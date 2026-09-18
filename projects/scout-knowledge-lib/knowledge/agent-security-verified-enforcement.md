@@ -1,8 +1,8 @@
 <ai_context>
-summary: "Companion note to agent-security-defense-architectures.md: verified/formal enforcement patterns for AI agent security. These share a common principle — safety enforcement that does not depend on model cooperation. Covers out-of-band deterministic enforcement, institutional attestation, policy autoformalization, trust-by-construction, multi-layer verification oracles, per-datum trust scoring, runtime trace enforcement, knowledge-boundary defense, physical-world attestation, context-to-execution integrity (CXI), off-host identity-bound authorization (aiAuthZ), hardware-confined signing with pre-committed effect authority, adversarial MCP-server verification with replayability limits, mediated-action receipts that separate integrity, signer attribution, completeness, and per-request authentication strength, fail-closed shell/file hooks whose policy coverage is regression-tested against bypasses, model-relative SMT containment for agent-authored permission changes, path-composition evidence for layered controls, explicit egress assurance states, and MCP tool pins whose identity semantics and missing-observation behavior are part of the enforcement claim."
-triggers: ["verified enforcement", "out-of-band defense", "Progent", "CaMeL", "FIDES", "institutional attestation", "Cedar policy", "autoformalization", "Kiko protocol", "trust-by-construction", "VIGIL trace enforcement", "knowledge-based PR", "KPR", "hardware-gated agent", "deceptive fixes", "TerraProbe", "Robust-TO", "per-datum trust", "CXI", "context-to-execution integrity", "aiAuthZ", "identity-bound authorization", "hardware keystore", "PKCS#11", "signing authority", "payload commitment", "SkillProof", "MCP server verification", "replayable evidence", "action receipt", "signed receipt", "evidence completeness", "Pipelock", "PassControl", "sender proof", "bearer visa", "authentication assurance", "default deny", "fail closed", "shell hook", "protected path", "guardrail regression test", "OpenShell prover", "maximum policy", "SMT containment", "Z3 counterexample", "credentialed L4", "Kubernetes RBAC", "defense in depth", "path composition", "secure-agent", "egress firewall", "uninspected egress", "coverage posture", "tool identity", "tool pin", "schema canonicalization", "Rul1an/assay"]
-last_updated: "2026-09-17"
-source_basis: "Extracted from agent-security-defense-architectures.md §2.33–§2.42. §2.44–§2.45 (CXI, aiAuthZ) moved from defense-architectures.md §Execution Boundary Patterns (scan #453). Patterns sourced from arXiv June–August 2026 papers, including 2606.26479 Progent, 2606.26298 Institutional Attestation, 2606.26649 Cedar Pipeline, 2606.26590 TerraProbe, 2606.26156 Kiko, 2606.26904 Robust-TO, 2606.26524 VIGIL, 2606.26721 KPR, 2606.27231 Quantum Hardware Agent, 2607.06000 CXI, 2607.05518 aiAuthZ, and 2608.06130 hardware-confined signing; HN item 49649729 and the pinned SkillProof repository commit f5ddb4b (checked 2026-09-10); Pipelock's pinned repository commit f7d1816 (checked 2026-09-11) for mediated-action receipt verification and explicit evidence limits; HN item 49658005 plus agent-guardrails-kit's pinned commit 18c241e (checked 2026-09-11) for fail-closed, regression-tested hook enforcement; PassControl's pinned repository commit f9cb702 (checked 2026-09-12) for per-request authentication-strength receipts, revocation-state posture, and explicit receipt limits; HN item 49713261 plus OpenShell's formal-methods note and pinned spike commit df0ee1a (checked 2026-09-15) for model-relative policy containment, explicit unsupported surfaces, and counterexample-bearing permission review; k8s-rca-agent commit 29f5fad (checked 2026-09-15) for path-composition limits across RBAC, hooks, credentials, and redaction; secure-agent commit 017ec5a (checked 2026-09-16) for monitor-versus-block semantics, fail-open inspection, bounded payload coverage, and explicit uninspected-egress posture; and Rul1an/assay commit 900e536 (checked 2026-09-17) for structurally bounded tool-identity output, schema-pin canonicalization limits, and missing-identity behavior. Scans #176–#183, #453; maintained with current source checks."
+summary: "Companion note to agent-security-defense-architectures.md: verified/formal enforcement patterns for AI agent security. These share a common principle — safety enforcement that does not depend on model cooperation. Covers out-of-band deterministic enforcement, institutional attestation, policy autoformalization, trust-by-construction, multi-layer verification oracles, per-datum trust scoring, runtime trace enforcement, knowledge-boundary defense, physical-world attestation, context-to-execution integrity (CXI), off-host identity-bound authorization (aiAuthZ), hardware-confined signing with pre-committed effect authority, adversarial MCP-server verification with replayability limits, mediated-action receipts that separate integrity, signer attribution, completeness, and per-request authentication strength, fail-closed shell/file hooks whose policy coverage is regression-tested against bypasses, model-relative SMT containment for agent-authored permission changes, path-composition evidence for layered controls, explicit egress assurance states, MCP tool pins whose identity semantics and missing-observation behavior are part of the enforcement claim, and rollout evidence that keeps shadow verdicts distinct from effect-owning enforcement."
+triggers: ["verified enforcement", "out-of-band defense", "Progent", "CaMeL", "FIDES", "institutional attestation", "Cedar policy", "autoformalization", "Kiko protocol", "trust-by-construction", "VIGIL trace enforcement", "knowledge-based PR", "KPR", "hardware-gated agent", "deceptive fixes", "TerraProbe", "Robust-TO", "per-datum trust", "CXI", "context-to-execution integrity", "aiAuthZ", "identity-bound authorization", "hardware keystore", "PKCS#11", "signing authority", "payload commitment", "SkillProof", "MCP server verification", "replayable evidence", "action receipt", "signed receipt", "evidence completeness", "Pipelock", "PassControl", "sender proof", "bearer visa", "authentication assurance", "default deny", "fail closed", "shell hook", "protected path", "guardrail regression test", "OpenShell prover", "maximum policy", "SMT containment", "Z3 counterexample", "credentialed L4", "Kubernetes RBAC", "defense in depth", "path composition", "secure-agent", "egress firewall", "uninspected egress", "coverage posture", "tool identity", "tool pin", "schema canonicalization", "Rul1an/assay", "Soup Wall", "shadow mode", "enforcement posture", "mediation ownership"]
+last_updated: "2026-09-18"
+source_basis: "Extracted from agent-security-defense-architectures.md §2.33–§2.42. §2.44–§2.45 (CXI, aiAuthZ) moved from defense-architectures.md §Execution Boundary Patterns (scan #453). Patterns sourced from arXiv June–August 2026 papers, including 2606.26479 Progent, 2606.26298 Institutional Attestation, 2606.26649 Cedar Pipeline, 2606.26590 TerraProbe, 2606.26156 Kiko, 2606.26904 Robust-TO, 2606.26524 VIGIL, 2606.26721 KPR, 2606.27231 Quantum Hardware Agent, 2607.06000 CXI, 2607.05518 aiAuthZ, and 2608.06130 hardware-confined signing; HN item 49649729 and the pinned SkillProof repository commit f5ddb4b (checked 2026-09-10); Pipelock's pinned repository commit f7d1816 (checked 2026-09-11) for mediated-action receipt verification and explicit evidence limits; HN item 49658005 plus agent-guardrails-kit's pinned commit 18c241e (checked 2026-09-11) for fail-closed, regression-tested hook enforcement; PassControl's pinned repository commit f9cb702 (checked 2026-09-12) for per-request authentication-strength receipts, revocation-state posture, and explicit receipt limits; HN item 49713261 plus OpenShell's formal-methods note and pinned spike commit df0ee1a (checked 2026-09-15) for model-relative policy containment, explicit unsupported surfaces, and counterexample-bearing permission review; k8s-rca-agent commit 29f5fad (checked 2026-09-15) for path-composition limits across RBAC, hooks, credentials, and redaction; secure-agent commit 017ec5a (checked 2026-09-16) for monitor-versus-block semantics, fail-open inspection, bounded payload coverage, and explicit uninspected-egress posture; Rul1an/assay commit 900e536 (checked 2026-09-17) for structurally bounded tool-identity output, schema-pin canonicalization limits, and missing-identity behavior; and Soup Wall commit be8db48 (checked 2026-09-18) for shadow-to-enforce rollout, fail-open advisory hooks and MCP mediation, and fail-closed effect-owning adapters. Scans #176–#183, #453; maintained with current source checks."
 </ai_context>
 
 # Agent Security: Verified Enforcement Patterns
@@ -959,3 +959,66 @@ proxy against a live MCP server, or test whether other policy rules mask the
 missing-identity path in a particular deployment. The numeric collision and
 validator disagreement are assertions encoded by the repository's tests, not an
 independent reproduction in this run.
+
+## A Policy Verdict Is Counterfactual Until the Mediator Owns the Effect (GitHub, September 2026)
+
+**Repo:** https://github.com/MakazhanAlpamys/soup-wall
+
+**Pinned observation:** repository commit
+[`be8db48966f3afeea86767f256060b709a45e2f8`](https://github.com/MakazhanAlpamys/soup-wall/commit/be8db48966f3afeea86767f256060b709a45e2f8)
+
+Soup Wall makes an unusually clear distinction between computing a security
+verdict and controlling an effect. Its default shadow mode records what policy
+*would* have decided while returning no blocking decision. The supplied replay
+command requires at least 500 events across 20 sessions before recommending a
+mode change, and it sends any observed `ask` or `deny` to human review rather
+than guessing whether the interruption was an attack or a false positive. Those
+thresholds are explicitly engineering judgment, not statistical validation;
+more importantly, the replay module summarizes previously recorded verdicts and
+does not re-evaluate events against a changed policy.
+
+After promotion, enforcement strength still depends on the integration path:
+
+- The Claude Code HTTP hook is advisory. Oversized, malformed, unknown, and
+  internally failed inputs return an empty success response, and an unavailable
+  daemon is handled by the host as no opinion. Even in enforce mode this path is
+  deliberately fail-open.
+- The MCP stdio proxy can replace a rejected `tools/list` result with an error,
+  but only while the daemon responds with enforce mode enabled. An unavailable
+  or unparsable daemon becomes `Unavailable`, which passes the manifest through.
+- The guarded shell, file, and fetch adapters are stronger because they own
+  process creation or the mutation. They reject every non-`Allow` verdict before
+  acting, confine file operations to the workspace, and require an egress
+  allowlist (plus a proxy when using network allowlists).
+
+The reusable assurance tuple is therefore:
+
+`{policy verdict, rollout mode, mediator owns effect, mediator available, input/path covered}`
+
+A deny in an audit log proves only the first element. A preflight that reports
+`enforce: true` proves the configured mode and liveness at that instant, not that
+all later effects traverse an effect-owning mediator. Conversely, shadow-mode
+traffic can support usability review without supplying attack coverage: a clean
+window means no recorded interruption, not that the policy detects novel
+attacks. Deployment reports should keep **would deny**, **did deny**, **allowed
+on inspection failure**, and **unmediated** as separate outcomes.
+
+This sharpens the prior egress and path-composition findings: promotion evidence
+can justify turning a control on, but enforcement evidence must come from the
+exact execution path that owns or can withhold the consequence.
+
+**Evidence inspected at the pinned commit:**
+[`README.md`](https://github.com/MakazhanAlpamys/soup-wall/blob/be8db48966f3afeea86767f256060b709a45e2f8/README.md),
+[`replay.rs`](https://github.com/MakazhanAlpamys/soup-wall/blob/be8db48966f3afeea86767f256060b709a45e2f8/crates/agentfw/src/replay.rs),
+[`handlers.rs`](https://github.com/MakazhanAlpamys/soup-wall/blob/be8db48966f3afeea86767f256060b709a45e2f8/crates/agentfw/src/handlers.rs),
+[`mcp/proxy.rs`](https://github.com/MakazhanAlpamys/soup-wall/blob/be8db48966f3afeea86767f256060b709a45e2f8/crates/agentfw/src/mcp/proxy.rs),
+[`sandbox.rs`](https://github.com/MakazhanAlpamys/soup-wall/blob/be8db48966f3afeea86767f256060b709a45e2f8/crates/agentfw/src/sandbox.rs), and
+[the successful pinned CI run](https://github.com/MakazhanAlpamys/soup-wall/actions/runs/34464016736).
+
+**Evidence boundary:** Scout inspected the pinned source, repository-authored
+tests, and a successful GitHub Actions run whose checked-in workflow executes
+format, clippy, locked workspace tests, and all-feature tests. The local runtime
+had no `cargo` executable, so Scout did not independently run the tests, start
+the daemon, connect Claude Code or an MCP server, or exercise guarded execution.
+The repository's hand-authored agent corpus is not a held-out security
+benchmark, and this observation does not establish production bypass resistance.
