@@ -7,7 +7,7 @@
     "bundle": "rm -rf .state/bundle && bun build ./app.ts ./evaluation-report-intake.ts ./improvement-approval.ts --target=bun --format=esm --outdir .state/bundle --external @may-agent/sdk",
     "check": "bun run typecheck && bun run format:check && bun run test",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "test": "bun test ./*.test.ts ./agents ./poc/intent-learning ../../shared/tools/task-evidence.test.ts --timeout 30000",
+    "test": "bun test ./*.test.ts ./agents ./scripts ./poc/intent-learning ../../shared/tools/task-evidence.test.ts --timeout 30000",
     "poc:intent": "bun poc/intent-learning/run.ts",
     "poc:intent-transfer": "bun poc/intent-learning/transfer.ts",
     "format": "bun x prettier --write ../../shared/tools/task-evidence.ts ../../shared/tools/task-evidence.test.ts app.ts app.test.ts evaluation-report-intake*.ts improvement-approval*.ts design/*.md agents poc/run.ts poc/intent-learning package.json project.json tsconfig.json",

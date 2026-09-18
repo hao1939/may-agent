@@ -4,13 +4,27 @@
     "module": "ESNext",
     "moduleResolution": "Bundler",
     "strict": true,
-    "types": ["bun-types", "node"],
+    "types": [
+      "bun-types",
+      "node"
+    ],
     "paths": {
-      "@may-agent/sdk": ["../may-agent/bundle/sdk-current/src/index.ts"]
+      "@may-agent/sdk": [
+        "../may-agent/bundle/sdk-current/src/index.ts"
+      ]
     },
     "skipLibCheck": true,
     "noEmit": true
   },
-  "include": ["app.ts", "agents/**/*.ts", "poc/intent-learning/**/*.ts"],
-  "exclude": ["**/*.test.ts", ".state/**", "node_modules/**"]
+  "include": [
+    "*.ts",
+    "agents/**/*.ts",
+    "scripts/**/*.ts",
+    "poc/intent-learning/**/*.ts"
+  ],
+  "exclude": [
+    "**/*.test.ts",
+    ".state/**",
+    "node_modules/**"
+  ]
 }
