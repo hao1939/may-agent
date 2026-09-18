@@ -5,6 +5,7 @@ import {
   configuredTaskReportRoot,
   isPublishedTaskReportPath,
   listTaskReports,
+  readPublishedTaskReport,
   resolveTaskReportPath,
   taskReportPaths,
 } from "./lib/task-report-store.js";
@@ -63,14 +64,9 @@ export function readPublishedEvaluationReport(
     };
   const marker = resolveTaskReportPath(reportRoot, expected.publicationPath);
   if (!existsSync(marker)) return { status: "publication-pending" };
-  const entry = listTaskReports(reportRoot, 100).find(
-    (item) =>
-      item.appId === request.appId &&
-      item.taskId === request.taskId &&
-      item.evidenceHash === request.evidenceHash &&
-      item.executionId === request.executionId,
-  );
-  if (!entry)
+  const entry = readPublishedTaskReport(reportRoot, request.facts);
+  if (!entry || entry.appId !== request.appId || entry.taskId !== request.taskId ||
+      entry.evidenceHash !== request.evidenceHash || entry.executionId !== request.executionId)
     return {
       status: "invalid",
       reason: "published report integrity check failed",

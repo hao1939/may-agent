@@ -4,7 +4,7 @@
   "domain": "agent benchmark governance and regression analysis",
   "model": "gpt-5.6-sol",
   "heartbeat": false,
-  "tools": ["read-only", "finish"],
+  "tools": ["read-only", "workflow", "finish"],
   "context_files": [],
   "memoryLimit": 5
 }

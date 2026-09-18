@@ -3,7 +3,7 @@ import { appendFileSync, mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { createTestAppWorkflowContext } from "@may-agent/sdk/testing";
-import { readEvaluationReports } from "./evaluation-report-reader.ts";
+import { readEvaluationReports, readPublishedEvaluationReport } from "./evaluation-report-reader.ts";
 import {
   hashReport,
   markTaskReportPublished,
@@ -13,15 +13,15 @@ import {
   writeImmutable,
 } from "./lib/task-report-store.ts";
 
-function publishFixture(root: string, summary = "report"): ReturnType<typeof taskReportPaths> {
-  const paths = taskReportPaths("may", "goal/one", "abc");
+function publishFixture(root: string, summary = "report", taskId = "goal/one", createdAt = 1): ReturnType<typeof taskReportPaths> {
+  const paths = taskReportPaths("may", taskId, "abc");
   const payload = {
     version: 1,
     rubricVersion: "task-outcome-v2",
     sourceRevision: "test",
     disposition: "assessed",
-    createdAt: 1,
-    subject: { appId: "may", taskId: "goal/one", evidenceHash: "abc" },
+    createdAt,
+    subject: { appId: "may", taskId, evidenceHash: "abc" },
     evidence: {},
     evaluator: { executionId: "s_1", cost: "unknown" },
     judgment: {
@@ -39,7 +39,7 @@ function publishFixture(root: string, summary = "report"): ReturnType<typeof tas
   writeImmutable(markdown, renderTaskReportMarkdown(payload)!);
   markTaskReportPublished(root, {
     appId: "may",
-    taskId: "goal/one",
+    taskId,
     evidenceHash: "abc",
     executionId: "s_1",
     jsonPath: paths.jsonPath,
@@ -51,6 +51,22 @@ function publishFixture(root: string, summary = "report"): ReturnType<typeof tas
 }
 
 describe("evaluation report reader", () => {
+  test("reads an exact older publication after it falls outside the latest 100 reports", async () => {
+    const root = mkdtempSync(join(tmpdir(), "report-reader-history-"));
+    const paths = publishFixture(root, "older report", "goal/older");
+    for (let index = 0; index < 101; index++) publishFixture(root, "newer", `goal/newer-${index}`, index + 2);
+    const publication = {
+      appId: "may", taskId: "goal/older", evidenceHash: "abc", executionId: "s_1",
+      facts: paths.jsonPath, report: paths.markdownPath,
+      jsonHash: hashReport(resolveTaskReportPath(root, paths.jsonPath)),
+      markdownHash: hashReport(resolveTaskReportPath(root, paths.markdownPath)),
+    };
+    expect(readPublishedEvaluationReport(publication, root).status).toBe("valid");
+    const read = await readEvaluationReports(createTestAppWorkflowContext({ input: { operation: "read", path: paths.markdownPath } }), root);
+    expect((read.output as { result: { content: string } }).result.content).toContain("older report");
+    expect(readPublishedEvaluationReport({ ...publication, executionId: "different" }, root).status).toBe("invalid");
+  });
+
   test("lists and reads accepted immutable report pairs without an evaluator call", async () => {
     const root = mkdtempSync(join(tmpdir(), "report-reader-"));
     const paths = publishFixture(root);
