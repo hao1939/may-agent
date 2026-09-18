@@ -5,6 +5,7 @@ import { resolve } from "node:path";
 const ALLOWED_COMMANDS = new Set([
   "apps.list",
   "app.tasks.list",
+  "tasks.list",
   "app.task.get",
   "task.get",
   "event.get",
@@ -23,6 +24,15 @@ export type PublicTaskEvidenceProvider = {
     limit?: number,
     cursor?: string,
   ): Promise<{ items: Record<string, unknown>[]; nextCursor: string }>;
+  listRecentTaskPage(
+    appId: string,
+    limit?: number,
+    cursor?: string,
+  ): Promise<{
+    items: Record<string, unknown>[];
+    nextCursor: string;
+    issues: string[];
+  }>;
   getAppTask(appId: string, taskId: string): Promise<Record<string, unknown>>;
   getTask(appId: string, taskId: string): Promise<Record<string, unknown>>;
   getEvent(eventId: string | number): Promise<Record<string, unknown>>;
@@ -214,6 +224,45 @@ export function createPublicTaskEvidenceProvider(
         items: items.map(object),
         nextCursor: text(object(envelope).nextCursor ?? response.nextCursor),
       };
+    },
+    async listRecentTaskPage(appId, limit = 50, cursor = "") {
+      const response = await command({
+        type: "tasks.list",
+        appId,
+        includeDone: true,
+        limit: boundedLimit(limit),
+        ...(cursor ? { cursor } : {}),
+      });
+      if (response.command !== "tasks.list")
+        throw new Error("tasks.list response identity mismatch");
+      const envelope = object(response.tasks);
+      const nextCursor = text(envelope.nextCursor);
+      if (!Array.isArray(envelope.items))
+        return {
+          items: [],
+          nextCursor,
+          issues: ["tasks.list response has no items array"],
+        };
+      const items: Record<string, unknown>[] = [];
+      const issues: string[] = [];
+      for (const value of envelope.items) {
+        const item = object(value);
+        if (text(item.appId) !== appId) {
+          issues.push("tasks.list item appId identity mismatch");
+          continue;
+        }
+        if (!text(item.taskId)) {
+          issues.push("tasks.list item has no taskId");
+          continue;
+        }
+        const updatedAt = Number(item.updatedAt);
+        if (!Number.isFinite(updatedAt) || updatedAt <= 0) {
+          issues.push("tasks.list item has no usable updatedAt");
+          continue;
+        }
+        items.push(item);
+      }
+      return { items, nextCursor, issues };
     },
     async listTasks(appId, limit = 50) {
       const maximum = boundedLimit(limit);

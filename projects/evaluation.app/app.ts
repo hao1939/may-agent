@@ -1152,7 +1152,7 @@ const baseApp = defineApp({
   version: 1,
   agent: "evaluator",
   description:
-    "Independent session and App auditing with evidence-backed owner and human reporting.",
+    "Reviews external App Task outcomes. Use read-reports with operation list/read to discover retained results without starting an evaluation.",
   inputSchema: evaluationInputSchema,
   task: taskForEvaluationInput,
   workspace: { kind: "local", localPath: "." },
