@@ -99,6 +99,31 @@ describe("may CLI help", () => {
       });
       expect(help.stdout).toContain("Usage: may-agent [options]");
       expect(existsSync(join(root, "state"))).toBe(false);
+
+      try {
+        await execFileAsync(
+          binary,
+          [
+            "--task-worker-once",
+            JSON.stringify({
+              appId: "sample",
+              taskId: "work/one",
+              dispatch: { enqueuedAt: 1, startedAt: 1, readyWaitMs: 0, lane: "normal" },
+            }),
+          ],
+          {
+            cwd: root,
+            env: { ...process.env, STATE_DIR: join(root, "state"), MAY_TASK_ATTEMPT_CHILD: "1" },
+            encoding: "utf8",
+            timeout: 10_000,
+          },
+        );
+        throw new Error("Compiled private worker unexpectedly started without parent IPC");
+      } catch (error) {
+        expect((error as { stderr?: string }).stderr).toContain(
+          "Task worker mode requires its parent IPC connection",
+        );
+      }
     } finally {
       rmSync(root, { recursive: true, force: true });
     }

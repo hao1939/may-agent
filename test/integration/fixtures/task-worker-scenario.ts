@@ -1,8 +1,9 @@
 import assert from "node:assert/strict";
 import { spawn, type ChildProcess } from "node:child_process";
-import { mkdirSync, mkdtempSync, readFileSync, renameSync, rmSync, writeFileSync } from "node:fs";
+import { chmodSync, existsSync, mkdirSync, mkdtempSync, readFileSync, renameSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { join, resolve } from "node:path";
+import { pathToFileURL } from "node:url";
 import { closeDb, getDb } from "../../../src/lib/requests.js";
 import { AppTaskResourceStore } from "../../../src/app/core/state/app-task-resource-store.js";
 import { DefinitionSourceReleaseStore } from "../../../src/app/app-source-release.js";
@@ -20,9 +21,12 @@ import { installAppTaskRuntimes, closeInstalledAppTaskRuntimes } from "../../../
 import { HostCapacity } from "../../../src/app/core/scheduling/host-capacity.js";
 import { readExecutionStatus } from "../../../src/app/core/reads/execution-status.js";
 import { observeDaemonLiveness } from "../../../src/app/modes/maintenance.js";
+import { isBundled } from "../../../src/app/bundle-mode.js";
 import {
   createTaskAttemptProcessExecutor,
   createTaskRecoveryProcessExecutor,
+  parseTaskAttemptProcessRequest,
+  runTaskAttemptWorker,
   type TaskAttemptProcessRequest,
 } from "../../../src/app/composition/workers/task-attempt-process.js";
 
@@ -169,7 +173,7 @@ export function run(f: ReturnType<typeof fixture>, recovery = false): Promise<un
         ],
         {
           cwd: f.root,
-          env: { ...process.env, MAY_TASK_ATTEMPT_CHILD: "1" },
+          env: { ...process.env, MAY_TASK_ATTEMPT_CHILD: undefined },
           stdio: ["ignore", "pipe", "pipe", "ipc"],
           serialization: "json",
         },
@@ -609,6 +613,150 @@ export async function execute(ctx) {
     }
   },
 
+  async ordinaryCommands() {
+    const f = fixture("owner");
+    const output = join(f.root, "ordinary-command-result.json");
+    const childScript = join(f.root, "ordinary-command.ts");
+    const dbConnectionUrl = pathToFileURL(resolve(process.cwd(), "src/lib/db/connection.ts")).href;
+    const bashToolUrl = pathToFileURL(resolve(process.cwd(), "src/lib/tools/bash.ts")).href;
+    const cliAgentUrl = pathToFileURL(resolve(process.cwd(), "src/lib/cli-agent.ts")).href;
+    const helperBin = join(f.root, "bin");
+    const helperProbe = join(f.root, "native-helper-command.json");
+    mkdirSync(helperBin, { recursive: true });
+    writeFileSync(
+      join(helperBin, "codex"),
+      `#!/usr/bin/env bun
+      import { writeFileSync } from "node:fs";
+      const args = process.argv.slice(2);
+      const resultPath = args[args.indexOf("-o") + 1];
+      const command = Bun.spawn([process.execPath, ${JSON.stringify(childScript)}], { stdout: "pipe", stderr: "pipe" });
+      const stdout = await new Response(command.stdout).text();
+      const stderr = await new Response(command.stderr).text();
+      if (await command.exited !== 0) throw new Error(stderr);
+      writeFileSync(process.env.TASK_NATIVE_DB_PROBE, stdout.trim());
+      writeFileSync(resultPath, "Synthetic native helper completed");
+      console.log(JSON.stringify({ type: "thread.started", thread_id: "fixture-thread" }));
+      console.log(JSON.stringify({ type: "item.completed", item: { type: "agent_message", text: "Synthetic native helper completed" } }));
+      console.log(JSON.stringify({ type: "turn.completed" }));
+      `,
+    );
+    chmodSync(join(helperBin, "codex"), 0o755);
+    writeFileSync(
+      childScript,
+      `
+      import { mkdtempSync, rmSync } from "node:fs";
+      import { tmpdir } from "node:os";
+      import { join } from "node:path";
+      import { closeDb, getDb } from ${JSON.stringify(dbConnectionUrl)};
+      const root = mkdtempSync(join(tmpdir(), "may-ordinary-command-"));
+      try {
+        const db = getDb(root);
+        console.log(JSON.stringify({
+          initialized: !!db.prepare("SELECT name FROM sqlite_master WHERE name = 'events'").get(),
+          legacyMarker: process.env.MAY_TASK_ATTEMPT_CHILD ?? null,
+        }));
+      } finally {
+        closeDb(root);
+        rmSync(root, { recursive: true, force: true });
+      }
+      `,
+    );
+    writeFileSync(
+      join(f.appDir, "agents", "owner", "workflows", "probe.ts"),
+      `
+      import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+      import { tmpdir } from "node:os";
+      import { join } from "node:path";
+      import { closeDb, getDb } from ${JSON.stringify(dbConnectionUrl)};
+      import { createBashTool } from ${JSON.stringify(bashToolUrl)};
+      import { runCliAgent } from ${JSON.stringify(cliAgentUrl)};
+      export const name = "probe";
+      export const description = "Exercise ordinary commands from a real Task worker";
+      export async function execute(ctx) {
+        const missing = mkdtempSync(join(tmpdir(), "may-worker-missing-"));
+        let workerRefusedMissing = false;
+        try { getDb(missing); } catch (error) {
+          workerRefusedMissing = String(error.message).includes("initialized Host database");
+        } finally {
+          closeDb(missing);
+          rmSync(missing, { recursive: true, force: true });
+        }
+        const bash = await createBashTool(${JSON.stringify(f.root)}).execute("ordinary", {
+          command: ${JSON.stringify(`${process.execPath} ${childScript}`)}, timeout: 10
+        });
+        const directChild = Bun.spawn([process.execPath, ${JSON.stringify(childScript)}], {
+          stdout: "pipe", stderr: "pipe"
+        });
+        const direct = await new Response(directChild.stdout).text();
+        const directError = await new Response(directChild.stderr).text();
+        if (await directChild.exited !== 0) throw new Error(directError);
+        process.env.PATH = ${JSON.stringify(`${helperBin}:`)} + process.env.PATH;
+        process.env.TASK_NATIVE_DB_PROBE = ${JSON.stringify(helperProbe)};
+        const helper = await runCliAgent(
+          { tool: "codex", prompt: "Run the synthetic portable helper", timeoutMs: 5_000 },
+          {
+            agentName: "owner",
+            projectRoot: ${JSON.stringify(f.root)},
+            persistDir: ${JSON.stringify(f.persistDir)},
+            sessionId: "worker-native-helper",
+          },
+        );
+        if (helper.status !== "completed") throw new Error(helper.error ?? helper.summary);
+        writeFileSync(${JSON.stringify(output)}, JSON.stringify({
+          workerRefusedMissing,
+          bash: JSON.parse(bash.content[0].text.trim()),
+          direct: JSON.parse(direct.trim()),
+          helper: JSON.parse(readFileSync(${JSON.stringify(helperProbe)}, "utf8")),
+        }));
+        return ctx.done("done", { state: "converged", summary: "ordinary commands completed", facts: [] });
+      }
+      `,
+    );
+    if (isBundled()) {
+      writeFileSync(
+        join(f.appDir, "agents", "owner", "workflows", "probe.ts"),
+        `
+        import { writeFileSync } from "node:fs";
+        export const name = "probe";
+        export const description = "Exercise an ordinary command from the bundled Task worker";
+        export async function execute(ctx) {
+          const child = Bun.spawn(["bun", "-e", ${JSON.stringify(`import { Database } from "bun:sqlite"; import { mkdtempSync, rmSync } from "node:fs"; import { tmpdir } from "node:os"; import { join } from "node:path"; const root = mkdtempSync(join(tmpdir(), "may-compiled-ordinary-")); try { const db = new Database(join(root, "probe.db")); db.exec("CREATE TABLE proof (id INTEGER)"); console.log(JSON.stringify({ initialized: !!db.query("SELECT name FROM sqlite_master WHERE name = 'proof'").get(), legacyMarker: process.env.MAY_TASK_ATTEMPT_CHILD ?? null })); db.close(); } finally { rmSync(root, { recursive: true, force: true }); }`)}], { stdout: "pipe", stderr: "pipe" });
+          const stdout = await new Response(child.stdout).text();
+          const stderr = await new Response(child.stderr).text();
+          if (await child.exited !== 0) throw new Error(stderr);
+          writeFileSync(${JSON.stringify(output)}, JSON.stringify({ compiled: JSON.parse(stdout.trim()) }));
+          return ctx.done("done", { state: "converged", summary: "compiled ordinary command completed", facts: [] });
+        }
+        `,
+      );
+    }
+    process.env.MAY_TASK_ATTEMPT_CHILD = "1";
+    process.env.TASK_COMMAND_PROBE_ROOT = f.root;
+    await createTaskAttemptProcessExecutor({
+      bus: f.bus,
+      timeoutMs: 10_000,
+      definitionSource: () => ({
+        agentsRoot: join(f.root, "agents"),
+        projectsRoot: join(f.root, "projects"),
+        sharedRoot: join(f.root, "shared"),
+        appDirectories: ["sample.app"],
+      }),
+    })(f.request);
+    if (!existsSync(output)) {
+      const events = f.db.prepare("SELECT * FROM events ORDER BY id DESC LIMIT 10").all();
+      throw new Error(`ordinary command result missing: ${JSON.stringify(events)}`);
+    }
+    const result = JSON.parse(readFileSync(output, "utf8"));
+    if (isBundled()) {
+      assert.deepEqual(result.compiled, { initialized: true, legacyMarker: null });
+    } else {
+      assert.equal(result.workerRefusedMissing, true);
+      assert.deepEqual(result.bash, { initialized: true, legacyMarker: null });
+      assert.deepEqual(result.direct, { initialized: true, legacyMarker: null });
+      assert.deepEqual(result.helper, { initialized: true, legacyMarker: null });
+    }
+  },
+
   async inheritedAgent() {
     const f = fixture("specialist");
     await run(f);
@@ -698,4 +846,33 @@ export async function runScenario(name: string): Promise<void> {
   }
 }
 
-if (import.meta.main) await runScenario(process.argv[2]);
+if (import.meta.main) {
+  if (process.argv.includes("--task-worker-once")) {
+    const root = process.env.TASK_COMMAND_PROBE_ROOT!;
+    await runTaskAttemptWorker({
+      request: parseTaskAttemptProcessRequest(process.argv[process.argv.indexOf("--task-worker-once") + 1]),
+      roots: {
+        projectRoot: root,
+        projectsRoot: join(root, "projects"),
+        sharedRoot: join(root, "shared"),
+        persistDir: join(root, ".state"),
+      },
+      models: {
+        test: {
+          id: "test",
+          name: "test",
+          provider: "test",
+          api: "openai-completions",
+          apiKey: "fixture-only",
+          baseUrl: "http://127.0.0.1:1",
+          contextWindow: 8192,
+          maxTokens: 1024,
+          input: ["text"],
+          cost: {},
+        },
+      },
+    });
+  } else {
+    await runScenario(process.argv[2]);
+  }
+}

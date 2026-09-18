@@ -1,5 +1,13 @@
 import { describe, it } from "bun:test";
+import { execFile } from "node:child_process";
+import { mkdtempSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join, resolve } from "node:path";
+import { promisify } from "node:util";
+import { fileURLToPath } from "node:url";
 import { runTaskWorkerProbe } from "../../test/integration/fixtures/run-task-worker-probe.js";
+
+const execFileAsync = promisify(execFile);
 
 // Exercise a real parent and its workers outside the test runner's reused VM.
 // This keeps the parent-loss probe from touching another test's database or IPC.
@@ -21,5 +29,38 @@ describe("real Task worker boundary", () => {
     ["rejectedDisable", "keeps accepted Apps in recovery and attempts after rejected disable reload"],
     ["inheritedAgent", "runs an inherited non-default agent"],
     ["liveControl", "receives feedback and cancels without duplicate Events"],
+    ["ordinaryCommands", "keeps Bash and direct workflow commands outside the internal worker role"],
   ])("%s: %s", (scenario) => runTaskWorkerProbe("./task-worker-scenario.ts", scenario), 20_000);
+
+  it(
+    "runs ordinary commands from the production worker spawn in a compiled fixture",
+    async () => {
+      const root = mkdtempSync(join(tmpdir(), "may-compiled-worker-"));
+      const binary = join(root, "worker-probe");
+      try {
+        await execFileAsync(
+          process.execPath,
+          [
+            "build",
+            "--compile",
+            fileURLToPath(
+              new URL("../../test/integration/fixtures/task-worker-scenario.ts", import.meta.url),
+            ),
+            "--outfile",
+            binary,
+          ],
+          { cwd: resolve(import.meta.dir, "../.."), encoding: "utf8", timeout: 30_000 },
+        );
+        await execFileAsync(binary, ["ordinaryCommands"], {
+          cwd: resolve(import.meta.dir, "../.."),
+          env: { ...process.env, MAY_TASK_ATTEMPT_CHILD: "1" },
+          encoding: "utf8",
+          timeout: 20_000,
+        });
+      } finally {
+        rmSync(root, { recursive: true, force: true });
+      }
+    },
+    55_000,
+  );
 });

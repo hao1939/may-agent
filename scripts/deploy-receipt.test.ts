@@ -323,7 +323,7 @@ describe("restart-aware deploy receipts", () => {
     expect(deploy).toContain('git merge-base --is-ancestor "$canonical_commit" "$source_commit"');
     expect(deploy).toContain('git archive "$source_commit" | tar -x -C "$build_dir"');
     expect(deploy).toContain(
-      "env -u MAY_TASK_ATTEMPT_CHILD bun test packages/control/src/client.test.ts packages/control/src/control-socket.test.ts src/app/modes/emit-mode.test.ts",
+      "bun test packages/control/src/client.test.ts packages/control/src/control-socket.test.ts src/app/modes/emit-mode.test.ts",
     );
     expect(deploy).toContain('MAY_AGENT_BUILD_COMMIT="$source_commit" bun run bundle');
     expect(deploy).toContain('MAY_AGENT_UI_OUTPUT_DIR="$build_dir/bundle/platform-ui"');
@@ -335,7 +335,7 @@ describe("restart-aware deploy receipts", () => {
     expect(deploy).toContain('cp -R "$build_dir/bundle/platform-ui/." "$ui_stage/"');
   });
 
-  it("removes Task-child context only from the portable archive test gate", async () => {
+  it("stops before staging or restart when the portable archive test gate fails", async () => {
     const root = mkdtempSync(join(tmpdir(), "may-agent-deploy-gate-"));
     try {
       const repo = join(root, "repo");
@@ -395,7 +395,7 @@ describe("restart-aware deploy receipts", () => {
       const calls = readFileSync(log, "utf8").trim().split("\n");
       expect(calls[0]).toContain("1|kept|scripts/deploy-receipt.ts validate-target");
       expect(calls[1]).toBe(
-        "unset|kept|test packages/control/src/client.test.ts packages/control/src/control-socket.test.ts src/app/modes/emit-mode.test.ts",
+        "1|kept|test packages/control/src/client.test.ts packages/control/src/control-socket.test.ts src/app/modes/emit-mode.test.ts",
       );
       expect(calls.some((call) => call.includes("run bundle"))).toBe(false);
       expect(calls.some((call) => call.includes("deploy-receipt.ts request"))).toBe(false);

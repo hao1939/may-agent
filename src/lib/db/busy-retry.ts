@@ -1,3 +1,4 @@
+import { isTaskWorkerProcess } from "../task-worker-context.js";
 import { log } from "../log.js";
 
 const SQLITE_BUSY_PATTERNS = [/database is locked/i, /SQLITE_BUSY/i];
@@ -16,8 +17,7 @@ function sleepSync(ms: number): void {
 }
 
 export function withSqliteBusyRetry<T>(operation: string, run: () => T): T {
-  const retryDelaysMs =
-    process.env.MAY_TASK_ATTEMPT_CHILD === "1" ? WORKER_RETRY_DELAYS_MS : HOST_RETRY_DELAYS_MS;
+  const retryDelaysMs = isTaskWorkerProcess() ? WORKER_RETRY_DELAYS_MS : HOST_RETRY_DELAYS_MS;
   let lastError: unknown = null;
   for (let attempt = 0; attempt <= retryDelaysMs.length; attempt += 1) {
     try {

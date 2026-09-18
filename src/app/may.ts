@@ -16,6 +16,7 @@ import { parseAppArgs } from "./app-args.js";
 import { runAppRuntime } from "./app-runtime.js";
 import { createAppReporting } from "./composition/reporting.js";
 import { getDb } from "../lib/requests.js";
+import { enterTaskWorkerProcess } from "../lib/task-worker-context.js";
 import { resolveRuntimeRoots } from "./path-roots.js";
 import { runMaintenanceMode } from "./modes/maintenance.js";
 import { runRequestedControlExitMode } from "./runtime-exit-modes.js";
@@ -105,8 +106,12 @@ const INSTANCE = process.env.INSTANCE || "";
 const INSTANCE_LABEL = INSTANCE || "default";
 
 let appArgs: ReturnType<typeof parseAppArgs>;
+let taskWorkerMode = false;
 try {
   appArgs = parseAppArgs();
+  taskWorkerMode = Boolean(appArgs.taskWorkerRequest || appArgs.taskRecoveryWorker || appArgs.taskAdmissionWorker);
+  // Establish the private role before control reads, model configuration, storage, or App definitions are loaded.
+  if (taskWorkerMode) enterTaskWorkerProcess();
 } catch (err) {
   console.error(err instanceof Error ? err.message : String(err));
   process.exit(1);
@@ -148,12 +153,9 @@ if (WEB_ONLY_MODE) {
   });
 }
 
-// ── Models ──────────────────────────────────────────────────────────────
-
-const models = createModelRegistry();
-
-if (appArgs.taskWorkerRequest || appArgs.taskRecoveryWorker || appArgs.taskAdmissionWorker) {
+if (taskWorkerMode) {
   try {
+    const models = createModelRegistry();
     const workerInput = {
       roots: {
         projectRoot: PROJECT_ROOT,
@@ -188,6 +190,9 @@ if (appArgs.taskWorkerRequest || appArgs.taskRecoveryWorker || appArgs.taskAdmis
   }
 }
 
+// ── Models ──────────────────────────────────────────────────────────────
+
+const models = createModelRegistry();
 const PROCESS_START_TIME = Date.now();
 const writeIdentity = createIdentityWriter({ persistDir: PERSIST_DIR, instanceLabel: INSTANCE_LABEL });
 
