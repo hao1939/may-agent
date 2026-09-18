@@ -13,4 +13,6 @@ The pilot is a composition of small ordinary Task stages, not one improvement co
 Each stage has an explicit input/output and retained evidence naming its failure stage. Candidate readiness is not integration, approval, activation, or deployment. The accountable owner performs one reconciliation from current Task detail at each return: it reuses the retained selected subject and admitted `appdep_…` request rather than resampling or assuming the workflow-local dependency label is the public result identity. Outstanding activation, post-adoption subject selection, and Evaluation return remain visible through the same Task's Conditions and accepted result until the exact next fact arrives. Present that state using the common [current-first Task guidance](../../may-agent.app/docs/2a-design/human-control-surfaces.md#shared-resource-interface); the same document defines generic trusted-ingress, Condition, and operation-identity boundaries.
 
 See the [September 18 rollout](evaluation-improvement-rollout-20260918.md) for
-deployed revisions, live observations, retained failures and remaining limits.
+the initial installation and the [September 19 live verification](evaluation-improvement-rollout-20260919.md)
+for the current deployed identities, real no-op intake, synthetic approval
+coverage, retained failures and remaining limits.
