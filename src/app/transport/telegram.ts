@@ -443,16 +443,16 @@ function pendingHumanApprovalCondition(task: HumanTaskView | null) {
 
 function fullHumanApprovalAction(task: HumanTaskView | null): string | null {
   if (!task || task.terminal) return null;
-  const humanConditions = (task.diagnostics?.conditions ?? [])
+  const actions = (task.diagnostics?.conditions ?? [])
     .map((item) => item.condition)
     .filter(
       (condition) =>
         condition?.status?.state !== "true" &&
-        (condition?.spec.owner === "human" || condition?.spec.owner?.startsWith("human:") === true) &&
-        condition.spec.requestedAction?.trim(),
-    );
-  const action = humanConditions.length === 1 ? humanConditions[0]!.spec.requestedAction?.trim() : null;
-  return action || null;
+        (condition?.spec.owner === "human" || condition?.spec.owner?.startsWith("human:") === true),
+    )
+    .map((condition) => condition!.spec.requestedAction?.trim())
+    .filter((action): action is string => Boolean(action));
+  return actions.length > 0 ? actions.join("\n\n---\n\n") : null;
 }
 
 function approvalAnchor(task: HumanTaskView | null): TelegramApprovalAnchor | null {
@@ -973,19 +973,51 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
   }
 
   const todoTaskKey = (task: HumanTaskView): string => `${task.appId}\0${task.taskId}`;
-  const todoActionSignature = (task: HumanTaskView): string => humanActionText(task);
+  const todoActionSignature = (task: HumanTaskView): string => {
+    const conditions = (task.diagnostics?.conditions ?? [])
+      .flatMap((item) => {
+        const condition = item.condition;
+        if (
+          !condition ||
+          condition.status?.state === "true" ||
+          !(condition.spec.owner === "human" || condition.spec.owner?.startsWith("human:") === true)
+        )
+          return [];
+        return [
+          {
+            id: item.id,
+            type: condition.spec.type,
+            subject: condition.spec.subject,
+            owner: condition.spec.owner,
+            requestedAction: condition.spec.requestedAction,
+            expected: condition.spec.expected,
+          },
+        ];
+      })
+      .sort((left, right) => left.id.localeCompare(right.id));
+    return JSON.stringify({
+      generation: task.generation,
+      conditions,
+      fallback: conditions.length === 0 ? humanActionText(task) : undefined,
+    });
+  };
 
   async function refreshTodos(surface: string): Promise<void> {
     const coordinates = surfaces.get(surface);
     if (!coordinates) return;
     const appId = selectedApps.get(surface) ?? opts.interfaceAgent;
     const page = opts.humanTasks.listTasks({ appId, humanActionOnly: true, limit: TODO_PAGE_SIZE });
+    const actions = page.items.map((task) => {
+      const owner = task.humanAction?.task ?? { appId: task.appId, taskId: task.taskId };
+      const detail = opts.humanTasks.getTask?.(owner) ?? task;
+      return { task, detail, signature: todoActionSignature(detail) };
+    });
     const prior = shownTodoActions.get(surface) ?? new Map<string, string>();
-    const next = new Map(page.items.map((task) => [todoTaskKey(task), todoActionSignature(task)]));
+    const next = new Map(actions.map(({ task, signature }) => [todoTaskKey(task), signature]));
     const watched = watchedTasks.get(surface);
-    const changed = page.items.filter(
-      (task) =>
-        prior.get(todoTaskKey(task)) !== todoActionSignature(task) &&
+    const changed = actions.filter(
+      ({ task, signature }) =>
+        prior.get(todoTaskKey(task)) !== signature &&
         !(watched?.appId === task.appId && watched.taskId === task.taskId),
     );
     if (changed.length === 0) {
@@ -994,10 +1026,9 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
     }
     const first = changed[0]!;
     const single = page.total === 1 && changed.length === 1;
-    const actionTask = first.humanAction?.task ?? { appId: first.appId, taskId: first.taskId };
-    // Compact lists intentionally omit Conditions. Read the exact action owner
-    // once so displayed text and immutable approval anchor share one snapshot.
-    const proposal = single ? (opts.humanTasks.getTask?.(actionTask) ?? first) : first;
+    // The detail was read once above, so displayed text and immutable approval
+    // anchor share the same snapshot without a list/detail race.
+    const proposal = single ? first.detail : first.task;
     const taskRefs = (single ? [proposal] : page.items).map((task) => ({ appId: task.appId, taskId: task.taskId }));
     const displayedApproval = single ? approvalAnchor(proposal) : null;
     const text = single
@@ -1026,7 +1057,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
       chatId: coordinates.chatId,
       topicId: coordinates.topicId,
       taskRefs,
-      idempotencyKey: `todo-notification:telegram:${surface}:${first.appId}:${first.taskId}:${first.resourceVersion}`,
+      idempotencyKey: `todo-notification:telegram:${surface}:${first.task.appId}:${first.task.taskId}:${first.task.resourceVersion}`,
     });
   }
 
@@ -1596,7 +1627,16 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
           if (!more && appId === (selectedApps.get(surface) ?? opts.interfaceAgent)) {
             shownTodoActions.set(
               surface,
-              new Map(page.items.map((task) => [todoTaskKey(task), todoActionSignature(task)])),
+              new Map(
+                page.items.map((task) => {
+                  const owner = task.humanAction?.task ?? {
+                    appId: task.appId,
+                    taskId: task.taskId,
+                  };
+                  const detail = opts.humanTasks.getTask?.(owner) ?? task;
+                  return [todoTaskKey(task), todoActionSignature(detail)];
+                }),
+              ),
             );
           }
         },
