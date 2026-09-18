@@ -229,7 +229,7 @@ describe("automatic task outcome selector", () => {
     const command = catalogCommand({
       may: [
         task("may", "goal/running", 0, "running"),
-        task("may", "goal/recent", 1, "needs-attention"),
+        task("may", "goal/recent", 1, "attention"),
         task("may", "goal/old", 8),
         task("may", "goal/older", 9),
       ],
@@ -248,8 +248,11 @@ describe("automatic task outcome selector", () => {
     const root = mkdtempSync(join(tmpdir(), "selector-status-"));
     const command = catalogCommand({
       may: [
+        task("may", "goal/attention", 0, "attention"),
+        task("may", "goal/done", 0, "done"),
         task("may", "goal/closed", 0, "closed"),
         task("may", "goal/cancelled", 0, "cancelled"),
+        task("may", "goal/obsolete", 0, "needs-attention"),
       ],
     });
     const first = await selectFairCandidate(
@@ -259,14 +262,16 @@ describe("automatic task outcome selector", () => {
       undefined,
       NOW,
     );
-    const second = await selectFairCandidate(
-      command,
-      config,
-      root,
-      first.state,
-      NOW,
-    );
-    expect([first.candidate?.taskId, second.candidate?.taskId]).toEqual([
+    const selected = [first.candidate?.taskId];
+    let state = first.state;
+    for (let index = 0; index < 3; index += 1) {
+      const next = await selectFairCandidate(command, config, root, state, NOW);
+      selected.push(next.candidate?.taskId);
+      state = next.state;
+    }
+    expect(selected).toEqual([
+      "goal/attention",
+      "goal/done",
       "goal/closed",
       "goal/cancelled",
     ]);
@@ -440,7 +445,7 @@ describe("automatic task outcome selector", () => {
         "No eligible recent external Task candidate was found within selector bounds; ordinary Task navigation advanced.",
       response:
         "No eligible recent external Task candidate was found within selector bounds; ordinary Task navigation advanced.",
-      facts: [
+      evidence: [
         "selector:no-candidate",
         selectorStateFact(result.state),
         ...result.navigationFacts,

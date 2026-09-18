@@ -23,12 +23,6 @@ function object(value: unknown): Record<string, unknown> {
     ? (value as Record<string, unknown>)
     : {};
 }
-function taskDetail(task: unknown): Record<string, unknown> {
-  const envelope = object(task);
-  return Object.keys(object(envelope.detail)).length
-    ? object(envelope.detail)
-    : envelope;
-}
 function finish(
   ctx: WorkflowContext<Input>,
   disposition: string,
@@ -111,9 +105,10 @@ export async function intakeEvaluationReport(
       },
       handoffKey: null,
     });
-  const snapshot = taskDetail(read.facts.evidence);
-  const current = taskDetail(subject.task);
-  const recovered = snapshot.status !== "done" && current.status === "done";
+  // A terminal status is a lifecycle receipt, not proof that the evaluated
+  // finding was recovered. Recovery remains an evidence-backed May judgment.
+  // This intake only verifies report bytes and current subject identity.
+  const recovered = false;
   const plan = planReportIntake({
     appId: publication.appId,
     taskId: publication.taskId,

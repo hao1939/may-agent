@@ -156,6 +156,21 @@ describe("May Evaluation report intake procedure", () => {
     expect(reads).toBe(1);
   });
 
+  test("does not treat a terminal status as proof of recovery", async () => {
+    const data = fixture();
+    data.detail.status = "done";
+    const execution = await intakeEvaluationReport(
+      context(data),
+      data.root,
+      reader(data),
+    );
+    const output = execution.output as { result: Record<string, unknown> };
+    expect(output.result).toMatchObject({
+      disposition: "investigate",
+      recovered: false,
+    });
+  });
+
   test("treats a changed canonical evidence hash as stale before candidate preparation", async () => {
     const data = fixture();
     data.detail.status = "done";
