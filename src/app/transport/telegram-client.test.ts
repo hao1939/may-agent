@@ -291,7 +291,43 @@ describe("telegram client", () => {
     }
   });
 
-  it("does not report a multipart send as delivered when any chunk is uncertain", async () => {
+  it("binds a complete multipart approval only to its final delivery", async () => {
+    const persistDir = mkdtempSync(join(tmpdir(), "telegram-client-complete-approval-"));
+    let nextMessageId = 750;
+    const deliveredText: string[] = [];
+    try {
+      const client = createTelegramClient({
+        token: "token",
+        persistDir,
+        emitInfo: () => {},
+        fetchImpl: (async (_url, init) => {
+          deliveredText.push(JSON.parse(String(init?.body)).text);
+          return Response.json({ ok: true, result: { message_id: nextMessageId++ } });
+        }) as typeof fetch,
+      });
+      const exactProposal = `${"first ".repeat(800)}final exact scope`;
+
+      await expect(
+        client.sendMessage("chat-1", exactProposal, undefined, {
+          eventType: "task.human-action",
+          data: JSON.stringify({ approvalAnchor: { approvalId: "exact-proposal" } }),
+          bindToCompleteDelivery: true,
+        }),
+      ).resolves.toBe(751);
+
+      const { getNotificationMessage } = await import("../../lib/db/notifications.js");
+      expect(deliveredText.join(" ")).toBe(exactProposal);
+      expect(getNotificationMessage(persistDir, "chat-1", 750)).toBeNull();
+      expect(JSON.parse(String(getNotificationMessage(persistDir, "chat-1", 751)?.data))).toMatchObject({
+        approvalAnchor: { approvalId: "exact-proposal" },
+      });
+    } finally {
+      closeDb(persistDir);
+      rmSync(persistDir, { recursive: true, force: true });
+    }
+  });
+
+  it("does not make a partial multipart approval delivery replyable", async () => {
     const persistDir = mkdtempSync(join(tmpdir(), "telegram-client-partial-"));
     let attempt = 0;
     try {
@@ -308,8 +344,16 @@ describe("telegram client", () => {
         }) as typeof fetch,
       });
 
-      await expect(client.sendMessage("chat-1", "a".repeat(5_000))).resolves.toBeUndefined();
+      await expect(
+        client.sendMessage("chat-1", "a".repeat(5_000), undefined, {
+          eventType: "task.human-action",
+          data: JSON.stringify({ approvalAnchor: { approvalId: "exact-proposal" } }),
+          bindToCompleteDelivery: true,
+        }),
+      ).resolves.toBeUndefined();
       expect(attempt).toBe(2);
+      const { getNotificationMessage } = await import("../../lib/db/notifications.js");
+      expect(getNotificationMessage(persistDir, "chat-1", 800)).toBeNull();
     } finally {
       closeDb(persistDir);
       rmSync(persistDir, { recursive: true, force: true });
