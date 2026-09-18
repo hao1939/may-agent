@@ -10,3 +10,6 @@ The pilot is a composition of small ordinary Task stages, not one improvement co
 6. **Application (operator):** `scripts/apply-improvement.ts` reads actual Git and evidence identities, then uses `applyWithExactApproval` before fast-forwarding the exact source candidate. Deployment remains a separate operator action. Missing/rejected/stale/mismatched approval makes zero calls. Application and post-apply verification/rollback are separate from model judgment.
 
 Each stage has an explicit input/output and retained evidence naming its failure stage. Candidate readiness is not integration, approval, activation, or deployment.
+
+See the [September 18 rollout](evaluation-improvement-rollout-20260918.md) for
+deployed revisions, live observations, retained failures and remaining limits.

@@ -1,8 +1,10 @@
 # Recovering unanswered input after wait corrections
 
-Status: isolated implementation candidate, September 18, 2026. No merge,
-deployment or live-agent validation is implied. Host baseline: `fe605220`;
-candidate: `afcefe76` on `fix/task-wait-recovery`.
+Status: merged locally and deployed on September 18, 2026. Host `e0e0b846`
+includes the original wait recovery candidate `afcefe76`, PR #195 integration
+`9b649b91`, and equivalent historical admission recovery. Paired App release:
+`425c6c7791`. The original experiment below remains historical evidence;
+the rollout section distinguishes portable mechanics from observed live behavior.
 
 ## Evidence and scope
 
@@ -82,12 +84,43 @@ published main `dd548cab`, which predates the local shared Task-context work.
 A merge preview against the current candidate conflicts in the workflow adapter
 and workflow-tool tests. During integration, carry the existing fenced revision
 capability in `TaskExecutionContext`, including agent-invoked workflows, instead
-of limiting the new exposure to direct Task workflow dispatch. Add a caller-tool
-regression alongside the direct-workflow test. This integration has not been
-performed; checks on the PR alone do not establish that combined behavior.
+of limiting the new exposure to direct Task workflow dispatch. Integration
+`9b649b91` now implements that shared capability and adds a caller-tool regression
+alongside the direct-workflow test. The combined focused checks pass 56 tests;
+checks on the PR alone did not establish that combined behavior.
 
 The automatic improvement proposal belongs to
 [Gym's report-driven design](../../../gym.app/design/report-driven-improvement.md).
 The common contract already supplies the required Task/input/caller mechanism.
 Gym can compare isolated behavior candidates; it must not teach an agent to work
 around broken Host correlation. Final human approval is required before promotion.
+
+## Rollout and observed limits
+
+The final Host revision passes `check:ci` and the complete portable suite:
+3,121 pass, 3 intentional installation-dependent skips, zero failures and
+14,220 assertions. The paired common design check also passes; the earlier
+workflow document length failure was resolved in the integrated design source.
+Matching binary, SDK, Console and UI artifacts were activated with the immutable
+App source, and readiness plus artifact/revision identity checks passed.
+
+The live Gym trial exposed old inputs with missing admission links and two saved
+aliases. Recovery now reuses aliases only when every bound authority and result
+field agrees, ignoring only the admission timestamp. Thirteen equivalent inputs
+settled through normal Host recovery after restart. One conflicting historical
+input remains unlinked: recovery must not guess its accepted answer. Task
+cancellation and historical results remain unchanged. The focused inbox suite
+passes 41 tests, including conflict preservation and idempotent recovery.
+
+The initial cutover used the existing fenced operator APIs to retire 41 exact
+obsolete Gym Tasks and import 675 historical completion receipts, linking 271
+inputs. This was an explicit operator migration, not autonomous agent repair.
+The follow-up deployment needed no repeat migration. The initial UI permission
+and history-compatibility failures, restoration evidence and successful
+activations remain in the installation's ignored review evidence directory.
+
+Live May first submitted an invalid Topic-less follow-up, received a useful
+error with paced recovery, then corrected it. That demonstrates this recovery
+path in use; it does not prove every historical wait correction through a model.
+The App trial and the remaining benchmark limitations are recorded in
+[the improvement-loop rollout](../../../may.app/design/evaluation-improvement-rollout-20260918.md).
