@@ -9,7 +9,7 @@ import {
   realpathSync,
   writeFileSync,
 } from "node:fs";
-import { basename, join, resolve, sep } from "node:path";
+import { basename, dirname, isAbsolute, join, resolve, sep } from "node:path";
 import type { ExecutionResult, WorkflowContext } from "@may-agent/sdk";
 
 export const name = "compare-candidate";
@@ -20,7 +20,10 @@ export type Comparison = {
   requestId: string;
   agent: "may" | "scout";
   baselineRunId: string;
+  baselinePath: string;
+  baselineFingerprint: string;
   candidate: string;
+  candidatePath: string;
   candidateFingerprint: string;
   benchmark: string;
   scorerRevision: string;
@@ -57,6 +60,12 @@ function safeSegment(value: string, field: string): string {
   if (!/^[A-Za-z0-9._-]+$/.test(value) || value === "." || value === "..")
     throw new Error(`comparison ${field} must be one safe path segment`);
   return value;
+}
+function absolutePath(value: unknown, field: string): string {
+  const path = text(value, field);
+  if (!isAbsolute(path))
+    throw new Error(`comparison ${field} must be absolute`);
+  return resolve(path);
 }
 export function parseComparison(value: unknown): Comparison {
   const data =
@@ -101,7 +110,10 @@ export function parseComparison(value: unknown): Comparison {
       text(data.baselineRunId, "baselineRunId"),
       "baselineRunId",
     ),
+    baselinePath: absolutePath(data.baselinePath, "baselinePath"),
+    baselineFingerprint: text(data.baselineFingerprint, "baselineFingerprint"),
     candidate: safeSegment(text(data.candidate, "candidate"), "candidate"),
+    candidatePath: absolutePath(data.candidatePath, "candidatePath"),
     candidateFingerprint: text(
       data.candidateFingerprint,
       "candidateFingerprint",
@@ -198,14 +210,17 @@ export async function compareCandidate(
   if (!ctx.workspace)
     return ctx.blocked("Comparison requires a granted App workspace");
   const gymRoot = resolve(ctx.workspace.projectRoot);
-  const agentsRoot = resolve(ctx.workspace.root, "agents");
-  const candidateDir = join(agentsRoot, ".lab", request.candidate);
-  const baselineDir = join(
-    gymRoot,
-    ".state",
-    "benchmarks",
-    request.baselineRunId,
-  );
+  const baselineDir = request.baselinePath;
+  const candidateDir = request.candidatePath;
+  if (
+    basename(baselineDir) !== request.baselineRunId ||
+    basename(candidateDir) !== request.candidate ||
+    basename(dirname(candidateDir)) !== ".lab"
+  )
+    return ctx.blocked(
+      "Frozen baseline/candidate artifact paths do not match their exact identities",
+    );
+  const agentsRoot = dirname(dirname(candidateDir));
   let baseline: Manifest;
   try {
     baseline = json<Manifest>(join(baselineDir, "manifest.json"));
@@ -217,6 +232,7 @@ export async function compareCandidate(
     : "";
   const preflight =
     baseline.run_id === request.baselineRunId &&
+    fingerprintTree(baselineDir) === request.baselineFingerprint &&
     baseline.agent === request.agent &&
     baseline.benchmark === request.benchmark &&
     same(baseline.scenarios, request.scenarios) &&
@@ -246,9 +262,7 @@ export async function compareCandidate(
   const argv = [
     "setsid",
     process.env.BUN_EXEC_PATH || "bun",
-    "run",
-    "loop",
-    "--",
+    join(gymRoot, "src", "loop", "cli.ts"),
     "verify",
     "--baseline",
     baselineDir,
@@ -283,7 +297,9 @@ export async function compareCandidate(
     }
   };
   let forceTimer: ReturnType<typeof setTimeout> | undefined;
+  let terminationRequested = false;
   const terminate = () => {
+    terminationRequested = true;
     killGroup("SIGTERM");
     forceTimer ??= setTimeout(() => killGroup("SIGKILL"), 1_000);
   };
@@ -299,6 +315,10 @@ export async function compareCandidate(
     child.exited,
   ]).finally(() => {
     clearTimeout(timer);
+    // The Bun wrapper can exit after SIGTERM while a descendant in the same
+    // process group remains alive. Complete cancellation before discarding the
+    // escalation timer so an aborted/timed-out comparison cannot leak model work.
+    if (terminationRequested) killGroup("SIGKILL");
     if (forceTimer) clearTimeout(forceTimer);
     signal.removeEventListener("abort", abort);
   });
@@ -315,8 +335,17 @@ export async function compareCandidate(
   const outputScorer = manifest?.source.evaluator_snapshot
     ? resolve(runDir, manifest.source.evaluator_snapshot)
     : "";
+  let artifactsUnchanged = false;
+  try {
+    artifactsUnchanged =
+      fingerprintTree(baselineDir) === request.baselineFingerprint &&
+      fingerprintTree(candidateDir) === request.candidateFingerprint;
+  } catch {
+    /* an unavailable or changed artifact cannot support the candidate */
+  }
   const outputMatches =
     Boolean(manifest) &&
+    artifactsUnchanged &&
     manifest!.run_id === basename(runDir) &&
     manifest!.baseline_run_id === request.baselineRunId &&
     manifest!.candidate === request.candidate &&

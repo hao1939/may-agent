@@ -90,9 +90,52 @@ describe("May Evaluation report intake procedure", () => {
       data.root,
       reader(data),
     );
-    expect((execution.output as { summary: string }).summary).toContain(
-      "investigate",
+    const output = execution.output as {
+      summary: string;
+      result: Record<string, any>;
+      facts: string[];
+    };
+    expect(output.summary).toContain("investigate");
+    expect(output.result).toMatchObject({
+      stage: "evaluation-report-intake",
+      disposition: "investigate",
+      publication: data.publication,
+      currentEvidence: {
+        appId: "may",
+        taskId: "goal/one",
+        evidenceHash: "evidence-1",
+      },
+      report: { facts: data.publication.facts },
+    });
+    expect(output.result.handoffKey).toMatch(/^[a-f0-9]{64}$/);
+    expect(output.facts).toContain(
+      `evaluation-report:${data.publication.facts}`,
     );
+  });
+
+  test("keeps a publication race retryable without reading staged bytes", async () => {
+    const data = fixture();
+    const pendingRoot = mkdtempSync(join(tmpdir(), "may-report-pending-"));
+    let subjectReads = 0;
+    const execution = await intakeEvaluationReport(
+      context(data),
+      pendingRoot,
+      async () => {
+        subjectReads++;
+        return reader(data)();
+      },
+    );
+    const output = execution.output as {
+      state: string;
+      result: Record<string, unknown>;
+    };
+    expect(output.state).toBe("incomplete");
+    expect(output.result).toMatchObject({
+      disposition: "retry-publication",
+      handoffKey: null,
+      currentEvidence: null,
+    });
+    expect(subjectReads).toBe(0);
   });
 
   test("uses Evaluation's public identity-checked reader for a Scout subject", async () => {

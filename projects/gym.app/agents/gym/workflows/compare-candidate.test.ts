@@ -23,14 +23,14 @@ afterEach(() => {
     rmSync(root, { recursive: true, force: true });
 });
 
-function fixture(mode: "valid" | "fail" | "abort") {
+function fixture(mode: "valid" | "fail" | "abort" | "control") {
   const root = mkdtempSync(join(tmpdir(), "gym-adapter-"));
   roots.push(root);
   const gym = join(root, "projects", "gym");
   const output = join(root, "output");
-  const agents = join(root, "agents");
+  const agents = join(root, "separate-may-worktree", "agents");
   const candidate = join(agents, ".lab", `candidate-${mode}`);
-  const baseline = join(gym, ".state", "benchmarks", "baseline-1");
+  const baseline = join(root, "separate-baseline-task", "baseline-1");
   mkdirSync(join(baseline, "inputs"), { recursive: true });
   mkdirSync(candidate, { recursive: true });
   mkdirSync(output, { recursive: true });
@@ -57,12 +57,9 @@ function fixture(mode: "valid" | "fail" | "abort") {
     join(baseline, "manifest.json"),
     JSON.stringify(baselineManifest),
   );
+  mkdirSync(join(gym, "src", "loop"), { recursive: true });
   writeFileSync(
-    join(gym, "package.json"),
-    JSON.stringify({ scripts: { loop: "bun fixture-runner.ts" } }),
-  );
-  writeFileSync(
-    join(gym, "fixture-runner.ts"),
+    join(gym, "src", "loop", "cli.ts"),
     `
 import { mkdirSync, readFileSync, writeFileSync, cpSync } from "node:fs";
 import { basename, join } from "node:path";
@@ -73,7 +70,13 @@ const candidate = value("--candidate");
 const mode = readFileSync(join(process.env.GYM_AGENTS_ROOT, ".lab", candidate, "mode"), "utf8").trim();
 writeFileSync(join(process.env.GYM_STATE_DIR, "spawned"), mode);
 if (mode === "fail") console.error("x".repeat(100_000));
-if (mode === "abort") await Bun.sleep(10_000);
+if (mode === "abort") {
+  const sentinel = join(process.env.GYM_STATE_DIR, "leaked-descendant");
+  Bun.spawn(["bash", "-c", "trap '' TERM; sleep 1; touch '" + sentinel + "'; sleep 30"], {
+    stdout: "ignore", stderr: "ignore",
+  });
+  await Bun.sleep(10_000);
+}
 const base = JSON.parse(readFileSync(join(baselineDir, "manifest.json"), "utf8"));
 const runId = "tiny-verify-" + mode;
 const run = join(process.env.GYM_STATE_DIR, "benchmarks", runId);
@@ -82,16 +85,20 @@ cpSync(join(baselineDir, "inputs", "score.js"), join(run, "inputs", "score.js"))
 const manifest = { ...base, run_id: runId, baseline_run_id: base.run_id, candidate,
   proof: { ...base.proof, candidate_fingerprint: ${JSON.stringify(fingerprintTree(candidate))} } };
 writeFileSync(join(run, "manifest.json"), JSON.stringify(manifest));
-writeFileSync(join(run, "comparison.json"), JSON.stringify({ baseline_run_id: base.run_id, candidate_run_id: runId, gate: "pass" }));
+writeFileSync(join(run, "comparison.json"), JSON.stringify({ baseline_run_id: base.run_id, candidate_run_id: runId, gate: mode === "control" ? "fail" : "pass" }));
 console.log(run);
 if (mode === "fail") process.exit(7);
+if (mode === "control") process.exit(1);
 `,
   );
   const request: Comparison = {
     requestId: `request-${mode}`,
     agent: "may",
     baselineRunId: "baseline-1",
+    baselinePath: baseline,
+    baselineFingerprint: fingerprintTree(baseline),
     candidate: `candidate-${mode}`,
+    candidatePath: candidate,
     candidateFingerprint: fingerprintTree(candidate),
     benchmark: "tiny",
     scorerRevision: createHash("sha256").update(scorer).digest("hex"),
@@ -156,10 +163,22 @@ describe("standalone Gym comparison adapter", () => {
     const receipt = JSON.parse(readFileSync(saved.receiptPath, "utf8"));
     expect(saved.verdict).toBe("candidate-supported");
     expect(receipt.outputMatches).toBeTrue();
-    expect(receipt.env.GYM_AGENTS_ROOT).toBe(join(setup.root, "agents"));
+    expect(receipt.env.GYM_AGENTS_ROOT).toBe(
+      join(setup.root, "separate-may-worktree", "agents"),
+    );
     expect(
       receipt.runDir.startsWith(join(setup.output, "gym-state", "benchmarks")),
     ).toBeTrue();
+  });
+
+  test("holds a verified no-change control without pretending improvement", async () => {
+    const setup = fixture("control");
+    const execution = await compareCandidate(context(setup));
+    const saved = result(execution);
+    const receipt = JSON.parse(readFileSync(saved.receiptPath, "utf8"));
+    expect(saved.verdict).toBe("hold");
+    expect(receipt.outputMatches).toBeTrue();
+    expect(receipt.comparison.gate).toBe("fail");
   });
 
   test("kills an aborted subprocess and retains no fabricated successful run", async () => {
@@ -175,5 +194,9 @@ describe("standalone Gym comparison adapter", () => {
     expect(saved.verdict).toBe("hold");
     expect(receipt.aborted).toBeTrue();
     expect(receipt.outputMatches).toBeFalse();
+    await Bun.sleep(1_200);
+    expect(
+      existsSync(join(setup.output, "gym-state", "leaked-descendant")),
+    ).toBeFalse();
   });
 });

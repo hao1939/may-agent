@@ -7,7 +7,10 @@ import { parseComparison } from "./agents/gym/workflows/compare-candidate";
 const comparison = {
   agent: "may",
   baselineRunId: "run-baseline",
+  baselinePath: "/frozen/gym/run-baseline",
+  baselineFingerprint: "sha256:baseline",
   candidate: "candidate-1",
+  candidatePath: "/frozen/may/agents/.lab/candidate-1",
   candidateFingerprint: "sha256:candidate",
   benchmark: "may-alignment",
   scorerRevision: "scorer-v1",
