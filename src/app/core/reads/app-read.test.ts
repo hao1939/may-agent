@@ -126,6 +126,7 @@ describe("App read projections", () => {
           acceptance: ["Completed"],
           agent: "evaluation",
           input: { exact: `input-for-${id}` },
+          outputs: ["report.md"],
         },
       });
     }
@@ -148,6 +149,7 @@ describe("App read projections", () => {
       parentId: "review",
       acceptance: ["Completed"],
       input: { exact: "input-for-review/a" },
+      outputs: ["report.md"],
       agent: "evaluation",
       owner: "evaluation",
       conditions: [],

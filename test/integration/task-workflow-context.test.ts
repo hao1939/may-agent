@@ -31,6 +31,8 @@ export const description = "Inspect with a specialist; input {marker:string}";
 export async function execute(ctx) {
   const task = await ctx.read.tasks.get(ctx.reconciliation.taskId);
   const result = await ctx.agents.call("worker", ctx.input.marker);
+  await ctx.reviseTask({ appId: "worker", taskId: "child-" + ctx.input.marker, expectedGeneration: 1,
+    input: { kind: "message", data: { marker: ctx.input.marker } } });
   return ctx.done("inspected", { marker: ctx.input.marker, task: task.id, root: ctx.workspace.root, taskFile: ctx.workspace.taskFile, result });
 }`,
     );
@@ -49,11 +51,13 @@ export async function execute(ctx) { return ctx.workflows.run("delegate", ctx.in
     const seen = new Map<string, string>();
     const helperPrompts = new Map<string, string>();
     const taskFiles = new Map<string, string>();
+    const revisions = new Map<string, unknown[]>();
     let accepted = 0;
     for (const marker of ["alpha", "beta"]) {
       entered.set(marker, Promise.withResolvers<void>());
       release.set(marker, Promise.withResolvers<void>());
       listeners.set(marker, new Set());
+      revisions.set(marker, []);
     }
     const manager = new SubagentManager({
       persistDir,
@@ -173,6 +177,12 @@ export async function execute(ctx) { return ctx.workflows.run("delegate", ctx.in
         reconciliation: { taskId: marker, input: { omitted: `only-${marker}` }, events: { items: [], truncated: false } },
         taskRead: { get: async (id: string) => ({ id }) },
         taskEmitter: { read: () => null, publish: () => 1, onEvent: () => () => {} },
+        async reviseTask(change) {
+          expect(change.taskId).toBe(`child-${marker}`);
+          expect(change.input).toEqual({ kind: "message", data: { marker } });
+          revisions.get(marker)!.push(change);
+          return { kind: "observed", taskId: change.taskId, generation: 2, changed: true };
+        },
         observeEvents(listener) {
           listeners.get(marker)!.add(listener);
           return () => {
@@ -244,6 +254,9 @@ export async function execute(ctx) { return ctx.workflows.run("delegate", ctx.in
         }
       } else expect(results.every((r) => r.status === "rejected")).toBe(true);
       expect(accepted).toBe(0);
+      for (const changes of revisions.values()) {
+        expect(changes).toHaveLength(mode === "feedback" && route !== "agent" ? 1 : 0);
+      }
       expect([...listeners.values()].every((rows) => rows.size === 0)).toBe(true);
       expect(manager.status()).toEqual([]);
     } finally {

@@ -17,6 +17,7 @@ export function taskExecutionContext(
     agentDefinitions: definitions,
     taskEmitter: input.taskEvents,
     observeEvents: attempt.onEvent,
+    reviseTask: (change) => attempt.reviseTask(change),
     taskRead: input.taskRead,
     details: { task, declaredOutputs: attempt.declaredOutputPaths, ...(input.dependencies ? { dependencies: input.dependencies } : {}) },
     reconciliation: {

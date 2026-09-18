@@ -87,6 +87,7 @@ export type TestAppWorkflowContextOptions<TInput> = {
   input: TInput;
   signal?: AbortSignal;
   reconciliation?: WorkflowContext<TInput>["reconciliation"];
+  reviseTask?: WorkflowContext["reviseTask"];
   read?: AppRead;
   log?: Logger;
   callAgent?: WorkflowContext["agents"]["call"];
@@ -115,6 +116,7 @@ export function createTestAppWorkflowContext<TInput>(
     input: options.input,
     signal: options.signal ?? new AbortController().signal,
     ...(options.reconciliation ? { reconciliation: options.reconciliation } : {}),
+    ...(options.reviseTask ? { reviseTask: options.reviseTask } : {}),
     read: options.read ?? createTestAppRead(),
     agents: {
       call: options.callAgent ?? fn(async (agent: string) => terminal("agent", `s_test_${agent}`)),

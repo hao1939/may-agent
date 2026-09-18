@@ -61,6 +61,18 @@ export async function execute(ctx) { return ctx.blocked("Specification missing",
     }
   });
 
+  it("does not expose creator revision authority to an unbound workflow", async () => {
+    const workflowDir = workflowRoot("workflow-no-creator-");
+    writeFileSync(join(workflowDir, "inspect.ts"), `
+export const name = "inspect";
+export const description = "Capability boundary";
+export function execute(ctx) { return ctx.done(typeof ctx.reviseTask); }
+`);
+    const runner = createWorkflowRunner({ manager: {} as never, workflowDir,
+      reviseTask: async () => { throw new Error("Must not expose authority"); },
+    });
+    await expect(runner.run("inspect", "Inspect capabilities")).resolves.toMatchObject({ type: "done", summary: "undefined" });
+  });
   it("uses the canonical App read capability supplied by its owning Runtime", async () => {
     const root = workflowRoot("workflow-app-read-");
     const workflowDir = join(root, "workflows");
