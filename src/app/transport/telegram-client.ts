@@ -21,6 +21,8 @@ export interface TelegramSendContext {
   sessionId?: string;
   projectId?: string;
   data?: string;
+  /** Persist reply authority only after every chunk was delivered, on the final chunk. */
+  bindToCompleteDelivery?: boolean;
   replyToMessageId?: number;
   messageThreadId?: number;
   replyMarkup?: { inline_keyboard: Array<Array<{ text: string; callback_data: string }>> };
@@ -142,7 +144,15 @@ export function createTelegramClient(opts: TelegramClientOptions): TelegramClien
     }
 
     if (context) {
-      for (const telegramMsgId of sentMsgIds) {
+      const fullyDelivered = complete && sentMsgIds.length === chunks.length;
+      // An approval reply must target the final chunk: that provider receipt
+      // proves all preceding bytes were sent. A partial send gets no authority.
+      const indexableMsgIds = context.bindToCompleteDelivery
+        ? fullyDelivered
+          ? sentMsgIds.slice(-1)
+          : []
+        : sentMsgIds;
+      for (const telegramMsgId of indexableMsgIds) {
         try {
           storeNotificationMessage(opts.persistDir, {
             chat_id: chatId,

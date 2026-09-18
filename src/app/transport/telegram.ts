@@ -922,6 +922,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
         topicId: conversationTopicId,
         ...(displayedApproval ? { approvalAnchor: displayedApproval } : {}),
       }),
+      bindToCompleteDelivery: Boolean(displayedApproval),
     });
     if (delivered && running)
       recordConversationMessage({
@@ -968,6 +969,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
     // once so displayed text and immutable approval anchor share one snapshot.
     const proposal = single ? (opts.humanTasks.getTask?.(actionTask) ?? first) : first;
     const taskRefs = (single ? [proposal] : page.items).map((task) => ({ appId: task.appId, taskId: task.taskId }));
+    const displayedApproval = single ? approvalAnchor(proposal) : null;
     const text = single
       ? `Needs your decision: ${proposal.outcome}\n${fullHumanApprovalAction(proposal) ?? humanActionText(proposal)}\n\nReply here with your decision.`
       : `${page.total ?? page.items.length} Tasks need your action in ${appId}. Ask May what needs your attention, or use /todo.`;
@@ -978,8 +980,9 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
       replyMarkup: taskButtons(taskRefs),
       data: JSON.stringify({
         taskRefs,
-        ...(single ? { approvalAnchor: approvalAnchor(proposal) } : {}),
+        ...(displayedApproval ? { approvalAnchor: displayedApproval } : {}),
       }),
+      bindToCompleteDelivery: Boolean(displayedApproval),
     });
     if (!messageId || !running) return;
     if ((selectedApps.get(surface) ?? opts.interfaceAgent) === appId) shownTodoActions.set(surface, next);
@@ -1415,6 +1418,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
             topicId: conversationTopicId,
             ...(displayedApproval ? { approvalAnchor: displayedApproval } : {}),
           }),
+          bindToCompleteDelivery: Boolean(displayedApproval),
           replyToMessageId: msg.message_id,
           messageThreadId: topicId,
           replyMarkup: taskButtons(followTask ? [followTask] : taskRefs),
