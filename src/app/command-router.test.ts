@@ -9,7 +9,11 @@ import { attachCommandRouter, validateSessionControl } from "./command-router.js
 import { EVENT_REDELIVERY_REQUIRED, EVENT_ROW_ID, EventBus } from "./core/events/bus.js";
 
 function fixture(
-  reload: () => { ok: boolean; summary: string } | Promise<{ ok: boolean; summary: string }> = () => ({
+  reload: (options?: {
+    expectedSourceCommit?: string;
+  }) =>
+    | { ok: boolean; summary: string; sourceCommit?: string }
+    | Promise<{ ok: boolean; summary: string; sourceCommit?: string }> = () => ({
     ok: true,
     summary: "[reload] No changes",
   }),
@@ -78,7 +82,13 @@ describe("command router", () => {
     const result = Promise.withResolvers<{ ok: boolean; summary: string }>();
     const started = Promise.withResolvers<void>();
     let calls = 0;
-    const f = fixture(() => { calls++; started.resolve(); return result.promise; });
+    const reloadOptions: Array<{ expectedSourceCommit?: string } | undefined> = [];
+    const f = fixture((options) => {
+      calls++;
+      reloadOptions.push(options);
+      started.resolve();
+      return result.promise;
+    });
     const observed: any[] = [];
     const unsubscribe = f.bus.subscribe((event) => observed.push(event));
     try {
@@ -101,6 +111,7 @@ describe("command router", () => {
       f.bus.redeliverPersisted(request, Number(request[EVENT_ROW_ID]));
       await Bun.sleep(0);
       expect(calls).toBe(1);
+      expect(reloadOptions).toEqual([undefined]);
       result.resolve({ ok: true, summary: "[reload] 6 task-enabled App(s)" });
       await Bun.sleep(0);
       expect(observed.filter((event) => event.type === "runtime.reload.finished")).toHaveLength(1);
@@ -119,6 +130,48 @@ describe("command router", () => {
     } finally {
       result.resolve({ ok: true, summary: "[reload] Fixture cleanup" });
       await Bun.sleep(0);
+      unsubscribe();
+      cleanup(f.root, f.router);
+    }
+  });
+
+  it("carries a pinned App source commit and records the actual activated commit", async () => {
+    const expectedSourceCommit = "1".repeat(40);
+    const activatedSourceCommit = "2".repeat(40);
+    const received: Array<{ expectedSourceCommit?: string } | undefined> = [];
+    const f = fixture((options) => {
+      received.push(options);
+      return {
+        ok: true,
+        summary: "[reload] 1 task-enabled App(s), 1 durable App address(es)",
+        sourceCommit: activatedSourceCommit,
+      };
+    });
+    const observed: any[] = [];
+    const unsubscribe = f.bus.subscribe((event) => observed.push(event));
+    try {
+      f.bus.emit({
+        type: "runtime.reload.requested",
+        source: "control-socket",
+        owner: "app:may",
+        data: { requestId: "pinned-reload", expectedSourceCommit },
+      } as any);
+      await Bun.sleep(0);
+
+      expect(received).toEqual([{ expectedSourceCommit }]);
+      expect(observed).toContainEqual(
+        expect.objectContaining({
+          type: "runtime.reload.finished",
+          owner: "app:may",
+          data: {
+            requestId: "pinned-reload",
+            ok: true,
+            summary: "[reload] 1 task-enabled App(s), 1 durable App address(es)",
+            sourceCommit: activatedSourceCommit,
+          },
+        }),
+      );
+    } finally {
       unsubscribe();
       cleanup(f.root, f.router);
     }

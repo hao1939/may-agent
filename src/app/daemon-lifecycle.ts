@@ -12,11 +12,18 @@ import { invalidateRuntimeModuleCache } from "../lib/runtime-import.js";
 export type AppGenerationReloadResult = {
   appIds: string[];
   taskApps: number;
+  sourceCommit?: string;
 };
 
 export type RuntimeReloadResult = {
   ok: boolean;
   summary: string;
+  sourceCommit?: string;
+};
+
+export type RuntimeReloadOptions = {
+  throwOnError?: boolean;
+  expectedSourceCommit?: string;
 };
 
 type ExecFileFn = (
@@ -57,7 +64,10 @@ export function createDaemonLifecycle(opts: {
   getActiveReadline: () => { close: () => void } | null;
   clearActiveReadline: () => void;
   beforeShutdown?: () => void;
-  prepareAgents?: typeof prepareAgentGeneration;
+  prepareAgents?: (
+    loaderOpts: AgentLoaderOptions,
+    reloadOptions: RuntimeReloadOptions,
+  ) => Promise<PreparedAgentGeneration>;
   publishAgents?: typeof publishPreparedAgentGeneration;
   reloadApps?: (input: {
     agents: PreparedAgentGeneration;
@@ -112,7 +122,7 @@ export function createDaemonLifecycle(opts: {
     startSupervisorRestarter(opts.bus);
   };
 
-  const handleReload = async (reloadOptions: { throwOnError?: boolean } = {}): Promise<RuntimeReloadResult> => {
+  const handleReload = async (reloadOptions: RuntimeReloadOptions = {}): Promise<RuntimeReloadResult> => {
     invalidateRuntimeModuleCache();
     let added: string[] = [];
     let updated: string[] = [];
@@ -121,7 +131,9 @@ export function createDaemonLifecycle(opts: {
     let publication: AgentGenerationPublication | undefined;
     let agents: PreparedAgentGeneration | undefined;
     try {
-      const prepared = await (opts.prepareAgents ?? prepareAgentGeneration)(opts.loaderOpts);
+      const prepared = opts.prepareAgents
+        ? await opts.prepareAgents(opts.loaderOpts, reloadOptions)
+        : await prepareAgentGeneration(opts.loaderOpts);
       agents = prepared;
       added = prepared.added;
       updated = prepared.updated;
@@ -172,7 +184,11 @@ export function createDaemonLifecycle(opts: {
     if (reloadOptions.throwOnError && !ok) {
       throw new Error(summary);
     }
-    return { ok, summary };
+    return {
+      ok,
+      summary,
+      ...(appGeneration?.sourceCommit ? { sourceCommit: appGeneration.sourceCommit } : {}),
+    };
   };
 
   const installProcessHandlers = () => {
