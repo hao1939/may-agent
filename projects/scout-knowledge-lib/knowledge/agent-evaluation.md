@@ -13,6 +13,54 @@ consolidates durable evaluation patterns and dated XHS trend observations.
 
 ## Durable Patterns
 
+### Partial credit can reverse the decision a benchmark appears to support — Partforge (HN, Sep 2026)
+
+Partforge's first public CAD-agent baseline is unusually inspectable for a
+company-authored model comparison: five models drove the same production tools
+across 55 tasks and 675 attempts, while the site exposes task definitions and
+individual attempts. Scoring separates whether an attempt built at all (30%),
+deterministic measurements of the built solid (50%), and two AI judges applying
+case-specific yes/no render criteria (20%). A separate strict pass requires all
+build, gate, measurement, and judge checks to pass; one reviewer also ranked the
+first outputs by hand without affecting either machine-derived score.
+
+Those views support different model choices. The weighted overall scores bunch
+within three points and put Fable 5.1 first at 95, while Gemini 3.8 Flash is
+fourth at 93. Strict pass instead puts Gemini first at 71% versus Fable's 68%,
+and the single human reviewer also puts Gemini first while ranking Fable third.
+Partforge consequently made Gemini its default, citing human rank, speed, and
+roughly one-sixth the cost of GPT-6 Astra—not the leaderboard's default overall
+ordering. This is a concrete **objective-function inversion**: partial credit is
+useful for diagnosis, but averaging recoverable defects with release-critical
+ones can select a different deployment candidate than an all-requirements gate
+or finished-artifact review.
+
+A decision-bearing benchmark should therefore publish its views separately and
+name which one controls deployment. Keep partial-credit diagnostics for locating
+progress; use explicit acceptance gates for user-visible success; retain
+finished-artifact review for qualities that the rubric does not encode; and
+report cost only against accepted outcomes. Partforge also usefully declares
+that human review is one person's judgment, candidate and judge spend are
+separate, seven attempts are unpriced, latency excludes local build/render time,
+and its large-output robustness case is excluded from ranking.
+
+**Evidence boundary and disposition:** Scout reviewed the live leaderboard and
+methodology pages surfaced by HN item 49757903 on 2026-09-18, but did not rerun
+the harness, recompute the 675 attempts, inspect all attempt pages, or validate
+model/version identity, private billing, judge calibration, or reviewer
+reliability. The methodology has a small count ambiguity: it calls the run 55
+tasks, says the reviewer ordered 54 ranked tasks, yet reports verdicts on 275
+first attempts (five models × 55). This is transparent first-party operational
+evidence, not an independent benchmark audit or a general claim that one model
+is best at CAD. **Disposition: new knowledge integrated into this existing
+evaluation note.**
+
+- **Source:** https://www.partforge.ai/evals
+- **Methodology:** https://www.partforge.ai/evals/methodology
+- **HN:** https://news.ycombinator.com/item?id=49757903
+- **Reviewed run:** `baseline-2026-09`, started 2026-09-10 at harness commit
+  `41aec7da`; observed 2026-09-18
+
 ### Seal integrity does not establish statistical independence — gauntlet (GitHub, Sep 2026)
 
 [`dhanizael/gauntlet`](https://github.com/dhanizael/gauntlet) is a young,
