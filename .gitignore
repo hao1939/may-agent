@@ -125,3 +125,7 @@ __pycache__/
 .may-runtime-module-*
 shared/guards/.may-runtime-module-*
 agents/may/handlers/.may-runtime-module-*
+
+# Independent repository and local Task/development checkouts.
+/projects/aks-e2e-spec-runner/
+/worktrees/
