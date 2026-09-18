@@ -3,7 +3,10 @@ import { appendFileSync, mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { createTestAppWorkflowContext } from "@may-agent/sdk/testing";
-import { readEvaluationReports, readPublishedEvaluationReport } from "./evaluation-report-reader.ts";
+import {
+  readEvaluationReports,
+  readPublishedEvaluationReport,
+} from "./evaluation-report-reader.ts";
 import {
   hashReport,
   markTaskReportPublished,
@@ -13,7 +16,12 @@ import {
   writeImmutable,
 } from "./lib/task-report-store.ts";
 
-function publishFixture(root: string, summary = "report", taskId = "goal/one", createdAt = 1): ReturnType<typeof taskReportPaths> {
+function publishFixture(
+  root: string,
+  summary = "report",
+  taskId = "goal/one",
+  createdAt = 1,
+): ReturnType<typeof taskReportPaths> {
   const paths = taskReportPaths("may", taskId, "abc");
   const payload = {
     version: 1,
@@ -54,17 +62,36 @@ describe("evaluation report reader", () => {
   test("reads an exact older publication after it falls outside the latest 100 reports", async () => {
     const root = mkdtempSync(join(tmpdir(), "report-reader-history-"));
     const paths = publishFixture(root, "older report", "goal/older");
-    for (let index = 0; index < 101; index++) publishFixture(root, "newer", `goal/newer-${index}`, index + 2);
+    for (let index = 0; index < 101; index++)
+      publishFixture(root, "newer", `goal/newer-${index}`, index + 2);
     const publication = {
-      appId: "may", taskId: "goal/older", evidenceHash: "abc", executionId: "s_1",
-      facts: paths.jsonPath, report: paths.markdownPath,
+      appId: "may",
+      taskId: "goal/older",
+      evidenceHash: "abc",
+      executionId: "s_1",
+      facts: paths.jsonPath,
+      report: paths.markdownPath,
       jsonHash: hashReport(resolveTaskReportPath(root, paths.jsonPath)),
       markdownHash: hashReport(resolveTaskReportPath(root, paths.markdownPath)),
     };
-    expect(readPublishedEvaluationReport(publication, root).status).toBe("valid");
-    const read = await readEvaluationReports(createTestAppWorkflowContext({ input: { operation: "read", path: paths.markdownPath } }), root);
-    expect((read.output as { result: { content: string } }).result.content).toContain("older report");
-    expect(readPublishedEvaluationReport({ ...publication, executionId: "different" }, root).status).toBe("invalid");
+    expect(readPublishedEvaluationReport(publication, root).status).toBe(
+      "valid",
+    );
+    const read = await readEvaluationReports(
+      createTestAppWorkflowContext({
+        input: { operation: "read", path: paths.markdownPath },
+      }),
+      root,
+    );
+    expect(
+      (read.output as { result: { content: string } }).result.content,
+    ).toContain("older report");
+    expect(
+      readPublishedEvaluationReport(
+        { ...publication, executionId: "different" },
+        root,
+      ).status,
+    ).toBe("invalid");
   });
 
   test("lists and reads accepted immutable report pairs without an evaluator call", async () => {
@@ -87,21 +114,25 @@ describe("evaluation report reader", () => {
       coverage: "bounded-single-task-snapshot",
       markdownSha256: expect.stringMatching(/^[a-f0-9]{64}$/),
     });
-    expect(Buffer.byteLength(JSON.stringify(listed.output))).toBeLessThan(16_384);
+    expect(Buffer.byteLength(JSON.stringify(listed.output))).toBeLessThan(
+      16_384,
+    );
     const read = await readEvaluationReports(
       createTestAppWorkflowContext({
         input: { operation: "read", path: paths.markdownPath },
       }),
       root,
     );
-    expect((read.output as { result: { content: string } }).result.content).toContain(
-      "## Summary\n\nreport",
-    );
+    expect(
+      (read.output as { result: { content: string } }).result.content,
+    ).toContain("## Summary\n\nreport");
   });
 
   test("omits published pairs whose deterministic JSON or Markdown bytes were tampered", async () => {
     for (const target of ["jsonPath", "markdownPath"] as const) {
-      const root = mkdtempSync(join(tmpdir(), `report-reader-tamper-${target}-`));
+      const root = mkdtempSync(
+        join(tmpdir(), `report-reader-tamper-${target}-`),
+      );
       const paths = publishFixture(root);
       appendFileSync(resolveTaskReportPath(root, paths[target]), "tampered");
       const listed = await readEvaluationReports(
@@ -138,7 +169,9 @@ describe("evaluation report reader", () => {
     expect(payload.truncated).toBeTrue();
     expect(payload.continuation).not.toBeNull();
     expect(payload.bytes).toBeGreaterThan(20_000);
-    expect(Buffer.byteLength(JSON.stringify(result.output))).toBeLessThan(16_384);
+    expect(Buffer.byteLength(JSON.stringify(result.output))).toBeLessThan(
+      16_384,
+    );
   });
 
   test("rejects paths outside the configured root and unpublished staged files", async () => {

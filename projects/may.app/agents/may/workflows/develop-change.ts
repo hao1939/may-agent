@@ -309,9 +309,7 @@ export async function execute(ctx: WorkflowContext) {
     };
     const ask = async <
       S extends
-        | typeof designSchema
-        | typeof implementationSchema
-        | typeof reviewSchema,
+        typeof designSchema | typeof implementationSchema | typeof reviewSchema,
     >(
       agent: string,
       stage: string,

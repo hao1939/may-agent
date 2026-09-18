@@ -1,8 +1,9 @@
 # Improvements from observed work
 
-Status: proposal, September 18, 2026. Preparation and isolated experiments may
-be autonomous. Applying an improvement requires final human approval. This
-proposal does not activate Gym, alter production agents or enable schedules.
+Design contract, September 18, 2026. Preparation and isolated experiments may
+be autonomous. Applying an improvement requires final human approval. Source
+readiness and deployed activation are recorded separately in the rollout evidence;
+this design does not grant approval to any generated candidate.
 
 ## Start with a useful finding
 
@@ -35,14 +36,14 @@ Use ordinary modules for bounded mechanics, workflows for useful sequencing and
 existing Tasks when responsibility or a durable wait crosses a boundary. A stage
 does not require a new service, lifecycle or public App input type.
 
-| Part | Input | Result and independent check |
-| --- | --- | --- |
-| Evaluation | Exact observed work and acceptance | Published report with immutable evidence; check attribution and coverage |
-| May investigation | Verified report and current subject state | Reasoned disposition and existing/new work reference; check diagnosis, recovery and duplicate handling |
-| Candidate preparation | Accepted change scope and frozen baseline | Isolated committed candidate, diff and checks; verify scope and reproducibility |
-| Gym comparison | Exact candidate/baseline and frozen evaluation plan | Per-case comparison with invalid runs and limits; verify identical conditions and transfer coverage |
-| Human review | Complete exact-candidate packet | Approval, rejection or requested adjustment through the human return path; verify actor and packet identity |
-| Application | Exact approval, candidate and current target | Application receipt and adoption checks or visible refusal; verify baseline, scope and rollback |
+| Part                  | Input                                               | Result and independent check                                                                                |
+| --------------------- | --------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| Evaluation            | Exact observed work and acceptance                  | Published report with immutable evidence; check attribution and coverage                                    |
+| May investigation     | Verified report and current subject state           | Reasoned disposition and existing/new work reference; check diagnosis, recovery and duplicate handling      |
+| Candidate preparation | Accepted change scope and frozen baseline           | Isolated committed candidate, diff and checks; verify scope and reproducibility                             |
+| Gym comparison        | Exact candidate/baseline and frozen evaluation plan | Per-case comparison with invalid runs and limits; verify identical conditions and transfer coverage         |
+| Human review          | Complete exact-candidate packet                     | Approval, rejection or requested adjustment through the human return path; verify actor and packet identity |
+| Application           | Exact approval, candidate and current target        | Application receipt and adoption checks or visible refusal; verify baseline, scope and rollback             |
 
 These are result contracts, not six new Host schemas. Keep each contract small:
 identity, evidence references, observed outcome, limitations and the next owner's
@@ -59,14 +60,13 @@ and approval. This lets us refine one part without obscuring which part improved
 
 ## Trigger and ownership
 
-Add one explicit consumer subscription for `evaluation.task_report_published`
-to May's App as the initial installation policy. Normalize it into the existing
+May has one explicit consumer subscription for `evaluation.task_report_published`
+as the initial installation policy. It normalizes the fact into the existing
 `message` input, preserving the event and exact subject/report/hash context.
-Use the existing subscription admission/deduplication path; no file watcher,
-private inbox or new workflow-specific input kind. This is a proposed route:
-the current event targets Evaluation and May has no report-publication
-subscription. Confirm the consumer route with a real subscription test before
-enabling it; a publication does not itself prove May received the finding.
+It uses the existing subscription admission/deduplication path. The event targets
+Evaluation, so the explicit consumer does not add a May target filter. Test the
+actual route and observe its admitted May input; publication alone does not prove
+May received or acted on the finding.
 
 The consumer checks the report through Evaluation's integrity-checked list/read
 interface and rereads current target evidence. Publication precedes the durable
@@ -90,14 +90,14 @@ useful finding, a material blocker or a reviewable candidate.
 
 ## Choose what to change
 
-| Finding | Responsible response |
-| --- | --- |
-| Lost input, invalid action recovery, unavailable capability | Host/App owner fixes mechanics and adds production-path regressions |
-| Accepted evidence is hard to find | Improve shared context or report navigation; retain references, do not copy history into another authority |
-| Misunderstood instruction or reusable judgment gap | Isolated instruction/skill candidate; compare behavior across transfer cases |
-| Repeated stable procedural error | Consider a scoped tool or workflow after confirming that guidance is insufficient |
-| Wrong benchmark truth or scorer | Separate reviewed benchmark/scorer correction; freeze a new baseline |
-| Missing evidence, runtime outage or noise | Report that limit; no claim of a behavior regression or improvement |
+| Finding                                                     | Responsible response                                                                                       |
+| ----------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| Lost input, invalid action recovery, unavailable capability | Host/App owner fixes mechanics and adds production-path regressions                                        |
+| Accepted evidence is hard to find                           | Improve shared context or report navigation; retain references, do not copy history into another authority |
+| Misunderstood instruction or reusable judgment gap          | Isolated instruction/skill candidate; compare behavior across transfer cases                               |
+| Repeated stable procedural error                            | Consider a scoped tool or workflow after confirming that guidance is insufficient                          |
+| Wrong benchmark truth or scorer                             | Separate reviewed benchmark/scorer correction; freeze a new baseline                                       |
+| Missing evidence, runtime outage or noise                   | Report that limit; no claim of a behavior regression or improvement                                        |
 
 Gym does not change model weights here. The trainable surfaces are instructions,
 skills, tools, workflows and supplied context. Context limits, model variability,
@@ -114,11 +114,12 @@ requires approved truth, a common framework revision, no invalid runs, no
 regressions and an improvement. Reuse these capabilities after adapter validation.
 Do not transplant the old campaign orchestration.
 
-The old `gym.app` listens to `evaluation.recorded`, assumes a May-only
-`improve/may` campaign, has legacy Task modes and several enabled schedules in
-source. It is not loaded in the inspected installation. Those defaults are not
-authority to start training or harvest conversations. A fresh bounded Gym Task
-can serve May or Scout through the same App input/caller mechanism.
+The archived Gym implementation listened to `evaluation.recorded`, assumed a
+May-only `improve/may` campaign and included legacy Task modes and schedules.
+The active App has none of those triggers or application actions. Its agent
+chooses the bounded comparison workflow for May or Scout through the same
+ordinary App input/caller mechanism. Retire inventoried obsolete work during
+operator cutover while retaining its Task history and evidence.
 
 For behavioral comparisons, freeze the candidate, baseline, model settings,
 benchmark/scorer revisions, trial count and evidence scope. Include the incident,
@@ -149,9 +150,9 @@ Request approval through the existing trusted human-facing return path; do not
 invent a Condition type or pretend a self-published approval is human consent.
 The existing owner/deployment capability must validate current baseline, exact
 approved artifact and actor immediately before applying it. Broad shell access
-is not an approval enforcement boundary. Until the installed apply route has
-these checks, keep merge/deployment as an explicit operator action; automatic
-preparation still provides value. Gym has no production apply step in the pilot.
+is not an approval enforcement boundary. The first release provides an exact-packet source application command and keeps
+merge/deployment as explicit operator actions; see May’s
+[operator application contract](../../may.app/design/operator-application.md). Gym has no production apply step in the pilot.
 
 After approval, the responsible owner verifies the actually activated revision
 and runs targeted checks. A failure reports what changed and follows the approved
@@ -166,7 +167,7 @@ wait replacement, restart, late/unrelated input, invalid wait syntax and
 self-action recovery. These are mechanical comparisons and do not require Gym
 or a model. They remain in the Host's maintained tests.
 
-Next, migrate only a bounded Gym comparison entrypoint and explicitly wire one
+The active implementation has one bounded Gym comparison entrypoint and one
 May report consumer. Give May one published report and observe whether it:
 
 1. discovers accepted evidence and later recovery before judging the finding;
@@ -179,5 +180,5 @@ May report consumer. Give May one published report and observe whether it:
 Use an isolated installation for the route and approval checks. Enable automatic
 intake only after those results are reviewed. The earlier unified-Task improvement
 PoC demonstrates useful wait/reopen/withdrawal mechanics; its fixture activation
-window was not proof of installed human approval enforcement. This proposal has
-not yet run the integrated Gym pilot.
+window was not proof of installed human approval enforcement. Keep the rollout record explicit about isolated adapter trials versus live
+agent-selected workflow execution; neither alone demonstrates behavior improvement.

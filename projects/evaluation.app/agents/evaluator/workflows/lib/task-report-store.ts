@@ -266,12 +266,21 @@ export function isPublishedTaskReportPath(root: string, path: string): boolean {
 }
 
 /** Exact reference reads must not depend on the bounded recent-report listing. */
-export function readPublishedTaskReport(root: string, path: string): TaskReportEntry | null {
-  if (!/\.(?:json|md)$/.test(path) || path.endsWith(".published.json")) return null;
+export function readPublishedTaskReport(
+  root: string,
+  path: string,
+): TaskReportEntry | null {
+  if (!/\.(?:json|md)$/.test(path) || path.endsWith(".published.json"))
+    return null;
   try {
-    const markerPath = resolveTaskReportPath(root, path.replace(/\.(?:json|md)$/, ".published.json"));
+    const markerPath = resolveTaskReportPath(
+      root,
+      path.replace(/\.(?:json|md)$/, ".published.json"),
+    );
     const entry = publishedEntry(root, markerPath);
-    return entry && (entry.jsonPath === path || entry.markdownPath === path) ? entry : null;
+    return entry && (entry.jsonPath === path || entry.markdownPath === path)
+      ? entry
+      : null;
   } catch {
     return null;
   }

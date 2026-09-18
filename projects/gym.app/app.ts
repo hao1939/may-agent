@@ -61,7 +61,6 @@ export function taskForGymInput(
       intent: {
         id: `input/${safeId(admitted.id)}`,
         parentId: "gym",
-        mode: "achieve",
         agent: "gym",
         outcome:
           "Review and answer one addressed Gym message without changing benchmark truth or production.",
@@ -78,7 +77,6 @@ export function taskForGymInput(
     intent: {
       id: `goal/${safeId(admitted.id)}`,
       parentId: "gym",
-      mode: "achieve",
       outcome: String(data.outcome),
       acceptance: Array.isArray(data.acceptance)
         ? (data.acceptance as string[])

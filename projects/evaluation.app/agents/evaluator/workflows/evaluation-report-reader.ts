@@ -65,8 +65,13 @@ export function readPublishedEvaluationReport(
   const marker = resolveTaskReportPath(reportRoot, expected.publicationPath);
   if (!existsSync(marker)) return { status: "publication-pending" };
   const entry = readPublishedTaskReport(reportRoot, request.facts);
-  if (!entry || entry.appId !== request.appId || entry.taskId !== request.taskId ||
-      entry.evidenceHash !== request.evidenceHash || entry.executionId !== request.executionId)
+  if (
+    !entry ||
+    entry.appId !== request.appId ||
+    entry.taskId !== request.taskId ||
+    entry.evidenceHash !== request.evidenceHash ||
+    entry.executionId !== request.executionId
+  )
     return {
       status: "invalid",
       reason: "published report integrity check failed",

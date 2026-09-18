@@ -5,7 +5,6 @@ A bounded frozen-comparison App for May and Scout candidates. Read the
 [report-driven improvement design](design/report-driven-improvement.md).
 Source readiness and deployed activation are reported separately.
 
-
 The App admits only ordinary `goal` and `message` inputs. The Gym owner may
 select the focused `compare-candidate` workflow from the shared workflow catalog.
 The workflow reuses standalone Gym frozen baseline/verification primitives and
