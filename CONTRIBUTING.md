@@ -130,11 +130,14 @@ There is no macOS/Windows matrix: the released deployment is Linux/container.
 
 ### Dependency and image maintenance
 
-Dependabot checks `bun.lock`, Actions, and base images weekly. Keep Pi runtime
-packages and TypeBox together, separate from routine tooling updates; a
-pre-1.0 minor release can change runtime contracts. Major tooling changes also
-need an explicit compatibility review. Check peer ranges before upgrading
-TypeScript; a newer compiler may not yet be supported by the lint parser.
+Dependabot checks `bun.lock`, the container CLI npm lock, Actions, and base
+images weekly. Keep root Pi runtime libraries and TypeBox together, separate
+from routine tooling updates; a pre-1.0 minor release can change runtime
+contracts. The three container CLI packages update independently so a Codex
+protocol review does not hold unrelated Claude or Pi updates. Major tooling
+changes also need an explicit compatibility review. Check peer ranges before
+upgrading TypeScript; a newer compiler may not yet be supported by the lint
+parser.
 
 Keep `@types/node` on the same major as the minimum Node version in
 `engines.node`, CI, and the image. Newer type definitions do not make newer APIs
@@ -158,22 +161,32 @@ pins: refresh within their major versions and remove them only when the
 parent dependency graph no longer needs them. The Host uses built-in Bun/Node
 SQLite, not `better-sqlite3`.
 
-The CLI versions and terminal checksums live in `container/Dockerfile`; the
-Bun version lives in `.bun-version`. Dependabot does not update those embedded
-tool pins. Review them explicitly, retain exact versions, and validate CLI
-flags/configuration and the image smoke test. For Codex, compare generated
-schemas with the old CLI before updating `scripts/codex-goal-protocol.snapshot.json`;
-the image smoke test checks that snapshot against the shipped CLI without a
-model call. Node/npm move together through
-the Node base image. Upgrading the standalone Pi CLI does not upgrade the Pi
-libraries linked into May. A new CLI version still needs model-backed checks
-before claiming live provider compatibility.
+The shipped agent CLI versions live as exact dependencies in
+`container/package.json`, with their complete transitive and optional platform
+files locked by `container/package-lock.json`; terminal checksums remain in
+`container/Dockerfile`, and the Bun version lives in `.bun-version`. The image
+uses `npm ci --omit=dev` and keeps the resulting production tree outside
+`/app`, where installation bind mounts cannot hide it. Three image-owned links
+in `/usr/local/bin` make `claude`, `codex`, and `pi` ordinary commands from any
+working directory and login shell, with no caller PATH setup, activation,
+`npm install`, or `npx`. Do not disable install scripts or optional dependencies:
+Claude's installer and the native/platform packages are part of the executable
+runtime. Review CLI manifest and lockfile
+changes together, run `npm audit --prefix container --omit=dev`, and validate
+versions, flags/configuration, runtime-user PATH behavior, and the image smoke
+test. For Codex, compare generated schemas with the old CLI before updating
+`scripts/codex-goal-protocol.snapshot.json`; the image smoke test checks that
+snapshot against the shipped CLI without a model call. Node/npm move together
+through the Node base image. Upgrading the standalone Pi CLI does not upgrade
+the Pi libraries linked into May. A new CLI version still needs model-backed
+checks before claiming live provider compatibility.
 
 Publish reviewed image changes as a new release and deploy separately. Do not
 run ad-hoc global upgrades in a live container. Refresh base digests and check
 OS/browser packages as part of image maintenance; an unchanged cached apt
 layer is not evidence that security packages are current. `bun audit` covers
-the project lockfile, not the image's OS packages or global CLI dependency trees.
+the root project lockfile and `npm audit --prefix container --omit=dev` covers
+the locked CLI tree; neither covers the image's OS packages.
 
 ## Review and merge rules
 

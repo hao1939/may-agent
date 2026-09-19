@@ -154,16 +154,22 @@ RUN node /usr/local/share/ttyd/patch-ttyd-index.cjs \
     grep -qF 'data-may-clipboard-bridge' /usr/local/share/ttyd/index.html && \
     rm /usr/local/share/ttyd/patch-ttyd-index.cjs /usr/local/share/ttyd/ttyd-clipboard-bridge.js
 
-# Install CLI agent tools (claude-code, codex, pi) used as worker agents. They use
-# the configured model endpoint; keep versions pinned so image rebuilds do not
-# silently change agent behavior.
-ARG CLAUDE_CODE_VERSION=2.1.267
-ARG CODEX_VERSION=0.154.0
-ARG PI_CODING_AGENT_VERSION=0.85.1
-RUN npm install -g @anthropic-ai/claude-code@${CLAUDE_CODE_VERSION} @openai/codex@${CODEX_VERSION} @earendil-works/pi-coding-agent@${PI_CODING_AGENT_VERSION} \
-    && test "$(claude --version | awk '{print $1}')" = "${CLAUDE_CODE_VERSION}" \
-    && test "$(codex --version | awk '{print $2}')" = "${CODEX_VERSION}" \
-    && test "$(pi --version)" = "${PI_CODING_AGENT_VERSION}" \
+# Install the locked CLI agent tools outside /app so an installation bind mount
+# cannot hide them. Keep install scripts and optional dependencies enabled:
+# Claude materializes its executable in postinstall, and all three tools ship
+# platform-specific runtime files.
+COPY container/package.json container/package-lock.json /opt/may-agent-cli/
+RUN npm ci --prefix /opt/may-agent-cli --omit=dev --no-audit --no-fund \
+    && ln -s /opt/may-agent-cli/node_modules/.bin/claude /usr/local/bin/claude \
+    && ln -s /opt/may-agent-cli/node_modules/.bin/codex /usr/local/bin/codex \
+    && ln -s /opt/may-agent-cli/node_modules/.bin/pi /usr/local/bin/pi \
+    && claude_version="$(node -p "require('/opt/may-agent-cli/package.json').dependencies['@anthropic-ai/claude-code']")" \
+    && codex_version="$(node -p "require('/opt/may-agent-cli/package.json').dependencies['@openai/codex']")" \
+    && pi_version="$(node -p "require('/opt/may-agent-cli/package.json').dependencies['@earendil-works/pi-coding-agent']")" \
+    && test -x "$(command -v claude)" \
+    && test "$(claude --version | awk '{print $1}')" = "$claude_version" \
+    && test "$(codex --version | awk '{print $2}')" = "$codex_version" \
+    && test "$(pi --version)" = "$pi_version" \
     && claude --help | grep -q -- '--output-format' \
     && claude --help | grep -q -- '--model' \
     && claude --help | grep -q -- '--resume' \
