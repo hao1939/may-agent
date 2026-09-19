@@ -67,14 +67,17 @@ export function createTestAppLogger(overrides: Partial<Logger> = {}): Logger {
 export function createTestObserverContext(
   options: {
     previousObservation?: ObserverContext["previousObservation"];
-    read?: AppRead;
+    read?: AppRead & Partial<Pick<ObserverContext["read"], "hostHealth">>;
     log?: Logger;
     workspace?: ObserverContext["workspace"];
   } = {},
 ): ObserverContext {
   return {
     previousObservation: structuredClone(options.previousObservation),
-    read: options.read ?? createTestAppRead(),
+    read: {
+      ...(options.read ?? createTestAppRead()),
+      hostHealth: options.read?.hostHealth ?? (async () => { throw new Error("Host health reporting is not installed"); }),
+    },
     log: options.log ?? createTestAppLogger(),
     workspace: options.workspace ?? {
       appRoot: "/test/apps/example.app",
