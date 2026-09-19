@@ -49,6 +49,23 @@ exact input/return link; Conditions identify external facts. An `incomplete`
 result reports a failed attempt, not owner closure. A waiting Task may return
 useful caller feedback with `report: true` while retaining its exact wait.
 
+May's trusted, non-delegated `goal` ingress can deliberately revise an existing
+May-owned Task by including `data.revision: { taskId, expectedGeneration }`
+alongside the complete corrected `outcome` and `acceptance` (and any applicable
+constraints). The App mapper selects that exact Task; common admission then
+checks the creator and observed generation atomically before preserving the
+Task identity and independent obligations. An outer `targetTaskId` only attaches
+input and does not request revision. This route does not grant a Task worker
+App-only authority: Task-bound creators continue to use generation-fenced
+`tasks.update`. On stale feedback, reread the current Task and submit a new
+intentional request; do not retry until success or create a duplicate goal. The
+shared authority and reconciliation rules are owned by the
+[Task resource engine](../may-agent.app/docs/2a-design/task-resource-engine.md).
+This input requires the paired Host/SDK support from PR210: deploy and read back
+the compatible Host and SDK before activating the May definition. An older Host
+ignores `attachment.expectedGeneration`, so activating the App half first is
+unsafe.
+
 The same rule applies to automated research checks: compare the result with
 the latest relevant Conversation report. Another run, timestamp or source
 fingerprint is not by itself a useful update. Keep unchanged, already-covered
