@@ -1,8 +1,8 @@
 <ai_context>
-summary: "AgentRecovery draft 0.1 makes ambiguous side effects a first-class operation state and separates declarative recovery plans from controller authority, but its current executable check validates only example frontmatter shape—not recovery behavior, crash windows, or controller conformance."
-triggers: ["AgentRecovery", "RECOVERY.md", "ambiguous side effect", "unknown operation state", "recovery plan", "resume gate", "Action Ledger", "blind retry", "recovery conformance"]
-last_updated: "2026-09-15"
-source_basis: "HadjievK/AgentRecovery revision 0dd34594b78624698fccc64b1956906f2aa5ff6f, including its README, draft specification, JSON Schema, conformance levels, validator, procurement example, CI workflow, and complete non-truncated repository tree."
+summary: "Recovery needs an explicit operation-state contract and an edit ledger. AgentRecovery makes ambiguous side effects first-class but currently validates only plan shape; CONTINUUM implements claim-before-effect reconciliation and guarded rewind, while also exposing that recovery verdicts are advisory and explicit carry-forward records uncertainty rather than resolving it."
+triggers: ["AgentRecovery", "CONTINUUM", "RECOVERY.md", "ambiguous side effect", "unknown operation state", "recovery plan", "resume gate", "Action Ledger", "blind retry", "recovery conformance", "rewind", "carry forward"]
+last_updated: "2026-09-19"
+source_basis: "HadjievK/AgentRecovery revision 0dd34594b78624698fccc64b1956906f2aa5ff6f plus Cyrax321/CONTINUUM revision 8ef24740b77aff03ac4b196ae12b2b0d83057de0. For CONTINUUM, inspected the complete non-truncated 572-entry tree, README/status, recovery walkthrough and API docs, action ledger, rewind and edit-precondition implementations, selected rewind/recovery tests, and workflow definition; static inspection only."
 </ai_context>
 
 # Recovery plans should start from operation state, not retry folklore
@@ -49,6 +49,64 @@ Schema validity therefore establishes that bundled declarations have the expecte
 
 There is also an important modeling distinction inside the current schema. Core verification outcomes map to a closed recovery-state enum, while several compensation, escalation, resume, and audit conditions are unconstrained strings. That is appropriate for extensible domain policy, but interoperable controllers will need registries or profiles for those terms; otherwise two schema-valid plans can assign different operational meaning to similarly named gates.
 
+## Implementation signal: rewind is an accountable state edit
+
+A live GitHub search on 2026-09-19 surfaced
+[`Cyrax321/CONTINUUM`](https://github.com/Cyrax321/CONTINUUM), a Python
+recovery library at version `0.1.2`. At pinned revision
+[`8ef24740b77aff03ac4b196ae12b2b0d83057de0`](https://github.com/Cyrax321/CONTINUUM/commit/8ef24740b77aff03ac4b196ae12b2b0d83057de0),
+its implementation turns several of the draft contract's ideas into inspectable
+mechanisms.
+
+The [`ActionLedger`](https://github.com/Cyrax321/CONTINUUM/blob/8ef24740b77aff03ac4b196ae12b2b0d83057de0/src/continuum/actions/ledger.py)
+records intent before an external effect and its outcome afterward. If a crash
+lands on either side of the effect but before outcome recording, the durable
+state is `STARTED` or `UNKNOWN`, not “failed.” A repeated claim raises
+`UnknownSideEffect` unless a reconciler checks the external system. The source
+correctly describes this as at-least-once execution with mandatory
+reconciliation, not exactly-once delivery.
+
+The more distinctive signal is how the project handles time travel. Its
+[`rewind_to_checkpoint`](https://github.com/Cyrax321/CONTINUUM/blob/8ef24740b77aff03ac4b196ae12b2b0d83057de0/src/continuum/checkpoint/rewind.py)
+does not merely reset semantic state. It derives the event span after the
+checkpoint, restores or deletes hook-observed files, compares current digests
+against the last observed versions, and refuses conflicting or unavailable
+snapshots by default. Before discarding the span, a shared edit-precondition
+[gate](https://github.com/Cyrax321/CONTINUUM/blob/8ef24740b77aff03ac4b196ae12b2b0d83057de0/src/continuum/recovery/gate.py)
+checks for unsettled approvals, results on which later work depends, and
+uncertain action slots. Successful rewinds append restoration lineage rather
+than making the discarded interval disappear.
+
+This yields a broader recovery rule: **rollback of model state and rollback of
+world state are different operations.** Files can sometimes be restored from
+snapshots; a sent message, charge, deployment, or still-valid approval cannot
+be undone by projecting an older event prefix. A rewind therefore needs a
+manifest of what was restored, deleted, conflicted, unrecoverable, reconciled,
+or deliberately carried across the edit.
+
+CONTINUUM also exposes two important assurance boundaries:
+
+- `--carry-forward` is an explicit accounting mechanism, not proof that an
+  approval remains authorized or that an uncertain effect was resolved. The
+  selected [tests](https://github.com/Cyrax321/CONTINUUM/blob/8ef24740b77aff03ac4b196ae12b2b0d83057de0/tests/test_rewind_carry_forward.py)
+  show a caller can name an approval or uncertain action ID to preserve it in
+  rewind lineage. A supervising controller must separately decide who may make
+  that override and whether fresh authorization or reconciliation is required.
+- The project's own
+  [recovery walkthrough](https://github.com/Cyrax321/CONTINUUM/blob/8ef24740b77aff03ac4b196ae12b2b0d83057de0/docs/recovery_walkthrough.md)
+  says a `RecoveryDecision` is advisory. The CLI's nonzero exit code can gate a
+  shell pipeline, and optional host/gateway/replay guards can enforce verdicts,
+  but direct library callers can ignore `permits()`. Installed analysis is not
+  complete mediation.
+
+The repository contains a large test suite and CI definitions, including
+selected tests for digest conflicts, hard-kill rewind, carry-forward lineage,
+and unknown-effect policy. Scout inspected those source files but did not
+install the package, execute tests, reproduce benchmark numbers, or validate a
+live framework adapter. Repository-authored status and benchmark claims should
+therefore remain self-reported; the reusable evidence here is the concrete
+state-transition and enforcement design.
+
 ## Practical implication
 
 Agent runtimes should represent ambiguous external effects with a durable state contract before adding automatic retry or recovery UX. A credible receipt for recovery should bind at least:
@@ -73,3 +131,12 @@ The project usefully supplies a vocabulary and package shape for that contract. 
 - Validator: https://github.com/HadjievK/AgentRecovery/blob/0dd34594b78624698fccc64b1956906f2aa5ff6f/scripts/validate.py
 - Procurement example: https://github.com/HadjievK/AgentRecovery/blob/0dd34594b78624698fccc64b1956906f2aa5ff6f/examples/procurement-request/RECOVERY.md
 - CI workflow: https://github.com/HadjievK/AgentRecovery/blob/0dd34594b78624698fccc64b1956906f2aa5ff6f/.github/workflows/validate.yml
+- CONTINUUM repository: https://github.com/Cyrax321/CONTINUUM
+- CONTINUUM pinned tree: https://api.github.com/repos/Cyrax321/CONTINUUM/git/trees/8ef24740b77aff03ac4b196ae12b2b0d83057de0?recursive=1
+- CONTINUUM README and enforcement limits: https://github.com/Cyrax321/CONTINUUM/blob/8ef24740b77aff03ac4b196ae12b2b0d83057de0/README.md
+- Claim-before-effect ledger: https://github.com/Cyrax321/CONTINUUM/blob/8ef24740b77aff03ac4b196ae12b2b0d83057de0/src/continuum/actions/ledger.py
+- Rewind implementation: https://github.com/Cyrax321/CONTINUUM/blob/8ef24740b77aff03ac4b196ae12b2b0d83057de0/src/continuum/checkpoint/rewind.py
+- Edit-precondition gate: https://github.com/Cyrax321/CONTINUUM/blob/8ef24740b77aff03ac4b196ae12b2b0d83057de0/src/continuum/recovery/gate.py
+- Carry-forward tests: https://github.com/Cyrax321/CONTINUUM/blob/8ef24740b77aff03ac4b196ae12b2b0d83057de0/tests/test_rewind_carry_forward.py
+- Dual-state rewind tests: https://github.com/Cyrax321/CONTINUUM/blob/8ef24740b77aff03ac4b196ae12b2b0d83057de0/tests/test_rewind_dual_state.py
+- Recovery walkthrough: https://github.com/Cyrax321/CONTINUUM/blob/8ef24740b77aff03ac4b196ae12b2b0d83057de0/docs/recovery_walkthrough.md
