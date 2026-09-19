@@ -23,10 +23,16 @@ export type HumanTaskStatus =
   | "closed"
   | "cancelled";
 
-/** True for the canonical human principal or a canonical human role. */
-export function isHumanOwner(owner: string | undefined): boolean {
-  const canonical = owner?.trim();
-  return canonical === "human" || (canonical?.startsWith("human:") === true && canonical.length > "human:".length);
+const LEGACY_HAO_HUMAN_OWNER = "Hao";
+
+/** True for a canonical human owner, plus the retained legacy Hao read projection. */
+export function isHumanActionOwner(owner: string | undefined): boolean {
+  const normalized = owner?.trim();
+  if (normalized === "human" || (normalized?.startsWith("human:") === true && normalized.length > "human:".length)) {
+    return true;
+  }
+  // Read compatibility only. Newly admitted Conditions use human or human:<role>.
+  return normalized === LEGACY_HAO_HUMAN_OWNER;
 }
 
 export type HumanTaskProgress = {
@@ -300,11 +306,14 @@ function taskStatusDetail(
   }
 }
 
-// Conditions are normalized at admission. Keep the SQL projection on the
-// canonical human namespace rather than an installation-specific identity list.
+// Conditions are normalized at admission. New Conditions use the canonical
+// human namespace; the exact legacy Hao identity remains read-compatible only.
 const HUMAN_OWNER_VALUE_SQL = "trim(json_extract(human_condition.condition_json, '$.spec.owner'))";
-const HUMAN_OWNER_SQL = `(${HUMAN_OWNER_VALUE_SQL} = 'human'
+const CANONICAL_HUMAN_OWNER_SQL = `(${HUMAN_OWNER_VALUE_SQL} = 'human'
       OR ${HUMAN_OWNER_VALUE_SQL} GLOB 'human:?*')`;
+const LEGACY_HAO_HUMAN_OWNER_SQL = `${HUMAN_OWNER_VALUE_SQL} = 'Hao'`;
+const HUMAN_OWNER_SQL = `(${CANONICAL_HUMAN_OWNER_SQL}
+      OR ${LEGACY_HAO_HUMAN_OWNER_SQL})`;
 
 function recurringTaskSql(appId: string, taskId: string): string {
   return `EXISTS (

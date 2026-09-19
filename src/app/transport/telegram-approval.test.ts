@@ -160,7 +160,7 @@ describe("Telegram exact approval reply", () => {
     }
   });
 
-  it("shows every canonical human action and accepts a role-owned approval without guessing among approvals", () => {
+  it("shows canonical and legacy Hao actions and accepts either approval owner without guessing among approvals", () => {
     const withClarification = proposal("a", 1);
     withClarification.humanAction = { requestedAction: "Two human actions remain." };
     withClarification.diagnostics!.conditions.push({
@@ -202,7 +202,7 @@ describe("Telegram exact approval reply", () => {
           subject: "question:display-name",
           expected: { answer: true },
           owner: "Hao",
-          requestedAction: "This display-name owner must stay hidden.",
+          requestedAction: "Approve the legacy Hao-owned rollout wait.",
           reviewAfterMs: 60_000,
         },
         status: { state: "false" },
@@ -212,12 +212,16 @@ describe("Telegram exact approval reply", () => {
     expect(rendered).toContain("Verified benefit: exact packet binding.");
     expect(rendered).toContain("Clarify the preferred rollback observation window.");
     expect(rendered).toContain("Run checks, obtain review, and merge the May-owned change.");
-    expect(rendered).not.toContain("This display-name owner must stay hidden.");
+    expect(rendered).toContain("Approve the legacy Hao-owned rollout wait.");
     expect(telegramApprovalReply("approve", withClarification, anchorA)).not.toBeNull();
 
     const roleOwnedApproval = proposal("a", 1);
     roleOwnedApproval.diagnostics!.conditions[0]!.condition!.spec.owner = "human:github-maintainer";
     expect(telegramApprovalReply("approve", roleOwnedApproval, anchorA)).not.toBeNull();
+
+    const legacyHaoApproval = proposal("a", 1);
+    legacyHaoApproval.diagnostics!.conditions[0]!.condition!.spec.owner = "Hao";
+    expect(telegramApprovalReply("approve", legacyHaoApproval, anchorA)).not.toBeNull();
 
     const ambiguous = proposal("a", 1);
     ambiguous.humanAction = { requestedAction: "Choose one proposal." };

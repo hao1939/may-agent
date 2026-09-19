@@ -667,13 +667,14 @@ describe("Task reference index", () => {
 });
 
 describe("Human Task service", () => {
-  test("derives human actions from canonical human owners and excludes App, agent, and display-name owners", () => {
+  test("derives human actions from canonical owners and legacy Hao while excluding App, agent, and other display names", () => {
     const db = database();
     insertTask(db, { appId: "alpha", taskId: "completed", phase: "waiting", updatedAt: 80 });
     insertTask(db, { appId: "alpha", taskId: "approval", phase: "waiting", updatedAt: 70 });
     insertTask(db, { appId: "alpha", taskId: "may-owned", phase: "waiting", updatedAt: 60 });
     insertTask(db, { appId: "alpha", taskId: "agent-owned", phase: "waiting", updatedAt: 50 });
     insertTask(db, { appId: "alpha", taskId: "may-merge", phase: "waiting", updatedAt: 40 });
+    insertTask(db, { appId: "alpha", taskId: "legacy-hao", phase: "waiting", updatedAt: 37 });
     insertTask(db, { appId: "alpha", taskId: "display-name", phase: "waiting", updatedAt: 35 });
     insertTask(db, { appId: "alpha", taskId: "external", phase: "waiting", updatedAt: 30 });
     insertTask(db, { appId: "alpha", taskId: "broken", phase: "attention", updatedAt: 20 });
@@ -717,10 +718,17 @@ describe("Human Task service", () => {
     });
     insertCondition(db, {
       appId: "alpha",
+      taskId: "legacy-hao",
+      conditionId: "legacy-hao-action",
+      owner: "Hao",
+      requestedAction: "Approve the legacy rollout wait.",
+    });
+    insertCondition(db, {
+      appId: "alpha",
       taskId: "display-name",
       conditionId: "display-name-action",
-      owner: "Hao",
-      requestedAction: "This display name is not a canonical owner.",
+      owner: "Alice",
+      requestedAction: "This unrelated display-name owner must stay hidden.",
     });
     insertCondition(db, { appId: "alpha", taskId: "external", conditionId: "external-fact" });
     insertCondition(db, {
@@ -748,7 +756,7 @@ describe("Human Task service", () => {
     const service = new HumanTaskService(db, registry("alpha", "beta"));
 
     expect(service.listTasks({ appId: "alpha", humanActionOnly: true })).toMatchObject({
-      total: 2,
+      total: 3,
       items: [
         {
           appId: "alpha",
@@ -766,11 +774,18 @@ describe("Human Task service", () => {
           status: "waiting",
           humanAction: { requestedAction: "Run checks, obtain review, and merge the May-owned change." },
         },
+        {
+          appId: "alpha",
+          taskId: "legacy-hao",
+          status: "waiting",
+          humanAction: { requestedAction: "Approve the legacy rollout wait." },
+        },
       ],
     });
     expect(service.listTasks({ humanActionOnly: true }).items.map((task) => task.taskId)).toEqual([
       "approval",
       "may-merge",
+      "legacy-hao",
       "input",
       "operator",
     ]);
@@ -795,16 +810,19 @@ describe("Human Task service", () => {
     expect(service.getTask({ appId: "alpha", taskId: "may-merge" })?.humanAction).toEqual({
       requestedAction: "Run checks, obtain review, and merge the May-owned change.",
     });
+    expect(service.getTask({ appId: "alpha", taskId: "legacy-hao" })?.humanAction).toEqual({
+      requestedAction: "Approve the legacy rollout wait.",
+    });
     expect(service.getTask({ appId: "alpha", taskId: "display-name" })?.humanAction).toBeUndefined();
     expect(service.getTask({ appId: "alpha", taskId: "external" })?.humanAction).toBeUndefined();
 
     db.prepare(
-      "UPDATE app_task_conditions SET state = 'true', condition_json = json_set(condition_json, '$.status.state', 'true') WHERE app_id = 'alpha' AND condition_id IN ('human-approval', 'host-pr-199-merged')",
+      "UPDATE app_task_conditions SET state = 'true', condition_json = json_set(condition_json, '$.status.state', 'true') WHERE app_id = 'alpha' AND condition_id IN ('human-approval', 'host-pr-199-merged', 'legacy-hao-action')",
     ).run();
     expect(service.listTasks({ appId: "alpha", humanActionOnly: true })).toMatchObject({ total: 0, items: [] });
   });
 
-  test("finds a role-owned human approval on an exact dependency leaf", () => {
+  test("keeps a legacy Hao approval visible on an exact dependency leaf", () => {
     const db = database();
     insertTask(db, { appId: "evaluation", taskId: "parent", phase: "waiting", updatedAt: 20 });
     insertTask(db, { appId: "may-agent", taskId: "approval", phase: "waiting", updatedAt: 10 });
@@ -812,7 +830,7 @@ describe("Human Task service", () => {
       appId: "may-agent",
       taskId: "approval",
       conditionId: "approval-needed",
-      owner: "human:github-maintainer",
+      owner: "Hao",
       requestedAction: "Approve or reject commit 50e4cc0d.",
       createdAt: "2026-08-20T01:02:03.000Z",
     });

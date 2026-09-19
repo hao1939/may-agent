@@ -33,7 +33,7 @@ import {
   TASK_UPDATE_EVENT_TYPES,
   taskUpdateIdentity,
 } from "../../../packages/control/src/task-wake.js";
-import { isHumanOwner, type HumanAppView, type HumanTaskService, type HumanTaskView } from "../human-task-service.js";
+import { isHumanActionOwner, type HumanAppView, type HumanTaskService, type HumanTaskView } from "../human-task-service.js";
 import { taskCancelRequestedEvent } from "../task-control-events.js";
 
 const TASK_PAGE_SIZE = 10;
@@ -437,7 +437,7 @@ function pendingHumanApprovalCondition(task: HumanTaskView | null) {
     return (
       condition?.spec.type === "project.approval.submitted" &&
       condition.status?.state !== "true" &&
-      isHumanOwner(condition.spec.owner) &&
+      isHumanActionOwner(condition.spec.owner) &&
       expected.taskGeneration === task.generation &&
       expected.conditionId === item.id
     );
@@ -449,7 +449,7 @@ function fullHumanApprovalAction(task: HumanTaskView | null): string | null {
   if (!task || task.terminal) return null;
   const actions = (task.diagnostics?.conditions ?? [])
     .map((item) => item.condition)
-    .filter((condition) => condition?.status?.state !== "true" && isHumanOwner(condition?.spec.owner))
+    .filter((condition) => condition?.status?.state !== "true" && isHumanActionOwner(condition?.spec.owner))
     .map((condition) => condition!.spec.requestedAction?.trim())
     .filter((action): action is string => Boolean(action));
   return actions.length > 0 ? actions.join("\n\n---\n\n") : null;
@@ -977,7 +977,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
     const conditions = (task.diagnostics?.conditions ?? [])
       .flatMap((item) => {
         const condition = item.condition;
-        if (!condition || condition.status?.state === "true" || !isHumanOwner(condition.spec.owner)) return [];
+        if (!condition || condition.status?.state === "true" || !isHumanActionOwner(condition.spec.owner)) return [];
         return [
           {
             id: item.id,

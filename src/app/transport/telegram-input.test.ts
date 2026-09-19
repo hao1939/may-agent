@@ -1279,7 +1279,7 @@ describe("Telegram May input", () => {
                 spec: {
                   type: "human.answer.received",
                   subject: "task:deploy/current",
-                  owner: "human:github-maintainer",
+                  owner: "Hao",
                   requestedAction: todo().humanAction.requestedAction,
                   expected: { answer: true },
                 },
