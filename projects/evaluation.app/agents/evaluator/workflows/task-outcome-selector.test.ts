@@ -352,7 +352,7 @@ describe("automatic task outcome selector", () => {
       }) as never;
     const requested = await runTaskOutcomeSelector(
       context([
-        { taskId: "runtime/task-outcome/may/goal-one", phase: "waiting" },
+        { taskId: "runtime/task-outcome/may/goal-one", status: "waiting" },
       ]),
       catalogCommand({ may: [task("may", "goal/routine")] }),
       config,
