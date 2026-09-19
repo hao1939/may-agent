@@ -227,17 +227,21 @@ describe("Task outcome review", () => {
       },
     };
     const events: Array<Record<string, any>> = [];
+    let prompt = "";
     const result = await reviewTaskOutcome(
       createTestAppWorkflowContext({
         input: { appId, taskId, assessmentPurpose: "ongoing" },
         reconciliation: reconciliation(),
-        callAgent: async () => ({
-          id: "s_ongoing",
-          kind: "agent",
-          status: "done",
-          summary: "done",
-          output: judgment,
-        }),
+        callAgent: async (_agent, value) => {
+          prompt = String(value);
+          return {
+            id: "s_ongoing",
+            kind: "agent",
+            status: "done",
+            summary: "done",
+            output: judgment,
+          };
+        },
         emit: async (event) => events.push(event as Record<string, any>),
       }),
       reader(() => ongoingDetail),
@@ -266,6 +270,10 @@ describe("Task outcome review", () => {
     expect(events[0]?.localKey).toMatch(
       /^task-report-[a-f0-9]{16}-[a-f0-9]{12}$/,
     );
+    expect(prompt).toContain(
+      "App status done plus Task detail up-to-date with terminal=false and ready=false is coherent",
+    );
+    expect(prompt).toContain("no review deadline is required");
   });
 
   test("passes the combined real public Task views to the model and publishes immutable artifacts", async () => {
