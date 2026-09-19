@@ -5,9 +5,9 @@
 ## Pinned source
 
 1. Host PR 209, branch `may/task-health-strengthening-7b986648`, commit `11a331279681c135ff822cbc703280e2b8f99825`.
-2. Compatible Apps/common-design candidate commit `a0be4b08325c4e570293558156396803ed20c596` in the `/app` repository.
+2. Compatible Apps/runtime-policy candidate commit `cdcebb636ad9976a7c17ac328de95193f68328d1` in the `/app` repository. This rollout record is included in that commit; any later documentation-only delivery commit may point back to `cdcebb636a` as the frozen runtime/policy source.
 
-Hao merges the Host PR. The Apps commit must be integrated only after the Host/SDK revision is available; its Evaluation typecheck intentionally depends on that newer contract. Recheck both exact revisions and the PR head immediately before merge. A changed commit requires a new review.
+Hao merges the Host PR. The Apps runtime/policy commit must be integrated only after the Host/SDK revision is deployed and read back; its Evaluation typecheck intentionally depends on that newer contract. Recheck both exact revisions and the PR head immediately before merge. A changed runtime/policy commit requires a new review.
 
 ## Verification already completed
 
@@ -16,18 +16,17 @@ Hao merges the Host PR. The Apps commit must be integrated only after the Host/S
 - Exact-Host-SDK May validation: typecheck pass; 23 focused approval/intake tests pass; ordinary May check has 94 pass and one explicit opt-in composition skip.
 - Independent production-composition probes: 4 pass and 24 assertions.
 - The bounded current-source trial completed all seven permitted model calls. It used real production reconciliation, public projections, report publication, May intake, exact-owner feedback, and an independent recheck in an isolated fixture. It preserved a genuine approval wait and unrelated controls. Its manifest is `/app/.state/review-pilots/task-obligation-root-cause-20260920/current-source-trial-final-a0be4b08/manifest.json`. The initial post-recovery judgment falsely treated `done`/`up-to-date` with `terminal=false` and `ready=false` as inconsistent; corrected guidance recognizes that an accepted outcome can be reconciled while its durable Task remains open for future input. One targeted readback of the same snapshot then assessed it as coherent; receipt and output are under `/app/.state/review-pilots/task-obligation-root-cause-20260920/current-source-trial-status-readback/`.
-- Independent Bob and tech-lead reviews found no blocker on the final paired candidate.
+- Bob found no design/value blocker on the paired candidate. Tech-lead verified the status-guidance correction and identified the rollout-document ordering/pinning issues corrected by this documentation-only delivery commit; the final supervisor delta review accepted the corrected runtime/policy source.
 
 These are source/candidate and isolated-trial checks, not installed-runtime evidence.
 
 ## Operator sequence
 
 1. Merge PR 209 without rewriting its reviewed source. Record the resulting Host merge commit.
-2. Integrate Apps commit `a0be4b08325c4e570293558156396803ed20c596` onto current `/app` main without replacing newer files. Resolve no semantic conflict without refreshed review.
-3. Run the repository-required Host and App checks on the integrated revisions. Confirm the installed SDK exposes the reviewed Task reconciliation fields before loading the Apps.
-4. Deploy the Host by the normal Host Operations procedure. Deployment authorization is separate from this candidate.
-5. Reload/activate the May, Evaluation, and common App definitions only through the normal App-definition release procedure. Record the deployed Host revision and loaded definition hash. Source integration alone is not activation.
-6. Leave live Evaluation spend unchanged by default. If Hao explicitly chooses the pilot, set `EVALUATION_AUTO_REVIEW_ENABLED=true`, `EVALUATION_AUTO_REVIEW_INTERVAL_MS=3600000`, `EVALUATION_ASSESSMENT_ALLOWANCE_INTERVAL_MS=86400000`, and `EVALUATION_ASSESSMENT_CALLS_PER_INTERVAL=2`; verify the source invariant `tasks.maxConcurrent: 1`. This permits at most 14 semantic Task-review calls per aligned week; it is not a dollar cap. Record the explicit configuration decision and activation receipt.
+2. Run the repository-required Host checks, deploy the compatible Host and SDK by the normal Host Operations procedure, and read back the deployed Host/SDK revisions. Deployment authorization is separate from this candidate.
+3. Only after that read-back, integrate Apps runtime/policy commit `cdcebb636ad9976a7c17ac328de95193f68328d1` onto current `/app` main without replacing newer files. Resolve no semantic conflict without refreshed review, then run the repository-required App checks against the installed compatible SDK.
+4. Reload/activate only the May and Evaluation App definitions through the normal App-definition release procedure. The `may-agent.app` changes in this candidate are documentation-only; do not reload its unrelated legacy workflows for this delivery. Record the loaded definition hash. Source integration alone is not activation.
+5. Leave live Evaluation spend unchanged by default. If Hao explicitly chooses the pilot, set `EVALUATION_AUTO_REVIEW_ENABLED=true`, `EVALUATION_AUTO_REVIEW_INTERVAL_MS=3600000`, `EVALUATION_ASSESSMENT_ALLOWANCE_INTERVAL_MS=86400000`, and `EVALUATION_ASSESSMENT_CALLS_PER_INTERVAL=2`; verify the source invariant `tasks.maxConcurrent: 1`. This permits at most 14 semantic Task-review calls per aligned week; it is not a dollar cap. Record the explicit configuration decision and activation receipt.
 
 ## Live checks after activation
 
