@@ -207,7 +207,7 @@ describe("telegram reply e2e", () => {
       resourceStore: store,
       tree: { root_task_id: "root", groups: { root: { id: "root", parent_id: null } } },
     });
-    const createWait = (taskId: string, condition: Record<string, unknown>) => {
+    const createWait = (taskId: string, conditions: Record<string, unknown> | Record<string, unknown>[]) => {
       observeAppTaskIntent(config, {
         appAgent: "may",
         intent: { id: taskId, parentId: "root", outcome: `Resolve ${taskId}`, acceptance: ["Resolved"] },
@@ -218,7 +218,7 @@ describe("telegram reply e2e", () => {
         disposition: "waiting",
         summary: "Waiting for human help",
         facts: ["help:requested"],
-        conditions: [condition as any],
+        conditions: (Array.isArray(conditions) ? conditions : [conditions]) as any[],
       });
     };
     const answerCondition = {
@@ -588,6 +588,106 @@ describe("telegram reply e2e", () => {
       });
       const openConditions = store.readTaskContext({ taskIds: ["external"] }).resources?.external?.status.conditionIds;
       expect(openConditions).toEqual(["deployment-proof", "rollout-window"]);
+
+      const approvalCondition = (letter: string) => ({
+        id: `approval-${letter}`,
+        type: "project.approval.submitted",
+        subject: `id:proposal-${letter}`,
+        expected: {
+          allowedDecisions: ["approve", "reject", "defer"],
+          approvalId: `proposal-${letter}`,
+          packetHash: letter.repeat(64),
+          proposalRevision: 1,
+          taskGeneration: 1,
+          conditionId: `approval-${letter}`,
+        },
+        owner: "human",
+        requestedAction: `Review proposal ${letter}.`,
+        reviewAfterMs: 60_000,
+      });
+      createWait("mixed", [
+        approvalCondition("a"),
+        approvalCondition("b"),
+        {
+          id: "clarify-mixed",
+          type: "app.task.requested",
+          subject: "task:mixed",
+          expected: {
+            source: "human",
+            conditionId: "clarify-mixed",
+            conditionGeneration: 1,
+            taskGeneration: 1,
+          },
+          owner: "human",
+          requestedAction: "Clarify the preferred proposal before approval.",
+          reviewAfterMs: 60_000,
+        },
+      ]);
+      const mixedRef = service.getTask({ appId: "may", taskId: "mixed" })!.ref;
+      updates.push({
+        update_id: 7,
+        message: { message_id: 16, chat: { id: 12345 }, from: { id: 7 }, text: `/watch ${mixedRef}` },
+      });
+      await waitFor(() =>
+        expect(sentMessages.some((message) => String(message.text).includes("Following updates."))).toBe(true),
+      );
+      recordAppTaskTrigger(config, "mixed", { type: "test.reconsider", eventId: 83, data: {} });
+      const refreshedMixed = claimObservedAppTask(config, { taskId: "mixed", appAgent: "may", handler: "agent" });
+      if (refreshedMixed.kind !== "claimed") throw new Error("Expected mixed-condition refresh claim");
+      deferAppTask(config, refreshedMixed, {
+        disposition: "waiting",
+        summary: "Mixed conditions refreshed",
+        facts: ["help:mixed"],
+        acceptedLiveEventIds: [83],
+      });
+      notify("mixed");
+      const savedMixedWatch = () =>
+        db
+          .prepare(
+            "SELECT telegram_msg_id, data FROM notification_messages WHERE chat_id = '12345' AND event_type = 'task.watch' ORDER BY telegram_msg_id DESC LIMIT 1",
+          )
+          .get() as { telegram_msg_id: number; data: string } | null;
+      await waitFor(() =>
+        expect(savedMixedWatch() ? JSON.parse(savedMixedWatch()!.data).taskRefs : null).toEqual([
+          { appId: "may", taskId: "mixed" },
+        ]),
+      );
+      const mixedWatch = savedMixedWatch()!;
+      const mixedNotice = sentMessages.find((message) => String(message.text).includes("Mixed conditions refreshed"))!;
+      const mixedReceipt = JSON.parse(mixedWatch.data);
+      expect(mixedReceipt).not.toHaveProperty("approvalAnchor");
+      expect(mixedReceipt).not.toHaveProperty("humanCondition");
+
+      updates.push({
+        update_id: 8,
+        message: {
+          message_id: 17,
+          chat: { id: 12345 },
+          from: { id: 7 },
+          text: "Prefer proposal a",
+          reply_to_message: { message_id: mixedWatch.telegram_msg_id, text: mixedNotice.text },
+        },
+      });
+      await waitFor(() =>
+        expect(
+          db.prepare("SELECT COUNT(*) AS count FROM app_inbox_items WHERE target_task_id = 'mixed'").get(),
+        ).toEqual({ count: 1 }),
+      );
+      const mixedClaim = claimObservedAppTask(config, { taskId: "mixed", appAgent: "may", handler: "agent" });
+      if (mixedClaim.kind !== "claimed") throw new Error("Expected mixed-condition reply claim");
+      const mixedRequest = mixedClaim.events.find(({ event }) => event.type === "app.task.requested")?.event.data
+        .request as any;
+      expect(mixedRequest.input.data).toMatchObject({
+        message: "Prefer proposal a",
+        context: { focusedTask: { appId: "may", taskId: "mixed" } },
+      });
+      expect(mixedRequest.input.data.context).not.toHaveProperty("displayedHumanCondition");
+      deferAppTask(config, mixedClaim, {
+        disposition: "waiting",
+        summary: "The ordinary reply remains Task input without selecting a Condition",
+        facts: ["reply:mixed"],
+        acceptedLiveEventIds: mixedClaim.events.map(({ event }) => Number(event.eventId)).filter(Number.isSafeInteger),
+      });
     } finally {
       bot.close();
       runtime.close();

@@ -437,14 +437,11 @@ function humanConditionAnchor(task: HumanTaskView | null): TelegramHumanConditio
   if (!task || task.terminal || !["pending", "waiting", "running", "attention"].includes(task.status)) return null;
   const matches = (task.diagnostics?.conditions ?? []).filter((item) => {
     const condition = item.condition;
-    return (
-      condition?.spec.type !== "project.approval.submitted" &&
-      condition?.status.state !== "true" &&
-      isHumanActionOwner(condition?.spec.owner)
-    );
+    return condition?.status.state !== "true" && isHumanActionOwner(condition?.spec.owner);
   });
   if (matches.length !== 1) return null;
   const match = matches[0]!;
+  if (match.condition?.spec.type === "project.approval.submitted") return null;
   return {
     taskGeneration: task.generation,
     conditionId: match.id,
