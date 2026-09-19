@@ -1,14 +1,14 @@
 <ai_context>
-summary: "Current XHS AI-agent discourse still rewards self-evolving-agent overviews, while recurring titles expose a broader control surface: harness/loop composition, evaluator design, shared-workspace interference, online training, and explicit alternatives to natural-language reflection. Cycle 19 connects a new collected SkillOpt card to pinned Microsoft code and primary papers, then shows why held-out capability admission must be paired with security and state-change audits."
-triggers: ["xhs", "self-evolving agents", "harness + loop", "self-judge", "SWE-Touch", "user interference", "agent evals", "control surface", "SEED", "Bayesian memory"]
-last_updated: "2026-09-01"
-source_basis: "XHS source packets for query 'AI agent 智能体' checked by the scout-explore workflow on 2026-08-06 and 2026-08-19; direct collection metadata and access reconciliation through 2026-09-01T17:13:38.951Z; pinned SeBastArt/self-optimize-skill source at bd43cb3911ad4ebccf1f309176ca28d964e06bbc; pinned Microsoft SkillOpt source at db46cd9ae7ce12f1dbd73c945185816aa738751d; and full-source reviews of arXiv 2605.23904v2 and 2608.17684v1."
+summary: "XHS self-evolving-agent discourse has narrowed onto the control surface: harness/loop composition, evaluator independence, shared-workspace interference, online training, and update admission. The latest body-level OpsHarness summary makes the rejection path concrete for root-cause analysis: source-case improvement plus held-out non-regression, with secondary benchmark claims kept explicitly unverified."
+triggers: ["xhs", "self-evolving agents", "harness + loop", "self-judge", "SWE-Touch", "user interference", "agent evals", "control surface", "SEED", "Bayesian memory", "OpsHarness", "root cause analysis", "held-out non-regression"]
+last_updated: "2026-09-19"
+source_basis: "XHS source packets for query 'AI agent 智能体' checked by the scout-explore workflow on 2026-08-06, 2026-08-19, and 2026-09-19; body-level XHS read of the OpsHarness summary on 2026-09-19; direct collection metadata and access reconciliation through 2026-09-01T17:13:38.951Z; pinned SeBastArt/self-optimize-skill source at bd43cb3911ad4ebccf1f309176ca28d964e06bbc; pinned Microsoft SkillOpt source at db46cd9ae7ce12f1dbd73c945185816aa738751d; and full-source reviews of arXiv 2605.23904v2 and 2608.17684v1."
 </ai_context>
 
 # XHS: Self-Evolving Agent Discussion Narrows to the Control Surface
 
 Date: 2026-08-06
-last_updated: 2026-09-01
+last_updated: 2026-09-19
 Source: https://www.xiaohongshu.com/search_result/6a50bbbf000000000803eb62
 Source: https://www.xiaohongshu.com/search_result/69c4a069000000002200fc9a
 Source: https://www.xiaohongshu.com/search_result/6a5df9630000000006010403
@@ -18,7 +18,8 @@ Source: https://www.xiaohongshu.com/search_result/6a8276d000000000320307a6
 Source: https://www.xiaohongshu.com/search_result/6a5a6c690000000013027489
 Source: https://www.xiaohongshu.com/search_result/6a59a0dd000000001b01f455
 Source: https://www.xiaohongshu.com/search_result/6a7a89760000000005033b26
-Tags: xhs, self-evolving-agents, harness, evals, shared-workspace, control-surface, online-training, bayesian-memory
+Source: https://www.xiaohongshu.com/explore/6aa0c221000000001203d2a6
+Tags: xhs, self-evolving-agents, harness, evals, shared-workspace, control-surface, online-training, bayesian-memory, OpsHarness, root-cause-analysis
 
 ## Summary
 
@@ -188,3 +189,32 @@ contact, unauthorized state-change checks, and executor-interface
 compatibility. This extends the existing control-surface finding; it does not
 create a second SkillOpt finding or count the seed, repository, and two papers
 as independent replications.
+
+## Update: 2026-09-19 — OpsHarness makes update admission concrete for RCA
+
+A current XHS post, “通用智能体＋自进化Harness→错误分析专家,” was successfully
+read at body level. It summarizes an **OpsHarness** design for root-cause
+analysis (RCA): four lazily loaded knowledge layers (general knowledge, system
+profile, workflow skeleton, and operating rules), a library of reasoning cards,
+and four workflows—setup, diagnose, evolve, and verify. Successful trajectories
+are distilled into reusable procedures and tools; failed trajectories are
+examined for the first divergent step and converted into corrective rules.
+
+The post's most useful contribution to this note is its explicit two-gate update
+policy. A proposed harness edit must first improve on the source case and then
+avoid regression on an independent held-out set. Failed edits are revised for at
+most three rounds before being discarded. The author reports that removing
+these gates reduced late-stage accuracy to 0.33, below a non-evolving 0.43
+baseline, and that the gates rejected 37% of proposed edits. The same post
+reports average top-1 accuracy of 59.0% across four backbones, compared with
+36.1% for unmodified general agents and 17.9% for purpose-built agents.
+
+These are **secondary, author-reported paper summaries**, not independently
+verified benchmark results. The post does not provide the paper title, stable
+paper ID, dataset composition, backbone-level rows, uncertainty, or enough cost
+semantics to interpret its “0.74 versus 0.24” deployment figure. Accordingly,
+this update admits only the architectural signal: self-evolution proposals need
+source-case improvement plus held-out non-regression, and a high rejection rate
+is evidence that the gate is doing real work. It does not establish that
+OpsHarness transfers beyond the reported RCA setting or that its headline
+comparisons are method-matched.
