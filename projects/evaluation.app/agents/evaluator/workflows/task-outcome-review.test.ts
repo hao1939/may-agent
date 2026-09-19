@@ -581,12 +581,36 @@ describe("Task outcome review", () => {
     expect(calls).toBe(0);
   });
 
+  test("keeps semantic allowance independent from selector cadence", () => {
+    const root = mkdtempSync(join(tmpdir(), "task-review-independent-budget-"));
+    const now = 1_789_824_000_000;
+    const allowance = claimSemanticAllowance(
+      root,
+      "subject",
+      {
+        EVALUATION_AUTO_REVIEW_INTERVAL_MS: "3600000",
+        EVALUATION_ASSESSMENT_ALLOWANCE_INTERVAL_MS: "86400000",
+        EVALUATION_ASSESSMENT_CALLS_PER_INTERVAL: "2",
+      },
+      now,
+    );
+    expect(allowance).toMatchObject({ allowed: true, limit: 2 });
+    expect(allowance.nextEligibleAt - allowance.slot * 86_400_000).toBe(
+      86_400_000,
+    );
+  });
+
   test("returns the same exact deadline for repeated same-subject reviews and becomes eligible after it", async () => {
     const root = mkdtempSync(join(tmpdir(), "task-review-budget-wait-"));
     const now = 1_789_824_000_000;
     setSystemTime(new Date(now));
     try {
-      const occupied = claimSemanticAllowance(root, "another-subject", process.env, now);
+      const occupied = claimSemanticAllowance(
+        root,
+        "another-subject",
+        process.env,
+        now,
+      );
       expect(occupied.allowed).toBeTrue();
       let modelCalls = 0;
       const context = () =>

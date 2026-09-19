@@ -79,11 +79,15 @@ export function claimSemanticAllowance(
   env: NodeJS.ProcessEnv = process.env,
   nowMs = Date.now(),
 ): { allowed: boolean; slot: number; limit: number; nextEligibleAt: number } {
+  // Semantic spend is deliberately independent from selector cadence. A faster
+  // periodic scan must not silently create a larger model-call allowance.
   const interval = Math.max(
     60_000,
     Math.min(
       604_800_000,
-      Math.trunc(Number(env.EVALUATION_AUTO_REVIEW_INTERVAL_MS) || 86_400_000),
+      Math.trunc(
+        Number(env.EVALUATION_ASSESSMENT_ALLOWANCE_INTERVAL_MS) || 86_400_000,
+      ),
     ),
   );
   const limit = Math.max(
@@ -104,7 +108,12 @@ export function claimSemanticAllowance(
         `${JSON.stringify({ version: 1, slot, identity })}\n`,
         { flag: "wx" },
       );
-      return { allowed: true, slot, limit, nextEligibleAt: (slot + 1) * interval };
+      return {
+        allowed: true,
+        slot,
+        limit,
+        nextEligibleAt: (slot + 1) * interval,
+      };
     } catch (error) {
       const code = object(error).code;
       if (code !== "EEXIST") throw error;

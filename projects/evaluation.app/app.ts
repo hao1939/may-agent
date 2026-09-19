@@ -902,12 +902,19 @@ export function taskInputForEvent(
       const appId = stringValue(data.appId);
       const taskId = stringValue(data.taskId);
       const assessmentPurpose = stringValue(data.assessmentPurpose);
+      const subjectGeneration = Number(data.subjectGeneration);
+      const evidenceHash = stringValue(data.evidenceHash);
       return appId && taskId && !isEvaluationOwnedReference(appId)
         ? {
             kind: "review-task-outcome",
             data: {
               appId,
               taskId,
+              ...(Number.isSafeInteger(subjectGeneration) &&
+              subjectGeneration > 0
+                ? { subjectGeneration }
+                : {}),
+              ...(evidenceHash ? { evidenceHash } : {}),
               ...(assessmentPurpose === "ongoing" ||
               assessmentPurpose === "outcome"
                 ? { assessmentPurpose }
