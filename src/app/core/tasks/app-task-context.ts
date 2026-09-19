@@ -103,13 +103,20 @@ export function readAppTaskWaitPromptContext(
       },
     ];
   });
-  return projectAppTaskWaitPromptContext(waits);
+  const projected = projectAppTaskWaitPromptContext(waits);
+  return {
+    ...projected,
+    ...(Number.isSafeInteger(resource?.status.reviewAt) && Number(resource?.status.reviewAt) > 0
+      ? { reviewAt: Number(resource!.status.reviewAt) }
+      : {}),
+  };
 }
 
 /** Current accepted waits supplied to every executor before it judges feedback. */
 export function projectAppTaskWaitPromptContext(waits: readonly AppTaskWaitObservation[]): {
   open: Array<{
     conditionId: string;
+    conditionGeneration: number;
     type: string;
     subject: string;
     state: string;
@@ -133,6 +140,7 @@ export function projectAppTaskWaitPromptContext(waits: readonly AppTaskWaitObser
     return [
       {
         conditionId,
+        conditionGeneration: condition.metadata.generation,
         type: condition.spec.type,
         subject: condition.spec.subject,
         state: condition.status.state,

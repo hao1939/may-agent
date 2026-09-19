@@ -31,6 +31,7 @@ export type NormalizedTaskHandlerResult = {
   report?: true;
   continue?: true;
   result?: Record<string, unknown>;
+  reviewAt?: number;
   facts: string[];
   actions: AppTaskAction[];
   conditions?: AppTaskConditionSpec[];

@@ -1,4 +1,4 @@
-import { expect, test } from "bun:test";
+import { afterEach, expect, setSystemTime, test } from "bun:test";
 import { mkdtempSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
@@ -16,6 +16,8 @@ import {
   observeAppTaskIntent,
   readAppTaskAdmissionOutcome,
 } from "./app-task-reconciler.js";
+
+afterEach(() => setSystemTime());
 
 test.each(["finish", "close"])("continuation survives reopen and retains the original input through %s", (end) => {
   const root = mkdtempSync(join(tmpdir(), "task-continuation-"));
@@ -143,6 +145,93 @@ test.each(["finish", "close"])("continuation survives reopen and retains the ori
   }
 });
 
+test("omitted declarations preserve deadlines without attaching unrelated Conditions or spinning a consumed deadline", () => {
+  const root = mkdtempSync(join(tmpdir(), "task-input-wait-correlation-"));
+  const config = appTaskTestContext({
+    appDir: root,
+    databasePath: join(root, "state.db"),
+    agent: "owner",
+    maxConcurrent: 1,
+    tree: { root_task_id: "root", groups: { root: { id: "root", parent_id: null } } },
+  });
+  const admit = (key: string) =>
+    admitTaskInput(config, {
+      appId: "sample",
+      attachment: { kind: "existing", taskId: "work" },
+      idempotencyKey: key,
+      inputContext: {
+        id: key,
+        source: { kind: "human", id: "operator" },
+        input: { kind: "message", data: { text: key } },
+      },
+    });
+  const claim = () => {
+    const result = claimObservedAppTask(config, { taskId: "work", appAgent: "owner", handler: "agent" });
+    if (result.kind !== "claimed") throw new Error(result.kind);
+    return result;
+  };
+  const now = 1_800_000_000_000;
+  const due = now + 60_000;
+  const independent = {
+    id: "independent-review",
+    type: "review.completed",
+    subject: "id:independent",
+    expected: "accepted",
+    owner: "app:reviewer",
+    reviewAfterMs: 600_000,
+  };
+  try {
+    setSystemTime(now);
+    observeAppTaskIntent(config, {
+      appAgent: "owner",
+      intent: { id: "work", parentId: "root", outcome: "Answer correlated requests", acceptance: ["Answered"] },
+    });
+    admit("original");
+    deferAppTask(config, claim(), {
+      disposition: "waiting",
+      summary: "Original input awaits its review",
+      conditions: [independent],
+      reviewAt: due,
+    });
+
+    admit("unrelated-feedback");
+    deferAppTask(config, claim(), {
+      disposition: "waiting",
+      summary: "Feedback does not alter obligations",
+    });
+    let task = config.resourceStore.readTask("work")!;
+    expect(task.status.reviewAt).toBe(due);
+    expect(task.status.inputWaits?.original).toEqual({
+      taskGeneration: 1,
+      conditions: [{ id: independent.id, generation: 1 }],
+      reviewAt: due,
+    });
+    expect(task.status.inputWaits?.["unrelated-feedback"]).toEqual({
+      taskGeneration: 1,
+      conditions: [],
+      reviewAt: due,
+    });
+
+    setSystemTime(due);
+    const dueClaim = claim();
+    expect(dueClaim.continuedInputKeys?.sort()).toEqual(["original", "unrelated-feedback"]);
+    deferAppTask(config, dueClaim, {
+      disposition: "waiting",
+      summary: "Deadline consumed; independent review remains",
+    });
+    task = config.resourceStore.readTask("work")!;
+    expect(task.status.reviewAt).toBeUndefined();
+    expect(task.status.inputWaits?.original?.reviewAt).toBeUndefined();
+    expect(task.status.inputWaits?.["unrelated-feedback"]?.reviewAt).toBeUndefined();
+    expect(task.status.inputWaits?.["unrelated-feedback"]?.conditions).toEqual([]);
+    expect(claimObservedAppTask(config, { taskId: "work", appAgent: "owner", handler: "agent" }).kind).toBe("waiting");
+    expect(config.resourceStore.nextDueAt()).toBeGreaterThan(due);
+  } finally {
+    config.resourceStore.close();
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
 test.each(["changed-spec", "replaced-id"])("reconsiders inputs with %s waits after reopen, without answering unrelated input", (change) => {
   const root = mkdtempSync(join(tmpdir(), "task-wait-replacement-"));
   const databasePath = join(root, "state.db");
@@ -184,21 +273,29 @@ test.each(["changed-spec", "replaced-id"])("reconsiders inputs with %s waits aft
     expect(claimObservedAppTask(config, { taskId: "work", appAgent: "owner", handler: "agent" }).kind).toBe("waiting");
     trackAppTaskConditionEventForTasks(config, { type: "review.completed", data: { id: replacement.id, state: "accepted" } }, ["work"]);
     const final = claim();
-    expect(final.continuedInputKeys?.sort()).toEqual(["correction", "original"]);
+    const expectedContinued = change === "changed-spec" ? ["correction", "original"] : ["correction"];
+    expect(final.continuedInputKeys?.sort()).toEqual(expectedContinued);
     const context = readAppTaskReconciliationEvents(config.resourceStore, final);
-    expect(context.continuedInputs?.map(({ event }) => event.data.idempotencyKey).sort()).toEqual(["correction", "original"]);
+    expect(context.continuedInputs?.map(({ event }) => event.data.idempotencyKey).sort()).toEqual(expectedContinued);
     // A later independent ask was not in this execution's context.
     admit("late-question");
     expect(completeAppTask(config, final, { summary: "Reviews accepted", response: "Corrected review complete" }).taskContinues).toBe(true);
     expect(readAppTaskAdmissionOutcome(config, "work", "original")).toBeNull();
     const next = claim();
-    expect(next.continuedInputKeys).toContain("original");
+    if (change === "changed-spec") expect(next.continuedInputKeys).toContain("original");
+    else expect(next.continuedInputKeys ?? []).not.toContain("original");
     completeAppTask(config, next, { summary: "Reviewed new question too", response: "Corrected review complete; independent review pending" });
-    for (const key of ["original", "correction", "late-question"]) {
+    for (const key of ["correction", "late-question"]) {
       expect(readAppTaskAdmissionOutcome(config, "work", key)?.attemptId).toBe(next.attemptId);
     }
     expect(readAppTaskAdmissionOutcome(config, "work", "independent-request")).toBeNull();
-    expect(config.resourceStore.readTask("work")?.status.conditionIds).toEqual(["independent"]);
+    if (change === "changed-spec") {
+      expect(readAppTaskAdmissionOutcome(config, "work", "original")?.attemptId).toBe(next.attemptId);
+      expect(config.resourceStore.readTask("work")?.status.conditionIds).toEqual(["independent"]);
+    } else {
+      expect(readAppTaskAdmissionOutcome(config, "work", "original")).toBeNull();
+      expect(config.resourceStore.readTask("work")?.status.conditionIds).toEqual(["independent", "review"]);
+    }
   } finally {
     config.resourceStore.close();
     rmSync(root, { recursive: true, force: true });

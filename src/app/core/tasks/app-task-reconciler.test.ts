@@ -5977,7 +5977,7 @@ describe("App task reconciler state", () => {
     ).toThrow("already linked to another task with a different specification");
   });
 
-  it("retires a satisfied Condition only when accepting the next wait", () => {
+  it("does not silently reopen an unchanged satisfied Condition", () => {
     const { config } = fixture();
     const taskIntent = intent("monitor");
     const first = declareAndClaimTask(config, {
@@ -6012,12 +6012,12 @@ describe("App task reconciler state", () => {
 
     deferAppTask(config, resumed, {
       disposition: "waiting",
-      summary: "waiting for a new observation",
+      summary: "The already-observed fact remains valid",
+      reviewAt: Date.now() + 60_000,
       conditions: [condition],
     });
-    expect(readTaskSnapshot(config).conditions?.[condition.id]).toMatchObject({
-      status: { observedGeneration: 0, state: "unknown" },
-    });
+    expect(readTaskSnapshot(config).conditions?.[condition.id]).toBeUndefined();
+    expect(readTaskSnapshot(config).resources?.[taskIntent.id]?.status.conditionIds).toEqual([]);
     expect(
       trackAppTaskConditionEvent(config, {
         type: "unrelated.event",
@@ -6027,7 +6027,7 @@ describe("App task reconciler state", () => {
     ).toEqual([]);
   });
 
-  it("does not replay an old level observation into a newly established state wait", async () => {
+  it("does not reopen an unchanged satisfied level wait or replay its old observation", async () => {
     const { config } = fixture();
     const taskIntent = intent("monitor");
     const condition = {
@@ -6066,14 +6066,13 @@ describe("App task reconciler state", () => {
     await new Promise((resolve) => setTimeout(resolve, 5));
     deferAppTask(config, resumed, {
       disposition: "waiting",
-      summary: "credential was lost before use",
+      summary: "The observed credential fact remains valid",
+      reviewAt: Date.now() + 60_000,
       conditions: [condition],
     });
 
     expect(trackAppTaskConditionEvent(config, readyObservation)).toEqual([]);
-    expect(readTaskSnapshot(config).conditions?.[condition.id]).toMatchObject({
-      status: { observedGeneration: 0, state: "unknown" },
-    });
+    expect(readTaskSnapshot(config).conditions?.[condition.id]).toBeUndefined();
   });
 
   it("does not replay an old scheduled check into a newly established pulse wait", () => {
@@ -6208,7 +6207,7 @@ describe("App task reconciler state", () => {
     });
 
     expect(readTaskSnapshot(config).conditions?.["session-terminal"]).toMatchObject({
-      metadata: { generation: 1, resourceVersion: 1 },
+      metadata: { generation: 2 },
       spec: { subject: "session:replacement" },
       status: { observedGeneration: 0, state: "unknown" },
     });
