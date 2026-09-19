@@ -281,15 +281,16 @@ durable intent. Other input kinds use normal Task mapping. May's policy is owned
 by [Message Lifecycle](message-lifecycle.md). This is not a second durable work
 loop.
 
-Conversation and exact-Task addressing are mutually exclusive at admission.
-Callers send Conversation input with `conversationId` and without
+Conversation routing and exact-Task routing are mutually exclusive at
+admission. Callers send Conversation input with `conversationId` and without
 `targetTaskId`; the Host resolves the current execution Task for that stable
 Conversation and preserves the caller correlation. `targetTaskId` is reserved
 for ordinary exact Task input and must not name a current, successor, or retained
-Conversation executor, even when `conversationId` is also supplied. The Host
-normalizes exact Task identifiers before this check and before persistence, so a
-stale or padded executor identity cannot bypass Conversation lineage or silently
-land on another successor Task.
+Conversation executor. Ordinary exact Task input may also carry
+`conversationId` as reply provenance; that context does not change its exact
+Task route. The Host normalizes exact Task identifiers before this check and
+before persistence, so a stale or padded executor identity cannot bypass
+Conversation lineage or silently land on another successor Task.
 
 Task results may include a caller-facing `response`; `summary` describes
 operational state. Neither field contains channel delivery state. A Task can
