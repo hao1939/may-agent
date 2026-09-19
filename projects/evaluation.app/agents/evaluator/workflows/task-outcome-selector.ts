@@ -368,8 +368,7 @@ export function retainedRequestedReviewTaskIds(
     .filter(
       (task) =>
         task.taskId.startsWith("runtime/task-outcome/") &&
-        task.taskId !== "runtime/task-outcome-selector" &&
-        task.status !== "done",
+        task.taskId !== "runtime/task-outcome-selector",
     )
     .map((task) => task.taskId)
     .sort();

@@ -38,7 +38,7 @@ Use bounded `tasks.list` for discovery and `tasks.get` for exact Task detail.
 The current shared `TaskView` is deliberately small:
 
 ```text
-{ id, status, generation, outcome, summary?, response?, result?, evidence? }
+{ id, status, generation, outcome, summary?, response?, result?, facts? }
 ```
 
 The list form returns bounded views from live resources and immutable completed
@@ -51,7 +51,7 @@ meaning. A parent that needs a child's verdict reads this object; it never
 reconstructs the verdict from `summary`, `response`, evidence labels, or task
 prose. Human explanation stays in `summary` or `response`.
 
-The get form returns one exact `TaskDetail`, including parent, mode, acceptance,
+The get form returns one exact `TaskDetail`, including parent, acceptance,
 input, selected execution mechanism, dependencies, and Conditions. Attempt and
 activity evidence remain linked records rather than copied Task truth.
 
