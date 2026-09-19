@@ -3753,7 +3753,9 @@ export function deferAppTask(
     const condition = tree.conditions?.[id];
     return condition && condition.status.state !== "true" ? [{ id, ...condition.spec }] : [];
   });
-  if (input.disposition === "waiting" && reviewAt === undefined && openConditions.length === 0) {
+  // Only a sleeping attempt needs an external return route. `continue` is its
+  // own bounded scheduler request and may remain useful after the last wait resolves.
+  if (input.disposition === "waiting" && !input.continue && reviewAt === undefined && openConditions.length === 0) {
     throw new Error(`Waiting result for ${claim.taskId} requires at least one exact Condition`);
   }
   for (const key of inputKeys) {

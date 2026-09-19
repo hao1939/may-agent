@@ -198,20 +198,22 @@ describe("prepared completion contract", () => {
       "reviewAt is valid only for waiting",
     ],
     [
-      "dependencyless continuation",
+      "no-progress continuation",
       {
         state: "waiting",
         continue: true,
-        summary: "Continue useful work",
-        facts: ["progress:recorded"],
+        summary: "Continue without any completed work",
+        facts: [],
       },
       {
         state: "waiting",
-        summary: "Wait for more input",
+        continue: true,
+        report: true,
+        summary: "Report the blocker and continue useful work",
         reviewAt: Date.now() + 60_000,
         facts: ["progress:recorded"],
       },
-      "continue requires waiting, dependencies and progress facts, without report",
+      "continue requires waiting and progress facts",
     ],
   ])("returns correctable finish feedback for %s before terminating", async (_name, invalid, corrected, error) => {
     const { finish, context } = prepare("worker", taskAgentResultSchema);
@@ -231,28 +233,26 @@ describe("prepared completion contract", () => {
     expect(correctedResult.terminate).toBe(true);
   });
 
-  it("uses the same semantic boundary for valid agent and workflow Task effects", async () => {
-    const cases = [
-      [
-        taskAgentResultSchema,
+  it("uses the same semantic finish boundary for agent and workflow report-plus-continuation", async () => {
+    const taskResult = {
+      state: "waiting",
+      report: true,
+      continue: true,
+      summary: "Review is blocked while independent checks continue",
+      facts: ["checks:started"],
+      conditions: [
         {
-          state: "waiting",
-          summary: "Waiting for review",
-          reviewAt: Date.now() + 60_000,
-          facts: [],
+          id: "review",
+          type: "review.completed",
+          subject: "review:candidate",
+          expected: true,
+          owner: "human",
+          reviewAfterMs: 60_000,
         },
       ],
-      [
-        taskReconcileResultSchema,
-        {
-          state: "needs-agent",
-          summary: "A worker must continue",
-          facts: [],
-        },
-      ],
-    ] as const;
+    } as const;
 
-    for (const [schema, taskResult] of cases) {
+    for (const schema of [taskAgentResultSchema, taskReconcileResultSchema]) {
       const { finish, context } = prepare("worker", schema);
       const call = context({ ...review, status: "partial", result: taskResult });
       const result = await finish.execute(call.toolCall.id, validateToolArguments(finish, call.toolCall));

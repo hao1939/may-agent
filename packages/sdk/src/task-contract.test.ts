@@ -18,14 +18,14 @@ it("routes persisted Task result schemas through the same semantic admission", (
     facts: [],
     reviewAt: Date.now() + 60_000,
   };
-  const dependencylessContinuation = {
+  const noProgressContinuation = {
     state: "waiting",
     continue: true,
-    summary: "Continuation needs declared work",
-    facts: ["progress:recorded"],
+    summary: "Continuation needs evidence of useful work",
+    facts: [],
   };
 
-  for (const invalid of [convergedReview, dependencylessContinuation]) {
+  for (const invalid of [convergedReview, noProgressContinuation]) {
     expect(Check(taskAgentResultSchema, invalid)).toBe(true);
     expect(admitTaskResultForSchema(structuredClone(taskAgentResultSchema), invalid)).toEqual(
       admitTaskReconcileResult(invalid, { allowNeedsAgent: false }),
@@ -42,26 +42,21 @@ it("routes persisted Task result schemas through the same semantic admission", (
   expect(admitTaskResultForSchema(Type.Object({ value: Type.String() }), { value: "ordinary" })).toBeNull();
 });
 
-it("admits explicit useful continuation without confusing it with an answer or failure", () => {
+it("admits independent reporting and useful continuation without inventing a wait", () => {
   const result = {
     state: "waiting",
     continue: true,
+    report: true,
     summary: "Review requested; prepare independent notes next",
     facts: ["review:requested"],
-    dependencies: [{ id: "review", appId: "reviewer", input: { kind: "review", data: {} } }],
   };
   expect(Check(taskAgentResultSchema, result)).toBe(true);
   const admitted = admitTaskReconcileResult(result, workflowOptions);
   expect(admitted.ok).toBe(true);
   if (!admitted.ok) throw new Error(admitted.error);
   expect(admitTaskReconcileResult(admitted.result, workflowOptions)).toEqual(admitted);
-  for (const invalid of [
-    { continue: false },
-    { state: "converged" },
-    { dependencies: [] },
-    { facts: [] },
-    { report: true },
-  ]) {
+  expect(admitted.result).toMatchObject({ state: "waiting", report: true, continue: true });
+  for (const invalid of [{ continue: false }, { state: "converged" }, { facts: [] }]) {
     expect(admitTaskReconcileResult({ ...result, ...invalid }, workflowOptions).ok).toBe(false);
   }
 });

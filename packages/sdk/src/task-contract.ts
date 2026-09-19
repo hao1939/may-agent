@@ -105,7 +105,7 @@ export const taskAgentResultSchema = Type.Union(
         continue: Type.Optional(
           Type.Literal(true, {
             description:
-              "After submitting dependencies, queue another bounded pass for useful independent work. Keeps the input unanswered. Omit to sleep until feedback or review.",
+              "Queue one more bounded pass for useful work. Keeps the input unanswered; omit to sleep until feedback or review.",
           }),
         ),
       },
@@ -116,6 +116,12 @@ export const taskAgentResultSchema = Type.Union(
         state: Type.Literal("waiting"),
         ...resultFields,
         report: Type.Literal(true),
+        continue: Type.Optional(
+          Type.Literal(true, {
+            description:
+              "Queue one more bounded pass for useful work. This may coexist with a report or an independent wait.",
+          }),
+        ),
         facts: Type.Array(nonEmptyStringSchema, { minItems: 1, maxItems: 32 }),
       },
       { additionalProperties: false },
@@ -409,15 +415,8 @@ export function admitTaskReconcileResult(
   if (output.state !== "waiting" && dependencies.length > 0) {
     return { ok: false, error: "dependencies are valid only for waiting" };
   }
-  if (
-    output.continue !== undefined &&
-    (output.continue !== true ||
-      output.state !== "waiting" ||
-      output.report !== undefined ||
-      !dependencies.length ||
-      !facts.length)
-  ) {
-    return { ok: false, error: "continue requires waiting, dependencies and progress facts, without report" };
+  if (output.continue !== undefined && (output.continue !== true || output.state !== "waiting" || !facts.length)) {
+    return { ok: false, error: "continue requires waiting and progress facts" };
   }
   if (!Check(taskReconcileResultSchema, output)) {
     const first = [...Errors(taskReconcileResultSchema, output)][0];

@@ -78,7 +78,7 @@ export function appTaskAgentProtocol(appId: string): string {
     "Use incomplete for unfinished work: include facts, partial work and unresolved effects; no actions, Conditions or dependencies. Set report:true for new caller-relevant updates after an earlier report. Omit for unchanged failures. The assignment remains pending under paced recovery until its owner revises or closes it.",
     "Put machine-readable decisions in result, explanations in summary. Waiting may retain a decision for later review.",
     "Use waiting for a saved wait, exact Condition or typed App dependency. Omit unchanged waits and response. Set report:true with summary/facts for a new caller-relevant blocker; omit for quiet waits.",
-    "New dependencies plus continue:true and facts queue useful independent work; omit when only results remain. Do not combine continue with report.",
+    "continue:true plus progress facts queues one bounded pass for useful remaining work without inventing a wait; omit continue when no useful work remains. It may coexist with a saved wait and with report:true for a new caller-relevant update.",
     "For another Task's work, return stable dependency { id, appId, input }; add taskId for an exact Task. Your App may own it. Runtime publishes and correlates it; do not publish app.input.requested yourself.",
     "Use Installed Apps' appId, input.kind, requiredData, fixedData and dataTypes. The target App owns execution/scheduling.",
     assignmentGuidance,

@@ -145,6 +145,75 @@ test.each(["finish", "close"])("continuation survives reopen and retains the ori
   }
 });
 
+test("continuation can outlive a wait while sleeping still requires a return route", () => {
+  const root = mkdtempSync(join(tmpdir(), "task-continuation-admission-"));
+  const config = appTaskTestContext({ appDir: root, databasePath: join(root, "state.db"), agent: "owner", maxConcurrent: 1,
+    tree: { root_task_id: "root", groups: { root: { id: "root", parent_id: null } } } });
+  const claim = (taskId: string) => {
+    const result = claimObservedAppTask(config, { taskId, appAgent: "owner", handler: "agent" });
+    if (result.kind !== "claimed") throw new Error(result.kind);
+    return result;
+  };
+  const admit = (taskId: string, key: string) => admitTaskInput(config, {
+    appId: "sample", attachment: { kind: "existing", taskId }, idempotencyKey: key,
+    inputContext: { id: key, source: { kind: "human", id: "operator" },
+      input: { kind: "message", data: { text: key } } },
+  });
+  try {
+    observeAppTaskIntent(config, { appAgent: "owner", intent: {
+      id: "with-wait", parentId: "root", outcome: "Review and prepare", acceptance: ["Reviewed"],
+    } });
+    admit("with-wait", "original");
+    deferAppTask(config, claim("with-wait"), {
+      disposition: "waiting", summary: "Review requested",
+      conditions: [{ id: "review", type: "review.completed", subject: "review:candidate",
+        expected: true, owner: "human", reviewAfterMs: 60_000 }],
+    });
+    admit("with-wait", "progress");
+    const progress = claim("with-wait");
+    deferAppTask(config, progress, {
+      disposition: "waiting", report: true, continue: true,
+      summary: "Review is blocked; independent checks started", facts: ["checks:started"],
+    });
+    expect(config.resourceStore.readAttempt(progress.attemptId)?.acceptedResult)
+      .toMatchObject({ state: "waiting", report: true, continue: true });
+    expect(readAppTaskAdmissionOutcome(config, "with-wait", "progress", "report"))
+      .toMatchObject({ state: "waiting", summary: "Review is blocked; independent checks started" });
+    expect(config.resourceStore.readTask("with-wait")?.status)
+      .toMatchObject({ phase: "pending", conditionIds: ["review"] });
+    trackAppTaskConditionEventForTasks(config, {
+      type: "review.completed", data: { review: "candidate", state: true },
+    }, ["with-wait"]);
+    const continued = claim("with-wait");
+    deferAppTask(config, continued, { disposition: "waiting", continue: true,
+      summary: "Review arrived; finish independent checks next", facts: ["review:complete"] });
+    expect(config.resourceStore.readTask("with-wait")?.status).toMatchObject({ phase: "pending" });
+    expect(config.resourceStore.readTask("with-wait")?.status.conditionIds).toEqual([]);
+    completeAppTask(config, claim("with-wait"), {
+      summary: "Review and independent checks complete", response: "Complete", facts: ["checks:complete"],
+    });
+
+    observeAppTaskIntent(config, { appAgent: "owner", intent: {
+      id: "without-wait", parentId: "root", outcome: "Do bounded work", acceptance: ["Done"],
+    } });
+    admit("without-wait", "start");
+    const noWait = claim("without-wait");
+    deferAppTask(config, noWait, { disposition: "waiting", continue: true,
+      summary: "Continue useful work without inventing a wait", facts: ["step:complete"] });
+    expect(config.resourceStore.readAttempt(noWait.attemptId)?.acceptedResult)
+      .toMatchObject({ state: "waiting", continue: true });
+    expect(config.resourceStore.readTask("without-wait")?.status.phase).toBe("pending");
+    const finalPass = claim("without-wait");
+    expect(() => deferAppTask(config, finalPass, { disposition: "waiting",
+      summary: "No work or return route remains", facts: ["step:complete"] }))
+      .toThrow("requires at least one exact Condition");
+    expect(config.resourceStore.readAttempt(finalPass.attemptId)?.acceptedResult).toBeUndefined();
+  } finally {
+    config.resourceStore.close();
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
 test("omitted declarations preserve deadlines without attaching unrelated Conditions or spinning a consumed deadline", () => {
   const root = mkdtempSync(join(tmpdir(), "task-input-wait-correlation-"));
   const config = appTaskTestContext({
