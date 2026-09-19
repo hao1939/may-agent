@@ -421,10 +421,16 @@ describe("project task workspace", () => {
     const privateHeadLock = join(f.repo, `.git/${prepared.metadata.baseRef.replace(/\/base$/, "/head")}.lock`);
     mkdirSync(dirname(privateHeadLock), { recursive: true });
     writeFileSync(privateHeadLock, "another Host fetch\n");
-    await expect(prepareAppTaskWorkspace({
-      repoDir: f.repo, workspaceRoot: f.worktrees, taskId: "waiting-live-proof", generation: 1,
-      baseBranch: "dev", previous: finalized.metadata,
-    })).rejects.toThrow("cannot lock ref");
+    await expect(
+      prepareAppTaskWorkspace({
+        repoDir: f.repo,
+        workspaceRoot: f.worktrees,
+        taskId: "waiting-live-proof",
+        generation: 1,
+        baseBranch: "dev",
+        previous: finalized.metadata,
+      }),
+    ).rejects.toThrow("cannot lock ref");
     expect(existsSync(prepared.metadata.path)).toBe(false);
     expect(await git(f.repo, "branch", "--list", prepared.metadata.branch)).toBe("");
     expect(await git(f.repo, "for-each-ref", "--format=%(refname)", "refs/may/workspaces/")).toBe("");
@@ -433,10 +439,16 @@ describe("project task workspace", () => {
 
     const configLock = join(f.repo, ".git/config.lock");
     writeFileSync(configLock, "another worker configuring Git\n");
-    await expect(prepareAppTaskWorkspace({
-      repoDir: f.repo, workspaceRoot: f.worktrees, taskId: "waiting-live-proof", generation: 1,
-      baseBranch: "dev", previous: finalized.metadata,
-    })).rejects.toThrow("could not lock config file");
+    await expect(
+      prepareAppTaskWorkspace({
+        repoDir: f.repo,
+        workspaceRoot: f.worktrees,
+        taskId: "waiting-live-proof",
+        generation: 1,
+        baseBranch: "dev",
+        previous: finalized.metadata,
+      }),
+    ).rejects.toThrow("could not lock config file");
     expect(existsSync(prepared.metadata.path)).toBe(false);
     expect(await git(f.repo, "branch", "--list", prepared.metadata.branch)).toBe("");
     expect(await git(f.repo, "for-each-ref", "--format=%(refname)", "refs/may/workspaces/")).toBe("");
@@ -572,6 +584,7 @@ describe("project task workspace", () => {
     const finalized = await finalizeAppTaskWorkspace(prepared, "accepted");
 
     expect(finalized).toMatchObject({ ok: false, metadata: { disposition: "retained-for-recovery" } });
+    expect(finalized.reason).toContain("Bounded git status:\n?? dirty.txt");
   });
 
   for (const retained of [false, true]) {
@@ -617,7 +630,10 @@ describe("project task workspace", () => {
       baseBranch: "dev",
       refreshRemote: false,
     });
-    for (const [cwd, content] of [[prepared.metadata.path, "task"], [f.repo, "target"]]) {
+    for (const [cwd, content] of [
+      [prepared.metadata.path, "task"],
+      [f.repo, "target"],
+    ]) {
       writeFileSync(join(cwd!, "README.md"), `${content}\n`);
       await git(cwd!, "add", "README.md");
       await git(cwd!, "commit", "-m", content!);

@@ -84,6 +84,7 @@ describe("Task context projections", () => {
     expect(projected.open).toEqual([
       {
         conditionId: "wait:review",
+        conditionGeneration: 1,
         type: "app.dependency.updated",
         subject: "id:review",
         state: "unknown",
@@ -95,9 +96,16 @@ describe("Task context projections", () => {
           resolvedTaskId: "resolved-task",
         },
       },
-      { conditionId: "wait:missing", type: "app.dependency.updated", subject: "id:missing", state: "false" },
+      {
+        conditionId: "wait:missing",
+        conditionGeneration: 1,
+        type: "app.dependency.updated",
+        subject: "id:missing",
+        state: "false",
+      },
       {
         conditionId: "wait:new",
+        conditionGeneration: 1,
         type: "app.dependency.updated",
         subject: "id:new",
         state: "unknown",
@@ -120,6 +128,7 @@ describe("Task context projections", () => {
                 observedGeneration: 1,
                 phase: "waiting",
                 updatedAt: "2026-01-01T00:00:00Z",
+                reviewAt: 1_800_000_000_000,
                 conditionIds: ["open", "done", "absent"],
               },
             },
@@ -128,9 +137,19 @@ describe("Task context projections", () => {
         },
         "context-test",
       );
-      expect(readAppTaskWaitPromptContext(store, null, "current").open).toEqual([
-        { conditionId: "open", type: "app.dependency.updated", subject: "id:open", state: "unknown" },
-      ]);
+      expect(readAppTaskWaitPromptContext(store, null, "current")).toEqual({
+        note: "These accepted waits remain part of the Task's state. Judge new facts against the goal and these obligations. Return waiting without redeclaring unchanged waits; code retains their identities and observations. Propose new or changed work only when the goal requires it, never merely because a wait was absent from prose or child summaries.",
+        reviewAt: 1_800_000_000_000,
+        open: [
+          {
+            conditionId: "open",
+            conditionGeneration: 1,
+            type: "app.dependency.updated",
+            subject: "id:open",
+            state: "unknown",
+          },
+        ],
+      });
       expect(readAppTaskWaitPromptContext(store, null, "absent").open).toEqual([]);
     } finally {
       store.close();

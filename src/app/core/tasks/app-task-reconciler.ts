@@ -470,7 +470,9 @@ export function appTaskSpecHash(intent: AppTaskIntent, effectiveAgent?: string):
 
 /** Compare retained facts without rewriting its identity or accepting legacy authoring. */
 export function matchesAppTaskSpecHash(intent: AppTaskIntent, effectiveAgent: string, hash: string): boolean {
-  return [undefined, "achieve", "maintain"].some((legacyMode) => taskSpecHash(intent, effectiveAgent, legacyMode) === hash);
+  return [undefined, "achieve", "maintain"].some(
+    (legacyMode) => taskSpecHash(intent, effectiveAgent, legacyMode) === hash,
+  );
 }
 
 function taskSpecHash(intent: AppTaskIntent, effectiveAgent?: string, legacyMode?: string): string {
@@ -620,6 +622,7 @@ function acceptedAttemptResult(
     summary: string;
     response?: string;
     result?: Record<string, unknown>;
+    reviewAt?: number;
     facts?: string[];
     acceptedLiveEventIds?: number[];
   },
@@ -640,6 +643,7 @@ function acceptedAttemptResult(
     summary: input.summary,
     ...(input.response !== undefined ? { response: input.response } : {}),
     ...(input.result ? { result: input.result } : {}),
+    ...(input.reviewAt !== undefined ? { reviewAt: input.reviewAt } : {}),
     facts: input.facts ?? [],
     acceptanceBasis,
     ...(acceptedLiveEventIds.length ? { acceptedLiveEventIds } : {}),
@@ -656,8 +660,9 @@ function consideredInputKeys(
   const attempt = tree.attempts?.[claim.attemptId];
   const events = [
     ...(attempt?.events ?? []),
-    ...(tree.taskTriggers?.[claim.taskId] ? taskTriggerEvents(tree.taskTriggers[claim.taskId]) : [])
-      .filter(({ event }) => liveIds.has(Number(event.eventId))),
+    ...(tree.taskTriggers?.[claim.taskId] ? taskTriggerEvents(tree.taskTriggers[claim.taskId]) : []).filter(
+      ({ event }) => liveIds.has(Number(event.eventId)),
+    ),
   ];
   return taskInputAdmissionKeys(events, [
     ...(attempt?.continuedInputKeys ?? []),
@@ -682,10 +687,18 @@ function inputOutcomeAdmissions(
     if (!admission || admission.taskId !== claim.taskId || admission.taskGeneration > claim.generation ||
       admission.resultAttemptId) return [];
     if (kind === "report")
-      return admission.reportAttemptId && !explicitReport ? [] : [{ taskId: key, value: {
-        ...admission, reportAttemptId: claim.attemptId,
-        reportRevision: (admission.reportRevision ?? (admission.reportAttemptId ? 1 : 0)) + 1,
-      } }];
+      return admission.reportAttemptId && !explicitReport
+        ? []
+        : [
+            {
+              taskId: key,
+              value: {
+                ...admission,
+                reportAttemptId: claim.attemptId,
+                reportRevision: (admission.reportRevision ?? (admission.reportAttemptId ? 1 : 0)) + 1,
+              },
+            },
+          ];
     delete tree.resources?.[claim.taskId]?.status.inputWaits?.[key];
     return [{ taskId: key, value: { ...admission, resultAttemptId: claim.attemptId } }];
   });
@@ -700,18 +713,25 @@ export function readAppTaskAdmissionOutcome(
   taskId: string,
   admissionKey: string,
   kind: "answer" | "report" = "answer",
-): (Omit<NonNullable<AppTaskAttempt["acceptedResult"]>, "state"> & {
-  attemptId: string; generation: number; state: "converged" | "waiting" | "incomplete" | "error";
-  reportRevision?: number;
-}) | null {
+):
+  | (Omit<NonNullable<AppTaskAttempt["acceptedResult"]>, "state"> & {
+      attemptId: string;
+      generation: number;
+      state: "converged" | "waiting" | "incomplete" | "error";
+      reportRevision?: number;
+    })
+  | null {
   const admission = config.resourceStore.readTaskContext({ taskIds: [], admissionIds: [admissionKey] })
     .appTaskAdmissions?.[admissionKey];
   const attemptId = kind === "answer" ? admission?.resultAttemptId : admission?.reportAttemptId;
   if (admission?.taskId !== taskId || !attemptId) return null;
   const attempt = config.resourceStore.readAttempt(attemptId);
   if (attempt?.taskId !== taskId || attempt.taskGeneration < admission.taskGeneration) return null;
-  const identity = { attemptId: attempt.metadata.id, generation: attempt.taskGeneration,
-    ...(kind === "report" ? { reportRevision: admission.reportRevision ?? 1 } : {}) };
+  const identity = {
+    attemptId: attempt.metadata.id,
+    generation: attempt.taskGeneration,
+    ...(kind === "report" ? { reportRevision: admission.reportRevision ?? 1 } : {}),
+  };
   const accepted = attempt.acceptedResult;
   if (kind === "answer") return accepted?.state === "converged" ? { ...identity, ...accepted } : null;
   const report = appTaskAttemptReport(attempt);
@@ -848,9 +868,13 @@ function pruneUnlinkedConditions(tree: TaskTree): void {
   }
 }
 
-function unlinkTaskConditions(tree: TaskTree, taskId: string): void {
+function unlinkExactTaskCondition(tree: TaskTree, taskId: string, conditionId: string): void {
   const resource = tree.resources?.[taskId];
-  if (resource?.status.conditionIds?.length) touchResource(resource, { conditionIds: [] });
+  if (!resource?.status.conditionIds?.includes(conditionId)) return;
+  touchResource(resource, {
+    conditionIds: resource.status.conditionIds.filter((id) => id !== conditionId),
+  });
+  // A shared Condition remains available to every other linked Task.
   pruneUnlinkedConditions(tree);
 }
 
@@ -873,11 +897,20 @@ function materializeWaitingConditions(
   now: string,
 ): void {
   const registry = conditionRegistry(tree);
-  const ids: string[] = [];
-  const previousIds = new Set(taskConditionIds(tree, taskId));
-  for (const raw of conditions) {
+  const ids = taskConditionIds(tree, taskId);
+  const previousIds = new Set(ids);
+  const declarations = new Map<string, AppTaskConditionSpec>();
+  for (const condition of conditions) {
+    const id = condition.id.trim();
+    const previous = declarations.get(id);
+    if (previous && JSON.stringify(stableValue(previous)) !== JSON.stringify(stableValue(condition))) {
+      throw new Error(`Task result contains conflicting declarations for Condition ${id}`);
+    }
+    declarations.set(id, condition);
+  }
+  for (const raw of declarations.values()) {
     const id = raw.id.trim();
-    ids.push(id);
+    if (!previousIds.has(id)) ids.push(id);
     const spec = {
       type: raw.type.trim(),
       subject: raw.subject.trim(),
@@ -897,18 +930,9 @@ function materializeWaitingConditions(
     // Unrelated reevaluation must not postpone a future recovery checkpoint.
     // Once due, an accepted recheck may renew it without satisfying the wait.
     const reviewDue = current && Date.parse(current.status.observedAt ?? "") + spec.reviewAfterMs <= Date.parse(now);
-    registry[id] = sameSpec
-      ? previousIds.has(id) && current.status.state !== "true" && reviewDue
-        ? {
-            ...current,
-            metadata: {
-              ...current.metadata,
-              resourceVersion: current.metadata.resourceVersion + 1,
-            },
-            status: { ...current.status, observedAt: now },
-          }
-        : current
-      : {
+    const startsNewObservation = !sameSpec;
+    registry[id] = startsNewObservation
+      ? {
           metadata: {
             id,
             generation: (current?.metadata.generation ?? 0) + 1,
@@ -921,11 +945,36 @@ function materializeWaitingConditions(
             createdAt: now,
             observedAt: now,
           },
-        };
+        }
+      : previousIds.has(id) && current.status.state !== "true" && reviewDue
+        ? {
+            ...current,
+            metadata: {
+              ...current.metadata,
+              resourceVersion: current.metadata.resourceVersion + 1,
+            },
+            status: { ...current.status, observedAt: now },
+          }
+        : current;
   }
   const resource = tree.resources?.[taskId];
   if (resource) touchResource(resource, { conditionIds: ids });
   pruneUnlinkedConditions(tree);
+}
+
+function renewDueTaskConditionCheckpoints(tree: TaskTree, taskId: string, now: string): void {
+  const nowMs = Date.parse(now);
+  for (const id of taskConditionIds(tree, taskId)) {
+    const condition = tree.conditions?.[id];
+    if (!isAppTaskCondition(condition) || condition.status.state === "true") continue;
+    const reviewAfterMs = condition.spec.reviewAfterMs;
+    const observedAtMs = Date.parse(condition.status.observedAt ?? "");
+    if (!Number.isInteger(reviewAfterMs) || !Number.isFinite(observedAtMs) || observedAtMs + Number(reviewAfterMs) > nowMs) {
+      continue;
+    }
+    condition.metadata.resourceVersion += 1;
+    condition.status.observedAt = now;
+  }
 }
 
 export function recoverableAppTaskAttempts(
@@ -1191,7 +1240,7 @@ export function repairUnadmittedAppDependencyWaits(
   const mutationScope = emptyResourceMutationScope(tree);
   for (const resource of Object.values(tree.resources ?? {})) {
     if (resource.status.phase !== "waiting") continue;
-    const missingRequestId = (resource.status.conditionIds ?? []).flatMap((conditionId) => {
+    const missingRequests = (resource.status.conditionIds ?? []).flatMap((conditionId) => {
       const condition = tree.conditions?.[conditionId];
       if (
         !isAppTaskCondition(condition) ||
@@ -1202,19 +1251,19 @@ export function repairUnadmittedAppDependencyWaits(
         return [];
       }
       const requestId = condition.spec.subject.slice("id:".length).trim();
-      return requestId && !isAdmitted(requestId) ? [requestId] : [];
-    })[0];
-    if (!missingRequestId) continue;
+      return requestId && !isAdmitted(requestId) ? [{ conditionId, requestId }] : [];
+    });
+    if (!missingRequests.length) continue;
 
     trackResourceMutationTask(mutationScope, tree, resource.metadata.id);
-    const summary = `App dependency request ${missingRequestId} was not admitted; retrying the same Task from current facts`;
-    unlinkTaskConditions(tree, resource.metadata.id);
+    for (const { conditionId } of missingRequests) unlinkExactTaskCondition(tree, resource.metadata.id, conditionId);
+    const requestIds = missingRequests.map(({ requestId }) => requestId).join(", ");
+    const summary = `App dependency request${missingRequests.length === 1 ? "" : "s"} ${requestIds} ${missingRequests.length === 1 ? "was" : "were"} not admitted; retrying the same Task from current facts`;
     touchResource(resource, {
       phase: "pending",
       observedGeneration: Math.max(0, resource.metadata.generation - 1),
       currentAttemptId: undefined,
       summary,
-      conditionIds: [],
     });
     repairs.push({ taskId: resource.metadata.id, disposition: "requeued", summary });
   }
@@ -1553,13 +1602,7 @@ export type AppTaskChildContext = {
     dependsOn?: string[];
     conditions: AppTaskConditionSpec[];
     readiness?: {
-      state:
-        | "ready"
-        | "dependency-blocked"
-        | "condition-blocked"
-        | "capacity-blocked"
-        | "paused"
-        | "not-applicable";
+      state: "ready" | "dependency-blocked" | "condition-blocked" | "capacity-blocked" | "paused" | "not-applicable";
       reason: string;
       relatedTaskIds: string[];
     };
@@ -1602,13 +1645,7 @@ export type AppTaskSnapshotContext = {
     Pick<AppTaskConditionSpec, "id" | "type" | "subject" | "requestedAction" | "owner" | "reviewAfterMs">
   >;
   readiness?: {
-    state:
-      | "ready"
-      | "dependency-blocked"
-      | "condition-blocked"
-      | "capacity-blocked"
-      | "paused"
-      | "not-applicable";
+    state: "ready" | "dependency-blocked" | "condition-blocked" | "capacity-blocked" | "paused" | "not-applicable";
     reason: string;
     relatedTaskIds: string[];
   };
@@ -1830,8 +1867,25 @@ function nextTaskConditionReviewAt(tree: TaskTree, taskId: string): number | nul
   );
 }
 
+function acceptedTaskReviewAt(_tree: TaskTree, resource: AppTaskResource): number | null {
+  if (resource.status.phase !== "waiting") return null;
+  const deadlines = [
+    resource.status.reviewAt,
+    ...Object.values(resource.status.inputWaits ?? {}).map((wait) => wait.reviewAt),
+  ].filter((value): value is number => Number.isSafeInteger(value) && Number(value) > 0);
+  return deadlines.length ? Math.min(...deadlines) : null;
+}
+
+function nextTaskReviewAt(tree: TaskTree, resource: AppTaskResource): number | null {
+  const deadlines = [
+    nextTaskConditionReviewAt(tree, resource.metadata.id),
+    acceptedTaskReviewAt(tree, resource),
+  ].filter((value): value is number => value !== null);
+  return deadlines.length ? Math.min(...deadlines) : null;
+}
+
 function resourceWrite(tree: TaskTree, resource: AppTaskResource, ready = false) {
-  const nextCheckAt = nextTaskConditionReviewAt(tree, resource.metadata.id);
+  const nextCheckAt = nextTaskReviewAt(tree, resource);
   return {
     resource,
     ...(tree.taskTriggers?.[resource.metadata.id] ? { trigger: tree.taskTriggers[resource.metadata.id] } : {}),
@@ -1920,6 +1974,8 @@ function isRunnableOnPassiveResync(tree: TaskTree, resource: AppTaskResource): b
   if (resource.status.phase === "waiting") {
     if (hasSatisfiedTaskCondition(tree, taskId)) return true;
     if (missedTaskConditionCheckpointIds(tree, taskId).length > 0) return true;
+    const reviewAt = acceptedTaskReviewAt(tree, resource);
+    if (reviewAt !== null) return reviewAt <= Date.now();
     return !(resource.status.conditionIds?.length ?? 0);
   }
   if (resource.status.phase === "attention") return needsAgentHandoff(tree, resource);
@@ -2329,8 +2385,21 @@ export function reportAppTaskFailure(
   const { resource, attempt } = match;
   const mutationScope = beginResourceMutationScope(tree, claim, []);
   const now = new Date().toISOString();
-  attempt.acceptedResult = acceptedAttemptResult(tree, claim.taskId, "incomplete", input, defaultTaskAcceptance(claim, input.facts));
-  const admissions = inputOutcomeAdmissions(config, tree, claim, input.acceptedLiveEventIds, "report", input.report === true);
+  attempt.acceptedResult = acceptedAttemptResult(
+    tree,
+    claim.taskId,
+    "incomplete",
+    input,
+    defaultTaskAcceptance(claim, input.facts),
+  );
+  const admissions = inputOutcomeAdmissions(
+    config,
+    tree,
+    claim,
+    input.acceptedLiveEventIds,
+    "report",
+    input.report === true,
+  );
   const failures = (resource.status.executionFailures ?? 0) + 1;
   // Accepted facts are not a final answer to the original assignment.
   // Preserve input, including accepted live feedback and earlier linked waits.
@@ -2348,7 +2417,9 @@ export function reportAppTaskFailure(
     result: input.result ? structuredClone(input.result) : undefined,
     facts: [...input.facts],
   });
-  commitTaskMutation(config, tree, { resourceMutation: { ...finishResourceMutationScope(mutationScope, tree), admissions } });
+  commitTaskMutation(config, tree, {
+    resourceMutation: { ...finishResourceMutationScope(mutationScope, tree), admissions },
+  });
   return { status: "applied", summary };
 }
 
@@ -2658,33 +2729,34 @@ export function claimObservedAppTask(
   const openConditionIds = openTaskConditionIds(tree, input.taskId);
   const hasSatisfiedCondition = hasSatisfiedTaskCondition(tree, input.taskId);
   const missedCheckpointConditionIds = missedTaskConditionCheckpointIds(tree, input.taskId);
+  const reviewAt = acceptedTaskReviewAt(tree, resource);
+  const reviewDue = reviewAt !== null && reviewAt <= Date.now();
   if (
     resource.status.phase === "waiting" &&
     resource.status.observedGeneration >= resource.metadata.generation &&
-    openConditionIds.length > 0 &&
+    (openConditionIds.length > 0 || reviewAt !== null) &&
     !pendingTrigger &&
     !hasSatisfiedCondition &&
-    missedCheckpointConditionIds.length === 0
+    missedCheckpointConditionIds.length === 0 &&
+    !reviewDue
   ) {
-    acknowledgeIndexedRecoveryWait(
-      config,
-      input.taskId,
-      snapshotRevision,
-      nextTaskConditionReviewAt(tree, input.taskId),
-    );
+    acknowledgeIndexedRecoveryWait(config, input.taskId, snapshotRevision, nextTaskReviewAt(tree, resource));
     return { kind: "waiting", taskId: input.taskId, conditionIds: openConditionIds };
   }
 
-  const continuedInputKeys = [...new Set([
-    ...(latestAttempt?.acceptedResult?.continue
-      ? taskInputAdmissionKeys(latestAttempt.events ?? [], latestAttempt.continuedInputKeys) : []),
-    ...continuedTaskInputKeys(tree, input.taskId, claimedEvents, [
-      ...missedCheckpointConditionIds,
-      ...taskConditionEntries(tree, input.taskId)
-        .filter(([, condition]) => isAppTaskCondition(condition) && condition.status.state === "true")
-        .map(([id]) => id),
+  const continuedInputKeys = [
+    ...new Set([
+      ...(latestAttempt?.acceptedResult?.continue
+        ? taskInputAdmissionKeys(latestAttempt.events ?? [], latestAttempt.continuedInputKeys)
+        : []),
+      ...continuedTaskInputKeys(tree, input.taskId, claimedEvents, [
+        ...missedCheckpointConditionIds,
+        ...taskConditionEntries(tree, input.taskId)
+          .filter(([, condition]) => isAppTaskCondition(condition) && condition.status.state === "true")
+          .map(([id]) => id),
+      ]),
     ]),
-  ])];
+  ];
   // Claiming is not acceptance. Retain satisfied waits until settlement so
   // interrupted execution can still find their original inputs and facts.
 
@@ -2712,7 +2784,20 @@ export function claimObservedAppTask(
             synthetic: "controller-review-trigger",
           },
         }
-      : syntheticAttemptTrigger(config, input.taskId, input.reason));
+      : reviewDue
+        ? {
+            ...syntheticAttemptTrigger(config, input.taskId, "review-at-reached"),
+            type: "project.task.review-at.reached",
+            data: {
+              project: projectIdFromAppDir(config.appDir) || "unknown-app",
+              taskId: input.taskId,
+              task_id: input.taskId,
+              reason: "review-at-reached",
+              reviewAt,
+              synthetic: "controller-review-trigger",
+            },
+          }
+        : syntheticAttemptTrigger(config, input.taskId, input.reason));
   const specHash = appTaskSpecHash(intent, agent);
   const attempt: AppTaskAttempt = {
     metadata: { id: attemptId, resourceVersion: 1 },
@@ -2885,7 +2970,9 @@ export function failAppTaskAttempt(
     ...(details.facts ? { facts: [...details.facts] } : {}),
     ...(details.result ? { result: structuredClone(details.result) } : {}),
   });
-  commitTaskMutation(config, tree, { resourceMutation: { ...finishResourceMutationScope(mutationScope, tree), admissions } });
+  commitTaskMutation(config, tree, {
+    resourceMutation: { ...finishResourceMutationScope(mutationScope, tree), admissions },
+  });
   return {
     status: handoff ? "handoff" : "retrying",
     summary,
@@ -3131,7 +3218,10 @@ function requireExpectedGeneration(value: unknown, label: string): void {
   }
 }
 
-function mutableActionResource(tree: TaskTree, action: AppTaskAction): AppTaskResource {
+function mutableActionResource(
+  tree: TaskTree,
+  action: Extract<AppTaskAction, { kind: "unblock-task" }>,
+): AppTaskResource {
   const resource = tree.resources?.[action.taskId];
   if (!resource) throw new Error(`Handler action task not found: ${action.taskId}`);
   if (resource.metadata.generation !== action.expectedGeneration) {
@@ -3150,12 +3240,37 @@ function validateTaskActions(tree: TaskTree, actions: AppTaskAction[], runningTa
   for (const rawAction of actions as unknown[]) {
     if (!isRecord(rawAction)) throw new Error("Handler result contains a non-object action");
     if (rawAction.kind === "update-task")
-      throw new Error(
-        "update-task is retired; use tasks update or TaskAttempt.reviseTask before returning a result",
-      );
-    if (rawAction.kind !== "unblock-task")
+      throw new Error("update-task is retired; use tasks update or TaskAttempt.reviseTask before returning a result");
+    if (rawAction.kind !== "unblock-task" && rawAction.kind !== "retire-condition")
       throw new Error(`Handler result contains an unsupported action kind: ${String(rawAction.kind)}`);
     const action = rawAction as unknown as AppTaskAction;
+    if (action.kind === "retire-condition") {
+      const conditionId = requireNonEmptyString(action.conditionId, "Handler retire-condition identity");
+      const identity = `condition:${conditionId}`;
+      if (identities.has(identity)) throw new Error(`Handler result contains multiple actions for ${identity}`);
+      identities.add(identity);
+      requireExpectedGeneration(action.expectedConditionGeneration, `Handler retire-condition action ${conditionId}`);
+      requireNonEmptyString(action.reason, `Handler retire-condition ${conditionId} reason`);
+      const resource = tree.resources?.[runningTaskId];
+      const condition = tree.conditions?.[conditionId];
+      if (!resource?.status.conditionIds?.includes(conditionId) || !isAppTaskCondition(condition)) {
+        throw new AppTaskActionStaleError({
+          taskId: runningTaskId,
+          expectedGeneration: action.expectedConditionGeneration,
+          currentGeneration: condition?.metadata.generation ?? 0,
+          reason: `Condition ${conditionId} is no longer linked to this Task`,
+        });
+      }
+      if (condition.metadata.generation !== action.expectedConditionGeneration) {
+        throw new AppTaskActionStaleError({
+          taskId: runningTaskId,
+          expectedGeneration: action.expectedConditionGeneration,
+          currentGeneration: condition.metadata.generation,
+          reason: `Condition ${conditionId} generation changed`,
+        });
+      }
+      continue;
+    }
     const identity = requireNonEmptyString(action.taskId, "Handler unblock-task action identity");
     // A self-action is invalid on every attempt, not a concurrent state change.
     // Check it before the phase fence so recovery returns the concrete error.
@@ -3182,7 +3297,20 @@ function validateTaskActions(tree: TaskTree, actions: AppTaskAction[], runningTa
 
 function taskActionContextIds(actions: unknown[]): string[] {
   return actions.flatMap((action) =>
-    isRecord(action) && typeof action.taskId === "string" && action.taskId.trim() ? [action.taskId] : [],
+    isRecord(action) && action.kind === "unblock-task" && typeof action.taskId === "string" && action.taskId.trim()
+      ? [action.taskId]
+      : [],
+  );
+}
+
+function taskActionConditionIds(actions: unknown[]): string[] {
+  return actions.flatMap((action) =>
+    isRecord(action) &&
+    action.kind === "retire-condition" &&
+    typeof action.conditionId === "string" &&
+    action.conditionId.trim()
+      ? [action.conditionId]
+      : [],
   );
 }
 
@@ -3249,12 +3377,16 @@ function applyTaskActions(
   validateTaskActions(tree, actions, claim.taskId);
   const applied: string[] = [];
   for (const action of actions) {
+    if (action.kind === "retire-condition") {
+      unlinkExactTaskCondition(tree, claim.taskId, action.conditionId);
+      applied.push(`retired condition ${action.conditionId} generation ${action.expectedConditionGeneration}`);
+      continue;
+    }
     const resource = mutableActionResource(tree, action);
     assertResourceCreator(resource.metadata.creator, {
       appId: config.resourceStore.appId,
       taskId: claim.taskId,
     });
-    unlinkTaskConditions(tree, action.taskId);
     touchResource(resource, {
       phase: "pending",
       executionFailures: undefined,
@@ -3262,7 +3394,6 @@ function applyTaskActions(
       observedGeneration: Math.max(0, resource.metadata.generation - 1),
       currentAttemptId: undefined,
       summary: action.reason.trim(),
-      conditionIds: [],
     });
     applied.push(`unblocked ${action.taskId}`);
   }
@@ -3321,7 +3452,7 @@ function beginResourceMutationScope(
   track(claim.taskId);
   fence(tree.resources?.[claim.taskId]?.spec.parentId);
   for (const action of actions) {
-    track(action.taskId);
+    if (action.kind === "unblock-task") track(action.taskId);
   }
   return scope;
 }
@@ -3435,6 +3566,7 @@ export function completeAppTask(
   const actions = input.actions ?? [];
   const tree = config.resourceStore.readTaskContext({
     taskIds: [claim.taskId, ...taskActionContextIds(actions)],
+    conditionIds: taskActionConditionIds(actions),
   });
   const match = matchingTaskAttempt(tree, claim);
   if (!match) {
@@ -3472,11 +3604,9 @@ export function completeAppTask(
   consumeAcceptedLiveTaskEvents(tree, claim.taskId, claim.agent, input.acceptedLiveEventIds);
   unlinkSatisfiedTaskConditions(tree, claim.taskId);
   finishAttempt(tree, resource, "completed", input.summary, now);
-  const reconcileActionTaskIds = actions.map((action) => action.taskId);
+  const reconcileActionTaskIds = actions.flatMap((action) => (action.kind === "unblock-task" ? [action.taskId] : []));
   const pendingSelfTrigger = Boolean(tree.taskTriggers?.[claim.taskId]?.event);
-  const satisfiedTaskIds = [
-    ...(!pendingSelfTrigger ? [claim.taskId] : []),
-  ];
+  const satisfiedTaskIds = [...(!pendingSelfTrigger ? [claim.taskId] : [])];
   const dependentTaskIds = [
     ...new Set([
       ...reconcileActionTaskIds,
@@ -3489,8 +3619,20 @@ export function completeAppTask(
   for (const dependentTaskId of dependentTaskIds) {
     trackResourceMutationTask(mutationScope, tree, dependentTaskId);
   }
+  // Completion consumes this Task attempt's own recovery checkpoint. Only an
+  // unresolved caller input keeps its independently correlated deadline.
+  const remainingReviewAt = Object.values(resource.status.inputWaits ?? {})
+    .flatMap((wait) =>
+      Number.isSafeInteger(wait.reviewAt) && Number(wait.reviewAt) > 0 ? [Number(wait.reviewAt)] : [],
+    )
+    .sort((left, right) => left - right)[0];
   touchResource(resource, {
-    phase: pendingSelfTrigger ? "pending" : resource.status.conditionIds?.length ? "waiting" : "converged",
+    phase: pendingSelfTrigger
+      ? "pending"
+      : resource.status.conditionIds?.length || remainingReviewAt !== undefined
+        ? "waiting"
+        : "converged",
+    reviewAt: remainingReviewAt,
     observedGeneration: claim.generation,
     observedAttemptId: claim.attemptId,
     currentAttemptId: undefined,
@@ -3519,6 +3661,7 @@ export function deferAppTask(
     summary: string;
     response?: string;
     result?: Record<string, unknown>;
+    reviewAt?: number;
     facts?: string[];
     actions?: AppTaskAction[];
     conditions?: AppTaskConditionSpec[];
@@ -3532,9 +3675,12 @@ export function deferAppTask(
   const actions = input.actions ?? [];
   const tree = config.resourceStore.readTaskContext({
     taskIds: [claim.taskId, ...taskActionContextIds(actions)],
-    conditionIds: (input.conditions as unknown[] | undefined)?.flatMap((condition) =>
-      isRecord(condition) && typeof condition.id === "string" && condition.id.trim() ? [condition.id] : [],
-    ),
+    conditionIds: [
+      ...taskActionConditionIds(actions),
+      ...((input.conditions as unknown[] | undefined)?.flatMap((condition) =>
+        isRecord(condition) && typeof condition.id === "string" && condition.id.trim() ? [condition.id] : [],
+      ) ?? []),
+    ],
   });
   const match = matchingTaskAttempt(tree, claim);
   if (!match) {
@@ -3550,50 +3696,83 @@ export function deferAppTask(
       reason: "newer Task facts are pending",
     });
   }
+  const inputKeys = consideredInputKeys(config, tree, claim, input.acceptedLiveEventIds);
+  const retainedReviewAt = [
+    resource.status.reviewAt,
+    ...inputKeys.map((key) => resource.status.inputWaits?.[key]?.reviewAt),
+  ]
+    .filter((value): value is number => Number.isSafeInteger(value) && Number(value) > Date.now())
+    .sort((left, right) => left - right)[0];
+  const reviewAt = input.reviewAt ?? retainedReviewAt;
+  if (reviewAt !== undefined && (!Number.isSafeInteger(reviewAt) || reviewAt <= 0)) {
+    throw new Error(`Waiting result for ${claim.taskId} reviewAt must be a positive Unix timestamp in milliseconds`);
+  }
   const acceptedResult = acceptedAttemptResult(
     tree,
     claim.taskId,
     "waiting",
-    input,
+    { ...input, reviewAt },
     defaultTaskAcceptance(claim, input.facts ?? []),
   );
-  const inputKeys = consideredInputKeys(config, tree, claim, input.acceptedLiveEventIds);
-  const admissions = input.report ? inputOutcomeAdmissions(config, tree, claim, input.acceptedLiveEventIds, "report", true) : [];
+  const admissions = input.report
+    ? inputOutcomeAdmissions(config, tree, claim, input.acceptedLiveEventIds, "report", true)
+    : [];
   if (input.report) acceptedResult.report = true;
   if (input.continue) acceptedResult.continue = true;
   consumeAcceptedLiveTaskEvents(tree, claim.taskId, claim.agent, input.acceptedLiveEventIds);
   // A review checkpoint is recovery insurance for an event-driven wait. It
   // never makes the awaited fact true, so preserve the owner's Conditions.
   // Retained and redeclared waits must renew due checkpoints the same way.
-  const conditions = input.conditions ?? taskConditionIds(tree, claim.taskId).flatMap((id) => {
-    const condition = tree.conditions?.[id];
-    return condition && condition.status.state !== "true" ? [{ id, ...condition.spec }] : [];
-  });
+  let conditions = input.conditions ?? [];
   const pendingTriggerRecord = tree.taskTriggers?.[claim.taskId];
   const pendingEvents = pendingTriggerRecord ? taskTriggerEvents(pendingTriggerRecord) : [];
   validateActionFacts(claim.taskId, input.facts, actions.length);
   const mutationScope = beginResourceMutationScope(tree, claim, actions);
   const actionsApplied = applyTaskActions(tree, claim, actions, config);
-  validateConditions(conditions, {
-    required: input.disposition === "waiting",
-    taskId: claim.taskId,
-  });
+  validateConditions(conditions, { required: false, taskId: claim.taskId });
+  const retiredConditionIds = new Set(
+    actions.flatMap((action) => (action.kind === "retire-condition" ? [action.conditionId] : [])),
+  );
+  const redeclaredRetirement = input.conditions?.find((condition) => retiredConditionIds.has(condition.id));
+  if (redeclaredRetirement) {
+    throw new Error(`Task result cannot retire and redeclare Condition ${redeclaredRetirement.id}`);
+  }
+  conditions = conditions.filter((condition) => !retiredConditionIds.has(condition.id));
   const now = new Date().toISOString();
-  unlinkSatisfiedTaskConditions(tree, claim.taskId);
   match.attempt.acceptedResult = acceptedResult;
   finishAttempt(tree, resource, "completed", input.summary, now);
-  if (conditions.length) {
-    materializeWaitingConditions(tree, claim.taskId, conditions, now);
-  } else {
-    unlinkTaskConditions(tree, claim.taskId);
+  // Apply authored declarations first so a changed specification advances the
+  // existing identity before satisfied links are pruned. Every accepted review
+  // renews retained due checkpoints, regardless of whether its authored delta
+  // is omitted, empty, or adds a peer; legacy rows are retained without being
+  // revalidated or rewritten when they have no valid checkpoint metadata.
+  if (conditions.length) materializeWaitingConditions(tree, claim.taskId, conditions, now);
+  renewDueTaskConditionCheckpoints(tree, claim.taskId, now);
+  unlinkSatisfiedTaskConditions(tree, claim.taskId);
+  const openConditions = taskConditionIds(tree, claim.taskId).flatMap((id) => {
+    const condition = tree.conditions?.[id];
+    return condition && condition.status.state !== "true" ? [{ id, ...condition.spec }] : [];
+  });
+  if (input.disposition === "waiting" && reviewAt === undefined && openConditions.length === 0) {
+    throw new Error(`Waiting result for ${claim.taskId} requires at least one exact Condition`);
   }
-  if (inputKeys.length) {
-    const wait = {
+  for (const key of inputKeys) {
+    const previous = resource.status.inputWaits?.[key]?.conditions ?? [];
+    // Correlation is input-local: retain that input's exact existing waits and
+    // add only Conditions authored while handling it. Omission must not attach
+    // every unrelated Task obligation to a newly admitted input.
+    const relevantIds = [
+      ...new Set([...previous.map(({ id }) => id), ...(input.conditions ?? []).map(({ id }) => id)]),
+    ];
+    retainTaskInputWait(config, resource, [key], {
       taskGeneration: claim.generation,
-      conditions: (input.conditions?.map(({ id }) => id) ?? resource.status.conditionIds ?? [])
-        .flatMap((id) => tree.conditions?.[id] ? [{ id, generation: tree.conditions[id].metadata.generation }] : []),
-    };
-    retainTaskInputWait(config, resource, inputKeys, wait);
+      conditions: relevantIds.flatMap((id) =>
+        tree.conditions?.[id] && resource.status.conditionIds?.includes(id)
+          ? [{ id, generation: tree.conditions[id].metadata.generation }]
+          : [],
+      ),
+      ...(reviewAt !== undefined ? { reviewAt } : {}),
+    });
   }
   touchResource(resource, {
     phase: input.continue ? "pending" : input.disposition,
@@ -3603,8 +3782,8 @@ export function deferAppTask(
     summary: input.summary,
     response: input.response,
     result: input.result ? structuredClone(input.result) : undefined,
+    reviewAt,
     facts: [...(input.facts ?? [])],
-    ...(!conditions.length ? { conditionIds: [] } : {}),
   });
 
   // New input remains pending until accepted, whether or not it satisfies a
@@ -3616,9 +3795,12 @@ export function deferAppTask(
   }
   const resourceMutation = finishResourceMutationScope(mutationScope, tree);
   commitTaskMutation(config, tree, { resourceMutation: { ...resourceMutation, admissions } });
-  const reconcileTaskIds = [...new Set([
-    ...actions.map((action) => action.taskId), ...(input.continue ? [claim.taskId] : []),
-  ])];
+  const reconcileTaskIds = [
+    ...new Set([
+      ...actions.flatMap((action) => (action.kind === "unblock-task" ? [action.taskId] : [])),
+      ...(input.continue ? [claim.taskId] : []),
+    ]),
+  ];
   return { status: "applied", actionsApplied, reconcileTaskIds };
 }
 

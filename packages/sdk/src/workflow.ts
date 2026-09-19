@@ -251,13 +251,7 @@ export type TaskReconciliationChild = {
   dependsOn?: string[];
   conditions: Condition[];
   readiness?: {
-    state:
-      | "ready"
-      | "dependency-blocked"
-      | "condition-blocked"
-      | "capacity-blocked"
-      | "paused"
-      | "not-applicable";
+    state: "ready" | "dependency-blocked" | "condition-blocked" | "capacity-blocked" | "paused" | "not-applicable";
     reason: string;
     relatedTaskIds: string[];
   };
@@ -356,6 +350,7 @@ export type TaskAttempt = {
     /** Exact admitted report, when one exists. An execution error need not have one. */
     acceptedResult?: {
       state: "converged" | "waiting" | "incomplete";
+      reviewAt?: number;
       summary: string;
       response?: string;
       result?: Record<string, unknown>;
@@ -385,8 +380,11 @@ export type TaskAttempt = {
   };
   /** Exact accepted waits for inputs still awaiting feedback; other inputs may be answered. */
   waits: {
+    /** Task-level reconsideration deadline. Reaching it is a wake, not proof of any external fact. */
+    reviewAt?: number;
     open: Array<{
       conditionId: string;
+      conditionGeneration: number;
       type: string;
       subject: string;
       state: string;

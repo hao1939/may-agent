@@ -1,12 +1,6 @@
 import { Type } from "typebox";
 import { Check, Errors } from "typebox/value";
-import type {
-  Condition,
-  TaskAction,
-  TaskAppDependency,
-  TaskReconcileResult,
-  TaskVerificationResult,
-} from "./task.js";
+import type { Condition, TaskAction, TaskAppDependency, TaskReconcileResult, TaskVerificationResult } from "./task.js";
 
 export const MIN_CONDITION_REVIEW_AFTER_MS = 60_000;
 export const MAX_TASK_RESULT_BYTES = 16 * 1024;
@@ -30,15 +24,26 @@ const objectSchema = Type.Unsafe<Record<string, unknown>>({
   additionalProperties: true,
 });
 
-export const taskActionSchema = Type.Object(
-  {
-    kind: Type.Literal("unblock-task"),
-    taskId: nonEmptyStringSchema,
-    expectedGeneration: Type.Integer({ minimum: 1 }),
-    reason: nonEmptyStringSchema,
-  },
-  { additionalProperties: false },
-);
+export const taskActionSchema = Type.Union([
+  Type.Object(
+    {
+      kind: Type.Literal("unblock-task"),
+      taskId: nonEmptyStringSchema,
+      expectedGeneration: Type.Integer({ minimum: 1 }),
+      reason: nonEmptyStringSchema,
+    },
+    { additionalProperties: false },
+  ),
+  Type.Object(
+    {
+      kind: Type.Literal("retire-condition"),
+      conditionId: nonEmptyStringSchema,
+      expectedConditionGeneration: Type.Integer({ minimum: 1 }),
+      reason: nonEmptyStringSchema,
+    },
+    { additionalProperties: false },
+  ),
+]);
 
 export const conditionSchema = Type.Object(
   {
@@ -61,6 +66,8 @@ const resultFields = {
   summary: nonEmptyStringSchema,
   response: Type.Optional(nonEmptyStringSchema),
   result: Type.Optional(objectSchema),
+  reviewAt: Type.Optional(Type.Integer({ minimum: 1 })),
+
   facts: Type.Array(nonEmptyStringSchema, { maxItems: 32 }),
   actions: Type.Optional(Type.Array(taskActionSchema, { maxItems: 16 })),
   conditions: Type.Optional(Type.Array(conditionSchema, { maxItems: 16 })),
@@ -82,14 +89,18 @@ const resultFields = {
 
 /** Model-output schema for a resolved agent. */
 export const taskAgentResultSchema = Type.Union([
+  Type.Object({ state: Type.Literal("converged"), ...resultFields }, { additionalProperties: false }),
   Type.Object(
-    { state: Type.Literal("converged"), ...resultFields },
-    { additionalProperties: false },
-  ),
-  Type.Object(
-    { state: Type.Literal("waiting"), ...resultFields, continue: Type.Optional(Type.Literal(true, {
-      description: "After submitting dependencies, queue another bounded pass for useful independent work. Keeps the input unanswered. Omit to sleep until feedback or review.",
-    })) },
+    {
+      state: Type.Literal("waiting"),
+      ...resultFields,
+      continue: Type.Optional(
+        Type.Literal(true, {
+          description:
+            "After submitting dependencies, queue another bounded pass for useful independent work. Keeps the input unanswered. Omit to sleep until feedback or review.",
+        }),
+      ),
+    },
     { additionalProperties: false },
   ),
   Type.Object(
@@ -187,8 +198,23 @@ function normalizeAction(value: unknown, index: number): TaskAction | string {
       if (!reason) return `actions[${index}].reason must be a non-empty string`;
       return { kind: "unblock-task", taskId, expectedGeneration: value.expectedGeneration, reason };
     }
+    case "retire-condition": {
+      const conditionId = normalizedString(value.conditionId);
+      if (!conditionId) return `actions[${index}].conditionId must be a non-empty string`;
+      if (!validGeneration(value.expectedConditionGeneration)) {
+        return `actions[${index}].expectedConditionGeneration must be a positive integer`;
+      }
+      const reason = normalizedString(value.reason);
+      if (!reason) return `actions[${index}].reason must be a non-empty string`;
+      return {
+        kind: "retire-condition",
+        conditionId,
+        expectedConditionGeneration: value.expectedConditionGeneration,
+        reason,
+      };
+    }
     default:
-      return `actions[${index}].kind must be unblock-task; revise requirements through tasks update and delegate new work through dependencies`;
+      return `actions[${index}].kind must be unblock-task or retire-condition; revise requirements through tasks update and delegate new work through dependencies`;
   }
 }
 
@@ -312,6 +338,13 @@ export function admitTaskReconcileResult(
   if (output.state === "waiting" && response.value) {
     return { ok: false, error: "waiting cannot include response; put operational progress in summary" };
   }
+  const reviewAt = admittedOutput.reviewAt;
+  if (reviewAt !== undefined && (!Number.isSafeInteger(reviewAt) || Number(reviewAt) <= 0)) {
+    return { ok: false, error: "reviewAt must be a positive integer Unix timestamp in milliseconds" };
+  }
+  if (output.state !== "waiting" && reviewAt !== undefined) {
+    return { ok: false, error: "reviewAt is valid only for waiting" };
+  }
 
   const rawActions = admittedOutput.actions ?? [];
   if (!Array.isArray(rawActions)) return { ok: false, error: "actions must be an array" };
@@ -385,21 +418,32 @@ export function admitTaskReconcileResult(
   };
   if (output.state === "waiting") {
     const waiting = {
-      ...report, state: "waiting" as const, actions,
+      ...report,
+      state: "waiting" as const,
+      actions,
+      ...(reviewAt !== undefined ? { reviewAt: Number(reviewAt) } : {}),
       ...(admittedOutput.continue === true ? { continue: true as const } : {}),
       ...(conditions.length ? { conditions } : {}),
       ...(dependencies.length ? { dependencies } : {}),
     };
-    return { ok: true, result: admittedOutput.report === true
-      ? { ...waiting, report: true, facts: facts as [string, ...string[]] }
-      : waiting };
+    return {
+      ok: true,
+      result:
+        admittedOutput.report === true ? { ...waiting, report: true, facts: facts as [string, ...string[]] } : waiting,
+    };
   }
   const answer = { ...report, ...(response.value ? { response: response.value } : {}) };
   if (output.state === "incomplete") {
     // The incomplete branch above has already checked that facts are non-empty.
-    return { ok: true, result: { ...answer, state: "incomplete", facts: facts as [string, ...string[]],
-      ...(output.report === true ? { report: true } : {}),
-    } };
+    return {
+      ok: true,
+      result: {
+        ...answer,
+        state: "incomplete",
+        facts: facts as [string, ...string[]],
+        ...(output.report === true ? { report: true } : {}),
+      },
+    };
   }
   return { ok: true, result: { ...answer, state: "converged", actions } };
 }

@@ -7,10 +7,10 @@ import { normalizeTaskHandlerResult } from "./result.js";
 
 // Pure projection and protocol rules need neither a repository nor a database.
 describe("App Task agent prompt context", () => {
-  it("keeps the schema-enforced bounded-agent protocol below four kilobytes", () => {
+  it("keeps the schema-enforced bounded-agent protocol below five kilobytes", () => {
     const protocol = appTaskAgentProtocol("may");
 
-    expect(Buffer.byteLength(protocol, "utf8")).toBeLessThanOrEqual(4 * 1_024);
+    expect(Buffer.byteLength(protocol, "utf8")).toBeLessThanOrEqual(5 * 1_024);
     expect(protocol).toContain("agent pursuing one Task goal owned by App may");
     expect(protocol).not.toContain("accountable owner");
     expect(protocol).toContain("Finish exactly once with finish().result");
@@ -19,6 +19,9 @@ describe("App Task agent prompt context", () => {
     expect(protocol).toContain("report:true");
     expect(protocol).toContain("omit for quiet waits");
     expect(protocol).toContain("Execution errors are facts, not accepted results");
+    expect(protocol).toContain("waiting may set reviewAt");
+    expect(protocol).toContain("actions may retire-condition");
+    expect(protocol).toContain("does not satisfy the Condition");
   });
 
   it("lets an App reject Conditions it cannot meaningfully observe", () => {

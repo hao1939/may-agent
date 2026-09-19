@@ -336,10 +336,11 @@ export async function finalizeAppTaskWorkspace(
     const dirty = (await git(metadata.path, ["status", "--porcelain=v1", "--untracked-files=all"])).stdout;
     if (dirty) {
       metadata.disposition = "retained-for-recovery";
+      const status = dirty.split("\n").slice(0, 20).join("\n").slice(0, 2_048);
       return {
         ok: outcome === "failed",
         metadata,
-        reason: `Task worktree is dirty and was retained for recovery: ${metadata.path}`,
+        reason: `Task worktree is dirty and was retained for recovery: ${metadata.path}\nBounded git status:\n${status}`,
       };
     }
     if (outcome === "failed") {
