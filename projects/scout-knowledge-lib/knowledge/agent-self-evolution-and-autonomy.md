@@ -2,7 +2,7 @@
 summary: "Agent self-evolution is not one mechanism. The credible core is a governed release loop over explicit mutable surfaces: skills, memory, routing, harness code, weights, world models, or evaluators. Current evidence is strongest when an external fixed evaluator controls admission, and much weaker for self-generated or co-evolving judges and broad-goal autonomy."
 triggers: ["agent self-evolution", "self-improving agents", "recursive self-improvement", "agent autonomy", "skill evolution", "harness evolution", "world models", "co-evolving evaluators"]
 last_updated: "2026-09-19"
-source_basis: "A source-agnostic 984-row lead ledger: 908 observed cards from the human's Xiaohongshu collection, including a bounded authenticated frontier of 11 readable text bodies and one image-only cover; 69 primary paper, repository, benchmark, survey, blog, and interview records; and 8 existing Scout artifacts, plus 2026-09-10 direct XHS inspection of HarnessEvolve reception, an HN-surfaced primary-paper inspection of Procedural Graphs (arXiv 2609.09153), 2026-09-11 inspection of HN-surfaced Salesforce Beagle at commit 15f12b7, 2026-09-11 full-paper inspection of Ecdysis (arXiv 2609.11677v1), 2026-09-12 direct XHS inspection of the Seed/TokenWave Self-Developing Agents announcement, 2026-09-13 direct XHS inspection of Procedural Graphs reception, 2026-09-14 direct XHS inspection of a six-survey self-evolution reading map and its practitioner discussion, 2026-09-15 inspection of the HN-surfaced rekursiv.ai auto-autoresearch report plus its runnable NanoChat recipe at Priml commit 92c6bd2, 2026-09-16 inspection of EvoOntology's ontology-evolution lifecycle and admission boundary at commit ace8ff69, and 2026-09-19 abstract-level inspection of SoL-Pi (arXiv 2609.20519v1). Claims are traced to full primary sources and pinned code where available; titles remain discovery metadata, never technical evidence."
+source_basis: "A source-agnostic 984-row lead ledger: 908 observed cards from the human's Xiaohongshu collection, including a bounded authenticated frontier of 11 readable text bodies and one image-only cover; 69 primary paper, repository, benchmark, survey, blog, and interview records; and 8 existing Scout artifacts, plus 2026-09-10 direct XHS inspection of HarnessEvolve reception, an HN-surfaced primary-paper inspection of Procedural Graphs (arXiv 2609.09153), 2026-09-11 inspection of HN-surfaced Salesforce Beagle at commit 15f12b7, 2026-09-11 full-paper inspection of Ecdysis (arXiv 2609.11677v1), 2026-09-12 direct XHS inspection of the Seed/TokenWave Self-Developing Agents announcement, 2026-09-13 direct XHS inspection of Procedural Graphs reception, 2026-09-14 direct XHS inspection of a six-survey self-evolution reading map and its practitioner discussion, 2026-09-15 inspection of the HN-surfaced rekursiv.ai auto-autoresearch report plus its runnable NanoChat recipe at Priml commit 92c6bd2, 2026-09-16 inspection of EvoOntology's ontology-evolution lifecycle and admission boundary at commit ace8ff69, 2026-09-19 abstract-level inspection of SoL-Pi (arXiv 2609.20519v1), and 2026-09-19 inspection of SourceShift/mini-ork's path-specific self-modification controls at commit 962bf478. Claims are traced to full primary sources and pinned code where available; titles remain discovery metadata, never technical evidence."
 </ai_context>
 
 # Agent Self-Evolution and Autonomy: What Actually Changes?
@@ -84,6 +84,47 @@ general agent can safely rewrite itself.
 | Environment/curriculum evolution | `E` | policy weaknesses | original fixed benchmark remains better | curriculum becomes easier |
 | Evaluator evolution | `J` | meta-judgment or downstream reward | independent anchor catches judge drift | policy–judge collusion |
 | Meta-procedure evolution | proposer/search code in `W` | future candidate quality | transfer of improvement ability | fixed benchmark mistaken for open-endedness |
+
+## Implementation signal: autonomy is a property of a mutation path, not a repository
+
+**Observed 2026-09-19. Repo:** [SourceShift/mini-ork](https://github.com/SourceShift/mini-ork) at commit [`962bf47874b84ca0a393851d59896cdbb71a6eaa`](https://github.com/SourceShift/mini-ork/tree/962bf47874b84ca0a393851d59896cdbb71a6eaa).
+
+mini-ork contains at least two materially different self-change paths. Its
+[`self_improve.py`](https://github.com/SourceShift/mini-ork/blob/962bf47874b84ca0a393851d59896cdbb71a6eaa/mini_ork/cli/self_improve.py)
+outer loop creates a fresh branch and worktree for each patch, requires three
+deterministic verifier results plus an explicit approving model-critic verdict,
+commits only after those gates pass, and merges into the current branch only
+when `--auto-merge` is supplied. The default therefore creates a reviewable
+branch without activating it on the parent branch.
+
+The separate [`apply.py`](https://github.com/SourceShift/mini-ork/blob/962bf47874b84ca0a393851d59896cdbb71a6eaa/mini_ork/cli/apply.py)
+path mutates recipe prompt files. File writes are master-gated off by default,
+but once enabled there is deliberately no human approval branch: a real
+held-out probe must strictly improve the measured candidate, previously passing
+per-task probes may not regress, fabricated scorers cannot authorize promotion,
+and an unmeasured or dead two-arm probe is quarantined. A promoted mutation is
+then written directly, with prior bytes retained for rollback. The repository's
+[`SAFETY.md`](https://github.com/SourceShift/mini-ork/blob/962bf47874b84ca0a393851d59896cdbb71a6eaa/docs/SAFETY.md)
+is unusually explicit that its seven-rung ladder describes intent rather than a
+runtime dispatcher, that the advertised declarative `config/safety.yaml` root
+of trust does not exist, and that the effective backstop for this unattended
+path is the measurement gate plus version control.
+
+This is useful evidence for a sharper audit rule: **never label a system
+“human-gated,” “autonomous,” or “rollback-safe” at repository level.** Inventory
+each mutation path as `(target, enable switch, evaluator, activation action,
+recovery action)`. Here, harness-code evolution and prompt evolution share a
+project but not the same activation boundary. The former defaults to branch
+quarantine; the latter defaults disabled, then becomes measurement-authorized
+and immediately effectful when enabled. A policy diagram that merges those
+paths would overstate human review on one side or understate isolation on the
+other.
+
+Limits: this inspection established control flow and documentation at one pinned
+commit; it did not run the probe suite, exercise rollback, or independently test
+that all mutation entry points pass through these gates. The model-based patch
+critic is also not an independent deterministic evaluator, even though its
+missing or non-approving verdict fails closed.
 
 ## Six comparisons that matter in practice
 
