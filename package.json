@@ -37,6 +37,7 @@
     "logs": "docker compose -f ./container/compose.yml logs -f",
     "restart": "supervisorctl start may-agent-restarter",
     "maintain:db": "bun src/app/may.ts --maintenance-once",
+    "operate:recover-malformed-conversation-input": "bun scripts/operations/recover-malformed-conversation-input.ts",
     "restart:host": "docker exec may-agent supervisorctl start may-agent-restarter",
     "lint": "eslint src/ packages/ scripts/ test/",
     "lint:fix": "eslint src/ packages/ scripts/ test/ --fix",
