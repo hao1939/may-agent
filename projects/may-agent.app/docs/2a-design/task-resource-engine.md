@@ -170,13 +170,15 @@ invalid.
 There is no manager-transfer lifecycle or ownership encoded in ID prefixes.
 Creator identity is immutable metadata `{appId, taskId?}`: App-created work has
 an App-only creator, while delegated work names its exact creator Task. Creation
-supports both legitimate owner kinds. Task-bound revision is implemented through
-a fenced attempt capability; App-only revision still requires an exposed trusted
-owning-App route that reuses the installed App's input/intent mapping. That route
-must reread the exact creator and current generation and map the complete input
-before commit. A worker cannot gain authority by omitting `taskId`, naming an
-owner, targeting itself, or acting across Apps. Parent links, references and
-executor names confer no authority.
+supports both legitimate owner kinds. Task-bound revision uses its existing
+fenced attempt capability. An App-only revision is an optional
+`expectedGeneration` on the installed App task mapper's desired attachment: the
+mapper deliberately selects the existing Task ID from typed App input, while the
+Host derives App-only authority from the saved non-delegated inbox row. The
+common admission transaction rereads exact creator `{appId}` and current
+generation before applying the mapped intent. A worker cannot gain authority by
+omitting `taskId`, naming an owner, targeting itself, or acting across Apps.
+Parent links, references and executor names confer no authority.
 
 App policy maps the complete revised input; the generic engine preserves the
 stable Task identity, parent, accepted results and unrelated obligations while
@@ -185,13 +187,16 @@ creator, self-revision and concurrent-change controls reject the whole update.
 There is no generic write API, manager-transfer lifecycle, or ownership encoded
 in ID prefixes.
 
-**Current boundary:** task-bound `tasks update` implements the first route with
-exact negative controls. Low-level desired-input admission can preserve an
-App-only creator, but ordinary targeted input is intentionally attach-only and
-May's current goal mapper does not address an existing legacy Task identity.
-Until the trusted owning-App route is exposed and covered end to end, those
-legacy revisions remain an explicit authority gap; implementations must not
-weaken creator equality or let a worker impersonate the App to close it.
+**Candidate boundary:** task-bound `tasks update` is unchanged. Ordinary
+`targetTaskId` input remains attach-only and bypasses mapping, so it cannot
+revise scope. A typed App policy may instead return desired intent for an exact
+existing ID with the caller-observed `expectedGeneration`. Only a saved
+non-delegated inbox input receives App-only revision authority; task-bound,
+foreign, missing, closed, and stale targets terminate with readable correction
+feedback rather than an unbounded recovery retry. Exact accepted admission
+replay remains idempotent, but the same identity cannot authorize changed
+requirements. This paired Host/App behavior remains a source candidate until
+reviewed, integrated, deployed, and observed separately.
 
 ## Controller
 

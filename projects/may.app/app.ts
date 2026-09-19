@@ -33,6 +33,15 @@ const mayInputSchema = Type.Union([
             minItems: 1,
             maxItems: 32,
           }),
+          revision: Type.Optional(
+            Type.Object(
+              {
+                taskId: Type.String({ minLength: 1 }),
+                expectedGeneration: Type.Integer({ minimum: 1 }),
+              },
+              { additionalProperties: false },
+            ),
+          ),
           assignment: Type.Optional(teamAssignmentSchema),
         },
         { additionalProperties: true },
@@ -148,11 +157,29 @@ export function taskForMayInput(
   if (mode === "standing") {
     requireStandingResearchContract(data, outcome, acceptance);
   }
-  return {
-    kind: "desired",
+  const hasRevision = Object.prototype.hasOwnProperty.call(data, "revision");
+  const revision = record(data.revision);
+  const revisionTaskId = optionalText(revision.taskId);
+  const expectedGeneration = revision.expectedGeneration;
+  const revisesExisting =
+    hasRevision &&
+    revisionTaskId.length > 0 &&
+    Number.isSafeInteger(expectedGeneration) &&
+    Number(expectedGeneration) > 0;
+  if (hasRevision && !revisesExisting) {
+    throw new Error(
+      "May goal revision requires an exact taskId and positive expectedGeneration",
+    );
+  }
+  const attachment = {
+    kind: "desired" as const,
+    ...(revisesExisting
+      ? { expectedGeneration: Number(expectedGeneration) }
+      : {}),
     intent: {
-      id:
-        mode === "standing"
+      id: revisesExisting
+        ? revisionTaskId
+        : mode === "standing"
           ? STANDING_RESEARCH_TASK_ID
           : `goal/${admitted.id.replace(/[^a-zA-Z0-9._-]+/g, "-")}`,
       parentId: "may",
@@ -177,6 +204,7 @@ export function taskForMayInput(
       priority: "P1",
     },
   };
+  return attachment;
 }
 
 function record(value: unknown): Record<string, unknown> {

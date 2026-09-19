@@ -71,6 +71,69 @@ describe("canonical May conversation App", () => {
     });
   });
 
+  test("deliberately maps a generation-fenced revision to one exact existing goal", () => {
+    const revised = taskForMayInput({
+      id: "revision-request",
+      source: { kind: "system", id: "supervisor" },
+      input: {
+        kind: "goal",
+        data: {
+          outcome: "Use the corrected requirements",
+          acceptance: ["Preserve accepted evidence and verify the correction"],
+          revision: {
+            taskId: "goal/existing",
+            expectedGeneration: 7,
+          },
+        },
+      },
+    });
+    expect(
+      Check(app.inputSchema, {
+        kind: "goal",
+        data: {
+          outcome: "Use the corrected requirements",
+          acceptance: ["Verify"],
+          revision: { taskId: "goal/existing", expectedGeneration: 7 },
+        },
+      }),
+    ).toBe(true);
+    expect(revised).toMatchObject({
+      kind: "desired",
+      expectedGeneration: 7,
+      intent: {
+        id: "goal/existing",
+        parentId: "may",
+        outcome: "Use the corrected requirements",
+      },
+    });
+    for (const revision of [null, "goal/existing", {}, { taskId: "goal/existing" }]) {
+      expect(
+        Check(app.inputSchema, {
+          kind: "goal",
+          data: {
+            outcome: "Do not guess revision authority",
+            acceptance: ["Reject incomplete revision selection"],
+            revision,
+          },
+        }),
+      ).toBe(false);
+      expect(() =>
+        taskForMayInput({
+          id: "incomplete-revision",
+          source: { kind: "system", id: "supervisor" },
+          input: {
+            kind: "goal",
+            data: {
+              outcome: "Do not guess revision authority",
+              acceptance: ["Reject incomplete revision selection"],
+              revision,
+            },
+          },
+        }),
+      ).toThrow("exact taskId and positive expectedGeneration");
+    }
+  });
+
   test("selects installed team roles without changing default May routing", () => {
     const bobProfile = JSON.parse(
       readFileSync(new URL("./agents/bob/agent.json", import.meta.url), "utf8"),
