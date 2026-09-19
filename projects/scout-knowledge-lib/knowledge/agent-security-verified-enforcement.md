@@ -1,8 +1,8 @@
 <ai_context>
-summary: "Companion note to agent-security-defense-architectures.md: verified/formal enforcement patterns for AI agent security. These share a common principle — safety enforcement that does not depend on model cooperation. Covers out-of-band deterministic enforcement, institutional attestation, policy autoformalization, trust-by-construction, multi-layer verification oracles, per-datum trust scoring, runtime trace enforcement, knowledge-boundary defense, physical-world attestation, context-to-execution integrity (CXI), off-host identity-bound authorization (aiAuthZ), hardware-confined signing with pre-committed effect authority, adversarial MCP-server verification with replayability limits, mediated-action receipts that separate integrity, signer attribution, completeness, and per-request authentication strength, fail-closed shell/file hooks whose policy coverage is regression-tested against bypasses, model-relative SMT containment for agent-authored permission changes, path-composition evidence for layered controls, explicit egress assurance states, MCP tool pins whose identity semantics and missing-observation behavior are part of the enforcement claim, and rollout evidence that keeps shadow verdicts distinct from effect-owning enforcement."
-triggers: ["verified enforcement", "out-of-band defense", "Progent", "CaMeL", "FIDES", "institutional attestation", "Cedar policy", "autoformalization", "Kiko protocol", "trust-by-construction", "VIGIL trace enforcement", "knowledge-based PR", "KPR", "hardware-gated agent", "deceptive fixes", "TerraProbe", "Robust-TO", "per-datum trust", "CXI", "context-to-execution integrity", "aiAuthZ", "identity-bound authorization", "hardware keystore", "PKCS#11", "signing authority", "payload commitment", "SkillProof", "MCP server verification", "replayable evidence", "action receipt", "signed receipt", "evidence completeness", "Pipelock", "PassControl", "sender proof", "bearer visa", "authentication assurance", "default deny", "fail closed", "shell hook", "protected path", "guardrail regression test", "OpenShell prover", "maximum policy", "SMT containment", "Z3 counterexample", "credentialed L4", "Kubernetes RBAC", "defense in depth", "path composition", "secure-agent", "egress firewall", "uninspected egress", "coverage posture", "tool identity", "tool pin", "schema canonicalization", "Rul1an/assay", "Soup Wall", "shadow mode", "enforcement posture", "mediation ownership"]
-last_updated: "2026-09-18"
-source_basis: "Extracted from agent-security-defense-architectures.md §2.33–§2.42. §2.44–§2.45 (CXI, aiAuthZ) moved from defense-architectures.md §Execution Boundary Patterns (scan #453). Patterns sourced from arXiv June–August 2026 papers, including 2606.26479 Progent, 2606.26298 Institutional Attestation, 2606.26649 Cedar Pipeline, 2606.26590 TerraProbe, 2606.26156 Kiko, 2606.26904 Robust-TO, 2606.26524 VIGIL, 2606.26721 KPR, 2606.27231 Quantum Hardware Agent, 2607.06000 CXI, 2607.05518 aiAuthZ, and 2608.06130 hardware-confined signing; HN item 49649729 and the pinned SkillProof repository commit f5ddb4b (checked 2026-09-10); Pipelock's pinned repository commit f7d1816 (checked 2026-09-11) for mediated-action receipt verification and explicit evidence limits; HN item 49658005 plus agent-guardrails-kit's pinned commit 18c241e (checked 2026-09-11) for fail-closed, regression-tested hook enforcement; PassControl's pinned repository commit f9cb702 (checked 2026-09-12) for per-request authentication-strength receipts, revocation-state posture, and explicit receipt limits; HN item 49713261 plus OpenShell's formal-methods note and pinned spike commit df0ee1a (checked 2026-09-15) for model-relative policy containment, explicit unsupported surfaces, and counterexample-bearing permission review; k8s-rca-agent commit 29f5fad (checked 2026-09-15) for path-composition limits across RBAC, hooks, credentials, and redaction; secure-agent commit 017ec5a (checked 2026-09-16) for monitor-versus-block semantics, fail-open inspection, bounded payload coverage, and explicit uninspected-egress posture; Rul1an/assay commit 900e536 (checked 2026-09-17) for structurally bounded tool-identity output, schema-pin canonicalization limits, and missing-identity behavior; and Soup Wall commit be8db48 (checked 2026-09-18) for shadow-to-enforce rollout, fail-open advisory hooks and MCP mediation, and fail-closed effect-owning adapters. Scans #176–#183, #453; maintained with current source checks."
+summary: "Companion note to agent-security-defense-architectures.md: verified/formal enforcement patterns for AI agent security. These share a common principle — safety enforcement that does not depend on model cooperation. Covers out-of-band deterministic enforcement, institutional attestation, policy autoformalization, trust-by-construction, multi-layer verification oracles, per-datum trust scoring, runtime trace enforcement, knowledge-boundary defense, physical-world attestation, context-to-execution integrity (CXI), off-host identity-bound authorization (aiAuthZ), hardware-confined signing with pre-committed effect authority, adversarial MCP-server verification with replayability limits, mediated-action receipts that separate integrity, signer attribution, completeness, and per-request authentication strength, fail-closed shell/file hooks whose policy coverage is regression-tested against bypasses, model-relative SMT containment for agent-authored permission changes, path-composition evidence for layered controls, explicit egress assurance states, MCP tool pins whose identity semantics and missing-observation behavior are part of the enforcement claim, rollout evidence that keeps shadow verdicts distinct from effect-owning enforcement, and adversarial action-evidence packages that keep integrity, authorization, ground truth, replay state, and effect mediation as separate guarantees."
+triggers: ["verified enforcement", "out-of-band defense", "Progent", "CaMeL", "FIDES", "institutional attestation", "Cedar policy", "autoformalization", "Kiko protocol", "trust-by-construction", "VIGIL trace enforcement", "knowledge-based PR", "KPR", "hardware-gated agent", "deceptive fixes", "TerraProbe", "Robust-TO", "per-datum trust", "CXI", "context-to-execution integrity", "aiAuthZ", "identity-bound authorization", "hardware keystore", "PKCS#11", "signing authority", "payload commitment", "SkillProof", "MCP server verification", "replayable evidence", "action receipt", "signed receipt", "evidence completeness", "Pipelock", "PassControl", "sender proof", "bearer visa", "authentication assurance", "default deny", "fail closed", "shell hook", "protected path", "guardrail regression test", "OpenShell prover", "maximum policy", "SMT containment", "Z3 counterexample", "credentialed L4", "Kubernetes RBAC", "defense in depth", "path composition", "secure-agent", "egress firewall", "uninspected egress", "coverage posture", "tool identity", "tool pin", "schema canonicalization", "Rul1an/assay", "Soup Wall", "shadow mode", "enforcement posture", "mediation ownership", "Action Evidence Package", "AEP sandbox", "mandate", "scope violation", "replay nonce"]
+last_updated: "2026-09-19"
+source_basis: "Extracted from agent-security-defense-architectures.md §2.33–§2.42. §2.44–§2.45 (CXI, aiAuthZ) moved from defense-architectures.md §Execution Boundary Patterns (scan #453). Patterns sourced from arXiv June–August 2026 papers, including 2606.26479 Progent, 2606.26298 Institutional Attestation, 2606.26649 Cedar Pipeline, 2606.26590 TerraProbe, 2606.26156 Kiko, 2606.26904 Robust-TO, 2606.26524 VIGIL, 2606.26721 KPR, 2606.27231 Quantum Hardware Agent, 2607.06000 CXI, 2607.05518 aiAuthZ, and 2608.06130 hardware-confined signing; HN item 49649729 and the pinned SkillProof repository commit f5ddb4b (checked 2026-09-10); Pipelock's pinned repository commit f7d1816 (checked 2026-09-11) for mediated-action receipt verification and explicit evidence limits; HN item 49658005 plus agent-guardrails-kit's pinned commit 18c241e (checked 2026-09-11) for fail-closed, regression-tested hook enforcement; PassControl's pinned repository commit f9cb702 (checked 2026-09-12) for per-request authentication-strength receipts, revocation-state posture, and explicit receipt limits; HN item 49713261 plus OpenShell's formal-methods note and pinned spike commit df0ee1a (checked 2026-09-15) for model-relative policy containment, explicit unsupported surfaces, and counterexample-bearing permission review; k8s-rca-agent commit 29f5fad (checked 2026-09-15) for path-composition limits across RBAC, hooks, credentials, and redaction; secure-agent commit 017ec5a (checked 2026-09-16) for monitor-versus-block semantics, fail-open inspection, bounded payload coverage, and explicit uninspected-egress posture; Rul1an/assay commit 900e536 (checked 2026-09-17) for structurally bounded tool-identity output, schema-pin canonicalization limits, and missing-identity behavior; Soup Wall commit be8db48 (checked 2026-09-18) for shadow-to-enforce rollout, fail-open advisory hooks and MCP mediation, and fail-closed effect-owning adapters; and tyche-institute/aep-sandbox commit 3495e27 (checked 2026-09-19) for adversarial separation of unsigned ledger integrity, signed mandate appraisal, replay consumption, claimed outcome measurements, and effect ownership. Scans #176–#183, #453; maintained with current source checks."
 </ai_context>
 
 # Agent Security: Verified Enforcement Patterns
@@ -1022,3 +1022,64 @@ had no `cargo` executable, so Scout did not independently run the tests, start
 the daemon, connect Claude Code or an MCP server, or exercise guarded execution.
 The repository's hand-authored agent corpus is not a held-out security
 benchmark, and this observation does not establish production bypass resistance.
+
+## An Authorization Receipt Is Not an Effect Gate (GitHub, September 2026)
+
+**Repo:** https://github.com/tyche-institute/aep-sandbox
+
+**Pinned observation:** repository commit
+[`3495e279e2cda5a32ed6184a87c67465a4355b80`](https://github.com/tyche-institute/aep-sandbox/commit/3495e279e2cda5a32ed6184a87c67465a4355b80)
+
+AEP Sandbox turns several often-collapsed receipt claims into an adversarial
+ladder. Its unsigned ledger can detect an edited field or reordered receipt, but
+a writer can recompute the whole chain. The governed package adds an Ed25519
+agent signature and embeds an issuer-signed credential plus a principal-signed,
+agent-bound mandate. Verification then checks structure, content hash, agent
+signature, claimed action/outcome digests, mandate chain, action scope, expiry,
+and replay state in a fixed fail-fast order. A valid agent signature therefore
+does not authorize its action by itself: a correctly signed refund above the
+mandate's cap returns `DENY:scope_violation`.
+
+The implementation also makes the assurance boundary unusually inspectable:
+
+- action and outcome measurements are self-consistency checks over fields already
+  signed by the agent; they do not establish that the reported real-world effect
+  occurred;
+- replay rejection depends on a supplied consumed-nonce set, and the CLI records
+  it only with `--consume`; ordinary verification does not consume the nonce;
+- the demo's consumed-nonce store is a local append-only text file, not a claim
+  of atomic, distributed exactly-once admission;
+- mandate revocation before expiry is deliberately absent; and
+- the verifier appraises an evidence package and returns an exit code. Nothing in
+  this repository proves that a consequential effect waits for that verdict.
+
+The reusable rule is to report five claims separately:
+
+`{receipt integrity, signer identity, action-in-mandate, effect ground truth, mediator ownership}`
+
+A package can strongly establish the first three while leaving the final two to
+another system. To turn this appraisal primitive into enforcement, a deployment
+must put an effect-owning mediator before the consequence, make nonce consumption
+atomic with admission, define revocation/freshness behavior, and bind observed
+outcomes to an independent measurement root. This extends the receipt-validity
+vector and Soup Wall findings above: cryptographic authorization evidence is
+valuable, but post-action `DENY` is accountability unless the verifier can still
+withhold the effect.
+
+**Evidence inspected at the pinned commit:**
+[`README.md`](https://github.com/tyche-institute/aep-sandbox/blob/3495e279e2cda5a32ed6184a87c67465a4355b80/README.md),
+[`aep/mandate.py`](https://github.com/tyche-institute/aep-sandbox/blob/3495e279e2cda5a32ed6184a87c67465a4355b80/aep/mandate.py),
+[`aep/package.py`](https://github.com/tyche-institute/aep-sandbox/blob/3495e279e2cda5a32ed6184a87c67465a4355b80/aep/package.py),
+[`verify.py`](https://github.com/tyche-institute/aep-sandbox/blob/3495e279e2cda5a32ed6184a87c67465a4355b80/verify.py),
+[`attacks/README.md`](https://github.com/tyche-institute/aep-sandbox/blob/3495e279e2cda5a32ed6184a87c67465a4355b80/attacks/README.md),
+[`attacks/replay.py`](https://github.com/tyche-institute/aep-sandbox/blob/3495e279e2cda5a32ed6184a87c67465a4355b80/attacks/replay.py),
+[`THREAT-MODEL.md`](https://github.com/tyche-institute/aep-sandbox/blob/3495e279e2cda5a32ed6184a87c67465a4355b80/THREAT-MODEL.md), and the
+[frozen verifier specification](https://github.com/tyche-institute/aep-sandbox/blob/3495e279e2cda5a32ed6184a87c67465a4355b80/interlab/spec/VERIFIER-SPEC-v1.md).
+
+**Evidence boundary:** Scout statically inspected the complete pinned Git tree
+and the listed source files through GitHub's public read-only endpoints. It did
+not clone the repository, execute the attacks or tests, validate key custody,
+operate a multi-verifier nonce store, or independently test production EATF or
+hardware attestation. The repository had no stars at observation time; this is a
+small reference artifact and adversarial design signal, not adoption or
+production-security evidence.
