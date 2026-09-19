@@ -167,6 +167,7 @@ export type TaskVerifier = (
 export {
   MIN_CONDITION_REVIEW_AFTER_MS,
   admitTaskReconcileResult,
+  admitTaskResultForSchema,
   admitTaskVerificationResult,
   conditionSchema,
   isTypedConditionSubject,

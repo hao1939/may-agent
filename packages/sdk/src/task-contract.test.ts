@@ -1,8 +1,46 @@
 import { describe, expect, it } from "bun:test";
+import { Type } from "typebox";
 import { Check } from "typebox/value";
-import { admitTaskReconcileResult, admitTaskVerificationResult, taskAgentResultSchema } from "./task-contract.js";
+import {
+  admitTaskReconcileResult,
+  admitTaskResultForSchema,
+  admitTaskVerificationResult,
+  taskAgentResultSchema,
+  taskReconcileResultSchema,
+} from "./task-contract.js";
 
 const workflowOptions = { allowNeedsAgent: true };
+
+it("routes persisted Task result schemas through the same semantic admission", () => {
+  const convergedReview = {
+    state: "converged",
+    summary: "Review later is not a converged result",
+    facts: [],
+    reviewAt: Date.now() + 60_000,
+  };
+  const dependencylessContinuation = {
+    state: "waiting",
+    continue: true,
+    summary: "Continuation needs declared work",
+    facts: ["progress:recorded"],
+  };
+
+  for (const invalid of [convergedReview, dependencylessContinuation]) {
+    expect(Check(taskAgentResultSchema, invalid)).toBe(true);
+    expect(admitTaskResultForSchema(structuredClone(taskAgentResultSchema), invalid)).toEqual(
+      admitTaskReconcileResult(invalid, { allowNeedsAgent: false }),
+    );
+    expect(admitTaskResultForSchema(taskAgentResultSchema, invalid)?.ok).toBe(false);
+  }
+  expect(
+    admitTaskResultForSchema(taskReconcileResultSchema, {
+      state: "needs-agent",
+      summary: "Workflow requests a worker",
+      facts: [],
+    })?.ok,
+  ).toBe(true);
+  expect(admitTaskResultForSchema(Type.Object({ value: Type.String() }), { value: "ordinary" })).toBeNull();
+});
 
 it("admits explicit useful continuation without confusing it with an answer or failure", () => {
   const result = {
@@ -80,9 +118,10 @@ describe("project task handler contract", () => {
     for (const state of ["waiting", "incomplete", "converged", "needs-agent"] as const) {
       for (const facts of [[], ["source:access-denied"]]) {
         for (const report of [undefined, true, false]) {
-          const output = { state, summary: "Access is missing", facts,
-            ...(report === undefined ? {} : { report }) };
-          const valid = state !== "needs-agent" && report !== false &&
+          const output = { state, summary: "Access is missing", facts, ...(report === undefined ? {} : { report }) };
+          const valid =
+            state !== "needs-agent" &&
+            report !== false &&
             (report !== true || (state !== "converged" && facts.length > 0)) &&
             (state !== "incomplete" || facts.length > 0);
           expect({ output, valid: Check(taskAgentResultSchema, output) }).toEqual({ output, valid });
@@ -361,7 +400,9 @@ describe("project task handler contract", () => {
     { priority: "P1" },
   ])("rejects raw assignment updates at both result boundaries: %j", (change) => {
     const output = {
-      state: "converged", summary: "Proposed correction", facts: ["scope:corrected"],
+      state: "converged",
+      summary: "Proposed correction",
+      facts: ["scope:corrected"],
       actions: [{ kind: "update-task", taskId: "child", expectedGeneration: 1, ...change }],
     };
     expect(Check(taskAgentResultSchema, output)).toBe(false);
@@ -460,8 +501,7 @@ describe("project task handler contract", () => {
 
   it("admits waiting for runtime validation against newly declared or saved waits", () => {
     expect(
-      admitTaskReconcileResult({ state: "waiting", summary: "Waiting", facts: [], conditions: [] }, workflowOptions)
-        .ok,
+      admitTaskReconcileResult({ state: "waiting", summary: "Waiting", facts: [], conditions: [] }, workflowOptions).ok,
     ).toBe(true);
 
     expect(
