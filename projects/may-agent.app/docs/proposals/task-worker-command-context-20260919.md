@@ -1,11 +1,13 @@
 # Ordinary commands from Task workers
 
-**Status:** Production candidate `1cb37cdd877c9f6882f46a97b0b68c3c701d57ab`
-is committed and pushed to [PR #199](https://github.com/hao1939/may-agent/pull/199)
-for independent GitHub review; it is not merged or deployed. The earlier
-isolated prototype established the direction but is not the candidate or live
-proof. This is a common Host execution concern, owned here rather than in May,
-Scout, Gym or an individual workflow.
+**Status:** [PR #199](https://github.com/hao1939/may-agent/pull/199) merged
+as `f6ab8e18b16a42197519c2485a81d9d15fd0a3b8`; its worker-boundary change is
+included in deployed Host source `7fc90f57829ad6a8ddd48eb3de8489e527314cf5`.
+The terminal deployment receipts and independent live read-back are recorded in
+[App operations recovery](../2b-manual/app-operations-recovery.md#retained-local-rollout-receipt-2026-09-19).
+The earlier isolated prototype established the direction but is not the merged
+candidate or live proof. This is a common Host execution concern, owned here
+rather than in May, Scout, Gym or an individual workflow.
 
 **Candidate base:** Host `00a380b54be022017f0d455d2212f011fe124a90`.
 **Exploratory source:** Host `0d25ab157ad7de6693be46781ca65a8341017804`.
@@ -241,16 +243,21 @@ live adoption. Release and standalone binaries separately cover private-entry
 rejection without IPC. Hosted checks, independent GitHub approval, merge,
 deployment and fresh-worker adoption remain separate evidence gates.
 
-## Integration and adoption plan
+## Integration and adoption result
 
-Keep [PR #199](https://github.com/hao1939/may-agent/pull/199) as the one common
-Host correction. Its independent GitHub review and current-head checks must pass
-before normal merge. Do not bypass that gate or claim a pending candidate is
-live.
+[PR #199](https://github.com/hao1939/may-agent/pull/199) remains the one common
+Host correction for this issue. It passed the repository gates, merged as
+`f6ab8e18b16a42197519c2485a81d9d15fd0a3b8`, and is an ancestor of deployed
+source `7fc90f57829ad6a8ddd48eb3de8489e527314cf5`. The deployment receipt binds
+that source to the loaded binary, SDK, Console and UI artifact; the independent
+read-back confirms readiness and all three supervisor services running without
+a container replacement.
 
-After reviewed integration and an authorized Host update, ask a fresh worker to
-run an ordinary `bun run ci` from an isolated checkout without an environment
-workaround. Verify the deployment receipt, loaded Host revision and fresh-worker
-behavior separately. Older workers keep their old code and behavior until they
-exit; changing a source checkout does not update a running worker. Broader
-Host/SDK/App release conventions remain a separate, deferred proposal.
+A fresh isolated Conversation after restart accepted an ordinary input and
+returned the exact expected response through normal accepted completion. This
+is live ingress evidence, but not a model-backed provider check and not proof
+that the separately repaired primary Conversation input has passed its retained
+retry deadline or been consumed. Existing workers keep their old code and
+behavior until they exit; changing a source checkout alone never proves live
+adoption. Broader Host/SDK/App release conventions remain a separate, deferred
+proposal.

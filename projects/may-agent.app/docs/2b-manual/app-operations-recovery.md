@@ -201,6 +201,41 @@ exact wait; a failed or rolled-back receipt is a terminal disposition. Stop
 when these bounded facts answer the request—do not scan the workspace, inspect
 unrelated worktrees, or tail broad logs as a substitute for receipt evidence.
 
+### Retained local rollout receipt: 2026-09-19
+
+The authorized in-container rollout after Host PRs #200, #202, and #203 merged
+used maintenance Task `may-agent/runtime/platform-owner-review` and correlation
+`merged-7fc90f57-20260919T1027Z`. Its terminal receipt at
+`/app/projects/may-agent/.state/deploy-receipts/merged-7fc90f57-20260919T1027Z.json`
+binds source `7fc90f57829ad6a8ddd48eb3de8489e527314cf5` to artifact and loaded SHA-256
+`7be9003df66f53d748132101a677277a86048e21b18d751e260d81375403e1bf`, with
+`phase: succeeded`, `health: healthy`, and `duplicateDeploy: false`. A second
+receipt, correlation `merged-7fc90f57-20260919T1029Z`, records an unnecessary
+successful deployment of the same source and artifact 31 seconds later. Each
+receipt's `duplicateDeploy: false` is scoped to its own correlation; it does not
+prove there was no equivalent deployment under another correlation. Before
+choosing a new correlation after a restart, inspect existing exact source, Task,
+and artifact receipts and verify a match instead of deploying again.
+
+Independent read-back is retained at
+`/app/.state/review-pilots/host-release-20260919/merged-7fc90f57-live-verification.json`.
+It confirms matching bundle provenance and live binary hash, readiness, all
+three long-lived services running, and the unchanged container start time
+`2026-09-15T15:11:36.651441173Z`. This receipt supersedes the earlier staged
+PR #199 deployment record for current live identity and proves binary, Console,
+SDK, and UI adoption.
+
+The separate quiesced repair evidence is retained under
+`/app/.state/review-pilots/host-release-20260919/offline-recovery-7fc90f57/`.
+Its terminal `apply-receipt.json` records `status: repaired`, malformed input
+`app_3b2c919d-052d-4764-999a-efed0596f57f`, replacement input
+`app_62aff70d-b868-4965-8317-61f1994171c4`, and the unchanged Conversation Task
+`conversation_ec854e2f09f1c38566a25857_successor_2`. The backup quick-check,
+quiesced fence, snapshot hashes, and pre-restart verification are retained in
+that directory. They prove the bounded state repair, not
+that normal pacing has consumed the replacement input; accepted Task state must
+be read before claiming corrected consumption.
+
 ## Adapter uncertainty
 
 An App result remains readable even when an adapter send fails or its provider
