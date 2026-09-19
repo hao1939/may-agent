@@ -166,9 +166,12 @@ The shipped agent CLI versions live as exact dependencies in
 files locked by `container/package-lock.json`; terminal checksums remain in
 `container/Dockerfile`, and the Bun version lives in `.bun-version`. The image
 uses `npm ci --omit=dev` and keeps the resulting production tree outside
-`/app`, where installation bind mounts cannot hide it. Do not disable install
-scripts or optional dependencies: Claude's installer and the native/platform
-packages are part of the executable runtime. Review CLI manifest and lockfile
+`/app`, where installation bind mounts cannot hide it. Three image-owned links
+in `/usr/local/bin` make `claude`, `codex`, and `pi` ordinary commands from any
+working directory and login shell, with no caller PATH setup, activation,
+`npm install`, or `npx`. Do not disable install scripts or optional dependencies:
+Claude's installer and the native/platform packages are part of the executable
+runtime. Review CLI manifest and lockfile
 changes together, run `npm audit --prefix container --omit=dev`, and validate
 versions, flags/configuration, runtime-user PATH behavior, and the image smoke
 test. For Codex, compare generated schemas with the old CLI before updating

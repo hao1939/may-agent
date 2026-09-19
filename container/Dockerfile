@@ -159,8 +159,10 @@ RUN node /usr/local/share/ttyd/patch-ttyd-index.cjs \
 # Claude materializes its executable in postinstall, and all three tools ship
 # platform-specific runtime files.
 COPY container/package.json container/package-lock.json /opt/may-agent-cli/
-ENV PATH=/opt/may-agent-cli/node_modules/.bin:/usr/local/bin:$PATH
 RUN npm ci --prefix /opt/may-agent-cli --omit=dev --no-audit --no-fund \
+    && ln -s /opt/may-agent-cli/node_modules/.bin/claude /usr/local/bin/claude \
+    && ln -s /opt/may-agent-cli/node_modules/.bin/codex /usr/local/bin/codex \
+    && ln -s /opt/may-agent-cli/node_modules/.bin/pi /usr/local/bin/pi \
     && claude_version="$(node -p "require('/opt/may-agent-cli/package.json').dependencies['@anthropic-ai/claude-code']")" \
     && codex_version="$(node -p "require('/opt/may-agent-cli/package.json').dependencies['@openai/codex']")" \
     && pi_version="$(node -p "require('/opt/may-agent-cli/package.json').dependencies['@earendil-works/pi-coding-agent']")" \

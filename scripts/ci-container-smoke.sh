@@ -37,15 +37,25 @@ docker run --rm --network none --read-only --user mayagent \
   --tmpfs /app --workdir /tmp --entrypoint /bin/sh \
   "$image_ref" -ec '
     manifest=/opt/may-agent-cli/package.json
-    test "$(command -v claude)" = /opt/may-agent-cli/node_modules/.bin/claude
-    test "$(command -v codex)" = /opt/may-agent-cli/node_modules/.bin/codex
-    test "$(command -v pi)" = /opt/may-agent-cli/node_modules/.bin/pi
+    test "$(command -v claude)" = /usr/local/bin/claude
+    test "$(command -v codex)" = /usr/local/bin/codex
+    test "$(command -v pi)" = /usr/local/bin/pi
+    node --version
+    npm --version
     test "$(claude --version | awk "{print \$1}")" = "$(node -p "require(\"$manifest\").dependencies[\"@anthropic-ai/claude-code\"]")"
     test "$(codex --version | awk "{print \$2}")" = "$(node -p "require(\"$manifest\").dependencies[\"@openai/codex\"]")"
     test "$(pi --version)" = "$(node -p "require(\"$manifest\").dependencies[\"@earendil-works/pi-coding-agent\"]")"
     claude --help | grep -q -- --output-format
     codex exec --help | grep -q -- --output-last-message
     pi --help | grep -q -- --provider
+    /bin/bash -lec '\''
+      test "$(command -v claude)" = /usr/local/bin/claude
+      test "$(command -v codex)" = /usr/local/bin/codex
+      test "$(command -v pi)" = /usr/local/bin/pi
+      claude --version
+      codex --version
+      pi --version
+    '\''
   ' | tee test-results/cli-tools.txt
 
 # Exercise the shipped binary as its normal unprivileged user. Desktop/VNC
