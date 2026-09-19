@@ -237,7 +237,14 @@ export type AppTaskInput<TData = unknown> = {
   input: AppInput<TData>;
 };
 
-export type AppTaskAttachment = { kind: "existing"; taskId: string } | { kind: "desired"; intent: TaskIntent };
+export type AppTaskAttachment =
+  | { kind: "existing"; taskId: string }
+  | {
+      kind: "desired";
+      intent: TaskIntent;
+      /** Revise this exact existing App-owned Task only if the caller observed this generation. */
+      expectedGeneration?: number;
+    };
 
 export type ConversationTopicDecision =
   { kind: "none" } | { kind: "new"; title: string } | { kind: "existing"; id: string };

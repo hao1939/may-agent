@@ -1,5 +1,10 @@
 import { readInputContext, observeTaskDependency, type AppDependencyReader } from "./input-context.js";
-import { completeTaskInput, recoverTaskInputAdmissionKey } from "../state/inbox.js";
+import {
+  completeTaskInput,
+  isAppTaskRevisionAdmissionError,
+  recoverTaskInputAdmissionKey,
+  rejectTaskInputRevision,
+} from "../state/inbox.js";
 import {
   matchesEventSelector,
   type AppDependencyObservation,
@@ -35,6 +40,8 @@ import {
 export type AppTaskAttacher = (input: {
   appId: string;
   creator?: ResourceCreator;
+  /** Host-derived permission for the App mapper's generation-fenced revision. */
+  creatorRevision?: true;
   attachment: AppTaskAttachment;
   idempotencyKey: string;
   inputContext: Readonly<AppInputContext>;
@@ -436,9 +443,13 @@ export class AppInboxHost {
         : app.task(inputContext);
       if (!attachment || typeof attachment !== "object")
         throw new Error(`App ${app.id} task resolver returned no Task attachment`);
+      const appRevision = attachment.kind === "desired" && attachment.expectedGeneration !== undefined;
       this.#attachTask({
         appId: app.id,
-        creator: item.creator,
+        // Absence of a delegated creator on this saved inbox row is the
+        // trusted App-only provenance. A task-bound row keeps its exact caller.
+        creator: appRevision ? item.creator ?? { appId: app.id } : item.creator,
+        creatorRevision: appRevision ? true : undefined,
         attachment,
         inputContext,
         inboxInputId: item.id,
@@ -447,6 +458,18 @@ export class AppInboxHost {
         topicId: item.topicId,
       });
     } catch (error) {
+      if (isAppTaskRevisionAdmissionError(error)) {
+        const result = rejectTaskInputRevision(this.#db, item, error, this.#now());
+        if (result) {
+          try {
+            this.#onRequestUpdated?.(item, result, "done");
+            if (item.conversationId) this.#onConversationChanged?.(item.appId, item.conversationId);
+          } catch {
+            // The terminal correction remains readable if notification fails.
+          }
+        }
+        return;
+      }
       // Recovery has a fixed cadence; new unrelated inputs do not retry this row.
       this.#failure(item, "input-admission", error);
     }
