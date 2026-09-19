@@ -33,7 +33,7 @@ import {
   TASK_UPDATE_EVENT_TYPES,
   taskUpdateIdentity,
 } from "../../../packages/control/src/task-wake.js";
-import type { HumanAppView, HumanTaskService, HumanTaskView } from "../human-task-service.js";
+import { isHumanActionOwner, type HumanAppView, type HumanTaskService, type HumanTaskView } from "../human-task-service.js";
 import { taskCancelRequestedEvent } from "../task-control-events.js";
 
 const TASK_PAGE_SIZE = 10;
@@ -178,6 +178,10 @@ export function renderTelegramTopic(topic: AppConversationTopic, messages: AppCo
   ].join("\n");
 }
 
+function taskCadenceMarker(task: Pick<HumanTaskView, "recurring">): string {
+  return task.recurring ? "🔁 " : "";
+}
+
 export function renderTelegramTasks(tasks: HumanTaskView[], includeDone: boolean, hasMore = false): string {
   if (tasks.length === 0) return includeDone ? "No active or recent Tasks." : "No active Tasks.";
   return [
@@ -185,7 +189,7 @@ export function renderTelegramTasks(tasks: HumanTaskView[], includeDone: boolean
     ...tasks.flatMap((task) => {
       const result = task.response?.trim() || task.summary?.trim();
       return [
-        `• ${task.ref} · ${task.appId} · ${taskStatusLabel(task)} · ${updatedAgeText(task.updatedAt)}\n  ${task.outcome} · ${task.humanAction ? "needs you" : "no action from you"}`,
+        `• ${taskCadenceMarker(task)}${task.ref} · ${task.appId} · ${taskStatusLabel(task)} · ${updatedAgeText(task.updatedAt)}\n  ${task.outcome} · ${task.humanAction ? "needs you" : "no action from you"}`,
         ...(task.terminal && result ? [`  ${result}`] : []),
       ];
     }),
@@ -273,7 +277,7 @@ export function renderTelegramTodos(
     `Actions needed${scope}:`,
     ...tasks.map((task) => {
       const since = task.humanAction?.since;
-      return `• ${task.ref} · ${task.appId}${since === undefined ? "" : ` · ${elapsedText(since)}`}\n  ${humanActionText(task)}`;
+      return `• ${taskCadenceMarker(task)}${task.ref} · ${task.appId}${since === undefined ? "" : ` · ${elapsedText(since)}`}\n  ${humanActionText(task)}`;
     }),
     ...(total > tasks.length
       ? [`${total - tasks.length} more action(s) are not shown.${hasMore ? " Use /todo more." : ""}`]
@@ -433,7 +437,7 @@ function pendingHumanApprovalCondition(task: HumanTaskView | null) {
     return (
       condition?.spec.type === "project.approval.submitted" &&
       condition.status?.state !== "true" &&
-      (condition.spec.owner === "human" || condition.spec.owner?.startsWith("human:") === true) &&
+      isHumanActionOwner(condition.spec.owner) &&
       expected.taskGeneration === task.generation &&
       expected.conditionId === item.id
     );
@@ -445,11 +449,7 @@ function fullHumanApprovalAction(task: HumanTaskView | null): string | null {
   if (!task || task.terminal) return null;
   const actions = (task.diagnostics?.conditions ?? [])
     .map((item) => item.condition)
-    .filter(
-      (condition) =>
-        condition?.status?.state !== "true" &&
-        (condition?.spec.owner === "human" || condition?.spec.owner?.startsWith("human:") === true),
-    )
+    .filter((condition) => condition?.status?.state !== "true" && isHumanActionOwner(condition?.spec.owner))
     .map((condition) => condition!.spec.requestedAction?.trim())
     .filter((action): action is string => Boolean(action));
   return actions.length > 0 ? actions.join("\n\n---\n\n") : null;
@@ -977,12 +977,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
     const conditions = (task.diagnostics?.conditions ?? [])
       .flatMap((item) => {
         const condition = item.condition;
-        if (
-          !condition ||
-          condition.status?.state === "true" ||
-          !(condition.spec.owner === "human" || condition.spec.owner?.startsWith("human:") === true)
-        )
-          return [];
+        if (!condition || condition.status?.state === "true" || !isHumanActionOwner(condition.spec.owner)) return [];
         return [
           {
             id: item.id,

@@ -17,6 +17,7 @@ import { migrateTaskCompletionReceipts } from "./core/state/task-receipt-cutover
 import { listRuntimeTaskViews } from "./core/reads/app-read.js";
 import type { AppTaskContext } from "./core/tasks/app-task-store.js";
 import { createAppInboxItem } from "./core/state/app-inbox-store.js";
+import { linkTaskInput } from "./core/state/inbox.js";
 import { claimNextAppInboxItem, waitAppInboxClaim } from "../../test/fixtures/legacy-inbox.js";
 import {
   ensureTaskReferenceIndex,
@@ -402,6 +403,7 @@ test("status-filtered human reads retain the stored-phase index", () => {
   for (const status of ["pending", "running", "up-to-date"] as const) {
     service.listTasks({ status: [status], limit: 1 });
     expect(plans.at(-1)).toContain("idx_app_tasks_global_phase (phase=?)");
+    expect(plans.at(-1)).toContain("idx_app_inbox_waiting");
     expect(plans.at(-1)).not.toContain('"SCAN t"');
   }
   expect(plans).toHaveLength(3);
@@ -665,18 +667,68 @@ describe("Task reference index", () => {
 });
 
 describe("Human Task service", () => {
-  test("derives human actions only from explicit unsatisfied human Conditions", () => {
+  test("derives human actions from canonical owners and legacy Hao while excluding App, agent, and other display names", () => {
     const db = database();
-    insertTask(db, { appId: "alpha", taskId: "approval", phase: "waiting", updatedAt: 40 });
+    insertTask(db, { appId: "alpha", taskId: "completed", phase: "waiting", updatedAt: 80 });
+    insertTask(db, { appId: "alpha", taskId: "approval", phase: "waiting", updatedAt: 70 });
+    insertTask(db, { appId: "alpha", taskId: "may-owned", phase: "waiting", updatedAt: 60 });
+    insertTask(db, { appId: "alpha", taskId: "agent-owned", phase: "waiting", updatedAt: 50 });
+    insertTask(db, { appId: "alpha", taskId: "may-merge", phase: "waiting", updatedAt: 40 });
+    insertTask(db, { appId: "alpha", taskId: "legacy-hao", phase: "waiting", updatedAt: 37 });
+    insertTask(db, { appId: "alpha", taskId: "display-name", phase: "waiting", updatedAt: 35 });
     insertTask(db, { appId: "alpha", taskId: "external", phase: "waiting", updatedAt: 30 });
     insertTask(db, { appId: "alpha", taskId: "broken", phase: "attention", updatedAt: 20 });
     insertTask(db, { appId: "beta", taskId: "input", phase: "waiting", updatedAt: 10 });
+    insertTask(db, { appId: "beta", taskId: "operator", phase: "waiting", updatedAt: 5 });
+    insertCondition(db, {
+      appId: "alpha",
+      taskId: "completed",
+      conditionId: "completed-action",
+      owner: "human:Hao",
+      requestedAction: "Review work that is already complete.",
+    });
+    insertReceipt(db, "alpha", "completed", 90);
     insertCondition(db, {
       appId: "alpha",
       taskId: "approval",
       conditionId: "human-approval",
-      owner: "human:operator",
+      owner: "human:release-reviewer",
       createdAt: "2026-08-20T01:02:03.000Z",
+    });
+    insertCondition(db, {
+      appId: "alpha",
+      taskId: "may-owned",
+      conditionId: "may-action",
+      owner: "app:may",
+      requestedAction: "May should finish the rollout.",
+    });
+    insertCondition(db, {
+      appId: "alpha",
+      taskId: "agent-owned",
+      conditionId: "agent-action",
+      owner: "agent:dev",
+      requestedAction: "Dev should investigate the failure.",
+    });
+    insertCondition(db, {
+      appId: "alpha",
+      taskId: "may-merge",
+      conditionId: "host-pr-199-merged",
+      owner: "human:github-maintainer",
+      requestedAction: "Run checks, obtain review, and merge the May-owned change.",
+    });
+    insertCondition(db, {
+      appId: "alpha",
+      taskId: "legacy-hao",
+      conditionId: "legacy-hao-action",
+      owner: "Hao",
+      requestedAction: "Approve the legacy rollout wait.",
+    });
+    insertCondition(db, {
+      appId: "alpha",
+      taskId: "display-name",
+      conditionId: "display-name-action",
+      owner: "Alice",
+      requestedAction: "This unrelated display-name owner must stay hidden.",
     });
     insertCondition(db, { appId: "alpha", taskId: "external", conditionId: "external-fact" });
     insertCondition(db, {
@@ -686,42 +738,91 @@ describe("Human Task service", () => {
       owner: "human",
       requestedAction: "Provide the rollout window.",
     });
+    insertCondition(db, {
+      appId: "beta",
+      taskId: "operator",
+      conditionId: "operator-input",
+      owner: "human:operator",
+      requestedAction: "Choose the maintenance window.",
+    });
+    const scheduled = createAppInboxItem(db, {
+      id: "scheduled-approval",
+      appId: "alpha",
+      source: { kind: "system", id: "schedule:alpha:daily-approval" },
+      input: { kind: "goal", data: {} },
+      now: 1,
+    }).item;
+    linkTaskInput(db, scheduled.id, "approval", "task:scheduled-approval", 2);
     const service = new HumanTaskService(db, registry("alpha", "beta"));
 
     expect(service.listTasks({ appId: "alpha", humanActionOnly: true })).toMatchObject({
-      total: 1,
+      total: 3,
       items: [
         {
           appId: "alpha",
           taskId: "approval",
           status: "waiting",
+          recurring: true,
           humanAction: {
             requestedAction: "Choose approve or reject for task:approval.",
             since: Date.parse("2026-08-20T01:02:03.000Z"),
           },
         },
+        {
+          appId: "alpha",
+          taskId: "may-merge",
+          status: "waiting",
+          humanAction: { requestedAction: "Run checks, obtain review, and merge the May-owned change." },
+        },
+        {
+          appId: "alpha",
+          taskId: "legacy-hao",
+          status: "waiting",
+          humanAction: { requestedAction: "Approve the legacy rollout wait." },
+        },
       ],
     });
     expect(service.listTasks({ humanActionOnly: true }).items.map((task) => task.taskId)).toEqual([
       "approval",
+      "may-merge",
+      "legacy-hao",
       "input",
+      "operator",
     ]);
-    expect(service.getTask({ appId: "alpha", taskId: "approval" })?.humanAction).toEqual({
-      requestedAction: "Choose approve or reject for task:approval.",
-      since: Date.parse("2026-08-20T01:02:03.000Z"),
+    expect(service.getTask({ appId: "alpha", taskId: "approval" })).toMatchObject({
+      recurring: true,
+      humanAction: {
+        requestedAction: "Choose approve or reject for task:approval.",
+        since: Date.parse("2026-08-20T01:02:03.000Z"),
+      },
     });
     expect(service.getTask({ appId: "beta", taskId: "input" })?.humanAction).toEqual({
       requestedAction: "Provide the rollout window.",
     });
+    expect(service.getTask({ appId: "beta", taskId: "operator" })).toMatchObject({
+      recurring: false,
+      humanAction: { requestedAction: "Choose the maintenance window." },
+    });
+    expect(service.getTask({ appId: "alpha", taskId: "completed" })?.status).toBe("done");
+    expect(service.getTask({ appId: "alpha", taskId: "completed" })?.humanAction).toBeUndefined();
+    expect(service.getTask({ appId: "alpha", taskId: "may-owned" })?.humanAction).toBeUndefined();
+    expect(service.getTask({ appId: "alpha", taskId: "agent-owned" })?.humanAction).toBeUndefined();
+    expect(service.getTask({ appId: "alpha", taskId: "may-merge" })?.humanAction).toEqual({
+      requestedAction: "Run checks, obtain review, and merge the May-owned change.",
+    });
+    expect(service.getTask({ appId: "alpha", taskId: "legacy-hao" })?.humanAction).toEqual({
+      requestedAction: "Approve the legacy rollout wait.",
+    });
+    expect(service.getTask({ appId: "alpha", taskId: "display-name" })?.humanAction).toBeUndefined();
     expect(service.getTask({ appId: "alpha", taskId: "external" })?.humanAction).toBeUndefined();
 
     db.prepare(
-      "UPDATE app_task_conditions SET state = 'true', condition_json = json_set(condition_json, '$.status.state', 'true') WHERE app_id = 'alpha' AND condition_id = 'human-approval'",
+      "UPDATE app_task_conditions SET state = 'true', condition_json = json_set(condition_json, '$.status.state', 'true') WHERE app_id = 'alpha' AND condition_id IN ('human-approval', 'host-pr-199-merged', 'legacy-hao-action')",
     ).run();
     expect(service.listTasks({ appId: "alpha", humanActionOnly: true })).toMatchObject({ total: 0, items: [] });
   });
 
-  test("finds a legacy human approval on an exact dependency leaf", () => {
+  test("keeps a legacy Hao approval visible on an exact dependency leaf", () => {
     const db = database();
     insertTask(db, { appId: "evaluation", taskId: "parent", phase: "waiting", updatedAt: 20 });
     insertTask(db, { appId: "may-agent", taskId: "approval", phase: "waiting", updatedAt: 10 });

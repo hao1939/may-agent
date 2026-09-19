@@ -160,7 +160,7 @@ describe("Telegram exact approval reply", () => {
     }
   });
 
-  it("shows every human action but does not guess among multiple approvals", () => {
+  it("shows canonical and legacy Hao actions and accepts either approval owner without guessing among approvals", () => {
     const withClarification = proposal("a", 1);
     withClarification.humanAction = { requestedAction: "Two human actions remain." };
     withClarification.diagnostics!.conditions.push({
@@ -178,10 +178,50 @@ describe("Telegram exact approval reply", () => {
         status: { state: "false" },
       },
     } as any);
+    withClarification.diagnostics!.conditions.push({
+      id: "maintainer-merge",
+      condition: {
+        metadata: { id: "maintainer-merge", generation: 1, resourceVersion: 1 },
+        spec: {
+          type: "human.answer.received",
+          subject: "pull-request:199",
+          expected: { merged: true },
+          owner: "human:github-maintainer",
+          requestedAction: "Run checks, obtain review, and merge the May-owned change.",
+          reviewAfterMs: 60_000,
+        },
+        status: { state: "false" },
+      },
+    } as any);
+    withClarification.diagnostics!.conditions.push({
+      id: "display-name",
+      condition: {
+        metadata: { id: "display-name", generation: 1, resourceVersion: 1 },
+        spec: {
+          type: "human.answer.received",
+          subject: "question:display-name",
+          expected: { answer: true },
+          owner: "Hao",
+          requestedAction: "Approve the legacy Hao-owned rollout wait.",
+          reviewAfterMs: 60_000,
+        },
+        status: { state: "false" },
+      },
+    } as any);
     const rendered = renderTelegramTask(withClarification);
     expect(rendered).toContain("Verified benefit: exact packet binding.");
     expect(rendered).toContain("Clarify the preferred rollback observation window.");
+    expect(rendered).toContain("Run checks, obtain review, and merge the May-owned change.");
+    expect(rendered).toContain("Approve the legacy Hao-owned rollout wait.");
     expect(telegramApprovalReply("approve", withClarification, anchorA)).not.toBeNull();
+
+    const roleOwnedApproval = proposal("a", 1);
+    roleOwnedApproval.diagnostics!.conditions[0]!.condition!.spec.owner = "human:github-maintainer";
+    expect(telegramApprovalReply("approve", roleOwnedApproval, anchorA)).not.toBeNull();
+
+    const legacyHaoApproval = proposal("a", 1);
+    legacyHaoApproval.diagnostics!.conditions[0]!.condition!.spec.owner = "Hao";
+    expect(telegramApprovalReply("approve", legacyHaoApproval, anchorA)).not.toBeNull();
 
     const ambiguous = proposal("a", 1);
     ambiguous.humanAction = { requestedAction: "Choose one proposal." };

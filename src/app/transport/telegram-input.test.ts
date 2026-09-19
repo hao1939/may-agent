@@ -939,8 +939,12 @@ describe("Telegram May input", () => {
         },
       ]),
     ).toContain("evaluation — 1 active · 1 running");
-    expect(renderTelegramTasks([task], false)).toContain("8f12ac90 · evaluation · working");
+    expect(renderTelegramTasks([task], false)).toContain("• 8f12ac90 · evaluation · working");
     expect(renderTelegramTasks([task], false)).toContain("no action from you");
+    const recurringTasks = renderTelegramTasks([{ ...task, recurring: true }, task], false);
+    expect(recurringTasks).toContain("• 🔁 8f12ac90 · evaluation · working");
+    expect(recurringTasks).toContain("• 8f12ac90 · evaluation · working");
+    expect(recurringTasks).not.toContain("Recurring");
     expect(renderTelegramTasks([{ ...task, updatedAt: Date.now() }], false)).not.toContain("just now ago");
     expect(renderTelegramTasks([task], false, true)).toContain("/tasks more");
     expect(renderTelegramTask(task)).toContain("Goal\nReview the docs");
@@ -973,6 +977,18 @@ describe("Telegram May input", () => {
         "evaluation",
       ),
     ).toContain("Actions needed for evaluation:\n• 8f12ac90 · evaluation");
+    const recurringTodos = renderTelegramTodos([
+      {
+        ...task,
+        status: "waiting",
+        recurring: true,
+        humanAction: { requestedAction: "Approve the scheduled review." },
+      },
+      { ...task, status: "waiting", humanAction: { requestedAction: "Provide the rollout window." } },
+    ]);
+    expect(recurringTodos).toContain("• 🔁 8f12ac90 · evaluation");
+    expect(recurringTodos).toContain("• 8f12ac90 · evaluation");
+    expect(recurringTodos).not.toContain("Recurring");
     expect(
       renderTelegramTodos(
         [{ ...task, status: "waiting", humanAction: { requestedAction: "Provide the rollout window." } }],
@@ -1263,7 +1279,7 @@ describe("Telegram May input", () => {
                 spec: {
                   type: "human.answer.received",
                   subject: "task:deploy/current",
-                  owner: "human",
+                  owner: "Hao",
                   requestedAction: todo().humanAction.requestedAction,
                   expected: { answer: true },
                 },
