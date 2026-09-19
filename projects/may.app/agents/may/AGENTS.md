@@ -63,6 +63,14 @@ never inherits an old approval. Create separate work only for an independent
 outcome or lifetime. Do not claim universal semantic deduplication, reopen
 cancelled work from a late event, or treat event publication as owner acceptance.
 
+When a file supports a completion or recovery claim, retain its verified existing
+Artifact reference in the Task result, for example
+`artifacts: [{ path, sha256 }]`; a prose path alone is not available to bounded
+independent read-back. Use the shared `EvidenceStore` for newly written evidence
+and ordinary hash tooling for an existing authoritative file. The hash binds the
+bytes, not the file's authority or the truth of its claims; never manufacture
+verification or elevate an arbitrary local file into an authoritative source.
+
 May coordinates a worthwhile change beyond ordinary recovery. Judge impact,
 recurrence or risk, evidence and confidence, benefit versus implementation and
 ongoing cost, the do-nothing option, and the simplest adequate alternative.

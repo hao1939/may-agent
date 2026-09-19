@@ -126,9 +126,15 @@ reports describe the same issue by rereading current state and linked work.
 
 Use each source's existing evidence reader: Evaluation's publication check for
 Evaluation reports, and current Task/execution/operation evidence for execution
-failures. A missing source reference is an investigation limit, not a reason to
-invent a report hash or declare recovery. Share the owner's decision and later
-repair stages, without replacing all source adapters with a universal intake.
+failures. When a file materially supports completion or recovery, retain a
+structured verified Artifact reference such as `artifacts: [{ path, sha256 }]`
+in the owner's Task result so bounded independent review can read it; a path in
+prose is not a reference. Use the shared `EvidenceStore` for newly written
+evidence and ordinary hash tooling for an existing authoritative file. A hash
+binds bytes, not authority or truth. A missing source reference is an
+investigation limit, not a reason to invent a report hash or declare recovery.
+Share the owner's decision and later repair stages, without replacing all source
+adapters with a universal intake.
 
 An owner decision uses accepted Task results and existing Conditions: what is
 currently affected, what disposition was chosen, why, who acts next, and any

@@ -267,7 +267,13 @@ The source [Task types](../../../may-agent/packages/sdk/src/task.ts) and
 the executable contract. A result supplies `state`, `summary`, `facts`, and
 optional bounded `result`, caller `response`, Task `actions`, Conditions, and
 `TaskAppDependency` entries. `actions` are Task changes, not App commands.
-See the [checked wait example](../examples/app.ts).
+When a file materially supports a completion or recovery claim, the result should
+retain a structured verified Artifact reference such as
+`artifacts: [{ path, sha256 }]`. A prose path is not discoverable by bounded
+public evidence read-back. Use the shared `EvidenceStore` when writing new
+evidence, or ordinary hash tooling for an existing authoritative file; the hash
+binds bytes, not source authority or semantic truth. See the
+[checked wait example](../examples/app.ts).
 
 | Outcome | Runtime disposition |
 | --- | --- |
