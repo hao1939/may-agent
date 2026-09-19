@@ -1,8 +1,8 @@
 <ai_context>
 summary: "Entry point for Scout's project-owned knowledge library. Use this before creating or updating Scout-local knowledge notes."
 triggers: ["scout knowledge", "agent architecture research", "multi-agent trends", "XHS trends", "knowledge library maintenance"]
-last_updated: "2026-09-13"
-source_basis: "Maintained index of Scout canonical notes, companion notes, findings, and durable reports. Current navigation includes the §37–§40 Agent Evaluation Research: Diagnostic Layers companion extracted without duplicating the full index. Runtime task, credential, backlog, and health status belongs in the project UI or dated reports."
+last_updated: "2026-09-19"
+source_basis: "Maintained index of Scout canonical notes, companion notes, findings, and durable reports. Current navigation includes the 2026-09-18 source-grounded finding batch and the §37–§40 Agent Evaluation Research: Diagnostic Layers companion without duplicating the full index. Runtime task, credential, backlog, and health status belongs in the project UI or dated reports."
 findings_date_convention: "Use the actual observation date in YYYY-MM-DD filenames; never create a future-dated finding."
 </ai_context>
 
@@ -69,6 +69,23 @@ Migration and project-operation artifacts live outside `knowledge/`:
 - [Hermes Agent and OpenClaw comparative investigation (2026-09-02)](../reports/research/hermes-agent-openclaw-comparative-investigation-2026-09-02.md) — UTC-dated pinned-source architecture, memory, skill-learning, authority, recovery, issue, and cost comparison; reconciles all 28 existing matching leads and records bounded reproduction limits.
 
 ## Recent Source-Grounded Findings
+
+### 2026-09-18
+
+- [Keep observed architecture and proposed architecture in different views](./findings/2026-09-18-agent-architecture-view-proposal-boundary.md) — source-derived topology and explicitly hypothetical proposals make drift reviewable, while executable checks remain the independent admission boundary.
+- [Price agent models by accepted outcomes, not tokens](./findings/2026-09-18-agent-model-migration-outcome-cost.md) — a production migration shows why retries, tool recovery, regenerated media, cache accounting, and downstream outcomes belong in model-cost comparisons.
+- [Skill recommendation must preserve authorization and uncertainty](./findings/2026-09-18-authorized-skill-recommendation-boundaries.md) — recommendation should expose only granted active skills, bind catalog and policy state, and distinguish no match from unavailable judgment.
+- [Evidence-grounded judging needs citation and version boundaries](./findings/2026-09-18-citation-bound-agent-judging.md) — typed citations into fixed recordings improve auditability without proving that the cited evidence semantically supports a score.
+- [Runtime hardening needs keep, rollback, and unknown](./findings/2026-09-18-evidence-gated-runtime-hardening.md) — least-privilege mutations need separate keep, rollback, and unsupported-coverage outcomes rather than forced scoring.
+- [Long-horizon GUI agents need explicit task state](./findings/2026-09-18-gui-agent-execution-feedback-state-tracking.md) — compressed task-state tracking can connect high-level coordination to downstream execution feedback, based on a current XHS paper explainer.
+- [Model-blind review can produce artifact-addressed regression records](./findings/2026-09-18-model-blind-review-regression-bridge.md) — low human review scores can identify exact artifact units for replayable regression issues without implying automated proof of repair.
+- [Paper2Agent turns reproducibility into an operational test](./findings/2026-09-18-paper2agent-executable-research-artifacts.md) — generated executable interfaces can expose missing code, artifacts, documentation, and environments while stopping short of validating open-ended scientific conclusions.
+- [Portable agent trajectories need portable semantics](./findings/2026-09-18-portable-agent-trajectory-semantics.md) — shared event shapes do not make proposal, execution, approval, result, and node activity equivalent across frameworks.
+- [Private-code agent evaluation needs provenance and complexity strata](./findings/2026-09-18-private-code-agent-evaluation-signal.md) — a secondary XHS recap motivates reporting integration breadth and trajectory length, but does not establish its headline private-repository score.
+- [Recuris remains a release-gated memory pattern](./findings/2026-09-18-source-assessment-760fe1f5d298.md) — current landing-page evidence reinforces held-out memory admission but provides neither revision-level code comparison nor a new local adoption lead.
+- [Authoritative retrieval does not make agent synthesis authoritative](./findings/2026-09-18-un-data-commons-agent-grounding.md) — provenance-bearing retrieval improves traceability while repeatability, synthesis validity, and human review remain separate controls.
+- [Generation-time watermarking can drift agent actions](./findings/2026-09-18-watermark-sampling-drift-agent-actions.md) — paired action-level tests are needed because tool calls and refusals can change even when aggregate accuracy remains similar.
+- [ZCode workspace capture sits outside the agent tool loop](./findings/2026-09-18-zcode-workspace-snapshot-upload.md) — a reverse-engineering report makes host-level workspace snapshot and upload behavior a separate trust boundary from model training toggles and visible tools.
 
 ### 2026-09-12
 
