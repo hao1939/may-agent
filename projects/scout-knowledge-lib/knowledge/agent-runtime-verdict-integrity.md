@@ -1,8 +1,8 @@
 <ai_context>
-summary: "Reusable verification and verdict-integrity patterns: evidence bound to the verified subject, explicit receipt coverage and valid anomalies, negative controls for the verdict path, freshness binding for replayed traces, evaluator immutability across repair, proof of the inspected universe behind a clean sweep, separation of checker eligibility from acceptance authority, and release-aware expected-outcome reconciliation."
-triggers: ["verification subject binding", "Brigade", "receipt coverage", "not_checked", "invocation_ref", "ASQAV", "meta-verification", "false-green verifier", "negative control", "ProjectGuard", "trace freshness", "recorded trace", "skilldiff", "agent skill regression", "frozen tests", "test identity", "failure fingerprint", "RepoPilot", "independent runner", "inspected universe", "compared-nothing-reported-clean", "event-backed write", "Dream Studio", "checker eligibility", "acceptance authority", "FinalAcceptance", "ContributionRecord", "Workstream", "XFAIL", "XPASS", "release-aware conformance", "Monet E2E"]
-last_updated: "2026-09-18"
-source_basis: "Extracted intact from agent-runtime-effect-integrity.md during its 2026-09-14 oversized-note review, then extended with release-aware expected-outcome reconciliation, replay-freshness analysis, and evaluator-immutability analysis. Sources are Brigade revision 0e8b83ae6ef779bb6be8701dd4cd534c064608f9; jagmarques/asqav-sdk revision 4cbf71b774fe18e67c2433c6ebee7b3940fe62ec, especially its standalone verifier contract, executable requirement map, frozen conformance corpus, invocation-reference duplicate vector, and unsigned-gap vector; Dilikjon/projectguard revision 55df81492aa4890d512efd4152e2cdca514471e8, including its CLI entry point, test runner, active gate configuration, and CI workflow, with npm test, npm run verify, and a known-bad test-runner negative control reproduced locally from the pinned archive; scs0209/skilldiff revision 285489f8c18f7cf48b0b2d6b2ec35a6da45fcd64, especially its recorded/live runner split, trace assertions, report formatter, baseline fetch, CLI, and GitHub Actions workflow; indada/repopilot revision d184928c7bfef6bc0d7228f9d282f0ae2e56fda1, especially its pipeline, repair constraints, structured test-evidence comparison, architecture, verification-coverage statement, and security boundary; SeayInsights/dream-studio revision 1014fc185cbade7cb5b11bdf67b7150ce1e47d13, especially its event-backed-write gate, focused gate tests, projection declarations, and blocking pre-push wiring; Flow-Research/workstream revision d5dd94d3f1f4e52fa9f191e88d3c210758bb4b3b, especially its lifecycle contract, roadmap capability ledger, review queue persistence, and canonical-review decision record; and team-monet/monet-e2e revision ba8acbc55a4574b3a453dcbf49842f7fb363f70c, especially its suite runner, metrics ledger, source-baseline guardrail, and release-to-main flip test."
+summary: "Reusable verification and verdict-integrity patterns: evidence bound to the verified subject, explicit receipt coverage and valid anomalies, negative controls for the verdict path, freshness binding for replayed traces, evaluator immutability across repair, proof of the inspected universe behind a clean sweep, separation of checker eligibility from acceptance authority, actor-bound approval provenance, and release-aware expected-outcome reconciliation."
+triggers: ["verification subject binding", "Brigade", "receipt coverage", "not_checked", "invocation_ref", "ASQAV", "meta-verification", "false-green verifier", "negative control", "ProjectGuard", "trace freshness", "recorded trace", "skilldiff", "agent skill regression", "frozen tests", "test identity", "failure fingerprint", "RepoPilot", "independent runner", "inspected universe", "compared-nothing-reported-clean", "event-backed write", "Dream Studio", "checker eligibility", "acceptance authority", "FinalAcceptance", "ContributionRecord", "Workstream", "review provenance", "content-addressed approval", "CRT", "XFAIL", "XPASS", "release-aware conformance", "Monet E2E"]
+last_updated: "2026-09-19"
+source_basis: "Extracted intact from agent-runtime-effect-integrity.md during its 2026-09-14 oversized-note review, then extended with release-aware expected-outcome reconciliation, replay-freshness analysis, evaluator-immutability analysis, and actor-bound review-state analysis. Sources are Brigade revision 0e8b83ae6ef779bb6be8701dd4cd534c064608f9; jagmarques/asqav-sdk revision 4cbf71b774fe18e67c2433c6ebee7b3940fe62ec, especially its standalone verifier contract, executable requirement map, frozen conformance corpus, invocation-reference duplicate vector, and unsigned-gap vector; Dilikjon/projectguard revision 55df81492aa4890d512efd4152e2cdca514471e8, including its CLI entry point, test runner, active gate configuration, and CI workflow, with npm test, npm run verify, and a known-bad test-runner negative control reproduced locally from the pinned archive; scs0209/skilldiff revision 285489f8c18f7cf48b0b2d6b2ec35a6da45fcd64, especially its recorded/live runner split, trace assertions, report formatter, baseline fetch, CLI, and GitHub Actions workflow; indada/repopilot revision d184928c7bfef6bc0d7228f9d282f0ae2e56fda1, especially its pipeline, repair constraints, structured test-evidence comparison, architecture, verification-coverage statement, and security boundary; SeayInsights/dream-studio revision 1014fc185cbade7cb5b11bdf67b7150ce1e47d13, especially its event-backed-write gate, focused gate tests, projection declarations, and blocking pre-push wiring; Flow-Research/workstream revision d5dd94d3f1f4e52fa9f191e88d3c210758bb4b3b, especially its lifecycle contract, roadmap capability ledger, review queue persistence, and canonical-review decision record; imron/crt revision e3ff1126b06528048673573a667bf3561f185539, especially its content-addressed file-review records, review types, MCP mutation tools, and architecture documentation; and team-monet/monet-e2e revision ba8acbc55a4574b3a453dcbf49842f7fb363f70c, especially its suite runner, metrics ledger, source-baseline guardrail, and release-to-main flip test."
 </ai_context>
 
 # Agent Runtime Verdict Integrity
@@ -342,6 +342,70 @@ publish the implementation status of each transition independently.
 - **Inspected revision:** [`d5dd94d3f1f4e52fa9f191e88d3c210758bb4b3b`](https://github.com/Flow-Research/workstream/commit/d5dd94d3f1f4e52fa9f191e88d3c210758bb4b3b)
 - **Primary sources:** [lifecycle and trust contract](https://github.com/Flow-Research/workstream/blob/d5dd94d3f1f4e52fa9f191e88d3c210758bb4b3b/README.md), [capability ledger and explicit planned boundaries](https://github.com/Flow-Research/workstream/blob/d5dd94d3f1f4e52fa9f191e88d3c210758bb4b3b/docs/roadmap_status.md), [canonical Review decision record](https://github.com/Flow-Research/workstream/blob/d5dd94d3f1f4e52fa9f191e88d3c210758bb4b3b/docs/decision_0009_review_decisions_are_canonical.md), and [implemented review queue/admission persistence](https://github.com/Flow-Research/workstream/blob/d5dd94d3f1f4e52fa9f191e88d3c210758bb4b3b/backend/app/modules/reviews/models.py)
 - **Discovery query:** GitHub Repository Search API `"AI agent" pushed:>=2026-09-14`, sorted by update time; `incomplete_results: false`
+
+## Content-Addressed Approval Still Needs Actor Provenance — CRT (HN/GitHub, September 2026)
+
+CRT demonstrates a useful way to keep iterative human review from restarting every
+time an agent rebases or amends a branch. A review is scoped by merge-base and
+branch; each approved file is stored with an algorithm-independent content identity
+formed from its base and worktree blob IDs, plus the review time and HEAD commit. If
+that content identity changes, the file returns to the unreviewed set.
+Comments likewise retain exact selected text, surrounding context, and anchor status,
+so they can move with matching content or remain visible as approximate or orphaned
+instead of silently disappearing.
+
+This is stronger than remembering a line number or a commit-local UI position. It
+binds the operator's attention state to the bytes that were inspected, allowing an
+unchanged file to stay out of the way while changed work comes back for review. The
+MCP interface also gives an agent structured access to exact diffs, comments, code
+search, and definition lookup, avoiding the lossy handoff where a human describes a
+problem in prose and the agent must rediscover its location.
+
+The same interface exposes an important authority boundary. CRT intentionally lets
+agents create comments, resolve them, and call `mark_file_reviewed`; its README says
+this makes reviewers replaceable. At the pinned revision, however, `MarkReviewedParams`
+contains only `file_path`, `ResolveCommentParams` only a comment ID, the stored file
+review contains content identity, timestamp, and reviewed commit, and stored comments
+and resolution events have no actor or reviewer principal. The MCP methods require a
+selected review session but do not attach an authenticated reviewer identity or role
+to these mutations. Consequently, “reviewed” proves that some connected client marked
+the exact content, not that a human or an independently authorized reviewer approved
+it. A fixing agent can resolve a comment and mark the resulting file reviewed through
+the same channel that carries human review state.
+
+These are two separate and complementary properties:
+
+1. **attention freshness** — did the reviewed bytes remain unchanged?
+2. **approval provenance and authority** — who inspected those bytes, in what role,
+   under which policy, and may that actor's verdict admit the change?
+
+A practical review record should therefore retain CRT's content identity while adding
+an authenticated actor or service principal, reviewer class, operation type, policy
+or checklist identity, and supersession history. Agent self-review can remain useful,
+but it should produce a typed advisory verdict rather than overwrite or impersonate a
+required human or independent-review state. Comment resolution should mean only that
+the producer claims the concern was addressed; closure should occur when the required
+reviewer rechecks the new content. Final merge or deployment must remain a separate
+admission event bound to both the exact candidate and the required reviewer classes.
+
+The repository is early-stage (two GitHub stars at retrieval), says its interface and
+stored format may change without migration, and has no declared license in GitHub
+metadata. Scout inspected the pinned README, architecture documentation, data types,
+database writes, and MCP adapter but did not compile or execute CRT. This is therefore
+implementation evidence for content-addressed review continuity and a static authority
+gap, not an adoption, usability, or reliability benchmark.
+
+**Runtime rule:** bind review freshness to content identity, but never infer reviewer
+identity or acceptance authority from an untyped `reviewed` flag. Record who produced
+each comment, resolution, and approval; keep producer resolution separate from reviewer
+closure; and let only a policy-authorized, candidate-bound admission event promote the
+change.
+
+- **HN:** https://news.ycombinator.com/item?id=49761478
+- **Repo:** https://github.com/imron/crt
+- **Inspected revision:** [`e3ff1126b06528048673573a667bf3561f185539`](https://github.com/imron/crt/commit/e3ff1126b06528048673573a667bf3561f185539)
+- **Primary sources:** [README and review loop](https://github.com/imron/crt/blob/e3ff1126b06528048673573a667bf3561f185539/README.md), [review-state architecture](https://github.com/imron/crt/blob/e3ff1126b06528048673573a667bf3561f185539/docs/OVERVIEW.md), [review parameter and status types](https://github.com/imron/crt/blob/e3ff1126b06528048673573a667bf3561f185539/src/review_types.rs), [stored review/comment records](https://github.com/imron/crt/blob/e3ff1126b06528048673573a667bf3561f185539/src/db.rs), and [MCP review mutation tools](https://github.com/imron/crt/blob/e3ff1126b06528048673573a667bf3561f185539/src/mcp.rs)
+- **Discovery feed:** HN Algolia `search_by_date?query=AI%20agent&tags=story&hitsPerPage=20`
 
 ## Expected Outcomes Need Release-Aware Reconciliation — Monet E2E (GitHub, September 2026)
 
