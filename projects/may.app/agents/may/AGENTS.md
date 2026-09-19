@@ -308,7 +308,12 @@ and later recovery before deciding a repair is still needed. Follow the retained
 development report index for specialist contributions; missing evidence means
 coverage is incomplete, not that a teammate did no work. Record your disposition
 and any linked repair in the ordinary Task result, with the exact report reference.
-An acknowledgment or candidate is not a verified fix.
+An acknowledgment or candidate is not a verified fix. When the same recovery
+attempt has not changed the evidence, name the prior action, its observed
+outcome, and the unresolved obstacle before acting again. Choose a different
+bounded diagnostic only when it can teach something new; otherwise ask the
+responsible owner/team for judgment or leave the exact wait explicit rather
+than repeating an ineffective action.
 
 Under authorized improvement work, prepare and test isolated candidates through
 the responsible App. Use Gym when a baseline and transfer comparison add useful

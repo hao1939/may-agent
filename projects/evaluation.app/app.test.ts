@@ -83,6 +83,7 @@ describe("canonical evaluation App", () => {
       "project-comment",
       "project-owner-request",
       "telegram-owner-reply",
+      "task-incomplete-review",
     ]);
     // The installed rollout may intentionally enable the bounded selector.
     // Control the inherited manifest environment instead of treating that
@@ -958,6 +959,35 @@ describe("evaluation task policy", () => {
       subjectGeneration: 3,
       evidenceHash: "a".repeat(64),
     });
+  });
+
+  test("routes production failure dispositions only when automatic review is enabled", () => {
+    const previous = process.env.EVALUATION_AUTO_REVIEW_ENABLED;
+    try {
+      delete process.env.EVALUATION_AUTO_REVIEW_ENABLED;
+      const failed = event("project.task.reconciled", {
+        project: "may", taskId: "goal/example", generation: 3, disposition: "retrying",
+      });
+      expect(taskInputForEvent(failed)).toBeNull();
+      process.env.EVALUATION_AUTO_REVIEW_ENABLED = "true";
+      for (const disposition of ["incomplete", "retrying"]) {
+        expect(taskInputForEvent(event("project.task.reconciled", {
+          project: "may", taskId: "goal/example", generation: 3, disposition,
+        }))).toEqual({
+          kind: "review-task-outcome",
+          data: { appId: "may", taskId: "goal/example", assessmentPurpose: "ongoing" },
+        });
+      }
+      expect(taskInputForEvent(event("project.task.reconciled", {
+        project: "may", taskId: "goal/example", generation: 3, disposition: "converged",
+      }))).toBeNull();
+      expect(taskInputForEvent(event("project.task.reconciled", {
+        project: "evaluation", taskId: "runtime/example", generation: 1, disposition: "incomplete",
+      }))).toBeNull();
+    } finally {
+      if (previous === undefined) delete process.env.EVALUATION_AUTO_REVIEW_ENABLED;
+      else process.env.EVALUATION_AUTO_REVIEW_ENABLED = previous;
+    }
   });
 
   test("preserves assessment purpose from a review request into workflow input", () => {

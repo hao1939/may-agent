@@ -78,7 +78,7 @@ export function claimSemanticAllowance(
   identity: string,
   env: NodeJS.ProcessEnv = process.env,
   nowMs = Date.now(),
-): { allowed: boolean; slot: number; limit: number } {
+): { allowed: boolean; slot: number; limit: number; nextEligibleAt: number } {
   const interval = Math.max(
     60_000,
     Math.min(
@@ -104,13 +104,13 @@ export function claimSemanticAllowance(
         `${JSON.stringify({ version: 1, slot, identity })}\n`,
         { flag: "wx" },
       );
-      return { allowed: true, slot, limit };
+      return { allowed: true, slot, limit, nextEligibleAt: (slot + 1) * interval };
     } catch (error) {
       const code = object(error).code;
       if (code !== "EEXIST") throw error;
     }
   }
-  return { allowed: false, slot, limit };
+  return { allowed: false, slot, limit, nextEligibleAt: (slot + 1) * interval };
 }
 function resultFacts(
   appId: string,
@@ -477,17 +477,35 @@ export async function reviewTaskOutcome(
     reportRoot,
     `${appId}/${taskId}/${subject.evidenceHash}/${assessment.validityIdentity}`,
   );
-  if (!allowance.allowed)
-    return ctx.blocked(
-      `Semantic assessment allowance is exhausted for slot ${allowance.slot}; retain this exact request for a later interval.`,
-      [
+  if (!allowance.allowed) {
+    const summary = `Semantic assessment allowance is exhausted for slot ${allowance.slot}; the exact review remains due at ${new Date(allowance.nextEligibleAt).toISOString()}.`;
+    return ctx.done(summary, {
+      state: "waiting",
+      summary,
+      result: {
+        disposition: "budget-deferred",
+        subject: { appId, taskId, generation: actualGeneration },
+        evidenceHash: subject.evidenceHash,
+        allowance: {
+          slot: allowance.slot,
+          limit: allowance.limit,
+          nextEligibleAt: allowance.nextEligibleAt,
+        },
+      },
+      facts: [
         "review-disposition:budget-deferred",
         `subject:${appId}/${taskId}`,
+        `subject-generation:${actualGeneration}`,
+        `evidence-hash:${subject.evidenceHash}`,
         `assessment-purpose:${assessment.purpose}`,
         `allowance-slot:${allowance.slot}`,
         `allowance-limit:${allowance.limit}`,
+        `next-eligible-at:${allowance.nextEligibleAt}`,
       ],
-    );
+      reviewAt: allowance.nextEligibleAt,
+      actions: [],
+    });
+  }
 
   const execution = await ctx.agents.call(
     "evaluator",

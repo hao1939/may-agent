@@ -522,7 +522,7 @@ function safeTaskIdPart(value: unknown): string {
 export function validateEvaluationTaskAction(
   action: TaskAction,
 ): string | null {
-  if (action.taskId.startsWith("runtime/")) {
+  if (action.kind === "unblock-task" && action.taskId.startsWith("runtime/")) {
     return `${action.kind} cannot mutate reconciler-owned task ${action.taskId}`;
   }
   return null;
@@ -918,6 +918,22 @@ export function taskInputForEvent(
     }
     case "evaluation.task.select":
       return { kind: "automatic-review", data: eventData(event) };
+    case "project.task.reconciled": {
+      const data = eventData(event);
+      const appId = stringValue(data.project ?? data.appId);
+      const taskId = stringValue(data.taskId);
+      return automaticReviewConfig().enabled &&
+        (data.disposition === "incomplete" ||
+          data.disposition === "retrying") &&
+        appId &&
+        taskId &&
+        !isEvaluationOwnedReference(appId)
+        ? {
+            kind: "review-task-outcome",
+            data: { appId, taskId, assessmentPurpose: "ongoing" },
+          }
+        : null;
+    }
     case "evaluation.session.requested": {
       const sessionId = eventSessionId(event);
       if (isExplicitlyEvaluationOwned(eventData(event))) return null;
@@ -1214,6 +1230,11 @@ const baseApp = defineApp({
       id: "telegram-owner-reply",
       event: "telegram.reply",
       toInput: ownerMessageInput,
+    },
+    {
+      id: "task-incomplete-review",
+      event: "project.task.reconciled",
+      toInput: taskInputForEvent,
     },
   ],
   observations: [

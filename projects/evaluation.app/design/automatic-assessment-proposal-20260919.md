@@ -56,10 +56,14 @@ separately reviewable and reuse their established return contracts.
 
 Current source has an exact external Task reader, a serialized selector that
 emits at most one review per wake, and May's explicit subscription to
-`evaluation.task_report_published`. The selector excludes running/pending/waiting
-work and normally looks back seven days. The evaluator instructions and rubric
-describe historical outcomes. Simply allowing more statuses would incorrectly
-grade unfinished work by completion criteria.
+`evaluation.task_report_published`. The selector includes running/pending/waiting work under a distinct ongoing
+rubric and keeps open obligations eligible beyond the seven-day outcome window.
+The strengthening candidate leaves that fair bounded sampling unchanged and
+adds an opt-in exact review opportunity for production reconciliation outcomes
+reported as `incomplete` or `retrying`. Evaluation rereads current evidence, so
+a recovered transient is not frozen as a failure. Other stalls retain ordinary
+sampling latency; lifetime attempt count, age, and error prose alone are not
+failure verdicts.
 
 The manifest currently uses an event schedule; the Host's existing App-input
 schedule supports durable slot identity and latest-slot catch-up. Assess a small
@@ -159,8 +163,13 @@ is required to read retained status. Tests must not send real external messages.
 
 Start serialized and keep an explicit small semantic-review budget covering both
 scheduled and event-triggered work. Exact duplicate suppression alone does not
-bound a burst of different subjects. Reuse existing Task/admission/selection
-mechanisms and expose deferred coverage; do not silently increase live cadence.
+bound a burst of different subjects. Exhaustion returns an accepted `waiting`
+result for the exact review with subject generation, evidence hash, slot, limit,
+and actual next eligibility. The waiting result uses the Host's absolute `reviewAt`; it introduces no
+Condition or producer. Early wakes preserve the deadline and spend no model
+call. At the deadline the same exact request becomes eligible for
+reconsideration; elapsed time never proves an external fact. Reuse existing
+Task/admission/selection mechanisms and expose deferred coverage; do not silently increase live cadence.
 The default daily sample is limited coverage, not a prompt-response guarantee.
 Select a pilot cadence based on acceptable detection delay and observed cost;
 keep it configuration/guidance, not a universal Host policy.

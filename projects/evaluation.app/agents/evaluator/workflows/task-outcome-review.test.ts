@@ -1,4 +1,4 @@
-import { describe, expect, test } from "bun:test";
+import { describe, expect, setSystemTime, test } from "bun:test";
 import {
   createTestAppRead,
   createTestAppWorkflowContext,
@@ -8,7 +8,11 @@ import { EvidenceStore } from "../../../../../shared/tools/task-evidence.js";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { taskForEvaluationInput } from "../../../app.ts";
-import { assessmentContext, reviewTaskOutcome } from "./task-outcome-review.ts";
+import {
+  assessmentContext,
+  claimSemanticAllowance,
+  reviewTaskOutcome,
+} from "./task-outcome-review.ts";
 import type { PublicCommand } from "./lib/public-task-evidence.ts";
 import { listTaskReports } from "./lib/task-report-store.ts";
 
@@ -575,6 +579,59 @@ describe("Task outcome review", () => {
     expect(factsOf(result)).toContain("expected-generation:2");
     expect(factsOf(result)).toContain("actual-generation:1");
     expect(calls).toBe(0);
+  });
+
+  test("returns the same exact deadline for repeated same-subject reviews and becomes eligible after it", async () => {
+    const root = mkdtempSync(join(tmpdir(), "task-review-budget-wait-"));
+    const now = 1_789_824_000_000;
+    setSystemTime(new Date(now));
+    try {
+      const occupied = claimSemanticAllowance(root, "another-subject", process.env, now);
+      expect(occupied.allowed).toBeTrue();
+      let modelCalls = 0;
+      const context = () =>
+        createTestAppWorkflowContext({
+          input: { appId, taskId },
+          reconciliation: reconciliation(),
+          callAgent: async () => {
+            modelCalls += 1;
+            return {
+              id: "s_after_budget",
+              kind: "agent",
+              status: "done",
+              summary: "done",
+              output: judgment,
+            };
+          },
+        });
+
+      const first = await reviewTaskOutcome(context(), reader(), root);
+      const early = await reviewTaskOutcome(context(), reader(), root);
+      for (const deferred of [first, early]) {
+        expect(deferred.status).toBe("done");
+        expect(deferred.output).toMatchObject({
+          state: "waiting",
+          result: {
+            disposition: "budget-deferred",
+            subject: { appId, taskId, generation: 1 },
+            allowance: {
+              slot: occupied.slot,
+              limit: occupied.limit,
+              nextEligibleAt: occupied.nextEligibleAt,
+            },
+          },
+          reviewAt: occupied.nextEligibleAt,
+        });
+      }
+      expect(modelCalls).toBe(0);
+
+      setSystemTime(new Date(occupied.nextEligibleAt + 1));
+      const eligible = await reviewTaskOutcome(context(), reader(), root);
+      expect(eligible.output).toMatchObject({ state: "converged" });
+      expect(modelCalls).toBe(1);
+    } finally {
+      setSystemTime();
+    }
   });
 
   test("routes an admitted self-review through deterministic exclusion with zero evaluator calls", async () => {

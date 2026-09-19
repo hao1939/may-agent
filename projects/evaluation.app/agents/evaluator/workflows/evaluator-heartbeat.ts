@@ -16,14 +16,21 @@ type OwnerReviewInput = { scope?: string; reason?: string };
 type AgentResult = Exclude<TaskReconcileResult, { state: "needs-agent" }>;
 
 function fallbackResult(summary: string, facts: string[]): AgentResult {
-  return { state: "converged", summary, facts: facts.slice(0, 32), actions: [] };
+  return {
+    state: "converged",
+    summary,
+    facts: facts.slice(0, 32),
+    actions: [],
+  };
 }
 
 export function normalizeAgentResult(
   output: unknown,
   reconciliation: TaskReconciliationContext<OwnerReviewInput>,
 ): AgentResult {
-  const admission = admitTaskReconcileResult(output, { allowNeedsAgent: false });
+  const admission = admitTaskReconcileResult(output, {
+    allowNeedsAgent: false,
+  });
   if (admission.ok === false) {
     return fallbackResult(
       `Owner review returned an invalid structured result; preserving current desired state. ${admission.error}`,
@@ -31,12 +38,18 @@ export function normalizeAgentResult(
     );
   }
   const result = admission.result as AgentResult;
-  const live = new Map(reconciliation.children.live.map((child) => [child.taskId, child]));
+  const live = new Map(
+    reconciliation.children.live.map((child) => [child.taskId, child]),
+  );
   const actions = (result.actions ?? []).filter((action) => {
+    if (action.kind === "retire-condition") return true;
     const target = live.get(action.taskId);
-    return !action.taskId.startsWith("runtime/") && Boolean(target) &&
+    return (
+      !action.taskId.startsWith("runtime/") &&
+      Boolean(target) &&
       target?.generation === action.expectedGeneration &&
-      (target.status === "waiting" || target.status === "attention");
+      (target.status === "waiting" || target.status === "attention")
+    );
   });
   if (actions.length === (result.actions ?? []).length) return result;
   return fallbackResult(
@@ -45,7 +58,10 @@ export function normalizeAgentResult(
   );
 }
 
-function ownerPrompt(input: OwnerReviewInput, reconciliation: TaskReconciliationContext<OwnerReviewInput>): string {
+function ownerPrompt(
+  input: OwnerReviewInput,
+  reconciliation: TaskReconciliationContext<OwnerReviewInput>,
+): string {
   return [
     "You own evaluation.app reliability, not the work of evaluated Apps.",
     "Use only this bounded packet. Do not query global state, create work, edit files, or evaluate Evaluation's own quality.",
@@ -57,23 +73,46 @@ function ownerPrompt(input: OwnerReviewInput, reconciliation: TaskReconciliation
   ].join("\n\n");
 }
 
-export async function execute(ctx: WorkflowContext<OwnerReviewInput>): Promise<ExecutionResult> {
+export async function execute(
+  ctx: WorkflowContext<OwnerReviewInput>,
+): Promise<ExecutionResult> {
   const reconciliation = ctx.reconciliation;
-  if (!reconciliation) return ctx.blocked("evaluator-heartbeat requires canonical reconciliation context");
+  if (!reconciliation)
+    return ctx.blocked(
+      "evaluator-heartbeat requires canonical reconciliation context",
+    );
   await ctx.events.emit({
     type: "evaluation.owner_review_started",
     localKey: taskEmissionKey(ctx, "owner-review-started"),
-    data: { taskId: reconciliation.taskId, generation: reconciliation.generation },
+    data: {
+      taskId: reconciliation.taskId,
+      generation: reconciliation.generation,
+    },
     target: { appId: "evaluation" },
   });
-  const execution = await ctx.agents.call(reconciliation.agent, ownerPrompt(ctx.input, reconciliation), { schema: taskAgentResultSchema });
-  const result = execution.status === "done"
-    ? normalizeAgentResult(execution.output, reconciliation)
-    : fallbackResult(`Owner review execution ${execution.id} ended ${execution.status}; preserving current desired state.`, [`execution:${execution.id}`, `execution-status:${execution.status}`]);
+  const execution = await ctx.agents.call(
+    reconciliation.agent,
+    ownerPrompt(ctx.input, reconciliation),
+    { schema: taskAgentResultSchema },
+  );
+  const result =
+    execution.status === "done"
+      ? normalizeAgentResult(execution.output, reconciliation)
+      : fallbackResult(
+          `Owner review execution ${execution.id} ended ${execution.status}; preserving current desired state.`,
+          [`execution:${execution.id}`, `execution-status:${execution.status}`],
+        );
   await ctx.events.emit({
-    type: execution.status === "done" ? "evaluation.owner_reviewed" : "evaluation.owner_review_failed",
+    type:
+      execution.status === "done"
+        ? "evaluation.owner_reviewed"
+        : "evaluation.owner_review_failed",
     localKey: taskEmissionKey(ctx, "owner-reviewed"),
-    data: { taskId: reconciliation.taskId, generation: reconciliation.generation, state: result.state },
+    data: {
+      taskId: reconciliation.taskId,
+      generation: reconciliation.generation,
+      state: result.state,
+    },
     target: { appId: "evaluation" },
   });
   return ctx.done(result.summary, result);

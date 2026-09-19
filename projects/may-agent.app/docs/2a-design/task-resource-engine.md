@@ -283,9 +283,22 @@ See the [checked wait example](../examples/app.ts).
 
 Unknown result fields are rejected. `needs-agent` is workflow-only. A waiting
 result may retain a bounded typed judgment in `result`; later attempts read it
-without reconstructing state from prose. A failed verifier cannot establish
-completion. Result settlement, including newer input, uses the fences described
-below; this table does not override them. The [wait-recovery candidate](../proposals/task-wait-recovery-20260918.md) returns inputs with obsolete waits for reconsideration without satisfying replacement or unrelated waits.
+without reconstructing state from prose. A result may explicitly
+`retire-condition` only for one Condition currently linked to its own Task and
+must cite that Condition's observed generation plus non-empty result facts. This
+removes the Task's obsolete link; it does not assert that the external event
+occurred, mutate a shared Condition for another Task, or clear unrelated waits.
+Omission preserves waits, and stale generation or newer-input fences reject the
+whole result. A waiting result may instead carry one absolute `reviewAt` when
+reconsideration itself is due but no external fact is awaited. Runtime persists
+that deadline with the accepted result and exact outstanding input, schedules it
+through the ordinary recovery index across restart, and permits an earlier event
+to wake the Task without consuming the deadline. Reaching `reviewAt` only makes
+a new attempt eligible; it never satisfies a Condition, bypasses normal failure
+backoff, or answers the caller. An early re-wait that omits `reviewAt` retains a
+future deadline; after it is due, omission requires another Condition or a new
+future deadline. A failed verifier cannot establish completion. Result settlement,
+including newer input, uses the fences described below; this table does not override them. The [wait-recovery candidate](../proposals/task-wait-recovery-20260918.md) returns inputs with obsolete waits for reconsideration without satisfying replacement or unrelated waits.
 
 `incomplete` requires a summary and non-empty facts; it cannot include actions, Conditions
 or child App requests. The Host checks eligibility inside the fenced transaction.
