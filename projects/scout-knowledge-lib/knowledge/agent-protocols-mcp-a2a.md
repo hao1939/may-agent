@@ -1,8 +1,8 @@
 <ai_context>
-summary: "Canonical overview of the agent protocol landscape: MCP (agent→tool), A2A (agent→agent), AG-UI (agent→frontend), AHP (host→multi-client session state), and practical ACP implementation evidence. Covers what each standardizes, the SDK/ecosystem state, competing protocols, Chinese community sentiment, research findings, and how protocol roadmaps and implementations are splitting transport/tool shells from identity, discovery, and runtime control layers. A pinned Ripwire implementation adds a concrete progressive-discovery rule: omit capabilities that provably cannot succeed in the bound workspace, disclose the omission, and retain execution-time refusal rather than confusing catalog visibility with authority."
-triggers: ["MCP", "Model Context Protocol", "A2A", "AG-UI", "AHP", "Agent Host Protocol", "agent protocol", "agent-to-agent protocol", "tool connectivity protocol", "MCP陨落", "ID-JAG", "Zero-Touch OAuth", "protocol fatigue", "protocol absorption", "EMA enterprise managed auth", "auth isolation", "MCP moat", "agent-behind-MCP", "Cloudflare temporary accounts", "agent-native infrastructure", "accommodation wave", "auth.md", "ephemeral deploy", "stateless MCP", "requestState", "mcp-use v2", "ACP backend rail", "entwurf", "garden id", "progressive discovery", "capability-conditioned discovery", "Ripwire", "workload identity federation", "DPoP", "MCP roadmap"]
-last_updated: "2026-09-11"
-source_basis: "GitHub trending repos June 2026, XHS Chinese AI community May-June 2026, arXiv briefings June 2026, HN explorations June-Aug 2026 (incl. scan #33 and HN items 49131438, 49198472, 49399591, and 49453910), arXiv 2606.30317 (MCP Architecture Patterns), scan #262, Simon Willison's stateless MCP write-up (2026-07-31), Manufact's mcp-use v2 stateless-MCP rebuild write-up (2026-07-29), the current GitHub repo junghan0611/entwurf checked 2026-08-06 for ACP/backend-rail implementation evidence, the official MCP roadmap published 2026-08-22, VS Code's first-party Agent Host launch post (2026-08-26), and redhat-et/ripwire inspected at commit 5c4235b9befd4cd5b6f9f3a489940d7b79f86520 for capability-conditioned MCP catalog evidence (2026-09-11). See source declarations below."
+summary: "Canonical overview of the agent protocol landscape: MCP (agent→tool), A2A (agent→agent), AG-UI (agent→frontend), AHP (host→multi-client session state), and practical ACP implementation evidence. Covers what each standardizes, the SDK/ecosystem state, competing protocols, Chinese community sentiment, research findings, and how protocol roadmaps and implementations are splitting transport/tool shells from identity, discovery, and runtime control layers. Pinned implementation evidence now covers capability-conditioned discovery and a transport-level MCP fuzz harness whose result taxonomy illustrates why request failure, server liveness, and recovery must be measured separately."
+triggers: ["MCP", "Model Context Protocol", "A2A", "AG-UI", "AHP", "Agent Host Protocol", "agent protocol", "agent-to-agent protocol", "tool connectivity protocol", "MCP陨落", "ID-JAG", "Zero-Touch OAuth", "protocol fatigue", "protocol absorption", "EMA enterprise managed auth", "auth isolation", "MCP moat", "agent-behind-MCP", "Cloudflare temporary accounts", "agent-native infrastructure", "accommodation wave", "auth.md", "ephemeral deploy", "stateless MCP", "requestState", "mcp-use v2", "ACP backend rail", "entwurf", "garden id", "progressive discovery", "capability-conditioned discovery", "Ripwire", "mcp-assert", "MCP fuzzing", "fault classification", "workload identity federation", "DPoP", "MCP roadmap"]
+last_updated: "2026-09-19"
+source_basis: "GitHub trending repos June 2026, XHS Chinese AI community May-June 2026, arXiv briefings June 2026, HN explorations June-Aug 2026 (incl. scan #33 and HN items 49131438, 49198472, 49399591, and 49453910), arXiv 2606.30317 (MCP Architecture Patterns), scan #262, Simon Willison's stateless MCP write-up (2026-07-31), Manufact's mcp-use v2 stateless-MCP rebuild write-up (2026-07-29), the current GitHub repo junghan0611/entwurf checked 2026-08-06 for ACP/backend-rail implementation evidence, the official MCP roadmap published 2026-08-22, VS Code's first-party Agent Host launch post (2026-08-26), redhat-et/ripwire inspected at commit 5c4235b9befd4cd5b6f9f3a489940d7b79f86520 for capability-conditioned MCP catalog evidence (2026-09-11), and blackwell-systems/mcp-assert inspected at commit f2389c6511fdd205bc8732b0529e90eb1d25dd4b for transport-level fuzzing and fault-classification evidence (2026-09-19). See source declarations below."
 </ai_context>
 
 # Agent Protocols: MCP, A2A, and the Emerging Stack
@@ -29,6 +29,7 @@ coordination topology.
 - [GitHub Implementation Follow-Through: ACP Becomes a Backend Shell While Runtime Identity Lives Elsewhere](#8a2-github-implementation-follow-through-2026-08-06-acp-becomes-a-backend-shell-while-runtime-identity-lives-elsewhere)
 - [MCP Roadmap: Progressive Discovery Becomes an Authorization Boundary](#8a3-hn-roadmap-signal-2026-08-22-progressive-discovery-becomes-an-authorization-boundary)
 - [Ripwire: Capability-Conditioned Discovery Must Disclose Its Proof Boundary](#8a4-github-implementation-signal-2026-09-11-capability-conditioned-discovery-must-disclose-its-proof-boundary)
+- [mcp-assert: Fault Injection Needs Recovery Evidence](#8a5-github-implementation-signal-2026-09-19-fault-injection-needs-recovery-evidence)
 - [MCP Protocol Debt — Quantitative Evidence](#8b-mcp-protocol-debt--quantitative-evidence-2026-07-12)
 
 ## Protocol Taxonomy
@@ -1057,6 +1058,65 @@ and the discovery Search API returned `incomplete_results: false`.
 [pinned catalog-pruning regression gate](https://github.com/redhat-et/ripwire/blob/5c4235b9befd4cd5b6f9f3a489940d7b79f86520/test/mcptoolprunecheck.sh),
 [pinned map-before-read guidance](https://github.com/redhat-et/ripwire/blob/5c4235b9befd4cd5b6f9f3a489940d7b79f86520/skills/ripwire-orient/map-before-you-read.md), and
 [pinned warm-session benchmark harness](https://github.com/redhat-et/ripwire/blob/5c4235b9befd4cd5b6f9f3a489940d7b79f86520/bench/mcp_session_timing.py).
+
+### §8a.5. GitHub Implementation Signal (2026-09-19): Fault Injection Needs Recovery Evidence
+
+[`blackwell-systems/mcp-assert`](https://github.com/blackwell-systems/mcp-assert)
+provides a useful concrete shape for testing MCP servers through their public
+protocol surface. At pinned revision
+[`f2389c65`](https://github.com/blackwell-systems/mcp-assert/commit/f2389c6511fdd205bc8732b0529e90eb1d25dd4b),
+the client supports stdio, SSE, and Streamable HTTP, performs MCP initialization
+and tool discovery, then derives reproducible adversarial calls from each
+tool's JSON Schema. The generator includes missing required fields, wrong types,
+nulls, long strings, path and shell-shaped strings, extreme numbers, oversized
+arrays, and nested objects. This is stronger than testing an in-process handler:
+it exercises framing, initialization, schema publication, request handling, and
+timeouts across the same boundary a real client uses.
+
+The implementation also exposes a classification boundary worth preserving in
+any agent-protocol test harness. A returned tool result is counted as a pass
+when it contains ordinary content or a proper `isError` response, except for a
+small internal-error/stack-trace heuristic. A timeout is labeled `timeout`, but
+**every other client `CallTool` error is labeled `crash`**. The harness does not
+then issue a health probe, rediscover tools, or make a known-good call to show
+whether the server process or endpoint actually died. Its checked fuzz tests
+exercise report conversion and status constants; they do not establish the
+request-error-versus-process-death distinction. Accordingly, the implementation
+supports fault injection and response classification, but the name `crash`
+encodes a stronger diagnosis than the observed evidence necessarily warrants.
+
+The reusable design rule is: **separate stimulus, immediate response, liveness,
+and recovery into distinct evidence fields**. For each adversarial call, retain
+at least:
+
+1. the seeded input and schema revision;
+2. the protocol result (`result`, JSON-RPC error, malformed response, timeout,
+   or transport disconnect);
+3. a post-failure liveness probe; and
+4. a known-good recovery call on the same session, plus a reconnect result when
+   applicable.
+
+Only failed liveness or recovery should promote a request-level error to a
+server-crash claim. This matters across transports: a stdio child exiting, an
+SSE stream disconnecting, and an HTTP request rejection can surface through the
+same client error channel while implying different containment and retry
+behavior. Deterministic seeds are valuable, but reproducible inputs do not by
+themselves make the diagnosis reproducible.
+
+**Evidence boundary:** GitHub repository Search returned
+`incomplete_results: false`; the pinned recursive tree response was also
+untruncated (950 entries). This inspection read the repository metadata,
+README, fuzz generator, fuzz runner, runner tests, and transport client at the
+pinned commit. It did not execute the binary, reproduce the repository's
+published scan totals, test hosted servers, or independently verify the README
+claim that a passing server works with every MCP client.
+
+**Sources:** [repository](https://github.com/blackwell-systems/mcp-assert),
+[pinned README](https://github.com/blackwell-systems/mcp-assert/blob/f2389c6511fdd205bc8732b0529e90eb1d25dd4b/README.md),
+[pinned adversarial-input generator](https://github.com/blackwell-systems/mcp-assert/blob/f2389c6511fdd205bc8732b0529e90eb1d25dd4b/internal/fuzz/generator.go),
+[pinned fuzz runner and classifier](https://github.com/blackwell-systems/mcp-assert/blob/f2389c6511fdd205bc8732b0529e90eb1d25dd4b/internal/runner/fuzz.go),
+[pinned fuzz tests](https://github.com/blackwell-systems/mcp-assert/blob/f2389c6511fdd205bc8732b0529e90eb1d25dd4b/internal/runner/fuzz_test.go), and
+[pinned transport client](https://github.com/blackwell-systems/mcp-assert/blob/f2389c6511fdd205bc8732b0529e90eb1d25dd4b/internal/runner/client.go).
 
 ---
 
