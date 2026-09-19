@@ -51,6 +51,13 @@ export type HumanTaskAction = {
   task?: { appId: string; taskId: string; ref: string };
 };
 
+export type HumanTaskRecurrence = {
+  /** Canonical recheck interval when the Task's open scheduling Condition exposes one. */
+  cadenceMs?: number;
+  /** Canonical next scheduled observation, expressed as an ISO timestamp. */
+  nextRunAt?: string;
+};
+
 export type HumanTaskView = {
   appId: string;
   taskId: string;
@@ -68,8 +75,9 @@ export type HumanTaskView = {
   result?: Record<string, unknown>;
   facts?: string[];
   updatedAt: number;
-  /** True when this Task was admitted by a configured App input schedule. */
+  /** True when canonical App scheduling or an open timed recheck makes this Task recurring. */
   recurring?: boolean;
+  recurrence?: HumanTaskRecurrence;
   terminal: boolean;
   cancellable: boolean;
   execution?: { attemptId: string; sessionId?: string };
@@ -162,7 +170,8 @@ type TaskRow = {
   attempt_json?: string | null;
   observed_attempt_json?: string | null;
   human_conditions_json?: string | null;
-  recurring?: number;
+  recurrence_json?: string | null;
+  schedule_source_id?: string | null;
 };
 
 type TaskProgressRow = { data?: string | null; timestamp?: number };
@@ -315,15 +324,65 @@ const LEGACY_HAO_HUMAN_OWNER_SQL = `${HUMAN_OWNER_VALUE_SQL} = 'Hao'`;
 const HUMAN_OWNER_SQL = `(${CANONICAL_HUMAN_OWNER_SQL}
       OR ${LEGACY_HAO_HUMAN_OWNER_SQL})`;
 
-function recurringTaskSql(appId: string, taskId: string): string {
-  return `EXISTS (
-    SELECT 1 FROM app_inbox_items AS scheduled_input INDEXED BY idx_app_inbox_waiting
+function taskRecurrenceSql(appId: string, taskId: string): string {
+  return `(SELECT json_object(
+       'cadenceMs', json_extract(timed_condition.condition_json, '$.spec.reviewAfterMs'),
+       'nextRunAt', substr(json_extract(timed_condition.condition_json, '$.spec.subject'), 6)
+     )
+     FROM app_task_condition_routes timed_route
+     JOIN app_task_conditions timed_condition
+       ON timed_condition.app_id = timed_route.app_id
+      AND timed_condition.condition_id = timed_route.condition_id
+     WHERE timed_route.app_id = ${appId}
+       AND timed_route.task_id = ${taskId}
+       AND timed_condition.state != 'true'
+       AND json_extract(timed_condition.condition_json, '$.spec.type') = 'time.reached'
+       AND json_extract(timed_condition.condition_json, '$.spec.reviewAfterMs') IS NOT NULL
+       AND json_extract(timed_condition.condition_json, '$.spec.subject') GLOB 'time:?*'
+     ORDER BY timed_route.condition_id
+     LIMIT 1)`;
+}
+
+function taskScheduleSourceSql(appId: string, taskId: string): string {
+  return `(SELECT scheduled_input.source_id
+    FROM app_inbox_items AS scheduled_input INDEXED BY idx_app_inbox_waiting
     WHERE scheduled_input.waiting_on_kind = 'task'
       AND scheduled_input.waiting_on_id = ${taskId}
       AND scheduled_input.app_id = ${appId}
       AND scheduled_input.source_kind = 'system'
       AND instr(scheduled_input.source_id, 'schedule:' || ${appId} || ':') = 1
-  )`;
+    ORDER BY scheduled_input.created_at DESC
+    LIMIT 1)`;
+}
+
+function taskRecurrence(_row: TaskRow, configured?: HumanTaskRecurrence): HumanTaskRecurrence | undefined {
+  // A time.reached Condition is only a recovery/observation checkpoint. The
+  // configured input schedule alone establishes recurrence and its next slot.
+  if (!configured || Array.isArray(configured)) return undefined;
+  return {
+    ...(Number.isFinite(configured.cadenceMs) && Number(configured.cadenceMs) > 0
+      ? { cadenceMs: Number(configured.cadenceMs) }
+      : {}),
+    ...(configured.nextRunAt ? { nextRunAt: configured.nextRunAt } : {}),
+  };
+}
+
+function configuredTaskRecurrence(
+  registry: Pick<AppRegistry, "snapshot">,
+  row: TaskRow,
+  now = Date.now(),
+): HumanTaskRecurrence | undefined {
+  if (!row.app_id || !row.schedule_source_id) return undefined;
+  const prefix = `schedule:${row.app_id}:`;
+  if (!row.schedule_source_id.startsWith(prefix)) return undefined;
+  const scheduleId = row.schedule_source_id.slice(prefix.length);
+  const definition = registry.snapshot().entries.find((entry) => entry.definition.id === row.app_id)?.definition;
+  const schedule = definition?.schedules?.find(
+    (candidate) => candidate.id === scheduleId && candidate.enabled !== false && Boolean(candidate.input),
+  );
+  if (!schedule || !Number.isFinite(schedule.intervalMs) || schedule.intervalMs <= 0) return undefined;
+  const nextSlot = (Math.floor(now / schedule.intervalMs) + 1) * schedule.intervalMs;
+  return { cadenceMs: schedule.intervalMs, nextRunAt: new Date(nextSlot).toISOString() };
 }
 
 const HUMAN_CONDITIONS_SQL = `(SELECT json_group_array(json(human_condition.condition_json))
@@ -478,11 +537,17 @@ function descendantHumanAction(db: SqliteDb, view: HumanTaskView): HumanTaskActi
   return projected ? { ...projected, task: { appId: owner.appId, taskId: owner.taskId, ref } } : undefined;
 }
 
-function projectTask(row: TaskRow, ref: string, detail = true): HumanTaskView | null {
+function projectTask(
+  row: TaskRow,
+  ref: string,
+  detail = true,
+  configuredRecurrence?: HumanTaskRecurrence,
+): HumanTaskView | null {
   const appId = row.app_id;
   const taskId = row.task_id;
   if (!appId || !taskId) return null;
   const terminal = row.terminal !== 0;
+  const recurrence = taskRecurrence(row, configuredRecurrence);
   if (row.terminal === 2) {
     const cancellation = parseJson<AppTaskCancellation>(row.payload);
     if (!cancellation) return null;
@@ -502,7 +567,8 @@ function projectTask(row: TaskRow, ref: string, detail = true): HumanTaskView | 
       ...(cancellation.result ? { result: structuredClone(cancellation.result) } : {}),
       ...(cancellation.facts ? { facts: [...cancellation.facts] } : {}),
       updatedAt: row.updated_at ?? Date.parse(cancellation.cancelledAt),
-      recurring: row.recurring === 1,
+      recurring: Boolean(recurrence),
+      ...(recurrence ? { recurrence } : {}),
       terminal: true,
       cancellable: false,
     };
@@ -527,7 +593,8 @@ function projectTask(row: TaskRow, ref: string, detail = true): HumanTaskView | 
       ...(receipt.result ? { result: structuredClone(receipt.result) } : {}),
       ...(receipt.facts ? { facts: [...receipt.facts] } : {}),
       updatedAt: row.updated_at ?? Date.parse(receipt.completedAt),
-      recurring: row.recurring === 1,
+      recurring: Boolean(recurrence),
+      ...(recurrence ? { recurrence } : {}),
       terminal: true,
       cancellable: false,
     };
@@ -559,7 +626,8 @@ function projectTask(row: TaskRow, ref: string, detail = true): HumanTaskView | 
     ...(observationIsCurrent && resource.status.result ? { result: structuredClone(resource.status.result) } : {}),
     ...(observationIsCurrent && resource.status.facts ? { facts: [...resource.status.facts] } : {}),
     updatedAt: row.updated_at ?? Date.parse(resource.status.updatedAt),
-    recurring: row.recurring === 1,
+    recurring: Boolean(recurrence),
+    ...(recurrence ? { recurrence } : {}),
     terminal: false,
     cancellable: true,
     ...(resource.status.currentAttemptId
@@ -599,7 +667,8 @@ function readTaskRow(db: SqliteDb, appId: string, taskId: string): TaskRow | nul
        SELECT t.app_id, t.task_id, ${LIVE_TASK_PHASE_SQL} AS phase, t.updated_at, t.resource_json AS payload, 0 AS terminal,
          t.ready, a.attempt_json, oa.attempt_json AS observed_attempt_json,
          ${HUMAN_CONDITIONS_SQL} AS human_conditions_json,
-         ${recurringTaskSql("t.app_id", "t.task_id")} AS recurring,
+         ${taskRecurrenceSql("t.app_id", "t.task_id")} AS recurrence_json,
+         ${taskScheduleSourceSql("t.app_id", "t.task_id")} AS schedule_source_id,
          t.generation AS current_generation
        FROM app_tasks t
        LEFT JOIN app_task_attempts a
@@ -612,7 +681,8 @@ function readTaskRow(db: SqliteDb, appId: string, taskId: string): TaskRow | nul
        SELECT r.app_id, r.receipt_id AS task_id, 'done' AS phase, r.completed_at AS updated_at,
          r.receipt_json AS payload, 1 AS terminal, NULL AS ready, NULL AS attempt_json,
          NULL AS observed_attempt_json, NULL AS human_conditions_json,
-         ${recurringTaskSql("r.app_id", "r.receipt_id")} AS recurring,
+         ${taskRecurrenceSql("r.app_id", "r.receipt_id")} AS recurrence_json,
+         ${taskScheduleSourceSql("r.app_id", "r.receipt_id")} AS schedule_source_id,
          json_extract(r.receipt_json, '$.metadata.generation') AS current_generation
        FROM app_task_receipts r
        WHERE r.app_id = ? AND r.receipt_id = ?
@@ -620,7 +690,8 @@ function readTaskRow(db: SqliteDb, appId: string, taskId: string): TaskRow | nul
        SELECT c.app_id, c.task_id, 'cancelled' AS phase, c.requested_at AS updated_at,
          c.cancellation_json AS payload, 2 AS terminal, NULL AS ready, NULL AS attempt_json,
          NULL AS observed_attempt_json, NULL AS human_conditions_json,
-         ${recurringTaskSql("c.app_id", "c.task_id")} AS recurring,
+         ${taskRecurrenceSql("c.app_id", "c.task_id")} AS recurrence_json,
+         ${taskScheduleSourceSql("c.app_id", "c.task_id")} AS schedule_source_id,
          json_extract(c.cancellation_json, '$.generation') AS current_generation
        FROM app_task_cancellations c
        WHERE c.app_id = ? AND c.task_id = ?
@@ -957,7 +1028,8 @@ export class HumanTaskService {
       parts.push(
         `SELECT t.app_id, t.task_id, ${LIVE_TASK_PHASE_SQL} AS phase, t.updated_at, t.resource_json AS payload, 0 AS terminal,
            t.ready, a.attempt_json, ${HUMAN_CONDITIONS_SQL} AS human_conditions_json,
-           ${recurringTaskSql("t.app_id", "t.task_id")} AS recurring
+           ${taskRecurrenceSql("t.app_id", "t.task_id")} AS recurrence_json,
+           ${taskScheduleSourceSql("t.app_id", "t.task_id")} AS schedule_source_id
          FROM app_tasks t
          LEFT JOIN app_task_attempts a
            ON a.app_id = t.app_id AND a.attempt_id = t.current_attempt_id
@@ -977,7 +1049,8 @@ export class HumanTaskService {
       parts.push(
         `SELECT r.app_id, r.receipt_id AS task_id, 'done' AS phase, r.completed_at AS updated_at,
            r.receipt_json AS payload, 1 AS terminal, NULL AS ready, NULL AS attempt_json, NULL AS human_conditions_json,
-           ${recurringTaskSql("r.app_id", "r.receipt_id")} AS recurring
+           ${taskRecurrenceSql("r.app_id", "r.receipt_id")} AS recurrence_json,
+           ${taskScheduleSourceSql("r.app_id", "r.receipt_id")} AS schedule_source_id
          FROM app_task_receipts r
          WHERE NOT EXISTS (
            SELECT 1 FROM app_task_cancellations c WHERE c.app_id = r.app_id AND c.task_id = r.receipt_id
@@ -993,7 +1066,8 @@ export class HumanTaskService {
       parts.push(
         `SELECT c.app_id, c.task_id, COALESCE(json_extract(c.cancellation_json, '$.kind'), 'cancelled') AS phase, c.requested_at AS updated_at,
            c.cancellation_json AS payload, 2 AS terminal, NULL AS ready, NULL AS attempt_json, NULL AS human_conditions_json,
-           ${recurringTaskSql("c.app_id", "c.task_id")} AS recurring
+           ${taskRecurrenceSql("c.app_id", "c.task_id")} AS recurrence_json,
+           ${taskScheduleSourceSql("c.app_id", "c.task_id")} AS schedule_source_id
          FROM app_task_cancellations c
          WHERE COALESCE(json_extract(c.cancellation_json, '$.kind'), 'cancelled') IN (${closureKinds.map(() => "?").join(", ")})${appId ? " AND c.app_id = ?" : ""}`,
       );
@@ -1039,7 +1113,8 @@ export class HumanTaskService {
       const identity = rowIdentity(row);
       if (!identity) return [];
       const ref = refs.get(`${identity.appId}\0${identity.taskId}`);
-      const view = ref ? projectTask(row, ref, false) : null;
+      const recurrence = configuredTaskRecurrence(this.registry, row);
+      const view = ref ? projectTask(row, ref, false, recurrence) : null;
       if (!view) return [];
       const conditions = row.terminal === 0 ? humanConditions(row) : [];
       return [conditions.length > 0 ? withHumanAction(view, conditions) : view];
@@ -1084,7 +1159,12 @@ export class HumanTaskService {
     const row = readTaskRow(this.db, identity.appId, identity.taskId);
     if (!row) return null;
     const refs = displayTaskReferences(this.db, [{ appId: identity.appId, taskId: identity.taskId }]);
-    const view = projectTask(row, refs.get(`${identity.appId}\0${identity.taskId}`) ?? identity.digest.slice(0, 8));
+    const view = projectTask(
+      row,
+      refs.get(`${identity.appId}\0${identity.taskId}`) ?? identity.digest.slice(0, 8),
+      true,
+      configuredTaskRecurrence(this.registry, row),
+    );
     if (!view) return null;
     const requestedBy = taskRequester(this.db, identity.appId, identity.taskId);
     const linkedView = {

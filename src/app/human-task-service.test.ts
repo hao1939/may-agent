@@ -245,6 +245,39 @@ function registry(...ids: string[]) {
   };
 }
 
+function registryWithInputSchedule(
+  appId: string,
+  scheduleId: string,
+  intervalMs: number,
+  enabled = true,
+  ...otherAppIds: string[]
+) {
+  const base = registry(appId, ...otherAppIds).snapshot();
+  return {
+    snapshot: () => ({
+      ...base,
+      entries: base.entries.map((entry) =>
+        entry.definition.id === appId
+          ? {
+              ...entry,
+              definition: {
+                ...entry.definition,
+                schedules: [
+                  {
+                    id: scheduleId,
+                    intervalMs,
+                    enabled,
+                    input: { kind: "goal", data: {} },
+                  },
+                ],
+              },
+            }
+          : entry,
+      ),
+    }),
+  };
+}
+
 function insertTask(
   db: SqliteDb,
   input: {
@@ -571,17 +604,21 @@ function insertCondition(
     requestedAction?: string;
     createdAt?: string;
     state?: "unknown" | "false" | "true";
+    type?: string;
+    subject?: string;
+    reviewAfterMs?: number;
   },
 ): void {
   const state = input.state ?? "unknown";
   const condition = {
     metadata: { id: input.conditionId, generation: 2, resourceVersion: 1 },
     spec: {
-      type: "project.approval.submitted",
-      subject: `task:${input.taskId}`,
-      expected: { field: "decision", anyOf: ["approve", "reject"] },
+      type: input.type ?? "project.approval.submitted",
+      subject: input.subject ?? `task:${input.taskId}`,
+      expected: input.type === "time.reached" ? true : { field: "decision", anyOf: ["approve", "reject"] },
       ...(input.requestedAction ? { requestedAction: input.requestedAction } : {}),
       ...(input.owner ? { owner: input.owner } : {}),
+      ...(input.reviewAfterMs ? { reviewAfterMs: input.reviewAfterMs } : {}),
     },
     status: { observedGeneration: 2, state, ...(input.createdAt ? { createdAt: input.createdAt } : {}) },
   };
@@ -667,7 +704,7 @@ describe("Task reference index", () => {
 });
 
 describe("Human Task service", () => {
-  test("derives human actions from canonical owners and legacy Hao while excluding App, agent, and other display names", () => {
+  test("derives human actions from the canonical human namespace and legacy Hao while excluding App, agent, and other display names", () => {
     const db = database();
     insertTask(db, { appId: "alpha", taskId: "completed", phase: "waiting", updatedAt: 80 });
     insertTask(db, { appId: "alpha", taskId: "approval", phase: "waiting", updatedAt: 70 });
@@ -753,21 +790,15 @@ describe("Human Task service", () => {
       now: 1,
     }).item;
     linkTaskInput(db, scheduled.id, "approval", "task:scheduled-approval", 2);
-    const service = new HumanTaskService(db, registry("alpha", "beta"));
+    const service = new HumanTaskService(
+      db,
+      registryWithInputSchedule("alpha", "daily-approval", 86_400_000, true, "beta"),
+    );
 
     expect(service.listTasks({ appId: "alpha", humanActionOnly: true })).toMatchObject({
       total: 3,
       items: [
-        {
-          appId: "alpha",
-          taskId: "approval",
-          status: "waiting",
-          recurring: true,
-          humanAction: {
-            requestedAction: "Choose approve or reject for task:approval.",
-            since: Date.parse("2026-08-20T01:02:03.000Z"),
-          },
-        },
+        { appId: "alpha", taskId: "approval", status: "waiting" },
         {
           appId: "alpha",
           taskId: "may-merge",
@@ -791,11 +822,9 @@ describe("Human Task service", () => {
     ]);
     expect(service.getTask({ appId: "alpha", taskId: "approval" })).toMatchObject({
       recurring: true,
-      humanAction: {
-        requestedAction: "Choose approve or reject for task:approval.",
-        since: Date.parse("2026-08-20T01:02:03.000Z"),
-      },
+      recurrence: { cadenceMs: 86_400_000, nextRunAt: expect.any(String) },
     });
+    expect(service.getTask({ appId: "alpha", taskId: "approval" })?.humanAction).toBeDefined();
     expect(service.getTask({ appId: "beta", taskId: "input" })?.humanAction).toEqual({
       requestedAction: "Provide the rollout window.",
     });
@@ -946,6 +975,84 @@ describe("Human Task service", () => {
     expect(tasks.find((task) => task.taskId === "approval")?.humanAction).toEqual({
       requestedAction: "Approve or reject the rollout.",
     });
+  });
+
+  test("projects configured recurrence without replacing its next slot with a recovery checkpoint", () => {
+    const db = database();
+    insertTask(db, { appId: "may", taskId: "hygiene", phase: "waiting", updatedAt: 10 });
+    const scheduled = createAppInboxItem(db, {
+      id: "scheduled-hygiene",
+      appId: "may",
+      source: { kind: "system", id: "schedule:may:hygiene" },
+      input: { kind: "goal", data: {} },
+      now: 1,
+    }).item;
+    linkTaskInput(db, scheduled.id, "hygiene", "task:scheduled-hygiene", 2);
+    insertCondition(db, {
+      appId: "may",
+      taskId: "hygiene",
+      conditionId: "may-task-hygiene:next",
+      type: "time.reached",
+      subject: "time:2026-09-19T13:53:00.000Z",
+      owner: "app:may",
+      reviewAfterMs: 60_000,
+    });
+    const service = new HumanTaskService(db, registryWithInputSchedule("may", "hygiene", 14_400_000));
+
+    const detail = service.getTask({ appId: "may", taskId: "hygiene" });
+    expect(detail).toMatchObject({
+      recurring: true,
+      recurrence: { cadenceMs: 14_400_000, nextRunAt: expect.any(String) },
+    });
+    expect(detail?.recurrence?.nextRunAt).not.toBe("2026-09-19T13:53:00.000Z");
+    const listed = service.listTasks().items.find((task) => task.taskId === "hygiene");
+    expect(listed).toMatchObject({
+      recurring: true,
+      recurrence: { cadenceMs: 14_400_000, nextRunAt: expect.any(String) },
+    });
+    expect(listed?.recurrence?.nextRunAt).not.toBe("2026-09-19T13:53:00.000Z");
+  });
+
+  test("does not mistake a one-shot timed recovery checkpoint for recurrence", () => {
+    const db = database();
+    insertTask(db, { appId: "may", taskId: "one-time", phase: "waiting", updatedAt: 9 });
+    insertCondition(db, {
+      appId: "may",
+      taskId: "one-time",
+      conditionId: "review-later",
+      type: "time.reached",
+      subject: "time:2026-09-19T13:53:00.000Z",
+      owner: "app:may",
+      reviewAfterMs: 60_000,
+    });
+
+    const service = new HumanTaskService(db, registry("may"));
+    expect(service.getTask({ appId: "may", taskId: "one-time" })).toMatchObject({ recurring: false });
+    expect(service.getTask({ appId: "may", taskId: "one-time" })?.recurrence).toBeUndefined();
+  });
+
+  test("ignores stale schedule-origin links when the configured input schedule is disabled or removed", () => {
+    const db = database();
+    insertTask(db, { appId: "alpha", taskId: "scheduled", phase: "waiting", updatedAt: 10 });
+    const scheduled = createAppInboxItem(db, {
+      id: "scheduled-input",
+      appId: "alpha",
+      source: { kind: "system", id: "schedule:alpha:refresh" },
+      input: { kind: "goal", data: {} },
+      now: 1,
+    }).item;
+    linkTaskInput(db, scheduled.id, "scheduled", "task:scheduled-input", 2);
+
+    expect(
+      new HumanTaskService(db, registryWithInputSchedule("alpha", "refresh", 14_400_000, false)).getTask({
+        appId: "alpha",
+        taskId: "scheduled",
+      })?.recurring,
+    ).toBe(false);
+    expect(
+      new HumanTaskService(db, registry("alpha")).listTasks().items.find((task) => task.taskId === "scheduled")
+        ?.recurring,
+    ).toBe(false);
   });
 
   test("resolves exact detail by stable ref and preserves terminal results", () => {

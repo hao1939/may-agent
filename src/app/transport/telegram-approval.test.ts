@@ -160,7 +160,7 @@ describe("Telegram exact approval reply", () => {
     }
   });
 
-  it("shows canonical and legacy Hao actions and accepts either approval owner without guessing among approvals", () => {
+  it("shows canonical human-role and legacy Hao actions without guessing among approvals", () => {
     const withClarification = proposal("a", 1);
     withClarification.humanAction = { requestedAction: "Two human actions remain." };
     withClarification.diagnostics!.conditions.push({
