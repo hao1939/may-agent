@@ -334,7 +334,14 @@ export async function runTaskAttempt(input: {
               app: descriptor.app,
               registry,
               signal: attempt.signal,
-              execution: { descriptor, attempt, taskEvents, taskRead: taskReads(opts, descriptor), taskSnapshot, executionPaths },
+              execution: {
+                descriptor,
+                attempt,
+                taskEvents,
+                taskRead: taskReads(opts, descriptor),
+                taskSnapshot,
+                executionPaths,
+              },
               getTaskApp(appId) {
                 const entry = registry.entries.find(({ definition }) => definition.id === appId);
                 if (!entry?.definition.tasks || !opts.persistDir)
@@ -718,10 +725,12 @@ export async function runTaskAttempt(input: {
               acceptedLiveEventIds: primaryResult.acceptedLiveEventIds,
             })
           : [];
+        const declaredConditions = [...(primaryHandlerResult.conditions ?? []), ...dependencyConditions];
+        const declaredIds = new Set(declaredConditions.map((condition) => condition.id));
         const conditions = mergeTaskConditions(
-          [...existingAppDependencyConditions, ...(primaryHandlerResult.conditions ?? []), ...dependencyConditions],
+          [...existingAppDependencyConditions, ...declaredConditions],
           new Set(existingAppDependencyConditions.map((condition) => condition.id)),
-        );
+        ).filter((condition) => declaredIds.has(condition.id));
         primaryHandlerResult.conditions = conditions.length > 0 ? conditions : undefined;
       } catch (error) {
         const stale = rejectStaleEffect(error);
@@ -743,6 +752,7 @@ export async function runTaskAttempt(input: {
             summary: primaryHandlerResult.summary,
             response: primaryHandlerResult.response,
             result: primaryHandlerResult.result,
+            reviewAt: primaryHandlerResult.reviewAt,
             facts: primaryHandlerResult.facts,
             actions: primaryHandlerResult.actions,
             conditions: primaryHandlerResult.conditions,

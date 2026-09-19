@@ -1205,6 +1205,33 @@ test("cutover refuses unhandled legacy input even with an expired lease", () => 
   expect(f.db.prepare("SELECT COUNT(*) AS count FROM app_tasks").get()).toEqual({ count: 0 });
 });
 
+test("cutover ignores an ordinary focused input already admitted to an existing Task", () => {
+  const f = fixture();
+  observeAppTaskIntent(f.context(), {
+    appAgent: app.id,
+    intent: { id: "worker", parentId: "root", outcome: "Deliver release", acceptance: ["Delivered"] },
+  });
+  const focused = {
+    ...f.input("focused", 1, "Continue release"),
+    targetTaskId: "worker",
+  };
+  createAppInboxItem(f.db, focused);
+  admitTaskInput(f.context(), {
+    appId: app.id,
+    attachment: { kind: "existing", taskId: "worker" },
+    idempotencyKey: "task:focused",
+    inputContext: { id: focused.id, source: focused.source, input: focused.input },
+    inboxInputId: focused.id,
+  });
+
+  expect(() => f.admit("new", 2, "Review another issue")).not.toThrow();
+  expect(getAppInboxItem(f.db, focused.id)).toMatchObject({
+    status: "handling",
+    waitingOn: { kind: "task", id: "worker" },
+    taskAdmissionKey: "task:focused",
+  });
+});
+
 test("old inbox cannot execute Task-owned Conversation input or later unconverted input", async () => {
   const f = fixture();
   const input = f.admit();

@@ -84,6 +84,16 @@ test("retains waits through a queued and running pass and respects static gates"
   completeAppTask(config, second, { summary: "Review prepared", facts: ["review:done"] });
   expect(view().status).toBe("waiting");
   expect(view().waitingOn).toHaveLength(2);
+  expect(view().diagnostics?.attempts).toEqual([
+    expect.objectContaining({
+      id: second.attemptId,
+      generation: 1,
+      state: "completed",
+      acceptedResultState: "converged",
+    }),
+    expect.objectContaining({ id: first.attemptId, generation: 1, state: "completed", acceptedResultState: "waiting" }),
+  ]);
+  expect(view().diagnostics?.attemptsTruncated).toBeFalse();
 
   // A wake is not permission to bypass required Task generations.
   const resource = store.readTask("work")!;
@@ -398,8 +408,12 @@ test("shows a converged Task with pending work as queued in detail, lists, and s
     });
   }
 
-  expect(service.listTasks({ status: ["pending"] }).items.map((task) => task.taskId).sort())
-    .toEqual(["not-ready", "ready", "scheduled"]);
+  expect(
+    service
+      .listTasks({ status: ["pending"] })
+      .items.map((task) => task.taskId)
+      .sort(),
+  ).toEqual(["not-ready", "ready", "scheduled"]);
   expect(service.listTasks({ status: ["up-to-date"] }).items.map((task) => task.taskId)).toEqual(["quiet"]);
   expect(service.listTasks().items.filter((task) => task.status === "pending")).toHaveLength(3);
   expect(db.prepare("SELECT DISTINCT phase FROM app_tasks").all()).toEqual([{ phase: "converged" }]);
@@ -1282,12 +1296,13 @@ describe("Human Task service", () => {
     insertReceipt(db, "alpha", "completed-but-stale", 40);
     const service = new HumanTaskService(db, registry("alpha"));
 
-    expect(service.listTasks().items).toEqual([]);
-    expect(service.listApps()).toEqual([expect.objectContaining({ id: "alpha", activeTasks: 0, attentionTasks: 0 })]);
-    expect(service.listTasks({ includeDone: true }).items).toEqual([
-      expect.objectContaining({ taskId: "completed-but-stale", status: "done", terminal: true }),
-    ]);
-  });
+      expect(service.listTasks().items).toEqual([]);
+      expect(service.listApps()).toEqual([expect.objectContaining({ id: "alpha", activeTasks: 0, attentionTasks: 0 })]);
+      expect(service.listTasks({ includeDone: true }).items).toEqual([
+        expect.objectContaining({ taskId: "completed-but-stale", status: "done", terminal: true }),
+      ]);
+    },
+  );
 
   test("a newer live generation supersedes historical completion in detail, lists, and App counts", () => {
     const db = database();
@@ -1457,9 +1472,13 @@ describe("Human Task service", () => {
     expect(service.listTasks({ includeDone: true }).items).toHaveLength(3);
 
     const history = listRuntimeTaskViews({ taskStateConfig: config }, { status: ["done"] });
-    expect(history.items).toEqual([expect.objectContaining({
-      id: "previously-finished", closed: true, response: "previously-finished result",
-    })]);
+    expect(history.items).toEqual([
+      expect.objectContaining({
+        id: "previously-finished",
+        closed: true,
+        response: "previously-finished result",
+      }),
+    ]);
   });
 
   test("owner cancellation closes the Task and rejects a repeated control", () => {

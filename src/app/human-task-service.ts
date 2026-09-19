@@ -1,5 +1,10 @@
 import type { AppRegistry } from "./core/apps/registry.js";
-import type { AppTaskAttempt, AppTaskCancellation, AppTaskCondition, AppTaskResource } from "./core/tasks/app-task-state.js";
+import type {
+  AppTaskAttempt,
+  AppTaskCancellation,
+  AppTaskCondition,
+  AppTaskResource,
+} from "./core/tasks/app-task-state.js";
 import type { TaskCompletionReceipt } from "./core/tasks/app-task-store.js";
 import type { SqliteDb } from "../lib/db.js";
 import { storedResultFacts } from "./core/state/result-facts.js";
@@ -14,14 +19,7 @@ import {
 } from "./core/state/task-reference-index.js";
 
 export type HumanTaskStatus =
-  | "pending"
-  | "running"
-  | "waiting"
-  | "attention"
-  | "up-to-date"
-  | "done"
-  | "closed"
-  | "cancelled";
+  "pending" | "running" | "waiting" | "attention" | "up-to-date" | "done" | "closed" | "cancelled";
 
 const LEGACY_HAO_HUMAN_OWNER = "Hao";
 
@@ -118,6 +116,18 @@ export type HumanTaskDiagnostics = Pick<
   ready: boolean;
   attemptCount: number;
   attempt?: Pick<AppTaskAttempt, "handler" | "state" | "reason" | "startedAt" | "trigger">;
+  /** Newest-first bounded execution evidence; attemptCount remains lifetime display metadata only. */
+  attempts: Array<{
+    id: string;
+    generation: number;
+    state: AppTaskAttempt["state"];
+    startedAt: string;
+    finishedAt?: string;
+    acceptedResultState?: NonNullable<AppTaskAttempt["acceptedResult"]>["state"];
+    summary?: string;
+    failureReason?: string;
+  }>;
+  attemptsTruncated: boolean;
   conditions: Array<{ id: string; condition: AppTaskCondition | null }>;
   conditionsTruncated: boolean;
   dependencies: Array<{ id: string; status: HumanTaskStatus | "missing" | "group" }>;
@@ -812,9 +822,10 @@ function taskRequester(db: SqliteDb, appId: string, taskId: string): HumanTaskLi
 // Do not project a partial graph as though it were a complete scheduler snapshot.
 const TASK_DETAIL_LINK_LIMIT = 100;
 const TASK_HISTORY_LIMIT = 20;
+const TASK_ATTEMPT_EVIDENCE_LIMIT = 8;
 
 function taskDiagnostics(db: SqliteDb, row: TaskRow): HumanTaskDiagnostics {
-  const { spec, status } = JSON.parse(row.payload!) as AppTaskResource;
+  const { metadata, spec, status } = JSON.parse(row.payload!) as AppTaskResource;
   const { parentId, owner, priority, workflow, executor, category, outputs } = spec;
   const conditionIds = status.conditionIds ?? [];
   const dependencyIds = spec.dependsOn ?? [];
@@ -822,6 +833,28 @@ function taskDiagnostics(db: SqliteDb, row: TaskRow): HumanTaskDiagnostics {
   const count = db
     .prepare("SELECT COUNT(*) AS count FROM app_task_attempts WHERE app_id = ? AND task_id = ?")
     .get(row.app_id!, row.task_id!) as { count: number };
+  const attemptRows = db
+    .prepare(
+      `SELECT attempt_json FROM app_task_attempts
+       WHERE app_id = ? AND task_id = ? AND task_generation = ?
+       ORDER BY started_at DESC, attempt_id DESC LIMIT ?`,
+    )
+    .all(row.app_id!, row.task_id!, metadata.generation, TASK_ATTEMPT_EVIDENCE_LIMIT + 1) as Array<{
+      attempt_json: string;
+    }>;
+  const attempts = attemptRows.slice(0, TASK_ATTEMPT_EVIDENCE_LIMIT).map(({ attempt_json }) => {
+    const item = parseJson<AppTaskAttempt>(attempt_json)!;
+    return {
+      id: item.metadata.id,
+      generation: item.taskGeneration,
+      state: item.state,
+      startedAt: item.startedAt,
+      ...(item.finishedAt ? { finishedAt: item.finishedAt } : {}),
+      ...(item.acceptedResult ? { acceptedResultState: item.acceptedResult.state } : {}),
+      ...(item.summary ? { summary: item.summary.slice(0, 1_024) } : {}),
+      ...(item.failureReason ? { failureReason: item.failureReason.slice(0, 1_024) } : {}),
+    };
+  });
   return {
     parentId,
     owner,
@@ -833,6 +866,8 @@ function taskDiagnostics(db: SqliteDb, row: TaskRow): HumanTaskDiagnostics {
     observedGeneration: status.observedGeneration,
     ready: row.ready === 1,
     attemptCount: count.count,
+    attempts,
+    attemptsTruncated: attemptRows.length > TASK_ATTEMPT_EVIDENCE_LIMIT,
     ...(attempt
       ? {
           attempt: {

@@ -5,14 +5,25 @@ import { admitTaskReconcileResult, admitTaskVerificationResult, taskAgentResultS
 const workflowOptions = { allowNeedsAgent: true };
 
 it("admits explicit useful continuation without confusing it with an answer or failure", () => {
-  const result = { state: "waiting", continue: true, summary: "Review requested; prepare independent notes next",
-    facts: ["review:requested"], dependencies: [{ id: "review", appId: "reviewer", input: { kind: "review", data: {} } }] };
+  const result = {
+    state: "waiting",
+    continue: true,
+    summary: "Review requested; prepare independent notes next",
+    facts: ["review:requested"],
+    dependencies: [{ id: "review", appId: "reviewer", input: { kind: "review", data: {} } }],
+  };
   expect(Check(taskAgentResultSchema, result)).toBe(true);
   const admitted = admitTaskReconcileResult(result, workflowOptions);
   expect(admitted.ok).toBe(true);
   if (!admitted.ok) throw new Error(admitted.error);
   expect(admitTaskReconcileResult(admitted.result, workflowOptions)).toEqual(admitted);
-  for (const invalid of [{ continue: false }, { state: "converged" }, { dependencies: [] }, { facts: [] }, { report: true }]) {
+  for (const invalid of [
+    { continue: false },
+    { state: "converged" },
+    { dependencies: [] },
+    { facts: [] },
+    { report: true },
+  ]) {
     expect(admitTaskReconcileResult({ ...result, ...invalid }, workflowOptions).ok).toBe(false);
   }
 });
@@ -41,15 +52,29 @@ describe("App stop contract", () => {
 });
 
 describe("project task handler contract", () => {
-  it.each([["external-review", false], ["review.completed", true], ["custom.fact", true]] as const)(
-    "requires publishable namespaced Condition types: %s", (type, valid) => {
-      const output = { state: "waiting", summary: "Await exact review", facts: [], conditions: [{
-        id: "review", type, subject: "review:candidate", expected: true, owner: "human", reviewAfterMs: 60_000,
-      }] };
-      expect(Check(taskAgentResultSchema, output)).toBe(valid);
-      expect(admitTaskReconcileResult(output, workflowOptions).ok).toBe(valid);
-    },
-  );
+  it.each([
+    ["external-review", false],
+    ["review.completed", true],
+    ["custom.fact", true],
+  ] as const)("requires publishable namespaced Condition types: %s", (type, valid) => {
+    const output = {
+      state: "waiting",
+      summary: "Await exact review",
+      facts: [],
+      conditions: [
+        {
+          id: "review",
+          type,
+          subject: "review:candidate",
+          expected: true,
+          owner: "human",
+          reviewAfterMs: 60_000,
+        },
+      ],
+    };
+    expect(Check(taskAgentResultSchema, output)).toBe(valid);
+    expect(admitTaskReconcileResult(output, workflowOptions).ok).toBe(valid);
+  });
   it("agrees with the finish schema on quiet waits and explicit facts-backed reports", () => {
     for (const state of ["waiting", "incomplete", "converged", "needs-agent"] as const) {
       for (const facts of [[], ["source:access-denied"]]) {
@@ -93,10 +118,16 @@ describe("project task handler contract", () => {
         state: "waiting",
         summary: "Waiting for source access",
         facts: ["source:sample"],
-        conditions: [{
-          id: "source-access", type: "source.access", subject: "source:sample",
-          expected: true, owner, reviewAfterMs: 60_000,
-        }],
+        conditions: [
+          {
+            id: "source-access",
+            type: "source.access",
+            subject: "source:sample",
+            expected: true,
+            owner,
+            reviewAfterMs: 60_000,
+          },
+        ],
       };
       expect({ owner, valid: Check(taskAgentResultSchema, output) }).toEqual({ owner, valid });
       const admitted = admitTaskReconcileResult(output, workflowOptions);
@@ -118,8 +149,58 @@ describe("project task handler contract", () => {
     expect(Check(taskAgentResultSchema, result)).toBe(false);
     expect(admitTaskReconcileResult(result, workflowOptions)).toMatchObject({
       ok: false,
-      error: "actions[0].kind must be unblock-task; revise requirements through tasks update and delegate new work through dependencies",
+      error:
+        "actions[0].kind must be unblock-task or retire-condition; revise requirements through tasks update and delegate new work through dependencies",
     });
+  });
+
+  it("normalizes exact Condition retirement and an absolute waiting review", () => {
+    expect(
+      admitTaskReconcileResult(
+        {
+          state: "waiting",
+          summary: "Reconsider this exact request later",
+          reviewAt: 1_800_000_000_000,
+          facts: ["budget:deferred"],
+          actions: [
+            {
+              kind: "retire-condition",
+              conditionId: "obsolete-review",
+              expectedConditionGeneration: 2,
+              reason: "This exact link is obsolete",
+            },
+          ],
+        },
+        workflowOptions,
+      ),
+    ).toEqual({
+      ok: true,
+      result: {
+        state: "waiting",
+        summary: "Reconsider this exact request later",
+        reviewAt: 1_800_000_000_000,
+        facts: ["budget:deferred"],
+        actions: [
+          {
+            kind: "retire-condition",
+            conditionId: "obsolete-review",
+            expectedConditionGeneration: 2,
+            reason: "This exact link is obsolete",
+          },
+        ],
+      },
+    });
+    expect(
+      admitTaskReconcileResult(
+        {
+          state: "converged",
+          summary: "done",
+          reviewAt: 1_800_000_000_000,
+          facts: [],
+        },
+        workflowOptions,
+      ),
+    ).toEqual({ ok: false, error: "reviewAt is valid only for waiting" });
   });
 
   it("preserves a caller response separately from task summary", () => {
@@ -163,21 +244,14 @@ describe("project task handler contract", () => {
       result: { ...output, actions: [] },
     });
     expect(Check(taskAgentResultSchema, output)).toBeTrue();
-    expect(
-      admitTaskReconcileResult(
-        { ...output, state: "waiting" },
-        workflowOptions,
-      ),
-    ).toEqual({
+    expect(admitTaskReconcileResult({ ...output, state: "waiting" }, workflowOptions)).toEqual({
       ok: true,
       result: { ...output, state: "waiting", actions: [] },
     });
-    expect(
-      admitTaskReconcileResult(
-        { ...output, result: { value: "x".repeat(17 * 1024) } },
-        workflowOptions,
-      ),
-    ).toEqual({ ok: false, error: "result exceeds the 16384-byte limit" });
+    expect(admitTaskReconcileResult({ ...output, result: { value: "x".repeat(17 * 1024) } }, workflowOptions)).toEqual({
+      ok: false,
+      error: "result exceeds the 16384-byte limit",
+    });
   });
 
   it("admits typed App dependencies only while waiting", () => {
@@ -247,11 +321,18 @@ describe("project task handler contract", () => {
   });
 
   it("rejects raw child specifications in both schema and admission", () => {
-    const output = { state: "waiting", summary: "Delegate work", facts: ["needed"],
-      actions: [{ kind: "create-task", id: "child", outcome: "Measure", acceptance: ["Measured"] }] };
+    const output = {
+      state: "waiting",
+      summary: "Delegate work",
+      facts: ["needed"],
+      actions: [{ kind: "create-task", id: "child", outcome: "Measure", acceptance: ["Measured"] }],
+    };
     expect(Check(taskAgentResultSchema, output)).toBeFalse();
-    expect(admitTaskReconcileResult(output, workflowOptions)).toEqual({ ok: false,
-      error: "actions[0].kind must be unblock-task; revise requirements through tasks update and delegate new work through dependencies" });
+    expect(admitTaskReconcileResult(output, workflowOptions)).toEqual({
+      ok: false,
+      error:
+        "actions[0].kind must be unblock-task or retire-condition; revise requirements through tasks update and delegate new work through dependencies",
+    });
   });
 
   it("accepts the established human identity for an accountable timed wait", () => {

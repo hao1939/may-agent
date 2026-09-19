@@ -11,12 +11,14 @@ import {
 
 describe("Codex goal protocol drift", () => {
   it("keeps the container Codex version aligned with the protocol snapshot", () => {
-    const dockerfile = readFileSync(new URL("../container/Dockerfile", import.meta.url), "utf8");
+    const containerPackage = JSON.parse(
+      readFileSync(new URL("../container/package.json", import.meta.url), "utf8"),
+    ) as { dependencies: Record<string, string> };
     const snapshot = JSON.parse(
       readFileSync(new URL("./codex-goal-protocol.snapshot.json", import.meta.url), "utf8"),
     ) as CodexGoalProtocolSnapshot;
 
-    expect(dockerfile).toContain(`ARG CODEX_VERSION=${snapshot.codexVersion}`);
+    expect(containerPackage.dependencies["@openai/codex"]).toBe(snapshot.codexVersion);
   });
 
   it("parses only the expected Codex CLI version shape", () => {

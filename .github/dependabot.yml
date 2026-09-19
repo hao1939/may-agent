@@ -20,6 +20,11 @@ updates:
         patterns: ["*"]
         exclude-patterns: ["@earendil-works/*", "typebox"]
         update-types: [minor, patch]
+  - package-ecosystem: npm
+    directory: /container
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 3
   - package-ecosystem: github-actions
     directory: /
     schedule:

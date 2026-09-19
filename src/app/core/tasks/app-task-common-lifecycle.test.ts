@@ -52,7 +52,6 @@ function fixture() {
     parentId: "root",
     outcome: "Discuss and return requested measurements",
     acceptance: ["Explain facts honestly"],
-
   };
   observeAppTaskIntent(config, {
     intent,
@@ -118,7 +117,11 @@ describe("common Task lifecycle source PoC", () => {
     expect(resumed.previousAttempt?.state).toBe("interrupted");
     expect(resumed.previousAttempt?.unacceptedResult).toEqual(evidence);
     completeAppTask(f.config, resumed, { summary: "Reviewed measurement", facts: evidence.facts });
-    recordAppTaskTrigger(f.config, resumed.taskId, { type: "conversation.message", eventId: 2, data: { text: "Next ask" } });
+    recordAppTaskTrigger(f.config, resumed.taskId, {
+      type: "conversation.message",
+      eventId: 2,
+      data: { text: "Next ask" },
+    });
     setSystemTime(new Date(Date.now() + 1));
     const next = f.claim();
     expect(next.previousAttempt?.acceptedResult?.summary).toBe("Reviewed measurement");
@@ -150,12 +153,17 @@ describe("common Task lifecycle source PoC", () => {
           controller.enqueue(taskId); // An ordinary early wake must not bypass persisted pacing.
           return;
         }
-        expect(completeAppTask(f.config, claim, { summary: "Read succeeded", result: { value: 7 } }).status).toBe("applied");
+        expect(completeAppTask(f.config, claim, { summary: "Read succeeded", result: { value: 7 } }).status).toBe(
+          "applied",
+        );
         recovery.stateChanged();
         if (++completed === ids.length) resolve();
       },
     });
-    const recovery = new AppTaskRecoveryScheduler({ source: f.config.resourceStore, enqueue: (id) => controller.enqueue(id) });
+    const recovery = new AppTaskRecoveryScheduler({
+      source: f.config.resourceStore,
+      enqueue: (id) => controller.enqueue(id),
+    });
     const timeout = setTimeout(() => reject(new Error("Mechanical recovery did not finish")), 4_000);
     try { recovery.start(); await done; }
     finally { clearTimeout(timeout); recovery.close(); controller.close(); await controller.whenDrained(); }
@@ -177,8 +185,9 @@ describe("common Task lifecycle source PoC", () => {
       const retryAt = f.config.resourceStore.readTask("conversation")!.status.executionRetryAt!;
       f.reopen();
       recordAppTaskTrigger(f.config, "conversation", { type: "project.task.tick", eventId: 50, data: {} });
-      expect(claimObservedAppTask(f.config, { taskId: "conversation", appAgent: "owner", handler: "agent" }))
-        .toMatchObject({ kind: "waiting", retryAt });
+      expect(
+        claimObservedAppTask(f.config, { taskId: "conversation", appAgent: "owner", handler: "agent" }),
+      ).toMatchObject({ kind: "waiting", retryAt });
       expect(f.config.resourceStore.listRecoveryCandidates().items).toEqual([]);
       expect(f.config.resourceStore.nextDueAt()).toBe(retryAt);
       expect(f.config.resourceStore.readCancellation("conversation")).toBeNull();
@@ -201,9 +210,18 @@ describe("common Task lifecycle source PoC", () => {
       inputContext: { id: "measurement", source: { kind: "app", id: "caller" }, input: { kind: "measure", data: {} } },
     });
     deferAppTask(f.config, f.claim(), {
-      disposition: "waiting", summary: "Waiting for observed facts",
-      conditions: [{ id: "measurement", type: "project.task.reconciled", subject: "task:measurement",
-        expected: "done", owner: "app:sampler", reviewAfterMs: 60_000 }],
+      disposition: "waiting",
+      summary: "Waiting for observed facts",
+      conditions: [
+        {
+          id: "measurement",
+          type: "project.task.reconciled",
+          subject: "task:measurement",
+          expected: "done",
+          owner: "app:sampler",
+          reviewAfterMs: 60_000,
+        },
+      ],
     });
     const event = { type: "project.task.reconciled", taskId: "measurement", state: "converged", eventId: 5 };
     expect(trackAppTaskConditionEventForTasks(f.config, event, ["conversation"])).toHaveLength(1);
@@ -213,8 +231,9 @@ describe("common Task lifecycle source PoC", () => {
     f.reopen();
     f.advanceRetry();
     const retry = f.claim();
-    expect(readAppTaskReconciliationEvents(f.config.resourceStore, retry).continuedInputs?.[0]?.event.data.request)
-      .toMatchObject({ id: "measurement" });
+    expect(
+      readAppTaskReconciliationEvents(f.config.resourceStore, retry).continuedInputs?.[0]?.event.data.request,
+    ).toMatchObject({ id: "measurement" });
     const result = { summary: "Observed measurement", result: { value: 17 }, facts: ["measurement:17"] };
     f.config.resourceStore.db.exec(`CREATE TRIGGER reject_delayed_answer BEFORE UPDATE ON app_task_admissions
       BEGIN SELECT RAISE(ABORT, 'answer rejected'); END`);
@@ -232,31 +251,53 @@ describe("common Task lifecycle source PoC", () => {
 
   it.each([false, true])("keeps the ask with live wait facts (accepted live: %s)", (acceptLive) => {
     const f = fixture();
-    const ask = (id: string) => admitTaskInput(f.config, {
-      appId: "sample", attachment: { kind: "existing", taskId: "conversation" }, idempotencyKey: `task:${id}`,
-      inputContext: { id, source: { kind: "app", id: "caller" }, input: { kind: "question", data: { id } } },
-    });
+    const ask = (id: string) =>
+      admitTaskInput(f.config, {
+        appId: "sample",
+        attachment: { kind: "existing", taskId: "conversation" },
+        idempotencyKey: `task:${id}`,
+        inputContext: { id, source: { kind: "app", id: "caller" }, input: { kind: "question", data: { id } } },
+      });
     ask("measurement");
-    deferAppTask(f.config, f.claim(), { disposition: "waiting", summary: "Get facts",
-      conditions: [{ id: "measurement", type: "project.task.reconciled", subject: "task:measurement", expected: "done",
-        owner: "app:fixture", reviewAfterMs: 60_000 }] });
+    deferAppTask(f.config, f.claim(), {
+      disposition: "waiting",
+      summary: "Get facts",
+      conditions: [
+        {
+          id: "measurement",
+          type: "project.task.reconciled",
+          subject: "task:measurement",
+          expected: "done",
+          owner: "app:fixture",
+          reviewAfterMs: 60_000,
+        },
+      ],
+    });
     ask("explanation");
     let claim = f.claim();
     const fact = { type: "project.task.reconciled", eventId: 500, taskId: "measurement", state: "converged" };
     trackAppTaskConditionEventForTasks(f.config, fact, ["conversation"]);
     const live = readAppTaskLiveEvent(f.config, "conversation", fact);
     expect(live.data.continuedInputs).toMatchObject([{ event: { data: { request: { id: "measurement" } } } }]);
-    const result = { summary: "Explained the threshold and judged the new measurement",
-      result: { value: 17, explanation: "A threshold is a minimum" } };
+    const result = {
+      summary: "Explained the threshold and judged the new measurement",
+      result: { value: 17, explanation: "A threshold is a minimum" },
+    };
     if (!acceptLive) {
       completeAppTask(f.config, claim, result);
       expect(readAppTaskAdmissionOutcome(f.config, "conversation", "task:explanation")).toBeNull();
       f.reopen();
       claim = f.claim();
       const inputs = readAppTaskReconciliationEvents(f.config.resourceStore, claim);
-      expect(inputs.continuedInputs?.some(({ event }) => (event.data.request as { id?: string } | undefined)?.id === "explanation")).toBe(true);
-      expect(inputs.continuedInputs?.map(({ event }) => (event.data.request as { id: string }).id).sort())
-        .toEqual(["explanation", "measurement"]);
+      expect(
+        inputs.continuedInputs?.some(
+          ({ event }) => (event.data.request as { id?: string } | undefined)?.id === "explanation",
+        ),
+      ).toBe(true);
+      expect(inputs.continuedInputs?.map(({ event }) => (event.data.request as { id: string }).id).sort()).toEqual([
+        "explanation",
+        "measurement",
+      ]);
     }
     completeAppTask(f.config, claim, { ...result, ...(acceptLive ? { acceptedLiveEventIds: [500] } : {}) });
     f.reopen();
@@ -269,22 +310,50 @@ describe("common Task lifecycle source PoC", () => {
   it("a failure report retains its own ask without discarding another input's wait", () => {
     const f = fixture();
     for (const id of ["measurement", "expensive-question"]) {
-      admitTaskInput(f.config, { appId: "sample", attachment: { kind: "existing", taskId: "conversation" },
-        idempotencyKey: `task:${id}`, inputContext: { id, source: { kind: "app", id: "caller" },
-          input: { kind: "question", data: { id } } } });
-      if (id === "measurement") deferAppTask(f.config, f.claim(), { disposition: "waiting", summary: "Get measurement",
-        conditions: [{ id: "measurement", type: "project.task.reconciled", subject: "task:measurement", expected: "done",
-          owner: "app:fixture", reviewAfterMs: 60_000 }] });
-      else reportAppTaskFailure(f.config, f.claim(), { summary: "This extra question is too expensive", facts: ["cost:unjustified"] });
+      admitTaskInput(f.config, {
+        appId: "sample",
+        attachment: { kind: "existing", taskId: "conversation" },
+        idempotencyKey: `task:${id}`,
+        inputContext: { id, source: { kind: "app", id: "caller" }, input: { kind: "question", data: { id } } },
+      });
+      if (id === "measurement")
+        deferAppTask(f.config, f.claim(), {
+          disposition: "waiting",
+          summary: "Get measurement",
+          conditions: [
+            {
+              id: "measurement",
+              type: "project.task.reconciled",
+              subject: "task:measurement",
+              expected: "done",
+              owner: "app:fixture",
+              reviewAfterMs: 60_000,
+            },
+          ],
+        });
+      else
+        reportAppTaskFailure(f.config, f.claim(), {
+          summary: "This extra question is too expensive",
+          facts: ["cost:unjustified"],
+        });
     }
     f.reopen();
     expect(readAppTaskAdmissionOutcome(f.config, "conversation", "task:expensive-question")).toBeNull();
     f.advanceRetry();
     completeAppTask(f.config, f.claim(), { summary: "Found a cheaper way to answer the extra question" });
     expect(f.config.resourceStore.readTask("conversation")?.status.inputWaits).toHaveProperty("task:measurement");
-    expect(trackAppTaskConditionEventForTasks(f.config, {
-      type: "project.task.reconciled", eventId: 501, taskId: "measurement", state: "converged",
-    }, ["conversation"])).toHaveLength(1);
+    expect(
+      trackAppTaskConditionEventForTasks(
+        f.config,
+        {
+          type: "project.task.reconciled",
+          eventId: 501,
+          taskId: "measurement",
+          state: "converged",
+        },
+        ["conversation"],
+      ),
+    ).toHaveLength(1);
     const measured = f.claim();
     completeAppTask(f.config, measured, { summary: "Measured", result: { value: 17 } });
     expect(readAppTaskAdmissionOutcome(f.config, "conversation", "task:measurement")?.result).toEqual({ value: 17 });
@@ -293,9 +362,18 @@ describe("common Task lifecycle source PoC", () => {
   it("keeps each admitted input's answer while a reused Task waits, answers again and closes", () => {
     const f = fixture();
     deferAppTask(f.config, f.claim(), {
-      disposition: "waiting", summary: "An earlier measurement remains pending",
-      conditions: [{ id: "measurement", type: "sample.ready", subject: "sample:one", expected: true,
-        owner: "app:sampler", reviewAfterMs: 60_000 }],
+      disposition: "waiting",
+      summary: "An earlier measurement remains pending",
+      conditions: [
+        {
+          id: "measurement",
+          type: "sample.ready",
+          subject: "sample:one",
+          expected: true,
+          owner: "app:sampler",
+          reviewAfterMs: 60_000,
+        },
+      ],
     });
     const input = (id: string): TaskInputAdmission => ({
       appId: "sample", attachment: { kind: "existing", taskId: "conversation" }, idempotencyKey: `task:${id}`,
@@ -313,15 +391,26 @@ describe("common Task lifecycle source PoC", () => {
     admitTaskInput(f.config, input("second"));
     expect(readAppTaskAdmissionOutcome(f.config, "conversation", "task:second")).toBeNull();
     const second = f.claim();
-    reportAppTaskFailure(f.config, second, { summary: "Unavailable", result: { abandoned: true }, facts: ["cost:too-high"] });
+    reportAppTaskFailure(f.config, second, {
+      summary: "Unavailable",
+      result: { abandoned: true },
+      facts: ["cost:too-high"],
+    });
     f.reopen();
     expect(readAppTaskAdmissionOutcome(f.config, "conversation", "task:first")?.result).toEqual({ value: 17 });
     expect(readAppTaskAdmissionOutcome(f.config, "conversation", "task:second")).toBeNull();
-    expect(f.config.resourceStore.readAttempt(second.attemptId)?.acceptedResult)
-      .toMatchObject({ state: "incomplete", result: { abandoned: true } });
+    expect(f.config.resourceStore.readAttempt(second.attemptId)?.acceptedResult).toMatchObject({
+      state: "incomplete",
+      result: { abandoned: true },
+    });
     const resource = f.config.resourceStore.readTask("conversation")!;
-    closeAppTask(f.config, { appId: "sample", taskId: "conversation", reason: "Owner ended the work",
-      expectedGeneration: resource.metadata.generation, expectedResourceVersion: resource.metadata.resourceVersion });
+    closeAppTask(f.config, {
+      appId: "sample",
+      taskId: "conversation",
+      reason: "Owner ended the work",
+      expectedGeneration: resource.metadata.generation,
+      expectedResourceVersion: resource.metadata.resourceVersion,
+    });
     f.reopen();
     expect(readAppTaskAdmissionOutcome(f.config, "conversation", "task:first")?.result).toEqual({ value: 17 });
     expect(readAppTaskAdmissionOutcome(f.config, "conversation", "task:second")).toBeNull();
@@ -332,14 +421,18 @@ describe("common Task lifecycle source PoC", () => {
 
   it("commits the input-to-answer binding and accepted outcome atomically", () => {
     const f = fixture();
-    admitTaskInput(f.config, { appId: "sample", attachment: { kind: "existing", taskId: "conversation" },
-      idempotencyKey: "task:atomic", inputContext: { id: "atomic", source: { kind: "app", id: "caller" },
-        input: { kind: "question", data: {} } } });
+    admitTaskInput(f.config, {
+      appId: "sample",
+      attachment: { kind: "existing", taskId: "conversation" },
+      idempotencyKey: "task:atomic",
+      inputContext: { id: "atomic", source: { kind: "app", id: "caller" }, input: { kind: "question", data: {} } },
+    });
     const claim = f.claim();
     f.config.resourceStore.db.exec(`CREATE TRIGGER reject_input_answer BEFORE UPDATE ON app_task_admissions
       BEGIN SELECT RAISE(ABORT, 'input answer write rejected'); END`);
-    expect(() => completeAppTask(f.config, claim, { summary: "Answer", result: { value: 17 } }))
-      .toThrow("input answer write rejected");
+    expect(() => completeAppTask(f.config, claim, { summary: "Answer", result: { value: 17 } })).toThrow(
+      "input answer write rejected",
+    );
     expect(readAppTaskAdmissionOutcome(f.config, "conversation", "task:atomic")).toBeNull();
     expect(f.config.resourceStore.readAttempt(claim.attemptId)?.acceptedResult).toBeUndefined();
     expect(f.config.resourceStore.readTask("conversation")?.status.currentAttemptId).toBe(claim.attemptId);
@@ -362,52 +455,66 @@ describe("common Task lifecycle source PoC", () => {
     });
     const before = f.config.resourceStore.readTask("child");
     const claim = f.claim();
-    expect(() => completeAppTask(f.config, claim, {
-      summary: "Withdraw scope",
-      facts: ["owner:withdrawal"],
-      actions: [
-        {
-          kind: "update-task", taskId: "child", expectedGeneration: 1, outcome: "Changed work",
-        },
-        // A previously persisted/provider-generated action must fail atomically.
-        { kind: "close-task", taskId: "child", expectedGeneration: 1, summary: "No longer needed" } as never,
-      ],
-    })).toThrow("update-task is retired");
+    expect(() =>
+      completeAppTask(f.config, claim, {
+        summary: "Withdraw scope",
+        facts: ["owner:withdrawal"],
+        actions: [
+          {
+            kind: "update-task",
+            taskId: "child",
+            expectedGeneration: 1,
+            outcome: "Changed work",
+          },
+          // A previously persisted/provider-generated action must fail atomically.
+          { kind: "close-task", taskId: "child", expectedGeneration: 1, summary: "No longer needed" } as never,
+        ],
+      }),
+    ).toThrow("update-task is retired");
     expect(f.config.resourceStore.readTask("child")).toEqual(before);
     expect(f.config.resourceStore.readReceipt("child")).toBeNull();
     expect(f.config.resourceStore.readAttempt(claim.attemptId)?.acceptedResult).toBeUndefined();
     expect(f.config.resourceStore.readTask("conversation")?.status.currentAttemptId).toBe(claim.attemptId);
   });
 
-  it.each(["answer", "wait"])("rejects a worker rewriting its own assignment through %s and retains the original work", (settlement) => {
-    const f = fixture();
-    const claim = f.claim();
-    const before = f.config.resourceStore.readTask("conversation")!;
-    const proposal = {
-      summary: "Make the requirement easier",
-      facts: ["The measurement is unavailable"],
-      actions: [
-        { kind: "update-task" as const, taskId: "conversation", expectedGeneration: claim.generation,
-          outcome: "Explain why the measurement is unavailable", acceptance: ["An explanation is enough"] },
-      ],
-    };
-    expect(() => settlement === "answer"
-      ? completeAppTask(f.config, claim, proposal)
-      : deferAppTask(f.config, claim, { ...proposal, disposition: "waiting" }))
-      .toThrow("update-task is retired");
-    expect(f.config.resourceStore.readTask("conversation")).toEqual(before);
-    expect(f.config.resourceStore.readTask("child")).toBeNull();
-    expect(f.config.resourceStore.readAttempt(claim.attemptId)?.acceptedResult).toBeUndefined();
-    failAppTaskAttempt(f.config, claim, "Rejected self-revision");
-    f.reopen();
-    f.advanceRetry();
-    const retry = f.claim();
-    expect(f.config.resourceStore.readTask("conversation")?.spec).toEqual(before.spec);
-    expect(retry.generation).toBe(claim.generation);
-    expect(retry.events).toEqual(claim.events);
-    completeAppTask(f.config, retry, { summary: "Measurement obtained", result: { value: 17 } });
-    expect(f.config.resourceStore.readAttempt(retry.attemptId)?.acceptedResult?.state).toBe("converged");
-  });
+  it.each(["answer", "wait"])(
+    "rejects a worker rewriting its own assignment through %s and retains the original work",
+    (settlement) => {
+      const f = fixture();
+      const claim = f.claim();
+      const before = f.config.resourceStore.readTask("conversation")!;
+      const proposal = {
+        summary: "Make the requirement easier",
+        facts: ["The measurement is unavailable"],
+        actions: [
+          {
+            kind: "update-task" as const,
+            taskId: "conversation",
+            expectedGeneration: claim.generation,
+            outcome: "Explain why the measurement is unavailable",
+            acceptance: ["An explanation is enough"],
+          },
+        ],
+      };
+      expect(() =>
+        settlement === "answer"
+          ? completeAppTask(f.config, claim, proposal)
+          : deferAppTask(f.config, claim, { ...proposal, disposition: "waiting" }),
+      ).toThrow("update-task is retired");
+      expect(f.config.resourceStore.readTask("conversation")).toEqual(before);
+      expect(f.config.resourceStore.readTask("child")).toBeNull();
+      expect(f.config.resourceStore.readAttempt(claim.attemptId)?.acceptedResult).toBeUndefined();
+      failAppTaskAttempt(f.config, claim, "Rejected self-revision");
+      f.reopen();
+      f.advanceRetry();
+      const retry = f.claim();
+      expect(f.config.resourceStore.readTask("conversation")?.spec).toEqual(before.spec);
+      expect(retry.generation).toBe(claim.generation);
+      expect(retry.events).toEqual(claim.events);
+      completeAppTask(f.config, retry, { summary: "Measurement obtained", result: { value: 17 } });
+      expect(f.config.resourceStore.readAttempt(retry.attemptId)?.acceptedResult?.state).toBe("converged");
+    },
+  );
 
   it("accepts an answer to new input while keeping a different accepted wait and its route", () => {
     const f = fixture();
@@ -442,6 +549,328 @@ describe("common Task lifecycle source PoC", () => {
     expect(f.config.resourceStore.readTaskContext({ taskIds: ["conversation"] }).conditions).toEqual(conditions);
     expect(f.config.resourceStore.readTask("conversation")?.status.phase).toBe("waiting");
     expect(f.config.resourceStore.listRecoveryCandidates().items).toEqual([]);
+  });
+
+  it("retires one generation-fenced owner wait from cited result evidence and preserves an independent wait", () => {
+    const f = fixture();
+    deferAppTask(f.config, f.claim(), {
+      disposition: "waiting",
+      summary: "Waiting for CI and review",
+      facts: ["ci:pending", "review:pending"],
+      conditions: [
+        {
+          id: "ci",
+          type: "github.workflow.completed",
+          subject: "pipeline-run:123",
+          expected: "success",
+          owner: "app:sample",
+          reviewAfterMs: 60_000,
+        },
+        {
+          id: "review",
+          type: "github.review.completed",
+          subject: "pull-request:123",
+          expected: "approved",
+          owner: "app:reviewer",
+          reviewAfterMs: 60_000,
+        },
+      ],
+    });
+    observeAppTaskIntent(f.config, {
+      appAgent: "owner",
+      intent: { ...f.intent, id: "observer", parentId: "root" },
+    });
+    deferAppTask(f.config, f.claim("observer"), {
+      disposition: "waiting",
+      summary: "Observer also awaits CI",
+      facts: ["ci:pending"],
+      conditions: [
+        {
+          id: "ci",
+          type: "github.workflow.completed",
+          subject: "pipeline-run:123",
+          expected: "success",
+          owner: "app:sample",
+          reviewAfterMs: 60_000,
+        },
+      ],
+    });
+    recordAppTaskTrigger(f.config, "conversation", {
+      type: "conversation.message",
+      eventId: 2,
+      data: { text: "CI passed at the exact head" },
+    });
+    const claim = f.claim();
+    expect(
+      completeAppTask(f.config, claim, {
+        summary: "Exact-head CI is verified; review remains independent",
+        facts: ["github-run:123:success", "head:abc"],
+        actions: [
+          {
+            kind: "retire-condition",
+            conditionId: "ci",
+            expectedConditionGeneration: 1,
+            reason: "Exact-head run 123 completed successfully",
+          },
+        ],
+        acceptedLiveEventIds: [2],
+      }),
+    ).toMatchObject({
+      status: "applied",
+      actionsApplied: ["retired condition ci generation 1"],
+    });
+    const tree = f.config.resourceStore.readTaskContext({ taskIds: ["conversation", "observer"] });
+    expect(tree.resources?.conversation?.status.phase).toBe("waiting");
+    expect(tree.resources?.conversation?.status.conditionIds).toEqual(["review"]);
+    expect(tree.resources?.observer?.status.conditionIds).toEqual(["ci"]);
+    expect(tree.conditions?.ci).toBeDefined();
+    expect(tree.conditions?.review).toBeDefined();
+  });
+
+  it("does not restore a retired wait when a waiting result omits retained Conditions", () => {
+    const f = fixture();
+    deferAppTask(f.config, f.claim(), {
+      disposition: "waiting",
+      summary: "Waiting for two checks",
+      facts: ["checks:pending"],
+      conditions: [
+        {
+          id: "obsolete",
+          type: "github.workflow.completed",
+          subject: "pipeline-run:old",
+          expected: "success",
+          owner: "app:sample",
+          reviewAfterMs: 60_000,
+        },
+        {
+          id: "remaining",
+          type: "github.workflow.completed",
+          subject: "pipeline-run:new",
+          expected: "success",
+          owner: "app:sample",
+          reviewAfterMs: 60_000,
+        },
+      ],
+    });
+    recordAppTaskTrigger(f.config, "conversation", {
+      type: "conversation.message",
+      eventId: 2,
+      data: { text: "The old check is obsolete" },
+    });
+    const claim = f.claim();
+    deferAppTask(f.config, claim, {
+      disposition: "waiting",
+      summary: "Removed the obsolete check; the replacement remains",
+      facts: ["replacement-check:new"],
+      actions: [
+        {
+          kind: "retire-condition",
+          conditionId: "obsolete",
+          expectedConditionGeneration: 1,
+          reason: "A replacement check supersedes it",
+        },
+      ],
+      acceptedLiveEventIds: [2],
+    });
+    const tree = f.config.resourceStore.readTaskContext({ taskIds: ["conversation"] });
+    expect(tree.resources?.conversation?.status.conditionIds).toEqual(["remaining"]);
+    expect(tree.conditions?.obsolete).toBeUndefined();
+  });
+
+  it("rejects stale and pending-input condition retirement without clearing waits", () => {
+    for (const variant of ["stale", "pending"] as const) {
+      const f = fixture();
+      deferAppTask(f.config, f.claim(), {
+        disposition: "waiting",
+        summary: "Waiting for approval",
+        facts: ["approval:pending"],
+        conditions: [
+          {
+            id: "approval",
+            type: "github.review.completed",
+            subject: "pull-request:123",
+            expected: "approved",
+            owner: "app:sample",
+            reviewAfterMs: 60_000,
+          },
+        ],
+      });
+      recordAppTaskTrigger(f.config, "conversation", {
+        type: "conversation.message",
+        eventId: 2,
+        data: { text: "Evidence arrived" },
+      });
+      const claim = f.claim();
+      if (variant === "pending") {
+        recordAppTaskTrigger(f.config, "conversation", {
+          type: "conversation.message",
+          eventId: 3,
+          data: { text: "Newer correction" },
+        });
+      }
+      expect(() =>
+        completeAppTask(f.config, claim, {
+          summary: "Proposed retirement",
+          facts: ["evidence:receipt"],
+          actions: [
+            {
+              kind: "retire-condition",
+              conditionId: "approval",
+              expectedConditionGeneration: variant === "stale" ? 2 : 1,
+              reason: "Cited evidence",
+            },
+          ],
+          acceptedLiveEventIds: [2],
+        }),
+      ).toThrow();
+      expect(f.config.resourceStore.readTask("conversation")?.status.conditionIds).toEqual(["approval"]);
+    }
+  });
+
+  it("retains an exact timed input across early input, reopen and normal failure backoff", () => {
+    const f = fixture();
+    completeAppTask(f.config, f.claim(), { summary: "Initial request handled" });
+    const input = (id: string): TaskInputAdmission => ({
+      appId: "sample",
+      attachment: { kind: "existing", taskId: "conversation" },
+      idempotencyKey: `timed:${id}`,
+      inputContext: {
+        id,
+        source: { kind: "app", id: "caller" },
+        input: { kind: "review", data: { subject: "same-subject" } },
+      },
+    });
+    const now = 1_800_000_000_000;
+    const due = now + 60_000;
+    setSystemTime(new Date(now));
+    admitTaskInput(f.config, input("first"));
+    const first = f.claim();
+    deferAppTask(f.config, first, {
+      disposition: "waiting",
+      summary: "Allowance is exhausted",
+      reviewAt: due,
+      result: { subject: "same-subject" },
+      facts: ["budget:deferred"],
+    });
+    expect(f.config.resourceStore.readAttempt(first.attemptId)?.acceptedResult).toMatchObject({
+      state: "waiting",
+      reviewAt: due,
+    });
+    expect(f.config.resourceStore.readTask("conversation")?.status.inputWaits?.["timed:first"]?.reviewAt).toBe(due);
+    expect(f.config.resourceStore.nextDueAt()).toBe(due);
+
+    // A different exact request wakes early and can be answered without consuming the timed request.
+    admitTaskInput(f.config, input("second"));
+    const early = f.claim();
+    completeAppTask(f.config, early, { summary: "Answered the unrelated request", result: { answer: 2 } });
+    expect(readAppTaskAdmissionOutcome(f.config, "conversation", "timed:second")?.result).toEqual({ answer: 2 });
+    expect(readAppTaskAdmissionOutcome(f.config, "conversation", "timed:first")).toBeNull();
+    expect(f.config.resourceStore.readTask("conversation")?.status).toMatchObject({
+      phase: "waiting",
+      inputWaits: { "timed:first": { reviewAt: due } },
+    });
+
+    f.reopen();
+    expect(f.config.resourceStore.nextDueAt()).toBe(due);
+    expect(f.config.resourceStore.listRecoveryCandidates(due - 1).items.map(({ taskId }) => taskId)).not.toContain(
+      "conversation",
+    );
+    const queued: string[] = [];
+    const reopenedScheduler = new AppTaskRecoveryScheduler({
+      source: f.config.resourceStore,
+      enqueue: (taskId) => queued.push(taskId),
+      now: () => due,
+    });
+    expect(reopenedScheduler.recover()).toBe(1);
+    expect(queued).toEqual(["conversation"]);
+    reopenedScheduler.close();
+    setSystemTime(new Date(due));
+    const dueClaim = f.claim();
+    expect(dueClaim.trigger).toMatchObject({ type: "project.task.review-at.reached", data: { reviewAt: due } });
+    reportAppTaskFailure(f.config, dueClaim, {
+      summary: "Transient evaluator failure",
+      facts: ["provider:unavailable"],
+    });
+    const retryAt = f.config.resourceStore.readTask("conversation")?.status.executionRetryAt;
+    expect(retryAt).toBeGreaterThan(due);
+    expect(f.config.resourceStore.listRecoveryCandidates(due + 1).items.map(({ taskId }) => taskId)).not.toContain(
+      "conversation",
+    );
+
+    setSystemTime(new Date(retryAt!));
+    const retry = f.claim();
+    expect(() =>
+      deferAppTask(f.config, retry, {
+        disposition: "waiting",
+        summary: "Still deferred",
+        facts: ["budget:deferred"],
+      }),
+    ).toThrow("requires at least one exact Condition");
+    const nextDue = retryAt! + 60_000;
+    deferAppTask(f.config, retry, {
+      disposition: "waiting",
+      summary: "Deferred to a new exact allowance window",
+      reviewAt: nextDue,
+      facts: ["budget:deferred"],
+    });
+    expect(f.config.resourceStore.nextDueAt()).toBe(nextDue);
+  });
+
+  it("consumes a task-level review checkpoint when the desired result completes early", () => {
+    const f = fixture();
+    const now = 1_800_000_000_000;
+    setSystemTime(new Date(now));
+    const due = now + 60_000;
+    deferAppTask(f.config, f.claim(), {
+      disposition: "waiting",
+      summary: "Service busy; review later",
+      reviewAt: due,
+    });
+
+    recordAppTaskTrigger(f.config, "conversation", {
+      type: "result.ready",
+      eventId: 9_001,
+      data: { verified: true },
+    });
+    completeAppTask(f.config, f.claim(), {
+      summary: "Requested result independently verified early",
+      facts: ["result:verified"],
+    });
+
+    expect(f.config.resourceStore.readTask("conversation")?.status).toMatchObject({ phase: "converged" });
+    expect(f.config.resourceStore.readTask("conversation")?.status.reviewAt).toBeUndefined();
+    expect(f.config.resourceStore.nextDueAt()).toBeNull();
+  });
+
+  it("accepts a review deadline that elapses before settlement as immediately eligible", () => {
+    const f = fixture();
+    completeAppTask(f.config, f.claim(), { summary: "Initial request handled" });
+    const now = 1_800_000_000_000;
+    setSystemTime(new Date(now));
+    admitTaskInput(f.config, {
+      appId: "sample",
+      attachment: { kind: "existing", taskId: "conversation" },
+      idempotencyKey: "timed:boundary",
+      inputContext: {
+        id: "boundary",
+        source: { kind: "app", id: "caller" },
+        input: { kind: "review", data: { subject: "boundary" } },
+      },
+    });
+    const claim = f.claim();
+    deferAppTask(f.config, claim, {
+      disposition: "waiting",
+      summary: "Allowance boundary elapsed during work",
+      reviewAt: now - 1,
+      facts: ["budget:deferred"],
+    });
+    expect(f.config.resourceStore.readAttempt(claim.attemptId)?.acceptedResult).toMatchObject({
+      state: "waiting",
+      reviewAt: now - 1,
+    });
+    expect(f.config.resourceStore.listRecoveryCandidates(now).items.map(({ taskId }) => taskId)).toContain(
+      "conversation",
+    );
   });
 
   it("keeps an accepted wait without asking the agent to repeat its identifiers or timing", () => {
@@ -633,5 +1062,4 @@ describe("common Task lifecycle source PoC", () => {
       expect(() => observeAppTaskIntent(f.config, { intent: f.intent, appAgent: "owner" })).toThrow("cancelled");
     });
   }
-
 });
