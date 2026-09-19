@@ -291,7 +291,7 @@ describe("telegram client", () => {
     }
   });
 
-  it("binds a complete multipart approval only to its final delivery", async () => {
+  it("binds complete-delivery authority only to the final multipart delivery", async () => {
     const persistDir = mkdtempSync(join(tmpdir(), "telegram-client-complete-approval-"));
     let nextMessageId = 750;
     const deliveredText: string[] = [];
@@ -313,6 +313,7 @@ describe("telegram client", () => {
           data: JSON.stringify({
             taskRefs: [{ appId: "may", taskId: "goal/improvement" }],
             approvalAnchor: { approvalId: "exact-proposal" },
+            humanCondition: { taskGeneration: 2, conditionId: "choice", conditionGeneration: 3 },
           }),
           bindToCompleteDelivery: true,
         }),
@@ -326,6 +327,7 @@ describe("telegram client", () => {
       });
       expect(JSON.parse(String(getNotificationMessage(persistDir, "chat-1", 751)?.data))).toMatchObject({
         approvalAnchor: { approvalId: "exact-proposal" },
+        humanCondition: { taskGeneration: 2, conditionId: "choice", conditionGeneration: 3 },
       });
     } finally {
       closeDb(persistDir);
@@ -357,6 +359,7 @@ describe("telegram client", () => {
             taskRefs: [{ appId: "may", taskId: "goal/improvement" }],
             topicId: "topic/improvement",
             approvalAnchor: { approvalId: "exact-proposal" },
+            humanCondition: { taskGeneration: 2, conditionId: "choice", conditionGeneration: 3 },
           }),
           bindToCompleteDelivery: true,
         }),

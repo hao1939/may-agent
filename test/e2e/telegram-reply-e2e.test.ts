@@ -4,6 +4,17 @@ import { resolve } from "node:path";
 import { tmpdir } from "node:os";
 import { EVENT_ROW_ID, EventBus } from "../../src/app/core/events/bus.js";
 import { createAppInboxItem } from "../../src/app/core/state/app-inbox-store.js";
+import { admitTaskInput } from "../../src/app/core/state/inbox.js";
+import { AppTaskResourceStore } from "../../src/app/core/state/app-task-resource-store.js";
+import {
+  claimObservedAppTask,
+  completeAppTask,
+  deferAppTask,
+  observeAppTaskIntent,
+  recordAppTaskTrigger,
+} from "../../src/app/core/tasks/app-task-reconciler.js";
+import { appTaskTestContext } from "../../src/app/core/tasks/app-task-test-support.js";
+import { startAppInboxRuntime } from "../../src/app/composition/app-inbox-runtime.js";
 import { claimAppInboxItem, completeAppInboxClaim } from "../fixtures/legacy-inbox.js";
 import { attachTelegramBot as attachTelegramBotRuntime } from "../../src/app/transport/telegram.js";
 import { AppRegistry } from "../../src/app/core/apps/registry.js";
@@ -163,6 +174,424 @@ describe("telegram reply e2e", () => {
     expect(sentMessages).toHaveLength(0);
 
     bot.close();
+  });
+
+  it("projects generic human help through Telegram and correlates replies without proving external work", async () => {
+    const db = getDb(persistDir);
+    const registry = new AppRegistry(async () => [
+      {
+        appDir: persistDir,
+        definition: {
+          id: "may",
+          version: 1,
+          owner: "may",
+          inputSchema: { type: "object" },
+          task: (input: any) => {
+            const focusedTask = input.input?.data?.context?.focusedTask;
+            if (!focusedTask || focusedTask.appId !== "may" || typeof focusedTask.taskId !== "string") {
+              throw new Error("Human reply requires one focused May Task");
+            }
+            return { kind: "existing" as const, taskId: focusedTask.taskId };
+          },
+          tasks: {},
+        },
+      },
+    ]);
+    await registry.reload();
+    const store = AppTaskResourceStore.fromDb(db, "may");
+    const config = appTaskTestContext({
+      appDir: persistDir,
+      appId: "may",
+      agent: "may",
+      maxConcurrent: 1,
+      resourceStore: store,
+      tree: { root_task_id: "root", groups: { root: { id: "root", parent_id: null } } },
+    });
+    const createWait = (taskId: string, condition: Record<string, unknown>) => {
+      observeAppTaskIntent(config, {
+        appAgent: "may",
+        intent: { id: taskId, parentId: "root", outcome: `Resolve ${taskId}`, acceptance: ["Resolved"] },
+      });
+      const claim = claimObservedAppTask(config, { taskId, appAgent: "may", handler: "agent" });
+      if (claim.kind !== "claimed") throw new Error(`Expected ${taskId} claim`);
+      deferAppTask(config, claim, {
+        disposition: "waiting",
+        summary: "Waiting for human help",
+        facts: ["help:requested"],
+        conditions: [condition as any],
+      });
+    };
+    const answerCondition = {
+      id: "answer-choice",
+      type: "app.task.requested",
+      subject: "task:answer",
+      expected: {
+        source: "human",
+        conditionId: "answer-choice",
+        conditionGeneration: 1,
+        taskGeneration: 1,
+      },
+      owner: "human",
+      requestedAction: "Reply with blue or green.",
+      reviewAfterMs: 60_000,
+    };
+    createWait("answer", answerCondition);
+
+    const updates: any[] = [{ update_id: 1, message: { message_id: 10, chat: { id: 12345 }, text: "/apps may" } }];
+    const sentMessages: Array<Record<string, any>> = [];
+    vi.spyOn(globalThis, "fetch").mockImplementation(async (url: string | URL, init?: RequestInit) => {
+      const method = String(url).split("/").pop();
+      if (method === "getMe") return jsonResponse({ username: "may_test_bot", first_name: "May Test" });
+      if (method === "getUpdates") {
+        if (updates.length) return jsonResponse(updates.splice(0));
+        await new Promise((resolve) => setTimeout(resolve, 10));
+        return jsonResponse([]);
+      }
+      if (method === "sendMessage") {
+        const body = JSON.parse(String(init?.body));
+        sentMessages.push(body);
+        return jsonResponse({ message_id: 100 + sentMessages.length });
+      }
+      throw new Error(`unexpected Telegram method: ${method}`);
+    });
+
+    const bus = new EventBus();
+    const routedEvents: any[] = [];
+    bus.subscribe((event: any) => routedEvents.push(event));
+    const runtime = await startAppInboxRuntime({
+      registry,
+      db,
+      bus,
+      attachTask: ({ appDir: _appDir, ...input }) => admitTaskInput(config, input),
+      scanIntervalMs: 10_000,
+    });
+    const service = new HumanTaskService(db, registry);
+    const bot = attachTelegramBot({ persistDir, bus, interfaceAgent: "may", humanTasks: service });
+    const notify = (taskId: string) =>
+      bus.emit({
+        type: "project.task.reconciled",
+        source: "test-task",
+        owner: "app:may",
+        data: { project: "may", appId: "may", taskId, attemptId: `attempt-${taskId}` },
+      } as any);
+    const notifications = () =>
+      sentMessages.filter((message) => String(message.text).startsWith("Needs your decision:"));
+    const savedNotification = (messageId: number) => {
+      const row = db
+        .prepare("SELECT data FROM notification_messages WHERE chat_id = '12345' AND telegram_msg_id = ?")
+        .get(messageId) as { data: string } | null;
+      return row ? JSON.parse(row.data) : null;
+    };
+
+    try {
+      await waitFor(() =>
+        expect(sentMessages.some((message) => String(message.text).includes("Selected App"))).toBe(true),
+      );
+      notify("answer");
+      await waitFor(() => expect(notifications()).toHaveLength(1));
+      const answerMessageId = 100 + sentMessages.indexOf(notifications()[0]!) + 1;
+      await waitFor(() =>
+        expect(savedNotification(answerMessageId)).toMatchObject({
+          taskRefs: [{ appId: "may", taskId: "answer" }],
+          humanCondition: { taskGeneration: 1, conditionId: "answer-choice", conditionGeneration: 1 },
+        }),
+      );
+      recordAppTaskTrigger(config, "answer", { type: "test.reconsider", eventId: 81, data: {} });
+      const changedQuestion = claimObservedAppTask(config, { taskId: "answer", appAgent: "may", handler: "agent" });
+      if (changedQuestion.kind !== "claimed") throw new Error("Expected changed-question claim");
+      const answerConditionV2 = {
+        ...answerCondition,
+        expected: {
+          source: "human",
+          conditionId: "answer-choice",
+          conditionGeneration: 2,
+          taskGeneration: 1,
+        },
+        requestedAction: "Reply with red or yellow.",
+      };
+      deferAppTask(config, changedQuestion, {
+        disposition: "waiting",
+        summary: "Waiting for the corrected answer",
+        facts: ["help:corrected"],
+        acceptedLiveEventIds: [81],
+        conditions: [answerConditionV2],
+      });
+      notify("answer");
+      await waitFor(() => expect(notifications()).toHaveLength(2));
+      const currentAnswerNotice = notifications()[1]!;
+      const currentAnswerMessageId = 100 + sentMessages.indexOf(currentAnswerNotice) + 1;
+      expect(savedNotification(currentAnswerMessageId)).toMatchObject({
+        humanCondition: { taskGeneration: 1, conditionId: "answer-choice", conditionGeneration: 2 },
+      });
+
+      updates.push({
+        update_id: 2,
+        message: {
+          message_id: 11,
+          chat: { id: 12345 },
+          from: { id: 7 },
+          text: "blue",
+          reply_to_message: { message_id: answerMessageId, text: notifications()[0]!.text },
+        },
+      });
+      await waitFor(() =>
+        expect(
+          db
+            .prepare(
+              "SELECT status, waiting_on_kind, waiting_on_id FROM app_inbox_items WHERE target_task_id = 'answer' ORDER BY created_at LIMIT 1",
+            )
+            .get(),
+        ).toEqual({ status: "handling", waiting_on_kind: "task", waiting_on_id: "answer" }),
+      );
+      expect(store.readTaskContext({ taskIds: ["answer"] }).conditions?.["answer-choice"]?.status.state).toBe(
+        "unknown",
+      );
+      const staleAnswerClaim = claimObservedAppTask(config, { taskId: "answer", appAgent: "may", handler: "agent" });
+      if (staleAnswerClaim.kind !== "claimed") throw new Error("Expected stale-answer reconsideration");
+      const staleEvent = staleAnswerClaim.events.find(({ event }) => event.type === "app.task.requested")?.event;
+      expect(staleEvent?.data).toMatchObject({
+        conditionId: "answer-choice",
+        conditionGeneration: 1,
+        taskGeneration: 1,
+      });
+      const staleRequest = staleEvent?.data.request as any;
+      expect(staleRequest.input.data).toMatchObject({
+        message: "blue",
+        context: {
+          focusedTask: { appId: "may", taskId: "answer" },
+          displayedHumanCondition: { taskGeneration: 1, conditionId: "answer-choice", conditionGeneration: 1 },
+        },
+      });
+      expect(() =>
+        completeAppTask(config, staleAnswerClaim, {
+          summary: "Reject stale answer correlation",
+          facts: ["answer:stale"],
+          actions: [
+            {
+              kind: "retire-condition",
+              conditionId: "answer-choice",
+              expectedConditionGeneration: 1,
+              reason: "The displayed answer was supplied",
+            },
+          ],
+          acceptedLiveEventIds: staleAnswerClaim.events
+            .map(({ event }) => Number(event.eventId))
+            .filter(Number.isSafeInteger),
+        }),
+      ).toThrow("Condition answer-choice generation changed");
+      deferAppTask(config, staleAnswerClaim, {
+        disposition: "waiting",
+        summary: "The old answer did not answer the corrected question",
+        facts: ["answer:stale"],
+        acceptedLiveEventIds: staleAnswerClaim.events
+          .map(({ event }) => Number(event.eventId))
+          .filter(Number.isSafeInteger),
+      });
+
+      recordAppTaskTrigger(config, "answer", { type: "test.reconsider", eventId: 82, data: {} });
+      const runningAnswer = claimObservedAppTask(config, { taskId: "answer", appAgent: "may", handler: "agent" });
+      if (runningAnswer.kind !== "claimed") throw new Error("Expected answer attempt before concurrent reply");
+      updates.push({
+        update_id: 3,
+        message: {
+          message_id: 12,
+          chat: { id: 12345 },
+          from: { id: 7 },
+          text: "blue again",
+          reply_to_message: { message_id: answerMessageId, text: notifications()[0]!.text },
+        },
+      });
+      await waitFor(() =>
+        expect(
+          db.prepare("SELECT COUNT(*) AS count FROM app_inbox_items WHERE target_task_id = 'answer'").get(),
+        ).toEqual({ count: 2 }),
+      );
+      deferAppTask(config, runningAnswer, {
+        disposition: "waiting",
+        summary: "The concurrently arriving old answer is still stale",
+        facts: ["answer:concurrent-stale"],
+        acceptedLiveEventIds: [82],
+      });
+      expect(store.readTaskContext({ taskIds: ["answer"] }).conditions?.["answer-choice"]?.status.state).toBe(
+        "unknown",
+      );
+
+      updates.push({
+        update_id: 4,
+        message: {
+          message_id: 13,
+          chat: { id: 12345 },
+          from: { id: 7 },
+          text: "red",
+          reply_to_message: { message_id: currentAnswerMessageId, text: currentAnswerNotice.text },
+        },
+      });
+      await waitFor(() =>
+        expect(
+          db.prepare("SELECT COUNT(*) AS count FROM app_inbox_items WHERE target_task_id = 'answer'").get(),
+        ).toEqual({ count: 3 }),
+      );
+      expect(store.readTaskContext({ taskIds: ["answer"] }).conditions?.["answer-choice"]?.status.state).toBe(
+        "unknown",
+      );
+      const answerClaim = claimObservedAppTask(config, { taskId: "answer", appAgent: "may", handler: "agent" });
+      if (answerClaim.kind !== "claimed") throw new Error("Expected current-answer claim");
+      const answerEvent = answerClaim.events
+        .map(({ event }) => event)
+        .find(
+          (event) => event.type === "app.task.requested" && (event.data.request as any)?.input?.data?.message === "red",
+        );
+      expect(answerEvent?.data).toMatchObject({
+        conditionId: "answer-choice",
+        conditionGeneration: 2,
+        taskGeneration: 1,
+      });
+      const answerRequest = answerEvent?.data.request as any;
+      expect(answerRequest.input.data).toMatchObject({
+        message: "red",
+        context: {
+          focusedTask: { appId: "may", taskId: "answer" },
+          displayedHumanCondition: { taskGeneration: 1, conditionId: "answer-choice", conditionGeneration: 2 },
+        },
+      });
+      expect(
+        completeAppTask(config, answerClaim, {
+          summary: "The human answered the displayed question",
+          facts: ["answer:red"],
+          actions: [
+            {
+              kind: "retire-condition",
+              conditionId: "answer-choice",
+              expectedConditionGeneration: 2,
+              reason: "The reply answered the exact displayed question",
+            },
+          ],
+          acceptedLiveEventIds: answerClaim.events
+            .map(({ event }) => Number(event.eventId))
+            .filter(Number.isSafeInteger),
+        }),
+      ).toMatchObject({ status: "applied", actionsApplied: ["retired condition answer-choice generation 2"] });
+      expect(store.readTaskContext({ taskIds: ["answer"] }).conditions?.["answer-choice"]).toBeUndefined();
+      expect(routedEvents.filter((event) => event.type === "subscriber.failed")).toEqual([]);
+
+      const externalCondition = {
+        id: "deployment-proof",
+        type: "deployment.completed",
+        subject: "deployment:release-42",
+        expected: { state: "done" },
+        owner: "human",
+        requestedAction: "Deploy release 42, then wait for independent deployment observation.",
+        reviewAfterMs: 60_000,
+      };
+      createWait("external", externalCondition);
+      notify("external");
+      await waitFor(() => expect(notifications()).toHaveLength(3));
+      const externalNotice = notifications()[2]!;
+      const externalMessageId = 100 + sentMessages.indexOf(externalNotice) + 1;
+      const displayed = savedNotification(externalMessageId);
+      expect(displayed).toMatchObject({
+        taskRefs: [{ appId: "may", taskId: "external" }],
+        humanCondition: { taskGeneration: 1, conditionId: "deployment-proof", conditionGeneration: 1 },
+      });
+
+      updates.push({
+        update_id: 5,
+        message: {
+          message_id: 14,
+          chat: { id: 12345 },
+          from: { id: 7 },
+          text: "done",
+          reply_to_message: { message_id: externalMessageId, text: externalNotice.text },
+        },
+      });
+      await waitFor(() =>
+        expect(
+          db.prepare("SELECT COUNT(*) AS count FROM app_inbox_items WHERE target_task_id = 'external'").get(),
+        ).toEqual({ count: 1 }),
+      );
+      expect(store.readTaskContext({ taskIds: ["external"] }).conditions?.["deployment-proof"]?.status.state).toBe(
+        "unknown",
+      );
+      const externalClaim = claimObservedAppTask(config, { taskId: "external", appAgent: "may", handler: "agent" });
+      if (externalClaim.kind !== "claimed") throw new Error("Expected external-action reply claim");
+      const externalRequest = externalClaim.events.find(({ event }) => event.type === "app.task.requested")?.event.data
+        .request as any;
+      expect(externalRequest.input.data).toMatchObject({
+        message: "done",
+        context: {
+          focusedTask: { appId: "may", taskId: "external" },
+          displayedHumanCondition: displayed.humanCondition,
+        },
+      });
+      const acceptedLiveEventIds = externalClaim.events
+        .map(({ event }) => Number(event.eventId))
+        .filter(Number.isSafeInteger);
+      deferAppTask(config, externalClaim, {
+        disposition: "waiting",
+        summary: "The reply is input, not independent deployment evidence",
+        facts: ["reply:received", "deployment:unverified"],
+        acceptedLiveEventIds,
+        conditions: [
+          externalCondition,
+          {
+            id: "rollout-window",
+            type: "rollout.window.selected",
+            subject: "deployment:release-42",
+            expected: { field: "window", anyOf: ["now", "later"] },
+            owner: "human",
+            requestedAction: "Choose now or later for the rollout window.",
+            reviewAfterMs: 60_000,
+          },
+        ],
+      });
+      expect(store.readTaskContext({ taskIds: ["external"] }).conditions?.["deployment-proof"]?.status.state).toBe(
+        "unknown",
+      );
+
+      notify("external");
+      await waitFor(() => expect(notifications()).toHaveLength(4));
+      const ambiguousNotice = notifications()[3]!;
+      const ambiguousMessageId = 100 + sentMessages.indexOf(ambiguousNotice) + 1;
+      await waitFor(() =>
+        expect(savedNotification(ambiguousMessageId)?.taskRefs).toEqual([{ appId: "may", taskId: "external" }]),
+      );
+      expect(savedNotification(ambiguousMessageId)).not.toHaveProperty("humanCondition");
+
+      updates.push({
+        update_id: 6,
+        message: {
+          message_id: 15,
+          chat: { id: 12345 },
+          from: { id: 7 },
+          text: "later",
+          reply_to_message: { message_id: ambiguousMessageId, text: ambiguousNotice.text },
+        },
+      });
+      await waitFor(() =>
+        expect(
+          db.prepare("SELECT COUNT(*) AS count FROM app_inbox_items WHERE target_task_id = 'external'").get(),
+        ).toEqual({ count: 2 }),
+      );
+      const ambiguousClaim = claimObservedAppTask(config, { taskId: "external", appAgent: "may", handler: "agent" });
+      if (ambiguousClaim.kind !== "claimed") throw new Error("Expected ambiguous reply claim");
+      const ambiguousRequest = ambiguousClaim.events.find(({ event }) => event.type === "app.task.requested")?.event
+        .data.request as any;
+      expect(ambiguousRequest.input.data.context).toMatchObject({ focusedTask: { appId: "may", taskId: "external" } });
+      expect(ambiguousRequest.input.data.context).not.toHaveProperty("displayedHumanCondition");
+      deferAppTask(config, ambiguousClaim, {
+        disposition: "waiting",
+        summary: "An uncorrelated reply does not select either open Condition",
+        facts: ["reply:ambiguous"],
+        acceptedLiveEventIds: ambiguousClaim.events
+          .map(({ event }) => Number(event.eventId))
+          .filter(Number.isSafeInteger),
+      });
+      const openConditions = store.readTaskContext({ taskIds: ["external"] }).resources?.external?.status.conditionIds;
+      expect(openConditions).toEqual(["deployment-proof", "rollout-window"]);
+    } finally {
+      bot.close();
+      runtime.close();
+    }
   });
 
   it("does not turn raw session or legacy human-targeted events into Telegram output", async () => {

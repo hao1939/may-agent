@@ -105,6 +105,28 @@ function admitAuthorizedTaskInput(config: AppTaskContext, input: TaskInputAdmiss
     intent = readAppTaskIntent(config, taskId);
     if (!intent) throw new Error(`Task ${taskId} does not exist in App ${input.appId}`);
   } else intent = input.attachment.intent;
+  const data = input.inputContext.input.data;
+  const context =
+    data && typeof data === "object" && !Array.isArray(data) ? (data as Record<string, unknown>).context : undefined;
+  const displayed =
+    context && typeof context === "object" && !Array.isArray(context)
+      ? (context as Record<string, unknown>).displayedHumanCondition
+      : undefined;
+  const displayedHumanCondition =
+    displayed && typeof displayed === "object" && !Array.isArray(displayed)
+      ? (displayed as Record<string, unknown>)
+      : undefined;
+  const correlatedHumanCondition =
+    input.inputContext.source.kind === "human" &&
+    typeof displayedHumanCondition?.conditionId === "string" &&
+    Number.isSafeInteger(displayedHumanCondition.conditionGeneration) &&
+    Number.isSafeInteger(displayedHumanCondition.taskGeneration)
+      ? {
+          conditionId: displayedHumanCondition.conditionId,
+          conditionGeneration: displayedHumanCondition.conditionGeneration,
+          taskGeneration: displayedHumanCondition.taskGeneration,
+        }
+      : {};
   return observeAppTaskIntent(config, {
     intent,
     creator: input.creator,
@@ -120,7 +142,14 @@ function admitAuthorizedTaskInput(config: AppTaskContext, input: TaskInputAdmiss
       owner: `agent:${config.agent}`,
       target: { project: input.appId, taskId: intent.id },
       idempotencyKey,
-      data: { project: input.appId, taskId: intent.id, appId: input.appId, idempotencyKey, request: input.inputContext },
+      data: {
+        project: input.appId,
+        taskId: intent.id,
+        appId: input.appId,
+        idempotencyKey,
+        request: input.inputContext,
+        ...correlatedHumanCondition,
+      },
     },
   });
 }

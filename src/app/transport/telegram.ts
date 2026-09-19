@@ -426,6 +426,32 @@ export type TelegramApprovalReply = TelegramApprovalAnchor & {
   task: { appId: string; taskId: string };
 };
 
+type TelegramHumanConditionAnchor = {
+  taskGeneration: number;
+  conditionId: string;
+  conditionGeneration: number;
+};
+
+/** Correlate one ordinary help reply without turning it into approval or proof. */
+function humanConditionAnchor(task: HumanTaskView | null): TelegramHumanConditionAnchor | null {
+  if (!task || task.terminal || !["pending", "waiting", "running", "attention"].includes(task.status)) return null;
+  const matches = (task.diagnostics?.conditions ?? []).filter((item) => {
+    const condition = item.condition;
+    return (
+      condition?.spec.type !== "project.approval.submitted" &&
+      condition?.status.state !== "true" &&
+      isHumanActionOwner(condition?.spec.owner)
+    );
+  });
+  if (matches.length !== 1) return null;
+  const match = matches[0]!;
+  return {
+    taskGeneration: task.generation,
+    conditionId: match.id,
+    conditionGeneration: match.condition!.metadata.generation,
+  };
+}
+
 function pendingHumanApprovalCondition(task: HumanTaskView | null) {
   if (!task || task.terminal || !["pending", "waiting", "running", "attention"].includes(task.status)) return null;
   const matches = (task.diagnostics?.conditions ?? []).filter((item) => {
@@ -940,6 +966,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
     }
     const rendered = renderTelegramTaskUpdate(task);
     const displayedApproval = approvalAnchor(task);
+    const displayedHumanCondition = !displayedApproval ? humanConditionAnchor(task) : null;
     // Keep the card's context consistent even if selection changes during I/O.
     const conversationTopicId = selectedTaskTopicId(surface, task);
     const delivered = await sendMessage(watched.chatId, rendered, undefined, {
@@ -951,8 +978,9 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
         taskRefs: [{ appId: task.appId, taskId: task.taskId }],
         topicId: conversationTopicId,
         ...(displayedApproval ? { approvalAnchor: displayedApproval } : {}),
+        ...(displayedHumanCondition ? { humanCondition: displayedHumanCondition } : {}),
       }),
-      bindToCompleteDelivery: Boolean(displayedApproval),
+      bindToCompleteDelivery: Boolean(displayedApproval || displayedHumanCondition),
     });
     if (delivered && running)
       recordConversationMessage({
@@ -1026,6 +1054,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
     const proposal = single ? first.detail : first.task;
     const taskRefs = (single ? [proposal] : page.items).map((task) => ({ appId: task.appId, taskId: task.taskId }));
     const displayedApproval = single ? approvalAnchor(proposal) : null;
+    const displayedHumanCondition = single && !displayedApproval ? humanConditionAnchor(proposal) : null;
     const text = single
       ? `Needs your decision: ${proposal.outcome}\n${fullHumanApprovalAction(proposal) ?? humanActionText(proposal)}\n\nReply here with your decision.`
       : `${page.total ?? page.items.length} Tasks need your action in ${appId}. Ask May what needs your attention, or use /todo.`;
@@ -1037,8 +1066,9 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
       data: JSON.stringify({
         taskRefs,
         ...(displayedApproval ? { approvalAnchor: displayedApproval } : {}),
+        ...(displayedHumanCondition ? { humanCondition: displayedHumanCondition } : {}),
       }),
-      bindToCompleteDelivery: Boolean(displayedApproval),
+      bindToCompleteDelivery: Boolean(displayedApproval || displayedHumanCondition),
     });
     if (!messageId || !running) return;
     if ((selectedApps.get(surface) ?? opts.interfaceAgent) === appId) shownTodoActions.set(surface, next);
@@ -1291,6 +1321,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
     let replyTopicId: string | undefined;
     let replyTask: { appId: string; taskId: string } | undefined;
     let replyApprovalAnchor: TelegramApprovalAnchor | null = null;
+    let replyHumanCondition: TelegramHumanConditionAnchor | null = null;
     if (replyToMsgId) {
       try {
         const notification = getNotificationMessage(persistDir, chatIdStr, replyToMsgId);
@@ -1300,6 +1331,10 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
         replyApprovalAnchor =
           data?.approvalAnchor && typeof data.approvalAnchor === "object" && !Array.isArray(data.approvalAnchor)
             ? (data.approvalAnchor as TelegramApprovalAnchor)
+            : null;
+        replyHumanCondition =
+          data?.humanCondition && typeof data.humanCondition === "object" && !Array.isArray(data.humanCondition)
+            ? (data.humanCondition as TelegramHumanConditionAnchor)
             : null;
         replyToSourceId =
           typeof data?.conversationMessageId === "string" && data.conversationMessageId.trim()
@@ -1358,6 +1393,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
       inputContext = {
         ...(inputContext ?? {}),
         focusedTask: { appId: focusedTask.appId, taskId: focusedTask.taskId },
+        ...(replyHumanCondition ? { displayedHumanCondition: replyHumanCondition } : {}),
       };
     }
     if (!recordedConversationId) {
