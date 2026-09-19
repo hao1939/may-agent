@@ -96,7 +96,7 @@ export type TaskReconcileResult = {
       state: "waiting";
       /** Absolute time to reconsider this Task. Elapsed time wakes work; it does not satisfy a Condition. */
       reviewAt?: number;
-      /** After submitting dependencies, queue another bounded pass for useful independent work. */
+      /** Queue one bounded pass for useful remaining work; independent waits and reports remain valid. */
       continue?: true;
       response?: never;
       result?: Record<string, unknown>;
