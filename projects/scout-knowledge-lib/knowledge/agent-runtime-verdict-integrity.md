@@ -1,20 +1,67 @@
 <ai_context>
-summary: "Reusable verification and verdict-integrity patterns: evidence bound to the verified subject, explicit receipt coverage and valid anomalies, negative controls for the verdict path, freshness binding for replayed traces, evaluator immutability across repair, proof of the inspected universe behind a clean sweep, separation of checker eligibility from acceptance authority, actor-bound approval provenance, and release-aware expected-outcome reconciliation."
-triggers: ["verification subject binding", "Brigade", "receipt coverage", "not_checked", "invocation_ref", "ASQAV", "meta-verification", "false-green verifier", "negative control", "ProjectGuard", "trace freshness", "recorded trace", "skilldiff", "agent skill regression", "frozen tests", "test identity", "failure fingerprint", "RepoPilot", "independent runner", "inspected universe", "compared-nothing-reported-clean", "event-backed write", "Dream Studio", "checker eligibility", "acceptance authority", "FinalAcceptance", "ContributionRecord", "Workstream", "review provenance", "content-addressed approval", "CRT", "XFAIL", "XPASS", "release-aware conformance", "Monet E2E"]
+summary: "Reusable verification and verdict-integrity patterns: evidence bound to the verified subject, explicit receipt coverage and valid anomalies, negative controls for the verdict path, freshness binding for replayed traces, evaluator immutability across repair, proof of the inspected universe behind a clean sweep, cross-artifact conformance for executable governance, separation of checker eligibility from acceptance authority, actor-bound approval provenance, and release-aware expected-outcome reconciliation."
+triggers: ["verification subject binding", "Brigade", "receipt coverage", "not_checked", "invocation_ref", "ASQAV", "meta-verification", "false-green verifier", "negative control", "ProjectGuard", "trace freshness", "recorded trace", "skilldiff", "agent skill regression", "frozen tests", "test identity", "failure fingerprint", "RepoPilot", "independent runner", "inspected universe", "compared-nothing-reported-clean", "cross-artifact conformance", "decision table", "DMN", "OutTheBox", "event-backed write", "Dream Studio", "checker eligibility", "acceptance authority", "FinalAcceptance", "ContributionRecord", "Workstream", "review provenance", "content-addressed approval", "CRT", "XFAIL", "XPASS", "release-aware conformance", "Monet E2E"]
 last_updated: "2026-09-19"
-source_basis: "Extracted intact from agent-runtime-effect-integrity.md during its 2026-09-14 oversized-note review, then extended with release-aware expected-outcome reconciliation, replay-freshness analysis, evaluator-immutability analysis, and actor-bound review-state analysis. Sources are Brigade revision 0e8b83ae6ef779bb6be8701dd4cd534c064608f9; jagmarques/asqav-sdk revision 4cbf71b774fe18e67c2433c6ebee7b3940fe62ec, especially its standalone verifier contract, executable requirement map, frozen conformance corpus, invocation-reference duplicate vector, and unsigned-gap vector; Dilikjon/projectguard revision 55df81492aa4890d512efd4152e2cdca514471e8, including its CLI entry point, test runner, active gate configuration, and CI workflow, with npm test, npm run verify, and a known-bad test-runner negative control reproduced locally from the pinned archive; scs0209/skilldiff revision 285489f8c18f7cf48b0b2d6b2ec35a6da45fcd64, especially its recorded/live runner split, trace assertions, report formatter, baseline fetch, CLI, and GitHub Actions workflow; indada/repopilot revision d184928c7bfef6bc0d7228f9d282f0ae2e56fda1, especially its pipeline, repair constraints, structured test-evidence comparison, architecture, verification-coverage statement, and security boundary; SeayInsights/dream-studio revision 1014fc185cbade7cb5b11bdf67b7150ce1e47d13, especially its event-backed-write gate, focused gate tests, projection declarations, and blocking pre-push wiring; Flow-Research/workstream revision d5dd94d3f1f4e52fa9f191e88d3c210758bb4b3b, especially its lifecycle contract, roadmap capability ledger, review queue persistence, and canonical-review decision record; imron/crt revision e3ff1126b06528048673573a667bf3561f185539, especially its content-addressed file-review records, review types, MCP mutation tools, and architecture documentation; and team-monet/monet-e2e revision ba8acbc55a4574b3a453dcbf49842f7fb363f70c, especially its suite runner, metrics ledger, source-baseline guardrail, and release-to-main flip test."
+source_basis: "Extracted intact from agent-runtime-effect-integrity.md during its 2026-09-14 oversized-note review, then extended with release-aware expected-outcome reconciliation, replay-freshness analysis, evaluator-immutability analysis, actor-bound review-state analysis, and cross-artifact governance conformance. Sources are Brigade revision 0e8b83ae6ef779bb6be8701dd4cd534c064608f9; jagmarques/asqav-sdk revision 4cbf71b774fe18e67c2433c6ebee7b3940fe62ec, especially its standalone verifier contract, executable requirement map, frozen conformance corpus, invocation-reference duplicate vector, and unsigned-gap vector; Dilikjon/projectguard revision 55df81492aa4890d512efd4152e2cdca514471e8, including its CLI entry point, test runner, active gate configuration, and CI workflow, with npm test, npm run verify, and a known-bad test-runner negative control reproduced locally from the pinned archive; scs0209/skilldiff revision 285489f8c18f7cf48b0b2d6b2ec35a6da45fcd64, especially its recorded/live runner split, trace assertions, report formatter, baseline fetch, CLI, and GitHub Actions workflow; indada/repopilot revision d184928c7bfef6bc0d7228f9d282f0ae2e56fda1, especially its pipeline, repair constraints, structured test-evidence comparison, architecture, verification-coverage statement, and security boundary; SeayInsights/dream-studio revision 1014fc185cbade7cb5b11bdf67b7150ce1e47d13, especially its event-backed-write gate, focused gate tests, projection declarations, and blocking pre-push wiring; Flow-Research/workstream revision d5dd94d3f1f4e52fa9f191e88d3c210758bb4b3b, especially its lifecycle contract, roadmap capability ledger, review queue persistence, and canonical-review decision record; imron/crt revision e3ff1126b06528048673573a667bf3561f185539, especially its content-addressed file-review records, review types, MCP mutation tools, and architecture documentation; team-monet/monet-e2e revision ba8acbc55a4574b3a453dcbf49842f7fb363f70c, especially its suite runner, metrics ledger, source-baseline guardrail, and release-to-main flip test; and scubagraham/outthebox-open-patterns revision c7d6fa84ad8b289116599966fc1bb2a853c19231, including its Markdown patterns, DMN tables, and Agent 365-shaped JSON templates."
 </ai_context>
 
 # Agent Runtime Verdict Integrity
 
 **Companion note** to [Agent Runtime Effect Integrity](./agent-runtime-effect-integrity.md).
 
-These patterns separate seven questions that a green verification result can
+These patterns separate eight questions that a green verification result can
 otherwise collapse: which subject was checked, which axes were covered, whether
 the verdict path can reject a known-bad case, whether replay evidence is fresh for
 the candidate, whether the evaluator stayed fixed while the candidate changed,
-whether the verifier inspected the intended universe, and what authority may turn
-that verdict into acceptance.
+whether the verifier inspected the intended universe, whether parallel policy
+artifacts still encode the same contract, and what authority may turn that verdict
+into acceptance.
+
+## Executable Governance Needs Cross-Artifact Conformance — OutTheBox (HN / GitHub, September 2026)
+
+OutTheBox Open Patterns is a small, vendor-authored repository that expresses
+three agent-governance checks in parallel forms: prose, a DMN decision table,
+and a JSON template intended to map onto Microsoft Agent 365. The checked DMN
+files are well-formed XML and make two useful policy choices explicit: `unknown`
+evidence does not silently pass, and an alert does not count as an enforced
+budget circuit breaker. The inventory and budget templates also agree with
+their DMN tables on input names and listed recommendation values.
+
+The identity-sponsorship pattern exposes the harder integrity problem. Its DMN
+requires five facts—named individual, active status, explicit acceptance,
+actual authority, and current review—and returns eight fields, including status,
+reason, owner, deadline, restriction, evidence reference, and enforcement state.
+The adjacent JSON template asks only three differently named questions, omitting
+explicit acceptance and review currency; its `possibleValues` mix the DMN's
+reason codes with a status-like field. All three JSON templates also point to
+source-pattern and source-table filenames that do not exist in the checked tree.
+
+This means an individual decision table can be exhaustive while the deployable
+bundle is inconsistent. The repository says its logic was tested over every
+input combination, but revision
+[`c7d6fa84ad8b289116599966fc1bb2a853c19231`](https://github.com/scubagraham/outthebox-open-patterns/commit/c7d6fa84ad8b289116599966fc1bb2a853c19231)
+contains no test files or CI configuration from which that claim can be
+independently checked. The templates themselves correctly warn that their
+Agent 365 shape is author-defined rather than a verified Microsoft schema.
+
+**Runtime rule:** treat a governance bundle as one versioned contract. Generate
+or validate every prose, decision-table, platform-template, and enforcement
+projection against a canonical input/output schema. Conformance should fail on
+missing fields, renamed semantics, unreachable references, output-domain drift,
+and unsupported target-platform schemas. Separately test that each table covers
+valid combinations and rejects malformed input, and bind the resulting receipt
+to the exact bundle revision. Finally, keep decision logic distinct from effect
+enforcement: a DMN verdict that says `BLOCKED` or `BREACH_CONTAINED` is not proof
+that a runtime actually denied or throttled anything.
+
+This is artifact-consistency evidence from a new zero-star repository, not an
+independent validation of the policies, the claimed exhaustive testing,
+Microsoft compatibility, or production effectiveness.
+
+- **HN:** https://news.ycombinator.com/item?id=49767956
+- **Repo:** https://github.com/scubagraham/outthebox-open-patterns
+- **Inspected revision:** [`c7d6fa84ad8b289116599966fc1bb2a853c19231`](https://github.com/scubagraham/outthebox-open-patterns/commit/c7d6fa84ad8b289116599966fc1bb2a853c19231)
+- **Primary sources:** [repository overview](https://github.com/scubagraham/outthebox-open-patterns/blob/c7d6fa84ad8b289116599966fc1bb2a853c19231/README.md), [identity DMN](https://github.com/scubagraham/outthebox-open-patterns/blob/c7d6fa84ad8b289116599966fc1bb2a853c19231/patterns/agent-identity-ownership-sponsor-assignment/decision-table.dmn), and [identity JSON template](https://github.com/scubagraham/outthebox-open-patterns/blob/c7d6fa84ad8b289116599966fc1bb2a853c19231/patterns/agent-identity-ownership-sponsor-assignment/agent365-template.json)
 
 ## Verification-Evidence Binding — Brigade (GitHub, August 2026)
 
