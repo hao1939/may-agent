@@ -1,8 +1,8 @@
 <ai_context>
 summary: "Agent self-evolution is not one mechanism. The credible core is a governed release loop over explicit mutable surfaces: skills, memory, routing, harness code, weights, world models, or evaluators. Current evidence is strongest when an external fixed evaluator controls admission, and much weaker for self-generated or co-evolving judges and broad-goal autonomy."
 triggers: ["agent self-evolution", "self-improving agents", "recursive self-improvement", "agent autonomy", "skill evolution", "harness evolution", "world models", "co-evolving evaluators"]
-last_updated: "2026-09-16"
-source_basis: "A source-agnostic 984-row lead ledger: 908 observed cards from the human's Xiaohongshu collection, including a bounded authenticated frontier of 11 readable text bodies and one image-only cover; 69 primary paper, repository, benchmark, survey, blog, and interview records; and 8 existing Scout artifacts, plus 2026-09-10 direct XHS inspection of HarnessEvolve reception, an HN-surfaced primary-paper inspection of Procedural Graphs (arXiv 2609.09153), 2026-09-11 inspection of HN-surfaced Salesforce Beagle at commit 15f12b7, 2026-09-11 full-paper inspection of Ecdysis (arXiv 2609.11677v1), 2026-09-12 direct XHS inspection of the Seed/TokenWave Self-Developing Agents announcement, 2026-09-13 direct XHS inspection of Procedural Graphs reception, 2026-09-14 direct XHS inspection of a six-survey self-evolution reading map and its practitioner discussion, 2026-09-15 inspection of the HN-surfaced rekursiv.ai auto-autoresearch report plus its runnable NanoChat recipe at Priml commit 92c6bd2, and 2026-09-16 inspection of EvoOntology's ontology-evolution lifecycle and admission boundary at commit ace8ff69. Claims are traced to full primary sources and pinned code where available; titles remain discovery metadata, never technical evidence."
+last_updated: "2026-09-19"
+source_basis: "A source-agnostic 984-row lead ledger: 908 observed cards from the human's Xiaohongshu collection, including a bounded authenticated frontier of 11 readable text bodies and one image-only cover; 69 primary paper, repository, benchmark, survey, blog, and interview records; and 8 existing Scout artifacts, plus 2026-09-10 direct XHS inspection of HarnessEvolve reception, an HN-surfaced primary-paper inspection of Procedural Graphs (arXiv 2609.09153), 2026-09-11 inspection of HN-surfaced Salesforce Beagle at commit 15f12b7, 2026-09-11 full-paper inspection of Ecdysis (arXiv 2609.11677v1), 2026-09-12 direct XHS inspection of the Seed/TokenWave Self-Developing Agents announcement, 2026-09-13 direct XHS inspection of Procedural Graphs reception, 2026-09-14 direct XHS inspection of a six-survey self-evolution reading map and its practitioner discussion, 2026-09-15 inspection of the HN-surfaced rekursiv.ai auto-autoresearch report plus its runnable NanoChat recipe at Priml commit 92c6bd2, 2026-09-16 inspection of EvoOntology's ontology-evolution lifecycle and admission boundary at commit ace8ff69, and 2026-09-19 abstract-level inspection of SoL-Pi (arXiv 2609.20519v1). Claims are traced to full primary sources and pinned code where available; titles remain discovery metadata, never technical evidence."
 </ai_context>
 
 # Agent Self-Evolution and Autonomy: What Actually Changes?
@@ -560,6 +560,39 @@ Primary report: https://rekursiv.ai/blog/autoautoresearch/
 Repo: https://github.com/rekursiv-ai/priml  
 Inspected revision: https://github.com/rekursiv-ai/priml/commit/92c6bd2b23e922ecde5548431cd644c4cb6debe5  
 Runnable recipe and result table: https://github.com/rekursiv-ai/priml/blob/92c6bd2b23e922ecde5548431cd644c4cb6debe5/priml/baselines/nanochat/README.md#reproducing-the-blog-post
+
+### Harness evolution can optimize efficiency without proving general self-improvement
+
+*SoL-Pi: Recursively Scaling Auto-Research Loops for Efficient Agent Harness*
+([2609.20519v1](https://arxiv.org/abs/2609.20519v1)) treats the harness as the
+mutable surface. The authors report scaling auto-research rollouts across more
+numerous and diverse environments, then retaining four mechanisms spanning
+action execution, context compaction, observation handling, and delegated
+reading. On the 51-task EdgeBench evaluation, the abstract reports performance
+comparable to Pi across GPT-5.6 Sol and Opus 5 while reducing recorded token
+traffic by 44.7–49.0% and API cost by about one third. It translates those cost
+changes into estimated hourly savings of $8.75–$13.50 versus native Codex and
+Claude Code harnesses, and $4.36–$5.71 versus Pi.
+
+This is a useful reminder that an evolution loop can target a multi-dimensional
+release objective rather than benchmark accuracy alone: maintain verified task
+performance while reducing tokens and cost. It also reinforces the distinction
+between **search output** and **process improvement**. Four mechanisms surviving
+selection is evidence that one search produced a compact candidate harness; it
+does not by itself show that the recursive search procedure became better, that
+each mechanism caused part of the gain, or that the candidate generalizes
+outside EdgeBench. A defensible release receipt should therefore bind the
+parent and candidate harnesses, model and task panel, performance-equivalence
+margin, token-accounting boundary, prices, and held-out results. Dollar savings
+should remain derived, price-sensitive estimates rather than the primary
+measurement.
+
+**Evidence boundary:** Scout reviewed the live arXiv API abstract, not the full
+paper, harness implementation, rollout histories, EdgeBench task definitions,
+or cost records. The mechanism count, model names, performance comparison,
+token reduction, and savings are author-reported abstract claims. The abstract
+does not state the equivalence margin, uncertainty, train/test separation, or
+per-mechanism ablations needed to attribute transfer or causal value.
 
 ### A documented promotion gate is not an enforced promotion gate
 
