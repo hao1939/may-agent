@@ -445,14 +445,15 @@ storage or invoke an agent. The generic Condition tracker atomically updates
 the Condition, stores the triggering event, and returns the affected task IDs
 to enqueue.
 
-A Task may wait only when something outside the current attempt can produce the
+A Task may sleep only when something outside the current attempt can produce the
 named observation: an existing Task or submitted operation, an external fact
 source, or a human decision. “Deploy this change” is unfinished work, not a
 `deployment.completed` Condition. The owning App must perform or durably submit
 that work first. A self-owned requested action is rejected by the App boundary;
-without a real external wait, the same Task remains runnable.
+without a real external wait, the same Task may instead request another bounded
+pass for useful authorized work.
 
-Every admitted wait must identify:
+Every admitted sleeping wait must identify:
 
 - the exact fact or Task result being awaited;
 - the accountable external owner;
@@ -481,9 +482,10 @@ being revalidated as newly authored declarations. A changed specification starts
 a new generation and cannot inherit an older approval. Condition `reviewAfterMs`
 checkpoints renew after an accepted review while the fact remains pending.
 Task-level `reviewAt` is a recovery checkpoint: a future omitted deadline is
-preserved, a due checkpoint is consumed, and continued waiting must return a new
-explicit deadline or Condition. Accepted completion consumes that checkpoint
-unless an independently correlated input deadline still exists. Whole-Task
+preserved, a due checkpoint is consumed, and sleeping again must return a new
+explicit deadline or Condition. Immediate `continue: true` work requires neither.
+Accepted completion consumes that checkpoint unless an independently correlated
+input deadline still exists. Whole-Task
 cancellation remains the only broad termination operation. Callers that once
 used a replacement list must now explicitly retire removed identities; arbitrary
 JSON, observations, and history are not deep-merged.
