@@ -39,9 +39,7 @@ export type PublicTaskEvidenceProvider = {
   getEvent(eventId: string | number): Promise<Record<string, unknown>>;
 };
 export type SubjectDisposition =
-  | "eligible"
-  | "excluded"
-  | "insufficient-evidence";
+  "eligible" | "excluded" | "insufficient-evidence";
 export type SubjectEvidence = {
   disposition: SubjectDisposition;
   reason: string;
