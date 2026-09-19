@@ -177,9 +177,18 @@ export function admitConversationTaskInput(
     if (
       db
         .prepare(
-          `SELECT 1 FROM app_inbox_items WHERE app_id = ? AND conversation_id = ?
-      AND execution_task_id IS NULL AND status != 'done'
-      ${input.conversationInputKinds ? `AND input_kind IN (${input.conversationInputKinds.map(() => "?").join(",")})` : ""}
+          `SELECT 1 FROM app_inbox_items legacy WHERE legacy.app_id = ? AND legacy.conversation_id = ?
+      AND legacy.execution_task_id IS NULL AND legacy.status != 'done'
+      AND NOT EXISTS (
+        SELECT 1 FROM app_task_admissions admission
+        JOIN app_tasks task ON task.app_id = admission.app_id
+          AND task.task_id = json_extract(admission.admission_json, '$.taskId')
+        WHERE admission.app_id = legacy.app_id
+          AND admission.task_id = legacy.task_admission_key
+          AND legacy.waiting_on_kind = 'task'
+          AND legacy.waiting_on_id = task.task_id
+      )
+      ${input.conversationInputKinds ? `AND legacy.input_kind IN (${input.conversationInputKinds.map(() => "?").join(",")})` : ""}
       LIMIT 1`,
         )
         .get(input.appId, input.conversationId, ...(input.conversationInputKinds ?? []))

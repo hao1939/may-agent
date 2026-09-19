@@ -725,10 +725,12 @@ export async function runTaskAttempt(input: {
               acceptedLiveEventIds: primaryResult.acceptedLiveEventIds,
             })
           : [];
+        const declaredConditions = [...(primaryHandlerResult.conditions ?? []), ...dependencyConditions];
+        const declaredIds = new Set(declaredConditions.map((condition) => condition.id));
         const conditions = mergeTaskConditions(
-          [...existingAppDependencyConditions, ...(primaryHandlerResult.conditions ?? []), ...dependencyConditions],
+          [...existingAppDependencyConditions, ...declaredConditions],
           new Set(existingAppDependencyConditions.map((condition) => condition.id)),
-        );
+        ).filter((condition) => declaredIds.has(condition.id));
         primaryHandlerResult.conditions = conditions.length > 0 ? conditions : undefined;
       } catch (error) {
         const stale = rejectStaleEffect(error);

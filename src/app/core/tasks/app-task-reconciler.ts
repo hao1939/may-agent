@@ -868,12 +868,6 @@ function pruneUnlinkedConditions(tree: TaskTree): void {
   }
 }
 
-function unlinkTaskConditions(tree: TaskTree, taskId: string): void {
-  const resource = tree.resources?.[taskId];
-  if (resource?.status.conditionIds?.length) touchResource(resource, { conditionIds: [] });
-  pruneUnlinkedConditions(tree);
-}
-
 function unlinkExactTaskCondition(tree: TaskTree, taskId: string, conditionId: string): void {
   const resource = tree.resources?.[taskId];
   if (!resource?.status.conditionIds?.includes(conditionId)) return;
@@ -903,11 +897,20 @@ function materializeWaitingConditions(
   now: string,
 ): void {
   const registry = conditionRegistry(tree);
-  const ids: string[] = [];
-  const previousIds = new Set(taskConditionIds(tree, taskId));
-  for (const raw of conditions) {
+  const ids = taskConditionIds(tree, taskId);
+  const previousIds = new Set(ids);
+  const declarations = new Map<string, AppTaskConditionSpec>();
+  for (const condition of conditions) {
+    const id = condition.id.trim();
+    const previous = declarations.get(id);
+    if (previous && JSON.stringify(stableValue(previous)) !== JSON.stringify(stableValue(condition))) {
+      throw new Error(`Task result contains conflicting declarations for Condition ${id}`);
+    }
+    declarations.set(id, condition);
+  }
+  for (const raw of declarations.values()) {
     const id = raw.id.trim();
-    ids.push(id);
+    if (!previousIds.has(id)) ids.push(id);
     const spec = {
       type: raw.type.trim(),
       subject: raw.subject.trim(),
@@ -927,18 +930,9 @@ function materializeWaitingConditions(
     // Unrelated reevaluation must not postpone a future recovery checkpoint.
     // Once due, an accepted recheck may renew it without satisfying the wait.
     const reviewDue = current && Date.parse(current.status.observedAt ?? "") + spec.reviewAfterMs <= Date.parse(now);
-    registry[id] = sameSpec
-      ? previousIds.has(id) && current.status.state !== "true" && reviewDue
-        ? {
-            ...current,
-            metadata: {
-              ...current.metadata,
-              resourceVersion: current.metadata.resourceVersion + 1,
-            },
-            status: { ...current.status, observedAt: now },
-          }
-        : current
-      : {
+    const startsNewObservation = !sameSpec;
+    registry[id] = startsNewObservation
+      ? {
           metadata: {
             id,
             generation: (current?.metadata.generation ?? 0) + 1,
@@ -951,11 +945,36 @@ function materializeWaitingConditions(
             createdAt: now,
             observedAt: now,
           },
-        };
+        }
+      : previousIds.has(id) && current.status.state !== "true" && reviewDue
+        ? {
+            ...current,
+            metadata: {
+              ...current.metadata,
+              resourceVersion: current.metadata.resourceVersion + 1,
+            },
+            status: { ...current.status, observedAt: now },
+          }
+        : current;
   }
   const resource = tree.resources?.[taskId];
   if (resource) touchResource(resource, { conditionIds: ids });
   pruneUnlinkedConditions(tree);
+}
+
+function renewDueTaskConditionCheckpoints(tree: TaskTree, taskId: string, now: string): void {
+  const nowMs = Date.parse(now);
+  for (const id of taskConditionIds(tree, taskId)) {
+    const condition = tree.conditions?.[id];
+    if (!isAppTaskCondition(condition) || condition.status.state === "true") continue;
+    const reviewAfterMs = condition.spec.reviewAfterMs;
+    const observedAtMs = Date.parse(condition.status.observedAt ?? "");
+    if (!Number.isInteger(reviewAfterMs) || !Number.isFinite(observedAtMs) || observedAtMs + Number(reviewAfterMs) > nowMs) {
+      continue;
+    }
+    condition.metadata.resourceVersion += 1;
+    condition.status.observedAt = now;
+  }
 }
 
 export function recoverableAppTaskAttempts(
@@ -1221,7 +1240,7 @@ export function repairUnadmittedAppDependencyWaits(
   const mutationScope = emptyResourceMutationScope(tree);
   for (const resource of Object.values(tree.resources ?? {})) {
     if (resource.status.phase !== "waiting") continue;
-    const missingRequestId = (resource.status.conditionIds ?? []).flatMap((conditionId) => {
+    const missingRequests = (resource.status.conditionIds ?? []).flatMap((conditionId) => {
       const condition = tree.conditions?.[conditionId];
       if (
         !isAppTaskCondition(condition) ||
@@ -1232,19 +1251,19 @@ export function repairUnadmittedAppDependencyWaits(
         return [];
       }
       const requestId = condition.spec.subject.slice("id:".length).trim();
-      return requestId && !isAdmitted(requestId) ? [requestId] : [];
-    })[0];
-    if (!missingRequestId) continue;
+      return requestId && !isAdmitted(requestId) ? [{ conditionId, requestId }] : [];
+    });
+    if (!missingRequests.length) continue;
 
     trackResourceMutationTask(mutationScope, tree, resource.metadata.id);
-    const summary = `App dependency request ${missingRequestId} was not admitted; retrying the same Task from current facts`;
-    unlinkTaskConditions(tree, resource.metadata.id);
+    for (const { conditionId } of missingRequests) unlinkExactTaskCondition(tree, resource.metadata.id, conditionId);
+    const requestIds = missingRequests.map(({ requestId }) => requestId).join(", ");
+    const summary = `App dependency request${missingRequests.length === 1 ? "" : "s"} ${requestIds} ${missingRequests.length === 1 ? "was" : "were"} not admitted; retrying the same Task from current facts`;
     touchResource(resource, {
       phase: "pending",
       observedGeneration: Math.max(0, resource.metadata.generation - 1),
       currentAttemptId: undefined,
       summary,
-      conditionIds: [],
     });
     repairs.push({ taskId: resource.metadata.id, disposition: "requeued", summary });
   }
@@ -3368,7 +3387,6 @@ function applyTaskActions(
       appId: config.resourceStore.appId,
       taskId: claim.taskId,
     });
-    unlinkTaskConditions(tree, action.taskId);
     touchResource(resource, {
       phase: "pending",
       executionFailures: undefined,
@@ -3376,7 +3394,6 @@ function applyTaskActions(
       observedGeneration: Math.max(0, resource.metadata.generation - 1),
       currentAttemptId: undefined,
       summary: action.reason.trim(),
-      conditionIds: [],
     });
     applied.push(`unblocked ${action.taskId}`);
   }
@@ -3602,14 +3619,13 @@ export function completeAppTask(
   for (const dependentTaskId of dependentTaskIds) {
     trackResourceMutationTask(mutationScope, tree, dependentTaskId);
   }
-  const remainingReviewAt = [
-    ...(Number.isSafeInteger(resource.status.reviewAt) && Number(resource.status.reviewAt) > Date.now()
-      ? [Number(resource.status.reviewAt)]
-      : []),
-    ...Object.values(resource.status.inputWaits ?? {}).flatMap((wait) =>
+  // Completion consumes this Task attempt's own recovery checkpoint. Only an
+  // unresolved caller input keeps its independently correlated deadline.
+  const remainingReviewAt = Object.values(resource.status.inputWaits ?? {})
+    .flatMap((wait) =>
       Number.isSafeInteger(wait.reviewAt) && Number(wait.reviewAt) > 0 ? [Number(wait.reviewAt)] : [],
-    ),
-  ].sort((left, right) => left - right)[0];
+    )
+    .sort((left, right) => left - right)[0];
   touchResource(resource, {
     phase: pendingSelfTrigger
       ? "pending"
@@ -3707,43 +3723,56 @@ export function deferAppTask(
   // A review checkpoint is recovery insurance for an event-driven wait. It
   // never makes the awaited fact true, so preserve the owner's Conditions.
   // Retained and redeclared waits must renew due checkpoints the same way.
-  let conditions =
-    input.conditions ??
-    taskConditionIds(tree, claim.taskId).flatMap((id) => {
-      const condition = tree.conditions?.[id];
-      return condition && condition.status.state !== "true" ? [{ id, ...condition.spec }] : [];
-    });
+  let conditions = input.conditions ?? [];
   const pendingTriggerRecord = tree.taskTriggers?.[claim.taskId];
   const pendingEvents = pendingTriggerRecord ? taskTriggerEvents(pendingTriggerRecord) : [];
   validateActionFacts(claim.taskId, input.facts, actions.length);
   const mutationScope = beginResourceMutationScope(tree, claim, actions);
   const actionsApplied = applyTaskActions(tree, claim, actions, config);
+  validateConditions(conditions, { required: false, taskId: claim.taskId });
   const retiredConditionIds = new Set(
     actions.flatMap((action) => (action.kind === "retire-condition" ? [action.conditionId] : [])),
   );
+  const redeclaredRetirement = input.conditions?.find((condition) => retiredConditionIds.has(condition.id));
+  if (redeclaredRetirement) {
+    throw new Error(`Task result cannot retire and redeclare Condition ${redeclaredRetirement.id}`);
+  }
   conditions = conditions.filter((condition) => !retiredConditionIds.has(condition.id));
-  validateConditions(conditions, {
-    required: input.disposition === "waiting" && reviewAt === undefined,
-    taskId: claim.taskId,
-  });
   const now = new Date().toISOString();
-  unlinkSatisfiedTaskConditions(tree, claim.taskId);
   match.attempt.acceptedResult = acceptedResult;
   finishAttempt(tree, resource, "completed", input.summary, now);
-  if (conditions.length) {
-    materializeWaitingConditions(tree, claim.taskId, conditions, now);
-  } else {
-    unlinkTaskConditions(tree, claim.taskId);
+  // Apply authored declarations first so a changed specification advances the
+  // existing identity before satisfied links are pruned. Every accepted review
+  // renews retained due checkpoints, regardless of whether its authored delta
+  // is omitted, empty, or adds a peer; legacy rows are retained without being
+  // revalidated or rewritten when they have no valid checkpoint metadata.
+  if (conditions.length) materializeWaitingConditions(tree, claim.taskId, conditions, now);
+  renewDueTaskConditionCheckpoints(tree, claim.taskId, now);
+  unlinkSatisfiedTaskConditions(tree, claim.taskId);
+  const openConditions = taskConditionIds(tree, claim.taskId).flatMap((id) => {
+    const condition = tree.conditions?.[id];
+    return condition && condition.status.state !== "true" ? [{ id, ...condition.spec }] : [];
+  });
+  if (input.disposition === "waiting" && reviewAt === undefined && openConditions.length === 0) {
+    throw new Error(`Waiting result for ${claim.taskId} requires at least one exact Condition`);
   }
-  if (inputKeys.length) {
-    const wait = {
+  for (const key of inputKeys) {
+    const previous = resource.status.inputWaits?.[key]?.conditions ?? [];
+    // Correlation is input-local: retain that input's exact existing waits and
+    // add only Conditions authored while handling it. Omission must not attach
+    // every unrelated Task obligation to a newly admitted input.
+    const relevantIds = [
+      ...new Set([...previous.map(({ id }) => id), ...(input.conditions ?? []).map(({ id }) => id)]),
+    ];
+    retainTaskInputWait(config, resource, [key], {
       taskGeneration: claim.generation,
-      conditions: (input.conditions?.map(({ id }) => id) ?? resource.status.conditionIds ?? []).flatMap((id) =>
-        tree.conditions?.[id] ? [{ id, generation: tree.conditions[id].metadata.generation }] : [],
+      conditions: relevantIds.flatMap((id) =>
+        tree.conditions?.[id] && resource.status.conditionIds?.includes(id)
+          ? [{ id, generation: tree.conditions[id].metadata.generation }]
+          : [],
       ),
       ...(reviewAt !== undefined ? { reviewAt } : {}),
-    };
-    retainTaskInputWait(config, resource, inputKeys, wait);
+    });
   }
   touchResource(resource, {
     phase: input.continue ? "pending" : input.disposition,
@@ -3755,7 +3784,6 @@ export function deferAppTask(
     result: input.result ? structuredClone(input.result) : undefined,
     reviewAt,
     facts: [...(input.facts ?? [])],
-    ...(!conditions.length ? { conditionIds: [] } : {}),
   });
 
   // New input remains pending until accepted, whether or not it satisfies a

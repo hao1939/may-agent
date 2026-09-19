@@ -816,6 +816,32 @@ describe("common Task lifecycle source PoC", () => {
     expect(f.config.resourceStore.nextDueAt()).toBe(nextDue);
   });
 
+  it("consumes a task-level review checkpoint when the desired result completes early", () => {
+    const f = fixture();
+    const now = 1_800_000_000_000;
+    setSystemTime(new Date(now));
+    const due = now + 60_000;
+    deferAppTask(f.config, f.claim(), {
+      disposition: "waiting",
+      summary: "Service busy; review later",
+      reviewAt: due,
+    });
+
+    recordAppTaskTrigger(f.config, "conversation", {
+      type: "result.ready",
+      eventId: 9_001,
+      data: { verified: true },
+    });
+    completeAppTask(f.config, f.claim(), {
+      summary: "Requested result independently verified early",
+      facts: ["result:verified"],
+    });
+
+    expect(f.config.resourceStore.readTask("conversation")?.status).toMatchObject({ phase: "converged" });
+    expect(f.config.resourceStore.readTask("conversation")?.status.reviewAt).toBeUndefined();
+    expect(f.config.resourceStore.nextDueAt()).toBeNull();
+  });
+
   it("accepts a review deadline that elapses before settlement as immediately eligible", () => {
     const f = fixture();
     completeAppTask(f.config, f.claim(), { summary: "Initial request handled" });
