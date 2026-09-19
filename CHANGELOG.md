@@ -1,5 +1,37 @@
 # Changelog
 
+## [5.0.0](https://github.com/hao1939/may-agent/compare/v4.0.0...v5.0.0) (2026-09-19)
+
+
+### ⚠ BREAKING CHANGES
+
+* **tasks:** use App input as the complete handoff ([#194](https://github.com/hao1939/may-agent/issues/194))
+* **web:** route project comments through normal App input ([#176](https://github.com/hao1939/may-agent/issues/176))
+* **runtime:** decouple admission from execution ([#191](https://github.com/hao1939/may-agent/issues/191))
+* **tasks:** unify requirement corrections under creator authority ([#188](https://github.com/hao1939/may-agent/issues/188))
+
+### Features
+
+* **execution:** add experimental configured context preparation ([#192](https://github.com/hao1939/may-agent/issues/192)) ([83a2743](https://github.com/hao1939/may-agent/commit/83a27430794abf49a5ebb3f14a58af387bb8cccb))
+* **metrics:** compare context preparation usage and outcomes ([#193](https://github.com/hao1939/may-agent/issues/193)) ([45d6bd2](https://github.com/hao1939/may-agent/commit/45d6bd2e751174d5f6355bbbc62041c163fb2b3e))
+* **runtime:** bind approvals and activation to exact Task evidence ([#197](https://github.com/hao1939/may-agent/issues/197)) ([0d25ab1](https://github.com/hao1939/may-agent/commit/0d25ab157ad7de6693be46781ca65a8341017804))
+
+
+### Bug Fixes
+
+* **checkpoint:** preserve numbering across process restarts ([#198](https://github.com/hao1939/may-agent/issues/198)) ([28670dd](https://github.com/hao1939/may-agent/commit/28670dd2807eec91ffa27875d2eb8f386316d3b9))
+* **execution:** publish shared Task context and recovery baseline ([#196](https://github.com/hao1939/may-agent/issues/196)) ([0fcc420](https://github.com/hao1939/may-agent/commit/0fcc42051d255119366c69d9fd3e3fed4e9cc18c))
+* **inbox:** reject misrouted input before it blocks a conversation ([#202](https://github.com/hao1939/may-agent/issues/202)) ([71f04d4](https://github.com/hao1939/may-agent/commit/71f04d45d63c277c740ba727120aa138137fa080))
+* **runtime:** decouple admission from execution ([#191](https://github.com/hao1939/may-agent/issues/191)) ([efb98b5](https://github.com/hao1939/may-agent/commit/efb98b5b32ac2212273d822a882deae659f0fd36))
+* **runtime:** keep task worker role process-local ([#199](https://github.com/hao1939/may-agent/issues/199)) ([f6ab8e1](https://github.com/hao1939/may-agent/commit/f6ab8e18b16a42197519c2485a81d9d15fd0a3b8))
+* **state:** recover a stuck Conversation input offline ([#203](https://github.com/hao1939/may-agent/issues/203)) ([7fc90f5](https://github.com/hao1939/may-agent/commit/7fc90f57829ad6a8ddd48eb3de8489e527314cf5))
+* **tasks:** mark recurring tasks without hiding human decisions ([#200](https://github.com/hao1939/may-agent/issues/200)) ([ecbf886](https://github.com/hao1939/may-agent/commit/ecbf886f8292c804544481806674b6aaf827ab0a))
+* **tasks:** preserve independent waits and deferred reviews ([#209](https://github.com/hao1939/may-agent/issues/209)) ([5143799](https://github.com/hao1939/may-agent/commit/5143799ded84b2351749a0cd8d5a2178ed272a87))
+* **tasks:** unify requirement corrections under creator authority ([#188](https://github.com/hao1939/may-agent/issues/188)) ([708a9db](https://github.com/hao1939/may-agent/commit/708a9dbdfedc4b8ce4d7bedceb28ee7ceab5f197))
+* **tasks:** use App input as the complete handoff ([#194](https://github.com/hao1939/may-agent/issues/194)) ([dd548ca](https://github.com/hao1939/may-agent/commit/dd548cabe2bf88ba427de2d29fdde3e94b7050c5))
+* **web:** route project comments through normal App input ([#176](https://github.com/hao1939/may-agent/issues/176)) ([bf001b4](https://github.com/hao1939/may-agent/commit/bf001b48ad169e828c1713d959a5a524c2d198c6))
+* **workflows:** expose creator-authorized task revisions ([#195](https://github.com/hao1939/may-agent/issues/195)) ([9c7ee8c](https://github.com/hao1939/may-agent/commit/9c7ee8c65a1efeb09956db65101c4d79b20e15b6))
+
 ## [4.0.0](https://github.com/hao1939/may-agent/compare/v3.0.1...v4.0.0) (2026-09-13)
 
 
