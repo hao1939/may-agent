@@ -334,7 +334,14 @@ export async function runTaskAttempt(input: {
               app: descriptor.app,
               registry,
               signal: attempt.signal,
-              execution: { descriptor, attempt, taskEvents, taskRead: taskReads(opts, descriptor), taskSnapshot, executionPaths },
+              execution: {
+                descriptor,
+                attempt,
+                taskEvents,
+                taskRead: taskReads(opts, descriptor),
+                taskSnapshot,
+                executionPaths,
+              },
               getTaskApp(appId) {
                 const entry = registry.entries.find(({ definition }) => definition.id === appId);
                 if (!entry?.definition.tasks || !opts.persistDir)
@@ -743,6 +750,7 @@ export async function runTaskAttempt(input: {
             summary: primaryHandlerResult.summary,
             response: primaryHandlerResult.response,
             result: primaryHandlerResult.result,
+            reviewAt: primaryHandlerResult.reviewAt,
             facts: primaryHandlerResult.facts,
             actions: primaryHandlerResult.actions,
             conditions: primaryHandlerResult.conditions,

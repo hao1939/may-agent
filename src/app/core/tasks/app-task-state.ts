@@ -10,6 +10,8 @@ export type AppTaskInputWait = {
   taskGeneration: number;
   /** Empty means continue with already pending Task input, without replaying an old event batch. */
   conditions: Array<{ id: string; generation: number }>;
+  /** Exact input reconsideration deadline; elapsed time does not answer the input. */
+  reviewAt?: number;
 };
 
 /** Host-private persisted Condition state. */
@@ -64,6 +66,8 @@ export type AppTaskResource = {
     executionFailures?: number;
     /** Earliest next attempt after execution failure; ordinary wakes do not waive it. */
     executionRetryAt?: number;
+    /** Absolute Task reconsideration deadline; elapsed time only makes another attempt eligible. */
+    reviewAt?: number;
     /** A new human admission permits one fresh claim; that claim consumes the opportunity. */
     freshHumanInput?: true;
     summary?: string;
@@ -83,8 +87,7 @@ export function taskExecutionRetryDelay(failures: number): number {
 
 export function pendingTaskExecutionRetryAt(resource: AppTaskResource, now = Date.now()): number | undefined {
   const at = resource.status.executionRetryAt;
-  return typeof at === "number" && Number.isFinite(at) && at > now
-    ? at : undefined;
+  return typeof at === "number" && Number.isFinite(at) && at > now ? at : undefined;
 }
 
 export type AppTaskAttemptLease = {
@@ -119,6 +122,8 @@ export type AppTaskAttempt = {
   /** Accepted facts from this exact attempt; later cycles do not replace it. */
   acceptedResult?: {
     state: "converged" | "waiting" | "incomplete";
+    /** Absolute reconsideration deadline for a waiting result; not an external fact. */
+    reviewAt?: number;
     continue?: true;
     report?: true;
     summary: string;
@@ -158,7 +163,11 @@ export type AppTaskCancellation = {
   reason: string;
   summary: string;
   cancelledAt: string;
-  decidedBy?: { kind: "human" } | { kind: "app"; agent: string; attemptId: string } | { kind: "app-policy" } | { kind: "creator"; creator: ResourceCreator };
+  decidedBy?:
+    | { kind: "human" }
+    | { kind: "app"; agent: string; attemptId: string }
+    | { kind: "app-policy" }
+    | { kind: "creator"; creator: ResourceCreator };
   response?: string;
   result?: Record<string, unknown>;
   facts?: string[];

@@ -1,12 +1,6 @@
 import { Type } from "typebox";
 import { Check, Errors } from "typebox/value";
-import type {
-  Condition,
-  TaskAction,
-  TaskAppDependency,
-  TaskReconcileResult,
-  TaskVerificationResult,
-} from "./task.js";
+import type { Condition, TaskAction, TaskAppDependency, TaskReconcileResult, TaskVerificationResult } from "./task.js";
 
 export const MIN_CONDITION_REVIEW_AFTER_MS = 60_000;
 export const MAX_TASK_RESULT_BYTES = 16 * 1024;
@@ -23,22 +17,34 @@ const CONDITION_OWNER_PATTERN = "^\\s*(?:human|[a-z][a-z0-9-]*:[^\\s:]+)\\s*$";
 const conditionOwnerPattern = new RegExp(CONDITION_OWNER_PATTERN);
 const conditionOwnerSchema = Type.String({
   pattern: CONDITION_OWNER_PATTERN,
-  description: "Who can supply the awaited fact: human or kind:identity, e.g. human:requester or app:measurement. Use a lowercase kind and an identity without spaces or colons, not a display name or sentence. This field does not send a message or grant authority.",
+  description:
+    "Who can supply the awaited fact: human or kind:identity, e.g. human:requester or app:measurement. Use a lowercase kind and an identity without spaces or colons, not a display name or sentence. This field does not send a message or grant authority.",
 });
 const objectSchema = Type.Unsafe<Record<string, unknown>>({
   type: "object",
   additionalProperties: true,
 });
 
-export const taskActionSchema = Type.Object(
-  {
-    kind: Type.Literal("unblock-task"),
-    taskId: nonEmptyStringSchema,
-    expectedGeneration: Type.Integer({ minimum: 1 }),
-    reason: nonEmptyStringSchema,
-  },
-  { additionalProperties: false },
-);
+export const taskActionSchema = Type.Union([
+  Type.Object(
+    {
+      kind: Type.Literal("unblock-task"),
+      taskId: nonEmptyStringSchema,
+      expectedGeneration: Type.Integer({ minimum: 1 }),
+      reason: nonEmptyStringSchema,
+    },
+    { additionalProperties: false },
+  ),
+  Type.Object(
+    {
+      kind: Type.Literal("retire-condition"),
+      conditionId: nonEmptyStringSchema,
+      expectedConditionGeneration: Type.Integer({ minimum: 1 }),
+      reason: nonEmptyStringSchema,
+    },
+    { additionalProperties: false },
+  ),
+]);
 
 export const conditionSchema = Type.Object(
   {
@@ -46,7 +52,8 @@ export const conditionSchema = Type.Object(
     type: Type.String({
       minLength: 1,
       pattern: "\\.",
-      description: "Namespaced event type from a known producer, e.g. review.completed. Naming a type does not register its producer or ingress.",
+      description:
+        "Namespaced event type from a known producer, e.g. review.completed. Naming a type does not register its producer or ingress.",
     }),
     subject: typedConditionSubjectSchema,
     expected: Type.Unknown(),
@@ -61,6 +68,8 @@ const resultFields = {
   summary: nonEmptyStringSchema,
   response: Type.Optional(nonEmptyStringSchema),
   result: Type.Optional(objectSchema),
+  reviewAt: Type.Optional(Type.Integer({ minimum: 1 })),
+
   facts: Type.Array(nonEmptyStringSchema, { maxItems: 32 }),
   actions: Type.Optional(Type.Array(taskActionSchema, { maxItems: 16 })),
   conditions: Type.Optional(Type.Array(conditionSchema, { maxItems: 16 })),
@@ -82,19 +91,25 @@ const resultFields = {
 
 /** Model-output schema for a resolved agent. */
 export const taskAgentResultSchema = Type.Union([
+  Type.Object({ state: Type.Literal("converged"), ...resultFields }, { additionalProperties: false }),
   Type.Object(
-    { state: Type.Literal("converged"), ...resultFields },
-    { additionalProperties: false },
-  ),
-  Type.Object(
-    { state: Type.Literal("waiting"), ...resultFields, continue: Type.Optional(Type.Literal(true, {
-      description: "After submitting dependencies, queue another bounded pass for useful independent work. Keeps the input unanswered. Omit to sleep until feedback or review.",
-    })) },
+    {
+      state: Type.Literal("waiting"),
+      ...resultFields,
+      continue: Type.Optional(
+        Type.Literal(true, {
+          description:
+            "After submitting dependencies, queue another bounded pass for useful independent work. Keeps the input unanswered. Omit to sleep until feedback or review.",
+        }),
+      ),
+    },
     { additionalProperties: false },
   ),
   Type.Object(
     {
-      state: Type.Literal("waiting"), ...resultFields, report: Type.Literal(true),
+      state: Type.Literal("waiting"),
+      ...resultFields,
+      report: Type.Literal(true),
       facts: Type.Array(nonEmptyStringSchema, { minItems: 1, maxItems: 32 }),
     },
     { additionalProperties: false },
@@ -187,8 +202,23 @@ function normalizeAction(value: unknown, index: number): TaskAction | string {
       if (!reason) return `actions[${index}].reason must be a non-empty string`;
       return { kind: "unblock-task", taskId, expectedGeneration: value.expectedGeneration, reason };
     }
+    case "retire-condition": {
+      const conditionId = normalizedString(value.conditionId);
+      if (!conditionId) return `actions[${index}].conditionId must be a non-empty string`;
+      if (!validGeneration(value.expectedConditionGeneration)) {
+        return `actions[${index}].expectedConditionGeneration must be a positive integer`;
+      }
+      const reason = normalizedString(value.reason);
+      if (!reason) return `actions[${index}].reason must be a non-empty string`;
+      return {
+        kind: "retire-condition",
+        conditionId,
+        expectedConditionGeneration: value.expectedConditionGeneration,
+        reason,
+      };
+    }
     default:
-      return `actions[${index}].kind must be unblock-task; revise requirements through tasks update and delegate new work through dependencies`;
+      return `actions[${index}].kind must be unblock-task or retire-condition; revise requirements through tasks update and delegate new work through dependencies`;
   }
 }
 
@@ -229,10 +259,7 @@ function normalizeCondition(value: unknown, index: number): Condition | string {
     return `conditions[${index}].owner must be a canonical kind:identity`;
   }
   const reviewAfterMs = value.reviewAfterMs;
-  if (
-    !Number.isInteger(reviewAfterMs) ||
-    Number(reviewAfterMs) < MIN_CONDITION_REVIEW_AFTER_MS
-  ) {
+  if (!Number.isInteger(reviewAfterMs) || Number(reviewAfterMs) < MIN_CONDITION_REVIEW_AFTER_MS) {
     return `conditions[${index}].reviewAfterMs must be an integer of at least ${MIN_CONDITION_REVIEW_AFTER_MS}`;
   }
   return {
@@ -284,8 +311,10 @@ export function admitTaskReconcileResult(
   if (output.state !== "converged" && output.state !== "waiting" && output.state !== "incomplete") {
     return { ok: false, error: "state must be converged, waiting, incomplete, or needs-agent" };
   }
-  if (output.report !== undefined &&
-    ((output.state !== "waiting" && output.state !== "incomplete") || output.report !== true || facts.length === 0)) {
+  if (
+    output.report !== undefined &&
+    ((output.state !== "waiting" && output.state !== "incomplete") || output.report !== true || facts.length === 0)
+  ) {
     return { ok: false, error: "report requires waiting or incomplete, true, and non-empty facts" };
   }
   if (output.state === "incomplete") {
@@ -302,15 +331,18 @@ export function admitTaskReconcileResult(
     return { ok: false, error: "result must be an object" };
   }
   const result = rawResult as Record<string, unknown> | undefined;
-  if (
-    result !== undefined &&
-    new TextEncoder().encode(JSON.stringify(result)).byteLength >
-      MAX_TASK_RESULT_BYTES
-  ) {
+  if (result !== undefined && new TextEncoder().encode(JSON.stringify(result)).byteLength > MAX_TASK_RESULT_BYTES) {
     return { ok: false, error: `result exceeds the ${MAX_TASK_RESULT_BYTES}-byte limit` };
   }
   if (output.state === "waiting" && response.value) {
     return { ok: false, error: "waiting cannot include response; put operational progress in summary" };
+  }
+  const reviewAt = admittedOutput.reviewAt;
+  if (reviewAt !== undefined && (!Number.isSafeInteger(reviewAt) || Number(reviewAt) <= 0)) {
+    return { ok: false, error: "reviewAt must be a positive integer Unix timestamp in milliseconds" };
+  }
+  if (output.state !== "waiting" && reviewAt !== undefined) {
+    return { ok: false, error: "reviewAt is valid only for waiting" };
   }
 
   const rawActions = admittedOutput.actions ?? [];
@@ -366,8 +398,14 @@ export function admitTaskReconcileResult(
   if (output.state !== "waiting" && dependencies.length > 0) {
     return { ok: false, error: "dependencies are valid only for waiting" };
   }
-  if (output.continue !== undefined &&
-    (output.continue !== true || output.state !== "waiting" || output.report !== undefined || !dependencies.length || !facts.length)) {
+  if (
+    output.continue !== undefined &&
+    (output.continue !== true ||
+      output.state !== "waiting" ||
+      output.report !== undefined ||
+      !dependencies.length ||
+      !facts.length)
+  ) {
     return { ok: false, error: "continue requires waiting, dependencies and progress facts, without report" };
   }
   if (!Check(taskReconcileResultSchema, output)) {
@@ -385,21 +423,32 @@ export function admitTaskReconcileResult(
   };
   if (output.state === "waiting") {
     const waiting = {
-      ...report, state: "waiting" as const, actions,
+      ...report,
+      state: "waiting" as const,
+      actions,
+      ...(reviewAt !== undefined ? { reviewAt: Number(reviewAt) } : {}),
       ...(admittedOutput.continue === true ? { continue: true as const } : {}),
       ...(conditions.length ? { conditions } : {}),
       ...(dependencies.length ? { dependencies } : {}),
     };
-    return { ok: true, result: admittedOutput.report === true
-      ? { ...waiting, report: true, facts: facts as [string, ...string[]] }
-      : waiting };
+    return {
+      ok: true,
+      result:
+        admittedOutput.report === true ? { ...waiting, report: true, facts: facts as [string, ...string[]] } : waiting,
+    };
   }
   const answer = { ...report, ...(response.value ? { response: response.value } : {}) };
   if (output.state === "incomplete") {
     // The incomplete branch above has already checked that facts are non-empty.
-    return { ok: true, result: { ...answer, state: "incomplete", facts: facts as [string, ...string[]],
-      ...(output.report === true ? { report: true } : {}),
-    } };
+    return {
+      ok: true,
+      result: {
+        ...answer,
+        state: "incomplete",
+        facts: facts as [string, ...string[]],
+        ...(output.report === true ? { report: true } : {}),
+      },
+    };
   }
   return { ok: true, result: { ...answer, state: "converged", actions } };
 }

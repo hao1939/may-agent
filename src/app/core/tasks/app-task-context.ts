@@ -51,9 +51,13 @@ export function readAppTaskReconciliationEvents(
     const generation = store.readTask(claim.taskId)?.metadata.generation;
     projected.continuedInputs = claim.continuedInputKeys.flatMap((key) => {
       const admission = admissions?.[key];
-      return admission?.taskId === claim.taskId && generation !== undefined && admission.taskGeneration <= generation &&
-        !admission.resultAttemptId && admission.inputEvent
-        ? [{ observedAt: admission.admittedAt, event: canonicalAppEvent(admission.inputEvent as AgentEvent) }] : [];
+      return admission?.taskId === claim.taskId &&
+        generation !== undefined &&
+        admission.taskGeneration <= generation &&
+        !admission.resultAttemptId &&
+        admission.inputEvent
+        ? [{ observedAt: admission.admittedAt, event: canonicalAppEvent(admission.inputEvent as AgentEvent) }]
+        : [];
     });
   }
   return projected;
@@ -64,7 +68,9 @@ export function readAppTaskLiveEvent(config: AppTaskContext, taskId: string, eve
   const tree = config.resourceStore.readTaskContext({ taskIds: [taskId] });
   const events = [{ event: event as Record<string, unknown>, observedAt: new Date().toISOString() }];
   const projected = readAppTaskReconciliationEvents(config.resourceStore, {
-    taskId, events, eventsTruncated: false,
+    taskId,
+    events,
+    eventsTruncated: false,
     continuedInputKeys: continuedTaskInputKeys(tree, taskId, events),
   });
   const incoming = projected.items[0]!.event;
@@ -103,13 +109,20 @@ export function readAppTaskWaitPromptContext(
       },
     ];
   });
-  return projectAppTaskWaitPromptContext(waits);
+  const projected = projectAppTaskWaitPromptContext(waits);
+  return {
+    ...projected,
+    ...(Number.isSafeInteger(resource?.status.reviewAt) && Number(resource?.status.reviewAt) > 0
+      ? { reviewAt: Number(resource!.status.reviewAt) }
+      : {}),
+  };
 }
 
 /** Current accepted waits supplied to every executor before it judges feedback. */
 export function projectAppTaskWaitPromptContext(waits: readonly AppTaskWaitObservation[]): {
   open: Array<{
     conditionId: string;
+    conditionGeneration: number;
     type: string;
     subject: string;
     state: string;
@@ -133,6 +146,7 @@ export function projectAppTaskWaitPromptContext(waits: readonly AppTaskWaitObser
     return [
       {
         conditionId,
+        conditionGeneration: condition.metadata.generation,
         type: condition.spec.type,
         subject: condition.spec.subject,
         state: condition.status.state,
@@ -145,7 +159,8 @@ export function projectAppTaskWaitPromptContext(waits: readonly AppTaskWaitObser
                 ...(item.targetTaskId ? { targetTaskId: item.targetTaskId } : {}),
                 ...(item.waitingOn?.kind === "task" ? { resolvedTaskId: item.waitingOn.id } : {}),
                 ...(condition.status.state === "false" && condition.status.observed
-                  ? { report: condition.status.observed } : {}),
+                  ? { report: condition.status.observed }
+                  : {}),
               },
             }
           : {}),
@@ -171,8 +186,7 @@ function boundedPromptChildText(value: string): string {
  * resources remain available through the scoped Task read API.
  */
 export function projectAppTaskChildPromptContext(context: AppTaskChildContext) {
-  const facts = (items: string[]) =>
-    items.slice(0, MAX_PROMPT_CHILD_FACTS).map((item) => boundedPromptChildText(item));
+  const facts = (items: string[]) => items.slice(0, MAX_PROMPT_CHILD_FACTS).map((item) => boundedPromptChildText(item));
   return {
     ...(context.cancelled?.length
       ? {

@@ -61,11 +61,13 @@ export function continuedTaskInputKeys(
     }),
   );
   return Object.entries(task.status.inputWaits).flatMap(([key, wait]) =>
-    (wait.taskGeneration < task.metadata.generation ||
-      (wait.conditions.length === 0 && events.length > 0) ||
-      wait.conditions.some(({ id, generation }) =>
-        !linkedConditionIds.has(id) || tree.conditions?.[id]?.metadata.generation !== generation) ||
-      wait.conditions.some(({ id, generation }) => conditions.get(id) === generation))
+    wait.taskGeneration < task.metadata.generation ||
+    (wait.reviewAt !== undefined && wait.reviewAt <= Date.now()) ||
+    (wait.conditions.length === 0 && wait.reviewAt === undefined && events.length > 0) ||
+    wait.conditions.some(
+      ({ id, generation }) => !linkedConditionIds.has(id) || tree.conditions?.[id]?.metadata.generation !== generation,
+    ) ||
+    wait.conditions.some(({ id, generation }) => conditions.get(id) === generation)
       ? [key]
       : [],
   );

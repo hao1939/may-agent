@@ -84,6 +84,16 @@ test("retains waits through a queued and running pass and respects static gates"
   completeAppTask(config, second, { summary: "Review prepared", facts: ["review:done"] });
   expect(view().status).toBe("waiting");
   expect(view().waitingOn).toHaveLength(2);
+  expect(view().diagnostics?.attempts).toEqual([
+    expect.objectContaining({
+      id: second.attemptId,
+      generation: 1,
+      state: "completed",
+      acceptedResultState: "converged",
+    }),
+    expect.objectContaining({ id: first.attemptId, generation: 1, state: "completed", acceptedResultState: "waiting" }),
+  ]);
+  expect(view().diagnostics?.attemptsTruncated).toBeFalse();
 
   // A wake is not permission to bypass required Task generations.
   const resource = store.readTask("work")!;
@@ -284,8 +294,15 @@ function insertTask(
        changed, ready, updated_at, resource_json
      ) VALUES (?, ?, ?, 3, ?, ?, 'normal', ?, ?, ?, ?)`,
   ).run(
-    input.appId, input.taskId, generation, generation, input.phase,
-    input.changed ? 1 : 0, input.ready ? 1 : 0, input.updatedAt, JSON.stringify(resource),
+    input.appId,
+    input.taskId,
+    generation,
+    generation,
+    input.phase,
+    input.changed ? 1 : 0,
+    input.ready ? 1 : 0,
+    input.updatedAt,
+    JSON.stringify(resource),
   );
 }
 
@@ -354,7 +371,12 @@ test("shows a converged Task with pending work as queued in detail, lists, and s
     ["ready", true, false],
   ] as const) {
     insertTask(db, {
-      appId: "research", taskId, phase: "converged", updatedAt: 2, ready, changed,
+      appId: "research",
+      taskId,
+      phase: "converged",
+      updatedAt: 2,
+      ready,
+      changed,
     });
     expect(service.getTask({ appId: "research", taskId })).toMatchObject({
       status: "pending",
@@ -365,15 +387,18 @@ test("shows a converged Task with pending work as queued in detail, lists, and s
     });
   }
 
-  expect(service.listTasks({ status: ["pending"] }).items.map((task) => task.taskId).sort())
-    .toEqual(["not-ready", "ready", "scheduled"]);
+  expect(
+    service
+      .listTasks({ status: ["pending"] })
+      .items.map((task) => task.taskId)
+      .sort(),
+  ).toEqual(["not-ready", "ready", "scheduled"]);
   expect(service.listTasks({ status: ["up-to-date"] }).items.map((task) => task.taskId)).toEqual(["quiet"]);
   expect(service.listTasks().items.filter((task) => task.status === "pending")).toHaveLength(3);
   expect(db.prepare("SELECT DISTINCT phase FROM app_tasks").all()).toEqual([{ phase: "converged" }]);
 
   insertReceipt(db, "research", "scheduled", 3);
-  expect(service.getTask({ appId: "research", taskId: "scheduled" }))
-    .toMatchObject({ status: "done", terminal: true });
+  expect(service.getTask({ appId: "research", taskId: "scheduled" })).toMatchObject({ status: "done", terminal: true });
   expect(service.listTasks({ status: ["pending"] }).items).toHaveLength(2);
 });
 
@@ -389,10 +414,11 @@ test("status-filtered human reads retain the stored-phase index", () => {
       if (!sql.includes("AS payload, 0 AS terminal")) return statement;
       return new Proxy(statement, {
         get(target, key) {
-          if (key === "all") return (...values: Parameters<typeof statement.all>) => {
-            plans.push(JSON.stringify(db.prepare(`EXPLAIN QUERY PLAN ${sql}`).all(...values)));
-            return target.all(...values);
-          };
+          if (key === "all")
+            return (...values: Parameters<typeof statement.all>) => {
+              plans.push(JSON.stringify(db.prepare(`EXPLAIN QUERY PLAN ${sql}`).all(...values)));
+              return target.all(...values);
+            };
           const value = Reflect.get(target, key);
           return typeof value === "function" ? value.bind(target) : value;
         },
@@ -1169,18 +1195,21 @@ describe("Human Task service", () => {
     expect(detail?.facts).toEqual(["full facts"]);
   });
 
-  test.each([2, 4])("does not project live generation %s as active after its completion receipt exists", (generation) => {
-    const db = database();
-    insertTask(db, { appId: "alpha", taskId: "completed-but-stale", phase: "attention", updatedAt: 30, generation });
-    insertReceipt(db, "alpha", "completed-but-stale", 40);
-    const service = new HumanTaskService(db, registry("alpha"));
+  test.each([2, 4])(
+    "does not project live generation %s as active after its completion receipt exists",
+    (generation) => {
+      const db = database();
+      insertTask(db, { appId: "alpha", taskId: "completed-but-stale", phase: "attention", updatedAt: 30, generation });
+      insertReceipt(db, "alpha", "completed-but-stale", 40);
+      const service = new HumanTaskService(db, registry("alpha"));
 
-    expect(service.listTasks().items).toEqual([]);
-    expect(service.listApps()).toEqual([expect.objectContaining({ id: "alpha", activeTasks: 0, attentionTasks: 0 })]);
-    expect(service.listTasks({ includeDone: true }).items).toEqual([
-      expect.objectContaining({ taskId: "completed-but-stale", status: "done", terminal: true }),
-    ]);
-  });
+      expect(service.listTasks().items).toEqual([]);
+      expect(service.listApps()).toEqual([expect.objectContaining({ id: "alpha", activeTasks: 0, attentionTasks: 0 })]);
+      expect(service.listTasks({ includeDone: true }).items).toEqual([
+        expect.objectContaining({ taskId: "completed-but-stale", status: "done", terminal: true }),
+      ]);
+    },
+  );
 
   test("a newer live generation supersedes historical completion in detail, lists, and App counts", () => {
     const db = database();
@@ -1320,7 +1349,8 @@ describe("Human Task service", () => {
       insertTask(db, { appId: "alpha", taskId, phase: "waiting", updatedAt: 10 });
       const current = store.readTask(taskId)!;
       const control = {
-        appId: "alpha", taskId,
+        appId: "alpha",
+        taskId,
         expectedGeneration: current.metadata.generation,
         expectedResourceVersion: current.metadata.resourceVersion,
         reason: "Further work costs more than it is worth",
@@ -1331,11 +1361,15 @@ describe("Human Task service", () => {
     expect(migrateTaskCompletionReceipts(config, { oldRuntimeStopped: true }).imported).toBe(1);
 
     expect(service.getTask({ appId: "alpha", taskId: "withdrawn" })).toMatchObject({
-      status: "closed", terminal: true, cancellable: false,
+      status: "closed",
+      terminal: true,
+      cancellable: false,
       statusDetail: "Closed by its owner; no further work will run.",
     });
     expect(service.getTask({ appId: "alpha", taskId: "previously-finished" })).toMatchObject({
-      status: "closed", terminal: true, response: "previously-finished result",
+      status: "closed",
+      terminal: true,
+      response: "previously-finished result",
     });
     expect(service.listTasks().items).toEqual([]);
     expect(service.listTasks({ status: ["cancelled"] }).items.map((task) => task.taskId)).toEqual(["cancelled"]);
@@ -1350,9 +1384,13 @@ describe("Human Task service", () => {
     expect(service.listTasks({ includeDone: true }).items).toHaveLength(3);
 
     const history = listRuntimeTaskViews({ taskStateConfig: config }, { status: ["done"] });
-    expect(history.items).toEqual([expect.objectContaining({
-      id: "previously-finished", closed: true, response: "previously-finished result",
-    })]);
+    expect(history.items).toEqual([
+      expect.objectContaining({
+        id: "previously-finished",
+        closed: true,
+        response: "previously-finished result",
+      }),
+    ]);
   });
 
   test("owner cancellation closes the Task and rejects a repeated control", () => {

@@ -64,12 +64,20 @@ export type TaskAppDependency = {
 };
 
 /** Reconsider an existing wait through a fenced attempt. Revise requirements with TaskAttempt.reviseTask. */
-export type TaskAction = {
-  kind: "unblock-task";
-  taskId: string;
-  expectedGeneration: number;
-  reason: string;
-};
+export type TaskAction =
+  | {
+      kind: "unblock-task";
+      taskId: string;
+      expectedGeneration: number;
+      reason: string;
+    }
+  | {
+      /** Retire one exact wait on the Task currently returning this result. */
+      kind: "retire-condition";
+      conditionId: string;
+      expectedConditionGeneration: number;
+      reason: string;
+    };
 
 export type TaskReconcileResult = {
   summary: string;
@@ -86,6 +94,8 @@ export type TaskReconcileResult = {
     }
   | ({
       state: "waiting";
+      /** Absolute time to reconsider this Task. Elapsed time wakes work; it does not satisfy a Condition. */
+      reviewAt?: number;
       /** After submitting dependencies, queue another bounded pass for useful independent work. */
       continue?: true;
       response?: never;
@@ -94,11 +104,14 @@ export type TaskReconcileResult = {
       conditions?: Condition[];
       /** Typed App inputs whose answers are needed; code retains unchanged waits. */
       dependencies?: TaskAppDependency[];
-    } & ({ report?: never } | {
-      /** Return a new caller-relevant update without answering the input. */
-      report: true;
-      facts: [string, ...string[]];
-    }))
+    } & (
+      | { report?: never }
+      | {
+          /** Return a new caller-relevant update without answering the input. */
+          report: true;
+          facts: [string, ...string[]];
+        }
+    ))
   | {
       state: "incomplete";
       /** Select a new caller-relevant report while the same assignment retries. */
