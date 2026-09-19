@@ -19,6 +19,7 @@ import {
 import { AppRegistry, type AppDefinitionSource } from "../core/apps/registry.js";
 import { discoverAppDefinitions } from "../adapters/discovery/app-definitions.js";
 import { conversationTaskId } from "../core/state/conversation-task-turns.js";
+import { conversationTaskSuccessorId } from "../core/state/conversation-identity.js";
 import { createAppInboxItem } from "../core/state/app-inbox-store.js";
 import { claimNextAppInboxItem, waitAppInboxClaim } from "../../../test/fixtures/legacy-inbox.js";
 import {
@@ -377,6 +378,82 @@ describe("App inbox runtime", () => {
     expect(attachments).toEqual([{ kind: "existing", taskId: "decision/deploy" }]);
     const row = db.prepare("SELECT target_task_id FROM app_inbox_items WHERE source_id = 'human-reply-1'").get();
     expect(row).toEqual({ target_task_id: "decision/deploy" });
+  });
+
+  it("routes a human reply focused on a retained Conversation executor through its stable Conversation", async () => {
+    mkdirSync(join(root, "may.app"), { recursive: true });
+    writeFileSync(
+      join(root, "may.app", "app.js"),
+      `export default {
+        id: "may", version: 1, owner: "may",
+        inputSchema: { type: "object", required: ["kind", "data"], properties: {
+          kind: { const: "message" }, data: { type: "object", required: ["message"], properties: {
+            message: { type: "string" }, context: { type: "object" }
+          } }
+        } },
+        conversation: { mode: "agent", inputKinds: ["message"] },
+        task(input) { return { kind: "desired", intent: {
+          id: "work/" + input.id, parentId: "may", outcome: "Answer", acceptance: ["Answered"]
+        } }; },
+        tasks: {}
+      };\n`,
+    );
+    const predecessor = conversationTaskId("may", "may:primary");
+    const successor = conversationTaskSuccessorId("may", "may:primary", 2);
+    for (const [id, executionTaskId, sequence] of [
+      ["old-turn", predecessor, 10],
+      ["current-turn", successor, 20],
+    ] as const) {
+      createAppInboxItem(db, {
+        id,
+        appId: "may",
+        conversationId: "may:primary",
+        conversationSequence: sequence,
+        source: { kind: "human", id },
+        input: { kind: "message", data: { message: id } },
+      });
+      db.prepare("UPDATE app_inbox_items SET execution_task_id = ? WHERE id = ?").run(executionTaskId, id);
+    }
+    const routed: Array<Record<string, unknown>> = [];
+    const eventBus = persistentBus();
+    runtime = await startAppInboxRuntime({
+      registry: await loadedRegistry(root),
+      db,
+      bus: eventBus,
+      ...capabilities(eventBus).options,
+      admitConversation(input) {
+        routed.push(input);
+        return createAppInboxItem(db, input);
+      },
+      scanIntervalMs: 10_000,
+    });
+    eventBus.emit({
+      type: "conversation.message.created",
+      source: "may-console",
+      owner: "app:may",
+      target: { appId: "may" },
+      data: {
+        appId: "may",
+        conversationId: "may:primary",
+        author: { kind: "human", id: "focused-reply" },
+        text: "continue here",
+        context: { focusedTask: { appId: "may", taskId: predecessor } },
+        metadata: { channel: "may-console" },
+      },
+    });
+
+    await waitUntil(() => routed.length === 1);
+    expect(routed[0]).toMatchObject({
+      appId: "may",
+      conversationId: "may:primary",
+      source: { kind: "human", id: "focused-reply" },
+      input: { data: { context: { focusedTask: { appId: "may", taskId: predecessor } } } },
+    });
+    expect(routed[0]).not.toHaveProperty("targetTaskId");
+    const row = db
+      .prepare("SELECT conversation_id, target_task_id, origin_event_id FROM app_inbox_items WHERE source_id = ?")
+      .get("focused-reply");
+    expect(row).toEqual({ conversation_id: "may:primary", target_task_id: null, origin_event_id: 1 });
   });
 
   it("admits exact owner work without reviving retired wrapper announcements", async () => {

@@ -236,6 +236,22 @@ export function getAppInboxItem(db: SqliteDb, id: string): AppInboxItem | null {
   return row ? rowToItem(row) : null;
 }
 
+/**
+ * Check exact Conversation executor membership without scanning unrelated inbox history.
+ * Any retained Conversation binding is sufficient, so conflicting corrupt bindings still fail closed.
+ */
+export function hasConversationExecutionTask(db: SqliteDb, appId: string, taskId: string): boolean {
+  return Boolean(
+    db
+      .prepare(
+        `SELECT 1 FROM app_inbox_items INDEXED BY idx_app_inbox_execution_task
+         WHERE app_id = ? AND execution_task_id = ? AND conversation_id IS NOT NULL
+         LIMIT 1`,
+      )
+      .get(appId, taskId),
+  );
+}
+
 export function readActiveAppTurn(
   db: SqliteDb,
   appId: string,

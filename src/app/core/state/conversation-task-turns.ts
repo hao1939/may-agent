@@ -26,6 +26,7 @@ import { admitTaskInput } from "./inbox.js";
 import {
   createAppInboxItem,
   getAppInboxItem,
+  hasConversationExecutionTask,
   listAppInboxItems,
   type CreateAppInboxItem,
   type AppTurnTarget,
@@ -80,11 +81,7 @@ export function conversationTaskIntent(config: AppTaskContext): Omit<TaskIntent,
 }
 
 export function isConversationTask(config: AppTaskContext, taskId: string): boolean {
-  return Boolean(
-    config.resourceStore.db
-      .prepare("SELECT 1 FROM app_inbox_items WHERE app_id = ? AND execution_task_id = ? LIMIT 1")
-      .get(config.resourceStore.appId, taskId),
-  );
+  return hasConversationExecutionTask(config.resourceStore.db, config.resourceStore.appId, taskId);
 }
 
 /** A prepared judgment has no authority to settle or close its executing Task. */

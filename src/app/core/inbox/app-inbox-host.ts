@@ -19,6 +19,7 @@ import { assertValidAppDefinition, assertValidAppInput } from "../apps/definitio
 import {
   createAppInboxItem,
   getAppInboxItem,
+  hasConversationExecutionTask,
   listAppInboxItemsWaitingOnTask,
   listAppInboxTaskDependencyKeys,
   type AppTurnTarget,
@@ -326,8 +327,15 @@ export class AppInboxHost {
     if (this.#closed) throw new Error("App input admission is closed");
     const app = this.#requiredApp(input.appId);
     assertValidAppInput(app, input.input);
+    const targetTaskId =
+      input.targetTaskId === undefined ? undefined : requiredText(input.targetTaskId, "targetTaskId");
+    if (targetTaskId && hasConversationExecutionTask(this.#db, app.id, targetTaskId)) {
+      throw new Error("Conversation Task input must use conversationId without targetTaskId");
+    }
     const conversationInput = Boolean(
-      !input.targetTaskId && app.conversation && (!app.conversation.inputKinds || app.conversation.inputKinds.includes(input.input.kind)),
+      !targetTaskId &&
+      app.conversation &&
+      (!app.conversation.inputKinds || app.conversation.inputKinds.includes(input.input.kind)),
     );
     const defaultConversationId = app.conversation?.conversationId?.trim();
     const useDefaultConversation =
@@ -337,6 +345,7 @@ export class AppInboxHost {
       input.originEventId !== undefined;
     const prepared = {
       ...input,
+      ...(targetTaskId === undefined ? {} : { targetTaskId }),
       ...(useDefaultConversation
         ? { conversationId: defaultConversationId, conversationSequence: input.originEventId }
         : {}),
@@ -398,6 +407,12 @@ export class AppInboxHost {
     if (item.lease && item.lease.expiresAt > this.#now()) return;
     try {
       const app = this.#requiredApp(item.appId);
+      // Recheck retained inputs at the attachment boundary. A target that did
+      // not exist during initial admission may become a Conversation executor
+      // before recovery; it must never acquire ordinary Task authority.
+      if (item.targetTaskId && hasConversationExecutionTask(this.#db, app.id, item.targetTaskId)) {
+        throw new Error("Conversation Task input must use conversationId without targetTaskId");
+      }
       if (!item.targetTaskId && app.conversation && (!app.conversation.inputKinds || app.conversation.inputKinds.includes(item.input.kind)))
         throw new Error("Conversation input requires offline cutover to its Task execution owner");
       if (item.waitingOn?.kind === "task") {

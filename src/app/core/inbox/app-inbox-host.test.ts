@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it } from "bun:test";
 import { Type, defineApp, type AppDefinition, type AppInputContext, type AppTaskAttachment } from "@may-agent/sdk";
 import { openDatabase, type SqliteDb } from "../../../lib/db.js";
 import { applyDbSchema } from "../../../lib/db/schema.js";
+import { conversationTaskSuccessorId } from "../state/conversation-identity.js";
 import { AppInboxHost } from "./app-inbox-host.js";
 
 const probeInput = Type.Object({
@@ -203,16 +204,88 @@ describe("App inbox host", () => {
     host.admit({
       id: "feedback",
       appId: "evaluation",
-      targetTaskId: "existing",
+      targetTaskId: "  existing  ",
       source: { kind: "human", id: "operator" },
       input: { kind: "probe", data: { value: "correction" } },
     });
-    expect(host.get("feedback")?.status).toBe("pending");
+    expect(host.get("feedback")).toMatchObject({ status: "pending", targetTaskId: "existing" });
     available = true;
     await host.recoverAdmissions();
     expect(host.get("feedback")?.waitingOn).toEqual({ kind: "task", id: "existing" });
     expect(received).toMatchObject({ id: "feedback", humanRequested: true });
     expect(Object.isFrozen(received?.input.data)).toBe(true);
+  });
+
+  it("does not admit a Conversation executor target without Conversation identity", () => {
+    const executionTaskId = conversationTaskSuccessorId("evaluation", "primary", 2);
+    const original = createAppInboxItem(db, {
+      id: "original-turn",
+      appId: "evaluation",
+      conversationId: "primary",
+      conversationSequence: 1,
+      source: { kind: "human", id: "original-message" },
+      input: { kind: "probe", data: { value: "original" } },
+      now: 1,
+    });
+    db.prepare("UPDATE app_inbox_items SET execution_task_id = ? WHERE id = ?").run(
+      executionTaskId,
+      original.item.id,
+    );
+    const routed: Array<Record<string, unknown>> = [];
+    const host = new AppInboxHost({
+      db,
+      apps: [{ ...app(), conversation: { mode: "agent", inputKinds: ["probe"] } }],
+      admitConversation: (input) => {
+        routed.push(input);
+        return createAppInboxItem(db, input);
+      },
+      attachTask: fakeTaskAttacher(db),
+    });
+
+    expect(() =>
+      host.admit({
+        id: "malformed-feedback",
+        appId: "evaluation",
+        parentId: "caller-request",
+        targetTaskId: `  ${executionTaskId}\t`,
+        source: { kind: "app", id: "caller" },
+        input: { kind: "probe", data: { value: "feedback" } },
+        idempotencyKey: "feedback:malformed",
+      }),
+    ).toThrow("Conversation Task input must use conversationId without targetTaskId");
+    expect(host.get("malformed-feedback")).toBeNull();
+    expect(() =>
+      host.admit({
+        id: "stale-target-feedback",
+        appId: "evaluation",
+        parentId: "caller-request",
+        targetTaskId: executionTaskId,
+        conversationId: "primary",
+        source: { kind: "app", id: "caller" },
+        input: { kind: "probe", data: { value: "feedback" } },
+        idempotencyKey: "feedback:stale-target",
+      }),
+    ).toThrow("Conversation Task input must use conversationId without targetTaskId");
+    expect(host.get("stale-target-feedback")).toBeNull();
+    expect(db.prepare("SELECT COUNT(*) AS count FROM app_inbox_items").get()).toEqual({ count: 1 });
+    expect(routed).toHaveLength(0);
+
+    const untargeted = host.admit({
+      id: "conversation-message",
+      appId: "evaluation",
+      parentId: "caller-request",
+      conversationId: "primary",
+      source: { kind: "app", id: "caller" },
+      input: { kind: "probe", data: { value: "new message" } },
+      idempotencyKey: "message:new",
+    });
+    expect(untargeted.item).toMatchObject({
+      id: "conversation-message",
+      parentId: "caller-request",
+      conversationId: "primary",
+      source: { kind: "app", id: "caller" },
+    });
+    expect(routed).toHaveLength(1);
   });
 
   it("contains mapping failure, admits unrelated input, and retries the saved input after repair", async () => {
