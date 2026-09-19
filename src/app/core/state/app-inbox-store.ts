@@ -236,6 +236,19 @@ export function getAppInboxItem(db: SqliteDb, id: string): AppInboxItem | null {
   return row ? rowToItem(row) : null;
 }
 
+/** Resolve a Conversation executor from its retained inbox binding. */
+export function readConversationIdForExecutionTask(db: SqliteDb, appId: string, taskId: string): string | null {
+  const rows = db
+    .prepare(
+      `SELECT DISTINCT conversation_id FROM app_inbox_items
+       WHERE app_id = ? AND execution_task_id = ? AND conversation_id IS NOT NULL
+       LIMIT 2`,
+    )
+    .all(appId, taskId);
+  if (rows.length > 1) throw new Error(`Conversation Task ${appId}/${taskId} has conflicting Conversation bindings`);
+  return rows[0] ? String(rows[0].conversation_id) : null;
+}
+
 export function readActiveAppTurn(
   db: SqliteDb,
   appId: string,

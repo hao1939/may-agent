@@ -21,6 +21,7 @@ import {
   getAppInboxItem,
   listAppInboxItemsWaitingOnTask,
   listAppInboxTaskDependencyKeys,
+  readConversationIdForExecutionTask,
   type AppTurnTarget,
   type AppInboxItem,
   type AppInboxTaskDependencyKey,
@@ -326,8 +327,16 @@ export class AppInboxHost {
     if (this.#closed) throw new Error("App input admission is closed");
     const app = this.#requiredApp(input.appId);
     assertValidAppInput(app, input.input);
+    const targetConversationId = input.targetTaskId
+      ? readConversationIdForExecutionTask(this.#db, app.id, input.targetTaskId)
+      : null;
+    if (targetConversationId) {
+      throw new Error("Conversation Task input must use conversationId without targetTaskId");
+    }
     const conversationInput = Boolean(
-      !input.targetTaskId && app.conversation && (!app.conversation.inputKinds || app.conversation.inputKinds.includes(input.input.kind)),
+      !input.targetTaskId &&
+      app.conversation &&
+      (!app.conversation.inputKinds || app.conversation.inputKinds.includes(input.input.kind)),
     );
     const defaultConversationId = app.conversation?.conversationId?.trim();
     const useDefaultConversation =

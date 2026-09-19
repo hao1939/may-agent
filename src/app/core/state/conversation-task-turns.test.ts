@@ -1055,6 +1055,77 @@ test.each(["answer", "waiting-report", "execution-error"] as const)(
   },
 );
 
+test("Conversation ingress rejects direct executor targets and preserves untargeted caller identity", () => {
+  const f = fixture();
+  const first = f.admit();
+  completeConversationTaskTurn(f.context(), f.claim(first.taskId), decision);
+  const task = f.store.readTask(first.taskId)!;
+  closeAppTask(f.context(), {
+    appId: app.id,
+    taskId: first.taskId,
+    expectedGeneration: task.metadata.generation,
+    expectedResourceVersion: task.metadata.resourceVersion,
+    reason: "Historical terminal Conversation",
+  });
+  const successor = f.admit("successor", 2, "Continue");
+  expect(successor.taskId).toBe(`${first.taskId}_successor_2`);
+  const host = new AppInboxHost({
+    db: f.db,
+    apps: [app],
+    admitConversation: (input) =>
+      admitConversationTaskInput(f.context(), {
+        ...input,
+        intent: {
+          parentId: "root",
+          outcome: "Discuss with the human",
+          acceptance: ["Explain supported conclusions"],
+          executor: "conversation",
+        },
+      }),
+  });
+  const targeted = (id: string, targetTaskId: string, conversationId?: string) => () =>
+    host.admit({
+      id,
+      appId: app.id,
+      parentId: "caller-request",
+      targetTaskId,
+      ...(conversationId ? { conversationId } : {}),
+      source: { kind: "app", id: "caller" },
+      input: { kind: "message", data: { text: "Review this feedback" } },
+      idempotencyKey: `feedback:${id}`,
+    });
+
+  expect(targeted("missing-conversation", successor.taskId)).toThrow(
+    "Conversation Task input must use conversationId without targetTaskId",
+  );
+  expect(targeted("stale-predecessor", first.taskId, "chat")).toThrow(
+    "Conversation Task input must use conversationId without targetTaskId",
+  );
+  expect(targeted("mismatched-conversation", successor.taskId, "other-chat")).toThrow(
+    "Conversation Task input must use conversationId without targetTaskId",
+  );
+  for (const id of ["missing-conversation", "stale-predecessor", "mismatched-conversation"]) {
+    expect(getAppInboxItem(f.db, id)).toBeNull();
+  }
+
+  const admitted = host.admit({
+    id: "corrected-feedback",
+    appId: app.id,
+    parentId: "caller-request",
+    conversationId: "chat",
+    source: { kind: "app", id: "caller" },
+    input: { kind: "message", data: { text: "Review this feedback" } },
+    idempotencyKey: "feedback:corrected",
+  });
+  expect(admitted.item).toMatchObject({
+    id: "corrected-feedback",
+    parentId: "caller-request",
+    conversationId: "chat",
+    executionTaskId: successor.taskId,
+    source: { kind: "app", id: "caller" },
+  });
+});
+
 test("cutover refuses unhandled legacy input even with an expired lease", () => {
   const f = fixture();
   createAppInboxItem(f.db, f.input("old", 1));
