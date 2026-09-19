@@ -667,13 +667,14 @@ describe("Task reference index", () => {
 });
 
 describe("Human Task service", () => {
-  test("derives Hao's actions only from explicit unsatisfied Conditions owned by his principal", () => {
+  test("derives human actions from canonical human owners and excludes App, agent, and display-name owners", () => {
     const db = database();
     insertTask(db, { appId: "alpha", taskId: "completed", phase: "waiting", updatedAt: 80 });
     insertTask(db, { appId: "alpha", taskId: "approval", phase: "waiting", updatedAt: 70 });
     insertTask(db, { appId: "alpha", taskId: "may-owned", phase: "waiting", updatedAt: 60 });
     insertTask(db, { appId: "alpha", taskId: "agent-owned", phase: "waiting", updatedAt: 50 });
     insertTask(db, { appId: "alpha", taskId: "may-merge", phase: "waiting", updatedAt: 40 });
+    insertTask(db, { appId: "alpha", taskId: "display-name", phase: "waiting", updatedAt: 35 });
     insertTask(db, { appId: "alpha", taskId: "external", phase: "waiting", updatedAt: 30 });
     insertTask(db, { appId: "alpha", taskId: "broken", phase: "attention", updatedAt: 20 });
     insertTask(db, { appId: "beta", taskId: "input", phase: "waiting", updatedAt: 10 });
@@ -690,7 +691,7 @@ describe("Human Task service", () => {
       appId: "alpha",
       taskId: "approval",
       conditionId: "human-approval",
-      owner: "human:Hao",
+      owner: "human:release-reviewer",
       createdAt: "2026-08-20T01:02:03.000Z",
     });
     insertCondition(db, {
@@ -713,6 +714,13 @@ describe("Human Task service", () => {
       conditionId: "host-pr-199-merged",
       owner: "human:github-maintainer",
       requestedAction: "Run checks, obtain review, and merge the May-owned change.",
+    });
+    insertCondition(db, {
+      appId: "alpha",
+      taskId: "display-name",
+      conditionId: "display-name-action",
+      owner: "Hao",
+      requestedAction: "This display name is not a canonical owner.",
     });
     insertCondition(db, { appId: "alpha", taskId: "external", conditionId: "external-fact" });
     insertCondition(db, {
@@ -740,7 +748,7 @@ describe("Human Task service", () => {
     const service = new HumanTaskService(db, registry("alpha", "beta"));
 
     expect(service.listTasks({ appId: "alpha", humanActionOnly: true })).toMatchObject({
-      total: 1,
+      total: 2,
       items: [
         {
           appId: "alpha",
@@ -752,10 +760,17 @@ describe("Human Task service", () => {
             since: Date.parse("2026-08-20T01:02:03.000Z"),
           },
         },
+        {
+          appId: "alpha",
+          taskId: "may-merge",
+          status: "waiting",
+          humanAction: { requestedAction: "Run checks, obtain review, and merge the May-owned change." },
+        },
       ],
     });
     expect(service.listTasks({ humanActionOnly: true }).items.map((task) => task.taskId)).toEqual([
       "approval",
+      "may-merge",
       "input",
       "operator",
     ]);
@@ -777,16 +792,19 @@ describe("Human Task service", () => {
     expect(service.getTask({ appId: "alpha", taskId: "completed" })?.humanAction).toBeUndefined();
     expect(service.getTask({ appId: "alpha", taskId: "may-owned" })?.humanAction).toBeUndefined();
     expect(service.getTask({ appId: "alpha", taskId: "agent-owned" })?.humanAction).toBeUndefined();
-    expect(service.getTask({ appId: "alpha", taskId: "may-merge" })?.humanAction).toBeUndefined();
+    expect(service.getTask({ appId: "alpha", taskId: "may-merge" })?.humanAction).toEqual({
+      requestedAction: "Run checks, obtain review, and merge the May-owned change.",
+    });
+    expect(service.getTask({ appId: "alpha", taskId: "display-name" })?.humanAction).toBeUndefined();
     expect(service.getTask({ appId: "alpha", taskId: "external" })?.humanAction).toBeUndefined();
 
     db.prepare(
-      "UPDATE app_task_conditions SET state = 'true', condition_json = json_set(condition_json, '$.status.state', 'true') WHERE app_id = 'alpha' AND condition_id = 'human-approval'",
+      "UPDATE app_task_conditions SET state = 'true', condition_json = json_set(condition_json, '$.status.state', 'true') WHERE app_id = 'alpha' AND condition_id IN ('human-approval', 'host-pr-199-merged')",
     ).run();
     expect(service.listTasks({ appId: "alpha", humanActionOnly: true })).toMatchObject({ total: 0, items: [] });
   });
 
-  test("finds a legacy human approval on an exact dependency leaf", () => {
+  test("finds a role-owned human approval on an exact dependency leaf", () => {
     const db = database();
     insertTask(db, { appId: "evaluation", taskId: "parent", phase: "waiting", updatedAt: 20 });
     insertTask(db, { appId: "may-agent", taskId: "approval", phase: "waiting", updatedAt: 10 });
@@ -794,7 +812,7 @@ describe("Human Task service", () => {
       appId: "may-agent",
       taskId: "approval",
       conditionId: "approval-needed",
-      owner: "Hao",
+      owner: "human:github-maintainer",
       requestedAction: "Approve or reject commit 50e4cc0d.",
       createdAt: "2026-08-20T01:02:03.000Z",
     });

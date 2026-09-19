@@ -23,12 +23,10 @@ export type HumanTaskStatus =
   | "closed"
   | "cancelled";
 
-// These identities denote the authenticated person in this installation.
-// Other `human:*` owners are roles with their own responsible party, not Hao.
-const PERSONAL_HUMAN_OWNERS = ["human", "human:hao", "human:operator", "hao"] as const;
-
-export function isPersonalHumanOwner(owner: string | undefined): boolean {
-  return PERSONAL_HUMAN_OWNERS.includes(owner?.trim().toLowerCase() as (typeof PERSONAL_HUMAN_OWNERS)[number]);
+/** True for the canonical human principal or a canonical human role. */
+export function isHumanOwner(owner: string | undefined): boolean {
+  const canonical = owner?.trim();
+  return canonical === "human" || (canonical?.startsWith("human:") === true && canonical.length > "human:".length);
 }
 
 export type HumanTaskProgress = {
@@ -302,10 +300,11 @@ function taskStatusDetail(
   }
 }
 
-// Keep the SQL projection aligned with isPersonalHumanOwner so list/detail
-// reads and their transport presentation use the same structured principals.
-const HUMAN_OWNER_SQL = `(lower(trim(json_extract(human_condition.condition_json, '$.spec.owner'))) IN
-      (${PERSONAL_HUMAN_OWNERS.map((owner) => `'${owner}'`).join(", ")}))`;
+// Conditions are normalized at admission. Keep the SQL projection on the
+// canonical human namespace rather than an installation-specific identity list.
+const HUMAN_OWNER_VALUE_SQL = "trim(json_extract(human_condition.condition_json, '$.spec.owner'))";
+const HUMAN_OWNER_SQL = `(${HUMAN_OWNER_VALUE_SQL} = 'human'
+      OR ${HUMAN_OWNER_VALUE_SQL} GLOB 'human:?*')`;
 
 function recurringTaskSql(appId: string, taskId: string): string {
   return `EXISTS (

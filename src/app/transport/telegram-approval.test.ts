@@ -160,7 +160,7 @@ describe("Telegram exact approval reply", () => {
     }
   });
 
-  it("shows every personal action, excludes human roles, and does not guess among multiple approvals", () => {
+  it("shows every canonical human action and accepts a role-owned approval without guessing among approvals", () => {
     const withClarification = proposal("a", 1);
     withClarification.humanAction = { requestedAction: "Two human actions remain." };
     withClarification.diagnostics!.conditions.push({
@@ -193,15 +193,31 @@ describe("Telegram exact approval reply", () => {
         status: { state: "false" },
       },
     } as any);
+    withClarification.diagnostics!.conditions.push({
+      id: "display-name",
+      condition: {
+        metadata: { id: "display-name", generation: 1, resourceVersion: 1 },
+        spec: {
+          type: "human.answer.received",
+          subject: "question:display-name",
+          expected: { answer: true },
+          owner: "Hao",
+          requestedAction: "This display-name owner must stay hidden.",
+          reviewAfterMs: 60_000,
+        },
+        status: { state: "false" },
+      },
+    } as any);
     const rendered = renderTelegramTask(withClarification);
     expect(rendered).toContain("Verified benefit: exact packet binding.");
     expect(rendered).toContain("Clarify the preferred rollback observation window.");
-    expect(rendered).not.toContain("merge the May-owned change");
+    expect(rendered).toContain("Run checks, obtain review, and merge the May-owned change.");
+    expect(rendered).not.toContain("This display-name owner must stay hidden.");
     expect(telegramApprovalReply("approve", withClarification, anchorA)).not.toBeNull();
 
     const roleOwnedApproval = proposal("a", 1);
     roleOwnedApproval.diagnostics!.conditions[0]!.condition!.spec.owner = "human:github-maintainer";
-    expect(telegramApprovalReply("approve", roleOwnedApproval, anchorA)).toBeNull();
+    expect(telegramApprovalReply("approve", roleOwnedApproval, anchorA)).not.toBeNull();
 
     const ambiguous = proposal("a", 1);
     ambiguous.humanAction = { requestedAction: "Choose one proposal." };
