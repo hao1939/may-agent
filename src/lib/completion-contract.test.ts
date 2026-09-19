@@ -5,7 +5,7 @@ import { join } from "node:path";
 import type { BeforeToolCallContext } from "@earendil-works/pi-agent-core";
 import { Type, validateToolArguments, type ToolCall } from "@earendil-works/pi-ai";
 import { getBuiltinModel } from "@earendil-works/pi-ai/providers/all";
-import { taskAgentResultSchema } from "@may-agent/sdk";
+import { admitTaskReconcileResult, taskAgentResultSchema } from "@may-agent/sdk";
 import type { TSchema } from "typebox";
 import { prepareAgentExecution } from "./agent-execution.js";
 import { createFinishTool } from "./tools/lifecycle.js";
@@ -134,6 +134,29 @@ describe("prepared completion contract", () => {
     args.result.facts.push("source:access-denied");
     const ctx = context(args);
     const params = validateToolArguments(finish, ctx.toolCall);
+    expect(await prepared.runner.beforeToolCall!(ctx)).toBeUndefined();
+    expect((await finish.execute(ctx.toolCall.id, params)).terminate).toBe(true);
+  });
+
+  it("rejects a waiting response at finish validation and admits the corrected wait", async () => {
+    const { prepared, finish, context } = prepare("worker", taskAgentResultSchema);
+    const args = {
+      ...review,
+      status: "partial",
+      result: {
+        state: "waiting",
+        summary: "Waiting for review",
+        response: "I will report later.",
+        reviewAt: Date.now() + 60_000,
+        facts: ["review:scheduled"],
+      },
+    };
+    expect(() => validateToolArguments(finish, context(args).toolCall)).toThrow();
+    const { response: _response, ...correctedResult } = args.result;
+    const corrected = { ...args, result: correctedResult };
+    const ctx = context(corrected);
+    const params = validateToolArguments(finish, ctx.toolCall);
+    expect(admitTaskReconcileResult(params.result, { allowNeedsAgent: false }).ok).toBe(true);
     expect(await prepared.runner.beforeToolCall!(ctx)).toBeUndefined();
     expect((await finish.execute(ctx.toolCall.id, params)).terminate).toBe(true);
   });

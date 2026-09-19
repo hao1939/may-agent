@@ -32,6 +32,7 @@ describe("App stop contract", () => {
   const incomplete = {
     state: "incomplete",
     summary: "Optional export is not feasible",
+    response: "The requested export needs owner help.",
     facts: ["analysis:export"],
     result: { partial: "Feasibility findings" },
   };
@@ -292,18 +293,15 @@ describe("project task handler contract", () => {
         workflowOptions,
       ),
     ).toEqual({ ok: false, error: "dependencies are valid only for waiting" });
-    expect(
-      admitTaskReconcileResult(
-        {
-          state: "waiting",
-          summary: "The dependency is still running",
-          response: "I will tell you when it finishes.",
-          facts: [],
-          dependencies: [dependency],
-        },
-        workflowOptions,
-      ),
-    ).toEqual({
+    const waitingWithResponse = {
+      state: "waiting",
+      summary: "The dependency is still running",
+      response: "I will tell you when it finishes.",
+      facts: [],
+      dependencies: [dependency],
+    };
+    expect(Check(taskAgentResultSchema, waitingWithResponse)).toBe(false);
+    expect(admitTaskReconcileResult(waitingWithResponse, workflowOptions)).toEqual({
       ok: false,
       error: "waiting cannot include response; put operational progress in summary",
     });

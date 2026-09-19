@@ -64,7 +64,6 @@ export const conditionSchema = Type.Object(
 
 const resultFields = {
   summary: nonEmptyStringSchema,
-  response: Type.Optional(nonEmptyStringSchema),
   result: Type.Optional(objectSchema),
   reviewAt: Type.Optional(Type.Integer({ minimum: 1 })),
 
@@ -89,7 +88,10 @@ const resultFields = {
 
 /** Model-output schema for a resolved agent. */
 export const taskAgentResultSchema = Type.Union([
-  Type.Object({ state: Type.Literal("converged"), ...resultFields }, { additionalProperties: false }),
+  Type.Object(
+    { state: Type.Literal("converged"), ...resultFields, response: Type.Optional(nonEmptyStringSchema) },
+    { additionalProperties: false },
+  ),
   Type.Object(
     {
       state: Type.Literal("waiting"),
