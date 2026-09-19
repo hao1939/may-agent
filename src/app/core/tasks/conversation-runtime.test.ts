@@ -2140,6 +2140,10 @@ test.each([false, true])("the Conversation delegates and steers same-App work th
   let humanTurns = 0;
   let backgroundRuns = 0;
   let linkedTopic = "";
+  const invocationTrace: Array<Record<string, unknown>> = [];
+  const fixtureEvents: AgentEvent[] = [];
+  let droppedInvocations = 0;
+  let droppedFixtureEvents = 0;
   const ownApp = defineApp({
     ...app,
     conversation: { mode: "agent", inputKinds: ["message"], conversationId: "primary" },
@@ -2193,8 +2197,37 @@ test.each([false, true])("the Conversation delegates and steers same-App work th
       hostCapacity: new HostCapacity(2),
       appRegistrySnapshot: { id: "same-App", generation: 1, entries: [{ appDir, definition: ownApp }] },
       executors: {
-        inspect: async () => {
+        inspect: async (attempt: TaskAttempt) => {
           backgroundRuns++;
+          if (invocationTrace.length === 8) {
+            invocationTrace.shift();
+            droppedInvocations++;
+          }
+          invocationTrace.push(
+            structuredClone({
+              appId: attempt.appId,
+              taskId: attempt.task.id,
+              generation: attempt.task.generation,
+              attemptId: attempt.attemptId,
+              resourceVersion: attempt.resourceVersion,
+              previousAttempt: attempt.previousAttempt,
+              waits: attempt.waits,
+              events: {
+                items: attempt.events.items.map(({ eventId, event }) => ({
+                  eventId,
+                  type: event.type,
+                  localKey: event.localKey,
+                })),
+                continuedInputs: attempt.events.continuedInputs?.map(({ eventId, event }) => ({
+                  eventId,
+                  type: event.type,
+                  localKey: event.localKey,
+                })),
+                throughEventId: attempt.events.throughEventId,
+                truncated: attempt.events.truncated,
+              },
+            }),
+          );
           return {
             state: "waiting",
             summary: "Waiting for the facts source",
@@ -2213,6 +2246,59 @@ test.each([false, true])("the Conversation delegates and steers same-App work th
       },
     }),
   );
+  const listenForFixtureEvents = () =>
+    f.bus.listen(
+      (event) => {
+        const data = "data" in event ? (event.data as Record<string, unknown>) : {};
+        const diagnosticType =
+          event.type === "app.task.ready" ||
+          event.type.startsWith("project.task.reconcile") ||
+          event.type.startsWith("app.task.attempt.");
+        if (!diagnosticType || data.taskId !== "goal/review" || (data.appId ?? data.project) !== app.id) return;
+        if (fixtureEvents.length === 16) {
+          fixtureEvents.shift();
+          droppedFixtureEvents++;
+        }
+        fixtureEvents.push(structuredClone(event));
+      },
+      { label: "conversation-delegation-diagnostics" },
+    );
+  const reportCountMismatch = (expected: number, observedEvent: AgentEvent) => {
+    if (backgroundRuns === expected) return;
+    const task = f.store.readTask("goal/review");
+    const attemptIds = new Set(
+      [
+        task?.status.currentAttemptId,
+        ...invocationTrace.map((entry) => (typeof entry.attemptId === "string" ? entry.attemptId : undefined)),
+      ].filter((attemptId): attemptId is string => typeof attemptId === "string"),
+    );
+    const report = JSON.stringify(
+      {
+        afterClosure,
+        expected,
+        actual: backgroundRuns,
+        observedEvent: structuredClone(observedEvent),
+        invocationTrace,
+        droppedInvocations,
+        fixtureEvents,
+        droppedFixtureEvents,
+        store: {
+          task,
+          trigger: f.store.readTrigger("goal/review"),
+          attempts: [...attemptIds].map((attemptId) => f.store.readAttempt(attemptId)),
+        },
+      },
+      null,
+      2,
+    );
+    const limit = 32_000;
+    const boundedReport =
+      report.length <= limit
+        ? report
+        : `${report.slice(0, limit / 2)}\n... ${report.length - limit} diagnostic characters omitted ...\n${report.slice(-limit / 2)}`;
+    console.error("same-App background invocation count mismatch", boundedReport);
+  };
+  let stopFixtureEvents = listenForFixtureEvents();
   if (afterClosure) seedRetiredConversation(f);
   let ingress = await startConversationIngress(f);
   try {
@@ -2221,14 +2307,17 @@ test.each([false, true])("the Conversation delegates and steers same-App work th
       (event) => event.type === "project.task.reconcile.profiled" && event.data.taskId === "goal/review",
     );
     ingress.publish("first", "Review the design in the background");
-    await waiting;
+    const waitingEvent = await waiting;
     const original = listAppInboxItems(f.db, { appId: app.id }).find((item) => item.source.kind === "human")!;
     linkedTopic = original.topicId!;
     expect(original.result?.response).toBe("I'll review it and return the findings here.");
+    reportCountMismatch(1, waitingEvent);
     expect(backgroundRuns).toBe(1);
     const executionTaskId = original.executionTaskId!;
     ingress.runtime.close();
+    stopFixtureEvents();
     await f.reopen();
+    stopFixtureEvents = listenForFixtureEvents();
     ingress = await startConversationIngress(f);
     expect(humanTurns).toBe(1);
     const resumed = eventAfter(
@@ -2237,7 +2326,8 @@ test.each([false, true])("the Conversation delegates and steers same-App work th
         event.type === "project.task.reconcile.profiled" && event.data.taskId === "goal/review" && backgroundRuns === 2,
     );
     ingress.publish("correction", "Include recovery in that same review");
-    await resumed;
+    const resumedEvent = await resumed;
+    reportCountMismatch(2, resumedEvent);
     expect(backgroundRuns).toBe(2);
     expect(humanTurns).toBe(2);
     expect(Object.keys(readTaskSnapshot(f.context()).resources!).sort()).toEqual(
@@ -2251,6 +2341,7 @@ test.each([false, true])("the Conversation delegates and steers same-App work th
     );
     expect(f.store.isCancelled("goal/review")).toBe(false);
   } finally {
+    stopFixtureEvents();
     ingress.runtime.close();
   }
 });

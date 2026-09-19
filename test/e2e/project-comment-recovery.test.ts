@@ -84,19 +84,48 @@ test.each([
       proxy.listen(sb.socketPath);
       await once(proxy, "listening");
 
-      const response = await fetch(`http://127.0.0.1:${sb.webPort}/api/projects/comment`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ path: `projects/${appId}.app`, comment: "Review this project", idempotencyKey: key }),
-        signal: AbortSignal.timeout(20_000),
-      });
-      expect(errors).toEqual([]);
-      expect(response.status).toBe(status);
-      const body = await response.json();
-      expect(body).toMatchObject({ ok: status === 202, triggered: status === 202 });
-      expect(frames).toEqual(
-        status === 202 || scenario === "collision" ? ["app.input.admit", "app.input.admit"] : ["app.input.admit"],
-      );
+      const body = await (async () => {
+        try {
+          const response = await fetch(`http://127.0.0.1:${sb.webPort}/api/projects/comment`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              path: `projects/${appId}.app`,
+              comment: "Review this project",
+              idempotencyKey: key,
+            }),
+            signal: AbortSignal.timeout(20_000),
+          });
+          expect(errors).toEqual([]);
+          expect(response.status).toBe(status);
+          const responseBody = await response.json();
+          expect(responseBody).toMatchObject({ ok: status === 202, triggered: status === 202 });
+          expect(frames).toEqual(
+            status === 202 || scenario === "collision" ? ["app.input.admit", "app.input.admit"] : ["app.input.admit"],
+          );
+          return responseBody;
+        } catch (error) {
+          const cause = error instanceof Error ? error.cause : undefined;
+          const daemonLogs = sb.getLogs();
+          const logLimit = 16_000;
+          console.error("project comment recovery failure", {
+            scenario,
+            url: `http://127.0.0.1:${sb.webPort}/api/projects/comment`,
+            webPort: sb.webPort,
+            daemonPid: sb.daemonPid,
+            error,
+            errorCode: error && typeof error === "object" && "code" in error ? error.code : undefined,
+            cause,
+            causeCode: cause && typeof cause === "object" && "code" in cause ? cause.code : undefined,
+            frames,
+            dropped,
+            proxyErrors: errors,
+            daemonLogs: daemonLogs.slice(-logLimit),
+            daemonLogCharactersOmitted: Math.max(0, daemonLogs.length - logLimit),
+          });
+          throw error;
+        }
+      })();
       const db = openSandboxDb(sb.dbPath);
       try {
         expect(queryEvents(db, { types: ["project.comment.created"] })).toEqual([]);
