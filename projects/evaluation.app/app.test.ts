@@ -83,6 +83,7 @@ describe("canonical evaluation App", () => {
       "project-comment",
       "project-owner-request",
       "telegram-owner-reply",
+      "task-incomplete-review",
     ]);
     // The installed rollout may intentionally enable the bounded selector.
     // Control the inherited manifest environment instead of treating that
@@ -960,11 +961,71 @@ describe("evaluation task policy", () => {
     });
   });
 
+  test("routes production failure dispositions only when automatic review is enabled", () => {
+    const previous = process.env.EVALUATION_AUTO_REVIEW_ENABLED;
+    try {
+      delete process.env.EVALUATION_AUTO_REVIEW_ENABLED;
+      const failed = event("project.task.reconciled", {
+        project: "may",
+        taskId: "goal/example",
+        generation: 3,
+        disposition: "retrying",
+      });
+      expect(taskInputForEvent(failed)).toBeNull();
+      process.env.EVALUATION_AUTO_REVIEW_ENABLED = "true";
+      for (const disposition of ["incomplete", "retrying"]) {
+        expect(
+          taskInputForEvent(
+            event("project.task.reconciled", {
+              project: "may",
+              taskId: "goal/example",
+              generation: 3,
+              disposition,
+            }),
+          ),
+        ).toEqual({
+          kind: "review-task-outcome",
+          data: {
+            appId: "may",
+            taskId: "goal/example",
+            assessmentPurpose: "ongoing",
+          },
+        });
+      }
+      expect(
+        taskInputForEvent(
+          event("project.task.reconciled", {
+            project: "may",
+            taskId: "goal/example",
+            generation: 3,
+            disposition: "converged",
+          }),
+        ),
+      ).toBeNull();
+      expect(
+        taskInputForEvent(
+          event("project.task.reconciled", {
+            project: "evaluation",
+            taskId: "runtime/example",
+            generation: 1,
+            disposition: "incomplete",
+          }),
+        ),
+      ).toBeNull();
+    } finally {
+      if (previous === undefined)
+        delete process.env.EVALUATION_AUTO_REVIEW_ENABLED;
+      else process.env.EVALUATION_AUTO_REVIEW_ENABLED = previous;
+    }
+  });
+
   test("preserves assessment purpose from a review request into workflow input", () => {
     const input = taskInputForEvent(
       event("evaluation.task.review.requested", {
         appId: "may",
         taskId: "goal/example",
+        subjectGeneration: 7,
+        evidenceHash: "b".repeat(64),
         assessmentPurpose: "ongoing",
       }),
     );
@@ -973,12 +1034,18 @@ describe("evaluation task policy", () => {
       data: {
         appId: "may",
         taskId: "goal/example",
+        subjectGeneration: 7,
+        evidenceHash: "b".repeat(64),
         assessmentPurpose: "ongoing",
       },
     });
     expect(taskIntentForInput(input!)).toMatchObject({
       workflow: "task-outcome-review",
-      input: { assessmentPurpose: "ongoing" },
+      input: {
+        subjectGeneration: 7,
+        evidenceHash: "b".repeat(64),
+        assessmentPurpose: "ongoing",
+      },
     });
   });
 

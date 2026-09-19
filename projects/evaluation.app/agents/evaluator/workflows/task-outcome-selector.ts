@@ -260,10 +260,7 @@ export async function selectFairCandidate(
       // Ask for one keyset record at a time and persist its opaque continuation.
       // Advancing before return makes a dropped request harmless, while a Task
       // reordered to the front cannot move behind the retained keyset boundary.
-      const readLimit = Math.min(
-        config.maxTasksPerApp,
-        config.maxPagesPerApp,
-      );
+      const readLimit = Math.min(config.maxTasksPerApp, config.maxPagesPerApp);
       for (let pageIndex = 0; pageIndex < readLimit; pageIndex += 1) {
         const page = await provider.listRecentTaskPage(appId, 1, cursor);
         pagesRead += 1;
@@ -364,6 +361,19 @@ export async function selectFairCandidate(
   return { candidate: null, state: nextState, navigationFacts };
 }
 
+export function retainedRequestedReviewTaskIds(
+  ctx: WorkflowContext<Input>,
+): string[] {
+  return (ctx.reconciliation?.taskSnapshot?.live ?? [])
+    .filter(
+      (task) =>
+        task.taskId.startsWith("runtime/task-outcome/") &&
+        task.taskId !== "runtime/task-outcome-selector",
+    )
+    .map((task) => task.taskId)
+    .sort();
+}
+
 export async function runTaskOutcomeSelector(
   ctx: WorkflowContext<Input>,
   command?: PublicCommand,
@@ -380,11 +390,38 @@ export async function runTaskOutcomeSelector(
       actions: [],
     });
   }
+  const priorState = await acceptedSelectorState(ctx);
+  const retainedRequests = retainedRequestedReviewTaskIds(ctx);
+  const taskSnapshot = ctx.reconciliation?.taskSnapshot;
+  const backlogUnknown = !taskSnapshot || taskSnapshot.truncated;
+  if (retainedRequests.length || backlogUnknown) {
+    const summary = retainedRequests.length
+      ? `Deferred routine sampling while ${retainedRequests.length} retained requested review(s) use the shared semantic allowance.`
+      : "Deferred routine sampling because the bounded Evaluation Task snapshot cannot prove that the requested-review backlog is empty.";
+    return ctx.done(summary, {
+      state: "converged",
+      summary,
+      response: summary,
+      facts: [
+        retainedRequests.length
+          ? `selector:requested-reviews-first:${retainedRequests.length}`
+          : "selector:requested-review-backlog-unknown",
+        ...(taskSnapshot?.truncated
+          ? ["selector:task-snapshot-truncated"]
+          : []),
+        selectorStateFact(priorState),
+        ...retainedRequests
+          .slice(0, 8)
+          .map((taskId) => `requested-review:${taskId}`),
+      ],
+      actions: [],
+    });
+  }
   const selection = await selectFairCandidate(
     command,
     config,
     reportRoot,
-    await acceptedSelectorState(ctx),
+    priorState,
   );
   const cursorFact = selectorStateFact(selection.state);
   if (!selection.candidate) {

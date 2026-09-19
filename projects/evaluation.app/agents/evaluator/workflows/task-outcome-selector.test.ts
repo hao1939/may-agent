@@ -308,7 +308,11 @@ describe("automatic task outcome selector", () => {
     const long = `goal/${"任务🚀".repeat(2_000)}`;
     let emitted: Record<string, unknown> | undefined;
     const ctx = {
-      reconciliation: { taskId: "automatic-review", resourceVersion: 1 },
+      reconciliation: {
+        taskId: "automatic-review",
+        resourceVersion: 1,
+        taskSnapshot: { live: [], truncated: false },
+      },
       read: { tasks: { get: async () => ({ facts: [] }) } },
       events: {
         emit: async (event: Record<string, unknown>) => {
@@ -326,6 +330,57 @@ describe("automatic task outcome selector", () => {
     expect((emitted?.data as Record<string, unknown>).taskId).toBe(long);
     expect(String(emitted?.localKey).length).toBeLessThan(100);
     expect(Buffer.byteLength(JSON.stringify(result))).toBeLessThan(16 * 1_024);
+  });
+
+  test("gives retained requested reviews priority over routine sampling", async () => {
+    const root = mkdtempSync(join(tmpdir(), "selector-request-priority-"));
+    let emitted = false;
+    const context = (live: Record<string, unknown>[], truncated = false) =>
+      ({
+        reconciliation: {
+          taskId: "runtime/task-outcome-selector",
+          resourceVersion: 1,
+          taskSnapshot: { live, truncated },
+        },
+        read: { tasks: { get: async () => ({ facts: [] }) } },
+        events: {
+          emit: async () => {
+            emitted = true;
+          },
+        },
+        done: (_summary: string, result: Record<string, unknown>) => result,
+      }) as never;
+    const requested = await runTaskOutcomeSelector(
+      context([
+        { taskId: "runtime/task-outcome/may/goal-one", status: "waiting" },
+      ]),
+      catalogCommand({ may: [task("may", "goal/routine")] }),
+      config,
+      root,
+    );
+    expect((requested as { facts: string[] }).facts).toEqual(
+      expect.arrayContaining([
+        "selector:requested-reviews-first:1",
+        "requested-review:runtime/task-outcome/may/goal-one",
+        expect.stringMatching(/^selector-state:/),
+      ]),
+    );
+    expect(emitted).toBeFalse();
+
+    const incomplete = await runTaskOutcomeSelector(
+      context([], true),
+      catalogCommand({ may: [task("may", "goal/routine")] }),
+      config,
+      root,
+    );
+    expect((incomplete as { facts: string[] }).facts).toEqual(
+      expect.arrayContaining([
+        "selector:requested-review-backlog-unknown",
+        "selector:task-snapshot-truncated",
+        expect.stringMatching(/^selector-state:/),
+      ]),
+    );
+    expect(emitted).toBeFalse();
   });
 
   test("round-robins discovered Apps and never Evaluation", async () => {

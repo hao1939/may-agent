@@ -42,7 +42,7 @@ An ongoing review judges the exact current Task snapshot at its retained due pha
 - exact approval remains pending where application or activation requires it; and
 - overdue review, missing observations, stale evidence, or drift is reported explicitly without mutating, cancelling, or reassigning the subject.
 
-A valid wait, useful active execution, pending approval, or recovered transient failure is not a failure by status or age alone. If the public snapshot does not expose enough evidence to distinguish those states, return `insufficient-evidence`; do not call absent coverage healthy.
+A valid wait, useful active execution, pending approval, or recovered transient failure is not a failure by status or age alone. A current accepted/converged result can legitimately appear as App status `done` and Task detail status `up-to-date` while `terminal=false` and `ready=false`: the current outcome is reconciled, while the durable Task remains open for later input. If it has no current Conditions, dependencies, input waits, or other obligations, no review deadline is required; do not mistake open lifetime or non-claimability for unfinished work. If the public snapshot does not expose enough evidence to distinguish those states, return `insufficient-evidence`; do not call absent coverage healthy.
 
 ## Historical responsibility contract
 

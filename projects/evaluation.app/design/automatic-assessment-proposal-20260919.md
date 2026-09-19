@@ -18,15 +18,15 @@ recovery or insufficient evidence. May judges urgency, necessity, value versus
 cost, simpler alternatives and the responsible action. She coordinates the
 appropriate owner, rather than acquiring authority to mutate every App.
 
-| Responsibility | Owner and authority |
-| --- | --- |
-| Execute, retain evidence, return feedback, recover attempts and enforce exact approval boundaries | Host and supported adapters |
-| Collect bounded assessment evidence, select due subjects and publish independent assessment with coverage | Evaluation App and evaluator |
-| Decide no change, investigate, reuse a repair, delegate or request approval; follow accepted work | May under the installation's preparation authority |
-| Prepare and verify a repair | Responsible App/Host team |
-| Compare behavioral candidates when useful | Gym |
-| Approve the exact source/application and displayed activation scope | Human |
-| Check Host/Evaluation mechanical availability | Host Operations; full Host outage requires observation outside that process |
+| Responsibility                                                                                            | Owner and authority                                                         |
+| --------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------- |
+| Execute, retain evidence, return feedback, recover attempts and enforce exact approval boundaries         | Host and supported adapters                                                 |
+| Collect bounded assessment evidence, select due subjects and publish independent assessment with coverage | Evaluation App and evaluator                                                |
+| Decide no change, investigate, reuse a repair, delegate or request approval; follow accepted work         | May under the installation's preparation authority                          |
+| Prepare and verify a repair                                                                               | Responsible App/Host team                                                   |
+| Compare behavioral candidates when useful                                                                 | Gym                                                                         |
+| Approve the exact source/application and displayed activation scope                                       | Human                                                                       |
+| Check Host/Evaluation mechanical availability                                                             | Host Operations; full Host outage requires observation outside that process |
 
 Evaluation does not assess itself or its delegated review execution. A suspected
 defect in its judgment receives an independent review arranged by May. Mechanical
@@ -56,10 +56,14 @@ separately reviewable and reuse their established return contracts.
 
 Current source has an exact external Task reader, a serialized selector that
 emits at most one review per wake, and May's explicit subscription to
-`evaluation.task_report_published`. The selector excludes running/pending/waiting
-work and normally looks back seven days. The evaluator instructions and rubric
-describe historical outcomes. Simply allowing more statuses would incorrectly
-grade unfinished work by completion criteria.
+`evaluation.task_report_published`. The selector includes running/pending/waiting work under a distinct ongoing
+rubric and keeps open obligations eligible beyond the seven-day outcome window.
+The strengthening candidate leaves that fair bounded sampling unchanged and
+adds an opt-in exact review opportunity for production reconciliation outcomes
+reported as `incomplete` or `retrying`. Evaluation rereads current evidence, so
+a recovered transient is not frozen as a failure. Other stalls retain ordinary
+sampling latency; lifetime attempt count, age, and error prose alone are not
+failure verdicts.
 
 The manifest currently uses an event schedule; the Host's existing App-input
 schedule supports durable slot identity and latest-slot catch-up. Assess a small
@@ -150,20 +154,36 @@ is required to read retained status. Tests must not send real external messages.
 
 ## Simplicity and value check
 
-| Choice | Value | Cost control / smaller alternative |
-| --- | --- | --- |
-| Existing outcome assessment plus scoped ongoing-work assessment | Finds missed handoffs before humans repeatedly inspect them | Reuse reader/store/consumer; avoid a second health-report framework |
-| Event/request path plus one existing scheduled backstop | Prompt response and recovery from missed signals | No separate per-App timers or Task per tick; verify restart deduplication |
-| Deterministic reads before evaluator judgment | Avoids repeated model work and exposes missing facts | Keep bounded selectors and current Task facts; no second cache/issue queue |
-| Real transition checks and a small agent trial | Establishes that components work together | Reuse maintained fixtures; no live deployment or model run for each mechanical edge case |
+| Choice                                                          | Value                                                       | Cost control / smaller alternative                                                       |
+| --------------------------------------------------------------- | ----------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
+| Existing outcome assessment plus scoped ongoing-work assessment | Finds missed handoffs before humans repeatedly inspect them | Reuse reader/store/consumer; avoid a second health-report framework                      |
+| Event/request path plus one existing scheduled backstop         | Prompt response and recovery from missed signals            | No separate per-App timers or Task per tick; verify restart deduplication                |
+| Deterministic reads before evaluator judgment                   | Avoids repeated model work and exposes missing facts        | Keep bounded selectors and current Task facts; no second cache/issue queue               |
+| Real transition checks and a small agent trial                  | Establishes that components work together                   | Reuse maintained fixtures; no live deployment or model run for each mechanical edge case |
 
 Start serialized and keep an explicit small semantic-review budget covering both
-scheduled and event-triggered work. Exact duplicate suppression alone does not
-bound a burst of different subjects. Reuse existing Task/admission/selection
-mechanisms and expose deferred coverage; do not silently increase live cadence.
-The default daily sample is limited coverage, not a prompt-response guarantee.
-Select a pilot cadence based on acceptable detection delay and observed cost;
-keep it configuration/guidance, not a universal Host policy.
+scheduled and event-triggered work. Retained requested reviews take capacity before
+routine sampling. The selector checks the complete bounded Evaluation Task snapshot;
+when a requested review is live it preserves its cursor and skips that sample, and
+when the snapshot is absent or truncated it reports unknown backlog coverage instead
+of asserting the backlog is empty. Work already emitted before a newer request may
+still finish; this policy does not preempt running work or add a scheduler.
+
+Exact duplicate suppression alone does not bound a burst of different subjects.
+Exhaustion returns an accepted `waiting` result for the exact review with subject
+generation, evidence hash, slot, limit, and actual next eligibility. The waiting
+result uses the Host's absolute `reviewAt`; it introduces no Condition or producer.
+Early wakes preserve the deadline and spend no model call. At the deadline the same
+exact request becomes eligible for reconsideration; elapsed time never proves an
+external fact. Semantic allowance uses the separate
+`EVALUATION_ASSESSMENT_ALLOWANCE_INTERVAL_MS`; changing selector cadence does not
+silently change spend. The bounded pilot is an hourly selector with a daily allowance
+of at most two semantic calls (`maxConcurrent: 1`): at most 14 calls/week. The prior
+four-call trial estimated $0.479074 total, so $1.68/week is a planning estimate at
+that observed mean, not a billing cap; the enforceable upper bound is 14 calls.
+Live settings remain unchanged until an operator explicitly configures and activates
+the reviewed release. The default daily sample and one-call daily allowance remain
+limited coverage, not a prompt-response guarantee.
 
 ## Implementation slices and acceptance
 

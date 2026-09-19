@@ -28,7 +28,7 @@ When the bounded snapshot cannot establish a material claim, return disposition 
 
 ## Judgment
 
-Apply the current Task-outcome criteria in `criteria/criteria.md`. First honor the supplied assessment purpose and rubric identity. For ongoing work, useful active execution, a valid wait with a return route, pending exact approval, and a recovered transient failure are not failures by status or age alone; an overdue boundary is evidence to inspect rather than authority to reassign or cancel.
+Apply the current Task-outcome criteria in `criteria/criteria.md`. First honor the supplied assessment purpose and rubric identity. For ongoing work, useful active execution, a valid wait with a return route, pending exact approval, and a recovered transient failure are not failures by status or age alone; an overdue boundary is evidence to inspect rather than authority to reassign or cancel. A current accepted/converged result may project as App status `done` and Task detail status `up-to-date` while `terminal=false` and `ready=false`: the outcome is reconciled, but the durable Task remains open for future input. When no current Condition, dependency, input wait, or other obligation remains, that combination is coherent and requires no review deadline; do not report it as an inconsistency.
 
 - fidelity to the requested outcome and acceptance;
 - correct responsibility and authority boundaries;

@@ -126,9 +126,15 @@ reports describe the same issue by rereading current state and linked work.
 
 Use each source's existing evidence reader: Evaluation's publication check for
 Evaluation reports, and current Task/execution/operation evidence for execution
-failures. A missing source reference is an investigation limit, not a reason to
-invent a report hash or declare recovery. Share the owner's decision and later
-repair stages, without replacing all source adapters with a universal intake.
+failures. When a file materially supports completion or recovery, retain a
+structured verified Artifact reference such as `artifacts: [{ path, sha256 }]`
+in the owner's Task result so bounded independent review can read it; a path in
+prose is not a reference. Use the shared `EvidenceStore` for newly written
+evidence and ordinary hash tooling for an existing authoritative file. A hash
+binds bytes, not authority or truth. A missing source reference is an
+investigation limit, not a reason to invent a report hash or declare recovery.
+Share the owner's decision and later repair stages, without replacing all source
+adapters with a universal intake.
 
 An owner decision uses accepted Task results and existing Conditions: what is
 currently affected, what disposition was chosen, why, who acts next, and any
@@ -289,3 +295,36 @@ This evidence supports reviewed source integration, not live activation,
 automatic supervision, universal semantic deduplication or recovery of the
 original symptom. Source integration, live adoption and a fresh symptom check
 remain distinct facts.
+
+## Task-health strengthening addendum
+
+The later task-health candidate uses Host revision
+`7c8a428e6bebf05f8348e7748d1e2d6db631af80` and Apps guidance revision
+`9af02546293c2a72a1868448aaf3ba45f0234970`. Host draft PR
+[209](https://github.com/hao1939/may-agent/pull/209) has passing hosted Quality
+and Container checks; the Apps suite has 173 passing Evaluation tests, passing
+May typecheck, 18 passing approval/application controls, and zero canonical App
+integrity errors. These are candidate checks, not integration or activation.
+
+The retained ambiguous-source run
+`/app/.state/review-pilots/may-task-health-20260919/composition/run-1789827108357`
+correctly kept the external CI wait because an arbitrary local receipt was not
+independent authority. The canonical-source run
+`/app/.state/review-pilots/may-task-health-20260919/composition/run-1789827613076`
+made seven real model calls and 64 bounded public reads. The requester designated
+the producer output as authoritative; the owner verified it, retained its exact
+`{ path, sha256 }` Artifact reference, retired only the generation-fenced stale
+Condition, and returned the correlated answer. Independent Evaluation then read
+all 186 receipt bytes through the public evidence path, verified the hash and
+assessed the recovery. Healthy running and genuine human-approval controls were
+unchanged. The recovered-transient control was recognized as later convergence
+but remained `insufficient-evidence` because its fixture intentionally had no
+measurement receipt; this is not a claimed healthy-proof pass.
+
+This is promising bounded composition evidence from synthetic isolated subjects
+using production reconciliation, public projection, report publication and May
+intake with a native-model test adapter. It is not an installed scheduler,
+Telegram or live-deployment trial, and its deterministic ordinary-retry baseline
+is not a paired model baseline. Earlier harness failures and the ambiguous/read-
+back variants remain retained rather than rewritten as product failures or
+successful recovery. No merge, deployment or activation occurred.

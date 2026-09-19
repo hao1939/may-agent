@@ -267,25 +267,44 @@ The source [Task types](../../../may-agent/packages/sdk/src/task.ts) and
 the executable contract. A result supplies `state`, `summary`, `facts`, and
 optional bounded `result`, caller `response`, Task `actions`, Conditions, and
 `TaskAppDependency` entries. `actions` are Task changes, not App commands.
-See the [checked wait example](../examples/app.ts).
+When a file materially supports a completion or recovery claim, the result should
+retain a structured verified Artifact reference such as
+`artifacts: [{ path, sha256 }]`. A prose path is not discoverable by bounded
+public evidence read-back. Use the shared `EvidenceStore` when writing new
+evidence, or ordinary hash tooling for an existing authoritative file; the hash
+binds bytes, not source authority or semantic truth. See the
+[checked wait example](../examples/app.ts).
 
-| Outcome | Runtime disposition |
-| --- | --- |
-| Valid `converged` result | Accept the exact input's outcome when current-input fences, evidence, actions and verification permit; keep the Task open |
-| Valid `waiting` result | Retain exact external Conditions or typed input dependencies; release execution capacity; structural children alone do not establish a wait |
-| Valid `incomplete` result | Retain unsuccessful attempt facts, report the input's first accepted blocker to its linked caller, and retry unfinished work with backoff; no cancellation or implicit parent wake |
-| Workflow `needs-agent` | At most one sequential selected-agent judgment for the same Task; no ownership transfer |
-| Unavailable agent/workflow/executor or failed workspace prerequisite | Visible failure and same-Task paced retry; no silent executor substitution |
-| Invalid/rejected handler result (including self-unblock) or explicitly blocked workflow | Preserve diagnostic evidence and unfinished input, reject proposed effects and retry with pacing; not an accepted answer |
-| Thrown execution error or timeout | Same-Task execution-failure recovery, subject to its retry policy |
-| Stale generation, resource version or unseen-input fence | Reject stale effects; reread current state without replacing accepted state or releasing another attempt |
-| Durable cancellation | Retain cancellation, interrupt the exact attempt and reject its later stale result |
+| Outcome                                                                                 | Runtime disposition                                                                                                                                                                |
+| --------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Valid `converged` result                                                                | Accept the exact input's outcome when current-input fences, evidence, actions and verification permit; keep the Task open                                                          |
+| Valid `waiting` result                                                                  | Retain exact external Conditions or typed input dependencies; release execution capacity; structural children alone do not establish a wait                                        |
+| Valid `incomplete` result                                                               | Retain unsuccessful attempt facts, report the input's first accepted blocker to its linked caller, and retry unfinished work with backoff; no cancellation or implicit parent wake |
+| Workflow `needs-agent`                                                                  | At most one sequential selected-agent judgment for the same Task; no ownership transfer                                                                                            |
+| Unavailable agent/workflow/executor or failed workspace prerequisite                    | Visible failure and same-Task paced retry; no silent executor substitution                                                                                                         |
+| Invalid/rejected handler result (including self-unblock) or explicitly blocked workflow | Preserve diagnostic evidence and unfinished input, reject proposed effects and retry with pacing; not an accepted answer                                                           |
+| Thrown execution error or timeout                                                       | Same-Task execution-failure recovery, subject to its retry policy                                                                                                                  |
+| Stale generation, resource version or unseen-input fence                                | Reject stale effects; reread current state without replacing accepted state or releasing another attempt                                                                           |
+| Durable cancellation                                                                    | Retain cancellation, interrupt the exact attempt and reject its later stale result                                                                                                 |
 
 Unknown result fields are rejected. `needs-agent` is workflow-only. A waiting
 result may retain a bounded typed judgment in `result`; later attempts read it
-without reconstructing state from prose. A failed verifier cannot establish
-completion. Result settlement, including newer input, uses the fences described
-below; this table does not override them. The [wait-recovery candidate](../proposals/task-wait-recovery-20260918.md) returns inputs with obsolete waits for reconsideration without satisfying replacement or unrelated waits.
+without reconstructing state from prose. A result may explicitly
+`retire-condition` only for one Condition currently linked to its own Task and
+must cite that Condition's observed generation plus non-empty result facts. This
+removes the Task's obsolete link; it does not assert that the external event
+occurred, mutate a shared Condition for another Task, or clear unrelated waits.
+Omission preserves waits, and stale generation or newer-input fences reject the
+whole result. A waiting result may instead carry one absolute `reviewAt` when
+reconsideration itself is due but no external fact is awaited. Runtime persists
+that deadline with the accepted result and exact outstanding input, schedules it
+through the ordinary recovery index across restart, and permits an earlier event
+to wake the Task without consuming the deadline. Reaching `reviewAt` only makes
+a new attempt eligible; it never satisfies a Condition, bypasses normal failure
+backoff, or answers the caller. An early re-wait that omits `reviewAt` retains a
+future deadline; after it is due, omission requires another Condition or a new
+future deadline. A failed verifier cannot establish completion. Result settlement,
+including newer input, uses the fences described below; this table does not override them. The [wait-recovery candidate](../proposals/task-wait-recovery-20260918.md) returns inputs with obsolete waits for reconsideration without satisfying replacement or unrelated waits.
 
 `incomplete` requires a summary and non-empty facts; it cannot include actions, Conditions
 or child App requests. The Host checks eligibility inside the fenced transaction.
@@ -412,6 +431,23 @@ Any relevant change can wake a pass; all acceptance requirements must still
 hold before completion. This includes unexpected event types, not only a
 pre-enumerated set of known domain changes. See
 [workflow wait semantics and implementation status](workflows.md#a-wait-reason-is-not-an-exclusive-event-filter).
+
+Condition declarations are identity-scoped deltas, not snapshots. A distinct ID
+adds an obligation; the same ID may update its complete specification while
+preserving unrelated links and evidence. Omission and an empty declaration list
+mean no change. Satisfaction or generation-fenced retirement names the exact
+Condition; retry, failure, unblock, dependency repair, or ordinary reconsideration
+never clears peers. Retained legacy rows remain readable without being revalidated
+as newly authored declarations. A changed specification starts a new generation
+and cannot inherit an older approval. Condition `reviewAfterMs` checkpoints renew
+after an accepted review while the fact remains pending. Task-level `reviewAt` is
+a recovery checkpoint: a future omitted deadline is preserved, a due checkpoint is
+consumed, and continued waiting must return a new explicit deadline or Condition.
+Accepted completion consumes that checkpoint unless an independently correlated
+input deadline still exists. Whole-Task cancellation remains the only broad
+termination operation. Callers that once
+used a replacement list must now explicitly retire removed identities; arbitrary
+JSON, observations, and history are not deep-merged.
 
 Omitting the wake route or review deadline does not turn an incomplete state
 into a valid indefinite wait. Code validates shape and exact routes it knows;
@@ -795,105 +831,8 @@ conversational Request fulfillment remain distinct; see
 
 ## Resource read interface
 
-Exact Tasks use the same small resource-read shape inside and outside an App.
-There is one transport-neutral service backed by canonical task state:
-
-```text
-tasks.list({ appId, status?, limit?, cursor? })
-  -> bounded TaskPage
-
-tasks.get({ appId, taskId })
-  -> TaskDetail or not-found
-
-```
-
-The programmatic App read capability also exposes an opt-in shadow view:
-
-```text
-tasks.outcomes({ includeDone? })
-  -> TaskOutcomePage
-```
-
-The model-facing Task tool requires an exact Task identity and returns only the
-outcome containing that Task:
-
-```text
-tasks.outcomes({ taskId, includeDone? })
-  -> TaskOutcomePage
-```
-
-This prevents a reconciliation attempt that already knows its Task or accepted
-wait from loading the App's complete outcome projection into model context.
-Use bounded `tasks.list` for discovery and `tasks.get` for exact Task detail.
-
-The current shared `TaskView` is deliberately small:
-
-```text
-{ id, status, generation, outcome, summary?, response?, result?, evidence? }
-```
-
-The list form returns bounded views from live resources and immutable completed
-receipts. It accepts exact status filters, a capped page size, and an opaque
-continuation token. Omitting status includes every phase.
-
-`result` is a bounded App-defined object for machine-readable domain decisions.
-Runtime validates its transport shape and size but never interprets its domain
-meaning. A parent that needs a child's verdict reads this object; it never
-reconstructs the verdict from `summary`, `response`, evidence labels, or task
-prose. Human explanation stays in `summary` or `response`.
-
-The get form returns one exact `TaskDetail`, including parent, mode, acceptance,
-input, selected execution mechanism, dependencies, and Conditions. Attempt and
-activity evidence remain linked records rather than copied Task truth.
-
-The optional outcome projection groups exact Task identities for a simpler read
-view while preserving every member and link. It is not a new work resource,
-write API, or completion authority; list/get remain the exact Task interface.
-
-The contract is shared; only scope binding and transport differ:
-
-- a workflow or observer receives the same reader already bound to its current
-  App;
-- an agent `tasks` tool supplies the current App-attempt scope;
-- the daemon control socket carries those read operations for out-of-process
-  adapters;
-- HTTP binds the scope through `GET /api/apps/:appId/tasks` and
-  `GET /api/apps/:appId/tasks/:taskId`; and
-- the UI uses the HTTP adapter and renders the returned resources.
-
-There is no separate HTTP read model, agent task model, or SDK task model.
-Adapters translate argument placement but preserve the same exact `TaskView`,
-`TaskDetail`, and pagination contract.
-
-Exact absence returns not-found. Invalid limits or continuation tokens are
-caller errors. HTTP maps absence to 404 and invalid reads to a 400 response;
-SDK, socket, and agent callers receive the same underlying Runtime result or
-error text.
-
-App-scoped execution may read only its own App unless the Host explicitly
-grants a system-level read scope. List results are capped and paginated. Reads
-never expose task storage paths, SQL, leases, or mutation handles, and they
-never use `.state/tasks/tree.json` as authority.
-
-This common resource shape does not imply a universal CRUD service. Task,
-request, conversation, and execution APIs may share `get`/`list`, identity,
-pagination, and error conventions while retaining typed filters and details.
-The event stream is the change notification: consumers observe a relevant
-event and reread current resource state. The read API does not add a second
-watch cursor or delivery guarantee.
-
-Human surfaces may ask the same Host reader for `humanActionOnly`. This is a
-derived filter over live Tasks and their exact dependency leaves with at least
-one unsatisfied Condition owned by canonical identity `human` or
-`human:<role>`; it is not another resource or lifecycle. The result is
-deduplicated by the leaf Task that owns the Condition and the bounded card adds
-`{ requestedAction, since? }`. `since` is present only when the current
-Condition start is known; later observation time is not a substitute. Generic
-`attention`, age, display-name owners, and adapter state never satisfy this
-filter.
-
-There is deliberately no generic task write API. A caller asks the accountable
-App for an outcome, optionally naming the observed task. App policy then keeps,
-revises, wakes, decomposes, or closes it through the normal input-to-task path
-or reconciliation result. Inside an attempt, task changes remain
-generation-fenced and atomically admitted with the result.
+The transport-neutral `tasks.list`, `tasks.get`, and opt-in `tasks.outcomes`
+contract, scope bindings, pagination, human-action projection, and write
+boundary are specified in [Task resource read interface](task-resource-read-interface.md).
+Exact reads remain backed by canonical Task state; adapters do not create a
+second model or mutation authority.
