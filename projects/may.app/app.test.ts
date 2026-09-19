@@ -106,7 +106,12 @@ describe("canonical May conversation App", () => {
         outcome: "Use the corrected requirements",
       },
     });
-    for (const revision of [null, "goal/existing", {}, { taskId: "goal/existing" }]) {
+    for (const revision of [
+      null,
+      "goal/existing",
+      {},
+      { taskId: "goal/existing" },
+    ]) {
       expect(
         Check(app.inputSchema, {
           kind: "goal",

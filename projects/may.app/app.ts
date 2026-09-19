@@ -201,7 +201,7 @@ export function taskForMayInput(
               },
             }
           : { kind: admitted.input.kind, data },
-      priority: "P1",
+      priority: "P1" as const,
     },
   };
   return attachment;
