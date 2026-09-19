@@ -463,6 +463,8 @@ describe("workflow call empty final turn recovery", () => {
     const sessionId = "s_call_empty";
     const messages: AgentMessage[] = [];
     const prompts: string[] = [];
+    const steers: string[] = [];
+    const listeners: AgentRuntimeListener[] = [];
     ensureSessionDir(persistDir, sessionId);
     writeSessionMeta(persistDir, sessionId, {
       agent: "tech-lead",
@@ -481,7 +483,11 @@ describe("workflow call empty final turn recovery", () => {
         await onPrompt(promptText, messages);
       },
       waitForIdle: async () => {},
-      subscribe: () => () => {},
+      steer: (message: unknown) => steers.push(JSON.stringify(message)),
+      subscribe: (listener: AgentRuntimeListener) => {
+        listeners.push(listener);
+        return () => {};
+      },
     };
     const session = {
       sessionId,
@@ -502,8 +508,34 @@ describe("workflow call empty final turn recovery", () => {
       toolCalls: 0,
       turnCount: 1,
     } as any;
-    return { sessionId, session, messages, prompts };
+    return { sessionId, session, messages, prompts, steers, listeners };
   }
+
+  it("does not steer over finish at the allowance boundary but still steers unfinished work", () => {
+    const { session, steers, listeners } = makeCallSession(async () => {});
+    session.operationAllowance = 1;
+    (manager as any).bridgeEvents(session);
+    expect(listeners).toHaveLength(1);
+
+    listeners[0]!({
+      type: "tool_execution_start",
+      toolName: "finish",
+      toolCallId: "finish-at-boundary",
+      args: {},
+    } as Parameters<AgentRuntimeListener>[0]);
+    expect(session.toolCalls).toBe(1);
+    expect(steers).toEqual([]);
+
+    listeners[0]!({
+      type: "tool_execution_start",
+      toolName: "read",
+      toolCallId: "unfinished-after-rejection",
+      args: { path: "proof.txt" },
+    } as Parameters<AgentRuntimeListener>[0]);
+    expect(session.toolCalls).toBe(2);
+    expect(steers).toHaveLength(1);
+    expect(steers[0]).toContain("Bounded completion guardrail");
+  });
 
   it("keeps the original assignment available after an empty initial response", async () => {
     const { sessionId, session, messages, prompts } = makeCallSession(async (promptText, transcript) => {

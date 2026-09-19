@@ -28,11 +28,16 @@ export function shouldRequestBoundedWorkflowFinish(
   requireFinish: boolean,
   toolCalls: number,
   alreadyRequested: boolean,
-  timing?: { admittedTimeoutMs?: number; elapsedMs?: number; operationAllowance?: number },
+  timing?: {
+    admittedTimeoutMs?: number;
+    elapsedMs?: number;
+    operationAllowance?: number;
+    activeToolName?: string;
+  },
 ): boolean {
   const operationAllowance = validateOperationAllowance(timing?.operationAllowance);
   const threshold = operationAllowance ?? WORKFLOW_BOUNDED_FINISH_TOOL_CALL_THRESHOLD;
-  if (!requireFinish || alreadyRequested || toolCalls < threshold) return false;
+  if (!requireFinish || alreadyRequested || toolCalls < threshold || timing?.activeToolName === "finish") return false;
   // An explicit allowance is the operation boundary. Timeout only governs elapsed runtime.
   if (operationAllowance !== undefined) return true;
   const admittedTimeoutMs = timing?.admittedTimeoutMs;
