@@ -19,9 +19,9 @@ import { assertValidAppDefinition, assertValidAppInput } from "../apps/definitio
 import {
   createAppInboxItem,
   getAppInboxItem,
+  hasConversationExecutionTask,
   listAppInboxItemsWaitingOnTask,
   listAppInboxTaskDependencyKeys,
-  readConversationIdForExecutionTask,
   type AppTurnTarget,
   type AppInboxItem,
   type AppInboxTaskDependencyKey,
@@ -327,14 +327,13 @@ export class AppInboxHost {
     if (this.#closed) throw new Error("App input admission is closed");
     const app = this.#requiredApp(input.appId);
     assertValidAppInput(app, input.input);
-    const targetConversationId = input.targetTaskId
-      ? readConversationIdForExecutionTask(this.#db, app.id, input.targetTaskId)
-      : null;
-    if (targetConversationId) {
+    const targetTaskId =
+      input.targetTaskId === undefined ? undefined : requiredText(input.targetTaskId, "targetTaskId");
+    if (targetTaskId && hasConversationExecutionTask(this.#db, app.id, targetTaskId)) {
       throw new Error("Conversation Task input must use conversationId without targetTaskId");
     }
     const conversationInput = Boolean(
-      !input.targetTaskId &&
+      !targetTaskId &&
       app.conversation &&
       (!app.conversation.inputKinds || app.conversation.inputKinds.includes(input.input.kind)),
     );
@@ -346,6 +345,7 @@ export class AppInboxHost {
       input.originEventId !== undefined;
     const prepared = {
       ...input,
+      ...(targetTaskId === undefined ? {} : { targetTaskId }),
       ...(useDefaultConversation
         ? { conversationId: defaultConversationId, conversationSequence: input.originEventId }
         : {}),

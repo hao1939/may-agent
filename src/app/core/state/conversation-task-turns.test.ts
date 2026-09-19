@@ -1069,9 +1069,18 @@ test("Conversation ingress rejects direct executor targets and preserves untarge
   });
   const successor = f.admit("successor", 2, "Continue");
   expect(successor.taskId).toBe(`${first.taskId}_successor_2`);
+  const ingressApp = defineApp({
+    ...app,
+    conversation: { mode: "agent", inputKinds: ["message"] },
+    tasks: {},
+    task: () => {
+      throw new Error("Exact Task targets must bypass App mapping");
+    },
+  });
   const host = new AppInboxHost({
     db: f.db,
-    apps: [app],
+    apps: [ingressApp],
+    attachTask: (input) => admitTaskInput(f.context(), input),
     admitConversation: (input) =>
       admitConversationTaskInput(f.context(), {
         ...input,
@@ -1095,7 +1104,7 @@ test("Conversation ingress rejects direct executor targets and preserves untarge
       idempotencyKey: `feedback:${id}`,
     });
 
-  expect(targeted("missing-conversation", successor.taskId)).toThrow(
+  expect(targeted("missing-conversation", `  ${successor.taskId}\t`)).toThrow(
     "Conversation Task input must use conversationId without targetTaskId",
   );
   expect(targeted("stale-predecessor", first.taskId, "chat")).toThrow(
@@ -1124,6 +1133,11 @@ test("Conversation ingress rejects direct executor targets and preserves untarge
     executionTaskId: successor.taskId,
     source: { kind: "app", id: "caller" },
   });
+  const claim = f.claim(successor.taskId);
+  expect(readConversationTaskInputs(f.context(), claim).map((item) => item.id).sort()).toEqual([
+    "corrected-feedback",
+    "successor",
+  ]);
 });
 
 test("cutover refuses unhandled legacy input even with an expired lease", () => {

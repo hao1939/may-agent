@@ -204,11 +204,11 @@ describe("App inbox host", () => {
     host.admit({
       id: "feedback",
       appId: "evaluation",
-      targetTaskId: "existing",
+      targetTaskId: "  existing  ",
       source: { kind: "human", id: "operator" },
       input: { kind: "probe", data: { value: "correction" } },
     });
-    expect(host.get("feedback")?.status).toBe("pending");
+    expect(host.get("feedback")).toMatchObject({ status: "pending", targetTaskId: "existing" });
     available = true;
     await host.recoverAdmissions();
     expect(host.get("feedback")?.waitingOn).toEqual({ kind: "task", id: "existing" });
@@ -247,7 +247,7 @@ describe("App inbox host", () => {
         id: "malformed-feedback",
         appId: "evaluation",
         parentId: "caller-request",
-        targetTaskId: executionTaskId,
+        targetTaskId: `  ${executionTaskId}\t`,
         source: { kind: "app", id: "caller" },
         input: { kind: "probe", data: { value: "feedback" } },
         idempotencyKey: "feedback:malformed",
