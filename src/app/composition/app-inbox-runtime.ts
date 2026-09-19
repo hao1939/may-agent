@@ -24,6 +24,7 @@ import {
   type AppTaskAttacher,
   type AppInboxHostOptions,
 } from "../core/inbox/app-inbox-host.js";
+import { hasConversationExecutionTask } from "../core/state/app-inbox-store.js";
 import { listConversationTopicLinksForTask } from "../core/state/conversations.js";
 import type {
   AppDefinitionSource,
@@ -748,9 +749,16 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
           const focusedAppId =
             typeof focusedTask.appId === "string" ? focusedTask.appId.trim().replace(/\.app$/, "") : "";
           const focusedTaskId = typeof focusedTask.taskId === "string" ? focusedTask.taskId.trim() : "";
+          const focusedConversationTask = Boolean(
+            focusedAppId === appId &&
+              focusedTaskId &&
+              hasConversationExecutionTask(options.db, appId, focusedTaskId),
+          );
           const admitted = host.admit({
             appId,
-            ...(focusedAppId === appId && focusedTaskId ? { targetTaskId: focusedTaskId } : {}),
+            ...(focusedAppId === appId && focusedTaskId && !focusedConversationTask
+              ? { targetTaskId: focusedTaskId }
+              : {}),
             source: { kind: "human", id: authorId },
             input: {
               kind: "message",
