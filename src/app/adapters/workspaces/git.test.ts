@@ -62,11 +62,7 @@ describe("project task workspace", () => {
     writeFileSync(trackingLock, "owned by worker\n");
     writeFileSync(fetchHead, "worker fetch result\n");
     const prepared = await prepareAppTaskWorkspace({
-      repoDir: f.repo,
-      workspaceRoot: f.worktrees,
-      taskId: "independent-fetch",
-      generation: 1,
-      baseBranch: "dev",
+      repoDir: f.repo, workspaceRoot: f.worktrees, taskId: "independent-fetch", generation: 1, baseBranch: "dev",
     });
     expect(prepared.metadata.baseCommit).toBe(current);
     expect(prepared.metadata.headCommit).toBe(current);
@@ -88,11 +84,7 @@ describe("project task workspace", () => {
     await git(f.repo, "remote", "add", "origin", remote);
     await git(f.repo, "push", "-u", "origin", "dev");
     const input = {
-      repoDir: f.repo,
-      workspaceRoot: f.worktrees,
-      taskId: "deleted-remote",
-      generation: 1,
-      baseBranch: "dev",
+      repoDir: f.repo, workspaceRoot: f.worktrees, taskId: "deleted-remote", generation: 1, baseBranch: "dev",
     };
     const prepared = await prepareAppTaskWorkspace(input);
     const oldHead = prepared.metadata.headCommit;
@@ -211,11 +203,7 @@ describe("project task workspace", () => {
     await git(f.repo, "remote", "add", "origin", remote);
     await git(f.repo, "push", "-u", "origin", "dev");
     const first = await prepareAppTaskWorkspace({
-      repoDir: f.repo,
-      workspaceRoot: f.worktrees,
-      taskId: "first-fetch",
-      generation: 1,
-      baseBranch: "dev",
+      repoDir: f.repo, workspaceRoot: f.worktrees, taskId: "first-fetch", generation: 1, baseBranch: "dev",
     });
     writeFileSync(join(first.metadata.path, "unfinished.txt"), "retain this repair\n");
     writeFileSync(join(f.repo, "advanced.txt"), "new target\n");
@@ -224,21 +212,13 @@ describe("project task workspace", () => {
     await git(f.repo, "push", "origin", "dev");
     const current = await git(f.repo, "rev-parse", "HEAD");
     const second = await prepareAppTaskWorkspace({
-      repoDir: f.repo,
-      workspaceRoot: f.worktrees,
-      taskId: "second-fetch",
-      generation: 1,
-      baseBranch: "dev",
+      repoDir: f.repo, workspaceRoot: f.worktrees, taskId: "second-fetch", generation: 1, baseBranch: "dev",
     });
     expect(second.metadata.baseRef).not.toBe(first.metadata.baseRef);
     expect(await git(f.repo, "rev-parse", first.metadata.baseRef)).toBe(first.metadata.baseCommit);
     expect(second.metadata.headCommit).toBe(current);
     const resumed = await prepareAppTaskWorkspace({
-      repoDir: f.repo,
-      workspaceRoot: f.worktrees,
-      taskId: "first-fetch",
-      generation: 1,
-      baseBranch: "dev",
+      repoDir: f.repo, workspaceRoot: f.worktrees, taskId: "first-fetch", generation: 1, baseBranch: "dev",
       previous: first.metadata,
     });
     expect(resumed.metadata.path).toBe(first.metadata.path);
@@ -362,8 +342,7 @@ describe("project task workspace", () => {
     // An operator may remove a checkout while retaining the reviewed branch.
     await git(f.repo, "worktree", "remove", prepared.metadata.path);
     expect(await finalizeAppTaskWorkspace(prepared, "accepted")).toMatchObject({
-      ok: true,
-      metadata: { disposition: "branch-retained" },
+      ok: true, metadata: { disposition: "branch-retained" },
     });
   });
 
@@ -390,13 +369,8 @@ describe("project task workspace", () => {
     expect(finalized).toMatchObject({ ok: true, metadata: { disposition: "active" } });
     expect(existsSync(prepared.metadata.path)).toBe(true);
     const resumed = await prepareAppTaskWorkspace({
-      repoDir: f.repo,
-      workspaceRoot: f.worktrees,
-      taskId: "waiting-change",
-      generation: 1,
-      baseBranch: "dev",
-      refreshRemote: false,
-      previous: finalized.metadata,
+      repoDir: f.repo, workspaceRoot: f.worktrees, taskId: "waiting-change", generation: 1,
+      baseBranch: "dev", refreshRemote: false, previous: finalized.metadata,
     });
     expect(resumed.metadata.headCommit).toBe(finalized.metadata.headCommit);
     expect(readFileSync(join(dependencies, "installed"), "utf8")).toBe("keep the verified toolchain\n");
@@ -512,11 +486,7 @@ describe("project task workspace", () => {
       await git(f.repo, "remote", "add", "origin", remote);
       await git(f.repo, "push", "-u", "origin", "dev");
       const input = {
-        repoDir: f.repo,
-        workspaceRoot: f.worktrees,
-        taskId: "generation-cleanup",
-        generation: 1,
-        baseBranch: "dev",
+        repoDir: f.repo, workspaceRoot: f.worktrees, taskId: "generation-cleanup", generation: 1, baseBranch: "dev",
       };
       const first = await prepareAppTaskWorkspace(input);
       await git(first.metadata.path, "push", "-u", "origin", first.metadata.branch);
@@ -528,8 +498,7 @@ describe("project task workspace", () => {
       if (retainedState === "removed") await git(f.repo, "branch", "-D", previous.metadata.branch);
 
       expect(await finalizeAppTaskWorkspace(previous, "accepted")).toMatchObject({
-        ok: true,
-        metadata: { disposition: "removed" },
+        ok: true, metadata: { disposition: "removed" },
       });
       expect(await git(f.repo, "for-each-ref", "--format=%(refname)", "refs/may/workspaces/")).toBe(
         current.metadata.baseRef,
@@ -549,11 +518,7 @@ describe("project task workspace", () => {
     await git(f.repo, "remote", "add", "origin", remote);
     await git(f.repo, "push", "-u", "origin", "dev");
     const input = {
-      repoDir: f.repo,
-      workspaceRoot: f.worktrees,
-      taskId: "retained-refs",
-      generation: 1,
-      baseBranch: "dev",
+      repoDir: f.repo, workspaceRoot: f.worktrees, taskId: "retained-refs", generation: 1, baseBranch: "dev",
     };
     const first = await prepareAppTaskWorkspace(input);
     writeFileSync(join(first.metadata.path, "change.txt"), "unfinished change\n");
@@ -566,8 +531,7 @@ describe("project task workspace", () => {
     const dirtyFile = join(prepared.metadata.path, "dirty.txt");
     writeFileSync(dirtyFile, "preserve recovery facts\n");
     expect(await finalizeAppTaskWorkspace(prepared, "failed")).toMatchObject({
-      ok: true,
-      metadata: { disposition: "retained-for-recovery" },
+      ok: true, metadata: { disposition: "retained-for-recovery" },
     });
     expect(await git(f.repo, "for-each-ref", "--format=%(refname) %(objectname)", "refs/may/workspaces/")).toBe(refs);
     rmSync(dirtyFile);

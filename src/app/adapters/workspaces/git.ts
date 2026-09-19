@@ -121,8 +121,7 @@ async function isIntegrated(repoDir: string, metadata: AppTaskWorkspace): Promis
     metadata.headCommit === metadata.baseCommit ||
     (await git(repoDir, ["diff", "--quiet", metadata.baseCommit, metadata.headCommit], true)).status === 0 ||
     (await git(repoDir, ["merge-base", "--is-ancestor", metadata.headCommit, metadata.baseRef], true)).status === 0
-  )
-    return true;
+  ) return true;
   // Squash/rebase integration need not preserve commit ancestry. Prove that
   // merging the retained change adds nothing to one pinned target snapshot.
   // merge-tree changes no refs, index, or worktree. Conflict/unsupported Git is

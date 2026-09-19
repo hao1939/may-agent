@@ -79,10 +79,9 @@ describe("project task handler contract", () => {
     for (const state of ["waiting", "incomplete", "converged", "needs-agent"] as const) {
       for (const facts of [[], ["source:access-denied"]]) {
         for (const report of [undefined, true, false]) {
-          const output = { state, summary: "Access is missing", facts, ...(report === undefined ? {} : { report }) };
-          const valid =
-            state !== "needs-agent" &&
-            report !== false &&
+          const output = { state, summary: "Access is missing", facts,
+            ...(report === undefined ? {} : { report }) };
+          const valid = state !== "needs-agent" && report !== false &&
             (report !== true || (state !== "converged" && facts.length > 0)) &&
             (state !== "incomplete" || facts.length > 0);
           expect({ output, valid: Check(taskAgentResultSchema, output) }).toEqual({ output, valid });
@@ -364,9 +363,7 @@ describe("project task handler contract", () => {
     { priority: "P1" },
   ])("rejects raw assignment updates at both result boundaries: %j", (change) => {
     const output = {
-      state: "converged",
-      summary: "Proposed correction",
-      facts: ["scope:corrected"],
+      state: "converged", summary: "Proposed correction", facts: ["scope:corrected"],
       actions: [{ kind: "update-task", taskId: "child", expectedGeneration: 1, ...change }],
     };
     expect(Check(taskAgentResultSchema, output)).toBe(false);
@@ -465,7 +462,8 @@ describe("project task handler contract", () => {
 
   it("admits waiting for runtime validation against newly declared or saved waits", () => {
     expect(
-      admitTaskReconcileResult({ state: "waiting", summary: "Waiting", facts: [], conditions: [] }, workflowOptions).ok,
+      admitTaskReconcileResult({ state: "waiting", summary: "Waiting", facts: [], conditions: [] }, workflowOptions)
+        .ok,
     ).toBe(true);
 
     expect(

@@ -132,19 +132,14 @@ describe("common Task lifecycle source PoC", () => {
     const f = fixture();
     completeAppTask(f.config, f.claim(), { summary: "Fixture owner is quiet" });
     const ids = Array.from({ length: 24 }, (_, index) => `work-${index}`);
-    for (const id of ids)
-      observeAppTaskIntent(f.config, {
-        appAgent: "owner",
-        intent: { ...f.intent, id, outcome: "Read a retry-safe measurement" },
-      });
+    for (const id of ids) observeAppTaskIntent(f.config, {
+      appAgent: "owner", intent: { ...f.intent, id, outcome: "Read a retry-safe measurement" },
+    });
     const counts = new Map<string, number>();
     let completed = 0;
     let resolve!: () => void;
     let reject!: (error: unknown) => void;
-    const done = new Promise<void>((yes, no) => {
-      resolve = yes;
-      reject = no;
-    });
+    const done = new Promise<void>((yes, no) => { resolve = yes; reject = no; });
     const controller = new AppTaskController({
       maxConcurrent: 3,
       onError: (_id, error) => reject(error),
@@ -170,15 +165,8 @@ describe("common Task lifecycle source PoC", () => {
       enqueue: (id) => controller.enqueue(id),
     });
     const timeout = setTimeout(() => reject(new Error("Mechanical recovery did not finish")), 4_000);
-    try {
-      recovery.start();
-      await done;
-    } finally {
-      clearTimeout(timeout);
-      recovery.close();
-      controller.close();
-      await controller.whenDrained();
-    }
+    try { recovery.start(); await done; }
+    finally { clearTimeout(timeout); recovery.close(); controller.close(); await controller.whenDrained(); }
     f.reopen();
     expect([...counts.values()]).toEqual(ids.map(() => 2));
     for (const id of ids) {
@@ -218,9 +206,7 @@ describe("common Task lifecycle source PoC", () => {
   it("keeps a satisfied input wait across failed execution and restart until acceptance", () => {
     const f = fixture();
     admitTaskInput(f.config, {
-      appId: "sample",
-      attachment: { kind: "existing", taskId: "conversation" },
-      idempotencyKey: "task:measurement",
+      appId: "sample", attachment: { kind: "existing", taskId: "conversation" }, idempotencyKey: "task:measurement",
       inputContext: { id: "measurement", source: { kind: "app", id: "caller" }, input: { kind: "measure", data: {} } },
     });
     deferAppTask(f.config, f.claim(), {
@@ -390,9 +376,7 @@ describe("common Task lifecycle source PoC", () => {
       ],
     });
     const input = (id: string): TaskInputAdmission => ({
-      appId: "sample",
-      attachment: { kind: "existing", taskId: "conversation" },
-      idempotencyKey: `task:${id}`,
+      appId: "sample", attachment: { kind: "existing", taskId: "conversation" }, idempotencyKey: `task:${id}`,
       inputContext: { id, source: { kind: "app", id: "caller" }, input: { kind: "question", data: { id } } },
     });
     admitTaskInput(f.config, input("first"));
@@ -401,9 +385,7 @@ describe("common Task lifecycle source PoC", () => {
     expect(f.config.resourceStore.readTask("conversation")?.status.phase).toBe("waiting");
     expect(readRuntimeTaskView({ taskStateConfig: f.config }, "conversation")?.closed).toBeUndefined();
     expect(readAppTaskAdmissionOutcome(f.config, "conversation", "task:first")).toMatchObject({
-      state: "converged",
-      attemptId: first.attemptId,
-      result: { value: 17 },
+      state: "converged", attemptId: first.attemptId, result: { value: 17 },
     });
 
     admitTaskInput(f.config, input("second"));
@@ -929,8 +911,7 @@ describe("common Task lifecycle source PoC", () => {
     expect(closeAppTask(f.config, input).applied).toBe(false);
     f.reopen();
     expect(readRuntimeTaskView({ taskStateConfig: f.config }, "conversation")).toMatchObject({
-      status: "done",
-      closed: true,
+      status: "done", closed: true,
     });
     expect(f.config.resourceStore.readTask("conversation")?.status.result).toEqual({ answered: true });
     expect(f.config.resourceStore.readAttempt(current.attemptId)?.acceptedResult).toMatchObject({
@@ -989,8 +970,7 @@ describe("common Task lifecycle source PoC", () => {
     expect(completeAppTask(f.config, current, { summary: "Late success", facts: ["late"] }).status).toBe("stale");
     f.reopen();
     expect(readRuntimeTaskView({ taskStateConfig: f.config }, "conversation")).toMatchObject({
-      status: "attention",
-      closed: true,
+      status: "attention", closed: true,
     });
     expect(f.config.resourceStore.readAttempt(current.attemptId)).not.toHaveProperty("acceptedResult");
     expect(f.config.resourceStore.listRecoveryCandidates().items).toEqual([]);

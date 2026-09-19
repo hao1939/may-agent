@@ -684,13 +684,8 @@ function inputOutcomeAdmissions(
   const admissions = config.resourceStore.readTaskContext({ taskIds: [], admissionIds: keys }).appTaskAdmissions;
   const writes = keys.flatMap<{ taskId: string; value: AppTaskAdmission }>((key) => {
     const admission = admissions?.[key];
-    if (
-      !admission ||
-      admission.taskId !== claim.taskId ||
-      admission.taskGeneration > claim.generation ||
-      admission.resultAttemptId
-    )
-      return [];
+    if (!admission || admission.taskId !== claim.taskId || admission.taskGeneration > claim.generation ||
+      admission.resultAttemptId) return [];
     if (kind === "report")
       return admission.reportAttemptId && !explicitReport
         ? []
@@ -1145,12 +1140,7 @@ export function releaseLateTerminalWorkflowAppTaskAttempt(
     return { released: false, taskId: binding.taskId };
   }
   const attempt = currentResourceAttempt(tree, resource);
-  if (
-    !attempt ||
-    attempt.taskGeneration !== binding.generation ||
-    attempt.state !== "running" ||
-    attempt.sessionId !== sessionId
-  ) {
+  if (!attempt || attempt.taskGeneration !== binding.generation || attempt.state !== "running" || attempt.sessionId !== sessionId) {
     return { released: false, taskId: binding.taskId };
   }
 
@@ -1384,10 +1374,7 @@ export function observeAppTaskIntent(
   const specHash = appTaskSpecHash(input.intent, agent);
   const previousAdmission = admissionKey ? tree.appTaskAdmissions?.[admissionKey] : undefined;
   if (previousAdmission) {
-    if (
-      previousAdmission.taskId !== input.intent.id ||
-      !matchesAppTaskSpecHash(input.intent, agent, previousAdmission.specHash)
-    ) {
+    if (previousAdmission.taskId !== input.intent.id || !matchesAppTaskSpecHash(input.intent, agent, previousAdmission.specHash)) {
       throw new Error(`Task admission key ${admissionKey} was already used for different desired work`);
     }
     const current = tree.resources?.[previousAdmission.taskId];
@@ -1477,17 +1464,15 @@ export function observeAppTaskIntent(
         resourceVersion: (existingResource?.metadata.resourceVersion ?? 0) + 1,
       },
       spec: nextSpec,
-      status: existingResource
-        ? {
-            ...existingResource.status,
-            ...(laneChanged ? { lane: "human" as const } : {}),
-          }
-        : {
-            observedGeneration: 0,
-            phase: "pending",
-            ...(requestedLane === "human" ? { lane: "human" as const } : {}),
-            updatedAt: now,
-          },
+      status: existingResource ? {
+        ...existingResource.status,
+        ...(laneChanged ? { lane: "human" as const } : {}),
+      } : {
+        observedGeneration: 0,
+        phase: "pending",
+        ...(requestedLane === "human" ? { lane: "human" as const } : {}),
+        updatedAt: now,
+      },
     };
   }
   tree.resources = { ...(tree.resources ?? {}), [input.intent.id]: resource };
@@ -2178,8 +2163,8 @@ export function retryFailedAppTask(
     );
   }
   const attempt = latestTaskAttempt(tree, input.taskId, input.expectedGeneration);
-  const unsuccessful =
-    attempt?.state === "failed" || (attempt?.state === "completed" && attempt.acceptedResult?.state === "incomplete");
+  const unsuccessful = attempt?.state === "failed" ||
+    (attempt?.state === "completed" && attempt.acceptedResult?.state === "incomplete");
   if (!attempt || !unsuccessful || resource.status.currentAttemptId) {
     throw new Error(
       `Task ${input.appId}/${input.taskId} is not eligible for retry: its current generation has no completed failed attempt`,
@@ -2344,16 +2329,10 @@ function closeTask(
     ...input,
     kind,
     reason,
-    summary: input.actor
-      ? `${kind === "closed" ? "Closed" : "Cancelled"} by creator: ${reason}`
-      : kind === "closed"
-        ? `Closed by App policy: ${reason}`
-        : `Cancelled by human: ${reason}`,
-    decidedBy: input.actor
-      ? { kind: "creator", creator: structuredClone(input.actor) }
-      : kind === "closed"
-        ? { kind: "app-policy" }
-        : { kind: "human" },
+    summary: input.actor ? `${kind === "closed" ? "Closed" : "Cancelled"} by creator: ${reason}`
+      : kind === "closed" ? `Closed by App policy: ${reason}` : `Cancelled by human: ${reason}`,
+    decidedBy: input.actor ? { kind: "creator", creator: structuredClone(input.actor) }
+      : kind === "closed" ? { kind: "app-policy" } : { kind: "human" },
   });
 }
 
@@ -2463,13 +2442,11 @@ function commitTaskCancellation(
     phase: input.kind === "closed" && resource.status.phase === "converged" ? "converged" : "attention",
     observedGeneration: resource.metadata.generation,
     currentAttemptId: undefined,
-    ...(input.kind === "closed"
-      ? {}
-      : {
-          summary,
-          response: input.response ?? summary,
-          result: input.result ? structuredClone(input.result) : undefined,
-        }),
+    ...(input.kind === "closed" ? {} : {
+      summary,
+      response: input.response ?? summary,
+      result: input.result ? structuredClone(input.result) : undefined,
+    }),
     facts: [...(input.facts ?? resource.status.facts ?? [])],
     conditionIds: [],
   });
@@ -2996,12 +2973,7 @@ export function releaseStaleAppTaskResult(
     return { status: "superseded", taskId: claim.taskId };
   }
   const attempt = tree.attempts?.[claim.attemptId];
-  if (
-    !attempt ||
-    attempt.state !== "running" ||
-    attempt.taskId !== claim.taskId ||
-    attempt.taskGeneration !== claim.generation
-  ) {
+  if (!attempt || attempt.state !== "running" || attempt.taskId !== claim.taskId || attempt.taskGeneration !== claim.generation) {
     return { status: "superseded", taskId: claim.taskId };
   }
   // The rejected claim's version predates the very update we must preserve.
@@ -3046,7 +3018,10 @@ export function stopAppTaskAttempt(
     throw new Error("Attempt stop is stale or mismatched");
   const inputKeys = taskInputAdmissionKeys(attempt.events ?? [], attempt.continuedInputKeys);
   if (attempt.failureReason === "owner-stopped") return { changed: false, inputKeys };
-  if (resource.status.currentAttemptId !== input.attemptId || attempt.state !== "running")
+  if (
+    resource.status.currentAttemptId !== input.attemptId ||
+    attempt.state !== "running"
+  )
     throw new Error("Attempt stop is stale or mismatched");
   const scope = beginResourceMutationScopeForTasks(tree, [input.taskId]);
   const current = tree.attempts![input.attemptId]!;
@@ -3167,7 +3142,10 @@ export function associateAppTaskSession(
   const tree = config.resourceStore.readTaskContext({ taskIds: [binding.taskId] });
   const resource = tree.resources?.[binding.taskId];
   if (!resource) return { status: "missing", taskId: binding.taskId };
-  if (resource.status.phase !== "running" || !resource.status.currentAttemptId) {
+  if (
+    resource.status.phase !== "running" ||
+    !resource.status.currentAttemptId
+  ) {
     return { status: "superseded", taskId: binding.taskId };
   }
   const attempt = tree.attempts?.[resource.status.currentAttemptId];
@@ -3532,8 +3510,7 @@ function recordPendingAppTaskResult(
   // Keep unresolved asks as context for the newer facts. Replaying the
   // consumed event prefix would starve later input in a bounded batch.
   retainTaskInputWait(config, resource, consideredInputKeys(config, tree, claim, input.acceptedLiveEventIds), {
-    taskGeneration: claim.generation,
-    conditions: [],
+    taskGeneration: claim.generation, conditions: [],
   });
   consumeAcceptedLiveTaskEvents(tree, claim.taskId, claim.agent, input.acceptedLiveEventIds);
   finishAttempt(tree, resource, input.reason ? "failed" : "completed", input.summary, new Date().toISOString());
@@ -3597,10 +3574,7 @@ export function completeAppTask(
     }
     recordPendingAppTaskResult(config, tree, claim, input);
     return {
-      status: "applied",
-      actionsApplied: [],
-      dependentTaskIds: [claim.taskId],
-      taskContinues: true,
+      status: "applied", actionsApplied: [], dependentTaskIds: [claim.taskId], taskContinues: true,
     };
   }
   validateActionFacts(claim.taskId, input.facts, input.actions?.length ?? 0);

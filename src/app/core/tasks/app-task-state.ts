@@ -87,7 +87,8 @@ export function taskExecutionRetryDelay(failures: number): number {
 
 export function pendingTaskExecutionRetryAt(resource: AppTaskResource, now = Date.now()): number | undefined {
   const at = resource.status.executionRetryAt;
-  return typeof at === "number" && Number.isFinite(at) && at > now ? at : undefined;
+  return typeof at === "number" && Number.isFinite(at) && at > now
+    ? at : undefined;
 }
 
 export type AppTaskAttemptLease = {

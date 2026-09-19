@@ -17,8 +17,7 @@ const CONDITION_OWNER_PATTERN = "^\\s*(?:human|[a-z][a-z0-9-]*:[^\\s:]+)\\s*$";
 const conditionOwnerPattern = new RegExp(CONDITION_OWNER_PATTERN);
 const conditionOwnerSchema = Type.String({
   pattern: CONDITION_OWNER_PATTERN,
-  description:
-    "Who can supply the awaited fact: human or kind:identity, e.g. human:requester or app:measurement. Use a lowercase kind and an identity without spaces or colons, not a display name or sentence. This field does not send a message or grant authority.",
+  description: "Who can supply the awaited fact: human or kind:identity, e.g. human:requester or app:measurement. Use a lowercase kind and an identity without spaces or colons, not a display name or sentence. This field does not send a message or grant authority.",
 });
 const objectSchema = Type.Unsafe<Record<string, unknown>>({
   type: "object",
@@ -52,8 +51,7 @@ export const conditionSchema = Type.Object(
     type: Type.String({
       minLength: 1,
       pattern: "\\.",
-      description:
-        "Namespaced event type from a known producer, e.g. review.completed. Naming a type does not register its producer or ingress.",
+      description: "Namespaced event type from a known producer, e.g. review.completed. Naming a type does not register its producer or ingress.",
     }),
     subject: typedConditionSubjectSchema,
     expected: Type.Unknown(),
@@ -107,9 +105,7 @@ export const taskAgentResultSchema = Type.Union([
   ),
   Type.Object(
     {
-      state: Type.Literal("waiting"),
-      ...resultFields,
-      report: Type.Literal(true),
+      state: Type.Literal("waiting"), ...resultFields, report: Type.Literal(true),
       facts: Type.Array(nonEmptyStringSchema, { minItems: 1, maxItems: 32 }),
     },
     { additionalProperties: false },
@@ -259,7 +255,10 @@ function normalizeCondition(value: unknown, index: number): Condition | string {
     return `conditions[${index}].owner must be a canonical kind:identity`;
   }
   const reviewAfterMs = value.reviewAfterMs;
-  if (!Number.isInteger(reviewAfterMs) || Number(reviewAfterMs) < MIN_CONDITION_REVIEW_AFTER_MS) {
+  if (
+    !Number.isInteger(reviewAfterMs) ||
+    Number(reviewAfterMs) < MIN_CONDITION_REVIEW_AFTER_MS
+  ) {
     return `conditions[${index}].reviewAfterMs must be an integer of at least ${MIN_CONDITION_REVIEW_AFTER_MS}`;
   }
   return {
@@ -311,10 +310,8 @@ export function admitTaskReconcileResult(
   if (output.state !== "converged" && output.state !== "waiting" && output.state !== "incomplete") {
     return { ok: false, error: "state must be converged, waiting, incomplete, or needs-agent" };
   }
-  if (
-    output.report !== undefined &&
-    ((output.state !== "waiting" && output.state !== "incomplete") || output.report !== true || facts.length === 0)
-  ) {
+  if (output.report !== undefined &&
+    ((output.state !== "waiting" && output.state !== "incomplete") || output.report !== true || facts.length === 0)) {
     return { ok: false, error: "report requires waiting or incomplete, true, and non-empty facts" };
   }
   if (output.state === "incomplete") {
@@ -331,7 +328,11 @@ export function admitTaskReconcileResult(
     return { ok: false, error: "result must be an object" };
   }
   const result = rawResult as Record<string, unknown> | undefined;
-  if (result !== undefined && new TextEncoder().encode(JSON.stringify(result)).byteLength > MAX_TASK_RESULT_BYTES) {
+  if (
+    result !== undefined &&
+    new TextEncoder().encode(JSON.stringify(result)).byteLength >
+      MAX_TASK_RESULT_BYTES
+  ) {
     return { ok: false, error: `result exceeds the ${MAX_TASK_RESULT_BYTES}-byte limit` };
   }
   if (output.state === "waiting" && response.value) {
@@ -398,14 +399,8 @@ export function admitTaskReconcileResult(
   if (output.state !== "waiting" && dependencies.length > 0) {
     return { ok: false, error: "dependencies are valid only for waiting" };
   }
-  if (
-    output.continue !== undefined &&
-    (output.continue !== true ||
-      output.state !== "waiting" ||
-      output.report !== undefined ||
-      !dependencies.length ||
-      !facts.length)
-  ) {
+  if (output.continue !== undefined &&
+    (output.continue !== true || output.state !== "waiting" || output.report !== undefined || !dependencies.length || !facts.length)) {
     return { ok: false, error: "continue requires waiting, dependencies and progress facts, without report" };
   }
   if (!Check(taskReconcileResultSchema, output)) {

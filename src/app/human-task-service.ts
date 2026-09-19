@@ -586,7 +586,9 @@ function projectTask(row: TaskRow, ref: string, detail = true): HumanTaskView | 
             id: acceptedAttempt.metadata.id,
             generation: acceptedAttempt.taskGeneration,
             startedAt: acceptedAttempt.startedAt,
-            ...(acceptedAttempt.finishedAt ? { finishedAt: acceptedAttempt.finishedAt } : {}),
+            ...(acceptedAttempt.finishedAt
+              ? { finishedAt: acceptedAttempt.finishedAt }
+              : {}),
           },
         }
       : {}),
@@ -968,9 +970,7 @@ export class HumanTaskService {
       : ["pending", "running", "waiting", "attention", "converged"];
     // Keep the indexed stored-phase search, then narrow by the display phase.
     // Pending also includes converged rows with a newly queued cycle.
-    const storedPhases = livePhases.includes("pending")
-      ? [...new Set([...livePhases, "converged", "waiting"])]
-      : livePhases;
+    const storedPhases = livePhases.includes("pending") ? [...new Set([...livePhases, "converged", "waiting"])] : livePhases;
     const appId = normalizeAppId(input.appId);
     const humanOwners = humanActionOnly
       ? reachableHumanConditionOwners(this.db, appId ? { activeAppId: appId } : {})
