@@ -302,6 +302,26 @@ on the next semantic wake. Delivery never gates that transition.
 Provider delivery is observational. A failed or uncertain adapter send cannot
 change a Conversation result or a Task.
 
+The open human-owned Condition is the one canonical help request. `/todo` and a
+supported notification render that same Task, Condition and requested action;
+they do not create provider-specific work or a completion watcher. A reply to a
+rendered card is correlated through the adapter's saved receipt to the exact
+Task (and Condition identity when the adapter supports it), then enters as
+ordinary durable input for one bounded reconsideration. The worker must reread
+and verify the requested external state before retiring the Condition or
+claiming success. Text such as “done” is evidence of a reply, not evidence that
+the action happened, and it grants no wider authority. Exact candidate approvals
+retain their stronger immutable proposal, generation, sender and decision
+checks described below.
+
+**Current boundary:** same-App focused Conversation and Telegram replies already
+resume the exact Task; `/todo` already projects the saved Condition. Generic
+ordinary replies are not yet bound to a Condition generation on every adapter.
+Until that narrower correlation is implemented and production-tested, the next
+attempt must treat the reply as input and keep the Condition unless independent
+verification establishes its expected fact. Do not add a provider-specific
+watcher or invent an event type to conceal this gap.
+
 Bare text always goes to May with `context.focusedApp`. A watch additionally
 adds `context.focusedTask`. The selected App is a useful conversational lens,
 not permission to force work into the wrong owner.

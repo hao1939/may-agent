@@ -168,8 +168,30 @@ the same executing generation are pending input, not proof that its output is
 invalid.
 
 There is no manager-transfer lifecycle or ownership encoded in ID prefixes.
-App policy validates which task changes may revise a task; the generic engine
-uses one admission path for all task IDs.
+Creator identity is immutable metadata `{appId, taskId?}`: App-created work has
+an App-only creator, while delegated work names its exact creator Task. Creation
+and revision support both legitimate owner kinds through trusted bindings. A
+running creator Task uses its fenced attempt capability; an App-only revision
+must enter through the installed owning App's trusted input/intent boundary.
+Both routes reread the exact creator, current generation and complete mapped
+input before commit. A worker cannot gain authority by omitting `taskId`, naming
+an owner, targeting itself, or acting across Apps. Parent links, references and
+executor names confer no authority.
+
+App policy maps the complete revised input; the generic engine preserves the
+stable Task identity, parent, accepted results and unrelated obligations while
+advancing generation only for changed requirements. Stale generation, foreign
+creator, self-revision and concurrent-change controls reject the whole update.
+There is no generic write API, manager-transfer lifecycle, or ownership encoded
+in ID prefixes.
+
+**Current boundary:** task-bound `tasks update` implements the first route with
+exact negative controls. Low-level desired-input admission can preserve an
+App-only creator, but ordinary targeted input is intentionally attach-only and
+May's current goal mapper does not address an existing legacy Task identity.
+Until the trusted owning-App route is exposed and covered end to end, those
+legacy revisions remain an explicit authority gap; implementations must not
+weaken creator equality or let a worker impersonate the App to close it.
 
 ## Controller
 
@@ -316,9 +338,24 @@ Creating follow-up work does not complete the current task. Required
 decomposition uses typed dependencies and returns `waiting`; independent later
 work may be a successor only after the current outcome is actually accepted.
 
-**Implemented candidate:** `waiting` with `continue: true` queues independent work
-on the same Task, retaining unanswered input and waits. Dependencies and facts are
-required; see [admission and bounds](../archive/reviews/execution-feedback-poc-20260913.md#candidate-and-decisions).
+**Candidate contract:** `waiting` with `continue: true` requests one more bounded
+pass on the same Task while retaining unanswered input and every independent
+wait. It requires non-empty progress facts, but not a newly submitted dependency:
+continuation is an immediate scheduling request, not a claim that an external
+fact is outstanding. It may coexist with `report: true`, which selects a new
+caller-relevant update without changing scheduling or wait state. Omitting
+`continue` means the attempt sleeps, so a saved Condition, typed dependency, or
+future `reviewAt` must provide a real return route. Facts make the request
+auditable; they do not prove progress or replace the existing attempt/resource
+bounds and owner review.
+
+The SDK's `admitTaskReconcileResult` is the single pure semantic validator for
+agent and workflow results. Executor finish paths call it before terminating so
+an invalid proposal returns correctable feedback; fenced settlement calls it
+again against current state before applying effects. Settlement remains the
+only authority for generation, pending-input, creator, Condition and persistence
+checks. A schema, executor adapter, or recovery path must not define a narrower
+competing interpretation.
 
 Task changes and the final result apply in one transaction. Events emitted
 while an attempt runs are separate durable commit points: a resource-backed
@@ -434,18 +471,19 @@ pre-enumerated set of known domain changes. See
 
 Condition declarations are identity-scoped deltas, not snapshots. A distinct ID
 adds an obligation; the same ID may update its complete specification while
-preserving unrelated links and evidence. Omission and an empty declaration list
-mean no change. Satisfaction or generation-fenced retirement names the exact
-Condition; retry, failure, unblock, dependency repair, or ordinary reconsideration
-never clears peers. Retained legacy rows remain readable without being revalidated
-as newly authored declarations. A changed specification starts a new generation
-and cannot inherit an older approval. Condition `reviewAfterMs` checkpoints renew
-after an accepted review while the fact remains pending. Task-level `reviewAt` is
-a recovery checkpoint: a future omitted deadline is preserved, a due checkpoint is
-consumed, and continued waiting must return a new explicit deadline or Condition.
-Accepted completion consumes that checkpoint unless an independently correlated
-input deadline still exists. Whole-Task cancellation remains the only broad
-termination operation. Callers that once
+preserving unrelated Conditions, dependency links, failed-operation facts,
+selected reports and pending input. Omission and an empty declaration list mean
+no change. Satisfaction or generation-fenced retirement names the exact
+Condition; retry, failure, unblock, dependency repair, wake or ordinary
+reconsideration never clears peers. Retained legacy rows remain readable without
+being revalidated as newly authored declarations. A changed specification starts
+a new generation and cannot inherit an older approval. Condition `reviewAfterMs`
+checkpoints renew after an accepted review while the fact remains pending.
+Task-level `reviewAt` is a recovery checkpoint: a future omitted deadline is
+preserved, a due checkpoint is consumed, and continued waiting must return a new
+explicit deadline or Condition. Accepted completion consumes that checkpoint
+unless an independently correlated input deadline still exists. Whole-Task
+cancellation remains the only broad termination operation. Callers that once
 used a replacement list must now explicitly retire removed identities; arbitrary
 JSON, observations, and history are not deep-merged.
 
