@@ -1140,6 +1140,56 @@ test("Conversation ingress rejects direct executor targets and preserves untarge
   ]);
 });
 
+test("recovery cannot attach an earlier exact target after it becomes a Conversation executor", async () => {
+  const f = fixture();
+  const executionTaskId = conversationTaskId(app.id, "chat");
+  const failures: string[] = [];
+  const ingressApp = defineApp({
+    ...app,
+    conversation: { mode: "agent", inputKinds: ["message"] },
+    tasks: {},
+    task: () => {
+      throw new Error("Exact Task targets must bypass App mapping");
+    },
+  });
+  const host = new AppInboxHost({
+    db: f.db,
+    apps: [ingressApp],
+    attachTask: (input) => admitTaskInput(f.context(), input),
+    admitConversation: (input) => admitConversationTaskInput(f.context(), { ...f.input(input.id), ...input }),
+    onFailure: (failure) => failures.push(failure.error),
+  });
+
+  // The target is not a Task yet, so ordinary admission retains the input for
+  // retry rather than attaching it.
+  expect(
+    host.admit({
+      id: "early-feedback",
+      appId: app.id,
+      targetTaskId: executionTaskId,
+      source: { kind: "system", id: "reviewer" },
+      input: { kind: "message", data: { text: "Review this feedback" } },
+    }).item,
+  ).toMatchObject({ status: "pending", targetTaskId: executionTaskId });
+  expect(failures).toEqual([`Task ${executionTaskId} does not exist in App ${app.id}`]);
+
+  const conversation = f.admit();
+  expect(conversation.taskId).toBe(executionTaskId);
+  await host.recoverAdmissions();
+
+  expect(getAppInboxItem(f.db, "early-feedback")).toMatchObject({
+    status: "pending",
+    targetTaskId: executionTaskId,
+  });
+  expect(getAppInboxItem(f.db, "early-feedback")?.waitingOn).toBeUndefined();
+  expect(getAppInboxItem(f.db, "early-feedback")?.taskAdmissionKey).toBeUndefined();
+  expect(readAppTaskAdmissionOutcome(f.context(), executionTaskId, "task:early-feedback")).toBeNull();
+  expect(failures.at(-1)).toBe("Conversation Task input must use conversationId without targetTaskId");
+
+  const claim = f.claim(executionTaskId);
+  expect(readConversationTaskInputs(f.context(), claim).map((item) => item.id)).toEqual([conversation.item.id]);
+});
+
 test("cutover refuses unhandled legacy input even with an expired lease", () => {
   const f = fixture();
   createAppInboxItem(f.db, f.input("old", 1));

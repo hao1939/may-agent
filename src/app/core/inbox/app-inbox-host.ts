@@ -407,6 +407,12 @@ export class AppInboxHost {
     if (item.lease && item.lease.expiresAt > this.#now()) return;
     try {
       const app = this.#requiredApp(item.appId);
+      // Recheck retained inputs at the attachment boundary. A target that did
+      // not exist during initial admission may become a Conversation executor
+      // before recovery; it must never acquire ordinary Task authority.
+      if (item.targetTaskId && hasConversationExecutionTask(this.#db, app.id, item.targetTaskId)) {
+        throw new Error("Conversation Task input must use conversationId without targetTaskId");
+      }
       if (!item.targetTaskId && app.conversation && (!app.conversation.inputKinds || app.conversation.inputKinds.includes(item.input.kind)))
         throw new Error("Conversation input requires offline cutover to its Task execution owner");
       if (item.waitingOn?.kind === "task") {
