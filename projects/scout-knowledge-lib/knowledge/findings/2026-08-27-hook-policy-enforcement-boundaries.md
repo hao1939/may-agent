@@ -1,8 +1,8 @@
 <ai_context>
-summary: "Gryph's cross-harness policy layer makes two security boundaries explicit: a block only prevents an action when it comes from a pre-execution hook, and signed receipts only attest to what the same-user mediation path observed. Agent Hooks adds that multiple controls do not compose safely by default: approval can skip later controls, sequential transforms can change what later controls inspect, and streamed output requires segment-level release and persistence gates. Policy evidence therefore needs phase, coverage, composition, and exposure metadata."
-triggers: ["agent hooks", "coding-agent policy", "pre-execution enforcement", "post-execution detection", "signed receipts", "same-user bypass", "composition profile", "approval resume", "streaming mediation", "Gryph", "AARM", "Agent Hooks"]
+summary: "Gryph's cross-harness policy layer makes two security boundaries explicit: a block only prevents an action when it comes from a pre-execution hook, and signed receipts only attest to what the same-user mediation path observed. Agent Hooks adds that multiple controls do not compose safely by default: approval can skip later controls, sequential transforms can change what later controls inspect, and streamed output requires segment-level release and persistence gates. Package Doctor demonstrates why dependency admission needs both a preventive check of the requested artifact and a post-execution audit of resolved transitive artifacts. Policy evidence therefore needs phase, coverage, composition, and exposure metadata."
+triggers: ["agent hooks", "coding-agent policy", "pre-execution enforcement", "post-execution detection", "signed receipts", "same-user bypass", "composition profile", "approval resume", "streaming mediation", "dependency admission", "transitive dependencies", "Gryph", "AARM", "Agent Hooks", "Package Doctor"]
 last_updated: "2026-09-19"
-source_basis: "GitHub repository metadata plus Gryph documentation, implementation, and tests at revision 44e63b09957c4ab841a5aafe19604c769f3f848f; and the draft Agent Hooks specification, production guidance, threat model, Python reference SDK, and conformance vectors at revision 1fa77847c600b3582e73e0d20db9c625bf7f52b2."
+source_basis: "GitHub repository metadata plus Gryph documentation, implementation, and tests at revision 44e63b09957c4ab841a5aafe19604c769f3f848f; the draft Agent Hooks specification, production guidance, threat model, Python reference SDK, and conformance vectors at revision 1fa77847c600b3582e73e0d20db9c625bf7f52b2; and Package Doctor documentation, implementation, and tests at revision 5c14dfef0d80b7425ea1388ffea74d38b18d6d00."
 </ai_context>
 
 # An Agent-Policy Decision Needs an Execution Phase
@@ -113,6 +113,51 @@ not install the SDK or execute the multi-language conformance kit.
 - **Inspected revision:** https://github.com/responsibleai/agent-hooks/commit/1fa77847c600b3582e73e0d20db9c625bf7f52b2
 - **Primary sources:** [draft specification](https://github.com/responsibleai/agent-hooks/blob/1fa77847c600b3582e73e0d20db9c625bf7f52b2/spec/AGENT-HOOKS-0.1.md), [production profile guidance](https://github.com/responsibleai/agent-hooks/blob/1fa77847c600b3582e73e0d20db9c625bf7f52b2/docs/PRODUCTION.md), [threat-model coverage and gaps](https://github.com/responsibleai/agent-hooks/blob/1fa77847c600b3582e73e0d20db9c625bf7f52b2/docs/THREAT-MODEL.md), [Python emitter](https://github.com/responsibleai/agent-hooks/blob/1fa77847c600b3582e73e0d20db9c625bf7f52b2/sdk/python/python/agent_hooks/emitter.py), and [incremental-stream conformance vectors](https://github.com/responsibleai/agent-hooks/tree/1fa77847c600b3582e73e0d20db9c625bf7f52b2/conformance/vectors)
 - **Discovery query:** GitHub Repository Search API `"AI agent" guardrails pushed:>2026-09-17`, sorted by update time; 63 results, `incomplete_results: false`
+
+## Dependency Admission Needs Two Phase-Distinct Gates
+
+HN item [49762076](https://news.ycombinator.com/item?id=49762076) surfaced
+[Package Doctor](https://github.com/binuka200/package-doctor), whose Claude Code
+hook demonstrates a narrower but reusable consequence of the phase distinction:
+the artifact named before an install and the artifacts actually resolved after it
+are different policy subjects.
+
+At inspected revision
+[`5c14dfef0d80b7425ea1388ffea74d38b18d6d00`](https://github.com/binuka200/package-doctor/commit/5c14dfef0d80b7425ea1388ffea74d38b18d6d00),
+the `PreToolUse` path parses named installs, blocks direct URL/VCS targets that
+cannot receive registry or advisory checks, and evaluates package names for
+recent publication, near-match provenance, known exploitation, vulnerable
+versions, and maintenance capacity. This is the preventive gate. A separate
+`PostToolUse` path diffs supported lockfiles against Git's committed version after
+resolvers and selected locking installers run. It removes names already checked
+before execution and evaluates newly resolved transitive packages. Edits to
+supported dependency manifests receive a similar after-write check.
+
+The second pass closes a real observation gap but not an authority gap. Its own
+implementation says it cannot block because the install, resolve, or edit already
+happened; it can only return context asking the agent to change course before code
+runs. It also covers only lockfiles and command shapes the parser understands.
+Plain `pip`, PDM, and Rye transitive additions are not all covered by the lockfile
+diff, a repository-less run has no committed baseline, and post-hook parsing or
+lookup exceptions return silently. On the preventive path, malformed hook input
+and lookup failures fail open; an unavailable upstream yields an explicit
+“allowed unchecked” message when the event can still be interpreted.
+
+This makes “dependency guard enabled” too coarse a control claim. A useful
+admission receipt should separately report the requested artifact, effective
+index or direct source, preflight verdict, exact resolved artifact set, lockfile
+baseline, post-resolution verdicts, unchecked/degraded state, and whether any
+flagged bytes had already entered the workspace or environment. The post-pass is
+best treated as containment guidance until a subsequent clean resolve and scan
+prove that the rejected artifact is absent.
+
+The repository reports strong internal measurements—6,897/6,898 agreement with
+OSV's version-scoped answer and zero misses against `pip-audit` over the stated
+sample—but both comparisons share OSV, and the exposure map has no external
+review. Scout inspected the pinned documentation, implementation, and tests; it
+did not install the package or reproduce those measurements.
+
+- **Primary sources:** [agent guardrail and coverage limits](https://github.com/binuka200/package-doctor/blob/5c14dfef0d80b7425ea1388ffea74d38b18d6d00/docs/agent-guardrail.md), [hook implementation](https://github.com/binuka200/package-doctor/blob/5c14dfef0d80b7425ea1388ffea74d38b18d6d00/src/package_doctor/cli.py), [decision logic](https://github.com/binuka200/package-doctor/blob/5c14dfef0d80b7425ea1388ffea74d38b18d6d00/src/package_doctor/guard.py), [hook tests](https://github.com/binuka200/package-doctor/blob/5c14dfef0d80b7425ea1388ffea74d38b18d6d00/tests/test_guard.py), and [accuracy method and limitations](https://github.com/binuka200/package-doctor/blob/5c14dfef0d80b7425ea1388ffea74d38b18d6d00/docs/accuracy.md)
 
 ## Why it matters
 
