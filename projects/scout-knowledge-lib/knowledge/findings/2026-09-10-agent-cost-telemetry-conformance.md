@@ -1,8 +1,8 @@
 <ai_context>
-summary: "Agent cost telemetry needs parser-shape conformance for provider and lifecycle semantics, plus separate evidence for call-site detection, optimization-recommendation quality, and runtime cost measurement; neither synthetic recall nor modeled spend closes the full chain."
-triggers: ["AgentMeasure", "erabot", "token accounting", "agent cost telemetry", "usage dashboard", "cache pricing", "resume accounting", "conformance fixtures", "cost scanner evaluation"]
-last_updated: "2026-09-14"
-source_basis: "AgentMeasure audit and conformance materials at commit 3a9f58b1ca36b7dae520113163962d3c4f1e345e; erabot detector and planted-truth evaluation materials at commit 207a84a6e3165ffead72f081fa824ffe8ae5b468."
+summary: "Agent cost telemetry needs parser-shape conformance and separate detection, recommendation, measurement, and settlement verdicts; a fail-closed evidence policy must also constrain claim arithmetic, not merely disclose unsupported rows afterward."
+triggers: ["AgentMeasure", "erabot", "token accounting", "agent cost telemetry", "usage dashboard", "cache pricing", "resume accounting", "conformance fixtures", "cost scanner evaluation", "settlement evidence", "UNPROVABLE"]
+last_updated: "2026-09-19"
+source_basis: "AgentMeasure audit and conformance materials at commits 3a9f58b1ca36b7dae520113163962d3c4f1e345e and a475812d5377c594306fbd87f83aaff36a514527; erabot detector and planted-truth evaluation materials at commit 207a84a6e3165ffead72f081fa824ffe8ae5b468."
 </ai_context>
 
 # Agent Cost Telemetry Needs Parser-Shape Conformance
@@ -123,8 +123,54 @@ recommendation precision; and a correct recommendation can still have an
 unmeasured dollar impact. Collapsing these layers into “the scanner is accurate”
 loses the exact boundary operators need.
 
+## GitHub update — fail-closed evidence must change the arithmetic (2026-09-19)
+
+AgentMeasure's draft AMS-1 settlement standard introduces a useful distinction
+between **counting integrity** (whether records were altered) and **judgment
+integrity** (whether a `resolved` verdict is supportable). Its policy says rows
+without incrementality evidence are `cannot settle`, must be removed from the
+claim, and must remain distinct from zero. It also keeps provider-counted Tier 1
+and affected-party-confirmed Tier 2 separate, and requires disclosure when the
+input cannot reveal underbilling.
+
+Static inspection of the pinned implementation reveals a policy-to-code gap.
+[`generate_bundle`](https://github.com/roy-tong/AgentMeasure/blob/a475812d5377c594306fbd87f83aaff36a514527/healthcheck/am_healthcheck/settle.py)
+counts records whose `incrementality_evidence` is absent or `none` as
+`unprovable_count`, but both `settlement_statement` and `statement_markdown`
+still compute Tier 1 from every `resolved` or `assumed_resolved` row and Tier 2
+from every affected-party `resolved` row. They do not filter those rows by
+incrementality evidence. The resulting statement can therefore say unsupported
+rows were “removed from any outcome claim” while retaining them in both the
+claim counts and dollar arithmetic.
+
+The committed tests make the mismatch especially concrete: their shared
+`effect()` fixture omits `incrementality_evidence`, while tests expect those
+same rows to contribute to Tier 1, Tier 2, and dollar totals. The tests validate
+crossing outcome class with observer grade and printing the `cannot settle`
+disclosure, but do not validate that unsupported rows are excluded from the
+numbers. Tests were inspected, not executed.
+
+The reusable lesson is that **disclosure is not enforcement**. A fail-closed
+billing or outcome policy needs one eligibility predicate used by every count,
+amount, export, and display path. Conformance should include an adversarial row
+that is semantically resolved and strongly attested but lacks the separately
+required evidence, then assert that it appears in the rejection ledger and in
+neither payable tier. Otherwise a system can pass presentation tests while its
+financial claim violates its own evidence rule.
+
+This is a static finding at draft commit
+[`a475812d5377c594306fbd87f83aaff36a514527`](https://github.com/roy-tong/AgentMeasure/commit/a475812d5377c594306fbd87f83aaff36a514527),
+not a claim about a released service or the repository after that revision.
+
 ## Primary sources
 
+- GitHub discovery query: https://api.github.com/search/repositories?q=%22AI+agent%22+%22MCP%22+pushed%3A%3E2026-09-17&sort=updated&order=desc&per_page=20
+- Latest inspected AgentMeasure revision: https://github.com/roy-tong/AgentMeasure/commit/a475812d5377c594306fbd87f83aaff36a514527
+- AMS-1 settlement policy: https://github.com/roy-tong/AgentMeasure/blob/a475812d5377c594306fbd87f83aaff36a514527/standard/SETTLEMENT.md
+- Machine-readable clause manifest: https://github.com/roy-tong/AgentMeasure/blob/a475812d5377c594306fbd87f83aaff36a514527/standard/settlement.manifest.json
+- Bundle and statement implementation: https://github.com/roy-tong/AgentMeasure/blob/a475812d5377c594306fbd87f83aaff36a514527/healthcheck/am_healthcheck/settle.py
+- Settlement tests: https://github.com/roy-tong/AgentMeasure/blob/a475812d5377c594306fbd87f83aaff36a514527/healthcheck/tests/test_settle.py
+- Settlement conformance ladder: https://github.com/roy-tong/AgentMeasure/blob/a475812d5377c594306fbd87f83aaff36a514527/conformance/README.md
 - HN discovery item: https://news.ycombinator.com/item?id=49639249
 - Inspected revision: https://github.com/roy-tong/AgentMeasure/commit/3a9f58b1ca36b7dae520113163962d3c4f1e345e
 - Audit report: https://github.com/roy-tong/AgentMeasure/blob/3a9f58b1ca36b7dae520113163962d3c4f1e345e/campaigns/audit-report-2026-09.md
