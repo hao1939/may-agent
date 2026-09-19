@@ -170,12 +170,12 @@ invalid.
 There is no manager-transfer lifecycle or ownership encoded in ID prefixes.
 Creator identity is immutable metadata `{appId, taskId?}`: App-created work has
 an App-only creator, while delegated work names its exact creator Task. Creation
-and revision support both legitimate owner kinds through trusted bindings. A
-running creator Task uses its fenced attempt capability; an App-only revision
-must enter through the installed owning App's trusted input/intent boundary.
-Both routes reread the exact creator, current generation and complete mapped
-input before commit. A worker cannot gain authority by omitting `taskId`, naming
-an owner, targeting itself, or acting across Apps. Parent links, references and
+supports both legitimate owner kinds. Task-bound revision is implemented through
+a fenced attempt capability; App-only revision still requires an exposed trusted
+owning-App route that reuses the installed App's input/intent mapping. That route
+must reread the exact creator and current generation and map the complete input
+before commit. A worker cannot gain authority by omitting `taskId`, naming an
+owner, targeting itself, or acting across Apps. Parent links, references and
 executor names confer no authority.
 
 App policy maps the complete revised input; the generic engine preserves the
@@ -323,9 +323,10 @@ that deadline with the accepted result and exact outstanding input, schedules it
 through the ordinary recovery index across restart, and permits an earlier event
 to wake the Task without consuming the deadline. Reaching `reviewAt` only makes
 a new attempt eligible; it never satisfies a Condition, bypasses normal failure
-backoff, or answers the caller. An early re-wait that omits `reviewAt` retains a
-future deadline; after it is due, omission requires another Condition or a new
-future deadline. A failed verifier cannot establish completion. Result settlement,
+backoff, or answers the caller. An early sleeping re-wait that omits `reviewAt` retains a
+future deadline; after it is due, sleeping again requires another Condition or a
+new future deadline. `continue: true` instead requests immediate bounded work and
+requires no invented wait. A failed verifier cannot establish completion. Result settlement,
 including newer input, uses the fences described below; this table does not override them. The [wait-recovery candidate](../proposals/task-wait-recovery-20260918.md) returns inputs with obsolete waits for reconsideration without satisfying replacement or unrelated waits.
 
 `incomplete` requires a summary and non-empty facts; it cannot include actions, Conditions
@@ -352,10 +353,10 @@ bounds and owner review.
 The SDK's `admitTaskReconcileResult` is the single pure semantic validator for
 agent and workflow results. Executor finish paths call it before terminating so
 an invalid proposal returns correctable feedback; fenced settlement calls it
-again against current state before applying effects. Settlement remains the
-only authority for generation, pending-input, creator, Condition and persistence
-checks. A schema, executor adapter, or recovery path must not define a narrower
-competing interpretation.
+again before applying effects. The pure validator knows only the proposed result.
+Settlement remains the authority for current generation, attempt, pending-input,
+creator, Condition and persistence checks. A schema, executor adapter, or recovery
+path must not define a narrower competing interpretation.
 
 Task changes and the final result apply in one transaction. Events emitted
 while an attempt runs are separate durable commit points: a resource-backed

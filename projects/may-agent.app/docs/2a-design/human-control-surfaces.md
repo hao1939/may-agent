@@ -307,20 +307,27 @@ supported notification render that same Task, Condition and requested action;
 they do not create provider-specific work or a completion watcher. A reply to a
 rendered card is correlated through the adapter's saved receipt to the exact
 Task (and Condition identity when the adapter supports it), then enters as
-ordinary durable input for one bounded reconsideration. The worker must reread
-and verify the requested external state before retiring the Condition or
-claiming success. Text such as “done” is evidence of a reply, not evidence that
-the action happened, and it grants no wider authority. Exact candidate approvals
-retain their stronger immutable proposal, generation, sender and decision
-checks described below.
+ordinary durable input for one bounded reconsideration. If the Condition asks
+for a human answer, a correctly correlated reply may establish that expected
+fact. If it asks the human to perform an external action, the reply records only
+the human input; the worker must reread and verify the external state before
+claiming that action completed. Text such as “done” grants no wider authority.
+Exact candidate approvals retain their stronger immutable proposal, generation,
+sender and decision checks described below.
 
 **Current boundary:** same-App focused Conversation and Telegram replies already
-resume the exact Task; `/todo` already projects the saved Condition. Generic
-ordinary replies are not yet bound to a Condition generation on every adapter.
-Until that narrower correlation is implemented and production-tested, the next
-attempt must treat the reply as input and keep the Condition unless independent
-verification establishes its expected fact. Do not add a provider-specific
-watcher or invent an event type to conceal this gap.
+resume the exact Task; `/todo` already projects the saved Condition. The Host
+candidate saves the exact Task, Task generation, Condition ID and Condition
+generation only after a complete Telegram card delivery, then projects that
+receipt identity into the existing ordinary human input event. An exact reply
+receipt Condition can therefore match `source: human` plus those four saved
+fields before or during an attempt; broad `source: human` means any human input
+and must not be presented as exact-question correlation. Missing, ambiguous or
+stale display identity remains ordinary input and cannot match the exact receipt.
+This transport fact still requires worker judgment about answer sufficiency and
+never proves an external action or approval. Other adapters need equivalent
+production-tested receipt correlation before claiming the same guarantee. Do
+not add a provider-specific watcher or invent an event type to conceal a gap.
 
 Bare text always goes to May with `context.focusedApp`. A watch additionally
 adds `context.focusedTask`. The selected App is a useful conversational lens,
