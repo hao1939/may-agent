@@ -30,6 +30,24 @@ docker run --rm --network none --read-only --entrypoint /usr/local/bin/may-agent
   "$image_ref" --help > test-results/help.txt
 grep -q 'Usage: may-agent' test-results/help.txt
 
+# The CLI toolchain is image-owned rather than installed below /app. Prove its
+# ordinary PATH, exact manifest versions, flags, and permissions as the runtime
+# user from an unrelated working directory while a fresh mount masks /app.
+docker run --rm --network none --read-only --user mayagent \
+  --tmpfs /app --workdir /tmp --entrypoint /bin/sh \
+  "$image_ref" -ec '
+    manifest=/opt/may-agent-cli/package.json
+    test "$(command -v claude)" = /opt/may-agent-cli/node_modules/.bin/claude
+    test "$(command -v codex)" = /opt/may-agent-cli/node_modules/.bin/codex
+    test "$(command -v pi)" = /opt/may-agent-cli/node_modules/.bin/pi
+    test "$(claude --version | awk "{print \$1}")" = "$(node -p "require(\"$manifest\").dependencies[\"@anthropic-ai/claude-code\"]")"
+    test "$(codex --version | awk "{print \$2}")" = "$(node -p "require(\"$manifest\").dependencies[\"@openai/codex\"]")"
+    test "$(pi --version)" = "$(node -p "require(\"$manifest\").dependencies[\"@earendil-works/pi-coding-agent\"]")"
+    claude --help | grep -q -- --output-format
+    codex exec --help | grep -q -- --output-last-message
+    pi --help | grep -q -- --provider
+  ' | tee test-results/cli-tools.txt
+
 # Exercise the shipped binary as its normal unprivileged user. Desktop/VNC
 # startup is outside this runtime smoke test and needs no display or host mount.
 container_id=$(docker create --init --user mayagent --publish 127.0.0.1::8080 \
