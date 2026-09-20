@@ -8,6 +8,7 @@ import type {
 import type { TaskCompletionReceipt } from "./core/tasks/app-task-store.js";
 import type { SqliteDb } from "../lib/db.js";
 import { storedResultFacts } from "./core/state/result-facts.js";
+import { readEventTaskTarget } from "./core/events/task-target.js";
 import { taskViewPhaseSql } from "./core/state/task-view-phase.js";
 import {
   TaskReferenceError,
@@ -50,9 +51,9 @@ export type HumanTaskAction = {
 };
 
 export type HumanTaskRecurrence = {
-  /** Canonical recheck interval when the Task's open scheduling Condition exposes one. */
+  /** Unambiguous cadence from the Task's enabled configured App schedule(s). */
   cadenceMs?: number;
-  /** Canonical next scheduled observation, expressed as an ISO timestamp. */
+  /** Next strictly-future configured epoch slot, expressed as an ISO timestamp. */
   nextRunAt?: string;
 };
 
@@ -180,7 +181,7 @@ type TaskRow = {
   attempt_json?: string | null;
   observed_attempt_json?: string | null;
   human_conditions_json?: string | null;
-  schedule_source_id?: string | null;
+  schedule_source_ids?: string | null;
 };
 
 type TaskProgressRow = { data?: string | null; timestamp?: number };
@@ -333,16 +334,18 @@ const LEGACY_HAO_HUMAN_OWNER_SQL = `${HUMAN_OWNER_VALUE_SQL} = 'Hao'`;
 const HUMAN_OWNER_SQL = `(${CANONICAL_HUMAN_OWNER_SQL}
       OR ${LEGACY_HAO_HUMAN_OWNER_SQL})`;
 
-function taskScheduleSourceSql(appId: string, taskId: string): string {
-  return `(SELECT scheduled_input.source_id
-    FROM app_inbox_items AS scheduled_input INDEXED BY idx_app_inbox_waiting
-    WHERE scheduled_input.waiting_on_kind = 'task'
-      AND scheduled_input.waiting_on_id = ${taskId}
-      AND scheduled_input.app_id = ${appId}
-      AND scheduled_input.source_kind = 'system'
-      AND instr(scheduled_input.source_id, 'schedule:' || ${appId} || ':') = 1
-    ORDER BY scheduled_input.created_at DESC
-    LIMIT 1)`;
+function taskScheduleSourceIdsSql(appId: string, taskId: string): string {
+  return `(SELECT json_group_array(linked_schedule.source_id)
+    FROM (
+      SELECT DISTINCT scheduled_input.source_id
+      FROM app_inbox_items AS scheduled_input INDEXED BY idx_app_inbox_waiting
+      WHERE scheduled_input.waiting_on_kind = 'task'
+        AND scheduled_input.waiting_on_id = ${taskId}
+        AND scheduled_input.app_id = ${appId}
+        AND scheduled_input.source_kind = 'system'
+        AND instr(scheduled_input.source_id, 'schedule:' || ${appId} || ':') = 1
+      ORDER BY scheduled_input.source_id
+    ) AS linked_schedule)`;
 }
 
 function taskRecurrence(configured?: HumanTaskRecurrence): HumanTaskRecurrence | undefined {
@@ -355,22 +358,45 @@ function taskRecurrence(configured?: HumanTaskRecurrence): HumanTaskRecurrence |
   };
 }
 
+const MAX_DATE_EPOCH_MS = 8_640_000_000_000_000;
+
 function configuredTaskRecurrence(
   registry: Pick<AppRegistry, "snapshot">,
   row: TaskRow,
   now = Date.now(),
 ): HumanTaskRecurrence | undefined {
-  if (!row.app_id || !row.schedule_source_id) return undefined;
+  if (!row.app_id || !row.task_id || row.terminal === 2) return undefined;
+  const snapshot = registry.snapshot();
+  const linkedSourceIds = parseJson<unknown[]>(row.schedule_source_ids) ?? [];
   const prefix = `schedule:${row.app_id}:`;
-  if (!row.schedule_source_id.startsWith(prefix)) return undefined;
-  const scheduleId = row.schedule_source_id.slice(prefix.length);
-  const definition = registry.snapshot().entries.find((entry) => entry.definition.id === row.app_id)?.definition;
-  const schedule = definition?.schedules?.find(
-    (candidate) => candidate.id === scheduleId && candidate.enabled !== false && Boolean(candidate.input),
+  const linkedInputScheduleIds = new Set(
+    linkedSourceIds.flatMap((sourceId) =>
+      typeof sourceId === "string" && sourceId.startsWith(prefix) ? [sourceId.slice(prefix.length)] : [],
+    ),
   );
-  if (!schedule || !Number.isFinite(schedule.intervalMs) || schedule.intervalMs <= 0) return undefined;
-  const nextSlot = (Math.floor(now / schedule.intervalMs) + 1) * schedule.intervalMs;
-  return { cadenceMs: schedule.intervalMs, nextRunAt: new Date(nextSlot).toISOString() };
+  const cadences = new Set<number>();
+  for (const entry of snapshot.entries) {
+    for (const schedule of entry.definition.schedules ?? []) {
+      if (schedule.enabled === false || !Number.isFinite(schedule.intervalMs) || schedule.intervalMs <= 0) continue;
+      const linkedInput =
+        entry.definition.id === row.app_id && Boolean(schedule.input) && linkedInputScheduleIds.has(schedule.id);
+      const eventTarget =
+        schedule.event?.type === "project.task.tick" ? readEventTaskTarget(schedule.event) : null;
+      const exactTaskTick =
+        eventTarget?.appId === row.app_id && eventTarget.taskId === row.task_id;
+      if (linkedInput || exactTaskTick) cadences.add(schedule.intervalMs);
+    }
+  }
+  if (cadences.size !== 1) return undefined;
+  const cadenceMs = cadences.values().next().value;
+  if (typeof cadenceMs !== "number") return undefined;
+  const nextSlot = (Math.floor(now / cadenceMs) + 1) * cadenceMs;
+  return {
+    cadenceMs,
+    ...(Number.isFinite(nextSlot) && nextSlot > now && Math.abs(nextSlot) <= MAX_DATE_EPOCH_MS
+      ? { nextRunAt: new Date(nextSlot).toISOString() }
+      : {}),
+  };
 }
 
 const HUMAN_CONDITIONS_SQL = `(SELECT json_group_array(json(human_condition.condition_json))
@@ -655,7 +681,7 @@ function readTaskRow(db: SqliteDb, appId: string, taskId: string): TaskRow | nul
        SELECT t.app_id, t.task_id, ${LIVE_TASK_PHASE_SQL} AS phase, t.updated_at, t.resource_json AS payload, 0 AS terminal,
          t.ready, a.attempt_json, oa.attempt_json AS observed_attempt_json,
          ${HUMAN_CONDITIONS_SQL} AS human_conditions_json,
-         ${taskScheduleSourceSql("t.app_id", "t.task_id")} AS schedule_source_id,
+         ${taskScheduleSourceIdsSql("t.app_id", "t.task_id")} AS schedule_source_ids,
          t.generation AS current_generation
        FROM app_tasks t
        LEFT JOIN app_task_attempts a
@@ -668,7 +694,7 @@ function readTaskRow(db: SqliteDb, appId: string, taskId: string): TaskRow | nul
        SELECT r.app_id, r.receipt_id AS task_id, 'done' AS phase, r.completed_at AS updated_at,
          r.receipt_json AS payload, 1 AS terminal, NULL AS ready, NULL AS attempt_json,
          NULL AS observed_attempt_json, NULL AS human_conditions_json,
-         ${taskScheduleSourceSql("r.app_id", "r.receipt_id")} AS schedule_source_id,
+         ${taskScheduleSourceIdsSql("r.app_id", "r.receipt_id")} AS schedule_source_ids,
          json_extract(r.receipt_json, '$.metadata.generation') AS current_generation
        FROM app_task_receipts r
        WHERE r.app_id = ? AND r.receipt_id = ?
@@ -676,7 +702,7 @@ function readTaskRow(db: SqliteDb, appId: string, taskId: string): TaskRow | nul
        SELECT c.app_id, c.task_id, 'cancelled' AS phase, c.requested_at AS updated_at,
          c.cancellation_json AS payload, 2 AS terminal, NULL AS ready, NULL AS attempt_json,
          NULL AS observed_attempt_json, NULL AS human_conditions_json,
-         ${taskScheduleSourceSql("c.app_id", "c.task_id")} AS schedule_source_id,
+         ${taskScheduleSourceIdsSql("c.app_id", "c.task_id")} AS schedule_source_ids,
          json_extract(c.cancellation_json, '$.generation') AS current_generation
        FROM app_task_cancellations c
        WHERE c.app_id = ? AND c.task_id = ?
@@ -1038,7 +1064,7 @@ export class HumanTaskService {
       parts.push(
         `SELECT t.app_id, t.task_id, ${LIVE_TASK_PHASE_SQL} AS phase, t.updated_at, t.resource_json AS payload, 0 AS terminal,
            t.ready, a.attempt_json, ${HUMAN_CONDITIONS_SQL} AS human_conditions_json,
-           ${taskScheduleSourceSql("t.app_id", "t.task_id")} AS schedule_source_id
+           ${taskScheduleSourceIdsSql("t.app_id", "t.task_id")} AS schedule_source_ids
          FROM app_tasks t
          LEFT JOIN app_task_attempts a
            ON a.app_id = t.app_id AND a.attempt_id = t.current_attempt_id
@@ -1058,7 +1084,7 @@ export class HumanTaskService {
       parts.push(
         `SELECT r.app_id, r.receipt_id AS task_id, 'done' AS phase, r.completed_at AS updated_at,
            r.receipt_json AS payload, 1 AS terminal, NULL AS ready, NULL AS attempt_json, NULL AS human_conditions_json,
-           ${taskScheduleSourceSql("r.app_id", "r.receipt_id")} AS schedule_source_id
+           ${taskScheduleSourceIdsSql("r.app_id", "r.receipt_id")} AS schedule_source_ids
          FROM app_task_receipts r
          WHERE NOT EXISTS (
            SELECT 1 FROM app_task_cancellations c WHERE c.app_id = r.app_id AND c.task_id = r.receipt_id
@@ -1074,7 +1100,7 @@ export class HumanTaskService {
       parts.push(
         `SELECT c.app_id, c.task_id, COALESCE(json_extract(c.cancellation_json, '$.kind'), 'cancelled') AS phase, c.requested_at AS updated_at,
            c.cancellation_json AS payload, 2 AS terminal, NULL AS ready, NULL AS attempt_json, NULL AS human_conditions_json,
-           ${taskScheduleSourceSql("c.app_id", "c.task_id")} AS schedule_source_id
+           ${taskScheduleSourceIdsSql("c.app_id", "c.task_id")} AS schedule_source_ids
          FROM app_task_cancellations c
          WHERE COALESCE(json_extract(c.cancellation_json, '$.kind'), 'cancelled') IN (${closureKinds.map(() => "?").join(", ")})${appId ? " AND c.app_id = ?" : ""}`,
       );

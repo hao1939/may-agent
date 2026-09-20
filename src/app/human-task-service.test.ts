@@ -1,4 +1,5 @@
-import { afterEach, describe, expect, test } from "bun:test";
+import { afterEach, describe, expect, setSystemTime, test } from "bun:test";
+import type { AppSchedule } from "@may-agent/sdk";
 import { openDatabase, type SqliteDb } from "../lib/db.js";
 import { applyDbSchema } from "../lib/db/schema.js";
 import { HUMAN_TASK_LIST_TEXT_MAX_BYTES, HumanTaskService } from "./human-task-service.js";
@@ -226,6 +227,7 @@ test("history is exact, indexed, bounded, and never a substitute for terminal au
 });
 
 afterEach(() => {
+  setSystemTime();
   while (databases.length) databases.pop()?.close();
 });
 
@@ -255,11 +257,9 @@ function registry(...ids: string[]) {
   };
 }
 
-function registryWithInputSchedule(
+function registryWithSchedules(
   appId: string,
-  scheduleId: string,
-  intervalMs: number,
-  enabled = true,
+  schedules: AppSchedule[],
   ...otherAppIds: string[]
 ) {
   const base = registry(appId, ...otherAppIds).snapshot();
@@ -268,24 +268,25 @@ function registryWithInputSchedule(
       ...base,
       entries: base.entries.map((entry) =>
         entry.definition.id === appId
-          ? {
-              ...entry,
-              definition: {
-                ...entry.definition,
-                schedules: [
-                  {
-                    id: scheduleId,
-                    intervalMs,
-                    enabled,
-                    input: { kind: "goal", data: {} },
-                  },
-                ],
-              },
-            }
+          ? { ...entry, definition: { ...entry.definition, schedules } }
           : entry,
       ),
     }),
   };
+}
+
+function registryWithInputSchedule(
+  appId: string,
+  scheduleId: string,
+  intervalMs: number,
+  enabled = true,
+  ...otherAppIds: string[]
+) {
+  return registryWithSchedules(
+    appId,
+    [{ id: scheduleId, intervalMs, enabled, input: { kind: "goal", data: {} } }],
+    ...otherAppIds,
+  );
 }
 
 function insertTask(
@@ -1025,6 +1026,156 @@ describe("Human Task service", () => {
       recurrence: { cadenceMs: 14_400_000, nextRunAt: expect.any(String) },
     });
     expect(listed?.recurrence?.nextRunAt).not.toBe("2026-09-19T13:53:00.000Z");
+  });
+
+  test("projects only enabled exact-target project.task.tick schedules at the next epoch slot", () => {
+    setSystemTime(new Date(14_400_000));
+    const db = database();
+    insertTask(db, { appId: "may", taskId: "hygiene", phase: "waiting", updatedAt: 10 });
+    insertCondition(db, {
+      appId: "may",
+      taskId: "hygiene",
+      conditionId: "one-shot",
+      type: "time.reached",
+      subject: "time:2026-09-19T13:53:00.000Z",
+      owner: "app:may",
+      reviewAfterMs: 60_000,
+    });
+    const service = new HumanTaskService(
+      db,
+      registryWithSchedules("scheduler", [
+        {
+          id: "hygiene-tick",
+          intervalMs: 14_400_000,
+          event: {
+            type: "project.task.tick",
+            data: {},
+            target: { appId: "may.app", taskId: "hygiene" },
+          },
+        },
+        {
+          id: "intercepted-control",
+          intervalMs: 1_000,
+          event: {
+            type: "app.task.retry.requested",
+            data: {},
+            target: { appId: "may", taskId: "hygiene" },
+          },
+        },
+      ], "may"),
+    );
+
+    expect(service.getTask({ appId: "may", taskId: "hygiene" })).toMatchObject({
+      recurring: true,
+      recurrence: { cadenceMs: 14_400_000, nextRunAt: "1970-01-01T08:00:00.000Z" },
+    });
+    expect(service.listTasks({ appId: "may" }).items[0]).toMatchObject({
+      recurring: true,
+      recurrence: { cadenceMs: 14_400_000, nextRunAt: "1970-01-01T08:00:00.000Z" },
+    });
+  });
+
+  test("omits an unrepresentable next slot without losing its configured cadence", () => {
+    setSystemTime(new Date(0));
+    const db = database();
+    insertTask(db, { appId: "alpha", taskId: "far-future", phase: "waiting", updatedAt: 10 });
+    const view = new HumanTaskService(
+      db,
+      registryWithSchedules("alpha", [
+        {
+          id: "far-future",
+          intervalMs: Number.MAX_VALUE,
+          event: {
+            type: "project.task.tick",
+            data: {},
+            target: { appId: "alpha", taskId: "far-future" },
+          },
+        },
+      ]),
+    ).getTask({ appId: "alpha", taskId: "far-future" });
+
+    expect(view).toMatchObject({ recurring: true, recurrence: { cadenceMs: Number.MAX_VALUE } });
+    expect(view?.recurrence?.nextRunAt).toBeUndefined();
+  });
+
+  test("requires one distinct enabled configured cadence across linked inputs and exact ticks", () => {
+    const db = database();
+    insertTask(db, { appId: "alpha", taskId: "scheduled", phase: "waiting", updatedAt: 10 });
+    for (const [id, scheduleId, now] of [
+      ["older-enabled", "enabled-input", 1],
+      ["newer-disabled", "disabled-input", 2],
+    ] as const) {
+      const item = createAppInboxItem(db, {
+        id,
+        appId: "alpha",
+        source: { kind: "system", id: `schedule:alpha:${scheduleId}` },
+        input: { kind: "goal", data: {} },
+        now,
+      }).item;
+      linkTaskInput(db, item.id, "scheduled", `task:${id}`, now + 1);
+    }
+    const schedules: AppSchedule[] = [
+      { id: "enabled-input", intervalMs: 60_000, input: { kind: "goal", data: {} } },
+      { id: "disabled-input", intervalMs: 30_000, enabled: false, input: { kind: "goal", data: {} } },
+      {
+        id: "equal-tick",
+        intervalMs: 60_000,
+        event: { type: "project.task.tick", data: {}, target: { appId: "alpha", taskId: "scheduled" } },
+      },
+    ];
+    expect(
+      new HumanTaskService(db, registryWithSchedules("alpha", schedules)).getTask({
+        appId: "alpha",
+        taskId: "scheduled",
+      }),
+    ).toMatchObject({ recurring: true, recurrence: { cadenceMs: 60_000 } });
+
+    schedules.push({
+      id: "ambiguous-tick",
+      intervalMs: 120_000,
+      event: { type: "project.task.tick", data: {}, target: { appId: "alpha", taskId: "scheduled" } },
+    });
+    const ambiguous = new HumanTaskService(db, registryWithSchedules("alpha", schedules)).getTask({
+      appId: "alpha",
+      taskId: "scheduled",
+    });
+    expect(ambiguous).toMatchObject({ recurring: false });
+    expect(ambiguous?.recurrence).toBeUndefined();
+  });
+
+  test("drops disabled, removed, inexact, unsupported, and cancelled event schedule projections", () => {
+    const db = database();
+    insertTask(db, { appId: "alpha", taskId: "scheduled", phase: "waiting", updatedAt: 10 });
+    const exact: AppSchedule = {
+      id: "tick",
+      intervalMs: 60_000,
+      event: { type: "project.task.tick", data: {}, target: { appId: "alpha", taskId: "scheduled" } },
+    };
+    const read = (schedules: AppSchedule[]) =>
+      new HumanTaskService(db, registryWithSchedules("alpha", schedules)).getTask({
+        appId: "alpha",
+        taskId: "scheduled",
+      });
+    expect(read([{ ...exact, enabled: false }])).toMatchObject({ recurring: false });
+    expect(read([])).toMatchObject({ recurring: false });
+    expect(
+      read([
+        { ...exact, event: { ...exact.event!, target: { taskId: "scheduled" } } },
+        { ...exact, id: "wrong-task", event: { ...exact.event!, target: { appId: "alpha", taskId: "other" } } },
+        { ...exact, id: "wrong-kind", event: { ...exact.event!, type: "app.task.cancel.requested" } },
+      ]),
+    ).toMatchObject({ recurring: false });
+
+    const store = AppTaskResourceStore.fromDb(db, "alpha");
+    const current = store.readTask("scheduled")!;
+    cancelAppTask(taskConfig(db, store, "alpha"), {
+      appId: "alpha",
+      taskId: "scheduled",
+      reason: "fixture cancellation",
+      expectedGeneration: current.metadata.generation,
+      expectedResourceVersion: current.metadata.resourceVersion,
+    });
+    expect(read([exact])).toMatchObject({ recurring: false, status: "cancelled" });
   });
 
   test("does not mistake a one-shot timed recovery checkpoint for recurrence", () => {
