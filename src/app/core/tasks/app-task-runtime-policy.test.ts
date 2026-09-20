@@ -61,10 +61,10 @@ describe("Task Condition reconciliation authority", () => {
     expected: { field: "status", equals: "done" },
   };
 
-  it("keeps one canonical App-dependency Condition across compatible model and dependency echoes", () => {
-    const modelEcho = { ...canonical, reviewAfterMs: 60_000 };
+  it("keeps the explicit compatible specification after a generated dependency echo", () => {
     const dependencyEcho = structuredClone(canonical);
-    expect(mergeTaskConditions([canonical, modelEcho, dependencyEcho], new Set([canonical.id]))).toEqual([canonical]);
+    const explicit = { ...canonical, reviewAfterMs: 60_000 };
+    expect(mergeTaskConditions([canonical, dependencyEcho, explicit], new Set([canonical.id]))).toEqual([explicit]);
   });
 
   it("rejects retargeting an authoritative App-dependency Condition", () => {

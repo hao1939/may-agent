@@ -279,22 +279,22 @@ export function openTaskAppDependencyConditions(config: AppTaskContext, taskId: 
 
 export function mergeTaskConditions(
   conditions: AppTaskConditionSpec[],
-  authoritativeIds: ReadonlySet<string> = new Set(),
+  compatibleUpdateIds: ReadonlySet<string> = new Set(),
 ): AppTaskConditionSpec[] {
   const merged = new Map<string, AppTaskConditionSpec>();
   for (const condition of conditions) {
     const current = merged.get(condition.id);
     if (current && !isDeepStrictEqual(current, condition)) {
-      // Persisted Conditions are the reconciliation authority. An executor may
-      // echo different advisory metadata from its bounded prompt, but the
-      // observable identity must still match. Retargeting the subject, type, or
-      // expected fact remains a conflict rather than silently changing a wait.
+      // Persisted/generated dependency Conditions retain identity authority,
+      // while a later explicit declaration may replace their complete
+      // compatible specification. Retargeting identity remains a conflict.
       if (
-        authoritativeIds.has(condition.id) &&
+        compatibleUpdateIds.has(condition.id) &&
         current.type === condition.type &&
         current.subject === condition.subject &&
         isDeepStrictEqual(current.expected, condition.expected)
       ) {
+        merged.set(condition.id, condition);
         continue;
       }
       throw new Error(`Task result conflicts with existing Condition ${condition.id}`);
