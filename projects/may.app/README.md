@@ -49,6 +49,12 @@ exact input/return link; Conditions identify external facts. An `incomplete`
 result reports a failed attempt, not owner closure. A waiting Task may return
 useful caller feedback with `report: true` while retaining its exact wait.
 
+Ordinary human assignments and corrections use the Conversation creator path,
+which preserves the accepted Request and its accountable return route. Trusted,
+direct App-owned input is not a shortcut around that path: it requires the
+actual App owner to apply its own intent revision and must not strand correction
+responsibility.
+
 May's trusted, non-delegated `goal` ingress can deliberately revise an existing
 May-owned Task by including `data.revision: { taskId, expectedGeneration }`
 alongside the complete corrected `outcome` and `acceptance` (and any applicable

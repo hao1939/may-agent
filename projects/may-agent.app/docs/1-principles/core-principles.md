@@ -150,6 +150,13 @@ for the concrete contract.
 
 ### Use ownership to simplify intervention
 
+An assigned owner normally carries the promised outcome through execution,
+verification and delivery. Helpers provide bounded work or capabilities; they
+do not take over that outcome. Handover is recovery when the owner cannot
+continue, not routine completion. An intentionally source-only Task may finish
+at reviewed source, but a broader delivery promise retains an explicit
+accountable owner and concrete next action until that outcome is delivered.
+
 When the worker cannot make progress within its scope, bring the facts and
 remaining options to its assigning owner. That owner can clarify the goal,
 authorize a different approach, coordinate help, wait, or close the work.
