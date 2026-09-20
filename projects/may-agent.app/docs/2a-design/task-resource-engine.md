@@ -484,11 +484,11 @@ pre-enumerated set of known domain changes. See
 Condition declarations are identity-scoped deltas, not snapshots. A distinct ID
 adds an obligation; the same ID may update its complete specification while
 preserving unrelated Conditions, dependency links, failed-operation facts,
-selected reports and pending input. Omission and an empty declaration list mean
-no change. Satisfaction or generation-fenced retirement names the exact
-Condition; retry, failure, unblock, dependency repair, wake or ordinary
-reconsideration never clears peers. Retained legacy rows remain readable without
-being revalidated as newly authored declarations. A changed specification starts
+selected reports and pending input. A generated or persisted dependency Condition protects identity, while a compatible explicit same-ID declaration controls the complete specification, including `reviewAfterMs`; conflicts reject. Omission means no change.
+Satisfaction or generation-fenced retirement names the exact Condition; retry,
+failure, unblock, dependency repair, wake or ordinary reconsideration never
+clears peers. Retained legacy rows remain readable without being revalidated as
+newly authored declarations. A changed specification starts
 a new generation and cannot inherit an older approval. Condition `reviewAfterMs`
 checkpoints renew after an accepted review while the fact remains pending.
 Task-level `reviewAt` is a recovery checkpoint: a future omitted deadline is

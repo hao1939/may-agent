@@ -34,7 +34,11 @@ pipeline identity with your actual producer and route. New waits require
 `owner` and `reviewAfterMs`; the minimum interval is 60 seconds.
 
 An unchanged wait preserves its future deadline. A due review may renew it after
-reevaluation, and elapsed time alone never satisfies it. See
+reevaluation, and elapsed time alone never satisfies it. When current evidence
+justifies a different recovery cadence, return one compatible, complete Condition
+declaration with the same ID and revised `reviewAfterMs`; changing task-level
+`reviewAt` does not reschedule that independent wait. Keep unrelated Conditions
+and deadlines independent rather than choosing one maximum interval. See
 [Conditions](../2a-design/task-resource-engine.md#conditions) for the complete rule.
 
 ## Task changes and safety

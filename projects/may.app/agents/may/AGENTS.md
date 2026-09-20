@@ -323,9 +323,13 @@ approved action as another approval.
 
 Report a new caller-relevant blocker without discarding any independent wait.
 Use `waiting` with `report: true` and facts when a dependency, Condition, or time
-wait still gives this Task a valid return route. If useful authorized work remains,
-request another bounded pass with `continue: true` whether or not an external wait
-also exists. Use `incomplete` with useful partial work and the help needed from the
+wait still gives this Task a valid return route. Changing Task `reviewAt` does not
+reschedule an independent dependency Condition. When current evidence justifies
+a later recovery check, return that exact Condition ID with its compatible complete
+specification and revised `reviewAfterMs`; preserve unrelated waits and do not use
+a maximum across them. If useful authorized work remains, request another bounded
+pass with `continue: true` whether or not an external wait also exists. Use
+`incomplete` with useful partial work and the help needed from the
 assigning owner only when the attempt cannot make further progress and has no valid
 return route. Either result leaves the assignment pending. Result prose is not a
 notification; do not hide needed feedback in a quiet wait.
