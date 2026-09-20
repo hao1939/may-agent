@@ -1,5 +1,19 @@
 # Changelog
 
+## [5.0.1](https://github.com/hao1939/may-agent/compare/v5.0.0...v5.0.1) (2026-09-20)
+
+
+### Bug Fixes
+
+* **deploy:** allow deployment without an App task ([#220](https://github.com/hao1939/may-agent/issues/220)) ([3f9c46a](https://github.com/hao1939/may-agent/commit/3f9c46a2e82e3ed12bab1094e5d18ad30f6ad47f))
+* **tasks:** expose older accepted evidence through Task reads ([#214](https://github.com/hao1939/may-agent/issues/214)) ([04eea27](https://github.com/hao1939/may-agent/commit/04eea2766aa897b0797eaa2f40cfb96fb3dcacc9))
+* **tasks:** honor explicit condition schedule updates ([#217](https://github.com/hao1939/may-agent/issues/217)) ([423fb0b](https://github.com/hao1939/may-agent/commit/423fb0b813c86c37d144a84937f7b420ebcef9fe))
+* **tasks:** keep unfinished work recoverable across handoffs ([#210](https://github.com/hao1939/may-agent/issues/210)) ([3294803](https://github.com/hao1939/may-agent/commit/32948031e354ec48c9733429ec0db0df87fb0c8e))
+* **tasks:** pace retained condition reviews ([#218](https://github.com/hao1939/may-agent/issues/218)) ([fabdb94](https://github.com/hao1939/may-agent/commit/fabdb94bb324be8f02d29394a92e043faec547d1))
+* **tasks:** query global human actions directly ([#216](https://github.com/hao1939/may-agent/issues/216)) ([765bc0b](https://github.com/hao1939/may-agent/commit/765bc0b5c6adf5cacad00de2600fd0f2a6cdfe30))
+* **telegram:** add colored task state markers ([#215](https://github.com/hao1939/may-agent/issues/215)) ([27a1980](https://github.com/hao1939/may-agent/commit/27a1980a7777636163eeb76e7a2a60caf72f60a1))
+* **telegram:** make task lists readable and show scheduled recurrence ([#213](https://github.com/hao1939/may-agent/issues/213)) ([834cb27](https://github.com/hao1939/may-agent/commit/834cb27557a99f04c4c3f2b18e58b1d69485cca2))
+
 ## [5.0.0](https://github.com/hao1939/may-agent/compare/v4.0.0...v5.0.0) (2026-09-19)
 
 
