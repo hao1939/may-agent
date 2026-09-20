@@ -19,32 +19,36 @@ supervisor work.
 
 ## Build And Deploy
 
-Deploy only from work owned by an existing Host Operations App Task. Name that
-exact Task and use one stable correlation for the attempt:
+Deploy only with explicit rollout authority and revised PR #220 scripts. Before
+invoking the script, choose one stable correlation and retain the expected exact
+path `<deploy-root>/.state/deploy-receipts/<correlation>.json` (or the path under
+`MAY_AGENT_DEPLOY_RECEIPT_DIR`) in the operator's saved command or Task context:
 
 ```bash
 cd /app/projects/may-agent
 bun run check
 bun test <targeted tests>
-MAY_AGENT_DEPLOY_TASK_ID='<host-operations-task-id>' \
-MAY_AGENT_DEPLOY_CORRELATION='<stable-correlation>' \
-  bun run deploy
+MAY_AGENT_DEPLOY_CORRELATION='<stable-correlation>' bun run deploy
 ```
 
-`MAY_AGENT_DEPLOY_TASK_ID` is required. The deploy preflight proves that the
-Task exists under `app:may-agent` before building or restarting. `bun run
-deploy` builds from the exact source commit, creates a durable requested
-receipt under `.state/deploy-receipts/`, and starts the supervisor-owned
-restarter. The restarter atomically activates the binary, Console, SDK, and UI,
-then starts `may-agent`, `may-agent-web`, and `may-agent-maintenance`.
+`bun run deploy` is standalone: it needs no App, Task, or Task-database access.
+It builds from the exact source commit, creates a durable requested receipt
+under `.state/deploy-receipts/`, prints that exact path before restart, and
+starts the supervisor-owned restarter. Optional
+`MAY_AGENT_DEPLOY_OWNER_APP`/`MAY_AGENT_DEPLOY_TASK_ID` values request only a
+best-effort result wake; supply both or neither. Destination absence, closure,
+or wake failure does not change deployment success. The restarter atomically
+activates the binary, Console, SDK, and UI, then starts `may-agent`,
+`may-agent-web`, and `may-agent-maintenance`.
 
 Do not inline a stop/copy/start sequence from May's shell. If the live restarter
 does not support staged deploy, recreate the container from the updated image.
 
-Treat deploy as accepted-then-async. The matching receipt is authoritative;
-activation-marker disappearance and an unbounded log tail are not proof. Wait
-for that receipt or the exact Task wake. Claim success only when its phase is
-`succeeded`, `loadedArtifactSha` equals `artifactSha`, health is `healthy`, and
+Treat deploy as accepted-then-async. The retained exact receipt is authoritative;
+activation-marker disappearance and an unbounded log tail are not proof. Return
+to that receipt after caller interruption; an optional Task wake is only a
+convenience. Claim success only when its phase is `succeeded`,
+`loadedArtifactSha` equals `artifactSha`, health is `healthy`, and
 `duplicateDeploy` is `false`. Confirm the three long-lived services are
 `RUNNING`; `may-agent-restarter` is a one-shot and normally exits after the
 receipt settles.
@@ -54,18 +58,19 @@ receipt settles.
 When the requested outcome is to verify an exact commit or deployment, do not
 deploy or restart anything.
 
-1. Start with the requested `sourceCommit`, correlation, or Task identity. If
-   the input does not provide a receipt path, search only
-   `/app/projects/may-agent/.state/deploy-receipts/*.json` for the matching
-   `sourceCommit` or correlation. Do not search `/app`, other worktrees, build
-   files, or broad logs.
-2. Read the one matching receipt. `requested` means wait for that exact
-   receipt; `failed` or `rolled_back` is the terminal disposition. Do not tail
-   restart logs while a receipt is already authoritative.
+1. Start with the exact receipt path retained before restart. If the request
+   predates that contract, use its known `sourceCommit`, correlation, or Task
+   identity to perform one bounded compatibility lookup under
+   `/app/projects/may-agent/.state/deploy-receipts/`; do not scan unrelated
+   receipt files for a new deployment.
+2. Read the exact receipt with
+   `bun scripts/deploy-receipt.ts read RECEIPT_PATH`. `requested` means wait for
+   that same receipt; `failed` or `rolled_back` is the terminal disposition. Do
+   not tail restart logs while a receipt is already authoritative.
 3. For success, require `phase: succeeded`, matching requested
    `sourceCommit`, `loadedArtifactSha == artifactSha`, `health: healthy`, and
-   `duplicateDeploy: false`. Preserve its `project`, `taskId`, and
-   `correlation` as the exact causal link; do not substitute a nearby session
+   `duplicateDeploy: false`. Preserve its `correlation` and any optional
+   `project`/`taskId` notification metadata; do not substitute a nearby session
    or Task.
 4. Cross-check only the bounded live surfaces: compare
    `bundle/may-agent.provenance.json` with the receipt, compare the live

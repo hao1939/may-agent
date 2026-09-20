@@ -156,22 +156,27 @@ without confirming that `/proc/<pid>/cmdline` is the running daemon.
 ## Runtime deployment target
 
 Host source containing [PR #220](https://github.com/hao1939/may-agent/pull/220)
-allows a correlated Runtime deployment in this installation to name its
-responsible App and an existing exact Task through
-`MAY_AGENT_DEPLOY_OWNER_APP` and `MAY_AGENT_DEPLOY_TASK_ID`. Older installed
-deployment scripts do not provide the owner-App option and still require their
-`may-agent` Task target. In the candidate, the App defaults to `may-agent` only
-for compatibility with existing operators. This `{appId, taskId}` pair
-correlates the deployment receipt and settled wake; it is not permission to
-deploy, an App-name allowlist, or a replacement for the installation's
-deployment controls. Routing through May alone grants no deployment permission;
-explicit operator/user authorization and installation permissions still govern.
-Before building and again immediately before requesting restart, the deploy
-preflight reads that exact pair from the Host database (`$STATE_DIR/may.db`,
-normally `/app/.state/may.db`) and verifies that the selected App's
-`app_task_store_meta.authority` is `resources`. The read is query-only. A missing
-database, malformed identity, missing resource authority, wrong App/Task pairing,
-or closed Task fails closed before any receipt or process restart.
+makes Runtime deployment standalone: it requires neither an App/Task target nor
+Task-database access. Give each operation a stable
+`MAY_AGENT_DEPLOY_CORRELATION`; before launch, retain the expected path
+`<deploy-root>/.state/deploy-receipts/<correlation>.json` (or the equivalent
+path under `MAY_AGENT_DEPLOY_RECEIPT_DIR`) in saved operator or Task context.
+The script durably creates and prints that exact path before requesting restart.
+Return to it after interruption instead of starting another deployment. Reusing
+an existing correlation reads its receipt before build or staging, while the
+later atomic request guard prevents a second receipt request for the same
+correlation. This does not serialize distinct deployments or detect an
+equivalent deployment under another correlation.
+
+`MAY_AGENT_DEPLOY_OWNER_APP` and `MAY_AGENT_DEPLOY_TASK_ID` may be supplied
+together as optional best-effort result-notification metadata. Their syntax is
+checked, but the destination's existence, openness and canonical storage are not
+deployment preconditions. A missing or closed destination, or failed wake
+delivery, does not alter a successful terminal receipt. The pair grants no
+deployment permission, App-name allowlist or Task authority; explicit
+operator/user authorization and installation permissions still govern. Older
+installed scripts retain their prior targeted interface until this Host source
+is reviewed, merged and deployed.
 
 The archive build passes its validated source commit explicitly into the
 compiler. `may-agent --version` must work without a source checkout and report
@@ -194,25 +199,23 @@ cutover. Deployment must not consult, recreate, or mutate it.
 ### Read-only deployment verification
 
 Verification of an exact live commit is not another deployment attempt. Begin
-with the requested source commit, correlation, or maintenance Task and
-inspect only matching JSON receipts under
-`/app/projects/may-agent/.state/deploy-receipts/`. The terminal receipt is the
+with the exact receipt path retained before launch and run
+`bun scripts/deploy-receipt.ts read RECEIPT_PATH` from revised PR #220 source
+(or invoke the staged `bundle/deploy-receipt.ts`). The terminal receipt is the
 authoritative binding among `sourceCommit`, `artifactSha`, the loaded artifact,
-health, and the originating `{project, taskId, correlation}`. Internal
-activation markers and their disappearance are not completion evidence.
+health and correlation. Optional `{project, taskId}` fields describe only a
+best-effort notification destination. Internal activation markers and their
+disappearance are not completion evidence.
 
 The [deployment-boundary candidate (#179)](https://github.com/hao1939/may-agent/pull/179) moves receipt interpretation out of the
-generic Task executor. Its restarter attaches the settled `deploymentReceipt`
-to a `deployment.settled` fact with canonical
-`target: { appId, taskId }`. This is operation evidence, not a replaceable timer
-tick. When that best-effort wake is lost, the maintenance App
-can run `bun scripts/deploy-receipt.ts read-task RECEIPT_DIR APP_ID TASK_ID`
-from reviewed Host source (or invoke the staged `bundle/deploy-receipt.ts`).
-Use the actual configured receipt directory, including an installation override.
-This command only reads, matches both App and Task, and returns the latest
-receipt or `null`. Invalid/unreadable evidence fails visibly; it is not absence
-or authority to deploy. Adoption requires the maintenance-agent guidance and
-Host source together; this document does not claim the running image changed.
+generic Task executor. Revised PR #220 scripts retain the older
+`read-task RECEIPT_DIR APP_ID TASK_ID` compatibility lookup for targeted
+receipts, but normal recovery reads the known exact path and does not scan
+unrelated receipts. Invalid or unreadable evidence fails visibly; it is not
+absence or authority to deploy. The standalone `read` interface is revised
+source behavior and is not available in the older installed script until the
+Host change is reviewed, merged and deployed. This document does not claim the
+running image changed.
 
 A successful proof requires `phase: succeeded`,
 `loadedArtifactSha == artifactSha`, `health: healthy`, and

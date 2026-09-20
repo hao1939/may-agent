@@ -201,14 +201,14 @@ responsible App owns the desired change and acceptance; installation policy
 grants operational scope; deployment tooling enforces exact artifact checks,
 safe activation and recovery. A particular App name is not a core authority.
 
-Host [PR #220](https://github.com/hao1939/may-agent/pull/220) adds a
-responsible-App option to the deployment scripts; older installed scripts still
-lack that option. The candidate requires a canonical exact Task for the
-explicitly supplied responsible App, with `may-agent` retained as a compatibility
-default. That App identity remains receipt and wake correlation metadata: it
-neither grants deployment authority nor creates an App-name permission rule.
-Artifact identity (`sourceCommit` and `artifactSha`) remains separately bound by
-the receipt and live verification. The exact procedure belongs in
+Host [PR #220](https://github.com/hao1939/may-agent/pull/220) makes deployment
+a standalone operation with a durable exact receipt; older installed scripts
+still use their prior targeted interface. A deployment does not require an App,
+Task, or Task-database read. An optional `{appId, taskId}` pair is only
+best-effort result-notification metadata: it neither grants deployment authority
+nor makes destination availability part of deployment success. Artifact identity
+(`sourceCommit` and `artifactSha`) remains separately bound by the receipt and
+live verification. The exact procedure belongs in
 [Operations and Recovery](../2b-manual/app-operations-recovery.md#runtime-deployment-target),
 not in the generic App contract.
 
