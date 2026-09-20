@@ -161,6 +161,7 @@ describe("importRuntimeModule", () => {
   it("preserves dynamic relative imports from the original module directory", async () => {
     const root = mkdtempSync(join(tmpdir(), "may-runtime-import-relative-"));
     roots.push(root);
+    mkdirSync(join(root, ".state")); // Own the cache root even if the temporary directory has parent state.
 
     writeFileSync(join(root, "helper.ts"), "export const value = 'relative-ok';\n");
     const modulePath = join(root, "external-handler.ts");
