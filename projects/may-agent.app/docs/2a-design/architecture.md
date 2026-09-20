@@ -1,9 +1,9 @@
 # Architecture
 
 **Design status:** Accepted.
-**Implementation status:** The four responsibilities below are implemented at
-the [source baseline](../README.md). The source map follows the directory moves
-merged in Host #141/#142. The [boundary cleanup](../proposals/authority-boundary-simplification.md#core-policy-cleanup)
+**Implementation status:** The four responsibilities below are implemented in
+current Host source. The source map follows the directory moves merged in Host
+#141/#142. The [boundary cleanup](../proposals/authority-boundary-simplification.md#core-policy-cleanup)
 tracks subsequent candidate changes separately.
 Task activation and startup recovery are independent of optional schedules.
 [Open work](../proposals/task-runtime-organization.md) is tracked separately;
@@ -12,8 +12,10 @@ this page does not identify the deployed release. The
 merged in Host #158: Conversation, ordinary work and maintenance use one Task
 execution lifecycle, with explicit outcomes and owner-controlled closure.
 The inbox admits and correlates input; it no longer executes a second agent
-loop. Host #168 (`c0cbb59e`) subsequently removed the remaining Task mode
-vocabulary and integrated the attempt-path extraction.
+loop. Host #168 (`c0cbb59e`) subsequently removed mode-dependent Task behavior
+and integrated the attempt-path extraction. New `TaskIntent` values have no
+`mode`; retained persistence and stale paused consumers are compatibility
+evidence, not part of that contract.
 
 The [inbox/Conversation implementation review](../proposals/storage-state-service.md#candidate-review-and-landing-order)
 records the state/handler extraction, merged in #129 as `0bedd93a`, and its
@@ -84,11 +86,15 @@ persist input -> wake exact Task -> read and claim current state
 owner closes Task -> prevent new claims and fence late output
 ```
 
-One stable Task executes a Conversation; each Turn is its bounded attempt.
-Messages, Topics and Requests remain separate product records, with no execution
-lifecycle of their own. An independent assignment gets another Task and returns
-its result through the same event loop. No Task per message, second executing
-inbox owner or separate conversation supervisor is needed.
+A Conversation normally executes through one stable Task; each Turn is its
+bounded attempt. After terminal closure or cancellation, fresh human input may
+create a deterministic linked successor. Exact replay stays with its original
+identity, and old system feedback cannot establish a successor. [Message
+Lifecycle](message-lifecycle.md#cancelled-conversation-execution-and-successors)
+owns those rules. Messages, Topics and Requests remain separate product records,
+with no execution lifecycle of their own. An independent assignment gets another
+Task and returns its result through the same event loop. No Task per message,
+second executing inbox owner or separate conversation supervisor is needed.
 
 An accepted result describes the work considered. It can satisfy a caller while
 the Task remains open. The App, parent agent or human decides when to close the

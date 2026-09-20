@@ -2,18 +2,20 @@
 
 **Design status:** Accepted.
 **Implementation status:** Task reconciliation owns durable App work. Bounded
-conversational turns can perform self-contained authorized work directly.
-Small pure mappings (`subscription.toInput`, `task(request)`, and
+Conversation turns perform self-contained authorized work within their Task
+attempt. Small pure mappings (`subscription.toInput`, `task(request)`, and
 `tasks.resolve`) select durable work during admission; they cannot execute it.
 The owner/disposition worker, analysis attachment, delegation publisher, and
 request delivery gate have been removed. Scoped Task list/get reads share one
 Runtime implementation across SDK, agent tool, control socket, and HTTP.
 
 The accepted [one-lifecycle baseline](../proposals/conversation-input-unification.md)
-will move Conversation execution into a stable Task, use explicit accepted
-outcomes and owner-controlled closure, and remove separate execution recovery.
-That change is pending; startup and protocol descriptions below reflect current
-source unless marked as target behavior.
+is implemented in current Host source: Conversation, ordinary App work, and
+maintenance all execute as bounded Task attempts with explicit outcomes and
+owner-controlled closure. [Message Lifecycle](message-lifecycle.md) owns the
+Conversation-specific input, successor, and presentation rules. Dated proposal
+inventories remain historical migration evidence, not current implementation
+status or deployment proof.
 
 The runtime is the Host code. It is not a third layer between Host and App.
 
@@ -39,22 +41,21 @@ recovery.
 | Web/read-only process          | No         | Only through explicit control calls |
 | Status CLI                     | No         | No                                  |
 
-Ingress readiness and Task execution readiness are separate. At the
-[current source baseline](../README.md), process role determines whether Task
-controllers and startup recovery run. A socket-only daemon runs its Tasks
-without `--cron`; that flag selects optional schedules. The Task controller gate
-opens after the initial recovery pass settles. Direct workflow, read-only and
-isolated worker modes do not claim background work. The
+Ingress readiness and Task execution readiness are separate. Process role
+determines whether Task controllers and startup recovery run. A socket-only
+daemon runs its Tasks without `--cron`; that flag selects optional schedules.
+The Task controller gate opens after the initial recovery pass settles. Direct
+workflow, read-only and isolated worker modes do not claim background work. The
 [core proposal](../archive/implementation/core-separation-review-20260910.md#step-1-implementation)
 records the merged implementation and validation, not a deployment claim.
 
 ## Startup
 
-At the [source baseline](../README.md), execution/recovery adapters are
-selected in composition; named Host maintenance cannot launch standalone
-workflow jobs; reporting is optional and observes committed App generations
-outside publication. Basic Task/request/result reads remain available without
-reporting. Source tests run Tasks with all human interfaces omitted. See
+Execution/recovery adapters are selected in composition; named Host maintenance
+cannot launch standalone workflow jobs; reporting is optional and observes
+committed App generations outside publication. Basic Task/request/result reads
+remain available without reporting. Source tests run Tasks with all human
+interfaces omitted. See
 [Architecture](architecture.md#behavior-when-a-capability-is-absent) for the
 absence contract.
 
@@ -93,14 +94,16 @@ releases.
 
 Reload applies one committed agent-and-App definition release; it rejects
 uncommitted executable definition changes and does not replace Host code.
-A Host deployment does not imply App activation. It belongs to a live **Host
-Operations App** Task whose
-stable App ID is `may-agent`; it never belongs to the May Conversation App
-merely because May routed the request. The immutable
-candidate must contain the current canonical May commit before it may replace
-the process binary and SDK. A project App may report a Host compatibility gap,
-but its task cannot authorize a global May deployment. Historical releases and
-worktrees are evidence, never rollout targets.
+A Host deployment does not imply App activation and does not require a live Host
+Operations App Task. An explicitly authorized operator may run the standalone
+deployment procedure with installation permissions and a stable correlation.
+Optional App/Task metadata requests best-effort result notification; it grants no
+deployment authority and a missing or closed destination does not change the
+terminal receipt. The immutable candidate must contain the current canonical May
+commit before it may replace the process binary and SDK. Historical releases and
+worktrees are evidence, never rollout targets. Follow [Runtime deployment
+target](../2b-manual/app-operations-recovery.md#runtime-deployment-target) for the
+owning procedure and exact receipt recovery.
 
 The build embeds the immutable source commit in the compiled binary; it does
 not infer identity from whichever checkout is the process working directory.
@@ -135,12 +138,12 @@ cooldown elapsed, and uses the `(status, updated_at)` index. A route that
 remains invalid therefore stays visible without continuously consuming CPU or
 rewriting its error row.
 
-The [one-lifecycle target](../proposals/conversation-input-unification.md#proposed-controller-boundary-and-code-layout)
-replaces Conversation execution in the inbox pump with Task admission and one
-common claim/attempt/settlement path. Retain caller correlation and admission
-recovery; do not put a Task around an independently executing inbox handler.
-Current source still has both paths. Closed Tasks and stopped/exhausted input
-are not made eligible by a queue hint or a timer tick.
+The [one-lifecycle implementation](../proposals/conversation-input-unification.md#proposed-controller-boundary-and-code-layout)
+replaced Conversation execution in the inbox pump with Task admission and one
+common claim/attempt/settlement path. Caller correlation and admission recovery
+remain; there is no independently executing inbox handler wrapped by a Task.
+Closed Tasks and stopped/exhausted input are not made eligible by a queue hint
+or a timer tick.
 
 ## Capacity
 
@@ -151,16 +154,13 @@ use background capacity, while at most one May decision may use the reserved
 foreground slot. Apps do not configure either mechanical limit. Delivery is
 passive and consumes neither.
 
-The accepted [conversation input unification](../proposals/conversation-input-unification.md)
-requires a refinement: choose these existing lanes by admitted input origin so
-linked Task/timer reviews use background capacity even when May handles them.
-Current dispatch selects foreground by conversational App identity; changing
-the subscription alone would give all such reviews foreground treatment.
-In the one-lifecycle target, a conversation Task handling human input may use
-the reserve; its automated review and independently delegated work use background
-capacity. Current Task attempts all acquire background capacity, so both input
-selection and Task dispatch need alignment. This adds no capacity service or
-preemption; a single-slot Host cannot reserve a second slot for human execution.
+Conversation input uses the existing lanes by admitted input origin: a
+Conversation Task handling human input may use the reserve; automated review and
+independently delegated work use background capacity. This adds no capacity
+service or preemption; a single-slot Host cannot reserve a second slot for human
+execution. The dated [conversation input unification
+proposal](../proposals/conversation-input-unification.md) retains the migration
+tradeoff that led to this implementation.
 
 Capacity is backpressure, not policy. It decides when work may start, never
 which work matters or whether the result is acceptable.
@@ -170,15 +170,16 @@ which work matters or whether the result is acceptable.
 Pause has one meaning:
 
 - admission and persistence continue;
-- new task attempts do not start; and
-- resume queues retained work from durable state.
+- background Task attempts do not start;
+- a Task with pending human Conversation input remains eligible in the foreground
+  lane; and
+- resume queues retained background work from durable state.
 
-The Host does not reject task intent merely because the App is paused.
-
-Under the pending common lifecycle, this existing background-work pause must
-leave human conversation handling available. It cannot become an indiscriminate
-pause of every Task just because Conversation now uses Task execution. Exact
-Turn Stop and explicit Task closure remain separate controls.
+The Host does not reject task intent merely because the App is paused. Foreground
+eligibility comes from pending admitted human input, not App identity, Task
+priority, or arbitrary system feedback. This preserves human Conversation across
+restart while background work waits. Pausing one App is not a global runtime
+pause. Exact Turn Stop and explicit Task closure remain separate controls.
 
 ## Bounded execution
 

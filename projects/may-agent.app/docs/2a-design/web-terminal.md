@@ -93,6 +93,13 @@ May terminal profile registry.
 
 ## Boundaries
 
+This is a trusted-operator surface. The installation operator owns user and
+network access controls; the repository configuration does not by itself prove
+an external authentication proxy or firewall. See [Installation access
+responsibility](http-boundary.md#installation-access-responsibility). `/terminal/`
+uses ttyd through nginx and its Unix socket; published port 6080 is the separate
+noVNC/websockify surface, not the terminal route.
+
 The terminal path deliberately does not own:
 
 - authentication or multi-user isolation;

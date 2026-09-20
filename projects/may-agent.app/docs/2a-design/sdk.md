@@ -1,11 +1,12 @@
 # May-Agent SDK
 
 **Design status:** Accepted.
-**Implementation status:** Durable App work uses Task reconciliation; bounded
-conversational inputs may run directly through declared `requests` policy. The
-shared bounded Task collection is exposed as `read.tasks.list/get`. Public App
-and Task intent use `agent` to select a managed agent. The Host accepts the old
-`owner` spelling only at compatibility boundaries for retained state.
+**Implementation status:** Durable App work, including Conversation turns, uses
+Task reconciliation. The shared bounded Task collection is exposed as
+`read.tasks.list/get`. Public App and Task intent use `agent` to select a managed
+agent. `TaskIntent.mode` is retired for new intent; the reconciler rejects it.
+The Host accepts the old `owner` spelling and retained mode data only at explicit
+compatibility boundaries.
 
 `@may-agent/sdk` is the narrow boundary between an App and the Host. It
 describes meaning, inputs, results, facts, and desired work; it does not expose
@@ -15,11 +16,12 @@ See [App Contract](agent-app.md) for declaration and mapping,
 [Task Resource Engine](task-resource-engine.md) for result admission, and the
 [SDK Quickstart](../2b-manual/sdk-quickstart.md) for checked source.
 
-The accepted [one-lifecycle target](task-resource-engine.md#one-lifecycle-baseline)
-will remove mode-dependent lifetime rules and put Conversation execution through
-Task attempts. Explicit accepted outcomes and owner closure replace the coupling
-between result completion and Task lifetime. The SDK migration is pending;
-examples and type references below intentionally describe current usable APIs.
+The accepted [one-lifecycle contract](task-resource-engine.md#one-lifecycle-baseline)
+uses Task attempts for Conversation execution. Explicit accepted outcomes and
+owner closure replace mode-dependent lifetime rules and coupling between result
+completion and Task lifetime. The examples and type references below describe
+current usable APIs; historical retained records do not restore removed intent
+fields.
 
 ## Executable type references
 
@@ -108,10 +110,11 @@ as human Turns. Other kinds use normal Task mapping.
 policy. Source compatibility for retained requests does not create a second
 work lifecycle.
 
-The accepted [shared-input refinement](../proposals/conversation-input-unification.md)
-adds source-marked linked Task reviews to that same conversation handling path,
-including a quiet result. Its input/result contracts are pending implementation;
-system facts must retain their origin and cannot be presented as human asks.
+The implemented [shared-input design](../proposals/conversation-input-unification.md)
+routes source-marked linked Task reviews through that same Conversation Task,
+including a quiet result. System facts retain their origin and cannot be
+presented as human asks. [Message Lifecycle](message-lifecycle.md#one-conversation-input-path)
+owns the detailed routing contract.
 
 ### Fact Event policy
 
@@ -148,7 +151,7 @@ The workflow input is App-owned. The Host carries it across the execution
 boundary without parsing prompts or reconstructing it from global task state.
 
 For App-owned work, `reconciliation` supplies bounded current facts:
-App/task identity, generation, selected agent, mode, outcome, acceptance, typed input,
+App/task identity, generation, selected agent, outcome, acceptance, typed input,
 live/completed child views, a bounded snapshot of other live App tasks for
 frontier-health review, and the ordered unobserved event batch that drove this
 attempt. Snapshot entries carry only planning facts: identity, parent,

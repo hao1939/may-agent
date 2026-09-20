@@ -39,6 +39,21 @@ The same `may-agent` binary owns the runtime. Web mode may run in a separate
 process group, but it uses the same control/read contracts and cannot claim App
 work independently.
 
+### Installation access responsibility
+
+Host-control events, cancellation, and browser-terminal input are trusted
+operator surfaces. The installation operator must authorize their users and
+constrain network access before publishing them. Event ingress allowlists,
+provenance assignment, and resource-level authority checks restrict what an
+accepted request can name; they are not user authentication or a firewall.
+Current container configuration publishes HTTP on 8080 and noVNC/websockify on
+6080. Nginx serves `/terminal/` by proxying ttyd over
+`/tmp/may-agent-ttyd.sock`; port 6080 is the separate noVNC surface. The
+inspected repository configuration does not establish an external identity
+proxy, firewall, or other deployment boundary, so operators must verify those
+controls for their installation rather than infer them from reachability or
+this design.
+
 Edit the default UI only in `packages/webui/static`. Build into staging, then
 update the served copy through explicit deployment; see the
 [UI source/build boundary](webui.md#source-ownership) for the repository-local

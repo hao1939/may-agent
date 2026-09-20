@@ -17,10 +17,10 @@ See [System Model](system-model.md) for the whole model,
 [Task Resource Engine](task-resource-engine.md) for reconciliation, and
 [SDK Quickstart](../2b-manual/sdk-quickstart.md) for the checked example.
 
-The accepted [one-lifecycle target](task-resource-engine.md#one-lifecycle-baseline)
-uses a stable Task for Conversation execution too. Tasks record outcomes and
-remain available until an authorized owner closes them; ordinary Apps can close
-after accepting the requested result by convention. The controller need not
+The accepted [one-lifecycle contract](task-resource-engine.md#one-lifecycle-baseline)
+uses a stable Task lineage for Conversation execution too. Tasks record outcomes
+and remain available until an authorized owner closes them; ordinary Apps can
+close after accepting the requested result by convention. The controller need not
 classify finite and maintained responsibilities. Conversation execution and
 ordinary App work use this shared Task controller; `conversation` selects the
 bounded agent turn capability.

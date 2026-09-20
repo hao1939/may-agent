@@ -6,14 +6,17 @@ for the intended outcome and [System Model](2a-design/system-model.md) for how
 the system works. Use [INDEX.md](INDEX.md) to find the document that owns a
 specific contract.
 
-**Source baseline:** The consolidated Host checkout is `main` at `5857529e`
-(September 11, 2026), including directory organization, core policy cleanup and
-workflow failure evidence, Task definition preparation (#146) and runtime adapter
-publication cleanup (#145). Dated reviews
-retain the revision they examined;
-this baseline does not imply a fresh review of every subsystem or identify the
-deployed release. Candidate behavior and validation stay in linked proposals
-until merged.
+## Reading source and installation status
+
+Keep four facts separate: this documentation states the intended contract; a
+source review names the exact Host revision it inspected; the running binary is
+identified by its embedded revision and artifact receipt; and the active App and
+agent definitions come from an installed immutable definition release. Source
+checkout `HEAD` is not deployed identity, and a passing source check does not
+prove rollout. Preserve revisions in dated reviews rather than maintaining a
+volatile baseline here. Operators recover the exact receipt and compare binary,
+SDK, UI, and definition provenance through [Operations and
+Recovery](2b-manual/app-operations-recovery.md#read-only-deployment-verification).
 
 Conversation is the default for discussion and joint work. A **Request** is an
 accepted ask May must close the loop on. An independent **Task** can run in the

@@ -2,13 +2,13 @@
 
 **Design status:** Accepted.
 **Implementation status:** App Tasks, bounded conversational work, shared reads,
-and event-driven follow-through are implemented at the [source baseline](../README.md).
-The accepted baseline below uses one Task execution lifecycle for Conversation,
+and event-driven follow-through are implemented in current Host source. The
+accepted baseline below uses one Task execution lifecycle for Conversation,
 ordinary work and maintenance, with explicit outcomes and owner-controlled
 closure. Shared execution replaced separate conversation execution and
-supervision in [#158](../proposals/conversation-input-unification.md). At reviewed
-Host `649d801c`, old Task mode names remain in the SDK; their removal is tracked
-separately in [the simplification proposal](../proposals/authority-boundary-simplification.md).
+supervision in [#158](../proposals/conversation-input-unification.md). New
+`TaskIntent` values no longer have a mode; retained state and paused consumers
+are compatibility evidence, not current SDK vocabulary.
 The focused Conversation review at Host `99bc1a31` confirms accepted Request
 storage, durable turn Stop and Esc/button bindings. Current-turn steering remains
 [open](human-control-surfaces.md#current-turn-control); App judgment

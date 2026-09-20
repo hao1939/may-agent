@@ -1,14 +1,14 @@
 # One Task lifecycle
 
-**Status:** Accepted design baseline, refined September 12, 2026. A source PoC
-is under review in [Host PR #158](https://github.com/hao1939/may-agent/pull/158);
-it is unmerged and undeployed. Use one Task model, controller and lifecycle:
-explicit outcomes, rest between inputs, owner-controlled closure. Human
-conversation, delegated work and maintenance describe roles and inputs within
-that model. Full local CI, live nested delegation and an isolated old-to-new
-daemon cutover pass. The [critical-path acceptance audit](controller-poc-recovery-review.md#critical-path-acceptance-audit)
-supports the shared model and records retained compatibility costs and deferred
-usage checks. Human review and installation adoption remain separate.
+**Status:** Accepted design baseline, refined September 12, 2026 and implemented
+in Host source through #158 and its follow-up cleanup. Use one Task model,
+controller and lifecycle: explicit outcomes, rest between inputs, and
+owner-controlled closure. Human conversation, delegated work and maintenance
+describe roles and inputs within that model. Full local CI, live nested
+delegation and an isolated old-to-new daemon cutover passed for the source
+candidate. The [critical-path acceptance audit](controller-poc-recovery-review.md#critical-path-acceptance-audit)
+records retained compatibility costs and deferred usage checks. Dated migration
+inventories below are historical; installed release adoption remains separate.
 The [deeper review](controller-poc-deeper-review.md) tests natural delegation,
 owner withdrawal and changed acceptance during execution. It also simplifies
 additive delegation and examines the recurring cost of retries.
@@ -389,18 +389,19 @@ Code validates revisions, identity, acceptance and closure authority; the
 worker judges the approach and evidence; the assigning owner judges whether
 to retain, revise or close the assignment.
 
-## What the source actually requires
+## Historical migration inventory
 
-The installed Host predates this baseline. This table records the source
-boundaries the PoC changes; the [evidence record](controller-poc-recovery-review.md)
-tracks what the candidate has implemented and verified.
+The table below records the boundaries reviewed before the source candidate
+landed. It is retained to explain the migration and is not current implementation
+status. The [evidence record](controller-poc-recovery-review.md) tracks what the
+candidate implemented and verified.
 
-| Source boundary | Change to prove |
+| Source boundary | Historical change to prove |
 | --- | --- |
 | [`core/tasks/controller.ts`](../../../may-agent/src/app/core/tasks/controller.ts) and [`queue.ts`](../../../may-agent/src/app/core/tasks/queue.ts) | Reuse queue, capacity wait, wake-during-run and drain; extend execution controls without a parallel Conversation controller |
 | [`composition/app-inbox-runtime.ts`](../../../may-agent/src/app/composition/app-inbox-runtime.ts) | Direct input admission, events and bounded admission/result recovery; the inbox execution pump and its capacity lane are removed in the source candidate |
 | [`core/state/app-inbox-store.ts`](../../../may-agent/src/app/core/state/app-inbox-store.ts) and [`core/inbox/app-inbox-host.ts`](../../../may-agent/src/app/core/inbox/app-inbox-host.ts) | Retain input identity, caller correlation and readable historical evidence. Task admission owns execution; no inbox claims or lease renewal remain in production |
-| [`core/tasks/app-task-reconciler.ts`](../../../may-agent/src/app/core/tasks/app-task-reconciler.ts) | Remove mode-dependent completion/reopening/stop rules after explicit outcome and closure behavior works. Today `achieve` cannot converge with live children, generic cancellation rejects `maintain`, and handler `stopped` is restricted to finite leaf Tasks |
+| [`core/tasks/app-task-reconciler.ts`](../../../may-agent/src/app/core/tasks/app-task-reconciler.ts) | Remove mode-dependent completion/reopening/stop rules after explicit outcome and closure behavior works. At the time of this inventory, `achieve` could not converge with live children, generic cancellation rejected `maintain`, and handler `stopped` was restricted to finite leaf Tasks |
 | Former `core/state/conversation-outcomes.ts` boundary | Reuse Request revision and explanation checks inside fenced Task settlement; retire the supervisor's separate projection/response path |
 | SDK types, readers, cleanup and App removal | Audit consumers of `done`, `converged`, receipts and mode. Accepted result, pending work and closed resource must stay distinguishable; an idle owner must not pin capacity or an execution workspace forever |
 
@@ -420,9 +421,9 @@ retain the same lifecycle branches.
 
 | Choice | Assessment under the accepted baseline |
 | --- | --- |
-| One Task execution lifecycle, explicit outcomes and owner closure | Target: remove duplicate execution authority and mode-specific lifetime rules; requires settlement, control and retained-state changes |
-| Share only scheduling | Possible implementation step if it is cheaply reusable; no longer the destination or an extra mandatory extraction |
-| Unify only Conversation's human/Task/timer inputs | Useful narrow slice, but leaves duplicate claims/recovery and mode-dependent Task lifetimes |
+| One Task execution lifecycle, explicit outcomes and owner closure | Accepted and implemented: duplicate execution authority and mode-specific lifetime rules were removed; retained-state compatibility remains historical evidence |
+| Share only scheduling | Rejected as the destination because it retained duplicate execution authority |
+| Unify only Conversation's human/Task/timer inputs | Rejected as incomplete because it retained duplicate claims/recovery and mode-dependent Task lifetimes |
 
 For this frequently used foundation, reduced long-term maintenance and fewer
 failure paths can justify a coordinated migration. The accepted tradeoffs are

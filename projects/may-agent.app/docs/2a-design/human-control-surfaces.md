@@ -557,12 +557,10 @@ separate control service, or new work lifecycle is required.
    workflow, Codex turn, or CLI process tree; and
 5. retains a cancellation result distinct from accepted achievement.
 
-An in-flight stale result cannot cross the new resource fence. Current source
-may refuse generic cancellation of a maintained Task and name an App-specific
-control instead. The pending common lifecycle removes that mode exception:
-an authorized owner can close any Task, with non-success retained for unfinished
-work and no implicit cancellation of independent children. `/unwatch` is never
-cancellation.
+An in-flight stale result cannot cross the new resource fence. The common
+lifecycle has no maintained-task mode exception: an authorized owner can close
+any Task, with non-success retained for unfinished work and no implicit
+cancellation of independent children. `/unwatch` is never cancellation.
 Use `/cancel <ref>` when the target is not already watched. Bare `/cancel`
 resolves only the currently watched Task and fails when there is none. Render
 the exact Task reference and summary in its acknowledgment so the target is

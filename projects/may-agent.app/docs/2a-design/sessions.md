@@ -47,8 +47,10 @@ created → running → idle      (chat turn completed; same chat session can re
 ```
 
 No "pending" or "queued" state. Sessions start running immediately when spawned.
-Heartbeats are `call` sessions spawned by a bounded heartbeat workflow through
-`ctx.agents.call()`. Query by their source/correlation, not by `kind`.
+Periodic App work arrives as ordinary input and executes through its Task and
+bounded attempt. Liveness observation and optional time production are owned by
+[Heartbeat](heartbeat.md) and [Cron](cron.md), not by a special heartbeat session
+or workflow lifecycle.
 
 Chat sessions are persistent conversations. A successful chat turn moves the
 session from `running` back to `idle`; the next human message wakes the same
@@ -93,23 +95,14 @@ operation or the exact idempotent state already holds. It does not mean the
 session has reached its requested terminal state. Callers use the opening event
 ID and linked session read to observe progress.
 
-## Session Tree
+## Session lineage
 
-```
-Root (May heartbeat)
-  ├── call("tech-lead", task)          ← child (blocks parent)
-  │     └── call("dev", subtask)       ← grandchild
-  └── fork("dev", task)                ← caller-owned helper (returns immediately)
-```
-
-- **call** = awaited result; agent calls carry `parentSessionId` where available
-- **fork** = asynchronous, returns sessionId, child linked via `parentSessionId`
-
-Workflow steps also carry `workflowRunId`; a workflow without a parent agent
-session need not invent one. Task ownership uses the exact runtime-supplied
-Task/attempt binding, not either lineage field. Trace links describe event
-causality. The [cooperation contract](agents.md) owns helper lifetime; the
-consolidation candidate enforces it using the live caller's execution scope.
+Awaited agent calls carry `parentSessionId` where available. Workflow steps also
+carry `workflowRunId`; a workflow without a parent agent session need not invent
+one. Task ownership uses the exact runtime-supplied Task/attempt binding, not
+either lineage field. Trace links describe event causality. The [cooperation
+contract](agents.md) owns helper lifetime; the consolidation candidate enforces
+it using the live caller's execution scope.
 
 ## Persistence
 
@@ -257,5 +250,6 @@ policy selector. `kind: "chat"` with `autoClose: "never"` uses the persistent
 chat-turn path (`running → idle`) rather than the bounded job path
 (`running → done/error/interrupted`).
 
-Heartbeats are `call` kind sessions—the workflow uses `ctx.agents.call()`,
-which produces a call session. There is no separate `heartbeat` kind.
+Periodic App review uses ordinary input, Task, and attempt execution. See
+[Heartbeat](heartbeat.md) for liveness signals and [Cron](cron.md) for optional
+time-based input production; neither defines a session kind.

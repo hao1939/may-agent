@@ -82,6 +82,7 @@ owning document and keep implementation details there.
 | [agent-app.md](2a-design/agent-app.md)                       | App package, ownership, input, and Task policy.                         |
 | [projects.md](2a-design/projects.md)                         | Durable goal context, project posture, and workspace layout.           |
 | [task-resource-engine.md](2a-design/task-resource-engine.md) | Canonical tasks, key queue, Conditions, claims, results, and recovery. |
+| [task-resource-read-interface.md](2a-design/task-resource-read-interface.md) | Bounded App, operator, and adapter Task read contracts. |
 | [default-project-ui.md](2a-design/default-project-ui.md)     | Shared project readout and steering contract.                          |
 
 ### Events, scheduling, and reliability
@@ -131,6 +132,10 @@ current-design list.
 
 ## Tier 3 — Active proposals and trackers
 
+- [Task context discovery](proposals/task-context-discovery-20260917.md)
+  — shared Task entry, bounded discovery references, and contribution handoff;
+- [Design documentation live-truth review](proposals/design-doc-live-truth-review-20260920.md)
+  — reviewed documentation corrections, evidence boundaries, and deferred runtime work;
 - [Ordinary commands from Task workers](proposals/task-worker-command-context-20260919.md)
   — reproduced environment inheritance failure and an isolated comparison of
   explicit worker entry with process-local database behavior;
@@ -164,8 +169,9 @@ Active reviews are:
   — candidate fixes for five reproduced defects, contextual follow-up and
   compact progress; source verification and separate live experience trial;
 - [Conversation and Task: one reconciliation model](proposals/conversation-input-unification.md)
-  — accepted common Task lifecycle, explicit outcomes and owner-controlled closure;
-  Conversation execution, code deletion, migration and cost evidence pending;
+  — accepted and implemented common Task lifecycle, explicit outcomes and
+  owner-controlled closure; dated migration inventories and remaining usage-cost
+  evidence are retained separately from deployment status;
 
 - [Workflow tracing by default and useful health metrics](proposals/workflow-tracing-and-health-metrics.md)
   — first source slice under review: run diagnostics, replaceable outcome
