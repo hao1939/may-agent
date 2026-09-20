@@ -127,6 +127,31 @@ describe("telegram client", () => {
     }
   });
 
+  it("removes supported HTML markup and decodes renderer entities in a formatting fallback", async () => {
+    const bodies: Record<string, unknown>[] = [];
+    const fixture = networkFixture(async (request, call) => {
+      bodies.push((await request.json()) as Record<string, unknown>);
+      return call === 1
+        ? Response.json(
+            { ok: false, error_code: 400, description: "Bad Request: can't parse entities" },
+            { status: 400 },
+          )
+        : Response.json({ ok: true, result: { message_id: 1000 } });
+    });
+    try {
+      await expect(
+        fixture.client.sendMessage("chat-1", "• <b>Review &lt;docs&gt;</b>\n  <code>a&amp;b</code>", "HTML"),
+      ).resolves.toBe(1000);
+      expect(bodies.map((body) => body.parse_mode)).toEqual(["HTML", undefined]);
+      expect(bodies.map((body) => body.text)).toEqual([
+        "• <b>Review &lt;docs&gt;</b>\n  <code>a&amp;b</code>",
+        "• Review <docs>\n  a&b",
+      ]);
+    } finally {
+      fixture.close();
+    }
+  });
+
   it("does not retry a different provider rejection as plain text", async () => {
     const fixture = networkFixture(() =>
       Response.json(

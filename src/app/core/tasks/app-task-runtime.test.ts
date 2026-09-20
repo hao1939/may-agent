@@ -1448,6 +1448,187 @@ function projectDirForBypass(): string {
 }
 
 describe("canonical App task runtime", () => {
+  it("routes recurring exact-target schedule facts through the persistent Task mutation boundary", async () => {
+    const f = fixture();
+    const bus = eventBus();
+    const persistDir = join(f.root, "state");
+    let now = 14_400_001;
+    setSystemTime(new Date(now));
+    const scheduledDefinition = (schedules: NonNullable<AppDefinition["schedules"]>) =>
+      defineApp({ ...definition(), schedules });
+    let currentDefinition = scheduledDefinition([]);
+    const discover = async () => [{ appDir: f.appDir, definition: currentDefinition }];
+    const registry = new AppRegistry(discover);
+    await registry.reload();
+    const writer = new DbWriter(persistDir);
+    bus.setPersistenceSubscriber(writer.handler);
+    bus.setDeliveryRecorder(writer.recordDelivery);
+    const startGate = Promise.withResolvers<void>();
+    await installAppTaskRuntimes({
+      ...options(f, bus),
+      persistDir,
+      startAfter: startGate.promise,
+      appRegistrySnapshot: registry.snapshot(),
+    });
+    const config = loadedTaskConfig(f, persistDir);
+    observeAppTaskIntent(config, {
+      appAgent: "sample-owner",
+      intent: {
+        id: "work/recurring",
+        parentId: "operations",
+        outcome: "Review the recurring source",
+        acceptance: ["Each configured observation is reviewed"],
+        agent: "sample-owner",
+      },
+    });
+    const initial = claimObservedAppTask(config, {
+      taskId: "work/recurring",
+      appAgent: "sample-owner",
+      handler: "agent:sample-owner",
+    });
+    if (initial.kind !== "claimed") throw new Error("expected initial recurring Task claim");
+    deferAppTask(config, initial, {
+      disposition: "waiting",
+      summary: "Waiting on the legacy one-shot timer",
+      conditions: [
+        {
+          id: "legacy-timer",
+          type: "time.reached",
+          subject: "time:2030-01-01T00:00:00.000Z",
+          expected: true,
+          owner: "app:sample",
+          reviewAfterMs: 14_400_000,
+        },
+      ],
+    });
+    const db = getDb(persistDir);
+    const inbox = await startAppInboxRuntime({
+      registry,
+      db,
+      bus,
+      admitTaskEvent: ({ appId, event, intent, targetedTaskId, conditionTaskIds }) =>
+        admitLoadedCanonicalAppTaskEvent({ bus, appId, event, intent, targetedTaskId, conditionTaskIds }),
+      previewTaskEvent: ({ appId, event, targetedTaskId }) =>
+        previewLoadedCanonicalAppTaskEvent({ bus, appId, event, targetedTaskId }),
+      previewTaskEventRoutes: ({ event }) => previewLoadedCanonicalAppTaskEventRoutes({ bus, event }),
+      now: () => now,
+      scanIntervalMs: 1_000_000,
+    });
+    const schedule = {
+      id: "recurring-review",
+      intervalMs: 14_400_000,
+      event: {
+        type: "project.task.tick",
+        data: {},
+        target: { appId: "sample", taskId: "work/recurring" },
+      },
+    } as const;
+    const service = new HumanTaskService(db, registry);
+    const eventCount = () =>
+      Number(
+        (db.prepare("SELECT COUNT(*) AS count FROM events WHERE event_type = 'project.task.tick'").get() as {
+          count: number;
+        }).count,
+      );
+    try {
+      expect(service.getTask({ appId: "sample", taskId: "work/recurring" })).toMatchObject({ recurring: false });
+      const before = config.resourceStore.readTask("work/recurring")!;
+
+      currentDefinition = scheduledDefinition([schedule]);
+      await inbox.reload();
+      expect(service.getTask({ appId: "sample", taskId: "work/recurring" })).toMatchObject({
+        recurring: true,
+        recurrence: { cadenceMs: 14_400_000, nextRunAt: "1970-01-01T08:00:00.000Z" },
+      });
+      expect(service.listTasks({ appId: "sample" }).items[0]).toMatchObject({
+        taskId: "work/recurring",
+        recurring: true,
+        recurrence: { cadenceMs: 14_400_000 },
+      });
+      inbox.scanNow();
+      expect(eventCount()).toBe(0);
+
+      now = 28_800_001;
+      setSystemTime(new Date(now));
+      inbox.scanNow();
+      expect(eventCount()).toBe(1);
+      const afterWake = config.resourceStore.readTask("work/recurring")!;
+      expect(afterWake.metadata).toMatchObject({ id: before.metadata.id, generation: before.metadata.generation });
+      expect(afterWake.metadata.resourceVersion).toBeGreaterThan(before.metadata.resourceVersion);
+      expect(afterWake.status.phase).toBe("waiting");
+      expect(config.resourceStore.readTaskForView("work/recurring")?.phase).toBe("pending");
+      expect(config.resourceStore.readTrigger("work/recurring")?.event).toMatchObject({
+        type: "project.task.tick",
+        data: { idempotencyKey: "schedule:sample:recurring-review:2" },
+      });
+      expect(config.resourceStore.readTaskConditions("work/recurring")).toMatchObject([
+        { metadata: { id: "legacy-timer" }, status: { state: "unknown" } },
+      ]);
+      expect(db.prepare("SELECT COUNT(*) AS count FROM app_inbox_items").get()).toEqual({ count: 0 });
+      expect(Object.keys(readTaskSnapshot(config).resources ?? {})).toEqual(["work/recurring"]);
+      expect(db.prepare("SELECT status FROM app_event_admission_plans").all()).toEqual([{ status: "completed" }]);
+
+      inbox.scanNow();
+      expect(eventCount()).toBe(1);
+      expect(db.prepare("SELECT COUNT(*) AS count FROM app_event_admission_plans").get()).toEqual({ count: 1 });
+
+      const retire = claimObservedAppTask(config, {
+        taskId: "work/recurring",
+        appAgent: "sample-owner",
+        handler: "agent:sample-owner",
+      });
+      if (retire.kind !== "claimed") throw new Error("expected scheduled recurring Task claim");
+      expect(
+        completeAppTask(config, retire, {
+          summary: "Configured recurrence replaced the legacy timer",
+          facts: ["schedule:sample:recurring-review"],
+          actions: [
+            {
+              kind: "retire-condition",
+              conditionId: "legacy-timer",
+              expectedConditionGeneration: 1,
+              reason: "The exact-target schedule is durably admitted",
+            },
+          ],
+        }),
+      ).toMatchObject({ status: "applied", actionsApplied: ["retired condition legacy-timer generation 1"] });
+      expect(config.resourceStore.readTaskConditions("work/recurring")).toEqual([]);
+      expect(config.resourceStore.readTask("work/recurring")?.status.phase).toBe("converged");
+
+      now = 43_200_001;
+      setSystemTime(new Date(now));
+      inbox.scanNow();
+      expect(eventCount()).toBe(2);
+      const steady = config.resourceStore.readTask("work/recurring")!;
+      expect(steady.metadata.generation).toBe(before.metadata.generation);
+      expect(steady.status.phase).toBe("converged");
+      expect(config.resourceStore.readTaskForView("work/recurring")?.phase).toBe("pending");
+      const steadyClaim = claimObservedAppTask(config, {
+        taskId: "work/recurring",
+        appAgent: "sample-owner",
+        handler: "agent:sample-owner",
+      });
+      if (steadyClaim.kind !== "claimed") throw new Error("expected steady recurring Task claim");
+      expect(completeAppTask(config, steadyClaim, { summary: "Reviewed the next configured slot" }).status).toBe(
+        "applied",
+      );
+
+      currentDefinition = scheduledDefinition([{ ...schedule, enabled: false }]);
+      await inbox.reload();
+      expect(service.getTask({ appId: "sample", taskId: "work/recurring" })).toMatchObject({ recurring: false });
+      currentDefinition = scheduledDefinition([]);
+      await inbox.reload();
+      expect(service.listTasks({ appId: "sample" }).items[0]).toMatchObject({ recurring: false });
+      now = 57_600_001;
+      setSystemTime(new Date(now));
+      inbox.scanNow();
+      expect(eventCount()).toBe(2);
+    } finally {
+      inbox.close();
+      startGate.resolve();
+    }
+  });
+
   it("rejects a dependency that is not accepted by the installed App contract", () => {
     const f = fixture();
     const bus = eventBus();

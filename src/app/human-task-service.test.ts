@@ -1,4 +1,5 @@
-import { afterEach, describe, expect, test } from "bun:test";
+import { afterEach, describe, expect, setSystemTime, test } from "bun:test";
+import type { AppSchedule } from "@may-agent/sdk";
 import { openDatabase, type SqliteDb } from "../lib/db.js";
 import { applyDbSchema } from "../lib/db/schema.js";
 import { HUMAN_TASK_LIST_TEXT_MAX_BYTES, HumanTaskService } from "./human-task-service.js";
@@ -226,6 +227,7 @@ test("history is exact, indexed, bounded, and never a substitute for terminal au
 });
 
 afterEach(() => {
+  setSystemTime();
   while (databases.length) databases.pop()?.close();
 });
 
@@ -253,6 +255,38 @@ function registry(...ids: string[]) {
       })),
     }),
   };
+}
+
+function registryWithSchedules(
+  appId: string,
+  schedules: AppSchedule[],
+  ...otherAppIds: string[]
+) {
+  const base = registry(appId, ...otherAppIds).snapshot();
+  return {
+    snapshot: () => ({
+      ...base,
+      entries: base.entries.map((entry) =>
+        entry.definition.id === appId
+          ? { ...entry, definition: { ...entry.definition, schedules } }
+          : entry,
+      ),
+    }),
+  };
+}
+
+function registryWithInputSchedule(
+  appId: string,
+  scheduleId: string,
+  intervalMs: number,
+  enabled = true,
+  ...otherAppIds: string[]
+) {
+  return registryWithSchedules(
+    appId,
+    [{ id: scheduleId, intervalMs, enabled, input: { kind: "goal", data: {} } }],
+    ...otherAppIds,
+  );
 }
 
 function insertTask(
@@ -585,17 +619,21 @@ function insertCondition(
     requestedAction?: string;
     createdAt?: string;
     state?: "unknown" | "false" | "true";
+    type?: string;
+    subject?: string;
+    reviewAfterMs?: number;
   },
 ): void {
   const state = input.state ?? "unknown";
   const condition = {
     metadata: { id: input.conditionId, generation: 2, resourceVersion: 1 },
     spec: {
-      type: "project.approval.submitted",
-      subject: `task:${input.taskId}`,
-      expected: { field: "decision", anyOf: ["approve", "reject"] },
+      type: input.type ?? "project.approval.submitted",
+      subject: input.subject ?? `task:${input.taskId}`,
+      expected: input.type === "time.reached" ? true : { field: "decision", anyOf: ["approve", "reject"] },
       ...(input.requestedAction ? { requestedAction: input.requestedAction } : {}),
       ...(input.owner ? { owner: input.owner } : {}),
+      ...(input.reviewAfterMs ? { reviewAfterMs: input.reviewAfterMs } : {}),
     },
     status: { observedGeneration: 2, state, ...(input.createdAt ? { createdAt: input.createdAt } : {}) },
   };
@@ -681,7 +719,7 @@ describe("Task reference index", () => {
 });
 
 describe("Human Task service", () => {
-  test("derives human actions from canonical owners and legacy Hao while excluding App, agent, and other display names", () => {
+  test("derives human actions from the canonical human namespace and legacy Hao while excluding App, agent, and other display names", () => {
     const db = database();
     insertTask(db, { appId: "alpha", taskId: "completed", phase: "waiting", updatedAt: 80 });
     insertTask(db, { appId: "alpha", taskId: "approval", phase: "waiting", updatedAt: 70 });
@@ -767,21 +805,15 @@ describe("Human Task service", () => {
       now: 1,
     }).item;
     linkTaskInput(db, scheduled.id, "approval", "task:scheduled-approval", 2);
-    const service = new HumanTaskService(db, registry("alpha", "beta"));
+    const service = new HumanTaskService(
+      db,
+      registryWithInputSchedule("alpha", "daily-approval", 86_400_000, true, "beta"),
+    );
 
     expect(service.listTasks({ appId: "alpha", humanActionOnly: true })).toMatchObject({
       total: 3,
       items: [
-        {
-          appId: "alpha",
-          taskId: "approval",
-          status: "waiting",
-          recurring: true,
-          humanAction: {
-            requestedAction: "Choose approve or reject for task:approval.",
-            since: Date.parse("2026-08-20T01:02:03.000Z"),
-          },
-        },
+        { appId: "alpha", taskId: "approval", status: "waiting" },
         {
           appId: "alpha",
           taskId: "may-merge",
@@ -805,11 +837,9 @@ describe("Human Task service", () => {
     ]);
     expect(service.getTask({ appId: "alpha", taskId: "approval" })).toMatchObject({
       recurring: true,
-      humanAction: {
-        requestedAction: "Choose approve or reject for task:approval.",
-        since: Date.parse("2026-08-20T01:02:03.000Z"),
-      },
+      recurrence: { cadenceMs: 86_400_000, nextRunAt: expect.any(String) },
     });
+    expect(service.getTask({ appId: "alpha", taskId: "approval" })?.humanAction).toBeDefined();
     expect(service.getTask({ appId: "beta", taskId: "input" })?.humanAction).toEqual({
       requestedAction: "Provide the rollout window.",
     });
@@ -960,6 +990,240 @@ describe("Human Task service", () => {
     expect(tasks.find((task) => task.taskId === "approval")?.humanAction).toEqual({
       requestedAction: "Approve or reject the rollout.",
     });
+  });
+
+  test("projects configured recurrence without replacing its next slot with a recovery checkpoint", () => {
+    const db = database();
+    insertTask(db, { appId: "may", taskId: "hygiene", phase: "waiting", updatedAt: 10 });
+    const scheduled = createAppInboxItem(db, {
+      id: "scheduled-hygiene",
+      appId: "may",
+      source: { kind: "system", id: "schedule:may:hygiene" },
+      input: { kind: "goal", data: {} },
+      now: 1,
+    }).item;
+    linkTaskInput(db, scheduled.id, "hygiene", "task:scheduled-hygiene", 2);
+    insertCondition(db, {
+      appId: "may",
+      taskId: "hygiene",
+      conditionId: "may-task-hygiene:next",
+      type: "time.reached",
+      subject: "time:2026-09-19T13:53:00.000Z",
+      owner: "app:may",
+      reviewAfterMs: 60_000,
+    });
+    const service = new HumanTaskService(db, registryWithInputSchedule("may", "hygiene", 14_400_000));
+
+    const detail = service.getTask({ appId: "may", taskId: "hygiene" });
+    expect(detail).toMatchObject({
+      recurring: true,
+      recurrence: { cadenceMs: 14_400_000, nextRunAt: expect.any(String) },
+    });
+    expect(detail?.recurrence?.nextRunAt).not.toBe("2026-09-19T13:53:00.000Z");
+    const listed = service.listTasks().items.find((task) => task.taskId === "hygiene");
+    expect(listed).toMatchObject({
+      recurring: true,
+      recurrence: { cadenceMs: 14_400_000, nextRunAt: expect.any(String) },
+    });
+    expect(listed?.recurrence?.nextRunAt).not.toBe("2026-09-19T13:53:00.000Z");
+  });
+
+  test("projects only enabled exact-target project.task.tick schedules at the next epoch slot", () => {
+    setSystemTime(new Date(14_400_000));
+    const db = database();
+    insertTask(db, { appId: "may", taskId: "hygiene", phase: "waiting", updatedAt: 10 });
+    insertCondition(db, {
+      appId: "may",
+      taskId: "hygiene",
+      conditionId: "one-shot",
+      type: "time.reached",
+      subject: "time:2026-09-19T13:53:00.000Z",
+      owner: "app:may",
+      reviewAfterMs: 60_000,
+    });
+    const service = new HumanTaskService(
+      db,
+      registryWithSchedules("scheduler", [
+        {
+          id: "hygiene-tick",
+          intervalMs: 14_400_000,
+          event: {
+            type: "project.task.tick",
+            data: {},
+            target: { appId: "may.app", taskId: "hygiene" },
+          },
+        },
+        {
+          id: "intercepted-control",
+          intervalMs: 1_000,
+          event: {
+            type: "app.task.retry.requested",
+            data: {},
+            target: { appId: "may", taskId: "hygiene" },
+          },
+        },
+      ], "may"),
+    );
+
+    expect(service.getTask({ appId: "may", taskId: "hygiene" })).toMatchObject({
+      recurring: true,
+      recurrence: { cadenceMs: 14_400_000, nextRunAt: "1970-01-01T08:00:00.000Z" },
+    });
+    expect(service.listTasks({ appId: "may" }).items[0]).toMatchObject({
+      recurring: true,
+      recurrence: { cadenceMs: 14_400_000, nextRunAt: "1970-01-01T08:00:00.000Z" },
+    });
+  });
+
+  test("omits an unrepresentable next slot without losing its configured cadence", () => {
+    setSystemTime(new Date(0));
+    const db = database();
+    insertTask(db, { appId: "alpha", taskId: "far-future", phase: "waiting", updatedAt: 10 });
+    const view = new HumanTaskService(
+      db,
+      registryWithSchedules("alpha", [
+        {
+          id: "far-future",
+          intervalMs: Number.MAX_VALUE,
+          event: {
+            type: "project.task.tick",
+            data: {},
+            target: { appId: "alpha", taskId: "far-future" },
+          },
+        },
+      ]),
+    ).getTask({ appId: "alpha", taskId: "far-future" });
+
+    expect(view).toMatchObject({ recurring: true, recurrence: { cadenceMs: Number.MAX_VALUE } });
+    expect(view?.recurrence?.nextRunAt).toBeUndefined();
+  });
+
+  test("requires one distinct enabled configured cadence across linked inputs and exact ticks", () => {
+    const db = database();
+    insertTask(db, { appId: "alpha", taskId: "scheduled", phase: "waiting", updatedAt: 10 });
+    for (const [id, scheduleId, now] of [
+      ["older-enabled", "enabled-input", 1],
+      ["newer-disabled", "disabled-input", 2],
+    ] as const) {
+      const item = createAppInboxItem(db, {
+        id,
+        appId: "alpha",
+        source: { kind: "system", id: `schedule:alpha:${scheduleId}` },
+        input: { kind: "goal", data: {} },
+        now,
+      }).item;
+      linkTaskInput(db, item.id, "scheduled", `task:${id}`, now + 1);
+    }
+    const schedules: AppSchedule[] = [
+      { id: "enabled-input", intervalMs: 60_000, input: { kind: "goal", data: {} } },
+      { id: "disabled-input", intervalMs: 30_000, enabled: false, input: { kind: "goal", data: {} } },
+      {
+        id: "equal-tick",
+        intervalMs: 60_000,
+        event: { type: "project.task.tick", data: {}, target: { appId: "alpha", taskId: "scheduled" } },
+      },
+    ];
+    expect(
+      new HumanTaskService(db, registryWithSchedules("alpha", schedules)).getTask({
+        appId: "alpha",
+        taskId: "scheduled",
+      }),
+    ).toMatchObject({ recurring: true, recurrence: { cadenceMs: 60_000 } });
+
+    schedules.push({
+      id: "ambiguous-tick",
+      intervalMs: 120_000,
+      event: { type: "project.task.tick", data: {}, target: { appId: "alpha", taskId: "scheduled" } },
+    });
+    const ambiguousService = new HumanTaskService(db, registryWithSchedules("alpha", schedules));
+    const ambiguous = ambiguousService.getTask({
+      appId: "alpha",
+      taskId: "scheduled",
+    });
+    expect(ambiguous).toMatchObject({ recurring: true, recurrence: {} });
+    expect(ambiguous?.recurrence).not.toHaveProperty("cadenceMs");
+    expect(ambiguous?.recurrence).not.toHaveProperty("nextRunAt");
+    expect(ambiguousService.listTasks({ appId: "alpha" }).items[0]).toMatchObject({
+      recurring: true,
+      recurrence: {},
+    });
+  });
+
+  test("drops disabled, removed, inexact, unsupported, and cancelled event schedule projections", () => {
+    const db = database();
+    insertTask(db, { appId: "alpha", taskId: "scheduled", phase: "waiting", updatedAt: 10 });
+    const exact: AppSchedule = {
+      id: "tick",
+      intervalMs: 60_000,
+      event: { type: "project.task.tick", data: {}, target: { appId: "alpha", taskId: "scheduled" } },
+    };
+    const read = (schedules: AppSchedule[]) =>
+      new HumanTaskService(db, registryWithSchedules("alpha", schedules)).getTask({
+        appId: "alpha",
+        taskId: "scheduled",
+      });
+    expect(read([{ ...exact, enabled: false }])).toMatchObject({ recurring: false });
+    expect(read([])).toMatchObject({ recurring: false });
+    expect(
+      read([
+        { ...exact, event: { ...exact.event!, target: { taskId: "scheduled" } } },
+        { ...exact, id: "wrong-task", event: { ...exact.event!, target: { appId: "alpha", taskId: "other" } } },
+        { ...exact, id: "wrong-kind", event: { ...exact.event!, type: "app.task.cancel.requested" } },
+      ]),
+    ).toMatchObject({ recurring: false });
+
+    const store = AppTaskResourceStore.fromDb(db, "alpha");
+    const current = store.readTask("scheduled")!;
+    cancelAppTask(taskConfig(db, store, "alpha"), {
+      appId: "alpha",
+      taskId: "scheduled",
+      reason: "fixture cancellation",
+      expectedGeneration: current.metadata.generation,
+      expectedResourceVersion: current.metadata.resourceVersion,
+    });
+    expect(read([exact])).toMatchObject({ recurring: false, status: "cancelled" });
+  });
+
+  test("does not mistake a one-shot timed recovery checkpoint for recurrence", () => {
+    const db = database();
+    insertTask(db, { appId: "may", taskId: "one-time", phase: "waiting", updatedAt: 9 });
+    insertCondition(db, {
+      appId: "may",
+      taskId: "one-time",
+      conditionId: "review-later",
+      type: "time.reached",
+      subject: "time:2026-09-19T13:53:00.000Z",
+      owner: "app:may",
+      reviewAfterMs: 60_000,
+    });
+
+    const service = new HumanTaskService(db, registry("may"));
+    expect(service.getTask({ appId: "may", taskId: "one-time" })).toMatchObject({ recurring: false });
+    expect(service.getTask({ appId: "may", taskId: "one-time" })?.recurrence).toBeUndefined();
+  });
+
+  test("ignores stale schedule-origin links when the configured input schedule is disabled or removed", () => {
+    const db = database();
+    insertTask(db, { appId: "alpha", taskId: "scheduled", phase: "waiting", updatedAt: 10 });
+    const scheduled = createAppInboxItem(db, {
+      id: "scheduled-input",
+      appId: "alpha",
+      source: { kind: "system", id: "schedule:alpha:refresh" },
+      input: { kind: "goal", data: {} },
+      now: 1,
+    }).item;
+    linkTaskInput(db, scheduled.id, "scheduled", "task:scheduled-input", 2);
+
+    expect(
+      new HumanTaskService(db, registryWithInputSchedule("alpha", "refresh", 14_400_000, false)).getTask({
+        appId: "alpha",
+        taskId: "scheduled",
+      })?.recurring,
+    ).toBe(false);
+    expect(
+      new HumanTaskService(db, registry("alpha")).listTasks().items.find((task) => task.taskId === "scheduled")
+        ?.recurring,
+    ).toBe(false);
   });
 
   test("resolves exact detail by stable ref and preserves terminal results", () => {

@@ -939,12 +939,33 @@ describe("Telegram May input", () => {
         },
       ]),
     ).toContain("evaluation — 1 active · 1 running");
-    expect(renderTelegramTasks([task], false)).toContain("• 8f12ac90 · evaluation · working");
-    expect(renderTelegramTasks([task], false)).toContain("no action from you");
-    const recurringTasks = renderTelegramTasks([{ ...task, recurring: true }, task], false);
-    expect(recurringTasks).toContain("• 🔁 8f12ac90 · evaluation · working");
-    expect(recurringTasks).toContain("• 8f12ac90 · evaluation · working");
-    expect(recurringTasks).not.toContain("Recurring");
+    expect(renderTelegramTasks([task], false)).toContain("<b>Working</b>\n• <b>Review the docs</b>");
+    expect(renderTelegramTasks([task], false)).toContain("Working · evaluation · <code>8f12ac90</code>");
+    expect(renderTelegramTasks([task], false)).not.toContain("Needs you:");
+    const groupedTasks = renderTelegramTasks(
+      [
+        { ...task, status: "waiting", humanAction: { requestedAction: "Choose the rollout." } },
+        task,
+        { ...task, taskId: "waiting", ref: "aa11bb22", status: "waiting" },
+      ],
+      false,
+    );
+    expect(groupedTasks).toContain("<b>Needs you</b>");
+    expect(groupedTasks).toContain("<b>Working</b>");
+    expect(groupedTasks).toContain("<b>Waiting</b>");
+    const recurringTasks = renderTelegramTasks(
+      [
+        {
+          ...task,
+          recurring: true,
+          recurrence: { cadenceMs: 4 * 60 * 60_000, nextRunAt: "2026-09-19T13:53:00.000Z" },
+        },
+        task,
+      ],
+      false,
+    );
+    expect(recurringTasks).toContain("🔁 <b>Recurring</b> · every 4h · next 2026-09-19 13:53 UTC");
+    expect(recurringTasks.match(/🔁/g)).toHaveLength(1);
     expect(renderTelegramTasks([{ ...task, updatedAt: Date.now() }], false)).not.toContain("just now ago");
     expect(renderTelegramTasks([task], false, true)).toContain("/tasks more");
     expect(renderTelegramTask(task)).toContain("Goal\nReview the docs");
@@ -976,19 +997,29 @@ describe("Telegram May input", () => {
         1,
         "evaluation",
       ),
-    ).toContain("Actions needed for evaluation:\n• 8f12ac90 · evaluation");
+    ).toContain("<b>Needs you for evaluation</b>\n\n• <b>Approve or reject deployment.</b>");
     const recurringTodos = renderTelegramTodos([
       {
         ...task,
         status: "waiting",
         recurring: true,
+        recurrence: { cadenceMs: 4 * 60 * 60_000, nextRunAt: "2026-09-19T13:53:00.000Z" },
         humanAction: { requestedAction: "Approve the scheduled review." },
       },
       { ...task, status: "waiting", humanAction: { requestedAction: "Provide the rollout window." } },
     ]);
-    expect(recurringTodos).toContain("• 🔁 8f12ac90 · evaluation");
-    expect(recurringTodos).toContain("• 8f12ac90 · evaluation");
-    expect(recurringTodos).not.toContain("Recurring");
+    expect(recurringTodos).toContain("🔁 <b>Recurring</b> · every 4h · next 2026-09-19 13:53 UTC");
+    expect(recurringTodos.match(/🔁/g)).toHaveLength(1);
+    expect(
+      renderTelegramTodos([
+        {
+          ...task,
+          outcome: "Review <unsafe> & confirm",
+          appId: "a&b",
+          humanAction: { requestedAction: "Approve <this> & that." },
+        },
+      ]),
+    ).toContain("<b>Approve &lt;this&gt; &amp; that.</b>\n  Review &lt;unsafe&gt; &amp; confirm");
     expect(
       renderTelegramTodos(
         [{ ...task, status: "waiting", humanAction: { requestedAction: "Provide the rollout window." } }],
@@ -1027,6 +1058,7 @@ describe("Telegram May input", () => {
     const listCalls: Array<Record<string, unknown>> = [];
     const todoCalls: Array<Record<string, unknown>> = [];
     const sent: string[] = [];
+    const sentParseModes: Array<string | undefined> = [];
     let updatePolls = 0;
     globalThis.fetch = (async (url: string | URL | Request, init?: RequestInit) => {
       const method = String(url).split("/").at(-1) ?? "";
@@ -1050,6 +1082,7 @@ describe("Telegram May input", () => {
       if (method === "sendMessage") {
         const body = JSON.parse(String(init?.body));
         sent.push(body.text);
+        sentParseModes.push(body.parse_mode);
         return { json: async () => ({ ok: true, result: { message_id: 900 + sent.length } }) } as Response;
       }
       throw new Error(`Unexpected Telegram method ${method}`);
@@ -1120,6 +1153,8 @@ describe("Telegram May input", () => {
         cursor: "todo-cursor-2",
       });
       expect(sent).toContainEqual(expect.stringContaining("Use /todo more."));
+      expect(sentParseModes.filter((mode) => mode === "HTML")).toHaveLength(4);
+      expect(sentParseModes[0]).toBeUndefined();
     } finally {
       bot.close();
       closeDb(root);
@@ -1292,7 +1327,7 @@ describe("Telegram May input", () => {
       } as any,
     });
     try {
-      await waitFor(() => sent.some((text) => text.includes("Actions needed for evaluation")));
+      await waitFor(() => sent.some((text) => text.includes("Needs you for evaluation")));
       expect(taskListReads.some((options) => options.humanActionOnly === true && options.limit === 50)).toBe(true);
       expect(sent).toContainEqual(expect.stringContaining("Approve or reject deployment."));
       await waitFor(() =>
