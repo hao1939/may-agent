@@ -33,6 +33,7 @@ import { readActiveSessionProcessId } from "../../../src/lib/persistence.js";
 import { SubagentManager } from "../../../src/lib/manager.js";
 import { attachCommandRouter, validateSessionControl } from "../../../src/app/command-router.js";
 import { createEventInterface } from "../../../src/app/core/events/interface.js";
+import { openDatabase } from "../../../src/lib/db.js";
 
 async function withProvider(
   f: ReturnType<typeof fixture>,
@@ -263,7 +264,7 @@ function eventAfter(bus: EventBus, matches: (event: AgentEvent) => boolean) {
   });
 }
 
-async function delegation(nested = false) {
+async function delegation(nested = false, contendAdmission = false) {
   const f = fixture("owner", false, false, true);
   const measurement = Promise.withResolvers<void>();
   const source = createServer(async (_request, response) => {
@@ -331,6 +332,28 @@ async function delegation(nested = false) {
   `,
   );
   let runtime: AppInboxRuntime | undefined;
+  const competingWriter = contendAdmission ? openDatabase(join(f.persistDir, "may.db")) : undefined;
+  let contended = false;
+  let admissionFailed = false;
+  let writerLocked = false;
+  // The worker has already persisted this input. Contend only its parent-side
+  // admission, just as another SQLite writer can after the IPC event arrives.
+  if (competingWriter) {
+    f.bus.subscribeDurableRoute((event) => {
+      if (contended || event.type !== "app.input.requested" || event.data.input?.kind !== "sample") return;
+      contended = true;
+      competingWriter.exec("BEGIN IMMEDIATE");
+      writerLocked = true;
+    });
+    f.bus.listen((event) => {
+      if (
+        event.type === "subscriber.failed" &&
+        event.data.originalEventType === "app.input.requested" &&
+        event.data.error.includes("database is locked")
+      )
+        admissionFailed = true;
+    });
+  }
   const start = async () => {
     const registry = new AppRegistry(discoverAppDefinitions(join(f.root, "projects")));
     await registry.reload();
@@ -346,6 +369,10 @@ async function delegation(nested = false) {
         executeAttempt: async (request) => {
           const result = await run({ ...f, request });
           assert(Array.isArray(result));
+          // Exercise ordinary recovery at this exact process boundary instead
+          // of waiting for the production 60-second scan. A relayed input can
+          // encounter the worker's final SQLite writes and remain pending.
+          await runtime!.host.recoverAdmissions();
           return result;
         },
       },
@@ -449,9 +476,19 @@ async function delegation(nested = false) {
       async (contexts) => {
         try {
           await start();
+          if (competingWriter)
+            f.bus.subscribeDurableRoute(() => {
+              if (!writerLocked) return;
+              competingWriter.exec("ROLLBACK");
+              writerLocked = false;
+            });
           const started = eventAfter(f.bus, (event) => event.type === "measurement.started");
           publish("measure", "Measure the sample and bring back the result.");
           await started;
+          if (competingWriter) {
+            assert(contended, "The recovery case must encounter a real competing writer");
+            assert(admissionFailed, "The input must recover after a confirmed SQLite admission failure");
+          }
           assert.equal(readConversationRequest(f.db, "sample", "primary", "measurement")?.status, "open");
           const discussion = replyAfter("We can keep discussing while it runs.");
           publish("discuss", "Can we discuss the method while it runs?");
@@ -507,6 +544,8 @@ async function delegation(nested = false) {
     );
   } finally {
     measurement.resolve();
+    if (writerLocked) competingWriter!.exec("ROLLBACK");
+    competingWriter?.close();
     source.closeAllConnections();
     await new Promise<void>((resolve) => source.close(() => resolve()));
   }
@@ -516,8 +555,8 @@ try {
   const scenario = process.argv[2];
   if (scenario === "conversation") await conversation();
   else {
-    assert(["delegation", "nested"].includes(scenario!));
-    await delegation(scenario === "nested");
+    assert(["delegation", "nested", "nestedRecovery"].includes(scenario!));
+    await delegation(scenario !== "delegation", scenario === "nestedRecovery");
   }
 } finally {
   await cleanup();
