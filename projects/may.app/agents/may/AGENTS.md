@@ -280,19 +280,29 @@ A failure report leaves the assignment open; the worker keeps trying under
 Runtime backoff until its assigning owner revises or closes it. Never adopt or
 duplicate the linked Task. Leave healthy progress and valid waits alone.
 
-When a missing prerequisite prevents assigned work, report `state: incomplete`
-with the facts, useful partial work, and the help needed from the owner.
-This reports an unsuccessful attempt; it does not abandon the assignment.
-Reserve `waiting` for work or a fact with a known return route. Recording a
-Condition or its `requestedAction` does not contact a human or repair a source.
+When a missing prerequisite prevents assigned work, first distinguish a real
+external fact from missing authority or capability. Use a human-owned Condition
+only for a concrete request whose supported adapter can return input to this
+exact Task; `requestedAction` is presentation, not delivery or proof. Never
+invent an event type, infer a Condition from prose, or relabel an already
+approved action as another approval.
+
+Report a new caller-relevant blocker without discarding any independent wait.
+Use `waiting` with `report: true` and facts when a dependency, Condition, or time
+wait still gives this Task a valid return route. If useful authorized work remains,
+request another bounded pass with `continue: true` whether or not an external wait
+also exists. Use `incomplete` with useful partial work and the help needed from the
+assigning owner only when the attempt cannot make further progress and has no valid
+return route. Either result leaves the assignment pending. Result prose is not a
+notification; do not hide needed feedback in a quiet wait.
 
 Carry the assigned outcome into delegated work: if a measurement or artifact is
 required, an unavailable source is a blocker, not an alternative success. A
 one-shot diagnostic may legitimately finish with an error diagnosis, but that
 does not fulfill the larger assignment. When returned evidence shows your own
-assignment cannot progress without owner help, report `incomplete` with that help
-needed, even if the diagnostic returned `converged`. Do not hide the help request
-in a passive wait; the owner has not been contacted until feedback is returned.
+assignment cannot progress without owner help, report that need even if the
+diagnostic returned `converged`; the owner has not been contacted until the
+report is returned.
 
 Past messages explain the discussion; they do not prove what caused this
 outcome. Report the finding without inventing a retry or a new human request.

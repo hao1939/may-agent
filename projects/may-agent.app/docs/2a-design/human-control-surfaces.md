@@ -302,6 +302,35 @@ on the next semantic wake. Delivery never gates that transition.
 Provider delivery is observational. A failed or uncertain adapter send cannot
 change a Conversation result or a Task.
 
+The open human-owned Condition is the one canonical help request. `/todo` and a
+supported notification render that same Task, Condition and requested action;
+they do not create provider-specific work or a completion watcher. A reply to a
+rendered card is correlated through the adapter's saved receipt to the exact
+Task (and Condition identity when the adapter supports it), then enters as
+ordinary durable input for one bounded reconsideration. An exact reply-receipt
+Condition may establish only that a reply reached the Task from the displayed
+card; the worker still judges whether its content answers the question and may
+retain or replace an unanswered requirement. If the Condition asks the human to
+perform an external action, the reply records only the human input; the worker
+must reread and verify the external state before claiming that action completed.
+Text such as “done” grants no wider authority. Exact candidate approvals retain
+their stronger immutable proposal, generation, sender and decision checks
+described below.
+
+**Current boundary:** same-App focused Conversation and Telegram replies already
+resume the exact Task; `/todo` already projects the saved Condition. The Host
+candidate saves the exact Task, Task generation, Condition ID and Condition
+generation only after a complete Telegram card delivery, then projects that
+receipt identity into the existing ordinary human input event. An exact reply
+receipt Condition can therefore match `source: human` plus those four saved
+fields before or during an attempt; broad `source: human` means any human input
+and must not be presented as exact-question correlation. Missing, ambiguous or
+stale display identity remains ordinary input and cannot match the exact receipt.
+This transport fact still requires worker judgment about answer sufficiency and
+never proves an external action or approval. Other adapters need equivalent
+production-tested receipt correlation before claiming the same guarantee. Do
+not add a provider-specific watcher or invent an event type to conceal a gap.
+
 Bare text always goes to May with `context.focusedApp`. A watch additionally
 adds `context.focusedTask`. The selected App is a useful conversational lens,
 not permission to force work into the wrong owner.

@@ -168,8 +168,35 @@ the same executing generation are pending input, not proof that its output is
 invalid.
 
 There is no manager-transfer lifecycle or ownership encoded in ID prefixes.
-App policy validates which task changes may revise a task; the generic engine
-uses one admission path for all task IDs.
+Creator identity is immutable metadata `{appId, taskId?}`: App-created work has
+an App-only creator, while delegated work names its exact creator Task. Creation
+supports both legitimate owner kinds. Task-bound revision uses its existing
+fenced attempt capability. An App-only revision is an optional
+`expectedGeneration` on the installed App task mapper's desired attachment: the
+mapper deliberately selects the existing Task ID from typed App input, while the
+Host derives App-only authority from the saved non-delegated inbox row. The
+common admission transaction rereads exact creator `{appId}` and current
+generation before applying the mapped intent. A worker cannot gain authority by
+omitting `taskId`, naming an owner, targeting itself, or acting across Apps.
+Parent links, references and executor names confer no authority.
+
+App policy maps the complete revised input; the generic engine preserves the
+stable Task identity, parent, accepted results and unrelated obligations while
+advancing generation only for changed requirements. Stale generation, foreign
+creator, self-revision and concurrent-change controls reject the whole update.
+There is no generic write API, manager-transfer lifecycle, or ownership encoded
+in ID prefixes.
+
+**Candidate boundary:** task-bound `tasks update` is unchanged. Ordinary
+`targetTaskId` input remains attach-only and bypasses mapping, so it cannot
+revise scope. A typed App policy may instead return desired intent for an exact
+existing ID with the caller-observed `expectedGeneration`. Only a saved
+non-delegated inbox input receives App-only revision authority; task-bound,
+foreign, missing, closed, and stale targets terminate with readable correction
+feedback rather than an unbounded recovery retry. Exact accepted admission
+replay remains idempotent, but the same identity cannot authorize changed
+requirements. This paired Host/App behavior remains a source candidate until
+reviewed, integrated, deployed, and observed separately.
 
 ## Controller
 
@@ -301,9 +328,10 @@ that deadline with the accepted result and exact outstanding input, schedules it
 through the ordinary recovery index across restart, and permits an earlier event
 to wake the Task without consuming the deadline. Reaching `reviewAt` only makes
 a new attempt eligible; it never satisfies a Condition, bypasses normal failure
-backoff, or answers the caller. An early re-wait that omits `reviewAt` retains a
-future deadline; after it is due, omission requires another Condition or a new
-future deadline. A failed verifier cannot establish completion. Result settlement,
+backoff, or answers the caller. An early sleeping re-wait that omits `reviewAt` retains a
+future deadline; after it is due, sleeping again requires another Condition or a
+new future deadline. `continue: true` instead requests immediate bounded work and
+requires no invented wait. A failed verifier cannot establish completion. Result settlement,
 including newer input, uses the fences described below; this table does not override them. The [wait-recovery candidate](../proposals/task-wait-recovery-20260918.md) returns inputs with obsolete waits for reconsideration without satisfying replacement or unrelated waits.
 
 `incomplete` requires a summary and non-empty facts; it cannot include actions, Conditions
@@ -316,9 +344,24 @@ Creating follow-up work does not complete the current task. Required
 decomposition uses typed dependencies and returns `waiting`; independent later
 work may be a successor only after the current outcome is actually accepted.
 
-**Implemented candidate:** `waiting` with `continue: true` queues independent work
-on the same Task, retaining unanswered input and waits. Dependencies and facts are
-required; see [admission and bounds](../archive/reviews/execution-feedback-poc-20260913.md#candidate-and-decisions).
+**Candidate contract:** `waiting` with `continue: true` requests one more bounded
+pass on the same Task while retaining unanswered input and every independent
+wait. It requires non-empty progress facts, but not a newly submitted dependency:
+continuation is an immediate scheduling request, not a claim that an external
+fact is outstanding. It may coexist with `report: true`, which selects a new
+caller-relevant update without changing scheduling or wait state. Omitting
+`continue` means the attempt sleeps, so a saved Condition, typed dependency, or
+future `reviewAt` must provide a real return route. Facts make the request
+auditable; they do not prove progress or replace the existing attempt/resource
+bounds and owner review.
+
+The SDK's `admitTaskReconcileResult` is the single pure semantic validator for
+agent and workflow results. Executor finish paths call it before terminating so
+an invalid proposal returns correctable feedback; fenced settlement calls it
+again before applying effects. The pure validator knows only the proposed result.
+Settlement remains the authority for current generation, attempt, pending-input,
+creator, Condition and persistence checks. A schema, executor adapter, or recovery
+path must not define a narrower competing interpretation.
 
 Task changes and the final result apply in one transaction. Events emitted
 while an attempt runs are separate durable commit points: a resource-backed
@@ -407,14 +450,15 @@ storage or invoke an agent. The generic Condition tracker atomically updates
 the Condition, stores the triggering event, and returns the affected task IDs
 to enqueue.
 
-A Task may wait only when something outside the current attempt can produce the
+A Task may sleep only when something outside the current attempt can produce the
 named observation: an existing Task or submitted operation, an external fact
 source, or a human decision. “Deploy this change” is unfinished work, not a
 `deployment.completed` Condition. The owning App must perform or durably submit
 that work first. A self-owned requested action is rejected by the App boundary;
-without a real external wait, the same Task remains runnable.
+without a real external wait, the same Task may instead request another bounded
+pass for useful authorized work.
 
-Every admitted wait must identify:
+Every admitted sleeping wait must identify:
 
 - the exact fact or Task result being awaited;
 - the accountable external owner;
@@ -434,18 +478,20 @@ pre-enumerated set of known domain changes. See
 
 Condition declarations are identity-scoped deltas, not snapshots. A distinct ID
 adds an obligation; the same ID may update its complete specification while
-preserving unrelated links and evidence. Omission and an empty declaration list
-mean no change. Satisfaction or generation-fenced retirement names the exact
-Condition; retry, failure, unblock, dependency repair, or ordinary reconsideration
-never clears peers. Retained legacy rows remain readable without being revalidated
-as newly authored declarations. A changed specification starts a new generation
-and cannot inherit an older approval. Condition `reviewAfterMs` checkpoints renew
-after an accepted review while the fact remains pending. Task-level `reviewAt` is
-a recovery checkpoint: a future omitted deadline is preserved, a due checkpoint is
-consumed, and continued waiting must return a new explicit deadline or Condition.
+preserving unrelated Conditions, dependency links, failed-operation facts,
+selected reports and pending input. Omission and an empty declaration list mean
+no change. Satisfaction or generation-fenced retirement names the exact
+Condition; retry, failure, unblock, dependency repair, wake or ordinary
+reconsideration never clears peers. Retained legacy rows remain readable without
+being revalidated as newly authored declarations. A changed specification starts
+a new generation and cannot inherit an older approval. Condition `reviewAfterMs`
+checkpoints renew after an accepted review while the fact remains pending.
+Task-level `reviewAt` is a recovery checkpoint: a future omitted deadline is
+preserved, a due checkpoint is consumed, and sleeping again must return a new
+explicit deadline or Condition. Immediate `continue: true` work requires neither.
 Accepted completion consumes that checkpoint unless an independently correlated
-input deadline still exists. Whole-Task cancellation remains the only broad
-termination operation. Callers that once
+input deadline still exists. Whole-Task
+cancellation remains the only broad termination operation. Callers that once
 used a replacement list must now explicitly retire removed identities; arbitrary
 JSON, observations, and history are not deep-merged.
 

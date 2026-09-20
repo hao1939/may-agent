@@ -20,10 +20,19 @@ selection; they do not each demand the most elaborate possible implementation.
 ## Simple first
 
 First ask whether the proposed feature can be removed while still satisfying
-the outcome. Otherwise use the smallest sufficient mechanism. Reuse an
-existing capability or ordinary module before adding a framework, protocol,
-configuration layer, or work lifecycle. Simplicity includes the decisions,
-handoffs, and recovery paths needed to operate the system, not only code size.
+the outcome. Otherwise use the smallest sufficient mechanism. Before adding or
+changing a mechanism, trace the existing capability that should already cover
+the case and test its real boundary. Repair or delete conflicting wiring and
+interpretations before adding a framework, protocol, configuration layer, or
+work lifecycle. A genuine missing primitive should be recorded separately from
+an implementation defect.
+
+When the established behavior is uncertain, inspect the owning source and
+current design, then consult relevant retained research or established external
+practice. State what that evidence does and does not establish; borrow the
+small invariant that fits this system rather than importing another system's
+framework. Simplicity includes the decisions, handoffs, and recovery paths
+needed to operate the system, not only code size.
 
 Sufficient includes [robustness for the actual need](design-philosophy.md#robust-enough-for-the-goal).
 Remove fragile dependencies and unnecessary state first. Add protection where
@@ -398,12 +407,12 @@ hide a failure in another layer. See [Mechanism Selection](code-vs-data.md).
 Use the philosophy when a decision can change the work, its scope, or its cost.
 Existing features and contracts face the same comparison as new ones.
 
-| When | How to use it |
-| --- | --- |
-| Choosing work or a design | Identify the unmet goal and compare the proposed work with a simpler alternative or leaving it out |
-| A fix keeps growing | Reconsider the feature or guarantee driving the complexity before adding another mechanism |
-| Reviewing a proposal or PR | Test the claimed benefit, lifetime, costs, and failure assumptions against evidence and alternatives |
-| An experiment gains regular use, or actual results differ | Reassess cumulative cost and robustness; harden, simplify, or retire what the evidence warrants |
+| When                                                      | How to use it                                                                                        |
+| --------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| Choosing work or a design                                 | Identify the unmet goal and compare the proposed work with a simpler alternative or leaving it out   |
+| A fix keeps growing                                       | Reconsider the feature or guarantee driving the complexity before adding another mechanism           |
+| Reviewing a proposal or PR                                | Test the claimed benefit, lifetime, costs, and failure assumptions against evidence and alternatives |
+| An experiment gains regular use, or actual results differ | Reassess cumulative cost and robustness; harden, simplify, or retire what the evidence warrants      |
 
 For a meaningful tradeoff, answer the relevant questions:
 
