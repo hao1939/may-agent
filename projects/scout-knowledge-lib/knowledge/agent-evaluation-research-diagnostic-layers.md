@@ -1,8 +1,8 @@
 <ai_context>
-summary: "Third companion note to agent-evaluation.md containing the cohesive §37–§42 diagnostic-layers block from August–September 2026. Separates candidate supply from answer selection, answer correctness from trace integrity, implementation readiness from blocker localization, AI-AI coordination from human convention recovery, detected trace patterns from causal attribution, and answer-level forgetting from deployment-wide secret leakage."
-triggers: ["agent evaluation diagnostic layers", "candidate supply", "answer selection", "judge reliability", "selection loss", "fixed candidate pools", "trace integrity", "CAIT Rate", "execution contract", "answer-trace consistency", "structured-data agent", "IdeaAMBIG", "codification readiness", "specification gap", "defect localization", "clarification action", "convention gap", "implicit communication", "human-AI compatibility", "Hanabi", "Off-Belief Learning", "partner legibility", "failstep", "failure diagnosis", "causal attribution", "deterministic detectors", "trace normalization", "K-Bench", "agentic unlearning", "K-Score", "deployment-wide leakage", "tool-observation leakage"]
-last_updated: "2026-09-14"
-source_basis: "Extracted intact from agent-evaluation-research-beyond-outputs.md §37–§40 on 2026-09-11 after the block grew into a reusable August–September companion. §37 derives from arXiv 2608.25937; §38 from the arXiv API and full HTML for 2608.26036; §39 from the arXiv API and full HTML for 2609.10539; §40 from the arXiv API and full HTML for 2609.11489. §41 adds static GitHub inspection of AbdelazizBs/failstep pinned at 09166c7cc356bd1f7c96b1bd54b34d82d7c2d581; repository code was not executed. §42 derives from the arXiv API abstract for K-Bench (2609.12808v1)."
+summary: "Third companion note to agent-evaluation.md containing the cohesive §37–§43 diagnostic-layers block from August–September 2026. Separates candidate supply from answer selection, answer correctness from trace integrity, implementation readiness from blocker localization, AI-AI coordination from human convention recovery, detected trace patterns from causal attribution, answer-level forgetting from deployment-wide secret leakage, and aggregate scores from uncertainty-aware domain estimates under sparse labels."
+triggers: ["agent evaluation diagnostic layers", "candidate supply", "answer selection", "judge reliability", "selection loss", "fixed candidate pools", "trace integrity", "CAIT Rate", "execution contract", "answer-trace consistency", "structured-data agent", "IdeaAMBIG", "codification readiness", "specification gap", "defect localization", "clarification action", "convention gap", "implicit communication", "human-AI compatibility", "Hanabi", "Off-Belief Learning", "partner legibility", "failstep", "failure diagnosis", "causal attribution", "deterministic detectors", "trace normalization", "K-Bench", "agentic unlearning", "K-Score", "deployment-wide leakage", "tool-observation leakage", "disaggregated evaluation", "prediction-powered smoothing", "small area estimation", "domain mean", "interval coverage", "reporting taxonomy"]
+last_updated: "2026-09-20"
+source_basis: "Extracted intact from agent-evaluation-research-beyond-outputs.md §37–§40 on 2026-09-11 after the block grew into a reusable August–September companion. §37 derives from arXiv 2608.25937; §38 from the arXiv API and full HTML for 2608.26036; §39 from the arXiv API and full HTML for 2609.10539; §40 from the arXiv API and full HTML for 2609.11489. §41 adds static GitHub inspection of AbdelazizBs/failstep pinned at 09166c7cc356bd1f7c96b1bd54b34d82d7c2d581; repository code was not executed. §42 derives from the arXiv API abstract for K-Bench (2609.12808v1). §43 derives from the live arXiv API abstract for prediction-powered smoothing and validation (2609.20758v1)."
 parent_note: "agent-evaluation.md"
 previous_companion: "agent-evaluation-research-beyond-outputs.md"
 </ai_context>
@@ -14,11 +14,11 @@ continues [Agent Evaluation Research: Beyond Outputs](./agent-evaluation-researc
 which covers §23–§36 and establishes why evaluation must inspect the substrate rather
 than only terminal outputs.
 
-This note covers §37–§42: six diagnostic layers that localize where apparently
+This note covers §37–§43: seven diagnostic layers that localize where apparently
 successful agent behavior can fail — candidate selection, computational trace,
 specification readiness, partner-legible convention recovery, the boundary
-between detected trace patterns and causal attribution, and secret leakage outside
-the final-answer channel.
+between detected trace patterns and causal attribution, secret leakage outside
+the final-answer channel, and domain-level uncertainty hidden by aggregate scores.
 
 ---
 
@@ -334,6 +334,49 @@ mismatch—not an independent validation of K-Bench or a ranking of unlearning
 methods.
 
 Source: https://arxiv.org/abs/2609.12808v1  
+Source: https://export.arxiv.org/api/query?search_query=%28cat%3Acs.AI%20OR%20cat%3Acs.MA%20OR%20cat%3Acs.CL%29%20AND%20%28all%3Aagent%20OR%20all%3Aagentic%29&start=0&max_results=20&sortBy=submittedDate&sortOrder=descending
+
+---
+
+## §43 Sparse Domain Labels Need Estimation and Validation, Not Raw Slice Means (2026-09-20)
+
+**Prediction-Powered Smoothing and Validation for Disaggregated AI Evaluation**
+([2609.20758v1](https://arxiv.org/abs/2609.20758v1)) treats an evaluation set as
+a finite population and asks for point and interval estimates of performance in
+each domain—for example, task types in a benchmark or conversation types in
+deployed-agent traffic. The practical problem is that exhaustive human grading
+is expensive: direct estimates, including prediction-powered inference (PPI),
+use only a domain's own labels and become imprecise for sparsely labeled slices.
+
+The authors propose prediction-powered smoothing (PP-S), a Bayesian model fit to
+each domain's prediction-powered estimate, plus PP-TS, which can borrow strength
+across a reporting taxonomy. They pair estimation with an approximately unbiased,
+design-based cross-validation score for choosing between direct and smoothed
+estimators. On one curated benchmark with verifiable grading and one deployed
+agent-traffic dataset graded by humans—both with every outcome available for
+retrospective comparison—the abstract reports better point and interval estimation
+than direct estimators, with near-nominal interval coverage. At the same labeling
+budget, the proposed score reportedly selects estimators as well as an independent
+validation sample and estimates the selected estimator's error more accurately.
+
+This adds an **estimation layer** to agent evaluation. Reporting every slice is not
+enough when some slices have very few labels: noisy raw means can make small domains
+look exceptionally good or bad, while a single aggregate can hide them entirely.
+A useful evaluation report should therefore retain the domain taxonomy and sampling
+design, publish sample counts and uncertainty intervals, compare direct and pooled
+estimates, and validate the estimator-selection rule rather than choosing smoothing
+because it produces tidier results. Borrowing strength should follow a declared
+reporting structure, not silently erase meaningful domain differences.
+
+**Boundary:** Scout reviewed the live arXiv API metadata and complete abstract, not
+the full paper, equations, datasets, code, or subgroup tables. The improvement and
+coverage statements are author-reported for two fully observed retrospective study
+populations. The abstract does not quantify gains by domain, specify how sensitive
+PP-TS is to a misspecified taxonomy, or establish performance when the human labels
+or model predictions are systematically biased. Smoothing narrows sampling
+uncertainty; it does not repair a bad grader, missing domain, or invalid taxonomy.
+
+Source: https://arxiv.org/abs/2609.20758v1  
 Source: https://export.arxiv.org/api/query?search_query=%28cat%3Acs.AI%20OR%20cat%3Acs.MA%20OR%20cat%3Acs.CL%29%20AND%20%28all%3Aagent%20OR%20all%3Aagentic%29&start=0&max_results=20&sortBy=submittedDate&sortOrder=descending
 
 ---
