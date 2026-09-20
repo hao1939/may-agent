@@ -208,9 +208,10 @@ support branch protection or rulesets. These rules are therefore contributor
 policy, not enforced merge restrictions. Enabling paid-plan protection is an
 owner decision; never change visibility or billing to bypass that boundary.
 
-Deployment remains separate: use the existing Host Operations App task and
-documented deployment procedure. Never use the local production Compose file
-as a CI sandbox.
+Deployment remains separate: an authorized operator uses the documented
+standalone deployment procedure and retains its exact receipt path. A source
+change, review, or merge does not authorize rollout. Never use the local
+production Compose file as a CI sandbox.
 
 ## Publication privacy
 

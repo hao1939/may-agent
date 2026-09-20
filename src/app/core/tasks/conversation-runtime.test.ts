@@ -2231,11 +2231,12 @@ test.each([false, true])("the Conversation delegates and steers same-App work th
           return {
             state: "waiting",
             summary: "Waiting for the facts source",
+            facts: [],
             conditions: [
               {
                 id: "source",
                 type: "source.ready",
-                subject: "review",
+                subject: "id:review",
                 expected: true,
                 owner: "app:source",
                 reviewAfterMs: 60_000,
@@ -2308,6 +2309,15 @@ test.each([false, true])("the Conversation delegates and steers same-App work th
     );
     ingress.publish("first", "Review the design in the background");
     const waitingEvent = await waiting;
+    {
+      const saved = f.store.readTask("goal/review")!;
+      expect(f.store.readAttempt(saved.status.observedAttemptId!)?.acceptedResult).toMatchObject({
+        state: "waiting",
+        summary: "Waiting for the facts source",
+        facts: [],
+      });
+      expect(saved.status.executionFailures ?? 0).toBe(0);
+    }
     const original = listAppInboxItems(f.db, { appId: app.id }).find((item) => item.source.kind === "human")!;
     linkedTopic = original.topicId!;
     expect(original.result?.response).toBe("I'll review it and return the findings here.");
@@ -2327,6 +2337,15 @@ test.each([false, true])("the Conversation delegates and steers same-App work th
     );
     ingress.publish("correction", "Include recovery in that same review");
     const resumedEvent = await resumed;
+    {
+      const saved = f.store.readTask("goal/review")!;
+      expect(f.store.readAttempt(saved.status.observedAttemptId!)?.acceptedResult).toMatchObject({
+        state: "waiting",
+        summary: "Waiting for the facts source",
+        facts: [],
+      });
+      expect(saved.status.executionFailures ?? 0).toBe(0);
+    }
     reportCountMismatch(2, resumedEvent);
     expect(backgroundRuns).toBe(2);
     expect(humanTurns).toBe(2);

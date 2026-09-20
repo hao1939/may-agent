@@ -84,6 +84,8 @@ wait_for_health() {
 
 emit_wake() {
   phase="$1"
+  has_target="$(bun -e 'const r=JSON.parse(await Bun.file(process.argv[1]).text()); const p=typeof r.project === "string" && r.project.length > 0; const t=typeof r.taskId === "string" && r.taskId.length > 0; if (p !== t) throw new Error("incomplete deployment notification target"); process.stdout.write(p ? "1" : "0")' "$receipt")"
+  [ "$has_target" = "1" ] || return 0
   payload="$(bun -e 'const r=JSON.parse(await Bun.file(process.argv[1]).text()); console.log(JSON.stringify({target:{appId:r.project,taskId:r.taskId},data:{project:r.project,taskId:r.taskId,reason:"restart-aware-deploy-receipt",deploymentCorrelation:r.correlation,deploymentPhase:process.argv[2],deploymentReceipt:r}}))' "$receipt" "$phase")"
   "$target" --emit deployment.settled "$payload"
 }
