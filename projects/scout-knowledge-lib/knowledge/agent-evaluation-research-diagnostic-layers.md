@@ -1,8 +1,8 @@
 <ai_context>
-summary: "Third companion note to agent-evaluation.md containing the cohesive §37–§43 diagnostic-layers block from August–September 2026. Separates candidate supply from answer selection, answer correctness from trace integrity, implementation readiness from blocker localization, AI-AI coordination from human convention recovery, detected trace patterns from causal attribution, answer-level forgetting from deployment-wide secret leakage, and aggregate scores from uncertainty-aware domain estimates under sparse labels."
-triggers: ["agent evaluation diagnostic layers", "candidate supply", "answer selection", "judge reliability", "selection loss", "fixed candidate pools", "trace integrity", "CAIT Rate", "execution contract", "answer-trace consistency", "structured-data agent", "IdeaAMBIG", "codification readiness", "specification gap", "defect localization", "clarification action", "convention gap", "implicit communication", "human-AI compatibility", "Hanabi", "Off-Belief Learning", "partner legibility", "failstep", "failure diagnosis", "causal attribution", "deterministic detectors", "trace normalization", "K-Bench", "agentic unlearning", "K-Score", "deployment-wide leakage", "tool-observation leakage", "disaggregated evaluation", "prediction-powered smoothing", "small area estimation", "domain mean", "interval coverage", "reporting taxonomy"]
+summary: "Third companion note to agent-evaluation.md containing the cohesive §37–§44 diagnostic-layers block from August–September 2026. Separates candidate supply from answer selection, answer correctness from trace integrity, implementation readiness from blocker localization, AI-AI coordination from human convention recovery, detected trace patterns from causal attribution, answer-level forgetting from deployment-wide secret leakage, aggregate scores from uncertainty-aware domain estimates under sparse labels, and end-to-end voice quality from the language model's decisions inside a cascade."
+triggers: ["agent evaluation diagnostic layers", "candidate supply", "answer selection", "judge reliability", "selection loss", "fixed candidate pools", "trace integrity", "CAIT Rate", "execution contract", "answer-trace consistency", "structured-data agent", "IdeaAMBIG", "codification readiness", "specification gap", "defect localization", "clarification action", "convention gap", "implicit communication", "human-AI compatibility", "Hanabi", "Off-Belief Learning", "partner legibility", "failstep", "failure diagnosis", "causal attribution", "deterministic detectors", "trace normalization", "K-Bench", "agentic unlearning", "K-Score", "deployment-wide leakage", "tool-observation leakage", "disaggregated evaluation", "prediction-powered smoothing", "small area estimation", "domain mean", "interval coverage", "reporting taxonomy", "voice agent evaluation", "cascaded voice agent", "MTVA-Bench", "tool argument accuracy", "action ordering"]
 last_updated: "2026-09-20"
-source_basis: "Extracted intact from agent-evaluation-research-beyond-outputs.md §37–§40 on 2026-09-11 after the block grew into a reusable August–September companion. §37 derives from arXiv 2608.25937; §38 from the arXiv API and full HTML for 2608.26036; §39 from the arXiv API and full HTML for 2609.10539; §40 from the arXiv API and full HTML for 2609.11489. §41 adds static GitHub inspection of AbdelazizBs/failstep pinned at 09166c7cc356bd1f7c96b1bd54b34d82d7c2d581; repository code was not executed. §42 derives from the arXiv API abstract for K-Bench (2609.12808v1). §43 derives from the live arXiv API abstract for prediction-powered smoothing and validation (2609.20758v1)."
+source_basis: "Extracted intact from agent-evaluation-research-beyond-outputs.md §37–§40 on 2026-09-11 after the block grew into a reusable August–September companion. §37 derives from arXiv 2608.25937; §38 from the arXiv API and full HTML for 2608.26036; §39 from the arXiv API and full HTML for 2609.10539; §40 from the arXiv API and full HTML for 2609.11489. §41 adds static GitHub inspection of AbdelazizBs/failstep pinned at 09166c7cc356bd1f7c96b1bd54b34d82d7c2d581; repository code was not executed. §42 derives from the arXiv API abstract for K-Bench (2609.12808v1). §43 derives from the live arXiv API abstract for prediction-powered smoothing and validation (2609.20758v1). §44 derives from the live arXiv API abstract for MTVA-Bench (2609.20152v1)."
 parent_note: "agent-evaluation.md"
 previous_companion: "agent-evaluation-research-beyond-outputs.md"
 </ai_context>
@@ -14,11 +14,12 @@ continues [Agent Evaluation Research: Beyond Outputs](./agent-evaluation-researc
 which covers §23–§36 and establishes why evaluation must inspect the substrate rather
 than only terminal outputs.
 
-This note covers §37–§43: seven diagnostic layers that localize where apparently
+This note covers §37–§44: eight diagnostic layers that localize where apparently
 successful agent behavior can fail — candidate selection, computational trace,
 specification readiness, partner-legible convention recovery, the boundary
 between detected trace patterns and causal attribution, secret leakage outside
-the final-answer channel, and domain-level uncertainty hidden by aggregate scores.
+the final-answer channel, domain-level uncertainty hidden by aggregate scores,
+and language-model decisions hidden inside an end-to-end voice pipeline.
 
 ---
 
@@ -377,6 +378,47 @@ or model predictions are systematically biased. Smoothing narrows sampling
 uncertainty; it does not repair a bad grader, missing domain, or invalid taxonomy.
 
 Source: https://arxiv.org/abs/2609.20758v1  
+Source: https://export.arxiv.org/api/query?search_query=%28cat%3Acs.AI%20OR%20cat%3Acs.MA%20OR%20cat%3Acs.CL%29%20AND%20%28all%3Aagent%20OR%20all%3Aagentic%29&start=0&max_results=20&sortBy=submittedDate&sortOrder=descending
+
+---
+
+## §44 Evaluate the Decision-Making Layer Inside a Voice-Agent Cascade (2026-09-20)
+
+**MTVA-Bench** ([2609.20152v1](https://arxiv.org/abs/2609.20152v1)) targets the
+language model inside a cascaded voice agent rather than scoring either the whole
+ASR–LLM–TTS pipeline or an ordinary text-only model call. Its scenarios preserve
+conditions the decision model actually encounters: transcription errors, caller
+speech split across messages, language and script requirements, multi-turn state,
+and backend tool responses determined by the arguments the model sent.
+
+The benchmark contains 49 agents across 490 reviewed scenarios and seven
+languages. An LLM plays the caller from a rubric, while a mock backend executes
+the model's proposed arguments. Scoring combines deterministic tool-call checks
+with two LLM judges: one applies scenario-specific rules and one grades
+conversation quality without seeing the task; both must cite transcript messages.
+Task and conversation scores receive equal weight. In the abstract's seven-model
+study, six models selected the correct tool within a 6.4-point band, yet overall
+scores spanned 24.4 points. The larger differences came from argument values,
+action ordering, rule compliance, and the language surrounding tool calls.
+
+This adds a **cascade-layer isolation rule** to agent evaluation. End-to-end audio
+quality can conceal whether a failure came from recognition, decision-making, or
+speech generation, while a clean text benchmark removes the noisy and segmented
+input the decision model must handle. Evaluate the interfaces separately and
+retain at least: transcription presented to the model, turn boundaries, selected
+tool, exact arguments, ordering, backend response, rule compliance, and user-facing
+conversation quality. Correct tool selection is only one intermediate event, not
+a task-completion verdict.
+
+**Boundary:** Scout reviewed the live arXiv API metadata and complete abstract,
+not the paper, scenario set, prompts, transcripts, code, language breakdowns, or
+judge calibration. The caller is model-simulated and the backend is mocked, so
+the reported results do not establish robustness to real callers, ASR systems,
+latency, interruptions, telephony, or production tools. The abstract does not
+report uncertainty, per-language results, or whether the 24.4-point spread is
+stable across judge choices.
+
+Source: https://arxiv.org/abs/2609.20152v1  
 Source: https://export.arxiv.org/api/query?search_query=%28cat%3Acs.AI%20OR%20cat%3Acs.MA%20OR%20cat%3Acs.CL%29%20AND%20%28all%3Aagent%20OR%20all%3Aagentic%29&start=0&max_results=20&sortBy=submittedDate&sortOrder=descending
 
 ---
