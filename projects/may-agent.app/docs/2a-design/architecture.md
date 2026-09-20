@@ -133,7 +133,7 @@ Composition selects executor adapters and supplies narrow functions to the
 runtime. Each expensive Task attempt runs in an isolated worker; the worker
 rereads and claims current state, executes, and admits its fenced result.
 Worker Events are persisted once and relayed by identity to the parent.
-Conversational turns execute as bounded attempts of one stable Task per Conversation.
+Conversational turns execute as bounded attempts of the stable Task lineage described above.
 
 One `HostCapacity` limit governs execution with App limits and an interactive
 reserve. Pending human Conversation input selects foreground capacity; ordinary

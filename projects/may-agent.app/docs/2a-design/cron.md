@@ -19,8 +19,9 @@ Under the accepted [one-lifecycle baseline](task-resource-engine.md#one-lifecycl
 ordinary work, maintenance and Conversation use the same Task engine. Any may
 receive timer input; none needs it merely to remain open. Quiet Tasks do not
 trigger model work. An owner closes a Task explicitly, and later timer input
-cannot reopen it. Shared execution and explicit closure are implemented in
-#158; removal of old SDK mode names is tracked separately.
+cannot reopen it. Shared execution and explicit closure are implemented in #158.
+New Task intent has no mode; mode fields in older persisted records are
+compatibility evidence.
 
 ```text
 due slot -> publish required App-input event

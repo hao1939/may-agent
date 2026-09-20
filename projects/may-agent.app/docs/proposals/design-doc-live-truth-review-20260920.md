@@ -32,7 +32,8 @@ Reviewed on September 20–21, 2026:
 3. `TaskIntent.mode` is retired for new intent, and current reconciliation
    rejects it. Retained compatibility data and stale code in the paused
    `may-agent.app` and an improvement-composition script do not restore the
-   public contract. `requests.mode` is a different App request-dispatch field.
+   public contract. `requests.mode` is retired historical App vocabulary;
+   current `conversation.mode` is a separate bounded-turn policy field.
 4. The paused App's targeted typecheck reproduced 19 errors across several
    compatibility changes, not only mode. This documentation task does not
    migrate or activate that App.
@@ -48,9 +49,10 @@ Reviewed on September 20–21, 2026:
    retained input was repaired and no longer repeats. They do not justify a new
    age-triggered Condition or controller without first locating a remaining
    owner/intake gap.
-8. The canonical `.disabled` marker is honored by App discovery. Immutable
-   source packaging may omit installation-only markers, but the installed
-   marker keeps `may-agent.app` paused. It remains paused for this change.
+8. The canonical `.disabled` marker excludes the App and its agents from
+   discovery. Immutable source packaging may omit installation-only markers;
+   the marker does not itself prove a `project_lifecycle=paused` runtime state.
+   `may-agent.app` remains inactive for this change.
 
 ## Approved documentation changes
 

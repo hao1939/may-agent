@@ -12,8 +12,8 @@ These contracts were checked against Host `8026aff9`; #167 further shares
 workflow failure handling without changing Task lifetime. This is source
 status, not deployment evidence. App judgment needs separate live evidence.
 
-This page owns the durable Task contract. Retained SDK names such as
-`achieve`/`maintain`, `converged` and `stopped` do not select separate lifecycles.
+This page owns the durable Task contract. Historical `achieve`/`maintain` mode
+data does not select a lifecycle; result labels describe attempts, not lifetime.
 The unmerged [caller-feedback candidate](../proposals/caller-feedback-and-waiting.md)
 adds explicit updates while waiting or retrying and factual execution-error returns; those additions
 are not part of the merged baseline described here.
@@ -24,20 +24,20 @@ Read the lifecycle below first. Use [the executor contract](#one-attempt-interfa
 and [resource reads](#resource-read-interface) as references when implementing an adapter.
 
 ## One lifecycle baseline
-
 **Accepted and implemented in merged Host #158/#164.** One Task lifecycle serves
 ordinary work, maintenance and Conversation. Deployment is a separate check.
 
 A Task remains open after an outcome: the worker chooses how to proceed; its owner
 decides whether to retain, revise or close the assignment. Unfinished failure keeps
 reconciling with backoff, without a fixed failure-count stop. Attempts stay bounded.
-The SDK retains `achieve`/`maintain` as intent labels, not lifetime rules.
-Timers are optional input; quiet Tasks consume no worker or recurring model call.
+Older resources may retain mode data; new `TaskIntent` has no mode. Timers are
+optional input; quiet Tasks consume no worker or recurring model call.
 
 A caller consumes its exact assignment's accepted outcome, not child closure.
 Existing input/generation/result references distinguish it from an old success.
-One stable Task executes a Conversation; its Turns use the common attempt fence.
-Messages, Topics and Requests remain typed records, with no separate executor.
+A Conversation normally executes through one stable Task; fresh human input after
+closure uses the linked successor below. Turns share the common attempt fence;
+Messages, Topics and Requests remain records without a separate executor.
 Request closure needs its current scope and explanation and leaves chat available.
 
 Turn Stop fences one execution/input; a worker's `stopped` result instead
@@ -78,11 +78,11 @@ A typed cross-App dependency may name an exact `taskId`. Runtime then admits
 the input against that existing Task and waits for the same Task lineage. With
 no `taskId`, normal App task resolution creates or finds the requested outcome.
 
-An open Task remains available after an accepted outcome, regardless of mode.
-SDK `status: done` describes that outcome, not owner closure; read `closed`
-separately. A new ask waits for its own exact answer, while replaying the same
-admission must not run another cycle. Closed Tasks and historical immutable
-receipts are not reopened by this rule.
+An open Task remains available after an accepted outcome. Its lifetime is not
+selected by historical mode data. SDK `status: done` describes that outcome,
+not owner closure; read `closed` separately. A new ask waits for its own exact
+answer, while replaying the same admission must not run another cycle. Closed
+Tasks and historical immutable receipts are not reopened by this rule.
 
 For a conversational handoff, the App names the accepted ask in
 `followUp.requestId`. Omit `requestUpdates[].taskRefs` for that handoff: the
@@ -155,8 +155,8 @@ read contract rather than introduce another Task model.
 The stable execution key is `(appId, taskId)`. A task contains:
 
 - `metadata.id`, `generation`, and `resourceVersion`;
-- `spec` describing the outcome, mode, selected agent, workflow or executor,
-  inputs, outputs, dependencies, parent, priority, and acceptance; and
+- `spec` describing outcome, execution, inputs, dependencies, parent, priority,
+  and acceptance; older specs may retain compatibility-only mode data; and
 - `status` describing observed generation, phase, summary, evidence, current
   attempt, and linked Conditions.
 
@@ -584,8 +584,7 @@ or a typed May conversational request when mediation is required.
 The reply satisfies or updates exact evidence for the next attempt; it does not
 itself prove the Task outcome.
 
-## Modes and phases
-
+## Phases and historical mode data
 Phases are:
 
 - `pending`: desired state needs another attempt;
@@ -595,12 +594,13 @@ Phases are:
   depends on its reason and input, not this label alone; and
 - `converged`: an accepted outcome with no currently eligible input.
 
-`achieve` and `maintain` are retained intent labels. Both leave the Task open
-after acceptance; neither automatically removes it from the live graph. Exact
-accepted attempt/input references remain readable after later input. Owner
-closure is separate from phase, so `converged` alone does not tell whether new
-work can be admitted. An observation during an attempt stays pending for a
-later bounded pass unless explicitly consumed by its admitted result.
+Older persisted resources may retain `achieve` or `maintain` mode data. The
+current intent contract does not accept either label, and retained data does not
+select Task lifetime. Exact accepted attempt/input references remain readable
+after later input. Owner closure is separate from phase, so `converged` alone
+does not tell whether new work can be admitted. An observation during an attempt
+stays pending for a later bounded pass unless explicitly consumed by its admitted
+result.
 
 ## Parents and dependencies
 

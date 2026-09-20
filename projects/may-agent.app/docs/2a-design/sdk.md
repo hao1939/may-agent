@@ -101,14 +101,14 @@ wrapped with `kind: "desired"`. `tasks.resolve(event)` instead receives a
 selected fact and returns `TaskIntent | null`. Both are pure mappings.
 [App Contract](agent-app.md#addressed-work) owns this distinction.
 
-A conversational App declares `requests: { mode: "agent", inputKinds: [...] }`
+A conversational App declares `conversation: { mode: "agent", inputKinds: [...] }`
 for the input kinds handled in a bounded turn. It may finish authorized work
 using supplied tools or admit durable intent. An optional `conversationId`
 sets the Conversation for non-channel requests; those inputs are not presented
 as human Turns. Other kinds use normal Task mapping.
 [Message Lifecycle](message-lifecycle.md) owns May's direct-work and follow-up
-policy. Source compatibility for retained requests does not create a second
-work lifecycle.
+policy. Historical `requests` declarations are rejected; retained records do
+not create a second work lifecycle.
 
 The implemented [shared-input design](../proposals/conversation-input-unification.md)
 routes source-marked linked Task reviews through that same Conversation Task,
