@@ -4,6 +4,34 @@
 mode-free Tasks and `facts` for result observations. Retained history stays in
 the Host; source compatibility is not deployment proof.
 
+## Coding-worktree source
+
+May declares a Git workspace on local branch `main`. The Host treats a remote
+named `origin` as that workspace's publication authority, so advertised
+`origin/main` is a new Task worktree's base even when local `main` is ahead; an
+advertised Task branch may supply its head. The loaded App definition and a deployed
+local commit do not change that Git source choice; a retained Task worktree also
+keeps its own head and original base across retries.
+
+For this installation, where locally integrated Apps source is intended to be
+authoritative, use the ordinary Git configuration convention: keep the backup or
+publication remote under a name other than `origin` (for example `backup`) and
+leave local `main` as the worktree base. Use `git remote rename origin backup`,
+not config deletion: preparation still prefers a leftover
+`refs/remotes/origin/main`. Before changing the canonical checkout, require a
+clean repository, record its remotes/upstream, search installed scripts and
+operator commands for an `origin` dependency, and prove the change in a
+disposable clone with the production workspace adapter. Afterward verify that no
+`refs/remotes/origin/*` remain and that a fresh Task fixture starts at local
+`main`; existing local Task work stays retained, but backup-only published Task
+branches are no longer restored automatically. Roll back with
+`git remote rename backup origin` and repeat the remote-authority fixture.
+
+Do not choose the newer commit automatically or infer that installed definitions
+and source worktrees share an authority. Publishing local `main` remains the
+alternative when the remote is intentionally canonical; it is a separate
+operator decision.
+
 People talk to **May** (`app:may`). One logical Conversation Task lineage
 handles that interaction: normally one stable execution Task, with a
 deterministic linked successor only if the prior execution identity was

@@ -643,14 +643,14 @@ capacity. Accepted completion, not an external wait, is the ordinary cleanup
 boundary; dependencies and local evidence should survive the same-generation
 reconciliation loop.
 
-Remote workspace preparation fetches the base and optional published Task
-branch into Task-generation-specific Git refs, without updating shared
-`origin/*`, tags, or `FETCH_HEAD`. Worker subprocesses do not share the Host's
-in-process repository lock, so sharing their mutable fetch destinations is not
-safe synchronization. Each preparation reads its own base snapshot; refreshing
-that snapshot must preserve the existing worktree, head and recorded original
-base commit. These refs are Git preparation metadata, not another Task store
-or a claim that retained work is integrated.
+For a Git App workspace, remote `origin` is source authority. Preparation fetches
+its advertised base and optional Task branch into private, generation-specific refs
+without changing shared refs, tags, or `FETCH_HEAD`. The base is `origin/<base>`;
+an advertised Task branch may supply the new head. Only when neither that remote nor
+a cached `refs/remotes/origin/<base>` exists does preparation use the local base.
+`git remote rename origin backup` moves its tracking refs; deleting only remote
+config does not select local source. This choice never compares recency. Refreshes
+preserve worktree, head, and original base; disabling refresh still prefers a cached ref.
 
 ## Follow-up events
 
