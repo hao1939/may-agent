@@ -301,6 +301,113 @@ test("omitted declarations preserve deadlines without attaching unrelated Condit
   }
 });
 
+test("converged review renews only overdue retained Condition checkpoints", () => {
+  const root = mkdtempSync(join(tmpdir(), "task-converged-condition-review-"));
+  const databasePath = join(root, "state.db");
+  let config = appTaskTestContext({
+    appDir: root,
+    databasePath,
+    agent: "owner",
+    maxConcurrent: 1,
+    tree: { root_task_id: "root", groups: { root: { id: "root", parent_id: null } } },
+  });
+  const claim = () => claimObservedAppTask(config, { taskId: "work", appAgent: "owner", handler: "agent" });
+  const startedAt = Date.parse("2026-09-20T00:00:00.000Z");
+  const overdue = {
+    id: "publication",
+    type: "app.dependency.updated",
+    subject: "id:publication",
+    expected: { field: "status", equals: "done" },
+    owner: "app:library",
+    reviewAfterMs: 60_000,
+  };
+  const future = {
+    id: "independent",
+    type: "review.completed",
+    subject: "id:independent",
+    expected: "done",
+    owner: "human",
+    reviewAfterMs: 3_600_000,
+  };
+  const satisfied = {
+    id: "already-reviewed",
+    type: "review.completed",
+    subject: "id:accepted",
+    expected: "done",
+    owner: "human",
+    reviewAfterMs: 3_600_000,
+  };
+  try {
+    setSystemTime(startedAt);
+    observeAppTaskIntent(config, {
+      appAgent: "owner",
+      intent: { id: "work", parentId: "root", outcome: "Review source", acceptance: ["Source reviewed"] },
+    });
+    const initial = claim();
+    if (initial.kind !== "claimed") throw new Error(initial.kind);
+    deferAppTask(config, initial, {
+      disposition: "waiting",
+      summary: "Publication and independent review remain",
+      conditions: [overdue, future, satisfied],
+    });
+    trackAppTaskConditionEventForTasks(config, {
+      type: "review.completed",
+      data: { id: "accepted", state: "done" },
+    }, ["work"]);
+    const review = claim();
+    if (review.kind !== "claimed") throw new Error(review.kind);
+    const before = config.resourceStore.readTaskContext({
+      taskIds: ["work"],
+      conditionIds: [overdue.id, future.id, satisfied.id],
+    });
+    const futureBefore = structuredClone(before.conditions?.[future.id]);
+    const overdueBefore = structuredClone(before.conditions?.[overdue.id]);
+
+    setSystemTime(startedAt + overdue.reviewAfterMs + 1);
+    completeAppTask(config, review, {
+      summary: "Current source review is complete; publication remains pending",
+      facts: ["source:unchanged", "publication:pending"],
+    });
+
+    const after = config.resourceStore.readTaskContext({
+      taskIds: ["work"],
+      conditionIds: [overdue.id, future.id, satisfied.id],
+    });
+    expect(after.resources?.work?.status).toMatchObject({
+      phase: "waiting",
+      conditionIds: [overdue.id, future.id],
+    });
+    expect(after.conditions?.[overdue.id]).toMatchObject({
+      metadata: {
+        id: overdue.id,
+        generation: overdueBefore?.metadata.generation,
+        resourceVersion: (overdueBefore?.metadata.resourceVersion ?? 0) + 1,
+      },
+      spec: overdueBefore?.spec,
+      status: { state: "unknown", observedAt: new Date(Date.now()).toISOString() },
+    });
+    expect(after.conditions?.[future.id]).toEqual(futureBefore);
+    expect(after.conditions?.[satisfied.id]).toBeUndefined();
+    const renewedDue = Date.now() + overdue.reviewAfterMs;
+    expect(config.resourceStore.nextDueAt()).toBe(renewedDue);
+    expect(claim().kind).toBe("waiting");
+
+    config.resourceStore.close();
+    config = appTaskContext({
+      appDir: root,
+      projectDir: root,
+      agent: "owner",
+      maxConcurrent: 1,
+      resourceStore: AppTaskResourceStore.openStandalone(databasePath, "sample"),
+    });
+    expect(config.resourceStore.nextDueAt()).toBe(renewedDue);
+    expect(claim().kind).toBe("waiting");
+  } finally {
+    config.resourceStore.close();
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
 test.each(["changed-spec", "replaced-id"])("reconsiders inputs with %s waits after reopen, without answering unrelated input", (change) => {
   const root = mkdtempSync(join(tmpdir(), "task-wait-replacement-"));
   const databasePath = join(root, "state.db");
