@@ -63,9 +63,13 @@ Before publication the observer rereads the exact Task and Condition signature.
 A result acquired for a replaced wait is discarded. Host `.state` freshness then
 fences journal replay by the event envelope timestamp. Fetch failures, timeouts,
 rate limits, malformed provider results, and incomplete review pagination produce
-a non-matching `may.github.pull-request.read-failed` fact and warning; they neither
-satisfy nor remove the PR Condition. A review-only failure does not discard the
-independently valid PR state, merge, or head fact.
+a non-matching `may.github.pull-request.read-failed` fact and warning. The first
+new failure is also targeted to the exact owner Task so it wakes for an honest
+failure judgment even though the failure fact cannot satisfy the PR Condition;
+repeated identical failures are suppressed. The targeted wake neither satisfies
+nor removes the PR Condition. A review-only failure does not discard the
+independently valid PR state, merge, or head fact: that separately published
+partial state may still match the Condition and wake ordinary owner judgment.
 
 Disposable suppression memory stores ordinary typed JSON publication states for
 at most 128 recently observed live Conditions. The 500-interest regression stays
@@ -91,8 +95,20 @@ simpler but does not meet automatic observation; a Host change is unnecessary
 because scoped Task list/get, AppObserver publication, and existing Condition
 matching already provide the route.
 
-A bounded local live trial may call the production reader for the already-merged
-public `hao1939/may-agent#215`. It can prove current connectivity and parsing only.
-It cannot prove an open-to-merged transition, live owner reconciliation, approval,
-deployment, or production activation, and must not write the live database or
-create/merge a PR.
+Two live proof scopes remain distinct:
+
+1. A bounded reader-only trial may call the production reader for the
+   already-merged public `hao1939/may-agent#215`. It proves current connectivity
+   and parsing only; it does not exercise observer registration, event admission,
+   or owner reconciliation.
+2. After reviewed source integration and App reload, a planned bounded registered
+   live trial may use an already-existing exact PR Condition to prove the live
+   current-state -> durable event -> exact owner wake route. It must preserve
+   independent Conditions and may prove an initially merged current state, but
+   not an open-to-merged transition unless that transition actually occurs.
+   The current read-only inventory found no remaining PR Condition among current
+   May Task references, so there is nothing to backfill and this second scope
+   cannot be run now without fabricating authoritative work.
+
+Neither scope proves approval or deployment, writes the live database directly,
+or creates or merges a PR solely for testing.

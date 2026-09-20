@@ -286,29 +286,48 @@ try {
   failed = true;
   currentTime += observer.intervalMs;
   await scan();
+  const failureEvent = observations.at(-1);
+  const failureAdmission = admissions.at(-1);
   const failedClaim = claimObservedAppTask(config, {
     taskId,
     appAgent: "may",
     handler: "agent",
   });
+  assert.equal(failureEvent?.type, "may.github.pull-request.read-failed");
+  assert.deepEqual(failureAdmission?.taskIds, [taskId]);
+  assert.equal(failedClaim.kind, "claimed");
+  deferAppTask(config, failedClaim, {
+    disposition: "waiting",
+    summary: "Failure judged; preserve fallback",
+    facts: ["Provider temporarily unavailable"],
+  });
+  assert.equal(
+    readRuntimeTaskView({ taskStateConfig: config }, taskId).status,
+    "waiting",
+  );
+  assert.deepEqual(
+    store
+      .readTaskConditions(taskId)
+      .map((c: any) => c.metadata.id)
+      .sort(),
+    ["github-pr", "human-review"],
+  );
   report.failure = {
-    emitted: observations.at(-1)?.type,
-    admittedTaskIds: admissions.at(-1)?.taskIds,
+    emitted: failureEvent.type,
+    admittedTaskIds: failureAdmission.taskIds,
     ownerClaimKind: failedClaim.kind,
+    settledStatus: "waiting",
+    survivingConditionIds: ["github-pr", "human-review"],
   };
-  if (failedClaim.kind === "claimed")
-    deferAppTask(config, failedClaim, {
-      disposition: "waiting",
-      summary: "Failure judged; preserve fallback",
-      facts: ["Provider temporarily unavailable"],
-    });
   currentTime += observer.intervalMs;
   await scan();
-  report.failure.repeatedFailureOwnerClaimKind = claimObservedAppTask(config, {
+  const repeatedFailureOwnerClaimKind = claimObservedAppTask(config, {
     taskId,
     appAgent: "may",
     handler: "agent",
   }).kind;
+  assert.equal(repeatedFailureOwnerClaimKind, "waiting");
+  report.failure.repeatedFailureOwnerClaimKind = repeatedFailureOwnerClaimKind;
   report.httpCalls = httpCalls;
   report.fixtureOnly = true;
   report.limit =

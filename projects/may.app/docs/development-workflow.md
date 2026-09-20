@@ -276,6 +276,15 @@ poller, tracking file, or manual retry loop to make one PR faster. A malformed
 provider response, unsafe pagination link, redirect, quota deferral, or incomplete
 review read is unavailable evidence rather than an unchanged or closed PR.
 
+From the Apps repository root, run the maintained production-composition probe
+against an explicit Host checkout (never a guessed checkout):
+
+```sh
+HOST_CANDIDATE=/app/projects/may-agent APP_CANDIDATE="$PWD" \
+  bun projects/may.app/scripts/github-pull-request-composition.ts \
+  /tmp/github-pull-request-composition.json
+```
+
 The fact wakes the same Task for judgment; it does not approve, merge, deploy,
 close work, or retire independent Conditions. A targeted `read-failed` fact also
 wakes that owner once even though it cannot match or satisfy the PR Condition; a
