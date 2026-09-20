@@ -490,7 +490,9 @@ failure, unblock, dependency repair, wake or ordinary reconsideration never
 clears peers. Retained legacy rows remain readable without being revalidated as
 newly authored declarations. A changed specification starts
 a new generation and cannot inherit an older approval. Condition `reviewAfterMs`
-checkpoints renew after an accepted review while the fact remains pending.
+checkpoints renew after an accepted waiting or converged settlement while the
+fact remains pending. Stale or otherwise unaccepted proposals, including those
+superseded by pending input, do not renew checkpoints.
 Task-level `reviewAt` is a recovery checkpoint: a future omitted deadline is
 preserved, a due checkpoint is consumed, and sleeping again must return a new
 explicit deadline or Condition. Immediate `continue: true` work requires neither.
