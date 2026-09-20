@@ -4,6 +4,7 @@ import { resolve } from "node:path";
 import type { ExecutionResult, WorkflowContext } from "@may-agent/sdk";
 import {
   approvalCondition,
+  assertCurrentEvaluationSubject,
   buildApprovalProposal,
   packetHash,
   type ApprovalPacket,
@@ -46,17 +47,14 @@ async function assertEvaluationSubjectCurrent(packet: ApprovalPacket) {
     pinned.assessmentPurpose === "ongoing"
       ? assessmentContext(subject, "ongoing")
       : null;
-  if (
-    subject.disposition !== "eligible" ||
-    detail.generation !== pinned.generation ||
-    subject.evidenceHash !== pinned.evidenceHash ||
-    (assessment &&
-      (assessment.rubricVersion !== pinned.rubricVersion ||
-        assessment.validityIdentity !== pinned.validityIdentity))
-  )
-    throw new Error(
-      "Evaluation subject changed before approval preparation; obtain a current review",
-    );
+  assertCurrentEvaluationSubject(pinned, {
+    disposition: subject.disposition,
+    generation:
+      typeof detail.generation === "number" ? detail.generation : undefined,
+    evidenceHash: subject.evidenceHash,
+    validityIdentity: assessment?.validityIdentity,
+    rubricVersion: assessment?.rubricVersion,
+  });
 }
 
 /** Idempotently retain the exact proposal bytes outside the target checkout. */

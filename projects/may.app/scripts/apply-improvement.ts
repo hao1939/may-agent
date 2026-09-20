@@ -5,6 +5,7 @@ import { readFileSync, realpathSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 import {
   applicationDenial,
+  assertCurrentEvaluationSubject,
   trustedDecisionFromEvent,
   type ApprovalPacket,
   type ApprovalProposal,
@@ -251,18 +252,21 @@ export async function applyImprovementFromTrustedEvent(
     evidenceHash?: string;
     task?: Record<string, unknown>;
     validityIdentity?: string;
+    rubricVersion?: string;
   }> = async (identity) => {
     const { readSubjectTask } =
       await import("../../evaluation.app/agents/evaluator/workflows/lib/public-task-evidence.js");
     const { assessmentContext } =
       await import("../../evaluation.app/agents/evaluator/workflows/lib/task-assessment-context.js");
     const subject = await readSubjectTask(identity);
+    const assessment =
+      subject.disposition === "eligible"
+        ? assessmentContext(subject, "ongoing")
+        : undefined;
     return {
       ...subject,
-      validityIdentity:
-        subject.disposition === "eligible"
-          ? assessmentContext(subject, "ongoing").validityIdentity
-          : undefined,
+      validityIdentity: assessment?.validityIdentity,
+      rubricVersion: assessment?.rubricVersion,
     };
   },
 ) {
@@ -295,16 +299,14 @@ export async function applyImprovementFromTrustedEvent(
       taskId: pinned.taskId,
     });
     const detail = (subject.task?.detail ?? {}) as Record<string, unknown>;
-    if (
-      subject.disposition !== "eligible" ||
-      detail.generation !== pinned.generation ||
-      subject.evidenceHash !== pinned.evidenceHash ||
-      (pinned.assessmentPurpose === "ongoing" &&
-        subject.validityIdentity !== pinned.validityIdentity)
-    )
-      throw new Error(
-        "Evaluation subject changed before source application; fresh review and approval are required",
-      );
+    assertCurrentEvaluationSubject(pinned, {
+      disposition: subject.disposition,
+      generation:
+        typeof detail.generation === "number" ? detail.generation : undefined,
+      evidenceHash: subject.evidenceHash,
+      validityIdentity: subject.validityIdentity,
+      rubricVersion: subject.rubricVersion,
+    });
   }
   return applyImprovement(files, decision.packetHash);
 }

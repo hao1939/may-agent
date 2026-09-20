@@ -343,8 +343,12 @@ export function createPublicTaskEvidenceProvider(
         ...(acceptedEvidence
           ? {
               acceptedEvidence: true,
-              ...(acceptedEvidence.limit ? { evidenceLimit: acceptedEvidence.limit } : {}),
-              ...(acceptedEvidence.cursor ? { evidenceCursor: acceptedEvidence.cursor } : {}),
+              ...(acceptedEvidence.limit
+                ? { evidenceLimit: acceptedEvidence.limit }
+                : {}),
+              ...(acceptedEvidence.cursor
+                ? { evidenceCursor: acceptedEvidence.cursor }
+                : {}),
             }
           : {}),
       });
@@ -364,8 +368,12 @@ export function createPublicTaskEvidenceProvider(
         ...(acceptedEvidence
           ? {
               acceptedEvidence: true,
-              ...(acceptedEvidence.limit ? { evidenceLimit: acceptedEvidence.limit } : {}),
-              ...(acceptedEvidence.cursor ? { evidenceCursor: acceptedEvidence.cursor } : {}),
+              ...(acceptedEvidence.limit
+                ? { evidenceLimit: acceptedEvidence.limit }
+                : {}),
+              ...(acceptedEvidence.cursor
+                ? { evidenceCursor: acceptedEvidence.cursor }
+                : {}),
             }
           : {}),
       });

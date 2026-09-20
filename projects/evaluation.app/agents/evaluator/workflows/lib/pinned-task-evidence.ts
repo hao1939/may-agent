@@ -86,8 +86,11 @@ export async function readPinnedTaskEvidence(
         limit: 8,
         ...(evidenceCursor ? { cursor: evidenceCursor } : {}),
       });
-      const page = object(object(historical.acceptedEvidence).page);
-      const items = Array.isArray(page.items) ? page.items : [];
+      const navigation = object(historical.acceptedEvidence);
+      const page = object(navigation.page);
+      if (!navigation.page || !Array.isArray(page.items))
+        throw new Error("accepted-attempt page unsupported or malformed");
+      const items = page.items;
       for (const item of items) {
         const record = object(item);
         queue.push({
@@ -100,11 +103,14 @@ export async function readPinnedTaskEvidence(
             `accepted attempt content truncated: ${String(record.attemptId)}`,
           );
       }
-      evidenceCursor = typeof page.nextCursor === "string" ? page.nextCursor : "";
+      evidenceCursor =
+        typeof page.nextCursor === "string" ? page.nextCursor : "";
       evidencePages += 1;
     } while (evidenceCursor && evidencePages < 16);
     if (evidenceCursor)
-      gaps.add("accepted-attempt navigation limit (128 records); older evidence not read");
+      gaps.add(
+        "accepted-attempt navigation limit (128 records); older evidence not read",
+      );
   } catch {
     gaps.add(`accepted-attempt history unavailable: ${appId}/${taskId}`);
   }
@@ -226,6 +232,8 @@ export async function readPinnedTaskEvidence(
       artifactBytes: 32_768,
       totalArtifactBytes: 65_536,
       linkedTasks: 4,
+      acceptedAttempts: 128,
+      acceptedPageSize: 8,
       scanNodes: 2_000,
     },
     artifacts,

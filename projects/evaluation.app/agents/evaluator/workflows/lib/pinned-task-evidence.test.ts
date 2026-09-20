@@ -42,7 +42,14 @@ function publicReader(
       };
     return {
       command: "task.get",
-      task: { appId: command.appId, taskId: id, generation: 1 },
+      task: {
+        appId: command.appId,
+        taskId: id,
+        generation: 1,
+        ...(command.acceptedEvidence
+          ? { acceptedEvidence: { page: { items: [] } } }
+          : {}),
+      },
     };
   };
 }
@@ -125,7 +132,11 @@ describe("pinned Task evidence read-back", () => {
                       taskId: "goal/one",
                       taskGeneration: 1,
                       attemptId: `later-wait-${index}`,
-                      acceptedResult: { state: "waiting", summary: "budget", facts: [] },
+                      acceptedResult: {
+                        state: "waiting",
+                        summary: "budget",
+                        facts: [],
+                      },
                     })),
                     nextCursor: "older",
                   },
@@ -136,7 +147,10 @@ describe("pinned Task evidence read-back", () => {
     );
     expect(cursors).toEqual(["", "older"]);
     expect(bundle.artifacts).toHaveLength(1);
-    expect(bundle.artifacts[0]).toMatchObject({ status: "read", content: "old accepted evidence" });
+    expect(bundle.artifacts[0]).toMatchObject({
+      status: "read",
+      content: "old accepted evidence",
+    });
   });
 
   test("existence is not read-back, and missing-to-readable evidence changes review identity", async () => {

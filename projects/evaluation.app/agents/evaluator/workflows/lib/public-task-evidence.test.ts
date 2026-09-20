@@ -323,11 +323,12 @@ describe("public Task evidence", () => {
     });
     expect(subject.task!.appTask).not.toHaveProperty("creator");
     expect(subject.task!.readBack).toMatchObject({
-      gaps: [
+      gaps: expect.arrayContaining([
         expect.stringContaining(
           "Optional creator/delegation provenance is unavailable",
         ),
-      ],
+        expect.stringContaining("accepted-attempt history unavailable"),
+      ]),
     });
     expect(subject.evidenceHash).toHaveLength(64);
     const withCreator = await readSubjectTask(

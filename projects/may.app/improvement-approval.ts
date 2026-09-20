@@ -16,6 +16,31 @@ export interface EvaluationSubjectIdentity {
   validityIdentity?: string;
 }
 
+export type CurrentEvaluationSubject = {
+  disposition: string;
+  generation?: number;
+  evidenceHash?: string;
+  validityIdentity?: string;
+  rubricVersion?: string;
+};
+
+export function assertCurrentEvaluationSubject(
+  pinned: EvaluationSubjectIdentity,
+  current: CurrentEvaluationSubject,
+): void {
+  if (
+    current.disposition !== "eligible" ||
+    current.generation !== pinned.generation ||
+    current.evidenceHash !== pinned.evidenceHash ||
+    (pinned.assessmentPurpose === "ongoing" &&
+      (current.validityIdentity !== pinned.validityIdentity ||
+        current.rubricVersion !== pinned.rubricVersion))
+  )
+    throw new Error(
+      "Evaluation subject changed; a fresh review and approval are required",
+    );
+}
+
 export interface ApprovalPacket {
   packetHash: string;
   baselineCommit: string;

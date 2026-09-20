@@ -641,7 +641,8 @@ describe("automatic task outcome selector", () => {
         NOW + wake,
       );
       expect(listReads - beforeLists).toBeLessThanOrEqual(5);
-      expect(exactReads - beforeExact).toBeLessThanOrEqual(2);
+      // One additional exact read is the explicit bounded accepted-evidence page.
+      expect(exactReads - beforeExact).toBeLessThanOrEqual(3);
       state = result.state;
       if (!result.candidate) continue;
       selected.add(result.candidate.taskId);
@@ -654,7 +655,7 @@ describe("automatic task outcome selector", () => {
 
     expect(selected.size).toBe(100);
     expect(listReads).toBe(100);
-    expect(exactReads).toBe(200);
+    expect(exactReads).toBe(300);
     expect(state).not.toHaveProperty("attemptedTaskByApp");
     expect(state).not.toHaveProperty("lastTaskByApp");
   });

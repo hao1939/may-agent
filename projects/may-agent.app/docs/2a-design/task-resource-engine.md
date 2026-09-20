@@ -500,6 +500,16 @@ cancellation remains the only broad termination operation. Callers that once
 used a replacement list must now explicitly retire removed identities; arbitrary
 JSON, observations, and history are not deep-merged.
 
+Exact Task reads keep current status, summary, and result current-first. They
+advertise whether immutable accepted-attempt evidence exists without loading its
+bodies. A caller may explicitly request bounded newest-first pages from the same
+read surface. Each record carries App, Task, generation, attempt and
+`app_task_attempts.acceptedResult` provenance; an opaque cursor can reach older
+records after arbitrarily many later waits. Per-record serialized output and
+page size are bounded, with explicit omitted-field and continuation metadata.
+Historical records remain evidence only: they never replace the current result,
+certify recovery, satisfy an obligation, or create a second evidence lifecycle.
+
 Omitting the wake route or review deadline does not turn an incomplete state
 into a valid indefinite wait. Code validates shape and exact routes it knows;
 App validation/guidance must establish whether its source can actually produce
