@@ -40,13 +40,18 @@ describe("App Task read tool", () => {
           action: "get",
           taskId: "benchmark",
           target: { appId: "gym" },
+          acceptedEvidence: { limit: 4, cursor: "older" },
         }),
       ),
     ).toMatchObject({ id: "benchmark", status: "done" });
     expect(calls).toEqual([
       expect.objectContaining({ appId: "evaluation", options: { status: ["running"], limit: 10 } }),
       expect.objectContaining({ appId: "evaluation", taskId: "review" }),
-      expect.objectContaining({ appId: "gym", taskId: "benchmark" }),
+      expect.objectContaining({
+        appId: "gym",
+        taskId: "benchmark",
+        options: { acceptedEvidence: { limit: 4, cursor: "older" } },
+      }),
     ]);
   });
 

@@ -3010,6 +3010,20 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
     }
   }
 
+  function taskEvidenceQuery(url: URL): Record<string, unknown> {
+    const acceptedEvidence = url.searchParams.get("acceptedEvidence");
+    if (acceptedEvidence !== null && acceptedEvidence !== "true" && acceptedEvidence !== "false") throw new Error("acceptedEvidence must be true or false");
+    if (acceptedEvidence !== "true") {
+      if (url.searchParams.has("evidenceLimit") || url.searchParams.has("evidenceCursor")) throw new Error("acceptedEvidence=true is required for evidence pagination");
+      return {};
+    }
+    return {
+      acceptedEvidence: true,
+      ...(url.searchParams.has("evidenceLimit") ? { evidenceLimit: Number(url.searchParams.get("evidenceLimit")) } : {}),
+      ...(url.searchParams.has("evidenceCursor") ? { evidenceCursor: url.searchParams.get("evidenceCursor") } : {}),
+    };
+  }
+
   async function handleHumanTaskRead(url: URL): Promise<Response> {
     const appId = url.searchParams.get("appId")?.trim();
     const detail = url.pathname === "/api/task";
@@ -3020,10 +3034,13 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
     if (includeDone !== null && includeDone !== "true" && includeDone !== "false") {
       return json({ error: "includeDone must be true or false" }, 400);
     }
+    let evidenceOptions: Record<string, unknown>;
+    try { evidenceOptions = taskEvidenceQuery(url); }
+    catch (error) { return json({ error: error instanceof Error ? error.message : String(error) }, 400); }
     try {
       const response = await daemonRead(
         detail
-          ? { type: "task.get", appId, taskId }
+          ? { type: "task.get", appId, taskId, ...evidenceOptions }
           : {
               type: "tasks.list",
               ...(appId ? { appId } : {}),
@@ -3064,11 +3081,14 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
     }
   }
 
-  async function handleAppTask(appId: string, taskId: string): Promise<Response> {
+  async function handleAppTask(url: URL, appId: string, taskId: string): Promise<Response> {
     if (!appId) return json({ error: "appId required" }, 400);
     if (!taskId) return json({ error: "taskId required" }, 400);
+    let evidenceOptions: Record<string, unknown>;
+    try { evidenceOptions = taskEvidenceQuery(url); }
+    catch (error) { return json({ error: error instanceof Error ? error.message : String(error) }, 400); }
     try {
-      const response = await daemonRead({ type: "app.task.get", appId, taskId });
+      const response = await daemonRead({ type: "app.task.get", appId, taskId, ...evidenceOptions });
       if (response.type === "error") return json({ error: response.message ?? "Task read failed" }, 400);
       return response.task ? json(response.task) : json({ error: "Task not found" }, 404);
     } catch (error) {
@@ -3616,7 +3636,7 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
       if (url.pathname === "/api/projects") return handleProjects();
       const appTaskMatch = url.pathname.match(/^\/api\/apps\/([^/]+)\/tasks\/(.+)$/);
       if (appTaskMatch && req.method === "GET") {
-        return handleAppTask(decodeURIComponent(appTaskMatch[1]), decodeURIComponent(appTaskMatch[2]));
+        return handleAppTask(url, decodeURIComponent(appTaskMatch[1]), decodeURIComponent(appTaskMatch[2]));
       }
       const appTasksMatch = url.pathname.match(/^\/api\/apps\/([^/]+)\/tasks$/);
       if (appTasksMatch && req.method === "GET") return handleAppTasks(url, decodeURIComponent(appTasksMatch[1]));
