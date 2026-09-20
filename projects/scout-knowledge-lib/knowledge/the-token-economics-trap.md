@@ -1,8 +1,8 @@
 <ai_context>
-summary: "Cross-source synthesis: Agent-era token consumption was structurally unpredictable from 2025 vantage, causing universal budget blowouts. The trap has three layers: (1) predictability collapse (no budget set in 2025 could model agent consumption), (2) cost-trajectory inversion (humans get cheaper per-quality-unit over time, LLMs don't), (3) hallucination-size inversion (bigger models cost more AND hallucinate more). The combined effect drives model-tier differentiation, local adoption, and two-model architectures as structural responses. Jul 2026 update: Cost Inversion Threshold identified — when AI infrastructure cost per engineer exceeds total compensation (bull case: $596K/engineer by 2029, Goldman Sachs). Aug 2026 update: a Databricks field report describes a softer cost-control stack—model/harness portability, routing, progressive spend friction, and context-overhead tuning—rather than hard user cutoffs. Sep 2026 update: abstract-level evidence suggests live tool progress is a materially better KV-cache scheduling signal than duration estimates fixed before a call."
-triggers: ["AI cost wall", "token economics", "budget blowout", "AI budget", "token budget cap", "$1500/month", "model tiering", "frontier economics", "cost-trajectory inversion", "agent token consumption", "budget predictability", "cost inversion threshold", "AI costs more than engineer", "24x token consumption", "compute payroll ratio", "AI gateway", "progressive spend friction", "model downshifting", "coding agent cost routing", "tool progress signal", "KV cache scheduling", "post-tool TTFT"]
-last_updated: "2026-09-18"
-source_basis: "HN scans #47-#58 (Jun-Aug 2026), FT reporting on AI budget strain, simonw framing (predictability thesis), gamblor956 (cost-trajectory inversion), hallucination benchmarks (AA-Omniscience). Cross-referenced with: The Cold Start Tax (session-start token overhead), The Coordination Tax (multi-agent cost multiplication), Evaluation Mirage (dangerous valley from budget opacity). Jul 2026: tomtunguz.com/ai-spend-breakeven-2029, Goldman Sachs AI Economy 2026, Forbes Global 2000, HN Scan #404. Aug 2026: Databricks field report on AI coding cost controls, surfaced by HN item 49214468. Sep 2026: arXiv 2609.18849v1 abstract on live tool-progress signals for KV-cache scheduling."
+summary: "Cross-source synthesis: Agent-era token consumption was structurally unpredictable from 2025 vantage, causing universal budget blowouts. The trap has three layers: (1) predictability collapse (no budget set in 2025 could model agent consumption), (2) cost-trajectory inversion (humans get cheaper per-quality-unit over time, LLMs don't), (3) hallucination-size inversion (bigger models cost more AND hallucinate more). The combined effect drives model-tier differentiation, local adoption, and two-model architectures as structural responses. Jul 2026 update: Cost Inversion Threshold identified — when AI infrastructure cost per engineer exceeds total compensation (bull case: $596K/engineer by 2029, Goldman Sachs). Aug 2026 update: a Databricks field report describes a softer cost-control stack—model/harness portability, routing, progressive spend friction, and context-overhead tuning—rather than hard user cutoffs. Sep 2026 updates: abstract-level evidence suggests live tool progress is a materially better KV-cache scheduling signal than duration estimates fixed before a call; Sabi provides an inspectable per-round routing implementation whose own frozen replay is more expensive than its fixed-mid baseline, illustrating why policy correctness and savings need separate evidence."
+triggers: ["AI cost wall", "token economics", "budget blowout", "AI budget", "token budget cap", "$1500/month", "model tiering", "frontier economics", "cost-trajectory inversion", "agent token consumption", "budget predictability", "cost inversion threshold", "AI costs more than engineer", "24x token consumption", "compute payroll ratio", "AI gateway", "progressive spend friction", "model downshifting", "coding agent cost routing", "adaptive inference routing", "routing economics", "tool progress signal", "KV cache scheduling", "post-tool TTFT"]
+last_updated: "2026-09-20"
+source_basis: "HN scans #47-#58 (Jun-Aug 2026), FT reporting on AI budget strain, simonw framing (predictability thesis), gamblor956 (cost-trajectory inversion), hallucination benchmarks (AA-Omniscience). Cross-referenced with: The Cold Start Tax (session-start token overhead), The Coordination Tax (multi-agent cost multiplication), Evaluation Mirage (dangerous valley from budget opacity). Jul 2026: tomtunguz.com/ai-spend-breakeven-2029, Goldman Sachs AI Economy 2026, Forbes Global 2000, HN Scan #404. Aug 2026: Databricks field report on AI coding cost controls, surfaced by HN item 49214468. Sep 2026: arXiv 2609.18849v1 abstract on live tool-progress signals for KV-cache scheduling; vizuh/sabi revision 6ef18b9ce20dd895b7b96a2009896e17a914d5e7 source, tests, compatibility ledger, and offline eval."
 </ai_context>
 
 # The Token Economics Trap: Why Every AI Budget Is Wrong
@@ -381,6 +381,58 @@ portable client surface, centralized routing, and progressive spend gates.
 
 Source: https://news.ycombinator.com/item?id=49214468,
 https://www.databricks.com/blog/managing-ai-coding-costs-scale
+
+## A Router Can Behave as Designed and Still Cost More (GitHub, September 2026)
+
+[Sabi](https://github.com/vizuh/sabi) is a young TypeScript implementation of
+per-round model and reasoning-effort routing for coding-agent trajectories. At
+pinned revision
+[`6ef18b9ce20dd895b7b96a2009896e17a914d5e7`](https://github.com/vizuh/sabi/commit/6ef18b9ce20dd895b7b96a2009896e17a914d5e7),
+the deterministic policy classifies transcript state before routing: reads and
+searches default to a cheap tier, edits and verification to mid, hard failures
+to strong, and transport failures to a separate transport tier rather than
+escalating merely because an error looks severe. Capability and compatibility
+gates sit outside that policy. The repository's evidence ledger also keeps
+source/tests, real-client-to-mock protocol checks, authenticated provider smoke
+tests, and completed-task cost/quality evaluations as separate evidence levels.
+
+Scout installed the checkout's declared npm workspaces and reproduced all 406
+repository tests. More importantly, the repository's own `npm run eval` did not
+manufacture a savings win. Its frozen eight-task, ten-round replay routed two
+rounds cheap, three mid, and five strong; under the checked-in synthetic prices
+and fixed 1,000-input/200-output-token assumption per round, Sabi cost $0.0215
+versus $0.0044 for an all-mid baseline: **-388.4% savings**. Five task outcomes
+were labelled pass and three fail; all three failures escalated to strong, while
+only two of five passing tasks stayed at or below the baseline tier.
+
+That negative result clarifies the evaluation contract for adaptive routing:
+
+1. **Policy correctness is not economic superiority.** Correctly escalating
+   failures can increase cost; a router needs an explicit quality/cost frontier,
+   not only classification tests.
+2. **Counterfactuals need executions.** Sabi's task outcomes are fixed labels on
+   synthetic transcripts, not outcomes produced by the routed models. Repricing
+   the same 1,200-token round across tiers cannot show whether a cheaper route
+   would preserve task completion or whether a stronger route would recover a
+   failure.
+3. **Evidence levels should not collapse.** Passing local tests establishes that
+   policy and adapter contracts behave as encoded. It does not convert a mock
+   client path into provider entitlement, live quality, or production savings.
+
+The implementation is therefore useful less as proof that adaptive routing
+saves money than as an unusually inspectable example of what remains to prove.
+A production router benchmark should replay the same versioned tasks through
+both routed and fixed policies, measure actual per-route tokens and latency,
+score completed-task quality independently, report fallback and escalation
+rates, and publish uncertainty across repeated runs. The repository itself says
+that no paid provider smoke test has run, and it was created only on 2026-09-18;
+there is no adoption or production-reliability evidence here.
+
+Sources: [repository](https://github.com/vizuh/sabi),
+[README](https://github.com/vizuh/sabi/blob/6ef18b9ce20dd895b7b96a2009896e17a914d5e7/README.md),
+[harness evidence ledger](https://github.com/vizuh/sabi/blob/6ef18b9ce20dd895b7b96a2009896e17a914d5e7/docs/harnesses.md),
+[offline evaluation harness](https://github.com/vizuh/sabi/blob/6ef18b9ce20dd895b7b96a2009896e17a914d5e7/packages/evals/src/harness.ts),
+[frozen tasks](https://github.com/vizuh/sabi/blob/6ef18b9ce20dd895b7b96a2009896e17a914d5e7/packages/evals/src/tasks.ts)
 
 ## Live Tool Progress Beats Pre-Call Duration Guesses (arXiv, September 2026)
 
