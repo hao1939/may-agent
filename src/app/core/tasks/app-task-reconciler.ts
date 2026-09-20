@@ -3602,6 +3602,7 @@ export function completeAppTask(
   match.attempt.acceptedResult = acceptedAttemptResult(tree, claim.taskId, "converged", input, acceptanceBasis);
   const admissions = inputOutcomeAdmissions(config, tree, claim, input.acceptedLiveEventIds);
   consumeAcceptedLiveTaskEvents(tree, claim.taskId, claim.agent, input.acceptedLiveEventIds);
+  renewDueTaskConditionCheckpoints(tree, claim.taskId, now);
   unlinkSatisfiedTaskConditions(tree, claim.taskId);
   finishAttempt(tree, resource, "completed", input.summary, now);
   const reconcileActionTaskIds = actions.flatMap((action) => (action.kind === "unblock-task" ? [action.taskId] : []));
