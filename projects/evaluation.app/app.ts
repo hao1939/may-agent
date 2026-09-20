@@ -606,16 +606,31 @@ export function taskIntentForInput(input: AppInput): TaskIntent | null {
       if (!appId || !taskId) return null;
       const subjectGeneration = Number(data.subjectGeneration);
       const evidenceHash = stringValue(data.evidenceHash);
-      const assessmentPurpose = stringValue(data.assessmentPurpose);
-      const pinnedIdentity =
-        Number.isSafeInteger(subjectGeneration) &&
-        subjectGeneration > 0 &&
-        evidenceHash
-          ? `/generation-${subjectGeneration}/${safeTaskIdPart(evidenceHash)}`
+      const assessmentPurpose =
+        stringValue(data.assessmentPurpose) === "ongoing"
+          ? "ongoing"
+          : "outcome";
+      const generationIdentity =
+        Number.isSafeInteger(subjectGeneration) && subjectGeneration > 0
+          ? `/generation-${subjectGeneration}`
           : "";
-      const purposeIdentity = assessmentPurpose === "ongoing" ? "/ongoing" : "";
+      const evidenceIdentity = evidenceHash
+        ? `/evidence-${safeTaskIdPart(evidenceHash)}`
+        : "";
+      const normalizedInput = {
+        appId,
+        taskId,
+        ...(Number.isSafeInteger(subjectGeneration) && subjectGeneration > 0
+          ? { subjectGeneration }
+          : {}),
+        ...(evidenceHash ? { evidenceHash } : {}),
+        assessmentPurpose,
+      };
+      const contractHash = createHash("sha256")
+        .update(JSON.stringify(normalizedInput))
+        .digest("hex");
       return {
-        id: `runtime/task-outcome/${safeTaskIdPart(appId)}/${safeTaskIdPart(taskId)}${purposeIdentity}${pinnedIdentity}`,
+        id: `runtime/task-outcome/v2/${safeTaskIdPart(appId)}/${safeTaskIdPart(taskId)}/${assessmentPurpose}${generationIdentity}${evidenceIdentity}/contract-${contractHash}`,
         parentId: "evaluation-system",
         outcome:
           assessmentPurpose === "ongoing"
@@ -626,17 +641,7 @@ export function taskIntentForInput(input: AppInput): TaskIntent | null {
           "An immutable report and machine-readable facts are read back before publication.",
         ],
         workflow: "task-outcome-review",
-        input: {
-          appId,
-          taskId,
-          ...(Number.isSafeInteger(subjectGeneration) && subjectGeneration > 0
-            ? { subjectGeneration }
-            : {}),
-          ...(evidenceHash ? { evidenceHash } : {}),
-          ...(assessmentPurpose === "ongoing" || assessmentPurpose === "outcome"
-            ? { assessmentPurpose }
-            : {}),
-        },
+        input: normalizedInput,
         priority: "P1",
       };
     }

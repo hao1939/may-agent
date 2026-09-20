@@ -1,5 +1,7 @@
 import { describe, expect, test } from "bun:test";
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { Database } from "bun:sqlite";
 import {
   matchesEventSelector,
@@ -40,6 +42,16 @@ import {
   PROJECT_HEALTH_EVALUATOR_AGENT_PROMPT_PREAMBLE,
   projectHealthEvaluatorAgentPrompt,
 } from "./agents/evaluator/workflows/project-health-evaluator.ts";
+import { AppInboxHost } from "../may-agent/src/app/core/inbox/app-inbox-host.ts";
+import { createAppInboxItem } from "../may-agent/src/app/core/state/app-inbox-store.ts";
+import { admitTaskInput } from "../may-agent/src/app/core/state/inbox.ts";
+import { appTaskTestContext } from "../may-agent/src/app/core/tasks/app-task-test-support.ts";
+import {
+  claimObservedAppTask,
+  deferAppTask,
+  observeAppTaskIntent,
+} from "../may-agent/src/app/core/tasks/app-task-reconciler.ts";
+import { applyDbSchema } from "../may-agent/src/lib/db/schema.ts";
 
 function subscription(id: string) {
   const route = app.subscriptions?.find((candidate) => candidate.id === id);
@@ -904,61 +916,211 @@ describe("evaluation task policy", () => {
     );
   });
 
-  test("gives pinned outcome evidence a deterministic identity separate from generic review", () => {
-    const generic = taskIntentForInput({
-      kind: "review-task-outcome",
-      data: { appId: "may", taskId: "goal/example" },
+  test("uses the complete normalized assessment contract as review identity", () => {
+    const review = (data: Record<string, unknown>) =>
+      taskIntentForInput({
+        kind: "review-task-outcome",
+        data: { appId: "may", taskId: "goal/example", ...data },
+      });
+    const omittedPurpose = review({});
+    const explicitOutcome = review({ assessmentPurpose: "outcome" });
+    const generationOnly = review({ subjectGeneration: 3 });
+    const evidenceOnly = review({ evidenceHash: "a".repeat(64) });
+    const full = review({
+      subjectGeneration: 3,
+      evidenceHash: "a".repeat(64),
     });
-    const first = taskIntentForInput({
-      kind: "review-task-outcome",
-      data: {
-        appId: "may",
-        taskId: "goal/example",
-        subjectGeneration: 3,
-        evidenceHash: "a".repeat(64),
-      },
+    const duplicate = review({
+      assessmentPurpose: "outcome",
+      subjectGeneration: 3,
+      evidenceHash: "a".repeat(64),
     });
-    const duplicate = taskIntentForInput({
-      kind: "review-task-outcome",
-      data: {
-        appId: "may",
-        taskId: "goal/example",
-        subjectGeneration: 3,
-        evidenceHash: "a".repeat(64),
-      },
+    const changedEvidence = review({
+      subjectGeneration: 3,
+      evidenceHash: "b".repeat(64),
     });
-    const changed = taskIntentForInput({
-      kind: "review-task-outcome",
-      data: {
-        appId: "may",
-        taskId: "goal/example",
-        subjectGeneration: 3,
-        evidenceHash: "b".repeat(64),
-      },
+    const ongoing = review({ assessmentPurpose: "ongoing" });
+
+    expect(omittedPurpose).toEqual(explicitOutcome);
+    expect(full).toEqual(duplicate);
+    expect(review({ taskId: "goal/example" })?.id).not.toBe(
+      review({ taskId: "goal-example-96ccaaaa0f4c" })?.id,
+    );
+    expect(
+      new Set([
+        omittedPurpose?.id,
+        generationOnly?.id,
+        evidenceOnly?.id,
+        full?.id,
+        changedEvidence?.id,
+        ongoing?.id,
+      ]).size,
+    ).toBe(6);
+    expect(omittedPurpose).toMatchObject({
+      id: expect.stringMatching(
+        /^runtime\/task-outcome\/v2\/may\/goal-example-[a-f0-9]{12}\/outcome\/contract-[a-f0-9]{64}$/,
+      ),
+      input: { assessmentPurpose: "outcome" },
     });
-    const ongoing = taskIntentForInput({
-      kind: "review-task-outcome",
-      data: {
-        appId: "may",
-        taskId: "goal/example",
-        assessmentPurpose: "ongoing",
-      },
-    });
-    expect(first?.id).toBe(duplicate?.id);
-    expect(first?.id).not.toBe(generic?.id);
-    expect(first?.id).not.toBe(changed?.id);
-    expect(ongoing?.id).not.toBe(generic?.id);
+    expect(generationOnly?.id).toContain("/outcome/generation-3/contract-");
+    expect(evidenceOnly?.id).toContain(`/outcome/evidence-${"a".repeat(64)}`);
+    expect(full?.id).toContain(
+      `/outcome/generation-3/evidence-${"a".repeat(64)}`,
+    );
     expect(ongoing).toMatchObject({
       id: expect.stringMatching(
-        /^runtime\/task-outcome\/may\/goal-example-[a-f0-9]{12}\/ongoing$/,
+        /^runtime\/task-outcome\/v2\/may\/goal-example-[a-f0-9]{12}\/ongoing\/contract-[a-f0-9]{64}$/,
       ),
       workflow: "task-outcome-review",
       input: { assessmentPurpose: "ongoing" },
     });
-    expect(first?.input).toMatchObject({
-      subjectGeneration: 3,
-      evidenceHash: "a".repeat(64),
+  });
+
+  test("recovers saved unpinned reviews without changing the historical collided Task", async () => {
+    const root = mkdtempSync(join(tmpdir(), "evaluation-v2-admission-"));
+    const config = appTaskTestContext({
+      appDir: root,
+      appId: "evaluation",
+      agent: "evaluator",
+      maxConcurrent: 1,
+      tree: {
+        groups: {
+          "evaluation-system": { id: "evaluation-system", parent_id: null },
+        },
+      },
     });
+    applyDbSchema(config.resourceStore.db);
+    const subject = {
+      appId: "may",
+      taskId: "goal/historical-subject",
+      assessmentPurpose: "ongoing",
+    } as const;
+    const currentPinned = taskIntentForInput({
+      kind: "review-task-outcome",
+      data: { ...subject, subjectGeneration: 1 },
+    })!;
+    const historicalPinned = {
+      ...currentPinned,
+      id: currentPinned.id
+        .replace("runtime/task-outcome/v2/", "runtime/task-outcome/")
+        .replace("/generation-1", "")
+        .replace(/\/contract-[a-f0-9]{64}$/, ""),
+    };
+    const callerAdmissionKey = "task:historical-caller";
+    observeAppTaskIntent(config, {
+      appAgent: "evaluator",
+      intent: historicalPinned,
+      creator: { appId: "may", taskId: subject.taskId },
+      admissionKey: callerAdmissionKey,
+    });
+    const claim = claimObservedAppTask(config, {
+      taskId: historicalPinned.id,
+      appAgent: "evaluator",
+      handler: "workflow:task-outcome-review",
+    });
+    if (claim.kind !== "claimed") throw new Error("expected historical claim");
+    const reviewAt = Date.now() + 86_400_000;
+    deferAppTask(config, claim, {
+      disposition: "waiting",
+      report: true,
+      summary: "Semantic allowance is exhausted",
+      facts: ["allowance:budget-deferred"],
+      reviewAt,
+    });
+    const before = config.resourceStore.readTask(historicalPinned.id);
+    const beforeAttempt = config.resourceStore.readAttempt(claim.attemptId);
+    const beforeCallerAdmission = config.resourceStore.readTaskContext({
+      taskIds: [],
+      admissionIds: [callerAdmissionKey],
+    }).appTaskAdmissions?.[callerAdmissionKey];
+
+    const requestIds = ["periodic-a", "periodic-b", "periodic-c"];
+    for (const id of requestIds) {
+      createAppInboxItem(config.resourceStore.db, {
+        id,
+        appId: "evaluation",
+        source: { kind: "system", id: "periodic-review" },
+        input: { kind: "review-task-outcome", data: subject },
+      });
+    }
+    const failures: string[] = [];
+    const host = new AppInboxHost({
+      db: config.resourceStore.db,
+      apps: [app],
+      attachTask: (input) => admitTaskInput(config, input),
+      onFailure: (failure) => failures.push(failure.error),
+    });
+    try {
+      await host.recoverAdmissions();
+      const recoveredId = taskIntentForInput({
+        kind: "review-task-outcome",
+        data: subject,
+      })!.id;
+      expect(recoveredId).not.toBe(historicalPinned.id);
+      expect(requestIds.map((id) => host.get(id)?.waitingOn)).toEqual(
+        requestIds.map(() => ({ kind: "task", id: recoveredId })),
+      );
+      expect(failures).toEqual([]);
+      expect(config.resourceStore.readTask(historicalPinned.id)).toEqual(
+        before,
+      );
+      expect(config.resourceStore.readAttempt(claim.attemptId)).toEqual(
+        beforeAttempt,
+      );
+      expect(before).toMatchObject({
+        metadata: {
+          creator: { appId: "may", taskId: subject.taskId },
+          generation: 1,
+        },
+        status: {
+          phase: "waiting",
+          facts: ["allowance:budget-deferred"],
+          reviewAt,
+        },
+      });
+      expect(
+        config.resourceStore.readTaskContext({
+          taskIds: [],
+          admissionIds: [callerAdmissionKey],
+        }).appTaskAdmissions?.[callerAdmissionKey],
+      ).toEqual(beforeCallerAdmission);
+
+      const recoveredContext = config.resourceStore.readTaskContext({
+        taskIds: [recoveredId],
+        admissionIds: requestIds.map((id) => `task:${id}`),
+      });
+      expect(
+        requestIds.map(
+          (id) => recoveredContext.appTaskAdmissions?.[`task:${id}`]?.taskId,
+        ),
+      ).toEqual(requestIds.map(() => recoveredId));
+      expect(
+        Object.values(recoveredContext.attempts ?? {}).filter(
+          (attempt) => attempt.taskId === recoveredId,
+        ),
+      ).toEqual([]);
+      expect(config.resourceStore.readTask(recoveredId)).toMatchObject({
+        metadata: { creator: { appId: "evaluation" }, generation: 1 },
+        spec: {
+          input: { ...subject },
+          workflow: "task-outcome-review",
+        },
+        status: { phase: "pending" },
+      });
+
+      const recoveredBeforeReplay = config.resourceStore.readTask(recoveredId);
+      await host.recoverAdmissions();
+      expect(config.resourceStore.readTask(recoveredId)).toEqual(
+        recoveredBeforeReplay,
+      );
+      expect(requestIds.map((id) => host.get(id)?.waitingOn)).toEqual(
+        requestIds.map(() => ({ kind: "task", id: recoveredId })),
+      );
+    } finally {
+      host.close();
+      config.resourceStore.close();
+      rmSync(root, { recursive: true, force: true });
+    }
   });
 
   test("routes production failure dispositions only when automatic review is enabled", () => {
@@ -1090,7 +1252,7 @@ describe("evaluation task policy", () => {
     }
     expect(intents.slice(0, 3).map((intent) => intent?.id)).toEqual([
       expect.stringMatching(
-        /^runtime\/task-outcome\/may\/goal-example-[a-f0-9]{12}$/,
+        /^runtime\/task-outcome\/v2\/may\/goal-example-[a-f0-9]{12}\/outcome\/contract-[a-f0-9]{64}$/,
       ),
       "runtime/report-reader/latest",
       "runtime/task-outcome-selector",

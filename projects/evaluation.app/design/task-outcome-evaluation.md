@@ -47,6 +47,44 @@ Code owns catalog and Task identity checks, evidence binding, exclusion, stable 
 
 An unchanged accepted evidence hash reuses the existing report only after canonical report paths and on-disk subject identity are verified. A staged report may be republished after a publication failure without another model call. If the source changes while judgment runs, Evaluation retains and publishes the judgment against the immutable inspected snapshot, with snapshot identity and the later freshness check recorded separately. It never relabels that report as current. Report listing and exact reads continue to expose the historical judgment; May intake classifies current versus stale and returns stale reports with current evidence for explicit relevance and value judgment. A historical report cannot by itself authorize action or certify present health, but later subject progress does not erase its scoped judgment or invalidate independently authorized candidate, approval, application, or activation work. Explicit post-adoption review carries the subject generation and evidence hash in both its input and deterministic Task identity. Generation or evidence drift before model judgment remains `insufficient-evidence`; drift during judgment preserves the already-paid-for historical assessment without turning it into a present-tense health claim.
 
+### Review-request identity and retained collision recovery
+
+A review Task represents the normalized assessment contract, not only the target
+Task. Version 2 identities have the deterministic shape
+`runtime/task-outcome/v2/<app>/<task>/<purpose>[/generation-N][/evidence-H]/contract-<sha256>`.
+The final full digest binds the canonical normalized input and prevents the
+readable, lossy path labels from becoming identity authority. `purpose` is always
+`outcome` or `ongoing`; omitted purpose normalizes to `outcome` in both identity
+and workflow input. Generation and evidence pins are independent optional
+attributes. Neither suppresses the other, because the workflow validates each
+independently and partial pins have distinct meaning. The identity is derived
+only from the request, never from mutable current target state. Exact replay
+therefore retains one Task and complete requirements, while any changed target,
+purpose or pin selects different work.
+
+The explicit `v2` namespace is the bounded upgrade for the retained historical
+collision where a valid generation-only ongoing review occupied the old unpinned
+identity. Normal inbox recovery remaps still-pending unpinned inputs to the new
+namespace; their equivalent contracts share one new Task. The old Task is not
+revised, migrated, cleared, or assigned a new creator, so its original caller
+links, accepted evidence and budget-deferred wait remain authoritative. This
+small namespace correction costs a one-time identity change for future review
+admissions, including contracts that never collided. It is preferable to a
+compatibility registry, whole-archive scan, or creator-owned rewrite: those add
+state and authority risk merely to preserve obsolete mapper identities. Existing
+immutable reports remain reusable because report lookup and the semantic
+allowance are keyed by subject evidence and publication identity, not this Task
+namespace.
+
+A fixture that seeds the collided Task and saved inbox rows, then runs ordinary
+`recoverAdmissions`, proves source mapping, admission idempotency and retained
+state preservation. It does not prove that deployed source recovered live rows,
+that a semantic report was produced, or that allowance was available. Those
+claims require separate live admission and report observations after activation.
+The upgrade deliberately handles retained pending inputs visible to bounded
+inbox recovery; it does not scan or rewrite completed historical inputs or the
+Task archive.
+
 ## Reports and use
 
 Each successful review stages an immutable Markdown report and JSON facts sidecar under the configured durable `${EVALUATION_REPORT_ROOT:-${MAY_PERSIST_DIR:-/app/.state}/evaluation/reports}/task-outcomes/<app>/<rubric-version>/<task>-<evidence-hash>.*`, then emits `evaluation.task_report_published` with a stable Task-owned `localKey` and both content hashes. Only after that emit succeeds does it write an immutable `.published.json` marker. Listing and reading require the marker and revalidate the JSON identity, recorded JSON/Markdown hashes, and deterministically rendered Markdown bytes. A failed publish therefore leaves staged files undiscoverable, while a retry republishes the same validated bytes without another model call. A rubric change creates a new directory and deliberate assessment rather than overwriting history.
