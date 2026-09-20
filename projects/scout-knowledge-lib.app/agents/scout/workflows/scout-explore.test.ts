@@ -678,6 +678,21 @@ describe("scout-explore workflow prompt", () => {
       }).trim(),
     ).toBe("");
     expect(runOptions).toMatchObject({ schema: expect.any(Object) });
+    expect(prompt).toStartWith("Bounded Scout research assignment:");
+    expect(prompt).toContain(
+      "You are the researcher/writer already running inside scout-explore",
+    );
+    expect(prompt).toContain("Do not redispatch this same scan through");
+    expect(prompt).toContain("scout-explore as a substitute for the research");
+    expect(prompt).toContain(
+      "does not prohibit independent useful agents or workflows",
+    );
+    expect(prompt).toContain("Standing Task background");
+    expect(prompt).toContain('"acceptance": [');
+    expect(prompt).toContain('"source": "xhs"');
+    expect(prompt.indexOf("Bounded Scout research assignment:")).toBeLessThan(
+      prompt.indexOf("Standing Task background"),
+    );
     expect(prompt).toContain('"id": "note-1"');
     expect(result).toMatchObject({
       status: "done",
@@ -798,6 +813,108 @@ describe("scout-explore workflow prompt", () => {
     });
     expect(serialized).toContain("item?id=123");
     expect(serialized).not.toContain("token=secret");
+  });
+
+  it("rejects a stale reported output when another publication changed its bytes", async () => {
+    const fixture = publicationTestFixture();
+    temporaryRoots.push(fixture.repositoryRoot);
+    const canonical = join(
+      fixture.workspace.projectRoot,
+      "knowledge/README.md",
+    );
+    const originalHead = fixture.git("rev-parse", "HEAD");
+    let writerCalls = 0;
+    const ctx = workflowContext(async (_agent, task) => {
+      writerCalls += 1;
+      const candidateOutput = join(
+        candidateProjectFromPrompt(task),
+        "knowledge/README.md",
+      );
+      writeFileSync(canonical, "# Concurrent publication\n");
+      fixture.git("add", "projects/scout-knowledge-lib/knowledge/README.md");
+      fixture.git("commit", "-m", "concurrent publication");
+      return {
+        status: "done",
+        sessionId: "s_stale_output",
+        structuredResult: {
+          summary: "The existing note already covered this source.",
+          source: {
+            name: "hn",
+            queryOrFeed: "https://news.ycombinator.com/newest",
+            itemIdsOrUrls: ["https://news.ycombinator.com/item?id=1"],
+          },
+          outputs: [candidateOutput],
+        },
+      };
+    }, "hn");
+    ctx.workspace = { ...fixture.workspace };
+
+    const result = await executeScoutExplore(ctx);
+    const concurrentHead = fixture.git("rev-parse", "HEAD");
+
+    expect(writerCalls).toBe(1);
+    expect(result).toMatchObject({
+      status: "blocked",
+      summary: "Scout exploration was accepted but not published",
+      facts: {
+        executionId: "s_stale_output",
+        error: expect.stringContaining("Reviewed output changed"),
+      },
+    });
+    expect(concurrentHead).not.toBe(originalHead);
+    expect(fixture.git("rev-list", "--count", "HEAD")).toBe("2");
+    expect(readFileSync(canonical, "utf8")).toBe("# Concurrent publication\n");
+  });
+
+  it("accepts a no-op reported output across a disjoint independent publication", async () => {
+    const fixture = publicationTestFixture();
+    temporaryRoots.push(fixture.repositoryRoot);
+    let writerCalls = 0;
+    const ctx = workflowContext(async (_agent, task) => {
+      writerCalls += 1;
+      const candidateOutput = join(
+        candidateProjectFromPrompt(task),
+        "knowledge/README.md",
+      );
+      writeFileSync(
+        join(fixture.repositoryRoot, "independent.txt"),
+        "independent work\n",
+      );
+      fixture.git("add", "independent.txt");
+      fixture.git("commit", "-m", "independent publication");
+      return {
+        status: "done",
+        sessionId: "s_disjoint_output",
+        structuredResult: {
+          summary: "The existing note already covered this source.",
+          source: {
+            name: "hn",
+            queryOrFeed: "https://news.ycombinator.com/newest",
+            itemIdsOrUrls: ["https://news.ycombinator.com/item?id=2"],
+          },
+          outputs: [candidateOutput],
+        },
+      };
+    }, "hn");
+    ctx.workspace = { ...fixture.workspace };
+
+    const result = await executeScoutExplore(ctx);
+
+    expect(writerCalls).toBe(1);
+    expect(result).toMatchObject({
+      status: "done",
+      output: {
+        state: "converged",
+        facts: expect.arrayContaining([
+          "publication:no-change",
+          "execution:s_disjoint_output",
+        ]),
+      },
+    });
+    expect(fixture.git("rev-list", "--count", "HEAD")).toBe("2");
+    expect(
+      readFileSync(join(fixture.repositoryRoot, "independent.txt"), "utf8"),
+    ).toBe("independent work\n");
   });
 
   it("rejects source evidence for a different lane", async () => {

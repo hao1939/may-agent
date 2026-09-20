@@ -119,8 +119,14 @@ Reusable research and maintenance processes belong to Scout and live under:
 The app manifest binds deterministic responsibilities such as digest and
 library health directly to their workflows. Standing source responsibilities
 run through the native Scout owner, which reviews current Task state and selects
-the existing `scout-explore` workflow only when a fresh scan is useful. This is
-the standard agent-owned method-selection boundary, not a second planner,
+the existing `scout-explore` workflow only when a fresh scan is useful. The
+workflow creates an isolated candidate and gives its bounded researcher/writer a
+source operation first, with the standing Task packet retained only as
+background. That writer performs the selected research and returns reviewed
+source/output evidence; the workflow validates and publishes the candidate, and
+the native owner then reconciles the standing Task and its independent waits.
+The writer does not restart the same selected scan as a substitute for doing it.
+This is the standard agent-owned method-selection boundary, not a second planner,
 workflow registry, wake classifier, or domain strategy in the generic
 reconciler. A selected but missing workflow remains an execution failure; the
 runtime does not guess from task prose or silently substitute another method.

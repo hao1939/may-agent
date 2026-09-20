@@ -676,8 +676,25 @@ export async function executeScoutExplore(
     xhsPacket = { query: search.query, items: search.items.slice(0, 20) };
   }
 
-  // The task comes from the workflow-backed handler config — source-specific instructions
-  const task = JSON.stringify(ctx.reconciliation, null, 2);
+  // Assign the bounded operation before supplying the owner's standing Task packet.
+  // The packet remains complete background, but it does not transfer reconciliation.
+  const task = `Bounded Scout research assignment:
+You are the researcher/writer already running inside scout-explore. The standing
+Task owner selected this ${source} scan. Inspect the current ${source} source,
+search existing Scout knowledge, make only justified edits in the supplied
+candidate, read every changed output back, and return summary, source, and
+outputs. The enclosing workflow owns admission and publication; the native
+standing Task owner owns later reconciliation, waits, and scheduling.
+
+Perform this assigned scan directly. Do not redispatch this same scan through
+scout-explore as a substitute for the research. This same-operation boundary
+does not prohibit independent useful agents or workflows.
+
+Standing Task background (requirements and retained evidence; context only,
+not an assignment to reconcile or reschedule the standing Task):
+\`\`\`json
+${JSON.stringify(ctx.reconciliation, null, 2)}
+\`\`\``;
   const beforePublication = snapshotKnowledge(projectDir, ctx.workspace.output);
   const candidateFailureDetails = () => ({
     candidateFacts: retainedCandidateFacts(beforePublication),
