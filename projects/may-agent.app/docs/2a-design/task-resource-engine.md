@@ -507,8 +507,8 @@ read surface. Each record carries App, Task, generation, attempt and
 `app_task_attempts.acceptedResult` provenance; an opaque cursor can reach older
 records after arbitrarily many later waits. Per-record serialized output and
 page size are bounded, with explicit omitted-field and continuation metadata.
-Historical records remain evidence only: they never replace the current result,
-certify recovery, satisfy an obligation, or create a second evidence lifecycle.
+History never automatically replaces current result, certifies recovery, discharges unrelated obligations, or creates another evidence lifecycle.
+An owner may use an exact scoped receipt when reconciling the obligation it proves.
 
 Omitting the wake route or review deadline does not turn an incomplete state
 into a valid indefinite wait. Code validates shape and exact routes it knows;

@@ -135,7 +135,9 @@ Direct tools still return directly. See
 [execution and outstanding results](../2a-design/system-model.md#execution-and-outstanding-results).
 
 The agent judges what the facts mean, whether a result is sufficient and which
-authorized action comes next. For assigned work, the worker decides how to
+authorized action comes next. Independent facts and Conditions coexist; reject
+an action only when a requirement of that action is not satisfied. Historical
+evidence identity is provenance, not continuing authorization by itself. For assigned work, the worker decides how to
 make progress; the assigning App, parent agent or human decides whether to
 continue, revise or close the assignment. The worker may recommend that decision
 without applying it to its own assignment. Code enforces identity, permissions

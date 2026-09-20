@@ -70,11 +70,12 @@ May received or acted on the finding.
 
 The consumer checks the report through Evaluation's integrity-checked list/read
 interface and rereads current target evidence. A report whose inspected snapshot
-is no longer current remains readable historical evidence, but cannot authorize
-candidate preparation, approval/application, a recovery claim, or post-adoption
-certification. Publication precedes the durable report marker, so an early
-unavailable read is a delivery race to retry through ordinary Task recovery, not
-permission to consume unvalidated staged files.
+is no longer current remains readable historical evidence and returns with the
+current evidence for May's explicit relevance and value judgment; it cannot by
+itself authorize action or certify current recovery or post-adoption behavior.
+Publication precedes the durable report marker, so an early unavailable read is
+a delivery race to retry through ordinary Task recovery, not permission to
+consume unvalidated staged files.
 Reports on Evaluation itself never enter this loop. Evaluation stays independent
 and does not create, own or approve the repair Task.
 

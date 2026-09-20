@@ -450,7 +450,7 @@ describe("May Evaluation report intake procedure", () => {
     });
   });
 
-  test("treats a changed canonical evidence hash as stale before candidate preparation", async () => {
+  test("returns a stale snapshot with current evidence for explicit relevance judgment", async () => {
     const data = fixture();
     data.detail.status = "done";
     const execution = await intakeEvaluationReport(
@@ -458,8 +458,16 @@ describe("May Evaluation report intake procedure", () => {
       data.root,
       reader(data, "evidence-2"),
     );
-    expect((execution.output as { summary: string }).summary).toContain(
-      "stale",
-    );
+    expect(execution.output as any).toMatchObject({
+      state: "converged",
+      summary: expect.stringContaining("explicit relevance and value judgment"),
+      result: {
+        disposition: "stale",
+        handoffKey: null,
+        nextOwner: "app:may",
+        currentEvidence: { evidenceHash: "evidence-2" },
+      },
+      actions: [],
+    });
   });
 });

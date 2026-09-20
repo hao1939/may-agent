@@ -128,9 +128,12 @@ export async function intakeEvaluationReport(
     return finish(
       ctx,
       "stale",
-      "The canonical subject evidence or ongoing due-phase identity changed after publication.",
+      "The report remains an immutable judgment of its inspected snapshot. Current evidence changed and is returned for May's explicit relevance and value judgment; the report alone does not certify current health or authorize action.",
       {
         handoffKey: null,
+        nextOwner: "app:may",
+        nextAction:
+          "Judge the historical finding's present relevance from the returned current evidence before any current-health claim or action.",
         currentEvidence: {
           appId: subject.appId,
           taskId: subject.taskId,

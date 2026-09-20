@@ -2,7 +2,6 @@ import { describe, expect, test } from "bun:test";
 import {
   approvalCondition,
   applyWithExactApproval,
-  assertCurrentEvaluationSubject,
   buildApprovalProposal,
   followUpAfterVerifiedActivation,
   packetHash,
@@ -44,60 +43,6 @@ function fixture() {
   };
   return { packet, current, approved };
 }
-
-test("Evaluation-origin packet pin accepts only the matching current subject", () => {
-  const pinned = {
-    appId: "may",
-    taskId: "goal/subject",
-    generation: 4,
-    evidenceHash: "evidence",
-    assessmentPurpose: "ongoing" as const,
-    rubricVersion: "rubric-v1",
-    validityIdentity: "validity",
-  };
-  expect(() =>
-    assertCurrentEvaluationSubject(pinned, {
-      disposition: "eligible",
-      generation: 4,
-      evidenceHash: "evidence",
-      rubricVersion: "rubric-v1",
-      validityIdentity: "validity",
-    }),
-  ).not.toThrow();
-  for (const changed of [
-    {
-      disposition: "insufficient-evidence",
-      generation: 4,
-      evidenceHash: "evidence",
-      rubricVersion: "rubric-v1",
-      validityIdentity: "validity",
-    },
-    {
-      disposition: "eligible",
-      generation: 5,
-      evidenceHash: "evidence",
-      rubricVersion: "rubric-v1",
-      validityIdentity: "validity",
-    },
-    {
-      disposition: "eligible",
-      generation: 4,
-      evidenceHash: "changed",
-      rubricVersion: "rubric-v1",
-      validityIdentity: "validity",
-    },
-    {
-      disposition: "eligible",
-      generation: 4,
-      evidenceHash: "evidence",
-      rubricVersion: "rubric-v1",
-      validityIdentity: "changed",
-    },
-  ])
-    expect(() => assertCurrentEvaluationSubject(pinned, changed)).toThrow(
-      "fresh review and approval",
-    );
-});
 
 const finding: FindingJudgment = {
   disposition: "improve",

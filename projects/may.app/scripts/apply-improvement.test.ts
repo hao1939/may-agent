@@ -170,23 +170,8 @@ function waitingTask(proposal: {
   };
 }
 
-test("trusted journal decision drives the real Git guard once and remains source-only", async () => {
+test("trusted journal decision and exact packet apply despite unrelated later diagnostic evidence", async () => {
   const f = fixture();
-  const evaluationSubject = {
-    appId: "may",
-    taskId: "goal/subject",
-    generation: 4,
-    evidenceHash: "subject-evidence",
-    assessmentPurpose: "ongoing" as const,
-    rubricVersion: "rubric-v1",
-    validityIdentity: "validity-v1",
-  };
-  const packetBody = { ...f.packet, evaluationSubject };
-  delete (packetBody as Partial<typeof packetBody>).packetHash;
-  Object.assign(f.packet, evaluationSubject ? { evaluationSubject } : {}, {
-    packetHash: packetHash(packetBody),
-  });
-  writeFileSync(f.files.packet, JSON.stringify(f.packet));
   const finding: FindingJudgment = {
     disposition: "improve",
     userImpact: "A recurring user-visible result can be lost.",
@@ -237,31 +222,6 @@ test("trusted journal decision drives the real Git guard once and remains source
       },
     },
   };
-  const matchingSubject = async () => ({
-    disposition: "eligible",
-    evidenceHash: evaluationSubject.evidenceHash,
-    task: { detail: { generation: evaluationSubject.generation } },
-    rubricVersion: evaluationSubject.rubricVersion,
-    validityIdentity: evaluationSubject.validityIdentity,
-  });
-  for (const current of [
-    { ...(await matchingSubject()), evidenceHash: "changed" },
-    { disposition: "unavailable" },
-    { ...(await matchingSubject()), validityIdentity: "crossed-boundary" },
-  ]) {
-    await expect(
-      applyImprovementFromTrustedEvent(
-        f.files,
-        proposal,
-        77,
-        async () => event,
-        async () => waitingTask(proposal),
-        async () => current,
-      ),
-    ).rejects.toThrow("fresh review and approval");
-    expect(f.git("rev-parse", "HEAD")).toBe(f.packet.baselineCommit);
-  }
-
   let reads = 0;
   const first = await applyImprovementFromTrustedEvent(
     f.files,
@@ -271,8 +231,16 @@ test("trusted journal decision drives the real Git guard once and remains source
       reads++;
       return event;
     },
-    async () => waitingTask(proposal),
-    matchingSubject,
+    async () => ({
+      ...waitingTask(proposal),
+      history: [
+        {
+          eventType: "project.task.reconciled",
+          attemptId: "later-successful-diagnostic",
+          disposition: "converged",
+        },
+      ],
+    }),
   );
   expect(first).toMatchObject({
     applied: true,
@@ -300,7 +268,6 @@ test("trusted journal decision drives the real Git guard once and remains source
         ],
       },
     }),
-    matchingSubject,
   );
   expect(replay).toMatchObject({ applied: true, alreadyApplied: true });
   expect(replay).not.toHaveProperty("activationReceipt");

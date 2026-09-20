@@ -12,18 +12,7 @@ import {
 } from "../../../improvement-approval";
 import { runActivationFollowUp } from "./improvement-activation-follow-up";
 
-function fixture(
-  withActivation = true,
-  evaluationSubject?: {
-    appId: string;
-    taskId: string;
-    generation: number;
-    evidenceHash: string;
-    assessmentPurpose?: "outcome" | "ongoing";
-    rubricVersion?: string;
-    validityIdentity?: string;
-  },
-) {
+function fixture(withActivation = true) {
   const root = mkdtempSync(join(tmpdir(), "may-activation-"));
   const repository = join(root, "repo");
   const git = (...args: string[]) =>
@@ -71,7 +60,6 @@ function fixture(
           },
         }
       : {}),
-    ...(evaluationSubject ? { evaluationSubject } : {}),
     rollbackCommit: baselineCommit,
   };
   const packet = { ...body, packetHash: packetHash(body) };
@@ -295,66 +283,58 @@ function context(
   return ctx;
 }
 
-async function execute(
-  ctx: ReturnType<typeof context>,
-  readEvaluationSubject?: Parameters<typeof runActivationFollowUp>[3],
-) {
+async function execute(ctx: ReturnType<typeof context>) {
   const f = ctx.input;
   const retained = await ctx.events.read(
     "runtime.reload.requested",
     `improvement-activation:${f.proposal.packetHash}`,
   );
   const provider = (ctx as any).evidenceProvider;
-  return runActivationFollowUp(
-    ctx,
-    provider,
-    async (command) => {
-      if (command.type === "event.get")
-        return {
-          type: "ok",
-          command: "event.get",
+  return runActivationFollowUp(ctx, provider, async (command) => {
+    if (command.type === "event.get")
+      return {
+        type: "ok",
+        command: "event.get",
+        event: {
           event: {
-            event: {
-              id: retained?.eventId,
-              type: "runtime.reload.requested",
-              data: retained?.data,
-            },
-            links: retained ? [{ kind: "operation", id: "event:77" }] : [],
+            id: retained?.eventId,
+            type: "runtime.reload.requested",
+            data: retained?.data,
           },
-        } as any;
-      if (command.type === "apps.list")
-        return {
-          type: "ok",
-          command: "apps.list",
-          apps: [{ id: "may" }],
-        } as any;
-      if (command.type === "app.task.get") {
-        const task = await provider.getTask("may", String(command.taskId));
-        return {
-          type: "ok",
-          command: "app.task.get",
-          appId: "may",
-          taskId: command.taskId,
-          task: {
-            id: command.taskId,
-            generation: task.generation,
-            status: task.status,
-            acceptedAttempt: task.acceptedAttempt,
-            outcome: "Exercise post-adoption behavior",
-            acceptance: ["Return an accepted outcome"],
-          },
-        } as any;
-      }
-      if (command.type === "task.get")
-        return {
-          type: "ok",
-          command: "task.get",
-          task: await provider.getTask("may", String(command.taskId)),
-        } as any;
-      throw new Error(`unexpected public command ${String(command.type)}`);
-    },
-    readEvaluationSubject,
-  );
+          links: retained ? [{ kind: "operation", id: "event:77" }] : [],
+        },
+      } as any;
+    if (command.type === "apps.list")
+      return {
+        type: "ok",
+        command: "apps.list",
+        apps: [{ id: "may" }],
+      } as any;
+    if (command.type === "app.task.get") {
+      const task = await provider.getTask("may", String(command.taskId));
+      return {
+        type: "ok",
+        command: "app.task.get",
+        appId: "may",
+        taskId: command.taskId,
+        task: {
+          id: command.taskId,
+          generation: task.generation,
+          status: task.status,
+          acceptedAttempt: task.acceptedAttempt,
+          outcome: "Exercise post-adoption behavior",
+          acceptance: ["Return an accepted outcome"],
+        },
+      } as any;
+    }
+    if (command.type === "task.get")
+      return {
+        type: "ok",
+        command: "task.get",
+        task: await provider.getTask("may", String(command.taskId)),
+      } as any;
+    throw new Error(`unexpected public command ${String(command.type)}`);
+  });
 }
 
 const output = (result: Awaited<ReturnType<typeof execute>>) =>
@@ -382,9 +362,19 @@ describe("approved activation and independent follow-up", () => {
     expect((await execute(context(drift))).status).toBe("blocked");
   });
 
-  test("publishes the existing pinned reload operation and waits for its exact result", async () => {
+  test("publishes the pinned reload despite unrelated later diagnostic evidence", async () => {
     const f = fixture();
     const ctx = context(f);
+    const provider = (ctx as any).evidenceProvider;
+    const owner = await provider.getTask("may", "goal/improvement");
+    owner.acceptedEvidence = {
+      items: [
+        {
+          attemptId: "later-successful-diagnostic",
+          disposition: "converged",
+        },
+      ],
+    };
     const emitted: any[] = [];
     ctx.events.emit = async (event) => void emitted.push(event);
     const result = await execute(ctx);
@@ -402,66 +392,6 @@ describe("approved activation and independent follow-up", () => {
       result: { stage: "activation-requested" },
       conditions: [{ id: `improvement-activation:${f.packet.packetHash}` }],
     });
-  });
-
-  test("freshly validates an Evaluation pin before the initial activation emit", async () => {
-    const pin = {
-      appId: "evaluation",
-      taskId: "goal/original-subject",
-      generation: 4,
-      evidenceHash: "evidence-4",
-    };
-    const matching = fixture(true, pin);
-    const matchingCtx = context(matching);
-    const emitted: unknown[] = [];
-    matchingCtx.events.emit = async (event) => void emitted.push(event);
-    expect(
-      (
-        await execute(matchingCtx, async () => ({
-          disposition: "eligible",
-          generation: 4,
-          evidenceHash: "evidence-4",
-        }))
-      ).output,
-    ).toMatchObject({ state: "waiting" });
-    expect(emitted).toHaveLength(1);
-
-    for (const current of [
-      { disposition: "eligible", generation: 5, evidenceHash: "changed" },
-      { disposition: "unavailable" },
-    ]) {
-      const denied = fixture(true, pin);
-      const deniedCtx = context(denied);
-      const deniedEmits: unknown[] = [];
-      deniedCtx.events.emit = async (event) => void deniedEmits.push(event);
-      expect((await execute(deniedCtx, async () => current)).status).toBe(
-        "blocked",
-      );
-      expect(deniedEmits).toEqual([]);
-    }
-
-    const ongoingPin = {
-      ...pin,
-      assessmentPurpose: "ongoing" as const,
-      rubricVersion: "v1",
-      validityIdentity: "validity-a",
-    };
-    const ongoing = fixture(true, ongoingPin);
-    const ongoingCtx = context(ongoing);
-    const ongoingEmits: unknown[] = [];
-    ongoingCtx.events.emit = async (event) => void ongoingEmits.push(event);
-    expect(
-      (
-        await execute(ongoingCtx, async () => ({
-          disposition: "eligible",
-          generation: 4,
-          evidenceHash: "evidence-4",
-          rubricVersion: "v1",
-          validityIdentity: "validity-b",
-        }))
-      ).status,
-    ).toBe("blocked");
-    expect(ongoingEmits).toEqual([]);
   });
 
   test("continues the exact issued operation after the satisfied approval wait is unlinked", async () => {
@@ -710,35 +640,40 @@ describe("approved activation and independent follow-up", () => {
     });
     expect(readResultIds).toEqual([admittedRequestId]);
 
-    const staleCompleted = context(f, {
+    const progressedCompleted = context(f, {
       ok: true,
       sourceCommit: f.packet.candidateCommit,
     });
-    (staleCompleted.read as any).tasks.get = (completed.read as any).tasks.get;
-    (staleCompleted.read as any).appResult = (completed.read as any).appResult;
-    (staleCompleted.reconciliation as any).events.items = [
+    (progressedCompleted.read as any).tasks.get = (
+      completed.read as any
+    ).tasks.get;
+    (progressedCompleted.read as any).appResult = (
+      completed.read as any
+    ).appResult;
+    (progressedCompleted.reconciliation as any).events.items = [
       ...(completed.reconciliation as any).events.items,
     ];
-    const staleCompletedProvider = (staleCompleted as any).evidenceProvider;
-    const staleCompletedRead = staleCompletedProvider.getTask;
-    staleCompletedProvider.getTask = async (appId: string, taskId: string) => {
-      const task = await staleCompletedRead(appId, taskId);
+    const progressedProvider = (progressedCompleted as any).evidenceProvider;
+    const progressedRead = progressedProvider.getTask;
+    progressedProvider.getTask = async (appId: string, taskId: string) => {
+      const task = await progressedRead(appId, taskId);
       if (taskId === "goal/new-subject")
         task.facts = [...(task.facts ?? []), "later-owner-update"];
       return task;
     };
-    expect(output(await execute(staleCompleted))).toMatchObject({
+    expect(output(await execute(progressedCompleted))).toMatchObject({
       state: "converged",
       result: {
-        stage: "post-adoption-evaluation-inconclusive",
-        evaluationDisposition: "stale",
+        stage: "post-adoption-evaluation-complete",
+        evaluationDisposition: "insufficient-evidence",
       },
       facts: [
         expect.stringContaining("activation-result-event:"),
         expect.any(String),
         expect.any(String),
-        expect.stringContaining("current-subject-evidence:"),
-        "review-freshness:stale",
+        expect.any(String),
+        expect.stringContaining("follow-up-request:"),
+        "report:task-outcomes/may/report.md",
       ],
     });
 
