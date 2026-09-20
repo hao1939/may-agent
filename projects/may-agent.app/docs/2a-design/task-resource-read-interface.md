@@ -101,6 +101,18 @@ Condition start is known; later observation time is not a substitute. Generic
 `attention`, age, display-name owners, and adapter state never satisfy this
 filter.
 
+A system-wide `humanActionOnly` read selects the eligible direct owner Tasks of
+open human-owned Conditions before applying its ordinary pagination. It follows
+existing Condition-to-Task links through selective indexes instead of
+enumerating unrelated Tasks. Unrelated retained Tasks and Apps absent from the
+loaded registry therefore cannot hide a real obligation. One owner Task yields
+one card even when several Conditions match, and `total` counts all eligible,
+status-filtered owner Tasks before the page cursor and limit. App- and
+Task-scoped reads retain exact dependency-leaf discovery, including cross-App
+leaves. That scoped traversal is currently bounded to 1,000 reachable Task
+identities before human filtering; this known scoped coverage limit does not
+apply a new cap to the system-wide direct-owner query.
+
 There is deliberately no generic task write API. A caller asks the accountable
 App for an outcome, optionally naming the observed task. App policy then keeps,
 revises, wakes, decomposes, or closes it through the normal input-to-task path
