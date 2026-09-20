@@ -1051,6 +1051,115 @@ describe("Human Task service", () => {
     expect(service.listTasks({ appId: "alpha", humanActionOnly: true })).toMatchObject({ total: 0, items: [] });
   });
 
+  test("selects global human actions before pagination without scanning unrelated Tasks", () => {
+    const db = database();
+    for (let index = 0; index < 1_201; index++) {
+      insertTask(db, {
+        appId: "legacy-unloaded",
+        taskId: `unrelated-${index.toString().padStart(4, "0")}`,
+        phase: "attention",
+        updatedAt: 10_000 + index,
+      });
+    }
+    insertTask(db, { appId: "current", taskId: "approval-a", phase: "waiting", updatedAt: 30 });
+    insertTask(db, { appId: "current", taskId: "approval-b", phase: "attention", updatedAt: 20 });
+    insertTask(db, { appId: "unloaded", taskId: "retained-human", phase: "waiting", updatedAt: 10 });
+    insertTask(db, { appId: "current", taskId: "nonhuman", phase: "waiting", updatedAt: 40 });
+    insertTask(db, { appId: "current", taskId: "satisfied", phase: "waiting", updatedAt: 50 });
+    insertTask(db, { appId: "current", taskId: "completed", phase: "waiting", updatedAt: 60 });
+    insertCondition(db, { appId: "current", taskId: "approval-a", conditionId: "approval-a-1", owner: "human" });
+    insertCondition(db, {
+      appId: "current",
+      taskId: "approval-a",
+      conditionId: "approval-a-2",
+      owner: "human:reviewer",
+    });
+    insertCondition(db, { appId: "current", taskId: "approval-b", conditionId: "approval-b", owner: "Hao" });
+    insertCondition(db, {
+      appId: "unloaded",
+      taskId: "retained-human",
+      conditionId: "retained-human",
+      owner: "human:operator",
+    });
+    insertCondition(db, { appId: "current", taskId: "nonhuman", conditionId: "nonhuman", owner: "app:may" });
+    insertCondition(db, {
+      appId: "current",
+      taskId: "satisfied",
+      conditionId: "satisfied",
+      owner: "human",
+      state: "true",
+    });
+    insertCondition(db, { appId: "current", taskId: "completed", conditionId: "completed", owner: "human" });
+    insertReceipt(db, "current", "completed", 70);
+
+    const plans: Array<Array<{ detail: string }>> = [];
+    const observed: SqliteDb = {
+      ...db,
+      prepare(sql) {
+        const statement = db.prepare(sql);
+        if (!sql.includes("idx_app_task_conditions_open_human_owner") || !sql.includes("AS payload, 0 AS terminal")) {
+          return statement;
+        }
+        return new Proxy(statement, {
+          get(target, key) {
+            if (key === "all") return (...values: Parameters<typeof statement.all>) => {
+              plans.push(db.prepare(`EXPLAIN QUERY PLAN ${sql}`).all(...values) as Array<{ detail: string }>);
+              return target.all(...values);
+            };
+            const value = Reflect.get(target, key);
+            return typeof value === "function" ? value.bind(target) : value;
+          },
+        });
+      },
+    };
+    const service = new HumanTaskService(observed, registry("current"));
+    const first = service.listTasks({ humanActionOnly: true, limit: 2 });
+    const cursor = first.nextCursor;
+    expect(first).toMatchObject({
+      total: 3,
+      items: [
+        { appId: "current", taskId: "approval-a" },
+        { appId: "current", taskId: "approval-b" },
+      ],
+      nextCursor: expect.any(String),
+    });
+    const second = service.listTasks({ humanActionOnly: true, limit: 2, cursor });
+    expect(second).toMatchObject({
+      total: 3,
+      items: [{ appId: "unloaded", taskId: "retained-human" }],
+    });
+    expect(second.nextCursor).toBeUndefined();
+    db.prepare("DELETE FROM app_tasks WHERE app_id = 'unloaded' AND task_id = 'retained-human'").run();
+    expect(service.listTasks({ humanActionOnly: true, limit: 2, cursor })).toEqual({ items: [], total: 2 });
+    expect(service.listTasks({ humanActionOnly: true, status: ["waiting"] })).toMatchObject({
+      total: 1,
+      items: [{ taskId: "approval-a" }],
+    });
+    for (const status of [["done"], ["closed"], ["cancelled"], []] as const) {
+      expect(service.listTasks({ humanActionOnly: true, status: [...status] })).toEqual({ items: [], total: 0 });
+    }
+
+    const plan = plans[0] ?? [];
+    const conditionStep = plan.findIndex(({ detail }) => detail.includes("idx_app_task_conditions_open_human_owner"));
+    const routeStep = plan.findIndex(
+      ({ detail }, index) => index > conditionStep && detail.includes("human_route") && detail.includes("app_id=? AND condition_id=?"),
+    );
+    const taskStep = plan.findIndex(
+      ({ detail }, index) => index > routeStep && detail.startsWith("SEARCH t") && detail.includes("app_id=? AND task_id=?"),
+    );
+    expect(conditionStep).toBeGreaterThanOrEqual(0);
+    expect(routeStep).toBeGreaterThan(conditionStep);
+    expect(taskStep).toBeGreaterThan(routeStep);
+    expect(plan[taskStep]?.detail).toContain("sqlite_autoindex_app_tasks_1");
+    expect(plan.some(({ detail }) => detail.includes("idx_app_tasks_global_phase"))).toBe(false);
+    const hydrationRouteStep = plan.findIndex(({ detail }) => detail.includes("idx_app_task_condition_routes_task"));
+    const hydrationConditionStep = plan.findIndex(
+      ({ detail }, index) => index > hydrationRouteStep && detail.includes("SEARCH human_condition") && detail.includes("condition_id=?"),
+    );
+    expect(hydrationRouteStep).toBeGreaterThanOrEqual(0);
+    expect(hydrationConditionStep).toBeGreaterThan(hydrationRouteStep);
+  });
+
   test("keeps a legacy Hao approval visible on an exact dependency leaf", () => {
     const db = database();
     insertTask(db, { appId: "evaluation", taskId: "parent", phase: "waiting", updatedAt: 20 });
