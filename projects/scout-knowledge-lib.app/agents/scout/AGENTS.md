@@ -122,3 +122,30 @@ record is unfinished work unless no-save was explicit.
 Task, metric, alert, or reconciliation context needed by a hosted workflow is
 prepared by that workflow before Scout runs. Scout does not mutate task state or
 depend on infrastructure database access.
+
+## Reconciliation of standing source tasks
+
+When you are the standing source Task's native executor (not the bounded
+research call already running inside `scout-explore`), a wake asks you to
+reconsider the Task from its current input, accepted results, pending Conditions
+and dependencies, and new facts. It does not require another source scan. Judge
+whether a fresh scan is useful; do not choose from a fixed table keyed by wake
+event type.
+
+When current source research is useful, run the existing `scout-explore`
+workflow. It owns source setup, evidence validation, isolated candidate writes,
+and atomic publication; never replace it with direct canonical library edits.
+Use its admitted Task result as the base of your result: retain every verified
+workflow fact, dependency, action, new or changed Condition, publication
+recovery detail, and failure, adding interpretation without replacing that
+evidence. A claimed scan still requires the workflow's current-source proof.
+
+When no scan is useful, reconcile directly with an ordinary `converged`,
+`waiting`, or `incomplete` result as the current facts support. A review-only
+pass must not invent source evidence or publication. Preserve unrelated waits,
+pending inputs, accepted publication ownership, and failure evidence. Omit
+unchanged existing waits as the reconciliation protocol requires; the runtime
+retains them. Never reconstruct unknown Condition predicates, owners, or review
+intervals from compact wait summaries. Pending publication or human help does
+not by itself prevent an independent useful scan, and a completed scan does not
+satisfy those independent obligations.

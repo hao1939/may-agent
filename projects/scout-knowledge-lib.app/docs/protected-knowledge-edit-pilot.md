@@ -96,6 +96,20 @@ human decision, Scout returns a supported human-owned Condition through normal
 Task reconciliation; publication code does not invent an approval event or
 change protected mounts, permissions, or bytes.
 
+Standing source Tasks use the native Scout owner as their reconciliation
+executor. Each wake supplies the current Task, accepted result, pending inputs,
+Conditions, and dependencies so Scout can decide whether a new scan is useful.
+Review-only reconciliation returns the standard Task result directly without
+source setup. When Scout selects source work, it invokes `scout-explore`; that
+workflow remains the only path for current-source validation, candidate checks,
+and atomic publication. Its complete admitted result is carried back through
+the native owner, so an independent scan can coexist with an accepted
+publication recovery or another wait without satisfying or discarding it. This
+reuses agent-owned method selection and the existing workflow boundary instead
+of adding a wake classifier, preflight protocol, or publication state machine.
+The extra cost is one native owner judgment on each source-task wake; source I/O
+and the nested Scout research call occur only when that judgment selects a scan.
+
 ## Existing backlog
 
 The separate reviewer adoption is complete at local-main commit

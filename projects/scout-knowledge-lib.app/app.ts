@@ -84,9 +84,8 @@ export function resolveScoutTask(
         parentId: "ongoing-research",
         outcome: `Continuously explore ${source} for source-grounded AI-agent signals and integrate useful findings into the Scout knowledge library.`,
         acceptance: [
-          "The current source is checked without simulated data; useful findings update an existing note or a source-grounded finding, otherwise the workflow records an evidence-backed no-op.",
+          "Reconcile the current source responsibility from all Task facts: review-only outcomes are valid when no scan is useful; any claimed scan uses current non-simulated source proof and integrates useful findings or records an evidence-backed no-op without discarding independent pending obligations.",
         ],
-        workflow: "scout-explore",
         input: { source },
         outputs: [
           `${projectDir}/knowledge`,

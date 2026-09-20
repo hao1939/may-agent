@@ -116,11 +116,22 @@ Reusable research and maintenance processes belong to Scout and live under:
 /app/projects/scout-knowledge-lib.app/agents/scout/workflows/
 ```
 
-The app manifest binds stable tasks to those workflows. It does not contain a
-second planner, a workflow registry, or domain strategy in the generic
-reconciler. A missing named workflow remains visible in `attention` until the
-binding is repaired. The runtime does not guess from task prose or silently
-substitute the owner.
+The app manifest binds deterministic responsibilities such as digest and
+library health directly to their workflows. Standing source responsibilities
+run through the native Scout owner, which reviews current Task state and selects
+the existing `scout-explore` workflow only when a fresh scan is useful. This is
+the standard agent-owned method-selection boundary, not a second planner,
+workflow registry, wake classifier, or domain strategy in the generic
+reconciler. A selected but missing workflow remains an execution failure; the
+runtime does not guess from task prose or silently substitute another method.
+
+The boundary is validated with isolated managed-agent trials using the production
+agent loader, workflow tool, Task reads, reconciler, and settlement path. Trials
+cover review-only reconciliation, fresh input beside existing waits, and a real
+source scan with hosted publication; they must compare retained Conditions and
+workflow facts after settlement. These fixtures do not prove live scheduler or
+external recovery behavior, so activation still requires a current installed
+App read-back and an observed source-Task reconciliation.
 
 Every task owner must resolve to a runnable agent. `human` is not a Scout task
 owner. Human notification and task accountability are separate concerns.
@@ -164,19 +175,19 @@ Scout uses only the two shared reconciliation modes:
 Standing Scout identities are stable and do not include event IDs or dates:
 
 ```text
-explore-arxiv                    maintain -> scout-explore
-explore-hn                       maintain -> scout-explore
-explore-xhs                      maintain -> scout-explore
-explore-github                   maintain -> scout-explore
-explore-reddit                   maintain -> scout-explore
+explore-arxiv                    maintain -> Scout owner -> scout-explore when useful
+explore-hn                       maintain -> Scout owner -> scout-explore when useful
+explore-xhs                      maintain -> Scout owner -> scout-explore when useful
+explore-github                   maintain -> Scout owner -> scout-explore when useful
+explore-reddit                   maintain -> Scout owner -> scout-explore when useful
 daily-digest                     maintain -> scout-daily-digest
 runtime/library-health-observer  maintain -> library-health
 library-maintenance              maintain -> knowledge-planner
 ```
 
-The source name is stable workflow input. Event IDs, timestamps, schedule
-metadata, health packets, and current observations are trigger/status data and
-never task input. Repeated schedule ticks therefore wake the same generation;
+The source name is stable Task input and becomes workflow input when Scout
+selects `scout-explore`. Event IDs, timestamps, schedule metadata, health
+packets, and current observations are trigger/status data and never task input. Repeated schedule ticks therefore wake the same generation;
 they do not create new task identities or false spec changes.
 
 Structural labels such as `project`, `ongoing-research`, and
@@ -205,7 +216,7 @@ schedule/action/comment
 
 The main routes are:
 
-- `scout.explore` -> source discovery workflow;
+- `scout.explore` -> standing source Task; Scout selects the source discovery workflow when useful;
 - `scout.digest` -> daily digest workflow;
 - `project.library_health.tick` -> deterministic health observer;
 - an allowlisted `project.owner.requested` reason -> Scout owner/planner review.

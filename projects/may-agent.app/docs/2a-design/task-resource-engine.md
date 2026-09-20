@@ -888,14 +888,12 @@ parent task
 
 The Host schedules task IDs from canonical task state. It never schedules a
 tree, restores state from a tree, or treats tree placement as ownership.
-The Task view supplies progress and diagnostic detail. Input handling and
-conversational Request fulfillment remain distinct; see
+The Task view supplies progress and diagnostic detail. Input handling and conversational Request fulfillment remain distinct; see
 [Message Lifecycle](message-lifecycle.md#requests-acceptance-and-closure).
 
 ## Resource read interface
 
-The transport-neutral `tasks.list`, `tasks.get`, and opt-in `tasks.outcomes`
-contract, scope bindings, pagination, human-action projection, and write
-boundary are specified in [Task resource read interface](task-resource-read-interface.md).
+The transport-neutral `tasks.list`, `tasks.get`, and opt-in `tasks.outcomes` contract,
+scope bindings, pagination, human-action projection, and write boundary are specified in [Task resource read interface](task-resource-read-interface.md).
 Exact reads remain backed by canonical Task state; adapters do not create a
 second model or mutation authority.

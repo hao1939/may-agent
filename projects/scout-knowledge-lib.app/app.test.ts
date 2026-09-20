@@ -142,6 +142,7 @@ describe("Scout task reconciliation", () => {
     expect(context).toContain("## Source Access");
     expect(context).toContain("`python3`");
     expect(config).not.toHaveProperty("context_files");
+    expect(config.tools).toContain("workflow");
   });
 
   it("keeps digest-link preservation in Scout's active instructions", async () => {
@@ -169,13 +170,19 @@ describe("Scout task reconciliation", () => {
       ).toMatchObject({
         id: `explore-${source}`,
         parentId: "ongoing-research",
-        workflow: "scout-explore",
         input: { source },
         outputs: [
           "/app/projects/scout-knowledge-lib/knowledge",
           "/app/projects/scout-knowledge-lib.app/agents/scout/workspace/digest/today.md",
         ],
       });
+      expect(
+        resolveScoutTask({
+          type: "scout.explore",
+          project: "scout-knowledge-lib",
+          source,
+        })?.workflow,
+      ).toBeUndefined();
     }
   });
 
@@ -198,7 +205,6 @@ describe("Scout task reconciliation", () => {
       }),
     ).toMatchObject({
       id: "explore-hn",
-      workflow: "scout-explore",
       input: { source: "hn" },
     });
   });
