@@ -1135,12 +1135,18 @@ describe("Human Task service", () => {
       intervalMs: 120_000,
       event: { type: "project.task.tick", data: {}, target: { appId: "alpha", taskId: "scheduled" } },
     });
-    const ambiguous = new HumanTaskService(db, registryWithSchedules("alpha", schedules)).getTask({
+    const ambiguousService = new HumanTaskService(db, registryWithSchedules("alpha", schedules));
+    const ambiguous = ambiguousService.getTask({
       appId: "alpha",
       taskId: "scheduled",
     });
-    expect(ambiguous).toMatchObject({ recurring: false });
-    expect(ambiguous?.recurrence).toBeUndefined();
+    expect(ambiguous).toMatchObject({ recurring: true, recurrence: {} });
+    expect(ambiguous?.recurrence).not.toHaveProperty("cadenceMs");
+    expect(ambiguous?.recurrence).not.toHaveProperty("nextRunAt");
+    expect(ambiguousService.listTasks({ appId: "alpha" }).items[0]).toMatchObject({
+      recurring: true,
+      recurrence: {},
+    });
   });
 
   test("drops disabled, removed, inexact, unsupported, and cancelled event schedule projections", () => {

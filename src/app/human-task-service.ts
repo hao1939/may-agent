@@ -387,7 +387,8 @@ function configuredTaskRecurrence(
       if (linkedInput || exactTaskTick) cadences.add(schedule.intervalMs);
     }
   }
-  if (cadences.size !== 1) return undefined;
+  if (cadences.size === 0) return undefined;
+  if (cadences.size > 1) return {};
   const cadenceMs = cadences.values().next().value;
   if (typeof cadenceMs !== "number") return undefined;
   const nextSlot = (Math.floor(now / cadenceMs) + 1) * cadenceMs;
