@@ -131,6 +131,7 @@ Migration and project-operation artifacts live outside `knowledge/`:
 ### 2026-09-01
 
 - [Agent self-evolution and autonomy: what actually changes?](./agent-self-evolution-and-autonomy.md) — mechanism-first taxonomy separating skill creation, admission, maintenance, internalization, routing, harnesses, weights, world models, evaluators, search, and authority; includes six direct comparison matrices and actionable experiments.
+- [Agent self-evolution: evidence profiles and release-control boundaries](./agent-self-evolution-evidence-and-release-controls.md) — source profiles for bounded skill learning, harness and search evolution, lifecycle evaluation, admission integrity, RL headroom, and formal limits; preserves explicit evidence and reproduction boundaries.
 
 ### 2026-08-31
 
