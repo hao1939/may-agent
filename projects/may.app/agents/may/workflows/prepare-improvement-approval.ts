@@ -35,26 +35,49 @@ type Input = {
 const sha256 = (bytes: string | Buffer) =>
   createHash("sha256").update(bytes).digest("hex");
 
-async function assertEvaluationSubjectCurrent(packet: ApprovalPacket) {
-  const pinned = packet.evaluationSubject;
-  if (!pinned) return;
-  const subject = await readSubjectTask({
-    appId: pinned.appId,
-    taskId: pinned.taskId,
-  });
+type EvaluationSubjectReader = (identity: {
+  appId: string;
+  taskId: string;
+  assessmentPurpose: "outcome" | "ongoing";
+}) => Promise<{
+  disposition: string;
+  generation?: number;
+  evidenceHash?: string;
+  validityIdentity?: string;
+  rubricVersion?: string;
+}>;
+
+const readCurrentEvaluationSubject: EvaluationSubjectReader = async (
+  identity,
+) => {
+  const subject = await readSubjectTask(identity);
   const detail = (subject.task?.detail ?? {}) as Record<string, unknown>;
   const assessment =
-    pinned.assessmentPurpose === "ongoing"
+    identity.assessmentPurpose === "ongoing"
       ? assessmentContext(subject, "ongoing")
-      : null;
-  assertCurrentEvaluationSubject(pinned, {
+      : undefined;
+  return {
     disposition: subject.disposition,
     generation:
       typeof detail.generation === "number" ? detail.generation : undefined,
     evidenceHash: subject.evidenceHash,
     validityIdentity: assessment?.validityIdentity,
     rubricVersion: assessment?.rubricVersion,
+  };
+};
+
+async function assertEvaluationSubjectCurrent(
+  packet: ApprovalPacket,
+  readCurrentSubject: EvaluationSubjectReader = readCurrentEvaluationSubject,
+) {
+  const pinned = packet.evaluationSubject;
+  if (!pinned) return;
+  const current = await readCurrentSubject({
+    appId: pinned.appId,
+    taskId: pinned.taskId,
+    assessmentPurpose: pinned.assessmentPurpose ?? "outcome",
   });
+  assertCurrentEvaluationSubject(pinned, current);
 }
 
 /** Idempotently retain the exact proposal bytes outside the target checkout. */
@@ -114,6 +137,7 @@ export function prepareImprovementApproval(
 
 export async function execute(
   ctx: WorkflowContext<Input>,
+  readCurrentSubject: EvaluationSubjectReader = readCurrentEvaluationSubject,
 ): Promise<ExecutionResult> {
   const taskId = ctx.reconciliation?.taskId;
   if (!taskId)
@@ -125,7 +149,7 @@ export async function execute(
     const { packetHash: claimedPacketHash, ...packetBody } = packet;
     if (packetHash(packetBody) !== claimedPacketHash)
       throw new Error("approval packet changed");
-    await assertEvaluationSubjectCurrent(packet);
+    await assertEvaluationSubjectCurrent(packet, readCurrentSubject);
     const prepared = prepareImprovementApproval(ctx.input, {
       appId: "may",
       taskId,
