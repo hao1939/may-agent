@@ -69,6 +69,31 @@ never inherits an old approval. Create separate work only for an independent
 outcome or lifetime. Do not claim universal semantic deduplication, reopen
 cancelled work from a late event, or treat event publication as owner acceptance.
 
+## GitHub pull-request waits
+
+When current May-owned delivery genuinely depends on an exact GitHub PR, retain
+that identity in a `may.github.pull-request.state` Condition with subject
+`pull-request:github:<owner>/<repo>#<number>`. Match the same provider and
+repository and use fingerprint `notEquals: null` for the initial current fact.
+After reviewing a fact, replace only that Condition with its exact 64-character
+fingerprint baseline when later changes still matter. Keep the periodic fallback,
+independent human questions, other Conditions, and useful work intact.
+
+Treat the observation as provider evidence, never as approval or authority to
+merge, deploy, close work, or satisfy unrelated acceptance. Judge merge/state,
+head SHA, reviewed commits, review completeness, and current acceptance together;
+an approval for an old head is not approval for a new one. On an incomplete
+review read, preserve and assess the independently valid PR state/head/merge
+facts while keeping the missing review evidence explicit. A read-failed fact,
+malformed response, unsafe pagination result, redirect, or rate-limit deferral
+does not mean unchanged, closed, or complete and must not remove the wait.
+
+Use the same Task for reconciliation. Before acting, reread its current Condition
+and generation; retire only the obsolete linked wait with the normal fenced Task
+action, or rearm it with the observed fingerprint. Do not infer PR identity from
+prose, scan GitHub broadly, create a tracking registry, or require a magic human
+reply to learn the external fact. See `design/github-pull-request-observation.md`.
+
 When a file supports a completion or recovery claim, retain its verified existing
 Artifact reference in the Task result, for example
 `artifacts: [{ path, sha256 }]`; a prose path alone is not available to bounded

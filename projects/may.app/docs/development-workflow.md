@@ -259,6 +259,30 @@ Task's existing caller feedback. The workflow does not invent a human Condition
 with no return route or directly send messages. The experiment does not claim
 exact suppression of repeated questions during retry.
 
+## Waiting for GitHub pull-request facts
+
+When this workflow leaves a May-owned delivery waiting on a GitHub PR, use the
+registered `github-pull-request` observer contract documented in
+[`../design/github-pull-request-observation.md`](../design/github-pull-request-observation.md).
+Return a `may.github.pull-request.state` Condition with canonical subject
+`pull-request:github:<owner>/<repo>#<number>`, matching provider/repository, and
+`{ "field": "fingerprint", "notEquals": null }` for the initial observation.
+After judgment, rearm with the last observed fingerprint when further PR change
+is relevant. Do not infer links from prose or require a magic human reply.
+
+The observer uses fair bounded passes, at most eleven real GitHub requests every
+fifteen minutes, and provider-directed rate-limit deferral. Do not add a parallel
+poller, tracking file, or manual retry loop to make one PR faster. A malformed
+provider response, unsafe pagination link, redirect, quota deferral, or incomplete
+review read is unavailable evidence rather than an unchanged or closed PR.
+
+The fact wakes the same Task for judgment; it does not approve, merge, deploy,
+close work, or retire independent Conditions. A targeted `read-failed` fact also
+wakes that owner once even though it cannot match or satisfy the PR Condition; a
+separate partial state fact can match and still requires judgment. Preserve a
+periodic review fallback and any independently useful human route. Provider
+failures remain visible and leave the wait intact.
+
 ## Input and installation boundary
 
 ```json

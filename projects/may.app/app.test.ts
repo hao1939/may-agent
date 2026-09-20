@@ -42,6 +42,9 @@ describe("canonical May conversation App", () => {
     });
     expect(app).toHaveProperty("task");
     expect(app.tasks).toMatchObject({ maxConcurrent: 4 });
+    expect(app.tasks?.validateCondition).toBeFunction();
+    expect(app.observers?.map(({ id }) => id)).toEqual(["github-pull-request"]);
+    expect(app.description).toContain("may.github.pull-request.state");
     expect(app.subscriptions?.map(({ id }) => id)).toEqual([
       "scout-research-qualified",
       "evaluation-human-decision",
