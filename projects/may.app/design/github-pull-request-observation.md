@@ -101,14 +101,15 @@ Two live proof scopes remain distinct:
    already-merged public `hao1939/may-agent#215`. It proves current connectivity
    and parsing only; it does not exercise observer registration, event admission,
    or owner reconciliation.
-2. After reviewed source integration and App reload, a planned bounded registered
-   live trial may use an already-existing exact PR Condition to prove the live
-   current-state -> durable event -> exact owner wake route. It must preserve
+2. After explicit source-integration approval and App reload, the current
+   implementation Task may declare a neutral PR215 Condition whose stated purpose
+   is live observer verification. That planned bounded registered trial proves the
+   live current-state -> durable event -> exact same-Task owner-wake route through
+   normal fenced Task settlement and event persistence. It must preserve
    independent Conditions and may prove an initially merged current state, but
-   not an open-to-merged transition unless that transition actually occurs.
-   The current read-only inventory found no remaining PR Condition among current
-   May Task references, so there is nothing to backfill and this second scope
-   cannot be run now without fabricating authoritative work.
+   not an open-to-merged transition unless that transition actually occurs. The
+   current read-only inventory found no remaining PR Condition among current May
+   Task references, so no migration or backfill is needed.
 
-Neither scope proves approval or deployment, writes the live database directly,
-or creates or merges a PR solely for testing.
+Neither scope proves approval or deployment, directly writes the live database,
+reopens the old PR215 delivery Task, or creates or merges a PR solely for testing.
