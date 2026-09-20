@@ -88,6 +88,11 @@ notifications were missed. It uses the same input path and adds no supervision
 Task. An unchanged wait or already reported outcome needs no repeated human
 update. Later useful findings can be reported without reopening a fulfilled ask.
 
+The four-hour `task-hygiene-review` schedule targets the existing May hygiene
+Task directly. It replaces that Task's timer only as its wake method: the Task's
+identity, goal, acceptance, constraints and other waits remain unchanged. The
+obsolete timed wait is retired only after this schedule is active and verified.
+
 The [shared-loop design](../may-agent.app/docs/proposals/conversation-input-unification.md)
 owns the lifecycle and its evidence. Host deployment and runtime operations
 remain with the Host Operations App (`app:may-agent`).
