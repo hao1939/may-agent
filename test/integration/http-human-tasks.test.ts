@@ -165,6 +165,10 @@ describe("HTTP human Task reads and board", () => {
     expect(await read(`/api/task?${new URLSearchParams({ appId: "alpha", taskId: "work/a ?&" })}`)).toEqual(
       service.getTask({ appId: "alpha", taskId: "work/a ?&" }),
     );
+    expect(await read(`/api/task?${new URLSearchParams({ appId: "alpha", taskId: "work/a ?&", acceptedEvidence: "true", evidenceLimit: "1" })}`)).toEqual(
+      service.getTask({ appId: "alpha", taskId: "work/a ?&", acceptedEvidence: { limit: 1 } }),
+    );
+    await read("/api/task?appId=alpha&taskId=work%2Fa&evidenceLimit=1", 400);
     expect((await read("/api/tasks?appId=alpha&status=waiting")).items).toEqual([]);
     expect(await read("/api/tasks?allApps=true&status=running&status=waiting&limit=8"))
       .toEqual(service.listTasks({ status: ["running", "waiting"], limit: 8 }));

@@ -13,6 +13,7 @@ const MAX_FACT_BYTES = 512;
 const MAX_RESULT_BYTES = 16 * 1_024;
 
 type EvidenceCursor = { startedAt: number; attemptId: string };
+type TruncatedField = "summary" | "response" | "result" | "facts" | "acceptanceBasis" | "acceptedLiveEventIds";
 
 function encodeCursor(cursor: EvidenceCursor): string {
   return Buffer.from(JSON.stringify(cursor), "utf8").toString("base64url");
@@ -49,9 +50,9 @@ function boundedText(value: string, maxBytes: number): { value: string; truncate
 
 function boundedAcceptedResult(result: NonNullable<AppTaskAttempt["acceptedResult"]>) {
   if (Buffer.byteLength(JSON.stringify(result), "utf8") <= MAX_ACCEPTED_RESULT_BYTES) {
-    return { value: structuredClone(result), fields: [] as string[] };
+    return { value: structuredClone(result), fields: [] as TruncatedField[] };
   }
-  const fields = new Set<"summary" | "response" | "result" | "facts" | "acceptanceBasis" | "acceptedLiveEventIds">();
+  const fields = new Set<TruncatedField>();
   const summary = boundedText(result.summary, MAX_SUMMARY_BYTES);
   if (summary.truncated) fields.add("summary");
   const response = result.response ? boundedText(result.response, MAX_RESPONSE_BYTES) : null;
