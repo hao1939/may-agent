@@ -6,6 +6,10 @@ import {
   type AppTaskAttachment,
   type AppTaskInput,
 } from "@may-agent/sdk";
+import {
+  githubPullRequestObserver,
+  validateGitHubPullRequestCondition,
+} from "./watchers/github-pull-request.js";
 
 const detailsSchema = Type.Record(Type.String(), Type.Unknown());
 const teamAssignmentSchema = Type.Object(
@@ -355,7 +359,7 @@ export default defineApp({
   agent: "may",
   workspace: { kind: "git", localPath: ".", branch: "main" },
   description:
-    "Hao's deputy: handles conversation and authorized direct work, owns ongoing Tasks, and involves other Apps when useful or required. Use goal for ongoing work. May chooses available tools, specialists and workflows to meet the outcome; procedure parameters belong in context, not new input kinds.",
+    "Hao's deputy: handles conversation and authorized direct work, owns ongoing Tasks, and involves other Apps when useful or required. Use goal for ongoing work. May chooses available tools, specialists and workflows to meet the outcome; procedure parameters belong in context, not new input kinds. The registered github-pull-request observer supplies may.github.pull-request.state facts for exact structured May Task Conditions.",
   inputSchema: mayInputSchema,
   conversation: {
     mode: "agent",
@@ -415,7 +419,9 @@ export default defineApp({
   task: taskForMayInput,
   tasks: {
     maxConcurrent: 4,
+    validateCondition: validateGitHubPullRequestCondition,
   },
+  observers: [githubPullRequestObserver],
   subscriptions: [
     {
       id: "scout-research-qualified",
