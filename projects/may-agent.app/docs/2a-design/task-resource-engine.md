@@ -178,7 +178,7 @@ Host derives App-only authority from the saved non-delegated inbox row. The
 common admission transaction rereads exact creator `{appId}` and current
 generation before applying the mapped intent. A worker cannot gain authority by
 omitting `taskId`, naming an owner, targeting itself, or acting across Apps.
-Parent links, references and executor names confer no authority.
+Parent links, references and executor names confer no authority. Historical Tasks without creator metadata remain provenance-incomplete; normal admission must not infer creator authority from other fields, and any correction must follow the reviewed [offline safety procedure](../2b-manual/app-operations-recovery.md#historical-tasks-missing-creator-metadata).
 
 App policy maps the complete revised input; the generic engine preserves the
 stable Task identity, parent, accepted results and unrelated obligations while
