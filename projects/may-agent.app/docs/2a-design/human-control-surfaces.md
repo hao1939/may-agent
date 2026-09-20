@@ -175,6 +175,20 @@ digest from a versioned, length-safe encoding of the canonical identity.
 
 Numbers shown for visual layout are never accepted as identity.
 
+### Configured recurrence
+
+Task recurrence shown by `/tasks`, `/todo`, or exact Task detail comes from an
+enabled App schedule that resolves to the same canonical `{appId, taskId}`.
+A linked input schedule and an exact-target `project.task.tick` event schedule
+are both valid configured sources. A one-shot `time.reached` Condition, title,
+or goal prose is not recurrence evidence.
+
+When exactly one configured cadence is known, the view may show its interval
+and next strictly-future epoch slot. Multiple enabled cadences still establish
+that the Task is recurring, but the view omits ambiguous cadence and next-run
+fields. Schedule configuration does not prove that a live producer has fired;
+activation and the same-Task wake remain separate operational evidence.
+
 ## Conversation
 
 Ordinary text publishes one durable `conversation.message.created` event for
