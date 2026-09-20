@@ -92,6 +92,7 @@ describe("canonical database schema", () => {
       expect(admissionCommandColumns.some(({ name }) => name === "payload_version")).toBe(true);
       expect(conditionRouteIndexes.some(({ name }) => name === "idx_app_task_condition_routes_task")).toBe(true);
       expect(conditionIndexes.some(({ name }) => name === "idx_app_task_conditions_type_app")).toBe(true);
+      expect(conditionIndexes.some(({ name }) => name === "idx_app_task_conditions_open_human_owner")).toBe(true);
       expect(db.prepare("SELECT name FROM sqlite_master WHERE name = 'conversation_topics'").get()).not.toBeNull();
       expect(db.prepare("SELECT name FROM sqlite_master WHERE name = 'conversation_topic_tasks'").get()).not.toBeNull();
       expect(trigger.sql).toContain("OLD.session_id");
@@ -112,6 +113,41 @@ describe("canonical database schema", () => {
           db.prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name = ?").get(domainTable),
         ).toBeNull();
       }
+    } finally {
+      db.close();
+    }
+  });
+
+  it("installs and maintains the open-human Condition index on an existing populated database", () => {
+    const db = openDatabase(":memory:");
+    try {
+      db.exec(`CREATE TABLE app_task_conditions (
+        app_id TEXT NOT NULL, condition_id TEXT NOT NULL, state TEXT NOT NULL, condition_json TEXT NOT NULL,
+        PRIMARY KEY(app_id, condition_id)
+      )`);
+      const insert = db.prepare("INSERT INTO app_task_conditions VALUES (?, ?, ?, ?)");
+      insert.run("sample", "human", "unknown", JSON.stringify({ spec: { owner: "human:reviewer" } }));
+      insert.run("sample", "app", "unknown", JSON.stringify({ spec: { owner: "app:may" } }));
+
+      applyDbSchema(db);
+      const indexedCount = () =>
+        db
+          .prepare(
+            `SELECT COUNT(*) AS count
+             FROM app_task_conditions INDEXED BY idx_app_task_conditions_open_human_owner
+             WHERE state != 'true'
+               AND (trim(json_extract(condition_json, '$.spec.owner')) = 'human'
+                 OR trim(json_extract(condition_json, '$.spec.owner')) GLOB 'human:?*'
+                 OR trim(json_extract(condition_json, '$.spec.owner')) = 'Hao')`,
+          )
+          .get() as { count: number };
+      expect(indexedCount()).toEqual({ count: 1 });
+      db.prepare("UPDATE app_task_conditions SET state = 'true' WHERE condition_id = 'human'").run();
+      expect(indexedCount()).toEqual({ count: 0 });
+      db.prepare(
+        "UPDATE app_task_conditions SET condition_json = json_set(condition_json, '$.spec.owner', 'human') WHERE condition_id = 'app'",
+      ).run();
+      expect(indexedCount()).toEqual({ count: 1 });
     } finally {
       db.close();
     }

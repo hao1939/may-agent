@@ -190,6 +190,7 @@ type TaskRow = {
   observed_attempt_json?: string | null;
   human_conditions_json?: string | null;
   schedule_source_ids?: string | null;
+  total_count?: number;
 };
 
 type TaskProgressRow = { data?: string | null; timestamp?: number };
@@ -409,8 +410,8 @@ function configuredTaskRecurrence(
 }
 
 const HUMAN_CONDITIONS_SQL = `(SELECT json_group_array(json(human_condition.condition_json))
-  FROM app_task_condition_routes human_route
-  JOIN app_task_conditions human_condition
+  FROM app_task_condition_routes human_route INDEXED BY idx_app_task_condition_routes_task
+  CROSS JOIN app_task_conditions human_condition
     ON human_condition.app_id = human_route.app_id
    AND human_condition.condition_id = human_route.condition_id
   WHERE human_route.app_id = t.app_id
@@ -1053,20 +1054,36 @@ export class HumanTaskService {
       ? [...new Set([...livePhases, "converged", "waiting"])]
       : livePhases;
     const appId = normalizeAppId(input.appId);
-    const humanOwners = humanActionOnly
-      ? reachableHumanConditionOwners(this.db, appId ? { activeAppId: appId } : {})
+    // A global read already has every eligible Task as a root. Start from the
+    // selective open-human Condition index and follow its exact owner routes;
+    // recursive dependency discovery remains only for scoped reads.
+    const directGlobalHumanOwners = humanActionOnly && !appId;
+    const scopedHumanOwners = humanActionOnly && appId
+      ? reachableHumanConditionOwners(this.db, { activeAppId: appId })
       : [];
-    const humanOwnerKeys = new Set(humanOwners.map((owner) => `${owner.appId}\0${owner.taskId}`));
-    if (humanActionOnly && humanOwnerKeys.size === 0) return { items: [], total: 0 };
-    const humanOwnerClause = humanActionOnly
-      ? ` AND (${[...humanOwnerKeys].map(() => "(t.app_id = ? AND t.task_id = ?)").join(" OR ")})`
+    const scopedHumanOwnerKeys = new Set(scopedHumanOwners.map((owner) => `${owner.appId}\0${owner.taskId}`));
+    if (humanActionOnly && appId && scopedHumanOwnerKeys.size === 0) return { items: [], total: 0 };
+    const scopedHumanOwnerClause = humanActionOnly && appId
+      ? ` AND (${[...scopedHumanOwnerKeys].map(() => "(t.app_id = ? AND t.task_id = ?)").join(" OR ")})`
       : "";
-    const humanOwnerValues = humanActionOnly
-      ? [...humanOwnerKeys].flatMap((key) => {
+    const scopedHumanOwnerValues = humanActionOnly && appId
+      ? [...scopedHumanOwnerKeys].flatMap((key) => {
           const [ownerAppId, ownerTaskId] = key.split("\0");
           return [ownerAppId, ownerTaskId];
         })
       : [];
+    const liveTaskSource = directGlobalHumanOwners
+      ? `FROM app_task_conditions human_condition INDEXED BY idx_app_task_conditions_open_human_owner
+         CROSS JOIN app_task_condition_routes human_route
+           ON human_route.app_id = human_condition.app_id
+          AND human_route.condition_id = human_condition.condition_id
+         CROSS JOIN app_tasks t
+           ON t.app_id = human_route.app_id AND t.task_id = human_route.task_id`
+      : "FROM app_tasks t";
+    const directGlobalHumanOwnerFilter = directGlobalHumanOwners
+      ? ` AND human_condition.state != 'true' AND ${HUMAN_OWNER_SQL}`
+      : "";
+    const directGlobalHumanOwnerGroup = directGlobalHumanOwners ? " GROUP BY t.app_id, t.task_id" : "";
     const parts: string[] = [];
     const values: unknown[] = [];
     if (includeLive && livePhases.length > 0) {
@@ -1074,7 +1091,7 @@ export class HumanTaskService {
         `SELECT t.app_id, t.task_id, ${LIVE_TASK_PHASE_SQL} AS phase, t.updated_at, t.resource_json AS payload, 0 AS terminal,
            t.ready, a.attempt_json, ${HUMAN_CONDITIONS_SQL} AS human_conditions_json,
            ${taskScheduleSourceIdsSql("t.app_id", "t.task_id")} AS schedule_source_ids
-         FROM app_tasks t
+         ${liveTaskSource}
          LEFT JOIN app_task_attempts a
            ON a.app_id = t.app_id AND a.attempt_id = t.current_attempt_id
          WHERE t.phase IN (${storedPhases.map(() => "?").join(", ")})
@@ -1085,9 +1102,14 @@ export class HumanTaskService {
            )
            AND NOT EXISTS (
              SELECT 1 FROM app_task_cancellations c WHERE c.app_id = t.app_id AND c.task_id = t.task_id
-           )${appId && !humanActionOnly ? " AND t.app_id = ?" : ""}${humanOwnerClause}`,
+           )${appId && !humanActionOnly ? " AND t.app_id = ?" : ""}${scopedHumanOwnerClause}${directGlobalHumanOwnerFilter}${directGlobalHumanOwnerGroup}`,
       );
-      values.push(...storedPhases, ...livePhases, ...(appId && !humanActionOnly ? [appId] : []), ...humanOwnerValues);
+      values.push(
+        ...storedPhases,
+        ...livePhases,
+        ...(appId && !humanActionOnly ? [appId] : []),
+        ...scopedHumanOwnerValues,
+      );
     }
     if (includeDone) {
       parts.push(
@@ -1116,8 +1138,9 @@ export class HumanTaskService {
       values.push(...closureKinds);
       if (appId) values.push(appId);
     }
-    if (parts.length === 0) return { items: [] };
+    if (parts.length === 0) return { items: [], ...(humanActionOnly ? { total: 0 } : {}) };
 
+    const membershipValues = [...values];
     const cursor = input.cursor ? decodeCursor(input.cursor) : null;
     const cursorClause = cursor
       ? `WHERE updated_at < ? OR
@@ -1142,7 +1165,10 @@ export class HumanTaskService {
     values.push(limit + 1);
     const rows = this.db
       .prepare(
-        `SELECT * FROM (${parts.join(" UNION ALL ")})
+        `SELECT * FROM (
+           SELECT listed_task.*, ${humanActionOnly ? "COUNT(*) OVER()" : "NULL"} AS total_count
+           FROM (${parts.join(" UNION ALL ")}) listed_task
+         )
          ${cursorClause}
          ORDER BY updated_at DESC, app_id, task_id, terminal
          LIMIT ?`,
@@ -1161,7 +1187,13 @@ export class HumanTaskService {
       const conditions = row.terminal === 0 ? humanConditions(row) : [];
       return [conditions.length > 0 ? withHumanAction(view, conditions) : view];
     });
-    const total = humanActionOnly ? humanOwnerKeys.size : undefined;
+    let total = humanActionOnly ? Number(rows[0]?.total_count ?? 0) : undefined;
+    if (humanActionOnly && cursor && rows.length === 0) {
+      const count = this.db
+        .prepare(`SELECT COUNT(*) AS count FROM (${parts.join(" UNION ALL ")})`)
+        .get(...membershipValues) as { count: number };
+      total = Number(count.count);
+    }
     const last = pageRows.at(-1);
     return {
       items,
