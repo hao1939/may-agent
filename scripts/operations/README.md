@@ -4,6 +4,87 @@ These commands are explicit maintenance operations, not startup recovery. They
 must be run against a stopped Host with a reviewed, installation-specific plan.
 They do not scan for candidates or choose state to repair.
 
+## Initialize reviewed creator metadata on legacy Tasks
+
+`initialize-legacy-task-creators.ts` is a one-time offline operation for a finite,
+reviewed batch of resource-backed Tasks created before creator metadata existed.
+It does not discover candidates. Keep the installation-specific manifest private;
+do not commit Task IDs, provenance, state paths or receipts.
+
+The manifest has this portable shape (example values only):
+
+```json
+{
+  "schemaVersion": 1,
+  "appId": "example",
+  "expectedEntryCount": 2,
+  "creator": { "appId": "example" },
+  "entries": [
+    {
+      "appId": "example",
+      "taskId": "legacy-one",
+      "expectedGeneration": 1,
+      "expectedResourceVersion": 7,
+      "legacySpecHash": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+      "provenance": { "reviewedEvidence": "private receipt reference" }
+    },
+    {
+      "appId": "example",
+      "taskId": "legacy-two",
+      "expectedGeneration": 1,
+      "expectedResourceVersion": 9,
+      "legacySpecHash": "abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789",
+      "provenance": { "reviewedEvidence": "private receipt reference" }
+    }
+  ]
+}
+```
+
+The legacy spec hash is SHA-256 over the stable, recursively key-sorted JSON of
+the complete stored `resource.spec`; use the exported `legacyTaskSpecHash` helper
+when preparing and independently reviewing a manifest. Provenance must be
+retained in every entry, but the operation never reads it to derive creator
+authority. The App-only `creator` is explicit reviewed data.
+
+The operation validates all entries inside one `BEGIN IMMEDIATE` transaction.
+It rejects count mismatch, duplicate/missing Tasks, cross-App entries, changed
+generation/resource-version/spec pins, running Tasks or attempts, conflicting
+App or Task creators and mixed initialized/uninitialized batches. Apply changes
+only absent creators, increments each listed Task's resource version once and
+advances the App store revision once. It does not alter generation, spec, status,
+attempts, Conditions, admissions, triggers, cancellation, relations or unrelated
+rows. Exact replay of the same fully initialized manifest returns
+`already-initialized` without writing.
+
+Procedure:
+
+1. Stop and quiesce the Host and **all** Task workers. Pausing one App is not
+   sufficient. Confirm the processes are stopped independently.
+2. Create and verify an offline backup using the installation-approved SQLite
+   procedure. Never copy a live database separately from its WAL.
+3. Through supported read-only tooling, re-read every manifested Task and review
+   exact IDs, App, generation, resource version, complete stored spec hash,
+   creator absence and retained provenance. Any mismatch requires a new review,
+   not a broadened manifest.
+4. Run the full validation as a rollback-only dry run while everything remains
+   stopped:
+
+```sh
+bun run operate:initialize-legacy-task-creators -- \
+  --state-dir /path/to/stopped/state --manifest /path/to/private-manifest.json \
+  --confirm-host-and-workers-stopped --dry-run
+```
+
+5. Review `would-initialize`, then run the exact command without `--dry-run`.
+   Accept only `initialized` or exact replay `already-initialized`.
+6. Before restart, read back every listed Task and verify only App-only creator
+   and resource-version bookkeeping changed. Keep the Host stopped and restore
+   the approved backup if this verification fails; do not improvise raw SQL.
+7. Restart through the normal operator path. Let retained App inbox input recover
+   once, then verify ordinary App-only revision adopted the complete desired
+   outcome/acceptance/input/outputs and execution selection while preserving
+   unrelated obligations. Initializer success alone is not rollout proof.
+
 ## Recover one malformed direct Conversation Task input
 
 `recover-malformed-conversation-input.ts` repairs the narrow case where a

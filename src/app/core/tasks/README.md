@@ -173,12 +173,27 @@ The responsible App's `task` mapper must accept the complete revised input and
 return desired intent; Host preserves the exact Task ID and parent.
 
 The schema adds nullable `creator_json` to the existing inbox table. New Task
-resources save creator in metadata. Historical Tasks without provenance remain
-readable but require explicit offline initialization before requirement changes;
-do not infer authority from parent links, executor names or input source text.
+resources save creator in metadata. Historical Tasks without provenance remain readable but require explicit
+offline initialization before requirement changes. The only supported initializer
+is a stopped-Host, stopped-worker operation over a reviewed private manifest. Each
+entry pins the App and Task IDs, generation, resource version, complete legacy
+spec hash and retained provenance. Provenance is review data, never evidence of
+authority: parent links, owners, workflows, executors, attempts, triggers and
+source text cannot select a creator.
+
+The operation initializes only an absent creator to the manifest's exact App-only
+creator and advances only Task/store resource-version bookkeeping. It validates
+the complete batch in one transaction and fails closed for missing, duplicate or
+extra entries, App mismatch, running evidence, changed pins/spec, any conflicting
+creator, or a partly applied batch. Exact replay of the same fully applied
+manifest is a no-op. Every requirement, status, result, wait, relation and
+unrelated row remains unchanged. The runtime inbox, Task revision and reconciler
+retain their ordinary immutable creator checks; there is no compatibility path
+that infers creator authority.
+
 Accepted historical results remain readable. Uncommitted old output containing
-retired actions is rejected and reviewed again through ordinary recovery.
-This source change neither migrates installed Apps nor certifies a live rollout.
+retired actions is rejected and reviewed again through ordinary recovery. This
+source change neither migrates installed Apps nor certifies a live rollout.
 
 For installations predating typed dependencies, retire saved implicit waits offline using
 `migrateTaskCoordination()` in `core/state` (also included by `migrateOpenTaskState`).

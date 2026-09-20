@@ -38,6 +38,7 @@
     "restart": "supervisorctl start may-agent-restarter",
     "maintain:db": "bun src/app/may.ts --maintenance-once",
     "operate:recover-malformed-conversation-input": "bun scripts/operations/recover-malformed-conversation-input.ts",
+    "operate:initialize-legacy-task-creators": "bun scripts/operations/initialize-legacy-task-creators.ts",
     "restart:host": "docker exec may-agent supervisorctl start may-agent-restarter",
     "lint": "eslint src/ packages/ scripts/ test/",
     "lint:fix": "eslint src/ packages/ scripts/ test/ --fix",
