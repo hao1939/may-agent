@@ -1,21 +1,22 @@
 <ai_context>
-summary: "Reusable verification and verdict-integrity patterns: evidence bound to the verified subject, explicit receipt coverage and valid anomalies, negative controls for the verdict path, freshness binding for replayed traces, evaluator immutability across repair, proof of the inspected universe behind a clean sweep, cross-artifact conformance for executable governance, separation of checker eligibility from acceptance authority, actor-bound approval provenance, and release-aware expected-outcome reconciliation."
-triggers: ["verification subject binding", "Brigade", "receipt coverage", "not_checked", "invocation_ref", "ASQAV", "meta-verification", "false-green verifier", "negative control", "ProjectGuard", "trace freshness", "recorded trace", "skilldiff", "agent skill regression", "frozen tests", "test identity", "failure fingerprint", "RepoPilot", "independent runner", "inspected universe", "compared-nothing-reported-clean", "cross-artifact conformance", "decision table", "DMN", "OutTheBox", "event-backed write", "Dream Studio", "checker eligibility", "acceptance authority", "FinalAcceptance", "ContributionRecord", "Workstream", "review provenance", "content-addressed approval", "CRT", "XFAIL", "XPASS", "release-aware conformance", "Monet E2E"]
-last_updated: "2026-09-19"
-source_basis: "Extracted intact from agent-runtime-effect-integrity.md during its 2026-09-14 oversized-note review, then extended with release-aware expected-outcome reconciliation, replay-freshness analysis, evaluator-immutability analysis, actor-bound review-state analysis, and cross-artifact governance conformance. Sources are Brigade revision 0e8b83ae6ef779bb6be8701dd4cd534c064608f9; jagmarques/asqav-sdk revision 4cbf71b774fe18e67c2433c6ebee7b3940fe62ec, especially its standalone verifier contract, executable requirement map, frozen conformance corpus, invocation-reference duplicate vector, and unsigned-gap vector; Dilikjon/projectguard revision 55df81492aa4890d512efd4152e2cdca514471e8, including its CLI entry point, test runner, active gate configuration, and CI workflow, with npm test, npm run verify, and a known-bad test-runner negative control reproduced locally from the pinned archive; scs0209/skilldiff revision 285489f8c18f7cf48b0b2d6b2ec35a6da45fcd64, especially its recorded/live runner split, trace assertions, report formatter, baseline fetch, CLI, and GitHub Actions workflow; indada/repopilot revision d184928c7bfef6bc0d7228f9d282f0ae2e56fda1, especially its pipeline, repair constraints, structured test-evidence comparison, architecture, verification-coverage statement, and security boundary; SeayInsights/dream-studio revision 1014fc185cbade7cb5b11bdf67b7150ce1e47d13, especially its event-backed-write gate, focused gate tests, projection declarations, and blocking pre-push wiring; Flow-Research/workstream revision d5dd94d3f1f4e52fa9f191e88d3c210758bb4b3b, especially its lifecycle contract, roadmap capability ledger, review queue persistence, and canonical-review decision record; imron/crt revision e3ff1126b06528048673573a667bf3561f185539, especially its content-addressed file-review records, review types, MCP mutation tools, and architecture documentation; team-monet/monet-e2e revision ba8acbc55a4574b3a453dcbf49842f7fb363f70c, especially its suite runner, metrics ledger, source-baseline guardrail, and release-to-main flip test; and scubagraham/outthebox-open-patterns revision c7d6fa84ad8b289116599966fc1bb2a853c19231, including its Markdown patterns, DMN tables, and Agent 365-shaped JSON templates."
+summary: "Reusable verification and verdict-integrity patterns: evidence bound to the verified subject, explicit receipt coverage and valid anomalies, negative controls for the verdict path, freshness binding for replayed traces, evaluator immutability across repair, proof of the inspected universe behind a clean sweep, cross-artifact conformance for executable governance, separation of checker eligibility from acceptance authority, actor-bound approval provenance, release-aware expected-outcome reconciliation, and lossless normalization of heterogeneous audit outcomes."
+triggers: ["verification subject binding", "Brigade", "receipt coverage", "not_checked", "invocation_ref", "ASQAV", "meta-verification", "false-green verifier", "negative control", "ProjectGuard", "trace freshness", "recorded trace", "skilldiff", "agent skill regression", "frozen tests", "test identity", "failure fingerprint", "RepoPilot", "independent runner", "inspected universe", "compared-nothing-reported-clean", "cross-artifact conformance", "decision table", "DMN", "OutTheBox", "event-backed write", "Dream Studio", "checker eligibility", "acceptance authority", "FinalAcceptance", "ContributionRecord", "Workstream", "review provenance", "content-addressed approval", "CRT", "XFAIL", "XPASS", "release-aware conformance", "Monet E2E", "audit outcome normalization", "decision vocabulary", "shadow mode", "approval timeout", "execution record", "node9"]
+last_updated: "2026-09-20"
+source_basis: "Extracted intact from agent-runtime-effect-integrity.md during its 2026-09-14 oversized-note review, then extended with release-aware expected-outcome reconciliation, replay-freshness analysis, evaluator-immutability analysis, actor-bound review-state analysis, and cross-artifact governance conformance. Sources are Brigade revision 0e8b83ae6ef779bb6be8701dd4cd534c064608f9; jagmarques/asqav-sdk revision 4cbf71b774fe18e67c2433c6ebee7b3940fe62ec, especially its standalone verifier contract, executable requirement map, frozen conformance corpus, invocation-reference duplicate vector, and unsigned-gap vector; Dilikjon/projectguard revision 55df81492aa4890d512efd4152e2cdca514471e8, including its CLI entry point, test runner, active gate configuration, and CI workflow, with npm test, npm run verify, and a known-bad test-runner negative control reproduced locally from the pinned archive; scs0209/skilldiff revision 285489f8c18f7cf48b0b2d6b2ec35a6da45fcd64, especially its recorded/live runner split, trace assertions, report formatter, baseline fetch, CLI, and GitHub Actions workflow; indada/repopilot revision d184928c7bfef6bc0d7228f9d282f0ae2e56fda1, especially its pipeline, repair constraints, structured test-evidence comparison, architecture, verification-coverage statement, and security boundary; SeayInsights/dream-studio revision 1014fc185cbade7cb5b11bdf67b7150ce1e47d13, especially its event-backed-write gate, focused gate tests, projection declarations, and blocking pre-push wiring; Flow-Research/workstream revision d5dd94d3f1f4e52fa9f191e88d3c210758bb4b3b, especially its lifecycle contract, roadmap capability ledger, review queue persistence, and canonical-review decision record; imron/crt revision e3ff1126b06528048673573a667bf3561f185539, especially its content-addressed file-review records, review types, MCP mutation tools, and architecture documentation; team-monet/monet-e2e revision ba8acbc55a4574b3a453dcbf49842f7fb363f70c, especially its suite runner, metrics ledger, source-baseline guardrail, and release-to-main flip test; scubagraham/outthebox-open-patterns revision c7d6fa84ad8b289116599966fc1bb2a853c19231, including its Markdown patterns, DMN tables, and Agent 365-shaped JSON templates; and node9-ai/node9-proxy revision 915735f92d988423203707a749d63b6298defa2c, especially its central decision classifier, live-derived regression fixtures, hook-to-audit coverage helper, and captured multi-agent gate-contract matrix."
 </ai_context>
 
 # Agent Runtime Verdict Integrity
 
 **Companion note** to [Agent Runtime Effect Integrity](./agent-runtime-effect-integrity.md).
 
-These patterns separate eight questions that a green verification result can
+These patterns separate verdict questions that a green verification result can
 otherwise collapse: which subject was checked, which axes were covered, whether
 the verdict path can reject a known-bad case, whether replay evidence is fresh for
 the candidate, whether the evaluator stayed fixed while the candidate changed,
 whether the verifier inspected the intended universe, whether parallel policy
-artifacts still encode the same contract, and what authority may turn that verdict
-into acceptance.
+artifacts still encode the same contract, what authority may turn that verdict
+into acceptance, and whether heterogeneous audit producers preserve action phase
+and decision cause.
 
 ## Executable Governance Needs Cross-Artifact Conformance — OutTheBox (HN / GitHub, September 2026)
 
@@ -511,3 +512,55 @@ and updates the defect ledger.
 - **Inspected revision:** [`ba8acbc55a4574b3a453dcbf49842f7fb363f70c`](https://github.com/team-monet/monet-e2e/commit/ba8acbc55a4574b3a453dcbf49842f7fb363f70c)
 - **Primary sources:** [four-way suite runner](https://github.com/team-monet/monet-e2e/blob/ba8acbc55a4574b3a453dcbf49842f7fb363f70c/harness/run_all.py), [`doctor --json` release-flip test](https://github.com/team-monet/monet-e2e/blob/ba8acbc55a4574b3a453dcbf49842f7fb363f70c/tests/test57_re57_doctor_json_startup_failure.py), [metrics ledger and verdict definitions](https://github.com/team-monet/monet-e2e/blob/ba8acbc55a4574b3a453dcbf49842f7fb363f70c/METRICS.md), and [pinned-source guardrail](https://github.com/team-monet/monet-e2e/blob/ba8acbc55a4574b3a453dcbf49842f7fb363f70c/GUARDRAILS.md)
 - **Discovery query:** GitHub Repository Search API `"AI agent" pushed:>=2026-09-14`, sorted by update time; `incomplete_results: false`
+
+## Audit Normalization Must Preserve Action Phase and Decision Cause — node9 (GitHub, September 2026)
+
+[node9](https://github.com/node9-ai/node9-proxy) exposes a concrete failure mode in
+agent-governance telemetry: multiple producers can use superficially similar words
+for events at different phases. At pinned revision
+`915735f92d988423203707a749d63b6298defa2c`, its audit reader has to reconcile gate
+rows (`allow`/`deny`), post-tool execution rows (`allowed`), daemon decisions
+(`auto-deny`), pending reviews, DLP findings, and MCP discovery records. A former
+reader reportedly treated every value other than literal `block` or `review` as an
+allow, making 12,176 `deny` rows look permitted; another reader counted findings as
+denials.
+
+The repair is a central classifier with two levels of meaning. A coarse outcome
+supports counting (`allow`, `deny`, `observe`, `info`, or `unknown`), while the label
+retains cause and phase: **Approved** versus **Auto-allowed**, **Denied** versus
+**Blocked** versus **Timed out**, **Would block** for shadow mode, **Ran** for a
+post-tool execution record, and **Finding** for DLP output. Unknown vocabulary fails
+loud as `unknown` while preserving the raw value; it never falls through to allow.
+The row-form API also reads attribution from either `checkedBy` or `source`, avoiding
+a per-reader choice that had reportedly erased human attribution on 37,576 rows.
+
+Two repository-authored tests make the pattern stronger than a taxonomy alone. The
+decision suite replays the exact decision/source pairs and frequencies observed in a
+101,000-row local audit log, checks the aggregate distribution, and uses explicit
+unknown-value and timeout-versus-human-denial controls. Separately, the gate-contract
+matrix replays sanitized payload envelopes captured from Claude Code, Gemini CLI,
+and Codex through the built CLI, then changes only the requested command or path to
+prove both an allowed case and a credential-read denial. Missing live captures for
+Copilot, Antigravity, and Hermes remain visible as `todo` cases rather than synthetic
+fixtures.
+
+The implementation also shows what this does **not** prove. Its coverage helper can
+flag a session found in `hook-debug.log` but absent from `audit.log`, but only when a
+debug line is JSON-parseable and carries a session ID. It counts non-JSON debug lines
+without attributing them and does not establish that every effect generated either
+record. Correctly classifying available rows is therefore distinct from proving log
+completeness, and a post-tool **Ran** row is still not proof that the intended
+semantic effect succeeded.
+
+**Runtime rule:** normalize audit vocabulary once, but preserve orthogonal fields for
+action phase, policy outcome, enforcement mode, actor/cause, and raw producer value.
+Never collapse shadow-mode would-blocks into allows, timeouts into human denials,
+findings into decisions, or execution observations into authorizations. Test the
+normalizer against captured production shapes plus known-bad mutations, and measure
+missing receipts separately from classification correctness.
+
+- **Repo:** https://github.com/node9-ai/node9-proxy
+- **Inspected revision:** [`915735f92d988423203707a749d63b6298defa2c`](https://github.com/node9-ai/node9-proxy/commit/915735f92d988423203707a749d63b6298defa2c)
+- **Primary sources:** [central decision classifier](https://github.com/node9-ai/node9-proxy/blob/915735f92d988423203707a749d63b6298defa2c/src/audit/decision.ts), [live-derived classifier tests](https://github.com/node9-ai/node9-proxy/blob/915735f92d988423203707a749d63b6298defa2c/src/__tests__/audit-decision.unit.test.ts), [captured gate-contract matrix](https://github.com/node9-ai/node9-proxy/blob/915735f92d988423203707a749d63b6298defa2c/src/__tests__/gate-contract.matrix.test.ts), and [hook-to-audit coverage helper](https://github.com/node9-ai/node9-proxy/blob/915735f92d988423203707a749d63b6298defa2c/src/audit/coverage.ts)
+- **Evidence level:** pinned source, README, repository tree, and project-authored tests inspected; the complete tree contained 686 entries and was not truncated. Scout did not run the package, inspect the underlying private audit log, or independently reproduce the reported historical row counts.
+- **Discovery query:** GitHub Repository Search API `topic:ai-agent pushed:>=2026-09-20 stars:>50`, sorted by update time; `incomplete_results: false`
