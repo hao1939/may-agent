@@ -19,8 +19,8 @@ Run commands below from the Host checkout unless stated otherwise.
 | Image build | `bun run build`; `build-image.sh` | Requires Docker and writes a local image using the container build definition. No publication or deployment. |
 | Image selection / smoke | `ci-container-needed.sh`; `ci-container-smoke.sh IMAGE` | CI passes NUL-delimited changed paths to the selector. Smoke checks the disposable candidate image's readiness, UI and CLI protocol; no installation mounts, model calls or deployment. |
 | CLI protocol verification | `bun run check:codex-goal-protocol` | Requires the pinned Codex CLI. Generates schemas in temporary storage, compares `codex-goal-protocol.snapshot.json`, removes temporary output, exits nonzero on drift. Support code/tests are `codex-goal-protocol*`. No model call. See executor README and CONTRIBUTING for upgrades. |
-| Deployment | `MAY_AGENT_DEPLOY_OWNER_APP=APP_ID MAY_AGENT_DEPLOY_TASK_ID=TASK_ID bun run deploy`; `deploy-receipt.ts` | Requires an exact open canonical Task owned by the supplied responsible App. The App defaults to `may-agent` for compatibility. This pair only correlates the receipt and wake; it does not grant deploy authority. Builds/stages a release and restarts through the supported restarter, so use the operations manual rather than this as a test command. |
-| Deployment facts | `bun scripts/deploy-receipt.ts read-task RECEIPT_DIR APP_ID TASK_ID` | Read-only fallback when a Task wake was lost. Returns the latest exact App/Task receipt or `null`; unreadable/corrupt facts fail rather than implying absence. It does not authorize a deployment. |
+| Deployment | `MAY_AGENT_DEPLOY_CORRELATION=STABLE_ID bun run deploy`; optional `MAY_AGENT_DEPLOY_OWNER_APP=APP_ID MAY_AGENT_DEPLOY_TASK_ID=TASK_ID` | Standalone deployment needs no App, Task, or Task database. The optional pair requests only a best-effort settled notification and must be supplied together; destination state or delivery cannot change deployment success. Builds/stages a release and restarts through the supported restarter, so use the operations manual rather than this as a test command. Record the printed receipt path before restart. Reusing a correlation reads its existing receipt before build/staging instead of redeploying. |
+| Deployment facts | `bun scripts/deploy-receipt.ts read RECEIPT_PATH`; compatibility: `read-task RECEIPT_DIR APP_ID TASK_ID` | Reads one exact requested/terminal receipt after caller interruption without deploying. `read-task` remains available for older targeted receipts. Unreadable/corrupt facts fail rather than implying absence or authorizing a retry. |
 | Event integrity | `bun run check:event-graph -- --state-dir /path/to/state` | Inspects an **existing** `may.db` read-only, prints a JSON report and fails on missing/incompatible state or integrity defects. `--limit` bounds a backfill batch, not the integrity scan. Only explicit `--backfill` writes repairs. SQLite may create reader sidecars; inspection does not initialize schema. |
 | Quiet-runtime sample | `bun run sample:runtime-quiet -- --socket /path/to/may.sock --state-dir /path/to/state --seconds 30` | Installed daemon, SQLite and Linux `/proc` required. Reads CPU/memory plus work-activity evidence; prints JSON. Exit 2 means the window was not quiet, not a successful idle measurement. |
 | Task interface benchmark | `bun scripts/benchmark-human-task-interface.ts` | Creates 20,000 synthetic rows in memory; prints p95 latency and fails its explicit budgets. No installed state or model. Machine-sensitive benchmark, not a default CI gate. |
@@ -28,12 +28,14 @@ Run commands below from the Host checkout unless stated otherwise.
 | Prior-lifecycle verification | `scripts/migrations/task-state-cutover.ts`, `task-runtime-cutover.ts` | Explicit clean old source plus temporary state; see the [test guide](../test/README.md). These verify an upgrade, never migrate your installation. |
 | Gym compatibility | `gym-run.sh`, `gym-baseline.sh`, `gym-batch.sh`, `gym-record.ts` | Model-backed scenario execution and existing result recording. `gym-run.sh --list` and `gym-batch.sh --help` are discovery; evaluation/recording are not read-only. See compatibility boundary below. |
 
-The restarter emits `deployment.settled` with `target: { appId, taskId }` and
-the settled receipt in `data.deploymentReceipt`. It is an ordinary Task fact,
-so later clock ticks cannot replace it. The receipt reader validates common
-fields and requires completion time, loaded hash, health and duplicate status
-for terminal receipts. The App judges whether those facts satisfy its outcome;
-the event and reader neither authorize another deployment nor close the Task.
+When optional notification metadata is present, the restarter attempts to emit
+`deployment.settled` with `target: { appId, taskId }` and the settled receipt in
+`data.deploymentReceipt`. It is an ordinary best-effort Task fact, so a missing
+or closed destination and delivery failure do not alter the terminal deployment
+receipt. The receipt reader validates common fields and requires completion
+time, loaded hash, health and duplicate status for terminal receipts. The App
+judges whether those facts satisfy its outcome; the event and reader neither
+authorize another deployment nor close the Task.
 
 Colocated `*.test.ts` files protect these commands and repository CI, lint,
 publication and deployment contracts. They run through `bun run ci`; no separate

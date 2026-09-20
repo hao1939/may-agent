@@ -40,12 +40,12 @@ async function fixture(
     previousSdk?: boolean;
     socketHealthy?: boolean;
     failWake?: boolean;
-    ownerApp?: string;
+    ownerApp?: string | null;
   } = {},
 ) {
   const root = mkdtempSync(join(tmpdir(), "may-agent-restarter-ui-"));
   roots.push(root);
-  const ownerApp = options.ownerApp ?? "may-agent";
+  const ownerApp = options.ownerApp === undefined ? "may-agent" : options.ownerApp;
   const binDir = join(root, "bin");
   const bundleRoot = join(root, "bundle");
   const receiptDir = join(root, ".state", "deploy-receipts");
@@ -96,8 +96,7 @@ async function fixture(
     `${JSON.stringify({
       version: 1,
       correlation: "deploy-test",
-      project: ownerApp,
-      taskId: "app-request/test",
+      ...(ownerApp ? { project: ownerApp, taskId: "app-request/test" } : {}),
       artifactSha: createHash("sha256").update(readFileSync(bundle)).digest("hex"),
       sourceCommit,
       phase: "requested",
@@ -194,10 +193,10 @@ async function fixture(
 describe("supervisor UI release", () => {
   it("admits a May-owned deployment receipt to its exact Task and retains it beside later clock ticks", async () => {
     const f = await fixture(true, { ownerApp: "may" });
+    if (!f.ownerApp) throw new Error("Expected notification owner");
     expect(f.result.exitCode).toBe(0);
     const eventType = readFileSync(`${f.wakePath}.type`, "utf8").trim();
     const payload = JSON.parse(readFileSync(f.wakePath, "utf8"));
-    const receipt = JSON.parse(readFileSync(f.receipt, "utf8"));
     const sb = await buildSandbox({ fixtureAgents: ["may"], daemonArgs: ["--socket"] });
     try {
       await sb.daemonReady;
@@ -253,11 +252,36 @@ describe("supervisor UI release", () => {
             writeReceipt: () => {},
           });
         await emit(eventType, payload);
+        const settledBeforeRejectedNotification = readFileSync(f.receipt, "utf8");
+        await expect(emit(eventType, {
+          ...payload,
+          target: { appId: f.ownerApp, taskId: "missing-notification-target" },
+        })).rejects.toThrow();
+        expect(readFileSync(f.receipt, "utf8")).toBe(settledBeforeRejectedNotification);
         for (let i = 0; i < 3; i++)
           await emit("project.task.tick", {
             target: { appId: f.ownerApp, taskId: "app-request/test" },
             data: { tick: i },
           });
+        const beforeCloseEvents = store.readTrigger("app-request/test")?.events ?? [];
+        expect(beforeCloseEvents.filter(({ event }) => event.type === "deployment.settled")).toMatchObject([
+          {
+            event: {
+              target: { appId: f.ownerApp, taskId: "app-request/test" },
+              data: { deploymentReceipt: JSON.parse(settledBeforeRejectedNotification) },
+            },
+          },
+        ]);
+        expect(beforeCloseEvents.filter(({ event }) => event.type === "project.task.tick")).toHaveLength(1);
+        const cancellation = await socketEmit(sb.socketPath, "task.cancel", {
+          appId: f.ownerApp,
+          taskId: "app-request/test",
+          reason: "Exercise a late optional deployment notification",
+        });
+        expect(cancellation).toMatchObject({ type: "ok", command: "task.cancel" });
+        await pollUntil(() => store.readCancellation("app-request/test"), { timeoutMs: 5000 });
+        await emit(eventType, payload);
+        expect(readFileSync(f.receipt, "utf8")).toBe(settledBeforeRejectedNotification);
       } finally {
         db.close();
       }
@@ -265,12 +289,11 @@ describe("supervisor UI release", () => {
       try {
         const store = AppTaskResourceStore.activeFromDb(reopened, f.ownerApp)!;
         const events = store.readTrigger("app-request/test")?.events ?? [];
-        expect(events.filter(({ event }) => event.type === "deployment.settled")).toMatchObject([
-          {
-            event: { target: { appId: f.ownerApp, taskId: "app-request/test" }, data: { deploymentReceipt: receipt } },
-          },
-        ]);
-        expect(events.filter(({ event }) => event.type === "project.task.tick")).toHaveLength(1);
+        expect(events.filter(({ event }) => event.type === "deployment.settled")).toHaveLength(0);
+        expect(events.filter(({ event }) => event.type === "project.task.tick")).toHaveLength(0);
+        expect(store.readCancellation("app-request/test")).toMatchObject({
+          reason: "Exercise a late optional deployment notification",
+        });
         expect(store.readTask("app-request/test")?.status.currentAttemptId).toBeUndefined();
       } finally {
         reopened.close();
@@ -279,6 +302,17 @@ describe("supervisor UI release", () => {
       await sb.close();
     }
   }, 30_000);
+
+  it("completes a standalone deployment without attempting a Task notification", async () => {
+    const f = await fixture(true, { ownerApp: null });
+    expect(f.result.exitCode).toBe(0);
+    expect(existsSync(f.wakePath)).toBe(false);
+    expect(JSON.parse(readFileSync(f.receipt, "utf8"))).toMatchObject({
+      phase: "succeeded",
+      health: "healthy",
+      duplicateDeploy: false,
+    });
+  });
 
   it("activates the versioned UI with the healthy binary and SDK", async () => {
     const f = await fixture(true);

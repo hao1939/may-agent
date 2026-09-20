@@ -3,10 +3,9 @@ set -eu
 
 cd "$(dirname "$0")/.."
 
-# This App/Task pair correlates the deployment receipt and wake to the
-# responsible durable work. It is validation metadata, not deploy authority.
-# Keep may-agent as the compatibility default for existing operators.
-project="${MAY_AGENT_DEPLOY_OWNER_APP:-may-agent}"
+# An optional App/Task pair requests a best-effort completion notification.
+# It is correlation metadata, not deploy authority or a deployment prerequisite.
+project="${MAY_AGENT_DEPLOY_OWNER_APP:-}"
 task_id="${MAY_AGENT_DEPLOY_TASK_ID:-}"
 correlation="${MAY_AGENT_DEPLOY_CORRELATION:-deploy-$(date -u +%Y%m%dT%H%M%SZ)-$$}"
 deploy_root="${MAY_AGENT_DEPLOY_ROOT:-$PWD}"
@@ -18,16 +17,14 @@ receipt_dir="${MAY_AGENT_DEPLOY_RECEIPT_DIR:-$deploy_root/.state/deploy-receipts
 receipt="$receipt_dir/$correlation.json"
 bundle_dir="$deploy_root/bundle"
 
-if [ -z "$task_id" ]; then
-  echo "MAY_AGENT_DEPLOY_TASK_ID is required for a correlated deploy." >&2
-  exit 2
+# Validate only the shape of optional notification metadata. Deployment is
+# standalone and never opens the Task database or checks notification state.
+bun scripts/deploy-receipt.ts validate-notification "$project" "$task_id" "$correlation"
+if [ -e "$receipt" ]; then
+  printf 'Deployment receipt already exists: %s\n' "$receipt"
+  bun scripts/deploy-receipt.ts read "$receipt"
+  exit 0
 fi
-
-# An exact task wake is a reference to existing durable work, not task-creation
-# authority. Fail before building or restarting when a stale caller supplies a
-# task that the running App can never admit.
-task_db="${MAY_AGENT_DEPLOY_TASK_DB:-${STATE_DIR:-/app/.state}/may.db}"
-bun scripts/deploy-receipt.ts validate-target "$task_db" "$project" "$task_id"
 
 source_commit="$(git rev-parse --verify HEAD)"
 canonical_commit="$(git -C "$deploy_root" rev-parse --verify HEAD)"
@@ -101,15 +98,17 @@ mv -f "$bundle_dir/may-agent.provenance.json.next" "$bundle_dir/may-agent.proven
 
 # This is the durability boundary: the requested receipt is atomically present
 # before the external restarter is started and before either runtime service stops.
-# The owner may have closed the Task while we built. Recheck before requesting
-# restart; this is not a lease, and Host admission still fences a later closure.
-bun scripts/deploy-receipt.ts validate-target "$task_db" "$project" "$task_id"
 set +e
 bun scripts/deploy-receipt.ts request "$receipt" "$project" "$task_id" "$correlation" "$artifact_sha" "$source_commit"
 rc=$?
 set -e
-if [ "$rc" = "73" ]; then exit 0; fi
+if [ "$rc" = "73" ]; then
+  printf 'Deployment receipt already exists: %s\n' "$receipt"
+  exit 0
+fi
 if [ "$rc" != "0" ]; then exit "$rc"; fi
+# Print the exact durable lookup before restart can interrupt this caller.
+printf 'Deployment receipt requested: %s (correlation %s)\n' "$receipt" "$correlation"
 printf '%s\n' "$sdk_release_name" > "$bundle_dir/sdk-requested.next"
 mv -f "$bundle_dir/sdk-requested.next" "$bundle_dir/sdk-requested"
 printf '%s\n' "$ui_release_name" > "$bundle_dir/ui-requested.next"
@@ -119,7 +118,6 @@ mv -f "$bundle_dir/deploy-requested.next" "$bundle_dir/deploy-requested"
 
 staged_restarter="/app/projects/may-agent/bundle/may-agent-supervisor-restart"
 installed_restarter="/usr/local/bin/may-agent-supervisor-restart"
-deploy_in_container='install -m 755 /app/projects/may-agent/bundle/may-agent-supervisor-restart /usr/local/bin/may-agent-supervisor-restart && MAY_AGENT_DEPLOY_RECEIPT="'"$receipt"'" MAY_AGENT_DEPLOY_CORRELATION="'"$correlation"'" MAY_AGENT_DEPLOY_PROJECT="'"$project"'" MAY_AGENT_DEPLOY_TASK_ID="'"$task_id"'" supervisorctl start may-agent-restarter'
 
 fail_restarter_launch() {
   failure="$1"
@@ -149,4 +147,4 @@ else
   fail_restarter_launch supervisor-unreachable
 fi
 
-printf 'Correlated deploy requested: %s (%s)\n' "$correlation" "$receipt"
+printf 'Deploy requested: %s (%s)\n' "$correlation" "$receipt"

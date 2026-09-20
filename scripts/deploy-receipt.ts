@@ -11,7 +11,6 @@ import {
   writeFileSync,
 } from "node:fs";
 import { basename, dirname, join } from "node:path";
-import { Database } from "bun:sqlite";
 
 export type DeployReceiptPhase = "requested" | "succeeded" | "failed" | "rolled_back";
 
@@ -19,8 +18,9 @@ export type DeployReceiptPhase = "requested" | "succeeded" | "failed" | "rolled_
 export type DeployReceipt = {
   version: 1;
   correlation: string;
-  project: string;
-  taskId: string;
+  /** Optional best-effort notification destination retained by older receipts. */
+  project?: string;
+  taskId?: string;
   artifactSha: string;
   sourceCommit?: string;
   phase: DeployReceiptPhase;
@@ -41,77 +41,44 @@ function timestamp(value: unknown): value is string {
   return nonEmptyText(value) && Number.isFinite(Date.parse(value));
 }
 
-/** Read-only fallback when a restart wake was lost; correlate both App and Task. */
+function parseDeployReceipt(path: string): DeployReceipt {
+  const receipt = JSON.parse(readFileSync(path, "utf8")) as Partial<DeployReceipt> | null;
+  const hasProject = receipt?.project !== undefined;
+  const hasTask = receipt?.taskId !== undefined;
+  if (
+    !receipt || receipt.version !== 1 || hasProject !== hasTask ||
+    (hasProject && (!nonEmptyText(receipt.project) || !nonEmptyText(receipt.taskId))) ||
+    !nonEmptyText(receipt.correlation) || !nonEmptyText(receipt.artifactSha) ||
+    !nonEmptyText(receipt.verification) || !timestamp(receipt.requestedAt) ||
+    !["requested", "succeeded", "failed", "rolled_back"].includes(receipt.phase ?? "") ||
+    (receipt.sourceCommit !== undefined && !nonEmptyText(receipt.sourceCommit)) ||
+    (receipt.failure !== undefined && typeof receipt.failure !== "string") ||
+    (receipt.completedAt !== undefined && !timestamp(receipt.completedAt)) ||
+    (receipt.loadedArtifactSha !== undefined && !nonEmptyText(receipt.loadedArtifactSha)) ||
+    (receipt.health !== undefined && receipt.health !== "healthy" && receipt.health !== "unhealthy") ||
+    (receipt.duplicateDeploy !== undefined && typeof receipt.duplicateDeploy !== "boolean") ||
+    (receipt.phase !== "requested" && (
+      receipt.completedAt === undefined || receipt.loadedArtifactSha === undefined ||
+      receipt.health === undefined || receipt.duplicateDeploy === undefined
+    ))
+  ) throw new Error(`Invalid deployment receipt: ${path}`);
+  return receipt as DeployReceipt;
+}
+
+/** Read one exact durable operation result without searching or redeploying. */
+export function readDeployReceipt(path: string): DeployReceipt {
+  return parseDeployReceipt(path);
+}
+
+/** Backwards-compatible read-only fallback for receipts carrying a Task target. */
 export function readDeployReceiptForTask(receiptDir: string, project: string, taskId: string): DeployReceipt | null {
   if (!existsSync(receiptDir)) return null;
   const receipts: DeployReceipt[] = [];
   for (const name of readdirSync(receiptDir).filter(entry => entry.endsWith(".json")).sort()) {
-    const receipt = JSON.parse(readFileSync(join(receiptDir, name), "utf8")) as Partial<DeployReceipt> | null;
-    // A damaged receipt must not look like evidence that no deployment exists.
-    if (!receipt || receipt.version !== 1 || typeof receipt.project !== "string" || typeof receipt.taskId !== "string") {
-      throw new Error(`Invalid deployment receipt: ${name}`);
-    }
-    if (receipt.project !== project || receipt.taskId !== taskId) continue;
-    if (
-      !nonEmptyText(receipt.project) || !nonEmptyText(receipt.taskId) ||
-      !nonEmptyText(receipt.correlation) || !nonEmptyText(receipt.artifactSha) ||
-      !nonEmptyText(receipt.verification) || !timestamp(receipt.requestedAt) ||
-      !["requested", "succeeded", "failed", "rolled_back"].includes(receipt.phase ?? "") ||
-      (receipt.sourceCommit !== undefined && !nonEmptyText(receipt.sourceCommit)) ||
-      (receipt.failure !== undefined && typeof receipt.failure !== "string") ||
-      (receipt.completedAt !== undefined && !timestamp(receipt.completedAt)) ||
-      (receipt.loadedArtifactSha !== undefined && !nonEmptyText(receipt.loadedArtifactSha)) ||
-      (receipt.health !== undefined && receipt.health !== "healthy" && receipt.health !== "unhealthy") ||
-      (receipt.duplicateDeploy !== undefined && typeof receipt.duplicateDeploy !== "boolean") ||
-      (receipt.phase !== "requested" && (
-        receipt.completedAt === undefined || receipt.loadedArtifactSha === undefined ||
-        receipt.health === undefined || receipt.duplicateDeploy === undefined
-      ))
-    ) throw new Error(`Invalid deployment receipt for ${project}/${taskId}: ${name}`);
-    receipts.push(receipt as DeployReceipt);
+    const receipt = parseDeployReceipt(join(receiptDir, name));
+    if (receipt.project === project && receipt.taskId === taskId) receipts.push(receipt);
   }
   return receipts.sort((a, b) => Date.parse(b.requestedAt) - Date.parse(a.requestedAt))[0] ?? null;
-}
-
-export function validateDeployTaskTarget(path: string, project: string, taskId: string): void {
-  if (!existsSync(path)) throw new Error(`Cannot read deploy task database ${path}: file does not exist`);
-  let db: Database | undefined;
-  try {
-    db = new Database(path, { readonly: true });
-    db.exec("PRAGMA query_only = ON");
-    const authority = db
-      .query("SELECT value FROM app_task_store_meta WHERE app_id = ? AND key = 'authority'")
-      .get(project) as { value?: string } | null;
-    if (authority?.value !== "resources") {
-      throw new Error(`Task resources for ${project} are not canonical in ${path}`);
-    }
-    const target = db
-      .query(
-        `SELECT EXISTS(SELECT 1 FROM app_task_cancellations closed
-        WHERE closed.app_id = task.app_id AND closed.task_id = task.task_id) AS closed
-        FROM app_tasks task WHERE task.app_id = ? AND task.task_id = ?`,
-      )
-      .get(project, taskId) as { closed: number } | null;
-    if (!target) {
-      throw new Error(
-        `Deploy task ${project}/${taskId} does not exist; refusing to emit an unresolvable targeted wake`,
-      );
-    }
-    if (target.closed)
-      throw new Error(`Deploy task ${project}/${taskId} is closed; it cannot accept a deployment wake`);
-  } catch (error) {
-    if (
-      error instanceof Error &&
-      (error.message.startsWith("Deploy task ") || error.message.startsWith("Task resources "))
-    ) {
-      throw error;
-    }
-    throw new Error(
-      `Cannot read deploy task database ${path}: ${error instanceof Error ? error.message : String(error)}`,
-    );
-  } finally {
-    db?.close();
-  }
 }
 
 function atomicJson(path: string, value: unknown): void {
@@ -131,14 +98,29 @@ function validId(value: string | undefined, label: string): string {
   return value;
 }
 
+export function validateNotificationTarget(project?: string, taskId?: string): void {
+  if (!project && !taskId) return;
+  if (!project || !taskId) throw new Error("Deployment notification requires both App ID and Task ID");
+  validId(project, "App ID");
+  validId(taskId, "Task ID");
+}
+
+export function validateCorrelation(value: string | undefined): string {
+  if (!value || !/^[A-Za-z0-9._-]+$/.test(value)) throw new Error("Invalid deployment correlation");
+  return value;
+}
+
 export function requestReceipt(
   path: string,
-  project: string,
-  taskId: string,
+  project: string | undefined,
+  taskId: string | undefined,
   correlation: string,
   artifactSha: string,
   sourceCommit?: string,
 ): boolean {
+  validateNotificationTarget(project, taskId);
+  validateCorrelation(correlation);
+  mkdirSync(dirname(path), { recursive: true });
   const lock = `${path}.lock`;
   try {
     mkdirSync(lock);
@@ -151,14 +133,13 @@ export function requestReceipt(
     atomicJson(path, {
       version: 1,
       correlation,
-      project,
-      taskId,
+      ...(project && taskId ? { project, taskId } : {}),
       artifactSha,
       ...(sourceCommit ? { sourceCommit } : {}),
       phase: "requested",
       requestedAt: new Date().toISOString(),
       verification:
-        "After the restarter settles service and HTTP health, verify loadedArtifactSha equals artifactSha, health is healthy, and duplicateDeploy is false, then report the result to the owning Task without redeploying.",
+        "After the restarter settles service and HTTP health, read this exact receipt without redeploying; verify loadedArtifactSha equals artifactSha, health is healthy, and duplicateDeploy is false. Any notification target is best-effort only.",
     });
     return true;
   } finally {
@@ -189,20 +170,25 @@ export function settleReceipt(
 if (import.meta.main) {
   const [command, pathArg, ...args] = process.argv.slice(2);
   const path = pathArg;
-  if (!path) throw new Error("Usage: deploy-receipt.ts <read-task|validate-target|request|settle> <path> ...");
-  if (command === "read-task") {
+  if (path === undefined) throw new Error("Usage: deploy-receipt.ts <read|read-task|validate-notification|request|settle> <path> ...");
+  if (command === "read") {
+    console.log(JSON.stringify(readDeployReceipt(path)));
+  } else if (command === "read-task") {
     const [projectArg, taskArg] = args;
     console.log(JSON.stringify(readDeployReceiptForTask(path, validId(projectArg, "project"), validId(taskArg, "task id"))));
-  } else if (command === "validate-target") {
-    const [projectArg, taskArg] = args;
-    validateDeployTaskTarget(path, validId(projectArg, "project"), validId(taskArg, "task id"));
+  } else if (command === "validate-notification") {
+    validateNotificationTarget(path === "" ? undefined : path, args[0] === "" ? undefined : args[0]);
+    validateCorrelation(args[1]);
   } else if (command === "request") {
     const [projectArg, taskArg, correlationArg, shaArg, sourceCommitArg] = args;
+    const project = projectArg === "" ? undefined : projectArg;
+    const taskId = taskArg === "" ? undefined : taskArg;
+    validateNotificationTarget(project, taskId);
     const created = requestReceipt(
       path,
-      validId(projectArg, "project"),
-      validId(taskArg, "task id"),
-      validId(correlationArg, "correlation"),
+      project,
+      taskId,
+      validateCorrelation(correlationArg),
       validId(shaArg, "artifact SHA"),
       sourceCommitArg ? validId(sourceCommitArg, "source commit") : undefined,
     );
