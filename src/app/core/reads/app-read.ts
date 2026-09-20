@@ -1,8 +1,21 @@
-import type { AppRead, ExecutionView, TaskDetail, TaskListOptions, TaskPage, TaskView } from "@may-agent/sdk/app";
+import type {
+  AppRead,
+  ExecutionView,
+  TaskReadOptions,
+  TaskDetail,
+  TaskListOptions,
+  TaskPage,
+  TaskView,
+} from "@may-agent/sdk/app";
 import type { AppTaskContext, TaskTree } from "../tasks/app-task-store.js";
 import { getExecutionResultFromDb } from "../../../lib/execution-result.js";
 import type { SqliteDb } from "../../../lib/db.js";
 import { getAppInboxItem } from "../state/app-inbox-store.js";
+import {
+  hasTaskAcceptedEvidence,
+  readTaskAcceptedEvidence,
+  TASK_ACCEPTED_EVIDENCE_MAX_PAGE_SIZE,
+} from "./app-task-evidence.js";
 
 export type RuntimeAppReadOptions = {
   getDb(): SqliteDb;
@@ -17,28 +30,35 @@ export type RuntimeAppReadOptions = {
 export function readRuntimeTaskView(
   opts: Pick<RuntimeAppReadOptions, "taskStateConfig">,
   taskId: string,
+  options?: TaskReadOptions,
 ): TaskDetail | null {
   const store = opts.taskStateConfig?.resourceStore;
   if (!store) return null;
   // Retained Task state owns current decisions. The fallback below only
   // exposes pre-cutover history when no retained resource exists.
+  const acceptedEvidence: TaskDetail["acceptedEvidence"] = {
+    available: hasTaskAcceptedEvidence(store.db, store.appId, taskId),
+    maxPageSize: TASK_ACCEPTED_EVIDENCE_MAX_PAGE_SIZE,
+    ...(options?.acceptedEvidence
+      ? { page: readTaskAcceptedEvidence(store.db, store.appId, taskId, options.acceptedEvidence) }
+      : {}),
+  };
   const current = store.readTaskForView(taskId);
   if (current) {
     return resourceTaskDetail(
       current.resource,
       current.phase,
+      acceptedEvidence,
       store.readTaskConditions(taskId).map((condition) => ({
         id: condition.metadata.id,
         ...structuredClone(condition.spec),
       })),
-      current.resource.status.observedAttemptId
-        ? store.readAttempt(current.resource.status.observedAttemptId)
-        : null,
+      current.resource.status.observedAttemptId ? store.readAttempt(current.resource.status.observedAttemptId) : null,
       current.closed,
     );
   }
   const receipt = store.readReceipt(taskId);
-  return receipt ? receiptTaskDetail(receipt) : null;
+  return receipt ? receiptTaskDetail(receipt, acceptedEvidence) : null;
 }
 
 function receiptTaskView(receipt: NonNullable<TaskTree["receipts"]>[string]): TaskView {
@@ -73,9 +93,13 @@ function resourceTaskView(
   };
 }
 
-function receiptTaskDetail(receipt: NonNullable<TaskTree["receipts"]>[string]): TaskDetail {
+function receiptTaskDetail(
+  receipt: NonNullable<TaskTree["receipts"]>[string],
+  acceptedEvidence: TaskDetail["acceptedEvidence"],
+): TaskDetail {
   return {
     ...receiptTaskView(receipt),
+    acceptedEvidence,
     parentId: receipt.parentId,
     acceptance: [...receipt.acceptance],
     input: structuredClone(receipt.input ?? {}),
@@ -91,12 +115,14 @@ function receiptTaskDetail(receipt: NonNullable<TaskTree["receipts"]>[string]): 
 function resourceTaskDetail(
   resource: NonNullable<TaskTree["resources"]>[string],
   phase: NonNullable<TaskTree["resources"]>[string]["status"]["phase"],
+  acceptedEvidence: TaskDetail["acceptedEvidence"],
   conditions: TaskDetail["conditions"],
   acceptedAttempt: ReturnType<AppTaskContext["resourceStore"]["readAttempt"]>,
   closed = false,
 ): TaskDetail {
   return {
     ...resourceTaskView(resource, phase, closed),
+    acceptedEvidence,
     ...(resource.metadata.creator ? { creator: structuredClone(resource.metadata.creator) } : {}),
     ...(acceptedAttempt && acceptedAttempt.acceptedResult
       ? {
@@ -104,9 +130,7 @@ function resourceTaskDetail(
             id: acceptedAttempt.metadata.id,
             generation: acceptedAttempt.taskGeneration,
             startedAt: acceptedAttempt.startedAt,
-            ...(acceptedAttempt.finishedAt
-              ? { finishedAt: acceptedAttempt.finishedAt }
-              : {}),
+            ...(acceptedAttempt.finishedAt ? { finishedAt: acceptedAttempt.finishedAt } : {}),
           },
         }
       : {}),
@@ -182,7 +206,7 @@ export function readRuntimeExecutionView(opts: Pick<RuntimeAppReadOptions, "getD
 
 /** Runtime-owned implementation of the SDK's bounded read projections. */
 export function createRuntimeAppRead(opts: RuntimeAppReadOptions): AppRead {
-  const getTask = async (taskId: string) => readRuntimeTaskView(opts, taskId);
+  const getTask = async (taskId: string, options?: TaskReadOptions) => readRuntimeTaskView(opts, taskId, options);
   return {
     async appResult(itemId) {
       return getAppInboxItem(opts.getDb(), itemId)?.result ?? null;

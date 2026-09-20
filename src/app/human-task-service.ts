@@ -1,4 +1,5 @@
 import type { AppRegistry } from "./core/apps/registry.js";
+import type { TaskAcceptedEvidenceNavigation, TaskReadOptions } from "@may-agent/sdk/app";
 import type {
   AppTaskAttempt,
   AppTaskCancellation,
@@ -9,6 +10,11 @@ import type { TaskCompletionReceipt } from "./core/tasks/app-task-store.js";
 import type { SqliteDb } from "../lib/db.js";
 import { storedResultFacts } from "./core/state/result-facts.js";
 import { taskViewPhaseSql } from "./core/state/task-view-phase.js";
+import {
+  hasTaskAcceptedEvidence,
+  readTaskAcceptedEvidence,
+  TASK_ACCEPTED_EVIDENCE_MAX_PAGE_SIZE,
+} from "./core/reads/app-task-evidence.js";
 import {
   TaskReferenceError,
   displayTaskReferences,
@@ -78,6 +84,8 @@ export type HumanTaskView = {
     startedAt: string;
     finishedAt?: string;
   };
+  /** Bounded immutable history, separate from current summary/result. Detail reads only. */
+  acceptedEvidence?: TaskAcceptedEvidenceNavigation;
   progress?: HumanTaskProgress;
   waitingOn?: HumanTaskWait[];
   requestedBy?: HumanTaskLink;
@@ -586,9 +594,7 @@ function projectTask(row: TaskRow, ref: string, detail = true): HumanTaskView | 
             id: acceptedAttempt.metadata.id,
             generation: acceptedAttempt.taskGeneration,
             startedAt: acceptedAttempt.startedAt,
-            ...(acceptedAttempt.finishedAt
-              ? { finishedAt: acceptedAttempt.finishedAt }
-              : {}),
+            ...(acceptedAttempt.finishedAt ? { finishedAt: acceptedAttempt.finishedAt } : {}),
           },
         }
       : {}),
@@ -769,8 +775,8 @@ function taskDiagnostics(db: SqliteDb, row: TaskRow): HumanTaskDiagnostics {
        ORDER BY started_at DESC, attempt_id DESC LIMIT ?`,
     )
     .all(row.app_id!, row.task_id!, metadata.generation, TASK_ATTEMPT_EVIDENCE_LIMIT + 1) as Array<{
-      attempt_json: string;
-    }>;
+    attempt_json: string;
+  }>;
   const attempts = attemptRows.slice(0, TASK_ATTEMPT_EVIDENCE_LIMIT).map(({ attempt_json }) => {
     const item = parseJson<AppTaskAttempt>(attempt_json)!;
     return {
@@ -970,7 +976,9 @@ export class HumanTaskService {
       : ["pending", "running", "waiting", "attention", "converged"];
     // Keep the indexed stored-phase search, then narrow by the display phase.
     // Pending also includes converged rows with a newly queued cycle.
-    const storedPhases = livePhases.includes("pending") ? [...new Set([...livePhases, "converged", "waiting"])] : livePhases;
+    const storedPhases = livePhases.includes("pending")
+      ? [...new Set([...livePhases, "converged", "waiting"])]
+      : livePhases;
     const appId = normalizeAppId(input.appId);
     const humanOwners = humanActionOnly
       ? reachableHumanConditionOwners(this.db, appId ? { activeAppId: appId } : {})
@@ -1097,7 +1105,7 @@ export class HumanTaskService {
     };
   }
 
-  getTask(input: { ref?: string; appId?: string; taskId?: string }): HumanTaskView | null {
+  getTask(input: { ref?: string; appId?: string; taskId?: string } & TaskReadOptions): HumanTaskView | null {
     let identity: ResolvedTaskReference;
     if (input.ref) {
       const resolved = resolveTaskReference(this.db, input.ref);
@@ -1122,8 +1130,16 @@ export class HumanTaskService {
     const view = projectTask(row, refs.get(`${identity.appId}\0${identity.taskId}`) ?? identity.digest.slice(0, 8));
     if (!view) return null;
     const requestedBy = taskRequester(this.db, identity.appId, identity.taskId);
+    const acceptedEvidence: TaskAcceptedEvidenceNavigation = {
+      available: hasTaskAcceptedEvidence(this.db, identity.appId, identity.taskId),
+      maxPageSize: TASK_ACCEPTED_EVIDENCE_MAX_PAGE_SIZE,
+      ...(input.acceptedEvidence
+        ? { page: readTaskAcceptedEvidence(this.db, identity.appId, identity.taskId, input.acceptedEvidence) }
+        : {}),
+    };
     const linkedView = {
       ...view,
+      acceptedEvidence,
       ...(requestedBy ? { requestedBy } : {}),
       ...taskHistory(this.db, identity.appId, identity.taskId),
     };

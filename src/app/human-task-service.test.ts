@@ -14,7 +14,7 @@ import {
 } from "./core/tasks/app-task-reconciler.js";
 import { appTaskTestContext } from "./core/tasks/app-task-test-support.js";
 import { migrateTaskCompletionReceipts } from "./core/state/task-receipt-cutover.js";
-import { listRuntimeTaskViews } from "./core/reads/app-read.js";
+import { listRuntimeTaskViews, readRuntimeTaskView } from "./core/reads/app-read.js";
 import type { AppTaskContext } from "./core/tasks/app-task-store.js";
 import { createAppInboxItem } from "./core/state/app-inbox-store.js";
 import { linkTaskInput } from "./core/state/inbox.js";
@@ -115,6 +115,179 @@ test("retains waits through a queued and running pass and respects static gates"
   });
   expect(view().terminal).toBe(true);
   expect(view().waitingOn).toBeUndefined();
+});
+
+test("accepted evidence remains opt-in, bounded, and navigable past later waits", () => {
+  const db = database();
+  insertTask(db, { appId: "sample", taskId: "work", phase: "waiting", updatedAt: 300 });
+  insertTask(db, { appId: "sample", taskId: "independent", phase: "running", updatedAt: 299 });
+  insertCondition(db, {
+    appId: "sample",
+    taskId: "work",
+    conditionId: "independent-review",
+    owner: "app:evaluation",
+    state: "false",
+  });
+  const resourceRow = db
+    .prepare("SELECT resource_json FROM app_tasks WHERE app_id = 'sample' AND task_id = 'work'")
+    .get() as { resource_json: string };
+  const resource = JSON.parse(resourceRow.resource_json);
+  resource.spec.dependsOn = ["independent"];
+  resource.status.summary = "Current budget wait";
+  resource.status.result = { current: true };
+  resource.status.conditionIds = ["independent-review"];
+  db.prepare("UPDATE app_tasks SET resource_json = ? WHERE app_id = 'sample' AND task_id = 'work'").run(
+    JSON.stringify(resource),
+  );
+
+  const insertAttempt = db.prepare(
+    `INSERT INTO app_task_attempts(
+       app_id, attempt_id, task_id, task_generation, state, started_at, attempt_json
+     ) VALUES ('sample', ?, 'work', 2, 'completed', ?, ?)`,
+  );
+  insertAttempt.run(
+    "artifact-attempt",
+    100,
+    JSON.stringify({
+      metadata: { id: "artifact-attempt", resourceVersion: 1 },
+      taskId: "work",
+      taskGeneration: 2,
+      specHash: "artifact-spec",
+      owner: "sample-owner",
+      handler: "agent:sample-owner",
+      runtimeId: "artifact-runtime",
+      state: "completed",
+      reason: "test",
+      startedAt: new Date(100).toISOString(),
+      finishedAt: new Date(101).toISOString(),
+      acceptedResult: {
+        state: "waiting",
+        summary: "Pinned evaluation evidence",
+        result: { artifacts: [{ path: "evidence.json", sha256: "abc123" }] },
+        facts: ["retained"],
+      },
+    }),
+  );
+  for (let index = 0; index < 13; index += 1) {
+    const attemptId = `later-wait-${String(index).padStart(2, "0")}`;
+    const startedAt = 200 + index;
+    insertAttempt.run(
+      attemptId,
+      startedAt,
+      JSON.stringify({
+        metadata: { id: attemptId, resourceVersion: 1 },
+        taskId: "work",
+        taskGeneration: 2,
+        specHash: `wait-${index}`,
+        owner: "sample-owner",
+        handler: "agent:sample-owner",
+        runtimeId: `wait-runtime-${index}`,
+        state: "completed",
+        reason: "test",
+        startedAt: new Date(startedAt).toISOString(),
+        finishedAt: new Date(startedAt + 1).toISOString(),
+        acceptedResult:
+          index === 12
+            ? {
+                state: "waiting",
+                summary: "\u0001".repeat(5_000),
+                response: "\u0001".repeat(5_000),
+                result: { legacy: "z".repeat(17_000) },
+                facts: Array.from({ length: 17 }, () => "\u0001".repeat(1_100)),
+                acceptanceBasis: {
+                  method: "agent-judgment",
+                  verifier: "legacy",
+                  facts: ["b".repeat(2 * 1_024 * 1_024)],
+                },
+                acceptedLiveEventIds: Array.from({ length: 300 }, (_, id) => id + 1),
+              }
+            : { state: "waiting", summary: `Budget wait ${index}`, facts: [] },
+      }),
+    );
+  }
+
+  const service = new HumanTaskService(db, registry("sample"));
+  const ordinary = service.getTask({ appId: "sample", taskId: "work" })!;
+  expect(ordinary).toMatchObject({
+    summary: "Current budget wait",
+    result: { current: true },
+    acceptedEvidence: { available: true, maxPageSize: 8 },
+    diagnostics: {
+      conditions: [expect.objectContaining({ id: "independent-review" })],
+      dependencies: [{ id: "independent", status: "running" }],
+    },
+  });
+  expect(ordinary.acceptedEvidence).not.toHaveProperty("page");
+
+  const records = [];
+  let cursor: string | undefined;
+  do {
+    const detail = service.getTask({
+      appId: "sample",
+      taskId: "work",
+      acceptedEvidence: { limit: 4, ...(cursor ? { cursor } : {}) },
+    })!;
+    expect(detail.summary).toBe("Current budget wait");
+    expect(detail.result).toEqual({ current: true });
+    records.push(...detail.acceptedEvidence!.page!.items);
+    cursor = detail.acceptedEvidence!.page!.nextCursor;
+  } while (cursor);
+  expect(records).toHaveLength(14);
+  expect(records[0]).toMatchObject({
+    truncated: {
+      fields: expect.arrayContaining([
+        "summary",
+        "response",
+        "result",
+        "facts",
+        "acceptanceBasis",
+        "acceptedLiveEventIds",
+      ]),
+    },
+    acceptedResult: {
+      summary: "\u0001".repeat(1_024),
+      facts: [],
+    },
+  });
+  expect(Buffer.byteLength(JSON.stringify(records[0]), "utf8")).toBeLessThan(32 * 1_024);
+  expect(records[0]?.acceptedResult).not.toHaveProperty("result");
+  expect(records[0]?.acceptedResult).not.toHaveProperty("acceptanceBasis");
+  expect(records[0]?.acceptedResult).not.toHaveProperty("acceptedLiveEventIds");
+  expect(records.at(-1)).toMatchObject({
+    appId: "sample",
+    taskId: "work",
+    taskGeneration: 2,
+    attemptId: "artifact-attempt",
+    provenance: "app_task_attempts.acceptedResult",
+    acceptedResult: {
+      state: "waiting",
+      result: { artifacts: [{ path: "evidence.json", sha256: "abc123" }] },
+    },
+  });
+  expect(new Set(records.map((record) => record.attemptId)).size).toBe(14);
+  const evidencePlan = db
+    .prepare(
+      `EXPLAIN QUERY PLAN SELECT attempt_id FROM app_task_attempts
+     WHERE app_id = ? AND task_id = ? AND json_type(attempt_json, '$.acceptedResult') = 'object'
+     ORDER BY started_at DESC, attempt_id DESC LIMIT ?`,
+    )
+    .all("sample", "work", 5);
+  expect(JSON.stringify(evidencePlan)).toContain("idx_app_task_attempts_task");
+  expect(() => service.getTask({ appId: "sample", taskId: "work", acceptedEvidence: { limit: 9 } })).toThrow(
+    "between 1 and 8",
+  );
+  expect(() => service.getTask({ appId: "sample", taskId: "work", acceptedEvidence: { cursor: "invalid" } })).toThrow(
+    "Invalid accepted evidence cursor",
+  );
+
+  const store = AppTaskResourceStore.fromDb(db, "sample");
+  const sdkCurrent = readRuntimeTaskView({ taskStateConfig: taskConfig(db, store, "sample") }, "work")!;
+  expect(sdkCurrent.acceptedEvidence).toEqual({ available: true, maxPageSize: 8 });
+  expect(
+    readRuntimeTaskView({ taskStateConfig: taskConfig(db, store, "sample") }, "work", {
+      acceptedEvidence: { limit: 2 },
+    })?.acceptedEvidence.page?.items,
+  ).toHaveLength(2);
 });
 
 test("exact diagnostics preserve bounded Conditions and dependency states without a whole-App read", () => {
@@ -294,8 +467,15 @@ function insertTask(
        changed, ready, updated_at, resource_json
      ) VALUES (?, ?, ?, 3, ?, ?, 'normal', ?, ?, ?, ?)`,
   ).run(
-    input.appId, input.taskId, generation, generation, input.phase,
-    input.changed ? 1 : 0, input.ready ? 1 : 0, input.updatedAt, JSON.stringify(resource),
+    input.appId,
+    input.taskId,
+    generation,
+    generation,
+    input.phase,
+    input.changed ? 1 : 0,
+    input.ready ? 1 : 0,
+    input.updatedAt,
+    JSON.stringify(resource),
   );
 }
 
@@ -364,7 +544,12 @@ test("shows a converged Task with pending work as queued in detail, lists, and s
     ["ready", true, false],
   ] as const) {
     insertTask(db, {
-      appId: "research", taskId, phase: "converged", updatedAt: 2, ready, changed,
+      appId: "research",
+      taskId,
+      phase: "converged",
+      updatedAt: 2,
+      ready,
+      changed,
     });
     expect(service.getTask({ appId: "research", taskId })).toMatchObject({
       status: "pending",
@@ -386,8 +571,7 @@ test("shows a converged Task with pending work as queued in detail, lists, and s
   expect(db.prepare("SELECT DISTINCT phase FROM app_tasks").all()).toEqual([{ phase: "converged" }]);
 
   insertReceipt(db, "research", "scheduled", 3);
-  expect(service.getTask({ appId: "research", taskId: "scheduled" }))
-    .toMatchObject({ status: "done", terminal: true });
+  expect(service.getTask({ appId: "research", taskId: "scheduled" })).toMatchObject({ status: "done", terminal: true });
   expect(service.listTasks({ status: ["pending"] }).items).toHaveLength(2);
 });
 
@@ -403,10 +587,11 @@ test("status-filtered human reads retain the stored-phase index", () => {
       if (!sql.includes("AS payload, 0 AS terminal")) return statement;
       return new Proxy(statement, {
         get(target, key) {
-          if (key === "all") return (...values: Parameters<typeof statement.all>) => {
-            plans.push(JSON.stringify(db.prepare(`EXPLAIN QUERY PLAN ${sql}`).all(...values)));
-            return target.all(...values);
-          };
+          if (key === "all")
+            return (...values: Parameters<typeof statement.all>) => {
+              plans.push(JSON.stringify(db.prepare(`EXPLAIN QUERY PLAN ${sql}`).all(...values)));
+              return target.all(...values);
+            };
           const value = Reflect.get(target, key);
           return typeof value === "function" ? value.bind(target) : value;
         },
@@ -1183,11 +1368,13 @@ describe("Human Task service", () => {
     expect(detail?.facts).toEqual(["full facts"]);
   });
 
-  test.each([2, 4])("does not project live generation %s as active after its completion receipt exists", (generation) => {
-    const db = database();
-    insertTask(db, { appId: "alpha", taskId: "completed-but-stale", phase: "attention", updatedAt: 30, generation });
-    insertReceipt(db, "alpha", "completed-but-stale", 40);
-    const service = new HumanTaskService(db, registry("alpha"));
+  test.each([2, 4])(
+    "does not project live generation %s as active after its completion receipt exists",
+    (generation) => {
+      const db = database();
+      insertTask(db, { appId: "alpha", taskId: "completed-but-stale", phase: "attention", updatedAt: 30, generation });
+      insertReceipt(db, "alpha", "completed-but-stale", 40);
+      const service = new HumanTaskService(db, registry("alpha"));
 
       expect(service.listTasks().items).toEqual([]);
       expect(service.listApps()).toEqual([expect.objectContaining({ id: "alpha", activeTasks: 0, attentionTasks: 0 })]);
@@ -1335,7 +1522,8 @@ describe("Human Task service", () => {
       insertTask(db, { appId: "alpha", taskId, phase: "waiting", updatedAt: 10 });
       const current = store.readTask(taskId)!;
       const control = {
-        appId: "alpha", taskId,
+        appId: "alpha",
+        taskId,
         expectedGeneration: current.metadata.generation,
         expectedResourceVersion: current.metadata.resourceVersion,
         reason: "Further work costs more than it is worth",
@@ -1346,11 +1534,15 @@ describe("Human Task service", () => {
     expect(migrateTaskCompletionReceipts(config, { oldRuntimeStopped: true }).imported).toBe(1);
 
     expect(service.getTask({ appId: "alpha", taskId: "withdrawn" })).toMatchObject({
-      status: "closed", terminal: true, cancellable: false,
+      status: "closed",
+      terminal: true,
+      cancellable: false,
       statusDetail: "Closed by its owner; no further work will run.",
     });
     expect(service.getTask({ appId: "alpha", taskId: "previously-finished" })).toMatchObject({
-      status: "closed", terminal: true, response: "previously-finished result",
+      status: "closed",
+      terminal: true,
+      response: "previously-finished result",
     });
     expect(service.listTasks().items).toEqual([]);
     expect(service.listTasks({ status: ["cancelled"] }).items.map((task) => task.taskId)).toEqual(["cancelled"]);

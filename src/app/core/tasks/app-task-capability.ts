@@ -5,6 +5,7 @@ import type {
   TaskOutcomePage,
   TaskOutcomeProjection,
   TaskPage,
+  TaskReadOptions,
 } from "@may-agent/sdk";
 import type { AppTaskAttacher } from "../inbox/app-inbox-host.js";
 import type { TaskInputObservation } from "../inbox/input-context.js";
@@ -30,7 +31,6 @@ import {
   retryLoadedFailedAppTask,
   stopLoadedConversationTurn,
   wakeLoadedAppTasks,
-
 } from "./app-task-runtime.js";
 import type { AppTaskRuntimeOptions } from "./runtime-options.js";
 
@@ -68,7 +68,7 @@ export type AppTaskCapability = {
   }): Promise<TaskInputObservation | null>;
   list(input: { appId: string; options?: TaskListOptions }): TaskPage;
   outcomes(input: { appId: string; projection?: TaskOutcomeProjection }): TaskOutcomePage;
-  get(input: { appId: string; taskId: string }): TaskDetail | null;
+  get(input: { appId: string; taskId: string; options?: TaskReadOptions }): TaskDetail | null;
   has(input: { appId: string; taskId: string }): boolean;
   wake(input: { appId: string; taskIds: string[] }): void;
   retry(input: {
@@ -130,19 +130,40 @@ export function createAppTaskCapability(options: {
     async readDependency({ appDir, dependency, admissionKey }) {
       const task = readLoadedAppTaskView({ bus: options.bus, appDir, taskId: dependency.id });
       if (admissionKey) {
-        const accepted = readLoadedAppTaskInputResult({ bus: options.bus, appDir, taskId: dependency.id, admissionKey });
-        if (accepted) return {
-          kind: "task", id: dependency.id, status: accepted.state === "converged" ? "done" : "attention",
-          ...(task?.closed ? { closed: true } : {}),
-          summary: accepted.summary, response: accepted.response, result: accepted.result, facts: accepted.facts,
-        };
+        const accepted = readLoadedAppTaskInputResult({
+          bus: options.bus,
+          appDir,
+          taskId: dependency.id,
+          admissionKey,
+        });
+        if (accepted)
+          return {
+            kind: "task",
+            id: dependency.id,
+            status: accepted.state === "converged" ? "done" : "attention",
+            ...(task?.closed ? { closed: true } : {}),
+            summary: accepted.summary,
+            response: accepted.response,
+            result: accepted.result,
+            facts: accepted.facts,
+          };
         // A later cycle or an unrelated retained wait cannot answer this input.
-        const report = readLoadedAppTaskInputResult({ bus: options.bus, appDir, taskId: dependency.id, admissionKey, kind: "report" });
-        return { kind: "task", id: dependency.id,
+        const report = readLoadedAppTaskInputResult({
+          bus: options.bus,
+          appDir,
+          taskId: dependency.id,
+          admissionKey,
+          kind: "report",
+        });
+        return {
+          kind: "task",
+          id: dependency.id,
           ...(report && !task?.closed ? { report } : {}),
           ...(task?.closed ? { closed: true } : {}),
           status: task?.closed ? "attention" : "pending",
-          summary: task?.closed ? "The Task closed without an accepted outcome for this input" : "This input has no accepted outcome yet",
+          summary: task?.closed
+            ? "The Task closed without an accepted outcome for this input"
+            : "This input has no accepted outcome yet",
         };
       }
       return task
@@ -164,7 +185,8 @@ export function createAppTaskCapability(options: {
         appId,
         ...(projection ? { projection } : {}),
       }),
-    get: ({ appId, taskId }) => getLoadedAppTaskView({ bus: options.bus, appId, taskId }),
+    get: ({ appId, taskId, options: readOptions }) =>
+      getLoadedAppTaskView({ bus: options.bus, appId, taskId, options: readOptions }),
     has: ({ appId, taskId }) => hasLoadedAppTask({ bus: options.bus, appId, taskId }),
     wake: ({ appId, taskIds }) =>
       wakeLoadedAppTasks({

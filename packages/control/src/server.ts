@@ -51,7 +51,11 @@ export interface AttachControlSocketOptions {
     options?: { limit?: number; topicId?: string; topicLimit?: number; topicCursor?: string },
   ) => unknown;
   listAppTasks?: (appId: string, options?: { status?: string[]; limit?: number; cursor?: string }) => unknown;
-  getAppTask?: (appId: string, taskId: string) => unknown;
+  getAppTask?: (
+    appId: string,
+    taskId: string,
+    options?: { acceptedEvidence?: { limit?: number; cursor?: string } },
+  ) => unknown;
   resolveAppTask?: (appId: string, event: Record<string, unknown>) => unknown;
   listApps?: (appId?: string) => unknown;
   listTasks?: (options?: {
@@ -62,7 +66,12 @@ export interface AttachControlSocketOptions {
     limit?: number;
     cursor?: string;
   }) => unknown;
-  getTask?: (input: { ref?: string; appId?: string; taskId?: string }) => unknown;
+  getTask?: (input: {
+    ref?: string;
+    appId?: string;
+    taskId?: string;
+    acceptedEvidence?: { limit?: number; cursor?: string };
+  }) => unknown;
   invokeProjectAction?: (input: { projectId: string; actionId: string; params: unknown; idempotencyKey?: string }) => {
     eventId: number;
     eventType: string;
@@ -168,6 +177,28 @@ function statusFields(status: ControlStatus, sessionId: string, agentName: strin
   return Array.isArray(status)
     ? { activeAgents: socketStatus(status, sessionId, agentName) }
     : { activeAgents: socketStatus(status.sessions, sessionId, agentName), activeWork: status.activeWork };
+}
+
+function acceptedEvidenceOptions(frame: Record<string, unknown>): {
+  acceptedEvidence?: { limit?: number; cursor?: string };
+} {
+  if (frame.acceptedEvidence !== true) {
+    if (frame.acceptedEvidence !== undefined && frame.acceptedEvidence !== false)
+      throw new Error("acceptedEvidence must be a boolean");
+    if (frame.evidenceLimit !== undefined || frame.evidenceCursor !== undefined)
+      throw new Error("acceptedEvidence=true is required for evidence pagination");
+    return {};
+  }
+  if (frame.evidenceLimit !== undefined && !Number.isSafeInteger(frame.evidenceLimit))
+    throw new Error("evidenceLimit must be an integer");
+  if (frame.evidenceCursor !== undefined && (typeof frame.evidenceCursor !== "string" || !frame.evidenceCursor.trim()))
+    throw new Error("evidenceCursor must be a non-empty string");
+  return {
+    acceptedEvidence: {
+      ...(frame.evidenceLimit === undefined ? {} : { limit: frame.evidenceLimit as number }),
+      ...(typeof frame.evidenceCursor === "string" ? { cursor: frame.evidenceCursor.trim() } : {}),
+    },
+  };
 }
 
 function runtimeDiagnostics(): Record<string, unknown> {
@@ -793,7 +824,7 @@ export function createControlSocketCore(opts: ControlSocketCoreOptions): {
               command: normalized.command,
               appId,
               taskId,
-              task: getAppTask(appId, taskId),
+              task: getAppTask(appId, taskId, acceptedEvidenceOptions(frame)),
             });
           } catch (error) {
             writeFrame(socket, {
@@ -970,6 +1001,7 @@ export function createControlSocketCore(opts: ControlSocketCoreOptions): {
               ...(typeof frame.appId === "string" && frame.appId.trim() ? { appId: frame.appId.trim() } : {}),
               ...(typeof frame.taskId === "string" && frame.taskId.trim() ? { taskId: frame.taskId.trim() } : {}),
               ...(typeof frame.reason === "string" && frame.reason.trim() ? { reason: frame.reason.trim() } : {}),
+              ...acceptedEvidenceOptions(frame),
             };
             writeFrame(socket, {
               type: "ok",

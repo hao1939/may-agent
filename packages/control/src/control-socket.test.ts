@@ -511,8 +511,11 @@ describe("control socket protocol", () => {
         });
         return { items: [task] };
       },
-      getAppTask: (appId, taskId) => {
+      getAppTask: (appId, taskId, options) => {
         expect({ appId, taskId }).toEqual({ appId: "evaluation", taskId: "review/docs" });
+        if (options?.acceptedEvidence) {
+          expect(options).toEqual({ acceptedEvidence: { limit: 3, cursor: "older-evidence" } });
+        }
         return task;
       },
     });
@@ -533,6 +536,24 @@ describe("control socket protocol", () => {
         taskId: "review/docs",
       }),
     ).resolves.toMatchObject({ type: "ok", command: "app.task.get", task });
+    await expect(
+      sendSocketCommand(core.endpoint, {
+        type: "app.task.get",
+        appId: "evaluation",
+        taskId: "review/docs",
+        acceptedEvidence: true,
+        evidenceLimit: 3,
+        evidenceCursor: "older-evidence",
+      }),
+    ).resolves.toMatchObject({ type: "ok", command: "app.task.get", task });
+    await expect(
+      sendSocketCommand(core.endpoint, {
+        type: "app.task.get",
+        appId: "evaluation",
+        taskId: "review/docs",
+        evidenceLimit: 3,
+      }),
+    ).rejects.toThrow("acceptedEvidence=true is required");
     expect(core.emitted).toEqual([]);
   });
 
@@ -965,7 +986,13 @@ describe("control socket protocol", () => {
     core.getBroadcast()?.({
       type: "project.task.reconciled",
       target: { appId: "evaluation" },
-      data: { project: "evaluation", taskId: "review/docs", disposition: "stale", state: "converged", summary: "not part of the wake" },
+      data: {
+        project: "evaluation",
+        taskId: "review/docs",
+        disposition: "stale",
+        state: "converged",
+        summary: "not part of the wake",
+      },
     });
 
     await expect(nextFrame(stream)).resolves.toEqual({
