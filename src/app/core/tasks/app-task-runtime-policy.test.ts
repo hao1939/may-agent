@@ -1,7 +1,5 @@
 import { describe, expect, it } from "bun:test";
-import {
-  appTaskAgentProtocol,
-} from "../../adapters/executors/managed-agent.js";
+import { appTaskAgentProtocol } from "../../adapters/executors/managed-agent.js";
 import { mergeTaskConditions } from "./dependency-admission.js";
 import { normalizeTaskHandlerResult } from "./result.js";
 
@@ -13,7 +11,8 @@ describe("App Task agent prompt context", () => {
     expect(Buffer.byteLength(protocol, "utf8")).toBeLessThanOrEqual(5 * 1_024);
     expect(protocol).toContain("agent pursuing one Task goal owned by App may");
     expect(protocol).not.toContain("accountable owner");
-    expect(protocol).toContain("Finish exactly once with finish().result");
+    expect(protocol).toContain("End the attempt with one accepted finish().result");
+    expect(protocol).toContain("If finish rejects invalid input, correct it before ending");
     expect(protocol).toContain("Runtime publishes and correlates it");
     expect(protocol).not.toContain("Converged example");
     expect(protocol).toContain("report:true");
@@ -62,10 +61,10 @@ describe("Task Condition reconciliation authority", () => {
     expected: { field: "status", equals: "done" },
   };
 
-  it("keeps one canonical App-dependency Condition across compatible model and dependency echoes", () => {
-    const modelEcho = { ...canonical, reviewAfterMs: 60_000 };
+  it("keeps the explicit compatible specification after a generated dependency echo", () => {
     const dependencyEcho = structuredClone(canonical);
-    expect(mergeTaskConditions([canonical, modelEcho, dependencyEcho], new Set([canonical.id]))).toEqual([canonical]);
+    const explicit = { ...canonical, reviewAfterMs: 60_000 };
+    expect(mergeTaskConditions([canonical, dependencyEcho, explicit], new Set([canonical.id]))).toEqual([explicit]);
   });
 
   it("rejects retargeting an authoritative App-dependency Condition", () => {

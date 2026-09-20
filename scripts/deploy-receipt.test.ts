@@ -11,16 +11,14 @@ import {
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { Database } from "bun:sqlite";
-import { readDeployReceiptForTask, requestReceipt, settleReceipt, validateDeployTaskTarget } from "./deploy-receipt";
-import { appTaskTestContext } from "../src/app/core/tasks/app-task-test-support.js";
 import {
-  cancelAppTask,
-  claimObservedAppTask,
-  closeAppTask,
-  completeAppTask,
-  observeAppTaskIntent,
-} from "../src/app/core/tasks/app-task-reconciler.js";
+  readDeployReceipt,
+  readDeployReceiptForTask,
+  requestReceipt,
+  settleReceipt,
+  validateCorrelation,
+  validateNotificationTarget,
+} from "./deploy-receipt";
 
 function fixture() {
   const projectDir = mkdtempSync(join(tmpdir(), "deploy-receipt-"));
@@ -29,110 +27,36 @@ function fixture() {
   return { projectDir, receiptDir, path: join(receiptDir, "correlation-1.json") };
 }
 
-function taskDatabase(projectDir: string, appId: string, taskIds: string[]): string {
-  const path = join(projectDir, "may.db");
-  const config = appTaskTestContext({
-    appDir: projectDir,
-    appId,
-    maxConcurrent: 1,
-    agent: "owner",
-    databasePath: path,
-    tree: { root_task_id: "root", groups: { root: { id: "root", parent_id: null } } },
-  });
-  try {
-    for (const id of taskIds) {
-      observeAppTaskIntent(config, {
-        appAgent: "owner",
-        intent: {
-          id,
-          parentId: "root",
-          outcome: "Verify deployment",
-          acceptance: ["Return deployment facts"],
-        },
-      });
-      if (id === "answered") {
-        const claim = claimObservedAppTask(config, { taskId: id, appAgent: "owner", handler: "agent" });
-        if (claim.kind !== "claimed") throw new Error("Expected fixture claim");
-        completeAppTask(config, claim, { summary: "Verified", facts: ["fixture:deployment"] });
-      }
-      if (id === "closed" || id === "cancelled") {
-        const task = config.resourceStore.readTask(id)!;
-        const control = {
-          appId,
-          taskId: id,
-          reason: "Owner closed fixture work",
-          expectedGeneration: task.metadata.generation,
-          expectedResourceVersion: task.metadata.resourceVersion,
-        };
-        if (id === "closed") closeAppTask(config, control);
-        else cancelAppTask(config, control);
-      }
-    }
-  } finally {
-    config.resourceStore.close();
-  }
-  return path;
-}
 
 describe("restart-aware deploy receipts", () => {
-  it("rejects a stale exact-task wake before deployment", () => {
-    const f = fixture();
+  it("persists and reads the first exact standalone receipt in a fresh directory", () => {
+    const projectDir = mkdtempSync(join(tmpdir(), "deploy-receipt-fresh-"));
+    const path = join(projectDir, "receipts", "correlation-1.json");
     try {
-      const dbPath = taskDatabase(f.projectDir, "may-agent", ["live", "answered", "closed", "cancelled"]);
-      expect(() => validateDeployTaskTarget(dbPath, "may-agent", "missing")).toThrow(
-        "does not exist; refusing to emit an unresolvable targeted wake",
-      );
-      expect(() => validateDeployTaskTarget(dbPath, "other", "live")).toThrow(
-        "May runtime deployment belongs to may-agent, not other",
-      );
-      expect(() => validateDeployTaskTarget(dbPath, "may-agent", "live")).not.toThrow();
-      expect(() => validateDeployTaskTarget(dbPath, "may-agent", "answered")).not.toThrow();
-      for (const id of ["closed", "cancelled"])
-        expect(() => validateDeployTaskTarget(dbPath, "may-agent", id)).toThrow("is closed");
+      expect(existsSync(join(projectDir, "receipts"))).toBe(false);
+      expect(requestReceipt(path, undefined, undefined, "correlation-1", "abc123", "deadbeef")).toBe(true);
+      expect(existsSync(join(projectDir, "receipts"))).toBe(true);
+      settleReceipt(path, "succeeded", "abc123", "healthy");
+      writeFileSync(join(projectDir, "receipts", "unrelated.json"), "not-json\n");
+      expect(readDeployReceipt(path)).toMatchObject({
+        correlation: "correlation-1",
+        sourceCommit: "deadbeef",
+        phase: "succeeded",
+        loadedArtifactSha: "abc123",
+        health: "healthy",
+      });
     } finally {
-      rmSync(f.projectDir, { recursive: true, force: true });
+      rmSync(projectDir, { recursive: true, force: true });
     }
   });
 
-  it("rejects a task owned by another App even when that task exists", () => {
-    const f = fixture();
-    try {
-      const dbPath = taskDatabase(f.projectDir, "alpha-project", ["ops/deploy-may-runtime"]);
-      expect(() => validateDeployTaskTarget(dbPath, "alpha-project", "ops/deploy-may-runtime")).toThrow(
-        "May runtime deployment belongs to may-agent, not alpha-project",
-      );
-    } finally {
-      rmSync(f.projectDir, { recursive: true, force: true });
-    }
-  });
-
-  it("rejects a database without canonical resource authority", () => {
-    const f = fixture();
-    try {
-      const dbPath = taskDatabase(f.projectDir, "may-agent", ["live"]);
-      const db = new Database(dbPath);
-      db.query("DELETE FROM app_task_store_meta WHERE app_id = ? AND key = 'authority'").run("may-agent");
-      db.close();
-
-      expect(() => validateDeployTaskTarget(dbPath, "may-agent", "live")).toThrow(
-        "Task resources for may-agent are not canonical",
-      );
-    } finally {
-      rmSync(f.projectDir, { recursive: true, force: true });
-    }
-  });
-
-  it("does not accept retained legacy JSON as deployment authority", () => {
-    const f = fixture();
-    try {
-      const path = join(f.projectDir, "state.json");
-      const retained = '{"project":"may-agent","resources":{"live":{}}}\n';
-      writeFileSync(path, retained);
-      expect(() => validateDeployTaskTarget(path, "may-agent", "live")).toThrow("Cannot read deploy task database");
-      expect(readFileSync(path, "utf8")).toBe(retained);
-    } finally {
-      rmSync(f.projectDir, { recursive: true, force: true });
-    }
+  it("validates optional notification pairs and path-safe correlations without Task state", () => {
+    expect(() => validateNotificationTarget(undefined, undefined)).not.toThrow();
+    expect(() => validateNotificationTarget("may", "task/1")).not.toThrow();
+    expect(() => validateNotificationTarget("may", undefined)).toThrow("requires both");
+    expect(() => validateNotificationTarget("bad app", "task/1")).toThrow("Invalid App ID");
+    expect(() => validateCorrelation("deploy-20260920.1")).not.toThrow();
+    expect(() => validateCorrelation("../escape")).toThrow("Invalid deployment correlation");
   });
 
   it("persists requested metadata before interruption and tells recovery to wait", () => {
@@ -149,7 +73,7 @@ describe("restart-aware deploy receipts", () => {
         sourceCommit: "deadbeef",
         phase: "requested",
         requestedAt: expect.any(String),
-        verification: expect.stringContaining("report the result to the owning Task without redeploying"),
+        verification: expect.stringContaining("read this exact receipt without redeploying"),
       });
       expect(readDeployReceiptForTask(f.receiptDir, "may-agent", "task-1")).toEqual(receipt);
     } finally {
@@ -308,15 +232,14 @@ describe("restart-aware deploy receipts", () => {
 
   it("builds deployable artifacts from one immutable tested commit", () => {
     const deploy = readFileSync(new URL("./deploy.sh", import.meta.url), "utf8");
-    expect(deploy).toContain('project="may-agent"');
-    expect(deploy).not.toContain("MAY_AGENT_DEPLOY_PROJECT:-");
-    expect(deploy).toContain('task_db="${MAY_AGENT_DEPLOY_TASK_DB:-${STATE_DIR:-/app/.state}/may.db}"');
-    expect(deploy).toContain('deploy-receipt.ts validate-target "$task_db" "$project" "$task_id"');
-    const validation = 'deploy-receipt.ts validate-target "$task_db" "$project" "$task_id"';
-    expect(deploy.split(validation)).toHaveLength(3);
-    expect(deploy.indexOf(validation)).toBeLessThan(deploy.indexOf("bun run bundle"));
-    expect(deploy.lastIndexOf(validation)).toBeGreaterThan(deploy.indexOf("bun run bundle"));
-    expect(deploy.lastIndexOf(validation)).toBeLessThan(deploy.indexOf("deploy-receipt.ts request"));
+    expect(deploy).toContain('project="${MAY_AGENT_DEPLOY_OWNER_APP:-}"');
+    expect(deploy).not.toContain("MAY_AGENT_DEPLOY_TASK_DB");
+    expect(deploy).not.toContain("validate-target");
+    expect(deploy).not.toContain("may.db");
+    expect(deploy).toContain('deploy-receipt.ts validate-notification "$project" "$task_id" "$correlation"');
+    expect(deploy.indexOf("validate-notification")).toBeLessThan(deploy.indexOf('if [ -e "$receipt" ]'));
+    expect(deploy.indexOf('if [ -e "$receipt" ]')).toBeLessThan(deploy.indexOf("git rev-parse"));
+    expect(deploy).toContain('deploy-receipt.ts read "$receipt"');
     expect(deploy).not.toContain("state.json");
     expect(deploy).toContain('source_commit="$(git rev-parse --verify HEAD)"');
     expect(deploy).toContain('canonical_commit="$(git -C "$deploy_root" rev-parse --verify HEAD)"');
@@ -346,6 +269,10 @@ describe("restart-aware deploy receipts", () => {
       mkdirSync(bin);
       mkdirSync(receiptDir);
       writeFileSync(join(repo, "scripts", "deploy.sh"), readFileSync(new URL("./deploy.sh", import.meta.url)));
+      writeFileSync(
+        join(repo, "scripts", "deploy-receipt.ts"),
+        readFileSync(new URL("./deploy-receipt.ts", import.meta.url)),
+      );
       chmodSync(join(repo, "scripts", "deploy.sh"), 0o755);
 
       const run = async (cmd: string[], env = process.env) => {
@@ -359,7 +286,7 @@ describe("restart-aware deploy receipts", () => {
       };
       for (const cmd of [
         ["git", "init", "-q"],
-        ["git", "add", "scripts/deploy.sh"],
+        ["git", "add", "scripts/deploy.sh", "scripts/deploy-receipt.ts"],
         ["git", "-c", "user.name=Fixture", "-c", "user.email=fixture@example.test", "commit", "-qm", "fixture"],
       ]) {
         expect((await run(cmd)).code).toBe(0);
@@ -368,14 +295,56 @@ describe("restart-aware deploy receipts", () => {
       const bun = join(bin, "bun");
       writeFileSync(
         bun,
-        `#!/bin/sh\nprintf '%s|%s|%s\\n' "\${MAY_TASK_ATTEMPT_CHILD-unset}" "\${KEEP_ME-unset}" "$*" >> "\$COMMAND_LOG"\nif [ "\${1-}" = test ]; then exit 42; fi\nexit 0\n`,
+        `#!/bin/sh
+printf '%s|%s|%s\\n' "\${MAY_TASK_ATTEMPT_CHILD-unset}" "\${KEEP_ME-unset}" "$*" >> "\$COMMAND_LOG"
+if [ "\${1-}" = scripts/deploy-receipt.ts ]; then exec ${JSON.stringify(process.execPath)} "$@"; fi
+if [ "\${1-}" = test ]; then exit "\${MAY_TEST_TEST_EXIT:-42}"; fi
+if [ "\${1-}" = run ] && [ "\${2-}" = bundle ]; then
+  mkdir -p bundle/platform-ui packages/terminal/bin packages/sdk container
+  printf '#!/bin/sh\\nexit 0\\n' > bundle/may-agent
+  printf '#!/bin/sh\\nexit 0\\n' > packages/terminal/bin/may-console.cjs
+  printf '#!/bin/sh\\nexit 0\\n' > container/may-agent-supervisor-restart.sh
+  printf '{}\\n' > packages/sdk/package.json
+  printf 'ui\\n' > bundle/platform-ui/index.html
+  chmod +x bundle/may-agent packages/terminal/bin/may-console.cjs container/may-agent-supervisor-restart.sh
+  exit 0
+fi
+exit 90
+`,
       );
       chmodSync(bun, 0o755);
       for (const command of ["supervisorctl", "docker"]) {
         const path = join(bin, command);
-        writeFileSync(path, `#!/bin/sh\necho "RESTART|$*" >> "$COMMAND_LOG"\nexit 99\n`);
+        writeFileSync(
+          path,
+          `#!/bin/sh\necho "FIXTURE_${command.toUpperCase()}|$*" >> "$COMMAND_LOG"\nexit "\${MAY_TEST_RESTART_EXIT:-99}"\n`,
+        );
         chmodSync(path, 0o755);
       }
+      // Confinement is unconditional: whichever production launch branch the
+      // host selects, this fixture cannot write the installed restarter or
+      // invoke the host's supervisor/docker (including as root with a socket).
+      writeFileSync(
+        join(bin, "install"),
+        `#!/bin/sh
+last=""
+for arg in "$@"; do last="$arg"; done
+case "$last" in
+  "$MAY_TEST_INSTALL_ROOT"/*) exec /usr/bin/install "$@" ;;
+  /usr/local/bin/may-agent-supervisor-restart)
+    echo "CONFINED_INSTALL|$*" >> "$COMMAND_LOG"
+    exit 0
+    ;;
+  *) echo "UNSAFE_INSTALL|$*" >> "$COMMAND_LOG"; exit 86 ;;
+esac
+`,
+      );
+      writeFileSync(
+        join(bin, "cmp"),
+        '#!/bin/sh\ncase "$*" in *"/usr/local/bin/may-agent-supervisor-restart"*) echo "CONFINED_CMP|$*" >> "$COMMAND_LOG"; exit 0;; esac\nexec /usr/bin/cmp "$@"\n',
+      );
+      chmodSync(join(bin, "install"), 0o755);
+      chmodSync(join(bin, "cmp"), 0o755);
 
       const correlation = "fixture-test-gate-failure";
       const result = await run(["/bin/sh", "scripts/deploy.sh"], {
@@ -384,29 +353,105 @@ describe("restart-aware deploy receipts", () => {
         COMMAND_LOG: log,
         KEEP_ME: "kept",
         MAY_TASK_ATTEMPT_CHILD: "1",
-        MAY_AGENT_DEPLOY_TASK_ID: "runtime/fixture",
+        MAY_TEST_INSTALL_ROOT: repo,
+        MAY_AGENT_DEPLOY_OWNER_APP: "",
+        MAY_AGENT_DEPLOY_TASK_ID: "",
         MAY_AGENT_DEPLOY_CORRELATION: correlation,
         MAY_AGENT_DEPLOY_ROOT: repo,
         MAY_AGENT_DEPLOY_RECEIPT_DIR: receiptDir,
-        MAY_AGENT_DEPLOY_TASK_DB: join(root, "not-opened.db"),
       });
 
       expect(result.code).toBe(42);
       const calls = readFileSync(log, "utf8").trim().split("\n");
-      expect(calls[0]).toContain("1|kept|scripts/deploy-receipt.ts validate-target");
+      expect(calls[0]).toContain("1|kept|scripts/deploy-receipt.ts validate-notification");
+      expect(calls[0]).toContain(correlation);
       expect(calls[1]).toBe(
         "1|kept|test packages/control/src/client.test.ts packages/control/src/control-socket.test.ts src/app/modes/emit-mode.test.ts",
       );
       expect(calls.some((call) => call.includes("run bundle"))).toBe(false);
       expect(calls.some((call) => call.includes("deploy-receipt.ts request"))).toBe(false);
-      expect(calls.some((call) => call.startsWith("RESTART|"))).toBe(false);
+      expect(
+        calls.some((call) => call.startsWith("FIXTURE_SUPERVISORCTL|") || call.startsWith("FIXTURE_DOCKER|")),
+      ).toBe(false);
       expect(existsSync(join(receiptDir, `${correlation}.json`))).toBe(false);
       expect(existsSync(join(repo, "bundle"))).toBe(false);
       expect(existsSync(join(repo, `.state/deploy-build-${correlation}`))).toBe(false);
+
+      writeFileSync(log, "");
+      const standaloneCorrelation = "fixture-standalone-success";
+      const standaloneReceipt = join(receiptDir, `${standaloneCorrelation}.json`);
+      const standalone = await run(["/bin/sh", "scripts/deploy.sh"], {
+        ...process.env,
+        PATH: `${bin}:${process.env.PATH}`,
+        COMMAND_LOG: log,
+        KEEP_ME: "kept",
+        MAY_TASK_ATTEMPT_CHILD: "1",
+        MAY_TEST_TEST_EXIT: "0",
+        MAY_TEST_RESTART_EXIT: "0",
+        MAY_TEST_INSTALL_ROOT: repo,
+        // Override any operator shell metadata: this is deliberately standalone.
+        MAY_AGENT_DEPLOY_OWNER_APP: "",
+        MAY_AGENT_DEPLOY_TASK_ID: "",
+        MAY_AGENT_DEPLOY_CORRELATION: standaloneCorrelation,
+        MAY_AGENT_DEPLOY_ROOT: repo,
+        MAY_AGENT_DEPLOY_RECEIPT_DIR: receiptDir,
+      });
+      expect(standalone.code).toBe(0);
+      expect(standalone.stdout).toContain(`Deployment receipt requested: ${standaloneReceipt}`);
+      const standaloneResult = readDeployReceipt(standaloneReceipt);
+      expect(standaloneResult).toMatchObject({ correlation: standaloneCorrelation, phase: "requested" });
+      expect(standaloneResult).not.toHaveProperty("project");
+      expect(standaloneResult).not.toHaveProperty("taskId");
+      const standaloneCalls = readFileSync(log, "utf8");
+      expect(standaloneCalls).not.toContain("may.db");
+      expect(standaloneCalls).not.toContain("UNSAFE_INSTALL|");
+      expect(
+        standaloneCalls.includes("FIXTURE_SUPERVISORCTL|") || standaloneCalls.includes("FIXTURE_DOCKER|"),
+      ).toBe(true);
+
+      writeFileSync(log, "");
+      const retryCorrelation = "fixture-existing-receipt";
+      const retryReceipt = join(receiptDir, `${retryCorrelation}.json`);
+      requestReceipt(retryReceipt, undefined, undefined, retryCorrelation, "abc123", "deadbeef");
+      settleReceipt(retryReceipt, "succeeded", "abc123", "healthy");
+      const receiptBefore = readFileSync(retryReceipt, "utf8");
+      const stagedArtifact = join(repo, "bundle", "may-agent");
+      const stagedResult = join(repo, "bundle", "may-agent.provenance.json");
+      mkdirSync(join(repo, "bundle"), { recursive: true });
+      writeFileSync(stagedArtifact, "previous artifact\n");
+      writeFileSync(stagedResult, '{"result":"previous"}\n');
+      const artifactBefore = readFileSync(stagedArtifact, "utf8");
+      const resultBefore = readFileSync(stagedResult, "utf8");
+      const retryResult = await run(["/bin/sh", "scripts/deploy.sh"], {
+        ...process.env,
+        PATH: `${bin}:${process.env.PATH}`,
+        COMMAND_LOG: log,
+        KEEP_ME: "kept",
+        MAY_TASK_ATTEMPT_CHILD: "1",
+        MAY_AGENT_DEPLOY_OWNER_APP: "",
+        MAY_AGENT_DEPLOY_TASK_ID: "",
+        MAY_AGENT_DEPLOY_CORRELATION: retryCorrelation,
+        MAY_AGENT_DEPLOY_ROOT: repo,
+        MAY_AGENT_DEPLOY_RECEIPT_DIR: receiptDir,
+      });
+      expect(retryResult.code).toBe(0);
+      expect(readFileSync(retryReceipt, "utf8")).toBe(receiptBefore);
+      expect(readFileSync(stagedArtifact, "utf8")).toBe(artifactBefore);
+      expect(readFileSync(stagedResult, "utf8")).toBe(resultBefore);
+      expect(existsSync(join(repo, `.state/deploy-build-${retryCorrelation}`))).toBe(false);
+      const retryCalls = readFileSync(log, "utf8");
+      expect(retryCalls).toContain("validate-notification");
+      expect(retryCalls).toContain(`read ${retryReceipt}`);
+      expect(retryCalls).not.toContain("|test ");
+      expect(retryCalls).not.toContain("run bundle");
+      expect(retryCalls).not.toContain("FIXTURE_SUPERVISORCTL|");
+      expect(retryCalls).not.toContain("FIXTURE_DOCKER|");
     } finally {
       rmSync(root, { recursive: true, force: true });
     }
   });
+
+
 
   it("can stage an immutable source-worktree build into the canonical deploy root", () => {
     const deploy = readFileSync(new URL("./deploy.sh", import.meta.url), "utf8");

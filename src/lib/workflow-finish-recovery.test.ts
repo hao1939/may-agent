@@ -1,6 +1,8 @@
 import { describe, expect, it } from "bun:test";
 import type { AgentTool } from "@earendil-works/pi-agent-core";
 import { Type } from "@earendil-works/pi-ai";
+import { taskAgentResultSchema } from "@may-agent/sdk";
+import { createWorkflowFinishTool } from "./tools/workflow-finish.js";
 import {
   RESPONSES_STREAM_TERMINAL_ERROR,
   WORKFLOW_BOUNDED_FINISH_DEFAULT_WINDOW_MS,
@@ -79,6 +81,58 @@ describe("workflow finish recovery", () => {
       toolCallId: "finish-captured",
       isError: false,
     });
+  });
+
+  it("reuses Task semantic admission for captured finish recovery after schema persistence", async () => {
+    let executions = 0;
+    const base = finishTool(async () => {
+      executions++;
+      return { content: [{ type: "text", text: "SUCCESS" }] };
+    });
+    const finish = createWorkflowFinishTool(base, structuredClone(taskAgentResultSchema));
+    const invalidMessages = [
+      abortedFinish({
+        status: "success",
+        summary: "Invalid Task result",
+        result: {
+          state: "converged",
+          summary: "Review is pending",
+          reviewAt: Date.now() + 60_000,
+          facts: [],
+        },
+      }),
+    ];
+
+    const rejected = await recoverCapturedWorkflowFinish({
+      sessionId: "s-task-semantic-invalid",
+      messages: invalidMessages,
+      tools: [finish],
+      reason: RESPONSES_STREAM_TERMINAL_ERROR,
+    });
+    expect(rejected.disposition).toBe("rejected");
+    expect(rejected.error).toContain("reviewAt is valid only for waiting");
+    expect(executions).toBe(0);
+
+    const correctedMessages = [
+      abortedFinish({
+        status: "success",
+        summary: "Corrected Task result",
+        result: {
+          state: "waiting",
+          summary: "Review is pending",
+          reviewAt: Date.now() + 60_000,
+          facts: [],
+        },
+      }),
+    ];
+    const recovered = await recoverCapturedWorkflowFinish({
+      sessionId: "s-task-semantic-corrected",
+      messages: correctedMessages,
+      tools: [finish],
+      reason: RESPONSES_STREAM_TERMINAL_ERROR,
+    });
+    expect(recovered.disposition).toBe("recovered");
+    expect(executions).toBe(1);
   });
 
   it("rejects schema-invalid captured arguments and preserves an explicit error", async () => {

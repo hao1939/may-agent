@@ -3602,6 +3602,7 @@ export function completeAppTask(
   match.attempt.acceptedResult = acceptedAttemptResult(tree, claim.taskId, "converged", input, acceptanceBasis);
   const admissions = inputOutcomeAdmissions(config, tree, claim, input.acceptedLiveEventIds);
   consumeAcceptedLiveTaskEvents(tree, claim.taskId, claim.agent, input.acceptedLiveEventIds);
+  renewDueTaskConditionCheckpoints(tree, claim.taskId, now);
   unlinkSatisfiedTaskConditions(tree, claim.taskId);
   finishAttempt(tree, resource, "completed", input.summary, now);
   const reconcileActionTaskIds = actions.flatMap((action) => (action.kind === "unblock-task" ? [action.taskId] : []));
@@ -3753,7 +3754,9 @@ export function deferAppTask(
     const condition = tree.conditions?.[id];
     return condition && condition.status.state !== "true" ? [{ id, ...condition.spec }] : [];
   });
-  if (input.disposition === "waiting" && reviewAt === undefined && openConditions.length === 0) {
+  // Only a sleeping attempt needs an external return route. `continue` is its
+  // own bounded scheduler request and may remain useful after the last wait resolves.
+  if (input.disposition === "waiting" && !input.continue && reviewAt === undefined && openConditions.length === 0) {
     throw new Error(`Waiting result for ${claim.taskId} requires at least one exact Condition`);
   }
   for (const key of inputKeys) {

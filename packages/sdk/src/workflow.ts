@@ -3,6 +3,7 @@ import type { AppEvent } from "./event.js";
 import type {
   Condition,
   ResourceCreator,
+  TaskAcceptanceBasis,
   TaskExecutorName,
   TaskPriority,
   TaskReconcileResult,
@@ -15,6 +16,57 @@ export type Logger = {
   info(message: string): void;
   warn(message: string): void;
   error(message: string): void;
+};
+
+export type TaskAcceptedEvidenceOptions = {
+  /** Page size for immutable accepted-attempt records. Runtime caps this at 8. */
+  limit?: number;
+  /** Opaque continuation returned by the previous acceptedEvidence page. */
+  cursor?: string;
+};
+
+export type TaskAcceptedEvidence = {
+  appId: string;
+  taskId: string;
+  taskGeneration: number;
+  attemptId: string;
+  /** Storage lineage, not a claim that this historical result is current. */
+  provenance: "app_task_attempts.acceptedResult";
+  startedAt: string;
+  finishedAt?: string;
+  /** Explicit when legacy content was reduced to keep the public page bounded. */
+  truncated?: {
+    fields: Array<"summary" | "response" | "result" | "facts" | "acceptanceBasis" | "acceptedLiveEventIds">;
+  };
+  acceptedResult: {
+    state: "converged" | "waiting" | "incomplete";
+    reviewAt?: number;
+    continue?: true;
+    report?: true;
+    summary: string;
+    response?: string;
+    result?: Record<string, unknown>;
+    facts: string[];
+    acceptanceBasis?: TaskAcceptanceBasis;
+    acceptedLiveEventIds?: number[];
+  };
+};
+
+export type TaskAcceptedEvidencePage = {
+  items: TaskAcceptedEvidence[];
+  nextCursor?: string;
+};
+
+export type TaskAcceptedEvidenceNavigation = {
+  available: boolean;
+  maxPageSize: number;
+  /** Present only when the caller explicitly requests acceptedEvidence. */
+  page?: TaskAcceptedEvidencePage;
+};
+
+export type TaskReadOptions = {
+  /** Opt in to one bounded page of immutable accepted-attempt history. */
+  acceptedEvidence?: TaskAcceptedEvidenceOptions;
 };
 
 export type TaskView = {
@@ -33,6 +85,8 @@ export type TaskView = {
 
 /** Exact desired Task detail returned only by an explicitly scoped get. */
 export type TaskDetail = TaskView & {
+  /** Discoverable immutable history; bodies load only through an explicit bounded read option. */
+  acceptedEvidence: TaskAcceptedEvidenceNavigation;
   /** Immutable change authority; absent for historical records with no saved provenance. */
   creator?: ResourceCreator;
   /** Exact accepted attempt retained for bounded execution-order checks. */
@@ -178,7 +232,7 @@ export type AppRead = {
     /** Opt-in shadow view. Omission keeps every existing list/get behavior unchanged. */
     /** Optional Host reporting capability; rejects when not installed. */
     outcomes(options?: TaskOutcomeProjection): Promise<TaskOutcomePage>;
-    get(taskId: string): Promise<TaskDetail | null>;
+    get(taskId: string, options?: TaskReadOptions): Promise<TaskDetail | null>;
   };
   execution(executionId: string): Promise<ExecutionView | null>;
   /** Null means no matching metric; an absent reporting capability rejects. */

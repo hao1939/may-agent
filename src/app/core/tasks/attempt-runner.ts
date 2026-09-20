@@ -714,7 +714,15 @@ export async function runTaskAttempt(input: {
 
     if (primaryHandlerResult.state === "waiting") {
       try {
+        // Validate owner declarations as one provenance group before admitting
+        // dependencies. Otherwise conflicting explicit specifications could be
+        // rejected only after publishing or adopting new dependency work.
+        const explicitConditions = mergeTaskConditions(primaryHandlerResult.conditions ?? []);
         const existingAppDependencyConditions = openTaskAppDependencyConditions(config, primary.taskId);
+        const existingIds = new Set(existingAppDependencyConditions.map((condition) => condition.id));
+        // Also reject an explicit retarget of persisted dependency identity
+        // before dependency admission can publish unrelated new work.
+        mergeTaskConditions([...existingAppDependencyConditions, ...explicitConditions], existingIds);
         const dependencyConditions = primaryHandlerResult.dependencies?.length
           ? admitTaskAppDependencies({
               opts,
@@ -725,11 +733,13 @@ export async function runTaskAttempt(input: {
               acceptedLiveEventIds: primaryResult.acceptedLiveEventIds,
             })
           : [];
-        const declaredConditions = [...(primaryHandlerResult.conditions ?? []), ...dependencyConditions];
+        // Generated dependency Conditions establish/reuse the wait, but the
+        // owner's explicit declaration is the final compatible specification.
+        const declaredConditions = [...dependencyConditions, ...explicitConditions];
         const declaredIds = new Set(declaredConditions.map((condition) => condition.id));
         const conditions = mergeTaskConditions(
           [...existingAppDependencyConditions, ...declaredConditions],
-          new Set(existingAppDependencyConditions.map((condition) => condition.id)),
+          new Set([...existingAppDependencyConditions, ...dependencyConditions].map((condition) => condition.id)),
         ).filter((condition) => declaredIds.has(condition.id));
         primaryHandlerResult.conditions = conditions.length > 0 ? conditions : undefined;
       } catch (error) {

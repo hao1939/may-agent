@@ -6,6 +6,7 @@ import type {
   TaskOutcomePage,
   TaskOutcomeProjection,
   TaskPage,
+  TaskReadOptions,
   TaskView,
 } from "@may-agent/sdk";
 import type { EventBus } from "./core/events/bus.js";
@@ -48,6 +49,15 @@ const parameters = Type.Object(
     limit: Type.Optional(Type.Integer({ minimum: 1, maximum: 100 })),
     cursor: Type.Optional(Type.String({ minLength: 1 })),
     includeDone: Type.Optional(Type.Boolean()),
+    acceptedEvidence: Type.Optional(
+      Type.Object(
+        {
+          limit: Type.Optional(Type.Integer({ minimum: 1, maximum: 8 })),
+          cursor: Type.Optional(Type.String({ minLength: 1 })),
+        },
+        { additionalProperties: false },
+      ),
+    ),
     expectedGeneration: Type.Optional(Type.Integer({ minimum: 1 })),
     input: Type.Optional(
       Type.Object({ kind: Type.String({ minLength: 1 }), data: Type.Unknown() }, { additionalProperties: false }),
@@ -69,6 +79,7 @@ type Params = {
   limit?: number;
   cursor?: string;
   includeDone?: boolean;
+  acceptedEvidence?: TaskReadOptions["acceptedEvidence"];
 };
 
 function result(value: unknown): AgentToolResult<undefined> {
@@ -87,7 +98,12 @@ export function createAppTaskReadTool(options: {
       appId: string;
       projection?: TaskOutcomeProjection;
     }): TaskOutcomePage | Promise<TaskOutcomePage>;
-    get(input: { bus: EventBus; appId: string; taskId: string }): TaskView | null | Promise<TaskView | null>;
+    get(input: {
+      bus: EventBus;
+      appId: string;
+      taskId: string;
+      options?: TaskReadOptions;
+    }): TaskView | null | Promise<TaskView | null>;
   };
   publisher?: {
     publish(input: {
@@ -194,8 +210,18 @@ export function createAppTaskReadTool(options: {
           const reader = options.reader ?? (await import("./core/tasks/app-task-runtime.js"));
           const value =
             "get" in reader
-              ? await reader.get({ bus: options.bus, appId: readAppId, taskId })
-              : await reader.getLoadedAppTaskView({ bus: options.bus, appId: readAppId, taskId });
+              ? await reader.get({
+                  bus: options.bus,
+                  appId: readAppId,
+                  taskId,
+                  ...(params.acceptedEvidence ? { options: { acceptedEvidence: params.acceptedEvidence } } : {}),
+                })
+              : await reader.getLoadedAppTaskView({
+                  bus: options.bus,
+                  appId: readAppId,
+                  taskId,
+                  ...(params.acceptedEvidence ? { options: { acceptedEvidence: params.acceptedEvidence } } : {}),
+                });
           return result(value);
         }
         const listOptions: TaskListOptions = {

@@ -81,6 +81,7 @@ import {
   deferAppTask,
   markAppTaskAttention,
   observeAppTaskIntent,
+  readAppTaskAdmissionOutcome,
   recordAppTaskTrigger,
   recordAppTaskAttemptSession,
   releaseStaleAppTaskResult,
@@ -510,7 +511,7 @@ describe("caller feedback PoC", () => {
     }
   });
 
-  it.each(["quiet", "incomplete-then-wait", "report-wait", "throw", "invalid", "throw-then-wait", "throw-then-report-retry"] as const)(
+  it.each(["quiet", "incomplete-then-wait", "report-wait", "report-continue", "throw", "invalid", "throw-then-wait", "throw-then-report-retry"] as const)(
     "returns exact feedback and recovers the original answer (%s)",
     async (scenario) => {
       const f = fixture();
@@ -570,7 +571,9 @@ describe("caller feedback PoC", () => {
               } as never;
               return {
                 state: "waiting", summary: reportSummary, facts: ["sample:access-denied"],
-                ...(scenario !== "quiet" && scenario !== "incomplete-then-wait" ? { report: true as const } : {}),
+                ...(scenario !== "quiet" && scenario !== "incomplete-then-wait" &&
+                  !(scenario === "report-continue" && workerCalls > 1) ? { report: true as const } : {}),
+                ...(scenario === "report-continue" && workerCalls === 1 ? { continue: true as const } : {}),
                 conditions: [{ id: "sample-access", type: "sample.access.changed", subject: "resource:sample",
                   expected: { field: "available", equals: true }, owner: "app:sample", reviewAfterMs: 300_000 }],
               };
@@ -623,9 +626,9 @@ describe("caller feedback PoC", () => {
         if (scenario === "quiet") expect(first).toBeNull();
         else {
           expect(first).not.toBeNull();
-          if (scenario === "report-wait" || scenario === "incomplete-then-wait") {
+          if (scenario === "report-wait" || scenario === "report-continue" || scenario === "incomplete-then-wait") {
             expect(first!.summary).toBe(reportSummary);
-            expect(first!.state).toBe(scenario === "report-wait" ? "waiting" : "incomplete");
+            expect(first!.state).toBe(scenario === "incomplete-then-wait" ? "incomplete" : "waiting");
           } else {
             expect(first!.summary).toContain("Execution failed");
             expect(first!.facts).toContain(`task-attempt:${first!.attemptId}`);
@@ -642,6 +645,15 @@ describe("caller feedback PoC", () => {
           const feedback = callerInputs[1]!.events.items.find(({ event }) => event.type === "app.dependency.updated");
           expect(feedback?.event.data).toMatchObject({ id: requestId, status: "blocked", summary: first!.summary });
           expect(callerInputs[1]!.waits.open[0]?.state).toBe("false");
+        }
+        if (scenario === "report-continue") {
+          expect(loadedTaskConfig(f).resourceStore.readAttempt(first!.attemptId)?.acceptedResult)
+            .toMatchObject({ state: "waiting", report: true, continue: true });
+          expect(loadedTaskConfig(f).resourceStore.readTask("work/collector")?.status.phase).toBe("pending");
+          await run("work/collector");
+          await host!.recoverTaskResults();
+          expect(report()).toEqual(first);
+          expect(loadedTaskConfig(f).resourceStore.readTask("work/collector")?.status.phase).toBe("waiting");
         }
         if (scenario === "throw-then-wait" || scenario === "incomplete-then-wait" || scenario === "throw-then-report-retry") {
           setSystemTime(loadedTaskConfig(f).resourceStore.readTask("work/collector")!.status.executionRetryAt! + 1);
@@ -682,7 +694,8 @@ describe("caller feedback PoC", () => {
         }
         expect(callerInputs).toHaveLength(expectedCalls);
         const beforeQuiet = workerCalls;
-        if (scenario === "quiet" || scenario === "report-wait" || scenario === "throw-then-wait" || scenario === "incomplete-then-wait") {
+        if (scenario === "quiet" || scenario === "report-wait" || scenario === "report-continue" ||
+          scenario === "throw-then-wait" || scenario === "incomplete-then-wait") {
           const start = Date.now();
           for (let tick = 1; tick <= 10; tick++) {
             setSystemTime(start + tick * 10_000);
@@ -946,6 +959,58 @@ it("keeps omitted workflows visible, continues unrelated work, and recovers with
   expect(
     Object.values(readTaskSnapshot(config).attempts ?? {}).find((a) => a.metadata.id === attempts[0]!.metadata.id),
   ).toEqual(attempts[0]);
+});
+
+it("settles report and useful continuation equivalently for agent and workflow attempts", async () => {
+  const f = fixture();
+  const bus = eventBus();
+  const resultFor = (taskId: string) => ({
+    state: "waiting" as const, report: true as const, continue: true as const,
+    summary: "Review is blocked while independent checks continue", facts: ["checks:started"],
+    conditions: [{ id: `review-${taskId.split("/").at(-1)}`, type: "review.completed", subject: `review:${taskId}`,
+      expected: true, owner: "human", reviewAfterMs: 60_000 }],
+  });
+  await installCoreTaskRuntimes({
+    ...options(f, bus), installControllers: false,
+    agents: createTaskAgentRunner({ manager: {
+      hasAgent: () => true,
+      callAgent: async () => ({ status: "done", sessionId: "agent-session", structuredResult: resultFor("work/agent") }),
+    } as never }),
+    workflows: {
+      async inspect() { return { available: true, error: null, workspace: "shared" }; },
+      async execute({ attempt }) {
+        return { handlerResult: { ...resultFor(attempt.task.id), actions: [] }, runId: "workflow-run" };
+      },
+    },
+    appRegistrySnapshot: { id: "agent-workflow-continuation", generation: 1,
+      entries: [{ appDir: f.appDir, definition: definition() }] },
+  });
+  const config = loadedTaskConfig(f);
+  for (const [taskId, selection] of [
+    ["work/agent", {}], ["work/workflow", { workflow: "review" }],
+  ] as const) {
+    observeAppTaskIntent(config, { appAgent: "sample-owner", intent: {
+      id: taskId, parentId: "operations", outcome: "Wait for review and continue useful checks",
+      acceptance: ["Review and checks complete"], ...selection,
+    } });
+    admitTaskInput(config, {
+      appId: "sample", attachment: { kind: "existing", taskId }, idempotencyKey: `input:${taskId}`,
+      inputContext: { id: `input:${taskId}`, source: { kind: "human", id: "operator" },
+        input: { kind: "review", data: {} } },
+    });
+    await reconcileLoadedAppTaskOnce({ bus, appId: "sample", taskId,
+      dispatch: { enqueuedAt: 1, startedAt: 2, readyWaitMs: 1, lane: "normal" } });
+    expect(acceptedTaskAttempt(config, taskId)?.acceptedResult).toMatchObject({
+      state: "waiting", report: true, continue: true,
+      summary: "Review is blocked while independent checks continue", facts: ["checks:started"],
+    });
+    expect(config.resourceStore.readTask(taskId)?.status).toMatchObject({
+      phase: "pending", conditionIds: [`review-${taskId.split("/").at(-1)}`],
+    });
+    expect(readAppTaskAdmissionOutcome(config, taskId, `input:${taskId}`, "report")).toMatchObject({
+      state: "waiting", summary: "Review is blocked while independent checks continue",
+    });
+  }
 });
 
 it("retains an App and exact agent work when its agent capability is removed, then restores it", async () => {
@@ -1383,6 +1448,187 @@ function projectDirForBypass(): string {
 }
 
 describe("canonical App task runtime", () => {
+  it("routes recurring exact-target schedule facts through the persistent Task mutation boundary", async () => {
+    const f = fixture();
+    const bus = eventBus();
+    const persistDir = join(f.root, "state");
+    let now = 14_400_001;
+    setSystemTime(new Date(now));
+    const scheduledDefinition = (schedules: NonNullable<AppDefinition["schedules"]>) =>
+      defineApp({ ...definition(), schedules });
+    let currentDefinition = scheduledDefinition([]);
+    const discover = async () => [{ appDir: f.appDir, definition: currentDefinition }];
+    const registry = new AppRegistry(discover);
+    await registry.reload();
+    const writer = new DbWriter(persistDir);
+    bus.setPersistenceSubscriber(writer.handler);
+    bus.setDeliveryRecorder(writer.recordDelivery);
+    const startGate = Promise.withResolvers<void>();
+    await installAppTaskRuntimes({
+      ...options(f, bus),
+      persistDir,
+      startAfter: startGate.promise,
+      appRegistrySnapshot: registry.snapshot(),
+    });
+    const config = loadedTaskConfig(f, persistDir);
+    observeAppTaskIntent(config, {
+      appAgent: "sample-owner",
+      intent: {
+        id: "work/recurring",
+        parentId: "operations",
+        outcome: "Review the recurring source",
+        acceptance: ["Each configured observation is reviewed"],
+        agent: "sample-owner",
+      },
+    });
+    const initial = claimObservedAppTask(config, {
+      taskId: "work/recurring",
+      appAgent: "sample-owner",
+      handler: "agent:sample-owner",
+    });
+    if (initial.kind !== "claimed") throw new Error("expected initial recurring Task claim");
+    deferAppTask(config, initial, {
+      disposition: "waiting",
+      summary: "Waiting on the legacy one-shot timer",
+      conditions: [
+        {
+          id: "legacy-timer",
+          type: "time.reached",
+          subject: "time:2030-01-01T00:00:00.000Z",
+          expected: true,
+          owner: "app:sample",
+          reviewAfterMs: 14_400_000,
+        },
+      ],
+    });
+    const db = getDb(persistDir);
+    const inbox = await startAppInboxRuntime({
+      registry,
+      db,
+      bus,
+      admitTaskEvent: ({ appId, event, intent, targetedTaskId, conditionTaskIds }) =>
+        admitLoadedCanonicalAppTaskEvent({ bus, appId, event, intent, targetedTaskId, conditionTaskIds }),
+      previewTaskEvent: ({ appId, event, targetedTaskId }) =>
+        previewLoadedCanonicalAppTaskEvent({ bus, appId, event, targetedTaskId }),
+      previewTaskEventRoutes: ({ event }) => previewLoadedCanonicalAppTaskEventRoutes({ bus, event }),
+      now: () => now,
+      scanIntervalMs: 1_000_000,
+    });
+    const schedule = {
+      id: "recurring-review",
+      intervalMs: 14_400_000,
+      event: {
+        type: "project.task.tick",
+        data: {},
+        target: { appId: "sample", taskId: "work/recurring" },
+      },
+    } as const;
+    const service = new HumanTaskService(db, registry);
+    const eventCount = () =>
+      Number(
+        (db.prepare("SELECT COUNT(*) AS count FROM events WHERE event_type = 'project.task.tick'").get() as {
+          count: number;
+        }).count,
+      );
+    try {
+      expect(service.getTask({ appId: "sample", taskId: "work/recurring" })).toMatchObject({ recurring: false });
+      const before = config.resourceStore.readTask("work/recurring")!;
+
+      currentDefinition = scheduledDefinition([schedule]);
+      await inbox.reload();
+      expect(service.getTask({ appId: "sample", taskId: "work/recurring" })).toMatchObject({
+        recurring: true,
+        recurrence: { cadenceMs: 14_400_000, nextRunAt: "1970-01-01T08:00:00.000Z" },
+      });
+      expect(service.listTasks({ appId: "sample" }).items[0]).toMatchObject({
+        taskId: "work/recurring",
+        recurring: true,
+        recurrence: { cadenceMs: 14_400_000 },
+      });
+      inbox.scanNow();
+      expect(eventCount()).toBe(0);
+
+      now = 28_800_001;
+      setSystemTime(new Date(now));
+      inbox.scanNow();
+      expect(eventCount()).toBe(1);
+      const afterWake = config.resourceStore.readTask("work/recurring")!;
+      expect(afterWake.metadata).toMatchObject({ id: before.metadata.id, generation: before.metadata.generation });
+      expect(afterWake.metadata.resourceVersion).toBeGreaterThan(before.metadata.resourceVersion);
+      expect(afterWake.status.phase).toBe("waiting");
+      expect(config.resourceStore.readTaskForView("work/recurring")?.phase).toBe("pending");
+      expect(config.resourceStore.readTrigger("work/recurring")?.event).toMatchObject({
+        type: "project.task.tick",
+        data: { idempotencyKey: "schedule:sample:recurring-review:2" },
+      });
+      expect(config.resourceStore.readTaskConditions("work/recurring")).toMatchObject([
+        { metadata: { id: "legacy-timer" }, status: { state: "unknown" } },
+      ]);
+      expect(db.prepare("SELECT COUNT(*) AS count FROM app_inbox_items").get()).toEqual({ count: 0 });
+      expect(Object.keys(readTaskSnapshot(config).resources ?? {})).toEqual(["work/recurring"]);
+      expect(db.prepare("SELECT status FROM app_event_admission_plans").all()).toEqual([{ status: "completed" }]);
+
+      inbox.scanNow();
+      expect(eventCount()).toBe(1);
+      expect(db.prepare("SELECT COUNT(*) AS count FROM app_event_admission_plans").get()).toEqual({ count: 1 });
+
+      const retire = claimObservedAppTask(config, {
+        taskId: "work/recurring",
+        appAgent: "sample-owner",
+        handler: "agent:sample-owner",
+      });
+      if (retire.kind !== "claimed") throw new Error("expected scheduled recurring Task claim");
+      expect(
+        completeAppTask(config, retire, {
+          summary: "Configured recurrence replaced the legacy timer",
+          facts: ["schedule:sample:recurring-review"],
+          actions: [
+            {
+              kind: "retire-condition",
+              conditionId: "legacy-timer",
+              expectedConditionGeneration: 1,
+              reason: "The exact-target schedule is durably admitted",
+            },
+          ],
+        }),
+      ).toMatchObject({ status: "applied", actionsApplied: ["retired condition legacy-timer generation 1"] });
+      expect(config.resourceStore.readTaskConditions("work/recurring")).toEqual([]);
+      expect(config.resourceStore.readTask("work/recurring")?.status.phase).toBe("converged");
+
+      now = 43_200_001;
+      setSystemTime(new Date(now));
+      inbox.scanNow();
+      expect(eventCount()).toBe(2);
+      const steady = config.resourceStore.readTask("work/recurring")!;
+      expect(steady.metadata.generation).toBe(before.metadata.generation);
+      expect(steady.status.phase).toBe("converged");
+      expect(config.resourceStore.readTaskForView("work/recurring")?.phase).toBe("pending");
+      const steadyClaim = claimObservedAppTask(config, {
+        taskId: "work/recurring",
+        appAgent: "sample-owner",
+        handler: "agent:sample-owner",
+      });
+      if (steadyClaim.kind !== "claimed") throw new Error("expected steady recurring Task claim");
+      expect(completeAppTask(config, steadyClaim, { summary: "Reviewed the next configured slot" }).status).toBe(
+        "applied",
+      );
+
+      currentDefinition = scheduledDefinition([{ ...schedule, enabled: false }]);
+      await inbox.reload();
+      expect(service.getTask({ appId: "sample", taskId: "work/recurring" })).toMatchObject({ recurring: false });
+      currentDefinition = scheduledDefinition([]);
+      await inbox.reload();
+      expect(service.listTasks({ appId: "sample" }).items[0]).toMatchObject({ recurring: false });
+      now = 57_600_001;
+      setSystemTime(new Date(now));
+      inbox.scanNow();
+      expect(eventCount()).toBe(2);
+    } finally {
+      inbox.close();
+      startGate.resolve();
+    }
+  });
+
   it("rejects a dependency that is not accepted by the installed App contract", () => {
     const f = fixture();
     const bus = eventBus();
@@ -7782,4 +8028,307 @@ describe("canonical App task runtime", () => {
     }
   });
 
+});
+
+// This exercises the production attempt boundary: persisted waits, generated
+// dependency echoes, and owner-authored deltas all meet in attempt-runner.
+describe("dependency Condition specification updates", () => {
+  it("keeps an explicit cadence update across a generated echo, omission, and earlier independent wakes", async () => {
+    setSystemTime(new Date("2030-01-01T00:00:00.000Z"));
+    const f = fixture();
+    const bus = eventBus();
+    const taskId = "work/dependency-cadence";
+    const requestId = "appdep_cadence";
+    const original = {
+      id: `app-request:${requestId}`,
+      type: "app.dependency.updated",
+      subject: `id:${requestId}`,
+      expected: { field: "status", equals: "done" },
+      owner: "app:sample",
+      reviewAfterMs: 300_000,
+    };
+    const peer = {
+      id: "human:decision",
+      type: "sample.decision",
+      subject: "id:human-decision",
+      expected: true,
+      owner: "human:operator",
+      reviewAfterMs: 60_000,
+    };
+    let calls = 0;
+    const { installed } = await installAppTaskRuntimes({
+      ...options(f, bus),
+      installControllers: false,
+      executors: {
+        worker: async (attempt) => {
+          calls++;
+          const completed = attempt.events.items.some(
+            ({ event }) =>
+              event.type === "app.dependency.updated" && event.data.id === requestId && event.data.status === "done",
+          );
+          if (completed) {
+            return { state: "converged", summary: "Exact dependency feedback reviewed", facts: ["review:complete"] };
+          }
+          if (calls > 1) return { state: "waiting", summary: "Existing obligations remain", facts: [] };
+          return {
+            state: "waiting",
+            summary: "Dependency cannot progress for an hour",
+            facts: [],
+            dependencies: [
+              { id: requestId, appId: "sample", taskId: "review/current", input: { kind: "review", data: {} } },
+            ],
+            conditions: [{ ...original, reviewAfterMs: 3_600_000 }],
+          };
+        },
+      },
+      appRegistrySnapshot: {
+        id: "dependency-cadence",
+        generation: 1,
+        entries: [
+          {
+            appDir: f.appDir,
+            definition: { ...definition(), task: () => ({ kind: "existing", taskId: "review/current" }) },
+          },
+        ],
+      },
+    });
+    const config = loadedTaskConfig(f);
+    observeAppTaskIntent(config, {
+      appAgent: "sample-owner",
+      intent: {
+        id: taskId,
+        parentId: "operations",
+        outcome: "Wait economically without hiding other obligations",
+        acceptance: ["All obligations observed"],
+        executor: "worker",
+      },
+    });
+    createAppInboxItem(getDb(join(f.root, "state")), {
+      id: requestId,
+      appId: "sample",
+      targetTaskId: "review/current",
+      creator: { appId: "sample", taskId },
+      source: { kind: "app", id: "sample" },
+      input: { kind: "review", data: {} },
+      idempotencyKey: `task-dependency:sample:${taskId}:1:review:existing`,
+      now: Date.now(),
+    });
+    const initial = claimObservedAppTask(config, { taskId, appAgent: "sample-owner", handler: "agent" });
+    if (initial.kind !== "claimed") throw new Error("initial claim failed");
+    expect(
+      deferAppTask(config, initial, {
+        disposition: "waiting",
+        summary: "Initial dependency wait",
+        conditions: [original, peer],
+      }).status,
+    ).toBe("applied");
+    const before = readTaskSnapshot(config).conditions;
+    const run = () =>
+      reconcileLoadedAppTaskOnce({
+        bus,
+        appId: "sample",
+        taskId,
+        dispatch: { enqueuedAt: 1, startedAt: 2, readyWaitMs: 1, lane: "normal" },
+      });
+
+    recordAppTaskTrigger(config, taskId, { type: "sample.owner-review", eventId: 1001 });
+    await run();
+    let after = readTaskSnapshot(config);
+    expect(after.conditions?.[original.id]?.spec.reviewAfterMs).toBe(3_600_000);
+    expect(after.conditions?.[peer.id]).toEqual(before?.[peer.id]);
+
+    const peerDueAt = Date.parse(after.conditions![peer.id]!.status.observedAt!) + peer.reviewAfterMs;
+    setSystemTime(new Date(peerDueAt));
+    await run();
+    after = readTaskSnapshot(config);
+    expect(calls).toBe(2);
+    expect(after.resources?.[taskId]?.status.phase).toBe("waiting");
+    expect(after.conditions?.[original.id]?.spec.reviewAfterMs).toBe(3_600_000);
+    expect(after.resources?.[taskId]?.status.conditionIds).toEqual([original.id, peer.id]);
+
+    const feedback = {
+      type: "app.dependency.updated",
+      source: "app-inbox:sample",
+      owner: "app:sample",
+      data: { kind: "app", id: requestId, status: "done", summary: "Review complete" },
+    } as AgentEvent;
+    Object.defineProperty(feedback, EVENT_ROW_ID, { value: 1002 });
+    expect(
+      admitStandaloneCanonicalAppTaskEvent({
+        descriptor: installed[0]!,
+        event: feedback,
+        intent: null,
+        conditionTaskIds: [taskId],
+      }),
+    ).toMatchObject({ delivery: { accepted: true }, taskIds: [taskId] });
+    await run();
+    expect(calls).toBe(3);
+    expect(readAcceptedRuntimeAttempt(config, taskId)?.acceptedResult).toMatchObject({
+      state: "converged",
+      summary: "Exact dependency feedback reviewed",
+    });
+    const completed = readTaskSnapshot(config);
+    expect(completed.resources?.[taskId]?.status.conditionIds).toContain(peer.id);
+    expect(completed.conditions?.[peer.id]?.spec).toEqual({
+      type: peer.type,
+      subject: peer.subject,
+      expected: peer.expected,
+      owner: peer.owner,
+      reviewAfterMs: peer.reviewAfterMs,
+    });
+    expect(completed.conditions?.[peer.id]?.status.state).toBe("unknown");
+  });
+
+  it.each(["type", "subject", "expected", "duplicate-cadence"] as const)(
+    "rejects a same-ID dependency %s conflict at the attempt boundary",
+    async (conflict) => {
+      const f = fixture();
+      const bus = eventBus();
+      let dependencyRequests = 0;
+      bus.subscribe((event) => {
+        if (event.type === "app.input.requested") dependencyRequests++;
+      });
+      const taskId = `work/dependency-conflict-${conflict}`;
+      const original = {
+        id: `app-request:appdep_conflict_${conflict}`,
+        type: "app.dependency.updated",
+        subject: `id:appdep_conflict_${conflict}`,
+        expected: { field: "status", equals: "done" },
+        owner: "app:sample",
+        reviewAfterMs: 300_000,
+      };
+      const changed =
+        conflict === "type"
+          ? { type: "sample.other" }
+          : conflict === "subject"
+            ? { subject: "id:other" }
+            : conflict === "expected"
+              ? { expected: { field: "status", equals: "blocked" } }
+              : { reviewAfterMs: 7_200_000 };
+      await installAppTaskRuntimes({
+        ...options(f, bus),
+        installControllers: false,
+        executors: {
+          worker: async () => ({
+            state: "waiting",
+            summary: "Invalid retarget",
+            facts: [],
+            dependencies: [{ id: "must-not-publish", appId: "sample", input: { kind: "review", data: {} } }],
+            conditions:
+              conflict === "duplicate-cadence"
+                ? [original, { ...original, ...changed }]
+                : [{ ...original, ...changed }],
+          }),
+        },
+        appRegistrySnapshot: {
+          id: `dependency-conflict-${conflict}`,
+          generation: 1,
+          entries: [
+            {
+              appDir: f.appDir,
+              definition: { ...definition(), task: () => ({ kind: "existing", taskId: "review/current" }) },
+            },
+          ],
+        },
+      });
+      const config = loadedTaskConfig(f);
+      observeAppTaskIntent(config, {
+        appAgent: "sample-owner",
+        intent: {
+          id: taskId,
+          parentId: "operations",
+          outcome: "Keep exact dependency identity",
+          acceptance: ["Exact wait retained"],
+          executor: "worker",
+        },
+      });
+      const initial = claimObservedAppTask(config, { taskId, appAgent: "sample-owner", handler: "agent" });
+      if (initial.kind !== "claimed") throw new Error("initial claim failed");
+      deferAppTask(config, initial, { disposition: "waiting", summary: "Initial wait", conditions: [original] });
+      recordAppTaskTrigger(config, taskId, { type: "sample.owner-review", eventId: 1100 });
+      await reconcileLoadedAppTaskOnce({
+        bus,
+        appId: "sample",
+        taskId,
+        dispatch: { enqueuedAt: 1, startedAt: 2, readyWaitMs: 1, lane: "normal" },
+      });
+      expect(readTaskSnapshot(config).conditions?.[original.id]?.spec).toEqual({
+        type: original.type,
+        subject: original.subject,
+        expected: original.expected,
+        owner: original.owner,
+        reviewAfterMs: original.reviewAfterMs,
+      });
+      expect(config.resourceStore.readTask(taskId)?.status).toMatchObject({
+        phase: "pending",
+        summary: `App dependency admission failed: Task result conflicts with existing Condition ${original.id}`,
+      });
+      expect(dependencyRequests).toBe(0);
+    },
+  );
+
+  it("does not apply a compatible Condition update from a stale generation", async () => {
+    const f = fixture();
+    const bus = eventBus();
+    const taskId = "work/stale-condition-update";
+    const original = {
+      id: "app-request:appdep_stale",
+      type: "app.dependency.updated",
+      subject: "id:appdep_stale",
+      expected: { field: "status", equals: "done" },
+      owner: "app:sample",
+      reviewAfterMs: 300_000,
+    };
+    let config: AppTaskContext;
+    await installAppTaskRuntimes({
+      ...options(f, bus),
+      installControllers: false,
+      executors: {
+        worker: async () => {
+          const current = config.resourceStore.readTask(taskId)!;
+          observeAppTaskIntent(config, {
+            appAgent: "sample-owner",
+            intent: { ...current.spec, id: taskId, outcome: "Revised current generation" },
+          });
+          return {
+            state: "waiting",
+            summary: "Stale cadence proposal",
+            facts: [],
+            conditions: [{ ...original, reviewAfterMs: 3_600_000 }],
+          };
+        },
+      },
+      appRegistrySnapshot: {
+        id: "stale-condition-update",
+        generation: 1,
+        entries: [{ appDir: f.appDir, definition: definition() }],
+      },
+    });
+    config = loadedTaskConfig(f);
+    observeAppTaskIntent(config, {
+      appAgent: "sample-owner",
+      intent: {
+        id: taskId,
+        parentId: "operations",
+        outcome: "Original generation",
+        acceptance: ["Current result only"],
+        executor: "worker",
+      },
+    });
+    const initial = claimObservedAppTask(config, { taskId, appAgent: "sample-owner", handler: "agent" });
+    if (initial.kind !== "claimed") throw new Error("initial claim failed");
+    deferAppTask(config, initial, { disposition: "waiting", summary: "Initial wait", conditions: [original] });
+    recordAppTaskTrigger(config, taskId, { type: "sample.owner-review", eventId: 1200 });
+    await reconcileLoadedAppTaskOnce({
+      bus,
+      appId: "sample",
+      taskId,
+      dispatch: { enqueuedAt: 1, startedAt: 2, readyWaitMs: 1, lane: "normal" },
+    });
+    expect(config.resourceStore.readTask(taskId)).toMatchObject({
+      metadata: { generation: 2 },
+      spec: { outcome: "Revised current generation" },
+    });
+    expect(readTaskSnapshot(config).conditions?.[original.id]?.spec.reviewAfterMs).toBe(300_000);
+  });
 });

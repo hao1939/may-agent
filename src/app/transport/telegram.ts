@@ -178,22 +178,68 @@ export function renderTelegramTopic(topic: AppConversationTopic, messages: AppCo
   ].join("\n");
 }
 
-function taskCadenceMarker(task: Pick<HumanTaskView, "recurring">): string {
-  return task.recurring ? "🔁 " : "";
+function escapeTelegramHtml(value: string): string {
+  return value.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;");
+}
+
+function compactDuration(milliseconds: number): string {
+  const minutes = Math.max(1, Math.round(milliseconds / 60_000));
+  if (minutes % (24 * 60) === 0) return `${minutes / (24 * 60)}d`;
+  if (minutes % 60 === 0) return `${minutes / 60}h`;
+  return `${minutes}m`;
+}
+
+function recurrenceLine(task: Pick<HumanTaskView, "recurring" | "recurrence">): string | null {
+  if (!task.recurring) return null;
+  const cadence = task.recurrence?.cadenceMs ? ` · every ${compactDuration(task.recurrence.cadenceMs)}` : "";
+  const parsedNextRun = task.recurrence?.nextRunAt ? Date.parse(task.recurrence.nextRunAt) : Number.NaN;
+  const nextRun = Number.isFinite(parsedNextRun)
+    ? ` · next ${new Date(parsedNextRun).toISOString().replace("T", " ").slice(0, 16)} UTC`
+    : "";
+  return `  🔁 <b>Recurring</b>${cadence}${nextRun}`;
+}
+
+function taskSection(task: HumanTaskView): string {
+  if (task.humanAction) return "Needs you";
+  if (task.status === "pending" || task.status === "running") return "Working";
+  if (task.status === "waiting") return "Waiting";
+  if (task.status === "up-to-date") return "Up to date";
+  if (task.terminal) return "Completed";
+  return "Attention";
+}
+
+function taskStateMarker(task: Pick<HumanTaskView, "status" | "humanAction" | "terminal">): string {
+  if (task.humanAction) return "🔴";
+  if (task.status === "pending" || task.status === "running") return "🔵";
+  if (task.status === "waiting") return "🟡";
+  if (task.status === "up-to-date") return "🟢";
+  if (task.terminal) return "⚪";
+  return "🟠";
+}
+
+function renderTaskCard(task: HumanTaskView): string {
+  const result = task.response?.trim() || task.summary?.trim();
+  return [
+    `${taskStateMarker(task)} <b>${escapeTelegramHtml(task.outcome)}</b>`,
+    `  ${escapeTelegramHtml(task.appId)} · <code>${escapeTelegramHtml(task.ref)}</code> · updated ${updatedAgeText(task.updatedAt)}`,
+    ...(task.humanAction ? [`  ${escapeTelegramHtml(humanActionText(task))}`] : []),
+    ...(recurrenceLine(task) ? [recurrenceLine(task)!] : []),
+    ...(task.terminal && result ? [`  ${escapeTelegramHtml(result)}`] : []),
+  ].join("\n");
 }
 
 export function renderTelegramTasks(tasks: HumanTaskView[], includeDone: boolean, hasMore = false): string {
   if (tasks.length === 0) return includeDone ? "No active or recent Tasks." : "No active Tasks.";
+  const sections = ["Needs you", "Working", "Waiting", "Up to date", "Attention", "Completed"];
   return [
-    includeDone ? "Tasks (active and recent):" : "Active Tasks:",
-    ...tasks.flatMap((task) => {
-      const result = task.response?.trim() || task.summary?.trim();
-      return [
-        `• ${taskCadenceMarker(task)}${task.ref} · ${task.appId} · ${taskStatusLabel(task)} · ${updatedAgeText(task.updatedAt)}\n  ${task.outcome} · ${task.humanAction ? "needs you" : "no action from you"}`,
-        ...(task.terminal && result ? [`  ${result}`] : []),
-      ];
+    `<b>${includeDone ? "Tasks · active and recent" : "Tasks · active"}</b>`,
+    ...sections.flatMap((section) => {
+      const matching = tasks.filter((task) => taskSection(task) === section);
+      return matching.length > 0
+        ? ["", `<b>${section}</b>`, ...matching.flatMap((task) => [renderTaskCard(task), ""]).slice(0, -1)]
+        : [];
     }),
-    ...(hasMore ? ["More Tasks are available; use /tasks more for the next page."] : []),
+    ...(hasMore ? ["", "More Tasks are available; use /tasks more for the next page."] : []),
   ].join("\n");
 }
 
@@ -274,13 +320,22 @@ export function renderTelegramTodos(
   const scope = appId ? ` for ${appId}` : " across all Apps";
   if (tasks.length === 0) return `Nothing needs your action${scope}.`;
   return [
-    `Actions needed${scope}:`,
-    ...tasks.map((task) => {
+    `<b>Needs you${escapeTelegramHtml(scope)}</b>`,
+    "",
+    ...tasks.flatMap((task) => {
       const since = task.humanAction?.since;
-      return `• ${taskCadenceMarker(task)}${task.ref} · ${task.appId}${since === undefined ? "" : ` · ${elapsedText(since)}`}\n  ${humanActionText(task)}`;
-    }),
+      return [
+        [
+          `🔴 <b>${escapeTelegramHtml(humanActionText(task))}</b>`,
+          `  ${escapeTelegramHtml(task.outcome)}`,
+          ...(recurrenceLine(task) ? [recurrenceLine(task)!] : []),
+          `  ${escapeTelegramHtml(task.appId)} · <code>${escapeTelegramHtml(task.ref)}</code>${since === undefined ? "" : ` · waiting ${elapsedText(since)}`}`,
+        ].join("\n"),
+        "",
+      ];
+    }).slice(0, -1),
     ...(total > tasks.length
-      ? [`${total - tasks.length} more action(s) are not shown.${hasMore ? " Use /todo more." : ""}`]
+      ? ["", `${total - tasks.length} more action(s) are not shown.${hasMore ? " Use /todo more." : ""}`]
       : []),
   ].join("\n");
 }
@@ -425,6 +480,29 @@ export type TelegramApprovalReply = TelegramApprovalAnchor & {
   decision: "approve" | "reject" | "defer";
   task: { appId: string; taskId: string };
 };
+
+type TelegramHumanConditionAnchor = {
+  taskGeneration: number;
+  conditionId: string;
+  conditionGeneration: number;
+};
+
+/** Correlate one ordinary help reply without turning it into approval or proof. */
+function humanConditionAnchor(task: HumanTaskView | null): TelegramHumanConditionAnchor | null {
+  if (!task || task.terminal || !["pending", "waiting", "running", "attention"].includes(task.status)) return null;
+  const matches = (task.diagnostics?.conditions ?? []).filter((item) => {
+    const condition = item.condition;
+    return condition?.status.state !== "true" && isHumanActionOwner(condition?.spec.owner);
+  });
+  if (matches.length !== 1) return null;
+  const match = matches[0]!;
+  if (match.condition?.spec.type === "project.approval.submitted") return null;
+  return {
+    taskGeneration: task.generation,
+    conditionId: match.id,
+    conditionGeneration: match.condition!.metadata.generation,
+  };
+}
 
 function pendingHumanApprovalCondition(task: HumanTaskView | null) {
   if (!task || task.terminal || !["pending", "waiting", "running", "attention"].includes(task.status)) return null;
@@ -940,6 +1018,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
     }
     const rendered = renderTelegramTaskUpdate(task);
     const displayedApproval = approvalAnchor(task);
+    const displayedHumanCondition = !displayedApproval ? humanConditionAnchor(task) : null;
     // Keep the card's context consistent even if selection changes during I/O.
     const conversationTopicId = selectedTaskTopicId(surface, task);
     const delivered = await sendMessage(watched.chatId, rendered, undefined, {
@@ -951,8 +1030,9 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
         taskRefs: [{ appId: task.appId, taskId: task.taskId }],
         topicId: conversationTopicId,
         ...(displayedApproval ? { approvalAnchor: displayedApproval } : {}),
+        ...(displayedHumanCondition ? { humanCondition: displayedHumanCondition } : {}),
       }),
-      bindToCompleteDelivery: Boolean(displayedApproval),
+      bindToCompleteDelivery: Boolean(displayedApproval || displayedHumanCondition),
     });
     if (delivered && running)
       recordConversationMessage({
@@ -1026,6 +1106,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
     const proposal = single ? first.detail : first.task;
     const taskRefs = (single ? [proposal] : page.items).map((task) => ({ appId: task.appId, taskId: task.taskId }));
     const displayedApproval = single ? approvalAnchor(proposal) : null;
+    const displayedHumanCondition = single && !displayedApproval ? humanConditionAnchor(proposal) : null;
     const text = single
       ? `Needs your decision: ${proposal.outcome}\n${fullHumanApprovalAction(proposal) ?? humanActionText(proposal)}\n\nReply here with your decision.`
       : `${page.total ?? page.items.length} Tasks need your action in ${appId}. Ask May what needs your attention, or use /todo.`;
@@ -1037,8 +1118,9 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
       data: JSON.stringify({
         taskRefs,
         ...(displayedApproval ? { approvalAnchor: displayedApproval } : {}),
+        ...(displayedHumanCondition ? { humanCondition: displayedHumanCondition } : {}),
       }),
-      bindToCompleteDelivery: Boolean(displayedApproval),
+      bindToCompleteDelivery: Boolean(displayedApproval || displayedHumanCondition),
     });
     if (!messageId || !running) return;
     if ((selectedApps.get(surface) ?? opts.interfaceAgent) === appId) shownTodoActions.set(surface, next);
@@ -1291,6 +1373,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
     let replyTopicId: string | undefined;
     let replyTask: { appId: string; taskId: string } | undefined;
     let replyApprovalAnchor: TelegramApprovalAnchor | null = null;
+    let replyHumanCondition: TelegramHumanConditionAnchor | null = null;
     if (replyToMsgId) {
       try {
         const notification = getNotificationMessage(persistDir, chatIdStr, replyToMsgId);
@@ -1300,6 +1383,10 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
         replyApprovalAnchor =
           data?.approvalAnchor && typeof data.approvalAnchor === "object" && !Array.isArray(data.approvalAnchor)
             ? (data.approvalAnchor as TelegramApprovalAnchor)
+            : null;
+        replyHumanCondition =
+          data?.humanCondition && typeof data.humanCondition === "object" && !Array.isArray(data.humanCondition)
+            ? (data.humanCondition as TelegramHumanConditionAnchor)
             : null;
         replyToSourceId =
           typeof data?.conversationMessageId === "string" && data.conversationMessageId.trim()
@@ -1358,6 +1445,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
       inputContext = {
         ...(inputContext ?? {}),
         focusedTask: { appId: focusedTask.appId, taskId: focusedTask.taskId },
+        ...(replyHumanCondition ? { displayedHumanCondition: replyHumanCondition } : {}),
       };
     }
     if (!recordedConversationId) {
@@ -1460,11 +1548,12 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
       onDelivered?: () => void,
       followTask?: { appId: string; taskId: string },
       approvalTask?: HumanTaskView,
+      parseMode?: string,
     ): void => {
       const conversationTopicId = followTask ? taskTopicId(followTask) : selectedTopics.get(surface)?.id;
       const displayedApproval = approvalAnchor(approvalTask ?? null);
       queueCommandDelivery(surface, async () => {
-        const deliveredMessageId = await sendMessage(chatIdStr, rendered, undefined, {
+        const deliveredMessageId = await sendMessage(chatIdStr, rendered, parseMode, {
           eventType: displayedApproval ? "task.human-action" : "telegram.reply",
           agent: opts.interfaceAgent,
           data: JSON.stringify({
@@ -1635,6 +1724,9 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
             );
           }
         },
+        undefined,
+        undefined,
+        "HTML",
       );
       return true;
     }
@@ -1671,6 +1763,10 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
       deliverCommandView(
         renderTelegramTasks(page.items, includeDone, Boolean(page.nextCursor)),
         page.items.map((task) => ({ appId: task.appId, taskId: task.taskId })),
+        undefined,
+        undefined,
+        undefined,
+        "HTML",
       );
       return true;
     }

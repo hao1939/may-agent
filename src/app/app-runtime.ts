@@ -39,7 +39,10 @@ import { attachConsoleUI } from "./transport/console.js";
 import { attachDaemonInfoLog } from "./transport/daemon-info-log.js";
 import { attachTelegramBot } from "./transport/telegram.js";
 import { HumanTaskService } from "./human-task-service.js";
-import { createTaskAttemptProcessExecutor, createTaskRecoveryProcessExecutor } from "./composition/workers/task-attempt-process.js";
+import {
+  createTaskAttemptProcessExecutor,
+  createTaskRecoveryProcessExecutor,
+} from "./composition/workers/task-attempt-process.js";
 import { createTaskAdmissionProcess } from "./composition/workers/task-admission-process.js";
 import { getAgentMaintenance, prepareAgentGeneration, publishPreparedAgentGeneration } from "./agent-loader.js";
 import { activateAgentMaintenance } from "./composition/maintenance-activation.js";
@@ -516,7 +519,7 @@ export async function runAppRuntime(opts: {
         },
       });
     },
-    getAppTask: (appId, taskId) => appTasks.get({ appId, taskId }),
+    getAppTask: (appId, taskId, options) => appTasks.get({ appId, taskId, options }),
     resolveAppTask: (appId, event) =>
       appRegistry.resolveInstalledTask(appId.trim().replace(/\.app$/, ""), event as AppEvent<Record<string, unknown>>),
     listApps: (appId) => humanTasks.listApps(appId),

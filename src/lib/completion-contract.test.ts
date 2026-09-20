@@ -5,7 +5,7 @@ import { join } from "node:path";
 import type { BeforeToolCallContext } from "@earendil-works/pi-agent-core";
 import { Type, validateToolArguments, type ToolCall } from "@earendil-works/pi-ai";
 import { getBuiltinModel } from "@earendil-works/pi-ai/providers/all";
-import { taskAgentResultSchema } from "@may-agent/sdk";
+import { admitTaskReconcileResult, taskAgentResultSchema, taskReconcileResultSchema } from "@may-agent/sdk";
 import type { TSchema } from "typebox";
 import { prepareAgentExecution } from "./agent-execution.js";
 import { createFinishTool } from "./tools/lifecycle.js";
@@ -21,7 +21,10 @@ describe("prepared completion contract", () => {
     rmSync(projectRoot, { recursive: true });
   });
 
-  function prepare(name = "optimizer", outputSchema: TSchema = Type.Object({ verdict: Type.Union([Type.Literal("pass"), Type.Literal("fail")]) })) {
+  function prepare(
+    name = "optimizer",
+    outputSchema: TSchema = Type.Object({ verdict: Type.Union([Type.Literal("pass"), Type.Literal("fail")]) }),
+  ) {
     const onGuard = mock();
     const prepared = prepareAgentExecution({
       definition: {
@@ -112,10 +115,16 @@ describe("prepared completion contract", () => {
         state: "waiting",
         summary: "The requester must restore access",
         facts: ["source:sample"],
-        conditions: [{
-          id: "access", type: "source.access", subject: "source:sample",
-          expected: true, owner: "human requester", reviewAfterMs: 60_000,
-        }],
+        conditions: [
+          {
+            id: "access",
+            type: "source.access",
+            subject: "source:sample",
+            expected: true,
+            owner: "human requester",
+            reviewAfterMs: 60_000,
+          },
+        ],
       },
     };
     expect(() => validateToolArguments(finish, context(args).toolCall)).toThrow();
@@ -125,17 +134,130 @@ describe("prepared completion contract", () => {
     expect(result.terminate).toBe(true);
   });
 
-  it.each(["waiting", "incomplete"])("rejects an empty %s report before finish and accepts its correction", async (state) => {
+  it.each(["waiting", "incomplete"])(
+    "rejects an empty %s report before finish and accepts its correction",
+    async (state) => {
+      const { prepared, finish, context } = prepare("worker", taskAgentResultSchema);
+      const args = {
+        ...review,
+        status: "partial",
+        result: {
+          state,
+          report: true,
+          summary: "Access is missing",
+          facts: [] as string[],
+        },
+      };
+      expect(() => validateToolArguments(finish, context(args).toolCall)).toThrow();
+      args.result.facts.push("source:access-denied");
+      const ctx = context(args);
+      const params = validateToolArguments(finish, ctx.toolCall);
+      expect(await prepared.runner.beforeToolCall!(ctx)).toBeUndefined();
+      expect((await finish.execute(ctx.toolCall.id, params)).terminate).toBe(true);
+    },
+  );
+
+  it("rejects a waiting response at finish validation and admits the corrected wait", async () => {
     const { prepared, finish, context } = prepare("worker", taskAgentResultSchema);
-    const args = { ...review, status: "partial", result: {
-      state, report: true, summary: "Access is missing", facts: [] as string[],
-    } };
+    const args = {
+      ...review,
+      status: "partial",
+      result: {
+        state: "waiting",
+        summary: "Waiting for review",
+        response: "I will report later.",
+        reviewAt: Date.now() + 60_000,
+        facts: ["review:scheduled"],
+      },
+    };
     expect(() => validateToolArguments(finish, context(args).toolCall)).toThrow();
-    args.result.facts.push("source:access-denied");
-    const ctx = context(args);
+    const { response: _response, ...correctedResult } = args.result;
+    const corrected = { ...args, result: correctedResult };
+    const ctx = context(corrected);
     const params = validateToolArguments(finish, ctx.toolCall);
+    expect(admitTaskReconcileResult(params.result, { allowNeedsAgent: false }).ok).toBe(true);
     expect(await prepared.runner.beforeToolCall!(ctx)).toBeUndefined();
     expect((await finish.execute(ctx.toolCall.id, params)).terminate).toBe(true);
+  });
+
+  it.each([
+    [
+      "converged reviewAt",
+      {
+        state: "converged",
+        summary: "Review is still pending",
+        reviewAt: Date.now() + 60_000,
+        facts: [],
+      },
+      {
+        state: "waiting",
+        summary: "Review is still pending",
+        reviewAt: Date.now() + 60_000,
+        facts: [],
+      },
+      "reviewAt is valid only for waiting",
+    ],
+    [
+      "no-progress continuation",
+      {
+        state: "waiting",
+        continue: true,
+        summary: "Continue without any completed work",
+        facts: [],
+      },
+      {
+        state: "waiting",
+        continue: true,
+        report: true,
+        summary: "Report the blocker and continue useful work",
+        reviewAt: Date.now() + 60_000,
+        facts: ["progress:recorded"],
+      },
+      "continue requires waiting and progress facts",
+    ],
+  ])("returns correctable finish feedback for %s before terminating", async (_name, invalid, corrected, error) => {
+    const { finish, context } = prepare("worker", taskAgentResultSchema);
+    const invalidCall = context({ ...review, status: "partial", result: invalid });
+    const invalidResult = await finish.execute(
+      invalidCall.toolCall.id,
+      validateToolArguments(finish, invalidCall.toolCall),
+    );
+    expect(invalidResult.terminate).toBeUndefined();
+    expect(invalidResult.content).toContainEqual({ type: "text", text: expect.stringContaining(error) });
+
+    const correctedCall = context({ ...review, status: "partial", result: corrected });
+    const correctedResult = await finish.execute(
+      correctedCall.toolCall.id,
+      validateToolArguments(finish, correctedCall.toolCall),
+    );
+    expect(correctedResult.terminate).toBe(true);
+  });
+
+  it("uses the same semantic finish boundary for agent and workflow report-plus-continuation", async () => {
+    const taskResult = {
+      state: "waiting",
+      report: true,
+      continue: true,
+      summary: "Review is blocked while independent checks continue",
+      facts: ["checks:started"],
+      conditions: [
+        {
+          id: "review",
+          type: "review.completed",
+          subject: "review:candidate",
+          expected: true,
+          owner: "human",
+          reviewAfterMs: 60_000,
+        },
+      ],
+    } as const;
+
+    for (const schema of [taskAgentResultSchema, taskReconcileResultSchema]) {
+      const { finish, context } = prepare("worker", schema);
+      const call = context({ ...review, status: "partial", result: taskResult });
+      const result = await finish.execute(call.toolCall.id, validateToolArguments(finish, call.toolCall));
+      expect(result.terminate).toBe(true);
+    }
   });
 
   it("does not terminate successful attempts that lack facts or claim nonexistent files", async () => {

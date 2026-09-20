@@ -11,6 +11,15 @@ import {
 import type { AppTaskContext } from "../tasks/app-task-store.js";
 import { linkConversationTopicTask } from "./conversations.js";
 import { linkConversationRequestTask } from "./conversation-requests.js";
+import { assertResourceCreator } from "./resource-creator.js";
+
+export class AppTaskRevisionAdmissionError extends Error {
+  readonly name = "AppTaskRevisionAdmissionError";
+}
+
+export function isAppTaskRevisionAdmissionError(error: unknown): error is AppTaskRevisionAdmissionError {
+  return error instanceof AppTaskRevisionAdmissionError;
+}
 
 export type TaskInputAdmission = {
   appId: string;
@@ -104,7 +113,72 @@ function admitAuthorizedTaskInput(config: AppTaskContext, input: TaskInputAdmiss
     }
     intent = readAppTaskIntent(config, taskId);
     if (!intent) throw new Error(`Task ${taskId} does not exist in App ${input.appId}`);
-  } else intent = input.attachment.intent;
+  } else {
+    intent = input.attachment.intent;
+    const expectedGeneration = input.attachment.expectedGeneration;
+    if (expectedGeneration !== undefined) {
+      if (!Number.isSafeInteger(expectedGeneration) || expectedGeneration < 1) {
+        throw new AppTaskRevisionAdmissionError("Task revision expectedGeneration must be a positive integer");
+      }
+      if (
+        input.creator?.appId !== input.appId ||
+        input.creator.taskId !== undefined ||
+        input.creatorRevision !== true
+      ) {
+        throw new AppTaskRevisionAdmissionError("Task revision requires trusted App-only creator authority");
+      }
+      const current = config.resourceStore.readTask(intent.id);
+      if (!current) {
+        throw new AppTaskRevisionAdmissionError(`Task ${intent.id} does not exist in App ${input.appId}`);
+      }
+      if (config.resourceStore.isCancelled(intent.id)) {
+        throw new AppTaskRevisionAdmissionError(`Cannot revise closed Task ${intent.id}`);
+      }
+      try {
+        assertResourceCreator(current.metadata.creator, { appId: input.appId });
+      } catch {
+        throw new AppTaskRevisionAdmissionError("Only the exact App-only creator may revise this Task");
+      }
+      const priorAdmission = input.inboxInputId
+        ? config.resourceStore.readTaskContext({ taskIds: [], admissionIds: [idempotencyKey] }).appTaskAdmissions?.[
+            idempotencyKey
+          ]
+        : undefined;
+      if (priorAdmission && priorAdmission.taskId !== intent.id) {
+        throw new AppTaskRevisionAdmissionError("Task revision input identity was reused for a different Task");
+      }
+      if (!priorAdmission && current.metadata.generation !== expectedGeneration) {
+        throw new AppTaskRevisionAdmissionError(
+          `Task requirements changed; expected generation ${expectedGeneration}, current generation ${current.metadata.generation}. Read the current Task before revising it`,
+        );
+      }
+      // Requirement revisions retain containment. The App selects the exact
+      // existing ID; it cannot silently move that Task under another parent.
+      intent = { ...intent, parentId: current.spec.parentId };
+    }
+  }
+  const data = input.inputContext.input.data;
+  const context =
+    data && typeof data === "object" && !Array.isArray(data) ? (data as Record<string, unknown>).context : undefined;
+  const displayed =
+    context && typeof context === "object" && !Array.isArray(context)
+      ? (context as Record<string, unknown>).displayedHumanCondition
+      : undefined;
+  const displayedHumanCondition =
+    displayed && typeof displayed === "object" && !Array.isArray(displayed)
+      ? (displayed as Record<string, unknown>)
+      : undefined;
+  const correlatedHumanCondition =
+    input.inputContext.source.kind === "human" &&
+    typeof displayedHumanCondition?.conditionId === "string" &&
+    Number.isSafeInteger(displayedHumanCondition.conditionGeneration) &&
+    Number.isSafeInteger(displayedHumanCondition.taskGeneration)
+      ? {
+          conditionId: displayedHumanCondition.conditionId,
+          conditionGeneration: displayedHumanCondition.conditionGeneration,
+          taskGeneration: displayedHumanCondition.taskGeneration,
+        }
+      : {};
   return observeAppTaskIntent(config, {
     intent,
     creator: input.creator,
@@ -120,7 +194,14 @@ function admitAuthorizedTaskInput(config: AppTaskContext, input: TaskInputAdmiss
       owner: `agent:${config.agent}`,
       target: { project: input.appId, taskId: intent.id },
       idempotencyKey,
-      data: { project: input.appId, taskId: intent.id, appId: input.appId, idempotencyKey, request: input.inputContext },
+      data: {
+        project: input.appId,
+        taskId: intent.id,
+        appId: input.appId,
+        idempotencyKey,
+        request: input.inputContext,
+        ...correlatedHumanCondition,
+      },
     },
   });
 }
@@ -142,6 +223,36 @@ export function linkTaskInput(
     )
     .run(taskId, admissionKey, now, now, inputId);
   if (updated.changes !== 1) throw new Error("Task input is unavailable");
+}
+
+/** Finish a deterministic revision rejection so recovery does not retry stale authority forever. */
+export function rejectTaskInputRevision(
+  db: SqliteDb,
+  item: AppInboxItem,
+  error: Error,
+  now: number,
+): AppResult | null {
+  const summary = `Task revision was not applied: ${error.message}`;
+  const result: AppResult = {
+    summary,
+    response: `${summary}. Read the current Task and submit a new revision with its current expectedGeneration.`,
+  };
+  const changed = db
+    .prepare(
+      `UPDATE app_inbox_items SET status = 'done', handling = ?, result = ?, completed_at = ?,
+      available_at = NULL, review_at = NULL, lease_owner = NULL, lease_expires_at = NULL,
+      changed_at = ?, updated_at = ?
+    WHERE id = ? AND status = 'pending' AND execution_task_id IS NULL AND waiting_on_kind IS NULL`,
+    )
+    .run(
+      JSON.stringify({ phase: "failed", reason: error.message }),
+      JSON.stringify(result),
+      now,
+      now,
+      now,
+      item.id,
+    ).changes;
+  return changed === 1 ? result : null;
 }
 
 /** A compare-and-set projection of an exact Task answer, not another attempt. */

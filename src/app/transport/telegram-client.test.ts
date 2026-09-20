@@ -127,6 +127,31 @@ describe("telegram client", () => {
     }
   });
 
+  it("removes supported HTML markup and decodes renderer entities in a formatting fallback", async () => {
+    const bodies: Record<string, unknown>[] = [];
+    const fixture = networkFixture(async (request, call) => {
+      bodies.push((await request.json()) as Record<string, unknown>);
+      return call === 1
+        ? Response.json(
+            { ok: false, error_code: 400, description: "Bad Request: can't parse entities" },
+            { status: 400 },
+          )
+        : Response.json({ ok: true, result: { message_id: 1000 } });
+    });
+    try {
+      await expect(
+        fixture.client.sendMessage("chat-1", "• <b>Review &lt;docs&gt;</b>\n  <code>a&amp;b</code>", "HTML"),
+      ).resolves.toBe(1000);
+      expect(bodies.map((body) => body.parse_mode)).toEqual(["HTML", undefined]);
+      expect(bodies.map((body) => body.text)).toEqual([
+        "• <b>Review &lt;docs&gt;</b>\n  <code>a&amp;b</code>",
+        "• Review <docs>\n  a&b",
+      ]);
+    } finally {
+      fixture.close();
+    }
+  });
+
   it("does not retry a different provider rejection as plain text", async () => {
     const fixture = networkFixture(() =>
       Response.json(
@@ -291,7 +316,7 @@ describe("telegram client", () => {
     }
   });
 
-  it("binds a complete multipart approval only to its final delivery", async () => {
+  it("binds complete-delivery authority only to the final multipart delivery", async () => {
     const persistDir = mkdtempSync(join(tmpdir(), "telegram-client-complete-approval-"));
     let nextMessageId = 750;
     const deliveredText: string[] = [];
@@ -313,6 +338,7 @@ describe("telegram client", () => {
           data: JSON.stringify({
             taskRefs: [{ appId: "may", taskId: "goal/improvement" }],
             approvalAnchor: { approvalId: "exact-proposal" },
+            humanCondition: { taskGeneration: 2, conditionId: "choice", conditionGeneration: 3 },
           }),
           bindToCompleteDelivery: true,
         }),
@@ -326,6 +352,7 @@ describe("telegram client", () => {
       });
       expect(JSON.parse(String(getNotificationMessage(persistDir, "chat-1", 751)?.data))).toMatchObject({
         approvalAnchor: { approvalId: "exact-proposal" },
+        humanCondition: { taskGeneration: 2, conditionId: "choice", conditionGeneration: 3 },
       });
     } finally {
       closeDb(persistDir);
@@ -357,6 +384,7 @@ describe("telegram client", () => {
             taskRefs: [{ appId: "may", taskId: "goal/improvement" }],
             topicId: "topic/improvement",
             approvalAnchor: { approvalId: "exact-proposal" },
+            humanCondition: { taskGeneration: 2, conditionId: "choice", conditionGeneration: 3 },
           }),
           bindToCompleteDelivery: true,
         }),

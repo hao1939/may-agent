@@ -5,7 +5,14 @@ import {
   type TaskRevision,
 } from "@may-agent/sdk";
 import { reviseAppTask, type TaskRevisionActor } from "./task-revision.js";
-import type { TaskDetail, TaskListOptions, TaskOutcomePage, TaskOutcomeProjection, TaskPage } from "@may-agent/sdk/app";
+import type {
+  TaskDetail,
+  TaskListOptions,
+  TaskOutcomePage,
+  TaskOutcomeProjection,
+  TaskPage,
+  TaskReadOptions,
+} from "@may-agent/sdk/app";
 import { resolve } from "node:path";
 import { Check } from "typebox/value";
 import { getDb } from "../../../lib/db/connection.js";
@@ -50,10 +57,7 @@ import {
 } from "./app-task-reconciler.js";
 import { AppTaskRecoveryScheduler } from "./app-task-recovery.js";
 import { type AppTaskContext } from "./app-task-store.js";
-import {
-  hasLiveAppTaskSession,
-  interruptSupersededAgentSession,
-} from "./attempt-execution.js";
+import { hasLiveAppTaskSession, interruptSupersededAgentSession } from "./attempt-execution.js";
 import { publishTaskCancellation, runTaskAttempt, type AppTaskTiming } from "./attempt-runner.js";
 import { AppTaskController, type AppTaskDispatch } from "./controller.js";
 import { recoverTaskConditions } from "./dependency-admission.js";
@@ -391,11 +395,7 @@ export function admitStandaloneCanonicalAppTaskEvent(input: {
 }
 
 /** Wake already-admitted Task identities without repeating their mutation. */
-export function wakeLoadedAppTasks(input: {
-  bus: EventBus;
-  appId: string;
-  taskIds: string[];
-}): void {
+export function wakeLoadedAppTasks(input: { bus: EventBus; appId: string; taskIds: string[] }): void {
   const appId = input.appId.trim().replace(/\.app$/, "");
   const descriptor = loadedAppTaskRuntimeDescriptor(input.bus, appId);
   const controller = appTaskControllersByBus.get(input.bus)?.get(appId);
@@ -895,7 +895,12 @@ export function listLoadedAppTaskOutcomeViews(input: {
   });
 }
 
-export function getLoadedAppTaskView(input: { bus: EventBus; appId: string; taskId: string }): TaskDetail | null {
+export function getLoadedAppTaskView(input: {
+  bus: EventBus;
+  appId: string;
+  taskId: string;
+  options?: TaskReadOptions;
+}): TaskDetail | null {
   const appId = input.appId.trim().replace(/\.app$/, "");
   const descriptor = (appRouterDescriptorsByBus.get(input.bus) ?? []).find((candidate) => candidate.id === appId);
   if (!descriptor) {
@@ -923,6 +928,7 @@ export function getLoadedAppTaskView(input: { bus: EventBus; appId: string; task
         }),
       },
       input.taskId,
+      input.options,
     );
   }
   return readRuntimeTaskView(
@@ -930,6 +936,7 @@ export function getLoadedAppTaskView(input: { bus: EventBus; appId: string; task
       taskStateConfig: appTaskConfig(descriptor),
     },
     input.taskId,
+    input.options,
   );
 }
 
