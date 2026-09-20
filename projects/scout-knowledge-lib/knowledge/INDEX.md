@@ -2,7 +2,7 @@
 summary: "Entry point for Scout's project-owned knowledge library. Use this before creating or updating Scout-local knowledge notes."
 triggers: ["scout knowledge", "agent architecture research", "multi-agent trends", "XHS trends", "knowledge library maintenance"]
 last_updated: "2026-09-19"
-source_basis: "Maintained index of Scout canonical notes, companion notes, findings, and durable reports. Current navigation includes the 2026-09-18 source-grounded finding batch and the §37–§40 Agent Evaluation Research: Diagnostic Layers companion without duplicating the full index. Runtime task, credential, backlog, and health status belongs in the project UI or dated reports."
+source_basis: "Maintained index of Scout canonical notes, companion notes, findings, and durable reports. Current navigation includes source-grounded finding batches through 2026-09-19 and the §37–§40 Agent Evaluation Research: Diagnostic Layers companion without duplicating the full index. Runtime task, credential, backlog, and health status belongs in the project UI or dated reports."
 findings_date_convention: "Use the actual observation date in YYYY-MM-DD filenames; never create a future-dated finding."
 </ai_context>
 
@@ -69,6 +69,18 @@ Migration and project-operation artifacts live outside `knowledge/`:
 - [Hermes Agent and OpenClaw comparative investigation (2026-09-02)](../reports/research/hermes-agent-openclaw-comparative-investigation-2026-09-02.md) — UTC-dated pinned-source architecture, memory, skill-learning, authority, recovery, issue, and cost comparison; reconciles all 28 existing matching leads and records bounded reproduction limits.
 
 ## Recent Source-Grounded Findings
+
+### 2026-09-19
+
+- [Agent plugin pinning must verify the resolved checkout](./findings/2026-09-19-agent-plugin-sha-pinning.md) — Plugin4Shell reporting shows why an approved Git object ID is only intent until the installer verifies the materialized checkout; exploit and patch claims were not independently reproduced.
+- [Agent validation gates need decision-class qualification](./findings/2026-09-19-domain-matched-validation-gates.md) — a small author-run chemistry test suggests qualifying gate, decision class, and threshold together, with deterministic domain checks for machine-computable invariants; no reproducibility package was available.
+- [Agent authorization needs a relying-service contract](./findings/2026-09-19-grantex-relying-service-authorization.md) — pinned-source inspection separates credential, resource, action, revocation, enforcement-mode, and effect-mediation bindings; packages and hosted behavior were not exercised.
+- [Retrieval trust needs one canonical evidence predicate](./findings/2026-09-19-misakanet-debugging-memory-trust-labels.md) — one memory system's independent heading-based and graded-evidence signals show why badges, ranking, admission, and public language should compile from one typed trust state.
+- [Evidence integrity is not scientific validity](./findings/2026-09-19-noetrium-evidence-authority.md) — finalized run-bound artifacts can establish evidence integrity while task outcome and scientific validity remain explicitly outside that layer's authority.
+- [Observation supervision changes the starting point for agent exploration](./findings/2026-09-19-observation-supervision-agent-exploration.md) — abstract-only ActObs results suggest that predicting observed environment tokens during training can preserve later RL exploration without granting runtime authority to emit observations.
+- [Privileged agent teachers should earn—and eventually lose—their role](./findings/2026-09-19-self-retiring-distillation-agent-rl.md) — abstract-only RetireOPD results motivate reward-grounding a privileged teacher and retiring it using both student–teacher discrepancy and task success.
+- [Simulated agent consensus can be a participation artifact](./findings/2026-09-19-simulated-group-consensus-bias.md) — a matched Wason-task study reports large agent–human consensus gaps after two sensitivity analyses, while abstract-only coverage limits generalization.
+- [Visual reproduction artifacts improve coding-agent verification](./findings/2026-09-19-vibecap-visual-evidence-for-coding-agents.md) — pinned-source inspection shows a bounded visual evidence-pack pattern, while demo-backed routes demonstrate why each layer must declare provenance.
 
 ### 2026-09-18
 
