@@ -74,11 +74,6 @@ export function readDeployReceiptForTask(receiptDir: string, project: string, ta
 }
 
 export function validateDeployTaskTarget(path: string, project: string, taskId: string): void {
-  if (project !== "may-agent") {
-    throw new Error(
-      `May runtime deployment belongs to may-agent, not ${project}; route the runtime change through the may-agent App`,
-    );
-  }
   if (!existsSync(path)) throw new Error(`Cannot read deploy task database ${path}: file does not exist`);
   let db: Database | undefined;
   try {

@@ -3,7 +3,10 @@ set -eu
 
 cd "$(dirname "$0")/.."
 
-project="may-agent"
+# This App/Task pair correlates the deployment receipt and wake to the
+# responsible durable work. It is validation metadata, not deploy authority.
+# Keep may-agent as the compatibility default for existing operators.
+project="${MAY_AGENT_DEPLOY_OWNER_APP:-may-agent}"
 task_id="${MAY_AGENT_DEPLOY_TASK_ID:-}"
 correlation="${MAY_AGENT_DEPLOY_CORRELATION:-deploy-$(date -u +%Y%m%dT%H%M%SZ)-$$}"
 deploy_root="${MAY_AGENT_DEPLOY_ROOT:-$PWD}"

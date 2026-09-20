@@ -14,6 +14,7 @@ import { join } from "node:path";
 import { Database } from "bun:sqlite";
 import { readDeployReceiptForTask, requestReceipt, settleReceipt, validateDeployTaskTarget } from "./deploy-receipt";
 import { appTaskTestContext } from "../src/app/core/tasks/app-task-test-support.js";
+import { AppTaskResourceStore } from "../src/app/core/state/app-task-resource-store.js";
 import {
   cancelAppTask,
   claimObservedAppTask,
@@ -74,33 +75,53 @@ function taskDatabase(projectDir: string, appId: string, taskIds: string[]): str
   return path;
 }
 
+function closeFixtureTask(projectDir: string, appId: string, taskId: string): void {
+  const db = new Database(join(projectDir, "may.db"));
+  try {
+    const resourceStore = AppTaskResourceStore.activeFromDb(db, appId);
+    if (!resourceStore) throw new Error(`Expected active fixture store for ${appId}`);
+    const task = resourceStore.readTask(taskId)!;
+    closeAppTask(
+      { appDir: projectDir, projectDir, agent: "owner", maxConcurrent: 1, resourceStore },
+      {
+        appId,
+        taskId,
+        reason: "Owner closed fixture work during build",
+        expectedGeneration: task.metadata.generation,
+        expectedResourceVersion: task.metadata.resourceVersion,
+      },
+    );
+  } finally {
+    db.close();
+  }
+}
+
 describe("restart-aware deploy receipts", () => {
-  it("rejects a stale exact-task wake before deployment", () => {
+  it("accepts an exact open Task for the explicitly supplied deployment-owner App", () => {
     const f = fixture();
     try {
-      const dbPath = taskDatabase(f.projectDir, "may-agent", ["live", "answered", "closed", "cancelled"]);
-      expect(() => validateDeployTaskTarget(dbPath, "may-agent", "missing")).toThrow(
+      const dbPath = taskDatabase(f.projectDir, "may", ["live", "answered", "closed", "cancelled"]);
+      expect(() => validateDeployTaskTarget(dbPath, "may", "missing")).toThrow(
         "does not exist; refusing to emit an unresolvable targeted wake",
       );
-      expect(() => validateDeployTaskTarget(dbPath, "other", "live")).toThrow(
-        "May runtime deployment belongs to may-agent, not other",
-      );
-      expect(() => validateDeployTaskTarget(dbPath, "may-agent", "live")).not.toThrow();
-      expect(() => validateDeployTaskTarget(dbPath, "may-agent", "answered")).not.toThrow();
+      expect(() => validateDeployTaskTarget(dbPath, "may", "live")).not.toThrow();
+      expect(() => validateDeployTaskTarget(dbPath, "may", "answered")).not.toThrow();
       for (const id of ["closed", "cancelled"])
-        expect(() => validateDeployTaskTarget(dbPath, "may-agent", id)).toThrow("is closed");
+        expect(() => validateDeployTaskTarget(dbPath, "may", id)).toThrow("is closed");
     } finally {
       rmSync(f.projectDir, { recursive: true, force: true });
     }
   });
 
-  it("rejects a task owned by another App even when that task exists", () => {
+  it("rejects a Task owned by another canonical App", () => {
     const f = fixture();
     try {
-      const dbPath = taskDatabase(f.projectDir, "alpha-project", ["ops/deploy-may-runtime"]);
-      expect(() => validateDeployTaskTarget(dbPath, "alpha-project", "ops/deploy-may-runtime")).toThrow(
-        "May runtime deployment belongs to may-agent, not alpha-project",
+      const dbPath = taskDatabase(f.projectDir, "may", ["ops/deploy-may-runtime"]);
+      taskDatabase(f.projectDir, "may-agent", ["maintenance/other"]);
+      expect(() => validateDeployTaskTarget(dbPath, "may-agent", "ops/deploy-may-runtime")).toThrow(
+        "Deploy task may-agent/ops/deploy-may-runtime does not exist",
       );
+      expect(() => validateDeployTaskTarget(dbPath, "may", "ops/deploy-may-runtime")).not.toThrow();
     } finally {
       rmSync(f.projectDir, { recursive: true, force: true });
     }
@@ -117,6 +138,34 @@ describe("restart-aware deploy receipts", () => {
       expect(() => validateDeployTaskTarget(dbPath, "may-agent", "live")).toThrow(
         "Task resources for may-agent are not canonical",
       );
+    } finally {
+      rmSync(f.projectDir, { recursive: true, force: true });
+    }
+  });
+
+  it("rejects malformed deployment-owner App and Task identifiers at the CLI boundary", async () => {
+    const f = fixture();
+    try {
+      const dbPath = taskDatabase(f.projectDir, "may", ["live"]);
+      for (const args of [
+        ["bad app", "live"],
+        ["may", "bad task"],
+      ]) {
+        const child = Bun.spawn({
+          cmd: [process.execPath, "scripts/deploy-receipt.ts", "validate-target", dbPath, ...args],
+          cwd: join(import.meta.dir, ".."),
+          stdout: "pipe",
+          stderr: "pipe",
+          timeout: 5000,
+        });
+        const [code, stderr] = await Promise.all([
+          child.exited,
+          new Response(child.stderr).text(),
+          new Response(child.stdout).text(),
+        ]);
+        expect(code).not.toBe(0);
+        expect(stderr).toContain("Invalid");
+      }
     } finally {
       rmSync(f.projectDir, { recursive: true, force: true });
     }
@@ -308,7 +357,7 @@ describe("restart-aware deploy receipts", () => {
 
   it("builds deployable artifacts from one immutable tested commit", () => {
     const deploy = readFileSync(new URL("./deploy.sh", import.meta.url), "utf8");
-    expect(deploy).toContain('project="may-agent"');
+    expect(deploy).toContain('project="${MAY_AGENT_DEPLOY_OWNER_APP:-may-agent}"');
     expect(deploy).not.toContain("MAY_AGENT_DEPLOY_PROJECT:-");
     expect(deploy).toContain('task_db="${MAY_AGENT_DEPLOY_TASK_DB:-${STATE_DIR:-/app/.state}/may.db}"');
     expect(deploy).toContain('deploy-receipt.ts validate-target "$task_db" "$project" "$task_id"');
@@ -384,6 +433,7 @@ describe("restart-aware deploy receipts", () => {
         COMMAND_LOG: log,
         KEEP_ME: "kept",
         MAY_TASK_ATTEMPT_CHILD: "1",
+        MAY_AGENT_DEPLOY_OWNER_APP: "may",
         MAY_AGENT_DEPLOY_TASK_ID: "runtime/fixture",
         MAY_AGENT_DEPLOY_CORRELATION: correlation,
         MAY_AGENT_DEPLOY_ROOT: repo,
@@ -393,7 +443,9 @@ describe("restart-aware deploy receipts", () => {
 
       expect(result.code).toBe(42);
       const calls = readFileSync(log, "utf8").trim().split("\n");
-      expect(calls[0]).toContain("1|kept|scripts/deploy-receipt.ts validate-target");
+      expect(calls[0]).toBe(
+        `1|kept|scripts/deploy-receipt.ts validate-target ${join(root, "not-opened.db")} may runtime/fixture`,
+      );
       expect(calls[1]).toBe(
         "1|kept|test packages/control/src/client.test.ts packages/control/src/control-socket.test.ts src/app/modes/emit-mode.test.ts",
       );
@@ -403,7 +455,241 @@ describe("restart-aware deploy receipts", () => {
       expect(existsSync(join(receiptDir, `${correlation}.json`))).toBe(false);
       expect(existsSync(join(repo, "bundle"))).toBe(false);
       expect(existsSync(join(repo, `.state/deploy-build-${correlation}`))).toBe(false);
+
+      writeFileSync(log, "");
+      const defaultCorrelation = "fixture-default-owner";
+      const defaultResult = await run(["/bin/sh", "scripts/deploy.sh"], {
+        ...process.env,
+        PATH: `${bin}:${process.env.PATH}`,
+        COMMAND_LOG: log,
+        KEEP_ME: "kept",
+        MAY_TASK_ATTEMPT_CHILD: "1",
+        MAY_AGENT_DEPLOY_TASK_ID: "runtime/fixture",
+        MAY_AGENT_DEPLOY_CORRELATION: defaultCorrelation,
+        MAY_AGENT_DEPLOY_ROOT: repo,
+        MAY_AGENT_DEPLOY_RECEIPT_DIR: receiptDir,
+        MAY_AGENT_DEPLOY_TASK_DB: join(root, "not-opened.db"),
+      });
+      expect(defaultResult.code).toBe(42);
+      expect(readFileSync(log, "utf8").split("\n")[0]).toBe(
+        `1|kept|scripts/deploy-receipt.ts validate-target ${join(root, "not-opened.db")} may-agent runtime/fixture`,
+      );
+      expect(existsSync(join(receiptDir, `${defaultCorrelation}.json`))).toBe(false);
     } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("fails invalid App/Task targets before build, receipt, or restart effects", async () => {
+    const root = mkdtempSync(join(tmpdir(), "may-agent-deploy-target-gate-"));
+    try {
+      const repo = join(root, "repo");
+      const bin = join(root, "bin");
+      const log = join(root, "commands.log");
+      mkdirSync(join(repo, "scripts"), { recursive: true });
+      mkdirSync(bin);
+      writeFileSync(join(repo, "scripts", "deploy.sh"), readFileSync(new URL("./deploy.sh", import.meta.url)));
+      writeFileSync(
+        join(repo, "scripts", "deploy-receipt.ts"),
+        readFileSync(new URL("./deploy-receipt.ts", import.meta.url)),
+      );
+      chmodSync(join(repo, "scripts", "deploy.sh"), 0o755);
+
+      const appDbRoot = join(root, "app-db");
+      mkdirSync(appDbRoot);
+      const dbPath = taskDatabase(appDbRoot, "may", ["live", "closed"]);
+      taskDatabase(appDbRoot, "may-agent", ["maintenance/other"]);
+      const noncanonicalRoot = join(root, "noncanonical-db");
+      mkdirSync(noncanonicalRoot);
+      const noncanonicalDb = taskDatabase(noncanonicalRoot, "may", ["live"]);
+      const db = new Database(noncanonicalDb);
+      db.query("DELETE FROM app_task_store_meta WHERE app_id = ? AND key = 'authority'").run("may");
+      db.close();
+
+      writeFileSync(
+        join(bin, "bun"),
+        `#!/bin/sh\nprintf 'bun|%s\\n' "$*" >> "$COMMAND_LOG"\nexec ${JSON.stringify(process.execPath)} "$@"\n`,
+      );
+      chmodSync(join(bin, "bun"), 0o755);
+      for (const command of ["git", "supervisorctl", "docker"]) {
+        writeFileSync(join(bin, command), `#!/bin/sh\necho "${command}|$*" >> "$COMMAND_LOG"\nexit 91\n`);
+        chmodSync(join(bin, command), 0o755);
+      }
+
+      const cases = [
+        { name: "wrong-app", database: dbPath, app: "may-agent", task: "live" },
+        { name: "missing", database: dbPath, app: "may", task: "missing" },
+        { name: "malformed", database: dbPath, app: "bad app", task: "live" },
+        { name: "noncanonical", database: noncanonicalDb, app: "may", task: "live" },
+        { name: "closed", database: dbPath, app: "may", task: "closed" },
+      ];
+      for (const target of cases) {
+        writeFileSync(log, "");
+        const receiptDir = join(root, `receipts-${target.name}`);
+        const child = Bun.spawn({
+          cmd: ["/bin/sh", "scripts/deploy.sh"],
+          cwd: repo,
+          env: {
+            ...process.env,
+            PATH: `${bin}:${process.env.PATH}`,
+            COMMAND_LOG: log,
+            MAY_AGENT_DEPLOY_OWNER_APP: target.app,
+            MAY_AGENT_DEPLOY_TASK_ID: target.task,
+            MAY_AGENT_DEPLOY_CORRELATION: target.name,
+            MAY_AGENT_DEPLOY_ROOT: repo,
+            MAY_AGENT_DEPLOY_RECEIPT_DIR: receiptDir,
+            MAY_AGENT_DEPLOY_TASK_DB: target.database,
+          },
+          stdout: "pipe",
+          stderr: "pipe",
+          timeout: 5000,
+        });
+        const [code] = await Promise.all([
+          child.exited,
+          new Response(child.stdout).text(),
+          new Response(child.stderr).text(),
+        ]);
+        expect(code).not.toBe(0);
+        const calls = readFileSync(log, "utf8");
+        expect(calls).toContain(`validate-target ${target.database} ${target.app} ${target.task}`);
+        expect(calls).not.toContain("git|");
+        expect(calls).not.toContain("supervisorctl|");
+        expect(calls).not.toContain("docker|");
+        expect(existsSync(join(receiptDir, `${target.name}.json`))).toBe(false);
+        expect(existsSync(join(repo, "bundle"))).toBe(false);
+      }
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("revalidates after build and carries an active May owner into the requested receipt", async () => {
+    const root = mkdtempSync(join(tmpdir(), "may-agent-deploy-revalidation-"));
+    const runs: Array<{ child: ReturnType<typeof Bun.spawn>; result: Promise<unknown> }> = [];
+    let buildRelease = "";
+    try {
+      const repo = join(root, "repo");
+      const bin = join(root, "bin");
+      const receiptDir = join(root, "receipts");
+      const buildReady = join(root, "build-ready");
+      buildRelease = join(root, "build-release");
+      mkdirSync(join(repo, "scripts"), { recursive: true });
+      mkdirSync(bin);
+      mkdirSync(receiptDir);
+      writeFileSync(join(repo, "scripts", "deploy.sh"), readFileSync(new URL("./deploy.sh", import.meta.url)));
+      writeFileSync(
+        join(repo, "scripts", "deploy-receipt.ts"),
+        readFileSync(new URL("./deploy-receipt.ts", import.meta.url)),
+      );
+      chmodSync(join(repo, "scripts", "deploy.sh"), 0o755);
+      const dbPath = taskDatabase(root, "may", ["close-during-build", "active"]);
+
+      writeFileSync(
+        join(bin, "bun"),
+        `#!/bin/sh
+if [ "\${1-}" = scripts/deploy-receipt.ts ]; then
+  ${JSON.stringify(process.execPath)} "$@"
+  rc=$?
+  if [ "\${2-}" = request ] && [ "$rc" = 0 ] && [ "\${MAY_TEST_STOP_AFTER_REQUEST:-0}" = 1 ]; then exit 88; fi
+  exit "$rc"
+fi
+if [ "\${1-}" = test ]; then exit 0; fi
+if [ "\${1-}" = run ] && [ "\${2-}" = bundle ]; then
+  mkdir -p bundle/platform-ui packages/terminal/bin packages/sdk container
+  printf '#!/bin/sh\\nexit 0\\n' > bundle/may-agent
+  printf '#!/bin/sh\\nexit 0\\n' > packages/terminal/bin/may-console.cjs
+  printf '#!/bin/sh\\nexit 0\\n' > container/may-agent-supervisor-restart.sh
+  printf '{}\\n' > packages/sdk/package.json
+  printf 'ui\\n' > bundle/platform-ui/index.html
+  chmod +x bundle/may-agent packages/terminal/bin/may-console.cjs container/may-agent-supervisor-restart.sh
+  : > "$MAY_TEST_BUILD_READY"
+  remaining=500
+  while [ ! -e "$MAY_TEST_BUILD_RELEASE" ] && [ "$remaining" -gt 0 ]; do
+    sleep 0.01
+    remaining=$((remaining - 1))
+  done
+  [ -e "$MAY_TEST_BUILD_RELEASE" ] || exit 92
+  exit 0
+fi
+exit 90
+`,
+      );
+      chmodSync(join(bin, "bun"), 0o755);
+      for (const command of ["supervisorctl", "docker"]) {
+        writeFileSync(join(bin, command), `#!/bin/sh\necho unexpected-${command} >&2\nexit 97\n`);
+        chmodSync(join(bin, command), 0o755);
+      }
+      const run = (taskId: string, correlation: string, extra: Record<string, string> = {}) => {
+        const child = Bun.spawn({
+          cmd: ["/bin/sh", "scripts/deploy.sh"],
+          cwd: repo,
+          env: {
+            ...process.env,
+            PATH: `${bin}:${process.env.PATH}`,
+            MAY_AGENT_DEPLOY_OWNER_APP: "may",
+            MAY_AGENT_DEPLOY_TASK_ID: taskId,
+            MAY_AGENT_DEPLOY_CORRELATION: correlation,
+            MAY_AGENT_DEPLOY_ROOT: repo,
+            MAY_AGENT_DEPLOY_RECEIPT_DIR: receiptDir,
+            MAY_AGENT_DEPLOY_TASK_DB: dbPath,
+            MAY_TEST_BUILD_READY: buildReady,
+            MAY_TEST_BUILD_RELEASE: buildRelease,
+            ...extra,
+          },
+          stdout: "pipe",
+          stderr: "pipe",
+          timeout: 5000,
+        });
+        const result = Promise.all([
+          child.exited,
+          new Response(child.stderr).text(),
+          new Response(child.stdout).text(),
+        ]);
+        const handle = { child, result };
+        runs.push(handle);
+        return handle;
+      };
+      for (const cmd of [
+        ["git", "init", "-q"],
+        ["git", "add", "scripts/deploy.sh", "scripts/deploy-receipt.ts"],
+        ["git", "-c", "user.name=Fixture", "-c", "user.email=fixture@example.test", "commit", "-qm", "fixture"],
+      ]) {
+        const child = Bun.spawn({ cmd, cwd: repo, stdout: "pipe", stderr: "pipe", timeout: 5000 });
+        const [code] = await Promise.all([
+          child.exited,
+          new Response(child.stdout).text(),
+          new Response(child.stderr).text(),
+        ]);
+        expect(code).toBe(0);
+      }
+
+      const closing = run("close-during-build", "closed-after-preflight", {
+        MAY_TEST_STOP_AFTER_REQUEST: "1",
+      });
+      for (let i = 0; i < 400 && !existsSync(buildReady); i++) await Bun.sleep(10);
+      expect(existsSync(buildReady)).toBe(true);
+      closeFixtureTask(root, "may", "close-during-build");
+      writeFileSync(buildRelease, "continue\n");
+      const [closedCode, closedStderr] = await closing.result;
+      expect(closedCode).not.toBe(0);
+      expect(closedStderr).toContain("is closed; it cannot accept a deployment wake");
+      expect(existsSync(join(receiptDir, "closed-after-preflight.json"))).toBe(false);
+
+      rmSync(buildReady, { force: true });
+      writeFileSync(buildRelease, "continue\n");
+      const active = run("active", "active-may", { MAY_TEST_STOP_AFTER_REQUEST: "1" });
+      const [activeCode] = await active.result;
+      expect(activeCode).toBe(88);
+      expect(JSON.parse(readFileSync(join(receiptDir, "active-may.json"), "utf8"))).toMatchObject({
+        project: "may",
+        taskId: "active",
+        correlation: "active-may",
+        phase: "requested",
+      });
+    } finally {
+      if (buildRelease) writeFileSync(buildRelease, "cleanup\n");
+      await Promise.allSettled(runs.map(({ result }) => result));
+      for (const { child } of runs) child.kill();
       rmSync(root, { recursive: true, force: true });
     }
   });

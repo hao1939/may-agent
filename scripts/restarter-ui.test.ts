@@ -35,10 +35,17 @@ function executable(path: string, body = "#!/bin/sh\nexit 0\n"): void {
 
 async function fixture(
   healthy: boolean,
-  options: { failUiSwitch?: boolean; previousSdk?: boolean; socketHealthy?: boolean; failWake?: boolean } = {},
+  options: {
+    failUiSwitch?: boolean;
+    previousSdk?: boolean;
+    socketHealthy?: boolean;
+    failWake?: boolean;
+    ownerApp?: string;
+  } = {},
 ) {
   const root = mkdtempSync(join(tmpdir(), "may-agent-restarter-ui-"));
   roots.push(root);
+  const ownerApp = options.ownerApp ?? "may-agent";
   const binDir = join(root, "bin");
   const bundleRoot = join(root, "bundle");
   const receiptDir = join(root, ".state", "deploy-receipts");
@@ -89,7 +96,7 @@ async function fixture(
     `${JSON.stringify({
       version: 1,
       correlation: "deploy-test",
-      project: "may-agent",
+      project: ownerApp,
       taskId: "app-request/test",
       artifactSha: createHash("sha256").update(readFileSync(bundle)).digest("hex"),
       sourceCommit,
@@ -180,12 +187,13 @@ async function fixture(
     deployMarker,
     sdkMarker,
     uiMarker,
+    ownerApp,
   };
 }
 
 describe("supervisor UI release", () => {
-  it("admits the restarter fact to its exact Task and retains it beside later clock ticks", async () => {
-    const f = await fixture(true);
+  it("admits a May-owned deployment receipt to its exact Task and retains it beside later clock ticks", async () => {
+    const f = await fixture(true, { ownerApp: "may" });
     expect(f.result.exitCode).toBe(0);
     const eventType = readFileSync(`${f.wakePath}.type`, "utf8").trim();
     const payload = JSON.parse(readFileSync(f.wakePath, "utf8"));
@@ -193,7 +201,7 @@ describe("supervisor UI release", () => {
     const sb = await buildSandbox({ fixtureAgents: ["may"], daemonArgs: ["--socket"] });
     try {
       await sb.daemonReady;
-      const appDir = join(sb.projectsRoot, "may-agent.app");
+      const appDir = join(sb.projectsRoot, `${f.ownerApp}.app`);
       mkdirSync(join(appDir, "tasks"), { recursive: true });
       writeFileSync(
         join(appDir, "tasks", "seed.json"),
@@ -206,7 +214,7 @@ describe("supervisor UI release", () => {
       writeFileSync(
         join(appDir, "app.js"),
         `export default {
-        id: "may-agent", version: 1, agent: "may", inputSchema: { type: "object" },
+        id: "${f.ownerApp}", version: 1, agent: "may", inputSchema: { type: "object" },
         workspace: { kind: "local", localPath: "." }, tasks: {},
         task() { return { kind: "desired", intent: {
           id: "app-request/test", parentId: "root", outcome: "Inspect deployment facts", acceptance: ["Report findings"]
@@ -217,20 +225,20 @@ describe("supervisor UI release", () => {
       await pollUntil(
         async () => {
           const response = (await socketEmit(sb.socketPath, "apps.list")) as { apps?: Array<{ id: string }> };
-          return response.apps?.some((app) => app.id === "may-agent");
+          return response.apps?.some((app) => app.id === f.ownerApp);
         },
         { timeoutMs: 5000, description: "load paused receipt owner" },
       );
       await socketEmit(sb.socketPath, "publish", {
         event: {
           type: "app.input.requested",
-          target: { appId: "may-agent" },
+          target: { appId: f.ownerApp },
           data: { input: { kind: "review", data: {} } },
         },
       });
       const db = openSandboxDb(sb.dbPath);
       try {
-        const store = AppTaskResourceStore.activeFromDb(db, "may-agent")!;
+        const store = AppTaskResourceStore.activeFromDb(db, f.ownerApp)!;
         await pollUntil(() => store.readTask("app-request/test"), { timeoutMs: 5000 });
         // Use the real CLI emitter and the restarter's captured arguments,
         // without repairing its routing in the test.
@@ -247,7 +255,7 @@ describe("supervisor UI release", () => {
         await emit(eventType, payload);
         for (let i = 0; i < 3; i++)
           await emit("project.task.tick", {
-            target: { appId: "may-agent", taskId: "app-request/test" },
+            target: { appId: f.ownerApp, taskId: "app-request/test" },
             data: { tick: i },
           });
       } finally {
@@ -255,11 +263,11 @@ describe("supervisor UI release", () => {
       }
       const reopened = openSandboxDb(sb.dbPath);
       try {
-        const store = AppTaskResourceStore.activeFromDb(reopened, "may-agent")!;
+        const store = AppTaskResourceStore.activeFromDb(reopened, f.ownerApp)!;
         const events = store.readTrigger("app-request/test")?.events ?? [];
         expect(events.filter(({ event }) => event.type === "deployment.settled")).toMatchObject([
           {
-            event: { target: { appId: "may-agent", taskId: "app-request/test" }, data: { deploymentReceipt: receipt } },
+            event: { target: { appId: f.ownerApp, taskId: "app-request/test" }, data: { deploymentReceipt: receipt } },
           },
         ]);
         expect(events.filter(({ event }) => event.type === "project.task.tick")).toHaveLength(1);
