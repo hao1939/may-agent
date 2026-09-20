@@ -16,6 +16,7 @@ describe("real Task worker boundary", () => {
     ["conversation", "handles human input on the same Task across worker and storage reopen"],
     ["delegation", "runs A and B through the common loop and returns B's result while A remains responsive"],
     ["nested", "returns C's facts through B to A using typed Task admission within one App"],
+    ["nestedRecovery", "recovers C's durable input after parent-side SQLite contention"],
   ])("%s: %s", (scenario) => runTaskWorkerProbe("./task-interaction-scenario.ts", scenario), 20_000);
 
   it.each([
