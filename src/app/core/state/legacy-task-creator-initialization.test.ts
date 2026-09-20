@@ -56,6 +56,8 @@ function fixture() {
   const first = resource("legacy-one");
   const second = resource("legacy-two");
   const unrelated = resource("unrelated");
+  first.status.conditionIds.push("dependency:legacy-one");
+  first.status.inputWaits!["input:legacy-one"]!.conditions.push({ id: "dependency:legacy-one", generation: 1 });
   const context = appTaskTestContext({
     appDir: root,
     databasePath: join(root, "may.db"),
@@ -98,16 +100,29 @@ function fixture() {
           observedAt: "2026-01-01T00:00:01.000Z",
         },
       },
-      conditions: Object.fromEntries(
-        [first, second, unrelated].map((item) => [
-          `condition:${item.metadata.id}`,
-          {
-            metadata: { id: `condition:${item.metadata.id}`, generation: 1, resourceVersion: 1 },
-            spec: { type: "example.ready", subject: item.metadata.id, expected: { field: "ready", equals: true } },
-            status: { observedGeneration: 1, state: "false" as const },
+      conditions: {
+        ...Object.fromEntries(
+          [first, second, unrelated].map((item) => [
+            `condition:${item.metadata.id}`,
+            {
+              metadata: { id: `condition:${item.metadata.id}`, generation: 1, resourceVersion: 1 },
+              spec: { type: "example.ready", subject: item.metadata.id, expected: { field: "ready", equals: true } },
+              status: { observedGeneration: 1, state: "false" as const },
+            },
+          ]),
+        ),
+        "dependency:legacy-one": {
+          metadata: { id: "dependency:legacy-one", generation: 1, resourceVersion: 1 },
+          spec: {
+            type: "app.dependency.updated",
+            subject: "id:retained-dependency",
+            expected: { field: "status", equals: "done" },
+            owner: "app:reviewer",
+            reviewAfterMs: 300_000,
           },
-        ]),
-      ),
+          status: { observedGeneration: 1, state: "false" as const },
+        },
+      },
       appTaskAdmissions: {
         retained: {
           taskId: "legacy-one",
@@ -134,24 +149,39 @@ function fixture() {
        waiting_on_id = 'legacy-one', task_admission_key = 'retained' WHERE id = 'retained-inbox'`,
     )
     .run();
-  context.resourceStore.db
-    .prepare(
-      `INSERT INTO app_task_cancellations(app_id, task_id, requested_at, reason, cancellation_json)
-       VALUES ('example', 'unrelated', 2, 'retained closure', ?)`,
-    )
-    .run(
-      JSON.stringify({
-        kind: "cancelled",
-        appId: "example",
-        taskId: "unrelated",
-        generation: 1,
-        resourceVersion: 1,
-        outcome: "Legacy unrelated",
-        reason: "retained closure",
-        summary: "Unrelated cancellation survives",
-        cancelledAt: "2026-01-01T00:00:02.000Z",
-      }),
-    );
+  createAppInboxItem(context.resourceStore.db, {
+    id: "retained-dependency",
+    appId: "reviewer",
+    parentId: "retained-inbox",
+    source: { kind: "app", id: "example" },
+    input: { kind: "review", data: { retained: "dependency" } },
+    idempotencyKey: "retained-dependency-v1",
+    now: 2,
+  });
+  for (const [taskId, summary] of [
+    ["legacy-two", "Manifested Task cancellation survives"],
+    ["unrelated", "Unrelated cancellation survives"],
+  ] as const) {
+    context.resourceStore.db
+      .prepare(
+        `INSERT INTO app_task_cancellations(app_id, task_id, requested_at, reason, cancellation_json)
+         VALUES ('example', ?, 3, 'retained closure', ?)`,
+      )
+      .run(
+        taskId,
+        JSON.stringify({
+          kind: "cancelled",
+          appId: "example",
+          taskId,
+          generation: 1,
+          resourceVersion: 1,
+          outcome: `Legacy ${taskId === "legacy-two" ? "legacy-two" : "unrelated"}`,
+          reason: "retained closure",
+          summary,
+          cancelledAt: "2026-01-01T00:00:03.000Z",
+        }),
+      );
+  }
   cleanups.push(() => {
     context.resourceStore.close();
     rmSync(root, { recursive: true, force: true });
@@ -203,10 +233,13 @@ test("initializes one fenced batch, preserves all other state, and exact replay 
   expect(before.attempts.some((row) => JSON.stringify(row).includes("acceptedResult"))).toBe(true);
   expect(Object.keys(before.triggers)).toHaveLength(1);
   expect(before.admissions).toHaveLength(1);
-  expect(before.cancellations).toHaveLength(1);
-  expect(before.inbox).toHaveLength(1);
-  expect(JSON.stringify(before.inbox[0])).toContain("retained");
-  expect(JSON.stringify(before.tasks["legacy-one"])).toContain("condition:legacy-one");
+  expect(before.cancellations).toHaveLength(2);
+  expect(JSON.stringify(before.cancellations)).toContain("Manifested Task cancellation survives");
+  expect(JSON.stringify(before.cancellations)).toContain("Unrelated cancellation survives");
+  expect(before.inbox).toHaveLength(2);
+  expect(JSON.stringify(before.inbox)).toContain("retained-dependency");
+  expect(JSON.stringify(before.tasks["legacy-one"])).toContain("dependency:legacy-one");
+  expect(JSON.stringify(before.conditions)).toContain("app.dependency.updated");
   const revision = f.context.resourceStore.revision();
   expect(initializeLegacyTaskCreators(f.db, f.manifest, { hostAndWorkersStopped: true })).toEqual({
     status: "initialized",
@@ -301,7 +334,10 @@ test("dry-run rolls back and a later App-only revision uses ordinary creator aut
       outputs: ["installed-output"],
       owner: "worker",
     },
-    status: { facts: ["fact:legacy-one"], conditionIds: ["condition:legacy-one"] },
+    status: {
+      facts: ["fact:legacy-one"],
+      conditionIds: ["condition:legacy-one", "dependency:legacy-one"],
+    },
   });
   expect(f.context.resourceStore.readTask("legacy-one")?.spec.workflow).toBeUndefined();
 });
