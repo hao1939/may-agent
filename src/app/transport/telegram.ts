@@ -182,11 +182,6 @@ function escapeTelegramHtml(value: string): string {
   return value.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;");
 }
 
-function titleCaseStatus(task: Pick<HumanTaskView, "status" | "humanAction">): string {
-  const label = taskStatusLabel(task);
-  return `${label.charAt(0).toUpperCase()}${label.slice(1)}`;
-}
-
 function compactDuration(milliseconds: number): string {
   const minutes = Math.max(1, Math.round(milliseconds / 60_000));
   if (minutes % (24 * 60) === 0) return `${minutes / (24 * 60)}d`;
@@ -207,17 +202,27 @@ function recurrenceLine(task: Pick<HumanTaskView, "recurring" | "recurrence">): 
 function taskSection(task: HumanTaskView): string {
   if (task.humanAction) return "Needs you";
   if (task.status === "pending" || task.status === "running") return "Working";
-  if (task.status === "waiting" || task.status === "up-to-date") return "Waiting";
+  if (task.status === "waiting") return "Waiting";
+  if (task.status === "up-to-date") return "Up to date";
   if (task.terminal) return "Completed";
   return "Attention";
+}
+
+function taskStateMarker(task: Pick<HumanTaskView, "status" | "humanAction" | "terminal">): string {
+  if (task.humanAction) return "🔴";
+  if (task.status === "pending" || task.status === "running") return "🔵";
+  if (task.status === "waiting") return "🟡";
+  if (task.status === "up-to-date") return "🟢";
+  if (task.terminal) return "⚪";
+  return "🟠";
 }
 
 function renderTaskCard(task: HumanTaskView): string {
   const result = task.response?.trim() || task.summary?.trim();
   return [
-    `• <b>${escapeTelegramHtml(task.outcome)}</b>`,
-    `  ${escapeTelegramHtml(titleCaseStatus(task))} · ${escapeTelegramHtml(task.appId)} · <code>${escapeTelegramHtml(task.ref)}</code> · updated ${updatedAgeText(task.updatedAt)}`,
-    ...(task.humanAction ? [`  <b>Needs you:</b> ${escapeTelegramHtml(humanActionText(task))}`] : []),
+    `${taskStateMarker(task)} <b>${escapeTelegramHtml(task.outcome)}</b>`,
+    `  ${escapeTelegramHtml(task.appId)} · <code>${escapeTelegramHtml(task.ref)}</code> · updated ${updatedAgeText(task.updatedAt)}`,
+    ...(task.humanAction ? [`  ${escapeTelegramHtml(humanActionText(task))}`] : []),
     ...(recurrenceLine(task) ? [recurrenceLine(task)!] : []),
     ...(task.terminal && result ? [`  ${escapeTelegramHtml(result)}`] : []),
   ].join("\n");
@@ -225,7 +230,7 @@ function renderTaskCard(task: HumanTaskView): string {
 
 export function renderTelegramTasks(tasks: HumanTaskView[], includeDone: boolean, hasMore = false): string {
   if (tasks.length === 0) return includeDone ? "No active or recent Tasks." : "No active Tasks.";
-  const sections = ["Needs you", "Working", "Waiting", "Attention", "Completed"];
+  const sections = ["Needs you", "Working", "Waiting", "Up to date", "Attention", "Completed"];
   return [
     `<b>${includeDone ? "Tasks · active and recent" : "Tasks · active"}</b>`,
     ...sections.flatMap((section) => {
@@ -321,7 +326,7 @@ export function renderTelegramTodos(
       const since = task.humanAction?.since;
       return [
         [
-          `• <b>${escapeTelegramHtml(humanActionText(task))}</b>`,
+          `🔴 <b>${escapeTelegramHtml(humanActionText(task))}</b>`,
           `  ${escapeTelegramHtml(task.outcome)}`,
           ...(recurrenceLine(task) ? [recurrenceLine(task)!] : []),
           `  ${escapeTelegramHtml(task.appId)} · <code>${escapeTelegramHtml(task.ref)}</code>${since === undefined ? "" : ` · waiting ${elapsedText(since)}`}`,

@@ -939,20 +939,27 @@ describe("Telegram May input", () => {
         },
       ]),
     ).toContain("evaluation — 1 active · 1 running");
-    expect(renderTelegramTasks([task], false)).toContain("<b>Working</b>\n• <b>Review the docs</b>");
-    expect(renderTelegramTasks([task], false)).toContain("Working · evaluation · <code>8f12ac90</code>");
-    expect(renderTelegramTasks([task], false)).not.toContain("Needs you:");
+    const workingTasks = renderTelegramTasks([task], false);
+    expect(workingTasks).toContain("<b>Working</b>\n🔵 <b>Review the docs</b>");
+    expect(workingTasks).toContain("🔵 <b>Review the docs</b>\n  evaluation · <code>8f12ac90</code>");
+    expect(workingTasks).not.toContain("Working · evaluation");
+    expect(workingTasks).not.toContain("Needs you:");
     const groupedTasks = renderTelegramTasks(
       [
         { ...task, status: "waiting", humanAction: { requestedAction: "Choose the rollout." } },
         task,
         { ...task, taskId: "waiting", ref: "aa11bb22", status: "waiting" },
+        { ...task, taskId: "current", ref: "cc33dd44", status: "up-to-date" },
       ],
       false,
     );
-    expect(groupedTasks).toContain("<b>Needs you</b>");
-    expect(groupedTasks).toContain("<b>Working</b>");
-    expect(groupedTasks).toContain("<b>Waiting</b>");
+    expect(groupedTasks).toContain("<b>Needs you</b>\n🔴 <b>Review the docs</b>");
+    expect(groupedTasks).toContain("<b>Working</b>\n🔵 <b>Review the docs</b>");
+    expect(groupedTasks).toContain("<b>Waiting</b>\n🟡 <b>Review the docs</b>");
+    expect(groupedTasks).toContain("<b>Up to date</b>\n🟢 <b>Review the docs</b>");
+    expect(groupedTasks).toContain("🟢 <b>Review the docs</b>\n  evaluation · <code>cc33dd44</code>");
+    expect(groupedTasks).not.toContain("Waiting · evaluation");
+    expect(groupedTasks).not.toContain("Up to date · evaluation");
     const recurringTasks = renderTelegramTasks(
       [
         {
@@ -997,7 +1004,7 @@ describe("Telegram May input", () => {
         1,
         "evaluation",
       ),
-    ).toContain("<b>Needs you for evaluation</b>\n\n• <b>Approve or reject deployment.</b>");
+    ).toContain("<b>Needs you for evaluation</b>\n\n🔴 <b>Approve or reject deployment.</b>");
     const recurringTodos = renderTelegramTodos([
       {
         ...task,
