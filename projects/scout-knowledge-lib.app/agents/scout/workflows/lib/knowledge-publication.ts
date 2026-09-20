@@ -978,6 +978,148 @@ export function verifyArchivedCandidateAtCanonicalHead(
   ];
 }
 
+function factValue(facts: string[], prefix: string): string | undefined {
+  const values = new Set(
+    facts
+      .filter((fact) => fact.startsWith(prefix))
+      .map((fact) => fact.slice(prefix.length))
+      .filter(Boolean),
+  );
+  return values.size === 1 ? [...values][0] : undefined;
+}
+
+/**
+ * Read-only completion check for a native-owner accepted-publication recovery.
+ * Exact delivery compares the immutable archive with canonical HEAD. A
+ * Scout-judged adaptation is accepted only when its claimed publisher commit
+ * is canonical history and every claimed output still matches that commit.
+ */
+export function verifyAcceptedPublicationAtCanonicalHead(
+  projectRoot: string,
+  candidate: { ref: string; revision: string; changedPaths: string[] },
+  facts: string[],
+): string[] {
+  const canonicalProjectRoot = realpathSync(projectRoot);
+  const repositoryRoot = realpathSync(
+    git(canonicalProjectRoot, ["rev-parse", "--show-toplevel"]),
+  );
+  const head = git(repositoryRoot, ["rev-parse", "HEAD"]);
+  const snapshot: KnowledgeSnapshot = {
+    projectRoot: canonicalProjectRoot,
+    canonicalProjectRoot,
+    repositoryRoot,
+    candidateRoot: canonicalProjectRoot,
+    ref: "HEAD",
+    head,
+    files: new Map(),
+    canonicalDirty: new Set(),
+  };
+  if (git(repositoryRoot, ["rev-parse", candidate.ref]) !== candidate.revision)
+    throw new Error(
+      `Archived publication ref ${candidate.ref} no longer resolves to ${candidate.revision}`,
+    );
+
+  try {
+    const exact = verifyArchivedCandidateAtCanonicalHead(snapshot, candidate);
+    for (const path of candidate.changedPaths) {
+      const canonical = resolve(repositoryRoot, path);
+      assertCanonicalFile(
+        snapshot,
+        relative(canonicalProjectRoot, canonical).replaceAll("\\", "/"),
+      );
+      const committed = gitBytes(repositoryRoot, ["show", `${head}:${path}`]);
+      if (digestBytes(committed) !== digest(canonical))
+        throw new Error(`Canonical output differs from HEAD: ${path}`);
+    }
+    return exact;
+  } catch (exactError) {
+    if (!facts.includes(`accepted-publication:adapted:${candidate.revision}`))
+      throw exactError;
+  }
+
+  const commit = factValue(facts, "accepted-publication:delivered-by:");
+  const publicationCommits = new Set(
+    facts
+      .filter((fact) => fact.startsWith("publication:commit:"))
+      .map((fact) => fact.slice("publication:commit:".length))
+      .filter(Boolean),
+  );
+  if (!commit || !publicationCommits.has(commit))
+    throw new Error("Adaptation lacks matching publisher commit evidence");
+  try {
+    git(repositoryRoot, ["merge-base", "--is-ancestor", commit, head]);
+  } catch {
+    throw new Error(`Adaptation commit ${commit} is not canonical history`);
+  }
+  const files = facts
+    .filter((fact) => fact.startsWith("publication-file:"))
+    .map((fact) => fact.slice("publication-file:".length));
+  const outputs = facts
+    .filter((fact) => fact.startsWith("published-output:"))
+    .map((fact) => fact.slice("published-output:".length));
+  if (files.length === 0 || outputs.length === 0)
+    throw new Error("Adaptation lacks publisher file and output evidence");
+  const committedFiles = new Set(
+    git(repositoryRoot, [
+      "diff-tree",
+      "--no-commit-id",
+      "--name-only",
+      "-r",
+      commit,
+    ])
+      .split("\n")
+      .filter(Boolean),
+  );
+  const selectedOutputs = outputs.filter((output) => {
+    const projectPath = relative(
+      canonicalProjectRoot,
+      resolve(output),
+    ).replaceAll("\\", "/");
+    return committedFiles.has(repositoryPath(snapshot, projectPath));
+  });
+  const selectedPaths = new Set(
+    selectedOutputs.map((output) =>
+      repositoryPath(
+        snapshot,
+        relative(canonicalProjectRoot, resolve(output)).replaceAll("\\", "/"),
+      ),
+    ),
+  );
+  if (
+    selectedOutputs.length === 0 ||
+    [...committedFiles].some(
+      (path) => !files.includes(path) || !selectedPaths.has(path),
+    )
+  )
+    throw new Error(
+      `Adaptation lacks complete output evidence for publication ${commit}`,
+    );
+  for (const output of selectedOutputs) {
+    const absolute = resolve(output);
+    const projectPath = relative(canonicalProjectRoot, absolute).replaceAll(
+      "\\",
+      "/",
+    );
+    assertCanonicalFile(snapshot, projectPath);
+    const repoPath = repositoryPath(snapshot, projectPath);
+    const committed = gitBytes(repositoryRoot, [
+      "show",
+      `${commit}:${repoPath}`,
+    ]);
+    if (digestBytes(committed) !== digest(absolute))
+      throw new Error(
+        `Adapted output differs from publication ${commit}: ${repoPath}`,
+      );
+  }
+  verifyCanonicalOutputPaths(snapshot, head, selectedOutputs);
+  return [
+    `accepted-publication:verified-adaptation:${candidate.revision}`,
+    `publication-head:${head}`,
+    `publication:commit:${commit}`,
+    ...selectedOutputs.map((output) => `verified-output:${output}`),
+  ];
+}
+
 export function publicationFacts(evidence: PublicationEvidence): string[] {
   return evidence.state === "unchanged"
     ? ["publication:no-change", `publication-head:${evidence.commit}`]

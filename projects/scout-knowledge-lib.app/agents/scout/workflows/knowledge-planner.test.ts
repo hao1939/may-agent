@@ -19,6 +19,7 @@ import {
   admitExperienceReviewResult,
   execute,
   isExperienceReview,
+  verify,
 } from "./knowledge-planner";
 
 const defaultFixture = publicationTestFixture();
@@ -375,6 +376,199 @@ describe("Scout owner reconciliation boundary", () => {
       }
     },
   );
+
+  it("hands a recovery publication failure to the native owner with exact unpublished evidence", async () => {
+    const fixture = publicationTestFixture();
+    const lock = join(fixture.repositoryRoot, ".git/index.lock");
+    const ref = "refs/archive/scout-publication/native-owner-handoff";
+    const revision = fixture.git("rev-parse", "HEAD");
+    fixture.git("update-ref", ref, revision);
+    try {
+      const result = await execute(
+        createTestAppWorkflowContext({
+          input: {},
+          reconciliation: {
+            appId: "scout-knowledge-lib",
+            taskId: "goal/native-owner-handoff",
+            generation: 1,
+            resourceVersion: 1,
+            agent: "scout",
+            outcome: "Deliver accepted knowledge",
+            acceptance: ["Canonical publication is verified"],
+            input: {
+              kind: "goal",
+              data: {
+                outcome: "Deliver accepted knowledge",
+                context: {
+                  reason: "accepted-publication-recovery",
+                  candidateRef: ref,
+                  candidateRevision: revision,
+                  changedPaths: [
+                    "projects/scout-knowledge-lib/knowledge/README.md",
+                  ],
+                },
+              },
+            },
+            children: { live: [], completed: [] },
+            events: { items: [], truncated: false },
+          },
+          workspace: fixture.workspace,
+          callAgent: (async (_agent, prompt) => {
+            const candidate = prompt.match(/- Domain workspace: (.+)/)?.[1];
+            const output = join(candidate!, "knowledge/adaptation.md");
+            writeFileSync(output, "Unpublished adaptation\n");
+            writeFileSync(lock, "publisher failure\n");
+            return {
+              id: "s_post_writer_failure",
+              kind: "agent",
+              status: "done",
+              summary: "Adaptation ready",
+              output: {
+                state: "converged",
+                summary: "Adaptation ready",
+                facts: [`output:${output}`, "owner-judgment:adaptation"],
+              },
+            };
+          }) as WorkflowContext["agents"]["call"],
+        }),
+      );
+      expect(result.status).toBe("done");
+      expect(result.output).toMatchObject({ state: "needs-agent" });
+      const evidence = result.output?.facts?.join("\n") ?? "";
+      expect(evidence).toContain("writer-execution:s_post_writer_failure");
+      expect(evidence).toContain(`accepted-archive-ref:${ref}`);
+      expect(evidence).toContain(`accepted-archive-revision:${revision}`);
+      expect(evidence).toContain("unpublished-candidate-ref:");
+      expect(evidence).toContain("unpublished-candidate-revision:");
+      expect(evidence).toContain("unpublished-candidate-base:");
+      expect(evidence).toContain("unpublished-candidate-paths:");
+      expect(evidence).toContain("publication:unverified");
+      expect(evidence).toContain("unaccepted-workflow-result:");
+      expect(evidence).toContain('"state":"converged"');
+      expect(result.output).not.toHaveProperty("conditions");
+      expect(result.output).not.toHaveProperty("dependencies");
+    } finally {
+      rmSync(lock, { force: true });
+      rmSync(fixture.repositoryRoot, { recursive: true, force: true });
+    }
+  });
+
+  it("verifies a publisher-backed owner adaptation without allocating a candidate", async () => {
+    const fixture = publicationTestFixture();
+    const ref = "refs/archive/scout-publication/adapted-verification";
+    const originalPath =
+      "projects/scout-knowledge-lib/knowledge/accepted-original.md";
+    const original = join(fixture.repositoryRoot, originalPath);
+    writeFileSync(original, "Accepted original\n");
+    fixture.git("add", originalPath);
+    fixture.git("commit", "-m", "accepted archive");
+    const revision = fixture.git("rev-parse", "HEAD");
+    fixture.git("update-ref", ref, revision);
+    fixture.git("reset", "--hard", "HEAD~1");
+    const output = join(fixture.workspace.projectRoot, "knowledge/adapted.md");
+    writeFileSync(output, "Scout judged adaptation\n");
+    const repoPath = "projects/scout-knowledge-lib/knowledge/adapted.md";
+    fixture.git("add", repoPath);
+    fixture.git("commit", "-m", "publish adaptation");
+    const commit = fixture.git("rev-parse", "HEAD");
+    const independentRepoPath =
+      "projects/scout-knowledge-lib/knowledge/independent.md";
+    const independentOutput = join(
+      fixture.workspace.projectRoot,
+      "knowledge/independent.md",
+    );
+    writeFileSync(independentOutput, "Independent publication\n");
+    fixture.git("add", independentRepoPath);
+    fixture.git("commit", "-m", "publish independent evidence");
+    const independentCommit = fixture.git("rev-parse", "HEAD");
+    try {
+      const before = fixture.git("worktree", "list", "--porcelain");
+      const checked = await verify(
+        {
+          appId: "scout-knowledge-lib",
+          taskId: "goal/adapted-verification",
+          generation: 1,
+          appRoot: fixture.workspace.appRoot,
+          projectRoot: fixture.workspace.projectRoot,
+          workspaceDir: fixture.workspace.output,
+          intent: {
+            id: "goal/adapted-verification",
+            outcome: "Deliver accepted knowledge",
+            acceptance: ["Canonical publication is verified"],
+            input: {
+              kind: "goal",
+              data: {
+                context: {
+                  reason: "accepted-publication-recovery",
+                  candidateRef: ref,
+                  candidateRevision: revision,
+                  changedPaths: [originalPath],
+                },
+              },
+            },
+          },
+        } as never,
+        {
+          state: "converged",
+          summary: "Adaptation published",
+          facts: [
+            `accepted-publication:adapted:${revision}`,
+            `accepted-publication:delivered-by:${commit}`,
+            `publication:commit:${commit}`,
+            `publication:commit:${commit}`,
+            `publication-file:${repoPath}`,
+            `published-output:${output}`,
+            `publication:commit:${independentCommit}`,
+            `publication-file:${independentRepoPath}`,
+            `published-output:${independentOutput}`,
+          ],
+        },
+      );
+      expect(checked.accepted).toBe(true);
+      expect(checked.facts).toContain(
+        `accepted-publication:verified-adaptation:${revision}`,
+      );
+      expect(fixture.git("worktree", "list", "--porcelain")).toBe(before);
+      fixture.git("rm", repoPath);
+      fixture.git("commit", "-m", "remove adaptation");
+      writeFileSync(output, "Scout judged adaptation\n");
+      expect(
+        (
+          await verify(
+            {
+              projectRoot: fixture.workspace.projectRoot,
+              intent: {
+                input: {
+                  kind: "goal",
+                  data: {
+                    context: {
+                      reason: "accepted-publication-recovery",
+                      candidateRef: ref,
+                      candidateRevision: revision,
+                      changedPaths: [originalPath],
+                    },
+                  },
+                },
+              },
+            } as never,
+            {
+              state: "converged",
+              summary: "Adaptation published",
+              facts: [
+                `accepted-publication:adapted:${revision}`,
+                `accepted-publication:delivered-by:${commit}`,
+                `publication:commit:${commit}`,
+                `publication-file:${repoPath}`,
+                `published-output:${output}`,
+              ],
+            },
+          )
+        ).accepted,
+      ).toBe(false);
+    } finally {
+      rmSync(fixture.repositoryRoot, { recursive: true, force: true });
+    }
+  });
 
   it("retains accepted publication through a disjoint in-library workflow advance", async () => {
     const fixture = publicationTestFixture();

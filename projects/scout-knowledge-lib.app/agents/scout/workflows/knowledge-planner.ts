@@ -3,6 +3,8 @@ import {
   taskAgentResultSchema,
   type ExecutionResult,
   type TaskReconcileResult,
+  type TaskVerificationContext,
+  type TaskVerificationResult,
   type WorkflowContext,
 } from "@may-agent/sdk";
 import { taskEmissionKey } from "./lib/task-emission.js";
@@ -17,10 +19,12 @@ import {
 } from "./lib/research-adoption-handoff.js";
 import {
   changedKnowledgePaths,
+  KnowledgePublicationError,
   publicationFacts,
   publishKnowledgeChanges,
   retainedCandidateFacts,
   snapshotKnowledge,
+  verifyAcceptedPublicationAtCanonicalHead,
   verifyArchivedCandidateAtCanonicalHead,
 } from "./lib/knowledge-publication.js";
 
@@ -146,6 +150,80 @@ export function isExperienceReview(ctx: WorkflowContext): boolean {
 export const name = "knowledge-planner";
 export const description =
   "Scout knowledge-library planner. Reviews current task resources and performs the smallest useful library maintenance step.";
+
+function publicationFailureHandoff(
+  error: unknown,
+  executionId: string,
+  recovery: AcceptedPublicationRecovery,
+  result: AgentResult,
+): Extract<TaskReconcileResult, { state: "needs-agent" }> | undefined {
+  if (!(error instanceof KnowledgePublicationError)) return undefined;
+  const publication = error;
+  return {
+    state: "needs-agent",
+    summary:
+      "Publication failed after Scout returned; the native Task owner must judge the retained failure and unpublished candidate.",
+    facts: [
+      `publication:failed:${publication.message}`,
+      `writer-execution:${executionId}`,
+      `accepted-archive-ref:${recovery.ref}`,
+      `accepted-archive-revision:${recovery.revision}`,
+      `accepted-archive-paths:${JSON.stringify(recovery.changedPaths)}`,
+      ...(publication.candidateRef
+        ? [`unpublished-candidate-ref:${publication.candidateRef}`]
+        : []),
+      ...(publication.candidateRevision
+        ? [`unpublished-candidate-revision:${publication.candidateRevision}`]
+        : []),
+      ...(publication.candidateBase
+        ? [`unpublished-candidate-base:${publication.candidateBase}`]
+        : []),
+      `unpublished-candidate-paths:${JSON.stringify(publication.changedPaths)}`,
+      "publication:unverified",
+      `unaccepted-workflow-result:${JSON.stringify(result)}`,
+    ],
+  };
+}
+
+export async function verify(
+  context: TaskVerificationContext,
+  result: TaskReconcileResult,
+): Promise<TaskVerificationResult> {
+  if (result.state !== "converged") {
+    return {
+      accepted: true,
+      summary:
+        "Only converged planner results require publication verification.",
+      facts: [],
+    };
+  }
+  const recovery = acceptedPublicationRecovery(context.intent.input);
+  if (!recovery) {
+    return {
+      accepted: true,
+      summary: "This result is outside accepted-publication recovery.",
+      facts: [],
+    };
+  }
+  try {
+    const facts = verifyAcceptedPublicationAtCanonicalHead(
+      context.projectRoot,
+      recovery,
+      result.facts ?? [],
+    );
+    return {
+      accepted: true,
+      summary: "Accepted Scout publication is present at canonical HEAD.",
+      facts,
+    };
+  } catch (error) {
+    return {
+      accepted: false,
+      summary: `Accepted Scout publication remains unverified: ${error instanceof Error ? error.message : String(error)}`,
+      facts: ["accepted-publication:verification-failed"],
+    };
+  }
+}
 
 export async function execute(ctx: WorkflowContext): Promise<ExecutionResult> {
   if (!ctx.workspace || !ctx.reconciliation) {
@@ -392,6 +470,15 @@ ${JSON.stringify(ctx.reconciliation, null, 2)}`.trim();
             recovery,
           });
     if (retained) return ctx.done(retained.summary, retained);
+    if (recovery) {
+      const handoff = publicationFailureHandoff(
+        error,
+        result.id,
+        recovery,
+        agentResult,
+      );
+      if (handoff) return ctx.done(handoff.summary, handoff);
+    }
     return ctx.blocked("Scout maintenance was not published", {
       executionId: result.id,
       error: error instanceof Error ? error.message : String(error),

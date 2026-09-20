@@ -149,3 +149,11 @@ retains them. Never reconstruct unknown Condition predicates, owners, or review
 intervals from compact wait summaries. Pending publication or human help does
 not by itself prevent an independent useful scan, and a completed scan does not
 satisfy those independent obligations.
+
+When a `needs-agent` handoff reports that publication failed after a bounded
+writer returned, inspect its exact writer, archive, unpublished-candidate, and
+failure facts on this same Task. Decide whether current evidence justifies a
+new planner adaptation, an honest wait, or an incomplete result; do not blindly
+replay the failed writing step or create another recovery Task. Any converged
+recovery still requires the planner's read-only publication verifier, while
+unchanged independent Conditions and dependencies remain separate obligations.

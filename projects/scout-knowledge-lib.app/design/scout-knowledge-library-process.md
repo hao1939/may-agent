@@ -291,6 +291,26 @@ how a suitable writable adaptation preserves the accepted candidate and
 provenance or returns a supported human-owned Condition. The shared publisher
 remains the only publication path.
 
+If that publisher fails after the bounded writer returns on an existing
+accepted-publication recovery, the workflow preserves an already-valid waiting
+result as a whole. Otherwise it returns `needs-agent` on the same Task rather
+than turning the failure into an automatic workflow replay. The handoff carries
+the thrown publication error, writer execution, immutable accepted archive,
+unpublished candidate identity and paths, and the exact unaccepted bounded
+result. It carries no proposed actions, Conditions, or dependencies because the
+shared handoff contract does not admit them; independently persisted waits
+remain on the Task and are not reconstructed from the handoff.
+
+The native Scout owner then judges adaptation, a justified invocation of the
+same `knowledge-planner` workflow, or an exact supported wait. It does not edit
+canonical knowledge directly or claim a draft is delivery. Converged owner
+results remain subject to the planner's read-only verifier: exact recovery must
+match the immutable archive at canonical HEAD, while a Scout-judged adaptation
+must name the archive and actual publisher commit and outputs. The verifier
+checks canonical ancestry and bytes but does not replace Scout's semantic
+judgment. Non-converged waits remain admissible without pretending publication
+was verified.
+
 An explicitly partial agent finish is not a no-op, even when its execution
 status is `done` and its output list is empty. Preserve its finish evidence
 and continuation details on the same source Task, and return a blocked
