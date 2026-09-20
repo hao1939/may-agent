@@ -1,8 +1,8 @@
 <ai_context>
-summary: "Canonical overview of the agent protocol landscape: MCP (agent→tool), A2A (agent→agent), AG-UI (agent→frontend), AHP (host→multi-client session state), and practical ACP implementation evidence. Covers what each standardizes, the SDK/ecosystem state, competing protocols, Chinese community sentiment, research findings, and how protocol roadmaps and implementations are splitting transport/tool shells from identity, discovery, and runtime control layers. Pinned implementation evidence now covers capability-conditioned discovery and a transport-level MCP fuzz harness whose result taxonomy illustrates why request failure, server liveness, and recovery must be measured separately."
-triggers: ["MCP", "Model Context Protocol", "A2A", "AG-UI", "AHP", "Agent Host Protocol", "agent protocol", "agent-to-agent protocol", "tool connectivity protocol", "MCP陨落", "ID-JAG", "Zero-Touch OAuth", "protocol fatigue", "protocol absorption", "EMA enterprise managed auth", "auth isolation", "MCP moat", "agent-behind-MCP", "Cloudflare temporary accounts", "agent-native infrastructure", "accommodation wave", "auth.md", "ephemeral deploy", "stateless MCP", "requestState", "mcp-use v2", "ACP backend rail", "entwurf", "garden id", "progressive discovery", "capability-conditioned discovery", "Ripwire", "mcp-assert", "MCP fuzzing", "fault classification", "workload identity federation", "DPoP", "MCP roadmap"]
-last_updated: "2026-09-19"
-source_basis: "GitHub trending repos June 2026, XHS Chinese AI community May-June 2026, arXiv briefings June 2026, HN explorations June-Aug 2026 (incl. scan #33 and HN items 49131438, 49198472, 49399591, and 49453910), arXiv 2606.30317 (MCP Architecture Patterns), scan #262, Simon Willison's stateless MCP write-up (2026-07-31), Manufact's mcp-use v2 stateless-MCP rebuild write-up (2026-07-29), the current GitHub repo junghan0611/entwurf checked 2026-08-06 for ACP/backend-rail implementation evidence, the official MCP roadmap published 2026-08-22, VS Code's first-party Agent Host launch post (2026-08-26), redhat-et/ripwire inspected at commit 5c4235b9befd4cd5b6f9f3a489940d7b79f86520 for capability-conditioned MCP catalog evidence (2026-09-11), and blackwell-systems/mcp-assert inspected at commit f2389c6511fdd205bc8732b0529e90eb1d25dd4b for transport-level fuzzing and fault-classification evidence (2026-09-19). See source declarations below."
+summary: "Canonical overview of the agent protocol landscape: MCP (agent→tool), A2A (agent→agent), AG-UI (agent→frontend), AHP (host→multi-client session state), and practical ACP implementation evidence. Covers what each standardizes, the SDK/ecosystem state, competing protocols, Chinese community sentiment, research findings, and how protocol roadmaps and implementations are splitting transport/tool shells from identity, discovery, and runtime control layers. Current HN discourse sharpens the MCP-versus-CLI choice into a deployment and authority decision rather than a claim about model intelligence."
+triggers: ["MCP", "Model Context Protocol", "A2A", "AG-UI", "AHP", "Agent Host Protocol", "agent protocol", "agent-to-agent protocol", "tool connectivity protocol", "MCP陨落", "ID-JAG", "Zero-Touch OAuth", "protocol fatigue", "protocol absorption", "EMA enterprise managed auth", "auth isolation", "MCP moat", "agent-behind-MCP", "Cloudflare temporary accounts", "agent-native infrastructure", "accommodation wave", "auth.md", "ephemeral deploy", "stateless MCP", "requestState", "mcp-use v2", "ACP backend rail", "entwurf", "garden id", "progressive discovery", "capability-conditioned discovery", "Ripwire", "mcp-assert", "MCP fuzzing", "fault classification", "MCP versus CLI", "shell authority", "workload identity federation", "DPoP", "MCP roadmap"]
+last_updated: "2026-09-20"
+source_basis: "GitHub trending repos June 2026, XHS Chinese AI community May-June 2026, arXiv briefings June 2026, HN explorations June-Sep 2026 (incl. scan #33 and HN items 49131438, 49198472, 49399591, 49453910, and 49779329), arXiv 2606.30317 (MCP Architecture Patterns), scan #262, Simon Willison's stateless MCP write-up (2026-07-31), Manufact's mcp-use v2 stateless-MCP rebuild write-up (2026-07-29), the current GitHub repo junghan0611/entwurf checked 2026-08-06 for ACP/backend-rail implementation evidence, the official MCP roadmap published 2026-08-22, VS Code's first-party Agent Host launch post (2026-08-26), redhat-et/ripwire inspected at commit 5c4235b9befd4cd5b6f9f3a489940d7b79f86520 for capability-conditioned MCP catalog evidence (2026-09-11), blackwell-systems/mcp-assert inspected at commit f2389c6511fdd205bc8732b0529e90eb1d25dd4b for transport-level fuzzing and fault-classification evidence (2026-09-19), and Maharshi Patel's MCP critique plus its HN discussion (2026-09-20). See source declarations below."
 </ai_context>
 
 # Agent Protocols: MCP, A2A, and the Emerging Stack
@@ -1117,6 +1117,57 @@ claim that a passing server works with every MCP client.
 [pinned fuzz runner and classifier](https://github.com/blackwell-systems/mcp-assert/blob/f2389c6511fdd205bc8732b0529e90eb1d25dd4b/internal/runner/fuzz.go),
 [pinned fuzz tests](https://github.com/blackwell-systems/mcp-assert/blob/f2389c6511fdd205bc8732b0529e90eb1d25dd4b/internal/runner/fuzz_test.go), and
 [pinned transport client](https://github.com/blackwell-systems/mcp-assert/blob/f2389c6511fdd205bc8732b0529e90eb1d25dd4b/internal/runner/client.go).
+
+### §8a.6. HN Deployment Signal (2026-09-20): MCP Versus CLI Is an Authority Decision
+
+A current HN discussion challenges MCP from the opposite direction. Maharshi
+Patel argues that stronger coding agents can discover CLIs and HTTP APIs, compose
+calls in scripts, and avoid paying the recurring context cost of large MCP tool
+schemas. He recommends deleting most remote-service MCP wrappers and using
+ordinary APIs, CLIs, and content negotiation instead. This is an author position,
+not comparative evidence: the post publishes no controlled reliability, token,
+latency, or security measurements.
+
+The thread's disagreement is more useful than the headline. At retrieval the
+story had 26 points and 53 comments. Some practitioners supported direct APIs
+or CLIs for terminal agents and described output-capture wrappers that keep
+large command results out of context. Others reported that agents still waste
+tokens rediscovering API parameters, especially with cheaper production models,
+or cited domain-specific MCP tools whose predefined operations were more
+reliable than searching documentation. The strongest objections were about
+capability boundaries rather than model competence: not every agent has or
+should have shell and unrestricted network access, while a constrained gateway
+can expose only approved operations, mediate authentication, support one-click
+connections, and retain audit logs. Commenters also correctly rejected the
+post's suggestion to overload HTTP `Accept-Language` with a programming-language
+preference; agent-oriented negotiation should not silently redefine an existing
+web standard.
+
+This updates the protocol decision rule: **choose the interface from the
+principal's deployment and authority envelope, then optimize context cost**.
+
+- A local terminal agent already authorized for shell, network, and credential
+  use may prefer a CLI or direct API, especially for composable multi-step work.
+- A remote, mobile, embedded, multi-user, or least-privilege agent may need a
+  brokered typed surface even when the model could write the API client itself.
+- Either path still needs output projection, credential-use controls,
+  execution-time authorization, and audit evidence; MCP does not supply those
+  properties merely by naming a tool, and shell access does not make them
+  unnecessary.
+
+The non-obvious point is that increasing model capability weakens MCP's
+*discovery* rationale without dissolving its possible *authority* and
+*distribution* roles. Claims that one transport replaces the other should be
+reported against an explicit matrix: agent location, available execution
+capabilities, credential exposure, allowed effect surface, discovery cost,
+response-shaping cost, and audit requirements.
+
+**Sources:** [Maharshi Patel, “Why MCP Was Always a Bad Idea”](https://maharship.com/blog/why-mcp-was-always-a-bad-idea/),
+[HN item 49779329](https://news.ycombinator.com/item?id=49779329).
+
+**Evidence boundary:** The article and current HN item tree were read. The
+thread contains practitioner anecdotes and arguments, not independent product
+benchmarks; no claim that MCP or CLI is generally more reliable was verified.
 
 ---
 
