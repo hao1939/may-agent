@@ -1,5 +1,8 @@
 // ── Projects ──────────────────────────────────────────────────────────
 
+// List and detail requests share one pane; only the latest load may render it.
+let projectLoadVersion = 0;
+
 async function loadAgentsTab() {
   const el = document.getElementById('agents-content');
   if (!el) return;
@@ -58,9 +61,11 @@ async function loadAgentsTab() {
 }
 
 async function loadProjects() {
+  const loadVersion = ++projectLoadVersion;
   try {
     const res = await fetch('/api/projects');
     const projects = await res.json();
+    if (loadVersion !== projectLoadVersion) return;
     const el = document.getElementById('projects-content');
 
     // Sort: active first, then by updatedAt desc
@@ -109,6 +114,7 @@ async function loadProjects() {
     html += `</table>`;
     el.innerHTML = html;
   } catch(e) {
+    if (loadVersion !== projectLoadVersion) return;
     document.getElementById('projects-content').innerHTML = `<div style="color:var(--red)">Failed to load projects: ${e.message}</div>`;
   }
 }
@@ -124,6 +130,7 @@ function projectRouteFor(path, surface) {
 }
 
 async function showProjectDetail(path, initialTab) {
+  const loadVersion = ++projectLoadVersion;
   _projectDetailPath = path;
   const el = document.getElementById('projects-content');
   el.innerHTML = '<div style="color:var(--fg2);padding:24px">Loading project…</div>';
@@ -133,9 +140,11 @@ async function showProjectDetail(path, initialTab) {
   try {
     const r = await fetch(`/api/projects/detail?path=${encodeURIComponent(path)}`);
     detail = await r.json();
+    if (loadVersion !== projectLoadVersion) return;
     if (detail.error) throw new Error(detail.error);
     _currentProjectDetail = detail;
   } catch (e) {
+    if (loadVersion !== projectLoadVersion) return;
     el.innerHTML = `<div style="color:var(--red);padding:16px">Failed to load project: ${esc(e.message)}</div>`;
     return;
   }
@@ -261,6 +270,7 @@ async function showProjectDetail(path, initialTab) {
     Promise.all(projectMetrics.map(m =>
       fetch(`/api/metrics/${encodeURIComponent(m.id)}/history?days=7`).then(r => r.json()).catch(() => ({snapshots:[]}))
     )).then(results => {
+      if (loadVersion !== projectLoadVersion) return;
       results.forEach((res, i) => {
         const m = projectMetrics[i];
         const card = document.querySelector(`[data-metric-id="${CSS.escape(m.id)}"]`);

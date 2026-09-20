@@ -262,6 +262,22 @@ describe.skipIf(E2E_NO_UI || !probe.ok)("E8: project comment via served UI", () 
         /routeTo\(\s*['"]\/projects\/['"]\s*\+\s*['"]platform['"]\s*\)/.test(platformRouteAttr ?? ""),
       ).toBe(true);
 
+      // A list refresh can still be in flight when the user opens a project.
+      // Hold the real response until detail has rendered, then finish the loader.
+      await page.setRequestInterception(true);
+      const pendingList = Promise.withResolvers<import("puppeteer-core").HTTPRequest>();
+      const interceptList = (request: import("puppeteer-core").HTTPRequest) => {
+        if (new URL(request.url()).pathname === "/api/projects") pendingList.resolve(request);
+        else void request.continue();
+      };
+      page.on("request", interceptList);
+      const listRefresh = page.evaluate(async () => {
+        await loadProjects();
+      });
+      // Observe rejection during teardown even if an earlier assertion fails.
+      void listRefresh.catch(() => {});
+      const delayedList = await pendingList.promise;
+
       // 4. Click row -> canonical route + resolved path
       await page.evaluate(() => {
         const rows = Array.from(document.querySelectorAll('tr[onclick*="routeTo"]'));
@@ -279,6 +295,10 @@ describe.skipIf(E2E_NO_UI || !probe.ok)("E8: project comment via served UI", () 
         },
         { timeout: 8000 },
       );
+      await delayedList.continue();
+      await listRefresh;
+      page.off("request", interceptList);
+      await page.setRequestInterception(false);
       const resolvedPath = await page.evaluate(() => {
         try { return _projectDetailPath; } catch { return undefined; }
       });
