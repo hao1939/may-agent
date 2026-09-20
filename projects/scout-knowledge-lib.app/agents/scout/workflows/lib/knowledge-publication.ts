@@ -31,6 +31,9 @@ export type KnowledgeSnapshot = {
   head: string;
   files: Map<string, string>;
   canonicalDirty: Set<string>;
+  /** Exact durable paths and bytes admitted before any disjoint HEAD replay. */
+  intendedPaths?: string[];
+  intendedContent?: Map<string, string>;
 };
 
 export type PublicationEvidence = {
@@ -48,6 +51,7 @@ export class KnowledgePublicationError extends Error {
     readonly candidateBase: string,
     readonly candidateRevision: string,
     readonly changedPaths: string[],
+    readonly candidateRef?: string,
   ) {
     super(message);
     this.name = "KnowledgePublicationError";
@@ -258,13 +262,150 @@ function assertCanonicalFile(
 
 function retainFailure(snapshot: KnowledgeSnapshot, error: unknown): never {
   const changes = allCandidateChanges(snapshot);
-  const revision = git(snapshot.candidateRoot, ["rev-parse", "HEAD"]);
+  const retainedChanges = snapshot.intendedPaths ?? changes;
+  let revision = git(snapshot.candidateRoot, ["rev-parse", "HEAD"]);
+  let candidateBase = snapshot.head;
+  let candidateRef: string | undefined;
+  let retentionError: string | undefined;
+  try {
+    const durableChanges = changedKnowledgePaths(snapshot).map((path) =>
+      repositoryPath(snapshot, projectRelative(snapshot, path)),
+    );
+    const intendedContentMatches =
+      snapshot.intendedPaths !== undefined &&
+      snapshot.intendedContent !== undefined &&
+      snapshot.intendedPaths.every((path) => {
+        const candidate = resolve(snapshot.candidateRoot, path);
+        const expected = snapshot.intendedContent!.get(path);
+        const actual = existsSync(candidate) ? digest(candidate) : "<deleted>";
+        return expected !== undefined && actual === expected;
+      });
+    const exactDurableCandidate = snapshot.intendedPaths
+      ? snapshot.intendedPaths.length > 0 && intendedContentMatches
+      : durableChanges.length > 0 &&
+        retainedChanges.length === durableChanges.length &&
+        retainedChanges.every((path) => durableChanges.includes(path));
+    if (exactDurableCandidate) {
+      git(snapshot.candidateRoot, ["add", "-A", "--", ...retainedChanges]);
+      try {
+        git(snapshot.candidateRoot, ["diff", "--cached", "--quiet"]);
+      } catch {
+        git(snapshot.candidateRoot, [
+          "-c",
+          "user.name=Scout Publisher",
+          "-c",
+          "user.email=scout@local",
+          "commit",
+          "-m",
+          "scout: retain accepted publication candidate",
+        ]);
+      }
+      revision = git(snapshot.candidateRoot, ["rev-parse", "HEAD"]);
+      const identity = createHash("sha256");
+      for (const path of retainedChanges.sort()) {
+        identity.update(path).update("\0");
+        const candidate = resolve(snapshot.candidateRoot, path);
+        identity.update(
+          existsSync(candidate) ? readFileSync(candidate) : "<deleted>",
+        );
+        identity.update("\0");
+      }
+      const archiveRef = `refs/archive/scout-publication/${identity.digest("hex")}`;
+      let archivedRevision: string | undefined;
+      try {
+        archivedRevision = git(snapshot.repositoryRoot, [
+          "rev-parse",
+          "--verify",
+          archiveRef,
+        ]);
+      } catch {
+        try {
+          git(snapshot.repositoryRoot, [
+            "update-ref",
+            archiveRef,
+            revision,
+            "0".repeat(40),
+          ]);
+        } catch {
+          // A concurrent identical failure may have created the content-keyed
+          // ref first. Read and validate that immutable winner below.
+        }
+        archivedRevision = git(snapshot.repositoryRoot, [
+          "rev-parse",
+          "--verify",
+          archiveRef,
+        ]);
+      }
+      revision = archivedRevision;
+      const archivedPaths = git(snapshot.repositoryRoot, [
+        "diff-tree",
+        "--no-commit-id",
+        "--name-only",
+        "-r",
+        revision,
+      ])
+        .split("\n")
+        .filter(Boolean)
+        .sort();
+      if (
+        JSON.stringify(archivedPaths) !==
+        JSON.stringify([...retainedChanges].sort())
+      )
+        throw new Error(
+          `Archived publication ref ${archiveRef} does not contain the exact intended paths`,
+        );
+      for (const path of retainedChanges) {
+        const candidate = resolve(snapshot.candidateRoot, path);
+        if (existsSync(candidate)) {
+          if (
+            digestBytes(
+              gitBytes(snapshot.repositoryRoot, [
+                "show",
+                `${revision}:${path}`,
+              ]),
+            ) !== digest(candidate)
+          )
+            throw new Error(
+              `Archived publication ref ${archiveRef} failed byte read-back for ${path}`,
+            );
+        } else {
+          try {
+            git(snapshot.repositoryRoot, [
+              "cat-file",
+              "-e",
+              `${revision}:${path}`,
+            ]);
+            throw new Error(
+              `Archived publication ref ${archiveRef} retained deleted path ${path}`,
+            );
+          } catch (archivePathError) {
+            if (
+              archivePathError instanceof Error &&
+              archivePathError.message.includes("retained deleted path")
+            )
+              throw archivePathError;
+          }
+        }
+      }
+      candidateBase = git(snapshot.repositoryRoot, [
+        "rev-parse",
+        `${revision}^`,
+      ]);
+      candidateRef = archiveRef;
+    }
+  } catch (archiveError) {
+    retentionError =
+      archiveError instanceof Error
+        ? archiveError.message
+        : String(archiveError);
+  }
   throw new KnowledgePublicationError(
-    `${error instanceof Error ? error.message : String(error)}; isolated candidate retained at ${snapshot.candidateRoot}; candidate base: ${snapshot.head}; candidate revision: ${revision}; candidate changes: ${changes.join(", ") || "none"}`,
+    `${error instanceof Error ? error.message : String(error)}; isolated candidate retained at ${snapshot.candidateRoot}; candidate base: ${candidateBase}; candidate revision: ${revision}; candidate changes: ${retainedChanges.join(", ") || "none"}${candidateRef ? `; archived candidate ref: ${candidateRef}` : ""}${retentionError ? `; durable archive failed: ${retentionError}` : ""}`,
     snapshot.candidateRoot,
-    snapshot.head,
+    candidateBase,
     revision,
-    changes,
+    retainedChanges,
+    candidateRef,
   );
 }
 function cleanup(snapshot: KnowledgeSnapshot): void {
@@ -366,6 +507,17 @@ export function publishKnowledgeChanges(
           existsSync(candidate) ? readFileSync(candidate) : null,
         ] as const;
       }),
+    );
+    // Preserve exact admitted intent before a disjoint HEAD replay can add
+    // unrelated library paths to the candidate's base tree.
+    before.intendedPaths = [...repoPaths];
+    before.intendedContent = new Map(
+      repoPaths.map((path, index) => [
+        path,
+        desired.get(projectPaths[index]) === null
+          ? "<deleted>"
+          : digestBytes(desired.get(projectPaths[index])!),
+      ]),
     );
     const current = git(before.repositoryRoot, ["rev-parse", before.ref]);
     if (current !== before.head) {
@@ -791,6 +943,39 @@ export function verifyCanonicalOutputPaths(
         `Reported output does not match publication revision ${revision}: ${repoPath}`,
       );
   }
+}
+
+export function verifyArchivedCandidateAtCanonicalHead(
+  snapshot: KnowledgeSnapshot,
+  candidate: { ref: string; revision: string; changedPaths: string[] },
+): string[] {
+  if (
+    git(snapshot.repositoryRoot, ["rev-parse", candidate.ref]) !==
+    candidate.revision
+  )
+    throw new Error(
+      `Archived publication ref ${candidate.ref} no longer resolves to ${candidate.revision}`,
+    );
+  const head = git(snapshot.repositoryRoot, ["rev-parse", snapshot.ref]);
+  for (const path of candidate.changedPaths) {
+    const archived = git(snapshot.repositoryRoot, [
+      "rev-parse",
+      `${candidate.revision}:${path}`,
+    ]);
+    const canonical = git(snapshot.repositoryRoot, [
+      "rev-parse",
+      `${head}:${path}`,
+    ]);
+    if (archived !== canonical)
+      throw new Error(
+        `Canonical HEAD ${head} does not contain accepted candidate bytes for ${path}`,
+      );
+  }
+  return [
+    `accepted-publication:delivered:${candidate.revision}`,
+    `publication-head:${head}`,
+    ...candidate.changedPaths.map((path) => `published-candidate-path:${path}`),
+  ];
 }
 
 export function publicationFacts(evidence: PublicationEvidence): string[] {

@@ -4,6 +4,7 @@ import {
   type TaskReconcileResult,
 } from "@may-agent/sdk";
 import { assessmentRecord, saveAssessment } from "./lib/assessment-archive.js";
+import { retainAcceptedPublication } from "./lib/accepted-publication.js";
 import {
   changedKnowledgePaths,
   publicationFacts,
@@ -96,6 +97,14 @@ export async function executeSourceAssessment(
           beforePublication.canonicalProjectRoot,
         );
       } catch (error) {
+        const retained =
+          state === "converged"
+            ? retainAcceptedPublication(error, {
+                summary: `${summary} The accepted assessment is retained for publication recovery.`,
+                facts: facts.filter((fact) => !fact.startsWith("output:")),
+              })
+            : undefined;
+        if (retained) return ctx.done(retained.summary, retained);
         finalState = "incomplete";
         finalSummary = `${summary} Publication failed: ${error instanceof Error ? error.message : String(error)}`;
         finalFacts = [

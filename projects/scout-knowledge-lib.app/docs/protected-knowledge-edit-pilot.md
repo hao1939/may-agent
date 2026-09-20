@@ -66,6 +66,36 @@ make arbitrary direct edits to canonical paths transactional. Direct Scout use
 must either use this workflow boundary or report exact uncommitted paths for an
 owner to adopt; it must never broadly stage or claim a commit from prose alone.
 
+## Accepted publication ownership
+
+A publication failure after Scout has accepted content is different from a
+rejected or unfinished draft. The publisher commits the exact admitted Scout
+paths to a content-keyed `refs/archive/scout-publication/...` ref and verifies
+that ref before exposing it. The ref, revision, original parent, and changed-path
+inventory form an immutable recovery descriptor; the temporary worktree may be
+removed. A disjoint canonical advance does not broaden that inventory, and a
+failed archive operation does not claim durable recovery.
+
+The workflow then requests an ordinary `scout-knowledge-lib` generic goal whose
+stable dependency id comes from the content-keyed ref. Replays therefore reuse
+the same input, while later scans and unrelated publications proceed
+independently and cannot satisfy the retained obligation. Planner publication
+failure preserves an already admitted waiting result as a whole, including
+unrelated dependencies, Conditions, actions, result data, report state,
+`continue`, and `reviewAt`. Recovery failure does not recursively create another
+recovery goal.
+
+The ordinary Scout owner reads the archived Git tree and chooses the remedy. It
+may reproduce the exact bytes or judge a suitable writable adaptation; the
+shared publisher still verifies the actual committed outputs. A no-change claim
+closes the publication obligation only when Git proves canonical HEAD contains
+the exact archived bytes. An adapted commit counts only with Scout's accepted
+`converged` judgment. A waiting or incomplete result, including a partial
+unrelated commit, does not assert delivery. When integration truly requires a
+human decision, Scout returns a supported human-owned Condition through normal
+Task reconciliation; publication code does not invent an approval event or
+change protected mounts, permissions, or bytes.
+
 ## Existing backlog
 
 The separate reviewer adoption is complete at local-main commit

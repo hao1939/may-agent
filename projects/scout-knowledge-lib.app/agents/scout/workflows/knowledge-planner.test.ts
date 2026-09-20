@@ -93,6 +93,223 @@ describe("Scout owner reconciliation boundary", () => {
     },
   );
 
+  it("retains accepted publication through a disjoint in-library workflow advance", async () => {
+    const fixture = publicationTestFixture();
+    const lock = join(fixture.repositoryRoot, ".git/index.lock");
+    try {
+      const result = await execute(
+        createTestAppWorkflowContext({
+          input: {},
+          reconciliation: {
+            appId: "scout-knowledge-lib",
+            taskId: "goal/disjoint-publication",
+            generation: 1,
+            resourceVersion: 1,
+            agent: "scout",
+            outcome: "Save accepted knowledge",
+            acceptance: ["Accepted knowledge has durable ownership"],
+            input: {},
+            children: { live: [], completed: [] },
+            events: { items: [], truncated: false },
+          },
+          workspace: fixture.workspace,
+          callAgent: (async (_agent, prompt) => {
+            const candidate = prompt.match(/- Domain workspace: (.+)/)?.[1];
+            expect(candidate).toBeDefined();
+            const output = join(candidate!, "knowledge/pending.md");
+            writeFileSync(output, "Accepted finding\n");
+            const independent = join(
+              fixture.workspace.projectRoot,
+              "knowledge/independent.md",
+            );
+            writeFileSync(independent, "Independent publication\n");
+            fixture.git(
+              "add",
+              "projects/scout-knowledge-lib/knowledge/independent.md",
+            );
+            fixture.git("commit", "-m", "independent publication");
+            writeFileSync(lock, "other writer\n");
+            return {
+              id: "s_disjoint",
+              kind: "agent",
+              status: "done",
+              summary: "Accepted finding",
+              output: {
+                state: "converged",
+                summary: "Accepted finding",
+                facts: [`output:${output}`],
+              },
+            };
+          }) as WorkflowContext["agents"]["call"],
+        }),
+      );
+      expect(result).toMatchObject({
+        status: "done",
+        output: {
+          state: "waiting",
+          dependencies: [
+            {
+              appId: "scout-knowledge-lib",
+              input: {
+                kind: "goal",
+                data: {
+                  context: {
+                    reason: "accepted-publication-recovery",
+                    changedPaths: [
+                      "projects/scout-knowledge-lib/knowledge/pending.md",
+                    ],
+                  },
+                },
+              },
+            },
+          ],
+        },
+      });
+      const recovery = result.output?.dependencies?.[0];
+      expect(recovery?.input.data.context.candidateRef).toStartWith(
+        "refs/archive/scout-publication/",
+      );
+      expect(
+        fixture.git(
+          "diff-tree",
+          "--no-commit-id",
+          "--name-only",
+          "-r",
+          recovery!.input.data.context.candidateRevision,
+        ),
+      ).toBe("projects/scout-knowledge-lib/knowledge/pending.md");
+    } finally {
+      rmSync(lock, { force: true });
+      rmSync(fixture.repositoryRoot, { recursive: true, force: true });
+    }
+  });
+
+  it("does not promote an incomplete draft after publication fails", async () => {
+    const fixture = publicationTestFixture();
+    const lock = join(fixture.repositoryRoot, ".git/index.lock");
+    try {
+      const result = await execute(
+        createTestAppWorkflowContext({
+          input: {},
+          reconciliation: {
+            appId: "scout-knowledge-lib",
+            taskId: "goal/incomplete-publication",
+            generation: 1,
+            resourceVersion: 1,
+            agent: "scout",
+            outcome: "Review a draft",
+            acceptance: ["Only accepted content gains publication ownership"],
+            input: {},
+            children: { live: [], completed: [] },
+            events: { items: [], truncated: false },
+          },
+          workspace: fixture.workspace,
+          callAgent: (async (_agent, prompt) => {
+            const candidate = prompt.match(/- Domain workspace: (.+)/)?.[1];
+            const output = join(candidate!, "knowledge/incomplete.md");
+            writeFileSync(output, "Unfinished draft\n");
+            writeFileSync(lock, "other writer\n");
+            return {
+              id: "s_incomplete",
+              kind: "agent",
+              status: "done",
+              summary: "Draft needs more work",
+              output: {
+                state: "incomplete",
+                report: true,
+                summary: "Draft needs more work",
+                facts: ["not-yet-accepted", `output:${output}`],
+              },
+            };
+          }) as WorkflowContext["agents"]["call"],
+        }),
+      );
+      expect(result.status).toBe("blocked");
+      expect(result).not.toHaveProperty("output.dependencies");
+      expect(result).not.toHaveProperty("output.state", "waiting");
+    } finally {
+      rmSync(lock, { force: true });
+      rmSync(fixture.repositoryRoot, { recursive: true, force: true });
+    }
+  });
+
+  it("preserves independent waiting work when durable archive creation fails", async () => {
+    const fixture = publicationTestFixture();
+    const lock = join(fixture.repositoryRoot, ".git/index.lock");
+    fixture.git("update-ref", "refs/archive/scout-publication", "HEAD");
+    const independent = {
+      id: "independent-research",
+      appId: "scout-knowledge-lib",
+      input: {
+        kind: "goal",
+        data: {
+          outcome: "Continue independent research",
+          acceptance: ["Return source evidence"],
+        },
+      },
+    };
+    try {
+      const result = await execute(
+        createTestAppWorkflowContext({
+          input: {},
+          reconciliation: {
+            appId: "scout-knowledge-lib",
+            taskId: "goal/archive-failure",
+            generation: 1,
+            resourceVersion: 1,
+            agent: "scout",
+            outcome: "Save accepted knowledge and keep independent work",
+            acceptance: ["Independent waits survive publication failure"],
+            input: {},
+            children: { live: [], completed: [] },
+            events: { items: [], truncated: false },
+          },
+          workspace: fixture.workspace,
+          callAgent: (async (_agent, prompt) => {
+            const candidate = prompt.match(/- Domain workspace: (.+)/)?.[1];
+            const output = join(candidate!, "knowledge/pending.md");
+            writeFileSync(output, "Accepted pending content\n");
+            writeFileSync(lock, "other writer\n");
+            return {
+              id: "s_archive_failure",
+              kind: "agent",
+              status: "done",
+              summary: "Accepted content with independent work",
+              output: {
+                state: "waiting",
+                summary: "Accepted content with independent work",
+                facts: ["source:accepted", `output:${output}`],
+                dependencies: [independent],
+                result: { retained: "evidence" },
+                report: true,
+                continue: true,
+              },
+            };
+          }) as WorkflowContext["agents"]["call"],
+        }),
+      );
+      expect(result).toMatchObject({
+        status: "done",
+        output: {
+          state: "waiting",
+          dependencies: [independent],
+          result: { retained: "evidence" },
+          report: true,
+          continue: true,
+          facts: expect.arrayContaining([
+            "source:accepted",
+            "accepted-publication:archive-unavailable",
+          ]),
+        },
+      });
+      expect(result.output?.dependencies).toHaveLength(1);
+      expect(JSON.stringify(result)).not.toContain("candidate-ref:");
+    } finally {
+      rmSync(lock, { force: true });
+      rmSync(fixture.repositoryRoot, { recursive: true, force: true });
+    }
+  });
+
   it.each([
     { status: "blocked", facts: undefined },
     {

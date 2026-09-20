@@ -7,6 +7,10 @@ import {
 } from "@may-agent/sdk";
 import { taskEmissionKey } from "./lib/task-emission.js";
 import {
+  acceptedPublicationRecovery,
+  retainAcceptedPublication,
+} from "./lib/accepted-publication.js";
+import {
   qualifiedResearchHandoff,
   researchHandoffKey,
 } from "./lib/research-adoption-handoff.js";
@@ -16,6 +20,7 @@ import {
   publishKnowledgeChanges,
   retainedCandidateFacts,
   snapshotKnowledge,
+  verifyArchivedCandidateAtCanonicalHead,
 } from "./lib/knowledge-publication.js";
 
 type AgentResult = Exclude<TaskReconcileResult, { state: "needs-agent" }>;
@@ -97,6 +102,7 @@ export async function execute(ctx: WorkflowContext): Promise<ExecutionResult> {
     uncommittedChanges: changedKnowledgePaths(beforePublication),
   });
   const projectDir = beforePublication.projectRoot;
+  const recovery = acceptedPublicationRecovery(ctx.reconciliation.input);
   const experienceReview = isExperienceReview(ctx);
   const experienceContext = experienceReview
     ? `Bounded reconciliation history:\n${JSON.stringify(ctx.reconciliation.children, null, 2)}`
@@ -121,7 +127,11 @@ do not run Git publication or edit the canonical library in this call.
 Your job in this workflow is not a freeform heartbeat. Review the bounded task
 resource context, understand the trigger, and do the smallest useful maintenance
 step.
-
+${
+  recovery
+    ? `\nThis is recovery of accepted publication ${recovery.revision}. Read the exact archived tree at ${recovery.ref}; the temporary worktree is not authoritative. Preserve source fidelity by reproducing its content in the supplied candidate workspace, either at the original paths or through a Scout-judged suitable writable adaptation, and let this workflow use the shared publisher. A no-change result is sufficient only when canonical HEAD already contains every archived byte. Return a human-owned Condition only when a concrete human decision is actually necessary.\n`
+    : ""
+}
 Start by reading:
 - ${appDir}/project.json
 - ${appDir}/tasks/README.md
@@ -291,11 +301,67 @@ ${JSON.stringify(ctx.reconciliation, null, 2)}`.trim();
       reportedOutputs,
     });
   } catch (error) {
+    const retained =
+      agentResult.state === "incomplete"
+        ? undefined
+        : retainAcceptedPublication(error, {
+            summary:
+              "Scout maintenance was accepted and retained for publication recovery.",
+            facts: [
+              `execution:${result.id}`,
+              ...(agentResult.facts ?? []).filter(
+                (fact) => !fact.startsWith("output:"),
+              ),
+            ],
+            acceptedWaiting:
+              agentResult.state === "waiting" ? agentResult : undefined,
+            recovery,
+          });
+    if (retained) return ctx.done(retained.summary, retained);
     return ctx.blocked("Scout maintenance was not published", {
       executionId: result.id,
       error: error instanceof Error ? error.message : String(error),
       ...candidateFailureDetails(),
     });
+  }
+  let recoveryFacts: string[] = [];
+  if (recovery) {
+    try {
+      recoveryFacts = verifyArchivedCandidateAtCanonicalHead(
+        beforePublication,
+        recovery,
+      );
+    } catch (error) {
+      const evidence = `accepted-publication:still-pending:${recovery.revision}:${error instanceof Error ? error.message : String(error)}`;
+      if (
+        publication.state === "committed" &&
+        agentResult.state === "converged"
+      ) {
+        // A committed adaptation is complete only when Scout explicitly accepts
+        // it. Code records the real commit; it does not make the semantic call.
+        recoveryFacts = [
+          `accepted-publication:adapted:${recovery.revision}`,
+          `accepted-publication:delivered-by:${publication.commit}`,
+        ];
+      } else if (agentResult.state === "waiting") {
+        return ctx.done(agentResult.summary, {
+          ...agentResult,
+          facts: [
+            evidence,
+            ...(agentResult.facts ?? []).filter(
+              (fact) => !fact.startsWith("output:"),
+            ),
+            ...publicationFacts(publication),
+          ],
+        });
+      } else {
+        return ctx.done("Accepted Scout publication remains undelivered.", {
+          state: "incomplete",
+          summary: "Accepted Scout publication remains undelivered.",
+          facts: [evidence, ...publicationFacts(publication)],
+        });
+      }
+    }
   }
   agentResult = {
     ...agentResult,
@@ -305,6 +371,7 @@ ${JSON.stringify(ctx.reconciliation, null, 2)}`.trim();
       ),
       ...publication.outputs.map((path) => `output:${path}`),
       ...publicationFacts(publication),
+      ...recoveryFacts,
     ] as [string, ...string[]],
   };
   const maintenanceFact = {

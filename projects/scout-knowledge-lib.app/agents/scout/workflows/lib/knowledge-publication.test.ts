@@ -14,6 +14,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import {
+  KnowledgePublicationError,
   publishKnowledgeChanges,
   snapshotKnowledge,
 } from "./knowledge-publication";
@@ -117,7 +118,7 @@ import { mkdirSync, rmSync, writeFileSync } from "node:fs";
 const args = process.argv.slice(2);
 try { process.stdout.write(execFileSync(${JSON.stringify(realGit)}, args)); }
 catch (error) { process.stderr.write(error.stderr ?? ""); process.exit(error.status ?? 1); }
-if (args[0] === "update-ref" && args[2] !== ${JSON.stringify(base)}) {
+if (args[0] === "update-ref" && args[1] === "refs/heads/main" && args[2] !== ${JSON.stringify(base)}) {
   writeFileSync(${JSON.stringify(join(project, "knowledge/existing.md"))}, "concurrent mutation\\n");
   rmSync(${JSON.stringify(blockedPath)});
   mkdirSync(${JSON.stringify(blockedPath)});
@@ -299,15 +300,165 @@ catch (error) { console.log(JSON.stringify({ error: String(error), candidate: sn
     // mount: the same-directory temporary can be written, but rename cannot replace it.
     mkdirSync(join(project, "knowledge", "blocked.md"));
     const head = run(root, "rev-parse", "HEAD");
-    expect(() =>
+    let failure: KnowledgePublicationError | undefined;
+    try {
       publishKnowledgeChanges(candidate, {
         executionId: "controlled",
         summary: "protected",
-      }),
-    ).toThrow(/isolated candidate retained.*candidate changes:/);
+      });
+    } catch (error) {
+      failure = error as KnowledgePublicationError;
+    }
+    expect(failure).toBeInstanceOf(KnowledgePublicationError);
+    expect(failure?.candidateRef).toStartWith(
+      "refs/archive/scout-publication/",
+    );
+    expect(run(root, "rev-parse", failure!.candidateRef!)).toBe(
+      failure?.candidateRevision,
+    );
+    expect(
+      run(
+        root,
+        "show",
+        `${failure?.candidateRevision}:projects/scout-knowledge-lib/knowledge/blocked.md`,
+      ),
+    ).toBe("candidate");
+    run(root, "worktree", "remove", "--force", candidate.candidateRoot);
+    expect(existsSync(candidate.candidateRoot)).toBe(false);
+    expect(
+      run(
+        root,
+        "show",
+        `${failure?.candidateRef}:projects/scout-knowledge-lib/knowledge/blocked.md`,
+      ),
+    ).toBe("candidate");
     expect(run(root, "rev-parse", "HEAD")).toBe(head);
-    expect(existsSync(candidate.candidateRoot)).toBe(true);
   });
+
+  it("keeps one content-keyed archive descriptor across unrelated HEAD advances", () => {
+    const { root, project } = fixture();
+    const lock = join(root, ".git/index.lock");
+    const attempt = () => {
+      const candidate = snapshotKnowledge(project, join(root, "artifacts"));
+      writeFileSync(
+        join(candidate.projectRoot, "knowledge/pending.md"),
+        "accepted bytes\n",
+      );
+      writeFileSync(lock, "other writer\n");
+      try {
+        publishKnowledgeChanges(candidate, {
+          executionId: "same-content",
+          summary: "same accepted content",
+        });
+      } catch (error) {
+        return error as KnowledgePublicationError;
+      } finally {
+        rmSync(lock, { force: true });
+      }
+      throw new Error("expected publication failure");
+    };
+
+    const first = attempt();
+    writeFileSync(join(root, "unrelated.md"), "unrelated\n");
+    run(root, "add", "unrelated.md");
+    run(root, "commit", "-m", "unrelated success");
+    const replay = attempt();
+
+    expect({
+      ref: replay.candidateRef,
+      revision: replay.candidateRevision,
+      base: replay.candidateBase,
+      paths: replay.changedPaths,
+    }).toEqual({
+      ref: first.candidateRef,
+      revision: first.candidateRevision,
+      base: first.candidateBase,
+      paths: first.changedPaths,
+    });
+  });
+
+  it("does not expose an archive ref when durable ref creation fails", () => {
+    const { root, project } = fixture();
+    const candidate = snapshotKnowledge(project, join(root, "artifacts"));
+    writeFileSync(
+      join(candidate.projectRoot, "knowledge/pending.md"),
+      "accepted bytes\n",
+    );
+    mkdirSync(join(root, ".git/refs/archive"), { recursive: true });
+    writeFileSync(
+      join(root, ".git/refs/archive/scout-publication"),
+      "synthetic ref path conflict\n",
+    );
+    writeFileSync(join(root, ".git/index.lock"), "other writer\n");
+
+    let failure: KnowledgePublicationError | undefined;
+    try {
+      publishKnowledgeChanges(candidate, {
+        executionId: "archive-failure",
+        summary: "archive failure",
+      });
+    } catch (error) {
+      failure = error as KnowledgePublicationError;
+    } finally {
+      rmSync(join(root, ".git/index.lock"), { force: true });
+    }
+
+    expect(failure).toBeInstanceOf(KnowledgePublicationError);
+    expect(failure?.candidateRef).toBeUndefined();
+    expect(failure?.message).toContain("durable archive failed");
+  });
+
+  it.each(["repository", "knowledge"] as const)(
+    "retains exact intended paths after a disjoint %s HEAD advance",
+    (location) => {
+      const { root, project } = fixture();
+      const candidate = snapshotKnowledge(project, join(root, "artifacts"));
+      const pending = "projects/scout-knowledge-lib/knowledge/pending.md";
+      writeFileSync(
+        join(candidate.projectRoot, "knowledge/pending.md"),
+        "accepted bytes\n",
+      );
+      const independent =
+        location === "knowledge"
+          ? "projects/scout-knowledge-lib/knowledge/independent.md"
+          : "independent.txt";
+      writeFileSync(join(root, independent), "independent advance\n");
+      run(root, "add", independent);
+      run(root, "commit", "-m", "independent advance");
+      writeFileSync(join(root, ".git/index.lock"), "other writer\n");
+
+      let failure: KnowledgePublicationError | undefined;
+      try {
+        publishKnowledgeChanges(candidate, {
+          executionId: "disjoint-advance",
+          summary: "retain intended content",
+        });
+      } catch (error) {
+        failure = error as KnowledgePublicationError;
+      } finally {
+        rmSync(join(root, ".git/index.lock"), { force: true });
+      }
+
+      expect(failure).toBeInstanceOf(KnowledgePublicationError);
+      expect(failure?.changedPaths).toEqual([pending]);
+      expect(failure?.candidateRef).toStartWith(
+        "refs/archive/scout-publication/",
+      );
+      expect(
+        run(
+          root,
+          "diff-tree",
+          "--no-commit-id",
+          "--name-only",
+          "-r",
+          failure!.candidateRevision,
+        ),
+      ).toBe(pending);
+      expect(readFileSync(join(root, independent), "utf8")).toBe(
+        "independent advance\n",
+      );
+    },
+  );
 
   it.each(["before", "during"])(
     "blocks staged-only edits %s the call without changing the index",
@@ -368,7 +519,20 @@ catch (error) { console.log(JSON.stringify({ error: String(error), candidate: sn
       ).toThrow(/Canonical Scout paths changed outside the isolated candidate/);
       expect(run(root, "rev-parse", "HEAD")).toBe(head);
       expect(run(root, "ls-files", "--stage")).toBe(index);
-      expect(run(candidate.candidateRoot, "rev-parse", "HEAD")).toBe(head);
+      expect(run(candidate.candidateRoot, "rev-parse", "HEAD")).not.toBe(head);
+      const archivedRef = run(
+        root,
+        "for-each-ref",
+        "--format=%(refname)",
+        "refs/archive/scout-publication",
+      );
+      expect(
+        run(
+          root,
+          "show",
+          `${archivedRef}:projects/scout-knowledge-lib/knowledge/new.md`,
+        ),
+      ).toBe("accepted candidate");
       expect(existsSync(join(project, "knowledge/new.md"))).toBe(false);
       expect(readFileSync(direct, "utf8")).toBe("direct uncommitted edit\n");
       expect(readFileSync(output, "utf8")).toBe("accepted candidate\n");

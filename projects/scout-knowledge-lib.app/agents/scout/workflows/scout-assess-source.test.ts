@@ -304,11 +304,14 @@ it("concurrent edits prevent a successful save and preserve the existing content
     return success();
   }) as WorkflowContext["agents"]["call"]);
   const result = await executeSourceAssessment(ctx, async () => packet);
-  expect(result.output).toHaveProperty("state", "incomplete");
-  expect(result.output).toHaveProperty(
-    "summary",
-    expect.stringContaining("changed outside the isolated candidate"),
-  );
+  expect(result.output).toMatchObject({
+    state: "waiting",
+    facts: expect.arrayContaining([
+      expect.stringContaining("accepted-publication:pending:"),
+      expect.stringContaining("candidate-ref:refs/archive/scout-publication/"),
+    ]),
+    dependencies: [expect.objectContaining({ appId: "scout-knowledge-lib" })],
+  });
   expect(readFileSync(record.path, "utf8")).toContain("Human correction");
   expect(readFileSync(record.path, "utf8")).not.toContain(draft.assessment);
 });
@@ -429,22 +432,17 @@ it("an unsafe canonical target never produces a successful result or a claimed s
     return success();
   }) as WorkflowContext["agents"]["call"]);
   const result = await executeSourceAssessment(ctx, async () => packet);
-  expect(result.output).toHaveProperty("state", "incomplete");
+  expect(result.output).toMatchObject({
+    state: "waiting",
+    facts: expect.arrayContaining([
+      expect.stringContaining("accepted-publication:pending:"),
+      expect.stringContaining("candidate-ref:refs/archive/scout-publication/"),
+    ]),
+    dependencies: [expect.objectContaining({ appId: "scout-knowledge-lib" })],
+  });
   expect(result.output).toHaveProperty(
     "facts",
     expect.not.arrayContaining([`output:${record.path}`]),
-  );
-  expect(result.output).toHaveProperty(
-    "facts",
-    expect.arrayContaining([expect.stringContaining("candidate-root:")]),
-  );
-  expect(result.output).toHaveProperty(
-    "response",
-    expect.stringContaining(draft.assessment),
-  );
-  expect(result.output).toHaveProperty(
-    "response",
-    expect.stringContaining("Publication failed"),
   );
 });
 

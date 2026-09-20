@@ -28,6 +28,7 @@ import {
   type XhsSearchItem,
   type XhsSearchResult,
 } from "../tools/lib/xhs-source.js";
+import { retainAcceptedPublication } from "./lib/accepted-publication.js";
 import {
   changedKnowledgePaths,
   publicationFacts,
@@ -847,6 +848,19 @@ run Git publication or edit the canonical library in this call.`;
       reportedOutputs: outputs.filter((path) => !scratchOutputs.includes(path)),
     });
   } catch (error) {
+    const retained = retainAcceptedPublication(error, {
+      summary:
+        "Scout exploration was accepted and retained for publication recovery.",
+      facts: [
+        ...sourceEvidence,
+        ...sourceResultEvidence(
+          observation,
+          source === "xhs" ? "workflow" : "agent-result+workflow-time",
+        ),
+        `execution:${result.id}`,
+      ],
+    });
+    if (retained) return ctx.done(retained.summary, retained);
     return ctx.blocked("Scout exploration was accepted but not published", {
       executionId: result.id,
       outputs,
