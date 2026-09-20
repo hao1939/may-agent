@@ -16,16 +16,20 @@ function plainTextFormattingFallback(text: string, parseMode: string): string {
     .replaceAll("&amp;", "&");
 }
 
-function withoutApprovalAuthority(data: string | undefined): string | undefined {
+function withoutCompleteDeliveryAuthority(data: string | undefined): string | undefined {
   if (!data) return data;
   try {
     const parsed = JSON.parse(data);
     if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return data;
-    const { approvalAnchor: _approvalAnchor, ...ordinary } = parsed as Record<string, unknown>;
+    const {
+      approvalAnchor: _approvalAnchor,
+      humanCondition: _humanCondition,
+      ...ordinary
+    } = parsed as Record<string, unknown>;
     return JSON.stringify(ordinary);
   } catch {
     // Generic notification metadata remains useful even when it is opaque. It
-    // cannot grant approval because the adapter requires approvalAnchor.
+    // cannot grant authority because adapters require a parsed exact anchor.
     return data;
   }
 }
@@ -171,12 +175,12 @@ export function createTelegramClient(opts: TelegramClientOptions): TelegramClien
     if (context) {
       const fullyDelivered = complete && sentMsgIds.length === chunks.length;
       // Every confirmed chunk keeps ordinary reply/task/topic correlation. Only
-      // the final chunk of a complete delivery carries approval authority,
-      // because only that receipt proves all proposal bytes were displayed.
+      // the final chunk of a complete delivery carries displayed approval or
+      // Condition metadata because only that receipt proves all bytes were shown.
       for (const telegramMsgId of sentMsgIds) {
-        const approvalCapable =
+        const completeDelivery =
           Boolean(context.bindToCompleteDelivery) && fullyDelivered && telegramMsgId === sentMsgIds.at(-1);
-        const storedData = approvalCapable ? context.data : withoutApprovalAuthority(context.data);
+        const storedData = completeDelivery ? context.data : withoutCompleteDeliveryAuthority(context.data);
         try {
           storeNotificationMessage(opts.persistDir, {
             chat_id: chatId,

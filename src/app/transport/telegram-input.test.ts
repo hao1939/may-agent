@@ -1311,6 +1311,7 @@ describe("Telegram May input", () => {
             conditions: [{
               id: "human-decision",
               condition: {
+                metadata: { generation: 1 },
                 spec: {
                   type: "human.answer.received",
                   subject: "task:deploy/current",
