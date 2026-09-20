@@ -39,6 +39,7 @@ import {
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { sendSocketCommand } from "../../../packages/control/src/client.js";
 
 // Repo root: this file is test/e2e/lib/sandbox.ts → ../../.. is repo root.
 const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
@@ -109,10 +110,17 @@ function copyFixtureFile(srcRel: string, destAbs: string): void {
 function waitForSocket(socketPath: string, timeoutMs: number, killOnTimeout: () => void): Promise<void> {
   return new Promise((resolveP, reject) => {
     const start = Date.now();
-    const tick = () => {
+    const tick = async () => {
       if (existsSync(socketPath)) {
-        resolveP();
-        return;
+        try {
+          await sendSocketCommand(socketPath, { type: "status" }, { timeoutMs: 1_000 });
+          resolveP();
+          return;
+        } catch {
+          // The socket path is created before the daemon's listening callback
+          // finishes startup work such as chmod. Wait for a successful command
+          // round trip before tests are allowed to manipulate the path.
+        }
       }
       if (Date.now() - start > timeoutMs) {
         killOnTimeout();
@@ -121,7 +129,7 @@ function waitForSocket(socketPath: string, timeoutMs: number, killOnTimeout: () 
       }
       setTimeout(tick, 100);
     };
-    tick();
+    void tick();
   });
 }
 
