@@ -767,6 +767,42 @@ Three arXiv papers argue that append-only storage is the wrong abstraction — m
 **UPDATE (Jul 2026 — Scan #444)**: Three memory governance benchmarks now form a complementary evaluation ecosystem: (1) **GateMem** (rzhub/GateMem, 154★) — multi-principal access control and governance for shared-memory agents. (2) **MemSyco-Bench** (2607.01071) — benchmarks memory-induced sycophancy, proving retrieved memories bias agents toward agreement over accuracy. (3) **MemoryData** (OpenDataBox/MemoryData, 98★) — unified evaluation suite across memory architectures. The memory layer is now measurable at three orthogonal dimensions: access governance, integrity (sycophancy detection), and cross-architecture comparison. Additionally, **brain.md** (mindmuxai/brain.md, 205★) and **mex** (1,151★, stable) represent competing memory format conventions (single-file markdown vs. structured scaffold with drift detection) — no convention has won.
 Source: findings/2026-07-18-hn-arxiv-github-scan-444.md
 
+#### Compare memory systems at the Add/Search boundary (HN, Sep 2026)
+
+The [Agent Memory Leaderboard](https://agentmemoryleaderboard.ai/) exposes a
+useful evaluation boundary: participants operate only versioned **Add** and
+**Search** endpoints, while the platform fixes the answer model, prompts,
+evaluators, dataset suite, Top K, and aggregation. This reduces a common
+confound in memory comparisons—letting every entrant choose its own answer
+model and judge—and makes retrieved evidence the handoff between the component
+under test and the standardized downstream pipeline.
+
+Its contract also turns several memory properties into observable requirements.
+An Add success means the chunk has been persisted and is immediately searchable;
+request, user, and session identifiers must be echoed; Search is isolated by the
+exact `user_id`; returned records preserve participant order and stable IDs; and
+contract-invalid or over-limit responses fail instead of being silently
+normalized. The publication gate binds a result to the answer model, evaluation
+contract, pipeline code hash, dataset bundle hashes, and question counts. These
+are stronger comparison controls than a leaderboard that records only a system
+name and aggregate score.
+
+The boundary is deliberately narrower than complete memory governance. Search
+may return only an ID, content, optional score, and optional creation time;
+provenance, supersession, authorization, and confidence semantics are not part
+of the common response. A fixed Top K of 100 standardizes candidate volume but
+still measures retrieval plus the platform's answer pipeline, not retrieval
+quality in isolation. Participant-hosted endpoints also leave implementation
+and service behavior outside Scout's inspection. Treat the site and repository
+as an emerging protocol and operational benchmark, not independent proof of its
+published rankings or of any entrant's production quality.
+
+- **HN discovery:** https://news.ycombinator.com/item?id=49749689 (2 points, no
+  comments when inspected)
+- **Source:** https://agentmemoryleaderboard.ai/
+- **Repo:** https://github.com/AML-memory/agent-memory-leaderboard
+- **Inspected revision:** https://github.com/AML-memory/agent-memory-leaderboard/commit/1b8142bfe0f20f1c5218d6b554aa0012de34e504
+
 ### Context Compression (June 2026 — Emerging)
 
 Tool outputs are too large for context windows. Infrastructure-layer compression reduces tokens 60-95% with same answer quality.
