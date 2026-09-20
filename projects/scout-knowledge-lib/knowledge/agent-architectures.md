@@ -1,9 +1,9 @@
 <ai_context>
 summary: "Canonical overview of agent architecture patterns, trends, and proven designs. Consolidated from five overlapping notes."
 triggers: ["agent architecture", "architecture patterns", "ReAct", "multi-agent orchestration", "monitor agent", "critic pattern", "tiered memory", "control flow agents"]
-last_updated: "2026-09-18"
-current_snapshot: "RAFT 2609.20754v1 treats a troubleshooting history as a state trajectory rather than a static document: retrieve the matching timeline entry, then return its parent case from that state. Its abstract reports stage-wise Case Hit gains, but only direct retrieval—not full-agent resolution quality—was evaluated."
-source_basis: "Merged from agent-architectures.md, agent-architecture-trends.md, agent-patterns.md, agent_patterns.md, agent_architectures_01.md. Sources include HN May 2026 trends, XHS community discussions, internal Scout synthesis, GitHub trending repos June 2026 (scans on Jun 13, 15, 20), and arXiv papers June 2–16 2026 (triages on Jun 14, 15, 17, 19, batch 6/7, session-state Jul 18, runtime-hardening). §Process Harness & §Architecture Gradient extracted to agent-runtime-hardening.md. §Intelligence Entropy through §SaliMory (12 arXiv research papers) extracted to agent-architectures-research.md (2026-07-08). HN updates (2026-08-05): HN 49182946 / Data For Science 'Building an Advanced Agentic Harness' added as practitioner evidence that harness engineering is being pressure-tested around thin orchestrators, benchmarkable structure, budget-aware graceful degradation, and explicit observability rather than framework bulk alone; HN 49189075 / Prime Intellect 'Prime Agent' added as practitioner evidence that self-improving harnesses now face a compression test from stronger base models and code-bloat skepticism. arXiv update (2026-08-06): Skill-Use [2608.04828] added as evidence that skill activation and compliance are harness-conditioned bottlenecks even when skill files already exist. HN update (2026-08-08): HN 49214109 and Prime Agent revision a18809e add concrete evidence that durable self-improvement is becoming a typed, rollback-capable supplemental state plane, while execution continuity and security containment remain separate concerns. arXiv update (2026-08-10): [2608.06953] adds controlled evidence that explicit source/certainty fields preserve epistemic stance under tight memory compression better than parenthetical prose, while showing that the mechanism and best explicit form remain model-dependent. HN update (2026-08-11): HN 49259702 / Lobu adds implementation-level practitioner evidence for treating durable agent memory as an append-only observation proxy with explicit supersession, run-to-input lineage, pre-effect approval, and corrections that survive model replacement. GitHub update (2026-08-19): volcengine/OpenViking revision 98a0104 adds implementation-level evidence that tiered memory is becoming an inspectable, crash-aware data plane with hierarchical retrieval, derived indexes, commit-triggered extraction, and memory diffs. GitHub update (2026-08-20): lesliechowsh/dsh-memo revision 86a94dd adds a reproducible session-localization harness and demonstrates why memory retrieval, evidence reading, and answer generation need separate metrics. GitHub update (2026-09-12): chigwell/Penelopa.ai revision 0abec61 adds repository-authored capture and delivery contracts that separate installation, real hook activity, durable local spooling, server acknowledgement, and stopping collection. GitHub update (2026-09-13): PebbleLog/SimonAgent revision 28f6b0a adds implementation-level evidence for validating and committing semantic memory artifacts before releasing source turns, while retaining a separate emergency context-trimming path. HN update (2026-09-14): HN 49704711 / data-gras/savi-loop-guard revision 43c35c6 adds pinned implementation evidence that repetition detection can be cheap and local, while showing why attempted calls, dispatched effects, progress, and circuit-breaker recovery cannot share one append-only history. GitHub update (2026-09-17): huggingface/funes revision 0612fce adds implementation-level evidence that cross-harness memory can be packaged as a derived, portable dataset while exposing a distinct publication-governance boundary: secret detection, release selection, and remote retraction are not one control. arXiv update (2026-09-18): RAFT [2609.20754v1] adds abstract-level evidence for state-matched retrieval over multi-stage troubleshooting histories; its reported evaluation measures retrieval directly rather than full-agent outcomes."
+last_updated: "2026-09-20"
+current_snapshot: "Caura revision 4673cab implements shared-memory governance across three distinct planes—scope/trust admission, content policy, and audit evidence—but its own queue semantics show that a valid hash chain proves integrity only for events that reached storage, not completeness of all attempted actions."
+source_basis: "Merged from agent-architectures.md, agent-architecture-trends.md, agent-patterns.md, agent_patterns.md, agent_architectures_01.md. Sources include HN May 2026 trends, XHS community discussions, internal Scout synthesis, GitHub trending repos June 2026 (scans on Jun 13, 15, 20), and arXiv papers June 2–16 2026 (triages on Jun 14, 15, 17, 19, batch 6/7, session-state Jul 18, runtime-hardening). §Process Harness & §Architecture Gradient extracted to agent-runtime-hardening.md. §Intelligence Entropy through §SaliMory (12 arXiv research papers) extracted to agent-architectures-research.md (2026-07-08). HN updates (2026-08-05): HN 49182946 / Data For Science 'Building an Advanced Agentic Harness' added as practitioner evidence that harness engineering is being pressure-tested around thin orchestrators, benchmarkable structure, budget-aware graceful degradation, and explicit observability rather than framework bulk alone; HN 49189075 / Prime Intellect 'Prime Agent' added as practitioner evidence that self-improving harnesses now face a compression test from stronger base models and code-bloat skepticism. arXiv update (2026-08-06): Skill-Use [2608.04828] added as evidence that skill activation and compliance are harness-conditioned bottlenecks even when skill files already exist. HN update (2026-08-08): HN 49214109 and Prime Agent revision a18809e add concrete evidence that durable self-improvement is becoming a typed, rollback-capable supplemental state plane, while execution continuity and security containment remain separate concerns. arXiv update (2026-08-10): [2608.06953] adds controlled evidence that explicit source/certainty fields preserve epistemic stance under tight memory compression better than parenthetical prose, while showing that the mechanism and best explicit form remain model-dependent. HN update (2026-08-11): HN 49259702 / Lobu adds implementation-level practitioner evidence for treating durable agent memory as an append-only observation proxy with explicit supersession, run-to-input lineage, pre-effect approval, and corrections that survive model replacement. GitHub update (2026-08-19): volcengine/OpenViking revision 98a0104 adds implementation-level evidence that tiered memory is becoming an inspectable, crash-aware data plane with hierarchical retrieval, derived indexes, commit-triggered extraction, and memory diffs. GitHub update (2026-08-20): lesliechowsh/dsh-memo revision 86a94dd adds a reproducible session-localization harness and demonstrates why memory retrieval, evidence reading, and answer generation need separate metrics. GitHub update (2026-09-12): chigwell/Penelopa.ai revision 0abec61 adds repository-authored capture and delivery contracts that separate installation, real hook activity, durable local spooling, server acknowledgement, and stopping collection. GitHub update (2026-09-13): PebbleLog/SimonAgent revision 28f6b0a adds implementation-level evidence for validating and committing semantic memory artifacts before releasing source turns, while retaining a separate emergency context-trimming path. HN update (2026-09-14): HN 49704711 / data-gras/savi-loop-guard revision 43c35c6 adds pinned implementation evidence that repetition detection can be cheap and local, while showing why attempted calls, dispatched effects, progress, and circuit-breaker recovery cannot share one append-only history. GitHub update (2026-09-17): huggingface/funes revision 0612fce adds implementation-level evidence that cross-harness memory can be packaged as a derived, portable dataset while exposing a distinct publication-governance boundary: secret detection, release selection, and remote retraction are not one control. arXiv update (2026-09-18): RAFT [2609.20754v1] adds abstract-level evidence for state-matched retrieval over multi-stage troubleshooting histories; its reported evaluation measures retrieval directly rather than full-agent outcomes. GitHub update (2026-09-20): caura-ai/caura revision 4673cab adds implementation-level evidence that shared-memory governance separates scope/trust admission, content-policy enforcement, and audit integrity, while exposing audit completeness as a separate availability property because non-critical events may be dropped under overload."
 supersedes: ["agent-architecture-trends.md", "agent-patterns.md", "agent_patterns.md", "agent_architectures_01.md"]
 </ai_context>
 
@@ -663,6 +663,55 @@ external effects—not the product's scale claim.
 
 - **HN:** https://news.ycombinator.com/item?id=49259702
 - **Source:** https://lobu.ai/blog/self-improving-agents-are-event-sourced/
+
+#### Governed shared memory needs separate admission, enforcement, and evidence guarantees (GitHub, Sep 2026)
+
+[`caura-ai/caura`](https://github.com/caura-ai/caura) is implementation-level
+evidence that a fleet memory is becoming a control plane rather than a vector
+store. At inspected revision
+[`4673cab`](https://github.com/caura-ai/caura/commit/4673cab2a881e890d0dd887f745aed77ff0c0938),
+three mechanisms are visibly separate:
+
+1. **Admission:** memories carry agent, team/fleet, or organization visibility;
+   trust-level checks gate operations. A missing agent row can inherit the
+   default trust level on read-only paths, while persistent write paths are
+   explicitly required to reject that soft pass so a fabricated identity does
+   not enter the audit trail.
+2. **Policy:** deterministic content gates can flag, mask, privatize, or reject
+   writes. Separately, tenant/fleet/agent “keystones” are ranked mandatory rules
+   retrieved for the agent to obey. These are not the same guarantee: the
+   former owns the write effect, while the latter is delivered instruction and
+   still depends on agent compliance.
+3. **Evidence:** stored audit rows form a per-tenant SHA-256 chain over canonical
+   event fields and the previous hash. Repository tests cover mutation, sequence
+   gaps, tail truncation against the retained chain head, concurrent same-tenant
+   inserts, and retry deduplication.
+
+The audit implementation exposes an important limit to the phrase
+“tamper-evident.” Non-critical audit events use a bounded in-process queue and
+may be dropped—with counters—when the queue is full; failed flush chunks are not
+requeued. Reject decisions are marked critical and fall back to a synchronous
+write on queue overflow, but if that fallback also fails the loss is logged and
+the rejected operation still proceeds. The chain can therefore prove the
+ordering and integrity of events that reached storage, while **capture
+completeness remains a separate availability property**. It also has no
+repository-visible external checkpoint in the inspected paths, so this review
+does not claim resistance to an administrator who can rewrite both rows and the
+in-database chain head.
+
+**Architecture rule:** describe governed memory with a guarantee matrix, not one
+“auditable” label: principal admission, visibility scope, effect-owning policy,
+instruction-only policy, event capture durability, stored-event integrity, and
+external anchoring. A valid hash-chain result does not prove every attempted or
+executed action was captured.
+
+This was a source inspection, not a deployment test. Scout did not execute the
+PostgreSQL integration suite, induce queue overload, or independently verify the
+README's production and benchmark claims.
+
+- **Repo:** https://github.com/caura-ai/caura
+- **Inspected revision:** https://github.com/caura-ai/caura/commit/4673cab2a881e890d0dd887f745aed77ff0c0938
+- **Primary sources:** [README](https://github.com/caura-ai/caura/blob/4673cab2a881e890d0dd887f745aed77ff0c0938/README.md), [trust gate](https://github.com/caura-ai/caura/blob/4673cab2a881e890d0dd887f745aed77ff0c0938/core-api/src/core_api/services/trust_service.py), [governance audit emitter](https://github.com/caura-ai/caura/blob/4673cab2a881e890d0dd887f745aed77ff0c0938/core-api/src/core_api/services/governance_gate.py), [audit queue](https://github.com/caura-ai/caura/blob/4673cab2a881e890d0dd887f745aed77ff0c0938/core-api/src/core_api/services/audit_queue.py), [hash-chain primitives](https://github.com/caura-ai/caura/blob/4673cab2a881e890d0dd887f745aed77ff0c0938/core-storage-api/src/core_storage_api/services/audit_chain.py), and [chain tests](https://github.com/caura-ai/caura/blob/4673cab2a881e890d0dd887f745aed77ff0c0938/tests/test_audit_chain.py)
 
 ### Memory Control Plane (July 2026 — Emerging Thesis)
 
