@@ -289,6 +289,36 @@ test("execute returns a canonically admitted wait bound to the exact proposal", 
   });
 });
 
+test("execute binds proposal preparation to the exact packet whose subject was checked", async () => {
+  const data = fixture();
+  const pin = pinEvaluationSubject(data);
+  const result = await execute(approvalContext(data), async () => {
+    const packet = JSON.parse(readFileSync(data.files.packet, "utf8"));
+    const changedSubject = {
+      ...packet.evaluationSubject,
+      evidenceHash: "changed",
+    };
+    const { packetHash: _old, ...body } = {
+      ...packet,
+      evaluationSubject: changedSubject,
+    };
+    writeFileSync(
+      data.files.packet,
+      JSON.stringify({ ...body, packetHash: packetHash(body) }),
+    );
+    return {
+      disposition: "eligible",
+      generation: pin.generation,
+      evidenceHash: pin.evidenceHash,
+      rubricVersion: pin.rubricVersion,
+      validityIdentity: pin.validityIdentity,
+    };
+  });
+  expect(result.status).toBe("blocked");
+  expect(JSON.stringify(result)).toContain("approval packet changed");
+  expect(existsSync(join(data.root, "proposal.json"))).toBe(false);
+});
+
 test("execute gates Evaluation-pinned proposals on a fresh exact subject read", async () => {
   const matching = fixture();
   const pin = pinEvaluationSubject(matching);

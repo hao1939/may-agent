@@ -96,6 +96,7 @@ function retainProposal(path: string, proposal: ApprovalProposal): string {
 export function prepareImprovementApproval(
   input: Input,
   task: { appId: string; taskId: string; generation: number },
+  expectedPacketHash?: string,
 ) {
   const files = {
     packet: resolve(input.files.packet),
@@ -107,7 +108,11 @@ export function prepareImprovementApproval(
   const inspected = inspectApplication(files);
   const packet = inspected.packet as ApprovalPacket;
   const { packetHash: claimed, ...body } = packet;
-  if (packetHash(body) !== claimed) throw new Error("approval packet changed");
+  if (
+    packetHash(body) !== claimed ||
+    (expectedPacketHash && claimed !== expectedPacketHash)
+  )
+    throw new Error("approval packet changed");
   for (const key of [
     "baselineCommit",
     "candidateCommit",
@@ -150,11 +155,15 @@ export async function execute(
     if (packetHash(packetBody) !== claimedPacketHash)
       throw new Error("approval packet changed");
     await assertEvaluationSubjectCurrent(packet, readCurrentSubject);
-    const prepared = prepareImprovementApproval(ctx.input, {
-      appId: "may",
-      taskId,
-      generation: ctx.reconciliation!.generation,
-    });
+    const prepared = prepareImprovementApproval(
+      ctx.input,
+      {
+        appId: "may",
+        taskId,
+        generation: ctx.reconciliation!.generation,
+      },
+      claimedPacketHash,
+    );
     const summary =
       "Exact candidate and evidence verified; human review is required before source application.";
     return ctx.done(summary, {

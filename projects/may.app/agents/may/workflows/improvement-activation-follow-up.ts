@@ -5,6 +5,7 @@ import type {
   WorkflowContext,
 } from "@may-agent/sdk";
 import {
+  assertCurrentEvaluationSubject,
   packetHash,
   trustedDecisionFromEvent,
   type ApprovalPacket,
@@ -15,6 +16,7 @@ import {
   readSubjectTask,
   sendPublicReadCommand,
 } from "../../../../evaluation.app/agents/evaluator/workflows/lib/public-task-evidence.js";
+import { assessmentContext } from "../../../../evaluation.app/agents/evaluator/workflows/lib/task-assessment-context.js";
 import {
   currentProposalMatches,
   inspectApplication,
@@ -46,6 +48,17 @@ async function publicEvidenceProvider() {
 }
 
 type PublicRead = typeof sendPublicReadCommand;
+type EvaluationSubjectReader = (identity: {
+  appId: string;
+  taskId: string;
+  assessmentPurpose: "outcome" | "ongoing";
+}) => Promise<{
+  disposition: string;
+  generation?: number;
+  evidenceHash?: string;
+  validityIdentity?: string;
+  rubricVersion?: string;
+}>;
 
 async function readCorrelatedReloadResult(
   retained: { eventId: number; data: Record<string, unknown> },
@@ -181,6 +194,7 @@ export async function runActivationFollowUp(
   ctx: WorkflowContext<Input>,
   suppliedProvider?: EvidenceProvider,
   publicRead: PublicRead = sendPublicReadCommand,
+  readEvaluationSubject?: EvaluationSubjectReader,
 ): Promise<ExecutionResult> {
   const rec = ctx.reconciliation;
   if (!rec?.taskId)
@@ -312,6 +326,35 @@ export async function runActivationFollowUp(
         return ctx.blocked(
           "Activation denied: actual source-application receipt does not bind the trusted approval",
         );
+      if (packet.evaluationSubject) {
+        const pinned = packet.evaluationSubject;
+        const identity = {
+          appId: pinned.appId,
+          taskId: pinned.taskId,
+          assessmentPurpose: pinned.assessmentPurpose ?? "outcome",
+        } as const;
+        const current = readEvaluationSubject
+          ? await readEvaluationSubject(identity)
+          : await (async () => {
+              const subject = await readSubjectTask(identity, publicRead);
+              const detail = record(record(subject.task).detail);
+              const assessment =
+                identity.assessmentPurpose === "ongoing"
+                  ? assessmentContext(subject, "ongoing")
+                  : undefined;
+              return {
+                disposition: subject.disposition,
+                generation:
+                  typeof detail.generation === "number"
+                    ? detail.generation
+                    : undefined,
+                evidenceHash: subject.evidenceHash,
+                validityIdentity: assessment?.validityIdentity,
+                rubricVersion: assessment?.rubricVersion,
+              };
+            })();
+        assertCurrentEvaluationSubject(pinned, current);
+      }
       await ctx.events.emit({
         type: "runtime.reload.requested",
         owner: "agent:may",

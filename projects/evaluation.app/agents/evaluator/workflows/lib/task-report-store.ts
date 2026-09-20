@@ -72,6 +72,13 @@ function strings(value: unknown): string[] {
 function safe(value: string): string {
   return value.replace(/[^A-Za-z0-9._-]+/g, "-").slice(0, 120);
 }
+function representableTimestamp(value: unknown): value is number {
+  return (
+    typeof value === "number" &&
+    Number.isFinite(value) &&
+    !Number.isNaN(new Date(value).getTime())
+  );
+}
 
 function purposeMatchesRubric(
   purpose: string,
@@ -177,8 +184,8 @@ export function renderTaskReportMarkdown(payload: unknown): string | null {
   if (
     Object.keys(freshness).length &&
     (!["current", "stale", "unavailable"].includes(freshnessStatus) ||
-      !Number.isFinite(Number(freshness.checkedAt)) ||
-      Number(freshness.checkedAt) < 0)
+      !representableTimestamp(freshness.checkedAt) ||
+      freshness.checkedAt < 0)
   )
     return null;
   const disposition = text(judgment.disposition);
@@ -199,7 +206,7 @@ export function renderTaskReportMarkdown(payload: unknown): string | null {
     !responsibility ||
     !delivery ||
     !executionId ||
-    !Number.isFinite(createdAt)
+    !representableTimestamp(createdAt)
   )
     return null;
   const findings = strings(judgment.findings).slice(0, 12);
@@ -213,7 +220,7 @@ export function renderTaskReportMarkdown(payload: unknown): string | null {
     return `# Evaluation report\n\n- Subject: \`${appId}/${taskId}\`\n- Evidence: \`${evidenceHash}\`\n- Rubric: \`${rubricVersion}\`\n- Source revision: \`${sourceRevision}\`\n- Disposition: \`${disposition}\`\n- Created: \`${new Date(createdAt).toISOString()}\`\n- Evaluator execution: \`${executionId}\`\n- Cost: unknown\n\n## Summary\n\n${summary}\n\n## Responsibility\n\n${responsibility}\n\n## Findings\n\n${findings.map((item) => `- ${item}`).join("\n") || "- None."}\n\n## Verification and delivery\n\n${verification.map((item) => `- ${item}`).join("\n") || "- No verification cited."}\n- Delivery: ${delivery}\n`;
   const validityLines =
     purpose === "ongoing"
-      ? `- Validity phase: \`${text(validity.phase) || "unknown"}\`\n- Due boundary: \`${typeof validity.dueAt === "number" && Number.isFinite(validity.dueAt) ? new Date(validity.dueAt).toISOString() : "unavailable"}\`\n`
+      ? `- Validity phase: \`${text(validity.phase) || "unknown"}\`\n- Due boundary: \`${representableTimestamp(validity.dueAt) ? new Date(validity.dueAt).toISOString() : "unavailable"}\`\n`
       : "";
   const freshnessLines = Object.keys(freshness).length
     ? `- Snapshot generation: \`${Number(snapshot.generation)}\`\n- Snapshot freshness at check: \`${freshnessStatus}\`\n- Freshness checked: \`${new Date(Number(freshness.checkedAt)).toISOString()}\`\n`
