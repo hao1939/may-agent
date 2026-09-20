@@ -92,6 +92,53 @@ describe("pinned Task evidence read-back", () => {
     expect(bundle.gaps).toEqual([]);
   });
 
+  test("pages old accepted attempts to reach pinned artifacts without making history current", async () => {
+    const store = await archive();
+    const ref = await store.put("old accepted evidence", "md");
+    const cursors: string[] = [];
+    const bundle = await readPinnedTaskEvidence(
+      "may",
+      "goal/one",
+      { appTask: { id: "goal/one", result: { current: true } }, detail: {} },
+      {
+        getAppTask: async () => ({ id: "goal/one" }),
+        getTask: async (_appId, _taskId, acceptedEvidence) => {
+          const cursor = acceptedEvidence?.cursor ?? "";
+          cursors.push(cursor);
+          return {
+            acceptedEvidence: {
+              page: cursor
+                ? {
+                    items: [
+                      {
+                        appId: "may",
+                        taskId: "goal/one",
+                        taskGeneration: 1,
+                        attemptId: "old-artifact",
+                        acceptedResult: { result: { artifacts: [ref] } },
+                      },
+                    ],
+                  }
+                : {
+                    items: Array.from({ length: 8 }, (_, index) => ({
+                      appId: "may",
+                      taskId: "goal/one",
+                      taskGeneration: 1,
+                      attemptId: `later-wait-${index}`,
+                      acceptedResult: { state: "waiting", summary: "budget", facts: [] },
+                    })),
+                    nextCursor: "older",
+                  },
+            },
+          };
+        },
+      },
+    );
+    expect(cursors).toEqual(["", "older"]);
+    expect(bundle.artifacts).toHaveLength(1);
+    expect(bundle.artifacts[0]).toMatchObject({ status: "read", content: "old accepted evidence" });
+  });
+
   test("existence is not read-back, and missing-to-readable evidence changes review identity", async () => {
     const store = await archive();
     const ref = await store.put("verified bytes", "md");

@@ -630,6 +630,38 @@ describe("approved activation and independent follow-up", () => {
     });
     expect(readResultIds).toEqual([admittedRequestId]);
 
+    const staleCompleted = context(f, {
+      ok: true,
+      sourceCommit: f.packet.candidateCommit,
+    });
+    (staleCompleted.read as any).tasks.get = (completed.read as any).tasks.get;
+    (staleCompleted.read as any).appResult = (completed.read as any).appResult;
+    (staleCompleted.reconciliation as any).events.items = [
+      ...(completed.reconciliation as any).events.items,
+    ];
+    const staleCompletedProvider = (staleCompleted as any).evidenceProvider;
+    const staleCompletedRead = staleCompletedProvider.getTask;
+    staleCompletedProvider.getTask = async (appId: string, taskId: string) => {
+      const task = await staleCompletedRead(appId, taskId);
+      if (taskId === "goal/new-subject")
+        task.facts = [...(task.facts ?? []), "later-owner-update"];
+      return task;
+    };
+    expect(output(await execute(staleCompleted))).toMatchObject({
+      state: "converged",
+      result: {
+        stage: "post-adoption-evaluation-inconclusive",
+        evaluationDisposition: "stale",
+      },
+      facts: [
+        expect.stringContaining("activation-result-event:"),
+        expect.any(String),
+        expect.any(String),
+        expect.stringContaining("current-subject-evidence:"),
+        "review-freshness:stale",
+      ],
+    });
+
     const differentReview = context(f, {
       ok: true,
       sourceCommit: f.packet.candidateCommit,

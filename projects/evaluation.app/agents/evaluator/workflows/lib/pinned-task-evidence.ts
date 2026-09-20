@@ -76,6 +76,38 @@ export async function readPinnedTaskEvidence(
     }
   }
   navigation(appId, task.appTask, task.detail);
+  // Current reads stay compact. Explicitly page immutable accepted attempts so
+  // pinned evidence remains reachable after many later wait-only results.
+  let evidenceCursor = "";
+  let evidencePages = 0;
+  try {
+    do {
+      const historical = await provider.getTask(appId, taskId, {
+        limit: 8,
+        ...(evidenceCursor ? { cursor: evidenceCursor } : {}),
+      });
+      const page = object(object(historical.acceptedEvidence).page);
+      const items = Array.isArray(page.items) ? page.items : [];
+      for (const item of items) {
+        const record = object(item);
+        queue.push({
+          value: record.acceptedResult,
+          source: `accepted-attempt:${String(record.appId)}/${String(record.taskId)}:${String(record.taskGeneration)}:${String(record.attemptId)}`,
+          depth: 0,
+        });
+        if (record.truncated)
+          gaps.add(
+            `accepted attempt content truncated: ${String(record.attemptId)}`,
+          );
+      }
+      evidenceCursor = typeof page.nextCursor === "string" ? page.nextCursor : "";
+      evidencePages += 1;
+    } while (evidenceCursor && evidencePages < 16);
+    if (evidenceCursor)
+      gaps.add("accepted-attempt navigation limit (128 records); older evidence not read");
+  } catch {
+    gaps.add(`accepted-attempt history unavailable: ${appId}/${taskId}`);
+  }
   let linkedIndex = 0;
   for (
     let index = 0;

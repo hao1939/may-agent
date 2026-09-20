@@ -243,6 +243,28 @@ export async function applyImprovementFromTrustedEvent(
     const provider = createPublicTaskEvidenceProvider();
     return provider.getTask(appId, taskId);
   },
+  readEvaluationSubject: (subject: {
+    appId: string;
+    taskId: string;
+  }) => Promise<{
+    disposition: string;
+    evidenceHash?: string;
+    task?: Record<string, unknown>;
+    validityIdentity?: string;
+  }> = async (identity) => {
+    const { readSubjectTask } =
+      await import("../../evaluation.app/agents/evaluator/workflows/lib/public-task-evidence.js");
+    const { assessmentContext } =
+      await import("../../evaluation.app/agents/evaluator/workflows/lib/task-assessment-context.js");
+    const subject = await readSubjectTask(identity);
+    return {
+      ...subject,
+      validityIdentity:
+        subject.disposition === "eligible"
+          ? assessmentContext(subject, "ongoing").validityIdentity
+          : undefined,
+    };
+  },
 ) {
   const packet = JSON.parse(
     readFileSync(files.packet, "utf8"),
@@ -266,6 +288,24 @@ export async function applyImprovementFromTrustedEvent(
   const current = await readTask(proposal.task.appId, proposal.task.taskId);
   if (!currentProposalMatches(current, proposal))
     throw new Error("approval proposal changed before source application");
+  if (packet.evaluationSubject) {
+    const pinned = packet.evaluationSubject;
+    const subject = await readEvaluationSubject({
+      appId: pinned.appId,
+      taskId: pinned.taskId,
+    });
+    const detail = (subject.task?.detail ?? {}) as Record<string, unknown>;
+    if (
+      subject.disposition !== "eligible" ||
+      detail.generation !== pinned.generation ||
+      subject.evidenceHash !== pinned.evidenceHash ||
+      (pinned.assessmentPurpose === "ongoing" &&
+        subject.validityIdentity !== pinned.validityIdentity)
+    )
+      throw new Error(
+        "Evaluation subject changed before source application; fresh review and approval are required",
+      );
+  }
   return applyImprovement(files, decision.packetHash);
 }
 

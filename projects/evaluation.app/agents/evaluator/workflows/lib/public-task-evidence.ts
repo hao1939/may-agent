@@ -34,8 +34,16 @@ export type PublicTaskEvidenceProvider = {
     nextCursor: string;
     issues: string[];
   }>;
-  getAppTask(appId: string, taskId: string): Promise<Record<string, unknown>>;
-  getTask(appId: string, taskId: string): Promise<Record<string, unknown>>;
+  getAppTask(
+    appId: string,
+    taskId: string,
+    acceptedEvidence?: { limit?: number; cursor?: string },
+  ): Promise<Record<string, unknown>>;
+  getTask(
+    appId: string,
+    taskId: string,
+    acceptedEvidence?: { limit?: number; cursor?: string },
+  ): Promise<Record<string, unknown>>;
   getEvent(eventId: string | number): Promise<Record<string, unknown>>;
 };
 export type SubjectDisposition =
@@ -327,8 +335,19 @@ export function createPublicTaskEvidenceProvider(
       } while (cursor && collected.length < maximum);
       return collected.slice(0, maximum);
     },
-    async getAppTask(appId, taskId) {
-      const response = await command({ type: "app.task.get", appId, taskId });
+    async getAppTask(appId, taskId, acceptedEvidence) {
+      const response = await command({
+        type: "app.task.get",
+        appId,
+        taskId,
+        ...(acceptedEvidence
+          ? {
+              acceptedEvidence: true,
+              ...(acceptedEvidence.limit ? { evidenceLimit: acceptedEvidence.limit } : {}),
+              ...(acceptedEvidence.cursor ? { evidenceCursor: acceptedEvidence.cursor } : {}),
+            }
+          : {}),
+      });
       if (response.command !== "app.task.get")
         throw new Error("app.task.get response identity mismatch");
       assertIdentity(response.appId, appId, "app.task.get appId");
@@ -337,8 +356,19 @@ export function createPublicTaskEvidenceProvider(
       assertIdentity(task.id ?? task.taskId, taskId, "app.task.get Task");
       return task;
     },
-    async getTask(appId, taskId) {
-      const response = await command({ type: "task.get", appId, taskId });
+    async getTask(appId, taskId, acceptedEvidence) {
+      const response = await command({
+        type: "task.get",
+        appId,
+        taskId,
+        ...(acceptedEvidence
+          ? {
+              acceptedEvidence: true,
+              ...(acceptedEvidence.limit ? { evidenceLimit: acceptedEvidence.limit } : {}),
+              ...(acceptedEvidence.cursor ? { evidenceCursor: acceptedEvidence.cursor } : {}),
+            }
+          : {}),
+      });
       if (response.command !== "task.get")
         throw new Error("task.get response identity mismatch");
       const task = object(response.task);

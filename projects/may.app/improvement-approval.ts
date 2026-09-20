@@ -6,6 +6,16 @@ export interface ActivationAuthorization {
   target: string;
 }
 
+export interface EvaluationSubjectIdentity {
+  appId: string;
+  taskId: string;
+  generation: number;
+  evidenceHash: string;
+  assessmentPurpose?: "outcome" | "ongoing";
+  rubricVersion?: string;
+  validityIdentity?: string;
+}
+
 export interface ApprovalPacket {
   packetHash: string;
   baselineCommit: string;
@@ -18,6 +28,8 @@ export interface ApprovalPacket {
   activationScope: string;
   /** Optional exact live activation included in the human-reviewed packet. */
   activation?: ActivationAuthorization;
+  /** Required freshness pin when the candidate is justified by an Evaluation report. */
+  evaluationSubject?: EvaluationSubjectIdentity;
   rollbackCommit: string;
 }
 

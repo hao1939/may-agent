@@ -497,6 +497,39 @@ export async function runActivationFollowUp(
         throw new Error(
           "post-adoption Evaluation return is ambiguous for this owner Task",
         );
+      const currentSubject = await readSubjectTask(
+        { appId: selected.appId, taskId: selected.taskId },
+        publicRead,
+      );
+      const currentDetail = record(record(currentSubject.task).detail);
+      if (
+        currentSubject.disposition !== "eligible" ||
+        currentDetail.generation !== selected.generation ||
+        currentSubject.evidenceHash !== selected.evidenceHash
+      ) {
+        const summary =
+          "The retained independent report remains readable, but its subject is no longer current; post-adoption certification is inconclusive.";
+        return ctx.done(summary, {
+          state: "converged",
+          summary,
+          response: summary,
+          facts: [
+            `activation-result-event:${finished.eventId ?? requestId}`,
+            `new-subject:${selected.appId}/${selected.taskId}:generation-${selected.generation}`,
+            `new-subject-evidence:${selected.evidenceHash}`,
+            `current-subject-evidence:${currentSubject.evidenceHash ?? "unavailable"}`,
+            "review-freshness:stale",
+          ],
+          result: {
+            stage: "post-adoption-evaluation-inconclusive",
+            packetHash: approvedPacketHash,
+            evaluationDisposition: "stale",
+            nextOwner: "app:may",
+            nextAction:
+              "Read and review the current post-adoption subject before making a recovery or value claim.",
+          },
+        } satisfies TaskReconcileResult);
+      }
       const admittedRequestId = exactReturns[0]!.requestId;
       const accepted = exactReturns[0]!.result;
       const facts = Array.isArray(accepted.facts)

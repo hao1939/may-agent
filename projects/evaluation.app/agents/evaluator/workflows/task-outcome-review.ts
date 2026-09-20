@@ -131,6 +131,7 @@ function resultFacts(
   executionId: string,
   assessment: AssessmentContext,
   disposition: Judgment["disposition"] = "assessed",
+  freshness: "current" | "stale" | "unavailable" = "current",
 ): string[] {
   return [
     `review-disposition:${disposition}`,
@@ -140,6 +141,7 @@ function resultFacts(
     `subject:${appId}/${taskId}`,
     `subject-generation:${generation}`,
     `evidence-hash:${evidenceHash}`,
+    `snapshot-freshness:${freshness}`,
     `report:${markdownPath}`,
     `report-facts:${jsonPath}`,
     `execution:${executionId}`,
@@ -187,6 +189,7 @@ function acceptedReport(
   markdownPath: string;
   executionId: string;
   disposition: Judgment["disposition"];
+  freshness: "current" | "stale" | "unavailable";
 } | null {
   const evidenceHash = subject.evidenceHash!;
   if (!facts.includes(`evidence-hash:${evidenceHash}`)) return null;
@@ -230,6 +233,7 @@ function acceptedReport(
         markdownPath,
         executionId,
         disposition: staged.judgment.disposition,
+        freshness: staged.freshness,
       }
     : null;
 }
@@ -243,6 +247,7 @@ function readStagedReport(
   jsonPath: string;
   markdownPath: string;
   executionId: string;
+  freshness: "current" | "stale" | "unavailable";
 } | null {
   const paths = taskReportPaths(
     subject.appId,
@@ -286,10 +291,15 @@ function readStagedReport(
     ) {
       return null;
     }
+    const freshnessStatus = text(object(payload.freshness).status);
     return {
       judgment,
       ...paths,
       executionId,
+      freshness:
+        freshnessStatus === "stale" || freshnessStatus === "unavailable"
+          ? freshnessStatus
+          : "current",
     };
   } catch {
     return null;
@@ -456,6 +466,7 @@ export async function reviewTaskOutcome(
         prior.executionId,
         assessment,
         prior.disposition,
+        prior.freshness,
       ),
     );
   }
@@ -478,6 +489,7 @@ export async function reviewTaskOutcome(
         staged.executionId,
         assessment,
         staged.judgment.disposition,
+        staged.freshness,
       ),
     );
   }
@@ -550,23 +562,17 @@ export async function reviewTaskOutcome(
     ]);
 
   const current = await readSubjectTask({ appId, taskId }, command);
-  if (
-    current.disposition !== "eligible" ||
-    current.evidenceHash !== subject.evidenceHash ||
-    assessmentContext(current, assessment.purpose).validityIdentity !==
-      assessment.validityIdentity
-  ) {
-    return done(
-      ctx,
-      `inconclusive: ${appId}/${taskId} changed while it was being evaluated; no report was published.`,
-      [
-        "review-disposition:insufficient-evidence",
-        `subject:${appId}/${taskId}`,
-        `stale-evidence-hash:${subject.evidenceHash}`,
-        `execution:${execution.id}`,
-      ],
-    );
-  }
+  const currentAssessment =
+    current.disposition === "eligible"
+      ? assessmentContext(current, assessment.purpose)
+      : null;
+  const freshness =
+    current.disposition !== "eligible"
+      ? "unavailable"
+      : current.evidenceHash === subject.evidenceHash &&
+          currentAssessment?.validityIdentity === assessment.validityIdentity
+        ? "current"
+        : "stale";
 
   // The workflow context does not expose the loaded App-definition source.
   // An arbitrary process environment label is not activation provenance, so
@@ -588,6 +594,22 @@ export async function reviewTaskOutcome(
       : {}),
     disposition: judgment.disposition,
     subject: { appId, taskId, evidenceHash: subject.evidenceHash },
+    snapshot: {
+      generation: actualGeneration,
+      evidenceHash: subject.evidenceHash,
+      validityIdentity: assessment.validityIdentity,
+    },
+    freshness: {
+      status: freshness,
+      checkedAt: Date.now(),
+      currentGeneration:
+        current.disposition === "eligible"
+          ? Number(object(object(current.task).detail).generation) || null
+          : null,
+      currentEvidenceHash: current.evidenceHash ?? null,
+      currentValidityIdentity: currentAssessment?.validityIdentity ?? null,
+      reason: current.reason,
+    },
     evidence: subject.task,
     evaluator: { executionId: execution.id, cost: "unknown" },
     judgment,
@@ -605,16 +627,20 @@ export async function reviewTaskOutcome(
   };
   // Read-back validates subject identity and complete judgment before the event
   // becomes the publication checkpoint.
-  if (!readStagedReport(reportRoot, current, assessment)) {
+  if (!readStagedReport(reportRoot, subject, assessment)) {
     return ctx.blocked(
       "Written task-outcome report failed identity read-back.",
       [`execution:${execution.id}`],
     );
   }
-  await publish(ctx, current, report, reportRoot, assessment);
+  await publish(ctx, subject, report, reportRoot, assessment);
+  const summary =
+    freshness === "current"
+      ? judgment.summary
+      : `${judgment.summary} The report remains a judgment of the inspected snapshot and is ${freshness}; consumers must reread the current subject before acting.`;
   return done(
     ctx,
-    judgment.summary,
+    summary,
     resultFacts(
       appId,
       taskId,
@@ -625,6 +651,7 @@ export async function reviewTaskOutcome(
       execution.id,
       assessment,
       judgment.disposition,
+      freshness,
     ),
   );
 }

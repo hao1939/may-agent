@@ -106,6 +106,13 @@ describe("evaluation report reader", () => {
         assessment: { ...ongoing.assessment, purpose: "outcome" },
       }),
     ).toBeNull();
+    expect(
+      renderTaskReportMarkdown({
+        ...legacy,
+        snapshot: { generation: 1, evidenceHash: "abc" },
+        freshness: { status: "stale", checkedAt: "not-a-time" },
+      }),
+    ).toBeNull();
   });
 
   test("integrity-checks an ongoing publication using its complete report identity", () => {

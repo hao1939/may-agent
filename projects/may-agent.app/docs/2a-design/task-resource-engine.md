@@ -182,10 +182,15 @@ Parent links, references and executor names confer no authority.
 
 App policy maps the complete revised input; the generic engine preserves the
 stable Task identity, parent, accepted results and unrelated obligations while
-advancing generation only for changed requirements. Stale generation, foreign
-creator, self-revision and concurrent-change controls reject the whole update.
-There is no generic write API, manager-transfer lifecycle, or ownership encoded
-in ID prefixes.
+advancing generation only for changed requirements. The responsible owner may
+change methods within the accepted outcome and constraints without revising the
+goal. Changing the outcome or a constraint requires creator-authorized revision
+of that same Task. Method choice, a Condition, an execution failure, a dependency,
+a valid wait, an independent obligation, and other useful work can coexist; none
+implicitly transfers ownership or discharges the owner's delivery responsibility.
+Stale generation, foreign creator, self-revision and concurrent-change controls
+reject the whole update. There is no generic write API, manager-transfer
+lifecycle, or ownership encoded in ID prefixes.
 
 **Candidate boundary:** task-bound `tasks update` is unchanged. Ordinary
 `targetTaskId` input remains attach-only and bypasses mapping, so it cannot

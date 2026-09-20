@@ -454,7 +454,7 @@ describe("Task outcome review", () => {
     expect(payload.disposition).toBe("insufficient-evidence");
   });
 
-  test("artifact change during judgment fences publication even when Task metadata is unchanged", async () => {
+  test("artifact change during judgment retains a stale snapshot report without certifying current evidence", async () => {
     const root = mkdtempSync(join(tmpdir(), "task-review-artifact-stale-"));
     const ref = await new EvidenceStore(root).put("original", "md");
     let emits = 0;
@@ -479,9 +479,12 @@ describe("Task outcome review", () => {
       reader(() => ({ ...detail, result: { evidence: ref } }) as typeof detail),
       root,
     );
-    expect(result.summary).toContain("changed while it was being evaluated");
-    expect(emits).toBe(0);
-    expect(listTaskReports(root)).toEqual([]);
+    expect(result.summary).toContain("judgment of the inspected snapshot");
+    expect(factsOf(result)).toContain("snapshot-freshness:stale");
+    expect(emits).toBe(1);
+    expect(listTaskReports(root)).toMatchObject([
+      { evidenceHash: expect.any(String), freshness: { status: "stale" } },
+    ]);
   });
 
   test("keeps a failed publication undiscoverable and publishes the staged retry without another model call", async () => {
@@ -528,7 +531,7 @@ describe("Task outcome review", () => {
     expect(listTaskReports(workspaceRoot)).toEqual([]);
   });
 
-  test("does not publish a report when evidence changes during model judgment", async () => {
+  test("publishes the inspected judgment with snapshot identity separate from current freshness", async () => {
     const root = mkdtempSync(join(tmpdir(), "task-review-stale-"));
     const events: unknown[] = [];
     let current = detail;
@@ -560,12 +563,27 @@ describe("Task outcome review", () => {
       reader(() => current),
       root,
     );
-    expect(result.summary).toContain("changed while it was being evaluated");
-    expect(factsOf(result)).toContain(
-      "review-disposition:insufficient-evidence",
-    );
-    expect(events).toHaveLength(0);
-    expect(existsSync(join(root, "reports", "task-outcomes"))).toBeFalse();
+    expect(result.summary).toContain("judgment of the inspected snapshot");
+    expect(factsOf(result)).toContain("review-disposition:assessed");
+    expect(factsOf(result)).toContain("snapshot-freshness:stale");
+    expect(events).toHaveLength(1);
+    const reportPath = factsOf(result)
+      .find((fact) => fact.startsWith("report-facts:"))!
+      .slice(13);
+    const report = JSON.parse(readFileSync(join(root, reportPath), "utf8"));
+    expect(report).toMatchObject({
+      snapshot: {
+        generation: 1,
+        evidenceHash: report.subject.evidenceHash,
+      },
+      freshness: {
+        status: "stale",
+        currentEvidenceHash: expect.not.stringMatching(
+          new RegExp(`^${report.subject.evidenceHash}$`),
+        ),
+      },
+      evidence: { detail: { resourceVersion: 2, facts: ["commit:abc"] } },
+    });
   });
 
   test("rejects a drifted pinned subject before model judgment or publication", async () => {

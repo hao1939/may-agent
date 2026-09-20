@@ -17,7 +17,12 @@ import {
 } from "../../../../evaluation.app/agents/evaluator/workflows/lib/task-report-store";
 import { assessmentContext } from "../../../../evaluation.app/agents/evaluator/workflows/lib/task-assessment-context";
 
-function fixture(appId = "may", ongoing = false, assessmentNow?: number) {
+function fixture(
+  appId = "may",
+  ongoing = false,
+  assessmentNow?: number,
+  freshness?: "current" | "stale" | "unavailable",
+) {
   const root = mkdtempSync(join(tmpdir(), "may-report-intake-"));
   const detail = {
     appId,
@@ -70,6 +75,21 @@ function fixture(appId = "may", ongoing = false, assessmentNow?: number) {
     disposition: "assessed",
     createdAt: 1,
     subject: { appId, taskId: detail.taskId, evidenceHash: "evidence-1" },
+    ...(freshness
+      ? {
+          snapshot: {
+            generation: detail.generation,
+            evidenceHash: "evidence-1",
+            validityIdentity,
+          },
+          freshness: {
+            status: freshness,
+            checkedAt: 1,
+            currentEvidenceHash:
+              freshness === "current" ? "evidence-1" : "evidence-2",
+          },
+        }
+      : {}),
     evidence: subjectTask,
     evaluator: { executionId: "s_eval", cost: "unknown" },
     ...(ongoing
@@ -193,6 +213,22 @@ describe("May Evaluation report intake procedure", () => {
     expect(output.currentEvidence.validityIdentity).not.toBe(
       data.publication.validityIdentity,
     );
+  });
+
+  test("uses the fresh canonical read when an unavailable-at-publication snapshot is current again", async () => {
+    const data = fixture("may", false, undefined, "unavailable");
+    const execution = await intakeEvaluationReport(
+      context(data),
+      data.root,
+      reader(data),
+    );
+    expect(execution.output as any).toMatchObject({
+      state: "converged",
+      result: {
+        disposition: "investigate",
+        currentEvidence: { evidenceHash: "evidence-1" },
+      },
+    });
   });
 
   test("uses the integrity reader and canonical current subject before producing a stable investigation", async () => {

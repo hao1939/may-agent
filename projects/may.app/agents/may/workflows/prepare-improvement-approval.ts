@@ -15,6 +15,8 @@ import {
   inspectApplication,
   type ApplicationFiles,
 } from "../../../scripts/apply-improvement.js";
+import { readSubjectTask } from "../../../../evaluation.app/agents/evaluator/workflows/lib/public-task-evidence.js";
+import { assessmentContext } from "../../../../evaluation.app/agents/evaluator/workflows/lib/task-assessment-context.js";
 
 export const name = "prepare-improvement-approval";
 export const description =
@@ -31,6 +33,31 @@ type Input = {
 
 const sha256 = (bytes: string | Buffer) =>
   createHash("sha256").update(bytes).digest("hex");
+
+async function assertEvaluationSubjectCurrent(packet: ApprovalPacket) {
+  const pinned = packet.evaluationSubject;
+  if (!pinned) return;
+  const subject = await readSubjectTask({
+    appId: pinned.appId,
+    taskId: pinned.taskId,
+  });
+  const detail = (subject.task?.detail ?? {}) as Record<string, unknown>;
+  const assessment =
+    pinned.assessmentPurpose === "ongoing"
+      ? assessmentContext(subject, "ongoing")
+      : null;
+  if (
+    subject.disposition !== "eligible" ||
+    detail.generation !== pinned.generation ||
+    subject.evidenceHash !== pinned.evidenceHash ||
+    (assessment &&
+      (assessment.rubricVersion !== pinned.rubricVersion ||
+        assessment.validityIdentity !== pinned.validityIdentity))
+  )
+    throw new Error(
+      "Evaluation subject changed before approval preparation; obtain a current review",
+    );
+}
 
 /** Idempotently retain the exact proposal bytes outside the target checkout. */
 function retainProposal(path: string, proposal: ApprovalProposal): string {
@@ -94,6 +121,13 @@ export async function execute(
   if (!taskId)
     return ctx.blocked("Approval preparation requires an ordinary owner Task");
   try {
+    const packet = JSON.parse(
+      readFileSync(resolve(ctx.input.files.packet), "utf8"),
+    ) as ApprovalPacket;
+    const { packetHash: claimedPacketHash, ...packetBody } = packet;
+    if (packetHash(packetBody) !== claimedPacketHash)
+      throw new Error("approval packet changed");
+    await assertEvaluationSubjectCurrent(packet);
     const prepared = prepareImprovementApproval(ctx.input, {
       appId: "may",
       taskId,

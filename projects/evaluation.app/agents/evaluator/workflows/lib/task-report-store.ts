@@ -30,6 +30,8 @@ export type TaskReportEntry = {
   sourceRevision: string;
   validityIdentity: string;
   validity: Record<string, unknown> | null;
+  snapshot: Record<string, unknown> | null;
+  freshness: Record<string, unknown> | null;
   coverage: "bounded-single-task-snapshot";
   jsonPath: string;
   markdownPath: string;
@@ -160,6 +162,25 @@ export function renderTaskReportMarkdown(payload: unknown): string | null {
     text(assessment.purpose) ||
     (rubricVersion === TASK_OUTCOME_RUBRIC_VERSION ? "outcome" : "");
   const validity = object(assessment.validity);
+  const snapshot = object(report.snapshot);
+  const freshness = object(report.freshness);
+  const freshnessStatus = text(freshness.status);
+  if (
+    Object.keys(snapshot).length &&
+    (text(snapshot.evidenceHash) !== evidenceHash ||
+      !Number.isSafeInteger(Number(snapshot.generation)) ||
+      Number(snapshot.generation) < 1 ||
+      (assessment.validityIdentity !== undefined &&
+        text(snapshot.validityIdentity) !== text(assessment.validityIdentity)))
+  )
+    return null;
+  if (
+    Object.keys(freshness).length &&
+    (!["current", "stale", "unavailable"].includes(freshnessStatus) ||
+      !Number.isFinite(Number(freshness.checkedAt)) ||
+      Number(freshness.checkedAt) < 0)
+  )
+    return null;
   const disposition = text(judgment.disposition);
   const summary = text(judgment.summary);
   const responsibility = text(judgment.responsibility);
@@ -185,14 +206,19 @@ export function renderTaskReportMarkdown(payload: unknown): string | null {
   const verification = strings(judgment.verification).slice(0, 12);
   if (
     rubricVersion === TASK_OUTCOME_RUBRIC_VERSION &&
-    !Object.keys(assessment).length
+    !Object.keys(assessment).length &&
+    !Object.keys(snapshot).length &&
+    !Object.keys(freshness).length
   )
     return `# Evaluation report\n\n- Subject: \`${appId}/${taskId}\`\n- Evidence: \`${evidenceHash}\`\n- Rubric: \`${rubricVersion}\`\n- Source revision: \`${sourceRevision}\`\n- Disposition: \`${disposition}\`\n- Created: \`${new Date(createdAt).toISOString()}\`\n- Evaluator execution: \`${executionId}\`\n- Cost: unknown\n\n## Summary\n\n${summary}\n\n## Responsibility\n\n${responsibility}\n\n## Findings\n\n${findings.map((item) => `- ${item}`).join("\n") || "- None."}\n\n## Verification and delivery\n\n${verification.map((item) => `- ${item}`).join("\n") || "- No verification cited."}\n- Delivery: ${delivery}\n`;
   const validityLines =
     purpose === "ongoing"
       ? `- Validity phase: \`${text(validity.phase) || "unknown"}\`\n- Due boundary: \`${typeof validity.dueAt === "number" && Number.isFinite(validity.dueAt) ? new Date(validity.dueAt).toISOString() : "unavailable"}\`\n`
       : "";
-  return `# Evaluation report\n\n- Subject: \`${appId}/${taskId}\`\n- Evidence: \`${evidenceHash}\`\n- Purpose: \`${purpose}\`\n- Rubric: \`${rubricVersion}\`\n- Source revision: \`${sourceRevision}\`\n${validityLines}- Disposition: \`${disposition}\`\n- Created: \`${new Date(createdAt).toISOString()}\`\n- Evaluator execution: \`${executionId}\`\n- Cost: unknown\n\n## Summary\n\n${summary}\n\n## Responsibility\n\n${responsibility}\n\n## Findings\n\n${findings.map((item) => `- ${item}`).join("\n") || "- None."}\n\n## Verification and delivery\n\n${verification.map((item) => `- ${item}`).join("\n") || "- No verification cited."}\n- Delivery: ${delivery}\n`;
+  const freshnessLines = Object.keys(freshness).length
+    ? `- Snapshot generation: \`${Number(snapshot.generation)}\`\n- Snapshot freshness at check: \`${freshnessStatus}\`\n- Freshness checked: \`${new Date(Number(freshness.checkedAt)).toISOString()}\`\n`
+    : "";
+  return `# Evaluation report\n\n- Subject: \`${appId}/${taskId}\`\n- Evidence: \`${evidenceHash}\`\n- Purpose: \`${purpose}\`\n- Rubric: \`${rubricVersion}\`\n- Source revision: \`${sourceRevision}\`\n${validityLines}${freshnessLines}- Disposition: \`${disposition}\`\n- Created: \`${new Date(createdAt).toISOString()}\`\n- Evaluator execution: \`${executionId}\`\n- Cost: unknown\n\n## Summary\n\n${summary}\n\n## Responsibility\n\n${responsibility}\n\n## Findings\n\n${findings.map((item) => `- ${item}`).join("\n") || "- None."}\n\n## Verification and delivery\n\n${verification.map((item) => `- ${item}`).join("\n") || "- No verification cited."}\n- Delivery: ${delivery}\n`;
 }
 
 export function markTaskReportPublished(
@@ -294,6 +320,12 @@ function publishedEntry(
       validityIdentity: markerValidityIdentity,
       validity: Object.keys(object(assessment.validity)).length
         ? object(assessment.validity)
+        : null,
+      snapshot: Object.keys(object(payload.snapshot)).length
+        ? object(payload.snapshot)
+        : null,
+      freshness: Object.keys(object(payload.freshness)).length
+        ? object(payload.freshness)
         : null,
       coverage: "bounded-single-task-snapshot",
       jsonPath: expected.jsonPath,
