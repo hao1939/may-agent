@@ -1,5 +1,6 @@
 import type { AgentTool } from "@earendil-works/pi-agent-core";
 import type { TSchema } from "@earendil-works/pi-ai";
+import { admitTaskResultForSchema } from "@may-agent/sdk";
 
 function addRequiredResult(base: TSchema, result: TSchema): TSchema {
   const objectSchema = base as {
@@ -34,6 +35,13 @@ export function createWorkflowFinishTool(baseFinish: AgentTool, outputSchema?: T
       : `${baseFinish.description} This workflow step must terminate through this tool.`,
     parameters,
     execute: async (toolCallId, params, signal, onUpdate) => {
+      const semanticAdmission = admitTaskResultForSchema(outputSchema, (params as { result?: unknown }).result);
+      if (semanticAdmission && !semanticAdmission.ok) {
+        return {
+          content: [{ type: "text" as const, text: `finish() error: ${semanticAdmission.error}` }],
+          details: undefined,
+        };
+      }
       const result = await baseFinish.execute(toolCallId, params, signal, onUpdate);
       const failed = result.content.some(
         (content) => content.type === "text" && content.text.trimStart().startsWith("finish() error:"),

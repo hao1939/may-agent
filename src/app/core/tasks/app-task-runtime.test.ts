@@ -81,6 +81,7 @@ import {
   deferAppTask,
   markAppTaskAttention,
   observeAppTaskIntent,
+  readAppTaskAdmissionOutcome,
   recordAppTaskTrigger,
   recordAppTaskAttemptSession,
   releaseStaleAppTaskResult,
@@ -510,7 +511,7 @@ describe("caller feedback PoC", () => {
     }
   });
 
-  it.each(["quiet", "incomplete-then-wait", "report-wait", "throw", "invalid", "throw-then-wait", "throw-then-report-retry"] as const)(
+  it.each(["quiet", "incomplete-then-wait", "report-wait", "report-continue", "throw", "invalid", "throw-then-wait", "throw-then-report-retry"] as const)(
     "returns exact feedback and recovers the original answer (%s)",
     async (scenario) => {
       const f = fixture();
@@ -570,7 +571,9 @@ describe("caller feedback PoC", () => {
               } as never;
               return {
                 state: "waiting", summary: reportSummary, facts: ["sample:access-denied"],
-                ...(scenario !== "quiet" && scenario !== "incomplete-then-wait" ? { report: true as const } : {}),
+                ...(scenario !== "quiet" && scenario !== "incomplete-then-wait" &&
+                  !(scenario === "report-continue" && workerCalls > 1) ? { report: true as const } : {}),
+                ...(scenario === "report-continue" && workerCalls === 1 ? { continue: true as const } : {}),
                 conditions: [{ id: "sample-access", type: "sample.access.changed", subject: "resource:sample",
                   expected: { field: "available", equals: true }, owner: "app:sample", reviewAfterMs: 300_000 }],
               };
@@ -623,9 +626,9 @@ describe("caller feedback PoC", () => {
         if (scenario === "quiet") expect(first).toBeNull();
         else {
           expect(first).not.toBeNull();
-          if (scenario === "report-wait" || scenario === "incomplete-then-wait") {
+          if (scenario === "report-wait" || scenario === "report-continue" || scenario === "incomplete-then-wait") {
             expect(first!.summary).toBe(reportSummary);
-            expect(first!.state).toBe(scenario === "report-wait" ? "waiting" : "incomplete");
+            expect(first!.state).toBe(scenario === "incomplete-then-wait" ? "incomplete" : "waiting");
           } else {
             expect(first!.summary).toContain("Execution failed");
             expect(first!.facts).toContain(`task-attempt:${first!.attemptId}`);
@@ -642,6 +645,15 @@ describe("caller feedback PoC", () => {
           const feedback = callerInputs[1]!.events.items.find(({ event }) => event.type === "app.dependency.updated");
           expect(feedback?.event.data).toMatchObject({ id: requestId, status: "blocked", summary: first!.summary });
           expect(callerInputs[1]!.waits.open[0]?.state).toBe("false");
+        }
+        if (scenario === "report-continue") {
+          expect(loadedTaskConfig(f).resourceStore.readAttempt(first!.attemptId)?.acceptedResult)
+            .toMatchObject({ state: "waiting", report: true, continue: true });
+          expect(loadedTaskConfig(f).resourceStore.readTask("work/collector")?.status.phase).toBe("pending");
+          await run("work/collector");
+          await host!.recoverTaskResults();
+          expect(report()).toEqual(first);
+          expect(loadedTaskConfig(f).resourceStore.readTask("work/collector")?.status.phase).toBe("waiting");
         }
         if (scenario === "throw-then-wait" || scenario === "incomplete-then-wait" || scenario === "throw-then-report-retry") {
           setSystemTime(loadedTaskConfig(f).resourceStore.readTask("work/collector")!.status.executionRetryAt! + 1);
@@ -682,7 +694,8 @@ describe("caller feedback PoC", () => {
         }
         expect(callerInputs).toHaveLength(expectedCalls);
         const beforeQuiet = workerCalls;
-        if (scenario === "quiet" || scenario === "report-wait" || scenario === "throw-then-wait" || scenario === "incomplete-then-wait") {
+        if (scenario === "quiet" || scenario === "report-wait" || scenario === "report-continue" ||
+          scenario === "throw-then-wait" || scenario === "incomplete-then-wait") {
           const start = Date.now();
           for (let tick = 1; tick <= 10; tick++) {
             setSystemTime(start + tick * 10_000);
@@ -946,6 +959,58 @@ it("keeps omitted workflows visible, continues unrelated work, and recovers with
   expect(
     Object.values(readTaskSnapshot(config).attempts ?? {}).find((a) => a.metadata.id === attempts[0]!.metadata.id),
   ).toEqual(attempts[0]);
+});
+
+it("settles report and useful continuation equivalently for agent and workflow attempts", async () => {
+  const f = fixture();
+  const bus = eventBus();
+  const resultFor = (taskId: string) => ({
+    state: "waiting" as const, report: true as const, continue: true as const,
+    summary: "Review is blocked while independent checks continue", facts: ["checks:started"],
+    conditions: [{ id: `review-${taskId.split("/").at(-1)}`, type: "review.completed", subject: `review:${taskId}`,
+      expected: true, owner: "human", reviewAfterMs: 60_000 }],
+  });
+  await installCoreTaskRuntimes({
+    ...options(f, bus), installControllers: false,
+    agents: createTaskAgentRunner({ manager: {
+      hasAgent: () => true,
+      callAgent: async () => ({ status: "done", sessionId: "agent-session", structuredResult: resultFor("work/agent") }),
+    } as never }),
+    workflows: {
+      async inspect() { return { available: true, error: null, workspace: "shared" }; },
+      async execute({ attempt }) {
+        return { handlerResult: { ...resultFor(attempt.task.id), actions: [] }, runId: "workflow-run" };
+      },
+    },
+    appRegistrySnapshot: { id: "agent-workflow-continuation", generation: 1,
+      entries: [{ appDir: f.appDir, definition: definition() }] },
+  });
+  const config = loadedTaskConfig(f);
+  for (const [taskId, selection] of [
+    ["work/agent", {}], ["work/workflow", { workflow: "review" }],
+  ] as const) {
+    observeAppTaskIntent(config, { appAgent: "sample-owner", intent: {
+      id: taskId, parentId: "operations", outcome: "Wait for review and continue useful checks",
+      acceptance: ["Review and checks complete"], ...selection,
+    } });
+    admitTaskInput(config, {
+      appId: "sample", attachment: { kind: "existing", taskId }, idempotencyKey: `input:${taskId}`,
+      inputContext: { id: `input:${taskId}`, source: { kind: "human", id: "operator" },
+        input: { kind: "review", data: {} } },
+    });
+    await reconcileLoadedAppTaskOnce({ bus, appId: "sample", taskId,
+      dispatch: { enqueuedAt: 1, startedAt: 2, readyWaitMs: 1, lane: "normal" } });
+    expect(acceptedTaskAttempt(config, taskId)?.acceptedResult).toMatchObject({
+      state: "waiting", report: true, continue: true,
+      summary: "Review is blocked while independent checks continue", facts: ["checks:started"],
+    });
+    expect(config.resourceStore.readTask(taskId)?.status).toMatchObject({
+      phase: "pending", conditionIds: [`review-${taskId.split("/").at(-1)}`],
+    });
+    expect(readAppTaskAdmissionOutcome(config, taskId, `input:${taskId}`, "report")).toMatchObject({
+      state: "waiting", summary: "Review is blocked while independent checks continue",
+    });
+  }
 });
 
 it("retains an App and exact agent work when its agent capability is removed, then restores it", async () => {

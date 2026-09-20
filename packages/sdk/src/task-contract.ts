@@ -1,4 +1,4 @@
-import { Type } from "typebox";
+import { Type, type TSchema } from "typebox";
 import { Check, Errors } from "typebox/value";
 import type { Condition, TaskAction, TaskAppDependency, TaskReconcileResult, TaskVerificationResult } from "./task.js";
 
@@ -17,7 +17,8 @@ const CONDITION_OWNER_PATTERN = "^\\s*(?:human|[a-z][a-z0-9-]*:[^\\s:]+)\\s*$";
 const conditionOwnerPattern = new RegExp(CONDITION_OWNER_PATTERN);
 const conditionOwnerSchema = Type.String({
   pattern: CONDITION_OWNER_PATTERN,
-  description: "Who can supply the awaited fact: human or kind:identity, e.g. human:requester or app:measurement. Use a lowercase kind and an identity without spaces or colons, not a display name or sentence. This field does not send a message or grant authority.",
+  description:
+    "Who can supply the awaited fact: human or kind:identity, e.g. human:requester or app:measurement. Use a lowercase kind and an identity without spaces or colons, not a display name or sentence. This field does not send a message or grant authority.",
 });
 const objectSchema = Type.Unsafe<Record<string, unknown>>({
   type: "object",
@@ -51,7 +52,8 @@ export const conditionSchema = Type.Object(
     type: Type.String({
       minLength: 1,
       pattern: "\\.",
-      description: "Namespaced event type from a known producer, e.g. review.completed. Naming a type does not register its producer or ingress.",
+      description:
+        "Namespaced event type from a known producer, e.g. review.completed. Naming a type does not register its producer or ingress.",
     }),
     subject: typedConditionSubjectSchema,
     expected: Type.Unknown(),
@@ -64,7 +66,6 @@ export const conditionSchema = Type.Object(
 
 const resultFields = {
   summary: nonEmptyStringSchema,
-  response: Type.Optional(nonEmptyStringSchema),
   result: Type.Optional(objectSchema),
   reviewAt: Type.Optional(Type.Integer({ minimum: 1 })),
 
@@ -87,57 +88,77 @@ const resultFields = {
   ),
 };
 
+const TASK_AGENT_RESULT_SCHEMA_ID = "may.task-agent-result.v1";
+const TASK_RECONCILE_RESULT_SCHEMA_ID = "may.task-reconcile-result.v1";
+
 /** Model-output schema for a resolved agent. */
-export const taskAgentResultSchema = Type.Union([
-  Type.Object({ state: Type.Literal("converged"), ...resultFields }, { additionalProperties: false }),
-  Type.Object(
-    {
-      state: Type.Literal("waiting"),
-      ...resultFields,
-      continue: Type.Optional(
-        Type.Literal(true, {
-          description:
-            "After submitting dependencies, queue another bounded pass for useful independent work. Keeps the input unanswered. Omit to sleep until feedback or review.",
-        }),
-      ),
-    },
-    { additionalProperties: false },
-  ),
-  Type.Object(
-    {
-      state: Type.Literal("waiting"), ...resultFields, report: Type.Literal(true),
-      facts: Type.Array(nonEmptyStringSchema, { minItems: 1, maxItems: 32 }),
-    },
-    { additionalProperties: false },
-  ),
-  Type.Object(
-    {
-      state: Type.Literal("incomplete"),
-      report: Type.Optional(Type.Literal(true)),
-      summary: nonEmptyStringSchema,
-      response: Type.Optional(nonEmptyStringSchema),
-      result: Type.Optional(objectSchema),
-      facts: Type.Array(nonEmptyStringSchema, { minItems: 1, maxItems: 32 }),
-    },
-    { additionalProperties: false },
-  ),
-]);
+export const taskAgentResultSchema = Type.Union(
+  [
+    Type.Object(
+      { state: Type.Literal("converged"), ...resultFields, response: Type.Optional(nonEmptyStringSchema) },
+      { additionalProperties: false },
+    ),
+    Type.Object(
+      {
+        state: Type.Literal("waiting"),
+        ...resultFields,
+        continue: Type.Optional(
+          Type.Literal(true, {
+            description:
+              "Queue one more bounded pass for useful work. Keeps the input unanswered; omit to sleep until feedback or review.",
+          }),
+        ),
+      },
+      { additionalProperties: false },
+    ),
+    Type.Object(
+      {
+        state: Type.Literal("waiting"),
+        ...resultFields,
+        report: Type.Literal(true),
+        continue: Type.Optional(
+          Type.Literal(true, {
+            description:
+              "Queue one more bounded pass for useful work. This may coexist with a report or an independent wait.",
+          }),
+        ),
+        facts: Type.Array(nonEmptyStringSchema, { minItems: 1, maxItems: 32 }),
+      },
+      { additionalProperties: false },
+    ),
+    Type.Object(
+      {
+        state: Type.Literal("incomplete"),
+        report: Type.Optional(Type.Literal(true)),
+        summary: nonEmptyStringSchema,
+        response: Type.Optional(nonEmptyStringSchema),
+        result: Type.Optional(objectSchema),
+        facts: Type.Array(nonEmptyStringSchema, { minItems: 1, maxItems: 32 }),
+      },
+      { additionalProperties: false },
+    ),
+  ],
+  { $id: TASK_AGENT_RESULT_SCHEMA_ID },
+);
 
 /** @deprecated Use `taskAgentResultSchema`. */
 export const taskOwnerResultSchema = taskAgentResultSchema;
 
 /** Model-output schema for a workflow, including its explicit agent handoff. */
-export const taskReconcileResultSchema = Type.Union([
-  taskAgentResultSchema,
-  Type.Object(
-    {
-      state: Type.Literal("needs-agent"),
-      summary: nonEmptyStringSchema,
-      facts: Type.Array(nonEmptyStringSchema, { maxItems: 32 }),
-    },
-    { additionalProperties: false },
-  ),
-]);
+export const taskReconcileResultSchema = Type.Union(
+  [
+    taskAgentResultSchema,
+    Type.Object(
+      {
+        state: Type.Literal("needs-agent"),
+        summary: nonEmptyStringSchema,
+        facts: Type.Array(nonEmptyStringSchema, { maxItems: 32 }),
+      },
+      { additionalProperties: false },
+    ),
+  ],
+  { $id: TASK_RECONCILE_RESULT_SCHEMA_ID },
+);
 
 export const taskVerificationResultSchema = Type.Object(
   {
@@ -255,10 +276,7 @@ function normalizeCondition(value: unknown, index: number): Condition | string {
     return `conditions[${index}].owner must be a canonical kind:identity`;
   }
   const reviewAfterMs = value.reviewAfterMs;
-  if (
-    !Number.isInteger(reviewAfterMs) ||
-    Number(reviewAfterMs) < MIN_CONDITION_REVIEW_AFTER_MS
-  ) {
+  if (!Number.isInteger(reviewAfterMs) || Number(reviewAfterMs) < MIN_CONDITION_REVIEW_AFTER_MS) {
     return `conditions[${index}].reviewAfterMs must be an integer of at least ${MIN_CONDITION_REVIEW_AFTER_MS}`;
   }
   return {
@@ -310,8 +328,10 @@ export function admitTaskReconcileResult(
   if (output.state !== "converged" && output.state !== "waiting" && output.state !== "incomplete") {
     return { ok: false, error: "state must be converged, waiting, incomplete, or needs-agent" };
   }
-  if (output.report !== undefined &&
-    ((output.state !== "waiting" && output.state !== "incomplete") || output.report !== true || facts.length === 0)) {
+  if (
+    output.report !== undefined &&
+    ((output.state !== "waiting" && output.state !== "incomplete") || output.report !== true || facts.length === 0)
+  ) {
     return { ok: false, error: "report requires waiting or incomplete, true, and non-empty facts" };
   }
   if (output.state === "incomplete") {
@@ -328,11 +348,7 @@ export function admitTaskReconcileResult(
     return { ok: false, error: "result must be an object" };
   }
   const result = rawResult as Record<string, unknown> | undefined;
-  if (
-    result !== undefined &&
-    new TextEncoder().encode(JSON.stringify(result)).byteLength >
-      MAX_TASK_RESULT_BYTES
-  ) {
+  if (result !== undefined && new TextEncoder().encode(JSON.stringify(result)).byteLength > MAX_TASK_RESULT_BYTES) {
     return { ok: false, error: `result exceeds the ${MAX_TASK_RESULT_BYTES}-byte limit` };
   }
   if (output.state === "waiting" && response.value) {
@@ -399,9 +415,8 @@ export function admitTaskReconcileResult(
   if (output.state !== "waiting" && dependencies.length > 0) {
     return { ok: false, error: "dependencies are valid only for waiting" };
   }
-  if (output.continue !== undefined &&
-    (output.continue !== true || output.state !== "waiting" || output.report !== undefined || !dependencies.length || !facts.length)) {
-    return { ok: false, error: "continue requires waiting, dependencies and progress facts, without report" };
+  if (output.continue !== undefined && (output.continue !== true || output.state !== "waiting" || !facts.length)) {
+    return { ok: false, error: "continue requires waiting and progress facts" };
   }
   if (!Check(taskReconcileResultSchema, output)) {
     const first = [...Errors(taskReconcileResultSchema, output)][0];
@@ -446,6 +461,23 @@ export function admitTaskReconcileResult(
     };
   }
   return { ok: true, result: { ...answer, state: "converged", actions } };
+}
+
+/**
+ * Reuse Task admission semantics at a model finish boundary without teaching
+ * generic execution another interpretation of the Task contract. The schema
+ * identifier survives persisted-session JSON round trips; unknown schemas have
+ * no Task semantics and remain governed by their own structural contract.
+ */
+export function admitTaskResultForSchema(schema: TSchema | undefined, output: unknown): TaskReconcileAdmission | null {
+  const id = (schema as (TSchema & { $id?: unknown }) | undefined)?.$id;
+  if (id === TASK_AGENT_RESULT_SCHEMA_ID) {
+    return admitTaskReconcileResult(output, { allowNeedsAgent: false });
+  }
+  if (id === TASK_RECONCILE_RESULT_SCHEMA_ID) {
+    return admitTaskReconcileResult(output, { allowNeedsAgent: true });
+  }
+  return null;
 }
 
 export function admitTaskVerificationResult(

@@ -18,6 +18,7 @@ import {
   cancelAppTask,
   closeAppTask,
   claimObservedAppTask,
+  completeAppTask,
   failAppTaskAttempt,
   markAppTaskAttention,
   observeAppTaskIntent,
@@ -551,6 +552,237 @@ it("runs Task-only input with no conversational frontend and keeps retained Conv
   expect(host.get("no-chat")).toMatchObject({ status: "done", result: { summary: "Verified" } });
   expect(readAppConversationResource(db, "example", "chat")).toEqual(before);
   expect(listConversationTopicLinksForTask(db, app.id, "work/without-chat")).toEqual([]);
+});
+
+it("routes an exact App-only revision through the installed mapper and gives stale input one readable result", async () => {
+  const { db, config } = fixture();
+  const taskId = "goal/existing";
+  observeAppTaskIntent(config, {
+    appAgent: "example-owner",
+    intent: {
+      id: taskId,
+      parentId: "project",
+      outcome: "Original requirements",
+      acceptance: ["Original acceptance"],
+    },
+  });
+  const originalClaim = claimObservedAppTask(config, {
+    taskId,
+    appAgent: "example-owner",
+    handler: "agent:example-owner",
+  });
+  if (originalClaim.kind !== "claimed") throw new Error("expected original claim");
+  completeAppTask(config, originalClaim, { summary: "Original evidence", facts: ["fixture:accepted"] });
+  const acceptedAttempt = config.resourceStore.readAttempt(originalClaim.attemptId);
+  const notifications: Array<{ id: string; status: string; summary: string }> = [];
+  const conversationUpdates: string[] = [];
+  let mappings = 0;
+  const mappedInputIds: string[] = [];
+  const app = defineApp({
+    id: "example",
+    version: 1,
+    agent: "example-owner",
+    inputSchema: Type.Unknown(),
+    tasks: {},
+    task: ({ id, input }) => {
+      mappings++;
+      mappedInputIds.push(id);
+      const data = input.data as { taskId?: string; expectedGeneration?: number; outcome?: string };
+      return {
+        kind: "desired" as const,
+        expectedGeneration: data.expectedGeneration,
+        intent: {
+          id: data.taskId ?? "goal/new",
+          parentId: "wrong-parent",
+          outcome: data.outcome ?? "Revised requirements",
+          acceptance: ["Revised acceptance"],
+        },
+      };
+    },
+  });
+  const host = new AppInboxHost({
+    db,
+    apps: [app],
+    attachTask: (input) => admitTaskInput(config, input),
+    onRequestUpdated: (item, result, status) => notifications.push({ id: item.id, status, summary: result.summary }),
+    onConversationChanged: (_, conversationId) => conversationUpdates.push(conversationId),
+  });
+  const revisionInput = {
+    kind: "revision",
+    data: { taskId, expectedGeneration: 1, outcome: "Corrected requirements" },
+  };
+  expect(
+    host.admit({
+      id: "revision-ok",
+      appId: "example",
+      source: { kind: "system", id: "supervisor" },
+      input: revisionInput,
+    }).item,
+  ).toMatchObject({ status: "handling", waitingOn: { kind: "task", id: taskId } });
+  const revised = config.resourceStore.readTask(taskId)!;
+  expect(revised).toMatchObject({
+    metadata: { generation: 2, creator: { appId: "example" } },
+    spec: { parentId: "project", outcome: "Corrected requirements" },
+  });
+  expect(config.resourceStore.readAttempt(originalClaim.attemptId)).toEqual(acceptedAttempt);
+  const mappingsAfterRevision = mappings;
+  expect(
+    host.admit({
+      id: "revision-ok",
+      appId: "example",
+      source: { kind: "system", id: "supervisor" },
+      input: revisionInput,
+    }),
+  ).toMatchObject({ created: false, item: { status: "handling" } });
+  expect(mappings).toBe(mappingsAfterRevision);
+  expect(config.resourceStore.readTask(taskId)?.metadata.generation).toBe(2);
+
+  // A replay of the already linked exact admission remains idempotent even
+  // though expectedGeneration is now stale; changed desired work is rejected.
+  const saved = host.get("revision-ok")!;
+  const attachment = app.task!({ id: saved.id, source: saved.source, input: saved.input });
+  if (attachment.kind !== "desired") throw new Error("expected revision attachment");
+  expect(
+    admitTaskInput(config, {
+      appId: "example",
+      creator: { appId: "example" },
+      creatorRevision: true,
+      attachment,
+      inputContext: { id: saved.id, source: saved.source, input: saved.input },
+      inboxInputId: saved.id,
+      idempotencyKey: "task:revision-ok",
+    }),
+  ).toMatchObject({ taskId, generation: 2, changed: false });
+  expect(() =>
+    admitTaskInput(config, {
+      appId: "example",
+      creator: { appId: "example" },
+      creatorRevision: true,
+      attachment: {
+        ...attachment,
+        intent: { ...attachment.intent, outcome: "Different replay" },
+      },
+      inputContext: { id: saved.id, source: saved.source, input: saved.input },
+      inboxInputId: saved.id,
+      idempotencyKey: "task:revision-ok",
+    }),
+  ).toThrow("different desired work");
+
+  const stale = host.admit({
+    id: "revision-stale",
+    appId: "example",
+    source: { kind: "app", id: "supervisor" },
+    conversationId: "owner-chat",
+    conversationSequence: 9,
+    input: revisionInput,
+  }).item;
+  expect(stale).toMatchObject({
+    status: "done",
+    handling: { phase: "failed", reason: expect.stringContaining("current generation 2") },
+    result: { response: expect.stringContaining("current expectedGeneration") },
+  });
+  expect(notifications).toEqual([
+    { id: "revision-stale", status: "done", summary: expect.stringContaining("was not applied") },
+  ]);
+  expect(conversationUpdates).toEqual(["owner-chat"]);
+  expect(mappedInputIds.filter((id) => id === "revision-stale")).toHaveLength(1);
+  await host.recoverAdmissions();
+  await host.recoverAdmissions();
+  expect(mappedInputIds.filter((id) => id === "revision-stale")).toHaveLength(1);
+  expect(notifications).toHaveLength(1);
+  expect(
+    host.admit({
+      id: "revision-stale",
+      appId: "example",
+      source: { kind: "app", id: "supervisor" },
+      conversationId: "owner-chat",
+      conversationSequence: 9,
+      input: revisionInput,
+    }).created,
+  ).toBe(false);
+  expect(notifications).toHaveLength(1);
+  expect(conversationUpdates).toHaveLength(1);
+
+  const beforeAttach = config.resourceStore.readTask(taskId)!.metadata.generation;
+  const mappingsBeforeAttach = mappings;
+  host.admit({
+    id: "ordinary-attach",
+    appId: "example",
+    targetTaskId: taskId,
+    source: { kind: "human", id: "operator" },
+    input: { kind: "revision", data: { taskId, expectedGeneration: 999, outcome: "Must not revise" } },
+  });
+  expect(mappings).toBe(mappingsBeforeAttach);
+  expect(config.resourceStore.readTask(taskId)?.metadata.generation).toBe(beforeAttach);
+});
+
+it("rejects missing, closed, foreign, and task-bound App-mapper revision authority", async () => {
+  const { db, config } = fixture();
+  const seed = (id: string, creator?: { appId: string; taskId?: string }) =>
+    observeAppTaskIntent(config, {
+      appAgent: "example-owner",
+      creator,
+      intent: { id, parentId: "project", outcome: id, acceptance: ["Remain fenced"] },
+    });
+  seed("foreign", { appId: "other" });
+  seed("self", { appId: "example", taskId: "self" });
+  seed("task-bound", { appId: "example", taskId: "caller" });
+  seed("closed");
+  const closed = config.resourceStore.readTask("closed")!;
+  cancelAppTask(config, {
+    appId: "example",
+    taskId: "closed",
+    expectedGeneration: closed.metadata.generation,
+    expectedResourceVersion: closed.metadata.resourceVersion,
+    reason: "Closed fixture",
+  });
+  const app = defineApp({
+    id: "example",
+    version: 1,
+    agent: "example-owner",
+    inputSchema: Type.Unknown(),
+    tasks: {},
+    task: ({ input }) => {
+      const data = input.data as { taskId: string };
+      return {
+        kind: "desired" as const,
+        expectedGeneration: 1,
+        intent: { id: data.taskId, parentId: "project", outcome: "Changed", acceptance: ["Changed"] },
+      };
+    },
+  });
+  const host = new AppInboxHost({ db, apps: [app], attachTask: (input) => admitTaskInput(config, input) });
+  for (const [id, expected] of [
+    ["missing", "does not exist"],
+    ["closed", "closed Task"],
+    ["foreign", "exact App-only creator"],
+    ["self", "exact App-only creator"],
+    ["task-bound", "exact App-only creator"],
+  ] as const) {
+    const item = host.admit({
+      id: `reject-${id}`,
+      appId: "example",
+      source: { kind: "system", id: "supervisor" },
+      input: { kind: "revision", data: { taskId: id } },
+    }).item;
+    expect(item).toMatchObject({ status: "done", result: { summary: expect.stringContaining(expected) } });
+  }
+
+  // A delegated input retains its task-bound provenance and cannot masquerade
+  // as App-only merely because the mapper asks for an App-owned target.
+  seed("app-owned");
+  createAppInboxItem(db, {
+    id: "delegated-masquerade",
+    appId: "example",
+    creator: { appId: "example", taskId: "caller" },
+    source: { kind: "app", id: "example" },
+    input: { kind: "revision", data: { taskId: "app-owned" } },
+  });
+  await host.recoverAdmissions();
+  expect(host.get("delegated-masquerade")).toMatchObject({
+    status: "done",
+    result: { summary: expect.stringContaining("trusted App-only creator authority") },
+  });
 });
 
 it("recovers only an exact, unambiguous historical admission key", () => {
