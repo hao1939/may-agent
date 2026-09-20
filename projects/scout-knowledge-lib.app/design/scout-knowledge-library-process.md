@@ -280,6 +280,17 @@ integration. An exact read-only file error is not evidence that all knowledge
 paths are read-only: preserve that file, use another appropriate writable
 destination when safe, or retain the draft with its exact blocker.
 
+For accepted-publication recovery, the workflow gives Scout the exact current
+Task's retained failure, archive descriptor, and previous-attempt link, plus any
+caller procedure input in a separate advisory section subordinate to Task
+acceptance. Canonical paths are read-only observation targets and final link
+destinations for the bounded writer, never write targets. Candidate editability
+is not evidence of canonical replaceability. Scout uses non-mutating checks,
+does not replay a confirmed protected destination unchanged, and either explains
+how a suitable writable adaptation preserves the accepted candidate and
+provenance or returns a supported human-owned Condition. The shared publisher
+remains the only publication path.
+
 An explicitly partial agent finish is not a no-op, even when its execution
 status is `done` and its output list is empty. Preserve its finish evidence
 and continuation details on the same source Task, and return a blocked

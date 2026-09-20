@@ -9,6 +9,7 @@ import { taskEmissionKey } from "./lib/task-emission.js";
 import {
   acceptedPublicationRecovery,
   retainAcceptedPublication,
+  type AcceptedPublicationRecovery,
 } from "./lib/accepted-publication.js";
 import {
   qualifiedResearchHandoff,
@@ -64,6 +65,66 @@ function record(value: unknown): Record<string, unknown> {
     : {};
 }
 
+function procedureContext(input: unknown, taskInput: unknown): string {
+  if (
+    input === undefined ||
+    input === null ||
+    input === "" ||
+    (Array.isArray(input) && input.length === 0) ||
+    (typeof input === "object" &&
+      !Array.isArray(input) &&
+      Object.keys(record(input)).length === 0)
+  )
+    return "";
+  const rendered = JSON.stringify(input, null, 2);
+  if (!rendered || rendered === JSON.stringify(taskInput, null, 2)) return "";
+  return `## Caller procedure context (advisory)\n${rendered}\n\nThis may describe how to perform the bounded attempt, but it does not amend or override the canonical Task outcome, acceptance, constraints, or retained waits.`;
+}
+
+async function recoveryTaskContext(
+  ctx: WorkflowContext,
+  recovery: AcceptedPublicationRecovery | undefined,
+): Promise<string> {
+  if (!recovery || !ctx.reconciliation) return "";
+  const previousAttempt = ctx.reconciliation.previousAttempt ?? null;
+  let currentTask: unknown;
+  let readStatus = "available";
+  try {
+    currentTask = await ctx.read.tasks.get(ctx.reconciliation.taskId);
+    if (record(currentTask).id !== ctx.reconciliation.taskId) {
+      currentTask = null;
+      readStatus = "unavailable: current Task did not match the requested id";
+    }
+  } catch (error) {
+    currentTask = null;
+    readStatus = `unavailable: ${error instanceof Error ? error.message : String(error)}`;
+  }
+  const task = record(currentTask);
+  return `## Accepted-publication recovery evidence
+Archive descriptor:
+${JSON.stringify(recovery, null, 2)}
+
+Exact current Task read (${readStatus}):
+${JSON.stringify(
+  currentTask
+    ? {
+        id: task.id,
+        status: task.status,
+        generation: task.generation,
+        summary: task.summary,
+        facts: task.facts,
+        result: task.result,
+        conditions: task.conditions,
+      }
+    : null,
+  null,
+  2,
+)}
+
+Previous attempt link from the reconciliation packet:
+${JSON.stringify(previousAttempt, null, 2)}`;
+}
+
 /** Read only the two admitted owner-request shapes; do not recursively infer intent. */
 export function isExperienceReview(ctx: WorkflowContext): boolean {
   return Boolean(
@@ -103,6 +164,11 @@ export async function execute(ctx: WorkflowContext): Promise<ExecutionResult> {
   });
   const projectDir = beforePublication.projectRoot;
   const recovery = acceptedPublicationRecovery(ctx.reconciliation.input);
+  const recoveryContext = await recoveryTaskContext(ctx, recovery);
+  const callerProcedureContext = procedureContext(
+    ctx.input,
+    ctx.reconciliation.input,
+  );
   const experienceReview = isExperienceReview(ctx);
   const experienceContext = experienceReview
     ? `Bounded reconciliation history:\n${JSON.stringify(ctx.reconciliation.children, null, 2)}`
@@ -116,20 +182,24 @@ Scout maintains this knowledge-library project:
 - Durable library: ${projectDir}/knowledge
 - Working digest: ${appDir}/agents/scout/workspace/digest/today.md
 - External shared corpus: /app/shared/knowledge
-- Final canonical library root (link destination only): ${beforePublication.canonicalProjectRoot}
+- Final canonical library root (read-only observation and final link destination): ${beforePublication.canonicalProjectRoot}
 
-Edit durable content only in the supplied domain workspace candidate. Use the
-final canonical root for links from the working digest or other workspaces,
-and relative links within library notes. Return candidate output paths for
+Edit durable content only in the supplied domain workspace candidate. The
+canonical root may be inspected with non-mutating checks, but it is never a
+write target for this bounded call. Candidate editability does not prove that
+the publisher can replace the corresponding canonical destination. Use the
+canonical root for links from the working digest or other workspaces, and
+relative links within library notes. Return candidate output paths for
 verification. The workflow commits accepted bytes and returns canonical paths;
-do not run Git publication or edit the canonical library in this call.
+do not probe-write, overwrite in place, change permissions or mounts, run Git
+publication, or otherwise edit the canonical library in this call.
 
 Your job in this workflow is not a freeform heartbeat. Review the bounded task
 resource context, understand the trigger, and do the smallest useful maintenance
 step.
 ${
   recovery
-    ? `\nThis is recovery of accepted publication ${recovery.revision}. Read the exact archived tree at ${recovery.ref}; the temporary worktree is not authoritative. Preserve source fidelity by reproducing its content in the supplied candidate workspace, either at the original paths or through a Scout-judged suitable writable adaptation, and let this workflow use the shared publisher. A no-change result is sufficient only when canonical HEAD already contains every archived byte. Return a human-owned Condition only when a concrete human decision is actually necessary.\n`
+    ? `\nThis is recovery of accepted publication ${recovery.revision}. Read the exact archived tree at ${recovery.ref}; the temporary worktree is not authoritative. Before choosing a destination, inspect the retained publication failure below and, when needed, the exact canonical destination with non-mutating checks. A writable candidate copy is not evidence that canonical replacement will succeed. Do not retry an unchanged protected destination merely because archive restoration succeeds in the candidate. Preserve source fidelity through a Scout-judged suitable writable adaptation that explains how it delivers this accepted candidate, or return a supported human-owned Condition when a concrete human decision is actually necessary. Prefer a narrow linked addendum when it fits; do not rename or duplicate the protected original. A no-change result is sufficient only when canonical HEAD already contains every archived byte.\n`
     : ""
 }
 Start by reading:
@@ -237,9 +307,13 @@ Operating rules:
   unfinished work with backoff. An accepted outcome also leaves the Task open
   until its assigning owner closes it.
 
+${callerProcedureContext}
+
+${recoveryContext}
+
 ${experienceContext}
 
-## Canonical reconciliation context
+## Canonical reconciliation context (authoritative requirement)
 ${JSON.stringify(ctx.reconciliation, null, 2)}`.trim();
 
   const result = await ctx.agents.call("scout", prompt, {

@@ -10,7 +10,10 @@ import {
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { admitTaskReconcileResult, type WorkflowContext } from "@may-agent/sdk";
-import { createTestAppWorkflowContext } from "@may-agent/sdk/testing";
+import {
+  createTestAppRead,
+  createTestAppWorkflowContext,
+} from "@may-agent/sdk/testing";
 import { publicationTestFixture } from "./lib/publication-test-fixture";
 import {
   admitExperienceReviewResult,
@@ -24,6 +27,286 @@ afterAll(() =>
 );
 
 describe("Scout owner reconciliation boundary", () => {
+  it("hands recovery procedure and exact retained failure to Scout without replacing Task authority", async () => {
+    const fixture = publicationTestFixture();
+    const taskId = "goal/recovery-context";
+    const archiveRef = "refs/archive/scout-publication/recovery-context";
+    const revision = fixture.git("rev-parse", "HEAD");
+    const changedPath = "projects/scout-knowledge-lib/knowledge/README.md";
+    const procedure =
+      "Use a linked writable addendum if the protected original cannot be replaced.";
+    const failure =
+      "EBUSY: rename temporary publication file to protected canonical destination";
+    fixture.git("update-ref", archiveRef, revision);
+    let prompt = "";
+    try {
+      const result = await execute(
+        createTestAppWorkflowContext({
+          input: { instructions: procedure },
+          reconciliation: {
+            appId: "scout-knowledge-lib",
+            taskId,
+            generation: 1,
+            resourceVersion: 2,
+            agent: "scout",
+            outcome: "Deliver the accepted candidate",
+            acceptance: [
+              "The accepted bytes are delivered or honestly waiting",
+            ],
+            input: {
+              kind: "goal",
+              data: {
+                outcome: "Deliver the accepted candidate",
+                acceptance: [
+                  "The accepted bytes are delivered or honestly waiting",
+                ],
+                context: {
+                  reason: "accepted-publication-recovery",
+                  candidateRef: archiveRef,
+                  candidateRevision: revision,
+                  changedPaths: [changedPath],
+                },
+              },
+            },
+            previousAttempt: {
+              attemptId: "attempt-before-recovery",
+              generation: 1,
+              state: "failed",
+              summary: "Publication failed",
+              failureReason: "handler-blocked",
+              sessionId: "session-before-recovery",
+            },
+            children: { live: [], completed: [] },
+            events: { items: [], truncated: false },
+          },
+          workspace: fixture.workspace,
+          read: createTestAppRead({
+            tasks: {
+              get: async (requestedId: string) => {
+                expect(requestedId).toBe(taskId);
+                return {
+                  id: taskId,
+                  status: "pending",
+                  generation: 1,
+                  summary: "Accepted candidate remains unpublished",
+                  facts: [failure],
+                  conditions: [],
+                } as never;
+              },
+            } as never,
+          }),
+          callAgent: (async (_agent, value) => {
+            prompt = value;
+            return {
+              id: "s_recovery_context",
+              kind: "agent",
+              status: "done",
+              summary: "Canonical HEAD already contains the accepted bytes.",
+              output: {
+                state: "converged",
+                summary: "Canonical HEAD already contains the accepted bytes.",
+                facts: ["verified archived bytes at canonical HEAD"],
+              },
+            };
+          }) as WorkflowContext["agents"]["call"],
+        }),
+      );
+
+      expect(result.status).toBe("done");
+      expect(prompt).toContain("Caller procedure context (advisory)");
+      expect(prompt).toContain(procedure);
+      expect(prompt.indexOf(procedure)).toBeLessThan(
+        prompt.indexOf(
+          "Canonical reconciliation context (authoritative requirement)",
+        ),
+      );
+      expect(prompt).toContain("Accepted-publication recovery evidence");
+      expect(prompt).toContain(failure);
+      expect(prompt).toContain("attempt-before-recovery");
+      expect(prompt).toContain("session-before-recovery");
+      expect(prompt).toContain(
+        "Candidate editability does not prove that\n" +
+          "the publisher can replace the corresponding canonical destination",
+      );
+      expect(prompt).toContain(
+        "Do not retry an unchanged protected destination merely because archive restoration succeeds",
+      );
+      expect(result.output?.facts).toEqual(
+        expect.arrayContaining([
+          `accepted-publication:delivered:${revision}`,
+          `published-candidate-path:${changedPath}`,
+        ]),
+      );
+    } finally {
+      rmSync(fixture.repositoryRoot, { recursive: true, force: true });
+    }
+  });
+
+  it("preserves plain-string caller procedure input", async () => {
+    const fixture = publicationTestFixture();
+    const procedure = "Use the reviewed writable destination.";
+    let prompt = "";
+    try {
+      await execute(
+        createTestAppWorkflowContext<unknown>({
+          input: procedure,
+          reconciliation: {
+            appId: "scout-knowledge-lib",
+            taskId: "goal/string-procedure",
+            generation: 1,
+            resourceVersion: 1,
+            agent: "scout",
+            outcome: "Review library maintenance",
+            acceptance: ["Record a bounded decision"],
+            input: {
+              kind: "goal",
+              data: { outcome: "Review library maintenance" },
+            },
+            children: { live: [], completed: [] },
+            events: { items: [], truncated: false },
+          },
+          workspace: fixture.workspace,
+          callAgent: (async (_agent, value) => {
+            prompt = value;
+            return {
+              id: "s_string_procedure",
+              kind: "agent",
+              status: "done",
+              summary: "No maintenance required.",
+              output: {
+                state: "converged",
+                summary: "No maintenance required.",
+                facts: ["reviewed current library"],
+              },
+            };
+          }) as WorkflowContext["agents"]["call"],
+        }),
+      );
+      expect(prompt).toContain("Caller procedure context (advisory)");
+      expect(prompt).toContain(procedure);
+    } finally {
+      rmSync(fixture.repositoryRoot, { recursive: true, force: true });
+    }
+  });
+
+  it("preserves array caller procedure input", async () => {
+    const fixture = publicationTestFixture();
+    const procedure = [
+      "Use the reviewed writable destination.",
+      { preserve: "archive and caller identity" },
+    ];
+    let prompt = "";
+    try {
+      await execute(
+        createTestAppWorkflowContext<unknown>({
+          input: procedure,
+          reconciliation: {
+            appId: "scout-knowledge-lib",
+            taskId: "goal/array-procedure",
+            generation: 1,
+            resourceVersion: 1,
+            agent: "scout",
+            outcome: "Review library maintenance",
+            acceptance: ["Record a bounded decision"],
+            input: {
+              kind: "goal",
+              data: { outcome: "Review library maintenance" },
+            },
+            children: { live: [], completed: [] },
+            events: { items: [], truncated: false },
+          },
+          workspace: fixture.workspace,
+          callAgent: (async (_agent, value) => {
+            prompt = value;
+            return {
+              id: "s_array_procedure",
+              kind: "agent",
+              status: "done",
+              summary: "No maintenance required.",
+              output: {
+                state: "converged",
+                summary: "No maintenance required.",
+                facts: ["reviewed current library"],
+              },
+            };
+          }) as WorkflowContext["agents"]["call"],
+        }),
+      );
+      expect(prompt).toContain("Caller procedure context (advisory)");
+      expect(prompt).toContain("Use the reviewed writable destination.");
+      expect(prompt).toContain('"preserve": "archive and caller identity"');
+    } finally {
+      rmSync(fixture.repositoryRoot, { recursive: true, force: true });
+    }
+  });
+
+  it("makes an unavailable exact recovery read explicit without scanning Tasks", async () => {
+    const fixture = publicationTestFixture();
+    const revision = fixture.git("rev-parse", "HEAD");
+    const archiveRef = "refs/archive/scout-publication/unavailable-context";
+    fixture.git("update-ref", archiveRef, revision);
+    let prompt = "";
+    try {
+      await execute(
+        createTestAppWorkflowContext({
+          input: {},
+          reconciliation: {
+            appId: "scout-knowledge-lib",
+            taskId: "goal/unavailable-recovery-context",
+            generation: 1,
+            resourceVersion: 1,
+            agent: "scout",
+            outcome: "Deliver accepted content",
+            acceptance: ["Verify delivery"],
+            input: {
+              kind: "goal",
+              data: {
+                context: {
+                  reason: "accepted-publication-recovery",
+                  candidateRef: archiveRef,
+                  candidateRevision: revision,
+                  changedPaths: [
+                    "projects/scout-knowledge-lib/knowledge/README.md",
+                  ],
+                },
+              },
+            },
+            children: { live: [], completed: [] },
+            events: { items: [], truncated: false },
+          },
+          workspace: fixture.workspace,
+          read: createTestAppRead({
+            tasks: {
+              get: async () => {
+                throw new Error("task reporting unavailable");
+              },
+            } as never,
+          }),
+          callAgent: (async (_agent, value) => {
+            prompt = value;
+            return {
+              id: "s_unavailable_context",
+              kind: "agent",
+              status: "done",
+              summary: "Verified existing delivery.",
+              output: {
+                state: "converged",
+                summary: "Verified existing delivery.",
+                facts: ["verified archived bytes at canonical HEAD"],
+              },
+            };
+          }) as WorkflowContext["agents"]["call"],
+        }),
+      );
+      expect(prompt).toContain("unavailable: task reporting unavailable");
+      expect(prompt).toContain(
+        "Previous attempt link from the reconciliation packet",
+      );
+    } finally {
+      rmSync(fixture.repositoryRoot, { recursive: true, force: true });
+    }
+  });
+
   it.each(["direct-write", "deleted-reuse"])(
     "does not claim completion for an uncommitted or missing output: %s",
     async (scenario) => {

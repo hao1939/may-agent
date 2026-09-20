@@ -85,16 +85,33 @@ unrelated dependencies, Conditions, actions, result data, report state,
 `continue`, and `reviewAt`. Recovery failure does not recursively create another
 recovery goal.
 
-The ordinary Scout owner reads the archived Git tree and chooses the remedy. It
-may reproduce the exact bytes or judge a suitable writable adaptation; the
-shared publisher still verifies the actual committed outputs. A no-change claim
-closes the publication obligation only when Git proves canonical HEAD contains
-the exact archived bytes. An adapted commit counts only with Scout's accepted
-`converged` judgment. A waiting or incomplete result, including a partial
-unrelated commit, does not assert delivery. When integration truly requires a
-human decision, Scout returns a supported human-owned Condition through normal
-Task reconciliation; publication code does not invent an approval event or
-change protected mounts, permissions, or bytes.
+The ordinary Scout owner reads the archived Git tree and chooses the remedy. On
+recovery, the planner also reads the exact current Task through the supported
+Task API and presents its retained publication failure, archive descriptor, and
+previous-attempt link. Relevant caller procedure input is shown separately and
+remains subordinate to the Task requirement. An unavailable exact read is made
+explicit rather than replaced by a scan or an empty-history assumption.
+
+The canonical project is a read-only observation target and final link
+destination for the bounded writer, never its write target. Candidate
+editability does not prove that the corresponding canonical path can be
+atomically replaced. Scout may use non-mutating checks to understand the exact
+destination, but must not probe-write, overwrite in place, change permissions or
+mounts, or bypass the publisher. A confirmed protected destination is not
+retried unchanged merely because archive restoration succeeds in the candidate.
+
+Scout may reproduce the exact bytes or judge a suitable writable adaptation;
+the shared publisher still verifies the actual committed outputs. An adaptation
+must explain how it preserves this accepted candidate and its provenance; a
+narrow linked addendum is preferable when suitable to renaming or duplicating a
+protected original. A no-change claim closes the publication obligation only
+when Git proves canonical HEAD contains the exact archived bytes. An adapted
+commit counts only with Scout's accepted `converged` judgment. A waiting or
+incomplete result, including a partial unrelated commit, does not assert
+delivery. When integration truly requires a human decision, Scout returns a
+supported human-owned Condition through normal Task reconciliation and sleeps
+for that fact; publication code does not invent an approval event, request an
+immediate retry, or change protected mounts, permissions, or bytes.
 
 Standing source Tasks use the native Scout owner as their reconciliation
 executor. Each wake supplies the current Task, accepted result, pending inputs,
