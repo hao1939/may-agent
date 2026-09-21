@@ -339,6 +339,12 @@ describe("telegram client", () => {
             taskRefs: [{ appId: "may", taskId: "goal/improvement" }],
             approvalAnchor: { approvalId: "exact-proposal" },
             humanCondition: { taskGeneration: 2, conditionId: "choice", conditionGeneration: 3 },
+            completedHumanAction: {
+              version: 1,
+              appId: "may",
+              taskId: "goal/improvement",
+              signature: "exact-action-v1",
+            },
           }),
           bindToCompleteDelivery: true,
         }),
@@ -353,6 +359,12 @@ describe("telegram client", () => {
       expect(JSON.parse(String(getNotificationMessage(persistDir, "chat-1", 751)?.data))).toMatchObject({
         approvalAnchor: { approvalId: "exact-proposal" },
         humanCondition: { taskGeneration: 2, conditionId: "choice", conditionGeneration: 3 },
+        completedHumanAction: {
+          version: 1,
+          appId: "may",
+          taskId: "goal/improvement",
+          signature: "exact-action-v1",
+        },
       });
     } finally {
       closeDb(persistDir);
@@ -385,17 +397,32 @@ describe("telegram client", () => {
             topicId: "topic/improvement",
             approvalAnchor: { approvalId: "exact-proposal" },
             humanCondition: { taskGeneration: 2, conditionId: "choice", conditionGeneration: 3 },
+            completedHumanAction: {
+              version: 1,
+              appId: "may",
+              taskId: "goal/improvement",
+              signature: "must-not-survive",
+            },
           }),
           bindToCompleteDelivery: true,
         }),
       ).resolves.toBeUndefined();
       expect(attempt).toBe(2);
-      const { getNotificationMessage } = await import("../../lib/db/notifications.js");
+      const { getNotificationMessage, hasCompletedHumanActionDelivery } = await import(
+        "../../lib/db/notifications.js"
+      );
       expect(JSON.parse(String(getNotificationMessage(persistDir, "chat-1", 800)?.data))).toEqual({
         taskRefs: [{ appId: "may", taskId: "goal/improvement" }],
         topicId: "topic/improvement",
         channelTargetId: "chat-1",
       });
+      expect(
+        hasCompletedHumanActionDelivery(persistDir, "chat-1", undefined, {
+          appId: "may",
+          taskId: "goal/improvement",
+          signature: "must-not-survive",
+        }),
+      ).toBe(false);
     } finally {
       closeDb(persistDir);
       rmSync(persistDir, { recursive: true, force: true });

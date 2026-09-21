@@ -24,7 +24,11 @@ import type { EventInput, EventReceipt } from "@may-agent/control/events";
 import { EVENT_DELIVERY_RESULT, eventData, type EventBus } from "../core/events/bus.js";
 import { loadPersistedEvent } from "../core/events/persisted.js";
 import { getDb } from "../../lib/requests.js";
-import { getNotificationMessage, storeNotificationMessage } from "../../lib/db/notifications.js";
+import {
+  getNotificationMessage,
+  hasCompletedHumanActionDelivery,
+  storeNotificationMessage,
+} from "../../lib/db/notifications.js";
 import { readAppConversationResource, readConversationTopic } from "../core/state/conversations.js";
 import { TaskReferenceError } from "../core/state/task-reference-index.js";
 import type { AppTaskCondition } from "../core/tasks/app-task-state.js";
@@ -34,7 +38,12 @@ import {
   TASK_UPDATE_EVENT_TYPES,
   taskUpdateIdentity,
 } from "../../../packages/control/src/task-wake.js";
-import { isHumanActionOwner, type HumanAppView, type HumanTaskService, type HumanTaskView } from "../human-task-service.js";
+import {
+  isHumanActionOwner,
+  type HumanAppView,
+  type HumanTaskService,
+  type HumanTaskView,
+} from "../human-task-service.js";
 import { taskCancelRequestedEvent } from "../task-control-events.js";
 
 const TASK_PAGE_SIZE = 10;
@@ -333,18 +342,20 @@ export function renderTelegramTodos(
   return [
     `<b>Needs you${escapeTelegramHtml(scope)}</b>`,
     "",
-    ...tasks.flatMap((task) => {
-      const since = task.humanAction?.since;
-      return [
-        [
-          `🔴 <b>${escapeTelegramHtml(humanActionText(task))}</b>`,
-          `  ${escapeTelegramHtml(task.outcome)}`,
-          ...(recurrenceLine(task) ? [recurrenceLine(task)!] : []),
-          `  ${escapeTelegramHtml(task.appId)} · <code>${escapeTelegramHtml(task.ref)}</code>${since === undefined ? "" : ` · waiting ${elapsedText(since)}`}`,
-        ].join("\n"),
-        "",
-      ];
-    }).slice(0, -1),
+    ...tasks
+      .flatMap((task) => {
+        const since = task.humanAction?.since;
+        return [
+          [
+            `🔴 <b>${escapeTelegramHtml(humanActionText(task))}</b>`,
+            `  ${escapeTelegramHtml(task.outcome)}`,
+            ...(recurrenceLine(task) ? [recurrenceLine(task)!] : []),
+            `  ${escapeTelegramHtml(task.appId)} · <code>${escapeTelegramHtml(task.ref)}</code>${since === undefined ? "" : ` · waiting ${elapsedText(since)}`}`,
+          ].join("\n"),
+          "",
+        ];
+      })
+      .slice(0, -1),
     ...(total > tasks.length
       ? ["", `${total - tasks.length} more action(s) are not shown.${hasMore ? " Use /todo more." : ""}`]
       : []),
@@ -388,22 +399,28 @@ export function renderTelegramTask(task: HumanTaskView): string {
   ].join("\n");
 }
 
+function renderedWaits(task: HumanTaskView): string[] {
+  return (task.waitingOn ?? []).map((wait) =>
+    wait.kind === "task"
+      ? `Waiting on ${wait.ref} · ${wait.appId} · ${taskStatusLabel(wait)}: ${wait.outcome}`
+      : wait.kind === "app"
+        ? `Waiting on App ${wait.appId} · ${wait.status}`
+        : `Waiting for ${wait.type}: ${wait.subject}`,
+  );
+}
+
 function taskPresentationRevision(task: HumanTaskView): string {
+  const decision = approvalDecisionAction(task);
   return JSON.stringify({
-    status: task.status,
-    statusDetail: task.statusDetail,
     outcome: task.outcome,
-    acceptance: task.acceptance,
-    updatedAt: task.updatedAt,
-    summary: task.summary,
-    response: task.response,
-    facts: task.facts,
-    progress: task.progress,
-    waitingOn: task.waitingOn,
-    requestedBy: task.requestedBy,
-    execution: task.execution,
-    humanAction: task.humanAction,
-    terminal: task.terminal,
+    status: taskStatusLabel(task),
+    current: currentTaskText(task),
+    waits: renderedWaits(task),
+    decision,
+    action: task.humanAction ? fullHumanActionText(task) : null,
+    otherActions: decision ? humanConditionActions(task, pendingHumanApprovalCondition(task)) : [],
+    approvalAnchor: approvalAnchor(task),
+    humanCondition: humanConditionAnchor(task),
   });
 }
 
@@ -432,6 +449,7 @@ function renderTelegramTaskUpdate(task: HumanTaskView): string {
     taskStatusLabel(task),
     "",
     currentTaskText(task),
+    ...renderedWaits(task).flatMap((wait) => ["", wait]),
     ...(task.humanAction
       ? decisionAction
         ? [
@@ -1094,7 +1112,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
   }
 
   const todoTaskKey = (task: HumanTaskView): string => `${task.appId}\0${task.taskId}`;
-  const todoActionSignature = (task: HumanTaskView): string => {
+  const todoActionSignature = (task: HumanTaskView): { value: string; exact: boolean } => {
     const conditions = (task.diagnostics?.conditions ?? [])
       .flatMap((item) => {
         const condition = item.condition;
@@ -1102,6 +1120,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
         return [
           {
             id: item.id,
+            generation: condition.metadata.generation,
             type: condition.spec.type,
             subject: condition.spec.subject,
             owner: condition.spec.owner,
@@ -1111,11 +1130,14 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
         ];
       })
       .sort((left, right) => left.id.localeCompare(right.id));
-    return JSON.stringify({
-      generation: task.generation,
-      conditions,
-      fallback: conditions.length === 0 ? humanActionText(task) : undefined,
-    });
+    return {
+      value: JSON.stringify({
+        generation: task.generation,
+        conditions,
+        fallback: conditions.length === 0 ? humanActionText(task) : undefined,
+      }),
+      exact: conditions.length > 0 && task.diagnostics?.conditionsTruncated !== true,
+    };
   };
 
   async function refreshTodos(surface: string): Promise<void> {
@@ -1129,13 +1151,19 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
       return { task, detail, signature: todoActionSignature(detail) };
     });
     const prior = shownTodoActions.get(surface) ?? new Map<string, string>();
-    const next = new Map(actions.map(({ task, signature }) => [todoTaskKey(task), signature]));
+    const next = new Map(actions.map(({ task, signature }) => [todoTaskKey(task), signature.value]));
     const watched = watchedTasks.get(surface);
-    const changed = actions.filter(
-      ({ task, signature }) =>
-        prior.get(todoTaskKey(task)) !== signature &&
-        !(watched?.appId === task.appId && watched.taskId === task.taskId),
-    );
+    const changed = actions.filter(({ task, detail, signature }) => {
+      if (prior.get(todoTaskKey(task)) === signature.value) return false;
+      if (watched?.appId === task.appId && watched.taskId === task.taskId) return false;
+      return !hasCompletedHumanActionDelivery(persistDir, coordinates.chatId, coordinates.topicId, {
+        appId: detail.appId,
+        taskId: detail.taskId,
+        signature: signature.value,
+        humanCondition: humanConditionAnchor(detail) ?? undefined,
+        approvalAnchor: approvalAnchor(detail) ?? undefined,
+      });
+    });
     if (changed.length === 0) {
       shownTodoActions.set(surface, next);
       return;
@@ -1180,8 +1208,20 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
         taskRefs,
         ...(displayedApproval ? { approvalAnchor: displayedApproval } : {}),
         ...(displayedHumanCondition ? { humanCondition: displayedHumanCondition } : {}),
+        ...(single && first.signature.exact
+          ? {
+              completedHumanAction: {
+                version: 1,
+                appId: first.detail.appId,
+                taskId: first.detail.taskId,
+                signature: first.signature.value,
+              },
+            }
+          : {}),
       }),
-      bindToCompleteDelivery: Boolean(displayedApproval || displayedHumanCondition),
+      bindToCompleteDelivery: Boolean(
+        displayedApproval || displayedHumanCondition || (single && first.signature.exact),
+      ),
     });
     if (!messageId || !running) return;
     if ((selectedApps.get(surface) ?? opts.interfaceAgent) === appId) shownTodoActions.set(surface, next);
@@ -1779,7 +1819,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
                     taskId: task.taskId,
                   };
                   const detail = opts.humanTasks.getTask?.(owner) ?? task;
-                  return [todoTaskKey(task), todoActionSignature(detail)];
+                  return [todoTaskKey(task), todoActionSignature(detail).value];
                 }),
               ),
             );

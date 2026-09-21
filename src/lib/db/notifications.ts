@@ -42,3 +42,71 @@ export function getNotificationMessage(
     .prepare("SELECT * FROM notification_messages WHERE chat_id = ? AND telegram_msg_id = ?")
     .get(chatId, telegramMsgId) as NotificationMessageRecord | null;
 }
+
+export type CompletedHumanActionDelivery = {
+  appId: string;
+  taskId: string;
+  signature: string;
+  humanCondition?: { taskGeneration: number; conditionId: string; conditionGeneration: number };
+  approvalAnchor?: unknown;
+};
+
+function sameJsonValue(left: unknown, right: unknown): boolean {
+  return JSON.stringify(left) === JSON.stringify(right);
+}
+
+/**
+ * Read only complete, destination-scoped action receipts. The complete marker is
+ * stripped from partial multipart sends by the Telegram client, so a row's mere
+ * existence is never delivery proof.
+ */
+export function hasCompletedHumanActionDelivery(
+  persistDir: string,
+  chatId: string,
+  threadId: number | undefined,
+  action: CompletedHumanActionDelivery,
+): boolean {
+  if (!chatId) return false;
+  const expectedThread = threadId === undefined ? null : String(threadId);
+  const rows = getDb(persistDir)
+    .prepare(
+      `SELECT data FROM notification_messages
+       WHERE chat_id = ? AND event_type IN ('task.human-action', 'task.watch')
+         AND json_extract(CASE WHEN json_valid(data) THEN data END, '$.taskRefs[0].appId') = ?
+         AND json_extract(CASE WHEN json_valid(data) THEN data END, '$.taskRefs[0].taskId') = ?
+         AND coalesce(json_extract(CASE WHEN json_valid(data) THEN data END, '$.channelThreadId'), '') = coalesce(?, '')
+       ORDER BY sent_at DESC
+       LIMIT 20`,
+    )
+    .all(chatId, action.appId, action.taskId, expectedThread) as Array<{ data?: string | null }>;
+  for (const row of rows) {
+    let data: Record<string, unknown>;
+    try {
+      const parsed = JSON.parse(row.data ?? "null");
+      if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) continue;
+      data = parsed as Record<string, unknown>;
+    } catch {
+      continue;
+    }
+    const receipt = data.completedHumanAction;
+    if (
+      receipt &&
+      typeof receipt === "object" &&
+      !Array.isArray(receipt) &&
+      (receipt as Record<string, unknown>).version === 1 &&
+      (receipt as Record<string, unknown>).appId === action.appId &&
+      (receipt as Record<string, unknown>).taskId === action.taskId &&
+      (receipt as Record<string, unknown>).signature === action.signature
+    ) {
+      return true;
+    }
+    // Compatibility for already-sent one-Task cards: complete-delivery
+    // authority proves the exact immutable Condition/candidate anchor. Unknown
+    // legacy rows and text-only records stay eligible for another notification.
+    const refs = data.taskRefs;
+    if (!Array.isArray(refs) || refs.length !== 1) continue;
+    if (action.humanCondition && sameJsonValue(data.humanCondition, action.humanCondition)) return true;
+    if (action.approvalAnchor && sameJsonValue(data.approvalAnchor, action.approvalAnchor)) return true;
+  }
+  return false;
+}

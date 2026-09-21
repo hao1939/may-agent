@@ -19,8 +19,8 @@ async function waitFor(predicate: () => boolean): Promise<void> {
 
 type Send = { chat_id: string; text: string; reply_parameters?: { message_id: number } };
 
-function fixture() {
-  const root = mkdtempSync(join(tmpdir(), "may-telegram-refresh-"));
+function fixture(options: { root?: string; removeOnClose?: boolean } = {}) {
+  const root = options.root ?? mkdtempSync(join(tmpdir(), "may-telegram-refresh-"));
   const priorFetch = globalThis.fetch;
   const priorToken = process.env.TELEGRAM_BOT_TOKEN;
   const priorChat = process.env.TELEGRAM_CHAT_ID;
@@ -117,6 +117,7 @@ function fixture() {
     },
   });
   return {
+    root,
     bot,
     sent,
     published,
@@ -200,7 +201,7 @@ function fixture() {
       await Bun.sleep(20);
       unsubscribe();
       closeDb(root);
-      rmSync(root, { recursive: true, force: true });
+      if (options.removeOnClose !== false) rmSync(root, { recursive: true, force: true });
       globalThis.fetch = priorFetch;
       if (priorToken === undefined) delete process.env.TELEGRAM_BOT_TOKEN;
       else process.env.TELEGRAM_BOT_TOKEN = priorToken;
@@ -458,6 +459,130 @@ describe("Telegram refresh lifecycle", () => {
       expect(approvalUpdate.text).toContain(`Needs your decision: ${decisionAction}`);
       expect(approvalUpdate.text).toContain("Also needs your action (separate from the decision):");
       expect(approvalUpdate.text).toContain("Reply here with your decision.");
+    } finally {
+      await f.close();
+    }
+  });
+
+  it("uses complete receipts after restart but keeps changed actions eligible", async () => {
+    const root = mkdtempSync(join(tmpdir(), "may-telegram-restart-action-"));
+    const action = (generation: number, requestedAction: string) => ({
+      humanAction: { requestedAction },
+      diagnostics: {
+        conditions: [
+          {
+            id: "operator-step",
+            condition: {
+              metadata: { id: "operator-step", generation, resourceVersion: generation },
+              spec: {
+                type: "human.answer.received",
+                subject: "id:operator-step",
+                owner: "human",
+                requestedAction,
+                expected: { answer: true },
+              },
+              status: { state: "false" },
+            },
+          },
+        ],
+        conditionsTruncated: false,
+      },
+    });
+    const first = fixture({ root, removeOnClose: false });
+    try {
+      await first.command("/apps may");
+      Object.assign(first.tasks.get("first")!, action(1, "Run the verified operator step."));
+      first.wake("first");
+      await waitFor(() => first.sent.some((send) => send.text.includes("Run the verified operator step.")));
+    } finally {
+      await first.close();
+    }
+
+    const restarted = fixture({ root });
+    try {
+      Object.assign(restarted.tasks.get("first")!, action(1, "Run the verified operator step."));
+      restarted.wake("first");
+      await Bun.sleep(40);
+      expect(restarted.sent.some((send) => send.text.includes("Run the verified operator step."))).toBe(false);
+
+      await restarted.command("/todo");
+      await waitFor(() => restarted.sent.some((send) => send.text.includes("Run the verified operator step.")));
+      expect(restarted.sent.at(-1)?.text).toContain("Needs you for may");
+
+      Object.assign(restarted.tasks.get("first")!, action(2, "Run the changed operator step."));
+      restarted.wake("first");
+      await waitFor(() => restarted.sent.some((send) => send.text.includes("Run the changed operator step.")));
+    } finally {
+      await restarted.close();
+    }
+  });
+
+  it("refreshes watch only for presented meaning, dependencies, or reply authority", async () => {
+    const f = fixture();
+    try {
+      await f.command("/watch first");
+      const task = f.tasks.get("first")!;
+      const baseline = f.sent.length;
+      Object.assign(task, {
+        resourceVersion: 8,
+        updatedAt: 8,
+        facts: ["internal-only"],
+        execution: { attemptId: "replacement-attempt", sessionId: "replacement-session" },
+        progress: { stage: "working", message: "Working on first", updatedAt: 8 },
+      });
+      f.wake("first");
+      await Bun.sleep(30);
+      expect(f.sent).toHaveLength(baseline);
+
+      task.progress = { stage: "working", message: "A user-visible milestone completed", updatedAt: 9 };
+      f.wake("first");
+      await waitFor(() => f.sent.some((send) => send.text.includes("A user-visible milestone completed")));
+
+      task.waitingOn = [
+        {
+          kind: "task",
+          appId: "evaluation",
+          taskId: "independent",
+          ref: "deadbeef",
+          status: "waiting",
+          outcome: "Independent review",
+        },
+        { kind: "condition", type: "human.answer.received", subject: "id:separate-action" },
+      ];
+      f.wake("first");
+      await waitFor(() => f.sent.some((send) => send.text.includes("Independent review")));
+      expect(f.sent.at(-1)?.text).toContain("Waiting for human.answer.received: id:separate-action");
+
+      const sameWords = "Confirm the exact current action.";
+      Object.assign(task, {
+        humanAction: { requestedAction: sameWords },
+        diagnostics: {
+          conditions: [
+            {
+              id: "exact-action",
+              condition: {
+                metadata: { id: "exact-action", generation: 1, resourceVersion: 1 },
+                spec: {
+                  type: "human.answer.received",
+                  subject: "id:exact-action",
+                  owner: "human",
+                  requestedAction: sameWords,
+                  expected: { answer: true },
+                },
+                status: { state: "false" },
+              },
+            },
+          ],
+          conditionsTruncated: false,
+        },
+      });
+      f.wake("first");
+      await waitFor(() => f.sent.some((send) => send.text.includes(sameWords)));
+      const authorityBaseline = f.sent.length;
+      task.diagnostics!.conditions[0]!.condition!.metadata.generation = 2;
+      f.wake("first");
+      await waitFor(() => f.sent.length > authorityBaseline);
+      expect(f.sent.at(-1)?.text).toContain(sameWords);
     } finally {
       await f.close();
     }
