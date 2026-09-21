@@ -1,4 +1,6 @@
 import { expect, test } from "bun:test";
+import { calculateCost } from "@earendil-works/pi-ai";
+import { createModelRegistry } from "../app/model-registry.js";
 import { createExecutionUsage } from "./execution-usage.js";
 import { preparationFixture, usageReply, observeReply } from "../../test/fixtures/execution-usage.js";
 
@@ -25,6 +27,36 @@ test("usage counts new model replies, caches and fallback separately, including 
   });
   expect(collector.snapshot().models.map((row) => row.provider)).toEqual(["fallback", "fixture"]);
   expect(before.totals.replies).toBe(1);
+});
+
+test("the registered DeepSeek model preserves usage without claiming a zero-cost estimate", () => {
+  const model = createModelRegistry({
+    DEEPSEEK_BASE_URL: "https://deepseek.example.test/v1",
+    DEEPSEEK_API_KEY: "synthetic-unused",
+  })["deepseek-v4-flash"]!;
+  const collector = createExecutionUsage(preparationFixture);
+  const usage = usageReply().usage;
+  calculateCost(model, usage);
+  observeReply(
+    collector,
+    usageReply({
+      provider: model.provider,
+      model: model.id,
+      usage,
+    }),
+  );
+
+  expect(Number.isNaN(usage.cost.total)).toBe(true);
+  expect(collector.snapshot().totals).toMatchObject({
+    replies: 1,
+    measuredReplies: 1,
+    estimatedCostReplies: 0,
+    input: usage.input,
+    cacheRead: usage.cacheRead,
+    cacheWrite: usage.cacheWrite,
+    output: usage.output,
+    estimatedCost: 0,
+  });
 });
 
 test("zero, missing and invalid usage stay unknown; missing pricing does not imply free usage", () => {

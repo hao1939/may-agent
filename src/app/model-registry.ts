@@ -11,6 +11,7 @@ const ENDPOINT_CONTEXT_WINDOWS = {
   "gpt-5.4": 400_000,
   "gpt-5.5": 400_000,
   "gpt-5.6-sol": 400_000,
+  "deepseek-v4-flash": 128_000,
   "claude-opus-4.7": 200_000,
   "claude-opus-5": 200_000,
   "gemini-3.1-pro-preview": 200_000,
@@ -26,6 +27,11 @@ export type ModelRegistry = Record<string, ModelWithFallback>;
 export function createModelRegistry(env: NodeJS.ProcessEnv = process.env): ModelRegistry {
   const baseUrl = env.MODEL_BASE_URL || "http://localhost:4000";
   const apiKey = env.MODEL_API_KEY || "not-needed";
+  const deepseekBaseUrl = env.DEEPSEEK_BASE_URL?.trim();
+  const deepseekApiKey = env.DEEPSEEK_API_KEY?.trim();
+  if (Boolean(deepseekBaseUrl) !== Boolean(deepseekApiKey)) {
+    throw new Error("DeepSeek model configuration requires both DEEPSEEK_BASE_URL and DEEPSEEK_API_KEY");
+  }
   const claudeOpus5: ModelWithApiKey = {
     ...getBuiltinModel("anthropic", "claude-opus-4-6"),
     id: "claude-opus-5",
@@ -67,6 +73,37 @@ export function createModelRegistry(env: NodeJS.ProcessEnv = process.env): Model
       apiKey,
       fallbackModel: claudeOpus5,
     },
+    ...(deepseekBaseUrl && deepseekApiKey
+      ? {
+          "deepseek-v4-flash": {
+            id: "deepseek-v4-flash",
+            name: "DeepSeek V4 Flash",
+            api: "openai-responses" as const,
+            provider: "deepseek",
+            reasoning: true,
+            input: ["text" as const],
+            contextWindow: ENDPOINT_CONTEXT_WINDOWS["deepseek-v4-flash"],
+            maxTokens: 65_536,
+            // The configured gateway has no verified tariff. NaN keeps Pi's
+            // required rate shape without recording a false zero-cost estimate.
+            cost: {
+              input: Number.NaN,
+              output: Number.NaN,
+              cacheRead: Number.NaN,
+              cacheWrite: Number.NaN,
+            },
+            compat: { supportsStrictMode: true },
+            // Match the configured harness's high-effort Responses request.
+            // Trial evidence does not establish reliable evaluator completion.
+            samplingParams: {
+              reasoning: { effort: "high", summary: "auto" },
+              include: ["reasoning.encrypted_content"],
+            },
+            baseUrl: deepseekBaseUrl,
+            apiKey: deepseekApiKey,
+          },
+        }
+      : {}),
     "claude-opus-4.7": {
       ...getBuiltinModel("github-copilot", "claude-opus-4.7"),
       contextWindow: ENDPOINT_CONTEXT_WINDOWS["claude-opus-4.7"],
