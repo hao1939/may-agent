@@ -60,8 +60,10 @@ remained registered. No new startup script was needed.
 The operator addressed the 23 retained budget-deferred Tasks once through normal
 `app.input.admit`, with their exact target IDs, original assessment inputs and
 idempotency keys. Their generations, pins and caller links were not replaced;
-closed subjects were not automatically discarded. All 23 normal workflows read the
-new budget and updated eligibility to September 21 08:00 UTC. No Task files or records were moved,
+closed subjects were not automatically discarded. All 23 workflows read the
+new budget and updated the follow-up inputs to September 21 08:00 UTC. The
+original per-input daily deadlines remained separate; the aggregate earliest
+deadline alone did not establish that those caller waits had advanced. No Task files or records were moved,
 restored, archived or deleted; allowance receipts were not reset.
 
 The first hourly allowance receipt belongs to the existing ongoing review of
@@ -78,10 +80,23 @@ Live settings, exact request receipts and read-backs are retained under
 `evaluation-priority-wake.json`, `evaluation-retained-wakes.json` and
 `evaluation-waits-after.json`. The report is
 `task-outcomes/may/task-obligation-v1/goal-app_8a957a1f-99f6-45bf-a289-ca00c55ddcff-47e6db084e206403-ef255144f8b6.md`
-under the canonical report root. The prioritized notification review recalculated
+under the canonical report root. The notification review's early follow-up recalculated
 its eligibility from September 22 00:00 UTC to September 21 08:00 UTC after the
-hour's allowance was consumed. This proves budget enforcement and reconsideration;
-a deferred review is not yet an accepted report or a satisfied caller dependency.
+hour's allowance was consumed. At that boundary it produced a second real report,
+`task-outcomes/may/task-obligation-v1/goal-app_86bea4d7-27bf-4c89-8f51-913c1de62dac-597de6e579e597d6-58bd72972288.md`.
+That report judged the inspected work coherent and retained its stale-snapshot
+qualification as publication progressed.
+
+The final caller check exposed the transition limit: the original
+`appdep_922479ce17fe86ea5ef02935` input was not considered by the follow-up attempt,
+so its saved September 22 00:00 UTC wait and May's linked Condition remain. This
+is not missing report production, nor proof that the caller has resumed. The Host
+correctly keeps independent input obligations. Do not repeat follow-up inputs as
+a backlog-drain mechanism; let original waits reach their due time and adopt the
+new allowance normally. The observation and exact Condition read-back are retained
+in `priority-review-after-boundary.json` and
+`notification-evaluation-condition.json`. No state rewrite or blanket wait clearing
+was performed.
 
 Validation: the existing outcome-review and selector suites passed 37 tests with
 441 assertions. A disposable fixture verified that the first hourly claim is

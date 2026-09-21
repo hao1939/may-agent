@@ -3,8 +3,9 @@
 **Current operating profile (September 21):** The installed App uses an hourly
 selector and one semantic assessment per hour, with serialized execution and
 requested-review precedence. The same-container daemon restart consumed the new
-settings; a real ongoing review published a report, while retained requests
-recalculated their next eligibility through ordinary input. See [capacity for an
+settings; a real ongoing review published a report, while ordinary follow-up inputs
+recalculated their own eligibility. Original caller waits retain their saved
+deadlines until normal reconciliation considers them. See [capacity for an
 active installation](#capacity-for-an-active-installation) and the [rollout
 record](rollout-and-migration-2026-09.md#september-21-capacity-correction) for
 settings, evidence and limitations. This is sampled coverage, not a claim that
@@ -158,21 +159,21 @@ self-exclusion, exact request identity, and requested-review precedence remain
 unchanged. A queue can still delay an individual review; this is bounded coverage,
 not an immediate-response or exhaustive-health guarantee.
 
-After applying a budget change, existing waits may still carry the prior
-next-eligibility time. A bounded operator pass can address each retained waiting
-Task through ordinary App input, preserving its original assessment contract and
-caller links. The workflow then rereads current evidence and the active allowance;
-it either assesses, reuses a report, or records the new deadline. Do not rewrite
-Task storage, reset allowance receipts, remove historical reviews, or create
-replacement Tasks to accelerate them. Prioritize a review that currently blocks
-useful owner work, then let existing serialized scheduling handle the rest.
+A budget change does not rewrite existing per-input waits. Let the original
+requests reach their recorded deadline and adopt the new allowance through normal
+reconciliation. If a report is needed sooner, an ordinary input addressed to the
+same Task can produce or reuse one under the new budget, but its completion does
+not answer another input whose independent wait was not considered. Preserve exact
+caller links and pins; neither identical workflow parameters nor a newly published
+report authorizes blanket completion of unrelated input waits.
 
-Verify the consumed process settings, an actual report and its return to the
-caller, and a second review that waits at the new allowance boundary. Document
-activation separately from this profile. Subsequent capacity changes should use
-observed backlog, report usefulness and cost; they do not require another queue,
-monitor, or scheduling framework.
-
+Verify consumed process settings, report production/read-back and enforcement of
+the next allowance boundary separately from completion of each original caller.
+The September 21 trial demonstrated this distinction: early follow-ups advanced
+their own eligibility, while original daily waits remained. Allow that bounded
+transition instead of rewriting storage, resetting receipts or adding an override
+controller. Future capacity changes should use observed backlog, report usefulness
+and cost.
 The deterministic `list-evaluation-reports` and `read-evaluation-report` actions expose at most 5 valid published pairs and an 8 KiB content preview per read, keeping the complete Task result below the 16 KiB admission budget. Larger reports return exact size, SHA-256, canonical path, and explicit continuation metadata. Listing says each entry is one bounded Task snapshot and returns disposition plus relative action paths and canonical absolute artifact paths. Neither action invokes the evaluator or creates findings.
 
 Activation must not awaken the retained legacy Evaluation backlog. The matching Host requires a string structural parent, so every supported input uses the surviving non-executable `evaluation-system` root group instead of a cancelled legacy subgroup. Canonical review, reader, and selector Task IDs remain stable; historical/manual compatibility inputs use fresh `runtime/compat/*` identities so they cannot revive cancelled Tasks. Session-only shallow/deep semantic entrypoints return neutral retired/insufficient-evidence results regardless of caller ownership hints; canonical Task-outcome review is the semantic path. Follow `rollout-and-migration-2026-09.md` for the exact 2,037-Task frozen retirement, staged canary, and rollback. Never delete Task or report history.
