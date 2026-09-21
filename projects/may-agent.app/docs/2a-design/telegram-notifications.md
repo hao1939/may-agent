@@ -12,9 +12,12 @@ aggregate deliveries eligible. It also makes watch refreshes compare the compact
 presentation plus exact reply authority, ignoring metadata-only changes while
 retaining visible progress, dependencies, actions, and changed
 approval/Condition anchors. PR #221 merged at `1283ea7a` on September 21.
-Deployment of that exact revision awaits the existing human decision; live
-adoption remains unverified. Source integration and passing checks are not
-adoption evidence. Follow-up admission now presents
+Hao authorized deployment on September 21; the same-container rollout succeeded
+at 08:49 UTC. The durable receipt `may-goal-app_86bea4d7-pr221-1283ea7a`
+records that exact source revision, matching built/loaded binary hashes and
+healthy services. Independent read-back confirmed readiness and all four Apps.
+This proves activation; longer-term notification quality and independent
+Evaluation follow-up remain separate. Follow-up admission now presents
 the responsible Task directly, and human-action reads follow exact dependency
 links to the Task that owns the action.
 The [current-turn Stop button](human-control-surfaces.md#current-turn-control)
