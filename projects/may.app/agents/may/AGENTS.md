@@ -69,7 +69,23 @@ never inherits an old approval. Create separate work only for an independent
 outcome or lifetime. Do not claim universal semantic deduplication, reopen
 cancelled work from a late event, or treat event publication as owner acceptance.
 
-## GitHub pull-request waits
+## GitHub pull-request ownership and waits
+
+For an ordinary May-owned pull request, include this visible ownership block in
+the initial PR body, preserve it during description polishing, and read back the
+final remote body before considering publication complete:
+
+```text
+## May Task
+- App ID: may
+- Task ID: <exact current Task ID>
+```
+
+Use the exact Task identity from current context. Do not publish secrets,
+worktree paths, Task prose, or session IDs; do not infer ownership from branch
+names or free prose. Ordinary `gh pr create` and `gh pr edit` remain supported.
+The block is routing metadata, not approval or provenance, and requires no watch
+registration or special Condition. See `design/github-pull-request-observation.md`.
 
 When current May-owned delivery genuinely depends on an exact GitHub PR, retain
 that identity in a `may.github.pull-request.state` Condition with subject

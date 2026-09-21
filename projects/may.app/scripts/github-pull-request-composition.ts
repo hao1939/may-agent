@@ -22,9 +22,11 @@ if (!output) {
   );
 }
 const { default: definition } = await import(`${app}/projects/may.app/app.ts`);
-const { observeGitHubPullRequests, GITHUB_PULL_REQUEST_EVENT } = await import(
-  `${app}/projects/may.app/watchers/github-pull-request.ts`
-);
+const {
+  observeGitHubPullRequests,
+  parseMayTaskOwner,
+  GITHUB_PULL_REQUEST_EVENT,
+} = await import(`${app}/projects/may.app/watchers/github-pull-request.ts`);
 const { openDatabase } = await import(`${host}/src/lib/db.ts`);
 const { applyDbSchema } = await import(`${host}/src/lib/db/schema.ts`);
 const { getDb, closeDb } = await import(`${host}/src/lib/requests.ts`);
@@ -78,7 +80,7 @@ const descriptor = {
   reconciliationPaused: false,
   resourceStore: store,
 };
-const taskId = "goal/linked-pr",
+const fixtureTaskId = "goal/linked-pr",
   type = GITHUB_PULL_REQUEST_EVENT;
 const scope = {
   repository: "hao1939/may-agent",
@@ -88,7 +90,10 @@ const scope = {
 };
 const ownerBody = process.env.PR_BODY_FILE
   ? readFileSync(resolve(process.env.PR_BODY_FILE), "utf8")
-  : `Fixture PR\n\n## May Task\n- App ID: may\n- Task ID: ${taskId}\n`;
+  : `Fixture PR\n\n## May Task\n- App ID: may\n- Task ID: ${fixtureTaskId}\n`;
+const owner = parseMayTaskOwner(ownerBody);
+assert.equal(owner?.appId, scope.appId, "PR body must identify the scoped App");
+const taskId = owner?.taskId ?? fixtureTaskId;
 const human = {
   id: "human-review",
   type: "conversation.message.created",
