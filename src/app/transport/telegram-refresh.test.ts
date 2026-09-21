@@ -505,6 +505,13 @@ describe("Telegram refresh lifecycle", () => {
       await Bun.sleep(40);
       expect(restarted.sent.some((send) => send.text.includes("Run the verified operator step."))).toBe(false);
 
+      restarted.tasks.get("first")!.diagnostics!.conditionsTruncated = true;
+      restarted.wake("first");
+      await waitFor(() => restarted.sent.some((send) => send.text.includes("Run the verified operator step.")));
+      const incompleteBaseline = restarted.sent.length;
+      restarted.wake("first");
+      await waitFor(() => restarted.sent.length > incompleteBaseline);
+
       await restarted.command("/todo");
       await waitFor(() => restarted.sent.some((send) => send.text.includes("Run the verified operator step.")));
       expect(restarted.sent.at(-1)?.text).toContain("Needs you for may");

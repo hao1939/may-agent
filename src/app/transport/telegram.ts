@@ -1151,11 +1151,14 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
       return { task, detail, signature: todoActionSignature(detail) };
     });
     const prior = shownTodoActions.get(surface) ?? new Map<string, string>();
-    const next = new Map(actions.map(({ task, signature }) => [todoTaskKey(task), signature.value]));
+    const presentedRevision = (signature: { value: string; exact: boolean }) =>
+      JSON.stringify({ value: signature.value, exact: signature.exact });
+    const next = new Map(actions.map(({ task, signature }) => [todoTaskKey(task), presentedRevision(signature)]));
     const watched = watchedTasks.get(surface);
     const changed = actions.filter(({ task, detail, signature }) => {
-      if (prior.get(todoTaskKey(task)) === signature.value) return false;
       if (watched?.appId === task.appId && watched.taskId === task.taskId) return false;
+      if (!signature.exact) return true;
+      if (prior.get(todoTaskKey(task)) === presentedRevision(signature)) return false;
       return !hasCompletedHumanActionDelivery(persistDir, coordinates.chatId, coordinates.topicId, {
         appId: detail.appId,
         taskId: detail.taskId,
