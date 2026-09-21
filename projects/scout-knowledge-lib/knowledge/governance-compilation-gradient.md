@@ -1,8 +1,8 @@
 <ai_context>
-summary: "Cross-source synthesis: every successful agent governance mechanism follows a universal maturation path from soft signal → structural constraint → compiled enforcement. The compilation gradient explains why constraints in infrastructure outperform constraints in instructions (KE-1924), why memory without compliance fails (TRACE), and why the XHS Structural Turn is a mathematical necessity (KE-1957). Identifies auto-compilation as the highest-leverage missing primitive."
-triggers: ["governance", "compilation", "constraint placement", "structural turn", "when to compile", "soft signal", "hard enforcement", "agent maturation", "governance lifecycle"]
-last_updated: "2026-09-16"
-source_basis: "Cross-source synthesis of: arXiv papers (TRACE, AgentTrust, SENTINEL, HyperTool, HIPIF, SMSR, Forge/guardrails magnitude — June 2026 triage); XHS signals (Structural Turn, 技能工程, 治理即技能 — May–Jun 2026); HN discourse (harness engineering, YourMemory pruning, AGENTS.md rot, permission fatigue — Jun 2026); production KEs (1920 Forgetting Deficit, 1924 Constraint Placement, 1930 Guard Accumulation, 1933 Discrimination Distance, 1956 Instruction Ratchet, 1958 Oversight Inverted-U, 1973 Compiler Gap, 1975 OS Recapitulation, 1976 Accidental Skill, 1984 Phantom Feedback Loop); Charter repository and HN submission inspected at commit f174c4b574506e56e47b58a8ae3724c98865fa56 (2026-09-11); Alkis Yuvanelis's HN-linked Git concurrency case study and its reproduced shared-index experiment (2026-09-15)."
+summary: "Cross-source synthesis: every successful agent governance mechanism follows a universal maturation path from soft signal → structural constraint → compiled enforcement. The compilation gradient explains why constraints in infrastructure outperform constraints in instructions (KE-1924), why memory without compliance fails (TRACE), and why the XHS Structural Turn is a mathematical necessity (KE-1957). Identifies auto-compilation as the highest-leverage missing primitive, with a September 2026 practitioner design for promoting repeated corrections into reviewable, tested hooks."
+triggers: ["governance", "compilation", "constraint placement", "structural turn", "when to compile", "soft signal", "hard enforcement", "agent maturation", "governance lifecycle", "captain-hook", "correction promotion", "tested hook"]
+last_updated: "2026-09-21"
+source_basis: "Cross-source synthesis of: arXiv papers (TRACE, AgentTrust, SENTINEL, HyperTool, HIPIF, SMSR, Forge/guardrails magnitude — June 2026 triage); XHS signals (Structural Turn, 技能工程, 治理即技能 — May–Jun 2026); HN discourse (harness engineering, YourMemory pruning, AGENTS.md rot, permission fatigue — Jun 2026); production KEs (1920 Forgetting Deficit, 1924 Constraint Placement, 1930 Guard Accumulation, 1933 Discrimination Distance, 1956 Instruction Ratchet, 1958 Oversight Inverted-U, 1973 Compiler Gap, 1975 OS Recapitulation, 1976 Accidental Skill, 1984 Phantom Feedback Loop); Charter repository and HN submission inspected at commit f174c4b574506e56e47b58a8ae3724c98865fa56 (2026-09-11); Alkis Yuvanelis's HN-linked Git concurrency case study and its reproduced shared-index experiment (2026-09-15); Yasyf Mohamedali's HN-linked captain-hook design article and live examples reviewed 2026-09-21."
 </ai_context>
 
 # The Compilation Gradient: From Soft Signal to Hard Enforcement
@@ -89,6 +89,50 @@ makes systems **worse**:
 The governance didn't gradually weaken — it phase-transitioned from helpful to
 harmful. The only escape is compilation: converting repeated soft verdicts into
 deterministic rules that execute at zero cognitive/attention cost.
+
+## Compile Corrections into Tested, Reviewable Hooks — Captain Hook (HN, September 2026)
+
+A current [HN submission](https://news.ycombinator.com/item?id=49782878) links
+Yasyf Mohamedali's practitioner design for
+[Captain Hook](https://yasyf.com/writing/less-prompts-more-guardrails/), a DSL
+for turning coding-agent instructions into lifecycle hooks. Its useful addition
+to the gradient is not merely “put rules in hooks,” but a candidate promotion
+loop:
+
+1. a session-end reviewer collects user corrections and deduplicates them by
+   semantic similarity;
+2. a correction becomes eligible only after recurring across distinct sessions
+   and days (the article's default is three sessions over at least two days);
+3. the system proposes a hook as a pull request rather than activating it
+   silently; and
+4. the DSL can attach positive and negative examples that run as tests for the
+   proposed rule.
+
+This gives auto-compilation a missing **admission boundary**. Recurrence is a
+signal that a behavioral correction may be stable enough to compile, but it is
+not proof that the generated matcher, rewrite, or block is correct. Human review,
+regression examples, scoped activation, and later false-positive measurement
+remain necessary. Otherwise semantic deduplication can merge distinct intents,
+a broad command matcher can block legitimate work, or an automated rewrite can
+change meaning while claiming compliance.
+
+The article also separates three control semantics that should not be collapsed:
+a prompt advises, a sandbox denies, and a hook can deny **and return a structured
+reason or safer substitute to the agent's context**. That feedback can prevent a
+blind retry, but only for effects visible at the hooked interface; the Mati
+results in [Agent Runtime Hardening](./agent-runtime-hardening.md#knowledge-guardrails-are-only-as-complete-as-their-observed-interface--mati-hngithub-september-2026)
+show why hook coverage must still be measured against alternate access paths.
+Stop hooks that require changed files to be reread after the last edit and
+signals that nudge an agent away from repeatedly running a large failing test
+are further examples of compiling process checks at the lifecycle point where
+they can still change the trajectory.
+
+**Evidence boundary:** Scout reviewed the complete public article and the HN
+item, which had one point and no comments at retrieval. The interactive examples,
+framework behavior, semantic deduplication, pull-request workflow, and default
+promotion thresholds are author claims; Scout did not install Captain Hook,
+inspect its repository, or reproduce its tests. Treat this as a concrete early
+design pattern, not reliability or adoption evidence.
 
 ## Why Auto-Compilation Is the Missing Primitive
 
