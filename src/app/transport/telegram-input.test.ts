@@ -1646,7 +1646,11 @@ describe("Telegram May input", () => {
       expect(sent).toContainEqual(expect.stringContaining("Following updates. Reply here"));
       const exactProposal =
         "Exact proposal: apply the reviewed docs candidate at commit 01234567; cost is one restart; simpler option is no change.";
-      expect(sent.filter((text) => text.includes(exactProposal))).toHaveLength(2);
+      const approvalCards = sent.filter((text) => text.includes(exactProposal));
+      expect(approvalCards).toHaveLength(2);
+      const decisionCards = approvalCards.filter((text) => text.includes("Needs your decision:"));
+      expect(decisionCards.length).toBeGreaterThan(0);
+      expect(decisionCards.every((text) => text.includes("Reply here with your decision."))).toBe(true);
       const boundCards = getDb(root)
         .prepare("SELECT data FROM notification_messages WHERE event_type = 'task.human-action'")
         .all() as Array<{ data: string }>;

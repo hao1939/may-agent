@@ -424,6 +424,13 @@ describe("May Console", () => {
         output.includes("you[evaluation · 0df0c0ed · 2 todo]>"),
     );
     const todoNoticeCount = output.split("[todo] 2 Tasks need you in evaluation. Run /todo.").length - 1;
+    const automaticTodoView = frames.find(
+      (frame) =>
+        frame.type === "publish" &&
+        frame.event?.data?.metadata?.command === "/todo notification" &&
+        frame.event?.data?.text?.includes("2 Tasks need you"),
+    );
+    expect(automaticTodoView?.event?.data?.transient).toBe(true);
     client?.write(
       `${JSON.stringify({ type: "app.task.updated", data: { appId: "evaluation", taskId: "review/docs" } })}\n`,
     );
@@ -457,14 +464,14 @@ describe("May Console", () => {
           frame.cursor === "todo-page-2",
       ),
     ).toBe(true);
-    expect(
-      frames.some(
-        (frame) =>
-          frame.type === "publish" &&
-          frame.event?.data?.metadata?.command === "/todo" &&
-          frame.event?.data?.metadata?.taskRefs?.[0]?.taskId === "review/docs",
-      ),
-    ).toBe(true);
+    const explicitTodoView = frames.find(
+      (frame) =>
+        frame.type === "publish" &&
+        frame.event?.data?.metadata?.command === "/todo" &&
+        frame.event?.data?.metadata?.taskRefs?.[0]?.taskId === "review/docs",
+    );
+    expect(explicitTodoView).toBeDefined();
+    expect(explicitTodoView?.event?.data?.transient).toBeUndefined();
 
     const activityMessage = {
       id: "task-activity-1",

@@ -275,7 +275,7 @@ describe("telegram reply e2e", () => {
         data: { project: "may", appId: "may", taskId, attemptId: `attempt-${taskId}` },
       } as any);
     const notifications = () =>
-      sentMessages.filter((message) => String(message.text).startsWith("Needs your decision:"));
+      sentMessages.filter((message) => String(message.text).startsWith("Needs your action:"));
     const savedNotification = (messageId: number) => {
       const row = db
         .prepare("SELECT data FROM notification_messages WHERE chat_id = '12345' AND telegram_msg_id = ?")
@@ -289,6 +289,9 @@ describe("telegram reply e2e", () => {
       );
       notify("answer");
       await waitFor(() => expect(notifications()).toHaveLength(1));
+      expect(notifications()[0]!.text).toContain("Reply with blue or green.");
+      expect(notifications()[0]!.text).toContain("Reply here to discuss this work or report completion.");
+      expect(notifications()[0]!.text).not.toContain("Reply here with your decision.");
       const answerMessageId = 100 + sentMessages.indexOf(notifications()[0]!) + 1;
       await waitFor(() =>
         expect(savedNotification(answerMessageId)).toMatchObject({
@@ -319,6 +322,8 @@ describe("telegram reply e2e", () => {
       notify("answer");
       await waitFor(() => expect(notifications()).toHaveLength(2));
       const currentAnswerNotice = notifications()[1]!;
+      expect(currentAnswerNotice.text).toContain("Reply with red or yellow.");
+      expect(currentAnswerNotice.text).not.toContain("Reply with blue or green.");
       const currentAnswerMessageId = 100 + sentMessages.indexOf(currentAnswerNotice) + 1;
       expect(savedNotification(currentAnswerMessageId)).toMatchObject({
         humanCondition: { taskGeneration: 1, conditionId: "answer-choice", conditionGeneration: 2 },

@@ -138,6 +138,24 @@ function fixture() {
         now: sequence,
       });
     },
+    consoleView(text: string, command: string, transient: boolean) {
+      getDb(root)
+        .prepare(
+          `INSERT INTO events (event_type, source, owner, data, timestamp)
+           VALUES ('conversation.message.created', 'may-console', 'app:may', ?, ?)`,
+        )
+        .run(
+          JSON.stringify({
+            appId: "may",
+            conversationId: "may:primary",
+            author: { kind: "command", id: "may-console" },
+            text,
+            ...(transient ? { transient: true } : {}),
+            metadata: { channel: "may-console", command },
+          }),
+          Date.now(),
+        );
+    },
     wakeConversation() {
       bus.emit({
         type: "conversation.updated",
@@ -295,6 +313,44 @@ describe("Telegram refresh lifecycle", () => {
       f.wake("first");
       await waitFor(() => f.sent.length === sends + 1);
       expect(f.sent.at(-1)?.text).toContain("Send this update");
+    } finally {
+      await f.close();
+    }
+  });
+
+  it("keeps automatic Console todo channel-local while native alerts and explicit cross-channel views remain", async () => {
+    const f = fixture();
+    try {
+      await f.command("/apps may");
+      Object.assign(f.tasks.get("first")!, {
+        humanAction: { requestedAction: "Run the already-authorized maintenance step." },
+      });
+      f.consoleView("[todo] automatic Console alert", "/todo notification", true);
+      f.consoleView("Explicit Console /todo result", "/todo", false);
+      f.conversation("Explicit cross-channel human message", 20);
+
+      f.wakeConversation();
+      f.wake("first");
+      await waitFor(
+        () =>
+          f.sent.some((send) => send.text.includes("Explicit Console /todo result")) &&
+          f.sent.some((send) => send.text.includes("Explicit cross-channel human message")) &&
+          f.sent.some((send) => send.text.includes("Run the already-authorized maintenance step.")),
+      );
+
+      expect(f.sent.some((send) => send.text.includes("automatic Console alert"))).toBe(false);
+      for (const chatId of ["123", "456"]) {
+        expect(
+          f.sent.filter(
+            (send) =>
+              send.chat_id === chatId && send.text.includes("Run the already-authorized maintenance step."),
+          ),
+        ).toHaveLength(1);
+      }
+      expect(f.sent).toContainEqual(
+        expect.objectContaining({ text: expect.stringContaining("Needs your action: Complete first") }),
+      );
+      expect(f.sent.some((send) => send.text.includes("Reply here with your decision."))).toBe(false);
     } finally {
       await f.close();
     }

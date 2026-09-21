@@ -414,13 +414,16 @@ function formatWorkTime(value: number): string {
 }
 
 function renderTelegramTaskUpdate(task: HumanTaskView): string {
+  const decisionAction = approvalDecisionAction(task);
   return [
     task.outcome,
     taskStatusLabel(task),
     "",
     currentTaskText(task),
     ...(task.humanAction
-      ? ["", `Needs you: ${fullHumanApprovalAction(task) ?? humanActionText(task)}`, "Reply here with your decision."]
+      ? decisionAction
+        ? ["", `Needs your decision: ${decisionAction}`, "Reply here with your decision."]
+        : ["", `Needs your action: ${humanActionText(task)}`, "Reply here to discuss this work or report completion."]
       : []),
   ].join("\n");
 }
@@ -531,6 +534,10 @@ function fullHumanApprovalAction(task: HumanTaskView | null): string | null {
     .map((condition) => condition!.spec.requestedAction?.trim())
     .filter((action): action is string => Boolean(action));
   return actions.length > 0 ? actions.join("\n\n---\n\n") : null;
+}
+
+function approvalDecisionAction(task: HumanTaskView | null): string | null {
+  return pendingHumanApprovalCondition(task)?.spec.requestedAction?.trim() || null;
 }
 
 function approvalAnchor(task: HumanTaskView | null): TelegramApprovalAnchor | null {
@@ -1107,8 +1114,11 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
     const taskRefs = (single ? [proposal] : page.items).map((task) => ({ appId: task.appId, taskId: task.taskId }));
     const displayedApproval = single ? approvalAnchor(proposal) : null;
     const displayedHumanCondition = single && !displayedApproval ? humanConditionAnchor(proposal) : null;
+    const decisionAction = displayedApproval ? approvalDecisionAction(proposal) : null;
     const text = single
-      ? `Needs your decision: ${proposal.outcome}\n${fullHumanApprovalAction(proposal) ?? humanActionText(proposal)}\n\nReply here with your decision.`
+      ? decisionAction
+        ? `Needs your decision: ${proposal.outcome}\n${decisionAction}\n\nReply here with your decision.`
+        : `Needs your action: ${proposal.outcome}\n${humanActionText(proposal)}\n\nReply here to discuss this work or report completion.`
       : `${page.total ?? page.items.length} Tasks need your action in ${appId}. Ask May what needs your attention, or use /todo.`;
     const messageId = await sendMessage(coordinates.chatId, text, undefined, {
       eventType: "task.human-action",
