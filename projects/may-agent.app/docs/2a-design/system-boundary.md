@@ -306,6 +306,18 @@ execution helpers/adapters run the work, and composition supplies trusted scope.
 The [candidate and evidence](../archive/reviews/execution-consolidation-poc-20260914.md)
 record consolidation of these entry points; this is not a deployment claim.
 
+Direct execution reports its actual model-visible tool surface. In its execution
+manifest, `configuredTools` retains the capability-bundle names declared by the
+agent while `effectiveTools` contains the concrete prepared tool names, including
+agent-local tools and any tool added by result-schema preparation. A caller may
+deny either a configured bundle or one concrete tool; an unknown, duplicate or
+unexplained denial fails preparation, and a required injected tool cannot bypass
+that denial. Capability denial prevents construction of that bundle, while a
+concrete agent-local denial removes the loaded tool before model execution.
+These rules make visibility and evidence agree; they are not an OS sandbox.
+Agent-local module factories are trusted installation code and execute during
+preparation, before their returned tools can be filtered.
+
 | Invocation | Ownership and result |
 | --- | --- |
 | A user runs an unrelated CLI | Its native caller owns it; May does not automatically discover or recover it. |
