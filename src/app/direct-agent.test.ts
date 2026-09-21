@@ -44,6 +44,134 @@ describe("direct agent tool policy", () => {
     }
   });
 
+  test("prepares local tools through the same manifest and denial policy", async () => {
+    const root = await mkdtemp(join(tmpdir(), "may-direct-local-policy-"));
+    const agentDir = join(root, "agents", "example");
+    await mkdir(join(agentDir, "tools"), { recursive: true });
+    await writeFile(
+      join(agentDir, "agent.json"),
+      JSON.stringify({
+        name: "example",
+        description: "example",
+        domain: "test",
+        model: "test",
+        tools: ["read-only"],
+      }),
+    );
+    await writeFile(
+      join(agentDir, "tools", "local-probe.ts"),
+      `export default () => ({
+        name: "local_probe",
+        label: "Local probe",
+        description: "Portable local fixture",
+        parameters: { type: "object", properties: {} },
+        execute: async () => ({ content: [{ type: "text", text: "ok" }], details: {} }),
+      });`,
+    );
+    const prepare = (
+      toolDenials?: Array<{ name: string; reason: string }>,
+      outputSchema?: ReturnType<typeof Type.Object>,
+    ) =>
+      prepareDirectAgentExecution({
+        agentName: "example",
+        task: "Inspect the fixture",
+        projectRoot: root,
+        workRoot: root,
+        agentsRoot: join(root, "agents"),
+        sharedRoot: join(root, "shared"),
+        outputRoot: join(root, "output"),
+        models: { test: { id: "test-model" } as any },
+        toolDenials,
+        outputSchema,
+      });
+
+    let direct: Awaited<ReturnType<typeof prepareDirectAgentExecution>> | undefined;
+    try {
+      direct = await prepare(undefined, Type.Object({ decision: Type.String() }));
+      expect(direct.prepared.tools.map((tool) => tool.name)).toEqual(["read", "local_probe", "finish"]);
+      expect(direct.executionManifest).toEqual({
+        agent: "example",
+        configuredTools: ["read-only"],
+        deniedTools: [],
+        effectiveTools: ["read", "local_probe", "finish"],
+      });
+      direct.cleanup();
+      direct = undefined;
+
+      direct = await prepare([{ name: "local_probe", reason: "fixture denial" }]);
+      expect(direct.prepared.tools.map((tool) => tool.name)).toEqual(["read"]);
+      expect(direct.executionManifest.effectiveTools).toEqual(["read"]);
+      direct.cleanup();
+      direct = undefined;
+
+      direct = await prepare([{ name: "read", reason: "concrete configured-tool denial" }]);
+      expect(direct.prepared.tools.map((tool) => tool.name)).toEqual(["local_probe"]);
+      expect(direct.executionManifest.effectiveTools).toEqual(["local_probe"]);
+      direct.cleanup();
+      direct = undefined;
+
+      direct = await prepare([{ name: "read-only", reason: "configured capability denial" }]);
+      expect(direct.prepared.tools.map((tool) => tool.name)).toEqual(["local_probe"]);
+      expect(direct.executionManifest.effectiveTools).toEqual(["local_probe"]);
+      direct.cleanup();
+      direct = undefined;
+
+      await expect(
+        prepare(
+          [{ name: "finish", reason: "structured call must not expose completion" }],
+          Type.Object({ decision: Type.String() }),
+        ),
+      ).rejects.toThrow('requires denied tool "finish" during preparation');
+    } finally {
+      direct?.cleanup();
+      await rm(root, { recursive: true, force: true });
+    }
+  });
+
+  test("distinguishes a coding bundle denial from one concrete tool denial", async () => {
+    const root = await mkdtemp(join(tmpdir(), "may-direct-coding-policy-"));
+    const agentDir = join(root, "agents", "example");
+    await mkdir(agentDir, { recursive: true });
+    await writeFile(
+      join(agentDir, "agent.json"),
+      JSON.stringify({
+        name: "example",
+        description: "example",
+        domain: "test",
+        model: "test",
+        tools: ["coding"],
+      }),
+    );
+    const prepare = (name: string) =>
+      prepareDirectAgentExecution({
+        agentName: "example",
+        task: "Inspect the fixture",
+        projectRoot: root,
+        workRoot: root,
+        agentsRoot: join(root, "agents"),
+        sharedRoot: join(root, "shared"),
+        outputRoot: join(root, "output"),
+        models: { test: { id: "test-model" } as any },
+        toolDenials: [{ name, reason: "fixture denial" }],
+      });
+
+    let direct: Awaited<ReturnType<typeof prepareDirectAgentExecution>> | undefined;
+    try {
+      direct = await prepare("bash");
+      expect(direct.prepared.tools.map((tool) => tool.name)).toEqual(["read", "edit", "write"]);
+      expect(direct.executionManifest.effectiveTools).toEqual(["read", "edit", "write"]);
+      direct.cleanup();
+      direct = undefined;
+
+      direct = await prepare("coding");
+      expect(direct.prepared.tools).toEqual([]);
+      expect(direct.executionManifest.effectiveTools).toEqual([]);
+    } finally {
+      direct?.cleanup();
+      await rm(root, { recursive: true, force: true });
+    }
+  });
+
   test("derives effective tools from configured tools and explicit denials in stable order", () => {
     expect(
       resolveDirectToolPolicy(
@@ -61,7 +189,10 @@ describe("direct agent tool policy", () => {
 
   test("rejects unknown, duplicate, and unexplained denials", () => {
     expect(() => resolveDirectToolPolicy("may", ["coding"], [{ name: "message", reason: "not configured" }])).toThrow(
-      "unconfigured tool",
+      "unknown tool",
+    );
+    expect(() => resolveDirectToolPolicy("may", ["coding"], [{ name: " ", reason: "blank" }])).toThrow(
+      "no name",
     );
     expect(() =>
       resolveDirectToolPolicy(
@@ -92,20 +223,35 @@ describe("direct agent tool policy", () => {
         tools: ["message"],
       }),
     );
+    const options = {
+      agentName: "example",
+      task: "test",
+      projectRoot: root,
+      workRoot: root,
+      agentsRoot: join(root, "agents"),
+      sharedRoot: join(root, "shared"),
+      outputRoot: join(root, "output"),
+      models: { test: {} as any },
+    };
+    let direct: Awaited<ReturnType<typeof prepareDirectAgentExecution>> | undefined;
     try {
-      await expect(
-        runDirectAgent({
-          agentName: "example",
-          task: "test",
-          projectRoot: root,
-          workRoot: root,
-          agentsRoot: join(root, "agents"),
-          sharedRoot: join(root, "shared"),
-          outputRoot: join(root, "output"),
-          models: { test: {} as any },
-        }),
-      ).rejects.toThrow('cannot construct effective tool "message"');
+      direct = await prepareDirectAgentExecution({
+        ...options,
+        toolDenials: [{ name: "message", reason: "direct fixture has no messaging transport" }],
+      });
+      expect(direct.prepared.tools).toEqual([]);
+      expect(direct.executionManifest).toEqual({
+        agent: "example",
+        configuredTools: ["message"],
+        deniedTools: [{ name: "message", reason: "direct fixture has no messaging transport" }],
+        effectiveTools: [],
+      });
+      direct.cleanup();
+      direct = undefined;
+
+      await expect(runDirectAgent(options)).rejects.toThrow('cannot construct effective tool "message"');
     } finally {
+      direct?.cleanup();
       await rm(root, { recursive: true, force: true });
     }
   });
