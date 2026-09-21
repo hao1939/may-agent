@@ -856,6 +856,7 @@ function applyTodoRefresh(page) {
         ? `[todo] ${first.ref} · ${first.appId} needs you: ${humanActionText(first)}\nUse /watch ${first.ref} to respond.`
         : `[todo] ${todoCount} Tasks need you in ${selectedApp}. Run /todo.`;
     presentView("/todo notification", text, {
+      transient: true,
       taskRefs: tasks.map(taskIdentity).filter(Boolean),
       idempotencyKey: `todo-notification:${source}:${selectedApp}:${first.appId}:${first.taskId}:${first.resourceVersion}`,
     });

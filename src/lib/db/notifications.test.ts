@@ -4,7 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { openDatabase } from "../db.js";
 import { closeDb, getDb } from "./connection.js";
-import { getNotificationMessage, storeNotificationMessage } from "./notifications.js";
+import { getNotificationMessage, hasCompletedHumanActionDelivery, storeNotificationMessage } from "./notifications.js";
 
 test("message links migrate without guessing legacy chats and survive reopen", () => {
   const root = mkdtempSync(join(tmpdir(), "telegram-message-links-"));
@@ -52,6 +52,96 @@ test("message links migrate without guessing legacy chats and survive reopen", (
       });
     }
     expect(getDb(root).prepare("SELECT COUNT(*) AS count FROM notification_messages").get()).toEqual({ count: 7 });
+  } finally {
+    closeDb(root);
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("completed human-action delivery is exact and destination scoped", () => {
+  const root = mkdtempSync(join(tmpdir(), "telegram-action-delivery-"));
+  const action = { appId: "may", taskId: "goal/example", signature: "condition-v1" };
+  try {
+    storeNotificationMessage(root, {
+      chat_id: "123",
+      telegram_msg_id: 70,
+      event_type: "task.human-action",
+      agent: "may",
+      session_id: null,
+      project_id: null,
+      data: JSON.stringify({
+        taskRefs: [{ appId: action.appId, taskId: action.taskId }],
+        channelThreadId: "9",
+        completedHumanAction: { version: 1, ...action },
+      }),
+    });
+    expect(hasCompletedHumanActionDelivery(root, "123", 9, action)).toBe(true);
+    expect(hasCompletedHumanActionDelivery(root, "123", 10, action)).toBe(false);
+    expect(hasCompletedHumanActionDelivery(root, "456", 9, action)).toBe(false);
+    expect(hasCompletedHumanActionDelivery(root, "123", 9, { ...action, taskId: "goal/new" })).toBe(false);
+    expect(hasCompletedHumanActionDelivery(root, "123", 9, { ...action, signature: "condition-v2" })).toBe(false);
+
+    storeNotificationMessage(root, {
+      chat_id: "123",
+      telegram_msg_id: 71,
+      event_type: "task.human-action",
+      agent: "may",
+      session_id: null,
+      project_id: null,
+      data: JSON.stringify({
+        taskRefs: [{ appId: action.appId, taskId: action.taskId }],
+        channelThreadId: "9",
+        humanCondition: { taskGeneration: 3, conditionId: "operator", conditionGeneration: 2 },
+        approvalAnchor: { approvalId: "unchanged" },
+      }),
+    });
+    expect(
+      hasCompletedHumanActionDelivery(root, "123", 9, {
+        ...action,
+        signature: "changed-action-set",
+      }),
+    ).toBe(false);
+
+    for (let id = 72; id < 97; id += 1) {
+      storeNotificationMessage(root, {
+        chat_id: "123",
+        telegram_msg_id: id,
+        event_type: "task.watch",
+        agent: "may",
+        session_id: null,
+        project_id: null,
+        data: JSON.stringify({
+          taskRefs: [{ appId: "may", taskId: `goal/distractor-${id}` }],
+          channelThreadId: "9",
+          completedHumanAction: {
+            version: 1,
+            appId: "may",
+            taskId: `goal/distractor-${id}`,
+            signature: `distractor-${id}`,
+          },
+        }),
+      });
+    }
+    expect(hasCompletedHumanActionDelivery(root, "123", 9, action)).toBe(true);
+
+    const second = { appId: "scout-knowledge-lib", taskId: "goal/second", signature: "second-v1" };
+    storeNotificationMessage(root, {
+      chat_id: "123",
+      telegram_msg_id: 97,
+      event_type: "task.human-action",
+      agent: "may",
+      session_id: null,
+      project_id: null,
+      data: JSON.stringify({
+        taskRefs: [
+          { appId: action.appId, taskId: action.taskId },
+          { appId: second.appId, taskId: second.taskId },
+        ],
+        channelThreadId: "9",
+        completedHumanAction: { version: 1, ...second },
+      }),
+    });
+    expect(hasCompletedHumanActionDelivery(root, "123", 9, second)).toBe(true);
   } finally {
     closeDb(root);
     rmSync(root, { recursive: true, force: true });

@@ -24,16 +24,26 @@ import type { EventInput, EventReceipt } from "@may-agent/control/events";
 import { EVENT_DELIVERY_RESULT, eventData, type EventBus } from "../core/events/bus.js";
 import { loadPersistedEvent } from "../core/events/persisted.js";
 import { getDb } from "../../lib/requests.js";
-import { getNotificationMessage, storeNotificationMessage } from "../../lib/db/notifications.js";
+import {
+  getNotificationMessage,
+  hasCompletedHumanActionDelivery,
+  storeNotificationMessage,
+} from "../../lib/db/notifications.js";
 import { readAppConversationResource, readConversationTopic } from "../core/state/conversations.js";
 import { TaskReferenceError } from "../core/state/task-reference-index.js";
+import type { AppTaskCondition } from "../core/tasks/app-task-state.js";
 import { createTelegramClient } from "./telegram-client.js";
 import {
   isTaskDerivedViewWake,
   TASK_UPDATE_EVENT_TYPES,
   taskUpdateIdentity,
 } from "../../../packages/control/src/task-wake.js";
-import { isHumanActionOwner, type HumanAppView, type HumanTaskService, type HumanTaskView } from "../human-task-service.js";
+import {
+  isHumanActionOwner,
+  type HumanAppView,
+  type HumanTaskService,
+  type HumanTaskView,
+} from "../human-task-service.js";
 import { taskCancelRequestedEvent } from "../task-control-events.js";
 
 const TASK_PAGE_SIZE = 10;
@@ -294,7 +304,17 @@ function humanActionText(task: HumanTaskView): string {
 
 function humanActionLine(task: HumanTaskView): string {
   const owner = task.humanAction?.task;
-  const text = fullHumanApprovalAction(task) ?? humanActionText(task);
+  const decisionAction = approvalDecisionAction(task);
+  const otherActions = decisionAction ? humanConditionActions(task, pendingHumanApprovalCondition(task)) : [];
+  const text = decisionAction
+    ? [
+        `Needs your decision: ${decisionAction}`,
+        "Reply here with your decision.",
+        ...(otherActions.length > 0
+          ? [`Also needs your action (separate from the decision): ${otherActions.join("\n\n")}`]
+          : []),
+      ].join("\n\n")
+    : fullHumanActionText(task);
   return owner ? `On Task ${owner.ref} · ${owner.appId}: ${text}` : text;
 }
 
@@ -322,18 +342,20 @@ export function renderTelegramTodos(
   return [
     `<b>Needs you${escapeTelegramHtml(scope)}</b>`,
     "",
-    ...tasks.flatMap((task) => {
-      const since = task.humanAction?.since;
-      return [
-        [
-          `🔴 <b>${escapeTelegramHtml(humanActionText(task))}</b>`,
-          `  ${escapeTelegramHtml(task.outcome)}`,
-          ...(recurrenceLine(task) ? [recurrenceLine(task)!] : []),
-          `  ${escapeTelegramHtml(task.appId)} · <code>${escapeTelegramHtml(task.ref)}</code>${since === undefined ? "" : ` · waiting ${elapsedText(since)}`}`,
-        ].join("\n"),
-        "",
-      ];
-    }).slice(0, -1),
+    ...tasks
+      .flatMap((task) => {
+        const since = task.humanAction?.since;
+        return [
+          [
+            `🔴 <b>${escapeTelegramHtml(humanActionText(task))}</b>`,
+            `  ${escapeTelegramHtml(task.outcome)}`,
+            ...(recurrenceLine(task) ? [recurrenceLine(task)!] : []),
+            `  ${escapeTelegramHtml(task.appId)} · <code>${escapeTelegramHtml(task.ref)}</code>${since === undefined ? "" : ` · waiting ${elapsedText(since)}`}`,
+          ].join("\n"),
+          "",
+        ];
+      })
+      .slice(0, -1),
     ...(total > tasks.length
       ? ["", `${total - tasks.length} more action(s) are not shown.${hasMore ? " Use /todo more." : ""}`]
       : []),
@@ -377,22 +399,28 @@ export function renderTelegramTask(task: HumanTaskView): string {
   ].join("\n");
 }
 
+function renderedWaits(task: HumanTaskView): string[] {
+  return (task.waitingOn ?? []).map((wait) =>
+    wait.kind === "task"
+      ? `Waiting on ${wait.ref} · ${wait.appId} · ${taskStatusLabel(wait)}: ${wait.outcome}`
+      : wait.kind === "app"
+        ? `Waiting on App ${wait.appId} · ${wait.status}`
+        : `Waiting for ${wait.type}: ${wait.subject}`,
+  );
+}
+
 function taskPresentationRevision(task: HumanTaskView): string {
+  const decision = approvalDecisionAction(task);
   return JSON.stringify({
-    status: task.status,
-    statusDetail: task.statusDetail,
     outcome: task.outcome,
-    acceptance: task.acceptance,
-    updatedAt: task.updatedAt,
-    summary: task.summary,
-    response: task.response,
-    facts: task.facts,
-    progress: task.progress,
-    waitingOn: task.waitingOn,
-    requestedBy: task.requestedBy,
-    execution: task.execution,
-    humanAction: task.humanAction,
-    terminal: task.terminal,
+    status: taskStatusLabel(task),
+    current: currentTaskText(task),
+    waits: renderedWaits(task),
+    decision,
+    action: task.humanAction ? fullHumanActionText(task) : null,
+    otherActions: decision ? humanConditionActions(task, pendingHumanApprovalCondition(task)) : [],
+    approvalAnchor: approvalAnchor(task),
+    humanCondition: humanConditionAnchor(task),
   });
 }
 
@@ -414,13 +442,33 @@ function formatWorkTime(value: number): string {
 }
 
 function renderTelegramTaskUpdate(task: HumanTaskView): string {
+  const decisionAction = approvalDecisionAction(task);
+  const otherActions = decisionAction ? humanConditionActions(task, pendingHumanApprovalCondition(task)) : [];
   return [
     task.outcome,
     taskStatusLabel(task),
     "",
     currentTaskText(task),
+    ...renderedWaits(task).flatMap((wait) => ["", wait]),
     ...(task.humanAction
-      ? ["", `Needs you: ${fullHumanApprovalAction(task) ?? humanActionText(task)}`, "Reply here with your decision."]
+      ? decisionAction
+        ? [
+            "",
+            `Needs your decision: ${decisionAction}`,
+            "Reply here with your decision.",
+            ...(otherActions.length > 0
+              ? [
+                  "",
+                  `Also needs your action (separate from the decision): ${otherActions.join("\n\n")}`,
+                  "Reply separately to discuss this work or report completion.",
+                ]
+              : []),
+          ]
+        : [
+            "",
+            `Needs your action: ${fullHumanActionText(task)}`,
+            "Reply here to discuss this work or report completion.",
+          ]
       : []),
   ].join("\n");
 }
@@ -523,14 +571,25 @@ function pendingHumanApprovalCondition(task: HumanTaskView | null) {
   return matches.length === 1 ? matches[0]!.condition : null;
 }
 
-function fullHumanApprovalAction(task: HumanTaskView | null): string | null {
-  if (!task || task.terminal) return null;
-  const actions = (task.diagnostics?.conditions ?? [])
+function humanConditionActions(task: HumanTaskView | null, exclude?: AppTaskCondition | null): string[] {
+  if (!task || task.terminal) return [];
+  return (task.diagnostics?.conditions ?? [])
     .map((item) => item.condition)
-    .filter((condition) => condition?.status?.state !== "true" && isHumanActionOwner(condition?.spec.owner))
+    .filter(
+      (condition) =>
+        condition !== exclude && condition?.status?.state !== "true" && isHumanActionOwner(condition?.spec.owner),
+    )
     .map((condition) => condition!.spec.requestedAction?.trim())
     .filter((action): action is string => Boolean(action));
-  return actions.length > 0 ? actions.join("\n\n---\n\n") : null;
+}
+
+function fullHumanActionText(task: HumanTaskView): string {
+  const actions = humanConditionActions(task);
+  return actions.length > 0 ? actions.join("\n\n") : humanActionText(task);
+}
+
+function approvalDecisionAction(task: HumanTaskView | null): string | null {
+  return pendingHumanApprovalCondition(task)?.spec.requestedAction?.trim() || null;
 }
 
 function approvalAnchor(task: HumanTaskView | null): TelegramApprovalAnchor | null {
@@ -1053,14 +1112,16 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
   }
 
   const todoTaskKey = (task: HumanTaskView): string => `${task.appId}\0${task.taskId}`;
-  const todoActionSignature = (task: HumanTaskView): string => {
-    const conditions = (task.diagnostics?.conditions ?? [])
+  const todoActionSignature = (task: HumanTaskView): { value: string; exact: boolean } => {
+    const conditionItems = task.diagnostics?.conditions ?? [];
+    const conditions = conditionItems
       .flatMap((item) => {
         const condition = item.condition;
         if (!condition || condition.status?.state === "true" || !isHumanActionOwner(condition.spec.owner)) return [];
         return [
           {
             id: item.id,
+            generation: condition.metadata.generation,
             type: condition.spec.type,
             subject: condition.spec.subject,
             owner: condition.spec.owner,
@@ -1070,12 +1131,20 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
         ];
       })
       .sort((left, right) => left.id.localeCompare(right.id));
-    return JSON.stringify({
-      generation: task.generation,
-      conditions,
-      fallback: conditions.length === 0 ? humanActionText(task) : undefined,
-    });
+    return {
+      value: JSON.stringify({
+        generation: task.generation,
+        conditions,
+        fallback: conditions.length === 0 ? humanActionText(task) : undefined,
+      }),
+      exact:
+        conditions.length > 0 &&
+        conditionItems.every((item) => item.condition !== null) &&
+        task.diagnostics?.conditionsTruncated !== true,
+    };
   };
+  const presentedTodoActionRevision = (signature: { value: string; exact: boolean }) =>
+    JSON.stringify({ value: signature.value, exact: signature.exact });
 
   async function refreshTodos(surface: string): Promise<void> {
     const coordinates = surfaces.get(surface);
@@ -1088,13 +1157,20 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
       return { task, detail, signature: todoActionSignature(detail) };
     });
     const prior = shownTodoActions.get(surface) ?? new Map<string, string>();
-    const next = new Map(actions.map(({ task, signature }) => [todoTaskKey(task), signature]));
-    const watched = watchedTasks.get(surface);
-    const changed = actions.filter(
-      ({ task, signature }) =>
-        prior.get(todoTaskKey(task)) !== signature &&
-        !(watched?.appId === task.appId && watched.taskId === task.taskId),
+    const next = new Map(
+      actions.map(({ task, signature }) => [todoTaskKey(task), presentedTodoActionRevision(signature)]),
     );
+    const watched = watchedTasks.get(surface);
+    const changed = actions.filter(({ task, detail, signature }) => {
+      if (watched?.appId === task.appId && watched.taskId === task.taskId) return false;
+      if (!signature.exact) return true;
+      if (prior.get(todoTaskKey(task)) === presentedTodoActionRevision(signature)) return false;
+      return !hasCompletedHumanActionDelivery(persistDir, coordinates.chatId, coordinates.topicId, {
+        appId: detail.appId,
+        taskId: detail.taskId,
+        signature: signature.value,
+      });
+    });
     if (changed.length === 0) {
       shownTodoActions.set(surface, next);
       return;
@@ -1107,8 +1183,28 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
     const taskRefs = (single ? [proposal] : page.items).map((task) => ({ appId: task.appId, taskId: task.taskId }));
     const displayedApproval = single ? approvalAnchor(proposal) : null;
     const displayedHumanCondition = single && !displayedApproval ? humanConditionAnchor(proposal) : null;
+    const decisionAction = displayedApproval ? approvalDecisionAction(proposal) : null;
+    const otherActions = displayedApproval
+      ? humanConditionActions(proposal, pendingHumanApprovalCondition(proposal))
+      : [];
     const text = single
-      ? `Needs your decision: ${proposal.outcome}\n${fullHumanApprovalAction(proposal) ?? humanActionText(proposal)}\n\nReply here with your decision.`
+      ? decisionAction
+        ? [
+            `Needs your decision: ${proposal.outcome}`,
+            decisionAction,
+            "",
+            "Reply here with your decision.",
+            ...(otherActions.length > 0
+              ? [
+                  "",
+                  "Also needs your action (separate from the decision):",
+                  otherActions.join("\n\n"),
+                  "",
+                  "Reply separately to discuss this work or report completion.",
+                ]
+              : []),
+          ].join("\n")
+        : `Needs your action: ${proposal.outcome}\n${fullHumanActionText(proposal)}\n\nReply here to discuss this work or report completion.`
       : `${page.total ?? page.items.length} Tasks need your action in ${appId}. Ask May what needs your attention, or use /todo.`;
     const messageId = await sendMessage(coordinates.chatId, text, undefined, {
       eventType: "task.human-action",
@@ -1119,8 +1215,20 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
         taskRefs,
         ...(displayedApproval ? { approvalAnchor: displayedApproval } : {}),
         ...(displayedHumanCondition ? { humanCondition: displayedHumanCondition } : {}),
+        ...(single && first.signature.exact
+          ? {
+              completedHumanAction: {
+                version: 1,
+                appId: first.detail.appId,
+                taskId: first.detail.taskId,
+                signature: first.signature.value,
+              },
+            }
+          : {}),
       }),
-      bindToCompleteDelivery: Boolean(displayedApproval || displayedHumanCondition),
+      bindToCompleteDelivery: Boolean(
+        displayedApproval || displayedHumanCondition || (single && first.signature.exact),
+      ),
     });
     if (!messageId || !running) return;
     if ((selectedApps.get(surface) ?? opts.interfaceAgent) === appId) shownTodoActions.set(surface, next);
@@ -1718,7 +1826,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
                     taskId: task.taskId,
                   };
                   const detail = opts.humanTasks.getTask?.(owner) ?? task;
-                  return [todoTaskKey(task), todoActionSignature(detail)];
+                  return [todoTaskKey(task), presentedTodoActionRevision(todoActionSignature(detail))];
                 }),
               ),
             );
