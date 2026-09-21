@@ -1,115 +1,95 @@
-# GitHub pull-request observation
+# GitHub pull-request ownership and observation
 
-Status: local source candidate; do not activate before supervisor review.
+Status: local source candidate; activation requires supervisor clearance.
 
-PR215 exposed a missing producer, not a failed Condition matcher or timer. Its
-Task waited for exact conversation text while GitHub merged the PR, and the
-loaded May App had no GitHub observer. The six-hour fallback had not elapsed.
+## Public ownership convention
 
-May now declares the `github-pull-request` AppObserver. A Task opts in with one
-durable structured Condition:
+Ordinary May delivery records its owner on the GitHub resource itself. A PR body
+contains exactly one visible block:
 
-```json
-{
-  "id": "github-pr-215",
-  "type": "may.github.pull-request.state",
-  "subject": "pull-request:github:hao1939/may-agent#215",
-  "expected": {
-    "provider": "github",
-    "repository": "hao1939/may-agent",
-    "field": "fingerprint",
-    "notEquals": null
-  },
-  "owner": "app:may",
-  "reviewAfterMs": 21600000
-}
+```text
+## May Task
+- App ID: may
+- Task ID: <exact existing Task ID>
 ```
 
-`null` asks for the first current observation, including an already-merged PR.
-After judging it, May may replace the Condition with the observed fingerprint as
-`notEquals`. That durable baseline survives App reloads and suppresses unchanged
-owner work. The observer's small snapshot only suppresses duplicate publication
-between reloads; it is not authoritative state.
+The heading and both fields must each occur once in the block. Code-fenced
+examples, duplicates, missing fields, unsupported App IDs, unsafe identifiers,
+and unknown or closed Tasks are rejected rather than guessed. Task IDs are
+opaque; branch names and free prose are not ownership. The block contains no
+secret, local path, Task prose, or session identity.
 
-The observer paginates all current May Tasks, reads exact Task detail, and follows
-only canonical Condition subjects. It never extracts repository or PR identity
-from outcome prose, requested actions, old results, or GitHub-wide searches.
-Runs occur every fifteen minutes and spend at most eleven actual HTTP requests,
-not merely a PR-count allowance. A persisted round-robin cursor advances only
-over examined interests, so budget or provider deferral cannot repeatedly starve
-later work. This is at most 44 requests in four ordinary hourly runs, below the
-anonymous GitHub allowance. Exact PRs are deduplicated within a pass.
+PR authors obtain the exact Task identity from current context, include the block
+in the initial body, preserve it during description polishing, and read the final
+remote body back. Ordinary `gh pr create` and `gh pr edit` remain usable. There is
+no registration command, watch registry, mandatory helper, or special Condition.
 
-Each HTTP call has a timeout and disables automatic redirect following. The only
-permitted endpoints are the fixed HTTPS `api.github.com` PR URL and that exact
-PR's reviews URL; pagination accepts only one `per_page=100` and an optional
-positive `page`. Off-origin, wrong-repository/path, extra-query, repeated-page,
-and redirect responses are rejected before another request. `Retry-After` and
-rate-limit remaining/reset headers persist a no-request deferral until a safe
-time. Review pagination is complete through ten 100-item pages when the shared
-HTTP budget permits, or is published explicitly as incomplete with the failure;
-valid PR merge/state/head facts and already parsed review pages remain usable.
+This implements the accepted resource-ownership convention in
+`projects/may-agent.app/docs/2a-design/agent-app.md`: Conditions describe what a
+Task awaits; they do not subscribe resources to observers. Explicit PR Conditions
+remain a valid matching contract for exceptional shared/read-only resources, but
+this observer does not enumerate Tasks to discover ordinary PRs.
 
-A successful fact includes provider, repository, number, canonical PR identity,
-head SHA, open/closed state, draft flag, merge flag/time/SHA, and each review's
-state and reviewed commit. Required provider identity, state, booleans, head, and
-nullable merge fields are type-checked; an unknown or missing state is not
-invented as closed. The fingerprint covers meaningful PR/review facts and review
-completeness, not acquisition time or a changing error string. Review state
-remains tied to its reviewed commit, so an old-head approval is not represented
-as approval of a new head.
+## Discovery and trust boundary
 
-Before publication the observer rereads the exact Task and Condition signature.
-A result acquired for a replaced wait is discarded. Host `.state` freshness then
-fences journal replay by the event envelope timestamp. Fetch failures, timeouts,
-rate limits, malformed provider results, and incomplete review pagination produce
-a non-matching `may.github.pull-request.read-failed` fact and warning. The first
-new failure is also targeted to the exact owner Task so it wakes for an honest
-failure judgment even though the failure fact cannot satisfy the PR Condition;
-repeated identical failures are suppressed. The targeted wake neither satisfies
-nor removes the PR Condition. A review-only failure does not discard the
-independently valid PR state, merge, or head fact: that separately published
-partial state may still match the Condition and wake ordinary owner judgment.
+`app.ts` configures one local trusted scope: repository `hao1939/may-agent`, PR
+author `hao1939`, owner App `may`, and project `may`. Author filtering bounds the
+controlled-writer surface; it is not cryptographic proof of who last edited a
+body. Metadata routes evidence only. It grants no approval, provenance, merge,
+deployment, Task-close, or Condition-satisfaction authority.
 
-Disposable suppression memory stores ordinary typed JSON publication states for
-at most 128 recently observed live Conditions. The 500-interest regression stays
-below the SDK's 64 KiB snapshot ceiling; evicted entries may publish once again,
-while retained unchanged success and failure entries stay quiet. This bounded
-cache is only a replay/noise optimization. The Condition's exact SHA-256 baseline
-remains the authoritative unchanged-state fence across reloads and beyond the
-cache window.
+Each fifteen-minute pass reads one bounded, newest-updated page for both open and
+closed PRs. It then directly reads candidate PRs before routing, because list
+responses are not authoritative for body, author, merge, or review state. The
+direct response must match repository, number, configured author, and one valid
+owner block. Only then does the observer perform `tasks.get(exactTaskId)`; it
+never scans Task lists or history. Quiet unclosed owners, including status
+`done`, remain valid. Unknown and closed owners do not receive events.
 
-The observation is evidence, not approval. May must compare it with current
-acceptance and authority, retire only the obsolete linked Condition with a
-fenced same-Task action, preserve unrelated human or external Conditions, and
-finish or rearm as appropriate. The observer never merges, deploys, closes a
-Task, or sends a human message. Human replies and periodic review remain
-independent fallback routes.
+Open resources are remembered in a bounded disposable snapshot and refreshed
+even after leaving the newest list page, so closure remains observable. Owner
+metadata is re-read every time: removal or change invalidates the old route, and
+a failed direct read never targets a cached owner. Recently closed resources can
+therefore produce an initially merged observation. Snapshot loss can re-publish
+facts and resources outside the two newest pages/cache can be missed; this is a
+bounded observer, not complete GitHub history.
 
-## Value and limits
+## Facts, budgets, and coexistence
 
-This small App-local adapter removes phrase-dependent merge discovery without a
-new registry, queue, scheduler, or Host API. Its ongoing cost is bounded GitHub
-API traffic and maintenance of one provider parser. Periodic manual checking is
-simpler but does not meet automatic observation; a Host change is unnecessary
-because scoped Task list/get, AppObserver publication, and existing Condition
-matching already provide the route.
+The observer shares an eleven-request pass budget across two discovery reads,
+direct PR reads, and review pagination. A round-robin cursor gives remembered
+and newly discovered candidates progress over later passes. At most 64 resources
+and compact publication markers are retained. Rate-limit deferral prevents calls
+until the recorded time. URL, redirect, identity, required-field, pagination and
+review-page validation remain fail closed.
 
-Two live proof scopes remain distinct:
+A successful `may.github.pull-request.state` fact contains repository/number,
+head, open/closed and merge state, and commit-bound reviews. Its fingerprint
+covers meaningful provider facts, not fetch time. Owner identity is part of the
+suppression key, so moving a valid block routes a fresh observation to the new
+owner even if provider state is unchanged. Incomplete reviews produce a targeted
+review diagnostic while preserving independently valid PR state. Direct-read or
+ownership failure is logged but is not targeted using stale ownership.
 
-1. A bounded reader-only trial may call the production reader for the
-   already-merged public `hao1939/may-agent#215`. It proves current connectivity
-   and parsing only; it does not exercise observer registration, event admission,
-   or owner reconciliation.
-2. After explicit source-integration approval and App reload, the current
-   implementation Task may declare a neutral PR215 Condition whose stated purpose
-   is live observer verification. That planned bounded registered trial proves the
-   live current-state -> durable event -> exact same-Task owner-wake route through
-   normal fenced Task settlement and event persistence. It must preserve
-   independent Conditions and may prove an initially merged current state, but
-   not an open-to-merged transition unless that transition actually occurs. The
-   current read-only inventory found no remaining PR Condition among current May
-   Task references, so no migration or backfill is needed.
+Host publication remains generation-fenced and commits `nextObservation` only
+with successful publication. Targeted facts enter ordinary same-Task admission:
+a busy owner retains input, while a quiet owner can wake. They do not create,
+remove, or satisfy independent human/dependency Conditions. May rereads current
+Task state and decides what changed.
 
-Neither scope proves approval or deployment, directly writes the live database,
-reopens the old PR215 delivery Task, or creates or merges a PR solely for testing.
+## Verification and limits
+
+Unit regressions cover the prior gap (a quiet `done` owner with only a human
+Condition), initial merged and open-to-merged state, unchanged suppression,
+metadata removal/change, closed/unknown/cross-App/untrusted owners, partial
+reviews, request bounds, memory, and deferral. The composition trial uses the
+production App observer, provider parser, Host event bus, persistence, targeted
+admission, and Task reconciler against an isolated database with mocked GitHub
+HTTP. It asserts same-Task delivery, unchanged suppression, and preservation of
+the unrelated human Condition without any PR Condition.
+
+The fixture does not prove a real GitHub write, merge, credential path, or native
+agent judgment. A native May authoring trial should prepare the exact body through
+ordinary guidance and feed those bytes into the composition fixture. A real live
+transition is reported only if a genuine in-scope pending PR exists; no dummy PR,
+fabricated approval, or test-only merge is permitted.

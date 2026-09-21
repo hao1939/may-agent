@@ -41,12 +41,8 @@ const { AppTaskResourceStore } = await import(
 const { appTaskTestContext } = await import(
   `${host}/src/app/core/tasks/app-task-test-support.ts`
 );
-const {
-  observeAppTaskIntent,
-  claimObservedAppTask,
-  deferAppTask,
-  completeAppTask,
-} = await import(`${host}/src/app/core/tasks/app-task-reconciler.ts`);
+const { observeAppTaskIntent, claimObservedAppTask, deferAppTask } =
+  await import(`${host}/src/app/core/tasks/app-task-reconciler.ts`);
 const { matchingAppTaskConditionTaskIds } = await import(
   `${host}/src/app/core/tasks/app-task-condition-tracker.ts`
 );
@@ -84,19 +80,13 @@ const descriptor = {
 };
 const taskId = "goal/linked-pr",
   type = GITHUB_PULL_REQUEST_EVENT;
-const condition = (fingerprint: any) => ({
-  id: "github-pr",
-  type,
-  subject: "pull-request:github:hao1939/may-agent#215",
-  expected: {
-    provider: "github",
-    repository: "hao1939/may-agent",
-    field: "fingerprint",
-    notEquals: fingerprint,
-  },
-  owner: "service:github",
-  reviewAfterMs: 21600000,
-});
+const scope = {
+  repository: "hao1939/may-agent",
+  author: "hao1939",
+  appId: "may",
+  project: "may",
+};
+const ownerBody = `Fixture PR\n\n## May Task\n- App ID: may\n- Task ID: ${taskId}\n`;
 const human = {
   id: "human-review",
   type: "conversation.message.created",
@@ -127,9 +117,9 @@ observeAppTaskIntent(config, {
 });
 deferAppTask(config, claim(), {
   disposition: "waiting",
-  summary: "Await real producer",
+  summary: "Await independent human choice; PR ownership is resource metadata",
   facts: ["fixture"],
-  conditions: [condition(null), human],
+  conditions: [human],
 });
 const bus = new EventBus(),
   writer = new DbWriter(root);
@@ -161,33 +151,35 @@ bus.subscribeDurableRoute((event: any) => {
   return result.delivery;
 });
 let merged = false,
-  failed = false,
   httpCalls = 0,
   currentTime = Date.now(),
   passes = 0;
 const provider: any = async (u: any) => {
   httpCalls++;
-  if (failed) return Response.json({ message: "unavailable" }, { status: 503 });
-  return Response.json(
-    String(u).includes("/reviews")
-      ? []
-      : {
-          number: 215,
-          state: merged ? "closed" : "open",
-          draft: false,
-          head: { sha: "a".repeat(40) },
-          base: { repo: { full_name: "hao1939/may-agent" } },
-          merged,
-          merged_at: merged ? "2026-09-20T06:30:19Z" : null,
-          merge_commit_sha: merged ? "b".repeat(40) : null,
-        },
-  );
+  const url = String(u);
+  const pull = {
+    number: 215,
+    body: ownerBody,
+    user: { login: "hao1939" },
+    state: merged ? "closed" : "open",
+    draft: false,
+    head: { sha: "a".repeat(40) },
+    base: { repo: { full_name: "hao1939/may-agent" } },
+    merged,
+    merged_at: merged ? "2026-09-20T06:30:19Z" : null,
+    merge_commit_sha: merged ? "b".repeat(40) : null,
+  };
+  if (url.includes("?state=")) {
+    const state = new URL(url).searchParams.get("state");
+    return Response.json(state === (merged ? "closed" : "open") ? [pull] : []);
+  }
+  return Response.json(url.includes("/reviews") ? [] : pull);
 };
 const observer = {
   ...definition.observers.find((o: any) => o.id === "github-pull-request"),
   run: async (ctx: any) => {
     try {
-      return await observeGitHubPullRequests(ctx, provider);
+      return await observeGitHubPullRequests(ctx, scope, provider);
     } finally {
       passes++;
     }
@@ -226,17 +218,15 @@ try {
   assert.equal(observations.filter((e) => e.type === type).length, 1);
   const initial = observations.find((e) => e.type === type);
   assert.equal(initial.data.merged, false);
-  assert.equal(
-    store
-      .readTaskConditions(taskId)
-      .find((c: any) => c.metadata.id === "github-pr").status.state,
-    "true",
+  assert.deepEqual(
+    store.readTaskConditions(taskId).map((c: any) => c.metadata.id),
+    ["human-review"],
   );
   deferAppTask(config, claim(), {
     disposition: "waiting",
-    summary: "Still awaiting merge and independent choice",
-    facts: ["PR currently open"],
-    conditions: [condition(initial.data.fingerprint)],
+    summary: "PR open; independent human choice remains",
+    facts: ["Resource-owned PR observed without registration"],
+    conditions: [human],
   });
   const before = observations.length;
   currentTime += observer.intervalMs;
@@ -248,86 +238,26 @@ try {
   const fact = observations.at(-1);
   assert.equal(fact.data.merged, true);
   assert.ok(fact[EVENT_ROW_ID] > 0);
-  const c = claim();
-  completeAppTask(config, c, {
+  assert.deepEqual(admissions.at(-1)?.taskIds, [taskId]);
+  deferAppTask(config, claim(), {
+    disposition: "waiting",
     summary: "Merge observed; independent choice stays",
     facts: ["Merged receipt verified"],
+    conditions: [human],
   });
   assert.deepEqual(
     store.readTaskConditions(taskId).map((c: any) => c.metadata.id),
     ["human-review"],
   );
-  report.transitionWithoutHumanReply = {
+  report.transitionWithoutRegistration = {
     sameTaskId: taskId,
-    prWaitRetired: true,
+    metadataBlock: ownerBody,
+    specialPrConditionPresent: false,
     independentHumanWaitPreserved: true,
+    unchangedSuppressed: true,
     durableEventId: fact[EVENT_ROW_ID],
     status: readRuntimeTaskView({ taskStateConfig: config }, taskId).status,
   };
-  // Rearm one PR interest to exercise real targeted failure admission.
-  const resource = store.readTask(taskId);
-  observeAppTaskIntent(config, {
-    appAgent: "may",
-    intent: {
-      id: taskId,
-      parentId: "root",
-      outcome: "Observe external PR facts",
-      acceptance: ["Keep independent decision"],
-      agent: "may",
-      input: { retryProbe: true },
-    },
-  });
-  deferAppTask(config, claim(), {
-    disposition: "waiting",
-    summary: "Await next change",
-    facts: ["Rearmed"],
-    conditions: [condition(fact.data.fingerprint)],
-  });
-  failed = true;
-  currentTime += observer.intervalMs;
-  await scan();
-  const failureEvent = observations.at(-1);
-  const failureAdmission = admissions.at(-1);
-  const failedClaim = claimObservedAppTask(config, {
-    taskId,
-    appAgent: "may",
-    handler: "agent",
-  });
-  assert.equal(failureEvent?.type, "may.github.pull-request.read-failed");
-  assert.deepEqual(failureAdmission?.taskIds, [taskId]);
-  assert.equal(failedClaim.kind, "claimed");
-  deferAppTask(config, failedClaim, {
-    disposition: "waiting",
-    summary: "Failure judged; preserve fallback",
-    facts: ["Provider temporarily unavailable"],
-  });
-  assert.equal(
-    readRuntimeTaskView({ taskStateConfig: config }, taskId).status,
-    "waiting",
-  );
-  assert.deepEqual(
-    store
-      .readTaskConditions(taskId)
-      .map((c: any) => c.metadata.id)
-      .sort(),
-    ["github-pr", "human-review"],
-  );
-  report.failure = {
-    emitted: failureEvent.type,
-    admittedTaskIds: failureAdmission.taskIds,
-    ownerClaimKind: failedClaim.kind,
-    settledStatus: "waiting",
-    survivingConditionIds: ["github-pr", "human-review"],
-  };
-  currentTime += observer.intervalMs;
-  await scan();
-  const repeatedFailureOwnerClaimKind = claimObservedAppTask(config, {
-    taskId,
-    appAgent: "may",
-    handler: "agent",
-  }).kind;
-  assert.equal(repeatedFailureOwnerClaimKind, "waiting");
-  report.failure.repeatedFailureOwnerClaimKind = repeatedFailureOwnerClaimKind;
   report.httpCalls = httpCalls;
   report.fixtureOnly = true;
   report.limit =
