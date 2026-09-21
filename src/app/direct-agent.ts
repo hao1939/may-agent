@@ -187,7 +187,7 @@ export async function prepareDirectAgentExecution(options: DirectAgentRunOptions
   }
   const model = options.models[config.model];
   if (!model) throw new Error(`Agent ${config.name} uses unknown model ${config.model}`);
-  const executionManifest = resolveDirectToolPolicy(config.name, config.tools, options.toolDenials);
+  let executionManifest = resolveDirectToolPolicy(config.name, config.tools, options.toolDenials);
   const { tools, cleanup } = await buildDirectTools(config, source, options, executionManifest.effectiveTools);
   const definitionSource = options.visibleAgentDir ? { ...source, dir: resolve(options.visibleAgentDir) } : source;
   const definition = await buildAgentDefinition({
@@ -219,6 +219,12 @@ export async function prepareDirectAgentExecution(options: DirectAgentRunOptions
       }),
     onNotice: options.onNotice,
   });
+  // Keep configured capability policy unchanged, but report the concrete tools
+  // that the model can actually see after local and schema-driven preparation.
+  executionManifest = {
+    ...executionManifest,
+    effectiveTools: prepared.tools.map((tool) => tool.name),
+  };
 
   return {
     prepared,

@@ -36,8 +36,60 @@ describe("direct agent tool policy", () => {
       });
 
       expect(direct.prepared.requireFinish).toBe(true);
-      expect(direct.prepared.tools.map((tool) => tool.name)).toContain("finish");
+      expect(direct.prepared.tools.map((tool) => tool.name)).toEqual(["read", "finish"]);
+      expect(direct.executionManifest.effectiveTools).toEqual(["read", "finish"]);
       expect(direct.prepared.systemPrompt).toContain("schema-validated result payload");
+    } finally {
+      direct?.cleanup();
+      await rm(root, { recursive: true, force: true });
+    }
+  });
+
+  test("reports expanded coding and agent-local tools from actual preparation", async () => {
+    const root = await mkdtemp(join(tmpdir(), "may-direct-manifest-"));
+    const agentDir = join(root, "agents", "example");
+    await mkdir(join(agentDir, "tools"), { recursive: true });
+    await writeFile(
+      join(agentDir, "agent.json"),
+      JSON.stringify({
+        name: "example",
+        description: "example",
+        domain: "test",
+        model: "test",
+        tools: ["coding"],
+      }),
+    );
+    await writeFile(
+      join(agentDir, "tools", "local-probe.ts"),
+      `export default () => ({
+        name: "local_probe",
+        label: "Local probe",
+        description: "Portable local fixture",
+        parameters: { type: "object", properties: {} },
+        execute: async () => ({ content: [{ type: "text", text: "ok" }], details: {} }),
+      });`,
+    );
+
+    let direct: Awaited<ReturnType<typeof prepareDirectAgentExecution>> | undefined;
+    try {
+      direct = await prepareDirectAgentExecution({
+        agentName: "example",
+        task: "Inspect the fixture",
+        projectRoot: root,
+        workRoot: root,
+        agentsRoot: join(root, "agents"),
+        sharedRoot: join(root, "shared"),
+        outputRoot: join(root, "output"),
+        models: { test: { id: "test-model" } as any },
+      });
+
+      expect(direct.executionManifest).toEqual({
+        agent: "example",
+        configuredTools: ["coding"],
+        deniedTools: [],
+        effectiveTools: ["read", "bash", "edit", "write", "local_probe"],
+      });
+      expect(direct.prepared.tools.map((tool) => tool.name)).toEqual(direct.executionManifest.effectiveTools);
     } finally {
       direct?.cleanup();
       await rm(root, { recursive: true, force: true });
