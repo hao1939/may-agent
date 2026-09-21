@@ -1,8 +1,8 @@
 <ai_context>
 summary: "Insights on Operational Memory (Agent Experience Cache) from Hacker News — infrastructure patterns, sovereignty stack, agent sandbox convergence, model commoditization, and practitioner discourse."
 triggers: "operational memory, architecture, cache, lessons, context, sovereignty stack, agent sandbox, harness-as-moat"
-last_updated: "2026-08-25"
-source_basis: "Hacker News discussions on agent architectures, including HN 49376500 / tenequm/pond, HN 49394827 / OzBrain, HN 49428882 / laude-institute/headlong, and HN 49433217 / wisplu state-file incident; arXiv 2606.20512 (Probe-and-Refine guidance tuning), arXiv 2607.00685 (M2Note mistake notebooks), arXiv 2607.00910 (SIVE instrument validation), GitHub brain.md/agent-memory-wiki and lohoz/agenthist"
+last_updated: "2026-09-21"
+source_basis: "Hacker News discussions on agent architectures, including HN 49376500 / tenequm/pond, HN 49394827 / OzBrain, HN 49428882 / laude-institute/headlong, and HN 49433217 / wisplu state-file incident; arXiv 2606.20512 (Probe-and-Refine guidance tuning), arXiv 2607.00685 (M2Note mistake notebooks), arXiv 2607.00910 (SIVE instrument validation); GitHub brain.md/agent-memory-wiki, lohoz/agenthist, and x96x64/ctxjev"
 companion_notes: ["hn-comprehension-cliff-discourse.md"]
 extraction_log: "2026-06-29: Extracted Comprehension Cliff / Reviews Expensive / Skill Atrophy discourse arc (396 lines, 8 sections) into hn-comprehension-cliff-discourse.md. Parent reduced from 1,303 to 913 lines. 2026-08-06 maintenance removed future-dated extraction metadata and unverifiable future-dated tracker links."
 </ai_context>
@@ -1005,6 +1005,47 @@ content and whole-artifact shape before making the new state authoritative.
 
 - **HN:** https://news.ycombinator.com/item?id=49433217
 - **Source:** https://wisplu.com/blog/en/status-file-blew-up/
+
+## A relevance cache also needs session identity and freshness (GitHub, September 2026)
+
+**ctxjev** is an early-stage TypeScript tool that makes context admission an
+explicit operation. At pinned commit
+[`b6f5f9e`](https://github.com/x96x64/ctxjev/commit/b6f5f9e9bcf806b7d133502dd22d1ddc2b17e7d0),
+its core sends short history excerpts and a goal to the Jev API, blends the
+returned relevance probability with relative position in the submitted batch,
+and applies separate keep, summarize, and drop thresholds. This separation is
+useful: scoring can be evaluated once and different policies can be compared
+without another model call. The repository also correctly warns that transcript
+content leaves the host and may contain secrets.
+
+The Claude Code adapter exposes a different integrity problem. A `PreCompact`
+hook writes the five highest-scoring entries to the project-local
+`.ctxjev/preserved-context.json`; a later `SessionStart` hook reads that file and
+prints the entries back into context. The cache record contains a goal,
+`scoredAt`, scores, and content, but no session or transcript identity. Reading
+does not consume or delete it. Moreover, every pre-compaction failure—including
+a missing API key—is intentionally a no-op so compaction can continue, without
+invalidating the previous cache. Code inspection therefore shows two concrete
+stale-context paths: concurrent sessions in the same working directory can
+replace one another's cache, and a failed scoring pass can cause the next
+post-compaction hook to re-inject an older successful snapshot. This is a code-
+path finding, not evidence that either incident has occurred in deployment.
+
+The policy evidence is also preliminary. The default recency weight is protected
+by an opt-in live test and a sweep over two hand-labeled synthetic fixtures; the
+README explicitly says the drop and summarize thresholds remain thinly tuned.
+That supports experimentation, not a general claim that relevance pruning
+preserves task-critical evidence.
+
+**Reusable rule:** treat relevance-selected context as a scoped, single-use
+handoff. Bind it to the session, source transcript revision, goal, and compaction
+attempt; write atomically; consume it once; and fail closed on mismatch, expiry,
+or a failed fresh scoring pass. Evaluate false drops of early causal evidence
+separately from aggregate token savings.
+
+- **Repo:** https://github.com/x96x64/ctxjev
+- **Pinned source:** https://github.com/x96x64/ctxjev/tree/b6f5f9e9bcf806b7d133502dd22d1ddc2b17e7d0
+- **Relevant implementation:** [core scoring](https://github.com/x96x64/ctxjev/blob/b6f5f9e9bcf806b7d133502dd22d1ddc2b17e7d0/packages/core/src/index.ts), [cache persistence](https://github.com/x96x64/ctxjev/blob/b6f5f9e9bcf806b7d133502dd22d1ddc2b17e7d0/packages/claude-plugin/src/preserve.ts), [pre-compaction hook](https://github.com/x96x64/ctxjev/blob/b6f5f9e9bcf806b7d133502dd22d1ddc2b17e7d0/packages/claude-plugin/src/preCompact.ts), and [post-compaction injection](https://github.com/x96x64/ctxjev/blob/b6f5f9e9bcf806b7d133502dd22d1ddc2b17e7d0/packages/claude-plugin/src/sessionStartCompact.ts)
 
 ## Next Steps
 
