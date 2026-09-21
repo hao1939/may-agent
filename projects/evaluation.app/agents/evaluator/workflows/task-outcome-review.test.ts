@@ -323,6 +323,18 @@ describe("Task outcome review", () => {
     expect(prompt).toContain(
       "do not write Markdown, JSON, or any other task-outcome report file",
     );
+    expect(prompt).toContain(
+      "Separate delivery verification from substantive claim support",
+    );
+    expect(prompt).toContain(
+      "read available conflicting controls, evaluations, corrections, or falsifiers",
+    );
+    expect(prompt).toContain(
+      "Author-created probes may substantiate a claim when they test the relevant path",
+    );
+    expect(prompt).toContain(
+      "accepted Task facts that merely repeat the author's claim add no independent support",
+    );
   });
 
   test("passes the combined real public Task views to the model and publishes immutable artifacts", async () => {

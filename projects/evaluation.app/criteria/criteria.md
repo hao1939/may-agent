@@ -127,6 +127,18 @@ A result is delivered only when the request's acceptance outcome is present and
 usable. A commit, file write, or plausible summary is supporting evidence, not
 automatic success.
 
+Delivery and correctness are separate judgments. For an analysis, review, or
+investigation outcome, a readable report and requester return establish delivery
+without establishing the report's substantive defect or mechanism claims.
+Verify those claims against the relevant behavior: trace probes to the actual
+path and claimed scope, and read available conflicting controls, evaluations,
+corrections, or falsifiers in the same bounded evidence collection. An
+author-created probe may substantiate a claim when it tests the relevant path;
+accepted Task facts that merely repeat the author's claim add no independent
+support. If a material claim cannot be checked, return `insufficient-evidence`
+and name the exact gap rather than treating delivered prose as corroboration or
+calling the outcome healthy.
+
 Check these common failure boundaries:
 
 - **Canonical output:** the result is in the requested authority, not a nested
