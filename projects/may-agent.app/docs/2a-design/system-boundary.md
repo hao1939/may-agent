@@ -310,13 +310,17 @@ Direct execution reports its actual model-visible tool surface. In its execution
 manifest, `configuredTools` retains the capability-bundle names declared by the
 agent while `effectiveTools` contains the concrete prepared tool names, including
 agent-local tools and any tool added by result-schema preparation. A caller may
-deny either a configured bundle or one concrete tool; an unknown, duplicate or
-unexplained denial fails preparation, and a required injected tool cannot bypass
-that denial. Capability denial prevents construction of that bundle, while a
-concrete agent-local denial removes the loaded tool before model execution.
+deny either a configured bundle or one concrete tool; overlapping bundle/member
+denials coexist, while an unknown, duplicate, blank or unexplained denial fails
+preparation. A required injected tool cannot bypass a denial.
+
 These rules make visibility and evidence agree; they are not an OS sandbox.
-Agent-local module factories are trusted installation code and execute during
-preparation, before their returned tools can be filtered.
+Supported bundle implementations and trusted agent-local factories execute while
+the Host builds the inventory, before visibility denials filter their concrete
+tools from model execution. Only an explicitly denied unsupported configured
+capability may skip construction; an unsupported capability left effective fails
+preparation. Host candidate `2764874e` implements this contract with passing local
+CI. PR review, merge, deployment and live adoption remain separate.
 
 | Invocation | Ownership and result |
 | --- | --- |
