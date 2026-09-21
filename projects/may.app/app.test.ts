@@ -528,6 +528,18 @@ describe("canonical May conversation App", () => {
       target: event.target,
       localKey: event.localKey,
     });
+    expect((input.data as any).message).toContain(
+      "Run evaluation-report-intake with this exact context.publication before any duplicate or reuse conclusion",
+    );
+    expect((input.data as any).message).toContain(
+      "the intake checks exact publication identity before reusing a prior intake",
+    );
+    expect((input.data as any).message).toContain(
+      "an unrelated prior disposition is not this report",
+    );
+    expect((input.data as any).message).toContain(
+      "verify material concerns against current evidence",
+    );
     event.data.taskId = "mutated";
     expect((input.data as any).context.event.data.taskId).toBe("goal/subject");
     expect(Check(app.inputSchema, input)).toBeTrue();

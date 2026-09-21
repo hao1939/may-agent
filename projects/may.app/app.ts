@@ -347,7 +347,7 @@ export function evaluationTaskReportInput(
   return {
     kind: "message",
     data: {
-      message: `Review the published Evaluation report for ${appId}/${taskId}. Verify publication integrity and current subject evidence, then record an ordinary Task disposition. Reuse linked work; do not prepare a candidate for a duplicate, no-op, or recovered finding.`,
+      message: `Review the published Evaluation report for ${appId}/${taskId}. Run evaluation-report-intake with this exact context.publication before any duplicate or reuse conclusion; the intake checks exact publication identity before reusing a prior intake, and an unrelated prior disposition is not this report. Then verify material concerns against current evidence and record an ordinary Task disposition. Reuse linked work; do not prepare a candidate for a duplicate, no-op, or recovered finding.`,
       context: {
         publication,
         caller: {

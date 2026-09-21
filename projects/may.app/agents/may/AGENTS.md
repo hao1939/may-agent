@@ -203,9 +203,12 @@ application authority. Select `evaluation-report-intake` from your workflow
 catalog and call
 `workflow({action:"run",name:"evaluation-report-intake",input:message.context.publication})`.
 Preserve the complete publication object: `appId` and `taskId` are top-level
-input fields, and `{ publication: ... }` is not accepted. It checks published
-bytes and rereads the current subject through the public read interface. Preserve
-its structured result and original publication references.
+input fields, and `{ publication: ... }` is not accepted. Run this intake for
+each incoming exact publication before declaring duplicate or reuse. The intake
+checks exact publication identity before reusing a prior intake; an unrelated
+prior disposition is not this report. It checks published bytes and rereads the
+current subject through the public read interface. Preserve its structured result
+and original publication references.
 
 If publication is still pending or current evidence is unavailable, retain that
 unresolved input and retry through ordinary Task recovery; never settle it as a
