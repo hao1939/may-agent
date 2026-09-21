@@ -29,6 +29,8 @@ function fixture(
   freshness?: "current" | "stale" | "unavailable",
   reviewer?: "evaluator" | "evaluator-deepseek",
   evidenceHash = "evidence-1",
+  judgmentSummary = "finding",
+  malformedJudgment = false,
 ) {
   const root = mkdtempSync(join(tmpdir(), "may-report-intake-"));
   const detail = {
@@ -115,19 +117,24 @@ function fixture(
           },
         }
       : {}),
-    judgment: {
-      disposition: "assessed",
-      summary: "finding",
-      responsibility: "subject owner",
-      findings: [],
-      verification: [],
-      delivery: "published",
-    },
+    judgment: malformedJudgment
+      ? { disposition: "assessed", summary: judgmentSummary }
+      : {
+          disposition: "assessed",
+          summary: judgmentSummary,
+          responsibility: "subject owner",
+          findings: [],
+          verification: [],
+          delivery: "published",
+        },
   };
   const facts = resolveTaskReportPath(root, paths.jsonPath);
   const report = resolveTaskReportPath(root, paths.markdownPath);
   writeImmutable(facts, `${JSON.stringify(payload, null, 2)}\n`);
-  writeImmutable(report, renderTaskReportMarkdown(payload)!);
+  writeImmutable(
+    report,
+    renderTaskReportMarkdown(payload) ?? "malformed report fixture\n",
+  );
   const publication = {
     appId,
     taskId: detail.taskId,
@@ -323,11 +330,86 @@ describe("May Evaluation report intake procedure", () => {
         evidenceHash: "evidence-1",
       },
       report: { facts: data.publication.facts },
+      checkedReport: {
+        complete: true,
+        judgment: { summary: "finding", disposition: "assessed" },
+        source: { subject: { appId: "may", taskId: "goal/one" } },
+      },
     });
     expect(output.result.handoffKey).toMatch(/^[a-f0-9]{64}$/);
     expect(output.facts).toContain(
       `evaluation-report:${data.publication.facts}`,
     );
+  });
+
+  test("returns a complete near-bound judgment within the workflow result envelope", async () => {
+    const data = fixture(
+      "may",
+      false,
+      undefined,
+      undefined,
+      "evaluator-deepseek",
+      "b".repeat(64),
+      "x".repeat(6_700),
+    );
+    const execution = await intakeEvaluationReport(
+      context(data),
+      data.root,
+      reader(data),
+    );
+    expect((execution.output as any).result.checkedReport.complete).toBe(true);
+    expect(Buffer.byteLength(JSON.stringify(execution.output))).toBeLessThan(
+      16_000,
+    );
+  });
+
+  test("rejects a published artifact with a malformed judgment before checkedReport exposure", async () => {
+    const data = fixture(
+      "may",
+      false,
+      undefined,
+      undefined,
+      "evaluator-deepseek",
+      "c".repeat(64),
+      "partial",
+      true,
+    );
+    const execution = await intakeEvaluationReport(
+      context(data),
+      data.root,
+      reader(data),
+    );
+    expect((execution.output as any).result).toMatchObject({
+      disposition: "invalid",
+      currentEvidence: null,
+      handoffKey: null,
+    });
+    expect((execution.output as any).result).not.toHaveProperty(
+      "checkedReport",
+    );
+  });
+
+  test("omits an oversized checked judgment without synthesizing a partial summary", async () => {
+    const data = fixture(
+      "may",
+      false,
+      undefined,
+      undefined,
+      "evaluator-deepseek",
+      "a".repeat(64),
+      "x".repeat(7_100),
+    );
+    const execution = await intakeEvaluationReport(
+      context(data),
+      data.root,
+      reader(data),
+    );
+    expect((execution.output as any).result.checkedReport).toMatchObject({
+      complete: false,
+      judgment: null,
+      omission: expect.stringContaining("read the exact retained report"),
+      source: { subject: { appId: "may", taskId: "goal/one" } },
+    });
   });
 
   test("reuses the accepted intake and exact linked owner through ordinary Task reads", async () => {

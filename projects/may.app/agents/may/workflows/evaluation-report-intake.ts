@@ -27,6 +27,33 @@ function object(value: unknown): Record<string, unknown> {
     ? (value as Record<string, unknown>)
     : {};
 }
+function checkedReportSummary(
+  facts: Record<string, unknown>,
+): Record<string, unknown> {
+  // readPublishedEvaluationReport has already rendered and hash-matched the full
+  // report, including the required judgment schema. Keep this boundary focused
+  // on transport size rather than duplicating the canonical validator.
+  const judgment = object(facts.judgment);
+  const complete = Buffer.byteLength(JSON.stringify(judgment)) <= 7_000;
+  return {
+    judgment: complete ? judgment : null,
+    complete,
+    ...(complete
+      ? {}
+      : {
+          omission:
+            "The integrity-checked judgment exceeds the intake result bound; read the exact retained report before any no-action or repair decision.",
+        }),
+    source: {
+      subject: facts.subject,
+      snapshot: facts.snapshot,
+      freshness: facts.freshness,
+      evaluator: facts.evaluator,
+      rubricVersion: facts.rubricVersion,
+      sourceRevision: facts.sourceRevision,
+    },
+  };
+}
 function finish(
   ctx: WorkflowContext<Input>,
   disposition: string,
@@ -94,6 +121,7 @@ export async function intakeEvaluationReport(
       currentEvidence: null,
       handoffKey: null,
     });
+  const checkedReport = checkedReportSummary(read.facts);
 
   // This is Evaluation's allowlisted public control-plane reader. It verifies
   // App/Task identities and computes the same canonical evidence hash used by
@@ -108,6 +136,7 @@ export async function intakeEvaluationReport(
     !subject.evidenceHash
   )
     return finish(ctx, "current-evidence-unavailable", subject.reason, {
+      checkedReport,
       currentEvidence: {
         appId: subject.appId,
         taskId: subject.taskId,
@@ -132,6 +161,7 @@ export async function intakeEvaluationReport(
       "stale",
       "The report remains an immutable judgment of its inspected snapshot. Current evidence changed and is returned for May's explicit relevance and value judgment; the report alone does not certify current health or authorize action.",
       {
+        checkedReport,
         handoffKey: null,
         nextOwner: "app:may",
         nextAction:
@@ -247,6 +277,7 @@ export async function intakeEvaluationReport(
       ? `Stable investigation handoff ${plan.handoffKey}; this is preparation authority, not approval or application authority.`
       : "No candidate preparation or production application was authorized by this report.",
     {
+      checkedReport,
       handoffKey:
         plan.handoffKey ??
         (plan.disposition === "reuse"

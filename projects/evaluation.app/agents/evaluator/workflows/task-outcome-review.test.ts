@@ -317,6 +317,12 @@ describe("Task outcome review", () => {
       "App status done plus Task detail up-to-date with terminal=false and ready=false is coherent",
     );
     expect(prompt).toContain("no review deadline is required");
+    expect(prompt).toContain(
+      "assessed and insufficient-evidence are both successful evaluator judgments",
+    );
+    expect(prompt).toContain(
+      "do not write Markdown, JSON, or any other task-outcome report file",
+    );
   });
 
   test("passes the combined real public Task views to the model and publishes immutable artifacts", async () => {
@@ -418,6 +424,12 @@ describe("Task outcome review", () => {
     const facts = factsOf(result);
     expect(calledAgent).toBe("evaluator-deepseek");
     expect(suppliedPrompt).toContain("UNIQUE APP ROOT RUBRIC");
+    expect(suppliedPrompt).toContain(
+      "assessed and insufficient-evidence are both successful evaluator judgments",
+    );
+    expect(suppliedPrompt).toContain(
+      "do not write Markdown, JSON, or any other task-outcome report file",
+    );
     expect(facts).toContain("reviewer:evaluator-deepseek");
     expect(facts).toContain("configured-model:deepseek-v4-flash");
     const reportFacts = facts

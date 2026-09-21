@@ -18,7 +18,7 @@ export const name = "task-outcome-selector";
 export const description =
   "Select at most one recent external Task candidate through bounded public App reads.";
 
-const STATE_VERSION = 5;
+const STATE_VERSION = 6;
 const MAX_STATE_APPS = 20;
 const MAX_STATE_HISTORY_BYTES = 6_000;
 const MAX_NAVIGATION_FACT_BYTES = 3_000;
@@ -51,6 +51,8 @@ type SelectorState = {
   appId: string;
   appIndex: number;
   taskCursorByApp: Record<string, string>;
+  unresolvedCursorByApp: Record<string, string>;
+  unresolvedExhaustedByApp: Record<string, string>;
 };
 type Selection = {
   candidate: Candidate | null;
@@ -130,7 +132,7 @@ function navigationFailureFact(
   return `selector-navigation-failed:${canonical(appId).slice(0, 80)}:pages-read=${pagesRead}:${boundedMessage}`;
 }
 function appendNavigationFact(facts: string[], fact: string): void {
-  if (facts.length >= MAX_NAVIGATION_FACTS) return;
+  if (facts.includes(fact) || facts.length >= MAX_NAVIGATION_FACTS) return;
   const candidate = [...facts, fact];
   if (Buffer.byteLength(JSON.stringify(candidate)) <= MAX_NAVIGATION_FACT_BYTES)
     facts.push(fact);
@@ -146,12 +148,49 @@ function assessmentPurposeFor(
     return "outcome";
   return null;
 }
+async function needsReview(
+  appId: string,
+  item: Record<string, unknown>,
+  purpose: AssessmentPurpose,
+  reviewer: Reviewer,
+  reportRoot: string,
+  command?: PublicCommand,
+  nowMs = Date.now(),
+): Promise<{ needed: boolean; unavailableReason?: string }> {
+  const subject = await readSubjectTask(
+    { appId, taskId: taskId(item) },
+    command,
+  );
+  if (subject.disposition !== "eligible" || !subject.evidenceHash)
+    return { needed: false, unavailableReason: subject.reason };
+  const assessment = assessmentContext(subject, purpose, nowMs);
+  const reportPath = taskReportPaths(
+    canonical(appId),
+    taskId(item),
+    subject.evidenceHash,
+    assessment.rubricVersion,
+    assessment.validityIdentity,
+    reviewer,
+  ).jsonPath;
+  const published = readPublishedTaskReport(reportRoot, reportPath);
+  return {
+    needed:
+      !published ||
+      canonical(published.appId) !== canonical(appId) ||
+      published.taskId !== taskId(item) ||
+      published.evidenceHash !== subject.evidenceHash ||
+      published.purpose !== purpose ||
+      published.validityIdentity !== assessment.validityIdentity,
+  };
+}
 function emptyState(): SelectorState {
   return {
     version: STATE_VERSION,
     appId: "",
     appIndex: 0,
     taskCursorByApp: {},
+    unresolvedCursorByApp: {},
+    unresolvedExhaustedByApp: {},
   };
 }
 function boundedTaskCursors(value: unknown): Record<string, string> {
@@ -176,12 +215,36 @@ function boundedTaskCursors(value: unknown): Record<string, string> {
 }
 function cleanState(value: unknown): SelectorState {
   const item = object(value);
-  if (Number(item.version) !== STATE_VERSION) return emptyState();
+  const version = Number(item.version);
+  if (version !== STATE_VERSION && version !== 5) return emptyState();
+  const taskCursorByApp = boundedTaskCursors(item.taskCursorByApp);
+  const unresolvedCursorByApp =
+    version === STATE_VERSION
+      ? boundedTaskCursors(item.unresolvedCursorByApp)
+      : {};
+  const unresolvedExhaustedByApp =
+    version === STATE_VERSION
+      ? boundedTaskCursors(item.unresolvedExhaustedByApp)
+      : {};
+  const history = {
+    taskCursorByApp,
+    unresolvedCursorByApp,
+    unresolvedExhaustedByApp,
+  };
+  while (Buffer.byteLength(JSON.stringify(history)) > MAX_STATE_HISTORY_BYTES) {
+    const map = [
+      unresolvedExhaustedByApp,
+      unresolvedCursorByApp,
+      taskCursorByApp,
+    ].find((candidate) => Object.keys(candidate).length);
+    if (!map) break;
+    delete map[Object.keys(map)[0]!];
+  }
   return {
     version: STATE_VERSION,
     appId: /^[a-f0-9]{64}$/.test(text(item.appId)) ? text(item.appId) : "",
     appIndex: Math.max(0, Math.trunc(Number(item.appIndex) || 0)),
-    taskCursorByApp: boundedTaskCursors(item.taskCursorByApp),
+    ...history,
   };
 }
 export function selectorStateFact(state: SelectorState): string {
@@ -255,76 +318,136 @@ export async function selectFairCandidate(
     const reportKey = canonical(appId);
     let cursor = state.taskCursorByApp[key] ?? "";
     let continuationCursor = cursor;
+    let unresolvedCursor = state.unresolvedCursorByApp[key] ?? "";
+    let unresolvedContinuationCursor = unresolvedCursor;
+    let unresolvedExhausted = state.unresolvedExhaustedByApp[key] === "1";
+    const original = { cursor, unresolvedCursor, unresolvedExhausted };
     let pagesRead = 0;
     const seenCursors = new Set<string>(cursor ? [cursor] : []);
     let selected:
       | { item: Record<string, unknown>; purpose: AssessmentPurpose }
       | undefined;
+    const considerUnresolved = async (item: Record<string, unknown>) => {
+      const review = await needsReview(
+        appId,
+        item,
+        "ongoing",
+        reviewer,
+        reportRoot,
+        command,
+        nowMs,
+      );
+      if (review.unavailableReason) {
+        appendNavigationFact(
+          navigationFacts,
+          `selector-evidence-unavailable:${reportKey}:${identityDigest(taskId(item))}:${review.unavailableReason.replace(/\s+/g, " ").slice(0, 180)}`,
+        );
+      } else if (review.needed) {
+        selected = { item, purpose: "ongoing" };
+      }
+    };
     try {
-      // Ask for one keyset record at a time and persist its opaque continuation.
-      // Advancing before return makes a dropped request harmless, while a Task
-      // reordered to the front cannot move behind the retained keyset boundary.
       const readLimit = Math.min(config.maxTasksPerApp, config.maxPagesPerApp);
-      for (let pageIndex = 0; pageIndex < readLimit; pageIndex += 1) {
-        const page = await provider.listRecentTaskPage(appId, 1, cursor);
-        pagesRead += 1;
-        for (const issue of page.issues)
-          appendNavigationFact(
-            navigationFacts,
-            navigationFailureFact(appId, pagesRead, issue),
+      if (!unresolvedExhausted) {
+        // Traverse one finite pass over the indexed unresolved view. The opaque
+        // cursor advances before return, so a dropped review cannot pin the
+        // pass. Arrivals ahead of the cursor are intentionally seen on the next
+        // pass; failure events remain the immediate admission path.
+        const seenUnresolvedCursors = new Set<string>(
+          unresolvedCursor ? [unresolvedCursor] : [],
+        );
+        for (
+          let pageIndex = 0;
+          pageIndex < readLimit && !selected;
+          pageIndex += 1
+        ) {
+          const unresolved = await provider.listUnresolvedTaskPage(
+            appId,
+            1,
+            unresolvedCursor,
           );
-        continuationCursor = page.nextCursor;
-        const item = page.items[0];
-        if (item) {
-          const purpose = assessmentPurposeFor(item, cutoff);
-          if (purpose) {
-            // Resolve the same decision-relevant evidence identity the reviewer
-            // will publish before emitting the wake's single review allowance.
-            const subject = await readSubjectTask(
-              { appId, taskId: taskId(item) },
-              command,
+          pagesRead += 1;
+          for (const issue of unresolved.issues)
+            appendNavigationFact(
+              navigationFacts,
+              navigationFailureFact(appId, pagesRead, issue),
             );
-            if (subject.disposition !== "eligible" || !subject.evidenceHash) {
-              appendNavigationFact(
-                navigationFacts,
-                `selector-evidence-unavailable:${canonical(appId).slice(0, 80)}:${identityDigest(taskId(item))}:${subject.reason.replace(/\s+/g, " ").slice(0, 180)}`,
-              );
-            } else {
-              const assessment = assessmentContext(subject, purpose, nowMs);
-              const reportPath = taskReportPaths(
-                reportKey,
-                taskId(item),
-                subject.evidenceHash,
-                assessment.rubricVersion,
-                assessment.validityIdentity,
+          unresolvedContinuationCursor = unresolved.nextCursor;
+          const item = unresolved.items[0];
+          if (item) await considerUnresolved(item);
+          if (
+            !unresolved.nextCursor ||
+            seenUnresolvedCursors.has(unresolved.nextCursor)
+          ) {
+            unresolvedContinuationCursor = "";
+            unresolvedExhausted = true;
+            break;
+          }
+          seenUnresolvedCursors.add(unresolved.nextCursor);
+          unresolvedCursor = unresolved.nextCursor;
+        }
+      }
+
+      // A completed unresolved pass yields to exactly one bounded historical
+      // turn before the filtered view starts fresh. Historical progress keeps
+      // its independent opaque cursor across those refreshes.
+      if (unresolvedExhausted && !selected) {
+        for (
+          let pageIndex = 0;
+          pageIndex < readLimit && !selected;
+          pageIndex += 1
+        ) {
+          const page = await provider.listRecentTaskPage(appId, 1, cursor);
+          pagesRead += 1;
+          for (const issue of page.issues)
+            appendNavigationFact(
+              navigationFacts,
+              navigationFailureFact(appId, pagesRead, issue),
+            );
+          continuationCursor = page.nextCursor;
+          const item = page.items[0];
+          if (item) {
+            const status = canonical(item.status);
+            const purpose =
+              status === "pending" ||
+              status === "waiting" ||
+              status === "attention"
+                ? null
+                : assessmentPurposeFor(item, cutoff);
+            if (purpose) {
+              const review = await needsReview(
+                appId,
+                item,
+                purpose,
                 reviewer,
-              ).jsonPath;
-              const published = readPublishedTaskReport(reportRoot, reportPath);
-              if (
-                !published ||
-                canonical(published.appId) !== reportKey ||
-                published.taskId !== taskId(item) ||
-                published.evidenceHash !== subject.evidenceHash ||
-                published.purpose !== purpose ||
-                published.validityIdentity !== assessment.validityIdentity
-              ) {
+                reportRoot,
+                command,
+                nowMs,
+              );
+              if (review.unavailableReason) {
+                appendNavigationFact(
+                  navigationFacts,
+                  `selector-evidence-unavailable:${reportKey}:${identityDigest(taskId(item))}:${review.unavailableReason.replace(/\s+/g, " ").slice(0, 180)}`,
+                );
+              } else if (review.needed) {
                 selected = { item, purpose };
-                break;
               }
             }
           }
+          if (!page.nextCursor || seenCursors.has(page.nextCursor)) {
+            continuationCursor = "";
+            break;
+          }
+          seenCursors.add(page.nextCursor);
+          cursor = page.nextCursor;
         }
-        if (!page.nextCursor || seenCursors.has(page.nextCursor)) {
-          continuationCursor = "";
-          break;
-        }
-        seenCursors.add(page.nextCursor);
-        cursor = page.nextCursor;
+        unresolvedExhausted = false;
       }
     } catch (error) {
-      // Retry the current opaque boundary after a read failure; do not pretend
-      // that an unavailable page was traversed.
-      continuationCursor = cursor;
+      // Retry the exact opaque boundaries and phase after a failed public read.
+      continuationCursor = original.cursor;
+      unresolvedContinuationCursor = original.unresolvedCursor;
+      unresolvedExhausted = original.unresolvedExhausted;
       appendNavigationFact(
         navigationFacts,
         navigationFailureFact(appId, pagesRead, error),
@@ -335,20 +458,37 @@ export async function selectFairCandidate(
     const taskCursorByApp = { ...nextState.taskCursorByApp };
     if (continuationCursor) taskCursorByApp[key] = continuationCursor;
     else delete taskCursorByApp[key];
-    const boundedCursors = boundedTaskCursors(taskCursorByApp);
-    if (continuationCursor)
-      appendNavigationFact(
-        navigationFacts,
-        boundedCursors[key] === continuationCursor
-          ? `selector-navigation-truncated:${reportKey}:pages-read=${pagesRead}:continuation-retained`
-          : `selector-navigation-truncated:${reportKey}:pages-read=${pagesRead}:continuation-unretained`,
-      );
-    nextState = {
+    const unresolvedCursorByApp = { ...nextState.unresolvedCursorByApp };
+    if (unresolvedContinuationCursor)
+      unresolvedCursorByApp[key] = unresolvedContinuationCursor;
+    else delete unresolvedCursorByApp[key];
+    const unresolvedExhaustedByApp = {
+      ...nextState.unresolvedExhaustedByApp,
+    };
+    if (unresolvedExhausted) unresolvedExhaustedByApp[key] = "1";
+    else delete unresolvedExhaustedByApp[key];
+    nextState = cleanState({
       version: STATE_VERSION,
       appId: appKey(apps[nextIndex]!),
       appIndex: nextIndex,
-      taskCursorByApp: boundedCursors,
-    };
+      taskCursorByApp,
+      unresolvedCursorByApp,
+      unresolvedExhaustedByApp,
+    });
+    if (continuationCursor)
+      appendNavigationFact(
+        navigationFacts,
+        nextState.taskCursorByApp[key] === continuationCursor
+          ? `selector-navigation-truncated:${reportKey}:pages-read=${pagesRead}:continuation-retained`
+          : `selector-navigation-truncated:${reportKey}:pages-read=${pagesRead}:continuation-unretained`,
+      );
+    if (unresolvedContinuationCursor)
+      appendNavigationFact(
+        navigationFacts,
+        nextState.unresolvedCursorByApp[key] === unresolvedContinuationCursor
+          ? `selector-unresolved-navigation-truncated:${reportKey}:continuation-retained`
+          : `selector-unresolved-navigation-truncated:${reportKey}:continuation-unretained`,
+      );
     if (selected) {
       return {
         candidate: {

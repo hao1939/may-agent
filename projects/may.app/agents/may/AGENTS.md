@@ -225,14 +225,22 @@ insufficient evidence, assessed, and independently rechecked. A routine DeepSeek
 screening report is a lead rather than an authoritative current-health verdict.
 Classify each material claim as confirmed, rejected, or uncertain from current
 exact evidence before repair or escalation; do not treat a no-finding report as
-certified health. For the bounded operational sample, retain useful impact and
-total verification cost/latency so increased attempt allowance is not confused
-with effective capacity. Routine Evaluation uses the supplied bounded current
-snapshot; when a material gap remains, May routes one focused evidence investigation
-through the existing accountable owner rather than granting unbounded forensic
-access or treating the gap as model failure. Retain the exact review request and
-its pins until Evaluation can use its explicit allowance; periodic sampling is
-only a fallback.
+certified health. The integrity intake returns the already checked judgment when
+it fits the result bound, or an explicit omission plus exact source identity when
+it does not. Never make a no-action decision from an omitted judgment. For a
+routine complete judgment with no material allegation, read it plus the
+current-subject result and record a bounded no-action decision; do not independently
+reconstruct every successful delivery assertion or require a second full Evaluation.
+Independently verify material
+allegations, stale relevance, missing evidence, and proposed repair claims. For
+the bounded operational sample, retain useful impact and total verification
+cost/latency so increased attempt allowance is not confused with effective
+capacity. Routine Evaluation uses the supplied bounded current snapshot; when a
+material gap remains, May routes one focused evidence investigation through the
+existing accountable owner rather than granting unbounded forensic access or
+treating the gap as model failure. Retain the exact review request and its pins
+until Evaluation can use its explicit allowance; periodic sampling is only a
+fallback.
 
 The current Conversation or Task's accepted result already retains a disposition.
 For a completed no-op or recovered finding, finish there with the evidence links;

@@ -25,6 +25,15 @@ export type PublicTaskEvidenceProvider = {
     limit?: number,
     cursor?: string,
   ): Promise<{ items: Record<string, unknown>[]; nextCursor: string }>;
+  listUnresolvedTaskPage(
+    appId: string,
+    limit?: number,
+    cursor?: string,
+  ): Promise<{
+    items: Record<string, unknown>[];
+    nextCursor: string;
+    issues: string[];
+  }>;
   listRecentTaskPage(
     appId: string,
     limit?: number,
@@ -231,6 +240,42 @@ function assertIdentity(
   }
 }
 
+function parseTaskListResponse(
+  response: Record<string, unknown>,
+  appId: string,
+): { items: Record<string, unknown>[]; nextCursor: string; issues: string[] } {
+  if (response.command !== "tasks.list")
+    throw new Error("tasks.list response identity mismatch");
+  const envelope = object(response.tasks);
+  const nextCursor = text(envelope.nextCursor);
+  if (!Array.isArray(envelope.items))
+    return {
+      items: [],
+      nextCursor,
+      issues: ["tasks.list response has no items array"],
+    };
+  const items: Record<string, unknown>[] = [];
+  const issues: string[] = [];
+  for (const value of envelope.items) {
+    const item = object(value);
+    if (text(item.appId) !== appId) {
+      issues.push("tasks.list item appId identity mismatch");
+      continue;
+    }
+    if (!text(item.taskId)) {
+      issues.push("tasks.list item has no taskId");
+      continue;
+    }
+    const updatedAt = Number(item.updatedAt);
+    if (!Number.isFinite(updatedAt) || updatedAt <= 0) {
+      issues.push("tasks.list item has no usable updatedAt");
+      continue;
+    }
+    items.push(item);
+  }
+  return { items, nextCursor, issues };
+}
+
 /**
  * Bounded, read-only adapter over the Host's public control-socket contract.
  * It deliberately exposes no database, workspace scan, or private Task store.
@@ -271,6 +316,19 @@ export function createPublicTaskEvidenceProvider(
         nextCursor: text(object(envelope).nextCursor ?? response.nextCursor),
       };
     },
+    async listUnresolvedTaskPage(appId, limit = 20, cursor = "") {
+      const response = await command({
+        type: "tasks.list",
+        appId,
+        // Running Conversations often reflect Evaluation publication handling
+        // itself. Keep them in the fair historical traversal rather than giving
+        // every fresh consumer turn priority over explicit unresolved work.
+        status: ["pending", "waiting", "attention"],
+        limit: boundedLimit(limit),
+        ...(cursor ? { cursor } : {}),
+      });
+      return parseTaskListResponse(response, appId);
+    },
     async listRecentTaskPage(appId, limit = 50, cursor = "") {
       const response = await command({
         type: "tasks.list",
@@ -279,36 +337,7 @@ export function createPublicTaskEvidenceProvider(
         limit: boundedLimit(limit),
         ...(cursor ? { cursor } : {}),
       });
-      if (response.command !== "tasks.list")
-        throw new Error("tasks.list response identity mismatch");
-      const envelope = object(response.tasks);
-      const nextCursor = text(envelope.nextCursor);
-      if (!Array.isArray(envelope.items))
-        return {
-          items: [],
-          nextCursor,
-          issues: ["tasks.list response has no items array"],
-        };
-      const items: Record<string, unknown>[] = [];
-      const issues: string[] = [];
-      for (const value of envelope.items) {
-        const item = object(value);
-        if (text(item.appId) !== appId) {
-          issues.push("tasks.list item appId identity mismatch");
-          continue;
-        }
-        if (!text(item.taskId)) {
-          issues.push("tasks.list item has no taskId");
-          continue;
-        }
-        const updatedAt = Number(item.updatedAt);
-        if (!Number.isFinite(updatedAt) || updatedAt <= 0) {
-          issues.push("tasks.list item has no usable updatedAt");
-          continue;
-        }
-        items.push(item);
-      }
-      return { items, nextCursor, issues };
+      return parseTaskListResponse(response, appId);
     },
     async listTasks(appId, limit = 50) {
       const maximum = boundedLimit(limit);
