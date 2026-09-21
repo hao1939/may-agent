@@ -1,8 +1,8 @@
 <ai_context>
-summary: "Landstrip's Pi integration separates sandbox execution from credential possession: workers inherit neither parent API keys nor arbitrary environment variables, request freshly resolved provider auth over a private pipe, and may use it only for the model and endpoint pinned by the parent. A later TET 0.4.0 Reddit announcement provides a weaker ecosystem signal: sandbox products increasingly expose mount, egress, instruction, and access-mode controls, but 'authentication stays inside the sandbox' is only a location claim unless credential custody has its own authority policy. Evidence strength is kept explicit: Landstrip is pinned source and repository-test inspection; TET is a self-authored release post, not implementation verification."
-triggers: ["sandbox credentials", "worker authentication", "credential delegation", "ambient authority", "private auth channel", "endpoint pinning", "subagent secrets", "credential custody", "Landstrip", "TET"]
-last_updated: "2026-09-12"
-source_basis: "GitHub repository discovery and pinned source inspection of landstrip/landstrip at commit 4388f5b9eb0d964d20c91dc795a4f33ac05b89ab, plus a Reddit release announcement for TET 0.4.0 used only as an ecosystem and control-surface signal."
+summary: "Landstrip's Pi integration separates sandbox execution from credential possession: workers inherit neither parent API keys nor arbitrary environment variables, request freshly resolved provider auth over a private pipe, and may use it only for the model and endpoint pinned by the parent. TET provides a weaker ecosystem signal about separately controlling mounts, egress, instructions and access modes. A sandboxio implementation contrast shows why an API-level `secrets=` lane is not itself custody isolation: its Docker and E2B adapters merge those values into the sandbox environment even though audit redaction is separate. Evidence strength remains explicit for each source."
+triggers: ["sandbox credentials", "worker authentication", "credential delegation", "ambient authority", "private auth channel", "endpoint pinning", "subagent secrets", "credential custody", "Landstrip", "TET", "sandboxio", "secret environment injection"]
+last_updated: "2026-09-21"
+source_basis: "GitHub repository discovery and pinned source inspection of landstrip/landstrip at commit 4388f5b9eb0d964d20c91dc795a4f33ac05b89ab and bit-agents/sandboxio at commit 8798e93eedbeb4aa7764100be10d38c67019417e, plus a Reddit release announcement for TET 0.4.0 used only as an ecosystem and control-surface signal."
 </ai_context>
 
 # Sandboxed Workers Should Receive Request Authority, Not Ambient Credentials
@@ -108,14 +108,56 @@ Mount, egress, and credential policies should be independently configurable and
 jointly tested; "inside the sandbox" answers where a secret lives, not what the
 worker is authorized to do with it.
 
+## GitHub implementation contrast — a separate API lane is not separate custody
+
+[`bit-agents/sandboxio`](https://github.com/bit-agents/sandboxio) makes a useful
+distinction between **redaction** and **possession** visible at pinned commit
+[`8798e93eedbeb4aa7764100be10d38c67019417e`](https://github.com/bit-agents/sandboxio/commit/8798e93eedbeb4aa7764100be10d38c67019417e).
+Its security ADR labels a separate `secrets=` argument as “Secrets are not env,”
+and the security specification requires those values to be redacted from logs,
+exceptions, representations, audit events and spans. The implementation does
+construct a `Redactor` from secret values. But both current adapters still put
+the values into the workload environment:
+
+- the [Docker adapter](https://github.com/bit-agents/sandboxio/blob/8798e93eedbeb4aa7764100be10d38c67019417e/packages/sandboxio-docker/src/sandboxio_docker/_backend.py#L253-L280)
+  passes `environment={**env, **secrets}` when creating the container; and
+- the [E2B adapter](https://github.com/bit-agents/sandboxio/blob/8798e93eedbeb4aa7764100be10d38c67019417e/packages/sandboxio-e2b/src/sandboxio_e2b/_backend.py#L205-L217)
+  passes the same merge as the provider's `envs` argument.
+
+The project is explicit elsewhere that broker-style injection should be
+preferred where a backend supports it, so this is not evidence of a concealed
+backdoor or of a demonstrated leak. It is a contract-language boundary: a
+separate caller parameter plus redactor is designed to prevent logging and
+configuration mixing, but does not prevent agent-generated code from reading,
+reusing or forwarding the secret after launch. Default-deny egress narrows that
+risk, but an allowed destination does not bind the credential to one request,
+provider identity or operation.
+
+For sandbox interfaces, document and test at least three independent properties:
+**input separation** (secret values do not enter ordinary config and telemetry),
+**workload visibility** (whether code can read the value), and **use authority**
+(which identity, endpoint and operation may consume it). Calling only the first
+property “not env” can overstate the security boundary. Landstrip's parent-owned,
+endpoint-bound resolver is the stronger custody pattern when an integration can
+support it.
+
+**Discovery record:** GitHub Repository Search API query `"AI agent"
+in:name,description created:>=2026-09-20`, sorted by `updated` descending, 30
+results per page, returned HTTP 200 with `total_count: 1317` and
+`incomplete_results: false`. The selected repository's recursive tree response
+was also complete (`truncated: false`). Repository metadata was used only for
+discovery; claims above come from pinned documentation and adapter source.
+
 ## Limits
 
-This is implementation evidence at one public commit, not a security audit or a
-claim that Landstrip is escape-proof. The project documents platform differences:
-private worker authentication and non-empty `denyReadAlways` are unsupported on
-Windows, runtime seccomp query approval is Linux-only, and primary Pi file tools
-are not automatically OS-isolated. Scout did not execute the repository tests,
-inspect a release binary, or validate credential lifetime in process memory.
+These are implementation observations at two public commits, not security audits.
+For Landstrip, private worker authentication and non-empty `denyReadAlways` are
+unsupported on Windows, runtime seccomp query approval is Linux-only, and primary
+Pi file tools are not automatically OS-isolated. For sandboxio, Scout inspected
+the pinned documentation, redactor, and two shipped adapters but did not run the
+repository tests, inspect a release artifact, or test whether any provider offers
+stronger credential handling outside these adapter paths. No leak or exploit was
+attempted or demonstrated.
 
 ## Discovery record
 
