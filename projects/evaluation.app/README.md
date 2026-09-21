@@ -68,6 +68,7 @@ When explicitly enabled, the selector discovers at most 20 external Apps with bo
 - `criteria/scoring.md` and `criteria/versions/` — historical session-scoring compatibility material.
 - `design/task-outcome-evaluation.md` — implemented architecture and rollout boundary.
 - `design/rollout-and-migration-2026-09.md` — operator-owned staged activation and rollback.
+- `design/deepseek-v4-flash-evaluator-pilot-2026-09.md` — frozen pilot evidence and the rejected model-specific prompt experiment.
 
 ## Commands
 
