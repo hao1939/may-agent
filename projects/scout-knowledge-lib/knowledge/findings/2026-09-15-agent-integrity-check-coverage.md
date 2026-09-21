@@ -102,6 +102,6 @@ efficacy.
 
 ## Related Scout knowledge
 
-- [Agent Runtime Verdict Integrity](../agent-runtime-verdict-integrity.md) — checker eligibility, acceptance authority, and effect routing are separate boundaries.
+- [Agent Runtime Acceptance and Reconciliation](../agent-runtime-acceptance-and-reconciliation.md#checker-eligibility-must-not-become-acceptance-authority--workstream-github-september-2026) — checker eligibility, acceptance authority, and effect routing are separate boundaries.
 - [Coverage-Accounted Discovery](./2026-09-10-coverage-accounted-agent-detection.md) — detector outcomes need an observation denominator.
 - [Audit Integrity Needs an External Tail Anchor](./2026-09-14-audit-integrity-needs-external-tail-anchor.md) — self-contained chains do not establish independently witnessed history.
