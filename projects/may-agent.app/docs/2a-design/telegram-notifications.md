@@ -4,10 +4,18 @@
 **Implementation status:** Shared Conversation admission, native App/Task
 reads, one Task watch per chat/topic, focused context, human-action projection,
 and Task cancellation are implemented. Outbound sends are best effort; there
-is no durable per-surface replay cursor. Watch refreshes suppress unchanged
-semantic Task revisions and render only meaningful changes. Follow-up
-admission now presents the responsible Task directly, and human-action reads
-follow exact dependency links to the Task that owns the action.
+is no durable per-surface replay cursor. Host
+[PR #221](https://github.com/hao1939/may-agent/pull/221) proposes using completed,
+destination-scoped delivery receipts to suppress an unchanged exact human
+action after restart while keeping unknown, failed, partial, changed, or
+aggregate deliveries eligible. It also makes watch refreshes compare the compact
+presentation plus exact reply authority, ignoring metadata-only changes while
+retaining visible progress, dependencies, actions, and changed
+approval/Condition anchors. PR #221 is published at `3f9d3db1` but remains
+pending until it is merged, deployed, and verified in the live runtime; its open
+PR and source checks are not adoption evidence. Follow-up admission now presents
+the responsible Task directly, and human-action reads follow exact dependency
+links to the Task that owns the action.
 The [current-turn Stop button](human-control-surfaces.md#current-turn-control)
 is implemented; Task cancellation and ending a watch have separate effects.
 Request deadlines and close cancellation merged in Host
@@ -250,7 +258,13 @@ A confirmed formatting rejection may be retried once as plain text. Network
 failure, timeout, or cancellation leaves delivery uncertain and does not cause
 an immediate formatting retry. A multipart send counts as confirmed only when
 every chunk has a provider message ID; IDs for confirmed chunks remain indexed
-even if another chunk fails.
+even if another chunk fails. Only the final receipt after complete delivery may
+carry the exact human-action revision or reply authority. On restart that
+receipt may suppress the same complete action set for the same chat/topic. A
+changed action, candidate, Condition generation, incomplete current read, or
+destination remains eligible. Legacy Condition or approval anchors alone do not
+prove the complete action identity; only the exact complete-delivery revision
+may suppress a repeat.
 
 Refreshes run on later events, without a periodic delivery retry loop. A later
 wake may retry an unconfirmed message and duplicate its display or some chunks.

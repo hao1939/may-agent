@@ -307,11 +307,16 @@ change is not also presented as an off-watch notification on that surface.
 
 After `/todo` or an automatic notification is actually shown, its canonical
 Task identities may enter Conversation as command-view metadata. Each adapter
-keeps only a bounded local map of the requested actions it has shown. Adapters
-do not coordinate notification delivery or promise cross-surface exactly-once
-presentation. A lost adapter cache may repeat presentation, but never creates,
-completes, or acknowledges human work. Clearing the Condition removes the Task
-on the next semantic wake. Delivery never gates that transition.
+keeps only a bounded local map of the requested actions it has shown. Telegram
+may also recover an exact unchanged action from a completed delivery receipt
+for the same chat/topic; only a final complete multipart receipt qualifies.
+Changed actions or destinations and failed, partial, aggregate, text-only, or
+ambiguous legacy sends stay eligible. Explicit `/todo` is an intentional read
+and answers every time. Adapters do not coordinate notification delivery or
+promise cross-surface exactly-once presentation. A crash before receipt storage
+may repeat presentation, but never creates, completes, or acknowledges human
+work. Clearing the Condition removes the Task on the next semantic wake.
+Delivery never gates that transition.
 
 Provider delivery is observational. A failed or uncertain adapter send cannot
 change a Conversation result or a Task.
@@ -456,13 +461,18 @@ wake a human surface. The adapter coalesces updates, performs at most one read
 at a time, and renders the latest Task. A terminal result ends the watch
 automatically. `/unwatch` changes only local presentation.
 
-Automatic progress is shown at most once per live adapter surface and semantic
-Task revision. The adapter retains a bounded map of revisions it actually
-rendered. Returning with `/watch <ref>` shows one compact catch-up snapshot only
-when the current Task revision differs; it does not replay a transcript or turn
-presentation into delivery state. Explicit `/task <ref>` remains an intentional
-read and may show the current value again. Restarting an adapter creates a new
-surface, so it may show the current snapshot once.
+Telegram automatic progress is shown at most once per live adapter surface and
+presented Task revision. The Telegram revision contains the compact
+status/current text, rendered independent waits and actions, and exact
+reply/approval authority. Internal timestamps, execution/session identifiers,
+and unrendered facts do not cause a Telegram card. The adapter retains a bounded
+map of revisions it actually rendered. Returning with `/watch <ref>` shows one
+compact catch-up snapshot only when the current presentation differs; it does
+not replay a transcript or turn presentation into delivery state. Explicit
+`/task <ref>` remains an intentional read and may show the current value again.
+Restarting an adapter creates a new surface, so it may show the current snapshot
+once. Console keeps its existing compact revision behavior; this Telegram repair
+does not claim a shared action-revision implementation.
 
 Watch does not poll and owns no timer, workflow, session, or model turn.
 
