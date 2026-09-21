@@ -207,22 +207,24 @@ const observer = {
     }
   },
 };
-const runtime = createAppObserverRuntime({
-  bus,
-  now: () => currentTime,
-  context: () => ({
-    workspace: { appRoot: root, projectRoot: root },
-    read: {
-      tasks: {
-        list: async (o: any) =>
-          listRuntimeTaskViews({ taskStateConfig: config }, o),
-        get: async (id: string) =>
-          readRuntimeTaskView({ taskStateConfig: config }, id),
+const createRuntime = () =>
+  createAppObserverRuntime({
+    bus,
+    now: () => currentTime,
+    context: () => ({
+      workspace: { appRoot: root, projectRoot: root },
+      read: {
+        tasks: {
+          list: async (o: any) =>
+            listRuntimeTaskViews({ taskStateConfig: config }, o),
+          get: async (id: string) =>
+            readRuntimeTaskView({ taskStateConfig: config }, id),
+        },
       },
-    },
-    log: { info: () => {}, warn: () => {}, debug: () => {}, error: () => {} },
-  }),
-});
+      log: { info: () => {}, warn: () => {}, debug: () => {}, error: () => {} },
+    }),
+  });
+let runtime = createRuntime();
 const entries = [
   { appDir: root, definition: { ...definition, observers: [observer] } },
 ];
@@ -247,6 +249,15 @@ try {
     store.readTaskConditions(taskId).map((c: any) => c.metadata.id),
     ["human-review", "independent-dependency"],
   );
+  const beforeRestart = observations.length;
+  runtime.close();
+  runtime = createRuntime();
+  runtime.replace(entries);
+  currentTime += observer.intervalMs;
+  await scan();
+  assert.equal(observations.length, beforeRestart + 1);
+  assert.equal(observations.at(-1)?.target?.taskId, taskId);
+
   const busyClaim = claim();
   const before = observations.length;
   currentTime += observer.intervalMs;
@@ -269,6 +280,21 @@ try {
     facts: ["Merged receipt and queued input retained"],
     conditions: [human, dependency],
   });
+  const resumedClaim = claim();
+  assert.equal(resumedClaim.kind, "claimed");
+  if (resumedClaim.kind !== "claimed") throw new Error("expected queued input");
+  assert.ok(
+    resumedClaim.events.some(
+      ({ event }: any) =>
+        event.type === type && event.eventId === fact[EVENT_ROW_ID],
+    ),
+  );
+  deferAppTask(config, resumedClaim, {
+    disposition: "waiting",
+    summary: "Merge input verified; independent work remains",
+    facts: ["Exact queued merge event was claimable after busy settlement"],
+    conditions: [human, dependency],
+  });
   assert.deepEqual(
     store.readTaskConditions(taskId).map((c: any) => c.metadata.id),
     ["human-review", "independent-dependency"],
@@ -280,8 +306,10 @@ try {
     independentHumanWaitPreserved: true,
     independentDependencyPreserved: true,
     busyOwnerInputRetained: true,
+    queuedEventId: fact[EVENT_ROW_ID],
     unchangedSuppressed: true,
     publicationFailureRetried: true,
+    runtimeRestartRepublishedSafely: true,
     durableEventId: fact[EVENT_ROW_ID],
     status: readRuntimeTaskView({ taskStateConfig: config }, taskId).status,
   };
@@ -289,7 +317,7 @@ try {
   report.fixtureOnly = true;
   report.externalBodyBytes = Boolean(process.env.PR_BODY_FILE);
   report.limit =
-    "Production observer, Host runtime, durable publication and busy-owner admission/settlement; HTTP and owner judgment are fixtures. Runtime restart and real GitHub writes are not proved. No production DB writes.";
+    "Production observer, reconstructed Host observer runtime, durable publication and busy-owner admission/settlement; HTTP and owner judgment are fixtures. A full Host process/container restart and real GitHub writes are not proved. No production DB writes.";
   writeFileSync(output, JSON.stringify(report, null, 2) + "\n");
   console.log(JSON.stringify(report));
 } finally {

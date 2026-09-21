@@ -37,7 +37,10 @@ type Resource = { repository: string; number: number };
 type RememberedResource = Resource & { open: boolean };
 type PublicationState = { success?: string; reviewFailure?: string };
 type ObserverMemory = {
+  // cursor retains the legacy positional checkpoint. nextResource is the stable
+  // identity checkpoint used when candidate recency changes their order.
   cursor?: number;
+  nextResource?: number;
   deferUntil?: number;
   resources?: RememberedResource[];
   states?: Record<string, PublicationState>;
@@ -613,8 +616,13 @@ export async function observeGitHubPullRequests(
       `GitHub pull-request candidate coverage exceeded the ${MAX_RESOURCES}-resource pass capacity`,
     );
   const resources = [...combined.values()];
+  const stableStart = Number.isSafeInteger(previous.nextResource)
+    ? resources.findIndex((item) => item.number === previous.nextResource)
+    : -1;
   const start = resources.length
-    ? (Number(previous.cursor) || 0) % resources.length
+    ? stableStart >= 0
+      ? stableStart
+      : (Number(previous.cursor) || 0) % resources.length
     : 0;
   const events: AppEvent<Record<string, unknown>>[] = [];
   const states: Record<string, PublicationState> = { ...priorStates };
@@ -711,10 +719,16 @@ export async function observeGitHubPullRequests(
     ctx.log.warn(
       `GitHub pull-request memory evicted ${rememberedValues.length - retainedResources.length} open resources beyond the ${MAX_REMEMBERED_RESOURCES}-resource reservation`,
     );
+  const nextIndex = resources.length
+    ? (start + advanced) % resources.length
+    : 0;
   return {
     events,
     nextObservation: {
-      cursor: resources.length ? (start + advanced) % resources.length : 0,
+      cursor: nextIndex,
+      ...(resources.length
+        ? { nextResource: resources[nextIndex].number }
+        : {}),
       ...(budget.deferUntil ? { deferUntil: budget.deferUntil } : {}),
       resources: retainedResources,
       states: Object.fromEntries(

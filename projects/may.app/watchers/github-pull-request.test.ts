@@ -343,6 +343,63 @@ describe("May GitHub pull-request resource ownership", () => {
     ).toBeGreaterThan(0);
   });
 
+  test("keeps every continuously admitted resource progressing when refresh recency reorders memory", async () => {
+    const pulls = new Map<number, ReturnType<typeof pullPayload>>();
+    const tasks = new Map<string, TaskDetail>();
+    for (let number = 1; number <= 64; number++) {
+      const id = `goal/${number}`;
+      pulls.set(number, pullPayload(number, ownerBody(id)));
+      tasks.set(id, task(id));
+    }
+    const fetcher = (async (input: string | URL | Request) => {
+      const url = String(input);
+      if (url.includes("?state=")) {
+        const parsed = new URL(url);
+        if (parsed.searchParams.get("state") === "closed") return response([]);
+        const page = Number(parsed.searchParams.get("page") ?? "1");
+        const values = [...pulls.values()];
+        const body = values.slice((page - 1) * 50, page * 50);
+        const headers =
+          page === 1
+            ? {
+                link: `<https://api.github.com/repos/${scope.repository}/pulls?state=open&sort=updated&direction=desc&per_page=50&page=2>; rel="next"`,
+              }
+            : undefined;
+        return response(body, 200, headers);
+      }
+      if (url.includes("/reviews")) return response([]);
+      const number = Number(url.match(/\/pulls\/(\d+)$/)?.[1]);
+      return response(pulls.get(number));
+    }) as typeof fetch;
+
+    let previous: ObserverContext["previousObservation"];
+    const initiallyObserved = new Set<number>();
+    for (let pass = 0; pass < 20; pass++) {
+      const result = await observe(context(tasks, previous), fetcher);
+      for (const event of result.events)
+        if (event.type === GITHUB_PULL_REQUEST_EVENT)
+          initiallyObserved.add(
+            Number((event.data as { number: number }).number),
+          );
+      previous = result.nextObservation;
+    }
+    expect(initiallyObserved.size).toBe(64);
+
+    const changed = pulls.get(29)!;
+    changed.head.sha = "changed-head-29";
+    let changeObserved = false;
+    for (let pass = 0; pass < 20 && !changeObserved; pass++) {
+      const result = await observe(context(tasks, previous), fetcher);
+      changeObserved = result.events.some(
+        (event) =>
+          event.type === GITHUB_PULL_REQUEST_EVENT &&
+          (event.data as { number: number }).number === 29,
+      );
+      previous = result.nextObservation;
+    }
+    expect(changeObserved).toBe(true);
+  });
+
   test("services successful discovery despite a later provider failure and reports incomplete coverage", async () => {
     const ctx = context(new Map([["goal/linked-pr", task("goal/linked-pr")]]));
     const fetcher = (async (input: string | URL | Request) => {

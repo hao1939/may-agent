@@ -60,8 +60,10 @@ bounded observer, not complete GitHub history.
 ## Facts, budgets, and coexistence
 
 The observer shares an eleven-request pass budget across up to four discovery
-reads, direct PR reads, and review pagination. A round-robin cursor gives admitted
-remembered and newly discovered candidates progress over later passes. The
+reads, direct PR reads, and review pagination. A round-robin resource-identity
+checkpoint (with a legacy positional fallback) gives admitted remembered and
+newly discovered candidates progress even when refresh recency changes memory
+order between passes. The
 64-resource candidate capacity reserves 32 positions for previously remembered
 open PRs; current newest-first discoveries fill the rest. Excess discoveries are
 reported as incomplete capacity coverage. Open-resource memory retains the 32
