@@ -1,8 +1,8 @@
 <ai_context>
-summary: "Runtime patterns for keeping checker eligibility separate from acceptance authority, binding review approval to actor and content provenance, reconciling expected outcomes against the tested release, and normalizing heterogeneous audit decisions without losing action phase or cause."
-triggers: ["checker eligibility", "acceptance authority", "FinalAcceptance", "ContributionRecord", "Workstream", "review provenance", "content-addressed approval", "CRT", "XFAIL", "XPASS", "release-aware conformance", "Monet E2E", "audit outcome normalization", "decision vocabulary", "shadow mode", "approval timeout", "execution record", "node9"]
+summary: "Runtime patterns for keeping checker eligibility separate from acceptance authority, binding review approval to actor and content provenance, deriving readiness from live premises at admission time, reconciling expected outcomes against the tested release, and normalizing heterogeneous audit decisions without losing action phase or cause."
+triggers: ["checker eligibility", "acceptance authority", "FinalAcceptance", "ContributionRecord", "Workstream", "review provenance", "content-addressed approval", "CRT", "transactional readiness", "live premises", "Amenbo", "XFAIL", "XPASS", "release-aware conformance", "Monet E2E", "audit outcome normalization", "decision vocabulary", "shadow mode", "approval timeout", "execution record", "node9"]
 last_updated: "2026-09-21"
-source_basis: "Extracted intact from agent-runtime-verdict-integrity.md during its 2026-09-21 oversized-note review. Sources are Flow-Research/workstream revision d5dd94d3f1f4e52fa9f191e88d3c210758bb4b3b; imron/crt revision e3ff1126b06528048673573a667bf3561f185539; team-monet/monet-e2e revision ba8acbc55a4574b3a453dcbf49842f7fb363f70c; and node9-ai/node9-proxy revision 915735f92d988423203707a749d63b6298defa2c. Reproduction and static-inspection limits remain stated in each section."
+source_basis: "Extracted intact from agent-runtime-verdict-integrity.md during its 2026-09-21 oversized-note review, then extended with ShiroDoromoto/amenbo revision 23cdac267aefa6806460c9c1c36a0eba8f105993. Other sources are Flow-Research/workstream revision d5dd94d3f1f4e52fa9f191e88d3c210758bb4b3b; imron/crt revision e3ff1126b06528048673573a667bf3561f185539; team-monet/monet-e2e revision ba8acbc55a4574b3a453dcbf49842f7fb363f70c; and node9-ai/node9-proxy revision 915735f92d988423203707a749d63b6298defa2c. Reproduction and static-inspection limits remain stated in each section."
 </ai_context>
 
 # Agent Runtime Acceptance and Reconciliation
@@ -238,6 +238,52 @@ missing receipts separately from classification correctness.
 - **Evidence level:** pinned source, README, repository tree, and project-authored tests inspected; the complete tree contained 686 entries and was not truncated. Scout did not run the package, inspect the underlying private audit log, or independently reproduce the reported historical row counts.
 - **Discovery query:** GitHub Repository Search API `topic:ai-agent pushed:>=2026-09-20 stars:>50`, sorted by update time; `incomplete_results: false`
 
+
+## Readiness Should Be Recomputed from Live Premises at Admission — Amenbo (GitHub, September 2026)
+
+Amenbo provides a concrete implementation of a useful scheduling distinction:
+a task's workflow status and its readiness to begin are different facts. A task
+can remain `todo` while four independent premises determine whether it is
+startable: no dependency is still open, every linked decision is settled and
+current, its declared start date has arrived, and task creation is complete.
+The CLI exposes the reasons through `ready:no`, while reservation rejects an
+unready task with typed reason parts rather than a generic failure.
+
+The stronger pattern is that discovery and admission share one predicate. The
+mailbox's `ready:yes` filter and the reservation guard both derive their answer
+from the same source-of-truth query, and a repository-authored test toggles each
+of the four premises to check that the two surfaces stay equivalent. On the
+write path, current status and premise blockers are read inside the same write
+transaction as the `todo` to `in_progress` transition. A compare-and-set check
+first distinguishes an already-held reservation from unmet premises; there is
+no actor exemption or force flag.
+
+This design avoids two common races: an agent cannot start work merely because
+an earlier listing said it was ready, and a direct reservation cannot bypass a
+condition hidden by the mailbox. It also preserves cause. Concurrent ownership
+returns `already_reserved`; unmet dependencies or decisions return `not_ready`
+with separate typed parts, allowing a host to route the right follow-up instead
+of treating all refusals as contention.
+
+One boundary is equally important. The readiness guard fires only when entering
+`in_progress`. Adding a dependency or reopening a linked decision after work has
+started does **not** revoke the reservation. That is a deliberate transition
+contract, not continuous invariant enforcement. Systems that require active
+work to pause when premises regress need a separate reconciliation consumer,
+lease invalidation rule, or interrupt protocol; recomputing readiness only at
+admission cannot provide that guarantee.
+
+**Runtime rule:** represent readiness as a derived predicate over live premises,
+not as a stale status bit. Use the same derivation for discovery and admission,
+recheck it transactionally with the ownership transition, and preserve typed
+causes. Separately specify whether later premise changes merely become visible
+or actively invalidate work already in progress.
+
+- **Repo:** https://github.com/ShiroDoromoto/amenbo
+- **Inspected revision:** [`23cdac267aefa6806460c9c1c36a0eba8f105993`](https://github.com/ShiroDoromoto/amenbo/commit/23cdac267aefa6806460c9c1c36a0eba8f105993)
+- **Primary sources:** [README task and decision contract](https://github.com/ShiroDoromoto/amenbo/blob/23cdac267aefa6806460c9c1c36a0eba8f105993/README.md), [transactional reservation guard and repository-authored tests](https://github.com/ShiroDoromoto/amenbo/blob/23cdac267aefa6806460c9c1c36a0eba8f105993/crates/amenbo-core/src/ops/task.rs), and [decision transition and supersession semantics](https://github.com/ShiroDoromoto/amenbo/blob/23cdac267aefa6806460c9c1c36a0eba8f105993/crates/amenbo-core/src/ops/decision.rs)
+- **Evidence level:** pinned static source and checked-in tests inspected; the GitHub tree response was not truncated. Scout did not compile or execute the repository, so this is implementation evidence rather than a reliability or concurrency benchmark.
+- **Discovery query:** GitHub Repository Search API `"AI agent" sandbox in:name,description,readme pushed:>=2026-09-20`, sorted by update time; `incomplete_results: false`
 
 ## Related Verification Patterns
 
