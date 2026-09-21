@@ -2,7 +2,7 @@
 summary: "Insights on Operational Memory (Agent Experience Cache) from Hacker News — infrastructure patterns, sovereignty stack, agent sandbox convergence, model commoditization, and practitioner discourse."
 triggers: "operational memory, architecture, cache, lessons, context, sovereignty stack, agent sandbox, harness-as-moat"
 last_updated: "2026-09-21"
-source_basis: "Hacker News discussions on agent architectures, including HN 49376500 / tenequm/pond, HN 49394827 / OzBrain, HN 49428882 / laude-institute/headlong, and HN 49433217 / wisplu state-file incident; arXiv 2606.20512 (Probe-and-Refine guidance tuning), arXiv 2607.00685 (M2Note mistake notebooks), arXiv 2607.00910 (SIVE instrument validation); GitHub brain.md/agent-memory-wiki, lohoz/agenthist, and x96x64/ctxjev"
+source_basis: "Hacker News discussions on agent architectures, including HN 49376500 / tenequm/pond, HN 49394827 / OzBrain, HN 49428882 / laude-institute/headlong, HN 49433217 / wisplu state-file incident, and HN 49784563 / manuelcecchetto/codex-context-gc; arXiv 2606.20512 (Probe-and-Refine guidance tuning), arXiv 2607.00685 (M2Note mistake notebooks), arXiv 2607.00910 (SIVE instrument validation); GitHub brain.md/agent-memory-wiki, lohoz/agenthist, x96x64/ctxjev, and manuelcecchetto/codex-context-gc"
 companion_notes: ["hn-comprehension-cliff-discourse.md"]
 extraction_log: "2026-06-29: Extracted Comprehension Cliff / Reviews Expensive / Skill Atrophy discourse arc (396 lines, 8 sections) into hn-comprehension-cliff-discourse.md. Parent reduced from 1,303 to 913 lines. 2026-08-06 maintenance removed future-dated extraction metadata and unverifiable future-dated tracker links."
 </ai_context>
@@ -1046,6 +1046,57 @@ separately from aggregate token savings.
 - **Repo:** https://github.com/x96x64/ctxjev
 - **Pinned source:** https://github.com/x96x64/ctxjev/tree/b6f5f9e9bcf806b7d133502dd22d1ddc2b17e7d0
 - **Relevant implementation:** [core scoring](https://github.com/x96x64/ctxjev/blob/b6f5f9e9bcf806b7d133502dd22d1ddc2b17e7d0/packages/core/src/index.ts), [cache persistence](https://github.com/x96x64/ctxjev/blob/b6f5f9e9bcf806b7d133502dd22d1ddc2b17e7d0/packages/claude-plugin/src/preserve.ts), [pre-compaction hook](https://github.com/x96x64/ctxjev/blob/b6f5f9e9bcf806b7d133502dd22d1ddc2b17e7d0/packages/claude-plugin/src/preCompact.ts), and [post-compaction injection](https://github.com/x96x64/ctxjev/blob/b6f5f9e9bcf806b7d133502dd22d1ddc2b17e7d0/packages/claude-plugin/src/sessionStartCompact.ts)
+
+## Let the model request compaction, but keep authority and recovery outside it (HN/GitHub, September 2026)
+
+HN item [49784563](https://news.ycombinator.com/item?id=49784563) surfaced
+[`codex-context-gc`](https://github.com/manuelcecchetto/codex-context-gc), an
+experimental adapter that exposes native Codex compaction as a model-callable
+`compact_context` tool. At pinned commit
+[`0cd8015`](https://github.com/manuelcecchetto/codex-context-gc/commit/0cd801556f75a642893c62bb2ef45c8ad2f08620),
+the installed instructions tell the model to compact only after a verified
+phase, before materially different work, and not while an investigation is
+unresolved. The checkpoint must name the completed phase, next focus, retained
+facts, and verification; the adapter saves it with owner-only permissions,
+invokes native compaction through lifecycle hooks, injects the full checkpoint,
+and continues in a new turn of the same task.
+
+This is a useful division of labor: the model sees semantic phase boundaries,
+while the runtime owns persistence, lifecycle sequencing, and continuation.
+The implementation also treats the checkpoint as **model-authored working
+state, not new user authorization**. New user activity cancels a pending
+continuation; late responses are matched against the pending checkpoint object;
+and an injection failure retains the saved checkpoint without automatically
+retrying. Those controls keep a self-requested context operation from silently
+becoming a new task or authority grant.
+
+The boundary remains incomplete. “Verified phase” is an instruction to the same
+model that requests compaction, not an independently checked predicate, and the
+checkpoint's `verification` list records claims rather than receipts. The
+README reports one live desktop handoff and a 21-test suite, including six
+compactions in an active goal, but says crash recovery, fork inheritance, and
+broader failure recovery remain unvalidated. Saving the checkpoint and native
+compaction are explicitly non-atomic; the adapter preserves a checkpoint on
+failure but does not automatically recover an in-flight handoff.
+
+**Reusable rule:** expose semantic compaction as a model proposal at a verified
+safe point, but keep its mechanics in a task-aware runtime. Bind the checkpoint
+to the task and turn, label it as non-authoritative, cancel on newer user input,
+and make continuation conditional on successful injection. For consequential
+work, replace free-text verification claims with independently checkable
+receipts, and test crash points between save, compact, inject, and resume.
+
+**Evidence boundary:** Scout inspected the README, installed instruction block,
+signed-runtime design note, adapter implementation, manifest, and test names at
+the pinned commit. Scout did not install the adapter, run its tests, reproduce
+the desktop handoff, or verify the author's performance or token-savings claim.
+The HN item had three points and one brief positive comment when checked, so it
+is an implementation pattern rather than adoption evidence.
+
+- **HN:** https://news.ycombinator.com/item?id=49784563
+- **Repo:** https://github.com/manuelcecchetto/codex-context-gc
+- **Pinned source:** https://github.com/manuelcecchetto/codex-context-gc/tree/0cd801556f75a642893c62bb2ef45c8ad2f08620
+- **Relevant implementation:** [adapter](https://github.com/manuelcecchetto/codex-context-gc/blob/0cd801556f75a642893c62bb2ef45c8ad2f08620/stock_gc.py), [instructions](https://github.com/manuelcecchetto/codex-context-gc/blob/0cd801556f75a642893c62bb2ef45c8ad2f08620/AGENTS-snippet.md), and [signed-runtime design](https://github.com/manuelcecchetto/codex-context-gc/blob/0cd801556f75a642893c62bb2ef45c8ad2f08620/SIGNED-RUNTIME.md)
 
 ## Next Steps
 
