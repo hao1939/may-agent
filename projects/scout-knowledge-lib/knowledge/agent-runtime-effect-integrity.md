@@ -1,6 +1,6 @@
 <ai_context>
-summary: "Companion to agent-runtime-hardening.md for core effect integrity: centralized effect-mode derivation, interaction-shaped mutation review, revision-bound workspace admission, evidence-carrying closure, quarantine for unknown effects, operation identity across replanning, transactional review versus atomic commit, guarded writes, apply-time revalidation, ambiguous-delivery recovery, session-bound retry safety, observation-bound handover, history/context separation, and externally anchored sandbox authority."
-triggers: ["runtime effect integrity", "central effect gate", "mutation confirmation", "revision-bound admission", "effect closure", "unknown effect", "operation identity", "replanning retry", "resource quarantine", "atomic commit", "guarded configuration write", "previewable plan", "ambiguous delivery", "AID-Guard", "outbound publication", "remote session retry", "desktop handover", "history fidelity", "safe resume", "sandbox escape", "external authority", "agentsgo", "atomic replacement", "compare-and-swap"]
+summary: "Companion to agent-runtime-hardening.md for core effect integrity: centralized effect-mode derivation, interaction-shaped mutation review, approval-channel races, revision-bound workspace admission, evidence-carrying closure, quarantine for unknown effects, operation identity across replanning, transactional review versus atomic commit, guarded writes, apply-time revalidation, ambiguous-delivery recovery, session-bound retry safety, observation-bound handover, history/context separation, and externally anchored sandbox authority."
+triggers: ["runtime effect integrity", "central effect gate", "mutation confirmation", "approval race", "permission broker", "modified-input recheck", "revision-bound admission", "effect closure", "unknown effect", "operation identity", "replanning retry", "resource quarantine", "atomic commit", "guarded configuration write", "previewable plan", "ambiguous delivery", "AID-Guard", "outbound publication", "remote session retry", "desktop handover", "history fidelity", "safe resume", "sandbox escape", "external authority", "agentsgo", "atomic replacement", "compare-and-swap"]
 last_updated: "2026-09-21"
 source_basis: "Extracted from agent-runtime-hardening.md during its oversized-note review and subsequently updated with source-grounded findings. Each retained section preserves stable source links, pinned revisions where applicable, reproduced checks where performed, and explicit evidence limitations. Unattended-execution, replay, approval-resume, settlement, accountable-write, and desktop-authorization sections moved intact to agent-runtime-unattended-execution-and-replay.md during the 2026-09-21 oversized-note review."
 </ai_context>
@@ -17,6 +17,52 @@ These patterns cover the boundary after an agent has been granted execution:
 which revision enters a persistent workspace, what evidence closes an effect,
 what work a verification receipt actually proves, and where an unattended
 sandbox's trust boundary ends.
+
+## A Visible Approval Must Already Have a Live, Single-Winner Responder — ZCode (GitHub, September 2026)
+
+ZCode's pinned agent runtime exposes a subtle approval-liveness failure and a
+useful repair pattern. A comment in its current permission flow records the
+prior ordering: the runtime emitted a permission request, then awaited a
+`PermissionRequest` hook, and only afterwards registered the interactive
+broker's response deferred. A synchronous hook used as an external approval
+bridge could block while the confirmation UI was already visible. User clicks
+then found no deferred, were treated as idempotent misses, and the turn could
+hang permanently. This is an implementation comment about the repaired defect,
+not an independently reproduced incident report.
+
+At revision `872ad960de7ec172591f7e1952f7849229f94521`, the runtime races the
+hook and broker responders. It starts the broker branch first, and the broker
+contract requires its response channel to be registered synchronously. A
+broker response first claims the result and aborts the hook; a hook decision
+first resolves the race and aborts the broker. A hook that returns no decision
+forfeits, while a hook exception is logged and leaves the user-facing broker
+waiting rather than converting auxiliary infrastructure failure into approval
+or denial. The winner is resolved before loser cancellation, so cleanup of a
+stuck loser cannot delay the accepted decision.
+
+The same flow handles another authority hazard: an approval hook can return a
+modified tool input. ZCode normalizes and schema-validates that input, then
+re-runs permission evaluation against the modified target. If the new target is
+denied it stops; if it still requires approval it asks through the broker. This
+prevents an approval for one path or scope from silently authorizing a
+hook-rewritten one. The repository tree at this revision contains no core
+permission test files (the only `*.test.ts`/`*.test.tsx` files found are in
+service and UI packages), and Scout did not build or execute the 7,364-entry
+monorepo. Treat these observations as static implementation evidence, not proof
+that every UI transport registers at the exact visibility boundary or that the
+race is free of all cancellation edge cases.
+
+**Runtime rule:** make “visible” imply “answerable.” Register the authoritative
+response channel before exposing an approval, give all legitimate responders a
+single atomic claim on the decision, cancel but do not await losers, and define
+how abstention and responder failure behave. If any responder can rewrite the
+operation, normalize, validate, and re-authorize the rewritten input rather
+than inheriting the original decision.
+
+- **Repo:** https://github.com/zai-org/ZCode
+- **Inspected revision:** [`872ad960de7ec172591f7e1952f7849229f94521`](https://github.com/zai-org/ZCode/commit/872ad960de7ec172591f7e1952f7849229f94521)
+- **Primary sources:** [permission flow](https://github.com/zai-org/ZCode/blob/872ad960de7ec172591f7e1952f7849229f94521/apps/zcode-cli/packages/core/src/tool/executor/permission-flow.ts), [responder race](https://github.com/zai-org/ZCode/blob/872ad960de7ec172591f7e1952f7849229f94521/apps/zcode-cli/packages/core/src/tool/executor/permission-responder-race.ts), [modified-input recheck](https://github.com/zai-org/ZCode/blob/872ad960de7ec172591f7e1952f7849229f94521/apps/zcode-cli/packages/core/src/tool/executor/permission-input-recheck.ts), and [approval gate](https://github.com/zai-org/ZCode/blob/872ad960de7ec172591f7e1952f7849229f94521/apps/zcode-cli/packages/core/src/tool/executor/approval-gate.ts)
+- **Discovery query:** GitHub Repository Search API `agent in:name,description created:>=2026-09-20`, sorted by stars; `total_count: 9843`, `incomplete_results: false`
 
 ## Atomic Replacement Is Not an Atomic Ownership Claim — agentsgo (GitHub, September 2026)
 
