@@ -963,7 +963,8 @@ export function taskInputForEvent(
       const data = eventData(event);
       const appId = stringValue(data.project ?? data.appId);
       const taskId = stringValue(data.taskId);
-      return automaticReviewConfig().enabled &&
+      const automatic = automaticReviewConfig();
+      return automatic.enabled &&
         (data.disposition === "incomplete" ||
           data.disposition === "retrying") &&
         appId &&
@@ -971,7 +972,14 @@ export function taskInputForEvent(
         !isEvaluationOwnedReference(appId)
         ? {
             kind: "review-task-outcome",
-            data: { appId, taskId, assessmentPurpose: "ongoing" },
+            data: {
+              appId,
+              taskId,
+              assessmentPurpose: "ongoing",
+              ...(automatic.reviewer === "evaluator-deepseek"
+                ? { reviewer: automatic.reviewer }
+                : {}),
+            },
           }
         : null;
     }

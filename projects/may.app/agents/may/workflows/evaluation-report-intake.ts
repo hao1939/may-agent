@@ -12,7 +12,7 @@ import { planReportIntake } from "../../../evaluation-report-intake.js";
 
 export const name = "evaluation-report-intake";
 export const description =
-  "Integrity-check one published Evaluation report and reread its canonical current subject before planning a disposition.";
+  "Integrity-check the flat publication identity from message.context.publication, reread its canonical current subject, and plan a disposition.";
 
 type Input = PublishedReportRequest;
 type SubjectReader = (subject: {
@@ -48,6 +48,7 @@ function finish(
         report: ctx.input.report,
         jsonHash: ctx.input.jsonHash,
         markdownHash: ctx.input.markdownHash,
+        ...(ctx.input.reviewer ? { reviewer: ctx.input.reviewer } : {}),
         ...(ctx.input.assessmentPurpose
           ? { assessmentPurpose: ctx.input.assessmentPurpose }
           : {}),
@@ -183,6 +184,7 @@ export async function intakeEvaluationReport(
           "markdownHash",
           "facts",
           "report",
+          "reviewer",
           "assessmentPurpose",
           "rubricVersion",
           "validityIdentity",

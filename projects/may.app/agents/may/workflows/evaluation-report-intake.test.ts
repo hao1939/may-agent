@@ -2,10 +2,12 @@ import { describe, expect, test } from "bun:test";
 import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import type { AppEvent } from "@may-agent/sdk";
 import {
   createTestAppRead,
   createTestAppWorkflowContext,
 } from "@may-agent/sdk/testing";
+import { evaluationTaskReportInput } from "../../../app";
 import { intakeEvaluationReport } from "./evaluation-report-intake";
 import {
   hashReport,
@@ -22,6 +24,8 @@ function fixture(
   ongoing = false,
   assessmentNow?: number,
   freshness?: "current" | "stale" | "unavailable",
+  reviewer?: "evaluator" | "evaluator-deepseek",
+  evidenceHash = "evidence-1",
 ) {
   const root = mkdtempSync(join(tmpdir(), "may-report-intake-"));
   const detail = {
@@ -53,7 +57,7 @@ function fixture(
     reason: "verified",
     appId,
     taskId: detail.taskId,
-    evidenceHash: "evidence-1",
+    evidenceHash,
     task: subjectTask,
   };
   const ongoingAssessment = ongoing
@@ -64,9 +68,10 @@ function fixture(
   const paths = taskReportPaths(
     appId,
     detail.taskId,
-    "evidence-1",
+    evidenceHash,
     rubricVersion,
     validityIdentity,
+    reviewer,
   );
   const payload = {
     version: 1,
@@ -74,24 +79,30 @@ function fixture(
     sourceRevision: "fixture",
     disposition: "assessed",
     createdAt: 1,
-    subject: { appId, taskId: detail.taskId, evidenceHash: "evidence-1" },
+    subject: { appId, taskId: detail.taskId, evidenceHash },
     ...(freshness
       ? {
           snapshot: {
             generation: detail.generation,
-            evidenceHash: "evidence-1",
+            evidenceHash,
             validityIdentity,
           },
           freshness: {
             status: freshness,
             checkedAt: 1,
             currentEvidenceHash:
-              freshness === "current" ? "evidence-1" : "evidence-2",
+              freshness === "current" ? evidenceHash : "evidence-2",
           },
         }
       : {}),
     evidence: subjectTask,
-    evaluator: { executionId: "s_eval", cost: "unknown" },
+    evaluator: {
+      reviewer: reviewer ?? "evaluator",
+      configuredModel:
+        reviewer === "evaluator-deepseek" ? "deepseek-v4-flash" : "gpt-5.6-sol",
+      executionId: "s_eval",
+      cost: "unknown",
+    },
     ...(ongoing
       ? {
           assessment: {
@@ -117,12 +128,13 @@ function fixture(
   const publication = {
     appId,
     taskId: detail.taskId,
-    evidenceHash: "evidence-1",
+    evidenceHash,
     executionId: "s_eval",
     report: paths.markdownPath,
     facts: paths.jsonPath,
     jsonHash: hashReport(facts),
     markdownHash: hashReport(report),
+    ...(reviewer ? { reviewer } : {}),
     ...(ongoing
       ? {
           assessmentPurpose: "ongoing" as const,
@@ -136,6 +148,7 @@ function fixture(
     taskId: detail.taskId,
     evidenceHash: publication.evidenceHash,
     executionId: publication.executionId,
+    ...(reviewer ? { reviewer } : {}),
     ...(ongoing ? { rubricVersion, validityIdentity } : {}),
     jsonPath: publication.facts,
     markdownPath: publication.report,
@@ -147,18 +160,51 @@ function fixture(
 function context(data: ReturnType<typeof fixture>) {
   return createTestAppWorkflowContext({ input: data.publication });
 }
-function reader(data: ReturnType<typeof fixture>, evidenceHash = "evidence-1") {
+function reader(data: ReturnType<typeof fixture>, evidenceHash?: string) {
   return async () => ({
     disposition: "eligible" as const,
     reason: "verified",
     appId: data.publication.appId,
     taskId: data.publication.taskId,
-    evidenceHash,
+    evidenceHash: evidenceHash ?? data.publication.evidenceHash,
     task: data.subjectTask,
   });
 }
 
 describe("May Evaluation report intake procedure", () => {
+  test("preserves producer reviewer identity through May normalization and shared report intake", async () => {
+    for (const reviewer of [undefined, "evaluator-deepseek"] as const) {
+      const data = fixture(
+        "may",
+        false,
+        undefined,
+        undefined,
+        reviewer,
+        "a".repeat(64),
+      );
+      const event: AppEvent<Record<string, unknown>> = {
+        type: "evaluation.task_report_published",
+        source: "app-task:evaluation",
+        owner: "app:evaluation",
+        data: { ...data.publication },
+      };
+      const normalized = evaluationTaskReportInput(event)!;
+      const publication = (normalized.data as any).context.publication;
+      expect(publication.reviewer).toBe(reviewer);
+
+      const execution = await intakeEvaluationReport(
+        createTestAppWorkflowContext({ input: publication }),
+        data.root,
+        reader(data),
+      );
+      expect((execution.output as any).result).toMatchObject({
+        disposition: "investigate",
+        publication: reviewer ? { reviewer } : data.publication,
+        report: reviewer ? { reviewer } : {},
+      });
+    }
+  });
+
   test("preserves ongoing assessment identity through integrity read and handoff", async () => {
     const data = fixture("may", true);
     const validityIdentity = data.publication.validityIdentity!;

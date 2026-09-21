@@ -326,6 +326,7 @@ export function evaluationTaskReportInput(
   const facts = requiredText(data, "facts", event.type);
   const jsonHash = reportHash(data, "jsonHash");
   const markdownHash = reportHash(data, "markdownHash");
+  const reviewer = optionalText(data.reviewer);
   const assessmentPurpose = optionalText(data.assessmentPurpose);
   const rubricVersion = optionalText(data.rubricVersion);
   const validityIdentity = optionalText(data.validityIdentity);
@@ -338,6 +339,7 @@ export function evaluationTaskReportInput(
     facts,
     jsonHash,
     markdownHash,
+    ...(reviewer ? { reviewer } : {}),
     ...(assessmentPurpose ? { assessmentPurpose } : {}),
     ...(rubricVersion ? { rubricVersion } : {}),
     ...(validityIdentity ? { validityIdentity } : {}),

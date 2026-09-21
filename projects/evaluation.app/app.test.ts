@@ -1131,9 +1131,11 @@ describe("evaluation task policy", () => {
   });
 
   test("routes production failure dispositions only when automatic review is enabled", () => {
-    const previous = process.env.EVALUATION_AUTO_REVIEW_ENABLED;
+    const previousEnabled = process.env.EVALUATION_AUTO_REVIEW_ENABLED;
+    const previousReviewer = process.env.EVALUATION_AUTO_REVIEW_REVIEWER;
     try {
       delete process.env.EVALUATION_AUTO_REVIEW_ENABLED;
+      delete process.env.EVALUATION_AUTO_REVIEW_REVIEWER;
       const failed = event("project.task.reconciled", {
         project: "may",
         taskId: "goal/example",
@@ -1182,9 +1184,46 @@ describe("evaluation task policy", () => {
         ),
       ).toBeNull();
     } finally {
-      if (previous === undefined)
+      if (previousEnabled === undefined)
         delete process.env.EVALUATION_AUTO_REVIEW_ENABLED;
-      else process.env.EVALUATION_AUTO_REVIEW_ENABLED = previous;
+      else process.env.EVALUATION_AUTO_REVIEW_ENABLED = previousEnabled;
+      if (previousReviewer === undefined)
+        delete process.env.EVALUATION_AUTO_REVIEW_REVIEWER;
+      else process.env.EVALUATION_AUTO_REVIEW_REVIEWER = previousReviewer;
+    }
+  });
+
+  test("routes new automatic failure reviews through the configured DeepSeek reviewer", () => {
+    const previousEnabled = process.env.EVALUATION_AUTO_REVIEW_ENABLED;
+    const previousReviewer = process.env.EVALUATION_AUTO_REVIEW_REVIEWER;
+    try {
+      process.env.EVALUATION_AUTO_REVIEW_ENABLED = "true";
+      process.env.EVALUATION_AUTO_REVIEW_REVIEWER = "evaluator-deepseek";
+      expect(
+        taskInputForEvent(
+          event("project.task.reconciled", {
+            project: "may",
+            taskId: "goal/example",
+            generation: 3,
+            disposition: "incomplete",
+          }),
+        ),
+      ).toEqual({
+        kind: "review-task-outcome",
+        data: {
+          appId: "may",
+          taskId: "goal/example",
+          assessmentPurpose: "ongoing",
+          reviewer: "evaluator-deepseek",
+        },
+      });
+    } finally {
+      if (previousEnabled === undefined)
+        delete process.env.EVALUATION_AUTO_REVIEW_ENABLED;
+      else process.env.EVALUATION_AUTO_REVIEW_ENABLED = previousEnabled;
+      if (previousReviewer === undefined)
+        delete process.env.EVALUATION_AUTO_REVIEW_REVIEWER;
+      else process.env.EVALUATION_AUTO_REVIEW_REVIEWER = previousReviewer;
     }
   });
 
