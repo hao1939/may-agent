@@ -505,6 +505,14 @@ describe("Telegram refresh lifecycle", () => {
       await Bun.sleep(40);
       expect(restarted.sent.some((send) => send.text.includes("Run the verified operator step."))).toBe(false);
 
+      restarted.tasks.get("first")!.diagnostics!.conditions.push({ id: "missing-condition", condition: null });
+      restarted.wake("first");
+      await waitFor(() => restarted.sent.some((send) => send.text.includes("Run the verified operator step.")));
+      const missingConditionBaseline = restarted.sent.length;
+      restarted.wake("first");
+      await waitFor(() => restarted.sent.length > missingConditionBaseline);
+
+      restarted.tasks.get("first")!.diagnostics!.conditions.pop();
       restarted.tasks.get("first")!.diagnostics!.conditionsTruncated = true;
       restarted.wake("first");
       await waitFor(() => restarted.sent.some((send) => send.text.includes("Run the verified operator step.")));
@@ -513,14 +521,52 @@ describe("Telegram refresh lifecycle", () => {
       await waitFor(() => restarted.sent.length > incompleteBaseline);
 
       await restarted.command("/todo");
-      await waitFor(() => restarted.sent.some((send) => send.text.includes("Run the verified operator step.")));
-      expect(restarted.sent.at(-1)?.text).toContain("Needs you for may");
+      await waitFor(() => restarted.sent.some((send) => send.text.includes("Needs you for may")));
 
       Object.assign(restarted.tasks.get("first")!, action(2, "Run the changed operator step."));
       restarted.wake("first");
       await waitFor(() => restarted.sent.some((send) => send.text.includes("Run the changed operator step.")));
     } finally {
       await restarted.close();
+    }
+  });
+
+  it("does not repeat an unchanged exact action after an explicit todo view", async () => {
+    const f = fixture();
+    const task = f.tasks.get("first")!;
+    try {
+      await f.command("/apps may");
+      Object.assign(task, {
+        humanAction: { requestedAction: "Run the exact current step." },
+        diagnostics: {
+          conditions: [
+            {
+              id: "exact-step",
+              condition: {
+                metadata: { id: "exact-step", generation: 1, resourceVersion: 1 },
+                spec: {
+                  type: "human.answer.received",
+                  subject: "id:exact-step",
+                  owner: "human",
+                  requestedAction: "Run the exact current step.",
+                  expected: { answer: true },
+                },
+                status: { state: "false" },
+              },
+            },
+          ],
+          conditionsTruncated: false,
+        },
+      });
+      await f.command("/todo");
+      await waitFor(() => f.sent.some((send) => send.chat_id === "123" && send.text.includes("Needs you for may")));
+      await Bun.sleep(20);
+      const baseline = f.sent.filter((send) => send.chat_id === "123").length;
+      f.wake("first");
+      await Bun.sleep(40);
+      expect(f.sent.filter((send) => send.chat_id === "123")).toHaveLength(baseline);
+    } finally {
+      await f.close();
     }
   });
 

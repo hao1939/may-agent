@@ -1113,7 +1113,8 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
 
   const todoTaskKey = (task: HumanTaskView): string => `${task.appId}\0${task.taskId}`;
   const todoActionSignature = (task: HumanTaskView): { value: string; exact: boolean } => {
-    const conditions = (task.diagnostics?.conditions ?? [])
+    const conditionItems = task.diagnostics?.conditions ?? [];
+    const conditions = conditionItems
       .flatMap((item) => {
         const condition = item.condition;
         if (!condition || condition.status?.state === "true" || !isHumanActionOwner(condition.spec.owner)) return [];
@@ -1136,9 +1137,14 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
         conditions,
         fallback: conditions.length === 0 ? humanActionText(task) : undefined,
       }),
-      exact: conditions.length > 0 && task.diagnostics?.conditionsTruncated !== true,
+      exact:
+        conditions.length > 0 &&
+        conditionItems.every((item) => item.condition !== null) &&
+        task.diagnostics?.conditionsTruncated !== true,
     };
   };
+  const presentedTodoActionRevision = (signature: { value: string; exact: boolean }) =>
+    JSON.stringify({ value: signature.value, exact: signature.exact });
 
   async function refreshTodos(surface: string): Promise<void> {
     const coordinates = surfaces.get(surface);
@@ -1151,14 +1157,14 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
       return { task, detail, signature: todoActionSignature(detail) };
     });
     const prior = shownTodoActions.get(surface) ?? new Map<string, string>();
-    const presentedRevision = (signature: { value: string; exact: boolean }) =>
-      JSON.stringify({ value: signature.value, exact: signature.exact });
-    const next = new Map(actions.map(({ task, signature }) => [todoTaskKey(task), presentedRevision(signature)]));
+    const next = new Map(
+      actions.map(({ task, signature }) => [todoTaskKey(task), presentedTodoActionRevision(signature)]),
+    );
     const watched = watchedTasks.get(surface);
     const changed = actions.filter(({ task, detail, signature }) => {
       if (watched?.appId === task.appId && watched.taskId === task.taskId) return false;
       if (!signature.exact) return true;
-      if (prior.get(todoTaskKey(task)) === presentedRevision(signature)) return false;
+      if (prior.get(todoTaskKey(task)) === presentedTodoActionRevision(signature)) return false;
       return !hasCompletedHumanActionDelivery(persistDir, coordinates.chatId, coordinates.topicId, {
         appId: detail.appId,
         taskId: detail.taskId,
@@ -1820,7 +1826,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
                     taskId: task.taskId,
                   };
                   const detail = opts.humanTasks.getTask?.(owner) ?? task;
-                  return [todoTaskKey(task), todoActionSignature(detail).value];
+                  return [todoTaskKey(task), presentedTodoActionRevision(todoActionSignature(detail))];
                 }),
               ),
             );
