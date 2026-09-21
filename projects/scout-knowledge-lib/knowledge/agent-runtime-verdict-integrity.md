@@ -1,8 +1,8 @@
 <ai_context>
-summary: "Reusable verification and verdict-integrity patterns: typed lifecycle evidence for unattended agent runs, multi-plane completion proofs, behavior-derived tests challenged by mutation negatives, evidence bound to the verified subject, explicit receipt coverage and valid anomalies, claim-level platform enforcement evidence, negative controls for the verdict path, state-based effect grading with honest and adversarial oracle controls, freshness binding for replayed traces, evaluator immutability across repair, proof of the inspected universe behind a clean sweep, cross-artifact conformance for executable governance, phase-aware calibration of probabilistic rule checks, and separation of reviewer diversity from verdict transport."
-triggers: ["verification subject binding", "Brigade", "receipt coverage", "not_checked", "invocation_ref", "ASQAV", "claim-level platform evidence", "RTQ", "sandbox enforcement", "construction-only test", "meta-verification", "false-green verifier", "negative control", "ProjectGuard", "state-based grading", "reward hacking", "Compound Evals", "kyisaiah47/compound-evals", "trace freshness", "recorded trace", "skilldiff", "agent skill regression", "frozen tests", "test identity", "failure fingerprint", "RepoPilot", "post-merge outcome", "evaluation identity", "independent runner", "inspected universe", "compared-nothing-reported-clean", "cross-artifact conformance", "decision table", "DMN", "OutTheBox", "probabilistic rule check", "phase-specific precision", "Abide", "event-backed write", "Dream Studio", "reviewer diversity", "cross-provider review", "verdict transport", "portable DSH", "unattended agent run", "fresh branch", "missing upstream", "launch failure", "lifecycle receipt", "CodeMidas", "GameLogicBench", "behavior-derived test", "mutant validation", "tick-level assertion", "multi-plane completion proof", "capture coverage", "world-state verification", "minecraft-agent"]
+summary: "Reusable verification and verdict-integrity patterns: frozen session inputs with snapshot-bound but intentionally limited checks, typed lifecycle evidence for unattended agent runs, multi-plane completion proofs, behavior-derived tests challenged by mutation negatives, evidence bound to the verified subject, explicit receipt coverage and valid anomalies, claim-level platform enforcement evidence, negative controls for the verdict path, state-based effect grading with honest and adversarial oracle controls, freshness binding for replayed traces, evaluator immutability across repair, proof of the inspected universe behind a clean sweep, cross-artifact conformance for executable governance, phase-aware calibration of probabilistic rule checks, and separation of reviewer diversity from verdict transport."
+triggers: ["verification subject binding", "captured inputs", "session snapshot", "postconditions", "CLAMP", "NickCamacho15/clamp", "Brigade", "receipt coverage", "not_checked", "invocation_ref", "ASQAV", "claim-level platform evidence", "RTQ", "sandbox enforcement", "construction-only test", "meta-verification", "false-green verifier", "negative control", "ProjectGuard", "state-based grading", "reward hacking", "Compound Evals", "kyisaiah47/compound-evals", "trace freshness", "recorded trace", "skilldiff", "agent skill regression", "frozen tests", "test identity", "failure fingerprint", "RepoPilot", "post-merge outcome", "evaluation identity", "independent runner", "inspected universe", "compared-nothing-reported-clean", "cross-artifact conformance", "decision table", "DMN", "OutTheBox", "probabilistic rule check", "phase-specific precision", "Abide", "event-backed write", "Dream Studio", "reviewer diversity", "cross-provider review", "verdict transport", "portable DSH", "unattended agent run", "fresh branch", "missing upstream", "launch failure", "lifecycle receipt", "CodeMidas", "GameLogicBench", "behavior-derived test", "mutant validation", "tick-level assertion", "multi-plane completion proof", "capture coverage", "world-state verification", "minecraft-agent"]
 last_updated: "2026-09-21"
-source_basis: "Extracted intact from agent-runtime-effect-integrity.md during its 2026-09-14 oversized-note review. Sources are pinned revisions of Brigade, ASQAV, ProjectGuard, skilldiff, RepoPilot, Dream Studio, OutTheBox, Abide, Compound Evals, Portable DSH, RTQ, and rmalde/minecraft-agent; reproduced checks and static-inspection limits remain stated in each section. Also includes HN 49782797 and Alkis Yuvanelis's complete linked incident essay, whose published minimal shell reproduction Scout reran for a missing child and a successful immediate no-op, plus abstract-level arXiv evidence from CodeMidas and GameLogicBench on behavior-derived tests and mutant validation. Acceptance authority, actor-bound review, release reconciliation, and audit normalization moved intact to agent-runtime-acceptance-and-reconciliation.md during the 2026-09-21 oversized-note review."
+source_basis: "Extracted intact from agent-runtime-effect-integrity.md during its 2026-09-14 oversized-note review. Sources are pinned revisions of Brigade, ASQAV, ProjectGuard, skilldiff, RepoPilot, Dream Studio, OutTheBox, Abide, Compound Evals, Portable DSH, RTQ, rmalde/minecraft-agent, and NickCamacho15/clamp; reproduced checks and static-inspection limits remain stated in each section. Also includes HN 49782797 and Alkis Yuvanelis's complete linked incident essay, whose published minimal shell reproduction Scout reran for a missing child and a successful immediate no-op, plus abstract-level arXiv evidence from CodeMidas and GameLogicBench on behavior-derived tests and mutant validation. Acceptance authority, actor-bound review, release reconciliation, and audit normalization moved intact to agent-runtime-acceptance-and-reconciliation.md during the 2026-09-21 oversized-note review."
 </ai_context>
 
 # Agent Runtime Verdict Integrity
@@ -17,6 +17,56 @@ whether the verifier inspected the intended universe, whether parallel policy
 artifacts still encode the same contract, whether a platform matrix exercised
 construction or real enforcement, and whether reviewer diversity survives verdict
 transport.
+
+## Freeze Session Inputs, but Keep Freshness and Sufficiency Explicit — CLAMP (GitHub, September 2026)
+
+CLAMP's unreleased session API offers a concrete pattern for making a long-running
+agent's evidence reproducible across submissions and process restarts. The host
+names the files or directories to import, and the runtime persists their bytes,
+permissions, baselines, private overlay, and selected values. There is no fallback
+to later host files. A pending round blocks the next submission, settlement advances
+the session revision transactionally, and a changed export target becomes a commit
+conflict rather than silently replacing the captured baseline. In the checked-in
+session test, an imported file remains `original` after the host changes it, later
+submissions consume that frozen value, and export preserves the externally edited
+input while committing the separate generated report.
+
+The verification path binds the verdict to the same captured subject. Host-required
+checks are combined with session-added checks, persisted, and cannot be weakened by
+the submitting plan. Assumptions run on the admitted snapshot; postconditions run
+at close and again before preview or export, with results tied to the requirements
+digest, snapshot hash, and exact change-set ID. Export still requires a separate
+exact-diff approval and host conflict check. This keeps three questions distinct:
+what evidence the round saw, whether stated output conditions passed, and whether
+the resulting effect may reach the host.
+
+Freezing is not freshness, however. The documentation explicitly says that importing
+a concurrently changing directory is not an atomic snapshot, that later host files
+remain invisible, and that recovery reuses admitted state rather than reinterpreting
+the current host tree. The closed verifier is intentionally narrow: it checks file
+presence or absence, exact SHA-256 bytes, or JSON parsing plus top-level key presence;
+it does not validate value types, domain semantics, or human intent. Thus a frozen
+snapshot supports repeatability only after its capture boundary is trusted, and a
+passing structural postcondition must not be promoted into semantic acceptance.
+
+**Runtime rule:** give each long-running session an explicit, immutable input
+manifest and bind every check to the admitted snapshot and final change set. Record
+capture time or revision separately from freshness policy; if the input tree can
+change during capture, coordinate writers or use a genuinely atomic source snapshot.
+Keep structural checks fail-closed and host-owned, but pair them with an independent
+domain verifier when correctness exceeds bytes, existence, or shallow JSON shape.
+Treat effect approval as a separate gate after verification.
+
+This is static implementation-design evidence from a new, zero-star repository at
+discovery. The session API is labeled unreleased. Scout inspected the pinned source,
+documentation, and checked-in session/recovery tests but did not execute the package
+test suite, audit the SQLite or overlay implementations end to end, or validate the
+sandbox boundary.
+
+- **Repo:** https://github.com/NickCamacho15/clamp
+- **Inspected revision:** [`fc0eca2c3f71b4db6a305308700825ad226f84cd`](https://github.com/NickCamacho15/clamp/commit/fc0eca2c3f71b4db6a305308700825ad226f84cd)
+- **Primary sources:** [session contract](https://github.com/NickCamacho15/clamp/blob/fc0eca2c3f71b4db6a305308700825ad226f84cd/packages/runner/SESSIONS.md), [verification implementation](https://github.com/NickCamacho15/clamp/blob/fc0eca2c3f71b4db6a305308700825ad226f84cd/packages/runner/src/verification.js), [session state implementation](https://github.com/NickCamacho15/clamp/blob/fc0eca2c3f71b4db6a305308700825ad226f84cd/packages/runner/src/sessions.js), and [session tests](https://github.com/NickCamacho15/clamp/blob/fc0eca2c3f71b4db6a305308700825ad226f84cd/packages/runner/test/sessions.js)
+- **Discovery query:** GitHub Repository Search API `"AI agent" memory in:name,description,readme pushed:>=2026-09-20`, sorted by updated; `total_count: 14315`, `incomplete_results: false`
 
 ## Completion Proof Should Join Independent Planes — minecraft-agent (GitHub, September 2026)
 
