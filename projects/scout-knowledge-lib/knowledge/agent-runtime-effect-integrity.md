@@ -1,8 +1,8 @@
 <ai_context>
-summary: "Companion to agent-runtime-hardening.md for core effect integrity: centralized effect-mode derivation, interaction-shaped mutation review, revision-bound workspace admission, evidence-carrying closure, quarantine for unknown effects, transactional review versus atomic commit, guarded writes, apply-time revalidation, ambiguous-delivery recovery, session-bound retry safety, observation-bound handover, history/context separation, and externally anchored sandbox authority."
-triggers: ["runtime effect integrity", "central effect gate", "mutation confirmation", "revision-bound admission", "effect closure", "unknown effect", "resource quarantine", "atomic commit", "guarded configuration write", "previewable plan", "ambiguous delivery", "AID-Guard", "outbound publication", "remote session retry", "desktop handover", "history fidelity", "safe resume", "sandbox escape", "external authority", "agentsgo", "atomic replacement", "compare-and-swap"]
+summary: "Companion to agent-runtime-hardening.md for core effect integrity: centralized effect-mode derivation, interaction-shaped mutation review, revision-bound workspace admission, evidence-carrying closure, quarantine for unknown effects, operation identity across replanning, transactional review versus atomic commit, guarded writes, apply-time revalidation, ambiguous-delivery recovery, session-bound retry safety, observation-bound handover, history/context separation, and externally anchored sandbox authority."
+triggers: ["runtime effect integrity", "central effect gate", "mutation confirmation", "revision-bound admission", "effect closure", "unknown effect", "operation identity", "replanning retry", "resource quarantine", "atomic commit", "guarded configuration write", "previewable plan", "ambiguous delivery", "AID-Guard", "outbound publication", "remote session retry", "desktop handover", "history fidelity", "safe resume", "sandbox escape", "external authority", "agentsgo", "atomic replacement", "compare-and-swap"]
 last_updated: "2026-09-21"
-source_basis: "Extracted intact from agent-runtime-hardening.md during its oversized-note review. Each retained section preserves stable source links, pinned revisions, reproduced checks where performed, and explicit evidence limitations. Unattended-execution, replay, approval-resume, settlement, accountable-write, and desktop-authorization sections moved intact to agent-runtime-unattended-execution-and-replay.md during the 2026-09-21 oversized-note review."
+source_basis: "Extracted from agent-runtime-hardening.md during its oversized-note review and subsequently updated with source-grounded findings. Each retained section preserves stable source links, pinned revisions where applicable, reproduced checks where performed, and explicit evidence limitations. Unattended-execution, replay, approval-resume, settlement, accountable-write, and desktop-authorization sections moved intact to agent-runtime-unattended-execution-and-replay.md during the 2026-09-21 oversized-note review."
 </ai_context>
 
 # Agent Runtime Effect Integrity
@@ -484,6 +484,54 @@ protected effects.
 
 - **Source:** https://arxiv.org/abs/2608.21159v1
 - **Full paper:** https://arxiv.org/html/2608.21159
+
+## Unknown Must Survive Replanning — HN / Josh C. Simmons (September 2026)
+
+An HN-linked essay isolates a practical way an otherwise correct idempotency
+scheme can fail: an HTTP client may reuse the provider key when it retries, but
+an agent that reasons about the timeout again can emit a new tool call with a
+new key. Every layer then follows its local contract while one user-authorized
+operation becomes two remote effects. The article's deterministic Python
+example makes this distinction visible: a simulated service commits a ticket
+and drops the first response; retrying with the same operation key leaves one
+ticket, while a newly minted key after replanning leaves two.
+
+Scout ran the supplied example and reproduced its three assertions: two tickets
+without provider deduplication, one with the same operation key, and two with a
+new key after replanning. This is a didactic, single-threaded in-memory model. It
+assumes the ticket write and deduplication record are indivisible and does not
+measure model behavior, network failure frequency, database crash safety, or a
+production provider.
+
+The useful refinement is that **operation identity belongs to the authorized
+effect, not to one model turn, tool-call message, worker, or retry attempt**.
+Create the operation record before dispatch; bind it to the actor, target, and
+resolved arguments; retain it across restart and delegation; and give each send
+a separate attempt ID without changing the provider-facing operation key. A
+transport timeout should move that operation to `unknown`, not `failed`. The
+next action must then be effect-specific reconciliation or a bounded retry of
+the same operation where the provider contract supports it—not a fresh create.
+
+Readback is not automatically certified absence. A negative search can be stale,
+scoped to the wrong account, or race an in-flight write. Likewise, a provider's
+idempotency retention window can expire before an agent resumes. The runtime
+therefore needs to preserve both the operation identity and the limits of the
+evidence that can settle it. If neither safe same-key repetition nor conclusive
+inspection exists, unresolved uncertainty should remain visible to the user
+rather than being hidden by optimistic replanning.
+
+This practitioner essay largely synthesizes established distributed-systems and
+HTTP guidance, so it is not evidence that deployed agents commonly duplicate
+these effects. Its contribution is the agent-specific boundary between a
+transport retry and a semantically new tool call, plus an executable negative
+control for that boundary. The HN item had one point and no comments at
+retrieval.
+
+- **HN:** https://news.ycombinator.com/item?id=49785337
+- **Source:** https://www.drjoshcsimmons.com/writing/your-agent-needs-an-unknown-state
+- **Runnable example:** https://www.drjoshcsimmons.com/examples/agent-retry-demo.py
+- **Referenced standards and operational guidance:** [HTTP retry rules](https://www.rfc-editor.org/rfc/rfc9110.html#section-9.2.2), [AWS idempotent API guidance](https://aws.amazon.com/builders-library/making-retries-safe-with-idempotent-APIs/), [Temporal Activity idempotency](https://docs.temporal.io/activity-definition#idempotency), and [Stripe idempotency keys](https://docs.stripe.com/api/idempotent_requests)
+- **Coverage:** complete article, linked runnable example, local execution of the example, and HN item metadata; no HN comments were present
 
 ## A Local Posting Claim Does Not Close an External Publication — PR Cockpit (GitHub, August 2026)
 
