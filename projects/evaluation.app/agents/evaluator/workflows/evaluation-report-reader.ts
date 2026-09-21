@@ -32,6 +32,7 @@ export type PublishedReportRequest = {
   taskId: string;
   evidenceHash: string;
   executionId: string;
+  reviewer?: "evaluator" | "evaluator-deepseek";
   report: string;
   facts: string;
   jsonHash: string;
@@ -74,6 +75,7 @@ export function readPublishedEvaluationReport(
     request.evidenceHash,
     rubricVersion,
     validityIdentity,
+    request.reviewer,
   );
   if (
     request.facts !== expected.jsonPath ||
@@ -92,6 +94,7 @@ export function readPublishedEvaluationReport(
     entry.taskId !== request.taskId ||
     entry.evidenceHash !== request.evidenceHash ||
     entry.executionId !== request.executionId ||
+    entry.reviewer !== (request.reviewer ?? "evaluator") ||
     entry.purpose !== assessmentPurpose ||
     entry.rubricVersion !== rubricVersion ||
     entry.validityIdentity !== validityIdentity

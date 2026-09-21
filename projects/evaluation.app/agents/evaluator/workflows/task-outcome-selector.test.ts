@@ -26,11 +26,17 @@ const NOW = Date.UTC(2026, 8, 17);
 const DAY = 86_400_000;
 const config = {
   enabled: true,
+  reviewer: "evaluator" as const,
   intervalMs: DAY,
   maxApps: 10,
   maxTasksPerApp: 2,
   maxPagesPerApp: 2,
   recentWindowMs: 7 * DAY,
+};
+const deepseekConfig = {
+  ...config,
+  reviewer: "evaluator-deepseek" as const,
+  intervalMs: 300_000,
 };
 
 function task(
@@ -48,8 +54,16 @@ function publishReport(
   taskId: string,
   evidenceHash: string,
   createdAt: number,
+  reviewer = "evaluator",
 ): void {
-  const paths = taskReportPaths(appId, taskId, evidenceHash);
+  const paths = taskReportPaths(
+    appId,
+    taskId,
+    evidenceHash,
+    TASK_OUTCOME_RUBRIC_VERSION,
+    "",
+    reviewer,
+  );
   const executionId = `fixture-${createHash("sha256").update(taskId).digest("hex").slice(0, 12)}`;
   const payload = {
     version: 1,
@@ -58,7 +72,10 @@ function publishReport(
     createdAt,
     disposition: "assessed",
     subject: { appId, taskId, evidenceHash },
-    evaluator: { executionId },
+    evaluator: {
+      executionId,
+      ...(reviewer === "evaluator" ? {} : { reviewer }),
+    },
     judgment: {
       disposition: "assessed",
       summary: "Fixture report",
@@ -79,6 +96,7 @@ function publishReport(
     taskId,
     evidenceHash,
     executionId,
+    ...(reviewer === "evaluator" ? {} : { reviewer }),
     jsonPath: paths.jsonPath,
     markdownPath: paths.markdownPath,
     jsonSha256: hashReport(join(root, paths.jsonPath)),
@@ -131,6 +149,7 @@ function catalogCommand(
           id: exactTaskId,
           generation: 1,
           creator: { appId },
+          agent: listed?.agent ?? "worker",
           outcome: `Review ${exactTaskId}`,
           result: { status: listed?.status },
         },
@@ -154,6 +173,8 @@ describe("automatic task outcome selector", () => {
   test("is initially off and bounds recent navigation configuration", () => {
     expect(automaticReviewConfig({})).toMatchObject({
       enabled: false,
+      reviewer: "evaluator",
+      intervalMs: DAY,
       maxApps: 20,
       maxTasksPerApp: 20,
       maxPagesPerApp: 2,
@@ -162,16 +183,37 @@ describe("automatic task outcome selector", () => {
     expect(
       automaticReviewConfig({
         EVALUATION_AUTO_REVIEW_ENABLED: "true",
+        EVALUATION_AUTO_REVIEW_REVIEWER: "evaluator-deepseek",
         EVALUATION_AUTO_REVIEW_MAX_APPS: "1000",
         EVALUATION_AUTO_REVIEW_MAX_PAGES_PER_APP: "99",
         EVALUATION_AUTO_REVIEW_RECENT_WINDOW_MS: String(99 * DAY),
       }),
     ).toMatchObject({
       enabled: true,
+      reviewer: "evaluator-deepseek",
       maxApps: 20,
       maxPagesPerApp: 5,
       recentWindowMs: 30 * DAY,
     });
+  });
+
+  test("does not select an externally owned Task assigned to an Evaluation worker", async () => {
+    const root = mkdtempSync(join(tmpdir(), "selector-self-worker-"));
+    const result = await selectFairCandidate(
+      catalogCommand({
+        may: [
+          {
+            ...task("may", "goal/delegated-review"),
+            agent: "evaluator-deepseek",
+          },
+        ],
+      }),
+      deepseekConfig,
+      root,
+      undefined,
+      NOW,
+    );
+    expect(result.candidate).toBeNull();
   });
 
   test("uses the recent tasks.list contract and advances within an App", async () => {
@@ -324,10 +366,13 @@ describe("automatic task outcome selector", () => {
     const result = await runTaskOutcomeSelector(
       ctx,
       catalogCommand({ may: [task("may", long)] }),
-      config,
+      deepseekConfig,
       root,
     );
     expect((emitted?.data as Record<string, unknown>).taskId).toBe(long);
+    expect((emitted?.data as Record<string, unknown>).reviewer).toBe(
+      "evaluator-deepseek",
+    );
     expect(String(emitted?.localKey).length).toBeLessThan(100);
     expect(Buffer.byteLength(JSON.stringify(result))).toBeLessThan(16 * 1_024);
   });
@@ -352,18 +397,52 @@ describe("automatic task outcome selector", () => {
       }) as never;
     const requested = await runTaskOutcomeSelector(
       context([
-        { taskId: "runtime/task-outcome/may/goal-one", status: "waiting" },
+        {
+          taskId:
+            "runtime/task-outcome/v2/may/goal-one/outcome/reviewer-evaluator-deepseek/contract-one",
+          status: "waiting",
+        },
       ]),
       catalogCommand({ may: [task("may", "goal/routine")] }),
-      config,
+      deepseekConfig,
       root,
     );
     expect((requested as { facts: string[] }).facts).toEqual(
       expect.arrayContaining([
         "selector:requested-reviews-first:1",
-        "requested-review:runtime/task-outcome/may/goal-one",
+        "requested-review:runtime/task-outcome/v2/may/goal-one/outcome/reviewer-evaluator-deepseek/contract-one",
         expect.stringMatching(/^selector-state:/),
       ]),
+    );
+    expect(emitted).toBeFalse();
+
+    await runTaskOutcomeSelector(
+      context([
+        {
+          taskId: "runtime/task-outcome/v2/may/goal-sol/outcome/contract-sol",
+          status: "waiting",
+        },
+      ]),
+      catalogCommand({ may: [task("may", "goal/routine")] }),
+      deepseekConfig,
+      root,
+    );
+    expect(emitted).toBeTrue();
+    emitted = false;
+
+    const solRequested = await runTaskOutcomeSelector(
+      context([
+        {
+          taskId: "runtime/task-outcome/v2/may/goal-sol/outcome/contract-sol",
+          status: "waiting",
+        },
+      ]),
+      catalogCommand({ may: [task("may", "goal/routine")] }),
+      config,
+      root,
+    );
+    expect((solRequested as { facts: string[] }).facts).toEqual(
+      expect.arrayContaining(["selector:requested-reviews-first:1"]),
     );
     expect(emitted).toBeFalse();
 
@@ -923,7 +1002,14 @@ describe("automatic task outcome selector", () => {
       command,
     );
     expect(subject.disposition).toBe("eligible");
-    publishReport(root, "may", "goal/stable", subject.evidenceHash!, NOW - 1);
+    publishReport(
+      root,
+      "may",
+      "goal/stable",
+      subject.evidenceHash!,
+      NOW - 1,
+      "evaluator-deepseek",
+    );
     for (let i = 0; i < 100; i++) {
       publishReport(
         root,
@@ -936,10 +1022,17 @@ describe("automatic task outcome selector", () => {
     const recent = listTaskReports(root, 100);
     expect(recent).toHaveLength(100);
     expect(recent.some((entry) => entry.taskId === "goal/stable")).toBe(false);
-    const paths = taskReportPaths("may", "goal/stable", subject.evidenceHash!);
+    const paths = taskReportPaths(
+      "may",
+      "goal/stable",
+      subject.evidenceHash!,
+      TASK_OUTCOME_RUBRIC_VERSION,
+      "",
+      "evaluator-deepseek",
+    );
     const reportBefore = hashReport(join(root, paths.jsonPath));
     expect(
-      (await selectFairCandidate(command, config, root, undefined, NOW))
+      (await selectFairCandidate(command, deepseekConfig, root, undefined, NOW))
         .candidate,
     ).toBeNull();
     Object.assign(item, {
@@ -949,12 +1042,12 @@ describe("automatic task outcome selector", () => {
       progress: { stage: "refresh" },
     });
     expect(
-      (await selectFairCandidate(command, config, root, undefined, NOW))
+      (await selectFairCandidate(command, deepseekConfig, root, undefined, NOW))
         .candidate,
     ).toBeNull();
     item.result = { output: { ref: "artifact:replacement" } };
     expect(
-      (await selectFairCandidate(command, config, root, undefined, NOW))
+      (await selectFairCandidate(command, deepseekConfig, root, undefined, NOW))
         .candidate,
     ).toEqual({ appId: "may", taskId: "goal/stable" });
     expect(hashReport(join(root, paths.jsonPath))).toBe(reportBefore);

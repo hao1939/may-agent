@@ -179,6 +179,13 @@ describe("canonical evaluator aftermath", () => {
         findings: [finding, { ...finding, targetAppId: "../bad" }],
       }),
     ).toBeNull();
+    expect(
+      parseAftermathOutcome({
+        kind: "evaluation",
+        evaluation: { ...evaluation, agent: "evaluator-deepseek" },
+        findings: [],
+      }),
+    ).toBeNull();
   });
 
   test("accepts existing and structured skip outcomes", () => {
@@ -206,6 +213,14 @@ describe("canonical evaluator aftermath", () => {
         reason: "runtime duplicate-resume carrier",
       }),
     ).toMatchObject({ kind: "skip", sessionId: "s_skip" });
+    expect(
+      parseAftermathOutcome({
+        kind: "skip",
+        sessionId: "s_deepseek",
+        agent: "evaluator-deepseek",
+        reason: "self execution",
+      }),
+    ).toBeNull();
     expect(parseAftermathOutcome({ noCandidate: true })).toBeNull();
   });
 

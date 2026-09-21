@@ -302,6 +302,27 @@ describe("public Task evidence", () => {
     });
   });
 
+  test("excludes canonically recorded Evaluation worker execution under an external owner", async () => {
+    for (const worker of ["evaluator", "evaluator-deepseek", "judge"]) {
+      const delegated = await readSubjectTask(
+        { appId: "sample", taskId: "goal/one" },
+        fixture({
+          ...appTask,
+          agent: worker,
+          creator: { appId: "external-owner" },
+        }),
+      );
+      expect(delegated).toMatchObject({
+        disposition: "insufficient-evidence",
+        reason: expect.stringContaining("Evaluation worker execution"),
+        task: {
+          appTask: { agent: worker, creator: { appId: "external-owner" } },
+        },
+      });
+      expect(delegated.evidenceHash).toBeUndefined();
+    }
+  });
+
   test("retains verified Scout ownership without inventing optional creator provenance", async () => {
     const { creator, ...withoutCreator } = appTask;
     const view = {

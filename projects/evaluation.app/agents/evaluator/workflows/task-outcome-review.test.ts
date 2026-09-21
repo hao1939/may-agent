@@ -1,20 +1,63 @@
 import { describe, expect, setSystemTime, test } from "bun:test";
 import {
   createTestAppRead,
-  createTestAppWorkflowContext,
+  createTestAppWorkflowContext as createSdkTestAppWorkflowContext,
 } from "@may-agent/sdk/testing";
-import { existsSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
+import {
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  writeFileSync,
+} from "node:fs";
 import { EvidenceStore } from "../../../../../shared/tools/task-evidence.js";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { taskForEvaluationInput } from "../../../app.ts";
 import {
   assessmentContext,
   claimSemanticAllowance,
   reviewTaskOutcome,
 } from "./task-outcome-review.ts";
-import type { PublicCommand } from "./lib/public-task-evidence.ts";
-import { listTaskReports } from "./lib/task-report-store.ts";
+import {
+  readSubjectTask,
+  type PublicCommand,
+} from "./lib/public-task-evidence.ts";
+import {
+  hashReport,
+  listTaskReports,
+  markTaskReportPublished,
+  renderTaskReportMarkdown,
+  resolveTaskReportPath,
+  taskReportPaths,
+  TASK_OUTCOME_RUBRIC_VERSION,
+  writeImmutable,
+} from "./lib/task-report-store.ts";
+import { reviewerProfile } from "./lib/reviewer-profile.ts";
+
+const TEST_APP_ROOT = fileURLToPath(new URL("../../../", import.meta.url));
+function createTestAppWorkflowContext(
+  options: Parameters<typeof createSdkTestAppWorkflowContext>[0],
+) {
+  const supplied = options.workspace;
+  const appRoot =
+    supplied?.appRoot &&
+    existsSync(join(supplied.appRoot, "criteria", "criteria.md"))
+      ? supplied.appRoot
+      : TEST_APP_ROOT;
+  return createSdkTestAppWorkflowContext({
+    ...options,
+    workspace: supplied
+      ? { ...supplied, appRoot }
+      : {
+          root: TEST_APP_ROOT,
+          appRoot,
+          projectRoot: TEST_APP_ROOT,
+          output: TEST_APP_ROOT,
+        },
+  });
+}
 
 const appId = "sample";
 const taskId = "goal/one";
@@ -344,6 +387,55 @@ describe("Task outcome review", () => {
     });
   });
 
+  test("calls the dedicated DeepSeek agent and attributes its separate report", async () => {
+    const root = mkdtempSync(join(tmpdir(), "task-review-deepseek-"));
+    const appRoot = mkdtempSync(join(tmpdir(), "evaluation-app-root-"));
+    mkdirSync(join(appRoot, "criteria"));
+    writeFileSync(
+      join(appRoot, "criteria", "criteria.md"),
+      "UNIQUE APP ROOT RUBRIC",
+    );
+    let calledAgent = "";
+    let suppliedPrompt = "";
+    const ctx = createTestAppWorkflowContext({
+      input: { appId, taskId, reviewer: "evaluator-deepseek" },
+      reconciliation: reconciliation(),
+      workspace: { root, appRoot, projectRoot: appRoot, output: root },
+      callAgent: async (agent, prompt) => {
+        calledAgent = agent;
+        suppliedPrompt = prompt;
+        return {
+          id: "s_deepseek",
+          kind: "agent",
+          status: "done",
+          summary: "done",
+          output: judgment,
+        };
+      },
+    });
+
+    const result = await reviewTaskOutcome(ctx, reader(), root);
+    const facts = factsOf(result);
+    expect(calledAgent).toBe("evaluator-deepseek");
+    expect(suppliedPrompt).toContain("UNIQUE APP ROOT RUBRIC");
+    expect(facts).toContain("reviewer:evaluator-deepseek");
+    expect(facts).toContain("configured-model:deepseek-v4-flash");
+    const reportFacts = facts
+      .find((fact) => fact.startsWith("report-facts:"))!
+      .slice(13);
+    expect(reportFacts).toStartWith("task-outcomes/evaluator-deepseek/");
+    expect(
+      JSON.parse(readFileSync(join(root, reportFacts), "utf8")),
+    ).toMatchObject({
+      evaluator: {
+        reviewer: "evaluator-deepseek",
+        configuredModel: "deepseek-v4-flash",
+        observedModel: "unknown:not-exposed-to-workflow",
+        executionId: "s_deepseek",
+      },
+    });
+  });
+
   test("reuses an unchanged accepted report before calling the model", async () => {
     const root = mkdtempSync(join(tmpdir(), "task-review-reuse-"));
     let accepted: Record<string, unknown> | null = null;
@@ -409,6 +501,77 @@ describe("Task outcome review", () => {
     );
     expect(calls).toBe(1);
     expect(readFileSync(join(root, report), "utf8")).toBe(original);
+  });
+
+  test("replays an authentic legacy report without changing its marker or publication event", async () => {
+    const root = mkdtempSync(join(tmpdir(), "task-review-legacy-replay-"));
+    const command = reader();
+    const subject = await readSubjectTask({ appId, taskId }, command);
+    expect(subject.disposition).toBe("eligible");
+    const paths = taskReportPaths(appId, taskId, subject.evidenceHash!);
+    const payload = {
+      version: 1,
+      rubricVersion: TASK_OUTCOME_RUBRIC_VERSION,
+      sourceRevision: "legacy-source",
+      createdAt: Date.UTC(2026, 8, 20),
+      disposition: judgment.disposition,
+      subject: { appId, taskId, evidenceHash: subject.evidenceHash },
+      evidence: subject.task,
+      evaluator: { executionId: "s_legacy", cost: "unknown" },
+      judgment,
+    };
+    writeImmutable(
+      resolveTaskReportPath(root, paths.jsonPath),
+      `${JSON.stringify(payload, null, 2)}\n`,
+    );
+    writeImmutable(
+      resolveTaskReportPath(root, paths.markdownPath),
+      renderTaskReportMarkdown(payload)!,
+    );
+    markTaskReportPublished(root, {
+      appId,
+      taskId,
+      evidenceHash: subject.evidenceHash!,
+      executionId: "s_legacy",
+      jsonPath: paths.jsonPath,
+      markdownPath: paths.markdownPath,
+      jsonSha256: hashReport(resolveTaskReportPath(root, paths.jsonPath)),
+      markdownSha256: hashReport(
+        resolveTaskReportPath(root, paths.markdownPath),
+      ),
+    });
+    const markerPath = resolveTaskReportPath(root, paths.publicationPath);
+    const markerBefore = readFileSync(markerPath, "utf8");
+    let modelCalls = 0;
+    let event: Record<string, unknown> | undefined;
+    const ctx = createTestAppWorkflowContext({
+      input: { appId, taskId },
+      reconciliation: reconciliation(),
+      callAgent: async () => {
+        modelCalls += 1;
+        throw new Error("legacy replay must not call the model");
+      },
+      emit: async (value) => {
+        event = value as unknown as Record<string, unknown>;
+      },
+    });
+
+    const result = await reviewTaskOutcome(ctx, command, root);
+
+    expect(modelCalls).toBe(0);
+    expect(readFileSync(markerPath, "utf8")).toBe(markerBefore);
+    expect(event?.data).toEqual({
+      appId,
+      taskId,
+      evidenceHash: subject.evidenceHash,
+      executionId: "s_legacy",
+      report: paths.markdownPath,
+      facts: paths.jsonPath,
+      jsonHash: hashReport(resolveTaskReportPath(root, paths.jsonPath)),
+      markdownHash: hashReport(resolveTaskReportPath(root, paths.markdownPath)),
+    });
+    expect(factsOf(result)).toContain("configured-model:unknown:not-recorded");
+    expect(factsOf(result)).toContain("observed-model:unknown:not-recorded");
   });
 
   test("passes consumed artifact bytes and gaps to the evaluator and preserves them in the immutable report", async () => {
@@ -626,6 +789,25 @@ describe("Task outcome review", () => {
     );
   });
 
+  test("keeps Sol and DeepSeek allowance counters independent", () => {
+    const root = mkdtempSync(join(tmpdir(), "task-review-reviewer-budgets-"));
+    const now = 1_789_824_000_000;
+    const sol = reviewerProfile("evaluator");
+    const deepseek = reviewerProfile("evaluator-deepseek");
+
+    expect(
+      claimSemanticAllowance(root, "sol", {}, now, sol).allowed,
+    ).toBeTrue();
+    expect(
+      claimSemanticAllowance(root, "sol-2", {}, now, sol).allowed,
+    ).toBeFalse();
+    expect(
+      claimSemanticAllowance(root, "deepseek", {}, now, deepseek),
+    ).toMatchObject({ allowed: true, limit: 1 });
+    expect(deepseek.configuredModel).toBe("deepseek-v4-flash");
+    expect(sol.configuredModel).toBe("gpt-5.6-sol");
+  });
+
   test("returns the same exact deadline for repeated same-subject reviews and becomes eligible after it", async () => {
     const root = mkdtempSync(join(tmpdir(), "task-review-budget-wait-"));
     const now = 1_789_824_000_000;
@@ -709,6 +891,38 @@ describe("Task outcome review", () => {
       reader(),
     );
     expect(result.summary).toContain("excluded");
+    expect(calls).toBe(0);
+  });
+
+  test("excludes an externally owned Task assigned to an Evaluation worker before a model call", async () => {
+    let calls = 0;
+    const base = reader();
+    const command: PublicCommand = async (request) => {
+      const response = await base(request);
+      if (request.type !== "app.task.get") return response;
+      return {
+        ...response,
+        task: {
+          ...appTask,
+          creator: { appId: "external-owner" },
+          agent: "evaluator-deepseek",
+        },
+      };
+    };
+    const result = await reviewTaskOutcome(
+      createTestAppWorkflowContext({
+        input: { appId, taskId },
+        callAgent: async () => {
+          calls += 1;
+          throw new Error("must not call");
+        },
+      }),
+      command,
+    );
+    expect(result.summary).toContain("Evaluation worker execution");
+    expect(factsOf(result)).toContain(
+      "review-disposition:insufficient-evidence",
+    );
     expect(calls).toBe(0);
   });
 

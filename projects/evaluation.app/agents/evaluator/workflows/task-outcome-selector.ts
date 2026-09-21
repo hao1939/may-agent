@@ -11,6 +11,7 @@ import {
   taskReportPaths,
 } from "./lib/task-report-store.js";
 import { assessmentContext } from "./lib/task-assessment-context.js";
+import { reviewerProfile, type Reviewer } from "./lib/reviewer-profile.js";
 import { memberEmissionKey, taskEmissionKey } from "./lib/task-emission.js";
 
 export const name = "task-outcome-selector";
@@ -31,6 +32,7 @@ const PILOT_APPS = new Set(["may", "scout", "scout-knowledge-lib"]);
 type Input = { reason?: string };
 type SelectorConfig = {
   enabled: boolean;
+  reviewer?: Reviewer;
   intervalMs: number;
   maxApps: number;
   maxTasksPerApp: number;
@@ -84,6 +86,7 @@ export function automaticReviewConfig(
 ): SelectorConfig {
   return {
     enabled: text(env.EVALUATION_AUTO_REVIEW_ENABLED).toLowerCase() === "true",
+    reviewer: reviewerProfile(env.EVALUATION_AUTO_REVIEW_REVIEWER).reviewer,
     intervalMs: bounded(
       env.EVALUATION_AUTO_REVIEW_INTERVAL_MS,
       86_400_000,
@@ -225,6 +228,7 @@ export async function selectFairCandidate(
       state: cleanState(priorState),
       navigationFacts: [],
     };
+  const reviewer = reviewerProfile(config.reviewer).reviewer;
   const state = cleanState(priorState);
   const provider = createPublicTaskEvidenceProvider(command);
   const apps = (await provider.listApps(config.maxApps))
@@ -293,6 +297,7 @@ export async function selectFairCandidate(
                 subject.evidenceHash,
                 assessment.rubricVersion,
                 assessment.validityIdentity,
+                reviewer,
               ).jsonPath;
               const published = readPublishedTaskReport(reportRoot, reportPath);
               if (
@@ -363,12 +368,15 @@ export async function selectFairCandidate(
 
 export function retainedRequestedReviewTaskIds(
   ctx: WorkflowContext<Input>,
+  reviewer: Reviewer = "evaluator",
 ): string[] {
   return (ctx.reconciliation?.taskSnapshot?.live ?? [])
-    .filter(
-      (task) =>
-        task.taskId.startsWith("runtime/task-outcome/") &&
-        task.taskId !== "runtime/task-outcome-selector",
+    .filter((task) =>
+      reviewer === "evaluator"
+        ? task.taskId.startsWith("runtime/task-outcome/") &&
+          !task.taskId.includes("/reviewer-") &&
+          task.taskId !== "runtime/task-outcome-selector"
+        : task.taskId.includes(`/reviewer-${reviewer}/`),
     )
     .map((task) => task.taskId)
     .sort();
@@ -390,8 +398,9 @@ export async function runTaskOutcomeSelector(
       actions: [],
     });
   }
+  const reviewer = reviewerProfile(config.reviewer).reviewer;
   const priorState = await acceptedSelectorState(ctx);
-  const retainedRequests = retainedRequestedReviewTaskIds(ctx);
+  const retainedRequests = retainedRequestedReviewTaskIds(ctx, reviewer);
   const taskSnapshot = ctx.reconciliation?.taskSnapshot;
   const backlogUnknown = !taskSnapshot || taskSnapshot.truncated;
   if (retainedRequests.length || backlogUnknown) {
@@ -443,8 +452,17 @@ export async function runTaskOutcomeSelector(
   const selectedIdentity = resultIdentity(candidate);
   await ctx.events.emit({
     type: "evaluation.task.review.requested",
-    localKey: taskEmissionKey(ctx, memberEmissionKey("selected", candidate)),
-    data: candidate,
+    localKey: taskEmissionKey(
+      ctx,
+      memberEmissionKey(
+        reviewer === "evaluator" ? "selected" : `selected-${reviewer}`,
+        candidate,
+      ),
+    ),
+    data: {
+      ...candidate,
+      ...(reviewer === "evaluator" ? {} : { reviewer }),
+    },
     target: { appId: "evaluation", project: "evaluation" },
   });
   const summary = `Selected ${selectedIdentity} for bounded outcome review; the emitted request retains the exact Task identity.`;

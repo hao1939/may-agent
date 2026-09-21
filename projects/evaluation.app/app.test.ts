@@ -386,12 +386,13 @@ describe("evaluation metrics", () => {
     db.run(
       `CREATE TABLE evaluations (
         createdAt INTEGER NOT NULL,
-        evaluatedByHeuristic INTEGER NOT NULL
+        evaluatedByHeuristic INTEGER NOT NULL,
+        agent TEXT NOT NULL
       )`,
     );
     db.run(
-      "INSERT INTO evaluations (createdAt, evaluatedByHeuristic) VALUES (?, 0), (?, 1)",
-      [Date.now() - 2 * 60 * 60_000, Date.now() - 60_000],
+      "INSERT INTO evaluations (createdAt, evaluatedByHeuristic, agent) VALUES (?, 0, 'may'), (?, 1, 'scout'), (?, 0, 'evaluator-deepseek')",
+      [Date.now() - 2 * 60 * 60_000, Date.now() - 60_000, Date.now() - 30_000],
     );
 
     const sample = db.query(LLM_COVERAGE_LAG_SOURCE_QUERY).get() as {
@@ -800,7 +801,13 @@ describe("evaluation fact admission", () => {
   });
 
   test("does not route automatic session endings into retired semantic review", () => {
-    for (const agent of ["may", "gym", "evaluator", "judge"]) {
+    for (const agent of [
+      "may",
+      "gym",
+      "evaluator",
+      "evaluator-deepseek",
+      "judge",
+    ]) {
       expect(
         taskIntentForEvent(
           event("session.end", {

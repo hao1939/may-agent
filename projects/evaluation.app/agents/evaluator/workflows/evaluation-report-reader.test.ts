@@ -21,8 +21,16 @@ function publishFixture(
   summary = "report",
   taskId = "goal/one",
   createdAt = 1,
+  reviewer: "evaluator" | "evaluator-deepseek" = "evaluator",
 ): ReturnType<typeof taskReportPaths> {
-  const paths = taskReportPaths("may", taskId, "abc");
+  const paths = taskReportPaths(
+    "may",
+    taskId,
+    "abc",
+    "task-outcome-v2",
+    "",
+    reviewer,
+  );
   const payload = {
     version: 1,
     rubricVersion: "task-outcome-v2",
@@ -31,7 +39,17 @@ function publishFixture(
     createdAt,
     subject: { appId: "may", taskId, evidenceHash: "abc" },
     evidence: {},
-    evaluator: { executionId: "s_1", cost: "unknown" },
+    evaluator: {
+      executionId: "s_1",
+      cost: "unknown",
+      ...(reviewer === "evaluator"
+        ? {}
+        : {
+            reviewer,
+            configuredModel: "deepseek-v4-flash",
+            observedModel: "unknown:not-exposed-to-workflow",
+          }),
+    },
     judgment: {
       disposition: "assessed",
       summary,
@@ -50,6 +68,7 @@ function publishFixture(
     taskId,
     evidenceHash: "abc",
     executionId: "s_1",
+    ...(reviewer === "evaluator" ? {} : { reviewer }),
     jsonPath: paths.jsonPath,
     markdownPath: paths.markdownPath,
     jsonSha256: hashReport(json),
@@ -114,6 +133,34 @@ describe("evaluation report reader", () => {
           freshness: { status: "stale", checkedAt },
         }),
       ).toBeNull();
+  });
+
+  test("reads a reviewer-namespaced DeepSeek publication only with matching identity", () => {
+    const root = mkdtempSync(join(tmpdir(), "report-reader-deepseek-"));
+    const paths = publishFixture(
+      root,
+      "deepseek report",
+      "goal/deepseek",
+      2,
+      "evaluator-deepseek",
+    );
+    const request = {
+      appId: "may",
+      taskId: "goal/deepseek",
+      evidenceHash: "abc",
+      executionId: "s_1",
+      reviewer: "evaluator-deepseek" as const,
+      report: paths.markdownPath,
+      facts: paths.jsonPath,
+      jsonHash: hashReport(resolveTaskReportPath(root, paths.jsonPath)),
+      markdownHash: hashReport(resolveTaskReportPath(root, paths.markdownPath)),
+    };
+
+    expect(readPublishedEvaluationReport(request, root).status).toBe("valid");
+    expect(
+      readPublishedEvaluationReport({ ...request, reviewer: "evaluator" }, root)
+        .status,
+    ).toBe("invalid");
   });
 
   test("integrity-checks an ongoing publication using its complete report identity", () => {

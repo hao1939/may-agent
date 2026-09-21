@@ -24,13 +24,14 @@ export const LLM_COVERAGE_LAG_SOURCE_QUERY = `SELECT COALESCE(
   9999
 ) AS value
 FROM evaluations
-WHERE evaluatedByHeuristic = 0`;
+WHERE evaluatedByHeuristic = 0
+  AND agent NOT IN ('evaluator', 'evaluator-deepseek', 'judge')`;
 export const LLM_EVALUATIONS_24H_METRIC_ID = "eval.llm-evals-24h";
 export const LLM_EVALUATIONS_24H_SOURCE_QUERY = `SELECT COUNT(*) AS value
 FROM evaluations
 WHERE evaluatedByHeuristic = 0
   AND createdAt > (strftime('%s','now') * 1000 - 86400000)
-  AND agent NOT IN ('evaluator', 'judge')`;
+  AND agent NOT IN ('evaluator', 'evaluator-deepseek', 'judge')`;
 export const LOW_QUALITY_RATE_24H_METRIC_ID = "evaluator.low-quality-rate-24h";
 export const LOW_QUALITY_RATE_24H_SOURCE_QUERY = `WITH counts AS (
   SELECT COUNT(*) AS total,
@@ -45,7 +46,7 @@ export const LOW_QUALITY_RATE_24H_SOURCE_QUERY = `WITH counts AS (
          ) AS low_quality
   FROM evaluations
   WHERE createdAt > (strftime('%s','now') * 1000 - 86400000)
-    AND agent NOT IN ('evaluator', 'judge')
+    AND agent NOT IN ('evaluator', 'evaluator-deepseek', 'judge')
     AND verdict != 'skipped'
 )
 SELECT CASE
@@ -71,7 +72,7 @@ export const SUBSTANTIVE_LOW_QUALITY_RATE_24H_SOURCE_QUERY = `WITH counts AS (
          ) AS substantive_low_quality
   FROM evaluations
   WHERE createdAt > (strftime('%s','now') * 1000 - 86400000)
-    AND agent NOT IN ('evaluator', 'judge')
+    AND agent NOT IN ('evaluator', 'evaluator-deepseek', 'judge')
     AND verdict != 'skipped'
 )
 SELECT CASE
@@ -201,7 +202,7 @@ export const FAILED_TRIAGE_RATE_3H_SOURCE_QUERY = `WITH bounds AS (
          END AS triaged
   FROM sessions s
   CROSS JOIN bounds b
-  WHERE s.agent NOT IN ('evaluator', 'judge')
+  WHERE s.agent NOT IN ('evaluator', 'evaluator-deepseek', 'judge')
     AND COALESCE(s.endedAt, s.startedAt) > b.measured_at - 10800000
     AND COALESCE(s.endedAt, s.startedAt) <= b.measured_at - 420000
     AND COALESCE(s.error, '') != 'Clean start (fresh)'
@@ -251,7 +252,7 @@ export const AFTERMATH_COVERAGE_SOURCE_QUERY = `WITH bounds AS (
   FROM sessions s
   CROSS JOIN bounds b
   WHERE s.status IN ('done', 'error', 'interrupted')
-    AND s.agent NOT IN ('evaluator', 'judge')
+    AND s.agent NOT IN ('evaluator', 'evaluator-deepseek', 'judge')
     AND COALESCE(s.endedAt, s.startedAt) > b.window_end - 10800000
     AND COALESCE(s.endedAt, s.startedAt) <= b.window_end
     AND NOT (
@@ -322,7 +323,11 @@ export const watchedProjectTargets: ReadonlyArray<{ targetProject: string }> =
   [];
 
 const EVALUATION_APP_IDS = new Set(["evaluation", "evaluation.app"]);
-const EVALUATION_AGENT_IDS = new Set(["evaluator", "judge"]);
+const EVALUATION_AGENT_IDS = new Set([
+  "evaluator",
+  "evaluator-deepseek",
+  "judge",
+]);
 
 function canonicalAppId(value: unknown): string {
   return stringValue(value)
@@ -398,6 +403,12 @@ const evaluationInputSchema = Type.Union([
           ),
           assessmentPurpose: Type.Optional(
             Type.Union([Type.Literal("outcome"), Type.Literal("ongoing")]),
+          ),
+          reviewer: Type.Optional(
+            Type.Union([
+              Type.Literal("evaluator"),
+              Type.Literal("evaluator-deepseek"),
+            ]),
           ),
         },
         { additionalProperties: false },
@@ -606,6 +617,13 @@ export function taskIntentForInput(input: AppInput): TaskIntent | null {
       if (!appId || !taskId) return null;
       const subjectGeneration = Number(data.subjectGeneration);
       const evidenceHash = stringValue(data.evidenceHash);
+      const reviewer = stringValue(data.reviewer);
+      if (
+        reviewer &&
+        reviewer !== "evaluator" &&
+        reviewer !== "evaluator-deepseek"
+      )
+        return null;
       const assessmentPurpose =
         stringValue(data.assessmentPurpose) === "ongoing"
           ? "ongoing"
@@ -625,12 +643,15 @@ export function taskIntentForInput(input: AppInput): TaskIntent | null {
           : {}),
         ...(evidenceHash ? { evidenceHash } : {}),
         assessmentPurpose,
+        ...(reviewer === "evaluator-deepseek" ? { reviewer } : {}),
       };
       const contractHash = createHash("sha256")
         .update(JSON.stringify(normalizedInput))
         .digest("hex");
+      const reviewerIdentity =
+        reviewer === "evaluator-deepseek" ? "/reviewer-evaluator-deepseek" : "";
       return {
-        id: `runtime/task-outcome/v2/${safeTaskIdPart(appId)}/${safeTaskIdPart(taskId)}/${assessmentPurpose}${generationIdentity}${evidenceIdentity}/contract-${contractHash}`,
+        id: `runtime/task-outcome/v2/${safeTaskIdPart(appId)}/${safeTaskIdPart(taskId)}/${assessmentPurpose}${generationIdentity}${evidenceIdentity}${reviewerIdentity}/contract-${contractHash}`,
         parentId: "evaluation-system",
         outcome:
           assessmentPurpose === "ongoing"
@@ -907,6 +928,13 @@ export function taskInputForEvent(
       const appId = stringValue(data.appId);
       const taskId = stringValue(data.taskId);
       const assessmentPurpose = stringValue(data.assessmentPurpose);
+      const reviewer = stringValue(data.reviewer);
+      if (
+        reviewer &&
+        reviewer !== "evaluator" &&
+        reviewer !== "evaluator-deepseek"
+      )
+        return null;
       const subjectGeneration = Number(data.subjectGeneration);
       const evidenceHash = stringValue(data.evidenceHash);
       return appId && taskId && !isEvaluationOwnedReference(appId)
@@ -920,6 +948,7 @@ export function taskInputForEvent(
                 ? { subjectGeneration }
                 : {}),
               ...(evidenceHash ? { evidenceHash } : {}),
+              ...(reviewer ? { reviewer } : {}),
               ...(assessmentPurpose === "ongoing" ||
               assessmentPurpose === "outcome"
                 ? { assessmentPurpose }
@@ -1287,6 +1316,12 @@ const baseApp = defineApp({
           ),
           assessmentPurpose: Type.Optional(
             Type.Union([Type.Literal("outcome"), Type.Literal("ongoing")]),
+          ),
+          reviewer: Type.Optional(
+            Type.Union([
+              Type.Literal("evaluator"),
+              Type.Literal("evaluator-deepseek"),
+            ]),
           ),
         },
         { additionalProperties: false },

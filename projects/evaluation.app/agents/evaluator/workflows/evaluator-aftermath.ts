@@ -222,6 +222,12 @@ function text(value: unknown, limit = 2_000): string {
   return typeof value === "string" ? value.trim().slice(0, limit) : "";
 }
 
+function isEvaluationAgent(value: string): boolean {
+  return (
+    value === "evaluator" || value === "evaluator-deepseek" || value === "judge"
+  );
+}
+
 function strings(value: unknown, limit = 40): string[] {
   return Array.isArray(value)
     ? value
@@ -316,8 +322,7 @@ function parseEvaluation(value: unknown): AftermathEvaluation | null {
   if (
     !id ||
     !agent ||
-    agent === "evaluator" ||
-    agent === "judge" ||
+    isEvaluationAgent(agent) ||
     quality === null ||
     efficiency === null ||
     productiveCalls === null ||
@@ -380,8 +385,7 @@ export function parseAftermathOutcome(
     if (
       !id ||
       !agent ||
-      agent === "evaluator" ||
-      agent === "judge" ||
+      isEvaluationAgent(agent) ||
       !reason ||
       (expectedSessionId && id !== expectedSessionId)
     ) {

@@ -415,6 +415,34 @@ function creatorAppIds(task: Record<string, unknown>): string[] {
     .filter(Boolean);
 }
 
+const EVALUATION_WORKERS = new Set([
+  "evaluator",
+  "evaluator-deepseek",
+  "judge",
+]);
+
+function isEvaluationWorker(value: unknown): boolean {
+  return EVALUATION_WORKERS.has(
+    text(value)
+      .toLowerCase()
+      .replace(/^agent:/, ""),
+  );
+}
+
+function recordedWorkerIds(task: Record<string, unknown>): string[] {
+  const assignment = object(task.assignment);
+  const diagnostics = object(task.diagnostics);
+  const acceptedAttempt = object(task.acceptedAttempt);
+  return [
+    task.agent,
+    assignment.agent,
+    diagnostics.agent,
+    acceptedAttempt.agent,
+  ]
+    .map(text)
+    .filter(Boolean);
+}
+
 export function unresolvedReviewSubject(
   hintedAppId: unknown,
   taskId: unknown = "",
@@ -471,6 +499,22 @@ export async function readSubjectTask(
       throw new Error("public Task generation mismatch");
     }
     const task = { appTask, detail };
+    // App ownership does not make Evaluation's own delegated execution an
+    // independent review subject. Use only worker identities recorded by the
+    // canonical App/detail views; caller hints are not exclusion authority.
+    const workers = [
+      ...recordedWorkerIds(appTask),
+      ...recordedWorkerIds(detail),
+    ];
+    if (workers.some(isEvaluationWorker))
+      return {
+        disposition: "insufficient-evidence",
+        reason:
+          "Evaluation worker execution is not an independent evaluation subject.",
+        appId,
+        taskId,
+        task,
+      };
     // The public App/detail identities establish the owning App. Creator is
     // optional provenance (including delegation), not the ownership authority.
     const creators = creatorAppIds(appTask);
