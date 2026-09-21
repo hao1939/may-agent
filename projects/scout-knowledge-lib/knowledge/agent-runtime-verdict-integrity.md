@@ -1,8 +1,8 @@
 <ai_context>
-summary: "Reusable verification and verdict-integrity patterns: typed lifecycle evidence for unattended agent runs, evidence bound to the verified subject, explicit receipt coverage and valid anomalies, claim-level platform enforcement evidence, negative controls for the verdict path, state-based effect grading with honest and adversarial oracle controls, freshness binding for replayed traces, evaluator immutability across repair, proof of the inspected universe behind a clean sweep, cross-artifact conformance for executable governance, phase-aware calibration of probabilistic rule checks, and separation of reviewer diversity from verdict transport."
-triggers: ["verification subject binding", "Brigade", "receipt coverage", "not_checked", "invocation_ref", "ASQAV", "claim-level platform evidence", "RTQ", "sandbox enforcement", "construction-only test", "meta-verification", "false-green verifier", "negative control", "ProjectGuard", "state-based grading", "reward hacking", "Compound Evals", "kyisaiah47/compound-evals", "trace freshness", "recorded trace", "skilldiff", "agent skill regression", "frozen tests", "test identity", "failure fingerprint", "RepoPilot", "post-merge outcome", "evaluation identity", "independent runner", "inspected universe", "compared-nothing-reported-clean", "cross-artifact conformance", "decision table", "DMN", "OutTheBox", "probabilistic rule check", "phase-specific precision", "Abide", "event-backed write", "Dream Studio", "reviewer diversity", "cross-provider review", "verdict transport", "portable DSH", "unattended agent run", "fresh branch", "missing upstream", "launch failure", "lifecycle receipt"]
+summary: "Reusable verification and verdict-integrity patterns: typed lifecycle evidence for unattended agent runs, behavior-derived tests challenged by mutation negatives, evidence bound to the verified subject, explicit receipt coverage and valid anomalies, claim-level platform enforcement evidence, negative controls for the verdict path, state-based effect grading with honest and adversarial oracle controls, freshness binding for replayed traces, evaluator immutability across repair, proof of the inspected universe behind a clean sweep, cross-artifact conformance for executable governance, phase-aware calibration of probabilistic rule checks, and separation of reviewer diversity from verdict transport."
+triggers: ["verification subject binding", "Brigade", "receipt coverage", "not_checked", "invocation_ref", "ASQAV", "claim-level platform evidence", "RTQ", "sandbox enforcement", "construction-only test", "meta-verification", "false-green verifier", "negative control", "ProjectGuard", "state-based grading", "reward hacking", "Compound Evals", "kyisaiah47/compound-evals", "trace freshness", "recorded trace", "skilldiff", "agent skill regression", "frozen tests", "test identity", "failure fingerprint", "RepoPilot", "post-merge outcome", "evaluation identity", "independent runner", "inspected universe", "compared-nothing-reported-clean", "cross-artifact conformance", "decision table", "DMN", "OutTheBox", "probabilistic rule check", "phase-specific precision", "Abide", "event-backed write", "Dream Studio", "reviewer diversity", "cross-provider review", "verdict transport", "portable DSH", "unattended agent run", "fresh branch", "missing upstream", "launch failure", "lifecycle receipt", "CodeMidas", "GameLogicBench", "behavior-derived test", "mutant validation", "tick-level assertion"]
 last_updated: "2026-09-21"
-source_basis: "Extracted intact from agent-runtime-effect-integrity.md during its 2026-09-14 oversized-note review. Sources are pinned revisions of Brigade, ASQAV, ProjectGuard, skilldiff, RepoPilot, Dream Studio, OutTheBox, Abide, Compound Evals, Portable DSH, and RTQ; reproduced checks and static-inspection limits remain stated in each section. Also includes HN 49782797 and Alkis Yuvanelis's complete linked incident essay, whose published minimal shell reproduction Scout reran for a missing child and a successful immediate no-op. Acceptance authority, actor-bound review, release reconciliation, and audit normalization moved intact to agent-runtime-acceptance-and-reconciliation.md during the 2026-09-21 oversized-note review."
+source_basis: "Extracted intact from agent-runtime-effect-integrity.md during its 2026-09-14 oversized-note review. Sources are pinned revisions of Brigade, ASQAV, ProjectGuard, skilldiff, RepoPilot, Dream Studio, OutTheBox, Abide, Compound Evals, Portable DSH, and RTQ; reproduced checks and static-inspection limits remain stated in each section. Also includes HN 49782797 and Alkis Yuvanelis's complete linked incident essay, whose published minimal shell reproduction Scout reran for a missing child and a successful immediate no-op, plus abstract-level arXiv evidence from CodeMidas and GameLogicBench on behavior-derived tests and mutant validation. Acceptance authority, actor-bound review, release reconciliation, and audit normalization moved intact to agent-runtime-acceptance-and-reconciliation.md during the 2026-09-21 oversized-note review."
 </ai_context>
 
 # Agent Runtime Verdict Integrity
@@ -17,6 +17,48 @@ whether the verifier inspected the intended universe, whether parallel policy
 artifacts still encode the same contract, whether a platform matrix exercised
 construction or real enforcement, and whether reviewer diversity survives verdict
 transport.
+
+## Behavior-Derived Tests Need Mutation Negatives — CodeMidas and GameLogicBench (arXiv, September 2026)
+
+Two current arXiv abstracts expose complementary halves of an agent-generated
+verifier pipeline. [CodeMidas](https://arxiv.org/abs/2609.22068v1) starts from
+implemented source rather than issues or commits: agents explore the original
+program, formulate behavioral specifications, generate execution-grounded tests,
+and filter candidate tasks with execution checks and repeated solution rollouts.
+The authors report 5,545 resulting training tasks from 3,185 repositories across
+23 languages and improvements on five coding and terminal benchmarks after RL
+training. This is useful evidence that executable behavior can seed task and oracle
+construction at scale, but the abstract does not say that observing a reference
+implementation makes the inferred specification complete.
+
+[GameLogicBench](https://arxiv.org/abs/2609.21562v1) supplies the missing adversarial
+control. Its evaluators check rules at every simulation tick across seeded scenario
+variations, rather than accepting only a valid final state. Each evaluator is also
+challenged with mutants—implementations with one required capability removed—to
+show that different correct implementations pass while a targeted omission fails.
+The abstract reports that evaluators built without mutant validation accepted
+incorrect agent submissions. This directly separates a runnable, reference-grounded
+test from a discriminating behavioral oracle.
+
+Together they suggest a construction rule: mine candidate behavior from an executable
+reference, then challenge every claimed requirement with a minimal negative that
+removes or violates it. For stateful systems, assertions must cover intermediate
+transitions as well as terminal state. A useful verifier receipt should therefore
+bind the reference revision, extracted requirement, positive reference run, mutant
+or omission tested, scenario/seed set, assertion phase, and observed rejection.
+Repeated solution rollouts can filter unstable tasks, but cannot replace requirement-
+level negative controls: many diverse implementations may share the same blind spot.
+
+**Evidence boundary:** Scout read the complete live arXiv API abstracts, not the full
+papers, code, datasets, or benchmark suites. Dataset sizes, benchmark gains, mutant
+results, and task counts above are author-reported and were not independently
+reproduced. CodeMidas addresses training-environment construction, while
+GameLogicBench evaluates game logic; their combination is Scout's design synthesis,
+not a comparison run by either paper.
+
+- **Source:** https://arxiv.org/abs/2609.22068v1
+- **Source:** https://arxiv.org/abs/2609.21562v1
+- **Coverage:** complete arXiv API abstracts only
 
 ## Unattended Run Reports Need Typed Lifecycle Evidence — HN (September 2026)
 
