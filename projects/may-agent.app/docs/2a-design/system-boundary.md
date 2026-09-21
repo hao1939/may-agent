@@ -308,21 +308,17 @@ record consolidation of these entry points; this is not a deployment claim.
 
 Direct execution reports its actual model-visible tool surface. In its execution
 manifest, `configuredTools` retains the capability-bundle names declared by the
-agent while `effectiveTools` contains the concrete prepared tool names, including
-agent-local tools and any tool added by result-schema preparation. A caller may
-deny either a configured bundle or one concrete tool; overlapping bundle/member
-denials coexist, while an unknown, duplicate, blank or unexplained denial fails
-preparation. A required injected tool cannot bypass a denial.
+agent while `effectiveTools` is replaced after preparation with the concrete
+prepared tool names, including agent-local tools and any `finish` tool added for
+a caller-owned result schema. Existing denials retain their narrower contract:
+they name configured capability bundles and are applied before tool construction.
 
-These rules make visibility and evidence agree; they are not an OS sandbox.
-Supported bundle implementations and trusted agent-local factories execute while
-the Host builds the inventory, before visibility denials filter their concrete
-tools from model execution. Only an explicitly denied unsupported configured
-capability may skip construction; an unsupported capability left effective fails
-preparation. Host [PR #223](https://github.com/hao1939/may-agent/pull/223)
-at `2764874e` implements this contract. Local CI, independent review, the original
-model-free May preparation regression, and hosted Quality/Container checks passed.
-The PR still requires human review; merge, deployment and live adoption remain
+This change makes execution evidence agree with tool visibility; it does not
+expand tool policy or provide an OS sandbox. Agent-local factories remain trusted
+installation code, and denying individual concrete or local tools is deferred
+until that policy has a clearer requirement and contract. Host
+[PR #223](https://github.com/hao1939/may-agent/pull/223) at `6ace65ad` carries
+the reporting correction; review, merge, deployment and live adoption remain
 separate.
 
 | Invocation | Ownership and result |
