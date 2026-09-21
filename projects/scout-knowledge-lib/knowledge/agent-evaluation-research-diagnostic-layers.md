@@ -1,8 +1,8 @@
 <ai_context>
-summary: "Third companion note to agent-evaluation.md containing the cohesive §37–§44 diagnostic-layers block from August–September 2026. Separates candidate supply from answer selection, answer correctness from trace integrity, implementation readiness from blocker localization, AI-AI coordination from human convention recovery, detected trace patterns from causal attribution, answer-level forgetting from deployment-wide secret leakage, aggregate scores from uncertainty-aware domain estimates under sparse labels, and end-to-end voice quality from the language model's decisions inside a cascade."
-triggers: ["agent evaluation diagnostic layers", "candidate supply", "answer selection", "judge reliability", "selection loss", "fixed candidate pools", "trace integrity", "CAIT Rate", "execution contract", "answer-trace consistency", "structured-data agent", "IdeaAMBIG", "codification readiness", "specification gap", "defect localization", "clarification action", "convention gap", "implicit communication", "human-AI compatibility", "Hanabi", "Off-Belief Learning", "partner legibility", "failstep", "failure diagnosis", "causal attribution", "deterministic detectors", "trace normalization", "K-Bench", "agentic unlearning", "K-Score", "deployment-wide leakage", "tool-observation leakage", "disaggregated evaluation", "prediction-powered smoothing", "small area estimation", "domain mean", "interval coverage", "reporting taxonomy", "voice agent evaluation", "cascaded voice agent", "MTVA-Bench", "tool argument accuracy", "action ordering"]
-last_updated: "2026-09-20"
-source_basis: "Extracted intact from agent-evaluation-research-beyond-outputs.md §37–§40 on 2026-09-11 after the block grew into a reusable August–September companion. §37 derives from arXiv 2608.25937; §38 from the arXiv API and full HTML for 2608.26036; §39 from the arXiv API and full HTML for 2609.10539; §40 from the arXiv API and full HTML for 2609.11489. §41 adds static GitHub inspection of AbdelazizBs/failstep pinned at 09166c7cc356bd1f7c96b1bd54b34d82d7c2d581; repository code was not executed. §42 derives from the arXiv API abstract for K-Bench (2609.12808v1). §43 derives from the live arXiv API abstract for prediction-powered smoothing and validation (2609.20758v1). §44 derives from the live arXiv API abstract for MTVA-Bench (2609.20152v1)."
+summary: "Third companion note to agent-evaluation.md containing the cohesive §37–§45 diagnostic-layers block from August–September 2026. Separates candidate supply from answer selection, answer correctness from trace integrity, implementation readiness from blocker localization, AI-AI coordination from human convention recovery, detected trace patterns from causal attribution, answer-level forgetting from deployment-wide secret leakage, aggregate scores from uncertainty-aware domain estimates under sparse labels, end-to-end voice quality from the language model's decisions inside a cascade, and model capability from deployment-specific scale decisions."
+triggers: ["agent evaluation diagnostic layers", "candidate supply", "answer selection", "judge reliability", "selection loss", "fixed candidate pools", "trace integrity", "CAIT Rate", "execution contract", "answer-trace consistency", "structured-data agent", "IdeaAMBIG", "codification readiness", "specification gap", "defect localization", "clarification action", "convention gap", "implicit communication", "human-AI compatibility", "Hanabi", "Off-Belief Learning", "partner legibility", "failstep", "failure diagnosis", "causal attribution", "deterministic detectors", "trace normalization", "K-Bench", "agentic unlearning", "K-Score", "deployment-wide leakage", "tool-observation leakage", "disaggregated evaluation", "prediction-powered smoothing", "small area estimation", "domain mean", "interval coverage", "reporting taxonomy", "voice agent evaluation", "cascaded voice agent", "MTVA-Bench", "tool argument accuracy", "action ordering", "EnterpriseVal", "deployment evaluation", "frozen configuration", "consequence tier", "reviewer catch rate", "scale gate"]
+last_updated: "2026-09-21"
+source_basis: "Extracted intact from agent-evaluation-research-beyond-outputs.md §37–§40 on 2026-09-11 after the block grew into a reusable August–September companion. §37 derives from arXiv 2608.25937; §38 from the arXiv API and full HTML for 2608.26036; §39 from the arXiv API and full HTML for 2609.10539; §40 from the arXiv API and full HTML for 2609.11489. §41 adds static GitHub inspection of AbdelazizBs/failstep pinned at 09166c7cc356bd1f7c96b1bd54b34d82d7c2d581; repository code was not executed. §42 derives from the arXiv API abstract for K-Bench (2609.12808v1). §43 derives from the live arXiv API abstract for prediction-powered smoothing and validation (2609.20758v1). §44 derives from the live arXiv API abstract for MTVA-Bench (2609.20152v1). §45 derives from the live arXiv API abstract for EnterpriseVal (2609.21841v1)."
 parent_note: "agent-evaluation.md"
 previous_companion: "agent-evaluation-research-beyond-outputs.md"
 </ai_context>
@@ -14,12 +14,13 @@ continues [Agent Evaluation Research: Beyond Outputs](./agent-evaluation-researc
 which covers §23–§36 and establishes why evaluation must inspect the substrate rather
 than only terminal outputs.
 
-This note covers §37–§44: eight diagnostic layers that localize where apparently
+This note covers §37–§45: nine diagnostic layers that localize where apparently
 successful agent behavior can fail — candidate selection, computational trace,
 specification readiness, partner-legible convention recovery, the boundary
 between detected trace patterns and causal attribution, secret leakage outside
 the final-answer channel, domain-level uncertainty hidden by aggregate scores,
-and language-model decisions hidden inside an end-to-end voice pipeline.
+language-model decisions hidden inside an end-to-end voice pipeline, and the
+translation from model capability to a deployment-specific scale decision.
 
 ---
 
@@ -419,6 +420,61 @@ report uncertainty, per-language results, or whether the 24.4-point spread is
 stable across judge choices.
 
 Source: https://arxiv.org/abs/2609.20152v1  
+Source: https://export.arxiv.org/api/query?search_query=%28cat%3Acs.AI%20OR%20cat%3Acs.MA%20OR%20cat%3Acs.CL%29%20AND%20%28all%3Aagent%20OR%20all%3Aagentic%29&start=0&max_results=20&sortBy=submittedDate&sortOrder=descending
+
+---
+
+## §45 A Deployment Gate Must Bind the Workflow, Configuration, and Consequence (2026-09-21)
+
+**EnterpriseVal** ([2609.21841v1](https://arxiv.org/abs/2609.21841v1)) argues that
+public capability benchmarks answer a different question from an enterprise
+scale decision. Its proposed evaluation unit is a specified use case plus a
+frozen socio-technical configuration: model, prompts, retrieval, tools,
+guardrails, and human oversight. Autonomy level and consequence tier determine
+the required evaluation intensity, while the metric set spans fidelity,
+utility, efficiency, reliability, assurance, and oversight.
+
+The abstract describes a two-tier algorithm that maps metric vectors with
+confidence bounds to `REJECT`, `CONDITIONAL`, or `SCALE`, and a value-and-risk
+model that treats reviewer catch rate as a measured parameter rather than an
+assumed benefit. That yields a useful deployment-evaluation boundary:
+
+1. **Bind evidence to the deployable configuration.** A model score cannot stand
+   in for the exact prompt, retrieval, tool, guardrail, and review system that
+   will operate the workflow.
+2. **Match evidence burden to authority and consequence.** More autonomous or
+   consequential uses should require stronger assurance, reliability, and
+   oversight evidence instead of sharing one generic launch threshold.
+3. **Retain uncertainty in the decision.** Confidence bounds and a conditional
+   state prevent a point estimate near a threshold from becoming a false binary
+   launch verdict.
+4. **Measure the reviewer channel.** Human review changes expected value only to
+   the extent that reviewers catch relevant failures under the tested workload;
+   nominal human presence is not a reliability parameter.
+5. **Separate performance, value, and scale authority.** Fidelity or utility can
+   pass while cost, risk, or oversight evidence still blocks scale. A gate should
+   preserve the failed dimension rather than compressing all evidence into one
+   score.
+
+The abstract reports a pilot across three workflows at a global bank. For
+credit-memo drafting, it reports 88% human-graded citation precision and a 1.6%
+hallucination rate for the best model, against stated gates of 70% and 5%. For
+procedure transformation, it reports estimated analyst refinement effort falling
+from 27.4 to 2.9 hours per document. These examples support evaluating a concrete
+workflow rather than a model in isolation, but they do not validate the complete
+gating framework.
+
+**Boundary:** Scout reviewed the complete live arXiv API abstract, not the full
+paper, formal specification, algorithm, pilot protocol, data, grader calibration,
+confidence intervals, or value model. The authors explicitly distinguish
+established results, documented pilot evidence, the proposed system, and open
+hypotheses. The reported bank figures are author claims and include an estimated
+baseline for refinement effort; the abstract does not show that the thresholds
+were preregistered, that reviewer catch rate was measured in the cited pilots, or
+that `SCALE` decisions improved production outcomes. Treat EnterpriseVal as a
+useful deployment-evaluation design, not a validated universal gate.
+
+Source: https://arxiv.org/abs/2609.21841v1
 Source: https://export.arxiv.org/api/query?search_query=%28cat%3Acs.AI%20OR%20cat%3Acs.MA%20OR%20cat%3Acs.CL%29%20AND%20%28all%3Aagent%20OR%20all%3Aagentic%29&start=0&max_results=20&sortBy=submittedDate&sortOrder=descending
 
 ---
