@@ -2,7 +2,7 @@
 
 **Historical pilot decision:** retain `deepseek-v4-flash` only as an opt-in experimental model option. Do not replace the production Sol evaluator or deploy the rejected prompt addendum on this evidence.
 
-**Authorized next-iteration candidate:** keep Sol available for explicit reviews at one assessment per hour, and add a dedicated `evaluator-deepseek` profile for initially shadowed routine sampling at one attempt per five minutes. The candidate remains off until the App definition is reviewed and activated; its larger attempt allowance is not evidence of useful-report capacity.
+**Authorized next-iteration candidate:** keep Sol as the automatic reviewer at one assessment per hour, and add a dedicated `evaluator-deepseek` profile for controlled explicit reviews at one attempt per five minutes. The candidate remains off until the App definition and service environment are reviewed and activated; its larger attempt allowance is not evidence of useful-report capacity.
 
 The configured OpenAI Responses gateway completed a simple native Pi tool probe, but the frozen evaluator comparison did not establish dependable evaluator completion or evidence judgment. The existing evaluator, result schema, evidence mechanism, Task records, and production budget were unchanged during that historical pilot.
 
