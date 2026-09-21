@@ -12,7 +12,10 @@ import { planReportIntake } from "../../../evaluation-report-intake.js";
 
 export const name = "evaluation-report-intake";
 export const description =
-  "Integrity-check the flat publication identity from message.context.publication, reread its canonical current subject, and plan a disposition.";
+  'Run workflow({action:"run",name:"evaluation-report-intake",input:message.context.publication}); preserve the complete publication object, with appId/taskId at the top level, not { publication: ... }. Integrity-check that report and reread its canonical current subject.';
+
+const missingPublicationIdentity =
+  'Evaluation report intake requires the complete flat publication object. Run workflow({action:"run",name:"evaluation-report-intake",input:message.context.publication}); appId and taskId must be top-level input fields, all publication fields must be preserved, and input.publication is not accepted.';
 
 type Input = PublishedReportRequest;
 type SubjectReader = (subject: {
@@ -77,9 +80,7 @@ export async function intakeEvaluationReport(
 ): Promise<ExecutionResult> {
   const publication = ctx.input;
   if (!publication?.appId || !publication.taskId)
-    return ctx.blocked(
-      "Evaluation report intake requires exact publication identity",
-    );
+    return ctx.blocked(missingPublicationIdentity);
   const read = readPublishedEvaluationReport(publication, reportRoot);
   if (read.status === "publication-pending")
     return finish(

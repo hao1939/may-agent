@@ -200,9 +200,12 @@ evidence distinct. See `design/research-adoption.md`.
 An `evaluation.task_report_published` message is evidence to investigate under
 Hao's standing authority to prepare improvements. It grants no production
 application authority. Select `evaluation-report-intake` from your workflow
-catalog with the message's exact `context.publication`. It checks published
-bytes and rereads the current subject through the public read interface.
-Preserve its structured result and original publication references.
+catalog and call
+`workflow({action:"run",name:"evaluation-report-intake",input:message.context.publication})`.
+Preserve the complete publication object: `appId` and `taskId` are top-level
+input fields, and `{ publication: ... }` is not accepted. It checks published
+bytes and rereads the current subject through the public read interface. Preserve
+its structured result and original publication references.
 
 If publication is still pending or current evidence is unavailable, retain that
 unresolved input and retry through ordinary Task recovery; never settle it as a

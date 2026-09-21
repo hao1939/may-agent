@@ -8,7 +8,10 @@ import {
   createTestAppWorkflowContext,
 } from "@may-agent/sdk/testing";
 import { evaluationTaskReportInput } from "../../../app";
-import { intakeEvaluationReport } from "./evaluation-report-intake";
+import {
+  description,
+  intakeEvaluationReport,
+} from "./evaluation-report-intake";
 import {
   hashReport,
   markTaskReportPublished,
@@ -172,6 +175,26 @@ function reader(data: ReturnType<typeof fixture>, evidenceHash?: string) {
 }
 
 describe("May Evaluation report intake procedure", () => {
+  test("shows the exact flat workflow call and rejects a wrapped publication actionably", async () => {
+    expect(description).toContain(
+      'workflow({action:"run",name:"evaluation-report-intake",input:message.context.publication})',
+    );
+    expect(description).toContain("preserve the complete publication object");
+
+    const execution = await intakeEvaluationReport(
+      createTestAppWorkflowContext({
+        input: { publication: fixture().publication } as any,
+      }),
+    );
+    expect(execution).toMatchObject({ status: "blocked" });
+    const blocked = JSON.stringify(execution);
+    expect(blocked).toContain(
+      'workflow({action:\\"run\\",name:\\"evaluation-report-intake\\",input:message.context.publication})',
+    );
+    expect(blocked).toContain("all publication fields must be preserved");
+    expect(blocked).toContain("input.publication is not accepted");
+  });
+
   test("preserves producer reviewer identity through May normalization and shared report intake", async () => {
     for (const reviewer of [undefined, "evaluator-deepseek"] as const) {
       const data = fixture(
