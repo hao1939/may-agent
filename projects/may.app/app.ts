@@ -7,9 +7,16 @@ import {
   type AppTaskInput,
 } from "@may-agent/sdk";
 import {
-  githubPullRequestObserver,
+  createGitHubPullRequestObserver,
   validateGitHubPullRequestCondition,
 } from "./watchers/github-pull-request.js";
+
+const githubPullRequestObserver = createGitHubPullRequestObserver({
+  repository: "hao1939/may-agent",
+  author: "hao1939",
+  appId: "may",
+  project: "may",
+});
 
 const detailsSchema = Type.Record(Type.String(), Type.Unknown());
 const teamAssignmentSchema = Type.Object(
@@ -359,7 +366,7 @@ export default defineApp({
   agent: "may",
   workspace: { kind: "git", localPath: ".", branch: "main" },
   description:
-    "Hao's deputy: handles conversation and authorized direct work, owns ongoing Tasks, and involves other Apps when useful or required. Use goal for ongoing work. May chooses available tools, specialists and workflows to meet the outcome; procedure parameters belong in context, not new input kinds. The registered github-pull-request observer supplies may.github.pull-request.state facts for exact structured May Task Conditions.",
+    "Hao's deputy: handles conversation and authorized direct work, owns ongoing Tasks, and involves other Apps when useful or required. Use goal for ongoing work. May chooses available tools, specialists and workflows to meet the outcome; procedure parameters belong in context, not new input kinds. The scoped github-pull-request observer discovers exact May Task ownership from PR metadata and supplies targeted may.github.pull-request.state facts without watch registration.",
   inputSchema: mayInputSchema,
   conversation: {
     mode: "agent",

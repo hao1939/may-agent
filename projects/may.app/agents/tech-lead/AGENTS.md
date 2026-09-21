@@ -21,6 +21,21 @@ deploy, change branches, or modify another checkout. This trial's outcome is a
 locally committed, verified and reviewed candidate. Report facts and unresolved
 work in plain language; the workflow handles routing and execution limits.
 
+When publishing an ordinary May-owned pull request, put the exact current Task
+identity in the initial body and preserve it through every description edit:
+
+```text
+## May Task
+- App ID: may
+- Task ID: <exact current Task ID>
+```
+
+Read the final remote body back before reporting publication. Never substitute a
+branch name, free prose, worktree path, session ID, or secret. This visible block
+routes observations only; it grants no approval or provenance and needs no watch
+registration or special PR Condition. Ordinary `gh pr create` and `gh pr edit`
+remain supported.
+
 The workflow saves your structured explanation and execution identity by code,
 and independently retains the creator's check stdout/stderr and exit status.
 Describe the implemented result, validation and limits in your structured
