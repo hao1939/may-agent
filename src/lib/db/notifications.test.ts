@@ -92,22 +92,56 @@ test("completed human-action delivery is exact and destination scoped", () => {
         taskRefs: [{ appId: action.appId, taskId: action.taskId }],
         channelThreadId: "9",
         humanCondition: { taskGeneration: 3, conditionId: "operator", conditionGeneration: 2 },
+        approvalAnchor: { approvalId: "unchanged" },
       }),
     });
     expect(
       hasCompletedHumanActionDelivery(root, "123", 9, {
         ...action,
-        signature: "legacy-text-not-used",
-        humanCondition: { taskGeneration: 3, conditionId: "operator", conditionGeneration: 2 },
-      }),
-    ).toBe(true);
-    expect(
-      hasCompletedHumanActionDelivery(root, "123", 9, {
-        ...action,
-        signature: "legacy-text-not-used",
-        humanCondition: { taskGeneration: 3, conditionId: "operator", conditionGeneration: 3 },
+        signature: "changed-action-set",
       }),
     ).toBe(false);
+
+    for (let id = 72; id < 97; id += 1) {
+      storeNotificationMessage(root, {
+        chat_id: "123",
+        telegram_msg_id: id,
+        event_type: "task.watch",
+        agent: "may",
+        session_id: null,
+        project_id: null,
+        data: JSON.stringify({
+          taskRefs: [{ appId: "may", taskId: `goal/distractor-${id}` }],
+          channelThreadId: "9",
+          completedHumanAction: {
+            version: 1,
+            appId: "may",
+            taskId: `goal/distractor-${id}`,
+            signature: `distractor-${id}`,
+          },
+        }),
+      });
+    }
+    expect(hasCompletedHumanActionDelivery(root, "123", 9, action)).toBe(true);
+
+    const second = { appId: "scout-knowledge-lib", taskId: "goal/second", signature: "second-v1" };
+    storeNotificationMessage(root, {
+      chat_id: "123",
+      telegram_msg_id: 97,
+      event_type: "task.human-action",
+      agent: "may",
+      session_id: null,
+      project_id: null,
+      data: JSON.stringify({
+        taskRefs: [
+          { appId: action.appId, taskId: action.taskId },
+          { appId: second.appId, taskId: second.taskId },
+        ],
+        channelThreadId: "9",
+        completedHumanAction: { version: 1, ...second },
+      }),
+    });
+    expect(hasCompletedHumanActionDelivery(root, "123", 9, second)).toBe(true);
   } finally {
     closeDb(root);
     rmSync(root, { recursive: true, force: true });

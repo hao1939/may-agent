@@ -1160,8 +1160,6 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
         appId: detail.appId,
         taskId: detail.taskId,
         signature: signature.value,
-        humanCondition: humanConditionAnchor(detail) ?? undefined,
-        approvalAnchor: approvalAnchor(detail) ?? undefined,
       });
     });
     if (changed.length === 0) {
