@@ -18,6 +18,10 @@ const REQUEST_TIMEOUT_MS = 15_000;
 const OBSERVER_INTERVAL_MS = 15 * 60_000;
 const MAX_HTTP_REQUESTS_PER_RUN = 11;
 const MAX_RESOURCES = 64;
+// Reserve half of the candidate set for open PRs retained from earlier passes.
+// This bounds memory while preventing a full newest-first discovery window from
+// starving resources that have since fallen out of that window.
+const MAX_REMEMBERED_RESOURCES = MAX_RESOURCES / 2;
 
 export type GitHubPullRequestScope = {
   repository: string;
@@ -160,6 +164,9 @@ export function parseMayTaskOwner(body: unknown): Owner | null {
   const tail = source.slice(start);
   const end = tail.search(/^#{1,2}\s/m);
   const block = end < 0 ? tail : tail.slice(0, end);
+  const appFields = [...block.matchAll(/^- App ID:/gm)];
+  const taskFields = [...block.matchAll(/^- Task ID:/gm)];
+  if (appFields.length !== 1 || taskFields.length !== 1) return null;
   const apps = [...block.matchAll(/^- App ID:\s*(\S+)\s*$/gm)];
   const tasks = [...block.matchAll(/^- Task ID:\s*(\S+)\s*$/gm)];
   if (apps.length !== 1 || tasks.length !== 1) return null;
@@ -190,6 +197,12 @@ function pullUrl(repository: string, number: number): string {
 }
 function listUrl(repository: string, state: "open" | "closed"): string {
   return `${GITHUB_API_ORIGIN}/repos/${repository}/pulls?state=${state}&sort=updated&direction=desc&per_page=${PER_PAGE}`;
+}
+
+function isPositiveSafeInteger(value: string): boolean {
+  if (!/^[1-9][0-9]*$/.test(value)) return false;
+  const parsed = Number(value);
+  return Number.isSafeInteger(parsed) && parsed > 0;
 }
 
 function assertAllowedUrl(
@@ -227,7 +240,7 @@ function assertAllowedUrl(
       url.searchParams.get("per_page") !== String(PER_PAGE) ||
       url.searchParams.getAll("per_page").length !== 1 ||
       pages.length > 1 ||
-      (pages.length === 1 && !/^[1-9][0-9]*$/.test(pages[0])) ||
+      (pages.length === 1 && !isPositiveSafeInteger(pages[0])) ||
       [...url.searchParams.keys()].some((key) => !allowed.includes(key))
     )
       throw new Error("refused unsafe GitHub discovery query");
@@ -241,7 +254,7 @@ function assertAllowedUrl(
       perPage.length !== 1 ||
       perPage[0] !== String(PER_PAGE) ||
       pages.length > 1 ||
-      (pages.length === 1 && !/^[1-9][0-9]*$/.test(pages[0]))
+      (pages.length === 1 && !isPositiveSafeInteger(pages[0]))
     )
       throw new Error("refused unsafe GitHub review pagination query");
   }
@@ -460,53 +473,65 @@ async function discoverResources(
   scope: GitHubPullRequestScope,
   fetchImpl: FetchLike,
   budget: RequestBudget,
-): Promise<{ resources: Resource[]; truncated: boolean }> {
+): Promise<{ resources: Resource[]; truncated: boolean; failures: string[] }> {
   const found = new Map<number, Resource>();
+  const failures: string[] = [];
   let truncated = false;
   for (const state of ["open", "closed"] as const) {
     let next: string | null = listUrl(scope.repository, state);
     const visited = new Set<string>();
-    for (
-      let pageNumber = 0;
-      next && pageNumber < MAX_DISCOVERY_PAGES_PER_STATE;
-      pageNumber++
-    ) {
-      const normalized = assertAllowedUrl(next, scope.repository, "list").href;
-      if (visited.has(normalized))
-        throw new Error("GitHub discovery pagination repeated a page");
-      visited.add(normalized);
-      const page = await githubJson(
-        normalized,
-        scope,
-        "list",
-        budget,
-        fetchImpl,
-      );
-      if (!Array.isArray(page.value))
-        throw new Error("GitHub discovery response is not an array");
-      for (const item of page.value) {
-        const pr = record(item);
-        const number = pr.number;
-        const author = text(record(pr.user).login);
-        const baseRepo = text(record(record(pr.base).repo).full_name);
-        const owner = parseMayTaskOwner(pr.body);
-        if (
-          Number.isSafeInteger(number) &&
-          Number(number) > 0 &&
-          author.toLowerCase() === scope.author.toLowerCase() &&
-          baseRepo.toLowerCase() === scope.repository.toLowerCase() &&
-          owner?.appId === scope.appId
-        )
-          found.set(Number(number), {
-            repository: scope.repository,
-            number: Number(number),
-          });
+    try {
+      for (
+        let pageNumber = 0;
+        next && pageNumber < MAX_DISCOVERY_PAGES_PER_STATE;
+        pageNumber++
+      ) {
+        const normalized = assertAllowedUrl(
+          next,
+          scope.repository,
+          "list",
+        ).href;
+        if (visited.has(normalized))
+          throw new Error("GitHub discovery pagination repeated a page");
+        visited.add(normalized);
+        const page = await githubJson(
+          normalized,
+          scope,
+          "list",
+          budget,
+          fetchImpl,
+        );
+        if (!Array.isArray(page.value))
+          throw new Error("GitHub discovery response is not an array");
+        for (const item of page.value) {
+          const pr = record(item);
+          const number = pr.number;
+          const author = text(record(pr.user).login);
+          const baseRepo = text(record(record(pr.base).repo).full_name);
+          const owner = parseMayTaskOwner(pr.body);
+          if (
+            Number.isSafeInteger(number) &&
+            Number(number) > 0 &&
+            author.toLowerCase() === scope.author.toLowerCase() &&
+            baseRepo.toLowerCase() === scope.repository.toLowerCase() &&
+            owner?.appId === scope.appId
+          )
+            found.set(Number(number), {
+              repository: scope.repository,
+              number: Number(number),
+            });
+        }
+        next = page.next;
       }
-      next = page.next;
+      if (next) truncated = true;
+    } catch (error) {
+      failures.push(
+        `${state}: ${error instanceof Error ? error.message : String(error)}`,
+      );
+      if (error instanceof DeferredReadError) break;
     }
-    if (next) truncated = true;
   }
-  return { resources: [...found.values()], truncated };
+  return { resources: [...found.values()], truncated, failures };
 }
 
 function ownerIsCurrent(task: TaskDetail | null, owner: Owner): boolean {
@@ -541,43 +566,60 @@ export async function observeGitHubPullRequests(
   try {
     const result = await discoverResources(scope, fetchImpl, budget);
     discovered = result.resources;
+    for (const failure of result.failures)
+      ctx.log.warn(
+        `GitHub pull-request discovery coverage incomplete: ${failure}`,
+      );
     if (result.truncated)
       ctx.log.warn(
-        `GitHub pull-request discovery exceeded the bounded ${MAX_DISCOVERY_PAGES_PER_STATE}-page window`,
+        `GitHub pull-request discovery exceeded the bounded ${MAX_DISCOVERY_PAGES_PER_STATE}-page-per-state window`,
       );
   } catch (error) {
     ctx.log.warn(
       `GitHub pull-request discovery failed: ${error instanceof Error ? error.message : String(error)}`,
     );
   }
-  const combined = new Map<number, Resource>();
-  for (const item of discovered) combined.set(item.number, item);
-  for (const item of Array.isArray(previous.resources)
-    ? previous.resources
-    : []) {
-    if (
-      item.open &&
+
+  // Admit remembered open resources first, up to their explicit reservation.
+  // Newest provider discoveries fill the remaining capacity. This makes every
+  // retained resource part of the round-robin set instead of slicing it away
+  // behind a perpetually full newest-first discovery window.
+  const priorRemembered = (
+    Array.isArray(previous.resources) ? previous.resources : []
+  ).filter(
+    (item): item is RememberedResource =>
+      item.open === true &&
       item.repository === scope.repository &&
-      Number.isSafeInteger(item.number)
-    )
-      combined.set(item.number, {
-        repository: item.repository,
-        number: item.number,
-      });
+      Number.isSafeInteger(item.number) &&
+      item.number > 0,
+  );
+  const admittedRemembered = priorRemembered.slice(-MAX_REMEMBERED_RESOURCES);
+  if (priorRemembered.length > admittedRemembered.length)
+    ctx.log.warn(
+      `GitHub pull-request memory evicted ${priorRemembered.length - admittedRemembered.length} open resources beyond the ${MAX_REMEMBERED_RESOURCES}-resource reservation`,
+    );
+  const combined = new Map<number, Resource>();
+  for (const item of admittedRemembered)
+    combined.set(item.number, {
+      repository: item.repository,
+      number: item.number,
+    });
+  for (const item of discovered) {
+    if (combined.size >= MAX_RESOURCES && !combined.has(item.number)) break;
+    combined.set(item.number, item);
   }
-  const resources = [...combined.values()].slice(0, MAX_RESOURCES);
+  if (discovered.some((item) => !combined.has(item.number)))
+    ctx.log.warn(
+      `GitHub pull-request candidate coverage exceeded the ${MAX_RESOURCES}-resource pass capacity`,
+    );
+  const resources = [...combined.values()];
   const start = resources.length
     ? (Number(previous.cursor) || 0) % resources.length
     : 0;
   const events: AppEvent<Record<string, unknown>>[] = [];
   const states: Record<string, PublicationState> = { ...priorStates };
   const remembered = new Map<number, RememberedResource>();
-  for (const item of Array.isArray(previous.resources)
-    ? previous.resources
-    : []) {
-    if (item.open && item.repository === scope.repository)
-      remembered.set(item.number, item);
-  }
+  for (const item of admittedRemembered) remembered.set(item.number, item);
   let advanced = 0;
 
   for (
@@ -646,9 +688,11 @@ export async function observeGitHubPullRequests(
           ? { reviewFailure: marker(owned.fact.reviewError) }
           : {}),
       };
-      if (owned.fact.state === "open")
+      if (owned.fact.state === "open") {
+        // Reinsert so bounded eviction retains the most recently refreshed PRs.
+        remembered.delete(resource.number);
         remembered.set(resource.number, { ...resource, open: true });
-      else remembered.delete(resource.number);
+      } else remembered.delete(resource.number);
     } catch (error) {
       if (error instanceof OwnershipError) remembered.delete(resource.number);
       ctx.log.warn(
@@ -661,12 +705,18 @@ export async function observeGitHubPullRequests(
     ctx.log.info(
       `GitHub pull-request observer deferred ${resources.length - advanced} resources`,
     );
+  const rememberedValues = [...remembered.values()];
+  const retainedResources = rememberedValues.slice(-MAX_REMEMBERED_RESOURCES);
+  if (rememberedValues.length > retainedResources.length)
+    ctx.log.warn(
+      `GitHub pull-request memory evicted ${rememberedValues.length - retainedResources.length} open resources beyond the ${MAX_REMEMBERED_RESOURCES}-resource reservation`,
+    );
   return {
     events,
     nextObservation: {
       cursor: resources.length ? (start + advanced) % resources.length : 0,
       ...(budget.deferUntil ? { deferUntil: budget.deferUntil } : {}),
-      resources: [...remembered.values()].slice(-MAX_RESOURCES),
+      resources: retainedResources,
       states: Object.fromEntries(
         Object.entries(states).slice(-MAX_RESOURCES * 2),
       ),

@@ -84,8 +84,12 @@ function context(
     },
   };
 }
-function response(value: unknown, status = 200): Response {
-  return Response.json(value, { status });
+function response(
+  value: unknown,
+  status = 200,
+  headers?: HeadersInit,
+): Response {
+  return Response.json(value, { status, headers });
 }
 function pullPayload(
   number: number,
@@ -152,6 +156,16 @@ describe("May GitHub pull-request resource ownership", () => {
     expect(parseMayTaskOwner("```md\n" + ownerBody())).toBeNull();
     expect(
       parseMayTaskOwner("## May Task\n- App ID: may\n- Task ID: ../escape"),
+    ).toBeNull();
+    expect(
+      parseMayTaskOwner(
+        "## May Task\n- App ID: may\n- App ID: invalid app\n- Task ID: goal/linked-pr",
+      ),
+    ).toBeNull();
+    expect(
+      parseMayTaskOwner(
+        "## May Task\n- App ID: may\n- Task ID: goal/linked-pr\n- Task ID: invalid task",
+      ),
     ).toBeNull();
   });
   test("retains explicit Conditions without using them as discovery registration", () => {
@@ -327,6 +341,164 @@ describe("May GitHub pull-request resource ownership", () => {
     expect(
       (retained.nextObservation as { resources: unknown[] }).resources.length,
     ).toBeGreaterThan(0);
+  });
+
+  test("services successful discovery despite a later provider failure and reports incomplete coverage", async () => {
+    const ctx = context(new Map([["goal/linked-pr", task("goal/linked-pr")]]));
+    const fetcher = (async (input: string | URL | Request) => {
+      const url = String(input);
+      if (url.includes("state=open") && !url.includes("page=2"))
+        return response([pullPayload(215)], 200, {
+          link: `<https://api.github.com/repos/${scope.repository}/pulls?state=open&sort=updated&direction=desc&per_page=50&page=2>; rel="next"`,
+        });
+      if (url.includes("state=open") && url.includes("page=2"))
+        return response({ message: "unavailable" }, 503);
+      if (url.includes("state=closed")) return response([]);
+      if (url.includes("/reviews")) return response([]);
+      return response(pullPayload(215));
+    }) as typeof fetch;
+    const result = await observe(ctx, fetcher);
+    expect(result.events[0]).toMatchObject({
+      type: GITHUB_PULL_REQUEST_EVENT,
+      target: { taskId: "goal/linked-pr" },
+    });
+    expect(ctx.warnings).toContainEqual(
+      expect.stringContaining(
+        "coverage incomplete: open: GitHub read failed HTTP 503",
+      ),
+    );
+  });
+
+  test("reserves fair refresh capacity for remembered open resources and reports overflow", async () => {
+    const tasks = new Map<string, TaskDetail>();
+    const listed: ReturnType<typeof pullPayload>[] = [];
+    for (let number = 1; number <= 65; number++) {
+      const id = `goal/${number}`;
+      tasks.set(id, task(id));
+      listed.push(pullPayload(number, ownerBody(id)));
+    }
+    tasks.set("goal/remembered", task("goal/remembered"));
+    const ctx = context(tasks, {
+      cursor: 0,
+      resources: [{ repository: scope.repository, number: 900, open: true }],
+      states: {},
+    });
+    const calls: string[] = [];
+    const fetcher = (async (input: string | URL | Request) => {
+      const url = String(input);
+      calls.push(url);
+      if (url.includes("state=open")) return response(listed);
+      if (url.includes("state=closed")) return response([]);
+      if (url.includes("/reviews")) return response([]);
+      const number = Number(url.match(/\/pulls\/(\d+)$/)?.[1]);
+      return response(
+        number === 900
+          ? pullPayload(900, ownerBody("goal/remembered"), { merged: true })
+          : pullPayload(number, ownerBody(`goal/${number}`)),
+      );
+    }) as typeof fetch;
+    const result = await observe(ctx, fetcher);
+    expect(calls.some((url) => url.endsWith("/pulls/900"))).toBe(true);
+    expect(result.events[0]).toMatchObject({
+      target: { taskId: "goal/remembered" },
+      data: { number: 900, merged: true },
+    });
+    expect(ctx.warnings).toContainEqual(
+      expect.stringContaining("candidate coverage exceeded"),
+    );
+  });
+
+  test("direct reader remains ownership-independent and rejects malformed provider boundaries", async () => {
+    const noOwner = pullPayload(215, "ordinary external PR body", {
+      author: "someone-else",
+    });
+    const direct = await readGitHubPullRequest(
+      scope.repository,
+      215,
+      provider(new Map([[215, noOwner]])),
+    );
+    expect(direct).toMatchObject({ number: 215, state: "open" });
+
+    await expect(
+      readGitHubPullRequest(scope.repository, 215, (async (
+        input: string | URL | Request,
+      ) =>
+        String(input).includes("/reviews")
+          ? response([])
+          : response({ ...pullPayload(215), number: 216 })) as typeof fetch),
+    ).rejects.toThrow("identity does not match");
+    await expect(
+      readGitHubPullRequest(scope.repository, 215, (async (
+        input: string | URL | Request,
+      ) =>
+        String(input).includes("/reviews")
+          ? response([])
+          : response({ ...pullPayload(215), draft: "false" })) as typeof fetch),
+    ).rejects.toThrow("missing boolean draft");
+    await expect(
+      readGitHubPullRequest(scope.repository, 215, (async () =>
+        response({ message: "no" }, 503)) as typeof fetch),
+    ).rejects.toThrow("HTTP 503");
+  });
+
+  test("fails review pagination closed for duplicate, unsafe-integer, and redirected pages while retaining PR state", async () => {
+    const links = [
+      `https://api.github.com/repos/${scope.repository}/pulls/215/reviews?per_page=50&page=2&page=3`,
+      `https://api.github.com/repos/${scope.repository}/pulls/215/reviews?per_page=50&page=9007199254740992`,
+    ];
+    for (const link of links) {
+      const fact = await readGitHubPullRequest(scope.repository, 215, (async (
+        input: string | URL | Request,
+      ) =>
+        String(input).includes("/reviews")
+          ? response([], 200, { link: `<${link}>; rel="next"` })
+          : response(pullPayload(215))) as typeof fetch);
+      expect(fact).toMatchObject({
+        state: "open",
+        reviewsComplete: false,
+        reviewError: expect.stringContaining("unsafe"),
+      });
+    }
+
+    const redirected = await readGitHubPullRequest(
+      scope.repository,
+      215,
+      (async (input: string | URL | Request) => {
+        const result = String(input).includes("/reviews")
+          ? response([])
+          : response(pullPayload(215));
+        if (String(input).includes("/reviews"))
+          Object.defineProperty(result, "url", {
+            value: "https://api.github.com/redirected",
+          });
+        return result;
+      }) as typeof fetch,
+    );
+    expect(redirected).toMatchObject({
+      state: "open",
+      reviewsComplete: false,
+      reviewError: expect.stringContaining("redirected"),
+    });
+  });
+
+  test("persists Retry-After date and rate-limit reset deferral", async () => {
+    for (const headers of [
+      { "retry-after": "Sun, 21 Sep 2026 02:00:00 GMT" },
+      {
+        "x-ratelimit-remaining": "0",
+        "x-ratelimit-reset": String(Date.parse("2026-09-21T02:00:00Z") / 1000),
+      },
+    ]) {
+      let calls = 0;
+      const first = await observe(context(new Map()), (async () => {
+        calls++;
+        return response({ message: "limited" }, 429, headers);
+      }) as typeof fetch);
+      expect(calls).toBe(1);
+      expect(
+        Number((first.nextObservation as { deferUntil: number }).deferUntil),
+      ).toBeGreaterThan(Date.parse("2026-09-21T01:00:00Z"));
+    }
   });
 
   test("does no reads during persisted rate-limit deferral", async () => {

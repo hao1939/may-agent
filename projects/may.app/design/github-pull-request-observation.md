@@ -38,9 +38,12 @@ controlled-writer surface; it is not cryptographic proof of who last edited a
 body. Metadata routes evidence only. It grants no approval, provenance, merge,
 deployment, Task-close, or Condition-satisfaction authority.
 
-Each fifteen-minute pass reads one bounded, newest-updated page for both open and
-closed PRs. It then directly reads candidate PRs before routing, because list
-responses are not authoritative for body, author, merge, or review state. The
+Each fifteen-minute pass reads at most two newest-updated pages for each state
+(open and recently closed): up to four discovery reads from the shared request
+budget. A failure on a later page or state is reported as incomplete coverage;
+already valid discoveries are still serviced with the remaining budget. The
+observer then directly reads candidate PRs before routing, because list responses
+are not authoritative for body, author, merge, or review state. The
 direct response must match repository, number, configured author, and one valid
 owner block. Only then does the observer perform `tasks.get(exactTaskId)`; it
 never scans Task lists or history. Quiet unclosed owners, including status
@@ -56,11 +59,18 @@ bounded observer, not complete GitHub history.
 
 ## Facts, budgets, and coexistence
 
-The observer shares an eleven-request pass budget across two discovery reads,
-direct PR reads, and review pagination. A round-robin cursor gives remembered
-and newly discovered candidates progress over later passes. At most 64 resources
-and compact publication markers are retained. Rate-limit deferral prevents calls
-until the recorded time. URL, redirect, identity, required-field, pagination and
+The observer shares an eleven-request pass budget across up to four discovery
+reads, direct PR reads, and review pagination. A round-robin cursor gives admitted
+remembered and newly discovered candidates progress over later passes. The
+64-resource candidate capacity reserves 32 positions for previously remembered
+open PRs; current newest-first discoveries fill the rest. Excess discoveries are
+reported as incomplete capacity coverage. Open-resource memory retains the 32
+most recently admitted/observed entries and explicitly reports older eviction.
+Thus every retained resource remains eligible for refresh, while more than 32
+simultaneously remembered open PRs can be evicted and later missed if they also
+fall outside both two-page discovery windows. Compact publication markers are
+bounded separately. Rate-limit deferral prevents calls until the recorded time.
+URL, redirect, identity, required-field, safe-integer/duplicate pagination and
 review-page validation remain fail closed.
 
 A successful `may.github.pull-request.state` fact contains repository/number,

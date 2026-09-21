@@ -3,7 +3,7 @@
  * against a temporary database. External HTTP and owner judgment are fixtures.
  */
 import assert from "node:assert/strict";
-import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 const app = resolve(
@@ -86,7 +86,9 @@ const scope = {
   appId: "may",
   project: "may",
 };
-const ownerBody = `Fixture PR\n\n## May Task\n- App ID: may\n- Task ID: ${taskId}\n`;
+const ownerBody = process.env.PR_BODY_FILE
+  ? readFileSync(resolve(process.env.PR_BODY_FILE), "utf8")
+  : `Fixture PR\n\n## May Task\n- App ID: may\n- Task ID: ${taskId}\n`;
 const human = {
   id: "human-review",
   type: "conversation.message.created",
@@ -94,6 +96,14 @@ const human = {
   expected: { field: "text", equals: "independent-decision" },
   owner: "human",
   requestedAction: "A separate fixture decision",
+  reviewAfterMs: 21600000,
+};
+const dependency = {
+  id: "independent-dependency",
+  type: "dependency.completed",
+  subject: "fixture:independent",
+  expected: { field: "status", equals: "done" },
+  owner: "app:other",
   reviewAfterMs: 21600000,
 };
 const claim = () => {
@@ -119,11 +129,18 @@ deferAppTask(config, claim(), {
   disposition: "waiting",
   summary: "Await independent human choice; PR ownership is resource metadata",
   facts: ["fixture"],
-  conditions: [human],
+  conditions: [human, dependency],
 });
 const bus = new EventBus(),
   writer = new DbWriter(root);
-bus.setPersistenceSubscriber(writer.handler);
+let failFirstStatePublication = true;
+bus.setPersistenceSubscriber((event: any) => {
+  if (event.type === type && failFirstStatePublication) {
+    failFirstStatePublication = false;
+    throw new Error("fixture publication failure");
+  }
+  return writer.handler(event);
+});
 bus.setDeliveryRecorder(writer.recordDelivery);
 const observations: any[] = [],
   admissions: any[] = [];
@@ -215,19 +232,17 @@ const report: any = {};
 try {
   runtime.replace(entries);
   await scan();
+  assert.equal(observations.filter((e) => e.type === type).length, 0);
+  currentTime += observer.intervalMs;
+  await scan();
   assert.equal(observations.filter((e) => e.type === type).length, 1);
   const initial = observations.find((e) => e.type === type);
   assert.equal(initial.data.merged, false);
   assert.deepEqual(
     store.readTaskConditions(taskId).map((c: any) => c.metadata.id),
-    ["human-review"],
+    ["human-review", "independent-dependency"],
   );
-  deferAppTask(config, claim(), {
-    disposition: "waiting",
-    summary: "PR open; independent human choice remains",
-    facts: ["Resource-owned PR observed without registration"],
-    conditions: [human],
-  });
+  const busyClaim = claim();
   const before = observations.length;
   currentTime += observer.intervalMs;
   await scan();
@@ -239,29 +254,37 @@ try {
   assert.equal(fact.data.merged, true);
   assert.ok(fact[EVENT_ROW_ID] > 0);
   assert.deepEqual(admissions.at(-1)?.taskIds, [taskId]);
-  deferAppTask(config, claim(), {
+  assert.equal(
+    readRuntimeTaskView({ taskStateConfig: config }, taskId).status,
+    "running",
+  );
+  deferAppTask(config, busyClaim, {
     disposition: "waiting",
-    summary: "Merge observed; independent choice stays",
-    facts: ["Merged receipt verified"],
-    conditions: [human],
+    summary: "Merge observed; independent work remains",
+    facts: ["Merged receipt and queued input retained"],
+    conditions: [human, dependency],
   });
   assert.deepEqual(
     store.readTaskConditions(taskId).map((c: any) => c.metadata.id),
-    ["human-review"],
+    ["human-review", "independent-dependency"],
   );
   report.transitionWithoutRegistration = {
     sameTaskId: taskId,
     metadataBlock: ownerBody,
     specialPrConditionPresent: false,
     independentHumanWaitPreserved: true,
+    independentDependencyPreserved: true,
+    busyOwnerInputRetained: true,
     unchangedSuppressed: true,
+    publicationFailureRetried: true,
     durableEventId: fact[EVENT_ROW_ID],
     status: readRuntimeTaskView({ taskStateConfig: config }, taskId).status,
   };
   report.httpCalls = httpCalls;
   report.fixtureOnly = true;
+  report.externalBodyBytes = Boolean(process.env.PR_BODY_FILE);
   report.limit =
-    "Real observer runtime, event persistence and task admission/settlement; HTTP and owner decision are stubbed. No production DB writes.";
+    "Production observer, Host runtime, durable publication and busy-owner admission/settlement; HTTP and owner judgment are fixtures. Runtime restart and real GitHub writes are not proved. No production DB writes.";
   writeFileSync(output, JSON.stringify(report, null, 2) + "\n");
   console.log(JSON.stringify(report));
 } finally {
