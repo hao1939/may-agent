@@ -27,17 +27,9 @@ export type ToolDenial = {
 
 export type AgentExecutionManifest = {
   agent: string;
-  /** Capability bundle names retained from agent.json. */
   configuredTools: string[];
   deniedTools: ToolDenial[];
-  /** Concrete model-visible names, including tools injected during preparation. */
   effectiveTools: string[];
-};
-
-type DirectToolInventory = {
-  tools: AgentTool[];
-  cleanup: Array<() => void>;
-  concreteToolsByCapability: Map<string, string[]>;
 };
 
 export type DirectAgentRunOptions = {
@@ -59,11 +51,6 @@ export type DirectAgentRunOptions = {
   models: Record<string, ModelWithApiKey>;
   /** Optional caller-owned structured result contract, enforced by finish(). */
   outputSchema?: TSchema;
-  /**
-   * Hide configured capability bundles or concrete tool names from the model.
-   * This controls tool visibility, not process/OS isolation. Supported bundle
-   * implementations and agent-local factories run while tools are inventoried.
-   */
   toolDenials?: ToolDenial[];
   timeoutMs?: number;
   signal?: AbortSignal;
@@ -105,15 +92,9 @@ export function resolveDirectToolPolicy(
   agent: string,
   configuredTools: string[],
   denials: ToolDenial[] = [],
-  concreteTools: string[] = configuredTools,
-  concreteToolsByCapability: ReadonlyMap<string, string[]> = new Map(
-    configuredTools.map((name) => [name, [name]]),
-  ),
 ): AgentExecutionManifest {
   const configured = new Set(configuredTools);
-  const concrete = new Set(concreteTools);
   const seen = new Set<string>();
-  const deniedConcrete = new Set<string>();
   const normalizedDenials = denials.map((denial) => ({
     name: denial.name.trim(),
     reason: denial.reason.trim(),
@@ -121,21 +102,17 @@ export function resolveDirectToolPolicy(
   for (const denial of normalizedDenials) {
     if (!denial.name) throw new Error(`Direct run for ${agent} has a tool denial with no name`);
     if (!denial.reason) throw new Error(`Direct run denial for tool "${denial.name}" requires a reason`);
-    if (!configured.has(denial.name) && !concrete.has(denial.name)) {
-      throw new Error(`Direct run denial names unknown tool "${denial.name}" for agent ${agent}`);
+    if (!configured.has(denial.name)) {
+      throw new Error(`Direct run denial names unconfigured tool "${denial.name}" for agent ${agent}`);
     }
     if (seen.has(denial.name)) throw new Error(`Direct run denies tool "${denial.name}" more than once`);
     seen.add(denial.name);
-    if (configured.has(denial.name)) {
-      for (const name of concreteToolsByCapability.get(denial.name) ?? []) deniedConcrete.add(name);
-    }
-    if (concrete.has(denial.name)) deniedConcrete.add(denial.name);
   }
   return {
     agent,
     configuredTools: [...configuredTools],
     deniedTools: normalizedDenials,
-    effectiveTools: concreteTools.filter((name) => !deniedConcrete.has(name)),
+    effectiveTools: configuredTools.filter((name) => !seen.has(name)),
   };
 }
 
@@ -143,29 +120,23 @@ async function buildDirectTools(
   config: AgentConfig,
   source: AgentDirectory,
   options: DirectAgentRunOptions,
-): Promise<DirectToolInventory> {
+  effectiveTools: string[],
+): Promise<{ tools: AgentTool[]; cleanup: Array<() => void> }> {
   const tools: AgentTool[] = [];
   const cleanup: Array<() => void> = [];
-  const concreteToolsByCapability = new Map<string, string[]>();
-  const deniedCapabilityNames = new Set(
-    (options.toolDenials ?? []).map((denial) => denial.name.trim()).filter((name) => config.tools.includes(name)),
-  );
-  // Build complete inventories for supported bundles before applying denials so
-  // overlapping bundle and concrete-name denials validate independently.
-  for (const capability of config.tools) {
-    const capabilityTools: AgentTool[] = [];
+  for (const capability of effectiveTools) {
     switch (capability) {
       case "coding":
-        capabilityTools.push(...createCodingTools(options.workRoot, { agentName: config.name }));
+        tools.push(...createCodingTools(options.workRoot, { agentName: config.name }));
         break;
       case "read-only":
-        capabilityTools.push(createReadTool(options.workRoot) as AgentTool);
+        tools.push(createReadTool(options.workRoot) as AgentTool);
         break;
       case "scrape":
-        capabilityTools.push(createScrapeTool());
+        tools.push(createScrapeTool());
         break;
       case "finish":
-        capabilityTools.push(
+        tools.push(
           createFinishTool({
             agentName: config.name,
             projectRoot: options.workRoot,
@@ -179,28 +150,17 @@ async function buildDirectTools(
           denyMessage: "Do not explore outside the scenario work root.",
           allowAgentSpawn: false,
         });
-        capabilityTools.push(background.tool);
+        tools.push(background.tool);
         cleanup.push(background.cleanup);
         break;
       }
       default:
-        if (deniedCapabilityNames.has(capability)) {
-          concreteToolsByCapability.set(capability, []);
-          continue;
-        }
         throw new Error(
           `Direct run cannot construct effective tool "${capability}" for agent ${config.name}; ` +
             `the caller must provide an explicit denial or a direct tool implementation`,
         );
     }
-    tools.push(...capabilityTools);
-    concreteToolsByCapability.set(
-      capability,
-      capabilityTools.map((tool) => tool.name),
-    );
   }
-  // These factories are trusted installation code. A denial can hide their
-  // returned tools from the model, but does not sandbox or prevent factory code.
   tools.push(
     ...(await loadAgentLocalTools(config.name, source.dir, {
       projectRoot: options.workRoot,
@@ -208,7 +168,7 @@ async function buildDirectTools(
       onNotice: options.onNotice,
     })),
   );
-  return { tools, cleanup, concreteToolsByCapability };
+  return { tools, cleanup };
 }
 
 /** Prepare one direct run without constructing autonomous infrastructure. */
@@ -227,78 +187,55 @@ export async function prepareDirectAgentExecution(options: DirectAgentRunOptions
   }
   const model = options.models[config.model];
   if (!model) throw new Error(`Agent ${config.name} uses unknown model ${config.model}`);
-  const inventory = await buildDirectTools(config, source, options);
-  const cleanup = () => {
-    for (const close of inventory.cleanup) close();
+  let executionManifest = resolveDirectToolPolicy(config.name, config.tools, options.toolDenials);
+  const { tools, cleanup } = await buildDirectTools(config, source, options, executionManifest.effectiveTools);
+  const definitionSource = options.visibleAgentDir ? { ...source, dir: resolve(options.visibleAgentDir) } : source;
+  const definition = await buildAgentDefinition({
+    config,
+    source: definitionSource,
+    model,
+    tools,
+    projectRoot: options.workRoot,
+    sharedRoot: options.sharedRoot,
+    globalAgentsRoot: options.globalAgentsRoot ?? join(options.projectRoot, "agents"),
+  });
+  for (const diagnostic of definition.skillCatalog?.diagnostics ?? []) options.onNotice?.(diagnostic);
+
+  const sessionId = options.sessionId ?? generateId("direct");
+  const sessionPath = resolve(options.outputRoot, "sessions", sessionId);
+  const prepared = prepareAgentExecution({
+    definition,
+    projectRoot: options.projectRoot,
+    sessionId,
+    task: options.task,
+    outputSchema: options.outputSchema,
+    requireFinish: options.outputSchema !== undefined,
+    promptTimestamp: options.promptTimestamp,
+    createFinish: () =>
+      createFinishTool({
+        agentName: config.name,
+        projectRoot: options.workRoot,
+        persistDir: options.outputRoot,
+      }),
+    onNotice: options.onNotice,
+  });
+  // Keep configured capability policy unchanged, but report the concrete tools
+  // that the model can actually see after local and schema-driven preparation.
+  executionManifest = {
+    ...executionManifest,
+    effectiveTools: prepared.tools.map((tool) => tool.name),
   };
-  try {
-    const availableToolNames = inventory.tools.map((tool) => tool.name);
-    // Structured direct calls require prepareAgentExecution() to expose finish,
-    // even when finish was not one of the configured capability bundles. Treat
-    // that concrete tool as available while validating the caller's policy.
-    if (options.outputSchema !== undefined && !availableToolNames.includes("finish")) {
-      availableToolNames.push("finish");
-    }
-    const policy = resolveDirectToolPolicy(
-      config.name,
-      config.tools,
-      options.toolDenials,
-      availableToolNames,
-      inventory.concreteToolsByCapability,
-    );
-    const effectiveNames = new Set(policy.effectiveTools);
-    const tools = inventory.tools.filter((tool) => effectiveNames.has(tool.name));
-    const definitionSource = options.visibleAgentDir ? { ...source, dir: resolve(options.visibleAgentDir) } : source;
-    const definition = await buildAgentDefinition({
-      config,
-      source: definitionSource,
-      model,
-      tools,
-      projectRoot: options.workRoot,
-      sharedRoot: options.sharedRoot,
-      globalAgentsRoot: options.globalAgentsRoot ?? join(options.projectRoot, "agents"),
-    });
-    for (const diagnostic of definition.skillCatalog?.diagnostics ?? []) options.onNotice?.(diagnostic);
 
-    const sessionId = options.sessionId ?? generateId("direct");
-    const sessionPath = resolve(options.outputRoot, "sessions", sessionId);
-    const prepared = prepareAgentExecution({
-      definition,
-      projectRoot: options.projectRoot,
-      sessionId,
-      task: options.task,
-      outputSchema: options.outputSchema,
-      requireFinish: options.outputSchema !== undefined,
-      promptTimestamp: options.promptTimestamp,
-      createFinish: () =>
-        createFinishTool({
-          agentName: config.name,
-          projectRoot: options.workRoot,
-          persistDir: options.outputRoot,
-        }),
-      onNotice: options.onNotice,
-    });
-    const preparedToolNames = prepared.tools.map((tool) => tool.name);
-    const deniedPreparedTool = policy.deniedTools.find((denial) => preparedToolNames.includes(denial.name));
-    if (deniedPreparedTool) {
-      throw new Error(
-        `Direct run for ${config.name} requires denied tool "${deniedPreparedTool.name}" during preparation`,
-      );
-    }
-    const executionManifest = { ...policy, effectiveTools: preparedToolNames };
-
-    return {
-      prepared,
-      sessionId,
-      sessionPath,
-      model: config.model,
-      executionManifest,
-      cleanup,
-    };
-  } catch (error) {
-    cleanup();
-    throw error;
-  }
+  return {
+    prepared,
+    sessionId,
+    sessionPath,
+    model: config.model,
+    executionManifest,
+    cleanup: () => {
+      for (const close of cleanup) close();
+    },
+  };
 }
 
 /**
