@@ -27,6 +27,7 @@ import { getDb } from "../../lib/requests.js";
 import { getNotificationMessage, storeNotificationMessage } from "../../lib/db/notifications.js";
 import { readAppConversationResource, readConversationTopic } from "../core/state/conversations.js";
 import { TaskReferenceError } from "../core/state/task-reference-index.js";
+import type { AppTaskCondition } from "../core/tasks/app-task-state.js";
 import { createTelegramClient } from "./telegram-client.js";
 import {
   isTaskDerivedViewWake,
@@ -294,7 +295,17 @@ function humanActionText(task: HumanTaskView): string {
 
 function humanActionLine(task: HumanTaskView): string {
   const owner = task.humanAction?.task;
-  const text = fullHumanApprovalAction(task) ?? humanActionText(task);
+  const decisionAction = approvalDecisionAction(task);
+  const otherActions = decisionAction ? humanConditionActions(task, pendingHumanApprovalCondition(task)) : [];
+  const text = decisionAction
+    ? [
+        `Needs your decision: ${decisionAction}`,
+        "Reply here with your decision.",
+        ...(otherActions.length > 0
+          ? [`Also needs your action (separate from the decision): ${otherActions.join("\n\n")}`]
+          : []),
+      ].join("\n\n")
+    : fullHumanActionText(task);
   return owner ? `On Task ${owner.ref} · ${owner.appId}: ${text}` : text;
 }
 
@@ -415,6 +426,7 @@ function formatWorkTime(value: number): string {
 
 function renderTelegramTaskUpdate(task: HumanTaskView): string {
   const decisionAction = approvalDecisionAction(task);
+  const otherActions = decisionAction ? humanConditionActions(task, pendingHumanApprovalCondition(task)) : [];
   return [
     task.outcome,
     taskStatusLabel(task),
@@ -422,8 +434,23 @@ function renderTelegramTaskUpdate(task: HumanTaskView): string {
     currentTaskText(task),
     ...(task.humanAction
       ? decisionAction
-        ? ["", `Needs your decision: ${decisionAction}`, "Reply here with your decision."]
-        : ["", `Needs your action: ${humanActionText(task)}`, "Reply here to discuss this work or report completion."]
+        ? [
+            "",
+            `Needs your decision: ${decisionAction}`,
+            "Reply here with your decision.",
+            ...(otherActions.length > 0
+              ? [
+                  "",
+                  `Also needs your action (separate from the decision): ${otherActions.join("\n\n")}`,
+                  "Reply separately to discuss this work or report completion.",
+                ]
+              : []),
+          ]
+        : [
+            "",
+            `Needs your action: ${fullHumanActionText(task)}`,
+            "Reply here to discuss this work or report completion.",
+          ]
       : []),
   ].join("\n");
 }
@@ -526,14 +553,21 @@ function pendingHumanApprovalCondition(task: HumanTaskView | null) {
   return matches.length === 1 ? matches[0]!.condition : null;
 }
 
-function fullHumanApprovalAction(task: HumanTaskView | null): string | null {
-  if (!task || task.terminal) return null;
-  const actions = (task.diagnostics?.conditions ?? [])
+function humanConditionActions(task: HumanTaskView | null, exclude?: AppTaskCondition | null): string[] {
+  if (!task || task.terminal) return [];
+  return (task.diagnostics?.conditions ?? [])
     .map((item) => item.condition)
-    .filter((condition) => condition?.status?.state !== "true" && isHumanActionOwner(condition?.spec.owner))
+    .filter(
+      (condition) =>
+        condition !== exclude && condition?.status?.state !== "true" && isHumanActionOwner(condition?.spec.owner),
+    )
     .map((condition) => condition!.spec.requestedAction?.trim())
     .filter((action): action is string => Boolean(action));
-  return actions.length > 0 ? actions.join("\n\n---\n\n") : null;
+}
+
+function fullHumanActionText(task: HumanTaskView): string {
+  const actions = humanConditionActions(task);
+  return actions.length > 0 ? actions.join("\n\n") : humanActionText(task);
 }
 
 function approvalDecisionAction(task: HumanTaskView | null): string | null {
@@ -1115,10 +1149,27 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
     const displayedApproval = single ? approvalAnchor(proposal) : null;
     const displayedHumanCondition = single && !displayedApproval ? humanConditionAnchor(proposal) : null;
     const decisionAction = displayedApproval ? approvalDecisionAction(proposal) : null;
+    const otherActions = displayedApproval
+      ? humanConditionActions(proposal, pendingHumanApprovalCondition(proposal))
+      : [];
     const text = single
       ? decisionAction
-        ? `Needs your decision: ${proposal.outcome}\n${decisionAction}\n\nReply here with your decision.`
-        : `Needs your action: ${proposal.outcome}\n${humanActionText(proposal)}\n\nReply here to discuss this work or report completion.`
+        ? [
+            `Needs your decision: ${proposal.outcome}`,
+            decisionAction,
+            "",
+            "Reply here with your decision.",
+            ...(otherActions.length > 0
+              ? [
+                  "",
+                  "Also needs your action (separate from the decision):",
+                  otherActions.join("\n\n"),
+                  "",
+                  "Reply separately to discuss this work or report completion.",
+                ]
+              : []),
+          ].join("\n")
+        : `Needs your action: ${proposal.outcome}\n${fullHumanActionText(proposal)}\n\nReply here to discuss this work or report completion.`
       : `${page.total ?? page.items.length} Tasks need your action in ${appId}. Ask May what needs your attention, or use /todo.`;
     const messageId = await sendMessage(coordinates.chatId, text, undefined, {
       eventType: "task.human-action",

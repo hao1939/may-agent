@@ -342,8 +342,7 @@ describe("Telegram refresh lifecycle", () => {
       for (const chatId of ["123", "456"]) {
         expect(
           f.sent.filter(
-            (send) =>
-              send.chat_id === chatId && send.text.includes("Run the already-authorized maintenance step."),
+            (send) => send.chat_id === chatId && send.text.includes("Run the already-authorized maintenance step."),
           ),
         ).toHaveLength(1);
       }
@@ -351,6 +350,114 @@ describe("Telegram refresh lifecycle", () => {
         expect.objectContaining({ text: expect.stringContaining("Needs your action: Complete first") }),
       );
       expect(f.sent.some((send) => send.text.includes("Reply here with your decision."))).toBe(false);
+    } finally {
+      await f.close();
+    }
+  });
+
+  it("keeps complete and independent Condition actions in native alerts and watch updates", async () => {
+    const f = fixture();
+    const longAction =
+      "Inspect the approved maintenance procedure and retain the exact evidence. ".repeat(5) +
+      "IMPORTANT: preserve existing creators and report completion only after independent verification.";
+    const independentAction = "Independent blocker: provide the rollback observation window.";
+    const condition = (id: string, requestedAction: string, approval = false) => ({
+      id,
+      condition: {
+        metadata: { id, generation: 1, resourceVersion: 1 },
+        spec: {
+          type: approval ? "project.approval.submitted" : "human.answer.received",
+          subject: `id:${id}`,
+          owner: "human",
+          requestedAction,
+          expected: {
+            answer: true,
+            ...(approval
+              ? { allowedDecisions: ["approve", "reject", "defer"], approvalId: id, taskGeneration: 1, conditionId: id }
+              : {}),
+          },
+        },
+        status: { state: "false" },
+      },
+    });
+    const task = f.tasks.get("first")!;
+    try {
+      Object.assign(task, {
+        humanAction: { requestedAction: `${longAction.slice(0, 220)}…` },
+        diagnostics: {
+          conditions: [condition("long-action", longAction), condition("independent", independentAction)],
+        },
+      });
+      await f.command("/apps may");
+      f.wake("first");
+      await waitFor(() =>
+        f.sent.some((send) => send.text.startsWith("Needs your action:") && send.text.includes("IMPORTANT:")),
+      );
+      const generalAlert = f.sent.find(
+        (send) => send.text.startsWith("Needs your action:") && send.text.includes("IMPORTANT:"),
+      )!;
+      expect(generalAlert.text).toContain(independentAction);
+
+      const decisionAction = "Approve only candidate A with the documented scope.";
+      Object.assign(task, {
+        resourceVersion: 2,
+        updatedAt: 2,
+        humanAction: { requestedAction: `${decisionAction} ${independentAction}` },
+        diagnostics: {
+          conditions: [condition("approval-a", decisionAction, true), condition("independent", independentAction)],
+        },
+      });
+      f.wake("first");
+      await waitFor(() =>
+        f.sent.some((send) => send.text.startsWith("Needs your decision:") && send.text.includes(independentAction)),
+      );
+      const approvalAlert = f.sent.find(
+        (send) => send.text.startsWith("Needs your decision:") && send.text.includes(independentAction),
+      )!;
+      expect(approvalAlert.text).toContain(decisionAction);
+      expect(approvalAlert.text).toContain("Also needs your action (separate from the decision):");
+      expect(approvalAlert.text).toContain("Reply here with your decision.");
+
+      await f.command("/watch first");
+      Object.assign(task, {
+        resourceVersion: 3,
+        updatedAt: 3,
+        progress: { stage: "intermediate", message: "General actions changed", updatedAt: 3 },
+        humanAction: { requestedAction: `${longAction.slice(0, 220)}…` },
+        diagnostics: {
+          conditions: [condition("long-action", longAction), condition("independent", independentAction)],
+        },
+      });
+      f.wake("first");
+      await waitFor(() =>
+        f.sent.some((send) => send.text.includes("General actions changed") && send.text.includes("IMPORTANT:")),
+      );
+      const generalUpdate = f.sent.find(
+        (send) => send.text.includes("General actions changed") && send.text.includes("IMPORTANT:"),
+      )!;
+      expect(generalUpdate.text).toContain(independentAction);
+
+      Object.assign(task, {
+        resourceVersion: 4,
+        updatedAt: 4,
+        progress: { stage: "intermediate", message: "Approval and blocker changed", updatedAt: 4 },
+        humanAction: { requestedAction: `${decisionAction} ${independentAction}` },
+        diagnostics: {
+          conditions: [condition("approval-a", decisionAction, true), condition("independent", independentAction)],
+        },
+      });
+      f.wake("first");
+      await waitFor(() =>
+        f.sent.some(
+          (send) => send.text.includes("Approval and blocker changed") && send.text.includes(independentAction),
+        ),
+      );
+      const approvalUpdate = f.sent.find(
+        (send) => send.text.includes("Approval and blocker changed") && send.text.includes(independentAction),
+      )!;
+      expect(approvalUpdate.text).toContain(`Needs your decision: ${decisionAction}`);
+      expect(approvalUpdate.text).toContain("Also needs your action (separate from the decision):");
+      expect(approvalUpdate.text).toContain("Reply here with your decision.");
     } finally {
       await f.close();
     }
