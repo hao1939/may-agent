@@ -343,7 +343,7 @@ describe("May GitHub pull-request resource ownership", () => {
     ).toBeGreaterThan(0);
   });
 
-  test("keeps every continuously admitted resource progressing when refresh recency reorders memory", async () => {
+  test("repeatedly services every saturated resource despite refresh-recency memory order", async () => {
     const pulls = new Map<number, ReturnType<typeof pullPayload>>();
     const tasks = new Map<string, TaskDetail>();
     for (let number = 1; number <= 64; number++) {
@@ -351,7 +351,10 @@ describe("May GitHub pull-request resource ownership", () => {
       pulls.set(number, pullPayload(number, ownerBody(id)));
       tasks.set(id, task(id));
     }
+    let calls = 0;
+    const directReads = new Map<number, number>();
     const fetcher = (async (input: string | URL | Request) => {
+      calls++;
       const url = String(input);
       if (url.includes("?state=")) {
         const parsed = new URL(url);
@@ -369,13 +372,17 @@ describe("May GitHub pull-request resource ownership", () => {
       }
       if (url.includes("/reviews")) return response([]);
       const number = Number(url.match(/\/pulls\/(\d+)$/)?.[1]);
+      directReads.set(number, (directReads.get(number) ?? 0) + 1);
       return response(pulls.get(number));
     }) as typeof fetch;
 
     let previous: ObserverContext["previousObservation"];
     const initiallyObserved = new Set<number>();
-    for (let pass = 0; pass < 20; pass++) {
+    let maxCalls = 0;
+    for (let pass = 0; pass < 40; pass++) {
+      const before = calls;
       const result = await observe(context(tasks, previous), fetcher);
+      maxCalls = Math.max(maxCalls, calls - before);
       for (const event of result.events)
         if (event.type === GITHUB_PULL_REQUEST_EVENT)
           initiallyObserved.add(
@@ -384,20 +391,30 @@ describe("May GitHub pull-request resource ownership", () => {
       previous = result.nextObservation;
     }
     expect(initiallyObserved.size).toBe(64);
+    expect([...directReads.values()].every((count) => count >= 2)).toBe(true);
+    expect(directReads.get(1)).toBeGreaterThanOrEqual(2);
+    expect(maxCalls).toBeLessThanOrEqual(11);
 
-    const changed = pulls.get(29)!;
-    changed.head.sha = "changed-head-29";
-    let changeObserved = false;
-    for (let pass = 0; pass < 20 && !changeObserved; pass++) {
+    const changedNumbers = [1, 29, 64];
+    for (const number of changedNumbers)
+      pulls.get(number)!.head.sha = `changed-head-${number}`;
+    const changesObserved = new Set<number>();
+    for (let pass = 0; pass < 20 && changesObserved.size < 3; pass++) {
+      const before = calls;
       const result = await observe(context(tasks, previous), fetcher);
-      changeObserved = result.events.some(
-        (event) =>
+      maxCalls = Math.max(maxCalls, calls - before);
+      for (const event of result.events) {
+        const number = Number((event.data as { number?: number }).number);
+        if (
           event.type === GITHUB_PULL_REQUEST_EVENT &&
-          (event.data as { number: number }).number === 29,
-      );
+          changedNumbers.includes(number)
+        )
+          changesObserved.add(number);
+      }
       previous = result.nextObservation;
     }
-    expect(changeObserved).toBe(true);
+    expect([...changesObserved].sort((a, b) => a - b)).toEqual(changedNumbers);
+    expect(maxCalls).toBeLessThanOrEqual(11);
   });
 
   test("services successful discovery despite a later provider failure and reports incomplete coverage", async () => {

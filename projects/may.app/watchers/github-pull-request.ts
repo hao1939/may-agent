@@ -615,15 +615,27 @@ export async function observeGitHubPullRequests(
     ctx.log.warn(
       `GitHub pull-request candidate coverage exceeded the ${MAX_RESOURCES}-resource pass capacity`,
     );
-  const resources = [...combined.values()];
-  const stableStart = Number.isSafeInteger(previous.nextResource)
-    ? resources.findIndex((item) => item.number === previous.nextResource)
-    : -1;
-  const start = resources.length
-    ? stableStart >= 0
-      ? stableStart
-      : (Number(previous.cursor) || 0) % resources.length
-    : 0;
+  // Traversal order is identity-stable and deliberately independent from the
+  // insertion order used above for recency-based memory retention. Otherwise
+  // refreshing a resource moves it in memory and can keep the cursor cycling
+  // over only the most recently serviced suffix. Resolve a legacy positional
+  // cursor against its original insertion order once, then persist an identity.
+  const insertionOrderedResources = [...combined.values()];
+  const resources = [...insertionOrderedResources].sort(
+    (left, right) => left.number - right.number,
+  );
+  const legacyStart = insertionOrderedResources.length
+    ? insertionOrderedResources[
+        (Number(previous.cursor) || 0) % insertionOrderedResources.length
+      ]?.number
+    : undefined;
+  const nextResource = Number.isSafeInteger(previous.nextResource)
+    ? previous.nextResource
+    : legacyStart;
+  const stableStart = resources.findIndex(
+    (item) => item.number === nextResource,
+  );
+  const start = resources.length && stableStart >= 0 ? stableStart : 0;
   const events: AppEvent<Record<string, unknown>>[] = [];
   const states: Record<string, PublicationState> = { ...priorStates };
   const remembered = new Map<number, RememberedResource>();
