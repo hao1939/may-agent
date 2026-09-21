@@ -319,8 +319,11 @@ Supported bundle implementations and trusted agent-local factories execute while
 the Host builds the inventory, before visibility denials filter their concrete
 tools from model execution. Only an explicitly denied unsupported configured
 capability may skip construction; an unsupported capability left effective fails
-preparation. Host candidate `2764874e` implements this contract with passing local
-CI. PR review, merge, deployment and live adoption remain separate.
+preparation. Host [PR #223](https://github.com/hao1939/may-agent/pull/223)
+at `2764874e` implements this contract. Local CI, independent review, the original
+model-free May preparation regression, and hosted Quality/Container checks passed.
+The PR still requires human review; merge, deployment and live adoption remain
+separate.
 
 | Invocation | Ownership and result |
 | --- | --- |

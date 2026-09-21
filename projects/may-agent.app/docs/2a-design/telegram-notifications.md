@@ -5,15 +5,16 @@
 reads, one Task watch per chat/topic, focused context, human-action projection,
 and Task cancellation are implemented. Outbound sends are best effort; there
 is no durable per-surface replay cursor. Host
-[PR #221](https://github.com/hao1939/may-agent/pull/221) proposes using completed,
+[PR #221](https://github.com/hao1939/may-agent/pull/221) uses completed,
 destination-scoped delivery receipts to suppress an unchanged exact human
 action after restart while keeping unknown, failed, partial, changed, or
 aggregate deliveries eligible. It also makes watch refreshes compare the compact
 presentation plus exact reply authority, ignoring metadata-only changes while
 retaining visible progress, dependencies, actions, and changed
-approval/Condition anchors. PR #221 is published at `3f9d3db1` but remains
-pending until it is merged, deployed, and verified in the live runtime; its open
-PR and source checks are not adoption evidence. Follow-up admission now presents
+approval/Condition anchors. PR #221 merged at `1283ea7a` on September 21.
+Deployment of that exact revision awaits the existing human decision; live
+adoption remains unverified. Source integration and passing checks are not
+adoption evidence. Follow-up admission now presents
 the responsible Task directly, and human-action reads follow exact dependency
 links to the Task that owns the action.
 The [current-turn Stop button](human-control-surfaces.md#current-turn-control)
