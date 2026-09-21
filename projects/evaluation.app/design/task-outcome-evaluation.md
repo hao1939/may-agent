@@ -1,6 +1,21 @@
 # Task-outcome evaluation and report use
 
-**Status:** The explicit single-Task review, durable report store, deterministic list/read path, legacy Task retirement, recent-window/fair-rotation selector, and report-discovery polish are deployed from App revision `79dd65e91f`. Four published reports—three assessed and one inconclusive—have an evaluator-session usage estimate of $0.479074; this is not a billing receipt, excludes May/reviewer costs, and is not report-recorded cost. A natural May query read the retained reports without a new evaluator run. Two bounded selector canaries rotated from May to Scout, emitted exactly one review each, never selected Evaluation, and caused no storm. The Scout provenance skip made no model call, published no semantic report, and adds no assessed coverage. Automatic selection was observed at a serialized daily cadence; this proves a bounded rollout, not comprehensive App health. The ongoing-assessment and latest-slot schedule changes described below are prepared candidate source, not observed activation.
+**Current operating profile (September 21):** The installed App uses an hourly
+selector and one semantic assessment per hour, with serialized execution and
+requested-review precedence. The same-container daemon restart consumed the new
+settings; a real ongoing review published a report, while retained requests
+recalculated their next eligibility through ordinary input. See [capacity for an
+active installation](#capacity-for-an-active-installation) and the [rollout
+record](rollout-and-migration-2026-09.md#september-21-capacity-correction) for
+settings, evidence and limitations. This is sampled coverage, not a claim that
+all Apps are healthy.
+
+**Initial rollout evidence (September 18):** App revision `79dd65e91f` established
+explicit review, durable reports, deterministic list/read and fair selection.
+Four reports had an evaluator-session usage estimate of $0.479074; that excludes
+May/reviewer costs and is not a billing receipt. Two selector canaries rotated
+from May to Scout without selecting Evaluation or causing a storm. The original
+daily cadence was a bounded pilot and has been superseded for this installation.
 
 ## Boundary
 
@@ -119,9 +134,44 @@ an automatically prepared improvement.
 
 ## Cost and rollout
 
-Initial rollout is serialized (`maxConcurrent: 1`) and automatic semantic sampling is off unless `EVALUATION_AUTO_REVIEW_ENABLED=true`. The selector chooses at most one Task per wake: bounded `apps.list` discovers subjects, and public `tasks.list(appId, includeDone: true)` supplies keyset-ordered navigation projections. Each page requests one record and persists the returned opaque continuation after that record is considered; defaults allow two such reads per visited App and at most 20 external Apps. App rotation occurs after every selection. Versioned ordinary Task facts retain only the next App and byte-bounded public continuations; emitted requests retain the full identity, and older selector state resets rather than crossing traversal contracts. This removes attempted-identity history and its capacity-dependent starvation mode. Malformed pages rotate neutrally. `up-to-date`, `attention`, `closed`, `cancelled`, retained `done` receipts, and due `running`, `pending`, or `waiting` obligations can be candidates under their purpose-specific rubric; obsolete status spellings are not accepted. The evaluator, not selector code, interprets cancellation, waiting, or failure meaning. A prior report suppresses only the same decision-relevant evidence hash, purpose, validity identity, and rubric: the selector performs a bounded exact subject read before deduplicating, so changed evidence can produce another immutable review. Exact subject reads also exclude Evaluation-owned/self work before any model call. A report records the exact loaded definition source only if runtime context exposes it; this candidate explicitly records `unavailable:not-exposed-to-workflow` instead of trusting an unrelated environment label. This daily, one-candidate mechanism is sampling, not exhaustive or healthy coverage; cursor expiry may restart traversal, and explicit post-application follow-up must use an ordinary review Task instead. Old outcomes remain explicitly reviewable. The strengthening candidate leaves fair selector traversal unchanged. Exact current reads stay compact and advertise accepted-attempt availability; the pinned-evidence consumer explicitly follows bounded newest-first pages (up to 128 records per review, with continuation and truncation gaps retained) so older artifact references do not become undiscoverable after later wait-only results. When the opt-in flag is enabled, an exact `project.task.reconciled` outcome of `incomplete` or `retrying` can request an ongoing review without waiting for sampling; the reviewer still rereads current evidence and decides whether the obligation is stalled, legitimately waiting, or recovered. Other stalls retain bounded sampling latency.
+Initial rollout is serialized (`maxConcurrent: 1`) and automatic semantic sampling is off unless `EVALUATION_AUTO_REVIEW_ENABLED=true`. The selector chooses at most one Task per wake: bounded `apps.list` discovers subjects, and public `tasks.list(appId, includeDone: true)` supplies keyset-ordered navigation projections. Each page requests one record and persists the returned opaque continuation after that record is considered; defaults allow two such reads per visited App and at most 20 external Apps. App rotation occurs after every selection. Versioned ordinary Task facts retain only the next App and byte-bounded public continuations; emitted requests retain the full identity, and older selector state resets rather than crossing traversal contracts. This removes attempted-identity history and its capacity-dependent starvation mode. Malformed pages rotate neutrally. `up-to-date`, `attention`, `closed`, `cancelled`, retained `done` receipts, and due `running`, `pending`, or `waiting` obligations can be candidates under their purpose-specific rubric; obsolete status spellings are not accepted. The evaluator, not selector code, interprets cancellation, waiting, or failure meaning. A prior report suppresses only the same decision-relevant evidence hash, purpose, validity identity, and rubric: the selector performs a bounded exact subject read before deduplicating, so changed evidence can produce another immutable review. Exact subject reads also exclude Evaluation-owned/self work before any model call. A report records the exact loaded definition source only if runtime context exposes it; this candidate explicitly records `unavailable:not-exposed-to-workflow` instead of trusting an unrelated environment label. This one-candidate mechanism is sampling, not exhaustive or healthy coverage; cursor expiry may restart traversal, and explicit post-application follow-up must use an ordinary review Task instead. Old outcomes remain explicitly reviewable. The strengthening candidate leaves fair selector traversal unchanged. Exact current reads stay compact and advertise accepted-attempt availability; the pinned-evidence consumer explicitly follows bounded newest-first pages (up to 128 records per review, with continuation and truncation gaps retained) so older artifact references do not become undiscoverable after later wait-only results. When the opt-in flag is enabled, an exact `project.task.reconciled` outcome of `incomplete` or `retrying` can request an ongoing review without waiting for sampling; the reviewer still rereads current evidence and decides whether the obligation is stalled, legitimately waiting, or recovered. Other stalls retain bounded sampling latency.
 
 The shared semantic allowance remains atomic. Its interval is configured separately by `EVALUATION_ASSESSMENT_ALLOWANCE_INTERVAL_MS` (default one day), so a faster selector cannot silently increase semantic spend; `EVALUATION_ASSESSMENT_CALLS_PER_INTERVAL` remains clamped to two. Retained requested review Tasks have priority over routine selection. The selector preserves its cursor and skips sampling while the complete App snapshot shows such work; a missing or truncated snapshot yields an explicit unknown-backlog coverage fact instead of a false empty claim. Already-running routine work is not preempted. Exhaustion is admitted as `waiting`, retaining exact subject generation, evidence hash, slot, limit and next eligibility. Its waiting result carries the Host's absolute `reviewAt`, not a synthetic Condition or event producer. Early wakes preserve that deadline and do not call the model; at eligibility the same exact request is reconsidered. Elapsed time never proves an external fact.
+
+### Capacity for an active installation
+
+The daily one-call default is an initial sampling profile, not a suitable promise
+of timely assessment for an active installation. On September 21 the live
+installation retained 23 budget-deferred review contracts across 20 subjects;
+routine selection correctly yielded to that backlog. Increasing selector cadence
+alone cannot repair that capacity mismatch.
+
+Use the existing installation settings to select an explicit review budget. The
+reviewed operational profile is an hourly selector and one semantic assessment per
+hour: `EVALUATION_AUTO_REVIEW_INTERVAL_MS=3600000`,
+`EVALUATION_ASSESSMENT_ALLOWANCE_INTERVAL_MS=3600000`, and
+`EVALUATION_ASSESSMENT_CALLS_PER_INTERVAL=1`, with serialized execution unchanged.
+This permits at most 24 semantic assessments per UTC day once active. The earlier
+four-call calibration suggests roughly $2.87/day at full use, excluding owner and
+reviewer work; this is a planning estimate, not a billing cap. Report reuse,
+self-exclusion, exact request identity, and requested-review precedence remain
+unchanged. A queue can still delay an individual review; this is bounded coverage,
+not an immediate-response or exhaustive-health guarantee.
+
+After applying a budget change, existing waits may still carry the prior
+next-eligibility time. A bounded operator pass can address each retained waiting
+Task through ordinary App input, preserving its original assessment contract and
+caller links. The workflow then rereads current evidence and the active allowance;
+it either assesses, reuses a report, or records the new deadline. Do not rewrite
+Task storage, reset allowance receipts, remove historical reviews, or create
+replacement Tasks to accelerate them. Prioritize a review that currently blocks
+useful owner work, then let existing serialized scheduling handle the rest.
+
+Verify the consumed process settings, an actual report and its return to the
+caller, and a second review that waits at the new allowance boundary. Document
+activation separately from this profile. Subsequent capacity changes should use
+observed backlog, report usefulness and cost; they do not require another queue,
+monitor, or scheduling framework.
 
 The deterministic `list-evaluation-reports` and `read-evaluation-report` actions expose at most 5 valid published pairs and an 8 KiB content preview per read, keeping the complete Task result below the 16 KiB admission budget. Larger reports return exact size, SHA-256, canonical path, and explicit continuation metadata. Listing says each entry is one bounded Task snapshot and returns disposition plus relative action paths and canonical absolute artifact paths. Neither action invokes the evaluator or creates findings.
 

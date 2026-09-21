@@ -185,6 +185,18 @@ Live settings remain unchanged until an operator explicitly configures and activ
 the reviewed release. The default daily sample and one-call daily allowance remain
 limited coverage, not a prompt-response guarantee.
 
+### September 21 capacity refinement
+
+The original daily pilot budget proved too small for the retained requested work:
+23 review contracts were waiting while routine sampling yielded. The existing
+mechanism remains sufficient. The [active-installation capacity
+profile](task-outcome-evaluation.md#capacity-for-an-active-installation) specifies
+an hourly selector with one semantic assessment per hour, retaining serialized
+execution and exact waits. This supersedes the earlier pilot frequency for this
+installation, activated on September 21; it does not change the conservative code
+defaults or claim that all work is monitored. Activation and observed results are
+recorded in the [rollout record](rollout-and-migration-2026-09.md).
+
 ## Implementation slices and acceptance
 
 May owns this as one ordinary implementation Task linked to the independent

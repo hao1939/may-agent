@@ -1,6 +1,10 @@
 # Evaluation outcome-review rollout and legacy retirement
 
-**Status:** migration completed on 2026-09-17, and the focused rollout completed on 2026-09-18. App revision `79dd65e91f` and Host revision `fe605220` are active. All 2,037 legacy Tasks and 73 linked legacy inbox inputs were retired neutrally, all 11 old metrics remain retired, and no retirement procedure was repeated. Automatic selection is enabled at a serialized daily cadence (`86400000` ms, at most 20 Apps and 20 Tasks per page, with the default two-page bound). A natural report query and two bounded selector canaries passed; the canaries rotated from May to Scout, emitted one review each, excluded Evaluation, and caused no storm. These trials establish safe bounded activation, not comprehensive App health.
+**Current status:** The September 17–18 migration and initial daily rollout below
+remain historical evidence. On September 21 the active installation changed to
+an hourly selector and one semantic assessment per hour using existing settings;
+see the [capacity correction](#september-21-capacity-correction). No retirement,
+record movement or receipt import was repeated. Coverage remains bounded.
 
 ## Frozen legacy inventory
 
@@ -34,3 +38,61 @@ Steps 1–7 are retained as the executed procedure and rollback evidence. Step 8
 ## Rollback
 
 Disable automatic selection first, then disable Evaluation and restore the prior reviewed release definition. Do not reverse legacy retirement, delete reports, or mutate the database: cancelled obsolete scheduling remains historical evidence and exact old work may be requested anew. Verify May and Scout remain registered and operating, preserve cancellation/publication receipts, and investigate any partially emitted review from its canonical Task identity before retrying.
+
+
+## September 21 capacity correction
+
+The initial one-call daily allowance left 23 exact review contracts across 20
+subjects deferred. Routine sampling correctly yielded to those requests. This
+was a capacity mismatch, so the correction changes installation settings rather
+than adding a queue, controller or new Task lifecycle.
+
+At 07:53 UTC the operator activated
+`EVALUATION_AUTO_REVIEW_INTERVAL_MS=3600000`,
+`EVALUATION_ASSESSMENT_ALLOWANCE_INTERVAL_MS=3600000`, and
+`EVALUATION_ASSESSMENT_CALLS_PER_INTERVAL=1`. The canonical installation `.env`
+retains the values for future container starts. The existing Supervisor program
+received the same three values and restarted only the May daemon in the same
+container, preserving isolated candidates and evidence. Readiness returned true;
+the daemon's actual process environment confirmed the values and all four Apps
+remained registered. No new startup script was needed.
+
+The operator addressed the 23 retained budget-deferred Tasks once through normal
+`app.input.admit`, with their exact target IDs, original assessment inputs and
+idempotency keys. Their generations, pins and caller links were not replaced;
+closed subjects were not automatically discarded. All 23 normal workflows read the
+new budget and updated eligibility to September 21 08:00 UTC. No Task files or records were moved,
+restored, archived or deleted; allowance receipts were not reset.
+
+The first hourly allowance receipt belongs to the existing ongoing review of
+May's direct-tool correction Task. It published an independent judgment of an
+invalid wait: the owner had claimed to wait for the coordinated restart without
+an exact Condition. The immutable report honestly records that the inspected
+snapshot became stale as work resumed. This is a useful historical finding,
+not a claim that the current Task remains blocked or that all Apps are healthy.
+The read-reports path was exercised separately without another model call.
+
+Live settings, exact request receipts and read-backs are retained under
+`/app/.state/review-pilots/app-runtime-fixes-20260921/`, including
+`evaluation-config.json`, `evaluation-waiting-contracts.json`,
+`evaluation-priority-wake.json`, `evaluation-retained-wakes.json` and
+`evaluation-waits-after.json`. The report is
+`task-outcomes/may/task-obligation-v1/goal-app_8a957a1f-99f6-45bf-a289-ca00c55ddcff-47e6db084e206403-ef255144f8b6.md`
+under the canonical report root. The prioritized notification review recalculated
+its eligibility from September 22 00:00 UTC to September 21 08:00 UTC after the
+hour's allowance was consumed. This proves budget enforcement and reconsideration;
+a deferred review is not yet an accepted report or a satisfied caller dependency.
+
+Validation: the existing outcome-review and selector suites passed 37 tests with
+441 assertions. A disposable fixture verified that the first hourly claim is
+accepted, the second is deferred to the next hour, and a later-hour claim succeeds.
+The code's conservative defaults remain unchanged. At full use the installed
+profile allows 24 assessments per UTC day; the earlier four-call calibration
+suggests roughly $2.87/day for assessment alone, not a billing cap or a guaranteed
+review latency. Observe report usefulness, backlog and actual spend before another
+capacity adjustment.
+
+Rollback is a settings change: restore the prior daily selector and remove the
+two allowance overrides (which restores the daily one-call default), then restart
+the daemon at a safe boundary. Preserve reports, exact review requests and allowance
+receipts. Do not repeat historical migration or rearrange records.
