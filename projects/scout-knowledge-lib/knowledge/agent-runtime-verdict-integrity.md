@@ -1,8 +1,8 @@
 <ai_context>
-summary: "Reusable verification and verdict-integrity patterns: evidence bound to the verified subject, explicit receipt coverage and valid anomalies, claim-level platform enforcement evidence, negative controls for the verdict path, state-based effect grading with honest and adversarial oracle controls, freshness binding for replayed traces, evaluator immutability across repair, proof of the inspected universe behind a clean sweep, cross-artifact conformance for executable governance, phase-aware calibration of probabilistic rule checks, and separation of reviewer diversity from verdict transport."
-triggers: ["verification subject binding", "Brigade", "receipt coverage", "not_checked", "invocation_ref", "ASQAV", "claim-level platform evidence", "RTQ", "sandbox enforcement", "construction-only test", "meta-verification", "false-green verifier", "negative control", "ProjectGuard", "state-based grading", "reward hacking", "Compound Evals", "kyisaiah47/compound-evals", "trace freshness", "recorded trace", "skilldiff", "agent skill regression", "frozen tests", "test identity", "failure fingerprint", "RepoPilot", "post-merge outcome", "evaluation identity", "independent runner", "inspected universe", "compared-nothing-reported-clean", "cross-artifact conformance", "decision table", "DMN", "OutTheBox", "probabilistic rule check", "phase-specific precision", "Abide", "event-backed write", "Dream Studio", "reviewer diversity", "cross-provider review", "verdict transport", "portable DSH"]
+summary: "Reusable verification and verdict-integrity patterns: typed lifecycle evidence for unattended agent runs, evidence bound to the verified subject, explicit receipt coverage and valid anomalies, claim-level platform enforcement evidence, negative controls for the verdict path, state-based effect grading with honest and adversarial oracle controls, freshness binding for replayed traces, evaluator immutability across repair, proof of the inspected universe behind a clean sweep, cross-artifact conformance for executable governance, phase-aware calibration of probabilistic rule checks, and separation of reviewer diversity from verdict transport."
+triggers: ["verification subject binding", "Brigade", "receipt coverage", "not_checked", "invocation_ref", "ASQAV", "claim-level platform evidence", "RTQ", "sandbox enforcement", "construction-only test", "meta-verification", "false-green verifier", "negative control", "ProjectGuard", "state-based grading", "reward hacking", "Compound Evals", "kyisaiah47/compound-evals", "trace freshness", "recorded trace", "skilldiff", "agent skill regression", "frozen tests", "test identity", "failure fingerprint", "RepoPilot", "post-merge outcome", "evaluation identity", "independent runner", "inspected universe", "compared-nothing-reported-clean", "cross-artifact conformance", "decision table", "DMN", "OutTheBox", "probabilistic rule check", "phase-specific precision", "Abide", "event-backed write", "Dream Studio", "reviewer diversity", "cross-provider review", "verdict transport", "portable DSH", "unattended agent run", "fresh branch", "missing upstream", "launch failure", "lifecycle receipt"]
 last_updated: "2026-09-21"
-source_basis: "Extracted intact from agent-runtime-effect-integrity.md during its 2026-09-14 oversized-note review. Sources are pinned revisions of Brigade, ASQAV, ProjectGuard, skilldiff, RepoPilot, Dream Studio, OutTheBox, Abide, Compound Evals, Portable DSH, and RTQ; reproduced checks and static-inspection limits remain stated in each section. Acceptance authority, actor-bound review, release reconciliation, and audit normalization moved intact to agent-runtime-acceptance-and-reconciliation.md during the 2026-09-21 oversized-note review."
+source_basis: "Extracted intact from agent-runtime-effect-integrity.md during its 2026-09-14 oversized-note review. Sources are pinned revisions of Brigade, ASQAV, ProjectGuard, skilldiff, RepoPilot, Dream Studio, OutTheBox, Abide, Compound Evals, Portable DSH, and RTQ; reproduced checks and static-inspection limits remain stated in each section. Also includes HN 49782797 and Alkis Yuvanelis's complete linked incident essay, whose published minimal shell reproduction Scout reran for a missing child and a successful immediate no-op. Acceptance authority, actor-bound review, release reconciliation, and audit normalization moved intact to agent-runtime-acceptance-and-reconciliation.md during the 2026-09-21 oversized-note review."
 </ai_context>
 
 # Agent Runtime Verdict Integrity
@@ -17,6 +17,50 @@ whether the verifier inspected the intended universe, whether parallel policy
 artifacts still encode the same contract, whether a platform matrix exercised
 construction or real enforcement, and whether reviewer diversity survives verdict
 transport.
+
+## Unattended Run Reports Need Typed Lifecycle Evidence — HN (September 2026)
+
+A current [HN-linked incident essay](https://dev.yuv.run/writing/while-i-sleep/)
+describes an overnight coding-agent job that reported twelve push failures even
+though the assistant executable was missing and no assistant had started. The
+failure came from collapsing distinct lifecycle facts. Every fresh worktree branch
+lacked an upstream, so a comparison against `branch@{u}` suppressed Git's error,
+substituted the string `none`, and interpreted `HEAD != none` as evidence of an
+unpushed commit. The launcher remained visible until the next one-minute poll, each
+start counted as a session, and tasks were never marked attempted, producing twelve
+retries. A separate shell-scope bug left the headline's session counter at zero, so
+the same report said both “quiet night” and twelve runs needed manual pushes.
+
+The author's minimal shell reproduction is a useful negative control for status
+logic. Scout reran it in two fresh directories. With a nonexistent child, the old
+check reported committed work while a before/after `HEAD` check reported a zero-second
+launch failure. With `true`, the old check again reported committed work; the repaired
+heuristic also called the successful immediate no-op a launch failure. This second
+case exposes the repair's limit: elapsed time and repository state can show that no
+commit appeared, but cannot establish whether a process launched, exited cleanly,
+failed internally, or intentionally produced no change.
+
+**Runtime rule:** record launch, exit, repository delta, commit creation, publication,
+and task disposition as separate typed observations. Do not infer one phase from a
+sentinel created by another phase's error, and do not use duration as the authority
+for exit semantics when the process status is available. Before trusting an unattended
+summary, exercise at least a missing-executable case, a successful no-op, a committed
+change, and an unavailable-upstream branch. The headline and detailed rows should be
+derived from the same persisted attempt records, and retry eligibility should consume
+an explicit attempt outcome rather than the mere continued presence of a task.
+
+This is one author's retrospective about a small private automation job, not evidence
+of prevalence across agent runtimes. The original overnight logs are no longer
+available, and Scout did not inspect the production script. The complete essay and
+its self-contained reproduction were read; Scout independently reproduced the two
+local cases above. HN had one point and no comments at retrieval, so there is no
+community validation. The durable contribution is the falsifiable lifecycle-control
+pattern, not the incident's scale.
+
+- **HN:** https://news.ycombinator.com/item?id=49782797
+- **Source:** https://dev.yuv.run/writing/while-i-sleep/
+- **Coverage:** complete linked essay and HN item; published minimal reproduction
+  rerun locally for missing-child and successful-no-op cases
 
 ## A Platform Matrix Must Name What Each Platform Actually Exercised — RTQ (GitHub, September 2026)
 
