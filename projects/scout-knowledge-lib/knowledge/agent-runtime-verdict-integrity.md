@@ -1,8 +1,8 @@
 <ai_context>
-summary: "Reusable verification and verdict-integrity patterns: typed lifecycle evidence for unattended agent runs, behavior-derived tests challenged by mutation negatives, evidence bound to the verified subject, explicit receipt coverage and valid anomalies, claim-level platform enforcement evidence, negative controls for the verdict path, state-based effect grading with honest and adversarial oracle controls, freshness binding for replayed traces, evaluator immutability across repair, proof of the inspected universe behind a clean sweep, cross-artifact conformance for executable governance, phase-aware calibration of probabilistic rule checks, and separation of reviewer diversity from verdict transport."
-triggers: ["verification subject binding", "Brigade", "receipt coverage", "not_checked", "invocation_ref", "ASQAV", "claim-level platform evidence", "RTQ", "sandbox enforcement", "construction-only test", "meta-verification", "false-green verifier", "negative control", "ProjectGuard", "state-based grading", "reward hacking", "Compound Evals", "kyisaiah47/compound-evals", "trace freshness", "recorded trace", "skilldiff", "agent skill regression", "frozen tests", "test identity", "failure fingerprint", "RepoPilot", "post-merge outcome", "evaluation identity", "independent runner", "inspected universe", "compared-nothing-reported-clean", "cross-artifact conformance", "decision table", "DMN", "OutTheBox", "probabilistic rule check", "phase-specific precision", "Abide", "event-backed write", "Dream Studio", "reviewer diversity", "cross-provider review", "verdict transport", "portable DSH", "unattended agent run", "fresh branch", "missing upstream", "launch failure", "lifecycle receipt", "CodeMidas", "GameLogicBench", "behavior-derived test", "mutant validation", "tick-level assertion"]
+summary: "Reusable verification and verdict-integrity patterns: typed lifecycle evidence for unattended agent runs, multi-plane completion proofs, behavior-derived tests challenged by mutation negatives, evidence bound to the verified subject, explicit receipt coverage and valid anomalies, claim-level platform enforcement evidence, negative controls for the verdict path, state-based effect grading with honest and adversarial oracle controls, freshness binding for replayed traces, evaluator immutability across repair, proof of the inspected universe behind a clean sweep, cross-artifact conformance for executable governance, phase-aware calibration of probabilistic rule checks, and separation of reviewer diversity from verdict transport."
+triggers: ["verification subject binding", "Brigade", "receipt coverage", "not_checked", "invocation_ref", "ASQAV", "claim-level platform evidence", "RTQ", "sandbox enforcement", "construction-only test", "meta-verification", "false-green verifier", "negative control", "ProjectGuard", "state-based grading", "reward hacking", "Compound Evals", "kyisaiah47/compound-evals", "trace freshness", "recorded trace", "skilldiff", "agent skill regression", "frozen tests", "test identity", "failure fingerprint", "RepoPilot", "post-merge outcome", "evaluation identity", "independent runner", "inspected universe", "compared-nothing-reported-clean", "cross-artifact conformance", "decision table", "DMN", "OutTheBox", "probabilistic rule check", "phase-specific precision", "Abide", "event-backed write", "Dream Studio", "reviewer diversity", "cross-provider review", "verdict transport", "portable DSH", "unattended agent run", "fresh branch", "missing upstream", "launch failure", "lifecycle receipt", "CodeMidas", "GameLogicBench", "behavior-derived test", "mutant validation", "tick-level assertion", "multi-plane completion proof", "capture coverage", "world-state verification", "minecraft-agent"]
 last_updated: "2026-09-21"
-source_basis: "Extracted intact from agent-runtime-effect-integrity.md during its 2026-09-14 oversized-note review. Sources are pinned revisions of Brigade, ASQAV, ProjectGuard, skilldiff, RepoPilot, Dream Studio, OutTheBox, Abide, Compound Evals, Portable DSH, and RTQ; reproduced checks and static-inspection limits remain stated in each section. Also includes HN 49782797 and Alkis Yuvanelis's complete linked incident essay, whose published minimal shell reproduction Scout reran for a missing child and a successful immediate no-op, plus abstract-level arXiv evidence from CodeMidas and GameLogicBench on behavior-derived tests and mutant validation. Acceptance authority, actor-bound review, release reconciliation, and audit normalization moved intact to agent-runtime-acceptance-and-reconciliation.md during the 2026-09-21 oversized-note review."
+source_basis: "Extracted intact from agent-runtime-effect-integrity.md during its 2026-09-14 oversized-note review. Sources are pinned revisions of Brigade, ASQAV, ProjectGuard, skilldiff, RepoPilot, Dream Studio, OutTheBox, Abide, Compound Evals, Portable DSH, RTQ, and rmalde/minecraft-agent; reproduced checks and static-inspection limits remain stated in each section. Also includes HN 49782797 and Alkis Yuvanelis's complete linked incident essay, whose published minimal shell reproduction Scout reran for a missing child and a successful immediate no-op, plus abstract-level arXiv evidence from CodeMidas and GameLogicBench on behavior-derived tests and mutant validation. Acceptance authority, actor-bound review, release reconciliation, and audit normalization moved intact to agent-runtime-acceptance-and-reconciliation.md during the 2026-09-21 oversized-note review."
 </ai_context>
 
 # Agent Runtime Verdict Integrity
@@ -17,6 +17,52 @@ whether the verifier inspected the intended universe, whether parallel policy
 artifacts still encode the same contract, whether a platform matrix exercised
 construction or real enforcement, and whether reviewer diversity survives verdict
 transport.
+
+## Completion Proof Should Join Independent Planes — minecraft-agent (GitHub, September 2026)
+
+The pinned `rmalde/minecraft-agent` verifier is a compact example of why a
+successful agent-run verdict should not come from one self-reported flag. Its
+`victory.json` must agree with the persisted Minecraft world: the run claims a
+dead dragon and exit, while `level.dat` independently says the dragon fight is
+complete, the game stayed in Survival at the declared difficulty, and commands
+were disabled. The event log supplies another plane: it identifies planner and
+controller models, deaths, capture lifecycle, and every decision and result
+through victory. The verifier then checks that recording intervals cover those
+events and that the video's measured duration matches the covered intervals.
+
+The run setup also freezes the executable subject before play. `freeze-run.mjs`
+rejects a reused run directory, copies a declared source and dependency set into
+the run record, and stores SHA-256 digests. The final verifier compares those
+digests with the live files and rejects logged harness repairs, multiple starts,
+a capture failure, or missing recording finalization. It reports any decisions
+after victory and includes hashes of both the event log and video, although the
+post-victory count is not itself part of the pass predicate. This yields four
+separately inspectable planes: controller events, externalized world state,
+media coverage, and source identity. None is sufficient alone, but disagreement
+between them makes a false completion claim easier to reject.
+
+The boundary is as important as the pattern. The README says the cited run's
+video, event log, world, and generated proof remain local and are excluded from
+Git, so Scout could inspect the verifier but not validate the claimed 8:43 run
+or its reported 17 run checks. Hashes emitted at verification time are integrity
+identifiers, not signatures or proof of prior custody. The source manifest is a
+hand-maintained file list, and the verifier checks current paths against it; an
+omitted executable input would be outside that guarantee. Scout did not install
+Minecraft, model credentials, or repository dependencies and did not execute the
+live run or verifier.
+
+**Runtime rule:** derive completion from a conjunction of independently sourced
+observations. Bind the claimed terminal event to durable domain state, prove
+that evidence capture covered every consequential action and result, freeze the
+executed source and dependencies before launch, and record artifact identities.
+Report missing planes as missing rather than letting a model-authored success
+flag substitute for them. Keep provenance and custody distinct from checksums,
+and challenge the verifier with inconsistent fixtures for each plane.
+
+- **Repo:** https://github.com/rmalde/minecraft-agent
+- **Inspected revision:** [`78b40ed59514e5e2abde33a05ce398ecb2c39e05`](https://github.com/rmalde/minecraft-agent/commit/78b40ed59514e5e2abde33a05ce398ecb2c39e05)
+- **Primary sources:** [README and evidence boundary](https://github.com/rmalde/minecraft-agent/blob/78b40ed59514e5e2abde33a05ce398ecb2c39e05/README.md), [run verifier](https://github.com/rmalde/minecraft-agent/blob/78b40ed59514e5e2abde33a05ce398ecb2c39e05/verify-run.mjs), [source freezer](https://github.com/rmalde/minecraft-agent/blob/78b40ed59514e5e2abde33a05ce398ecb2c39e05/optimization/nether/freeze-run.mjs), and [completion-event predicates and tests](https://github.com/rmalde/minecraft-agent/blob/78b40ed59514e5e2abde33a05ce398ecb2c39e05/evidence.test.mjs)
+- **Discovery query:** GitHub Repository Search API `AI agent in:name,description,readme created:>=2026-09-20`, sorted by stars; `total_count: 16284`, `incomplete_results: false`
 
 ## Behavior-Derived Tests Need Mutation Negatives — CodeMidas and GameLogicBench (arXiv, September 2026)
 
