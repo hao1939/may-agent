@@ -1,8 +1,8 @@
 <ai_context>
 summary: "Entry point for Scout's project-owned knowledge library. Use this before creating or updating Scout-local knowledge notes."
 triggers: ["scout knowledge", "agent architecture research", "multi-agent trends", "XHS trends", "knowledge library maintenance"]
-last_updated: "2026-09-19"
-source_basis: "Maintained index of Scout canonical notes, companion notes, findings, and durable reports. Current navigation includes source-grounded finding batches through 2026-09-19 and the §37–§40 Agent Evaluation Research: Diagnostic Layers companion without duplicating the full index. Runtime task, credential, backlog, and health status belongs in the project UI or dated reports."
+last_updated: "2026-09-21"
+source_basis: "Maintained index of Scout canonical notes, companion notes, findings, and durable reports. Current navigation includes source-grounded finding batches through 2026-09-20 and the §37–§40 Agent Evaluation Research: Diagnostic Layers companion without duplicating the full index. Runtime task, credential, backlog, and health status belongs in the project UI or dated reports."
 findings_date_convention: "Use the actual observation date in YYYY-MM-DD filenames; never create a future-dated finding."
 </ai_context>
 
@@ -70,8 +70,23 @@ Migration and project-operation artifacts live outside `knowledge/`:
 
 ## Recent Source-Grounded Findings
 
+### 2026-09-20
+
+- [Persistent agent memory needs integrity contracts before “absolute truth”](./findings/2026-09-20-agent-memory-integrity-contract-gaps.md) — pinned-source inspection separates provenance, replacement, namespace isolation, and retrieval authority; implementation behavior was not exercised.
+- [Agent routing needs a confidence boundary, not just a winner](./findings/2026-09-20-agent-routing-confidence-boundary.md) — a bundled replay motivates separate unknown-route rejection, confidence calibration, and authorization, but is not a live in-session benchmark.
+- [CoEvoSkills makes verifier design part of self-authored-skill evaluation](./findings/2026-09-20-coevoskills-self-authored-skill-packages.md) — a secondary XHS explainer reports large benchmark gains without linking the paper, repository, benchmark version, or statistical details.
+- [Fossil fork puts agent memory beside the software forge](./findings/2026-09-20-fossil-agentic-workflow.md) — a local-first prototype separates pooled notes, review metadata, and durable forge artifacts, making promotion and lineage explicit rather than automatic.
+- [Multi-agent scale is not the same as multi-agent contribution](./findings/2026-09-20-multi-agent-scaling-attribution-gap.md) — a secondary XHS summary motivates matched ablations before crediting visible swarm scale; the underlying podcasts and experiments were not inspected.
+- [QGIS agent claim shows domain execution as a typed tool-and-render loop](./findings/2026-09-20-qgis-agent-domain-tool-loop.md) — same-author Reddit cross-posts expose an inspectable domain-operation pattern, but the plugin, trace, data, and resulting map were not independently reviewed.
+- [Green agent-written tests still need a semantic audit](./findings/2026-09-20-semantic-test-audit.md) — a test-audit CLI checks whether tests cross real seams and distinguish regressions; reported precision is repository-authored and partly private.
+- [SoL-Pi for May Agent: evidence and adoption proposal](./findings/2026-09-20-sol-pi-may-agent-assessment.md) — a pinned-source assessment recommends deferring direct adoption and considering only a native bounded projection if local measurements establish the cost case.
+- [Deictic UI feedback needs coordinate-frame provenance](./findings/2026-09-20-ui-feedback-to-coding-agent-context.md) — project-author posts show why screenshots and pointing need window, transform, timing, and language provenance; application behavior was not verified.
+- [VoltDB Skills and MCP: least-privilege runtime authority](./findings/2026-09-20-voltdb-skills-mcp-least-privilege-addendum.md) — vendor documentation separates portable instruction packages from a database principal whose roles define live information and effect authority.
+- [Multimodal search agents need separate retrieval and interpretation checks](./findings/2026-09-20-weagent-multimodal-search.md) — an official team post motivates persistent visual evidence and separate acquisition-versus-understanding scores; paper and benchmark assets were not inspected.
+
 ### 2026-09-19
 
+- [Inference-engine fingerprinting can turn output tokens into an exploit carrier](./findings/2026-09-19-inference-engine-fingerprinting-output-token-exploits.md) — abstract-only evidence adds the model-serving engine to the agent containment boundary; the paper and exploit artifacts were not reviewed.
 - [Agent plugin pinning must verify the resolved checkout](./findings/2026-09-19-agent-plugin-sha-pinning.md) — Plugin4Shell reporting shows why an approved Git object ID is only intent until the installer verifies the materialized checkout; exploit and patch claims were not independently reproduced.
 - [Agent validation gates need decision-class qualification](./findings/2026-09-19-domain-matched-validation-gates.md) — a small author-run chemistry test suggests qualifying gate, decision class, and threshold together, with deterministic domain checks for machine-computable invariants; no reproducibility package was available.
 - [Agent authorization needs a relying-service contract](./findings/2026-09-19-grantex-relying-service-authorization.md) — pinned-source inspection separates credential, resource, action, revocation, enforcement-mode, and effect-mediation bindings; packages and hosted behavior were not exercised.
