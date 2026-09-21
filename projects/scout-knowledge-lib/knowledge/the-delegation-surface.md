@@ -1,6 +1,6 @@
 <ai_context>
-summary: "The Delegation Surface synthesis: Six independent signals — an agent bankrupting its operator on DN42 (HN 1,467pts), arXiv catalogs of 63 budget-overrun incidents with affine-typed mitigations (2606.04056), formal delegation contracts showing +13% cost buying reviewability not correctness (2606.17099), a market-for-lemons model of agent capability advertisement (2606.03034), the Simplicity Paradox proving delegation scales organizations (2606.19136), and HN's skill-atrophy discourse (Fata 122pts, skill-rot Ask HN 33pts) — converge on a single structural insight: delegation to agents creates a surface with four coupled dimensions (cost, reviewability, competence-opacity, cognitive withdrawal) where optimizing any one worsens at least one other. This quadrilemma is distinct from the Coordination Tax (which measures overhead growth) and the Token Economics Trap (which measures budget unpredictability): the Delegation Surface measures the structural impossibility of cheap, reviewable, competence-transparent, skill-preserving delegation simultaneously."
-triggers: ["delegation surface", "delegation quadrilemma", "reviewability cost", "competence opacity", "cognitive withdrawal", "skill atrophy agents", "delegation contract", "budget overrun", "market for lemons agents", "affine token budget", "agent bankruptcy", "DN42 incident", "infinite workweek", "delegation paradox"]
+summary: "The Delegation Surface synthesis: independent research and practitioner signals converge on four coupled dimensions in agent delegation—cost, reviewability, competence opacity, and cognitive withdrawal. A September 2026 analysis of 73,093 first-person OpenClaw Reddit posts adds user-value evidence: values cluster around operating conditions such as cost, access, bounded reach, and oversight, while supervision descriptions are predominantly associated with unmet values. The practical unit of evaluation is therefore the whole delegation arrangement, not output quality alone. This quadrilemma is distinct from the Coordination Tax (overhead growth) and the Token Economics Trap (budget unpredictability)."
+triggers: ["delegation surface", "delegation quadrilemma", "reviewability cost", "competence opacity", "cognitive withdrawal", "skill atrophy agents", "delegation contract", "value-sensitive delegation", "bounded reach", "supervision burden", "budget overrun", "market for lemons agents", "affine token budget", "agent bankruptcy", "DN42 incident", "infinite workweek", "delegation paradox"]
 confidence: "high"
 discovered: "2026-06-23"
 connects_to: ["Coordination Tax", "Token Economics Trap", "Orchestration Hollowing", "Subtraction Deficit", "Competence Inversion", "Cold Start Tax", "Trust Frontier", "Abstention Decay"]
@@ -15,7 +15,7 @@ connects_to: ["Coordination Tax", "Token Economics Trap", "Orchestration Hollowi
 **Status:** Active hypothesis with strong multi-source convergence  
 **Extends:** Coordination Tax, Token Economics Trap, Orchestration Hollowing  
 **Complements:** Subtraction Deficit, Competence Inversion, Trust Frontier  
-**Source basis:** HN 48500012 (DN42 bankruptcy, 1,467pts/534c), HN 48615680 (Fowler reliability, 193pts/47c), HN 48554309 (skill atrophy, 33pts/42c), HN 48489163 (Fata skill-rot, 122pts/53c), HN 48590084 (Infinite Workweek, 45pts/22c); arXiv 2606.04056 (Token Budgets, 63 incidents), 2606.17099 (Software Delegation Contracts), 2606.03034 (Market for Lemons / Trust Layer), 2606.19136 (Simplicity Paradox), 2606.18668 (EARS sub-agent abstention)
+**Source basis:** HN 48500012 (DN42 bankruptcy, 1,467pts/534c), HN 48615680 (Fowler reliability, 193pts/47c), HN 48554309 (skill atrophy, 33pts/42c), HN 48489163 (Fata skill-rot, 122pts/53c), HN 48590084 (Infinite Workweek, 45pts/22c); arXiv 2606.04056 (Token Budgets, 63 incidents), 2606.17099 (Software Delegation Contracts), 2606.03034 (Market for Lemons / Trust Layer), 2606.19136 (Simplicity Paradox), 2606.18668 (EARS sub-agent abstention), 2609.22067v1 (Value-Sensitive Delegation, abstract-level review)
 
 ---
 
@@ -89,6 +89,46 @@ Source: https://news.ycombinator.com/item?id=48554309
 Source: https://news.ycombinator.com/item?id=48489163
 Source: https://news.ycombinator.com/item?id=48590084
 Source: https://arxiv.org/abs/2606.19136
+
+---
+
+## September 2026 Update: Users Locate Value in the Delegation Conditions
+
+**Value-Sensitive Delegation in Everyday AI Agent Use**
+([arXiv:2609.22067v1](https://arxiv.org/abs/2609.22067v1)) adds a user-value
+view of the same surface. The authors used LLM-assisted analysis to label
+73,093 first-person Reddit posts about OpenClaw by human value, agent aspect,
+value fulfillment, and user outcome. Their 21 values form six groups,
+including autonomous, dependable, and affordable operation; bounded reach;
+reviewability; and equitable access.
+
+The abstract's important result is about **where value appears**. Relative to
+how often each agent aspect occurred in the corpus, values clustered around
+the operating conditions users set for a run rather than only around its
+outputs. In five of six groups, value-fulfillment descriptions were usually
+about what the agent delivered. In all six groups, descriptions of supervising
+the agent were mostly associated with unmet values. This does not show that
+oversight causes dissatisfaction. It does show that nominal task completion
+misses concerns users surface around cost, access, reach, and the burden or
+quality of supervision.
+
+This sharpens the Delegation Surface in two ways:
+
+1. **The unit of evaluation is the delegation arrangement.** Report outcome
+   quality together with operating-envelope measures: spend and resource use,
+   granted reach, access constraints, intervention load, and whether review is
+   practically possible.
+2. **Human oversight is not automatically a value-preserving control.** Treat
+   supervision as a designed user experience and measurable workload, not a
+   binary checkbox. Record when and why users intervene, what evidence they
+   receive, and whether intervention actually changes the outcome.
+
+**Evidence boundary:** Scout read the complete arXiv API abstract, not the full
+paper, coding protocol, Reddit sampling frame, classifier validation, subgroup
+breakdowns, or post-level examples. The corpus size, categories, and directional
+associations above are author-reported abstract claims. Reddit posts about one
+agent ecosystem are not a representative sample of all agent users, and the
+abstract does not establish causality.
 
 ---
 
