@@ -61,8 +61,8 @@ export type DirectAgentRunOptions = {
   outputSchema?: TSchema;
   /**
    * Hide configured capability bundles or concrete tool names from the model.
-   * This controls tool visibility, not process/OS isolation. Agent-local module
-   * factories are trusted installation code and run while tools are prepared.
+   * This controls tool visibility, not process/OS isolation. Supported bundle
+   * implementations and agent-local factories run while tools are inventoried.
    */
   toolDenials?: ToolDenial[];
   timeoutMs?: number;
@@ -150,12 +150,10 @@ async function buildDirectTools(
   const deniedCapabilityNames = new Set(
     (options.toolDenials ?? []).map((denial) => denial.name.trim()).filter((name) => config.tools.includes(name)),
   );
+  // Build complete inventories for supported bundles before applying denials so
+  // overlapping bundle and concrete-name denials validate independently.
   for (const capability of config.tools) {
     const capabilityTools: AgentTool[] = [];
-    if (deniedCapabilityNames.has(capability)) {
-      concreteToolsByCapability.set(capability, []);
-      continue;
-    }
     switch (capability) {
       case "coding":
         capabilityTools.push(...createCodingTools(options.workRoot, { agentName: config.name }));
@@ -186,6 +184,10 @@ async function buildDirectTools(
         break;
       }
       default:
+        if (deniedCapabilityNames.has(capability)) {
+          concreteToolsByCapability.set(capability, []);
+          continue;
+        }
         throw new Error(
           `Direct run cannot construct effective tool "${capability}" for agent ${config.name}; ` +
             `the caller must provide an explicit denial or a direct tool implementation`,

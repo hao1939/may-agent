@@ -128,7 +128,7 @@ describe("direct agent tool policy", () => {
     }
   });
 
-  test("distinguishes a coding bundle denial from one concrete tool denial", async () => {
+  test("handles coding bundle, member, and overlapping denials", async () => {
     const root = await mkdtemp(join(tmpdir(), "may-direct-coding-policy-"));
     const agentDir = join(root, "agents", "example");
     await mkdir(agentDir, { recursive: true });
@@ -142,7 +142,7 @@ describe("direct agent tool policy", () => {
         tools: ["coding"],
       }),
     );
-    const prepare = (name: string) =>
+    const prepare = (names: string[]) =>
       prepareDirectAgentExecution({
         agentName: "example",
         task: "Inspect the fixture",
@@ -152,18 +152,86 @@ describe("direct agent tool policy", () => {
         sharedRoot: join(root, "shared"),
         outputRoot: join(root, "output"),
         models: { test: { id: "test-model" } as any },
-        toolDenials: [{ name, reason: "fixture denial" }],
+        toolDenials: names.map((name) => ({ name, reason: "fixture denial" })),
       });
 
     let direct: Awaited<ReturnType<typeof prepareDirectAgentExecution>> | undefined;
     try {
-      direct = await prepare("bash");
+      direct = await prepare(["bash"]);
       expect(direct.prepared.tools.map((tool) => tool.name)).toEqual(["read", "edit", "write"]);
       expect(direct.executionManifest.effectiveTools).toEqual(["read", "edit", "write"]);
       direct.cleanup();
       direct = undefined;
 
-      direct = await prepare("coding");
+      direct = await prepare(["coding"]);
+      expect(direct.prepared.tools).toEqual([]);
+      expect(direct.executionManifest.effectiveTools).toEqual([]);
+      direct.cleanup();
+      direct = undefined;
+
+      direct = await prepare(["coding", "bash"]);
+      expect(direct.prepared.tools).toEqual([]);
+      expect(direct.executionManifest).toEqual({
+        agent: "example",
+        configuredTools: ["coding"],
+        deniedTools: [
+          { name: "coding", reason: "fixture denial" },
+          { name: "bash", reason: "fixture denial" },
+        ],
+        effectiveTools: [],
+      });
+    } finally {
+      direct?.cleanup();
+      await rm(root, { recursive: true, force: true });
+    }
+  });
+
+  test("preserves duplicate concrete names and denies every matching tool", async () => {
+    const root = await mkdtemp(join(tmpdir(), "may-direct-tool-collision-"));
+    const agentDir = join(root, "agents", "example");
+    await mkdir(join(agentDir, "tools"), { recursive: true });
+    await writeFile(
+      join(agentDir, "agent.json"),
+      JSON.stringify({
+        name: "example",
+        description: "example",
+        domain: "test",
+        model: "test",
+        tools: ["read-only"],
+      }),
+    );
+    await writeFile(
+      join(agentDir, "tools", "colliding-read.ts"),
+      `export default () => ({
+        name: "read",
+        label: "Colliding read",
+        description: "Portable duplicate-name fixture",
+        parameters: { type: "object", properties: {} },
+        execute: async () => ({ content: [{ type: "text", text: "local" }], details: {} }),
+      });`,
+    );
+    const prepare = (toolDenials?: Array<{ name: string; reason: string }>) =>
+      prepareDirectAgentExecution({
+        agentName: "example",
+        task: "Inspect the fixture",
+        projectRoot: root,
+        workRoot: root,
+        agentsRoot: join(root, "agents"),
+        sharedRoot: join(root, "shared"),
+        outputRoot: join(root, "output"),
+        models: { test: { id: "test-model" } as any },
+        toolDenials,
+      });
+
+    let direct: Awaited<ReturnType<typeof prepareDirectAgentExecution>> | undefined;
+    try {
+      direct = await prepare();
+      expect(direct.prepared.tools.map((tool) => tool.name)).toEqual(["read", "read"]);
+      expect(direct.executionManifest.effectiveTools).toEqual(["read", "read"]);
+      direct.cleanup();
+      direct = undefined;
+
+      direct = await prepare([{ name: "read", reason: "deny every colliding concrete tool" }]);
       expect(direct.prepared.tools).toEqual([]);
       expect(direct.executionManifest.effectiveTools).toEqual([]);
     } finally {
