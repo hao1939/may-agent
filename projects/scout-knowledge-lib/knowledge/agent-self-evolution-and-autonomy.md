@@ -1,8 +1,8 @@
 <ai_context>
 summary: "Agent self-evolution is not one mechanism. The credible core is a governed release loop over explicit mutable surfaces: skills, memory, routing, harness code, weights, world models, or evaluators. Current evidence is strongest when an external fixed evaluator controls admission, and much weaker for self-generated or co-evolving judges and broad-goal autonomy."
 triggers: ["agent self-evolution", "self-improving agents", "recursive self-improvement", "agent autonomy", "skill evolution", "harness evolution", "world models", "co-evolving evaluators"]
-last_updated: "2026-09-19"
-source_basis: "A source-agnostic 984-row lead ledger: 908 observed cards from the human's Xiaohongshu collection, including a bounded authenticated frontier of 11 readable text bodies and one image-only cover; 69 primary paper, repository, benchmark, survey, blog, and interview records; and 8 existing Scout artifacts, plus 2026-09-10 direct XHS inspection of HarnessEvolve reception, an HN-surfaced primary-paper inspection of Procedural Graphs (arXiv 2609.09153), 2026-09-11 inspection of HN-surfaced Salesforce Beagle at commit 15f12b7, 2026-09-11 full-paper inspection of Ecdysis (arXiv 2609.11677v1), 2026-09-12 direct XHS inspection of the Seed/TokenWave Self-Developing Agents announcement, 2026-09-13 direct XHS inspection of Procedural Graphs reception, 2026-09-14 direct XHS inspection of a six-survey self-evolution reading map and its practitioner discussion, 2026-09-15 inspection of the HN-surfaced rekursiv.ai auto-autoresearch report plus its runnable NanoChat recipe at Priml commit 92c6bd2, 2026-09-16 inspection of EvoOntology's ontology-evolution lifecycle and admission boundary at commit ace8ff69, 2026-09-19 abstract-level inspection of SoL-Pi (arXiv 2609.20519v1), and 2026-09-19 inspection of SourceShift/mini-ork's path-specific self-modification controls at commit 962bf478. Claims are traced to full primary sources and pinned code where available; titles remain discovery metadata, never technical evidence."
+last_updated: "2026-09-22"
+source_basis: "A source-agnostic 984-row lead ledger: 908 observed cards from the human's Xiaohongshu collection, including a bounded authenticated frontier of 11 readable text bodies and one image-only cover; 69 primary paper, repository, benchmark, survey, blog, and interview records; and 8 existing Scout artifacts, plus 2026-09-10 direct XHS inspection of HarnessEvolve reception, an HN-surfaced primary-paper inspection of Procedural Graphs (arXiv 2609.09153), 2026-09-11 inspection of HN-surfaced Salesforce Beagle at commit 15f12b7, 2026-09-11 full-paper inspection of Ecdysis (arXiv 2609.11677v1), 2026-09-12 direct XHS inspection of the Seed/TokenWave Self-Developing Agents announcement, 2026-09-13 direct XHS inspection of Procedural Graphs reception, 2026-09-14 direct XHS inspection of a six-survey self-evolution reading map and its practitioner discussion, 2026-09-15 inspection of the HN-surfaced rekursiv.ai auto-autoresearch report plus its runnable NanoChat recipe at Priml commit 92c6bd2, 2026-09-16 inspection of EvoOntology's ontology-evolution lifecycle and admission boundary at commit ace8ff69, 2026-09-19 abstract-level inspection of SoL-Pi (arXiv 2609.20519v1), 2026-09-19 inspection of SourceShift/mini-ork's path-specific self-modification controls at commit 962bf478, and 2026-09-22 direct XHS inspection of Chinese-language reception of the matched-budget harness-evolution critique. Claims are traced to full primary sources and pinned code where available; XHS reception is labeled as secondary commentary, and titles remain discovery metadata, never technical evidence."
 </ai_context>
 
 # Agent Self-Evolution and Autonomy: What Actually Changes?
@@ -206,6 +206,25 @@ matched. A later protocol critique of AHE-style evolution—not a replication of
 RHO—finds matched `K=5` parallel or sequential task search often wins and
 disjoint-task transfer averages only +0.6 points. Candidate generation and
 promotion reliability must therefore be measured separately.
+
+### XHS reception: the evaluation critique has crossed into practitioner media
+
+A directly read [XHS post](https://www.xiaohongshu.com/explore/6a5dd7f4000000000c016a6d)
+from the account “大模型知识分享” summarized the same protocol critique for a
+Chinese practitioner audience. At inspection it showed 76 likes and 117
+collections. Notably, the post foregrounded both confounds: compare automatic
+harness evolution with simple task-level search under matched feedback and
+reasoning budgets, and test the evolved harness on held-out tasks rather than
+on the benchmark used during search. It described the reported Terminal-Bench
+2.1 experiments as using GPT-5.4 and Claude Opus 4.6 and said automatic harness
+evolution did not consistently beat simple test-time scaling and generalized
+poorly.
+
+This is **secondary reception evidence**, not an independent replication or a
+replacement for the primary paper review. Its useful signal is directional:
+Chinese-language agent discourse is circulating a falsification criterion for
+harness-evolution claims—not merely the earlier “optimize the harness” thesis.
+Engagement counts are a point-in-time platform observation, not a quality score.
 
 EvoHarness-RL is likewise not an equal-budget “8B matches Opus” result. Its
 Qwen3-8B agent uses 87 successful Opus trajectories, Opus consolidation each
