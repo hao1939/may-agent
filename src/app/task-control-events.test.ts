@@ -3,6 +3,7 @@ import { EVENT_DELIVERY_RESULT, EVENT_REDELIVERY_REQUIRED, EventBus, type AgentE
 import {
   attachTaskControlEventRoute,
   taskCancelRequestedEvent,
+  taskCloseRequestedEvent,
   taskRetryRequestedEvent,
 } from "./task-control-events.js";
 
@@ -22,14 +23,26 @@ describe("Task control Event boundary", () => {
       data: { expectedGeneration: 2, expectedResourceVersion: 7, reason: "no longer needed" },
       idempotencyKey: "app-task-cancel:evaluation:review/docs:2:7",
     });
+    expect(taskCloseRequestedEvent(task, " r_2_answer ", " answer consumed ")).toEqual({
+      type: "app.task.close.requested",
+      target: { appId: "evaluation", taskId: "review/docs" },
+      data: {
+        expectedGeneration: 2,
+        expectedResourceVersion: 7,
+        afterResult: "r_2_answer",
+        reason: "answer consumed",
+      },
+      idempotencyKey: "app-task-close:evaluation:review/docs:2:7:r_2_answer",
+    });
   });
 
-  it("passes exact retry and cancellation controls to their authoritative writers", () => {
+  it("passes exact retry, completion, and cancellation controls to their authoritative writers", () => {
     const bus = new EventBus();
     const calls: unknown[] = [];
     attachTaskControlEventRoute(bus, {
       retryTask: (input) => calls.push({ action: "retry", ...input }),
       cancelTask: (input) => calls.push({ action: "cancel", ...input }),
+      closeTask: (input) => calls.push({ action: "close", ...input }),
     });
 
     const retry = {
@@ -58,6 +71,19 @@ describe("Task control Event boundary", () => {
     } as AgentEvent;
     expect(bus.emit(cancel)).toHaveProperty("type", "app.task.cancel.requested");
 
+    const close = {
+      ...taskCloseRequestedEvent(task, "r_2_answer", "done"),
+      source: "control-socket",
+      owner: "app:evaluation",
+      data: {
+        ...taskCloseRequestedEvent(task, "r_2_answer", "done").data,
+        appId: task.appId,
+        taskId: task.taskId,
+        idempotencyKey: taskCloseRequestedEvent(task, "r_2_answer", "done").idempotencyKey,
+      },
+    } as AgentEvent;
+    expect(bus.emit(close)).toHaveProperty("type", "app.task.close.requested");
+
     expect(calls).toEqual([
       {
         action: "retry",
@@ -69,6 +95,14 @@ describe("Task control Event boundary", () => {
         ...task,
         reason: "done",
         controlKey: taskCancelRequestedEvent(task, "done").idempotencyKey,
+        decision: "human",
+      },
+      {
+        action: "close",
+        ...task,
+        afterResult: "r_2_answer",
+        reason: "done",
+        controlKey: taskCloseRequestedEvent(task, "r_2_answer", "done").idempotencyKey,
       },
     ]);
   });
@@ -79,6 +113,7 @@ describe("Task control Event boundary", () => {
     attachTaskControlEventRoute(bus, {
       retryTask: ({ controlKey }) => calls.push(controlKey),
       cancelTask: () => undefined,
+      closeTask: () => undefined,
     });
     const recovered = {
       ...taskRetryRequestedEvent(task),
@@ -103,6 +138,7 @@ describe("Task control Event boundary", () => {
         throw new Error("control receipt belongs to another operation");
       },
       cancelTask: () => undefined,
+      closeTask: () => undefined,
     });
     const rejected = {
       ...taskRetryRequestedEvent(task),

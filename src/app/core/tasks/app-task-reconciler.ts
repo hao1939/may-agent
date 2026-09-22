@@ -2252,12 +2252,14 @@ type AppTaskCloseInput = {
   reason: string;
   /** Trusted creator control; omission is reserved for the existing operator/App-policy boundary. */
   actor?: ResourceCreator;
+  /** Trusted ingress attribution; request payloads cannot select this value. */
+  decision?: "human" | "app-policy";
 };
 
 /** Explicit owner control. A conventional close must still match the consumed result. */
 export function closeAppTask(
   config: AppTaskContext,
-  input: AppTaskCloseInput & { afterResult?: string },
+  input: AppTaskCloseInput & { afterResult?: string; controlKey?: string },
 ): { closure: AppTaskCancellation; interruptedAttemptId?: string; applied: boolean } {
   const closed = closeTask(config, input, "closed");
   return {
@@ -2299,6 +2301,9 @@ function closeTask(
     }
     const cancellation = config.resourceStore.readCancellation(input.taskId);
     if (!cancellation) throw new Error(`Task cancellation receipt ${input.controlKey} has no terminal facts`);
+    if (input.afterResult && cancellation.acceptedResultAttemptId !== input.afterResult) {
+      throw new Error("The Task was closed against a different accepted result");
+    }
     return { cancellation, applied: false };
   }
 
@@ -2336,6 +2341,7 @@ function closeTask(
       accepted.taskGeneration !== input.expectedGeneration ||
       !["converged", "incomplete"].includes(accepted.acceptedResult?.state ?? "") ||
       resource.status.observedAttemptId !== input.afterResult ||
+      resource.status.phase !== "converged" ||
       resource.status.currentAttemptId ||
       tree.taskTriggers?.[input.taskId]?.event
     ) {
@@ -2349,9 +2355,11 @@ function closeTask(
     kind,
     reason,
     summary: input.actor ? `${kind === "closed" ? "Closed" : "Cancelled"} by creator: ${reason}`
-      : kind === "closed" ? `Closed by App policy: ${reason}` : `Cancelled by human: ${reason}`,
+      : kind === "closed" || input.decision === "app-policy"
+        ? `${kind === "closed" ? "Closed" : "Cancelled"} by App policy: ${reason}`
+        : `Cancelled by human: ${reason}`,
     decidedBy: input.actor ? { kind: "creator", creator: structuredClone(input.actor) }
-      : kind === "closed" ? { kind: "app-policy" } : { kind: "human" },
+      : kind === "closed" || input.decision === "app-policy" ? { kind: "app-policy" } : { kind: "human" },
   });
 }
 

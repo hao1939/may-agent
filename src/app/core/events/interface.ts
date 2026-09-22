@@ -146,6 +146,13 @@ const EVENT_DEFINITIONS: Readonly<Record<string, EventDefinition>> = {
     delivery: "required",
     validate: (input, options) => validateTaskControl(input, options, true),
   },
+  "app.task.close.requested": {
+    delivery: "required",
+    validate: (input, options) => {
+      validateTaskControl(input, options, true);
+      requiredText(input.data.afterResult, "app.task.close.requested data.afterResult");
+    },
+  },
   "chat.start.requested": {
     delivery: "required",
     validate: (input, options) => {

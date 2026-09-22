@@ -662,7 +662,11 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
     (event): DeliveryResult | void => {
       // Task controls have their own fenced writer and receipt. Their target
       // identifies the resource to control, not fresh input for that Task.
-      if (event.type === "app.task.cancel.requested" || event.type === "app.task.retry.requested") return;
+      if (
+        event.type === "app.task.cancel.requested" ||
+        event.type === "app.task.close.requested" ||
+        event.type === "app.task.retry.requested"
+      ) return;
       const routeSnapshot = registrySnapshot;
       const routeGeneration = routeSnapshot.generation;
       const data = eventData(event);

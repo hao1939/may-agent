@@ -976,6 +976,49 @@ describe("common Task lifecycle source PoC", () => {
     expect(f.claim().events).toMatchObject([{ event: { eventId: 2 } }]);
   });
 
+  it("rejects completion close when an independent retained wait survives the accepted answer", () => {
+    const f = fixture();
+    deferAppTask(f.config, f.claim(), {
+      disposition: "waiting",
+      summary: "Waiting for a sample",
+      facts: ["sample:pending"],
+      conditions: [
+        {
+          id: "sample-ready",
+          type: "sample.ready",
+          subject: "sample:conversation",
+          expected: true,
+          owner: "app:sampler",
+          reviewAfterMs: 60_000,
+        },
+      ],
+    });
+    recordAppTaskTrigger(f.config, "conversation", {
+      type: "conversation.message",
+      eventId: 2,
+      data: { text: "Also answer an independent question" },
+    });
+    const current = f.claim();
+    completeAppTask(f.config, current, {
+      summary: "Independent question answered; sample still needed",
+      facts: ["answer:verified"],
+    });
+    const resource = f.config.resourceStore.readTask("conversation")!;
+    const before = f.config.resourceStore.readTaskContext({ taskIds: ["conversation"] });
+    expect(resource.status).toMatchObject({ phase: "waiting", conditionIds: ["sample-ready"] });
+    expect(() =>
+      closeAppTask(f.config, {
+        appId: "sample",
+        taskId: "conversation",
+        expectedGeneration: resource.metadata.generation,
+        expectedResourceVersion: resource.metadata.resourceVersion,
+        reason: "Caller consumed the independent answer",
+        afterResult: current.attemptId,
+      }),
+    ).toThrow("newer or unresolved");
+    expect(f.config.resourceStore.readTaskContext({ taskIds: ["conversation"] })).toEqual(before);
+  });
+
   it("owner closure interrupts an active attempt and retains an honest unfinished disposition", () => {
     const f = fixture();
     const current = f.claim();

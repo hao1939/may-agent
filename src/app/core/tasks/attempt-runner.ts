@@ -1111,7 +1111,7 @@ export function publishTaskCancellation(bus: EventBus, result: ReturnType<typeof
     bus.emit({
       type: "app.task.cancelled",
       source: "app-task-reconciler",
-      owner: "human:operator",
+      owner: result.cancellation.decidedBy?.kind === "human" ? "human:operator" : `app:${appId}`,
       target: { appId, taskId },
       data: {
         appId,

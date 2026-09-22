@@ -19,6 +19,7 @@ import {
   attachLoadedAppTask,
   cancelLoadedAppTask,
   closeInstalledAppTaskRuntimes,
+  closeLoadedAppTask,
   installAppTaskRuntimes,
   getLoadedAppTaskView,
   hasLoadedAppTask,
@@ -84,8 +85,18 @@ export type AppTaskCapability = {
     expectedGeneration: number;
     expectedResourceVersion: number;
     reason: string;
+    decision?: "human" | "app-policy";
     controlKey?: string;
   }): ReturnType<typeof cancelLoadedAppTask>;
+  closeAfterResult(input: {
+    appId: string;
+    taskId: string;
+    expectedGeneration: number;
+    expectedResourceVersion: number;
+    afterResult: string;
+    reason: string;
+    controlKey?: string;
+  }): ReturnType<typeof closeLoadedAppTask>;
   publishGeneration(input: {
     snapshot: AppRegistrySnapshot;
     definitionSource: Pick<AppTaskRuntimeOptions, "projectsRoot" | "agentsRoot" | "sharedRoot">;
@@ -203,13 +214,25 @@ export function createAppTaskCapability(options: {
         expectedResourceVersion,
         ...(controlKey ? { controlKey } : {}),
       }),
-    cancel: ({ appId, taskId, expectedGeneration, expectedResourceVersion, reason, controlKey }) =>
+    cancel: ({ appId, taskId, expectedGeneration, expectedResourceVersion, reason, decision, controlKey }) =>
       cancelLoadedAppTask({
         bus: options.bus,
         appId,
         taskId,
         expectedGeneration,
         expectedResourceVersion,
+        reason,
+        ...(decision ? { decision } : {}),
+        ...(controlKey ? { controlKey } : {}),
+      }),
+    closeAfterResult: ({ appId, taskId, expectedGeneration, expectedResourceVersion, afterResult, reason, controlKey }) =>
+      closeLoadedAppTask({
+        bus: options.bus,
+        appId,
+        taskId,
+        expectedGeneration,
+        expectedResourceVersion,
+        afterResult,
         reason,
         ...(controlKey ? { controlKey } : {}),
       }),

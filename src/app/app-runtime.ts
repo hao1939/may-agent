@@ -257,10 +257,21 @@ export async function runAppRuntime(opts: {
         expectedResourceVersion: resourceVersion,
         controlKey,
       }),
-    cancelTask: ({ appId, taskId, generation, resourceVersion, reason, controlKey }) =>
+    cancelTask: ({ appId, taskId, generation, resourceVersion, reason, decision, controlKey }) =>
       appTasks.cancel({
         appId,
         taskId,
+        reason,
+        decision,
+        expectedGeneration: generation,
+        expectedResourceVersion: resourceVersion,
+        controlKey,
+      }),
+    closeTask: ({ appId, taskId, generation, resourceVersion, afterResult, reason, controlKey }) =>
+      appTasks.closeAfterResult({
+        appId,
+        taskId,
+        afterResult,
         reason,
         expectedGeneration: generation,
         expectedResourceVersion: resourceVersion,

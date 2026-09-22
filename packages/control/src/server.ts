@@ -1018,6 +1018,57 @@ export function createControlSocketCore(opts: ControlSocketCoreOptions): {
           continue;
         }
 
+        if (normalized.kind === "control" && normalized.command === "task.close") {
+          const appId = typeof frame.appId === "string" ? frame.appId.trim().replace(/\.app$/, "") : "";
+          const taskId = typeof frame.taskId === "string" ? frame.taskId.trim() : "";
+          const expectedGeneration = frame.expectedGeneration;
+          const expectedResourceVersion = frame.expectedResourceVersion;
+          const afterResult = typeof frame.afterResult === "string" ? frame.afterResult.trim() : "";
+          const reason = typeof frame.reason === "string" ? frame.reason.trim() : "";
+          const exactPositiveInteger = (value: unknown) =>
+            typeof value === "number" && Number.isSafeInteger(value) && value > 0;
+          if (!appId || !taskId || !exactPositiveInteger(expectedGeneration) ||
+              !exactPositiveInteger(expectedResourceVersion) || !afterResult || !reason || !publishEvent) {
+            writeFrame(socket, {
+              type: "error",
+              command: normalized.command,
+              message: !appId ? "appId is required"
+                : !taskId ? "taskId is required"
+                  : !exactPositiveInteger(expectedGeneration) ? "expectedGeneration must be a positive integer"
+                    : !exactPositiveInteger(expectedResourceVersion)
+                      ? "expectedResourceVersion must be a positive integer"
+                      : !afterResult ? "afterResult must be a non-empty accepted attempt ID"
+                        : !reason ? "reason is required" : "guarded Task completion is unavailable",
+            });
+            continue;
+          }
+          try {
+            const receipt = publishEvent({
+              type: "app.task.close.requested",
+              target: { appId, taskId },
+              data: { expectedGeneration, expectedResourceVersion, afterResult, reason },
+              idempotencyKey:
+                `app-task-close:${appId}:${taskId}:${String(expectedGeneration)}:${String(expectedResourceVersion)}:${afterResult}`,
+            });
+            if (receipt.delivery !== "accepted") {
+              throw new Error(`Task ${appId}/${taskId} completion was recorded but not accepted; read the Task and retry`);
+            }
+            writeFrame(socket, {
+              type: "ok",
+              command: normalized.command,
+              receipt,
+              ...(getTask ? { task: getTask({ appId, taskId }) } : {}),
+            });
+          } catch (error) {
+            writeFrame(socket, {
+              type: "error",
+              command: normalized.command,
+              message: error instanceof Error ? error.message : String(error),
+            });
+          }
+          continue;
+        }
+
         if (normalized.kind === "control" && normalized.command === "task.cancel") {
           if (!getTask || !publishEvent) {
             writeFrame(socket, {

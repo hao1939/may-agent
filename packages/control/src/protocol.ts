@@ -14,6 +14,7 @@ export const SOCKET_CONTROL_TYPES = new Set([
   "apps.list",
   "tasks.list",
   "task.get",
+  "task.close",
   "task.cancel",
   "project.actions.describe",
   "project.action.invoke",
@@ -36,6 +37,7 @@ export type SocketFrame =
         | "apps.list"
         | "tasks.list"
         | "task.get"
+        | "task.close"
         | "task.cancel"
         | "project.actions.describe"
         | "project.action.invoke";
@@ -92,6 +94,7 @@ export function normalizeSocketFrame(frame: Record<string, unknown>): SocketFram
         | "apps.list"
         | "tasks.list"
         | "task.get"
+        | "task.close"
         | "task.cancel"
         | "project.actions.describe"
         | "project.action.invoke",

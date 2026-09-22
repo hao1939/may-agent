@@ -20,6 +20,24 @@ export function taskRetryRequestedEvent(task: ExactTask): EventInput {
   };
 }
 
+export function taskCloseRequestedEvent(task: ExactTask, afterResult: string, reason: string): EventInput {
+  const acceptedResult = afterResult.trim();
+  if (!acceptedResult) throw new Error("Task completion requires an exact accepted result attempt");
+  const normalizedReason = reason.trim();
+  if (!normalizedReason) throw new Error("Task completion requires a reason");
+  return {
+    type: "app.task.close.requested",
+    target: { appId: task.appId, taskId: task.taskId },
+    data: {
+      expectedGeneration: task.generation,
+      expectedResourceVersion: task.resourceVersion,
+      afterResult: acceptedResult,
+      reason: normalizedReason,
+    },
+    idempotencyKey: `app-task-close:${task.appId}:${task.taskId}:${task.generation}:${task.resourceVersion}:${acceptedResult}`,
+  };
+}
+
 export function taskCancelRequestedEvent(task: ExactTask, reason: string): EventInput {
   const normalizedReason = reason.trim() || "human requested cancellation";
   return {
@@ -44,12 +62,17 @@ export function attachTaskControlEventRoute(
   bus: EventBus,
   access: {
     retryTask(input: ExactTask & { controlKey: string }): unknown;
-    cancelTask(input: ExactTask & { reason: string; controlKey: string }): unknown;
+    cancelTask(input: ExactTask & { reason: string; controlKey: string; decision: "human" | "app-policy" }): unknown;
+    closeTask(input: ExactTask & { afterResult: string; reason: string; controlKey: string }): unknown;
   },
 ): () => void {
   return bus.subscribeDurableRoute(
     (event: AgentEvent): SubscriberResult => {
-      if (event.type !== "app.task.retry.requested" && event.type !== "app.task.cancel.requested") return;
+      if (
+        event.type !== "app.task.retry.requested" &&
+        event.type !== "app.task.cancel.requested" &&
+        event.type !== "app.task.close.requested"
+      ) return;
       const data = eventData(event);
       const appId = typeof data.appId === "string" ? data.appId.trim() : "";
       const taskId = typeof data.taskId === "string" ? data.taskId.trim() : "";
@@ -66,8 +89,19 @@ export function attachTaskControlEventRoute(
       if (event.type === "app.task.retry.requested") access.retryTask({ ...exact, controlKey });
       else {
         const reason = typeof data.reason === "string" ? data.reason.trim() : "";
-        if (!reason) throw new Error("app.task.cancel.requested reason must be a non-empty string");
-        access.cancelTask({ ...exact, reason, controlKey });
+        if (!reason) throw new Error(`${event.type} reason must be a non-empty string`);
+        if (event.type === "app.task.close.requested") {
+          const afterResult = typeof data.afterResult === "string" ? data.afterResult.trim() : "";
+          if (!afterResult) throw new Error("app.task.close.requested afterResult must be a non-empty attempt ID");
+          access.closeTask({ ...exact, afterResult, reason, controlKey });
+        } else {
+          access.cancelTask({
+            ...exact,
+            reason,
+            controlKey,
+            decision: event.source === "telegram" ? "human" : "app-policy",
+          });
+        }
       }
       return { accepted: true, by: "task-control", route: "direct" };
     },
