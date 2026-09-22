@@ -185,6 +185,106 @@ function factsOf(
 }
 
 describe("Task outcome review", () => {
+  test("publishes process separately from a valid wait and freshness binds inspected tool bytes", async () => {
+    const root = mkdtempSync(join(tmpdir(), "task-review-process-"));
+    let toolOutput =
+      "Repeated the same discovery after the answer was available";
+    let prompt = "";
+    const source = ".state/sessions/s_subject/session.jsonl";
+    const base = reader(() => ({
+      ...detail,
+      status: "waiting",
+      history: [
+        {
+          eventId: 123,
+          eventType: "project.task.reconciled",
+          generation: 1,
+          attemptId: "a1",
+        },
+      ],
+    }));
+    const command: PublicCommand = async (cmd) =>
+      cmd.type === "event.get"
+        ? {
+            command: "event.get",
+            event: {
+              id: 123,
+              type: "project.task.reconciled",
+              data: {
+                project: appId,
+                taskId,
+                generation: 1,
+                attemptId: "a1",
+                workflowRunId: "s_subject",
+              },
+            },
+          }
+        : base(cmd);
+    const sessionRead = async (_id: string, transcript: boolean) =>
+      transcript
+        ? {
+            sessionId: "s_subject",
+            source,
+            messageCount: 1,
+            messages: [
+              {
+                role: "tool_result",
+                rawLine: 4,
+                rawSource: source,
+                toolCallId: "call",
+                content: toolOutput,
+              },
+            ],
+          }
+        : {
+            session: {
+              sessionId: "s_subject",
+              app_id: appId,
+              task_id: taskId,
+              task_generation: 1,
+              attempt_id: "a1",
+              agent: "worker",
+              status: "done",
+            },
+          };
+    const ctx = createTestAppWorkflowContext({
+      input: { appId, taskId, assessmentPurpose: "ongoing" },
+      callAgent: async (_agent, value) => {
+        prompt = String(value);
+        toolOutput = "changed after inspection";
+        return {
+          id: "s_judge",
+          kind: "agent",
+          status: "done",
+          summary: "fixture",
+          output: {
+            ...judgment,
+            summary:
+              "Wait is valid; completed work had avoidable repetition; process scope is bounded.",
+            findings: ["Process: a1/s_subject/4 repeated discovery"],
+          },
+        };
+      },
+    });
+    const result = await reviewTaskOutcome(ctx, command, root, sessionRead);
+    expect(prompt).toContain("Repeated the same discovery");
+    expect(prompt).toContain("(1) current state/wait coherence");
+    expect(prompt).toContain(
+      "it does not invalidate an otherwise supported wait",
+    );
+    const path = factsOf(result)
+      .find((fact) => fact.startsWith("report-facts:"))!
+      .slice(13);
+    const payload = JSON.parse(readFileSync(join(root, path), "utf8"));
+    expect(payload.evidence.detail.status).toBe("waiting");
+    expect(
+      payload.evidence.readBack.process.attempts[0].messages[0].text,
+    ).toContain("Repeated");
+    expect(payload.judgment.findings).toEqual([
+      "Process: a1/s_subject/4 repeated discovery",
+    ]);
+    expect(payload.freshness.status).toBe("stale");
+  });
   test("derives every unresolved review boundary from the production task.get envelope", () => {
     const observedAt = "2026-09-18T12:00:00.000Z";
     const subject = {

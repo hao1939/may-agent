@@ -2,6 +2,10 @@ import { createHash } from "node:crypto";
 import { Socket } from "node:net";
 import { resolve } from "node:path";
 import { readPinnedTaskEvidence } from "./pinned-task-evidence.js";
+import {
+  readTaskProcessEvidence,
+  type SessionRead,
+} from "./task-process-evidence.js";
 
 const ALLOWED_COMMANDS = new Set([
   "apps.list",
@@ -498,6 +502,7 @@ export function unresolvedReviewSubject(
 export async function readSubjectTask(
   subject: { appId: string; taskId: string },
   command: PublicCommand = sendPublicReadCommand,
+  readSession?: SessionRead,
 ): Promise<SubjectEvidence> {
   const appId = text(subject.appId);
   const taskId = text(subject.taskId);
@@ -556,12 +561,15 @@ export async function readSubjectTask(
         taskId,
         task,
       };
-    const readBack = await readPinnedTaskEvidence(
+    const pinned = await readPinnedTaskEvidence(appId, taskId, task, provider);
+    const process = await readTaskProcessEvidence(
       appId,
       taskId,
-      task,
+      detail,
       provider,
+      readSession,
     );
+    const readBack = { ...pinned, process };
     if (creators.length === 0)
       readBack.gaps.push(
         "Optional creator/delegation provenance is unavailable; the owning App is verified, but who initiated this work is unknown.",
