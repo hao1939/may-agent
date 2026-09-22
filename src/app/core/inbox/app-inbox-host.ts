@@ -18,9 +18,9 @@ import {
   type EventSelector,
   type ResourceCreator,
 } from "@may-agent/sdk";
-import { Check, Errors } from "typebox/value";
+import { Check } from "typebox/value";
 import type { SqliteDb } from "../../../lib/db.js";
-import { assertValidAppDefinition, assertValidAppInput } from "../apps/definition-validation.js";
+import { assertValidAppDefinition, assertValidAppInput, assertValidSchemaInput } from "../apps/definition-validation.js";
 import {
   createAppInboxItem,
   getAppInboxItem,
@@ -197,10 +197,7 @@ export class AppInboxHost {
     if (!app) throw new Error(`App ${appId} is not loaded`);
     const action = app.actions?.[actionId];
     if (!action) throw new Error(`App ${normalized} has no action ${actionId}`);
-    if (!Check(action.inputSchema, params)) {
-      const first = [...Errors(action.inputSchema, params)][0];
-      throw new Error(`Invalid input for ${normalized}.${actionId}: ${first?.message ?? "schema mismatch"}`);
-    }
+    assertValidSchemaInput(action.inputSchema, params, `${normalized}.${actionId}`);
     const input = action.toInput(params as never);
     assertValidAppInput(app, input);
     return input;

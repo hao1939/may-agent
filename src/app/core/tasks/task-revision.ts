@@ -1,4 +1,4 @@
-import { Check } from "typebox/value";
+import { assertValidAppInput } from "../apps/definition-validation.js";
 import type { AppDefinition, TaskIntent, TaskRevision } from "@may-agent/sdk";
 import { isDeepStrictEqual } from "node:util";
 import { stateTransaction, inStateTransaction } from "../../../lib/db/transaction.js";
@@ -34,8 +34,8 @@ export function reviseAppTask(input: {
   if (actor.appId === change.appId && actor.taskId === change.taskId)
     throw new Error("A worker cannot revise its own assignment; return feedback to its creator");
   if (inStateTransaction(db)) throw new Error("Task revision must run outside result settlement");
-  if (!app.task || !Check(app.inputSchema, change.input))
-    throw new Error("Invalid revision input for the responsible App");
+  if (!app.task) throw new Error("The responsible App does not accept Task revisions");
+  assertValidAppInput(app, change.input);
   const authorize = () => {
     const resource = source.resourceStore.readTask(actor.taskId);
     const attempt = source.resourceStore.readAttempt(actor.attemptId);

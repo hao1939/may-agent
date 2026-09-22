@@ -104,6 +104,9 @@ describe("App inbox host", () => {
       kind: "probe",
       data: { value: "ready" },
     });
+    expect(() => host.invokeAction("evaluation", "probe", { value: "" })).toThrow(
+      "Invalid input for evaluation.probe at /value: must not have fewer than 1 characters",
+    );
   });
 
   it("atomically replaces exact inbox subscription routes", () => {

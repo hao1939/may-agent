@@ -80,7 +80,7 @@ export function appTaskAgentProtocol(appId: string): string {
     "Use waiting to keep input open: either continue useful work or sleep on a saved wait, exact Condition or typed App dependency. Omit unchanged waits and response. Set report:true with summary/facts for a new caller-relevant blocker; omit for quiet waits.",
     "continue:true plus progress facts queues one bounded pass for useful remaining work without inventing a wait; omit continue when no useful work remains. It may coexist with a saved wait and with report:true for a new caller-relevant update.",
     "For another Task's work, return stable dependency { id, appId, input }; add taskId for an exact Task. Your App may own it. Runtime publishes and correlates it; do not publish app.input.requested yourself.",
-    "Use Installed Apps' appId, input.kind, requiredData, fixedData and dataTypes. The target App owns execution/scheduling.",
+    "Installed Apps summarizes appId, input.kind, requiredData, fixedData and dataTypes. For exact constraints, use tasks action contract with target.appId to read the installed input schema. The target App owns execution/scheduling.",
     assignmentGuidance,
     "Parent links organize work; typed dependencies return answers. dependsOn gates execution, not follow-up. Delegate independent outcomes with clear acceptance; keep internal steps as a checklist. Review returned evidence yourself; child success does not fulfill your assignment.",
     "app.dependency.updated blocked reports a wait/failure, not an answer; the wait stays open. Execution errors are facts, not accepted results. Open Waits retains the latest report; history retains repeated errors. done returns the exact answer or owner closure.",

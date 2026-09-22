@@ -431,11 +431,28 @@ test("creator, caller freshness and App input validation protect requirements", 
     });
   expect(() => invoke({ ...f.actor, taskId: "sibling", attemptId: sibling.attemptId })).toThrow("recorded creator");
   expect(() => invoke(f.actor, { ...f.change, input: { kind: "invented", data: { source: "beta" } } })).toThrow(
-    "Invalid revision input",
+    "Invalid input for App worker at /kind",
   );
   recordAppTaskTrigger(f.context("creator"), "parent", { type: "human.correction", source: "human", data: {} });
   expect(() => invoke()).toThrow("New caller input");
   expect(f.context("worker").resourceStore.readTask("child")?.metadata.generation).toBe(1);
+});
+
+test("a revision reports its invalid field without changing the assignment, then accepts a correction", () => {
+  const f = fixture();
+  const before = f.context("worker").resourceStore.readTask("child");
+  expect(() =>
+    reviseAppTask({
+      source: f.context("creator"),
+      target: f.context("worker"),
+      app: worker,
+      actor: f.actor,
+      change: { ...f.change, input: { kind: "measure", data: { source: "" } } },
+    }),
+  ).toThrow("Invalid input for App worker at /data/source");
+  expect(f.context("worker").resourceStore.readTask("child")).toEqual(before);
+  f.revise();
+  expect(f.context("worker").resourceStore.readTask("child")?.metadata.generation).toBe(2);
 });
 
 test("a concurrent spec change during mapping cannot be overwritten", () => {
