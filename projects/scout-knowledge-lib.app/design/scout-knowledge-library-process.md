@@ -135,9 +135,13 @@ The boundary is validated with isolated managed-agent trials using the productio
 agent loader, workflow tool, Task reads, reconciler, and settlement path. Trials
 cover review-only reconciliation, fresh input beside existing waits, and a real
 source scan with hosted publication; they must compare retained Conditions and
-workflow facts after settlement. These fixtures do not prove live scheduler or
-external recovery behavior, so activation still requires a current installed
-App read-back and an observed source-Task reconciliation.
+workflow facts after settlement. A correction delivered through ordinary input
+to an existing source Task is considered against its named evidence even when it
+does not justify a fresh scan or code candidate. Retain the accepted owner
+consideration and correlation: a delivery receipt is not proof that future
+reasoning changed or that the reported issue is resolved. These fixtures do not
+prove live scheduler or external recovery behavior, so activation still requires
+a current installed App read-back and an observed source-Task reconciliation.
 
 Every task owner must resolve to a runnable agent. `human` is not a Scout task
 owner. Human notification and task accountability are separate concerns.

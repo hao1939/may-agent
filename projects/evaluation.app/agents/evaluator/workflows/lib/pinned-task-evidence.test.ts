@@ -313,6 +313,73 @@ describe("pinned Task evidence read-back", () => {
     expect(changed.evidenceHash).not.toBe(one.evidenceHash);
   });
 
+  test("retains creator navigation without hashing unrelated creator traffic", async () => {
+    let creatorFact = "conversation:one";
+    const base = publicReader({ complete: true });
+    const command: PublicCommand = async (request) => {
+      const response = await base(request);
+      const task = response.task as Record<string, unknown>;
+      if (request.taskId === "goal/one" && request.type === "app.task.get")
+        task.creator = { appId: "may", taskId: "conversation/one" };
+      if (
+        request.taskId === "conversation/one" &&
+        request.type === "app.task.get"
+      )
+        task.facts = [creatorFact];
+      return response;
+    };
+    const first = await readSubjectTask(
+      { appId: "may", taskId: "goal/one" },
+      command,
+    );
+    creatorFact = "conversation:unrelated-report-consumed";
+    const second = await readSubjectTask(
+      { appId: "may", taskId: "goal/one" },
+      command,
+    );
+    expect(second.evidenceHash).toBe(first.evidenceHash);
+    expect((second.task!.appTask as any).creator).toEqual({
+      appId: "may",
+      taskId: "conversation/one",
+    });
+    expect((second.task!.readBack as any).links).toEqual([]);
+  });
+
+  test("an explicit helper reference still follows the same creator Task as evidence", async () => {
+    let helperFact = "helper:passed";
+    const base = publicReader({
+      helper: { appId: "may", taskId: "conversation/one" },
+    });
+    const command: PublicCommand = async (request) => {
+      const response = await base(request);
+      const task = response.task as Record<string, unknown>;
+      if (request.taskId === "goal/one" && request.type === "app.task.get")
+        task.creator = { appId: "may", taskId: "conversation/one" };
+      if (
+        request.taskId === "conversation/one" &&
+        request.type === "app.task.get"
+      )
+        task.facts = [helperFact];
+      return response;
+    };
+    const first = await readSubjectTask(
+      { appId: "may", taskId: "goal/one" },
+      command,
+    );
+    expect((first.task!.readBack as any).links[0]).toMatchObject({
+      appId: "may",
+      taskId: "conversation/one",
+      status: "read",
+      appTask: { facts: [helperFact] },
+    });
+    helperFact = "helper:failed";
+    const changed = await readSubjectTask(
+      { appId: "may", taskId: "goal/one" },
+      command,
+    );
+    expect(changed.evidenceHash).not.toBe(first.evidenceHash);
+  });
+
   test("excludes Evaluation links and records exhausted reference navigation", async () => {
     let calls = 0;
     const bundle = await readPinnedTaskEvidence(

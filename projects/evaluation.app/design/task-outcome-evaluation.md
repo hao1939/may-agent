@@ -47,13 +47,20 @@ owner investigation, not a guessed read or failure verdict.
 Artifact read-back proves the bytes consumed, not the truth of their claims or
 independent recovery. The evaluator judges whether any gap is material to the
 requested outcome; unread required evidence prevents claiming that outcome.
-Read statuses, bytes and linked results are retained in immutable JSON reports
-and participate in the evidence fingerprint, including the pre-publication
-recheck. Newly readable evidence can therefore be reviewed without changing the
-Task generation. The new `readBack.version` changes identity once, while the
-existing rubric/path reader continues to read old immutable reports unchanged.
-This costs bounded file/public reads even when an unchanged report is reused;
-that is simpler than a second evidence cache and detects replaced/missing bytes.
+Read statuses, bytes and decision-relevant linked results are retained in
+immutable JSON reports and participate in the evidence fingerprint, including
+the pre-publication recheck. Canonical creator identity and navigation remain in
+the subject `appTask`, but the reader does not recursively fetch that creator's
+mutable Task merely because it is provenance; unrelated creator work therefore
+does not redefine the subject's evidence or consume its linked-read budget.
+Declared dependencies and exact helper/result references remain evidence links.
+If the creator Task is also cited by one of those independent references, it is
+followed normally; only the known Host provenance occurrence is skipped, not
+creator-named objects inside arbitrary domain results. Newly readable evidence
+can therefore be reviewed without changing the Task generation. Existing
+immutable reports and legacy reads remain unchanged. This costs bounded
+file/public reads even when an unchanged report is reused; that is simpler than
+a second evidence cache and detects replaced/missing bytes.
 
 Evaluation-owned subjects are excluded. Matching public App/Task identities establish the owning App; optional creator provenance identifies who initiated work, not who owns it. Creator-less historical/recurring Tasks remain readable without inventing a creator. Their missing creator/delegation provenance is retained in `readBack.gaps` for semantic judgment: eligibility to read is not proof of independent initiation, success, or healthy coverage. A Task created by Evaluation in another App is conservatively inconclusive when public provenance cannot distinguish reviewer delegation from independently owned remediation. A later Task owned and created by the external App remains eligible even when an Evaluation finding motivated it.
 
@@ -61,7 +68,7 @@ Evaluation-owned subjects are excluded. Matching public App/Task identities esta
 
 Code owns catalog and Task identity checks, evidence binding, exclusion, stable hashing, pre-model reuse, post-model freshness recheck, immutable file naming, read-back, and event identity. The evaluator judges requested value, delegation, follow-up, recovery, verification, and delivery. Missing evidence is stated rather than scored as failure.
 
-An unchanged accepted evidence hash reuses the existing report only after canonical report paths and on-disk subject identity are verified. A staged report may be republished after a publication failure without another model call. If the source changes while judgment runs, Evaluation retains and publishes the judgment against the immutable inspected snapshot, with snapshot identity and the later freshness check recorded separately. It never relabels that report as current. Report listing and exact reads continue to expose the historical judgment; May intake classifies current versus stale and returns stale reports with current evidence for explicit relevance and value judgment. A historical report cannot by itself authorize action or certify present health, but later subject progress does not erase its scoped judgment or invalidate independently authorized candidate, approval, application, or activation work. Explicit post-adoption review carries the subject generation and evidence hash in both its input and deterministic Task identity. Generation or evidence drift before model judgment remains `insufficient-evidence`; drift during judgment preserves the already-paid-for historical assessment without turning it into a present-tense health claim.
+An unchanged accepted evidence hash reuses the existing report only after canonical report paths and on-disk subject identity are verified. A staged report may be republished after a publication failure without another model call. A reviewer execution that does not return a schema-valid judgment remains an unfinished workflow result, preserving its exact execution and allowance facts; it is not converted into a successful `evaluator-failed` disposition. Ordinary Task recovery retries the same review, and the already consumed semantic allowance may truthfully defer that retry to its normal boundary. By contrast, schema-valid adverse and `insufficient-evidence` judgments are successful assessments and still publish normally. If the source changes while judgment runs, Evaluation retains and publishes the judgment against the immutable inspected snapshot, with snapshot identity and the later freshness check recorded separately. It never relabels that report as current. Report listing and exact reads continue to expose the historical judgment; May intake classifies current versus stale and returns stale reports with current evidence for explicit relevance and value judgment. A historical report cannot by itself authorize action or certify present health, but later subject progress does not erase its scoped judgment or invalidate independently authorized candidate, approval, application, or activation work. Explicit post-adoption review carries the subject generation and evidence hash in both its input and deterministic Task identity. Generation or evidence drift before model judgment remains `insufficient-evidence`; drift during judgment preserves the already-paid-for historical assessment without turning it into a present-tense health claim.
 
 ### Review-request identity and retained collision recovery
 

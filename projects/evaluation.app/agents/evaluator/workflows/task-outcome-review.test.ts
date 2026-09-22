@@ -598,6 +598,39 @@ describe("Task outcome review", () => {
     expect(factsOf(result)).toContain("observed-model:unknown:not-recorded");
   });
 
+  test("keeps a failed reviewer execution unfinished and defers retry to the existing allowance boundary", async () => {
+    const root = mkdtempSync(join(tmpdir(), "task-review-execution-failure-"));
+    let calls = 0;
+    const ctx = createTestAppWorkflowContext({
+      input: { appId, taskId },
+      callAgent: async () => {
+        calls += 1;
+        return {
+          id: "s_empty_turn",
+          kind: "agent",
+          status: "error",
+          summary: "provider returned no assistant output",
+        };
+      },
+    });
+
+    const failed = await reviewTaskOutcome(ctx, reader(), root);
+    expect(failed.status).toBe("done");
+    expect(failed.output).toMatchObject({ state: "incomplete", report: true });
+    expect(failed.summary).toContain("remains unfinished");
+    expect(factsOf(failed)).toContain("review-disposition:evaluator-failed");
+    expect(factsOf(failed)).toContain("execution:s_empty_turn");
+
+    const deferred = await reviewTaskOutcome(ctx, reader(), root);
+    expect(deferred.status).toBe("done");
+    expect(deferred.output).toMatchObject({
+      state: "waiting",
+      result: { disposition: "budget-deferred" },
+    });
+    expect(calls).toBe(1);
+    expect(listTaskReports(root)).toEqual([]);
+  });
+
   test("passes consumed artifact bytes and gaps to the evaluator and preserves them in the immutable report", async () => {
     const root = mkdtempSync(join(tmpdir(), "task-review-artifact-"));
     const store = new EvidenceStore(join(root, "evidence"));

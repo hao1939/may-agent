@@ -638,14 +638,27 @@ export async function reviewTaskOutcome(
     { schema: resultSchema },
   );
   if (execution.status !== "done") {
-    const summary = `evaluator-failed: ${execution.id} ended ${execution.status}`;
-    return done(ctx, summary, [
-      "review-disposition:evaluator-failed",
-      `reviewer:${profile.reviewer}`,
-      `configured-model:${profile.configuredModel}`,
-      `subject:${appId}/${taskId}`,
-      `execution:${execution.id}`,
-    ]);
+    const summary = `Evaluator execution ${execution.id} ended ${execution.status}; this exact review remains unfinished.`;
+    return ctx.done(summary, {
+      state: "incomplete",
+      report: true,
+      summary,
+      response: summary,
+      facts: [
+        "review-disposition:evaluator-failed",
+        `reviewer:${profile.reviewer}`,
+        `configured-model:${profile.configuredModel}`,
+        `subject:${appId}/${taskId}`,
+        `subject-generation:${actualGeneration}`,
+        `evidence-hash:${subject.evidenceHash}`,
+        `assessment-purpose:${assessment.purpose}`,
+        `allowance-slot:${allowance.slot}`,
+        `allowance-limit:${allowance.limit}`,
+        `next-eligible-at:${allowance.nextEligibleAt}`,
+        `execution:${execution.id}`,
+      ],
+      actions: [],
+    });
   }
   const judgment = parsedJudgment(execution.output);
   if (!judgment)

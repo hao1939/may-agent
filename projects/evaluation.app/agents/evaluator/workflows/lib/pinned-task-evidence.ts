@@ -214,7 +214,19 @@ export async function readPinnedTaskEvidence(
       } else gaps.add(`unpinned path not read: ${item.path}`);
     }
     // Exact structured cross-App helper references; no guesses from session IDs.
-    if (typeof item.appId === "string" && typeof item.taskId === "string")
+    // The canonical creator object remains in the subject snapshot as provenance,
+    // but its mutable Task is not itself outcome evidence. Do not mark it visited:
+    // the same identity must still be followed if a result/dependency cites it.
+    const creatorProvenance =
+      source === "subject.appTask.creator" ||
+      source.startsWith("subject.appTask.creator.") ||
+      source === "subject.detail.creator" ||
+      source.startsWith("subject.detail.creator.");
+    if (
+      !creatorProvenance &&
+      typeof item.appId === "string" &&
+      typeof item.taskId === "string"
+    )
       enqueueTask(item.appId, item.taskId);
     for (const [key, child] of Object.entries(value)) {
       if (child && typeof child === "object")
