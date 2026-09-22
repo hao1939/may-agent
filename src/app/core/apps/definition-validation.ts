@@ -277,22 +277,19 @@ export function assertValidSchemaInput(
   diagnosticPath?: string,
 ): void {
   if (Check(schema, input)) return;
-  // Keep the complete schema as the reference scope; select only diagnostics,
-  // never a detached branch that may lose root constraints or $defs.
-  const allErrors = [...Errors(schema, input)];
+  // Spend TypeBox's bounded error budget on the selected kind. Its public
+  // reference context keeps the complete root/$defs available to that branch.
   const selectedErrors = diagnosticPath
-    ? allErrors.filter(
-        (error) => error.schemaPath === diagnosticPath || error.schemaPath.startsWith(`${diagnosticPath}/`),
-      )
-    : allErrors;
-  const errors = selectedErrors.length ? selectedErrors : allErrors;
+    ? Errors({ "urn:may:app-input": schema }, { $ref: `urn:may:app-input${diagnosticPath}` } as TSchema, input)
+    : [];
+  const errors = selectedErrors.length ? selectedErrors : Errors(schema, input);
   const first = errors[0];
   const related = errors.filter((error) => error.instancePath === first?.instancePath);
   const reasons = related
     .slice(0, 8)
     .map((error) => `${error.message}${Object.keys(error.params).length ? ` ${JSON.stringify(error.params)}` : ""}`);
   const detail = [...new Set(reasons)].join("; ") || "schema mismatch";
-  const truncated = related.length > 8 || detail.length > 1600;
+  const truncated = errors.length >= 8 || detail.length > 1600;
   throw new Error(
     `Invalid input for ${subject} at ${first?.instancePath || "/"}: ${detail.slice(0, 1600)}${truncated ? " [diagnostics truncated; inspect the input contract]" : ""}`,
   );

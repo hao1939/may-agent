@@ -97,6 +97,9 @@ describe("App input validation", () => {
       ...definition,
       inputSchema: {
         ...Type.Union([
+          ...Array.from({ length: 10 }, (_, index) => Type.Object({
+            kind: Type.Literal(`irrelevant-${index}`), data: Type.Object({ required: Type.String() }),
+          })),
           Type.Object({ kind: Type.Literal("other"), data: Type.String() }),
           Type.Object({ kind: Type.Literal("inspect"), data: Type.Unsafe({ $ref: "#/$defs/choice" }) }),
         ]),
