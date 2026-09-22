@@ -1,6 +1,6 @@
 <ai_context>
-Summary: The Verification Commons Collapse — structural failure of contribution-accepting institutions (OSS repos, package registries, skill marketplaces) when generation volume exceeds verification bandwidth. Commons collapses because verification is finite, non-scalable, and nobody replenishes it. Three-layer response: rate limiting → semantic verification → institutional redesign. Critical: automated verification (test-presence checks) creates false confidence (80.2% of agent tests lack oracle signals). Tragedy of the verification commons = every agent PR consumes reviewer attention, none replenishes it.
-Triggers: verification commons, contribution governance, PR spam, package flooding, admission control, registry quality, open source sustainability, institutional collapse, oracle signals, effort signal collapse consequences
+Summary: The Verification Commons Collapse — structural failure of contribution-accepting institutions (OSS repos, package registries, skill marketplaces) when generation volume exceeds verification bandwidth or agent-mediated use bypasses the feedback channels that sustain maintainers. Commons collapses because verification is finite, non-scalable, and consumers or contributors do not replenish it. Three-layer response: rate limiting → semantic verification → institutional redesign. Critical: automated verification (test-presence checks) creates false confidence (80.2% of agent tests lack oracle signals). Tragedy of the verification commons = every agent PR consumes reviewer attention, while invisible reuse may return neither attribution nor fixes.
+Triggers: verification commons, contribution governance, PR spam, package flooding, admission control, registry quality, open source sustainability, invisible reuse, maintainer feedback, institutional collapse, oracle signals, effort signal collapse consequences
 </ai_context>
 
 # The Verification Commons Collapse
@@ -134,6 +134,44 @@ Source: https://news.ycombinator.com/item?id=49671159
 Source: https://tedium.co/2026/09/11/ilands-agents-email-spam-kaixin-tang/
 
 Source: https://ilands.ai
+
+### September 2026 update — usage can rise while maintainer feedback collapses
+
+A maintainer essay on HN argues that agent-generated substitutes can bypass package
+installation and therefore erase the already-thin visible rewards of maintenance:
+downloads, stars, attribution, and direct user feedback. The author's own example is a
+small Laravel package with about 24,000 installs and 281 GitHub stars as of September 21,
+2026. That figure is self-reported and predates the claimed agent effect, so it is best
+read as evidence that the feedback channel was weak already—not as a measurement of an
+AI-caused decline.
+
+The sharper systems implication is a **demand-side verification commons problem**. An
+agent can increase the use of patterns learned from public code while reducing visible
+traffic to the package and returning neither bug reports nor fixes. Public packages,
+tests, issue discussions, and rejected designs still function as a maintained reference
+corpus against which generated replacements can be learned, compared, and debugged, but
+the consumer may never cross the repository boundary where usage becomes observable or
+reciprocal. Agent-mediated use and commons health can therefore move in opposite
+directions.
+
+The retrieved 47-comment HN snapshot did not settle whether this is happening at scale.
+It supplied competing anecdotes: one developer used an agent to customize the open-source
+Frigate camera system without yet contributing back; others argued that mature packages
+remain cheaper and more trustworthy than generated replacements; another commenter
+predicted a glut of narrow, low-star alternatives. Several commenters also disputed the
+essay's premise and authorship style. Treat this as a mechanism and an early community
+signal, not adoption or ecosystem-wide causal evidence.
+
+A practical measurement consequence follows: package downloads and repository stars are
+no longer sufficient demand indicators. Maintainer-health monitoring should pair them
+with contribution-side burden and quality measures, while agent builders should retain
+provenance to upstream reference projects and offer a path for discovered edge cases or
+patches to flow back. That does not solve maintainer funding, but it makes otherwise
+invisible dependence and feedback loss measurable.
+
+Source: https://news.ycombinator.com/item?id=49799910
+
+Source: https://albertoarena.it/posts/will-open-source-survive-the-agents-that-replaced-it/
 
 ---
 
