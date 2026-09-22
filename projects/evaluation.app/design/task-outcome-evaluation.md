@@ -85,6 +85,13 @@ only from the request, never from mutable current target state. Exact replay
 therefore retains one Task and complete requirements, while any changed target,
 purpose or pin selects different work.
 
+`subjectGeneration`, when present, is a positive safe integer in both the App
+input and the `review-task-outcome` action input. Both declarations reuse one
+schema field, matching the Task mapper's retained identity: omission remains a
+valid unpinned review, while zero, fractional, and unsafe numeric values are
+rejected at admission instead of being accepted and silently omitted from the
+review identity.
+
 The explicit `v2` namespace is the bounded upgrade for the retained historical
 collision where a valid generation-only ongoing review occupied the old unpinned
 identity. Normal inbox recovery remaps still-pending unpinned inputs to the new

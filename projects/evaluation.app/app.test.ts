@@ -3,6 +3,7 @@ import { existsSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { Database } from "bun:sqlite";
+import { Check } from "typebox/value";
 import {
   matchesEventSelector,
   type AppEvent,
@@ -117,6 +118,38 @@ describe("canonical evaluation App", () => {
     expect(app).not.toHaveProperty("onEvent");
     expect(app).not.toHaveProperty("budget");
     expect(existsSync(new URL("./inbox.ts", import.meta.url))).toBe(false);
+  });
+
+  test("keeps subject generation a positive safe integer across App and action admission", () => {
+    const actionSchema = app.actions?.["review-task-outcome"]?.inputSchema;
+    expect(actionSchema).toBeDefined();
+
+    const appInput = (subjectGeneration?: number) => ({
+      kind: "review-task-outcome",
+      data: {
+        appId: "may",
+        taskId: "goal/example",
+        ...(subjectGeneration === undefined ? {} : { subjectGeneration }),
+      },
+    });
+    const actionInput = (subjectGeneration?: number) => ({
+      appId: "may",
+      taskId: "goal/example",
+      ...(subjectGeneration === undefined ? {} : { subjectGeneration }),
+    });
+
+    expect(Check(app.inputSchema, appInput())).toBeTrue();
+    expect(Check(actionSchema!, actionInput())).toBeTrue();
+    expect(Check(app.inputSchema, appInput(1))).toBeTrue();
+    expect(Check(actionSchema!, actionInput(1))).toBeTrue();
+    expect(taskIntentForInput(appInput(1))).toMatchObject({
+      input: { subjectGeneration: 1 },
+    });
+
+    for (const invalid of [0, 1.5, Number.MAX_SAFE_INTEGER + 1]) {
+      expect(Check(app.inputSchema, appInput(invalid))).toBeFalse();
+      expect(Check(actionSchema!, actionInput(invalid))).toBeFalse();
+    }
   });
 
   test("keeps canonical App-input actions without a legacy project-review alias", () => {

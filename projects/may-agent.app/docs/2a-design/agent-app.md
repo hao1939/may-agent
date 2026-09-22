@@ -241,9 +241,24 @@ must reject inputs they cannot interpret rather than silently choosing unrelated
 work. Shape validity does not prove semantic sufficiency. There is no separate
 model admission service: the ordinary agent attempt reads available required
 context, checks whether the assignment is actionable, and does justified work.
-Addressed input and conversational handoffs use the same schema check. A rejected
-input identifies the App and invalid field; for a literal-kind union, diagnostics
-prefer the selected kind's branch. Validation still checks the complete schema.
+Addressed input, conversational handoffs, typed dependencies, and creator
+revisions use the same full App-schema validation boundary after their distinct
+availability, authority, freshness, and correlation checks. A rejected input
+identifies the App and invalid field and includes a bounded useful expected value
+or constraint when the selected schema branch provides one; for a literal-kind
+union, diagnostics prefer the selected kind's branch without weakening complete
+schema validation.
+
+The installed-App catalog remains a compact routing overview: required fields
+and coarse data types help select an input kind but are not a second contract
+language and cannot encode every conditional, enum, length, or numeric constraint.
+When exact construction or diagnosis needs those details, the existing `tasks`
+inspection surface returns the complete loaded App input schema with
+`tasks({ action: "contract", target: { appId } })`; omitting `target` selects the
+current App. The result is `{ appId, inputSchema }`, preserving root constraints
+and references without branch extraction. Callers inspect that authoritative
+schema rather than growing `dataTypes`, guessing from a rejection, or treating
+an App action schema as a universal substitute for the App input contract.
 
 If material information is missing, the worker returns the exact gap, what it
 checked, useful partial work and the smallest clarification needed to its

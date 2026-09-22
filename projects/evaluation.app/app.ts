@@ -13,6 +13,10 @@ import {
 
 const projectId = "evaluation";
 const evaluationExecutor = "codex-goal";
+const subjectGenerationSchema = Type.Integer({
+  minimum: 1,
+  maximum: Number.MAX_SAFE_INTEGER,
+});
 export const AFTERMATH_COVERAGE_METRIC_ID =
   "evaluator.aftermath-coverage-rate-3h";
 export const LLM_COVERAGE_LAG_METRIC_ID = "eval.llm-coverage-lag-h";
@@ -397,7 +401,7 @@ const evaluationInputSchema = Type.Union([
         {
           appId: Type.String({ minLength: 1 }),
           taskId: Type.String({ minLength: 1 }),
-          subjectGeneration: Type.Optional(Type.Number({ minimum: 1 })),
+          subjectGeneration: Type.Optional(subjectGenerationSchema),
           evidenceHash: Type.Optional(
             Type.String({ minLength: 64, maxLength: 64 }),
           ),
@@ -1318,7 +1322,7 @@ const baseApp = defineApp({
         {
           appId: Type.String({ minLength: 1 }),
           taskId: Type.String({ minLength: 1 }),
-          subjectGeneration: Type.Optional(Type.Number({ minimum: 1 })),
+          subjectGeneration: Type.Optional(subjectGenerationSchema),
           evidenceHash: Type.Optional(
             Type.String({ minLength: 64, maxLength: 64 }),
           ),
