@@ -1,8 +1,8 @@
 <ai_context>
-summary: "Reusable verification and verdict-integrity patterns: frozen session inputs with snapshot-bound but intentionally limited checks, typed lifecycle evidence for unattended agent runs, multi-plane completion proofs, behavior-derived tests challenged by mutation negatives, evidence bound to the verified subject, explicit receipt coverage and valid anomalies, claim-level platform enforcement evidence, negative controls for the verdict path, state-based effect grading with honest and adversarial oracle controls, freshness binding for replayed traces, evaluator immutability across repair, proof of the inspected universe behind a clean sweep, cross-artifact conformance for executable governance, phase-aware calibration of probabilistic rule checks, and separation of reviewer diversity from verdict transport."
-triggers: ["verification subject binding", "captured inputs", "session snapshot", "postconditions", "CLAMP", "NickCamacho15/clamp", "Brigade", "receipt coverage", "not_checked", "invocation_ref", "ASQAV", "claim-level platform evidence", "RTQ", "sandbox enforcement", "construction-only test", "meta-verification", "false-green verifier", "negative control", "ProjectGuard", "state-based grading", "reward hacking", "Compound Evals", "kyisaiah47/compound-evals", "trace freshness", "recorded trace", "skilldiff", "agent skill regression", "frozen tests", "test identity", "failure fingerprint", "RepoPilot", "post-merge outcome", "evaluation identity", "independent runner", "inspected universe", "compared-nothing-reported-clean", "cross-artifact conformance", "decision table", "DMN", "OutTheBox", "probabilistic rule check", "phase-specific precision", "Abide", "event-backed write", "Dream Studio", "reviewer diversity", "cross-provider review", "verdict transport", "portable DSH", "unattended agent run", "fresh branch", "missing upstream", "launch failure", "lifecycle receipt", "CodeMidas", "GameLogicBench", "behavior-derived test", "mutant validation", "tick-level assertion", "multi-plane completion proof", "capture coverage", "world-state verification", "minecraft-agent"]
-last_updated: "2026-09-21"
-source_basis: "Extracted intact from agent-runtime-effect-integrity.md during its 2026-09-14 oversized-note review. Sources are pinned revisions of Brigade, ASQAV, ProjectGuard, skilldiff, RepoPilot, Dream Studio, OutTheBox, Abide, Compound Evals, Portable DSH, RTQ, rmalde/minecraft-agent, and NickCamacho15/clamp; reproduced checks and static-inspection limits remain stated in each section. Also includes HN 49782797 and Alkis Yuvanelis's complete linked incident essay, whose published minimal shell reproduction Scout reran for a missing child and a successful immediate no-op, plus abstract-level arXiv evidence from CodeMidas and GameLogicBench on behavior-derived tests and mutant validation. Acceptance authority, actor-bound review, release reconciliation, and audit normalization moved intact to agent-runtime-acceptance-and-reconciliation.md during the 2026-09-21 oversized-note review."
+summary: "Reusable verification and verdict-integrity patterns: protected separation of review, diagnostic validation, and official measurement; frozen session inputs with snapshot-bound but intentionally limited checks; typed lifecycle evidence for unattended agent runs; multi-plane completion proofs; behavior-derived tests challenged by mutation negatives; evidence bound to the verified subject; explicit receipt coverage and valid anomalies; claim-level platform enforcement evidence; negative controls for the verdict path; state-based effect grading with honest and adversarial oracle controls; freshness binding for replayed traces; evaluator immutability across repair; proof of the inspected universe behind a clean sweep; cross-artifact conformance for executable governance; phase-aware calibration of probabilistic rule checks; and separation of reviewer diversity from verdict transport."
+triggers: ["verification subject binding", "captured inputs", "session snapshot", "postconditions", "CLAMP", "NickCamacho15/clamp", "Brigade", "receipt coverage", "not_checked", "invocation_ref", "ASQAV", "claim-level platform evidence", "RTQ", "sandbox enforcement", "construction-only test", "meta-verification", "false-green verifier", "negative control", "ProjectGuard", "state-based grading", "reward hacking", "Compound Evals", "kyisaiah47/compound-evals", "trace freshness", "recorded trace", "skilldiff", "agent skill regression", "frozen tests", "test identity", "failure fingerprint", "RepoPilot", "post-merge outcome", "evaluation identity", "independent runner", "inspected universe", "compared-nothing-reported-clean", "cross-artifact conformance", "decision table", "DMN", "OutTheBox", "probabilistic rule check", "phase-specific precision", "Abide", "event-backed write", "Dream Studio", "reviewer diversity", "cross-provider review", "verdict transport", "portable DSH", "unattended agent run", "fresh branch", "missing upstream", "launch failure", "lifecycle receipt", "CodeMidas", "GameLogicBench", "behavior-derived test", "mutant validation", "tick-level assertion", "multi-plane completion proof", "capture coverage", "world-state verification", "minecraft-agent", "VibeSys", "uw-syfi/vibesys", "protected measurement plane", "official evaluation", "judge-audited validation recipe"]
+last_updated: "2026-09-22"
+source_basis: "Extracted intact from agent-runtime-effect-integrity.md during its 2026-09-14 oversized-note review. Sources are pinned revisions of Brigade, ASQAV, ProjectGuard, skilldiff, RepoPilot, Dream Studio, OutTheBox, Abide, Compound Evals, Portable DSH, RTQ, rmalde/minecraft-agent, NickCamacho15/clamp, and uw-syfi/vibesys; reproduced checks and static-inspection limits remain stated in each section. Also includes HN 49782797 and Alkis Yuvanelis's complete linked incident essay, whose published minimal shell reproduction Scout reran for a missing child and a successful immediate no-op, plus abstract-level arXiv evidence from CodeMidas and GameLogicBench on behavior-derived tests and mutant validation. Acceptance authority, actor-bound review, release reconciliation, and audit normalization moved intact to agent-runtime-acceptance-and-reconciliation.md during the 2026-09-21 oversized-note review."
 </ai_context>
 
 # Agent Runtime Verdict Integrity
@@ -17,6 +17,57 @@ whether the verifier inspected the intended universe, whether parallel policy
 artifacts still encode the same contract, whether a platform matrix exercised
 construction or real enforcement, and whether reviewer diversity survives verdict
 transport.
+
+## Separate Review, Diagnostic Validation, and Official Measurement — VibeSys (GitHub, September 2026)
+
+VibeSys implements a useful three-stage boundary for benchmark-driven coding
+agents. A fresh, read-only judge reviews the candidate, activation evidence,
+invariants, and reward-hacking risks, but does not run the canonical accuracy or
+benchmark commands. It may instead approve bounded local validation recipes. Only
+after a judge PASS does the framework execute those recipes; they must be
+non-mutating, are cached by a digest of their determining inputs, and fail if they
+write to the workspace. Any write triggers restoration to the pre-validation Git
+checkpoint. Official accuracy and benchmark gates remain a separate
+framework-owned stage, run on cadence or when a nominated/final candidate requires
+them.
+
+That separation avoids giving one model verdict more authority than it can support.
+The judge can reject an invalid causal claim or suspicious operating point without
+manufacturing an official score. A local recipe can cheaply test a hypothesis
+without becoming a substitute for target deployment or the canonical evaluator.
+The official gate, rather than an agent, owns the final command and result. The
+round state also distinguishes a deferred review from a pass: a later unreviewed
+retry does not inherit an earlier attempt's judge PASS.
+
+The measurement plane is protected at two layers. Project policy mounts task inputs,
+evaluator code, `.git`, and `.vibesys` read-only under the stronger sandbox backends.
+Independently, the accuracy gate compares trusted input paths with a recorded Git
+baseline before execution and checks them again afterward; a change prevents or
+invalidates the gate. This second check matters because the documented opt-in
+Landlock fallback cannot enforce nested read-only paths inside a writable project.
+In other words, confinement and evaluator integrity are independent controls rather
+than one optimistic sandbox claim.
+
+**Runtime rule:** type evidence by authority and cost. Let a read-only reviewer audit
+the candidate and nominate bounded diagnostics; have the framework execute those
+diagnostics against content-bound inputs; reserve canonical acceptance and
+performance measurements for protected evaluator-owned gates. Never let a reviewer
+run or reinterpret the official benchmark, never promote a targeted diagnostic into
+an official score, and recheck evaluator identity both before and after execution.
+A stale verdict must not flow across a changed candidate merely because it occurred
+in the same round or retry sequence.
+
+This is static inspection of the pinned implementation, documentation, and selected
+repository-authored tests. The complete recursive tree contained 2,348 entries and
+was not truncated. Scout did not install VibeSys, run its test suite, launch an agent,
+or reproduce a benchmark; the controls above are implementation and test-design
+evidence, not proof that every backend enforces them correctly in production. The
+repository's paper and performance results were not assessed in this scan.
+
+- **Repo:** https://github.com/uw-syfi/vibesys
+- **Inspected revision:** [`699354085e8ef50c5066d03d01543b6b54105683`](https://github.com/uw-syfi/vibesys/commit/699354085e8ef50c5066d03d01543b6b54105683)
+- **Primary sources:** [agent loop and judge boundary](https://github.com/uw-syfi/vibesys/blob/699354085e8ef50c5066d03d01543b6b54105683/src/vibesys/loops/agent/loop.py), [framework-owned gates](https://github.com/uw-syfi/vibesys/blob/699354085e8ef50c5066d03d01543b6b54105683/src/vibesys/loops/gates.py), [trusted project-path policy](https://github.com/uw-syfi/vibesys/blob/699354085e8ef50c5066d03d01543b6b54105683/src/vibesys/run/project_policy.py), [CLI integrity and cadence contract](https://github.com/uw-syfi/vibesys/blob/699354085e8ef50c5066d03d01543b6b54105683/docs/cli-flags.md), and [orchestration tests](https://github.com/uw-syfi/vibesys/blob/699354085e8ef50c5066d03d01543b6b54105683/tests/vibesys/loops/agent/test_orchestrate.py)
+- **Discovery query:** GitHub Repository Search API `"AI agent" in:name,description,readme pushed:>=2026-09-22`, sorted by updated; `total_count: 14774`, `incomplete_results: false`
 
 ## Freeze Session Inputs, but Keep Freshness and Sufficiency Explicit — CLAMP (GitHub, September 2026)
 
