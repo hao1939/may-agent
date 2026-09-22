@@ -2,7 +2,7 @@
 summary: "Entry point for Scout's project-owned knowledge library. Use this before creating or updating Scout-local knowledge notes."
 triggers: ["scout knowledge", "agent architecture research", "multi-agent trends", "XHS trends", "knowledge library maintenance"]
 last_updated: "2026-09-21"
-source_basis: "Maintained index of Scout canonical notes, companion notes, findings, and durable reports. Current navigation includes source-grounded finding batches through 2026-09-20 and the §37–§40 Agent Evaluation Research: Diagnostic Layers companion without duplicating the full index. Runtime task, credential, backlog, and health status belongs in the project UI or dated reports."
+source_basis: "Maintained index of Scout canonical notes, companion notes, findings, and durable reports. Current navigation includes source-grounded finding batches through 2026-09-21 and the §37–§40 Agent Evaluation Research: Diagnostic Layers companion without duplicating the full index. Runtime task, credential, backlog, and health status belongs in the project UI or dated reports."
 findings_date_convention: "Use the actual observation date in YYYY-MM-DD filenames; never create a future-dated finding."
 </ai_context>
 
@@ -69,6 +69,16 @@ Migration and project-operation artifacts live outside `knowledge/`:
 - [Hermes Agent and OpenClaw comparative investigation (2026-09-02)](../reports/research/hermes-agent-openclaw-comparative-investigation-2026-09-02.md) — UTC-dated pinned-source architecture, memory, skill-learning, authority, recovery, issue, and cost comparison; reconciles all 28 existing matching leads and records bounded reproduction limits.
 
 ## Recent Source-Grounded Findings
+
+### 2026-09-21
+
+- [Cheap agent implementation can fund independent audit instruments](./findings/2026-09-21-agent-built-audit-tooling-formal-proof.md) — Trail of Bits reports rerunnable analyzers and formal models from a Miden audit; outcomes and proof-model fidelity were not independently reproduced.
+- [Agent-driven test growth makes CI a capacity-control problem](./findings/2026-09-21-agent-driven-ci-capacity.md) — Linear's first-party measurements motivate separating verdict latency from runner consumption and making weaker-isolation fast paths explicit.
+- [Agent tool controls need separate execution and disclosure gates](./findings/2026-09-21-agent-runtime-two-gate-enforcement.md) — a pinned demo uses single-use correlation across request and result gates; its local suite passed, but distributed mediation and realistic exfiltration resistance remain unproved.
+- [An architecture change set needs a closed evidence loop](./findings/2026-09-21-architecture-change-set-evidence.md) — Viaduct pins model context and criterion IDs, while its public documentation leaves commit, test, ancestry, and architecture-reconciliation verification external.
+- [Digital shadows must preserve observation provenance](./findings/2026-09-21-digital-shadow-observation-provenance.md) — static ROSClaw inspection separates simulated calibration evidence from physically observed authority; tests and hardware behavior were not executed.
+- [Laya versus TypeSafe Jev](./findings/2026-09-21-laya-jev-assessment.md) — a pinned local Laya trial verifies typed-decision mechanics, while current speed claims are non-comparable and Jev was not invoked without credentials.
+- [OS automation can become an agent permission broker—and a confused deputy](./findings/2026-09-21-macos-shortcuts-permission-broker.md) — static inspection shows why recipe-level effect controls and output tainting are needed beyond a server-wide read-only label.
 
 ### 2026-09-20
 
