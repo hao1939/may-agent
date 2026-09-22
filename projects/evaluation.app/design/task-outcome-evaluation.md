@@ -70,6 +70,15 @@ Code owns catalog and Task identity checks, evidence binding, exclusion, stable 
 
 An unchanged accepted evidence hash reuses the existing report only after canonical report paths and on-disk subject identity are verified. A staged report may be republished after a publication failure without another model call. A reviewer execution that does not return a schema-valid judgment remains an unfinished workflow result, preserving its exact execution and allowance facts; it is not converted into a successful `evaluator-failed` disposition. Ordinary Task recovery retries the same review, and the already consumed semantic allowance may truthfully defer that retry to its normal boundary. By contrast, schema-valid adverse and `insufficient-evidence` judgments are successful assessments and still publish normally. If the source changes while judgment runs, Evaluation retains and publishes the judgment against the immutable inspected snapshot, with snapshot identity and the later freshness check recorded separately. It never relabels that report as current. Report listing and exact reads continue to expose the historical judgment; May intake classifies current versus stale and returns stale reports with current evidence for explicit relevance and value judgment. A historical report cannot by itself authorize action or certify present health, but later subject progress does not erase its scoped judgment or invalidate independently authorized candidate, approval, application, or activation work. Explicit post-adoption review carries the subject generation and evidence hash in both its input and deterministic Task identity. Generation or evidence drift before model judgment remains `insufficient-evidence`; drift during judgment preserves the already-paid-for historical assessment without turning it into a present-tense health claim.
 
+The unfinished result must pass the same SDK admission as any other Task result:
+return `incomplete` with execution facts and omit new actions, Conditions and
+dependencies. Even an empty `actions` field is outside that existing contract.
+This does not clear previously saved waits or obligations. The failure regression
+checks the workflow output through SDK admission before checking allowance deferral.
+The [deferred-review trial](../../may-agent.app/experiments/recovery-workflow-20260922/BUDGET-RESUME.md)
+records automatic timer, failure, publication and delivery checks separately from
+model judgment quality.
+
 ### Review-request identity and retained collision recovery
 
 A review Task represents the normalized assessment contract, not only the target

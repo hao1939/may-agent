@@ -657,7 +657,6 @@ export async function reviewTaskOutcome(
         `next-eligible-at:${allowance.nextEligibleAt}`,
         `execution:${execution.id}`,
       ],
-      actions: [],
     });
   }
   const judgment = parsedJudgment(execution.output);
