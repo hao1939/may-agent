@@ -355,6 +355,46 @@ Survey paper on "harness engineering" — the emerging discipline of building th
 
 **🔑 Signal:** The sheer volume of agent tooling launches (23+ this week) signals a Cambrian explosion in agent infrastructure. The dominant categories: **security/firewalls** (6 launches), **coding agent harnesses** (5), **observability** (4), **collaboration/workflow** (4), and **memory/knowledge** (3).
 
+#### GitHub follow-up: a spend firewall is a reservation system, not a billing ledger (September 22, 2026)
+
+A current-source follow-up inspected AI CostGuard at pinned revision
+[`b9821e92e70bae08a422c3fe45786532e4862344`](https://github.com/salimassili62-afk/ai-costguard/commit/b9821e92e70bae08a422c3fe45786532e4862344).
+Its useful architecture is a conservative admission boundary around selected
+provider calls. Before dispatch, the guard requires a finite output-token limit,
+rejects unknown model pricing by default, rejects streaming that it cannot safely
+reconcile, and checks whether the new estimate fits the scope's reserved budget.
+An allowed call immediately consumes a reservation. Provider-reported usage is
+recorded later as separate observability data and does not rewrite the earlier
+admission decision.
+
+That distinction prevents a common category error: a pre-call cost control
+should not pretend to be an exact spend ledger. In this implementation:
+
+- failed provider calls retain their reservation, favoring safety over capacity;
+- actual usage can be above or below the estimate without replenishing or
+  enlarging the reservation;
+- attempted, allowed/reserved, blocked, and actual cost remain separate fields;
+- stale or absent pricing, missing output bounds, and unsupported response modes
+  become explicit refusal states rather than zero-cost assumptions; and
+- budgets and prompt-history heuristics are scoped, but the free guard's state is
+  process-local, so restart and multi-replica enforcement require a separate
+  shared-state design.
+
+The same code also shows why cost control and behavior control should remain
+separate claims. Its loop and retry-storm checks use recent prompt text and
+character-trigram similarity; they do not observe tool effects or task progress.
+They are bounded anomaly heuristics, not proof that an agent is stuck. The
+repository's tests cover fail-closed pricing and output bounds, one-time usage
+reconciliation, reservation/actual variance, scope isolation, and scope-count
+limits. Scout inspected the README, implementation, and selected test source
+statically; it did not install dependencies, run the suite, validate pricing
+against provider pages, or test concurrent processes.
+
+**Reusable pattern:** Treat agent spend protection as conservative resource
+admission with four ledgers—attempted, reserved, blocked, and observed actual.
+Make estimation coverage and unsupported modes explicit, and do not infer either
+billing accuracy or progress detection from a successful pre-call block.
+
 ---
 
 ### Theme 7: Other Notable AI Agent Stories
