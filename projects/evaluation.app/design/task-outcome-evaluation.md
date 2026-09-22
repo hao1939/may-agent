@@ -99,11 +99,13 @@ limits. The direct control judged one authoritative read proportionate; the reco
 control judged one documented fallback after a transient 503 proportionate. These
 trials demonstrate evidence delivery and evaluator discretion, not exhaustive
 history coverage or a general proof that exploration was necessary or first-time.
-Provider usage is retained in the rollout artifacts; registry price estimates were
-zero placeholders and must not be reported as zero cost.
+Provider usage is retained in the rollout artifacts; zero cost totals mean tariff
+estimation was unavailable because the current registry rates are unknown, not that
+execution was free or configured pricing was zero.
 
-The first post-activation generation-pinned live request was correctly rejected as
-stale after the subject advanced from generation 1 to 2. Its generation-2 successor
+The first post-activation request mistakenly pinned subject generation 1 even though
+the saved baseline and current Task were already generation 2. The existing reader
+correctly rejected that stale supplied identity. Its generation-2 successor
 retained the identical evidence hash, waited for the normal DeepSeek allowance,
 and then published a current immutable report. The normal May intake verified the
 report hashes, reread the subject, and returned the report for investigation. May's
