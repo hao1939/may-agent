@@ -33,7 +33,7 @@ The snapshot now includes `readBack`, following structured `{path, sha256}`
 references through the shared Task evidence reader. This includes development
 indexes, helper reports and raw verification receipts, not just their filenames.
 Only explicit absolute pinned regular files are read; no directory scan, prose
-path guessing, network fetch or transcript injection. JSON artifacts can expose
+path guessing or arbitrary network fetch. JSON artifacts can expose
 further pinned references. Missing, inaccessible, hash-mismatched, unpinned and
 truncated evidence stays visible; oversized content is **not** presented as a
 verified prefix. Limits per subject read are 12 artifacts, 32 KiB per artifact or
@@ -43,6 +43,47 @@ truncation is retained. Exact structured `{appId, taskId}` references and declar
 dependencies use the existing public Task reader; Evaluation-owned links are
 excluded. Remote-only, prose-only or over-budget references require a bounded
 owner investigation, not a guessed read or failure verdict.
+
+### Bounded process evidence (candidate, not activated)
+
+`readBack.process` follows up to three newest distinct `project.task.reconciled`
+references in the public Task history, independent of waiting/completed status
+or summary. Exact `event.get` supplies the attempt's `workflowRunId`; only `s_`
+session links are supported. Public GET `/api/sessions/<id>` must match App,
+Task, generation and attempt, identify a non-Evaluation worker, and be terminal.
+Its binding is checked again after GET `/api/sessions/<id>/transcript`. Missing,
+mismatched, active or workflow-shaped execution is explicitly unassessed; no
+session directory scan or guesses from result strings. A later no-op does not
+hide earlier work inside this window; work outside the window remains unassessed.
+
+Each HTTP read uses the existing local UI endpoint at `localhost:8080`, a five-second
+timeout and one-megabyte response cap. Installations without that endpoint report
+unavailable coverage, not a failed wait. **The Host still parses the whole raw file
+server-side**, and its public projection omits some message kinds and caps tool
+results at 2,000 characters. Client bounds do not fix or conceal that Host cost.
+Each attempt retains at most 96 messages, 800 characters per field, eight calls
+per message and 64 KiB of projection. Raw line/source/block coordinates and
+hashed tool-call IDs preserve call/result correlation without copying long
+provider tokens. The public response hash detects drift even outside a clipped
+field; it is not a hash of the original raw transcript. Truncation is explicit.
+No child execution is inferred. Relative artifact references remain unavailable.
+
+The existing review snapshot hash, freshness reread, immutable publication and
+May intake include this bundle. The existing judgment schema is unchanged:
+summary/findings/verification/delivery distinguish current wait, delivered work,
+process efficiency and coverage. A coherent wait does not suppress inspection of
+completed work, and a process gap does not invalidate the wait. Counts, isolated
+errors, successful output, necessary exploration, recovery and valid no-ops are
+not automatic efficiency findings. The evaluator judges waste against practical
+value/cost and cites exact attempt/session/line evidence, or states its limits.
+
+This adds at most three event and nine HTTP reads per subject snapshot (the
+review rereads freshness), plus bounded prompt bytes; no new controller or
+scoring scheme. Prompt-only and latest-session-only changes cannot address the
+observed missing-process/no-op gap. A Host accepted-attempt execution link and
+server-bounded transcript endpoint may simplify this later; they are not needed
+to expose the saved cycle through today's public chain and are not implemented
+here. Model trials and independent review are required before activation.
 
 Artifact read-back proves the bytes consumed, not the truth of their claims or
 independent recovery. The evaluator judges whether any gap is material to the
