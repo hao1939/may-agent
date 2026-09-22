@@ -44,7 +44,15 @@ dependencies use the existing public Task reader; Evaluation-owned links are
 excluded. Remote-only, prose-only or over-budget references require a bounded
 owner investigation, not a guessed read or failure verdict.
 
-### Bounded process evidence (candidate, not activated)
+### Bounded process evidence (activated September 22)
+
+Source revision `6f7696bf7e4a8556800e5b16184c2a4eb9727345` was integrated and
+loaded as definition release
+`6f7696bf7e4a8556800e5b16184c2a4eb9727345-definitions-v4`. The three changed
+Evaluation production files in that release match the integrated source
+byte-for-byte. Activation used reload request event `6409383`, whose operation
+`6409384` succeeded; Host source and the live Host binary were unchanged. A
+later documentation-only commit does not change those active runtime bytes.
 
 `readBack.process` follows up to three newest distinct `project.task.reconciled`
 references in the public Task history, independent of waiting/completed status
@@ -83,7 +91,23 @@ scoring scheme. Prompt-only and latest-session-only changes cannot address the
 observed missing-process/no-op gap. A Host accepted-attempt execution link and
 server-bounded transcript endpoint may simplify this later; they are not needed
 to expose the saved cycle through today's public chain and are not implemented
-here. Model trials and independent review are required before activation.
+here. Before activation, independent tech-lead review and focused/full/design checks
+passed. Bounded DeepSeek trials used the existing assessment schema on the saved
+hygiene subject plus two controls. The subject trial cited the meaningful attempt,
+its later no-op, concrete tool evidence and explicit truncation/unavailable-artifact
+limits. The direct control judged one authoritative read proportionate; the recovery
+control judged one documented fallback after a transient 503 proportionate. These
+trials demonstrate evidence delivery and evaluator discretion, not exhaustive
+history coverage or a general proof that exploration was necessary or first-time.
+Provider usage is retained in the rollout artifacts; registry price estimates were
+zero placeholders and must not be reported as zero cost.
+
+The first post-activation generation-pinned live request was correctly rejected as
+stale after the subject advanced from generation 1 to 2. Its generation-2 successor
+retained the identical evidence hash and was budget-deferred until the normal
+DeepSeek allowance boundary. That pending publication, normal May intake, and
+May's explicit evidence/value/cost judgment remain separate delivery proof; neither
+activation nor the frozen model trials substitutes for them.
 
 Artifact read-back proves the bytes consumed, not the truth of their claims or
 independent recovery. The evaluator judges whether any gap is material to the
