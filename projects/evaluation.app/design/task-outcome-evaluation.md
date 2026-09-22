@@ -104,10 +104,17 @@ zero placeholders and must not be reported as zero cost.
 
 The first post-activation generation-pinned live request was correctly rejected as
 stale after the subject advanced from generation 1 to 2. Its generation-2 successor
-retained the identical evidence hash and was budget-deferred until the normal
-DeepSeek allowance boundary. That pending publication, normal May intake, and
-May's explicit evidence/value/cost judgment remain separate delivery proof; neither
-activation nor the frozen model trials substitutes for them.
+retained the identical evidence hash, waited for the normal DeepSeek allowance,
+and then published a current immutable report. The normal May intake verified the
+report hashes, reread the subject, and returned the report for investigation. May's
+bounded judgment accepted the demonstrated value: the report independently kept
+the valid wait, duplicate no-op, completed 12:00 contribution, and process
+proportionality distinct. It found no material waste in the three-attempt window and
+therefore authorized no hygiene-code repair. The exact publication, intake run and
+judgment are retained in the rollout record. This live proof does not make the
+three-attempt window exhaustive, fix unavailable or mismatched artifacts, establish
+the model's broader claim that exploration was necessary or first-time, or authorize
+future automatic application.
 
 Artifact read-back proves the bytes consumed, not the truth of their claims or
 independent recovery. The evaluator judges whether any gap is material to the
