@@ -6,7 +6,6 @@ import { HUMAN_TASK_LIST_TEXT_MAX_BYTES, HumanTaskService } from "./human-task-s
 import { AppTaskResourceStore } from "./core/state/app-task-resource-store.js";
 import {
   cancelAppTask,
-  closeAppTask,
   observeAppTaskIntent,
   claimObservedAppTask,
   deferAppTask,
@@ -1886,7 +1885,7 @@ describe("Human Task service", () => {
     expect(cancelAppTask(taskConfig(db, store, "alpha"), control).applied).toBeFalse();
   });
 
-  test("reads and filters owner closure without calling it cancellation or success", () => {
+  test("reads historical owner closure without calling it cancellation or success", () => {
     const db = database();
     const service = new HumanTaskService(db, registry("alpha"));
     const store = AppTaskResourceStore.fromDb(db, "alpha");
@@ -1901,7 +1900,13 @@ describe("Human Task service", () => {
         expectedResourceVersion: current.metadata.resourceVersion,
         reason: "Further work costs more than it is worth",
       };
-      expect((taskId === "withdrawn" ? closeAppTask : cancelAppTask)(config, control).applied).toBe(true);
+      const cancelled = cancelAppTask(config, control);
+      expect(cancelled.applied).toBe(true);
+      if (taskId === "withdrawn") {
+        // Retain compatibility with pre-existing withdrawal records stored as closed.
+        db.prepare("UPDATE app_task_cancellations SET cancellation_json = ? WHERE app_id = ? AND task_id = ?")
+          .run(JSON.stringify({ ...cancelled.cancellation, kind: "closed" }), "alpha", taskId);
+      }
     }
     insertReceipt(db, "alpha", "previously-finished", 20);
     expect(migrateTaskCompletionReceipts(config, { oldRuntimeStopped: true }).imported).toBe(1);

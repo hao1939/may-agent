@@ -20,7 +20,6 @@ import {
 import {
   claimObservedAppTask,
   cancelAppTask,
-  closeAppTask,
   appTaskContext,
   completeAppTask,
   deferAppTask,
@@ -496,7 +495,7 @@ describe("AppTaskResourceStore", () => {
     store.close();
   });
 
-  it("round-trips human cancellation and explicit App closure through snapshot bootstrap and reopen", () => {
+  it("round-trips human and explicit App cancellation through snapshot bootstrap and reopen", () => {
     const source = open();
     const target = open();
     const path = join(roots.at(-1)!, "host.sqlite");
@@ -534,12 +533,13 @@ describe("AppTaskResourceStore", () => {
       });
       expect(source.readCancellation("optional")).toBeNull();
       const optional = source.readTask("optional")!;
-      closeAppTask(config, { appId: "example", taskId: "optional", reason: "Owner withdrew optional work",
+      cancelAppTask(config, { appId: "example", taskId: "optional", decision: "app-policy", reason: "Owner withdrew optional work",
         expectedGeneration: optional.metadata.generation, expectedResourceVersion: optional.metadata.resourceVersion });
       const snapshot = source.readSnapshot();
       target.bootstrapSnapshot(snapshot, "copied", ["human", "optional"]);
       expect(target.readSnapshot()).toEqual(snapshot);
-      expect(target.readCancellation("optional")?.result).toEqual({ partial: "Findings" });
+      expect(target.readCancellation("optional")?.kind).toBe("cancelled");
+      expect(target.readAttempt(claim.attemptId)?.acceptedResult?.result).toEqual({ partial: "Findings" });
     } finally {
       source.close();
       target.close();

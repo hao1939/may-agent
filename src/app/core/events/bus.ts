@@ -665,9 +665,23 @@ export type SystemEvent =
       };
     }
   | {
+      type: "app.task.close.requested";
+      source: string;
+      owner: string;
+      target: { appId: string; taskId: string };
+      data: {
+        appId: string;
+        taskId: string;
+        expectedGeneration: number;
+        expectedResourceVersion: number;
+        afterResult: string;
+        reason: string;
+      };
+    }
+  | {
       type: "app.task.cancelled" | "app.task.attempt.stopped";
       source: "app-task-reconciler";
-      owner: "human:operator";
+      owner: string;
       target: { appId: string; taskId: string };
       data: {
         appId: string;

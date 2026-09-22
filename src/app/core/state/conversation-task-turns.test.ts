@@ -8,6 +8,7 @@ import { AppTaskResourceStore } from "./app-task-resource-store.js";
 import {
   appTaskContext,
   claimObservedAppTask,
+  cancelAppTask,
   closeAppTask,
   completeAppTask,
   deferAppTask,
@@ -244,12 +245,12 @@ test("late output after owner closure cannot publish a reply or close a Request"
   const input = f.admit();
   const claim = f.claim(input.taskId);
   const task = f.store.readTask(input.taskId)!;
-  closeAppTask(f.context(), {
+  cancelAppTask(f.context(), {
     appId: app.id,
     taskId: input.taskId,
     expectedGeneration: task.metadata.generation,
     expectedResourceVersion: task.metadata.resourceVersion,
-    reason: "End this Conversation",
+    decision: "app-policy", reason: "End this Conversation",
   });
   expect(() => completeConversationTaskTurn(f.context(), claim, decision)).toThrow("stale");
   expect(readConversationRequest(f.db, app.id, "chat", "comparison")).toBeNull();
@@ -262,12 +263,12 @@ test("fresh human input creates a linked successor without rebinding replay or s
   const input = f.admit();
   completeConversationTaskTurn(f.context(), f.claim(input.taskId), decision);
   const task = f.store.readTask(input.taskId)!;
-  closeAppTask(f.context(), {
+  cancelAppTask(f.context(), {
     appId: app.id,
     taskId: input.taskId,
     expectedGeneration: task.metadata.generation,
     expectedResourceVersion: task.metadata.resourceVersion,
-    reason: "Historical terminal Conversation",
+    decision: "app-policy", reason: "Historical terminal Conversation",
   });
 
   expect(f.admit().taskId).toBe(input.taskId);
@@ -326,12 +327,12 @@ test("fresh human input creates a linked successor without rebinding replay or s
   expect(getAppInboxItem(f.db, "stop-successor")?.handling).toMatchObject({ phase: "stopped" });
 
   const currentSuccessor = f.store.readTask(successor.taskId)!;
-  closeAppTask(f.context(), {
+  cancelAppTask(f.context(), {
     appId: app.id,
     taskId: successor.taskId,
     expectedGeneration: currentSuccessor.metadata.generation,
     expectedResourceVersion: currentSuccessor.metadata.resourceVersion,
-    reason: "Conversation ended again",
+    decision: "app-policy", reason: "Conversation ended again",
   });
   expect(() =>
     admitConversationTaskInput(f.context(), {
@@ -1060,12 +1061,12 @@ test("Conversation ingress rejects direct executor targets and preserves untarge
   const first = f.admit();
   completeConversationTaskTurn(f.context(), f.claim(first.taskId), decision);
   const task = f.store.readTask(first.taskId)!;
-  closeAppTask(f.context(), {
+  cancelAppTask(f.context(), {
     appId: app.id,
     taskId: first.taskId,
     expectedGeneration: task.metadata.generation,
     expectedResourceVersion: task.metadata.resourceVersion,
-    reason: "Historical terminal Conversation",
+    decision: "app-policy", reason: "Historical terminal Conversation",
   });
   const successor = f.admit("successor", 2, "Continue");
   expect(successor.taskId).toBe(`${first.taskId}_successor_2`);
@@ -1363,6 +1364,7 @@ test("bounded change discovery advances across Conversations, retains Stop and f
   closeAppTask(f.context(), {
     appId: app.id,
     taskId: "sample-1",
+    afterResult: finished.status.observedAttemptId!,
     expectedGeneration: finished.metadata.generation,
     expectedResourceVersion: finished.metadata.resourceVersion,
     reason: "Owner closed completed work",
@@ -1406,12 +1408,12 @@ test("bounded change discovery advances across Conversations, retains Stop and f
   linkConversationTopicTask(f.db, topic.id, app.id, "sample-2");
   expect(listPendingConversationTaskChanges(f.db, app.id).map((item) => item.taskId)).toEqual(["sample-2"]);
   const current = f.store.readTask(first.taskId)!;
-  closeAppTask(f.context(), {
+  cancelAppTask(f.context(), {
     appId: app.id,
     taskId: first.taskId,
     expectedGeneration: current.metadata.generation,
     expectedResourceVersion: current.metadata.resourceVersion,
-    reason: "Owner ended the Conversation",
+    decision: "app-policy", reason: "Owner ended the Conversation",
   });
   expect(listPendingConversationTaskChanges(f.db, app.id)).toEqual([]);
 
@@ -1463,18 +1465,18 @@ test("closure input validates the exact source and rolls admission back without 
     failed.attemptId,
   ]);
   const task = source.readTask("sample")!;
-  const closed = closeAppTask(worker, {
+  const closed = cancelAppTask(worker, {
     appId: source.appId,
     taskId: "sample",
     expectedGeneration: task.metadata.generation,
     expectedResourceVersion: task.metadata.resourceVersion,
-    reason: "The owner withdrew the assignment",
+    decision: "app-policy", reason: "The owner withdrew the assignment",
   });
   const ref = {
     conversationId: "chat",
     topicId: topic.id,
     taskId: "sample",
-    closedGeneration: closed.closure.generation,
+    closedGeneration: closed.cancellation.generation,
   };
   expect(
     admitConversationTaskChange(f.context(), worker, {
@@ -1485,7 +1487,7 @@ test("closure input validates the exact source and rolls admission back without 
     }).created,
   ).toBe(false);
   expect(listPendingConversationTaskChanges(f.db, app.id).map((change) => change.closedGeneration)).toEqual([
-    closed.closure.generation,
+    closed.cancellation.generation,
   ]);
   expect(() =>
     admitConversationTaskChange(f.context(), worker, { ...ref, closedGeneration: ref.closedGeneration + 1 }),
@@ -1495,13 +1497,13 @@ test("closure input validates the exact source and rolls admission back without 
     WHEN NEW.input_kind = 'task-closed' BEGIN SELECT RAISE(ABORT, 'closure input unavailable'); END`);
   expect(() => admitConversationTaskChange(f.context(), worker, ref)).toThrow("closure input unavailable");
   expect(f.store.readTrigger(input.taskId)).toBeNull();
-  expect(source.readCancellation("sample")).toEqual(closed.closure);
+  expect(source.readCancellation("sample")).toEqual(closed.cancellation);
   expect(listPendingConversationTaskChanges(f.db, app.id)).toHaveLength(1);
   f.db.exec("DROP TRIGGER reject_closure_input");
   const admitted = admitConversationTaskChange(f.context(), worker, ref);
   expect(admitted.item.input).toEqual({
     kind: "task-closed",
-    data: { appId: source.appId, taskId: "sample", generation: closed.closure.generation, closure: closed.closure },
+    data: { appId: source.appId, taskId: "sample", generation: closed.cancellation.generation, closure: closed.cancellation },
   });
   expect(admitConversationTaskChange(f.context(), worker, ref).created).toBe(false);
   expect(listPendingConversationTaskChanges(f.db, app.id)).toEqual([]);

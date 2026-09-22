@@ -2252,14 +2252,18 @@ type AppTaskCloseInput = {
   reason: string;
   /** Trusted creator control; omission is reserved for the existing operator/App-policy boundary. */
   actor?: ResourceCreator;
+  /** Trusted ingress attribution; request payloads cannot select this value. */
+  decision?: "human" | "app-policy";
 };
 
-/** Explicit owner control. A conventional close must still match the consumed result. */
+/** Completion only. Intentional withdrawal uses cancelAppTask, including during execution. */
 export function closeAppTask(
   config: AppTaskContext,
-  input: AppTaskCloseInput & { afterResult?: string },
+  input: AppTaskCloseInput & { afterResult: string; controlKey?: string },
 ): { closure: AppTaskCancellation; interruptedAttemptId?: string; applied: boolean } {
-  const closed = closeTask(config, input, "closed");
+  // Validate before receipt replay too: omitted input must never select withdrawal semantics.
+  requireNonEmptyString(input.afterResult, "Task completion afterResult");
+  const closed = closeTask(config, { ...input, kind: "closed" });
   return {
     closure: closed.cancellation,
     ...(closed.cancelledAttemptId ? { interruptedAttemptId: closed.cancelledAttemptId } : {}),
@@ -2272,14 +2276,17 @@ export function cancelAppTask(
   config: AppTaskContext,
   input: AppTaskCloseInput & { controlKey?: string },
 ): AppTaskCancellationResult {
-  return closeTask(config, input, "cancelled");
+  return closeTask(config, { ...input, kind: "cancelled", afterResult: undefined });
 }
 
 function closeTask(
   config: AppTaskContext,
-  input: AppTaskCloseInput & { controlKey?: string; afterResult?: string },
-  kind: "closed" | "cancelled",
+  input: AppTaskCloseInput & { controlKey?: string } & (
+    | { kind: "closed"; afterResult: string }
+    | { kind: "cancelled"; afterResult?: never }
+  ),
 ): AppTaskCancellationResult {
+  const { kind } = input;
   if (input.appId !== config.resourceStore.appId) {
     throw new Error(`Task cancellation belongs to another App: ${input.appId}`);
   }
@@ -2299,6 +2306,10 @@ function closeTask(
     }
     const cancellation = config.resourceStore.readCancellation(input.taskId);
     if (!cancellation) throw new Error(`Task cancellation receipt ${input.controlKey} has no terminal facts`);
+    if ((cancellation.kind ?? "cancelled") !== kind) throw new Error("The Task was ended by a different control");
+    if (kind === "closed" && cancellation.acceptedResultAttemptId !== input.afterResult) {
+      throw new Error("The Task was closed against a different accepted result");
+    }
     return { cancellation, applied: false };
   }
 
@@ -2310,7 +2321,8 @@ function closeTask(
     ) {
       throw new Error(`Task ${input.appId}/${input.taskId} was already cancelled at another version`);
     }
-    if (input.afterResult && existingCancellation.acceptedResultAttemptId !== input.afterResult) {
+    if ((existingCancellation.kind ?? "cancelled") !== kind) throw new Error("The Task was ended by a different control");
+    if (kind === "closed" && existingCancellation.acceptedResultAttemptId !== input.afterResult) {
       throw new Error("The Task was closed against a different accepted result");
     }
     return { cancellation: existingCancellation, applied: false };
@@ -2329,13 +2341,14 @@ function closeTask(
       `Task ${input.appId}/${input.taskId} resource version changed: expected ${input.expectedResourceVersion}, current ${resource.metadata.resourceVersion}`,
     );
   }
-  if (input.afterResult) {
+  if (input.kind === "closed") {
     const accepted = config.resourceStore.readAttempt(input.afterResult);
     if (
       accepted?.taskId !== input.taskId ||
       accepted.taskGeneration !== input.expectedGeneration ||
       !["converged", "incomplete"].includes(accepted.acceptedResult?.state ?? "") ||
       resource.status.observedAttemptId !== input.afterResult ||
+      resource.status.phase !== "converged" ||
       resource.status.currentAttemptId ||
       tree.taskTriggers?.[input.taskId]?.event
     ) {
@@ -2349,9 +2362,11 @@ function closeTask(
     kind,
     reason,
     summary: input.actor ? `${kind === "closed" ? "Closed" : "Cancelled"} by creator: ${reason}`
-      : kind === "closed" ? `Closed by App policy: ${reason}` : `Cancelled by human: ${reason}`,
+      : kind === "closed" || input.decision === "app-policy"
+        ? `${kind === "closed" ? "Closed" : "Cancelled"} by App policy: ${reason}`
+        : `Cancelled by human: ${reason}`,
     decidedBy: input.actor ? { kind: "creator", creator: structuredClone(input.actor) }
-      : kind === "closed" ? { kind: "app-policy" } : { kind: "human" },
+      : kind === "closed" || input.decision === "app-policy" ? { kind: "app-policy" } : { kind: "human" },
   });
 }
 

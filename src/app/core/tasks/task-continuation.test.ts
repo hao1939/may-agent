@@ -12,7 +12,7 @@ import {
   claimObservedAppTask,
   deferAppTask,
   completeAppTask,
-  closeAppTask,
+  cancelAppTask,
   observeAppTaskIntent,
   readAppTaskAdmissionOutcome,
 } from "./app-task-reconciler.js";
@@ -82,10 +82,10 @@ test.each(["finish", "close"])("continuation survives reopen and retains the ori
     expect(current.status.executionFailures).toBeUndefined();
     expect(current.status.conditionIds).toEqual(["result"]);
     if (end === "close") {
-      closeAppTask(config, {
+      cancelAppTask(config, {
         appId: "sample",
         taskId: "parent",
-        reason: "owner withdrew",
+        decision: "app-policy", reason: "owner withdrew",
         expectedGeneration: current.metadata.generation,
         expectedResourceVersion: current.metadata.resourceVersion,
       });

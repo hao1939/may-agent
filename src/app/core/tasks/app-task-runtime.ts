@@ -43,6 +43,7 @@ import {
   appTaskQueueEntries,
   associateAppTaskSession,
   cancelAppTask,
+  closeAppTask,
   observeAppTaskIntent,
   readAppTaskAdmissionOutcome,
   recordAppTaskTrigger,
@@ -740,6 +741,46 @@ export function retryLoadedFailedAppTask(input: {
   return { ...receipt, queued };
 }
 
+export function closeLoadedAppTask(input: {
+  bus: EventBus;
+  appId: string;
+  taskId: string;
+  expectedGeneration: number;
+  expectedResourceVersion: number;
+  afterResult: string;
+  reason: string;
+  controlKey?: string;
+}): ReturnType<typeof closeAppTask> {
+  const appId = input.appId.trim().replace(/\.app$/, "");
+  const taskId = input.taskId.trim();
+  const afterResult = input.afterResult.trim();
+  if (!appId || !taskId) throw new Error("App Task completion requires exact appId and taskId");
+  if (!afterResult) throw new Error("App Task completion requires an exact accepted result attempt");
+  if (!Number.isSafeInteger(input.expectedGeneration) || input.expectedGeneration < 1) {
+    throw new Error("App Task completion requires a positive integer expectedGeneration");
+  }
+  if (!Number.isSafeInteger(input.expectedResourceVersion) || input.expectedResourceVersion < 1) {
+    throw new Error("App Task completion requires a positive integer expectedResourceVersion");
+  }
+  const descriptor = loadedAppTaskRuntimeDescriptor(input.bus, appId);
+  if (!descriptor) throw new Error(`App ${appId} has no loaded task runtime`);
+  const result = closeAppTask(appTaskConfig(descriptor), {
+    appId,
+    taskId,
+    expectedGeneration: input.expectedGeneration,
+    expectedResourceVersion: input.expectedResourceVersion,
+    afterResult,
+    reason: input.reason,
+    ...(input.controlKey ? { controlKey: input.controlKey } : {}),
+  });
+  publishTaskCancellation(input.bus, {
+    cancellation: result.closure,
+    ...(result.interruptedAttemptId ? { cancelledAttemptId: result.interruptedAttemptId } : {}),
+    applied: result.applied,
+  });
+  return result;
+}
+
 export function cancelLoadedAppTask(input: {
   bus: EventBus;
   appId: string;
@@ -747,6 +788,7 @@ export function cancelLoadedAppTask(input: {
   expectedGeneration: number;
   expectedResourceVersion: number;
   reason: string;
+  decision?: "human" | "app-policy";
   controlKey?: string;
 }): ReturnType<typeof cancelAppTask> {
   const appId = input.appId.trim().replace(/\.app$/, "");
@@ -766,6 +808,7 @@ export function cancelLoadedAppTask(input: {
     expectedGeneration: input.expectedGeneration,
     expectedResourceVersion: input.expectedResourceVersion,
     reason: input.reason,
+    ...(input.decision ? { decision: input.decision } : {}),
     ...(input.controlKey ? { controlKey: input.controlKey } : {}),
   });
   publishTaskCancellation(input.bus, result);

@@ -3,7 +3,13 @@ import { connect, createServer, type Server } from "node:net";
 import { dirname } from "node:path";
 import type { Duplex } from "node:stream";
 import { normalizeSocketFrame } from "./protocol.js";
-import type { EventInput, EventReceipt, EventView } from "./events.js";
+import {
+  taskCloseRequestedEvent,
+  taskCancelRequestedEvent,
+  type EventInput,
+  type EventReceipt,
+  type EventView,
+} from "./events.js";
 import { isTaskDerivedViewWake, taskUpdateIdentity } from "./task-wake.js";
 
 export type ControlEvent = Record<string, unknown> & { type: string };
@@ -1018,6 +1024,39 @@ export function createControlSocketCore(opts: ControlSocketCoreOptions): {
           continue;
         }
 
+        if (normalized.kind === "control" && normalized.command === "task.close") {
+          const appId = typeof frame.appId === "string" ? frame.appId.trim().replace(/\.app$/, "") : "";
+          const taskId = typeof frame.taskId === "string" ? frame.taskId.trim() : "";
+          const expectedGeneration = frame.expectedGeneration;
+          const expectedResourceVersion = frame.expectedResourceVersion;
+          const afterResult = typeof frame.afterResult === "string" ? frame.afterResult.trim() : "";
+          const reason = typeof frame.reason === "string" ? frame.reason.trim() : "";
+          try {
+            if (!publishEvent) throw new Error("guarded Task completion is unavailable");
+            const receipt = publishEvent(taskCloseRequestedEvent(
+              { appId, taskId, generation: expectedGeneration as number, resourceVersion: expectedResourceVersion as number },
+              afterResult,
+              reason,
+            ));
+            if (receipt.delivery !== "accepted") {
+              throw new Error(`Task ${appId}/${taskId} completion was recorded but not accepted; read the Task and retry`);
+            }
+            writeFrame(socket, {
+              type: "ok",
+              command: normalized.command,
+              receipt,
+              ...(getTask ? { task: getTask({ appId, taskId }) } : {}),
+            });
+          } catch (error) {
+            writeFrame(socket, {
+              type: "error",
+              command: normalized.command,
+              message: error instanceof Error ? error.message : String(error),
+            });
+          }
+          continue;
+        }
+
         if (normalized.kind === "control" && normalized.command === "task.cancel") {
           if (!getTask || !publishEvent) {
             writeFrame(socket, {
@@ -1046,16 +1085,7 @@ export function createControlSocketCore(opts: ControlSocketCoreOptions): {
               typeof frame.reason === "string" && frame.reason.trim()
                 ? frame.reason.trim()
                 : "human requested cancellation";
-            const receipt = publishEvent({
-              type: "app.task.cancel.requested",
-              target: { appId, taskId },
-              data: {
-                expectedGeneration: generation,
-                expectedResourceVersion: resourceVersion,
-                reason,
-              },
-              idempotencyKey: `app-task-cancel:${appId}:${taskId}:${generation}:${resourceVersion}`,
-            });
+            const receipt = publishEvent(taskCancelRequestedEvent({ appId, taskId, generation, resourceVersion }, reason));
             if (receipt.delivery !== "accepted") {
               throw new Error(
                 `Task ${appId}/${taskId} cancellation was recorded but not accepted; read the Task and retry`,

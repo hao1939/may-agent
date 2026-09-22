@@ -598,6 +598,58 @@ describe("control socket protocol", () => {
     expect(core.emitted).toEqual([]);
   });
 
+  it("publishes caller-fenced guarded Task completion without selecting cancellation", async () => {
+    const published: unknown[] = [];
+    const core = createCore({
+      getTask: (input) => ({ ...input, generation: 2, resourceVersion: 8, status: "done" }),
+      publishEvent: (input) => {
+        published.push(input);
+        return { eventId: 75, eventType: input.type, delivery: "accepted" };
+      },
+    });
+
+    await expect(
+      sendSocketCommand(core.endpoint, {
+        type: "task.close",
+        appId: "evaluation",
+        taskId: "review/docs",
+        expectedGeneration: 2,
+        expectedResourceVersion: 7,
+        afterResult: "r_2_answer",
+        reason: "accepted answer consumed",
+      }),
+    ).resolves.toMatchObject({
+      type: "ok",
+      command: "task.close",
+      receipt: { eventId: 75, eventType: "app.task.close.requested", delivery: "accepted" },
+      task: { appId: "evaluation", taskId: "review/docs", resourceVersion: 8, status: "done" },
+    });
+    expect(published).toEqual([
+      {
+        type: "app.task.close.requested",
+        target: { appId: "evaluation", taskId: "review/docs" },
+        data: {
+          expectedGeneration: 2,
+          expectedResourceVersion: 7,
+          afterResult: "r_2_answer",
+          reason: "accepted answer consumed",
+        },
+        idempotencyKey: "app-task-close:evaluation:review/docs:2:7:r_2_answer",
+      },
+    ]);
+
+    await expect(
+      sendSocketCommand(core.endpoint, {
+        type: "task.close",
+        appId: "evaluation",
+        taskId: "review/docs",
+        expectedGeneration: 2,
+        expectedResourceVersion: 7,
+        reason: "missing result identity",
+      }),
+    ).rejects.toThrow("afterResult must be a non-empty accepted attempt ID");
+  });
+
   it("does not report a recorded but unaccepted Task control as success", async () => {
     const core = createCore({
       getTask: () => ({ appId: "evaluation", taskId: "review/docs", generation: 2, resourceVersion: 7 }),

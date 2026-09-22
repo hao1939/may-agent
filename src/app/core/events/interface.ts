@@ -43,6 +43,7 @@ export type EventInterface = {
 };
 
 type EventDefinition = {
+  taskControl?: "retry" | "close" | "cancel";
   delivery: "record" | "required";
   validate(input: EventInput, options: CreateEventInterfaceOptions): void;
 };
@@ -127,6 +128,7 @@ const EVENT_DEFINITIONS: Readonly<Record<string, EventDefinition>> = {
     },
   },
   "app.task.retry.requested": {
+    taskControl: "retry",
     delivery: "required",
     validate: (input, options) => validateTaskControl(input, options, false),
   },
@@ -143,8 +145,17 @@ const EVENT_DEFINITIONS: Readonly<Record<string, EventDefinition>> = {
     },
   },
   "app.task.cancel.requested": {
+    taskControl: "cancel",
     delivery: "required",
     validate: (input, options) => validateTaskControl(input, options, true),
+  },
+  "app.task.close.requested": {
+    taskControl: "close",
+    delivery: "required",
+    validate: (input, options) => {
+      validateTaskControl(input, options, true);
+      requiredText(input.data.afterResult, "app.task.close.requested data.afterResult");
+    },
   },
   "chat.start.requested": {
     delivery: "required",
@@ -305,6 +316,11 @@ function optionalTextField(value: Record<string, unknown>, key: string, field: s
 
 function validateOptionalReason(input: EventInput): void {
   optionalTextField(input.data, "reason", `${input.type} data.reason`);
+}
+
+/** Classify using the existing ingress definitions, not a second routing list. */
+export function taskControlAction(type: string): EventDefinition["taskControl"] {
+  return EVENT_DEFINITIONS[type]?.taskControl;
 }
 
 function validateTaskControl(input: EventInput, options: CreateEventInterfaceOptions, requiresReason: boolean): void {
