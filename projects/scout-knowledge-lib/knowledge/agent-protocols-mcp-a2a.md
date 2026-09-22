@@ -1,8 +1,8 @@
 <ai_context>
-summary: "Canonical overview of the agent protocol landscape: MCP (agent→tool), A2A (agent→agent), AG-UI (agent→frontend), AHP (host→multi-client session state), and practical ACP implementation evidence. Covers what each standardizes, the SDK/ecosystem state, competing protocols, Chinese community sentiment, research findings, and how protocol roadmaps and implementations are splitting transport/tool shells from identity, discovery, and runtime control layers. Current HN discourse sharpens the MCP-versus-CLI choice into a deployment and authority decision rather than a claim about model intelligence."
-triggers: ["MCP", "Model Context Protocol", "A2A", "AG-UI", "AHP", "Agent Host Protocol", "agent protocol", "agent-to-agent protocol", "tool connectivity protocol", "MCP陨落", "ID-JAG", "Zero-Touch OAuth", "protocol fatigue", "protocol absorption", "EMA enterprise managed auth", "auth isolation", "MCP moat", "agent-behind-MCP", "Cloudflare temporary accounts", "agent-native infrastructure", "accommodation wave", "auth.md", "ephemeral deploy", "stateless MCP", "requestState", "mcp-use v2", "ACP backend rail", "entwurf", "garden id", "progressive discovery", "capability-conditioned discovery", "Ripwire", "mcp-assert", "MCP fuzzing", "fault classification", "MCP versus CLI", "shell authority", "workload identity federation", "DPoP", "MCP roadmap"]
-last_updated: "2026-09-20"
-source_basis: "GitHub trending repos June 2026, XHS Chinese AI community May-June 2026, arXiv briefings June 2026, HN explorations June-Sep 2026 (incl. scan #33 and HN items 49131438, 49198472, 49399591, 49453910, and 49779329), arXiv 2606.30317 (MCP Architecture Patterns), scan #262, Simon Willison's stateless MCP write-up (2026-07-31), Manufact's mcp-use v2 stateless-MCP rebuild write-up (2026-07-29), the current GitHub repo junghan0611/entwurf checked 2026-08-06 for ACP/backend-rail implementation evidence, the official MCP roadmap published 2026-08-22, VS Code's first-party Agent Host launch post (2026-08-26), redhat-et/ripwire inspected at commit 5c4235b9befd4cd5b6f9f3a489940d7b79f86520 for capability-conditioned MCP catalog evidence (2026-09-11), blackwell-systems/mcp-assert inspected at commit f2389c6511fdd205bc8732b0529e90eb1d25dd4b for transport-level fuzzing and fault-classification evidence (2026-09-19), and Maharshi Patel's MCP critique plus its HN discussion (2026-09-20). See source declarations below."
+summary: "Canonical overview of the agent protocol landscape: MCP (agent→tool), A2A (agent→agent), AG-UI (agent→frontend), AHP (host→multi-client session state), and practical ACP implementation evidence. Covers what each standardizes, the SDK/ecosystem state, competing protocols, Chinese community sentiment, research findings, and how protocol roadmaps and implementations are splitting transport/tool shells from identity, discovery, and runtime control layers. Current HN discourse sharpens the MCP-versus-CLI choice into a deployment and authority decision; Google's cross-product Workspace search also shows why a read-only tool still needs corpus-level disclosure controls."
+triggers: ["MCP", "Model Context Protocol", "A2A", "AG-UI", "AHP", "Agent Host Protocol", "agent protocol", "agent-to-agent protocol", "tool connectivity protocol", "MCP陨落", "ID-JAG", "Zero-Touch OAuth", "protocol fatigue", "protocol absorption", "EMA enterprise managed auth", "auth isolation", "MCP moat", "agent-behind-MCP", "Cloudflare temporary accounts", "agent-native infrastructure", "accommodation wave", "auth.md", "ephemeral deploy", "stateless MCP", "requestState", "mcp-use v2", "ACP backend rail", "entwurf", "garden id", "progressive discovery", "capability-conditioned discovery", "Ripwire", "mcp-assert", "MCP fuzzing", "fault classification", "MCP versus CLI", "shell authority", "workload identity federation", "DPoP", "MCP roadmap", "Universal Search MCP", "Workspace search", "cross-product search", "read-only disclosure"]
+last_updated: "2026-09-22"
+source_basis: "GitHub trending repos June 2026, XHS Chinese AI community May-June 2026, arXiv briefings June 2026, HN explorations June-Sep 2026 (incl. scan #33 and HN items 49131438, 49198472, 49399591, 49453910, 49779329, and 49794043), arXiv 2606.30317 (MCP Architecture Patterns), scan #262, Simon Willison's stateless MCP write-up (2026-07-31), Manufact's mcp-use v2 stateless-MCP rebuild write-up (2026-07-29), the current GitHub repo junghan0611/entwurf checked 2026-08-06 for ACP/backend-rail implementation evidence, the official MCP roadmap published 2026-08-22, VS Code's first-party Agent Host launch post (2026-08-26), redhat-et/ripwire inspected at commit 5c4235b9befd4cd5b6f9f3a489940d7b79f86520 for capability-conditioned MCP catalog evidence (2026-09-11), blackwell-systems/mcp-assert inspected at commit f2389c6511fdd205bc8732b0529e90eb1d25dd4b for transport-level fuzzing and fault-classification evidence (2026-09-19), Maharshi Patel's MCP critique plus its HN discussion (2026-09-20), and Google's Universal Search MCP documentation (2026-09-18 page update, reviewed 2026-09-22). See source declarations below."
 </ai_context>
 
 # Agent Protocols: MCP, A2A, and the Emerging Stack
@@ -1168,6 +1168,48 @@ response-shaping cost, and audit requirements.
 **Evidence boundary:** The article and current HN item tree were read. The
 thread contains practitioner anecdotes and arguments, not independent product
 benchmarks; no claim that MCP or CLI is generally more reliable was verified.
+
+### §8a.7. HN Product Signal (2026-09-22): Read-Only Search Still Needs a Disclosure Boundary
+
+Google's Developer Preview for the Universal Search MCP Server exposes one
+`search_corpus` tool across Gmail, Drive, Calendar, and Chat. The setup has a
+real least-privilege feature: each product uses a separate OAuth read-only
+scope, and the documentation says a user may omit a product's scope so that its
+results are not searched or returned. This is better than an indivisible
+all-Workspace grant.
+
+The remaining boundary is easy to miss. Once a product scope is granted, the
+tool's agent-facing abstraction is a single cross-product corpus. Google's
+examples explicitly ask it to find material about a project across email,
+documents, chat, and meetings. Read-only authorization prevents mutation; it
+does not by itself constrain which authorized messages, files, events, or chat
+content may be disclosed into a particular task or model context. The reviewed
+page documents product-level OAuth selection, but not task-bound corpus
+filters, result-level release policy, provenance requirements, or defenses
+against instructions embedded in returned content.
+
+The reusable design rule is: **separate mutation authority from disclosure
+authority, then narrow both at task time**. For a cross-product search broker:
+
+1. grant only the products needed for the task;
+2. add server-side constraints for tenant, account, folder/space, sensitivity,
+   time range, and result count where the deployment requires them;
+3. preserve product and object provenance on every returned result;
+4. treat retrieved text as untrusted data before it enters the agent context;
+5. mediate result release separately from permission to run the search.
+
+This is not evidence that Google's server leaks data outside granted OAuth
+scopes. It is evidence that a protocol can correctly enforce coarse read-only
+scopes while leaving a finer task-to-disclosure policy to the client or
+deployment.
+
+**Sources:** [Google Workspace Universal Search MCP documentation](https://developers.google.com/workspace/guides/universal-search-mcp),
+[HN item 49794043](https://news.ycombinator.com/item?id=49794043).
+
+**Evidence boundary:** The complete public setup page and current HN listing
+were read. The Developer Preview was not enrolled in or executed, and no
+runtime result schema, audit log, search-quality behavior, or enforcement
+beyond the documentation was independently tested.
 
 ---
 
