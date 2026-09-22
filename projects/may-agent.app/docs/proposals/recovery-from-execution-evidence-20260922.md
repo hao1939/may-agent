@@ -181,19 +181,65 @@ controller, accepted results, Task context and workflow facts passed with zero
 failures. Their production mechanics are unchanged between #225 and #226.
 They cover persistence, restart, reporting isolation and navigation; they do
 not establish agent diagnosis. The earlier #226 real-socket A/B proves useful
-errors and safe admission, with no model calls. New agent trials above remain
-planned, not completed.
+errors and safe admission, with no model calls.
 
-May and tech-lead approved this direction with one useful refinement: the first
-persistent-workflow fixture must throw before returning any structured result.
-Use a real caller and exact delegated input, then independently check that no
-result was accepted, the failed attempt and first report were retained, and an
-unrelated wait survived. Give the caller only normal context and discoverable
-evidence. Observe an authorized correction of the existing assignment and check
-its outcome against a healthy control. This tests recovery without cooperation
-from the failed workflow; it does not require the model to diagnose in exactly
-one call or use a prescribed method. Retained local review:
-`/app/.state/review-pilots/apps-health-20260922/repair/recovery-design-may-review.md`.
+## First persistent-workflow observations
+
+The bounded real-agent trial is now complete. Its
+[current-first report](../../experiments/recovery-workflow-20260922/REPORT.md)
+and reproducible source are retained with this repository. Raw runs remain
+local and ignored by Git.
+
+In the failure-before-effect case, the authored method threw before a structured
+result. Production admission, workflow execution, failed-attempt settlement and
+exact caller return retained the attempt and workflow-run identities. A real
+`gpt-5.6-sol` owner read ordinary Task/contract evidence, revised the same child
+to another explicit workflow, and a later owner attempt considered the returned
+one-marker result. The unrelated audit Condition survived. This is one bounded
+useful judgment path, not a reliability rate.
+
+The acknowledgment-loss baseline exposed a different boundary. In baseline-3,
+method A wrote the marker and threw; the owner successfully read that existing
+effect, kept the dependency wait, but revised the child to an unguarded method B,
+which appended a second marker. In the earlier baseline-2, the owner read the
+effect and retired only its dependency Condition; a later method-A execution
+also duplicated the effect. The latter correctly did not cancel an independent
+child Task. Better discovery and correct Condition semantics did not make the
+operation safe.
+
+The bounded candidate changed only the fixture operation: exclusive create of a
+stable operation target followed by exact expected-content verification. Under
+the same acknowledgment-loss case, the owner selected the fallback before
+reading the effect, but method B verified and reused it, returned `reused:true`,
+converged the same child and left one marker. A final owner attempt read the
+actual marker. The improvement is therefore at the operation boundary, not in
+agent judgment or Host recovery mechanics. Direct checks also rejected empty,
+wrong, duplicate and inaccessible existing evidence without writing.
+
+This guard is only a single-host filesystem demonstration. It proves neither
+fsync durability, remote-provider atomicity, distributed concurrency nor
+universal exactly-once behavior. Real external effects still need a
+provider-supported stable idempotency identity or trustworthy current-state
+verification. No Host/runtime mechanism or deployment follows from this trial.
+
+The harness uses production App admission, Task claim/settlement, workflow
+adapter, failure report/answer projection, creator-authorized update and real
+provider execution. It seeds initial dependency admission from a fenced owner
+claim and manually invokes exact reconciliations instead of daemon scheduling;
+the healthy control checks the worker operation, not owner judgment. A separate
+Host audit exercised automatic retry of the guarded operation without a model:
+two attempts of the same generation, one effect, seven assertions, retained at
+`/app/.state/review-pilots/apps-health-20260922/repair/recovery-scheduled-effect-trial-3.log`
+(audit worktree commit `c68613cd`). Do not attribute that scheduling proof to
+the manual harness.
+
+Tech-lead independently reviewed the receipts, workflow runs, prompts and actual
+session tool records. That review caught a harness oracle which incorrectly
+looked for tool results inside assistant content; session JSONL records top-level
+`role:"toolResult"` messages. Retained transcripts show the baseline owner read
+the effect before revision, while the guarded candidate owner read it only in
+the final consideration. The harness now separates those observations. No
+costly model rerun was needed to correct the narrative.
 
 During the #226 rollout, the service restart interrupted May's active repair
 attempt. Runtime requeued the same Task; a later stale result was also rejected
