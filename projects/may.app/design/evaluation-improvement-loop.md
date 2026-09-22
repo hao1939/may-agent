@@ -5,6 +5,40 @@ controller. Evaluation findings and observed execution failures share owner
 judgment and the later improvement stages; they keep different evidence readers.
 Normal execution recovery remains in the original work.
 
+## Recover current work; improve future work
+
+Use the common [recovery rule](../../may-agent.app/docs/2a-design/system-boundary.md#recovery-uses-evidence-before-repetition).
+May first helps the accountable owner restore its promised outcome within
+existing authority. A corrected request, verified existing result, safe alternate
+method or concrete owner action may be sufficient. This must not wait for an
+Evaluation report, Gym comparison or a permanent source repair when authorized
+recovery is already possible. If the defect prevents every safe route, the
+repair can remain a real dependency of the original Task.
+
+Evaluation independently checks outcomes, unresolved work and recovery claims;
+it does not own immediate execution recovery. Its bounded selection and budgets
+are not a delivery deadline or proof that every failure was examined. May judges
+which confirmed problems merit further investigation; Bob/tech-lead contribute
+bounded design and implementation work through the existing team arrangement.
+Gym supplies a comparison when that adds evidence. No new incident App,
+recovery agent, queue or standing model call is introduced by this distinction.
+
+A retained recovery result should explain what now works, what remains owed,
+the supporting execution/evidence references, and any remaining defect. Reuse
+ordinary result/facts and links rather than adding a second status record.
+Successful recovery does not erase a recurring defect; an improvement candidate
+does not prove the original task recovered. May weighs recurrence, impact,
+recovery cost and the simpler alternative before pursuing a permanent change.
+Existing final human approval for generated improvements remains in force.
+Already authorized corrections do not acquire a new approval requirement.
+
+When human action is actually necessary, retain the exact supported human
+Condition and deliver its concrete request through the existing Conversation/
+Telegram path so it is also visible in `/todo`. A quiet wait or prose request
+alone is not proof of delivery. Preserve all unrelated obligations.
+
+## Improvement stages
+
 1. **Source evidence:** Evaluation's immutable `evaluation.task_report_published` names subject App/Task, evidence hash, execution, report/facts paths and both content hashes. Publication can race its durable marker; May retries the same ordinary work and never trusts staged bytes. A supported execution failure instead returns through its exact caller relationship and is read from the accepted Task result plus its Task/attempt/operation identity and retained receipts. It is not converted into a synthetic Evaluation publication.
 2. **Disposition (owner/May):** May uses Evaluation's published reader for Evaluation evidence and current Task/execution evidence for execution failures. The integrity intake returns the already checked judgment unchanged when it fits the bounded result, or an explicit omission with exact report identity when it does not; an omitted judgment cannot support no-action. Model identity does not change this intake boundary. Routine DeepSeek screening reports are leads: for a complete no-concern judgment May reads that judgment and the canonical current-subject result and records a bounded no-action without reconstructing every successful delivery claim or requiring a second full Evaluation. Material allegations, stale relevance, missing evidence, and proposed repair claims still require independent checks. May classifies each such claim as confirmed, rejected, or uncertain and never treats no-finding as certified health. "No code candidate" is only a repair disposition: a verified useful correction may still be owed to an existing accountable owner through its ordinary Task/input correlation. May reads the delivery receipt and accepted owner consideration; delivery or acknowledgment is not resolution, and any requested behavior recheck remains separate. This transport alone does not justify a duplicate Task or scan. She records impact, accountable owner, disposition, action or genuine wait, next step and evidence/repair links in the accepted Task result. An ordinary Task result may retain the structured intake. A Conversation result cannot add that raw object because its closed schema admits only the normal Conversation fields, so it retains exact publication subject/hashes/report references, handoff key and disposition in `facts`. Those facts must match the current publication before duplicate reuse; the live pilot observed one false reuse when a consumer treated a prior result for another publication as proof that the new input was handled. This is a documented prompt/procedure limitation, not a new Host field, registry, or enforcement mechanism. During a bounded screening rollout May also records useful impact and total verification cost/latency, so attempt allowance is not mislabeled as effective capacity. Expected failures and ordinary recovery create no repair. A subject becoming `done` or condition-free, or gaining deployment receipts, does not by itself prove recovery of a separately required independent review: the owner must retain that obligation until the exact review is admitted, returned, and judged. Duplicate transport reuses accepted work; semantic repair reuse remains owner judgment, and changed evidence is reconsidered without inheriting stale approval. A separate repair Task exists only for an independent outcome or lifetime.
 3. **Candidate (responsible App):** existing isolated development prepares and commits one candidate with diff and verification receipts. Evaluation does not own this decision; Gym does not build it. A new error never selects a workflow automatically.

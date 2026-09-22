@@ -14,9 +14,9 @@ status, not deployment evidence. App judgment needs separate live evidence.
 
 This page owns the durable Task contract. Historical `achieve`/`maintain` mode
 data does not select a lifecycle; result labels describe attempts, not lifetime.
-The unmerged [caller-feedback candidate](../proposals/caller-feedback-and-waiting.md)
-adds explicit updates while waiting or retrying and factual execution-error returns; those additions
-are not part of the merged baseline described here.
+The [caller-feedback contract](../proposals/caller-feedback-and-waiting.md), merged in #169,
+supports explicit updates while waiting or retrying and factual execution-error returns
+through the exact input's caller link; the proposal retains historical rollout evidence.
 [Message Lifecycle](message-lifecycle.md) owns conversational behavior;
 [App Contract](agent-app.md) owns declaration and input mapping.
 
@@ -709,12 +709,12 @@ removes the obsolete fallback that followed this repair; old notification
 metadata needs no migration.
 
 The former fixed retry limit in #107 was superseded by #158. Persisted execution
-failures back off from 250 ms to a maximum 15-minute interval, without abandoning
+failures back off from 250 ms to a maximum one-hour interval, without abandoning
 the assignment after a count. Fresh human input permits one earlier attempt;
 ordinary wakes do not waive backoff. Dispatch errors before failure persistence
 use the controller's local 250 ms–30 second pacing instead. These are different
 boundaries, not competing Task lifecycles. Backoff limits frequency, not total
-spending; the owner can revise, pause or close work that is no longer worthwhile.
+spending; owners can revise, pause or close work under the [shared recovery rule](system-boundary.md#recovery-uses-evidence-before-repetition).
 
 Metrics and watchdogs may reveal a stuck task, but they never create a
 replacement lifecycle or change desired state.

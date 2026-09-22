@@ -34,6 +34,11 @@ small shared state boundary.
 
 ## Current focus
 
+The [recovery review](proposals/recovery-from-execution-evidence-20260922.md)
+connects previous failures to the existing recovery mechanisms: use current
+structured facts, follow linked execution evidence when needed, and restore
+the original work while later improvement addresses recurrence.
+
 The [Task context discovery proposal](proposals/task-context-discovery-20260917.md)
 adds a shared `TASK.md` entry with full context and discovery references. Its
 local trials assess omitted-information discovery, self-diagnosis and unprompted

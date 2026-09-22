@@ -163,6 +163,55 @@ separates reproduced gaps from source findings; the
 implemented candidate repairs. This contract does not claim universal delivery
 or supervision is already implemented.
 
+### Recovery uses evidence before repetition
+
+Recovery restores useful progress toward the current assignment. Preventing a
+recurrence is later improvement work; neither requires a second Task lifecycle.
+The original Task keeps its independent obligations, accepted work and waits.
+A safely recovered attempt can coexist with an unresolved implementation defect.
+When input is rejected before destination admission, the caller still owns
+correction; there is no destination Task to recover or notify. Keep the failure
+in the caller's execution evidence instead of creating work from invalid input.
+
+Use current structured facts first. When they do not explain the failure,
+follow the exact attempt, operation, workflow step, command receipt and source
+contract references. Start at the failed boundary and its nearest verified
+input; expand only as needed. A generic error, missing optional log or absent
+classification is a reason to investigate, not permission to drop the outcome.
+Evidence that remains inaccessible is an explicit limitation. Diagnosis must
+distinguish facts, hypotheses and what the next bounded action can establish.
+
+Code retains identity, original failures, available evidence links and pending
+input; it bounds execution, releases capacity and enables normal reconciliation.
+Optional logging, notification and Evaluation failure must not replace the
+original error or make an unsuccessful execution look complete. These are
+mechanical contracts to test through real entry and return paths. No universal
+error taxonomy or mandatory model-generated diagnosis is required for admission.
+Conversely, optional diagnostic failure does not invalidate independently
+verified work; retain both facts and judge the actual outstanding requirement.
+
+The worker chooses a safe correction, a useful diagnostic, a justified wait or
+owner help. Before repeating an external effect, inspect its current target or
+use that operation's supported idempotency contract; missing acknowledgment
+does not prove the effect failed. Continue independent work when possible.
+Record the observed result and remaining obligation through normal settlement.
+A healthy wait needs no new investigation at every wake. Repeated unsuccessful
+execution calls for reconsideration; backoff limits frequency, not total cost
+or the quality of the next decision. Diagnosis is agent judgment, not a rule
+to change strategies after a fixed error count.
+
+Recovery cannot depend entirely on the failed authored workflow returning a
+special instruction. Its outer execution boundary and exact caller report
+must still expose failure. An available owner can investigate with existing
+tools and revise the method through authorized controls. Explicit workflow
+selection is not silently bypassed. A dead Host requires the installation's
+process supervisor/operator; an unavailable owner uses only the fallback
+actually installed. Automatic supervisor routing remains deferred as stated
+above. A safe visible unresolved outcome is not successful restoration.
+
+The [recovery review and trial plan](../proposals/recovery-from-execution-evidence-20260922.md)
+separates tested mechanics, observed agent behavior and remaining gaps.
+
 ## Plain names
 
 Host and App identify responsibility. Core and replaceable capabilities identify

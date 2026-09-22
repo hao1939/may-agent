@@ -132,6 +132,9 @@ current-design list.
 
 ## Tier 3 — Active proposals and trackers
 
+- [Recover current work from execution evidence](proposals/recovery-from-execution-evidence-20260922.md)
+  — lessons from failed recovery, structured facts and step-by-step diagnosis,
+  current guarantees and gaps, and bounded trials before more mechanisms;
 - [Task context discovery](proposals/task-context-discovery-20260917.md)
   — shared Task entry, bounded discovery references, and contribution handoff;
 - [Design documentation live-truth review](proposals/design-doc-live-truth-review-20260920.md)

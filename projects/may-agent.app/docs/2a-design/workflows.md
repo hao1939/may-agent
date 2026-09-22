@@ -652,6 +652,10 @@ evidence, validate its applicability, and continue unfinished work on the same
 Task**. It applies to a resumed executor and to a replacement agent. Neither
 agent identity nor remembered conversation is the work's authority.
 
+The [shared recovery rule](system-boundary.md#recovery-uses-evidence-before-repetition)
+uses structured facts first, then linked step evidence when diagnosis is needed.
+Improving the failed implementation is separate from restoring this assignment.
+
 Runtime retains Task identity, current specification, accepted results and
 previous-attempt evidence. `previousAttempt.unacceptedResult` is a proposed
 result whose settlement failed; it is inspectable evidence, not an accepted
