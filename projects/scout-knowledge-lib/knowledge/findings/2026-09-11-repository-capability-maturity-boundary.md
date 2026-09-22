@@ -1,8 +1,8 @@
 <ai_context>
-summary: "GitHub metadata, README capability lists, and even extensive tests do not imply uniform implementation maturity. Pinned inspection ranges from loomlc's design-only tree, through IvyClaw's mixed-strength capability paths, to ContextBrake's working installer and diagnostics around runtime adapters that are still behaviorally neutral. Discovery and adoption systems therefore need revision-pinned, per-capability evidence states rather than one repository-wide 'implemented' badge."
-triggers: ["GitHub discovery", "repository metadata", "capability maturity", "implementation evidence", "agent orchestrator", "loomlc", "IvyClaw", "ContextBrake", "no-op adapter", "per-capability conformance", "adoption gate"]
-last_updated: "2026-09-15"
-source_basis: "GitHub Search API observations and pinned repository inspection of stritech-oss/loomlc at commit 6abd7be0d525a01bfe22d0f704370385bd62a9e9, ivyfan-toowell/IvyClaw at commit e6de6f68eebcc8f7f72b61ce2a3d6f4486cca46b, and dougcunha/context-brake at commit 501f28ffb413aca2ce11d311ce1af7f4dcc9946e. Documentation, complete recursive trees, and selected implementation/check scripts were inspected; none of the projects was executed."
+summary: "GitHub metadata, README capability lists, and even extensive tests do not imply uniform implementation maturity. Pinned inspection ranges from loomlc's design-only tree, through IvyClaw's mixed-strength capability paths and ContextBrake's neutral runtime adapters, to Dynamic Tool SDK's public adapters and tests whose required proprietary core is absent from the repository. Discovery and adoption systems therefore need revision-pinned, per-capability and per-dependency evidence states rather than one repository-wide 'implemented' badge."
+triggers: ["GitHub discovery", "repository metadata", "capability maturity", "implementation evidence", "agent orchestrator", "loomlc", "IvyClaw", "ContextBrake", "Dynamic Tool SDK", "missing private core", "no-op adapter", "per-capability conformance", "adoption gate"]
+last_updated: "2026-09-22"
+source_basis: "GitHub Search API observations and pinned repository inspection of stritech-oss/loomlc at commit 6abd7be0d525a01bfe22d0f704370385bd62a9e9, ivyfan-toowell/IvyClaw at commit e6de6f68eebcc8f7f72b61ce2a3d6f4486cca46b, dougcunha/context-brake at commit 501f28ffb413aca2ce11d311ce1af7f4dcc9946e, and narko4u/dynamic-tool-sdk at commit dd836a81db081a8346d6c1d02c8fec10a2281c35. Documentation, complete recursive trees, and selected implementation/check scripts were inspected; none of the projects was executed."
 </ai_context>
 
 # Repository Scope Is Not Implementation Maturity
@@ -70,6 +70,25 @@ But the repository's headline description is **“Context telemetry and tool-cal
 The key distinction is not simply “tests versus no tests.” Tests are scoped evidence: this revision has strong evidence for installation and diagnostics, but its runtime-behavior checks prove neutral hooks can be registered, loaded, and timed. An adoption record should therefore attach each test or receipt to the capability it exercises. A package-level green suite cannot promote adjacent roadmap behavior from **documented design** to **implemented**.
 
 Pinned evidence also includes the [complete recursive tree](https://api.github.com/repos/dougcunha/context-brake/git/trees/501f28ffb413aca2ce11d311ce1af7f4dcc9946e?recursive=1), returned with `truncated: false`, and the [README](https://github.com/dougcunha/context-brake/blob/501f28ffb413aca2ce11d311ce1af7f4dcc9946e/README.md), which separately lists telemetry/brake as PRD 02 and checkpoint/boot as PRD 03. This was a static inspection; Scout did not install the package or run its suite.
+
+## Update — a green test claim can depend on code absent from the public artifact (2026-09-22)
+
+**Repo:** https://github.com/narko4u/dynamic-tool-sdk  
+**Inspected revision:** https://github.com/narko4u/dynamic-tool-sdk/commit/dd836a81db081a8346d6c1d02c8fec10a2281c35  
+**Discovery query:** https://api.github.com/search/repositories?q=%22AI+agent%22+evaluation+in%3Aname%2Cdescription%2Creadme+pushed%3A%3E%3D2026-09-21&sort=updated&order=desc&per_page=30 (`incomplete_results: false`; first 30 of 7,979 results)
+
+Dynamic Tool SDK exposes a concrete and potentially useful pattern: inject one persistent `use_toolset` bootstrap schema, let the model request a named tool group, defer the registry transition to a turn boundary, and filter the next request's schemas to the active groups. The public OpenAI adapter implements request wrapping and response interception, and its tests specify filtering, reset, asynchronous wrapping, and deferred multi-group changes.
+
+The repository does **not**, however, support the stronger README claims that its public surface “proves it works” or that a clean public checkout provides a production-ready SDK:
+
+- The README reports **172/172 passing tests** and says the public adapters and tests are open for evaluation, while identifying `dynamic_tool_sdk/core/`—the schema registry, state machine, filtering, and deferred-execution engine—as proprietary.
+- The [complete recursive tree](https://api.github.com/repos/narko4u/dynamic-tool-sdk/git/trees/dd836a81db081a8346d6c1d02c8fec10a2281c35?recursive=1) has 27 entries and is not truncated. It contains five adapters and five test files but no `dynamic_tool_sdk/core/` directory or module.
+- [`base.py`](https://github.com/narko4u/dynamic-tool-sdk/blob/dd836a81db081a8346d6c1d02c8fec10a2281c35/dynamic_tool_sdk/adapters/base.py) imports `SchemaFilter` from `..core`; [`test_openai_adapter.py`](https://github.com/narko4u/dynamic-tool-sdk/blob/dd836a81db081a8346d6c1d02c8fec10a2281c35/tests/test_openai_adapter.py) imports `dynamic_tool_sdk.core.registry`. The published [`pyproject.toml`](https://github.com/narko4u/dynamic-tool-sdk/blob/dd836a81db081a8346d6c1d02c8fec10a2281c35/pyproject.toml) declares no dependency that supplies that missing core.
+- The README's 10,000-turn VaultSentinel benchmark gives aggregate outcomes but no linked dataset, harness, configuration, or reproducible benchmark script in the pinned public tree. It is a project-reported result, not independently checkable evidence from this artifact.
+
+This adds **dependency closure** to the maturity matrix. Source code and tests can be genuine while the inspectable artifact remains non-runnable because both exercise an undisclosed component. A discovery record should distinguish at least `public artifact complete`, `requires private/runtime dependency`, `test specification present`, and `test execution reproduced`. Test count badges cannot substitute for that closure check.
+
+The architectural pattern remains worth tracking as a documented design with adapter-level implementation. Its evidence ceiling at this revision is narrower: Scout statically inspected the pinned public files but did not possess the proprietary core, run the suite, validate model-selected toolsets, or reproduce the benchmark.
 
 ## Design implication
 
