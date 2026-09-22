@@ -242,8 +242,9 @@ work. Shape validity does not prove semantic sufficiency. There is no separate
 model admission service: the ordinary agent attempt reads available required
 context, checks whether the assignment is actionable, and does justified work.
 Addressed input, conversational handoffs, typed dependencies, and creator
-revisions use the same full App-schema validation boundary after their distinct
-availability, authority, freshness, and correlation checks. A rejected input
+revisions use the same full App-schema validation boundary. Each route retains
+its distinct availability, authority, freshness, and correlation checks without
+requiring those checks to occur in one universal order. A rejected input
 identifies the App and invalid field and includes a bounded useful expected value
 or constraint when the selected schema branch provides one; for a literal-kind
 union, diagnostics prefer the selected kind's branch without weakening complete
