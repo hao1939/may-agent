@@ -4,6 +4,7 @@ triggers: ["software factory", "factory inversion", "role of engineer", "why wri
 confidence: "high"
 discovered: "2026-07-12"
 connects_to: ["Orchestration Hollowing", "Governance Compilation Gradient", "Compilation Threshold", "Delegation Surface", "Impedance Principle", "Reverse Centaur"]
+last_updated: "2026-09-22"
 </ai_context>
 
 # The Factory Inversion: When Engineers Stop Writing Software
@@ -109,6 +110,32 @@ A preview URL is valuable review affordance, not behavioral assurance by itself.
 
 Primary sources: [Knecht repository and README](https://github.com/knecht-works/knecht-cloud), [product site and roadmap](https://knecht.works)  
 HN launch: https://news.ycombinator.com/item?id=49709714 (1 point, no comments when checked)
+
+## HN Update — Brownfield Autonomy Is a Promoted Property of a Zone, Not a Model Setting (2026-09-22)
+
+Addy Osmani's practitioner essay on brownfield agentic engineering adds a useful admission layer before the factory receipts above. In a mature system, the repository is not a complete account of behavior: ownership, production traffic, historical compromises, and downstream expectations may live outside the tree. The essay therefore rejects model confidence as the autonomy dial and proposes a human-drawn map:
+
+- **green** areas have good tests and isolation and permit a tight agent loop;
+- **yellow** areas require characterization tests before a change;
+- **red** areas such as authentication, billing, and permissions require human pairing at every step or are not changed.
+
+The strongest part is that these are not permanent labels. Yellow becomes green only after current behavior has been captured and the module owner has reviewed the agent's first changes. In other words, autonomy is a **promoted capability of a bounded subsystem**, earned from evidence about blast radius, observability, and recovery—not a global entitlement that arrives with a stronger model.
+
+This also clarifies what a brownfield factory needs before scaling parallel work. For yellow and red areas, the essay recommends a separate read-only archaeology pass that records entry points, owners, callers, abstractions, tests, production signals, relevant history, and unresolved questions, with each claim citing an artifact. Planning then starts in a clean context; implementation stops if the map proves wrong; review starts fresh from acceptance criteria. The memo is not proof that the map is complete, but it prevents every new worker from silently paying for—and then discarding—the same discovery.
+
+A practical admission record for each work unit can therefore precede the factory's environment, behavior, and acceptance receipts:
+
+1. **Zone and owner** — who assigned the risk class, what exact paths or services it covers, and who can promote it;
+2. **Current-behavior baseline** — which independently authored characterization, replay, or shadow-traffic checks pin down behavior before modification;
+3. **Rollback and observability** — how a bad change is detected and reversed, including production-only signals that unit tests cannot represent;
+4. **Promotion evidence** — which checks and initial human-reviewed changes justify more autonomy rather than merely showing one run succeeded.
+
+This complements the library's [dual-verification migration finding](findings/2026-08-25-whole-repository-migration-needs-dual-verification.md): a migration must prove both replacement and compatibility, while the zone record decides whether an agent should be allowed to attempt that migration with a tight loop, tests-first supervision, or continuous pairing. It also complements [PRFlow's maintained review system](findings/2026-08-05-github-prflow-review-retrospective-governance.md): repeated corrections can be compiled into tests, hooks, types, or skills, gradually converting hidden brownfield knowledge into enforceable factory infrastructure.
+
+**Evidence boundary:** this is a detailed practitioner prescription, not a controlled evaluation of the zoning method. The article cites multiple external migrations and benchmarks, but this scan did not independently verify those linked case studies. The HN submission had one point and no comments when retrieved, so HN supplies discovery rather than corroboration. The durable claim is the control design—not evidence that it improves throughput or defect rates. A team adopting it should track promotion reversals, review time, escaped defects, rollback frequency, characterization mismatches, and residual legacy dependencies by zone.
+
+Primary source: https://addyo.substack.com/p/brownfield-agentic-engineering  
+HN: https://news.ycombinator.com/item?id=49798794
 
 ## Prediction
 
