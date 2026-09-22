@@ -183,9 +183,49 @@ They cover persistence, restart, reporting isolation and navigation; they do
 not establish agent diagnosis. The earlier #226 real-socket A/B proves useful
 errors and safe admission, with no model calls.
 
-## First persistent-workflow observations
+## Current unfamiliar-code recovery observation
 
-The bounded real-agent trial is now complete. Its
+Hao clarified that known interruption handling, prepared alternative methods and an
+experiment-author idempotency guard do not establish recovery from unfamiliar broken
+code. Those earlier trials below remain mechanical prerequisites only.
+
+One isolated real-agent trial now demonstrates a narrow positive case: an authored
+workflow launched a fresh helper that failed before structured result, reporting only
+an ordinary generic execution error plus command-record path. The tested owner was
+given the original outcome, ordinary Task/run/source/contract discovery and ordinary
+coding tools, not fault details or a repair. It read the record, order contract and
+source, made the source edit itself, and verified a scratch probe. The unchanged
+`deliver-order` workflow then completed the original `effect-child` at **generation 1**
+through production retry/settlement. Its exact caller input became done; the final
+owner read accepted Task evidence and actual output, preserved the independent audit,
+and a fresh-order control passed. An unchanged `tasks.update` call did not revise the
+assignment despite the model saying it requeued/revised it. A source repair can work
+through ordinary retry without a specification change.
+
+The [current-first report](../../experiments/recovery-workflow-20260922/REPORT.md)
+retains prompts, successful investigation reads and edit, source before/after, IDs,
+attempts and costs at the durable supervisor evidence root. Independent supervisor
+verification checked the actual store, both transcripts and 57 evidence hashes.
+Two author interventions fixed only harness errors: an initial-context check wrongly
+rejected the owner's learned diagnosis in its final prompt, and a count assertion
+mistook the root group for a fourth Task. The same store was continued; the tested
+helper was never repaired by the author and no extra paid repair trial was run.
+
+This is one small unfamiliar-code repair, not unattended reliability, degraded-evidence
+coverage, arbitrary unknown-failure competence or installed production activation.
+Delegation is seeded and reconciliation manually driven. Ordinary tools are scoped by
+instructions, not an OS sandbox. The healthy control checks the repaired operation,
+not healthy owner judgment. No new recovery mechanism or deployment follows.
+
+Existing optional Evaluation ongoing-failure assessment already provides another
+reasoning route through review/publication and May's ordinary message intake. It is
+opt-in and allowance/capacity limited, not universal immediate recovery; inspect that
+existing route before proposing another monitor.
+
+## Earlier mechanical prerequisite observations
+
+The prepared-alternative and operation-guard trials are retained, not unknown-failure
+success. Their
 [current-first report](../../experiments/recovery-workflow-20260922/REPORT.md)
 and reproducible source are retained with this repository. Raw runs remain
 local and ignored by Git.
@@ -195,8 +235,8 @@ result. Production admission, workflow execution, failed-attempt settlement and
 exact caller return retained the attempt and workflow-run identities. A real
 `gpt-5.6-sol` owner read ordinary Task/contract evidence, revised the same child
 to another explicit workflow, and a later owner attempt considered the returned
-one-marker result. The unrelated audit Condition survived. This is one bounded
-useful judgment path, not a reliability rate.
+one-marker result. The unrelated audit Condition survived. This is a prepared-alternative
+judgment path, not unfamiliar-code repair or a reliability rate.
 
 The acknowledgment-loss baseline exposed a different boundary. In baseline-3,
 method A wrote the marker and threw; the owner successfully read that existing

@@ -4,13 +4,109 @@
 
 **Host:** `20049916b79d2ba2d2265edf5eeb605ff0e59c05` (merged PR #226)
 
-**Decision:** keep the existing Host recovery mechanics. The demonstrated correction is only a bounded operation-level create-once and exact-content check for this fixture; no Host/runtime change or deployment is justified.
+**Decision:** keep existing Host recovery mechanics. The current model-authored helper repair restored one unfamiliar-code failure; earlier prepared alternatives and operation guards are prerequisites only. No Host/runtime change or deployment is justified.
 
-## Results
+## Current requirement: unfamiliar broken-code recovery
+
+Hao corrected the scope: prepared method B and an experiment-author operation guard
+are **mechanical prerequisites, not proof of unknown-failure recovery**. The new
+`unknown-code-trial-1` demonstrates one small unfamiliar-code repair by the tested
+model, with two disclosed harness corrections. It does not establish unattended
+reliability or coverage of every installed Task. No recovery runtime change follows.
+
+### Actual owner behavior and original outcome
+
+An authored `deliver-order` workflow launched a fresh Bun helper. The helper treated
+the domain contract's SKU-keyed catalog object as an array and failed before writing
+its delivery document. The caller saw only an ordinary generic execution error and
+a record path; the initial prompt contained neither fault nor repair. Ordinary
+subprocess stderr, source, order and contract were discoverable.
+
+The real installed-May-profile `gpt-5.6-sol` owner read Task/contract, workspace
+README, order, command record and helper source; used `edit` to change the catalog
+lookup; and ran an independently calculated scratch probe. The complete source
+diff is accounted for by that one model tool call. The author did **not** repair the
+tested helper. The owner requested `tasks.update` with unchanged input. Despite its
+claim to have “requeued/revised” work, that call did not change the specification or
+generation. The harness drove ordinary retry of **effect-child generation 1** with
+its unchanged **deliver-order** selection, and production workflow settlement
+accepted `{orderId:"order-715",totalCents:1373,lineCount:2}`. The exact original input
+became done. The final owner read both accepted Task evidence and actual output,
+returned verified delivery, and retained the independent audit wait. A fresh second
+order through the same repaired workflow settled with `{orderId:"order-716",
+totalCents:1000,lineCount:1}`. This control checks worker behavior, not healthy-owner
+judgment.
+
+### Evidence and exact identity
+
+Durable root (not the disposable worktree):
+`/app/.state/review-pilots/apps-health-20260922/repair/unknown-code-trial-1/`.
+
+- `receipt.json`: `b0933d579c833eb8f8659c322fdb99afba823aef1c084f0be3f8a256b5181aa0`.
+- `verification.json`: `ca6e02d04ec2cacfafb2f37e17e4eae2247488753bf612e3cbfb253967c0b8a3`; source checker `verify-unknown-failure.ts` passes ten grouped assertions without model calls.
+- `source-before.ts`: `898715f20cffd97c86223bcfe2081e097004a52f9e0e5027a60ae0f26a65a4e3`; `source-after.ts`: `a611a81f52b0fe4d855160e651304522de60309281c0cfe20d8e72c79166a58f`.
+- `first-failure.json`: `dac2259f357363a4499aad69055700a1580165affe577eae14797a8092c99723`; first failed attempt `r_1_ae74fbcd-0988-4619-8606-4fff0a8c05c1`, workflow run `wr_1790061133288_9vq8`, no accepted result.
+- Exact caller input `appdep_055b9dd038f7b8ac802680c3`; successful original workflow `wr_1790061165599_w4ab`, attempt `r_1_436ee147-2e38-4cca-9ab0-7e7899a5475d`; control workflow `wr_1790061233132_fb6f`.
+- Model sessions `s_1790061133373_b0a9f7fe-7854-49cd-936d-6ba9307bbe3f` and `s_1790061214105_32fefd88-8c62-488e-aaa1-7fded34225dd` under `runtime-p8Qp1T/state/sessions/`; exact prompts `owner-prompt-1.txt`, `continuation-owner-prompt-1.txt`, `system-prompt.txt`; JSONL preserves tool results and cost records.
+- Independent supervisor verification: `/app/.state/review-pilots/apps-health-20260922/repair/unknown-code-independent-verification.json`, hash `3d5d24e1a95d556a1671f671cac11ccf985f04ad3dc8ad4c972417fae156b544`. It checked actual isolated SQLite state, transcripts and 57 hashes with no mismatches.
+
+Two paid model sessions used 6 and 3 assistant messages, 162,831 aggregate reported
+tokens (including cached context), reported cost **0.2663878** in provider cost units.
+Configured limit: two invocations, 240 seconds each, fallback disabled; command default
+30 seconds. First failure through completed healthy control took **99,937 ms**, including
+manual harness repair/continuation. No human supplied diagnosis or source patch.
+
+### Harness failures, interventions and remaining limits
+
+Both nonzero runs are retained rather than rewritten as clean passes:
+
+1. `initial-receipt.json`: after the successful source repair and original workflow
+   settlement, the harness wrongly applied its initial-context leakage assertion to
+   the second prompt containing the owner's *own learned diagnosis*. It blocked that
+   provider invocation. The author corrected the check to initial context only and
+   resumed the **same isolated store**, leaving source, Task and outcome untouched.
+2. `continuation-receipt.json`: final model verification and healthy control succeeded,
+   then the task-count oracle expected four rows. Actual count was three because
+   `root` is a group, not a Task. Corrected assertion and `--audit-retained` checked the
+   existing results without another workflow or model execution. Final receipt is
+   this audit's snapshot, not a claim that either earlier command exited successfully.
+
+These are experiment-harness failures, not model or production recovery failures.
+The final provider did attempt an out-of-workspace read of installed May evaluator
+feedback because of its role prompt; it was unavailable. No author diagnosis was
+read there. Coding tools were ordinary production tools, instruction-scoped rather
+than OS-sandboxed. Initial delegation was seeded; reconciliation/result projection
+were manually invoked. This is not automatic scheduling or production activation
+proof. The domain defect was small and source/logs were accessible; degraded evidence,
+unavailable owners and arbitrary novel failures remain unproved. Existing optional
+Evaluation ongoing-failure review already supplies another reasoning route; this
+trial does not establish its installed coverage and justifies no new monitor.
+
+### Review and checks
+
+Tech-lead's independent critique is retained at
+`/app/.state/review-pilots/apps-health-20260922/repair/UNKNOWN-CODE-TRIAL-REVIEW.md`.
+It accepts the bounded restoration and requires the no-op update, timing and
+harness-intervention corrections recorded above. The initial prompt separation
+check uses known sentinels; independent prompt/transcript review, not that simple
+assertion alone, supports the separation claim.
+
+- Exact evidence verifier: ten grouped checks passed; no new model calls.
+- Bun build of the harness with external dependencies: passed (syntax/bundling check).
+- Repository `bun run typecheck`: passed before and after changes; its configured
+  include set does not typecheck this experiment, so this is not full experiment typing.
+- `bun scripts/check-may-design-integrity.ts`: zero errors and warnings.
+- `bun run check:may-design`: **blocked after integrity passed**, because this Apps
+  worktree lacks the independent Host import
+  `projects/may-agent/packages/sdk/src/task-contract.ts` needed by design examples.
+  The remaining combined checks are not claimed as passes.
+- `git diff --check`: passed. No CI, merge, installation or deployment is claimed.
+
+## Prior mechanical prerequisites (not unknown-failure success)
 
 | Case | Actual result | Meaning |
 | --- | --- | --- |
-| Failure before effect (`trial-2`) | One failed method-A workflow returned no accepted result; the blocked report retained exact attempt/run identity. The real owner revised the same child to method B, which produced one effect. A second owner attempt considered the returned evidence. The unrelated audit Condition survived. | Bounded real-agent recovery pass. It exercises production admission, execution, settlement, caller return and authorized same-Task revision. Seeded initial delegation and manual reconciliation are disclosed seams, so this is not automatic-scheduling proof. |
+| Failure before effect (`trial-2`) | One failed method-A workflow returned no accepted result; the blocked report retained exact attempt/run identity. The real owner revised the same child to method B, which produced one effect. A second owner attempt considered the returned evidence. The unrelated audit Condition survived. | Prepared-alternative owner path only, not unfamiliar-code repair. It exercises production admission, execution, settlement, caller return and authorized same-Task revision. Seeded initial delegation and manual reconciliation are disclosed seams, so this is not automatic-scheduling proof. |
 | Acknowledgment loss, unguarded (`ack-lost-baseline-3`) | Method A wrote one marker and threw. The owner successfully read that marker before revising the same child to method B; it did not retire the dependency wait. Method B appended a second marker. The child remained pending/failed and the original input remained handling. | Real duplicate. Better discovery did not make an unsafe operation safe. |
 | Acknowledgment loss, guarded (`ack-lost-candidate-1`) | Method A created one marker and threw. The owner selected method B before reading the marker. Method B used exclusive create, found the marker, verified exact expected bytes, and returned `reused:true`; the same child converged, the exact original input became done, and the final owner read the effect. Count stayed one. | Operation guard prevented duplication even though pre-replay owner judgment did not improve. This is not evidence of improved agent diagnosis. |
 | Healthy control | Fresh method B produced one marker in both acknowledgment-loss runs. | Worker-operation control only; it does not test healthy owner judgment or daemon scheduling. |

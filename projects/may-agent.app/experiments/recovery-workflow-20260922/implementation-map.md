@@ -34,11 +34,34 @@ Source baseline: Host `20049916b79d2ba2d2265edf5eeb605ff0e59c05` (merged PR #226
 
 Sources: `/app/.state/review-pilots/apps-health-20260922/repair/WHY-SELF-REVIEW-MISSED.md`, `PR225-ROLLOUT-REVIEW.md`, and the approved proposal.
 
-## Observed trial disposition
+## Current unfamiliar-code trial
+
+`run-unknown-failure-trial.ts` reuses the production path above but provides ordinary
+coding/search/command tools and one `deliver-order` workflow invoking a fresh helper
+process. A generic error returns to the exact owner. Source, order contract and command
+stderr are discoverable rather than injected as diagnosis. The owner performed the
+one-line source repair; production retry used those new bytes on the **same generation**.
+Its unchanged `tasks.update` was not a requirement revision despite the model's prose.
+No `implementationRevision` input field, new Task, selected alternate method or Host
+fallback was needed. Final owner inspection and a fresh-order worker control passed.
+
+See `REPORT.md` for durable exact evidence, source hashes, 2 model sessions/costs,
+independent supervisor verification, and both harness-only corrections. The author
+resumed the exact store after correcting an overly broad prompt check, then audited
+existing completion after correcting a root-group/task-row count. These interventions
+limit the claim to bounded restoration, not a clean unattended run. The operation did
+not touch live state; its source repair was not applied to any installation.
+
+Existing optional Evaluation ongoing-failure review is an additional reasoning route
+(`evaluation.app/app.ts` → automatic review/publication → May message intake). It is
+opt-in, allowance/capacity limited, and not proved by this fixture; no new monitor is
+justified. Route audit: `/app/.state/review-pilots/apps-health-20260922/repair/RECOVERY-REASONING-ROUTES.md`.
+
+## Prior mechanical prerequisite disposition
 
 The harness retained exact prompts/transcripts; workflow run and Task attempt IDs; the first caller report; parent and child generations; unrelated Condition identity before and after; effect and Task/input counts; elapsed time/model configuration; pre-execution source hashes; and every unsuccessful run. See `REPORT.md` for current-first results and exact hashes.
 
-The failure-before-effect case passed one bounded real-owner path: the agent discovered the failed child from ordinary evidence, used creator-authorized update on the same child, preserved explicit workflow selection and the unrelated wait, and the revised workflow produced the same externally checked one-marker effect as the worker control. This did not prove automatic scheduling because reconciliation was manually driven.
+The earlier failure-before-effect case passed a prepared-alternative path, not unknown-failure repair: the agent discovered the failed child from ordinary evidence, used creator-authorized update on the same child, preserved explicit workflow selection and the unrelated wait, and the revised workflow produced the same externally checked one-marker effect as the worker control. This did not prove automatic scheduling because reconciliation was manually driven.
 
 The acknowledgment-loss baseline then produced two markers even though the owner read the first effect before selecting method B. The demonstrated correction is a fixture operation guard—exclusive create of a stable target plus exact expected-content verification—not a Host recovery or model-judgment change. Under that guard the retry/fallback returned `reused:true`, the same child converged, the original input became done, and the count stayed one. Direct operation checks rejected malformed or inaccessible existing evidence without writing.
 
