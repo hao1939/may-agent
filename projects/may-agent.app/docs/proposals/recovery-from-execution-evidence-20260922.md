@@ -195,6 +195,18 @@ from the failed workflow; it does not require the model to diagnose in exactly
 one call or use a prescribed method. Retained local review:
 `/app/.state/review-pilots/apps-health-20260922/repair/recovery-design-may-review.md`.
 
+During the #226 rollout, the service restart interrupted May's active repair
+attempt. Runtime requeued the same Task; a later stale result was also rejected
+and retried. May read the successful deployment receipt, completed its rollout
+and design-review obligations without a duplicate deployment, and retained the
+separate unresolved Evaluation wait. This is a real recovery observation during
+instructed delivery, not the controlled vague-error/workflow diagnosis trial.
+Two additional real-runtime tests passed for exact child-failure return to
+Conversation, with unsuccessful execution kept separate from completion. They
+use scripted executors and do not prove model judgment. Exact local evidence:
+`recovery-design-task-after.json`, `pr226-live-verification.json` and
+`recovery-caller-boundary-tests.log` in the September 22 evidence directory.
+
 ## Learning without importing another framework
 
 Scout's [failure-mode review](../../../scout-knowledge-lib/knowledge/agent_failure_modes.md)
