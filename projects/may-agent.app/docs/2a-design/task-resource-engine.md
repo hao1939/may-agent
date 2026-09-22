@@ -44,8 +44,8 @@ Turn Stop fences one execution/input; a worker's `stopped` result records failur
 Owner closure prevents new claims and late settlement, retaining unresolved work visibly non-success. It neither fulfills Requests nor
 implicitly cancels children; old events cannot reopen it, and new work after closure uses a new linked Task. A conventional result close
 requires the exact accepted attempt and current generation/resource-version fences. The shared guard also requires a converged Task without
-pending input, attempt or retained wait. Rejection preserves every obligation; exact replay is idempotent. Intentional withdrawal stays
-a separate cancellation control under existing authority.
+pending input, attempt or retained wait. Rejection preserves Conditions, dependencies, facts and all obligations; exact replay returns the
+existing receipt without another write. Intentional withdrawal remains a separate cancellation control that may stop active work under existing authority.
 
 The [proposal](../proposals/conversation-input-unification.md) owns prerequisite
 handling, control scopes, code deletion and migration. Source verification does
