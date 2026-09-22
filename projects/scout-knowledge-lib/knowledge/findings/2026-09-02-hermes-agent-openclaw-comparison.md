@@ -1,8 +1,8 @@
 <ai_context>
 summary: "Current Hermes Agent and OpenClaw both have native learning loops, subagents, persistent memory, and recovery machinery. Their useful distinction is direct mutation versus governed state transitions; neither has controlled evidence of general self-improvement."
 triggers: ["Hermes Agent comparison", "OpenClaw comparison", "learning-loop governance", "Skill Workshop", "background skill review"]
-last_updated: "2026-09-02"
-source_basis: "Official repositories pinned at Hermes 1cb3ab6 and OpenClaw 1212f99, official docs/releases, bounded isolated Hermes checks, and six attributed issue records."
+last_updated: "2026-09-22"
+source_basis: "Official repositories pinned at Hermes 1cb3ab6 and OpenClaw 1212f99, official docs/releases, bounded isolated Hermes checks, six attributed issue records, and one observational XHS discussion read on 2026-09-22."
 </ai_context>
 
 # Hermes Agent vs OpenClaw: the difference is mutation governance
@@ -43,6 +43,28 @@ an always-on catastrophic-command floor; OpenClaw has broad sender, tool,
 device, and audit controls. Their normal local defaults still grant broad
 operator authority, and neither workspaces nor multi-agent routing provide
 hostile tenant isolation.
+
+## XHS adoption signal: visibility decay is not project death
+
+A current observational read of an August 24 XHS post found a highly engaged
+claim that OpenClaw had “disappeared” only months after its mass-market moment:
+**1,270 likes, 557 collections, and 469 comments** at observation. The body
+provides no usage, release, repository, or shutdown evidence, so it does not
+establish that OpenClaw declined or died.
+
+The comments are more useful as a segmentation signal than as a popularity
+measure. Some participants described OpenClaw as obsolete or lacking practical
+use; others reported an instance running for two months, disputed claims that
+new agents are built on OpenClaw, or described moving to Hermes because they
+wanted a personal-manager layer alongside Claude Code for complex coding. This
+supports a narrower interpretation: public attention can move on before the
+underlying workflow category disappears, and users distinguish a coding
+executor from a persistent personal coordinator. It does **not** show which
+product retains more users or solves tasks better. Technical judgments in this
+note remain grounded in the pinned project sources above, not this social-media
+reception sample.
+
+- XHS observation: [“OpenClaw像从没存在过一样消失了”](https://www.xiaohongshu.com/explore/6a8c54760000000033029f8d), note ID `6a8c54760000000033029f8d`.
 
 ## Consequence for Scout and Herdr
 
