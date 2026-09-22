@@ -120,6 +120,12 @@ The four-hour `task-hygiene-review` schedule targets the existing May hygiene
 Task directly. It replaces that Task's timer only as its wake method: the Task's
 identity, goal, acceptance, constraints and other waits remain unchanged. The
 obsolete timed wait is retired only after this schedule is active and verified.
+Hygiene may close completed work only through the installed guarded
+close-after-result control, using the exact accepted attempt and current Task
+fences after checking the full current obligations. A failed or unavailable
+guarded close preserves the Task for later review; it never falls back to raw
+cancellation merely to reduce counts. Intentional withdrawal remains a separate,
+explicitly authorized decision, including when it stops active work.
 
 The [shared-loop design](../may-agent.app/docs/proposals/conversation-input-unification.md)
 owns the lifecycle and its evidence. Host deployment and runtime operations

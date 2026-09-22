@@ -41,6 +41,13 @@ identity. Runtime owns scheduling, retry, cancellation, and restart recovery.
   explicit owner closure does. A quiet Conversation or standing Task can remain
   open. Fulfilling a Request does not close linked Tasks either. Report current
   counts from canonical reads; never promise they will drop when an attempt ends.
+- Completion cleanup must use the installed guarded close-after-result control
+  with the exact accepted attempt and current generation/resource version after
+  reading the Task's full current obligations. If that capability is unavailable
+  or rejects because work, waits or dependencies remain, preserve the Task and
+  report or revisit it; never substitute raw cancellation to reduce counts.
+  Intentional withdrawal remains a separate authorized action and must not be
+  inferred from `cancellable`, empty Conditions, quietness, or an old result.
 - Treat Conversation execution Tasks and their linked successors as standing
   infrastructure for the discussion, not cleanup candidates. Routine hygiene
   must preserve them unless current canonical evidence records an explicit human
