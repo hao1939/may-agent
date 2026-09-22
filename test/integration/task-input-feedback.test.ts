@@ -57,7 +57,7 @@ test("public targeted input retains its receipt, attaches once and reaches only 
     bus,
     db,
     hasApp: (id) => runtime.host.hasApp(id),
-    acceptsAppInput: (id, input) => runtime.host.acceptsInput(id, input),
+    validateAppInput: (id, input) => runtime.host.assertAcceptsInput(id, input),
     hasAgent: () => false,
     hasSession: () => false,
   });
@@ -125,7 +125,9 @@ test("public targeted input retains its receipt, attaches once and reaches only 
         { source: "test" },
       ),
     ).toThrow("conflicts");
-    expect(() => admit({ ...command, input: { kind: "invalid", data: {} } })).toThrow("does not accept");
+    expect(() => admit({ ...command, input: { kind: "invalid", data: {} } })).toThrow(
+      'Invalid input for App sample at /kind: must be equal to constant {"allowedValue":"message"}',
+    );
   } finally {
     stops.forEach((stop) => stop());
     runtime.close();

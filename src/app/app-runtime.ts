@@ -272,7 +272,10 @@ export async function runAppRuntime(opts: {
     bus,
     db: getDb(opts.persistDir),
     conversationAppId,
-    acceptsAppInput: (appId, input) => appInboxRuntime?.host.acceptsInput(appId, input) ?? false,
+    validateAppInput: (appId, input) => {
+      if (!appInboxRuntime) throw new Error("App input admission is unavailable");
+      appInboxRuntime.host.assertAcceptsInput(appId, input);
+    },
     hasApp: (appId) =>
       appRegistry.snapshot().entries.some((entry) => entry.definition.id === appId.trim().replace(/\.app$/, "")),
     hasAgent: (agent) => manager.hasAgent(agent),

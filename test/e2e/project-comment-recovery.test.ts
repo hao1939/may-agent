@@ -140,7 +140,11 @@ test.each([
         }
         if (status !== 202) {
           expect(body.eventId).toBeUndefined();
-          expect(body.error).toContain("does not accept this input");
+          expect(body.error).toContain(
+            scenario === "comment"
+              ? 'Invalid input for App comment at /kind: must be equal to constant {"allowedValue":"owner-review"}'
+              : "App history has no handler for input kind message",
+          );
           expect(dropped).toEqual([]);
           expect(queryEvents(db, { types: ["app.input.requested"] })).toEqual([]);
           expect(db.prepare("SELECT task_id FROM app_tasks").all()).toEqual([]);

@@ -18,7 +18,7 @@ describe("daemon event subscribers", () => {
       const bus = new EventBus();
       attachEventPersistence({ bus, persistDir: root });
       const events = createEventInterface({ bus, db, hasApp: () => false, hasAgent: () => false,
-        hasSession: () => false, acceptsAppInput: () => false });
+        hasSession: () => false, validateAppInput: () => { throw new Error("invalid App input"); } });
       db.exec("INSERT INTO metrics(id, threshold, updated_at) VALUES ('health', 10, 0), ('other', 5, 0)");
       db.exec("INSERT INTO metric_alerts(id, metric_id, created_at) VALUES (7, 'health', 1)");
       const edits = [
@@ -47,7 +47,7 @@ describe("daemon event subscribers", () => {
       const bus = new EventBus();
       attachEventPersistence({ bus, persistDir: root });
       const events = createEventInterface({ bus, db, hasApp: () => false, hasAgent: () => false,
-        hasSession: () => false, acceptsAppInput: () => false });
+        hasSession: () => false, validateAppInput: () => { throw new Error("invalid App input"); } });
       db.exec("INSERT INTO metrics(id, threshold, updated_at) VALUES ('health', 10, 0)");
       db.exec("CREATE TRIGGER refuse_metric BEFORE UPDATE ON metrics BEGIN SELECT RAISE(ABORT, 'write failed'); END");
       const edit = (to: number) => events.publish({ type: "metric.threshold_changed", idempotencyKey: `edit-${to}`,

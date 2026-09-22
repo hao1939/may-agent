@@ -123,7 +123,7 @@ const EVENT_DEFINITIONS: Readonly<Record<string, EventDefinition>> = {
       readEventTaskTarget(input);
       const appInput = record(input.data.input, "app.input.requested data.input") as unknown as AppInput;
       if (!options.hasApp(appId)) throw new Error(`App ${appId} is not loaded`);
-      if (!options.acceptsAppInput(appId, appInput)) throw new Error(`App ${appId} does not accept this input`);
+      options.validateAppInput(appId, appInput);
     },
   },
   "app.task.retry.requested": {
@@ -280,7 +280,7 @@ export const PUBLIC_EVENT_TYPES = new Set([...Object.keys(EVENT_DEFINITIONS)]);
 export type CreateEventInterfaceOptions = {
   bus: EventBus;
   db: SqliteDb;
-  acceptsAppInput(appId: string, input: AppInput): boolean;
+  validateAppInput(appId: string, input: AppInput): void;
   hasApp(appId: string): boolean;
   hasAgent(agent: string): boolean;
   hasSession(sessionId: string): boolean;
