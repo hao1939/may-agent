@@ -4,9 +4,159 @@
 
 **Host:** `20049916b79d2ba2d2265edf5eeb605ff0e59c05` (merged PR #226)
 
-**Current requirement:** verify automatic unfamiliar-code restoration through the installed
-controller/scheduler and normal persisted event/inbox/lifecycle composition. Prior
-manually advanced restoration remains valid bounded evidence, not proof of that chain.
+## Current: caller-less Evaluation → May recovery trial
+
+**Requirement:** determine whether an original system-sourced workflow with **no waiting
+App caller** reaches real Evaluation judgment and May consideration, and whether the
+same work is restored without author-driven advancement. Apps baseline
+`c146591de42913b1fcc2e3042c898fe5b4710829`; Host remains the revision above.
+
+**Observed: one bounded automatic restoration; no missing runtime connection demonstrated.**
+The original `recovery/original-order`, input `original-input`, was admitted once with
+source `{kind:"system",id:"callerless-original"}` and creator `{appId:"recovery"}`.
+Its first failure produced persisted event **13**, accepted by the actual Evaluation
+`task-incomplete-review` inbox subscription. Production `task-outcome-review` read the
+isolated public socket through real `app.task.get`/`task.get` services, consumed the
+ordinary initial allowance, and invoked the real installed-profile evaluator. It read
+the generic execution record, helper, order, contract and failed run; it diagnosed the
+deterministic mismatch without editing source. The workflow wrote/read back an immutable
+report and published event **20**, accepted by May's existing cross-App subscription.
+
+May's real Conversation agent chose `evaluation-report-intake`, supplying that exact
+publication. Intake verified hashes and returned **stale** after a second natural
+workflow failure. May rechecked current source/receipt/Task, correctly retained the
+material concern, made the sole one-line source edit, and verified a scratch output.
+It did not rewrite the Task, choose an alternative workflow or execute the delivery
+workflow manually. Its accepted consideration (event **45**) honestly said the original
+was still pending. On slot release, the existing queued retry executed the repaired
+helper; generation **1**, workflow **deliver-order**, and original specification stayed
+unchanged. Event **53** settled the original/input and the independently checked actual
+output was `{orderId:"order-715",totalCents:1373,lineCount:2}`. There was one original
+output, no duplicate or replacement business Task, and no author intervention after
+admission. No later May verification of final success was observed or required to make
+the operation happen; do not represent May's pre-retry result as final acceptance.
+
+The second failure (event **30**) also automatically reached Evaluation. Its actual
+allowance declined a second semantic call; event **37** retained the exact review as
+**waiting**, with its ordinary next allowance boundary. This remaining review is not
+silently closed by the restored operation. The evaluator's claim that retry timing was
+not represented was too broad: public history supplied retrying while the full persisted
+event contained `retryAt`; the model did not read event 13 itself. Its directly verified
+source defect and May's current-evidence check, not that coverage claim, support repair.
+
+### Exact evidence index
+
+Durable root: `/app/.state/review-pilots/apps-health-20260922/repair/callerless-trial-1/`.
+
+| Evidence | SHA-256 / identity |
+| --- | --- |
+| `receipt.json` | `f8da27165ef68a03f975a76c098ec74fbbff12edd16642a8f98f9c9f6e2556a1` |
+| `harness-executed.ts` | `405117e58e4445fb49563788f4f46965550457dc33f27ff5359097d3d13b4494` |
+| `runtime-snapshot.json` (discovered schema, full isolated rows) | `ad62b9633e1713eea6b04661a37550c522b2483663984df848a3a89089f3fea4` |
+| `evidence-manifest.json` (6,127 hashes verified) | `255d328e827db226c87c11e9128487869bf97e35ee12b9eb164bf01a18368ee9` |
+| `../callerless-trial-1-verification.json` | `56a8b3835ce63d3abc07496cba9f219845d84c16a7f2cf56a6777873c5ecb4a1` |
+| Published report JSON / Markdown | `f92b0dd1ff741c49dd4090ad9157fb5cd479ec20d4c07d160214eb33ee58ff46` / `0f97571e8705438426176762fe00197c04536473a0620574272cd545cc8a01c4` |
+
+First failed attempt `r_1_bd792432-d325-49db-8c8f-710a7390c915`, run
+`wr_1790063838578_d0lq`; second failed attempt `r_1_86f49fd1-b159-4e72-a677-fbfbffeba54a`,
+run `wr_1790063881029_79nf`; successful original attempt
+`r_1_36798b45-61e5-47f8-b5a8-dd64e60f8dfe`. Exact runs, queue profiles, admission items,
+May/Evaluation attempts, wakes and reports are in `runtime-snapshot.json` and
+`runtime-TUCSfx/state/`. Intake run: `wr_1790063891002_do6m`.
+
+Sessions under that state root's `sessions/`:
+- evaluator `s_1790063838761_662f3026-93c5-4985-a27c-2b607497fceb`, transcript hash
+  `fb3f8409bafaf65874a8bbbe7b5f023fad5b0150095317059552868f3fd2758a`;
+- May `s_1790063881251_8ab60f6c-741b-447c-aa8c-b19b6de8d3f2`, transcript hash
+  `6a1601c9f380718a5e43c0c6f69b1fcdb4f01ba9c1b950777e6e55c9d8c4e64b`.
+
+**Cost/time:** 2 actual model invocations of allowed 6; 331,725 aggregate reported tokens
+including cached context; reported cost **0.5301164** (evaluator 0.1965396, May 0.3335768).
+Receipt elapsed **94,807 ms** through runtime drain; console elapsed **95,626 ms** includes
+artifact hashing. Observation ceiling 480 seconds; each invocation timeout 90 seconds;
+fallback disabled. Six Task workflow executions plus May's intake workflow; seven Task
+attempts total. No live allowance reset or configured allowance override: fresh isolated
+report root, default one semantic call per 86,400,000-ms interval. All unrelated schedules
+and May's unrelated GitHub observer were disabled.
+
+### Controls, preflight, prompt separation and limits
+
+The healthy worker control was admitted first, with an **empty order**, using the same
+unmodified helper/verifier. It returned `{orderId:"control-empty",totalCents:0,lineCount:0}`
+and did not enter Evaluation. This controls healthy worker plumbing, not nonempty-order
+behavior or healthy-model judgment. The final nonempty original output proves repaired
+behavior separately. Earlier successful caller trial evidence below is preserved, not rerun.
+
+Three no-paid preflights are retained in the parent evidence directory. Preflight 1
+failed before runtime because the copied App lacked `shared/tools`; preflight 2 stopped
+at the production observer-context guard; these were harness setup defects, not product
+findings. Preflight 3 completed control/failure/admission/public reads and the real
+allowance, then intentionally blocked the evaluator-call boundary. It used its own
+isolated store; no paid decision or production allowance was consumed. Supervisor
+pre-run feedback fixed prompt checking, the observation race and shared-root composition
+before the only paid run. Natural evidence and learned diagnosis are not author leakage.
+
+The retained `prompt-1.json`, `prompt-2.json`, system prompts, source snapshots and actual
+successful reads establish separation: author oracle/manifests and prescribed repair
+were absent from initial tested context; May received Evaluation's learned finding.
+Author evidence sits outside the permitted workspace. Tools are **instruction-scoped,
+not OS-sandboxed**. Evaluator attempted an absolute live-profile feedback read (ENOENT);
+May's read-only `git status` traversed an enclosing `/app/.state` repository and exposed
+unrelated tracked path names. No live DB/App or external action was used and no model
+wrote outside authorized source/scratch. These are isolation limits, not clean sandbox
+proof. Subsequent harness hardening should not be attributed retroactively to this run.
+
+Host modules run in one process with one capacity slot, not the full daemon/worker-process
+isolation. Apps and installed role files are copied into temporary storage; May's Git
+workspace is replaced with local workspace. Explicit production tools are
+`read/bash/edit/write/tasks/workflow/finish`; other installed tools are absent. May's
+interactive workflow tool has fixture runtime/read/paths but not the complete dynamically
+bound Task emitter/reconciliation context; exact intake and direct Task reads succeeded,
+so this does not establish all alternate workflow branches. The source authority permits
+only fixture repair and scratch probes, never real application. Fresh subprocess activation
+and the small known fixture are not arbitrary-code reliability, concurrent multi-slot
+behavior, Evaluation self-failure coverage, or silent-output diagnosis.
+
+### Independent review, checks, and closeout provenance
+
+Independent evidence review is retained at
+`/app/.state/review-pilots/apps-health-20260922/repair/CALLERLESS-TRIAL-REVIEW.md`
+(SHA-256 `8a2b4c32e07e3c3385704e0108d7f7285d270dc73acd0458fe3999f2a52a263d`).
+Its separate compact verification is
+`/app/.state/review-pilots/apps-health-20260922/repair/callerless-independent-verification.json`
+(SHA-256 `8dbe8f780c4c037c0b2446e3fee058ca4e458dd47f8781e0ed564393b457ff1f`).
+The first closeout tech-lead review is retained in session
+`s_1790064618067_ab7bd1fd-be33-4a70-89bc-8bb834733ab1`; it found three documentation and
+verifier robustness corrections, all applied before commit, and no runtime/hygiene change
+or unrelated-wait claim. Its result is `/app/.state/sessions/s_1790064618067_ab7bd1fd-be33-4a70-89bc-8bb834733ab1/result.json`
+(SHA-256 `a33d2a9f53fdaccd19087cf48d40cdf6e7d81a7261623b327fcaba3b10c5297b`).
+
+Closeout checks reran the read-only verifier without a model or workflow and confirmed all
+6,127 hashes plus the exact event/attempt/output/cost/timing relationships. TypeScript
+bundling of `run-callerless-trial.ts`, Python bytecode compilation of the verifier,
+repository TypeScript typecheck, `git diff --check`, and May design-integrity checks passed.
+The broader `check:may-design` wrapper could not run its examples stage because this Apps
+checkout does not contain `projects/may-agent/packages/sdk/src/task-contract.ts`; this is a
+checkout composition limitation, not a passed check or trial finding.
+
+The successful isolated run itself was complete before the predecessor closeout was
+interrupted. `/app/.state/review-pilots/apps-health-20260922/repair/HYGIENE-CANCELLATION-FINDING.md`
+(SHA-256 `808ce91ba64e8d69e74cc6447cefa36d50124c5ade9804f72c0efbc4a466c0ca`)
+records that later, external hygiene error. This recovery handoff preserves the cancelled
+predecessor and its evidence; it does not reopen or replace the original business Task,
+repeat the experiment, or make the cancellation part of the successful trial chain.
+
+**Decision:** keep current Host/App recovery behavior. There is no demonstrated missing
+connection justifying a source correction or regression beyond the retained evidence
+verifier. Optional isolation hardening is a harness matter. This source/documentation
+integration is not a live recovery deployment. No CI, activation, deployment, service
+restart, Telegram or live-state mutation is claimed.
+
+## Prior current requirement: automatic caller recovery
+
+Verify automatic unfamiliar-code restoration through the installed controller/scheduler
+and normal persisted event/inbox/lifecycle composition. Prior manually advanced restoration
+remains valid bounded evidence, not proof of that chain.
 
 ## Automatic composition trial — supervisor correction
 

@@ -203,20 +203,38 @@ fix belongs in a separate Host worktree with its owning regression, not in this 
 experiment or an invented recovery subsystem. No generation bump is needed simply
 to activate a source-only repair in a fresh helper subprocess.
 
-One corrected isolated trial now exercised that automatic composition: failure report
-and normal feedback woke the real owner; its sole source edit repaired the helper;
-the already-scheduled same-generation/workflow retry produced the exact output; final
-success feedback woke the owner to verify accepted evidence and retain the unrelated
-audit. A fresh worker control passed. Two owner invocations used 57,764 ms overall.
-The unchanged Task update did not cause retry: its queue entry already existed before
-the owner finished. No Host defect or Host candidate was demonstrated.
+A later caller-less trial exercised the installed Evaluation-to-May path for a
+system-sourced original with no waiting App caller. Two natural workflow failures reached
+Evaluation; the first consumed the ordinary allowance and produced a real Sol judgment
+and publication, while the second retained a budget-deferred review wait. May's exact
+publication intake returned `stale` because the current Task had advanced to the second
+failed attempt. May verified the still-material defect, made the sole helper edit, and
+finished honestly before the already-scheduled retry ran. After its single capacity slot
+was released, that retry completed the same generation and workflow. There was no author
+wake/update/workflow call after admission, no replacement business Task, and no later May
+model verification or post-repair Evaluation. The immutable 94,807-ms observation used
+exactly two Sol invocations at reported cost 0.5301164; a read-only verifier independently
+recomputed 6,127 retained hashes. Its empty-order control and in-process, one-slot,
+instruction-scoped fixture are bounded evidence, not broad unattended reliability.
+The trial had no unrelated pre-existing wait, so it does not demonstrate preservation of
+one. Exact evidence and failed preflights are indexed in the current report.
 
-This is bounded to seeded delegation and one capacity slot in an in-process fixture.
-The model held that slot while investigating, so concurrent multi-slot retry behavior
-remains unproved. The executed run predates post-run oracle/teardown hardening; retained
-transcripts/results independently verify actual final consideration and provenance
-without another model run. No live activation, crash/unavailable-owner route or broad
-reliability is established. The current
+The prior corrected caller-linked trial also exercised automatic composition: failure
+report and normal feedback woke the real owner; its sole source edit repaired the helper;
+the already-scheduled same-generation/workflow retry produced the exact output; final
+success feedback woke the owner to verify accepted evidence and retain that trial's
+unrelated audit. A fresh worker control passed. Two owner invocations used 57,764 ms
+overall. The unchanged Task update did not cause retry: its queue entry already existed
+before the owner finished. No Host defect or Host candidate was demonstrated.
+
+Both observations use one capacity slot in an in-process fixture. The earlier
+caller-linked case seeded its initial delegation; the later caller-less case instead
+admitted one top-level system input with no App caller. In both, a model held the slot
+while investigating, so concurrent multi-slot retry behavior remains unproved. The
+earlier caller-linked run predates its
+post-run oracle/teardown hardening; retained transcripts/results independently verify
+its actual final consideration and provenance without another model run. No live
+activation, crash/unavailable-owner route or broad reliability is established. The current
 [report](../../experiments/recovery-workflow-20260922/REPORT.md) retains exact hashes,
 identities, cost, setup seams and those corrections separately from earlier manual evidence.
 The independent routing audit is retained at

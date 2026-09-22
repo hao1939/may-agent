@@ -4,7 +4,42 @@ This harness runs against the frozen production Host checkout `/app/projects/may
 `20049916b79d2ba2d2265edf5eeb605ff0e59c05`. It creates a file-backed runtime under the
 chosen output directory and never opens the live runtime database.
 
-## Current unfamiliar-code trial
+## Current caller-less Evaluation → May trial
+
+The latest retained trial admitted one system-sourced `recovery/original-order` with no
+waiting App caller. Its deterministic workflow failure reached the real Evaluation
+subscription, one `gpt-5.6-sol` evaluator published a review, and one `gpt-5.6-sol` May
+Conversation verified that publication, repaired the isolated helper, and finished
+honestly while the original Task was still pending. After May released the fixture's
+single capacity slot, the already-scheduled retry ran the same workflow at generation 1
+and produced the independently checked output. No author wake, Task update, workflow
+call, or alternate business Task advanced recovery after admission.
+
+The paid run is immutable and must not be repeated. Its durable evidence root is
+`/app/.state/review-pilots/apps-health-20260922/repair/callerless-trial-1/`; the read-only
+verifier below recomputes all 6,127 manifest hashes and checks the event, Task, report,
+source-edit, output, cost, and timing relationships without running a model or workflow:
+
+```sh
+python3 projects/may-agent.app/experiments/recovery-workflow-20260922/verify-callerless-trial.py \
+  /app/.state/review-pilots/apps-health-20260922/repair/callerless-trial-1
+```
+
+The observation took 94,807 ms and exactly two model invocations with reported cost
+0.5301164. The second Evaluation admission remained waiting on the ordinary allowance;
+intake's `stale` result reflected a newer failed attempt, not a dismissal of the material
+source defect. May finished before the successful retry, so there was no later May model
+verification or post-repair Evaluation. The empty-order control covers healthy worker
+plumbing only. Tools were instruction-scoped rather than OS-sandboxed, schedules and
+unrelated observers were disabled, and one in-process capacity slot was used. This run
+contains no unrelated pre-existing wait and does not prove preservation of one.
+
+`run-callerless-trial.ts` is the retained reproducible harness source. The exact paid bytes
+are `harness-executed.ts` in the evidence root. Do not point it at an existing directory;
+the harness rejects evidence reuse. `REPORT.md` records the exact identities, failed
+preflights, prompt separation, isolation boundaries, and review constraints.
+
+## Prior unfamiliar-code trial
 
 Run ONE bounded trial from the assigned Apps worktree, using a fresh output directory:
 

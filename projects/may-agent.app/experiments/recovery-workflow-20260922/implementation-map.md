@@ -50,6 +50,29 @@ emit synthetic failure/success wakes. Read-only observation and bounded shutdown
 are not recovery scheduling. No production schedule, live installation or budget
 is changed by selecting temporary fixture composition.
 
+## Caller-less Evaluation → May observation
+
+The latest isolated trial used the same production controller, scheduler, lifecycle,
+Evaluation publication, May intake, and retry composition for a system-sourced original
+with no waiting App caller. Failure event 13 was accepted by Evaluation; publication
+20 was accepted by May. Evaluation's real workflow used the public read boundary and
+one ordinary allowance slot. May ran the exact intake, treated its `stale` disposition
+as evidence that the subject had advanced rather than that the defect vanished, made
+the only source edit, and finished with the original honestly still pending. Once May
+released the one fixture capacity slot, the existing scheduler started the same workflow
+at generation 1 and event 53 converged the original. No model updated the Task, manually
+ran the workflow, or created a replacement business Task.
+
+The read-only verifier recomputed 6,127 artifact hashes and checked the source edit,
+report publication, two failed attempts, accepted retry, exact output, control, timing,
+and provider usage. The 94,807-ms observation made exactly two Sol invocations with
+reported cost 0.5301164. A second Evaluation review remained waiting at the ordinary
+allowance boundary; there was no later May model verification or post-repair Evaluation.
+The empty-order control, instruction-only tool boundary, copied Apps, disabled schedules
+and observers, in-process Host, and single capacity slot bound the claim. There was no
+unrelated pre-existing wait in this trial, so none is claimed preserved. Failed preflights
+and immutable evidence remain indexed in `REPORT.md`; the paid trial was not rerun.
+
 ## What already works, from retained evidence
 
 - PR #226 repaired the public validation connection. `/app/.state/review-pilots/apps-health-20260922/repair/PR225-ROLLOUT-REVIEW.md` records the prior hidden diagnostic, the exact minimal repair, CI, isolated socket comparison, merge and live activation. That is admission evidence, not model-recovery evidence.
