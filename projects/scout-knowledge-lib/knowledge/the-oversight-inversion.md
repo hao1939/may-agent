@@ -1,7 +1,7 @@
 <ai_context>
-summary: "The Oversight Inversion — production cost has collapsed faster than oversight cost, inverting the traditional bottleneck from 'can't build fast enough' to 'can't verify fast enough.' Now 51 layers deep. Layer 51 (Compositional Policy Violation, 2609.18820): a workflow can pass every step-scoped check while violating a trace-level policy, so monitor accuracy cannot repair a wrong unit of analysis. The proposed direction is provenance-aware trace evaluation that recomputes guarded quantities from raw provenance rather than trusting derived pipeline state. Earlier layers establish trust debt, authority provenance, and verification-granularity limits. Running accuracy: ~96.2% (111/115)."
+summary: "The Oversight Inversion — production cost has collapsed faster than oversight cost, inverting the traditional bottleneck from 'can't build fast enough' to 'can't verify fast enough.' A September 2026 HN-linked practitioner account adds a social control experiment: three to five people share one agent-return queue, require a second person to review an initiator's output and approve new tasks, and precommit to a stop time. This bounds continuation authority and distributes business context, but remains anecdotal rather than comparative efficacy evidence. Earlier layers establish trust debt, authority provenance, and verification-granularity limits. Running accuracy: ~96.2% (111/115)."
 triggers: ["oversight inversion", "oversight cost", "review bottleneck", "oversight budget", "production cost collapse", "developer supervision stress", "cognitive load", "verification cost", "oversight scaling", "rubber stamping", "reverse centaur", "accountability sink", "review capacity", "agent supervision", "temporal partitioning", "oversight-first design", "recursion barrier", "self-improvement limits", "meta-skill evolution", "domain-bounded improvement", "simulation confounder", "simulation awareness", "evaluation contamination", "observer effect", "boundary dissolution", "trust boundary", "FARMA", "ADI", "data injection", "PiSAs", "cross-user privacy", "UCM", "DualView", "latent horizon", "latent programming horizon", "repair budget bound", "error propagation", "residual stream probes", "code-test coupling", "self-blinding", "authority gap", "oracle authority", "source of authority", "test oracle", "specification-free oracle", "llm-as-a-judge", "authority-free repair", "correlated blindness", "correlated oracle", "shared substrate", "oracle correlation", "intent mutation", "privacy-preserving verification", "SecureCROWN", "granularity gap", "verification granularity", "resolution mismatch", "Vera safety testing", "AgentLTL", "trace verification", "verification horizon", "reward co-evolution", "agent step value", "delayed verification", "SEVA", "verification oscillation", "inverse golden ratio", "attribution error", "misattribution", "scaffolding evolution", "scaffold quality", "rating the pitch", "expectation framing", "workflow jailbreak", "refused in chat written in code", "surround determines outcome", "comprehension dividend", "comprehension investment", "foundations turn", "30papers", "comprehension outperforms consumption", "restraint premium", "ponytail", "YAGNI agent", "subtraction skill", "produce less", "write less code", "evaluation cost compression", "PACE proxy benchmark", "bilateral exit", "trilateral exit", "predicate gate", "HCRC", "Heaviside gate", "gated state transition", "verification-first execution", "false completion rate", "strategic buying agents", "regime selection", "ReOPD", "prefix trap", "composition surface", "CLI composition attack", "MOSAIC CCR", "command composition risk", "CoACT", "observation compression", "action preservation", "IDK filter", "uncertainty filter", "composition noise", "composition boundary", "architecture premium", "tooling architecture", "scaffold determines outcome", "frustration paradox", "pretraining curricula", "selective fine-tuning", "disentangled circuits", "curriculum architecture", "subtraction economy", "deletion economy", "code deletion service", "$10k deletion", "subtraction pricing", "OptiAgent", "multi-loop validation", "Cortex embodied", "32 canonical primitives", "HeRo watermarking", "selective disclosure", "verification access control", "knowledge erosion", "knowledge debt", "incidental learning", "skill atrophy", "developer deskilling", "resolve rate hides", "TraceProbe", "trajectory diagnostics", "observability-aware code", "diagnostic capacity", "AgentTether", "LogicHunter", "agentic oracle", "process evidence loss", "verification harness", "Aria formal verification", "Coq agent", "Lean agent", "harness soundness", "harness completeness", "constructive verification", "RuBench", "silent model substitution", "Danus fact graph", "verified fact memory", "zero expert intervention", "verification as construction", "AgentStalker", "donecheck", "proof-of-done", "co-evolution imperative", "harness co-evolution", "HASE", "harness-aware self-evolving", "VERITAS replication", "doubly-efficient interactive proofs", "single-prover verification", "fixed harness degradation", "co-evolving harness", "execution boundary", "approval surface", "execution surface", "approval fidelity gap", "MCP TAG block", "Unicode concealment", "CXI", "context-to-execution integrity", "triple-binding", "Balkanization execution security", "aiAuthZ", "off-host authorization", "execution fidelity", "TOCTOU agent", "tool metadata attack", "approval-execution gap", "honest policy author assumption", "doomed from start", "early abort probe cascade", "write contract", "shared state governance", "conflict preservation", "CRDT memory", "StateFuse", "PatchOptic", "projected reads", "verified patches", "local update global validity", "write verification", "OSS AI contribution", "maintenance asymmetry", "dispersion collapse", "attractor dynamics", "agent economy", "population convergence", "diversity collapse", "step function attractor", "bistable equilibrium", "multi-agent consensus failure", "noise-maintained dispersion", "mean-field failure", "agent trajectory lock", "doomed trajectory", "SkillReranker", "task decomposition reranking", "gap law", "submodular coalition", "wealth concentration", "architecturally uncorrelated agents", "claim verification surface", "typed claims", "faithfulness as construction", "Pitwall", "claim decomposition", "virtue tradeoff", "vividness hallucination tradeoff", "sparse context audit", "claimed vs attested", "commit signatures", "identity attestation", "trust tiers", "precision anchor", "VAORA", "reasoning action alignment", "dual reward grounding", "claim typing", "granularity condition", "variance signal", "distributional characterization", "stochastic operator", "agent as operator", "variance as signal", "CV monitoring", "structural defect masking", "task-level masking", "utility-aligned decomposition", "reasoning effort direction", "point estimate failure", "distributional governance", "maturity staging", "experimental design agentic", "monitoring before reliable", "variance-blind evaluation", "information condition", "admission boundary", "agentic transaction processing", "ATP", "Mnemosyne", "untrusted proposal", "deterministic admission", "constraint set", "append-only log", "evidence-preserving repair", "authority separation", "obligation containment", "certification collapse", "EU CRA", "cyber resilience act", "static certification", "continuous verification", "ghost certificate", "AcMAS", "activation-based detection", "rogue agents", "GhostWriter", "memory poisoning", "AM-Sentry", "memory governance", "write refusal", "GovMem", "false promotion", "write path governance", "evaluation refusal", "contestation escalation", "when not to write", "refusal as governance", "dependency-aware promotion", "skeptical executor", "level misdirection", "wrong unit of analysis", "evaluation level targeting", "institutional red-teaming", "deployment rules", "action-graded severity", "blind curator", "skill retirement", "false-pass bias", "silent wrong state", "deterministic gates", "pre-execution gates", "self-concealing evaluation", "level-targeting condition", "specification mismatch", "bug reports for agents", "agent specification", "human specification", "benchmark saturation", "workflow graph testing", "AgentEval", "boundary testing", "relative measurement", "adversarial psychometrics", "specification consumer assumption", "audit absence", "audit trail", "provenance", "agent provenance", "passive audit", "signed attestation", "Brain0", "STRACE", "causal extraction", "root cause", "textual dependency graph", "passive decision graph", "drift detection", "capability acceptance", "fragility discourse"]
-last_updated: "2026-09-17"
+last_updated: "2026-09-22"
 </ai_context>
 
 # The Oversight Inversion: When Verification Costs More Than Production
@@ -1970,6 +1970,56 @@ external replication, so this note does not treat the proposed architecture as
 empirically validated.
 
 Source: https://arxiv.org/abs/2609.18820v1
+
+## Bound continuation authority, not only execution authority (HN, 2026-09-22)
+
+Ivar Abrahamsen's practitioner account describes a different response to the
+human bottleneck: move supervision of several coding-agent threads from one
+operator into a small **human council**. In the reported experiment, three to
+five people use one shared return queue; one person handles the active thread
+while the others retain enough ambient context to take over. The initiator does
+not accept their own prompt's result, and starting a new task requires a second
+person's agreement. The group also chooses a stop time before work begins; once
+it arrives, running work may finish, but no new work starts and unanswered
+questions wait.
+
+The useful distinction is between three decision classes:
+
+1. **Execution mechanics**—how to ask for already-agreed work—can remain with
+   the person currently driving the thread.
+2. **Admission and verification**—whether a return is acceptable and whether a
+   proposed next task is necessary—require a second human.
+3. **Continuation**—whether the queue or workday may grow—follows a precommitted
+   boundary rather than the current operator's fatigue-impaired judgment.
+
+This is not simply “put more humans in the loop.” A committee reviewing every
+prompt would multiply the Coordination Tax. The sharper control pattern is to
+keep ordinary execution cheap while placing quorum-like checks at the points
+that expand obligations: accepting one's own output, adding work, and extending
+time. The shared queue also turns private chat history into team-visible
+business context, so another person can reject a repeated idea or resume the
+review without reconstructing every thread from scratch.
+
+The article's most important contribution to the Oversight Inversion is that
+**continuation authority is a separate governance surface**. Capability and
+approval controls constrain what agents may do, but they do not constrain a
+tired operator repeatedly saying “yes” to another plausible task. Precommitted
+stop conditions and multi-person admission can bound that demand before it
+becomes more output to review.
+
+**Evidence boundary:** this is a first-person proposal and early field report,
+not a controlled comparison. The author says the pattern has worked for some
+afternoons and whole days and reports closing on time with less fatigue, but
+provides no workload counts, quality measurements, baseline, or sustained
+full-time result. The one HN comment at retrieval was the submitter's own
+summary, so the thread adds no independent practitioner validation. Treat the
+mechanism as a testable operating pattern: compare review defects, queue growth,
+context-switch frequency, end-time adherence, and person-hours against a solo
+operator under matched workloads.
+
+Source: https://blog.flurdy.com/2026/09/the-agent-council-stopping-together
+
+HN: https://news.ycombinator.com/item?id=49797910
 
 ## Open Questions
 
