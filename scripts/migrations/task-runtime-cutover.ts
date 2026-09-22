@@ -22,7 +22,7 @@ import { migrateConversationInputs } from "../../src/app/core/state/conversation
 import { getAppInboxItem } from "../../src/app/core/state/app-inbox-store.js";
 import { readConversationRequest } from "../../src/app/core/state/conversation-requests.js";
 import { readAppConversationResource } from "../../src/app/core/state/conversations.js";
-import { appTaskContext, closeAppTask } from "../../src/app/core/tasks/app-task-reconciler.js";
+import { appTaskContext, cancelAppTask } from "../../src/app/core/tasks/app-task-reconciler.js";
 import type { AppTaskResource } from "../../src/app/core/tasks/app-task-state.js";
 import { openSandboxDb, pollUntil, socketEmit, socketStatus } from "../../test/e2e/lib/live-daemon.js";
 
@@ -350,12 +350,12 @@ try {
         oldRuntimeStopped: true,
       });
       const supervisor = store.readTask("conversation/follow-up")!;
-      closeAppTask(config, {
+      cancelAppTask(config, {
         appId: "may",
         taskId: supervisor.metadata.id,
         expectedGeneration: supervisor.metadata.generation,
         expectedResourceVersion: supervisor.metadata.resourceVersion,
-        reason: "Owner moved result handling to the shared Task loop",
+        decision: "app-policy", reason: "Owner moved result handling to the shared Task loop",
       });
       assert.equal(converted.migrated, 2);
       assert.equal(converted.pending, 1);

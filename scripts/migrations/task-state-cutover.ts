@@ -23,7 +23,7 @@ import {
   appTaskContext,
   claimObservedAppTask,
   completeAppTask,
-  closeAppTask,
+  cancelAppTask,
   readAppTaskAdmissionOutcome,
 } from "../../src/app/core/tasks/app-task-reconciler.js";
 
@@ -237,14 +237,14 @@ try {
   // The assigning owner retires the former supervision role using normal closure.
   // Nothing closes the other maintained or unfinished Tasks as a side effect.
   const retired = store.readTask(supervisor.taskId)!;
-  closeAppTask(current, {
+  cancelAppTask(current, {
     appId: "sample",
     taskId: supervisor.taskId,
     expectedGeneration: retired.metadata.generation,
     expectedResourceVersion: retired.metadata.resourceVersion,
-    reason: "Owner moved follow-through into Conversation",
+    decision: "app-policy", reason: "Owner moved follow-through into Conversation",
   });
-  assert.equal(store.readCancellation(supervisor.taskId)?.kind, "closed");
+  assert.equal(store.readCancellation(supervisor.taskId)?.kind, "cancelled");
   assert.equal(completeAppTask(current, supervisor, { summary: "Obsolete supervisor output" }).status, "stale");
   assert.equal(
     claimObservedAppTask(current, { taskId: supervisor.taskId, appAgent: "worker", handler: "agent" }).kind,

@@ -404,10 +404,10 @@ describe("common Task lifecycle source PoC", () => {
       result: { abandoned: true },
     });
     const resource = f.config.resourceStore.readTask("conversation")!;
-    closeAppTask(f.config, {
+    cancelAppTask(f.config, {
       appId: "sample",
       taskId: "conversation",
-      reason: "Owner ended the work",
+      decision: "app-policy", reason: "Owner ended the work",
       expectedGeneration: resource.metadata.generation,
       expectedResourceVersion: resource.metadata.resourceVersion,
     });
@@ -1019,23 +1019,164 @@ describe("common Task lifecycle source PoC", () => {
     expect(f.config.resourceStore.readTaskContext({ taskIds: ["conversation"] })).toEqual(before);
   });
 
-  it("owner closure interrupts an active attempt and retains an honest unfinished disposition", () => {
+  it.each([undefined, "", "   "])("requires a result identity before mutation or replay: %j", (afterResult) => {
+    const f = fixture();
+    const claim = f.claim();
+    completeAppTask(f.config, claim, { summary: "Verified answer" });
+    const resource = f.config.resourceStore.readTask("conversation")!;
+    const input = {
+      appId: "sample", taskId: "conversation",
+      expectedGeneration: resource.metadata.generation,
+      expectedResourceVersion: resource.metadata.resourceVersion,
+      reason: "Consumed answer", afterResult: claim.attemptId, controlKey: "close-answer",
+    };
+    for (const closed of [false, true]) {
+      if (closed) closeAppTask(f.config, input);
+      const before = f.config.resourceStore.readTaskContext({ taskIds: ["conversation"] });
+      expect(() => closeAppTask(f.config, { ...input, afterResult } as typeof input)).toThrow("afterResult");
+      expect(f.config.resourceStore.readTaskContext({ taskIds: ["conversation"] })).toEqual(before);
+    }
+  });
+
+  it.each([false, true])("does not replay a different terminal intent (control key: %s)", (withKey) => {
+    for (const operation of ["close", "cancel"] as const) {
+      const f = fixture();
+      const claim = f.claim();
+      completeAppTask(f.config, claim, { summary: "Verified answer" });
+      const resource = f.config.resourceStore.readTask("conversation")!;
+      const input = {
+        appId: "sample", taskId: "conversation", afterResult: claim.attemptId,
+        expectedGeneration: resource.metadata.generation,
+        expectedResourceVersion: resource.metadata.resourceVersion, reason: "Owner decision",
+        ...(withKey ? { controlKey: "terminal-decision" } : {}),
+      };
+      (operation === "close" ? closeAppTask : cancelAppTask)(f.config, input);
+      f.reopen();
+      const before = f.config.resourceStore.readTaskContext({ taskIds: ["conversation"] });
+      expect(() => (operation === "close" ? cancelAppTask : closeAppTask)(f.config, input)).toThrow("different control");
+      expect(f.config.resourceStore.readTaskContext({ taskIds: ["conversation"] })).toEqual(before);
+      expect((operation === "close" ? closeAppTask : cancelAppTask)(f.config, input).applied).toBe(false);
+    }
+  });
+
+  it.each([false, true])("replays legacy cancellation records without kind (control key: %s)", (withKey) => {
+    const f = fixture();
+    const resource = f.config.resourceStore.readTask("conversation")!;
+    const input = {
+      appId: "sample", taskId: "conversation",
+      expectedGeneration: resource.metadata.generation,
+      expectedResourceVersion: resource.metadata.resourceVersion, reason: "Withdrawn",
+      ...(withKey ? { controlKey: "legacy-cancel" } : {}),
+    };
+    const { kind: _kind, ...legacy } = cancelAppTask(f.config, input).cancellation;
+    // Historical schema allowed kind to be absent; it meant cancellation, not completion.
+    f.config.resourceStore.db.prepare("UPDATE app_task_cancellations SET cancellation_json = ? WHERE app_id = ? AND task_id = ?")
+      .run(JSON.stringify(legacy), "sample", "conversation");
+    f.reopen();
+    const before = f.config.resourceStore.readTaskContext({ taskIds: ["conversation"] });
+    expect(cancelAppTask(f.config, input)).toEqual({ cancellation: legacy, applied: false });
+    expect(f.config.resourceStore.readTaskContext({ taskIds: ["conversation"] })).toEqual(before);
+  });
+
+  // Ordered contracts: each ask keeps its own answer; finishing a different ask is not completion.
+  for (const recovery of [false, true]) {
+    for (const order of [["a", "b"], ["b", "a"]]) {
+      it.each(["before-read", "after-read"])(`preserves ordered obligations (${order}, recovery=${recovery}, correction=%s)`, (correction) => {
+        const f = fixture();
+        const ask = (id: string) => admitTaskInput(f.config, {
+          appId: "sample", attachment: { kind: "existing", taskId: "conversation" }, idempotencyKey: `ask:${id}`,
+          inputContext: { id, source: { kind: "app", id: "caller" }, input: { kind: "question", data: { id } } },
+        });
+        const snapshot = () => f.config.resourceStore.readTaskContext({
+          taskIds: ["conversation"], admissionIds: ["ask:a", "ask:b", "ask:c", "ask:d"],
+        });
+        const closeInput = (afterResult: string) => {
+          const task = f.config.resourceStore.readTask("conversation")!;
+          return { appId: "sample", taskId: "conversation", afterResult,
+            expectedGeneration: task.metadata.generation, expectedResourceVersion: task.metadata.resourceVersion,
+            reason: "All answers consumed", controlKey: "ordered-completion" };
+        };
+        const reject = (input: ReturnType<typeof closeInput>) => {
+          const before = snapshot();
+          expect(() => closeAppTask(f.config, input)).toThrow();
+          expect(snapshot()).toEqual(before);
+          expect(f.config.resourceStore.isCancelled("conversation")).toBe(false);
+        };
+        completeAppTask(f.config, f.claim(), { summary: "Initial answer" });
+        for (const id of ["a", "b"]) {
+          ask(id);
+          deferAppTask(f.config, f.claim(), { disposition: "waiting", summary: `Await ${id}`,
+            conditions: [{ id, type: "sample.ready", subject: `sample:${id}`, expected: true,
+              owner: "app:source", reviewAfterMs: 60_000 }] });
+        }
+        ask("c");
+        let answer = f.claim();
+        if (recovery) {
+          failAppTaskAttempt(f.config, answer, "Temporary failure");
+          f.reopen();
+          f.advanceRetry();
+          answer = f.claim();
+        }
+        completeAppTask(f.config, answer, { summary: "Answered c", result: { answer: "c" } });
+        expect(f.config.resourceStore.readTask("conversation")!.status.conditionIds?.slice().sort()).toEqual(["a", "b"]);
+        expect(readAppTaskAdmissionOutcome(f.config, "conversation", "ask:a")).toBeNull();
+        expect(readAppTaskAdmissionOutcome(f.config, "conversation", "ask:b")).toBeNull();
+        reject(closeInput(answer.attemptId));
+        for (const [index, id] of order.entries()) {
+          const event = { type: "sample.ready", eventId: 100 + index, sample: id, state: true };
+          trackAppTaskConditionEventForTasks(f.config, event, ["conversation"]);
+          trackAppTaskConditionEventForTasks(f.config, event, ["conversation"]);
+          f.reopen();
+          answer = f.claim();
+          completeAppTask(f.config, answer, { summary: `Answered ${id}`, result: { answer: id } });
+          expect(readAppTaskAdmissionOutcome(f.config, "conversation", `ask:${id}`)?.result).toEqual({ answer: id });
+          if (index === 0) {
+            expect(f.config.resourceStore.readTask("conversation")!.status.conditionIds).toEqual([order[1]!]);
+            expect(readAppTaskAdmissionOutcome(f.config, "conversation", `ask:${order[1]}`)).toBeNull();
+            reject(closeInput(answer.attemptId));
+          }
+        }
+        if (correction === "before-read") ask("d");
+        const stale = closeInput(answer.attemptId);
+        if (correction === "after-read") ask("d");
+        reject(stale);
+        answer = f.claim();
+        reject(closeInput(stale.afterResult));
+        completeAppTask(f.config, answer, { summary: "Answered d", result: { answer: "d" } });
+        expect(f.config.resourceStore.readTask("conversation")!.status.phase).toBe("converged");
+        const input = closeInput(answer.attemptId);
+        expect(closeAppTask(f.config, input).applied).toBe(true);
+        const closed = snapshot();
+        f.reopen();
+        expect(closeAppTask(f.config, input).applied).toBe(false);
+        expect(snapshot()).toEqual(closed);
+        for (const id of ["a", "b", "c", "d"]) {
+          expect(readAppTaskAdmissionOutcome(f.config, "conversation", `ask:${id}`)?.result).toEqual({ answer: id });
+        }
+      });
+    }
+  }
+
+  it("intentional cancellation interrupts an active attempt and retains an honest unfinished disposition", () => {
     const f = fixture();
     const current = f.claim();
     const resource = f.config.resourceStore.readTask("conversation")!;
-    const closed = closeAppTask(f.config, {
+    const withdrawal = {
+      afterResult: "not-an-accepted-result",
       appId: "sample",
       taskId: "conversation",
       expectedGeneration: resource.metadata.generation,
       expectedResourceVersion: resource.metadata.resourceVersion,
+      decision: "app-policy" as const,
       reason: "Scope withdrawn",
-    });
+    };
+    const closed = cancelAppTask(f.config, withdrawal);
     expect(closed).toMatchObject({
       applied: true,
-      interruptedAttemptId: current.attemptId,
-      closure: { kind: "closed" },
+      cancelledAttemptId: current.attemptId,
+      cancellation: { kind: "cancelled" },
     });
-    expect(closed.closure).not.toHaveProperty("acceptedResultAttemptId");
+    expect(closed.cancellation).not.toHaveProperty("acceptedResultAttemptId");
     expect(completeAppTask(f.config, current, { summary: "Late success", facts: ["late"] }).status).toBe("stale");
     f.reopen();
     expect(readRuntimeTaskView({ taskStateConfig: f.config }, "conversation")).toMatchObject({

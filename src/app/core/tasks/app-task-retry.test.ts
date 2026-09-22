@@ -11,7 +11,7 @@ import { appTaskTestContext } from "./app-task-test-support.js";
 import {
   appTaskContext,
   claimObservedAppTask,
-  closeAppTask,
+  cancelAppTask,
   completeAppTask,
   failAppTaskAttempt,
   markAppTaskAttention,
@@ -482,7 +482,7 @@ it("applies owner revision during cooldown and fences retry plus late failure on
   });
   expect(revised.intent.outcome).toBe("Read the cheaper replacement measurement");
   const resource = f.config.resourceStore.readTask("work")!;
-  closeAppTask(f.config, { appId: "sample", taskId: "work", reason: "Owner withdrew this assignment",
+  cancelAppTask(f.config, { appId: "sample", taskId: "work", decision: "app-policy", reason: "Owner withdrew this assignment",
     expectedGeneration: resource.metadata.generation, expectedResourceVersion: resource.metadata.resourceVersion });
   const admissions = f.config.resourceStore.readTaskContext({ taskIds: [], admissionIds: ["ask:measure"] }).appTaskAdmissions;
   expect(failAppTaskAttempt(f.config, revised, "Late provider failure").status).toBe("superseded");

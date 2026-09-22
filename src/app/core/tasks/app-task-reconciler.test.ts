@@ -360,12 +360,12 @@ describe("worker failure facts and owner closure", () => {
     expect(() =>
       kind === "report"
         ? reportAppTaskFailure(config, claim, decision)
-        : closeAppTask(config, {
+        : cancelAppTask(config, {
             appId: "sample",
             taskId: intent.id,
             expectedGeneration: resource.metadata.generation,
             expectedResourceVersion: resource.metadata.resourceVersion,
-            reason: "Owner withdrew the assignment",
+            decision: "app-policy", reason: "Owner withdrew the assignment",
           }),
     ).toThrow(`${kind} write rejected`);
     expect(readTaskSnapshot(config)).toEqual(before);
@@ -393,12 +393,12 @@ describe("worker failure facts and owner closure", () => {
           });
         const close = () => {
           const resource = store.readTask(base.intent.id)!;
-          return closeAppTask(config, {
+          return cancelAppTask(config, {
             appId: "sample",
             taskId: base.intent.id,
             expectedGeneration: resource.metadata.generation,
             expectedResourceVersion: resource.metadata.resourceVersion,
-            reason: "Owner withdrew this assignment",
+            decision: "app-policy", reason: "Owner withdrew this assignment",
           });
         };
         const intercepted = order === "child-first" ? store : peer;
@@ -4659,12 +4659,12 @@ describe("App task reconciler state", () => {
     ).toThrow("unsupported action kind: close-task");
     expect(readTaskSnapshot(config)).toEqual(before);
     const parent = config.resourceStore.readTask(parentIntent.id)!;
-    closeAppTask(config, {
+    cancelAppTask(config, {
       appId: "sample",
       taskId: parentIntent.id,
       expectedGeneration: parent.metadata.generation,
       expectedResourceVersion: parent.metadata.resourceVersion,
-      reason: "Owner withdrew only the parent assignment",
+      decision: "app-policy", reason: "Owner withdrew only the parent assignment",
     });
     expect(config.resourceStore.isCancelled(parentIntent.id)).toBe(true);
     expect(config.resourceStore.isCancelled(childIntent.id)).toBe(false);
@@ -4711,12 +4711,12 @@ describe("App task reconciler state", () => {
     }).status).toBe("applied");
 
     const parent = config.resourceStore.readTask(parentIntent.id)!;
-    closeAppTask(config, {
+    cancelAppTask(config, {
       appId: "sample",
       taskId: parentIntent.id,
       expectedGeneration: parent.metadata.generation,
       expectedResourceVersion: parent.metadata.resourceVersion,
-      reason: "Owner retired the old parent assignment",
+      decision: "app-policy", reason: "Owner retired the old parent assignment",
     });
     const tree = readTaskSnapshot(config);
     expect(config.resourceStore.isCancelled(parentIntent.id)).toBe(true);
@@ -5360,12 +5360,12 @@ describe("App task reconciler state", () => {
   it("rejects updates to an owner-closed Task", () => {
     const { config } = fixture();
     const target = config.resourceStore.readTask("categorized-task")!;
-    closeAppTask(config, {
+    cancelAppTask(config, {
       appId: "sample",
       taskId: "categorized-task",
       expectedGeneration: target.metadata.generation,
       expectedResourceVersion: target.metadata.resourceVersion,
-      reason: "Owner ended this assignment",
+      decision: "app-policy", reason: "Owner ended this assignment",
     });
 
     const review = declareAndClaimTask(config, {
@@ -5409,12 +5409,12 @@ describe("App task reconciler state", () => {
       intent: { id: "categorized-task", ...config.resourceStore.readTask("categorized-task")!.spec, outputs: [] },
     });
     const target = config.resourceStore.readTask("categorized-task")!;
-    closeAppTask(config, {
+    cancelAppTask(config, {
       appId: "sample",
       taskId: "categorized-task",
       expectedGeneration: target.metadata.generation,
       expectedResourceVersion: target.metadata.resourceVersion,
-      reason: "Owner ended this assignment",
+      decision: "app-policy", reason: "Owner ended this assignment",
     });
 
     const review = declareAndClaimTask(config, {

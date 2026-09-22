@@ -23,7 +23,7 @@ import {
   observeAppTaskIntent,
   claimObservedAppTask,
   completeAppTask,
-  closeAppTask,
+  cancelAppTask,
   assertAppTaskClaimCurrent,
 } from "../tasks/app-task-reconciler.js";
 import { createAppInboxItem, getAppInboxItem } from "./app-inbox-store.js";
@@ -226,12 +226,12 @@ test("offline cutover drains frozen supervisor admission, closes its owner, and 
         expect(completeAppEventAdmissionPlan(db, eventId)).toBe(true);
         migrateConversationInputs(config(), { app, conversationId: "primary", oldRuntimeStopped: true });
         const supervisor = store.readTask(supervisorIntent.id)!;
-        closeAppTask(config(), {
+        cancelAppTask(config(), {
           appId: app.id,
           taskId: supervisorIntent.id,
           expectedGeneration: supervisor.metadata.generation,
           expectedResourceVersion: supervisor.metadata.resourceVersion,
-          reason: "Owner moved follow-through into Conversation",
+          decision: "app-policy", reason: "Owner moved follow-through into Conversation",
         });
       });
     db.exec(

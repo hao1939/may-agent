@@ -1,3 +1,4 @@
+import { taskControlAction } from "../core/events/interface.js";
 import { readTaskEventTarget, readEventTaskTarget } from "../core/events/task-target.js";
 import { appInputFeedbackEvent } from "../core/inbox/input-result.js";
 import { conversationTaskId, listPendingConversationTaskChanges } from "../core/state/conversation-task-turns.js";
@@ -662,11 +663,7 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
     (event): DeliveryResult | void => {
       // Task controls have their own fenced writer and receipt. Their target
       // identifies the resource to control, not fresh input for that Task.
-      if (
-        event.type === "app.task.cancel.requested" ||
-        event.type === "app.task.close.requested" ||
-        event.type === "app.task.retry.requested"
-      ) return;
+      if (taskControlAction(event.type)) return;
       const routeSnapshot = registrySnapshot;
       const routeGeneration = routeSnapshot.generation;
       const data = eventData(event);

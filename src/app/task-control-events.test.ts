@@ -36,6 +36,13 @@ describe("Task control Event boundary", () => {
     });
   });
 
+  it.each([0, -1, 1.5, "2", undefined, null])("rejects an inexact close fence at construction: %j", (value) => {
+    for (const field of ["generation", "resourceVersion"] as const) {
+      expect(() => taskCloseRequestedEvent({ ...task, [field]: value } as typeof task, "answer", "Consumed"))
+        .toThrow("positive integer");
+    }
+  });
+
   it("passes exact retry, completion, and cancellation controls to their authoritative writers", () => {
     const bus = new EventBus();
     const calls: unknown[] = [];

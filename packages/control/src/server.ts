@@ -3,7 +3,13 @@ import { connect, createServer, type Server } from "node:net";
 import { dirname } from "node:path";
 import type { Duplex } from "node:stream";
 import { normalizeSocketFrame } from "./protocol.js";
-import type { EventInput, EventReceipt, EventView } from "./events.js";
+import {
+  taskCloseRequestedEvent,
+  taskCancelRequestedEvent,
+  type EventInput,
+  type EventReceipt,
+  type EventView,
+} from "./events.js";
 import { isTaskDerivedViewWake, taskUpdateIdentity } from "./task-wake.js";
 
 export type ControlEvent = Record<string, unknown> & { type: string };
@@ -1025,31 +1031,13 @@ export function createControlSocketCore(opts: ControlSocketCoreOptions): {
           const expectedResourceVersion = frame.expectedResourceVersion;
           const afterResult = typeof frame.afterResult === "string" ? frame.afterResult.trim() : "";
           const reason = typeof frame.reason === "string" ? frame.reason.trim() : "";
-          const exactPositiveInteger = (value: unknown) =>
-            typeof value === "number" && Number.isSafeInteger(value) && value > 0;
-          if (!appId || !taskId || !exactPositiveInteger(expectedGeneration) ||
-              !exactPositiveInteger(expectedResourceVersion) || !afterResult || !reason || !publishEvent) {
-            writeFrame(socket, {
-              type: "error",
-              command: normalized.command,
-              message: !appId ? "appId is required"
-                : !taskId ? "taskId is required"
-                  : !exactPositiveInteger(expectedGeneration) ? "expectedGeneration must be a positive integer"
-                    : !exactPositiveInteger(expectedResourceVersion)
-                      ? "expectedResourceVersion must be a positive integer"
-                      : !afterResult ? "afterResult must be a non-empty accepted attempt ID"
-                        : !reason ? "reason is required" : "guarded Task completion is unavailable",
-            });
-            continue;
-          }
           try {
-            const receipt = publishEvent({
-              type: "app.task.close.requested",
-              target: { appId, taskId },
-              data: { expectedGeneration, expectedResourceVersion, afterResult, reason },
-              idempotencyKey:
-                `app-task-close:${appId}:${taskId}:${String(expectedGeneration)}:${String(expectedResourceVersion)}:${afterResult}`,
-            });
+            if (!publishEvent) throw new Error("guarded Task completion is unavailable");
+            const receipt = publishEvent(taskCloseRequestedEvent(
+              { appId, taskId, generation: expectedGeneration as number, resourceVersion: expectedResourceVersion as number },
+              afterResult,
+              reason,
+            ));
             if (receipt.delivery !== "accepted") {
               throw new Error(`Task ${appId}/${taskId} completion was recorded but not accepted; read the Task and retry`);
             }
@@ -1097,16 +1085,7 @@ export function createControlSocketCore(opts: ControlSocketCoreOptions): {
               typeof frame.reason === "string" && frame.reason.trim()
                 ? frame.reason.trim()
                 : "human requested cancellation";
-            const receipt = publishEvent({
-              type: "app.task.cancel.requested",
-              target: { appId, taskId },
-              data: {
-                expectedGeneration: generation,
-                expectedResourceVersion: resourceVersion,
-                reason,
-              },
-              idempotencyKey: `app-task-cancel:${appId}:${taskId}:${generation}:${resourceVersion}`,
-            });
+            const receipt = publishEvent(taskCancelRequestedEvent({ appId, taskId, generation, resourceVersion }, reason));
             if (receipt.delivery !== "accepted") {
               throw new Error(
                 `Task ${appId}/${taskId} cancellation was recorded but not accepted; read the Task and retry`,

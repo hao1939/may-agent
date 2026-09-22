@@ -16,7 +16,6 @@ import { claimAppInboxItem, waitAppInboxClaim } from "../../../../test/fixtures/
 import { createConversationTopic, listConversationTopicLinksForTask } from "./conversations.js";
 import {
   cancelAppTask,
-  closeAppTask,
   claimObservedAppTask,
   completeAppTask,
   failAppTaskAttempt,
@@ -353,8 +352,8 @@ describe("request-to-Task state operation", () => {
     if (decision === "complete") finishTask(config);
     else {
       const task = config.resourceStore.readTask("work/one")!;
-      closeAppTask(config, { appId: "example", taskId: "work/one", expectedGeneration: task.metadata.generation,
-        expectedResourceVersion: task.metadata.resourceVersion, reason: "Owner withdrew this input" });
+      cancelAppTask(config, { appId: "example", taskId: "work/one", expectedGeneration: task.metadata.generation,
+        expectedResourceVersion: task.metadata.resourceVersion, decision: "app-policy", reason: "Owner withdrew this input" });
     }
     const result = { summary: decision === "complete" ? "Verified" : "Closed by owner" };
     expect(() => completeTaskInput(db, item, result, Date.now())).toThrow("projection failure");
