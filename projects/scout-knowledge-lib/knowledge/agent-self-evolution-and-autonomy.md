@@ -2,7 +2,7 @@
 summary: "Agent self-evolution is not one mechanism. The credible core is a governed release loop over explicit mutable surfaces: skills, memory, routing, harness code, weights, world models, or evaluators. Current evidence is strongest when an external fixed evaluator controls admission, and much weaker for self-generated or co-evolving judges and broad-goal autonomy."
 triggers: ["agent self-evolution", "self-improving agents", "recursive self-improvement", "agent autonomy", "skill evolution", "harness evolution", "world models", "co-evolving evaluators"]
 last_updated: "2026-09-22"
-source_basis: "A source-agnostic 984-row lead ledger: 908 observed cards from the human's Xiaohongshu collection, including a bounded authenticated frontier of 11 readable text bodies and one image-only cover; 69 primary paper, repository, benchmark, survey, blog, and interview records; and 8 existing Scout artifacts, plus 2026-09-10 direct XHS inspection of HarnessEvolve reception, an HN-surfaced primary-paper inspection of Procedural Graphs (arXiv 2609.09153), 2026-09-11 inspection of HN-surfaced Salesforce Beagle at commit 15f12b7, 2026-09-11 full-paper inspection of Ecdysis (arXiv 2609.11677v1), 2026-09-12 direct XHS inspection of the Seed/TokenWave Self-Developing Agents announcement, 2026-09-13 direct XHS inspection of Procedural Graphs reception, 2026-09-14 direct XHS inspection of a six-survey self-evolution reading map and its practitioner discussion, 2026-09-15 inspection of the HN-surfaced rekursiv.ai auto-autoresearch report plus its runnable NanoChat recipe at Priml commit 92c6bd2, 2026-09-16 inspection of EvoOntology's ontology-evolution lifecycle and admission boundary at commit ace8ff69, 2026-09-19 abstract-level inspection of SoL-Pi (arXiv 2609.20519v1), 2026-09-19 inspection of SourceShift/mini-ork's path-specific self-modification controls at commit 962bf478, and 2026-09-22 direct XHS inspection of Chinese-language reception of the matched-budget harness-evolution critique. Claims are traced to full primary sources and pinned code where available; XHS reception is labeled as secondary commentary, and titles remain discovery metadata, never technical evidence."
+source_basis: "A source-agnostic 984-row lead ledger: 908 observed cards from the human's Xiaohongshu collection, including a bounded authenticated frontier of 11 readable text bodies and one image-only cover; 69 primary paper, repository, benchmark, survey, blog, and interview records; and 8 existing Scout artifacts, plus 2026-09-10 direct XHS inspection of HarnessEvolve reception, an HN-surfaced primary-paper inspection of Procedural Graphs (arXiv 2609.09153), 2026-09-11 inspection of HN-surfaced Salesforce Beagle at commit 15f12b7, 2026-09-11 full-paper inspection of Ecdysis (arXiv 2609.11677v1), 2026-09-12 direct XHS inspection of the Seed/TokenWave Self-Developing Agents announcement, 2026-09-13 direct XHS inspection of Procedural Graphs reception, 2026-09-14 direct XHS inspection of a six-survey self-evolution reading map and its practitioner discussion, 2026-09-15 inspection of the HN-surfaced rekursiv.ai auto-autoresearch report plus its runnable NanoChat recipe at Priml commit 92c6bd2, 2026-09-16 inspection of EvoOntology's ontology-evolution lifecycle and admission boundary at commit ace8ff69, 2026-09-19 abstract-level inspection of SoL-Pi (arXiv 2609.20519v1), 2026-09-19 inspection of SourceShift/mini-ork's path-specific self-modification controls at commit 962bf478, and 2026-09-22 direct XHS inspection of Chinese-language reception of the matched-budget harness-evolution critique and RSIAgent's exploration-memory framing. Claims are traced to full primary sources and pinned code where available; XHS reception is labeled as secondary commentary, and titles remain discovery metadata, never technical evidence."
 </ai_context>
 
 # Agent Self-Evolution and Autonomy: What Actually Changes?
@@ -371,6 +371,30 @@ credit-assignment/admission mechanism. “Self-evolving” is otherwise too broa
 to distinguish a controlled release from an agent merely rewriting its own
 state. Engagement (198 likes and 323 saves when read) shows interest in a
 consolidated reading map, not evidence that any method works.
+
+### RSIAgent reception locates change in exploration memory, not model weights
+
+A current [XHS RSIAgent post body](https://www.xiaohongshu.com/explore/6ab117b4000000003300a622)
+presents recursive self-improvement as a three-role loop: an Actor executes,
+a Verifier checks outcomes, and a Curriculum Agent selects what to explore.
+The post says the system does not update model parameters; instead it explores
+an environment, validates results, retains reusable experience in long-term
+memory, and uses a broad-then-deep curriculum before focusing on difficult or
+hidden cases. It also attributes improvements on OSWorld-v2 and Agent's Last
+Exam to that process.
+
+This is useful practitioner framing because it places the claimed durable
+change in `K` (memory) and `E` (curriculum/environment exposure), not in model
+weights. It also illustrates why role names are not evidence boundaries. An
+Actor–Verifier–Curriculum decomposition does not by itself show that the
+Verifier is independent, that retained experience transfers to fresh tasks, or
+that broad exploration beats a matched-budget baseline. Scout directly read
+the XHS body but did not identify and inspect the underlying paper, benchmark
+split, implementation, or result tables in this source-specific scan. The
+benchmark gains therefore remain the post author's secondary account, while
+the reusable conclusion is narrower: report memory admission, verifier
+independence, exploration budget, and fresh-task transfer separately whenever
+an exploration-and-memory loop is called recursive self-improvement.
 
 ### Procedural Graphs make the mutable procedure explicit—but graph syntax is not the gate
 
