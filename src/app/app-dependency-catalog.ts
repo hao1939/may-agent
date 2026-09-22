@@ -83,9 +83,35 @@ function schemaFixedValues(value: unknown, prefix = "", depth = 0): Record<strin
   );
 }
 
+function boundedLiteralAlternatives(value: unknown): string | null {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return null;
+  const node = value as Record<string, unknown>;
+  const entries = Array.isArray(node.anyOf)
+    ? node.anyOf
+    : Array.isArray(node.oneOf)
+      ? node.oneOf
+      : null;
+  if (!entries || entries.length < 2 || entries.length > 8) return null;
+  const literals = entries.map((entry) => {
+    if (!entry || typeof entry !== "object" || Array.isArray(entry)) return undefined;
+    return (entry as Record<string, unknown>).const;
+  });
+  const primitive = typeof literals[0];
+  if (
+    !["string", "number", "boolean"].includes(primitive) ||
+    literals.some((literal) => typeof literal !== primitive)
+  )
+    return null;
+  const rendered = literals.map((literal) => JSON.stringify(literal));
+  if (rendered.some((literal) => literal.length > 50)) return null;
+  return [...new Set(rendered)].sort().join("|");
+}
+
 function schemaValueType(value: unknown, depth = 0): string {
   if (!value || typeof value !== "object" || Array.isArray(value) || depth > 3) return "unknown";
   const node = value as Record<string, unknown>;
+  const literals = boundedLiteralAlternatives(node);
+  if (literals) return literals;
   if (node.type === "array") {
     const itemType = schemaValueType(node.items, depth + 1);
     return itemType.includes("|") ? `(${itemType})[]` : `${itemType}[]`;
@@ -99,7 +125,8 @@ function schemaValueType(value: unknown, depth = 0): string {
     const entries = node[key];
     return Array.isArray(entries) ? entries.map((entry) => schemaValueType(entry, depth + 1)) : [];
   });
-  const concrete = [...new Set(variants.filter((entry) => entry !== "unknown"))].sort();
+  if (variants.includes("unknown")) return "unknown";
+  const concrete = [...new Set(variants)].sort();
   if (concrete.length) return concrete.join("|");
   if (node.properties || node.additionalProperties || node.allOf) return "object";
   if (node.const === null) return "null";
