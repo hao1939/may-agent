@@ -40,19 +40,12 @@ closure uses the linked successor below. Turns share the common attempt fence;
 Messages, Topics and Requests remain records without a separate executor.
 Request closure needs its current scope and explanation and leaves chat available.
 
-Turn Stop fences one execution/input; a worker's `stopped` result instead
-records failure evidence and preserves retry eligibility. Owner closure prevents
-new claims and late settlement, retaining unresolved work visibly non-success.
-It does not fulfill Requests or implicitly cancel children. Old events cannot
-reopen it; new work after closure uses a new linked Task. A conventional close
-after a result requires the exact accepted attempt plus current generation and
-resource-version fences. The shared guard rejects before mutation unless that
-attempt is still observed, no attempt or input is pending, and the Task itself
-is converged; this preserves retained Conditions, dependencies, facts and other
-obligations when one newer input happened to converge. Exact replay returns the
-existing receipt without another write. Intentional withdrawal remains a
-separate cancellation control and may stop active work under its existing
-authority.
+Turn Stop fences one execution/input; a worker's `stopped` result records failure evidence and preserves retry eligibility.
+Owner closure prevents new claims and late settlement, retaining unresolved work visibly non-success. It neither fulfills Requests nor
+implicitly cancels children; old events cannot reopen it, and new work after closure uses a new linked Task. A conventional result close
+requires the exact accepted attempt and current generation/resource-version fences. The shared guard also requires a converged Task without
+pending input, attempt or retained wait. Rejection preserves Conditions, dependencies, facts and all obligations; exact replay returns the
+existing receipt without another write. Intentional withdrawal remains a separate cancellation control that may stop active work under existing authority.
 
 The [proposal](../proposals/conversation-input-unification.md) owns prerequisite
 handling, control scopes, code deletion and migration. Source verification does
