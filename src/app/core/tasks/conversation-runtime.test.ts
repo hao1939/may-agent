@@ -1841,7 +1841,7 @@ test("public Stop commits before abort and preserves queued input across Task ru
   const events = createEventInterface({
     bus: f.bus,
     db: f.db,
-    acceptsAppInput: () => true,
+    validateAppInput: () => {},
     hasApp: (id) => id === app.id,
     hasAgent: () => true,
     hasSession: () => true,

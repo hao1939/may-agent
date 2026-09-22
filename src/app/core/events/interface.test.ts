@@ -1,9 +1,11 @@
+import { Type, defineApp } from "@may-agent/sdk";
 import { afterEach, describe, expect, it } from "bun:test";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { DbWriter } from "../../../lib/db-writer.js";
 import { closeDb, getDb } from "../../../lib/requests.js";
+import { AppInboxHost } from "../inbox/app-inbox-host.js";
 import { createAppInboxItem } from "../state/app-inbox-store.js";
 import { claimAppInboxItem, completeAppInboxClaim } from "../../../../test/fixtures/legacy-inbox.js";
 import { createRuntimeAppRead } from "../reads/app-read.js";
@@ -32,7 +34,9 @@ function fixture(conversationAppId?: string) {
     bus,
     db,
     conversationAppId,
-    acceptsAppInput: (appId, input) => appId === "sample" && input.kind === "message",
+    validateAppInput: (appId, input) => {
+      if (appId !== "sample" || input.kind !== "message") throw new Error("invalid App input");
+    },
     hasApp: (appId) => appId.trim().replace(/\.app$/, "") === "sample",
     hasAgent: (agent) => agent === "may",
     hasSession: (sessionId) => sessionId === "s_known",
@@ -89,6 +93,82 @@ describe("simple event interface", () => {
     expect(() => events.publish({ type: "chat.start.requested", target: { appId: "sample" },
       data: { message: "Please work" } }, { source: "test" })).toThrow("app.input.requested");
     expect(db.prepare("SELECT count(*) AS n FROM events").get()).toEqual({ n: 0 });
+  });
+
+  it("preserves App schema diagnostics at public ingress before persistence", () => {
+    const root = mkdtempSync(join(tmpdir(), "may-event-app-input-"));
+    roots.push(root);
+    const bus = new EventBus();
+    const writer = new DbWriter(root);
+    bus.setPersistenceSubscriber(writer.handler);
+    bus.setDeliveryRecorder(writer.recordDelivery);
+    const db = getDb(root);
+    const app = defineApp({
+      id: "evaluation",
+      version: 1,
+      agent: "evaluator",
+      inputSchema: Type.Object({
+        kind: Type.Literal("review-task-outcome"),
+        data: Type.Object({
+          assessmentPurpose: Type.Union([Type.Literal("outcome"), Type.Literal("ongoing")]),
+          subjectGeneration: Type.Integer({ minimum: 1 }),
+        }),
+      }),
+      task: ({ id }) => ({
+        kind: "desired",
+        intent: { id: `review/${id}`, parentId: "evaluation", outcome: "Review outcome", acceptance: ["Reviewed"] },
+      }),
+      tasks: {},
+    });
+    const host = new AppInboxHost({ db, apps: [app] });
+    const events = createEventInterface({
+      bus,
+      db,
+      validateAppInput: (appId, input) => host.assertAcceptsInput(appId, input),
+      hasApp: (appId) => host.hasApp(appId),
+      hasAgent: () => false,
+      hasSession: () => false,
+    });
+    bus.subscribeDurableRoute((event) => {
+      if (event.type !== "app.input.requested") return;
+      const data = eventData(event);
+      const created = createAppInboxItem(db, {
+        appId: String(data.appId),
+        source: data.source as { kind: "system"; id: string },
+        input: data.input as { kind: string; data: unknown },
+        originEventId: Number(event[EVENT_ROW_ID]),
+        idempotencyKey: String(data.idempotencyKey),
+      });
+      return { accepted: true, by: `app-inbox:${created.item.id}`, route: "direct" };
+    });
+
+    const publish = (data: { assessmentPurpose: string; subjectGeneration: number }) =>
+      events.publish(
+        {
+          type: "app.input.requested",
+          target: { appId: "evaluation" },
+          idempotencyKey: "review-correction",
+          data: { input: { kind: "review-task-outcome", data } },
+        },
+        { source: "control-socket", inputSource: { kind: "system", id: "test" } },
+      );
+
+    expect(() => publish({ assessmentPurpose: "behavioral-improvement", subjectGeneration: 1 })).toThrow(
+      /\/data\/assessmentPurpose.*allowedValue.*outcome.*allowedValue.*ongoing/,
+    );
+    expect(() => publish({ assessmentPurpose: "outcome", subjectGeneration: 1.5 })).toThrow(
+      "/data/subjectGeneration: must be integer",
+    );
+    expect(db.prepare("SELECT COUNT(*) AS count FROM events").get()).toEqual({ count: 0 });
+    expect(db.prepare("SELECT COUNT(*) AS count FROM app_inbox_items").get()).toEqual({ count: 0 });
+
+    const input = { assessmentPurpose: "outcome", subjectGeneration: 1 };
+    const first = publish(input);
+    const retry = publish(input);
+    expect(first).toMatchObject({ eventType: "app.input.requested", delivery: "accepted" });
+    expect(retry).toEqual(first);
+    expect(db.prepare("SELECT COUNT(*) AS count FROM events").get()).toEqual({ count: 1 });
+    expect(db.prepare("SELECT COUNT(*) AS count FROM app_inbox_items").get()).toEqual({ count: 1 });
   });
   it.each(["sample", " sample.app "])("requires durable input for the selected conversational App: %s", (selection) => {
     const { db, events } = fixture(selection);

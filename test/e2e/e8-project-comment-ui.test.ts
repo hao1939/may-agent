@@ -119,7 +119,7 @@ describe.skipIf(E2E_NO_UI || !probe.ok)("E8: project comment via served UI", () 
       expect(rejected.status()).toBe(503);
       const rejection = await rejected.json();
       expect(rejection).toMatchObject({ ok: false, triggered: false });
-      expect(rejection.error).toContain("does not accept this input");
+      expect(rejection.error).toContain("App history has no handler for input kind message");
       expect(rejection.eventId).toBeUndefined();
       const firstKey = JSON.parse(rejected.request().postData()!).idempotencyKey;
       await page.waitForFunction(() => !(document.getElementById("project-comment") as HTMLInputElement)?.disabled);
@@ -353,7 +353,10 @@ describe.skipIf(E2E_NO_UI || !probe.ok)("E8: project comment via served UI", () 
       expect(unowned.status()).toBe(503);
       expect(await unowned.json()).toMatchObject({ ok: false, triggered: false });
       await page.waitForFunction(
-        () => /Failed:.*does not accept this input/.test(document.getElementById("project-comment-status")?.textContent ?? ""),
+        () =>
+          /Failed:.*App history has no handler for input kind message/.test(
+            document.getElementById("project-comment-status")?.textContent ?? "",
+          ),
         { timeout: 5000 },
       );
       expect(await page.$eval("#project-comment", (el) => (el as HTMLInputElement).value)).toBe(commentText);

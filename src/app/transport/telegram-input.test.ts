@@ -136,7 +136,7 @@ function durableTelegramFixture() {
     const writer = new DbWriter(root);
     bus.setPersistenceSubscriber(writer.handler);
     bus.setDeliveryRecorder(writer.recordDelivery);
-    const events = createEventInterface({ bus, db: getDb(root), acceptsAppInput: () => true,
+    const events = createEventInterface({ bus, db: getDb(root), validateAppInput: () => {},
       hasApp: () => true, hasAgent: () => true, hasSession: () => false });
     publish = (input) => events.publish(input, { source: "telegram" });
     return attachTelegramBotRuntime({

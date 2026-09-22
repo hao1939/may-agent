@@ -178,7 +178,7 @@ async function conversation() {
         const events = createEventInterface({
           bus: f.bus,
           db: f.db,
-          acceptsAppInput: () => false,
+          validateAppInput: () => { throw new Error("invalid App input"); },
           hasApp: () => true,
           hasAgent: () => true,
           hasSession: (id) => manager.registryStore.getSession(id) !== null,

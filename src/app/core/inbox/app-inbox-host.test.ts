@@ -58,17 +58,25 @@ describe("App inbox host", () => {
     const input = { kind: "probe", data: { value: "work" } };
     for (const tasks of [undefined, {}]) {
       const host = new AppInboxHost({ db, apps: [{ ...app(), task: undefined, tasks }] });
-      expect(host.acceptsInput("evaluation", input)).toBe(false);
+      expect(() => host.assertAcceptsInput("evaluation", input)).toThrow(
+        "App evaluation has no handler for input kind probe",
+      );
     }
     const host = new AppInboxHost({ db, apps: [app()] });
-    expect(host.acceptsInput("evaluation", input)).toBe(true);
+    expect(() => host.assertAcceptsInput("missing", input)).toThrow("Unknown App: missing");
+    expect(() => host.assertAcceptsInput("evaluation", input)).not.toThrow();
+    expect(() => host.assertAcceptsInput("evaluation", { kind: "probe", data: { value: 1 } })).toThrow(
+      "/data/value: must be string",
+    );
     const conversation = new AppInboxHost({
       db,
       apps: [{ ...app(), task: undefined, conversation: { mode: "agent", inputKinds: ["probe"] } }],
     });
-    expect(conversation.acceptsInput("evaluation", input)).toBe(true);
+    expect(() => conversation.assertAcceptsInput("evaluation", input)).not.toThrow();
     conversation.replaceApps([{ ...app(), task: undefined, conversation: { mode: "agent", inputKinds: ["message"] } }]);
-    expect(conversation.acceptsInput("evaluation", input)).toBe(false);
+    expect(() => conversation.assertAcceptsInput("evaluation", input)).toThrow(
+      "App evaluation has no handler for input kind probe",
+    );
   });
 
   it("validates input and exposes typed actions without lifecycle machinery", () => {

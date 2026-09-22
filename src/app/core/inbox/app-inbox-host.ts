@@ -278,15 +278,16 @@ export class AppInboxHost {
     this.#subscriptionsByEventType = nextSubscriptions;
   }
 
-  acceptsInput(appId: string, input: AppInput): boolean {
-    const app = this.#apps.get(appId.trim());
-    if (!app || !Check(app.inputSchema, input)) return false;
+  assertAcceptsInput(appId: string, input: AppInput): void {
+    const app = this.#requiredApp(appId);
+    assertValidAppInput(app, input);
     // A schema describes valid data; accepting work also requires a handler.
     // A declared handler may fail temporarily: its durable input remains retryable.
-    return Boolean(
+    const hasHandler = Boolean(
       (app.conversation && (!app.conversation.inputKinds || app.conversation.inputKinds.includes(input.kind))) ||
       (app.tasks && app.task),
     );
+    if (!hasHandler) throw new Error(`App ${app.id} has no handler for input kind ${input.kind}`);
   }
 
   matchingAppIds(owner: string, input: AppInput): string[] {
