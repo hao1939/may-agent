@@ -30,3 +30,39 @@ Key implications:
 - [The Delegation Surface](../the-delegation-surface.md) — new cost dimension
 - [The Oversight Inversion](../the-oversight-inversion.md) — purchasing decisions harder to oversee than code
 - Agent autonomy spectrum: code → web browsing → financial transactions → physical-world effects
+
+## Reddit follow-up: approval-gated local purchasing (2026-09-22)
+
+**Source:** https://www.reddit.com/r/aiagents/comments/1wnk89v/i_gave_a_local_27b_ai_agent_my_amazon_account_and/  
+**Stable post ID:** `t3_1wnk89v`  
+**Coverage:** Complete author-supplied post body as returned in Reddit's public
+search Atom feed; linked video and repository were not inspected.  
+**Disposition:** New practitioner signal refining the autonomy boundary.
+
+A builder reports that a locally running Qwen 3.8 27B model, TensorSharp agent
+runtime, and Playwright browser skill searched Amazon, compared products, chose
+A4 paper, and prepared an order in one run. The author intervened to log in and
+to approve the final purchase, and reports that the run took about 24 minutes.
+Inference, reasoning, state, code generation, and tool execution reportedly
+remained local; interaction with Amazon did not.
+
+This is a self-reported single run, not a reproduced benchmark. The post does
+not provide repeated-run reliability, decision-quality criteria, price or
+product-selection evidence, or an audit of the linked raw trace. Its useful
+addition is therefore architectural rather than performance evidence:
+**transactional autonomy is not binary**. An agent may own discovery,
+comparison, navigation, and order preparation while a human retains identity
+entry and the irreversible commit. Evaluations of purchasing agents should
+report these boundaries separately instead of labeling the whole run simply
+“autonomous”:
+
+1. who supplies or unlocks identity and credentials;
+2. who chooses the item and evaluates price/quality;
+3. who prepares the transaction;
+4. who authorizes the irreversible purchase; and
+5. where inference, state, and browser effects execute.
+
+Compared with Sprocket's claimed no-per-transaction approval, this example
+occupies a narrower delegation tier: local execution with explicit human
+approval at the financial commitment boundary. That distinction is more useful
+for risk assessment than a single autonomy label.
