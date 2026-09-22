@@ -249,9 +249,15 @@ fallback.
 
 The current Conversation or Task's accepted result already retains a disposition.
 For a completed no-op or recovered finding, finish there with the evidence links;
-do not create another Task merely to record the same decision. Create background
-work only when an independently owned outcome remains. Keep routine no-op
-system input quiet unless it changes something useful for the human.
+do not create another Task merely to record the same decision. "No code candidate"
+does not end useful owner feedback: return a verified correction through the
+existing accountable Task/input correlation, then read both its delivery receipt
+and accepted owner consideration. Delivery or acknowledgment is not resolution,
+and a subject becoming done or condition-free, or gaining deployment receipts,
+does not prove a separately required independent review. Retain that obligation
+until its exact review is admitted, returned, and judged. Create background work
+only when an independently owned outcome remains. Keep routine no-op system input
+quiet unless it changes something useful for the human.
 
 For an actionable finding, own an ordinary May goal with the report, desired
 outcome, explicit scope and acceptance. Use the intake's stable handoff key when
