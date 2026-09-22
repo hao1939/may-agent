@@ -15,42 +15,63 @@ operator-invented identity; supported recovery begins with fresh human input.
    follow `nextCursor` and select records whose `closed` is not true. Inspect each candidate with `get` and its
    accepted evidence. A one-off authorized cleanup can run inside the current
    Conversation; periodic reviews need one continuing Task, not one per cycle.
-2. Read the exact control view using the existing public socket client:
+2. Read the exact control view and submit guarded completion through the existing
+   public socket client. Use the running installation's socket path and the
+   candidate's exact `ref`; do not import private writers or guess a source entry
+   point.
 
    ```ts
    import { sendSocketCommand } from "/app/projects/may-agent/packages/control/src/client.ts";
-   const response = await sendSocketCommand(socketPath, {
-     type: "task.get",
-     ref,
+
+   const read = await sendSocketCommand(socketPath, { type: "task.get", ref });
+   if (read.type !== "ok" || !read.task) throw new Error("Task read failed");
+   const task = read.task as {
+     appId: string;
+     taskId: string;
+     generation: number;
+     resourceVersion: number;
+     acceptedAttempt?: { id: string };
+   };
+   if (!task.acceptedAttempt?.id) throw new Error("No exact accepted result to consume");
+
+   const closed = await sendSocketCommand(socketPath, {
+     type: "task.close",
+     appId: task.appId,
+     taskId: task.taskId,
+     expectedGeneration: task.generation,
+     expectedResourceVersion: task.resourceVersion,
+     afterResult: task.acceptedAttempt.id,
+     reason: "Owner consumed this completed finite result",
    });
+   if (closed.type !== "ok") throw new Error(`Task completion rejected: ${closed.message}`);
    ```
 
-   Use the running installation's socket path and the candidate's exact `ref`.
-   Check for an `ok` response and read `response.task`: it includes `appId`,
-   `taskId`, `generation`, `resourceVersion`, and `cancellable`. This avoids
-   treating private SQLite tables as a control API. Stop if the current view
-   contradicts the closure decision or refuses cancellation.
+   The fresh read exposes the exact accepted attempt and current fences. The
+   runtime rejects omission or an empty `afterResult`, mismatched result or
+   fences, a non-converged stored phase, a current attempt, or a pending trigger.
+   Rejection must leave every Task fact and link intact. These mechanical checks
+   do not decide that the responsibility should end: inspect the full current
+   context and exercise owner judgment. Independent structural children can
+   continue. Do not interpret `cancellable`, an empty Conditions list, a quiet
+   Task, or an accepted old result as completion.
 
-3. Use the installed `may-agent` binary to submit the control. Verify its
-   version if the checkout and deployment differ; do not execute a guessed
-   source entry point, import private writers, or assume Docker is available
-   inside the container. Substitute the exact freshly read values below:
+3. If `task.close` is unavailable or rejects, preserve the Task and report the
+   exact limitation or current obligation. Do not fall back to
+   `app.task.cancel.requested` merely to reduce open counts. Reread after a stale
+   fence, then reconsider whether completion is still justified; do not blindly
+   substitute newer fence values.
 
-   ```sh
-   may-agent --emit app.task.cancel.requested '{"target":{"appId":"example","taskId":"goal/example"},"data":{"expectedGeneration":1,"expectedResourceVersion":4,"reason":"Owner-authorized closure: finite work complete"},"idempotencyKey":"app-task-cancel:example:goal/example:1:4"}'
-   ```
-
-   `target` must be outside `data`; payload `appId`/`taskId` alone do not route
-   a control. The CLI builds the wire envelope; do not invent source/owner
-   routing fields. Keep the same key and payload after an uncertain transport
-   result. A stale-fence rejection requires a fresh read and renewed judgment,
-   not blindly copying newer version numbers into the same operation.
+   Intentional withdrawal is a separate authorized decision. Only when the
+   assigning owner or human has actually withdrawn the remaining responsibility,
+   use the supported `task.cancel` control with an explicit reason. It may stop
+   active work and clear outstanding links by design; never describe an agent or
+   system-originated cancellation as a human decision.
 
 4. Verify the returned event with `event.get` and reread the exact Task.
    Acceptance proves control delivery; `tasks.get` showing `closed: true`
-   proves closure. The control view calls this `cancelled`; accepted achievement
-   remains in its history. Report what was closed, what remains, and current
-   counts. Do not delete Task history or rewrite prior receipts.
+   proves closure. The accepted achievement remains in history. Report what was
+   closed, what remains, and current counts. Do not delete Task history or
+   rewrite prior receipts.
 
 For a recurring review, return the current cycle's evidence and an exact wait
 with `reviewAfterMs` through the supplied result schema. Runtime stores and
