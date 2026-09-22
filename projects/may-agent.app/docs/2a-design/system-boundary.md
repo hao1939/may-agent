@@ -453,6 +453,17 @@ state-changing operation:
 publish(event)
 ```
 
+The operator socket's `task.close` command is a thin adapter over that same
+publication boundary. It requires the Task's current generation and resource
+version plus the exact accepted attempt ID, then publishes
+`app.task.close.requested`; the shared Task runtime alone decides whether no
+newer input, active attempt, retained wait, dependency, or other unfinished
+obligation remains. Rejection leaves the Task unchanged. This trusted operator
+boundary is not a Task-bound creator capability. `task.cancel` remains the
+distinct intentional-withdrawal control and must not be substituted for failed
+completion cleanup or attributed to a human when its trusted ingress does not
+establish a human decision.
+
 The event type selects one of four existing Host meanings: App input, reported
 fact, exact task/session control, or Host lifecycle control. `get(eventId)`
 reads admission and linked outcomes; `subscribe(filter)` observes Events.
