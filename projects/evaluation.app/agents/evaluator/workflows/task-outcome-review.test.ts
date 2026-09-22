@@ -1,4 +1,5 @@
 import { describe, expect, setSystemTime, test } from "bun:test";
+import { admitTaskReconcileResult } from "@may-agent/sdk";
 import {
   createTestAppRead,
   createTestAppWorkflowContext as createSdkTestAppWorkflowContext,
@@ -620,6 +621,10 @@ describe("Task outcome review", () => {
     expect(failed.summary).toContain("remains unfinished");
     expect(factsOf(failed)).toContain("review-disposition:evaluator-failed");
     expect(factsOf(failed)).toContain("execution:s_empty_turn");
+    expect(admitTaskReconcileResult(failed.output)).toMatchObject({
+      ok: true,
+      result: { state: "incomplete", report: true },
+    });
 
     const deferred = await reviewTaskOutcome(ctx, reader(), root);
     expect(deferred.status).toBe("done");

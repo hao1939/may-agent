@@ -4,6 +4,11 @@
 
 **Host:** `20049916b79d2ba2d2265edf5eeb605ff0e59c05` (merged PR #226)
 
+The [deferred-review follow-up](BUDGET-RESUME.md) separately verifies automatic
+budget resumption and a reviewer execution failure with scripted judgments. It
+records the small Evaluation result-contract correction; it is not another
+model-reasoning trial.
+
 ## Current: caller-less Evaluation → May recovery trial
 
 **Requirement:** determine whether an original system-sourced workflow with **no waiting
