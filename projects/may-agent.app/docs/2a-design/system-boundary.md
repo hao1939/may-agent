@@ -456,13 +456,19 @@ publish(event)
 The operator socket's `task.close` command is a thin adapter over that same
 publication boundary. It requires the Task's current generation and resource
 version plus the exact accepted attempt ID, then publishes
-`app.task.close.requested`; the shared Task runtime alone decides whether no
-newer input, active attempt, retained wait, dependency, or other unfinished
-obligation remains. Rejection leaves the Task unchanged. This trusted operator
-boundary is not a Task-bound creator capability. `task.cancel` remains the
-distinct intentional-withdrawal control and must not be substituted for failed
-completion cleanup or attributed to a human when its trusted ingress does not
-establish a human decision.
+`app.task.close.requested`; omission or an empty result identity is invalid even
+when an earlier receipt could otherwise replay. The shared Task runtime checks
+that identity and both fences, the stored converged phase, absence of a current
+attempt, and absence of a pending trigger. Rejection leaves every Task fact and
+link unchanged. These mechanics do not decide whether the owner should end the
+responsibility; independent structural children can continue. The internal
+completion callable has the same required result identity;
+it is not a generic terminal operation whose optional argument selects intent.
+This trusted operator boundary is not a Task-bound creator capability.
+`task.cancel` and the internal cancellation callable remain the distinct
+intentional-withdrawal control, sharing only the fenced terminal writer. They
+must not be substituted for failed completion cleanup or attributed to a human
+when their trusted ingress does not establish a human decision.
 
 The event type selects one of four existing Host meanings: App input, reported
 fact, exact task/session control, or Host lifecycle control. `get(eventId)`
