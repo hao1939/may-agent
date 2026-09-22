@@ -1,6 +1,6 @@
 <ai_context>
 summary: "Rolling review record for oversized canonical notes. Documents why each exceeds the 800-line threshold and whether a split is warranted."
-last_updated: "2026-09-18"
+last_updated: "2026-09-22"
 </ai_context>
 
 # Oversized Notes Tolerance Record — 2026-07-19
@@ -66,6 +66,24 @@ No note was split solely to lower a line-count signal, and no child assignment
 is justified: both dispositions are independently closable in the standing
 maintenance task.
 
+## Targeted recurrence — 2026-09-22 (evaluation notes)
+
+The observer reported `agent-evaluation.md` at 2,252 lines and
+`agent-runtime-verdict-integrity.md` at 822 lines. Direct `wc -l` counts were
+again one lower than the observer values.
+
+| Note | Observer / direct lines | Disposition |
+|------|------------------------:|-------------|
+| `agent-evaluation.md` | 2252 / 2251 | Split warranted after the current source-intake burst stabilizes. The `Durable Patterns` block at lines 14–1146 is now a coherent 1,133-line September catalog with 21 source-grounded patterns. It can become a verdict-and-evidence companion while the existing published path retains the older benchmark, tooling, metrics, and research navigation. Preserve the 21 heading fragments through exact forwarding links and check digest snapshots before moving the block. |
+| `agent-runtime-verdict-integrity.md` | 822 / 821 | No immediate second split. The note was reduced to 588 lines by the verified 2026-09-21 acceptance/reconciliation extraction, then received five same-day source publications and reached only 21 lines above threshold. The new sections still fit verdict integrity, and the companion forwarding link remains present. Re-review after intake stabilizes or when another cohesive block reaches roughly 150 lines. |
+
+Four source publications touched `agent-evaluation.md` after the runtime split,
+while five touched `agent-runtime-verdict-integrity.md`. This pass records the
+clean evaluation boundary and the runtime note's recent-growth context rather
+than moving actively changing source material. The standing maintenance task can
+perform the evaluation split in a later isolated pass; no separate child task is
+needed.
+
 ## Unsourced INDEX batch — 2026-09-18
 
 The observer reported 200 entries still marked `Not yet sourced` after 34
@@ -77,8 +95,9 @@ not a claim that every source was freshly retrieved during this review.
 
 ## Current summary
 
-The previously recommended diagnostic-layers split is complete. The present
-oversized signals are either format-appropriate logs/ledgers, recently reviewed
-notes without a clean new boundary, or one explicit next review candidate. The
-unsourced backlog received a small evidence-checked batch rather than a bulk
-metric edit.
+The previously recommended diagnostic-layers split is complete. The 2026-09-22
+review identifies `agent-evaluation.md` as the next clean split candidate and
+defers a second `agent-runtime-verdict-integrity.md` split during same-day source
+intake. Other oversized signals are format-appropriate logs/ledgers or previously
+reviewed notes. The unsourced backlog received a small evidence-checked batch
+rather than a bulk metric edit.
