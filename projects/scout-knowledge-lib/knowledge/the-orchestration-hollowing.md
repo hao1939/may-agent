@@ -1,8 +1,8 @@
 <ai_context>
-summary: "Cross-source synthesis: orchestration frameworks are being hollowed from both ends simultaneously — BUT with a key revision (Jun 22, scan #106): the hollowing applies only to SINGLE-AGENT orchestration. META-orchestration (cross-agent policy, multi-agent coordination, device sync) is growing explosively (Omnigent 4,455★ in 11 days, Vercel Eve 2,266★ in 6 days). Revised thesis: orchestration BIFURCATES — simple routing/delegation absorbed by models (confirmed), while meta-harness layer ABOVE individual agents grows as new market category. The containment/sandboxing that 'doesn't work' with traditional approaches is being solved by this meta-layer treating agents as interchangeable execution units."
-triggers: ["orchestration framework", "framework complexity", "split terminal", "tmux agent", "anti-framework", "orchestration dead", "containment", "framework value", "orchestration hollowing", "agent sandbox", "permission fatigue", "dangerously-skip-permissions", "meta-harness", "omnigent", "vercel eve", "orchestration bifurcation", "Slack Code", "code channels", "multiplayer agents"]
-last_updated: "2026-09-10"
-source_basis: "HN discourse Jun 20 2026: 'I don't see any good orchestration system for AI agents' (48611527, ffacu.dev/blog/the-split-terminal-problem); HN comment Jimmc414: 'useful part of orchestration moved into the model...what's left to bolt on top is negative value'; Microsoft Security Blog Jun 18 2026 AutoJack exploit chain (confused-deputy RCE via MCP WebSocket); Relaymux tmux-based meta-harness (scan #55, Aug 2026, 8pts); HN permission fatigue (386pts, May 2026, governance-compilation-gradient.md); Substrate Inversion synthesis (Jul 2026); Coordination Tax production data (Jun 2026). UPDATE Jun 22: GitHub API omnigent-ai/omnigent (4,455★, created 2026-06-11), vercel/eve (2,266★, created 2026-06-16); arXiv 2606.20512 (Probe-and-Refine), 2606.20158 (N-Version Programming). HN Oak (48631726, 121pts/119c). UPDATE Aug 21: Salesforce Slack Code launch page and HN item 49374965 (78pts/105 comments reported by HN API fields at retrieval; 30 top-level comments returned by Algolia). UPDATE Sep 10: GitHub Search API metadata for omnigent-ai/omnigent (9,835★; search incomplete_results=false) and repository contents pinned at commit 14a53bf7f6ff3aec8c6c0231c50168dfe806d927, including policy documentation and its harness conformance bench."
+summary: "Cross-source synthesis: orchestration frameworks are being hollowed from both ends simultaneously — BUT with a key revision (Jun 22, scan #106): the hollowing applies only to SINGLE-AGENT orchestration. META-orchestration (cross-agent policy, multi-agent coordination, device sync) is growing as a separate category. The durable layer above interchangeable agents must now prove three contracts independently: execution semantics, cross-provider governance receipts, and workspace isolation."
+triggers: ["orchestration framework", "framework complexity", "split terminal", "tmux agent", "anti-framework", "orchestration dead", "containment", "framework value", "orchestration hollowing", "agent sandbox", "permission fatigue", "dangerously-skip-permissions", "meta-harness", "omnigent", "vercel eve", "orchestration bifurcation", "Slack Code", "code channels", "multiplayer agents", "JetBrains Air", "multi-vendor governance", "ACP"]
+last_updated: "2026-09-22"
+source_basis: "HN discourse Jun 20 2026: 'I don't see any good orchestration system for AI agents' (48611527, ffacu.dev/blog/the-split-terminal-problem); HN comment Jimmc414: 'useful part of orchestration moved into the model...what's left to bolt on top is negative value'; Microsoft Security Blog Jun 18 2026 AutoJack exploit chain (confused-deputy RCE via MCP WebSocket); Relaymux tmux-based meta-harness (scan #55, Aug 2026, 8pts); HN permission fatigue (386pts, May 2026, governance-compilation-gradient.md); Substrate Inversion synthesis (Jul 2026); Coordination Tax production data (Jun 2026). UPDATE Jun 22: GitHub API omnigent-ai/omnigent (4,455★, created 2026-06-11), vercel/eve (2,266★, created 2026-06-16); arXiv 2606.20512 (Probe-and-Refine), 2606.20158 (N-Version Programming). HN Oak (48631726, 121pts/119c). UPDATE Aug 21: Salesforce Slack Code launch page and HN item 49374965 (78pts/105 comments reported by HN API fields at retrieval; 30 top-level comments returned by Algolia). UPDATE Sep 10: GitHub Search API metadata for omnigent-ai/omnigent (9,835★; search incomplete_results=false) and repository contents pinned at commit 14a53bf7f6ff3aec8c6c0231c50168dfe806d927, including policy documentation and its harness conformance bench. UPDATE Sep 22: JetBrains Air announcement and HN 49799287 (36pts/21 comments in retrieved snapshot), distinguishing execution, governance, and workspace-concurrency contracts."
 </ai_context>
 
 # The Orchestration Hollowing
@@ -328,3 +328,64 @@ instead of normalizing all backends to the lowest common denominator.
 - **Pinned commit:** https://github.com/omnigent-ai/omnigent/commit/14a53bf7f6ff3aec8c6c0231c50168dfe806d927
 - **Pinned policy documentation:** https://github.com/omnigent-ai/omnigent/blob/14a53bf7f6ff3aec8c6c0231c50168dfe806d927/docs/POLICIES.md
 - **Pinned harness bench:** https://github.com/omnigent-ai/omnigent/blob/14a53bf7f6ff3aec8c6c0231c50168dfe806d927/tests/harness_bench/README.md
+
+---
+
+## Update: Multi-vendor execution and multi-vendor governance are different contracts (2026-09-22)
+
+JetBrains' Air announcement is a useful incumbent-market signal for the revised
+orchestration thesis. The company explicitly says the IDE can no longer contain
+the whole development system and splits Air into three surfaces: agent direction
+and verification inside IDEs, team workflow coordination, and organization-level
+policy, audit, cost, and accountability. It also presents the Agent Client
+Protocol (ACP) as the open connection between an IDE and an agent's complete
+harness—including planning, tools, model routing, and observability—while
+claiming that Air Governance will span providers and execution surfaces.
+
+That design exposes **two separate interoperability contracts** that product
+language can easily collapse:
+
+1. **Execution portability:** can a host start an agent and faithfully preserve
+   its turns, tools, approvals, interruption, and observability semantics?
+2. **Governance portability:** can identity, policy decisions, provenance,
+   review status, spend, and accepted responsibility be compared across IDE,
+   terminal, cloud, and automated runs?
+
+ACP addresses the first boundary. The announcement describes the desired second
+boundary, but does not specify a common governance-event schema, show which
+third-party surfaces currently emit every required field, or provide a
+cross-provider conformance result. “Supports multiple agents” therefore does
+not yet entail “one complete and comparable control record.” A credible
+multi-vendor plane should publish a coverage matrix for both contracts and
+represent unknown or unavailable fields explicitly rather than silently
+normalizing them away.
+
+The HN discussion supplies useful adoption counterevidence rather than technical
+validation. Early commenters report being unable to combine their preferred
+Claude and OpenAI subscriptions, ask for OpenRouter or local-agent support, and
+describe overlapping JetBrains integrations as confusing. One long-time user
+also reports that creating multiple Git worktrees can trigger heavy IDE indexing
+and checkout friction even though terminal-based parallel-agent work itself is
+comfortable. These reports are anecdotal and configuration-specific, but they
+identify a practical third contract beneath protocol compatibility:
+**workspace concurrency**. A multi-agent surface must isolate indexes, branches,
+working trees, and resource budgets well enough that adding workers does not
+make the developer environment the bottleneck.
+
+The announcement's deterministic-code-intelligence argument remains promising:
+shared structural knowledge could reduce every supported agent's need to
+rediscover the codebase. But JetBrains reports only “promising results,” without
+a benchmark, cost comparison, or defect measure in this post. Treat that as a
+hypothesis to test across vendors, not launch evidence that deterministic
+context improves accuracy or economics.
+
+This sharpens the orchestration bifurcation. The growing layer above commodity
+agents is not one generic orchestrator. It is at least three independently
+verifiable planes—execution semantics, governance receipts, and workspace
+isolation. An incumbent bundling all three is evidence that the category is
+commercially salient; whether its interfaces are actually open, complete, and
+usable must be established per plane.
+
+- **HN:** https://news.ycombinator.com/item?id=49799287 (36 points, 21 comments in the retrieved snapshot)
+- **Primary announcement:** https://blog.jetbrains.com/blog/2026/09/22/introducing-jetbrains-air/
+- **Evidence boundary:** The product architecture and availability claims above come from JetBrains; the user reports come from the HN thread. Scout did not install Air, verify ACP conformance, or test provider integrations.
