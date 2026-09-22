@@ -35,6 +35,7 @@ import {
   cancelLoadedAppTask,
   closeInstalledAppTaskRuntimes,
   installAppTaskRuntimes as installCoreTaskRuntimes,
+  getLoadedAppInputContract,
   previewLoadedCanonicalAppTaskEvent,
   previewLoadedCanonicalAppTaskEventRoutes,
   readLoadedAppTaskView,
@@ -192,6 +193,60 @@ function options(f: ReturnType<typeof fixture>, bus: EventBus) {
 }
 
 describe("caller feedback PoC", () => {
+  it("reads the full installed input contract through tasks without starting target work", async () => {
+    const f = fixture();
+    const bus = eventBus();
+    const inputSchema = Type.Object(
+      {
+        kind: Type.Literal("review"),
+        data: Type.Object(
+          {
+            acceptance: Type.Array(Type.String(), { minItems: 1 }),
+            assignment: Type.Optional(Type.Object({ agent: Type.String() })),
+          },
+          { additionalProperties: false },
+        ),
+      },
+      { $defs: { label: Type.String({ minLength: 1 }) }, not: { required: ["unexpected"] } },
+    );
+    const target = defineApp({
+      id: "reviewer",
+      version: 1,
+      agent: "reviewer",
+      inputSchema,
+      tasks: {},
+      task: () => {
+        throw new Error("Contract reads must not create work");
+      },
+    });
+    const install = (app = target) =>
+      installCoreTaskRuntimes({
+        ...options(f, bus),
+        installControllers: false,
+        taskAppIds: ["sample"],
+        appRegistrySnapshot: {
+          id: "contracts",
+          generation: 1,
+          entries: [
+            { appDir: f.appDir, definition: definition() },
+            { appDir: join(f.projectsRoot, "reviewer.app"), definition: app },
+          ],
+        },
+      });
+    await install();
+    const tool = createAppTaskReadTool({ bus, appId: () => "sample" });
+    const result = await tool.execute("contract", { action: "contract", target: { appId: "reviewer.app" } });
+    const content = result.content[0];
+    if (content?.type !== "text") throw new Error("Expected contract text");
+    expect(JSON.parse(content.text)).toEqual({ appId: "reviewer", inputSchema });
+    const clone = getLoadedAppInputContract({ bus, appId: "reviewer" });
+    clone.inputSchema.properties = {};
+    expect(getLoadedAppInputContract({ bus, appId: "reviewer" }).inputSchema).toEqual(inputSchema);
+    await install({ ...target, inputSchema: Type.Object({ kind: Type.Literal("new-review") }) });
+    expect(getLoadedAppInputContract({ bus, appId: "reviewer" }).inputSchema).not.toEqual(inputSchema);
+    expect(() => getLoadedAppInputContract({ bus, appId: "absent" })).toThrow("no installed Task input contract");
+  });
+
   it("recovers delegated creator after lost admission and revises across Apps from a caller-only runtime", async () => {
     const f = fixture();
     const bus = eventBus();
@@ -1629,43 +1684,51 @@ describe("canonical App task runtime", () => {
     }
   });
 
-  it("rejects a dependency that is not accepted by the installed App contract", () => {
+  it("explains rejected dependencies, preserves existing waits, and admits a corrected input", () => {
     const f = fixture();
     const bus = eventBus();
+    let requests = 0;
+    bus.subscribe((event) => {
+      if (event.type === "app.input.requested") {
+        requests++;
+        return { accepted: true, by: "test-app-inbox", route: "direct" };
+      }
+    });
     const config = loadedTaskConfig(f);
+    const taskId = "work/invalid-owner";
     observeAppTaskIntent(config, {
-      intent: {
-        id: "work/invalid-owner",
-        parentId: "operations",
-        outcome: "Choose one installed accountable App",
-        acceptance: ["The target accepts the typed input"],
-      },
+      intent: { id: taskId, parentId: "operations", outcome: "Obtain a review", acceptance: ["Reviewed"] },
       appAgent: "sample-owner",
     });
-    const claim = claimObservedAppTask(config, {
-      taskId: "work/invalid-owner",
-      appAgent: "sample-owner",
-      handler: "agent:sample-owner",
+    const initial = claimObservedAppTask(config, { taskId, appAgent: "sample-owner", handler: "agent" });
+    if (initial.kind !== "claimed") throw new Error("expected initial claim");
+    deferAppTask(config, initial, {
+      disposition: "waiting",
+      summary: "Independent approval remains open",
+      conditions: [
+        {
+          id: "approval",
+          type: "approval.updated",
+          subject: "id:release",
+          expected: { field: "approved", equals: true },
+          owner: "human",
+          reviewAfterMs: 300_000,
+        },
+      ],
     });
+    recordAppTaskTrigger(config, taskId, { type: "review.requested", eventId: 1001 });
+    const claim = claimObservedAppTask(config, { taskId, appAgent: "sample-owner", handler: "agent" });
     if (claim.kind !== "claimed") throw new Error("expected claim");
     const target = defineApp({
       id: "evaluation",
       version: 1,
       agent: "evaluator",
-      inputSchema: Type.Object({
-        kind: Type.Literal("owner-review"),
-        data: Type.Record(Type.String(), Type.Unknown()),
-      }),
-      task: () => ({
-        kind: "desired" as const,
-        intent: {
-          id: "review",
-          parentId: "evaluation",
-          outcome: "Review facts",
-          acceptance: ["Reviewed"],
-        },
-      }),
       tasks: {},
+      inputSchema: Type.Object({
+        kind: Type.Literal("review"),
+        data: Type.Object({ purpose: Type.Union([Type.Literal("outcome"), Type.Literal("ongoing")]) }),
+      }),
+      task: () => ({ kind: "existing", taskId: "review/current" }),
     });
     const opts = {
       ...options(f, bus),
@@ -1675,22 +1738,41 @@ describe("canonical App task runtime", () => {
         entries: [{ appDir: join(f.projectsRoot, "evaluation.app"), definition: target }],
       },
     };
-
-    expect(() =>
-      admitTaskAppDependencies({
-        opts,
-        descriptor: {
-          id: "sample",
-          appDir: f.appDir,
-          projectDir: f.appDir,
-          agent: "sample-owner",
-          app: definition(),
-          reconciliationPaused: true,
-        },
-        claim,
-        dependencies: [{ id: "review", appId: "evaluation", input: { kind: "invented", data: {} } }],
-      }),
-    ).toThrow("input is not accepted by installed App evaluation");
+    const descriptor = {
+      id: "sample",
+      appDir: f.appDir,
+      projectDir: f.appDir,
+      agent: "sample-owner",
+      app: definition(),
+      reconciliationPaused: true,
+      resourceStore: config.resourceStore,
+    };
+    const dependency = (purpose: string) => ({
+      id: "review",
+      appId: "evaluation",
+      input: { kind: "review", data: { purpose } },
+    });
+    const before = readTaskSnapshot(config);
+    const host = new AppInboxHost({ db: config.resourceStore.db, apps: [target] });
+    let directError = "";
+    try {
+      host.admit({ appId: "evaluation", source: { kind: "app", id: "sample" }, input: dependency("invalid").input });
+    } catch (error) {
+      directError = (error as Error).message;
+    }
+    expect(directError).toContain("/data/purpose");
+    expect(directError).toContain('"allowedValue":"outcome"');
+    expect(directError).toContain('"allowedValue":"ongoing"');
+    expect(() => admitTaskAppDependencies({ opts, descriptor, claim, dependencies: [dependency("invalid")] })).toThrow(
+      directError,
+    );
+    expect(listAppInboxItems(config.resourceStore.db)).toEqual([]);
+    expect(readTaskSnapshot(config)).toEqual(before);
+    expect(requests).toBe(0);
+    const conditions = admitTaskAppDependencies({ opts, descriptor, claim, dependencies: [dependency("outcome")] });
+    expect(conditions).toHaveLength(1);
+    expect(requests).toBe(1);
+    expect(readTaskSnapshot(config).conditions?.approval).toEqual(before.conditions?.approval);
   });
 
   it("rejects a dependency when the configured registry has no target Apps", () => {

@@ -17,6 +17,7 @@ const parameters = Type.Object(
       Type.Literal("list"),
       Type.Literal("outcomes"),
       Type.Literal("get"),
+      Type.Literal("contract"),
       Type.Literal("publish"),
       Type.Literal("update"),
     ]),
@@ -67,7 +68,7 @@ const parameters = Type.Object(
 );
 
 type Params = {
-  action: "list" | "outcomes" | "get" | "publish" | "update";
+  action: "list" | "outcomes" | "get" | "contract" | "publish" | "update";
   expectedGeneration?: number;
   input?: AppInput;
   taskId?: string;
@@ -122,7 +123,7 @@ export function createAppTaskReadTool(options: {
     name: "tasks",
     label: "Tasks",
     description:
-      "List or get Tasks, publish facts, or update an assignment you created. For update, read the exact Task first and supply its expectedGeneration and complete revised input from the responsible App's input contract. Code checks creator authority, saves requirements and wakes the worker. target.appId selects another responsible App; the operation is the same.",
+      "List or get Tasks, read an App input contract, publish facts, or update an assignment you created. contract returns the full installed input schema for target.appId (default: current App), including constraints omitted by the compact Installed Apps catalog; no taskId is needed. For update, read the exact Task first and supply its expectedGeneration and complete revised input. Code checks creator authority, saves requirements and wakes the worker. target.appId selects another responsible App; the operation is the same.",
     parameters,
     execute: async (_toolCallId: string, raw: unknown): Promise<AgentToolResult<undefined>> => {
       const params = raw as Params;
@@ -130,6 +131,14 @@ export function createAppTaskReadTool(options: {
       const appId = (scope?.appId ?? options.appId?.())?.trim();
       if (!appId) return result({ error: "No current App Task scope" });
       try {
+        if (params.action === "contract") {
+          return result(
+            (await import("./core/tasks/app-task-runtime.js")).getLoadedAppInputContract({
+              bus: options.bus,
+              appId: params.target?.appId?.trim() || appId,
+            }),
+          );
+        }
         if (params.action === "update") {
           if (!scope?.taskId || !scope.generation || !scope.attemptId)
             return result({ error: "No current fenced Task attempt" });

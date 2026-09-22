@@ -269,23 +269,46 @@ export function assertValidAppDefinition(definition: unknown): asserts definitio
   if (errors.length > 0) throw new Error(errors.join("; "));
 }
 
-/** One shape check for addressed input and conversational handoffs; Apps own meaning. */
+/** Use the schema library's diagnostics, including expected values, without echoing input. */
+export function assertValidSchemaInput(
+  schema: TSchema,
+  input: unknown,
+  subject: string,
+  diagnosticPath?: string,
+): void {
+  if (Check(schema, input)) return;
+  // Spend TypeBox's bounded error budget on the selected kind. Its public
+  // reference context keeps the complete root/$defs available to that branch.
+  const selectedErrors = diagnosticPath
+    ? Errors({ "urn:may:app-input": schema }, { $ref: `urn:may:app-input${diagnosticPath}` } as TSchema, input)
+    : [];
+  const errors = selectedErrors.length ? selectedErrors : Errors(schema, input);
+  const first = errors[0];
+  const related = errors.filter((error) => error.instancePath === first?.instancePath);
+  const reasons = related
+    .slice(0, 8)
+    .map((error) => `${error.message}${Object.keys(error.params).length ? ` ${JSON.stringify(error.params)}` : ""}`);
+  const detail = [...new Set(reasons)].join("; ") || "schema mismatch";
+  const truncated = errors.length >= 8 || detail.length > 1600;
+  throw new Error(
+    `Invalid input for ${subject} at ${first?.instancePath || "/"}: ${detail.slice(0, 1600)}${truncated ? " [diagnostics truncated; inspect the input contract]" : ""}`,
+  );
+}
+
+/** One shape check for App input on every route; Apps own meaning. */
 export function assertValidAppInput(app: Readonly<AppDefinition>, input: AppInput): void {
   const inputKind = input.kind;
-  if (Check(app.inputSchema, input)) return;
   // Narrow diagnostics only, after checking the complete schema. Another input
   // kind's first error cannot explain how to repair this assignment.
   const schema = record(app.inputSchema);
-  const variants = schema?.anyOf ?? schema?.oneOf;
+  const union = Array.isArray(schema?.anyOf) ? "anyOf" : "oneOf";
+  const variants = schema?.[union];
   const matching = Array.isArray(variants)
-    ? variants.filter((variant) => {
+    ? variants.flatMap((variant, index) => {
         const kind = record(record(record(variant)?.properties)?.kind);
-        return kind?.const === inputKind;
+        return kind?.const === inputKind ? [index] : [];
       })
     : [];
-  const diagnosticSchema = matching.length === 1 ? (matching[0] as TSchema) : app.inputSchema;
-  const first = [...Errors(diagnosticSchema, input)][0];
-  throw new Error(
-    `Invalid input for App ${app.id} at ${first?.instancePath || "/"}: ${first?.message ?? "schema mismatch"}`,
-  );
+  const diagnosticPath = matching.length === 1 ? `#/${union}/${matching[0]}` : undefined;
+  assertValidSchemaInput(app.inputSchema, input, `App ${app.id}`, diagnosticPath);
 }

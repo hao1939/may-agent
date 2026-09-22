@@ -12,6 +12,16 @@ describe("App dependency catalog", () => {
       inputSchema: Type.Union([
         Type.Object({ kind: Type.Literal("owner-review"), data: Type.Record(Type.String(), Type.Unknown()) }),
         Type.Object({ kind: Type.Literal("deep-eval"), data: Type.Record(Type.String(), Type.Unknown()) }),
+        Type.Object({
+          kind: Type.Literal("review-task-outcome"),
+          data: Type.Object({
+            appId: Type.String(),
+            taskId: Type.String(),
+            assessmentPurpose: Type.Optional(
+              Type.Union([Type.Literal("outcome"), Type.Literal("ongoing")]),
+            ),
+          }),
+        }),
       ]),
       task: () => ({
         kind: "desired" as const,
@@ -48,6 +58,16 @@ describe("App dependency catalog", () => {
         inputs: [
           { kind: "deep-eval", requiredData: [], dataTypes: {}, fixedData: {} },
           { kind: "owner-review", requiredData: [], dataTypes: {}, fixedData: {} },
+          {
+            kind: "review-task-outcome",
+            requiredData: ["appId", "taskId"],
+            dataTypes: {
+              appId: "string",
+              assessmentPurpose: '"ongoing"|"outcome"',
+              taskId: "string",
+            },
+            fixedData: {},
+          },
         ],
       },
       {
@@ -76,6 +96,25 @@ describe("App dependency catalog", () => {
             outcome: Type.String(),
             facts: Type.Array(Type.String()),
             constraints: Type.Optional(Type.Array(Type.String())),
+            assessmentPurpose: Type.Union([Type.Literal("outcome"), Type.Literal("ongoing")]),
+            openChoice: Type.Union([Type.Literal("known"), Type.String()]),
+            nestedOpenChoice: Type.Union([
+              Type.Union([Type.Literal("a"), Type.Literal("b")]),
+              Type.Unknown(),
+            ]),
+            quotedChoices: Type.Union([Type.Literal("a|b"), Type.Literal("string")]),
+            literalChoices: Type.Array(Type.Union([Type.Literal("red"), Type.Literal("blue")])),
+            tooManyChoices: Type.Union([
+              Type.Literal("one"),
+              Type.Literal("two"),
+              Type.Literal("three"),
+              Type.Literal("four"),
+              Type.Literal("five"),
+              Type.Literal("six"),
+              Type.Literal("seven"),
+              Type.Literal("eight"),
+              Type.Literal("nine"),
+            ]),
           }),
         }),
         Type.Object({
@@ -103,8 +142,27 @@ describe("App dependency catalog", () => {
     ).toEqual([
       {
         kind: "general-operation",
-        requiredData: ["facts", "outcome"],
-        dataTypes: { constraints: "string[]", facts: "string[]", outcome: "string" },
+        requiredData: [
+          "assessmentPurpose",
+          "facts",
+          "literalChoices",
+          "nestedOpenChoice",
+          "openChoice",
+          "outcome",
+          "quotedChoices",
+          "tooManyChoices",
+        ],
+        dataTypes: {
+          assessmentPurpose: '"ongoing"|"outcome"',
+          constraints: "string[]",
+          facts: "string[]",
+          literalChoices: '("blue"|"red")[]',
+          nestedOpenChoice: "unknown",
+          openChoice: "string",
+          outcome: "string",
+          quotedChoices: '"a|b"|"string"',
+          tooManyChoices: "string",
+        },
         fixedData: {},
       },
       {

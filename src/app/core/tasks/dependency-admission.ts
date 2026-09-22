@@ -1,7 +1,7 @@
 import { type Condition as AppTaskConditionSpec, type TaskAppDependency } from "@may-agent/sdk";
 import { createHash } from "node:crypto";
 import { isDeepStrictEqual } from "node:util";
-import { Check } from "typebox/value";
+import { assertValidAppInput } from "../apps/definition-validation.js";
 import { getDb } from "../../../lib/db/connection.js";
 import { EVENT_DELIVERY_RESULT, EVENT_ROW_ID } from "../events/bus.js";
 import { appInputFeedbackEvent } from "../inbox/input-result.js";
@@ -312,9 +312,7 @@ function assertInstalledAppDependency(opts: AppTaskRuntimeOptions, dependency: T
   if (!target?.task || !target.tasks) {
     throw new Error(`App dependency ${dependency.id} targets unavailable App ${dependency.appId}`);
   }
-  if (!Check(target.inputSchema, dependency.input)) {
-    throw new Error(`App dependency ${dependency.id} input is not accepted by installed App ${dependency.appId}`);
-  }
+  assertValidAppInput(target, dependency.input);
 }
 
 export function recoverTaskConditions(

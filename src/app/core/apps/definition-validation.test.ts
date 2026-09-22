@@ -47,6 +47,72 @@ describe("App input validation", () => {
       ),
     ).toThrow("Invalid input for App research");
   });
+
+  it("reports expected alternatives and nested constraints without echoing rejected values", () => {
+    const app = {
+      ...definition,
+      inputSchema: Type.Object({
+        kind: Type.Literal("inspect"),
+        data: Type.Object({
+          purpose: Type.Union([Type.Literal("outcome"), Type.Literal("ongoing")]),
+          acceptance: Type.Array(Type.String(), { minItems: 1 }),
+          assignment: Type.Optional(Type.Object({ agent: Type.String() })),
+        }),
+      }),
+    };
+    const data = { purpose: "outcome", acceptance: ["Reviewed"] };
+    let message = "";
+    try {
+      assertValidAppInput(app, { kind: "inspect", data: { ...data, purpose: "private-invalid-value" } });
+    } catch (error) {
+      message = String(error);
+    }
+    expect(message).toContain("/data/purpose");
+    expect(message).toContain('"allowedValue":"outcome"');
+    expect(message).toContain('"allowedValue":"ongoing"');
+    expect(message).not.toContain("private-invalid-value");
+    expect(() => assertValidAppInput(app, { kind: "inspect", data: { ...data, acceptance: [] } })).toThrow(
+      "/data/acceptance: must not have fewer than 1 items",
+    );
+    expect(() => assertValidAppInput(app, { kind: "inspect", data: { ...data, assignment: {} } })).toThrow(
+      "/data/assignment: must have required properties agent",
+    );
+    expect(() => assertValidAppInput(app, { kind: "inspect", data })).not.toThrow();
+  });
+
+  it("bounds schema diagnostics and marks omitted details", () => {
+    const app = { ...definition, inputSchema: Type.Literal("x".repeat(5000)) };
+    let message = "";
+    try {
+      assertValidAppInput(app, { kind: "inspect", data: {} });
+    } catch (error) {
+      message = String(error);
+    }
+    expect(message.length).toBeLessThan(1800);
+    expect(message).toContain("diagnostics truncated");
+  });
+
+  it("keeps root references available when selecting the matching input kind's errors", () => {
+    const app = {
+      ...definition,
+      inputSchema: {
+        ...Type.Union([
+          ...Array.from({ length: 10 }, (_, index) => Type.Object({
+            kind: Type.Literal(`irrelevant-${index}`), data: Type.Object({ required: Type.String() }),
+          })),
+          Type.Object({ kind: Type.Literal("other"), data: Type.String() }),
+          Type.Object({ kind: Type.Literal("inspect"), data: Type.Unsafe({ $ref: "#/$defs/choice" }) }),
+        ]),
+        $defs: { choice: Type.Union([Type.Literal("outcome"), Type.Literal("ongoing")]) },
+      },
+    };
+    expect(() => assertValidAppInput(app, { kind: "inspect", data: "wrong" })).toThrow(
+      'Invalid input for App research at /data: must be equal to constant {"allowedValue":"outcome"}',
+    );
+    expect(() => assertValidAppInput(app, { kind: "inspect", data: "ongoing" })).not.toThrow();
+  });
+
+
 });
 
 describe("canonical App definition validation", () => {

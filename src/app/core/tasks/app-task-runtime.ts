@@ -14,7 +14,7 @@ import type {
   TaskReadOptions,
 } from "@may-agent/sdk/app";
 import { resolve } from "node:path";
-import { Check } from "typebox/value";
+import { assertValidAppInput } from "../apps/definition-validation.js";
 import { getDb } from "../../../lib/db/connection.js";
 import { stateTransaction } from "../../../lib/db/transaction.js";
 import { canonicalAppEvent } from "../../canonical-app-event.js";
@@ -419,7 +419,7 @@ export function admitLoadedConversationInput(input: {
     (conversation.inputKinds && !conversation.inputKinds.includes(input.item.input.kind))
   )
     throw new Error(`App ${input.item.appId} has no loaded Conversation capability for this input`);
-  if (!Check(descriptor.app.inputSchema, input.item.input)) throw new Error("Invalid Conversation input");
+  assertValidAppInput(descriptor.app, input.item.input);
   const config = appTaskConfig(descriptor);
   const admitted = admitConversationTaskInput(config, {
     ...input.item,
@@ -858,6 +858,15 @@ export function readLoadedAppTaskView(input: { bus: EventBus; appDir: string; ta
     },
     input.taskId,
   );
+}
+
+/** Read the same installed contract used by dependency admission, without projecting away constraints. */
+export function getLoadedAppInputContract(input: { bus: EventBus; appId: string }) {
+  const appId = input.appId.trim().replace(/\.app$/, "");
+  const opts = appRouterOptionsByBus.get(input.bus);
+  const app = opts && configuredRegistryEntries(opts).find(({ definition }) => definition.id === appId)?.definition;
+  if (!app?.task || !app.tasks) throw new Error(`App ${appId} has no installed Task input contract`);
+  return { appId, inputSchema: structuredClone(app.inputSchema) };
 }
 
 export function listLoadedAppTaskViews(input: { bus: EventBus; appId: string; options?: TaskListOptions }): TaskPage {
