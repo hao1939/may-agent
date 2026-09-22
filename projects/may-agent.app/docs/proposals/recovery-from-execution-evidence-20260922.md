@@ -183,7 +183,50 @@ They cover persistence, restart, reporting isolation and navigation; they do
 not establish agent diagnosis. The earlier #226 real-socket A/B proves useful
 errors and safe admission, with no model calls.
 
-## Current unfamiliar-code recovery observation
+## Automatic recovery composition criterion
+
+The supervisor's next correction requires the full installed route, not just a
+model-authored edit followed by author-driven runtime calls. Admit the original
+work once (disclosing any seeded delegation), then let the production controller,
+recovery scheduler, persisted lifecycle events and normal inbox composition carry
+failure publication, exact caller return, owner wake, retry and final settlement.
+The harness must not advance that chain with direct reconciliation, Condition/result
+recovery calls or synthetic failure/success wakes after start. Natural production
+startup/recovery calls remain part of the system under test.
+
+Source audit found that `startAppInboxRuntime` already refreshes exact results on
+`project.task.reconciled` and publishes caller feedback. Its event admission requires
+persisted event identity; a bare EventBus is not sufficient composition. Reuse those
+routes rather than constructing a fixture-only projector. Preserve the first actual
+missing fact, return, wake or decision if the bounded run fails. A demonstrated Host
+fix belongs in a separate Host worktree with its owning regression, not in this Apps
+experiment or an invented recovery subsystem. No generation bump is needed simply
+to activate a source-only repair in a fresh helper subprocess.
+
+One corrected isolated trial now exercised that automatic composition: failure report
+and normal feedback woke the real owner; its sole source edit repaired the helper;
+the already-scheduled same-generation/workflow retry produced the exact output; final
+success feedback woke the owner to verify accepted evidence and retain the unrelated
+audit. A fresh worker control passed. Two owner invocations used 57,764 ms overall.
+The unchanged Task update did not cause retry: its queue entry already existed before
+the owner finished. No Host defect or Host candidate was demonstrated.
+
+This is bounded to seeded delegation and one capacity slot in an in-process fixture.
+The model held that slot while investigating, so concurrent multi-slot retry behavior
+remains unproved. The executed run predates post-run oracle/teardown hardening; retained
+transcripts/results independently verify actual final consideration and provenance
+without another model run. No live activation, crash/unavailable-owner route or broad
+reliability is established. The current
+[report](../../experiments/recovery-workflow-20260922/REPORT.md) retains exact hashes,
+identities, cost, setup seams and those corrections separately from earlier manual evidence.
+The independent routing audit is retained at
+`/app/.state/review-pilots/apps-health-20260922/repair/AUTONOMOUS-RECOVERY-ROUTING-AUDIT.md`.
+Evaluation policy mapping tests do not establish installed end-to-end enablement;
+current owner-review selects the evaluator agent with `codex-goal`, not the legacy
+`evaluator-heartbeat` workflow. Neither that legacy file nor Evaluation's intentional
+self-exclusion proves a reachable defect or universal caller-less coverage.
+
+## Earlier manually advanced unfamiliar-code recovery observation
 
 Hao clarified that known interruption handling, prepared alternative methods and an
 experiment-author idempotency guard do not establish recovery from unfamiliar broken

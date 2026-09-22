@@ -4,9 +4,162 @@
 
 **Host:** `20049916b79d2ba2d2265edf5eeb605ff0e59c05` (merged PR #226)
 
-**Decision:** keep existing Host recovery mechanics. The current model-authored helper repair restored one unfamiliar-code failure; earlier prepared alternatives and operation guards are prerequisites only. No Host/runtime change or deployment is justified.
+**Current requirement:** verify automatic unfamiliar-code restoration through the installed
+controller/scheduler and normal persisted event/inbox/lifecycle composition. Prior
+manually advanced restoration remains valid bounded evidence, not proof of that chain.
 
-## Current requirement: unfamiliar broken-code recovery
+## Automatic composition trial — supervisor correction
+
+The corrected harness must admit original work once, then stop orchestrating recovery.
+It uses the actual Host controller/scheduler and `startAppInboxRuntime`, including a
+persisted event writer. No direct harness reconciliation, Condition/result recovery,
+or synthetic failure/success wake may advance execution after startup. Seeded initial
+delegation remains a separately disclosed setup seam. The original Task/workflow,
+independent audit wait, fresh subprocess activation, unknown-code model authorship
+and healthy worker control remain required.
+
+**Observed result: one bounded automatic restoration.** The first workflow failed
+before output/result, the production lifecycle returned its report to the original
+caller, and the actual owner investigated and made the sole helper edit. The existing
+scheduler queued retry at `1790062433253`, one millisecond after its persisted due
+time, while the owner held the fixture's single capacity slot. It waited **39,406 ms**
+in the normal queue, then the same `effect-child`, generation **1**, workflow
+`deliver-order` succeeded in a fresh subprocess. The original input became done;
+natural success feedback woke the owner, which read the accepted child, document and
+execution record. The owner retained `unrelated-audit`; its final phase remains
+`waiting`, not falsely closed. A fresh-order worker control then completed.
+
+The owner's unchanged `tasks.update` did not revise the specification/generation or
+cause the already-queued retry, despite its prose claiming reawakening. One source
+repair accounts for the complete before/after diff. The model read the generic failure
+record, source via ordinary `bash`, workspace contract and order, then tested only a
+scratch output. No author diagnosis, patch or alternate method was in its initial
+assembled prompt. Both sessions attempted the installed role's out-of-workspace
+feedback read; both returned ENOENT. Ordinary tools are instruction-scoped, not an OS
+sandbox.
+
+### Exact automatic evidence
+
+Durable root:
+`/app/.state/review-pilots/apps-health-20260922/repair/automatic-unknown-code-trial-1/`.
+
+- `receipt.json`: `5b196553c05e46ad517842f091cef15d2fc08674a0a3e626dad20ddfa1f097fc`.
+- `harness-executed.ts`: `8e7216a01782441d1612e75a0aa4f288e09a483657ecac07af7a57dbf842a33b`
+  (Apps base `415c2b150dcb0e9789d796e09d096786fd02fad5` plus the retained harness diff).
+- `verification.json`: `59c48dc6b8bee4e615ffb6529bfa4d467c003e8cefad06e77d7ee8f2e180d046`;
+  the retained verifier passes ten grouped checks without model/workflow execution.
+- `lifecycle-events.json`: `ba2e01a088a77cc0b1e24f6ad213f475c2f4882b9a1584add80c9f64d464f680`.
+  Persisted reconciliation events 7/22 represent child failure/success; exact blocked/done
+  feedback events **8/23** were accepted by `app-runtime:events:task:recovery/owner`.
+  Final owner/control reconciliations are events 28/37. Some broadcast reconciliation
+  facts retain pending delivery labels; exact accepted caller events and settled results,
+  not those labels alone, prove the route.
+- Original input `appdep_15dfd0f7d72fc605e7ef0011`; failure attempt
+  `r_1_45348db1-7769-45a7-958a-a74aa1053dcf`, run `wr_1790062432953_jz2i`;
+  accepted retry `r_1_ed6179bc-0afe-45e9-b33b-7701333bd1d1`, run
+  `wr_1790062472677_qts2`; control run `wr_1790062490595_5n0q`.
+- Owner attempts `r_1_4f4063a3-19f1-4bb8-afbd-cabf3527ed7f` and
+  `r_1_042d3136-8e53-489c-bbd6-4946f3455b86`; sessions
+  `s_1790062433049_d113a44f-f0a2-4671-aa05-88476a67f634` and
+  `s_1790062472767_19347692-c27a-41ac-b131-f050747e2296` under
+  `runtime-aVVMKW/state/sessions/`. Exact prompts and first failure/subprocess
+  records are retained alongside before/after source, waits, events and manifests.
+- Independent reviewer checker/output:
+  `/app/.state/review-pilots/apps-health-20260922/repair/automatic-recovery-independent-check.py`
+  and `automatic-recovery-independent-verification.json` in that same parent directory;
+  verification hash `7b29338c07551f987d3ec6ca965774aef3ef6c795bc0b29f095c46df3ef1829c`.
+  It verified **56 retained hashes without mismatch**, exact caller/attempt linkage,
+  unchanged spec, one model edit, final successful owner reads, both outputs and
+  unchanged independent wait. No new model/workflow call was used for this audit.
+
+**Cost/time:** two actual owner invocations (limit four), 180,116 aggregate reported
+tokens including cached context, reported provider cost **0.2101278**; **57,764 ms**
+from setup through control. Limits were 300 seconds overall and 60 seconds per owner
+invocation, fallback disabled. Three workflow executions, three Tasks, two inputs,
+one actual original delivery and one distinct control delivery; no duplicate effect.
+No paid rerun or post-start author intervention advanced recovery.
+
+### Seams, oracle corrections and judgment
+
+Initial delegation was seeded synchronously through production fenced admission and
+settlement before asynchronous execution, not chosen by the model. The trial composes
+Host modules in one isolated process rather than launching the installed daemon. It
+uses one capacity slot, which kept workflow retry behind the owner investigation;
+multiple-slot retry races are unproved. The business operation and order are fixtures,
+source activation is a fresh helper subprocess, and healthy control proves worker
+behavior rather than healthy owner judgment. This does not establish production
+activation, restart/crash recovery, caller-less/unavailable-owner coverage, degraded
+evidence behavior, arbitrary novel-failure competence or a reliability rate.
+
+The one run completed before supervisor oracle feedback was applied. Its original
+harness wrongly required output absence after owner repair and used call count plus
+non-running state as final-consideration shorthand; neither produced a false failure
+in this run. Retained accepted owner result/transcripts independently establish actual
+success consideration and workflow output provenance. The source is now hardened to
+remove the race-prone absence assertion, inspect structural accepted consideration
+without prescribing a free-form model result schema, stop/drain runtime, and export
+the executed harness and persisted lifecycle receipts before final hashing. Those post-run harness corrections were not a model
+rerun and do not retroactively change the executed source hash. The original event
+listener snapshot ended before all trailing lifecycle callbacks; persisted event
+records and workflow/Task receipts, not that partial snapshot alone, own final facts.
+
+**Decision:** keep existing Host mechanics; no first missing Host boundary or Host
+candidate was demonstrated. This is automatic restoration in one bounded isolated
+composition, not universal unattended recovery. Safe unresolved escalation, harness
+failure and model failure remain distinct possible results, none observed as the final
+outcome here. Earlier failed/manual runs remain retained below.
+
+### Caller-less and silent-output route limits
+
+The separate route audit identifies existing, reachable alternatives, not another
+recovery controller. `evaluation.app/app.ts` maps external `incomplete`/`retrying`
+`project.task.reconciled` events to ongoing assessments when automatic review is
+enabled; that mapping does not require an App caller. The selector also considers
+open and completed external Tasks, so a plausible but wrong successful result can
+be sampled for outcome assessment. Published reviews enter May through
+`evaluationTaskReportInput`. Allowance, capacity, successful review/publication,
+semantic judgment and May follow-through remain prerequisites, not guarantees.
+
+The supervisor's public readback `recovery-evaluation-selector-current.json` in the
+durable parent evidence directory proves recent live selector activity at 07:26,
+07:31 and 07:36 UTC (latest attempt `r_5_2ee073a7-1c62-4091-b371-0c43347c122d`,
+event `6403859`). It does not prove a selected assessment finished or caught a silent
+defect. Evaluation deliberately excludes its own Tasks; its `owner-review` selects
+agent `evaluator` with `codex-goal`, not the legacy `evaluator-heartbeat` file. No
+universal self-failure/caller-less/unavailable-owner return is established. The current
+trial cannot prove silent-wrong-output diagnosis because the workflow independently
+checks output before declaring success. No extra paid trial or speculative fix follows.
+
+### Current verification and review
+
+- Retained automatic verifier: ten grouped checks pass; reviewer checker confirms
+  56 hashes and exact effects. Supervisor independently inspected read-only isolated
+  SQLite plus both transcripts (`automatic-code-independent-verification.json`, hash
+  `42533e2b991180ad1552cb4d8613c5c0d19aa6f5ec56ab7a7714d2593683a626`).
+- Host baseline: **82 passed, zero failed**, 791 assertions across controller,
+  recovery and conversation-runtime tests; log `automatic-recovery-host-baseline.log`
+  hash `43493a3912ee8e739294ec8a228ce9d6515b6526ad7db7250a6d2ba250046c62`.
+- Apps typecheck and design integrity pass (zero design errors/warnings). Both current
+  experiment files bundle. The configured Apps typecheck excludes this experiment;
+  bundling is not full type checking or a new paid behavioral trial.
+- Full `bun run check:may-design` passed after temporarily linking this worktree's
+  ignored `projects/may-agent` prerequisite to the frozen Host checkout; the link was
+  removed afterward. The current success log is
+  `automatic-recovery-final-design-check.log`, hash
+  `a0667d09e9414dd6087f6688052b2a45f0d4357d9bae7717714ec971640fcab4`
+  (integrity: zero errors/warnings; SDK/control examples pass; canonical Apps: zero
+  errors). The earlier
+  `automatic-recovery-design-check.log` is retained as the failed setup attempt; it
+  records a missing worktree prerequisite, not a remaining source defect. No CI, PR,
+  merge or deployment is claimed.
+- Tech-lead final critique `AUTOMATIC-RECOVERY-FINAL-REVIEW.md` in the durable parent
+  directory preserves its original NOT READY finding and subsequent **READY** judgment.
+  The free-form owner result schema was removed from both prospective harness and
+  verifier. Final verification is structural feedback/attempt/Condition evidence plus
+  actual transcript/output review; no mandatory model diagnosis/report schema was added.
+  Review hash: `15ef4d7d30d3a701aa46c832224b38f36c7982ad85c1f7ccb3dbf382e1a33e75`.
+
+## Earlier manually advanced unfamiliar broken-code recovery
 
 Hao corrected the scope: prepared method B and an experiment-author operation guard
 are **mechanical prerequisites, not proof of unknown-failure recovery**. The new

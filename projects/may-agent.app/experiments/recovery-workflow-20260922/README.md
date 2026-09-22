@@ -17,19 +17,26 @@ The harness copies `unknown-fixture/` into isolated storage, supplies ordinary
 only source edits and scratch probes. There is no alternative workflow or prescribed
 patch. The caller sees an ordinary generic failure with discoverable execution record.
 The helper is a fresh subprocess on each workflow run. Same-generation source repair
-is valid; a Task revision is not required. Delegation/reconciliation are manually driven
-through production admission/execution/settlement/caller-return code.
+is valid; a Task revision is not required. Only the initial delegation is seeded.
+Thereafter the actual Host controller/recovery scheduler, persisted EventBus and
+`startAppInboxRuntime` drive failure publication, caller return, owner wakes, workflow
+retry and final settlement. The harness only observes; it never manually reconciles
+or projects recovery after admission. It uses one capacity slot in an isolated process,
+not the installed daemon. Healthy control checks worker behavior, not owner judgment.
 
-The retained single trial required two harness-only corrections, documented in
-`REPORT.md`. `--resume-verification` continues its exact isolated store after the
-first correction; `--audit-retained` checks completed evidence without calling the
-model or rerunning workflows. These are harness continuation modes, not recovery tools
-available to the tested owner. Do not use them to overwrite another run.
+The limit is four actual owner invocations, 60 seconds per invocation and 300 seconds
+for outcome observation (shutdown may drain one in-flight bounded invocation). Fallback
+is disabled. Existing output directories are rejected: no continuation/resume mode or
+blind rerun. Preserve every failure, identify its first missing boundary, and obtain
+scope before another paid trial. The sole retained automatic trial took two invocations
+and 57,764 ms. Post-run async-oracle/teardown hardening and evidence-export additions
+are documented in `REPORT.md`; the exact executed source is `harness-executed.ts`, not
+the later worktree file. The earlier manual harness remains in Git at `415c2b150d`.
 
 ```sh
 # Read-only evidence assertions; no model or DB writes.
 bun projects/may-agent.app/experiments/recovery-workflow-20260922/verify-unknown-failure.ts \
-  /app/.state/review-pilots/apps-health-20260922/repair/unknown-code-trial-1
+  /app/.state/review-pilots/apps-health-20260922/repair/automatic-unknown-code-trial-1
 ```
 
 The verifier writes only `verification.json`. Reports, raw transcripts, source snapshots,

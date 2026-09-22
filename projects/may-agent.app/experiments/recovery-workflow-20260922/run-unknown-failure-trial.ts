@@ -9,10 +9,9 @@ const EXPECTED_HOST = "20049916b79d2ba2d2265edf5eeb605ff0e59c05";
 const HERE = dirname(new URL(import.meta.url).pathname);
 
 const outputRoot = resolve(process.argv[2] ?? join(HERE, "runs", new Date().toISOString().replaceAll(":", "-")));
+assert.equal(existsSync(outputRoot), false, `Refusing to overwrite retained evidence: ${outputRoot}`);
 mkdirSync(outputRoot, { recursive: true });
-const resumeReceipt = (process.argv.includes("--resume-verification") || process.argv.includes("--audit-retained")) ? JSON.parse(readFileSync(join(outputRoot, "receipt.json"), "utf8")) : null;
-const auditOnly = process.argv.includes("--audit-retained");
-const runtimeRoot = resumeReceipt?.storage.runtimeRoot ?? mkdtempSync(join(outputRoot, "runtime-"));
+const runtimeRoot = mkdtempSync(join(outputRoot, "runtime-"));
 const persistDir = join(runtimeRoot, "state");
 const workspace = join(runtimeRoot, "workspace");
 const sourceRoot = join(workspace, "source");
@@ -25,7 +24,7 @@ mkdirSync(sourceRoot, { recursive: true });
 mkdirSync(join(workspace, "scratch"), { recursive: true });
 mkdirSync(join(agentDir, "workflows"), { recursive: true });
 mkdirSync(join(FIXTURE_APP, "tasks"), { recursive: true });
-if (!resumeReceipt) for (const [from, to] of [
+for (const [from, to] of [
   [join(HERE, "unknown-fixture", "deliver.ts"), join(sourceRoot, "deliver.ts")],
   [join(HERE, "unknown-fixture", "deliver-order.ts"), join(agentDir, "workflows", "deliver-order.ts")],
   [join(HERE, "unknown-fixture", "README.md"), join(workspace, "README.md")],
@@ -56,6 +55,7 @@ const { createAppTaskReadTool } = await import(HOST + "/src/app/app-task-read-to
 const { createTaskExecutionBackends } = await import(HOST + "/src/app/composition/task-execution.ts");
 const { EventBus } = await import(HOST + "/src/app/core/events/bus.ts");
 const { HostCapacity } = await import(HOST + "/src/app/core/scheduling/host-capacity.ts");
+const { AppRegistry } = await import(HOST + "/src/app/core/apps/registry.ts");
 const { AppTaskResourceStore } = await import(HOST + "/src/app/core/state/app-task-resource-store.ts");
 const { appTaskContext } = await import(HOST + "/src/app/core/tasks/app-task-reconciler.ts");
 const {
@@ -63,16 +63,14 @@ const {
   deferAppTask,
   observeAppTaskIntent,
 } = await import(HOST + "/src/app/core/tasks/app-task-reconciler.ts");
-const { admitTaskInput } = await import(HOST + "/src/app/core/state/inbox.ts");
-const { AppInboxHost } = await import(HOST + "/src/app/core/inbox/app-inbox-host.ts");
-const { appInputFeedbackEvent } = await import(HOST + "/src/app/core/inbox/input-result.ts");
-const { admitTaskAppDependencies, recoverTaskConditions } = await import(HOST + "/src/app/core/tasks/dependency-admission.ts");
+const { startAppInboxRuntime } = await import(HOST + "/src/app/composition/app-inbox-runtime.ts");
+const { admitTaskAppDependencies } = await import(HOST + "/src/app/core/tasks/dependency-admission.ts");
 const {
   closeInstalledAppTaskRuntimes,
   installAppTaskRuntimes,
-  reconcileLoadedAppTaskOnce,
 } = await import(HOST + "/src/app/core/tasks/app-task-runtime.ts");
 const { createAppTaskCapability } = await import(HOST + "/src/app/core/tasks/app-task-capability.ts");
+const { attachEventPersistence } = await import(HOST + "/src/app/daemon-events.ts");
 const { getDb, closeDb } = await import(HOST + "/src/lib/requests.ts");
 
 const app = defineApp({
@@ -107,7 +105,7 @@ const app = defineApp({
 
 const db = getDb(persistDir);
 const store = AppTaskResourceStore.fromDb(db, "recovery");
-if (!resumeReceipt) store.bootstrapSnapshot({
+store.bootstrapSnapshot({
   project: "recovery",
   project_lifecycle: "active",
   root_task_id: "root",
@@ -149,18 +147,18 @@ manager.register({
   sharedRoot: "/app/shared",
   systemPrompt: selectedSystemPrompt,
   tools: [createReadTool(workspace), createBashTool(workspace, { defaultTimeout: 30 }), createEditTool(workspace), createWriteTool(workspace), taskTool, createFinishTool({ agentName: "owner-agent", projectRoot: workspace, persistDir })],
-  timeoutMs: 240_000,
+  timeoutMs: 60_000,
 });
 
 const exactPrompts: Array<{ at: number; prompt: string }> = [];
 const modelExecutions: any[] = [];
-let providerStarts = resumeReceipt?.model.invocationCount ?? 0;
+let providerStarts = 0;
 const proxyManager = {
   hasAgent: (name: string) => manager.hasAgent(name),
   getAgentDefinition: (name: string) => manager.getAgentDefinition(name),
   callAgent: async (name: string, prompt: string, options: any) => {
     exactPrompts.push({ at: Date.now(), prompt });
-    assert.ok(providerStarts < 2, "Model invocation budget exhausted");
+    assert.ok(providerStarts < 4, "Model invocation budget exhausted");
     if (providerStarts === 0) for (const secret of ["catalog.find", "SKU-keyed catalog object as an array", "source-before.ts", "author-manifest.json"]) assert.equal(prompt.includes(secret), false, `Author context leaked: ${secret}`);
     providerStarts += 1;
     const result = await manager.callAgent(name, prompt, options);
@@ -169,7 +167,7 @@ const proxyManager = {
   },
   callAgentDefinition: async (definition: any, prompt: string, options: any) => {
     exactPrompts.push({ at: Date.now(), prompt });
-    assert.ok(providerStarts < 2, "Model invocation budget exhausted");
+    assert.ok(providerStarts < 4, "Model invocation budget exhausted");
     if (providerStarts === 0) for (const secret of ["catalog.find", "SKU-keyed catalog object as an array", "source-before.ts", "author-manifest.json"]) assert.equal(prompt.includes(secret), false, `Author context leaked: ${secret}`);
     providerStarts += 1;
     const result = await manager.callAgentDefinition(definition, prompt, options);
@@ -178,6 +176,9 @@ const proxyManager = {
   },
 };
 const backends = createTaskExecutionBackends({ manager: proxyManager as any, bus, persistDir });
+const registry = new AppRegistry(async () => [{ appDir: FIXTURE_APP, definition: app }]);
+await registry.reload();
+attachEventPersistence({ bus, persistDir });
 const runtimeOptions = {
   projectsRoot: join(workspace, "projects"),
   projectRoot: workspace,
@@ -186,63 +187,68 @@ const runtimeOptions = {
   sharedRoot: join(runtimeRoot, "shared"),
   bus,
   hostCapacity: new HostCapacity(1),
-  installControllers: false,
-  appRegistrySnapshot: { id: "isolated-recovery", generation: 1, entries: [{ appDir: FIXTURE_APP, definition: app }] },
+  installControllers: true,
+  appRegistry: registry,
+  appRegistrySnapshot: registry.snapshot(),
   ...backends,
 };
 const { installed } = await installAppTaskRuntimes(runtimeOptions, { deferRecovery: true });
 const descriptor = installed[0]!;
 assert.equal(descriptor.id, "recovery");
-
-const reports: unknown[] = [];
-const host = new AppInboxHost({
+const appTasks = createAppTaskCapability({ bus, runtime: runtimeOptions });
+const inboxRuntime = await startAppInboxRuntime({
+  registry,
   db,
-  apps: [app],
-  attachTask: (input: any) => admitTaskInput(config, input),
-  readDependency: (input: any) => createAppTaskCapability({ bus }).readDependency({ ...input, appDir: FIXTURE_APP }),
-  onRequestUpdated(item: any, result: any, status: string) {
-    reports.push({ item: structuredClone(item), result: structuredClone(result), status });
-    const event = appInputFeedbackEvent(item, result, status as any);
-    if (event) bus.emit(event);
-  },
+  bus,
+  persistDir,
+  schedulesEnabled: false,
+  scanIntervalMs: 60_000,
+  attachTask: appTasks.attach,
+  admitConversation: appTasks.admitConversation,
+  admitConversationChange: appTasks.admitConversationChange,
+  stopConversationTurn: appTasks.stopTurn,
+  admitTaskEvent: ({ appId, event, intent, targetedTaskId, conditionTaskIds }: any) =>
+    appTasks.admitEvent({ appId, event, intent, targetedTaskId, conditionTaskIds }),
+  wakeAdmittedTasks: appTasks.wake,
+  hasTaskTarget: appTasks.has,
+  previewTaskEvent: ({ appId, event, targetedTaskId }: any) => appTasks.previewEvent({ appId, event, targetedTaskId }),
+  previewTaskEventRoutes: ({ event }: any) => appTasks.previewEventRoutes({ event }),
+  readDependency: (entry: any) => appTasks.readDependency(entry),
 });
-bus.subscribe((event: any) => {
-  if (event.type !== "app.input.requested" || event.data.appId !== "recovery") return;
-  host.admit({
-    id: String(event.data.requestId), appId: "recovery", targetTaskId: event.data.targetTaskId,
-    source: event.data.source, input: event.data.input, idempotencyKey: String(event.data.idempotencyKey),
-  });
-  return { accepted: true, by: "isolated-app-inbox", route: "direct" };
-});
+const host = inboxRuntime.host;
 
-const dispatch = () => ({ lane: "normal" as const, enqueuedAt: Date.now(), startedAt: Date.now(), readyWaitMs: 0 });
-const runTask = async (taskId: string) => {
+const waitFor = async (label: string, predicate: () => boolean, timeoutMs = 330_000) => {
   const started = Date.now();
-  const sessions = await reconcileLoadedAppTaskOnce({ bus, appId: "recovery", taskId, dispatch: dispatch() });
-  return { taskId, started, ended: Date.now(), elapsedMs: Date.now() - started, sessions };
+  while (Date.now() - started < timeoutMs) {
+    if (predicate()) return { label, started, ended: Date.now(), elapsedMs: Date.now() - started };
+    await Bun.sleep(25);
+  }
+  throw new Error(`Timed out waiting for ${label} after ${timeoutMs}ms`);
 };
 const taskCount = () => Number((db.prepare("SELECT COUNT(*) AS n FROM app_tasks WHERE app_id = 'recovery'").get() as any).n);
 const inputCount = () => Number((db.prepare("SELECT COUNT(*) AS n FROM app_inbox_items WHERE app_id = 'recovery'").get() as any).n);
 // The following oracle/fixture assembly is not part of the tested owner prompt.
-const sourceBefore = readFileSync(join(resumeReceipt ? outputRoot : sourceRoot, resumeReceipt ? "source-before.ts" : "deliver.ts"));
-if (!resumeReceipt) writeFileSync(join(outputRoot, "source-before.ts"), sourceBefore);
+const sourceBefore = readFileSync(join(sourceRoot, "deliver.ts"));
+writeFileSync(join(outputRoot, "source-before.ts"), sourceBefore);
 const order = { orderId: "order-715", lines: [{ sku: "paper", quantity: 3 }, { sku: "ink", quantity: 2 }], catalog: { paper: { unitCents: 125 }, ink: { unitCents: 499 } } };
 const expected = { orderId: "order-715", totalCents: 1373, lineCount: 2 };
 const orderPath = join(effectDir, "order.json");
 const outputPath = join(effectDir, "delivery.json");
-if (!resumeReceipt) json(orderPath, order);
+json(orderPath, order);
 const input = { kind: "order-delivery", data: { taskId: "effect-child", sourceRoot, orderPath, outputPath } };
 const startedAt = Date.now();
+const overallDeadline = startedAt + 300_000;
 const runs: unknown[] = [];
 let phase = "setup";
-let originalInputId: string | undefined = resumeReceipt?.identities.originalInputId;
-let unrelatedBefore: unknown = resumeReceipt ? JSON.parse(readFileSync(join(outputRoot, "unrelated-before.json"), "utf8")) : undefined;
-let failedAttempt: any = resumeReceipt ? JSON.parse(readFileSync(join(outputRoot, "first-failure.json"), "utf8")).failedAttempt : undefined;
+let originalInputId: string | undefined;
+let unrelatedBefore: unknown;
+let failedAttempt: any;
 const sourceSnapshot = [import.meta.path, ...filesUnder(join(HERE, "unknown-fixture"))].map(path => ({ path, sha256: sha256(readFileSync(path)) }));
-json(join(outputRoot, resumeReceipt ? "continuation-author-manifest.json" : "author-manifest.json"), { sourceSnapshot, appsHead: git(HERE, ["rev-parse", "HEAD"]), hostHead, fault: "deliver.ts treats the contract's SKU-keyed catalog object as an array", expected, toolNames: ["read", "bash", "edit", "write", "tasks", "finish"], maxModelInvocations: 2, timeoutPerInvocationMs: 240_000, interventions: [] });
+writeFileSync(join(outputRoot, "harness-executed.ts"), readFileSync(import.meta.path));
+json(join(outputRoot, "author-manifest.json"), { sourceSnapshot, appsHead: git(HERE, ["rev-parse", "HEAD"]), hostHead, fault: "deliver.ts treats the contract's SKU-keyed catalog object as an array", expected, toolNames: ["read", "bash", "edit", "write", "tasks", "finish"], maxModelInvocations: 4, timeoutPerInvocationMs: 60_000, overallTimeoutMs: 300_000, interventions: [] });
 let receipt: any;
 try {
-  if (!resumeReceipt) {
+  const boundedWait = (label: string, predicate: () => boolean) => waitFor(label, predicate, Math.max(1, overallDeadline - Date.now()));
   observeAppTaskIntent(config, { appAgent: "owner-agent", intent: {
     id: "owner", parentId: "root", outcome: "Ensure the delegated order receives its exact verified delivery document",
     acceptance: ["Verify the original order's document through its assigned workflow and Task result", "Preserve the independent audit wait", "Use only the authorized workspace and ordinary Task controls"],
@@ -251,6 +257,8 @@ try {
   const ownerSeed = claimObservedAppTask(config, { taskId: "owner", appAgent: "owner-agent", handler: "agent" });
   assert.equal(ownerSeed.kind, "claimed");
   if (ownerSeed.kind !== "claimed") throw new Error("Owner seed claim failed");
+  // This is the sole seeded delegation. From here, production controllers,
+  // recovery timers, persisted events and App inbox projection own advancement.
   const conditions = admitTaskAppDependencies({ opts: runtimeOptions as any, descriptor, claim: ownerSeed, dependencies: [{ id: "delivery", appId: "recovery", input }] });
   assert.equal(conditions.length, 1);
   originalInputId = conditions[0]!.subject.slice(3);
@@ -262,100 +270,101 @@ try {
   unrelatedBefore = structuredClone(store.readTaskContext({ taskIds: ["owner"] }).conditions?.["unrelated-audit"]);
   json(join(outputRoot, "unrelated-before.json"), unrelatedBefore);
 
-  phase = "broken-execution";
-  runs.push(await runTask("effect-child"));
-  await host.recoverTaskResults();
-  assert.equal(reports.length, 1);
-  const firstReport = reports[0] as any;
-  failedAttempt = store.readAttempt(firstReport.result.attemptId)!;
+  phase = "automatic-failure-return";
+  runs.push(await boundedWait("blocked caller feedback", () => events.some((event: any) => event.type === "app.dependency.updated" && event.data?.id === originalInputId && event.data?.status === "blocked")));
+  const firstFeedback = events.find((event: any) => event.type === "app.dependency.updated" && event.data?.id === originalInputId && event.data?.status === "blocked") as any;
+  failedAttempt = store.readAttempt(String(firstFeedback.data.reportAttemptId))!;
+  const firstReport = { item: host.get(originalInputId), result: structuredClone(firstFeedback.data), status: "blocked", event: firstFeedback };
   assert.equal(failedAttempt.state, "failed");
   assert.equal(failedAttempt.acceptedResult, undefined);
-  assert.equal(firstReport.item.id, originalInputId);
-  assert.equal(firstReport.status, "blocked");
+  assert.equal(firstReport.item?.id, originalInputId);
   assert.equal(host.get(originalInputId)?.status, "handling");
   assert.equal(existsSync(outputPath), false);
   writeFileSync(join(outputRoot, "first-subprocess.json"), readFileSync(outputPath + ".execution.json"));
   json(join(outputRoot, "first-failure.json"), { failedAttempt, firstReport, child: store.readTask("effect-child") });
-  assert.deepEqual(recoverTaskConditions(runtimeOptions as any, descriptor, config, { conditionIds: [conditions[0]!.id] }), ["owner"]);
 
-  phase = "owner-investigation";
-  runs.push(await runTask("owner"));
-  assert.equal(providerStarts, 1);
-  // No author edits occur after this model call. Only production reconciliation follows.
+  phase = "automatic-owner-investigation";
+  runs.push(await boundedWait("owner source repair", () => providerStarts >= 1 && sha256(readFileSync(join(sourceRoot, "deliver.ts"))) !== sha256(sourceBefore) && store.readTask("owner")?.status.phase !== "running"));
   const sourceAfter = readFileSync(join(sourceRoot, "deliver.ts"));
   writeFileSync(join(outputRoot, "source-after.ts"), sourceAfter);
   assert.notEqual(sha256(sourceAfter), sha256(sourceBefore), "Owner did not change the executable source");
   assert.deepEqual(JSON.parse(readFileSync(orderPath, "utf8")), order, "Original order was altered");
-  assert.equal(existsSync(outputPath), false, "Owner bypassed the Task workflow to produce the actual output");
-  const revised = store.readTask("effect-child")!;
-  assert.equal(revised.metadata.id, "effect-child");
-  assert.deepEqual(revised.metadata.creator, { appId: "recovery", taskId: "owner" });
-  assert.equal(revised.spec.workflow, "deliver-order");
-  // Source-only repair may keep generation 1; ordinary paced retry retains the workflow.
-  const retryAt = revised.status.executionRetryAt ?? Date.now();
-  if (retryAt > Date.now()) await Bun.sleep(retryAt - Date.now());
+  // Do not infer bypass from output timing: the production retry may already
+  // have written the legitimate output before this polling observation.
+  const preRetry = store.readTask("effect-child")!;
+  assert.equal(preRetry.metadata.id, "effect-child");
+  assert.deepEqual(preRetry.metadata.creator, { appId: "recovery", taskId: "owner" });
+  assert.equal(preRetry.spec.workflow, "deliver-order");
 
-  phase = "same-task-reexecution";
-  runs.push(await runTask("effect-child"));
-  await host.recoverTaskResults();
-  assert.equal(store.readTask("effect-child")?.status.phase, "converged");
-  assert.equal(host.get(originalInputId)?.status, "done");
-  assert.deepEqual(JSON.parse(readFileSync(outputPath, "utf8")), expected);
-  assert.deepEqual(recoverTaskConditions(runtimeOptions as any, descriptor, config, { conditionIds: [conditions[0]!.id] }), ["owner"]);
-  }
+  phase = "automatic-same-task-reexecution";
+  runs.push(await boundedWait("original caller completion", () => store.readTask("effect-child")?.status.phase === "converged" && host.get(originalInputId!)?.status === "done"));
   const revised = store.readTask("effect-child")!;
-  const sourceAfter = readFileSync(join(sourceRoot, "deliver.ts"));
-  assert.equal(revised.status.phase, "converged");
-  assert.equal(host.get(originalInputId!)?.status, "done");
   assert.deepEqual(JSON.parse(readFileSync(outputPath, "utf8")), expected);
-  phase = "owner-verification";
-  if (!auditOnly) runs.push(await runTask("owner"));
-  assert.equal(providerStarts, 2);
+
+  phase = "automatic-owner-verification";
+  runs.push(await boundedWait("owner lifecycle consideration", () => {
+    const owner = store.readTask("owner");
+    const attempt = owner?.status.observedAttemptId ? store.readAttempt(owner.status.observedAttemptId) : undefined;
+    return owner?.status.phase === "waiting"
+      && attempt?.state === "completed" && Boolean(attempt.acceptedResult)
+      && attempt.events?.some((entry: any) => entry.event?.type === "app.dependency.updated"
+        && entry.event.data?.id === originalInputId && entry.event.data?.status === "done")
+      && owner.status.conditionIds?.includes(conditions[0]!.id) !== true
+      && owner.status.conditionIds?.includes("unrelated-audit") === true;
+  }));
+  assert.ok(providerStarts <= 4);
   const unrelatedAfter = store.readTaskContext({ taskIds: ["owner"] }).conditions?.["unrelated-audit"];
   assert.deepEqual(unrelatedAfter, unrelatedBefore);
   json(join(outputRoot, "unrelated-after.json"), unrelatedAfter);
 
   phase = "healthy-control";
-  // Fresh order and output; the same owner-produced executable and workflow, no model.
   const controlOrder = { orderId: "order-716", lines: [{ sku: "ink", quantity: 4 }], catalog: { ink: { unitCents: 250 } } };
   const controlOrderPath = join(effectDir, "control-order.json");
   const controlOutputPath = join(effectDir, "control-delivery.json");
-  if (!auditOnly) {
   json(controlOrderPath, controlOrder);
   host.admit({ id: "control-input", appId: "recovery", source: { kind: "system", id: "control" }, input: { kind: "order-delivery", data: { taskId: "control-child", sourceRoot, orderPath: controlOrderPath, outputPath: controlOutputPath } } });
-  runs.push(await runTask("control-child"));
-  await host.recoverTaskResults();
-  }
-  assert.equal(host.get("control-input")?.status, "done");
+  runs.push(await boundedWait("healthy control completion", () => host.get("control-input")?.status === "done"));
   assert.deepEqual(JSON.parse(readFileSync(controlOutputPath, "utf8")), { orderId: "order-716", totalCents: 1000, lineCount: 1 });
   assert.equal(taskCount(), 3);
   assert.equal(inputCount(), 2);
-  receipt = { classification: "restored-outcome", firstMissingBoundary: null, failedAttempt,
-    assertions: { noAcceptedFailureResult: true, exactCallerReturn: true, sameTask: true, sameWorkflow: true, ownerChangedSource: true, childGeneration: revised.metadata.generation, workflowVerifiedOriginalOutcome: true, unrelatedWaitPreserved: true, healthyControl: true, replacementTask: false },
+  receipt = { classification: "automatic-restored-outcome", firstMissingBoundary: null, failedAttempt,
+    assertions: { noAcceptedFailureResult: true, exactCallerReturn: true, sameTask: true, sameWorkflow: true, ownerChangedSource: true, childGeneration: revised.metadata.generation, workflowVerifiedOriginalOutcome: true, unrelatedWaitPreserved: true, healthyControl: true, replacementTask: false, noManualPostAdmissionAdvancement: true },
     sourceBeforeSha256: sha256(sourceBefore), sourceAfterSha256: sha256(sourceAfter),
-    finalChild: store.readTask("effect-child"), finalOwner: store.readTask("owner"), finalInput: host.get(originalInputId), control: store.readTask("control-child"),
+    finalChild: revised, finalOwner: store.readTask("owner"), finalInput: host.get(originalInputId), control: store.readTask("control-child"),
   };
 } catch (error) {
-  receipt = { classification: phase.startsWith("owner") ? "owner-boundary-unresolved" : "trial-boundary-unresolved", firstMissingBoundary: phase, error: error instanceof Error ? error.stack : String(error), child: store.readTask("effect-child"), owner: store.readTask("owner") };
+  receipt = { classification: phase.startsWith("automatic-owner") ? "owner-boundary-unresolved" : "trial-boundary-unresolved", firstMissingBoundary: phase, error: error instanceof Error ? error.stack : String(error), child: store.readTask("effect-child"), owner: store.readTask("owner") };
   process.exitCode = 1;
 } finally {
-  exactPrompts.forEach((entry, i) => writeFileSync(join(outputRoot, `${resumeReceipt ? "continuation-" : ""}owner-prompt-${i + 1}.txt`), entry.prompt));
+  // Freeze asynchronous producers and wait for in-flight reconciliation before
+  // writing immutable evidence and hashes, including on timeout/failure.
+  inboxRuntime.close();
+  await closeInstalledAppTaskRuntimes(bus);
+  exactPrompts.forEach((entry, i) => writeFileSync(join(outputRoot, `owner-prompt-${i + 1}.txt`), entry.prompt));
   writeFileSync(join(outputRoot, "system-prompt.txt"), selectedSystemPrompt);
   writeFileSync(join(outputRoot, "source-after.ts"), readFileSync(join(sourceRoot, "deliver.ts")));
-  if (!auditOnly) json(join(outputRoot, resumeReceipt ? "continuation-events.json" : "events.json"), events);
-  if (!auditOnly) json(join(outputRoot, resumeReceipt ? "continuation-reports.json" : "reports.json"), reports);
+  json(join(outputRoot, "events.json"), events);
+  // Retain the persisted delivery receipts, including callbacks that may lag
+  // the in-memory listener snapshot. Discover schema before selecting columns.
+  const eventSchema = db.prepare("PRAGMA table_info(events)").all() as Array<{ name: string; type: string }>;
+  for (const column of ["id", "event_type", "data", "delivery_status", "accepted_by"]) {
+    assert.ok(eventSchema.some(entry => entry.name === column), `Missing events column: ${column}`);
+  }
+  const lifecycleRows = db.prepare("SELECT * FROM events WHERE event_type IN ('app.input.requested', 'app.dependency.updated', 'project.task.reconciled', 'session.start', 'session.end') ORDER BY id").all() as any[];
+  json(join(outputRoot, "lifecycle-events.json"), {
+    schema: { events: eventSchema.map(({ name, type }) => ({ name, type })) },
+    rows: lifecycleRows.map(row => ({ ...row, data: JSON.parse(row.data) })),
+  });
   json(join(outputRoot, "receipt.json"), { ...receipt, startedAt, endedAt: Date.now(), elapsedMs: Date.now() - startedAt, phase,
     storage: { runtimeRoot, persistDir, workspace, liveRuntimeTouched: false },
     identities: { appId: "recovery", ownerTaskId: "owner", childTaskId: "effect-child", originalInputId },
-    hostHead, sourceSnapshot, observedCounts: { tasks: taskCount(), inputs: inputCount() }, runs: [...(resumeReceipt?.runs ?? []), ...runs], reports: [...(resumeReceipt?.reports ?? []), ...reports],
-    model: { configuredModel, provider: model.provider, modelId: model.id, fallbackDisabled: true, invocationCount: providerStarts, timeoutMs: 240_000, executions: [...(resumeReceipt?.model.executions ?? []), ...modelExecutions] },
-    interventions: ["Harness assembly and launch; no source change or diagnosis supplied by author after model execution", ...(resumeReceipt?.interventions?.slice(1) ?? []), ...(resumeReceipt && !auditOnly ? ["Resumed exact store after correcting harness-only leakage check that wrongly rejected the owner's own learned diagnosis in the final prompt; retained initial failed receipt and did not repeat initial model trial"] : []), ...(auditOnly ? ["Corrected harness task-count oracle (root is a group, not a Task); audited retained completion without model/workflow rerun"] : [])],
-    seams: ["Initial delegation seeded through production fenced dependency admission", "Exact reconciliations and result projection driven manually, not daemon scheduling", "Isolated filesystem business operation", "Ordinary production coding tools are permission-scoped by instructions, not an OS sandbox", "Healthy control exercises repaired worker operation, not healthy owner judgment", "Installed May profile with explicit read/bash/edit/write/tasks/finish tool manifest"],
+    hostHead, sourceSnapshot, observedCounts: { tasks: taskCount(), inputs: inputCount() }, runs,
+    model: { configuredModel, provider: model.provider, modelId: model.id, fallbackDisabled: true, invocationCount: providerStarts, maxInvocations: 4, timeoutMs: 60_000, executions: modelExecutions },
+    interventions: ["Harness assembled the isolated fixture and seeded the initial delegation once; no post-admission reconciliation, Condition recovery, result projection, wake, diagnosis or source repair was performed by the harness"],
+    seams: ["Initial delegation seeded once through production fenced dependency admission", "Production AppTaskController and AppTaskRecoveryScheduler own all post-admission execution and retry", "Production startAppInboxRuntime plus persisted EventBus own caller result projection and owner wakes", "Isolated filesystem business operation", "Ordinary production coding tools are permission-scoped by instructions, not an OS sandbox", "Healthy control exercises repaired worker operation, not healthy owner judgment", "Installed May profile with explicit read/bash/edit/write/tasks/finish tool manifest"],
   });
   const evidence = filesUnder(outputRoot).filter(path => !/\.(db|db-wal|db-shm)$/.test(path) && !path.endsWith("evidence-manifest.json") && !path.endsWith(".log"));
   json(join(outputRoot, "evidence-manifest.json"), evidence.map(path => ({ path, sha256: sha256(readFileSync(path)), bytes: readFileSync(path).length })));
   console.log(JSON.stringify({ classification: receipt.classification, phase, outputRoot, error: receipt.error ?? null }));
-  host.close();
-  await closeInstalledAppTaskRuntimes(bus);
   closeDb(persistDir);
 }

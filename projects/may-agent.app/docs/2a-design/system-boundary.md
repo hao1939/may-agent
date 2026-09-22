@@ -215,6 +215,16 @@ process supervisor/operator; an unavailable owner uses only the fallback
 actually installed. Automatic supervisor routing remains deferred as stated
 above. A safe visible unresolved outcome is not successful restoration.
 
+Automatic recovery requires more than a manually advanced successful retry. A
+bounded proof admits original work once, then lets the installed controller,
+scheduler, normal failure publication, exact caller return and owner wake carry
+the remaining work. Fixture-seeded delegation is a disclosed setup seam, not
+recovery scheduling. Harness reconciliation calls or synthetic failure/success
+wakes cannot establish automatic restoration. Retain the first missing fact,
+return, wake or decision if that chain fails; repair only its owning boundary.
+A harness failure, model failure and safe unresolved escalation are different
+results, and none is verified restoration.
+
 The [recovery review and trial plan](../proposals/recovery-from-execution-evidence-20260922.md)
 separates tested mechanics, observed agent behavior and remaining gaps.
 

@@ -13,6 +13,43 @@ Source baseline: Host `20049916b79d2ba2d2265edf5eeb605ff0e59c05` (merged PR #226
 7. **Authorized correction.** `src/app/core/tasks/task-revision.ts` and the admission mapper apply a creator revision to the same Task. The revision preserves creator, parent, attempts, and unrelated Conditions while invalidating stale execution results. The App mapper—not Host retry policy—selects the revised handler.
 8. **Healthy completion and caller answer.** The revised healthy workflow runs through the same production workflow adapter and Task settlement. `AppInboxHost.recoverTaskResults` returns the accepted answer to the original caller input; the checker reads the effect and stores independently.
 
+## Controller, scheduler and lifecycle composition (supervisor correction)
+
+The prior trial called the runtime primitives itself. The automatic trial instead
+composes the actual installed Host routes and seeds one initial delegation. These are
+source-verified connections at Host `20049916`, not by themselves execution receipts:
+
+1. `app-task-runtime.ts:installConventionTaskControllers` installs `AppTaskController`
+   and `AppTaskRecoveryScheduler`. Controller dispatch calls `reconcileTask` and its
+   `finally` calls the scheduler's `stateChanged()`. `startAfter` can hold initial
+   fixture admission without replacing any later scheduling decision.
+2. `attempt-runner.ts` persists `failAppTaskAttempt` and emits
+   `project.task.reconciled` with the exact Task, generation, attempt and retry
+   deadline. Failed execution returns no accepted handler result. The persisted
+   deadline, not harness sleep/dispatch, owns the next workflow attempt.
+3. `composition/app-inbox-runtime.ts` consumes that natural lifecycle event and calls
+   `host.refreshTaskResults(appId, taskId)`. Its normal startup/missed-notification
+   recovery also invokes inbox recovery internally. Neither is a harness-authored
+   failure/success wake or manual result projection.
+4. The inbox's `onRequestUpdated` publishes `appInputFeedbackEvent`; only App-sourced
+   input carries an App caller link. The inbox runtime freezes exact event admission
+   and Condition routes, and the Task capability applies the feedback to the original
+   caller. The existing Task router/controller provides the owner execution.
+5. The owner's ordinary tools expose source/command/contract evidence and authorized
+   same-Task update. A source repair is not necessarily a specification revision.
+   The recovery scheduler retries the selected workflow from its persisted eligibility;
+   the helper's fresh subprocess reads the current executable bytes.
+6. Successful settlement emits the same lifecycle event. Exact result projection and
+   caller feedback wake the owner for outcome consideration. The independent audit
+   Condition must survive that sequence unchanged.
+
+The experiment seeds initial fenced owner delegation synchronously before controller
+execution; this stays separate from recovery. After admission it does not call
+`reconcileLoadedAppTaskOnce`, `recoverTaskConditions`, or `recoverTaskResults`, nor
+emit synthetic failure/success wakes. Read-only observation and bounded shutdown
+are not recovery scheduling. No production schedule, live installation or budget
+is changed by selecting temporary fixture composition.
+
 ## What already works, from retained evidence
 
 - PR #226 repaired the public validation connection. `/app/.state/review-pilots/apps-health-20260922/repair/PR225-ROLLOUT-REVIEW.md` records the prior hidden diagnostic, the exact minimal repair, CI, isolated socket comparison, merge and live activation. That is admission evidence, not model-recovery evidence.
@@ -34,9 +71,24 @@ Source baseline: Host `20049916b79d2ba2d2265edf5eeb605ff0e59c05` (merged PR #226
 
 Sources: `/app/.state/review-pilots/apps-health-20260922/repair/WHY-SELF-REVIEW-MISSED.md`, `PR225-ROLLOUT-REVIEW.md`, and the approved proposal.
 
-## Current unfamiliar-code trial
+## Automatic trial result
 
-`run-unknown-failure-trial.ts` reuses the production path above but provides ordinary
+The corrected `run-unknown-failure-trial.ts` installed controllers, scheduler,
+`attachEventPersistence` and `startAppInboxRuntime` with ordinary Task capability
+callbacks. Retained production dispatch profiles establish retry enqueued at
+`1790062433253` before the owner finished; its single-capacity queue wait was 39,406 ms.
+Normal failure and success feedback each led to an actual owner session, the source
+repair was model-authored, and original/input/control settled without author scheduling.
+Generation and workflow stayed unchanged. No Host candidate follows.
+
+`REPORT.md` retains exact source/evidence identities and post-run oracle corrections.
+The executed harness snapshot and hardened final source are different facts; the paid
+trial was not rerun to erase that distinction. Seeded delegation, one slot, local
+fresh-helper activation and the in-process Host composition remain seams.
+
+## Earlier manually advanced unfamiliar-code trial
+
+The earlier `run-unknown-failure-trial.ts` reused the production path above but provides ordinary
 coding/search/command tools and one `deliver-order` workflow invoking a fresh helper
 process. A generic error returns to the exact owner. Source, order contract and command
 stderr are discoverable rather than injected as diagnosis. The owner performed the
