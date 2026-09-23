@@ -1,8 +1,8 @@
 <ai_context>
-summary: "Implementation-evidence companion to agent-security-verified-enforcement.md. Uses pinned repositories, disclosures, and deployed-system reports to separate signed claims from replayable evidence; receipt integrity from completeness; configured policy from covered paths; identity enrollment from per-request proof; formal models from unsupported surfaces; observed egress from blocking; stable tool digests from equivalent semantics; policy verdicts from effect ownership; authorization receipts from effect gates; and narrated results from positive execution evidence."
-triggers: ["SkillProof", "MCP server verification", "replayable evidence", "action receipt", "signed receipt", "evidence completeness", "Pipelock", "PassControl", "sender proof", "bearer visa", "authentication assurance", "default deny", "fail closed", "shell hook", "guardrail regression test", "OpenShell prover", "SMT containment", "path composition", "egress firewall", "uninspected egress", "tool identity", "tool pin", "schema canonicalization", "shadow mode", "mediation ownership", "Action Evidence Package", "AEP sandbox", "Codex sandbox", "Overpatch", "Heapjack", "authority derivation", "Meta Muse", "local configuration authority", "APEXA", "execution integrity", "tool execution evidence"]
+summary: "Implementation-evidence companion to agent-security-verified-enforcement.md. Uses pinned repositories, disclosures, and deployed-system reports to separate signed claims from replayable evidence; receipt integrity from completeness; configured policy from covered paths; identity enrollment from per-request proof; formal models from unsupported surfaces; observed egress from blocking; stable tool digests from equivalent semantics; policy verdicts from effect ownership; authorization receipts from effect gates; narrated results from positive execution evidence; and sandbox isolation from configuration coherence."
+triggers: ["SkillProof", "MCP server verification", "replayable evidence", "action receipt", "signed receipt", "evidence completeness", "Pipelock", "PassControl", "sender proof", "bearer visa", "authentication assurance", "default deny", "fail closed", "shell hook", "guardrail regression test", "OpenShell prover", "SMT containment", "path composition", "egress firewall", "uninspected egress", "tool identity", "tool pin", "schema canonicalization", "shadow mode", "mediation ownership", "Action Evidence Package", "AEP sandbox", "Codex sandbox", "Overpatch", "Heapjack", "authority derivation", "Meta Muse", "local configuration authority", "APEXA", "execution integrity", "tool execution evidence", "BoxLite", "micro-VM", "sandbox configuration coherence", "guest network", "host jailer grants"]
 last_updated: "2026-09-23"
-source_basis: "Pinned-source implementation studies and disclosures reviewed 2026-09-10 through 2026-09-22: SkillProof f5ddb4b, Pipelock f7d1816, agent-guardrails-kit 18c241e, PassControl f9cb702, OpenShell df0ee1a, k8s-rca-agent 29f5fad, secure-agent 017ec5a, Rul1an/assay 900e536, Soup Wall be8db48, aep-sandbox 3495e27, HN item 49795755 with Accomplish AI's Codex sandbox disclosure, HN item 49802030 with the Meta Muse endpoint-redirection report, and arXiv 2609.24165v1 (abstract and full HTML). Each section states its own evidence boundary."
+source_basis: "Pinned-source implementation studies and disclosures reviewed 2026-09-10 through 2026-09-23: SkillProof f5ddb4b, Pipelock f7d1816, agent-guardrails-kit 18c241e, PassControl f9cb702, OpenShell df0ee1a, k8s-rca-agent 29f5fad, secure-agent 017ec5a, Rul1an/assay 900e536, Soup Wall be8db48, aep-sandbox 3495e27, BoxLite 9e9436e, HN item 49795755 with Accomplish AI's Codex sandbox disclosure, HN item 49802030 with the Meta Muse endpoint-redirection report, and arXiv 2609.24165v1 (abstract and full HTML). Each section states its own evidence boundary."
 </ai_context>
 
 # Agent Security: Enforcement Evidence and Runtime Coverage
@@ -789,3 +789,71 @@ agents. The guard detects the documented intended-call/no-execution channel; it
 does not by itself prove complete mediation, parser completeness, backend
 correctness, artifact semantics, or the paper's broader scientific claims.
 Large-scale agent scoring is explicitly deferred to a later study.
+
+## Sandbox Policy Needs Configuration Coherence, Not Just Strong Primitives (GitHub, September 2026)
+
+**Repo:** https://github.com/boxlite-ai/boxlite
+
+**Pinned observation:** repository commit
+[`9e9436e633accac592fc9844c7417e2737bd7dda`](https://github.com/boxlite-ai/boxlite/commit/9e9436e633accac592fc9844c7417e2737bd7dda)
+
+BoxLite is useful evidence for a less visible sandbox property: each control may
+work as designed while the configuration vocabulary still creates a fail-open
+composition. Its current default security profile enables the host jailer,
+Linux seccomp and chroot, privilege dropping, file-descriptor closure,
+environment sanitization, and resource limits. The untrusted workload runs in a
+separate hardware-virtualized guest, while the host-side shim is constrained by
+an additional OS sandbox. On Linux this is a stronger stack than a container
+label alone; on macOS the project's own threat model says the layer is weaker
+because it lacks privilege dropping, network namespaces, and cgroups.
+
+The sharper signal is a repaired ambiguity between two similarly named controls.
+`network.mode` decides whether the guest gets a network backend.
+`advanced.security.network_enabled` decides whether the *host jailer* grants the
+shim the networking it needs. Previously, setting the latter to false while
+leaving the default guest network enabled could either prevent startup or, when
+the jailer was disabled, leave full guest internet access despite a
+network-disabled-looking configuration. The current creation validator rejects
+that contradictory pair and tells callers to set `network.mode="disabled"`.
+A separate integration test checks that a truly network-disabled guest cannot
+reach an external IP or see a host Unix socket while its vsock control channel
+still works.
+
+This yields a reusable **configuration-coherence gate** for agent sandboxes:
+
+1. give guest capabilities, host-side mediator grants, and master isolation
+   switches distinct names and documented semantics;
+2. validate combinations at the creation boundary, before any privileged helper
+   or network backend starts;
+3. reject misleading or contradictory states rather than silently degrading or
+   translating them;
+4. test the denied effect from inside the guest while retaining a positive
+   control for required management traffic; and
+5. report platform-specific enforcement, not a generic “sandboxed” state.
+
+The distinction matters because secure defaults are not least-authority defaults.
+BoxLite's jailer is enabled by default, but guest outbound networking is also
+enabled by default. A deployment that needs offline execution must make that
+separate choice and verify the resulting runtime path. Hardware virtualization,
+seccomp, and resource limits also do not cover host-kernel or hypervisor bugs,
+supply-chain compromise, operator error, side channels, or unnecessary mounted
+volumes. Configuration rejection proves that one known semantic mismatch now
+fails closed; it does not certify the whole sandbox.
+
+**Evidence inspected at the pinned commit:**
+[`README.md`](https://github.com/boxlite-ai/boxlite/blob/9e9436e633accac592fc9844c7417e2737bd7dda/README.md),
+[`docs/concepts/security.md`](https://github.com/boxlite-ai/boxlite/blob/9e9436e633accac592fc9844c7417e2737bd7dda/docs/concepts/security.md),
+[`THREAT_MODEL.md`](https://github.com/boxlite-ai/boxlite/blob/9e9436e633accac592fc9844c7417e2737bd7dda/src/boxlite/src/jailer/THREAT_MODEL.md),
+[`advanced_options.rs`](https://github.com/boxlite-ai/boxlite/blob/9e9436e633accac592fc9844c7417e2737bd7dda/src/boxlite/src/runtime/advanced_options.rs),
+[`options.rs`](https://github.com/boxlite-ai/boxlite/blob/9e9436e633accac592fc9844c7417e2737bd7dda/src/boxlite/src/runtime/options.rs),
+[`jailer-network-permissions.md`](https://github.com/boxlite-ai/boxlite/blob/9e9436e633accac592fc9844c7417e2737bd7dda/docs/contributing/architecture/jailer-network-permissions.md),
+and
+[`security_enforcement.rs`](https://github.com/boxlite-ai/boxlite/blob/9e9436e633accac592fc9844c7417e2737bd7dda/src/boxlite/tests/security_enforcement.rs).
+
+**Evidence boundary:** Scout statically inspected the complete pinned tree, the
+listed implementation, documentation, and in-tree tests through public GitHub
+endpoints. It did not build BoxLite, run its integration tests, audit libkrun or
+the host kernels, attempt a guest escape, or verify a deployed configuration.
+The source establishes the control decomposition and the fail-closed validation
+branch; security and performance claims outside those paths remain
+repository-authored claims.
