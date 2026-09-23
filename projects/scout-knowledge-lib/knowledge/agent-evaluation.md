@@ -4,6 +4,7 @@ triggers: ["evaluation", "benchmark", "reviewer agent", "feedback", "Agent-Eval-
 last_updated: "2026-09-23"
 source_update_2026_09_23: "HN item 49813880 and Life Forge repository at commit b747337d6de0a280af7c9e19b8a4e794137121e8; relevant source, bundled reports, test-suite manifest, and an offline reference-agent run were inspected."
 source_update_2026_09_23_detection_modes: "HN item 49815867 and the Nothing Threw essay, README, taxonomy, and September field notes were reviewed at repository commit c17bc3afb70c1168708082a7d94884075a8e293e."
+source_update_2026_09_23_apprenticebench: "HN item 49819853 and NeoCognition's ApprenticeBench article were reviewed. The evidence is a first-party benchmark report; no public task corpus, trajectories, or independent reproduction was located from the linked benchmark sites."
 source_basis: "Consolidated from agent-evaluation.md, agent-evaluation-trends.md, agent-evaluation-trends-updated.md, xhs-eval-synthesis-2024.md, and xhs_eval_trends_may2024.md. Testing tooling section added from findings/github-trending-ai-agents-2026.md, findings/2026-06-17-arxiv-ai-agent-triage.md, findings/hn-ai-agent-trends.md, findings/2026-06-14-arxiv-agent-triage.md, findings/2026-06-15-arxiv-agent-triage-batch7.md. Batch 6 sourcing: Multiagent Confidence Protocols, Intelligence Entropy evaluation dimension. Session-state sourcing (Jul 18): MemTrace knowledge-point evaluation. Diagnostic Refinement wave (Jun 20): LegalHalluLens, EARS, Thermodynamic Signatures, Rift. Observability Inversion (Jun 26): RigorBench, Steer Don't Solve, Topos. GitHub update (2026-08-08): RealReplicaBench section rechecked at commit 42693bb and expanded to distinguish per-run answer concealment from corpus-level secrecy: all 107 task definitions and rubrics are public, and private expected-answer files are present in the repository even though the runner excludes them from the agent-visible task tree. GitHub update (2026-08-06): RealReplicaBench section refreshed from the current Accio-org/RealReplicaBench public repo (redirect from Accio-Lab), adding the evaluation-boundary nuance that published leaderboard scores come from Accio-managed evaluation endpoints while the repo exposes a bring-your-own-credentials path and still lacks immutable public raw result bundles. HN update (2026-08-04): HN 49170915 added as practitioner evidence that benchmark saturation is pushing teams toward open-ended multi-agent evaluation worlds. HN update (2026-08-05): HN 49169641 / Computer Anthology added as evidence that serious eval teams are turning benchmarks into continuously renewed benchmark families and that scaffold choice can move pass@1 by double-digit points. HN update (2026-08-05): Ask HN 49181014 added as practitioner evidence that teams now want harness-only benchmarks with model/reasoning provenance instead of pooled model scores. HN update (2026-08-07): HN 49200652 added as live evidence that an unversioned agentic leaderboard can change ordering during the discussion when graders and task versions change. arXiv update (2026-08-07): AV-AIVAT (2608.06362) added as evidence that costly interactive agent comparisons need anytime-valid stopping, variance reduction, and replayable stopping metadata. arXiv update (2026-08-09): SkillTV-Bench (2608.05573v1) added as evidence that task-time procedural skills must be compiled into evidence-seeking inspection plans and that false accepts can erase gains from larger rollout pools. GitHub update (2026-08-20): EvoTrace at commit 1e457e8 added as an implementation of local coding-session mining into provenance-bearing task/environment/verifier bundles, with reconstruction confidence and explicit policy/runtime limits. HN update (2026-08-24): PagerDuty's repeated A/B test of unified versus domain-specific standards skills added as evidence that unconditional request exposure and routing reliability must be measured separately from quality conditional on activation. GitHub update (2026-09-10): reverify at commit f32ea84 added as implementation evidence for machine-verdict admission, information-weighted claim scoring, negative memory, and separate unverified hand-offs. GitHub update (2026-09-10): spec-wins at commit 776e799 added as evidence that hidden grader passage and specification conformance must remain distinct claims, with residual source/counterexample audit after executable grading. HN update (2026-09-10): coding-atlas at commit 7e29832 added as receipt-rich evidence for separating work outcome, disclosure accuracy, and harness effects in coding-agent evaluation. GitHub update (2026-09-13): AI-Has-Taste at commit 2537a78 added as implementation evidence for separating frozen claim scope, artifact integrity, selected replay status, and broader proof/review status. HN update (2026-09-13): Agents School added as a live implementation of deterministic transcript checking and versioned signed credentials whose current evidence class remains explicitly self-reported rather than independently audited. GitHub update (2026-09-14): WorldZero at commit 4dfce7a added as implementation evidence for behavior-first causal evaluation with event-linked reconstruction witnesses, matched-null episodes, separate claim auditing, and explicit benefit/transfer layers. HN update (2026-09-15): Dan Luu's broader coding-agent workflow report added as practitioner evidence that agent-generated artifacts can substantiate a fabricated reproduction and that execution against the claimed environment must remain independent from evidence production. HN update (2026-09-16): five-bugs added as replayable small-sample evidence that model diversity cannot recover an omitted requirement when every run sees the same weak executable specification; the note distinguishes independently replayed patches from author-reported run provenance. arXiv update (2026-09-16): Coding Agents Have Converged (2609.17394v1) added as verdict-matrix evidence that leaderboard resolution depends on directionally imbalanced discordant outcomes, paired testing, explicit grouping rules, and model-scaffold provenance rather than raw task count or small aggregate gaps. arXiv update (2026-09-17): DualViewEval (2609.18909v1) added as abstract-level evidence that benchmark compression should preserve process relations as well as outcome similarity. HN update (2026-09-17): Cooper's Insurance Agent Benchmark added paired model-alone versus document-harness evidence, with explicit reliability, abstention, cost, and private-corpus limitations. GitHub update (2026-09-18): gauntlet at commit 3c9b660 added implementation evidence for sealed trials, contamination scanning, and preregistered keep/revert/provisional gates, while exposing two evidence-boundary risks: Cartesian repeat pairing is bootstrapped as if the derived signs were independent, and the shipped guard detects lexical shingle overlap while fresh holdout generation remains planned. HN update (2026-09-18): RoninAgent Subject-0 added as first-party evidence that red-team reports must distinguish a supplied adversarial objective from spontaneous goal formation and classify proposed, denied, executed, observed, and persistent effects separately. HN update (2026-09-19): Anuclei's release note added first-party implementation evidence for conversation-level evaluation, evidence-cited deterministic diagnosis, stale-narrative marking, and declared-versus-observed delegation reconciliation. GitHub update (2026-09-20): NiceEval at commit 0d1ed3e added implementation evidence for deriving a readable manifest and evaluation fingerprint from one captured input, while keeping verdict and score folds separate and making source-closure limits explicit. HN update (2026-09-20): evaluation.club added practitioner guidance for treating prompts as replaceable treatments while domain experts own versioned measures, paired trials, holdouts, and labelled production feedback. HN/GitHub update (2026-09-20): jevals at commit a415922 added implementation evidence for separating reusable typed semantic checks from backend calibration, consequence-specific authorization, failure policy, and holdout validation. HN update (2026-09-21): Southbridge's Jev sentinel study added first-party evidence that anchored categorical trace readings can improve held-out time and spend forecasting when combined with counters, while remaining distinct from acceptance, security, and intervention authority. Companion extraction note: §12–§22 and §23–§31 were moved to agent-evaluation-research.md after being appended to the parent. Reddit update (2026-09-22): PhysAudit post added as a first-party design account for deterministic, domain-specific and claim-conditioned validation of AI-generated scientific code; repository and results were not independently checked. XHS update (2026-09-22): a directly read AgentJev post added secondary announcement evidence for a local probability-output decision model intended for low-latency agent gates and routers; its repository, weights, latency, and quality claims were not independently checked."
 </ai_context>
 
@@ -1829,6 +1830,52 @@ When introducing a reviewer agent, track:
 
 This separation allows optimizing the reviewer independently (via prompt
 engineering or stronger models like o3-mini for reasoning).
+
+### Job success and organizational efficiency are separate axes — ApprenticeBench (HN, Sep 2026)
+
+NeoCognition's first-party ApprenticeBench report offers a useful warning about
+real-work evaluation: a higher task pass rate can coexist with worse learning
+and coordination economics. Its simulated accounts-payable job sequences 100
+bills across one company year. Agents receive six months of historical bills,
+a handbook and ERP tutorial, then immediate mentor feedback in the first month
+and sparse month-end feedback thereafter. They use either the Odoo GUI or
+feature-matched API tools while maintaining persistent Markdown notes.
+
+The report says Fable 5.1 passed 72% of bills versus 51% for the better of two
+human testers, but cost $18.23 per task versus an estimated $7.21 for that
+human. Process measures moved in the opposite direction from accuracy: both
+humans became faster with practice, while agents generally slowed as their
+memory grew; one human wrote roughly 2,748 words of notes, versus 22,000 words
+in 61 files for GPT-6 Astra and 192,000 words in 122 files for Fable 5.1.
+Fable 5.1 and GPT-6 Astra also sent more messages than the task-design minimum
+and more than the human testers, imposing attention costs on simulated
+coworkers. The study's Fable 5 ablation adds a narrower learning signal: 11/100
+bills passed with no
+history, feedback, or cross-task memory; 31 with history only, 35 with feedback
+only, and 43 with both.
+
+This yields a **workplace-efficiency vector**, not one job-readiness score:
+report task correctness, direct execution cost, time trend across the work
+sequence, retained-memory growth, and communication load separately. In
+particular, a positive accuracy slope does not prove that an apprentice is
+becoming operationally cheaper; accumulating notes can improve recall while
+making every later task slower and more expensive. Communication should count
+as a system externality because each unnecessary message consumes another
+participant's attention.
+
+The evidence is preliminary. This is the benchmark maker's report about a
+simulated, challenge-enriched accounting stream, with one reported run per
+model configuration and only two paid human comparators. Human cost is wage
+hours while agent cost is token spend, so neither figure captures the same
+complete organizational cost surface. The linked article and benchmark site
+did not expose a public task corpus, trajectories, or reproducibility bundle
+when inspected; the scores and behavioral summaries therefore remain
+unreproduced first-party claims.
+
+*Sources: [HN item 49819853](https://news.ycombinator.com/item?id=49819853);
+[NeoCognition report](https://neocognition.io/blog/apprentice-bench);
+[benchmark site](https://apprenticebench.com/) (article and linked site
+inspected 2026-09-23).*
 
 ## Operational Metrics
 
