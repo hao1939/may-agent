@@ -1,8 +1,8 @@
 <ai_context>
-summary: "Reusable verification and verdict-integrity patterns: protected separation of review, diagnostic validation, and official measurement; frozen session inputs with snapshot-bound but intentionally limited checks; typed lifecycle evidence for unattended agent runs; multi-plane completion proofs; behavior-derived tests challenged by mutation negatives; evidence bound to the verified subject; explicit receipt coverage and valid anomalies; claim-level platform enforcement evidence; negative controls for the verdict path; state-based effect grading with honest and adversarial oracle controls; freshness binding for replayed traces; evaluator immutability across repair; proof of the inspected universe behind a clean sweep; cross-artifact conformance for executable governance; phase-aware calibration of probabilistic rule checks; and separation of reviewer diversity from verdict transport."
-triggers: ["verification subject binding", "captured inputs", "session snapshot", "postconditions", "CLAMP", "NickCamacho15/clamp", "Brigade", "receipt coverage", "not_checked", "invocation_ref", "ASQAV", "claim-level platform evidence", "RTQ", "sandbox enforcement", "construction-only test", "meta-verification", "false-green verifier", "negative control", "ProjectGuard", "state-based grading", "reward hacking", "Compound Evals", "kyisaiah47/compound-evals", "trace freshness", "recorded trace", "skilldiff", "agent skill regression", "frozen tests", "test identity", "failure fingerprint", "RepoPilot", "post-merge outcome", "evaluation identity", "independent runner", "inspected universe", "compared-nothing-reported-clean", "cross-artifact conformance", "decision table", "DMN", "OutTheBox", "probabilistic rule check", "phase-specific precision", "Abide", "event-backed write", "Dream Studio", "reviewer diversity", "cross-provider review", "verdict transport", "portable DSH", "unattended agent run", "fresh branch", "missing upstream", "launch failure", "lifecycle receipt", "CodeMidas", "GameLogicBench", "behavior-derived test", "mutant validation", "tick-level assertion", "multi-plane completion proof", "capture coverage", "world-state verification", "minecraft-agent", "VibeSys", "uw-syfi/vibesys", "protected measurement plane", "official evaluation", "judge-audited validation recipe"]
-last_updated: "2026-09-22"
-source_basis: "Extracted intact from agent-runtime-effect-integrity.md during its 2026-09-14 oversized-note review. Sources are pinned revisions of Brigade, ASQAV, ProjectGuard, skilldiff, RepoPilot, Dream Studio, OutTheBox, Abide, Compound Evals, Portable DSH, RTQ, rmalde/minecraft-agent, NickCamacho15/clamp, and uw-syfi/vibesys; reproduced checks and static-inspection limits remain stated in each section. Also includes HN 49782797 and Alkis Yuvanelis's complete linked incident essay, whose published minimal shell reproduction Scout reran for a missing child and a successful immediate no-op, plus abstract-level arXiv evidence from CodeMidas and GameLogicBench on behavior-derived tests and mutant validation. Acceptance authority, actor-bound review, release reconciliation, and audit normalization moved intact to agent-runtime-acceptance-and-reconciliation.md during the 2026-09-21 oversized-note review."
+summary: "Reusable verification and verdict-integrity patterns: protected separation of review, diagnostic validation, and official measurement; enforcement-reachability checks proving that typed evidence is required by the authoritative completion transition; frozen session inputs with snapshot-bound but intentionally limited checks; typed lifecycle evidence for unattended agent runs; multi-plane completion proofs; behavior-derived tests challenged by mutation negatives; evidence bound to the verified subject; explicit receipt coverage and valid anomalies; claim-level platform enforcement evidence; negative controls for the verdict path; state-based effect grading with honest and adversarial oracle controls; freshness binding for replayed traces; evaluator immutability across repair; proof of the inspected universe behind a clean sweep; cross-artifact conformance for executable governance; phase-aware calibration of probabilistic rule checks; and separation of reviewer diversity from verdict transport."
+triggers: ["verification subject binding", "captured inputs", "session snapshot", "postconditions", "CLAMP", "NickCamacho15/clamp", "Brigade", "receipt coverage", "not_checked", "invocation_ref", "ASQAV", "claim-level platform evidence", "RTQ", "sandbox enforcement", "construction-only test", "meta-verification", "false-green verifier", "negative control", "ProjectGuard", "state-based grading", "reward hacking", "Compound Evals", "kyisaiah47/compound-evals", "trace freshness", "recorded trace", "skilldiff", "agent skill regression", "frozen tests", "test identity", "failure fingerprint", "RepoPilot", "post-merge outcome", "evaluation identity", "independent runner", "inspected universe", "compared-nothing-reported-clean", "cross-artifact conformance", "decision table", "DMN", "OutTheBox", "probabilistic rule check", "phase-specific precision", "Abide", "event-backed write", "Dream Studio", "reviewer diversity", "cross-provider review", "verdict transport", "portable DSH", "unattended agent run", "fresh branch", "missing upstream", "launch failure", "lifecycle receipt", "CodeMidas", "GameLogicBench", "behavior-derived test", "mutant validation", "tick-level assertion", "multi-plane completion proof", "capture coverage", "world-state verification", "minecraft-agent", "VibeSys", "uw-syfi/vibesys", "protected measurement plane", "official evaluation", "judge-audited validation recipe", "Custos", "civi0411/Custos", "completion gate", "enforcement reachability", "evidence pipeline"]
+last_updated: "2026-09-23"
+source_basis: "Extracted intact from agent-runtime-effect-integrity.md during its 2026-09-14 oversized-note review. Sources are pinned revisions of Brigade, ASQAV, ProjectGuard, skilldiff, RepoPilot, Dream Studio, OutTheBox, Abide, Compound Evals, Portable DSH, RTQ, rmalde/minecraft-agent, NickCamacho15/clamp, uw-syfi/vibesys, and civi0411/Custos; reproduced checks and static-inspection limits remain stated in each section. Also includes HN 49782797 and Alkis Yuvanelis's complete linked incident essay, whose published minimal shell reproduction Scout reran for a missing child and a successful immediate no-op, plus abstract-level arXiv evidence from CodeMidas and GameLogicBench on behavior-derived tests and mutant validation. Acceptance authority, actor-bound review, release reconciliation, and audit normalization moved intact to agent-runtime-acceptance-and-reconciliation.md during the 2026-09-21 oversized-note review."
 </ai_context>
 
 # Agent Runtime Verdict Integrity
@@ -17,6 +17,57 @@ whether the verifier inspected the intended universe, whether parallel policy
 artifacts still encode the same contract, whether a platform matrix exercised
 construction or real enforcement, and whether reviewer diversity survives verdict
 transport.
+
+## Evidence Types Matter Only If the Completion Transition Requires Them — Custos (GitHub, September 2026)
+
+Custos is an early Rust runtime whose design documents make a strong, useful
+separation: tasks, permits, evidence requirements, verification claims, and outcome
+bundles are different types. Its evidence pipeline can evaluate required claims, its
+task service uses optimistic epochs, and its file-backed lifecycle test checks that
+task state and a continuation packet survive reopening SQLite. Those pieces show how
+a runtime can model evidence and durable execution without storing everything as
+chat text.
+
+The pinned implementation also exposes a sharper integration test for such
+architectures: **can the authoritative completion command be reached without the
+advertised evidence?** Here the answer is yes. `CompleteTask` carries only a task
+ID, summary, and expected epoch. `CompletionGate::can_complete` checks only that the
+task is running. The task-kernel crate does not depend on the evidence-engine crate,
+and the end-to-end lifecycle test advances a running task to `Succeeded` with the
+summary `All steps succeeded`, without supplying an evidence requirement, bundle, or
+verification claim. The evidence pipeline exists and has its own tests, but it is
+not on this state-transition path.
+
+A similar distinction appears in the action path. `PermitIssuer` stores expiring
+permits and can verify that one is active, while the deterministic gateway asks the
+authority engine to issue a permit and then returns a synthesized `executed` JSON
+object plus its digest. In the inspected code, no permit-consumption path exists and
+`verify_permit` has no caller. The resulting object is useful as a deterministic
+adapter fixture, but it is not evidence that an external effect occurred or that a
+single-use authorization was redeemed.
+
+This is not a claim that Custos presents these pieces as production-complete. Its
+roadmap explicitly schedules durable-kernel, controlled-mutation, verifier-runner,
+and signed-outcome work across later phases. The useful finding is a maturity rule:
+schema presence and isolated component tests establish **representational
+readiness**, not enforcement. For every safety or verification object, trace a
+negative case through the public authority-bearing transition. Completion should
+fail when required evidence is absent, stale, for another task or revision, or
+produced by an unapproved verifier; effect dispatch should fail when a permit is
+expired, mismatched, reused, or not atomically redeemed. The dependency graph and
+end-to-end tests should prove those objects are unavoidable, rather than merely
+available.
+
+Scout statically inspected the pinned archive and selected project-authored tests;
+it did not run the Rust suite, launch the daemon, or evaluate a deployment. The
+repository was created two days before inspection and had four stars at discovery,
+so this is an early implementation/maturity signal rather than a reliability or
+security assessment.
+
+- **Repo:** https://github.com/civi0411/Custos
+- **Inspected revision:** [`8b278e08d67bf540d920371fd3d7e28350e8366c`](https://github.com/civi0411/Custos/commit/8b278e08d67bf540d920371fd3d7e28350e8366c)
+- **Primary sources:** [completion command and gate](https://github.com/civi0411/Custos/blob/8b278e08d67bf540d920371fd3d7e28350e8366c/crates/task-kernel/src/service.rs), [completion-gate implementation](https://github.com/civi0411/Custos/blob/8b278e08d67bf540d920371fd3d7e28350e8366c/crates/task-kernel/src/completion.rs), [evidence pipeline](https://github.com/civi0411/Custos/blob/8b278e08d67bf540d920371fd3d7e28350e8366c/crates/evidence-engine/src/pipeline.rs), [permit store](https://github.com/civi0411/Custos/blob/8b278e08d67bf540d920371fd3d7e28350e8366c/crates/authority-engine/src/permits.rs), [deterministic gateway](https://github.com/civi0411/Custos/blob/8b278e08d67bf540d920371fd3d7e28350e8366c/crates/capability-gateway/src/deterministic.rs), [file-backed lifecycle test](https://github.com/civi0411/Custos/blob/8b278e08d67bf540d920371fd3d7e28350e8366c/tests/e2e/tests/cli_lifecycle.rs), and [roadmap](https://github.com/civi0411/Custos/blob/8b278e08d67bf540d920371fd3d7e28350e8366c/docs/development/roadmap.md)
+- **Discovery query:** GitHub Repository Search API `topic:agentic-ai created:>2026-09-20 stars:>3`, sorted by stars; `total_count: 1`, `incomplete_results: false`
 
 ## Separate Review, Diagnostic Validation, and Official Measurement — VibeSys (GitHub, September 2026)
 
