@@ -1,8 +1,8 @@
 <ai_context>
 summary: "Entry point for Scout's project-owned knowledge library. Use this before creating or updating Scout-local knowledge notes."
 triggers: ["scout knowledge", "agent architecture research", "multi-agent trends", "XHS trends", "knowledge library maintenance"]
-last_updated: "2026-09-21"
-source_basis: "Maintained index of Scout canonical notes, companion notes, findings, and durable reports. Current navigation includes source-grounded finding batches through 2026-09-21 and the §37–§40 Agent Evaluation Research: Diagnostic Layers companion without duplicating the full index. Runtime task, credential, backlog, and health status belongs in the project UI or dated reports."
+last_updated: "2026-09-23"
+source_basis: "Maintained index of Scout canonical notes, companion notes, findings, and durable reports. Current navigation includes source-grounded finding batches through 2026-09-22 and the §37–§40 Agent Evaluation Research: Diagnostic Layers companion without duplicating the full index. Runtime task, credential, backlog, and health status belongs in the project UI or dated reports."
 findings_date_convention: "Use the actual observation date in YYYY-MM-DD filenames; never create a future-dated finding."
 </ai_context>
 
@@ -69,6 +69,15 @@ Migration and project-operation artifacts live outside `knowledge/`:
 - [Hermes Agent and OpenClaw comparative investigation (2026-09-02)](../reports/research/hermes-agent-openclaw-comparative-investigation-2026-09-02.md) — UTC-dated pinned-source architecture, memory, skill-learning, authority, recovery, issue, and cost comparison; reconciles all 28 existing matching leads and records bounded reproduction limits.
 
 ## Recent Source-Grounded Findings
+
+### 2026-09-22
+
+- [AI-written proofs shift the review bottleneck to specification](./findings/2026-09-22-ai-written-proofs-shift-review-to-specification.md) — a human-authored Lean demonstration uses AI-written proofs, but kernel checking covers the encoded exact-rational model rather than its correspondence to production Transformer kernels.
+- [Proof-backed continuity and semantic memory need separate contracts](./findings/2026-09-22-crewhaus-proof-backed-continuity.md) — pinned CrewHaus inspection separates guarded proof state, recallable memory, and in-session handoff; tests and model-backed behavior were not executed.
+- [Immutable agent evidence, recomputable interpretation](./findings/2026-09-22-immutable-agent-evidence-derivations.md) — static Sediment inspection shows append-only observations, policy-versioned derivations, and revisioned quarantine; the PostgreSQL suite and deployment were not run.
+- [Instruction preflight must separate effective scope from repository evidence](./findings/2026-09-22-instruction-preflight-separates-scope-from-evidence.md) — pinned source inspection distinguishes scope resolution, manifest validation, and comparable-rule drift; local tests could not run because pytest was unavailable.
+- [Offensive agents compress both the attack clock and the accident clock](./findings/2026-09-22-offensive-agents-compress-attack-and-accident-clocks.md) — an interim incident report links automated intrusion throughput with destructive cleanup risk; the underlying corpus and compromises were not independently verified.
+- [Wearable agent integration: preserve and instrument each boundary](./findings/2026-09-22-wearable-agent-integration-staged-boundaries.md) — a builder's readable Reddit report describes staged microphone, transport, transcription, session, and display bring-up; code, device behavior, latency, and security were not independently checked.
 
 ### 2026-09-21
 
