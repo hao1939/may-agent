@@ -1,8 +1,8 @@
 <ai_context>
 summary: "Agent self-evolution is not one mechanism. The credible core is a governed release loop over explicit mutable surfaces: skills, memory, routing, harness code, weights, world models, or evaluators. Current evidence is strongest when an external fixed evaluator controls admission, and much weaker for self-generated or co-evolving judges and broad-goal autonomy."
 triggers: ["agent self-evolution", "self-improving agents", "recursive self-improvement", "agent autonomy", "skill evolution", "harness evolution", "world models", "co-evolving evaluators"]
-last_updated: "2026-09-22"
-source_basis: "A source-agnostic 984-row lead ledger: 908 observed cards from the human's Xiaohongshu collection, including a bounded authenticated frontier of 11 readable text bodies and one image-only cover; 69 primary paper, repository, benchmark, survey, blog, and interview records; and 8 existing Scout artifacts, plus 2026-09-10 direct XHS inspection of HarnessEvolve reception, an HN-surfaced primary-paper inspection of Procedural Graphs (arXiv 2609.09153), 2026-09-11 inspection of HN-surfaced Salesforce Beagle at commit 15f12b7, 2026-09-11 full-paper inspection of Ecdysis (arXiv 2609.11677v1), 2026-09-12 direct XHS inspection of the Seed/TokenWave Self-Developing Agents announcement, 2026-09-13 direct XHS inspection of Procedural Graphs reception, 2026-09-14 direct XHS inspection of a six-survey self-evolution reading map and its practitioner discussion, 2026-09-15 inspection of the HN-surfaced rekursiv.ai auto-autoresearch report plus its runnable NanoChat recipe at Priml commit 92c6bd2, 2026-09-16 inspection of EvoOntology's ontology-evolution lifecycle and admission boundary at commit ace8ff69, 2026-09-19 abstract-level inspection of SoL-Pi (arXiv 2609.20519v1), 2026-09-19 inspection of SourceShift/mini-ork's path-specific self-modification controls at commit 962bf478, and 2026-09-22 direct XHS inspection of Chinese-language reception of the matched-budget harness-evolution critique and RSIAgent's exploration-memory framing. Claims are traced to full primary sources and pinned code where available; XHS reception is labeled as secondary commentary, and titles remain discovery metadata, never technical evidence."
+last_updated: "2026-09-23"
+source_basis: "A source-agnostic 984-row lead ledger: 908 observed cards from the human's Xiaohongshu collection, including a bounded authenticated frontier of 11 readable text bodies and one image-only cover; 69 primary paper, repository, benchmark, survey, blog, and interview records; and 8 existing Scout artifacts, plus 2026-09-10 direct XHS inspection of HarnessEvolve reception, an HN-surfaced primary-paper inspection of Procedural Graphs (arXiv 2609.09153), 2026-09-11 inspection of HN-surfaced Salesforce Beagle at commit 15f12b7, 2026-09-11 full-paper inspection of Ecdysis (arXiv 2609.11677v1), 2026-09-12 direct XHS inspection of the Seed/TokenWave Self-Developing Agents announcement, 2026-09-13 direct XHS inspection of Procedural Graphs reception, 2026-09-14 direct XHS inspection of a six-survey self-evolution reading map and its practitioner discussion, 2026-09-15 inspection of the HN-surfaced rekursiv.ai auto-autoresearch report plus its runnable NanoChat recipe at Priml commit 92c6bd2, 2026-09-16 inspection of EvoOntology's ontology-evolution lifecycle and admission boundary at commit ace8ff69, 2026-09-19 abstract-level inspection of SoL-Pi (arXiv 2609.20519v1), 2026-09-19 inspection of SourceShift/mini-ork's path-specific self-modification controls at commit 962bf478, 2026-09-22 direct XHS inspection of Chinese-language reception of the matched-budget harness-evolution critique and RSIAgent's exploration-memory framing, and 2026-09-23 full-paper inspection of the HN-surfaced AIDE² recursive harness-improvement study (arXiv 2609.26457v1). Claims are traced to full primary sources and pinned code where available; XHS reception is labeled as secondary commentary, and titles remain discovery metadata, never technical evidence."
 </ai_context>
 
 # Agent Self-Evolution and Autonomy: What Actually Changes?
@@ -206,6 +206,58 @@ matched. A later protocol critique of AHE-style evolution—not a replication of
 RHO—finds matched `K=5` parallel or sequential task search often wins and
 disjoint-task transfer averages only +0.6 points. Candidate generation and
 promotion reliability must therefore be measured separately.
+
+### Recursive improvement needs an ignition test, not only better descendants
+
+The HN-surfaced paper *Recursive self-improvement of AI research agents*
+([arXiv 2609.26457v1](https://arxiv.org/abs/2609.26457v1)) provides unusually
+strong evidence for bounded harness evolution. AIDE² uses a bi-level loop: an
+inner agent edits task solutions using public feedback, while an outer agent
+rewrites the inner agent's code and admits candidates using private scores. All
+candidates receive the same per-task budget. In its main eight-day, 100-node
+trajectory, seven of 99 proposed rewrites became incumbents and raised the
+selection grade from 0.703 to 0.778; two further complete runs admitted two and
+four rewrites. The retained changes alter search policy, context management,
+and robustness rather than model weights.
+
+The authors test the selected lineage on four benchmarks that did not affect
+selection. AIDE₈₅ matches or exceeds the two-year human-engineered production
+baseline on ALE-Bench, MLE-Bench, FML-Bench, and WeatherBench 2; the first three
+share broad task families with selection, while WeatherBench 2 is the paper's
+out-of-distribution case. The comparison uses 10 tasks × 10 seeds on ALE-Bench,
+22 × 3 on MLE-Bench, 18 × 3 on FML-Bench, and one weather task × 3 seeds.
+Separately, on 38 held-out kernel/training-context pairs, measured proxy hacking
+falls from 55% for AIDE₀ to 32% for AIDE₈₅, versus 39% for the human baseline.
+These are author-reported results, not an independent reproduction, and the
+behavioral comparison does not identify which rewrite caused the change.
+
+Crucially, the paper separates **better descendants** from a **better
+self-improver**. Its “ignition test” places AIDE₄₇ or the human-engineered agent
+in the outer loop for three 50-step seeds each. The endpoint means are 0.780 and
+0.782 respectively. AIDE₄₇ reaches its final region earlier, but variance and
+small sample size make the result inconclusive; the study establishes no clear
+improvement in the machinery that drives further self-improvement. The paper
+also flags compounded evaluation noise, possible false promotion, high compute
+cost, and accumulated harness complexity whose active components are unclear.
+
+This suggests a two-receipt standard for recursive-improvement claims:
+
+1. **descendant receipt:** fixed-budget, protected evaluation shows that the
+   promoted artifact improves and transfers; and
+2. **ignition receipt:** from the same starting state and matched budget, the
+   promoted improver generates better future candidates than the prior
+   improver across enough independent runs.
+
+AIDE² provides substantial evidence for the first receipt and an honest but
+inconclusive test of the second. “The agent improved itself” should therefore
+not be expanded into “the self-improvement process accelerated.”
+
+*Sources: [HN item 49812641](https://news.ycombinator.com/item?id=49812641),
+[arXiv abstract](https://arxiv.org/abs/2609.26457v1),
+[full HTML](https://arxiv.org/html/2609.26457v1), and
+[API metadata](https://export.arxiv.org/api/query?id_list=2609.26457), inspected
+2026-09-23. The HN item had one point and no comments at inspection. Scout read
+the paper but did not run the system or reproduce its evaluations.*
 
 ### XHS reception: the evaluation critique has crossed into practitioner media
 
