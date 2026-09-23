@@ -1,8 +1,8 @@
 <ai_context>
-summary: "Implementation-evidence companion to agent-security-verified-enforcement.md. Uses pinned repositories, disclosures, and deployed-system reports to separate signed claims from replayable evidence; receipt integrity from completeness; configured policy from covered paths; identity enrollment from per-request proof; formal models from unsupported surfaces; observed egress from blocking; stable tool digests from equivalent semantics; policy verdicts from effect ownership; authorization receipts from effect gates; narrated results from positive execution evidence; and sandbox isolation from configuration coherence."
-triggers: ["SkillProof", "MCP server verification", "replayable evidence", "action receipt", "signed receipt", "evidence completeness", "Pipelock", "PassControl", "sender proof", "bearer visa", "authentication assurance", "default deny", "fail closed", "shell hook", "guardrail regression test", "OpenShell prover", "SMT containment", "path composition", "egress firewall", "uninspected egress", "tool identity", "tool pin", "schema canonicalization", "shadow mode", "mediation ownership", "Action Evidence Package", "AEP sandbox", "Codex sandbox", "Overpatch", "Heapjack", "authority derivation", "Meta Muse", "local configuration authority", "APEXA", "execution integrity", "tool execution evidence", "BoxLite", "micro-VM", "sandbox configuration coherence", "guest network", "host jailer grants"]
+summary: "Implementation-evidence companion to agent-security-verified-enforcement.md. Uses pinned repositories, disclosures, and deployed-system reports to separate signed claims from replayable evidence; receipt integrity from completeness; configured policy from covered paths; identity enrollment from per-request proof; formal models from unsupported surfaces; observed egress from blocking; stable tool digests from equivalent semantics; policy verdicts from effect ownership; counterfactual actions from execution authority; authorization receipts from effect gates; narrated results from positive execution evidence; and sandbox isolation from configuration coherence."
+triggers: ["SkillProof", "MCP server verification", "replayable evidence", "action receipt", "signed receipt", "evidence completeness", "Pipelock", "PassControl", "sender proof", "bearer visa", "authentication assurance", "default deny", "fail closed", "shell hook", "guardrail regression test", "OpenShell prover", "SMT containment", "path composition", "egress firewall", "uninspected egress", "tool identity", "tool pin", "schema canonicalization", "shadow mode", "mediation ownership", "counterfactual action", "observed policy action", "HOL Guard", "Action Evidence Package", "AEP sandbox", "Codex sandbox", "Overpatch", "Heapjack", "authority derivation", "Meta Muse", "local configuration authority", "APEXA", "execution integrity", "tool execution evidence", "BoxLite", "micro-VM", "sandbox configuration coherence", "guest network", "host jailer grants"]
 last_updated: "2026-09-23"
-source_basis: "Pinned-source implementation studies and disclosures reviewed 2026-09-10 through 2026-09-23: SkillProof f5ddb4b, Pipelock f7d1816, agent-guardrails-kit 18c241e, PassControl f9cb702, OpenShell df0ee1a, k8s-rca-agent 29f5fad, secure-agent 017ec5a, Rul1an/assay 900e536, Soup Wall be8db48, aep-sandbox 3495e27, BoxLite 9e9436e, HN item 49795755 with Accomplish AI's Codex sandbox disclosure, HN item 49802030 with the Meta Muse endpoint-redirection report, and arXiv 2609.24165v1 (abstract and full HTML). Each section states its own evidence boundary."
+source_basis: "Pinned-source implementation studies and disclosures reviewed 2026-09-10 through 2026-09-23: SkillProof f5ddb4b, Pipelock f7d1816, agent-guardrails-kit 18c241e, PassControl f9cb702, OpenShell df0ee1a, k8s-rca-agent 29f5fad, secure-agent 017ec5a, Rul1an/assay 900e536, Soup Wall be8db48, HOL Guard 56faea4, aep-sandbox 3495e27, BoxLite 9e9436e, HN item 49795755 with Accomplish AI's Codex sandbox disclosure, HN item 49802030 with the Meta Muse endpoint-redirection report, and arXiv 2609.24165v1 (abstract and full HTML). Each section states its own evidence boundary."
 </ai_context>
 
 # Agent Security: Enforcement Evidence and Runtime Coverage
@@ -568,6 +568,63 @@ had no `cargo` executable, so Scout did not independently run the tests, start
 the daemon, connect Claude Code or an MCP server, or exercise guarded execution.
 The repository's hand-authored agent corpus is not a held-out security
 benchmark, and this observation does not establish production bypass resistance.
+
+### Follow-up: preserve counterfactual policy without granting it execution authority (HOL Guard, September 2026)
+
+**Repo:** https://github.com/hashgraph-online/hol-guard
+
+**Pinned observation:** repository commit
+[`56faea4878649668b84f83c351d112cc279954ac`](https://github.com/hashgraph-online/hol-guard/commit/56faea4878649668b84f83c351d112cc279954ac)
+
+HOL Guard's current source adds a useful receipt-level refinement to the same
+boundary: a decision record can preserve what policy *would* have done without
+letting that counterfactual become authority. In its observe-mode regression,
+a sensitive source read returns `decision="allow"`, `policy_action="allow"`, and
+`model_output_action="allow_original"`, while separately recording
+`observed_policy_action="block"`. Metrics receive the observed block, but the
+harness receives the executable allow. This avoids both losing detector signal
+and falsely reporting an effect as denied.
+
+The decision-boundary implementation makes the distinction structural rather
+than a naming convention. `observed_policy_action` is accepted as watch-only
+evidence and may differ from the final receipt decision. By contrast, action
+fields that can affect execution are normalized and cross-checked across the
+policy value, decision object, and action envelope. Unknown or contradictory
+authority is rejected or tightened to `require-reapproval`; hidden action fields
+are a tested contradiction. For a resolved approval, the exact final
+`allow`/`block` resolution is the only approval authority carried into a new
+receipt, while the original review envelope remains historical context.
+
+This suggests a safer event schema for shadow evaluation and approvals:
+
+1. keep **evaluated action**, **returned host action**, and **effect-owning
+   authority** in separate fields;
+2. define which field a metric counts, rather than inferring enforcement from
+   the most restrictive value in a record;
+3. cross-check every authority-bearing projection and fail closed on
+   contradictions; and
+4. retire pre-resolution authority after an approval settles, retaining it only
+   as lineage.
+
+HOL Guard also documents harness ownership grades—Guard-owned enforcement,
+host-decided enforcement, observe-only degraded, and unsupported—and explicitly
+warns that an approval-center route does not itself imply execution ownership.
+That is the deployment counterpart of the receipt split: the same policy output
+has different assurance depending on who can actually withhold the effect.
+
+**Evidence inspected at the pinned commit:**
+[`README.md`](https://github.com/hashgraph-online/hol-guard/blob/56faea4878649668b84f83c351d112cc279954ac/README.md),
+[`decision_boundaries.py`](https://github.com/hashgraph-online/hol-guard/blob/56faea4878649668b84f83c351d112cc279954ac/src/codex_plugin_scanner/guard/decision_boundaries.py),
+[`test_hook_review_observe_mode.py`](https://github.com/hashgraph-online/hol-guard/blob/56faea4878649668b84f83c351d112cc279954ac/tests/test_hook_review_observe_mode.py),
+[`test_guard_decision_boundary_modules.py`](https://github.com/hashgraph-online/hol-guard/blob/56faea4878649668b84f83c351d112cc279954ac/tests/test_guard_decision_boundary_modules.py), and
+[`release-3-0-harness-grades.md`](https://github.com/hashgraph-online/hol-guard/blob/56faea4878649668b84f83c351d112cc279954ac/docs/guard/release-3-0-harness-grades.md).
+
+**Evidence boundary:** Scout read source, tests, and repository-authored design
+documents but did not install HOL Guard, run its test suite, or exercise a live
+harness. The ownership-grade document identifies itself as a release baseline,
+and current harness documentation contains more detailed, evolving adapter
+claims; the matrix is therefore evidence of an explicit classification model,
+not an independently verified current guarantee for every named host.
 
 ## An Authorization Receipt Is Not an Effect Gate (GitHub, September 2026)
 
