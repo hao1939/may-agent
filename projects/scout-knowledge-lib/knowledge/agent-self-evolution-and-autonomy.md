@@ -2,7 +2,7 @@
 summary: "Agent self-evolution is not one mechanism. The credible core is a governed release loop over explicit mutable surfaces: skills, memory, routing, harness code, weights, world models, or evaluators. Current evidence is strongest when an external fixed evaluator controls admission, and much weaker for self-generated or co-evolving judges and broad-goal autonomy."
 triggers: ["agent self-evolution", "self-improving agents", "recursive self-improvement", "agent autonomy", "skill evolution", "harness evolution", "world models", "co-evolving evaluators"]
 last_updated: "2026-09-23"
-source_basis: "A source-agnostic 984-row lead ledger: 908 observed cards from the human's Xiaohongshu collection, including a bounded authenticated frontier of 11 readable text bodies and one image-only cover; 69 primary paper, repository, benchmark, survey, blog, and interview records; and 8 existing Scout artifacts, plus 2026-09-10 direct XHS inspection of HarnessEvolve reception, an HN-surfaced primary-paper inspection of Procedural Graphs (arXiv 2609.09153), 2026-09-11 inspection of HN-surfaced Salesforce Beagle at commit 15f12b7, 2026-09-11 full-paper inspection of Ecdysis (arXiv 2609.11677v1), 2026-09-12 direct XHS inspection of the Seed/TokenWave Self-Developing Agents announcement, 2026-09-13 direct XHS inspection of Procedural Graphs reception, 2026-09-14 direct XHS inspection of a six-survey self-evolution reading map and its practitioner discussion, 2026-09-15 inspection of the HN-surfaced rekursiv.ai auto-autoresearch report plus its runnable NanoChat recipe at Priml commit 92c6bd2, 2026-09-16 inspection of EvoOntology's ontology-evolution lifecycle and admission boundary at commit ace8ff69, 2026-09-19 abstract-level inspection of SoL-Pi (arXiv 2609.20519v1), 2026-09-19 inspection of SourceShift/mini-ork's path-specific self-modification controls at commit 962bf478, 2026-09-22 direct XHS inspection of Chinese-language reception of the matched-budget harness-evolution critique and RSIAgent's exploration-memory framing, and 2026-09-23 full-paper inspection of the HN-surfaced AIDE² recursive harness-improvement study (arXiv 2609.26457v1). Claims are traced to full primary sources and pinned code where available; XHS reception is labeled as secondary commentary, and titles remain discovery metadata, never technical evidence."
+source_basis: "A source-agnostic 984-row lead ledger: 908 observed cards from the human's Xiaohongshu collection, including a bounded authenticated frontier of 11 readable text bodies and one image-only cover; 69 primary paper, repository, benchmark, survey, blog, and interview records; and 8 existing Scout artifacts, plus 2026-09-10 direct XHS inspection of HarnessEvolve reception, an HN-surfaced primary-paper inspection of Procedural Graphs (arXiv 2609.09153), 2026-09-11 inspection of HN-surfaced Salesforce Beagle at commit 15f12b7, 2026-09-11 full-paper inspection of Ecdysis (arXiv 2609.11677v1), 2026-09-12 direct XHS inspection of the Seed/TokenWave Self-Developing Agents announcement, 2026-09-13 direct XHS inspection of Procedural Graphs reception, 2026-09-14 direct XHS inspection of a six-survey self-evolution reading map and its practitioner discussion, 2026-09-15 inspection of the HN-surfaced rekursiv.ai auto-autoresearch report plus its runnable NanoChat recipe at Priml commit 92c6bd2, 2026-09-16 inspection of EvoOntology's ontology-evolution lifecycle and admission boundary at commit ace8ff69, 2026-09-19 abstract-level inspection of SoL-Pi (arXiv 2609.20519v1), 2026-09-19 inspection of SourceShift/mini-ork's path-specific self-modification controls at commit 962bf478, 2026-09-22 direct XHS inspection of Chinese-language reception of the matched-budget harness-evolution critique and RSIAgent's exploration-memory framing, 2026-09-23 full-paper inspection of the HN-surfaced AIDE² recursive harness-improvement study (arXiv 2609.26457v1), and 2026-09-23 direct XHS inspection of a secondary RRSI explainer (arXiv 2609.24972 named but not inspected). Claims are traced to full primary sources and pinned code where available; XHS reception is labeled as secondary commentary, and titles remain discovery metadata, never technical evidence."
 </ai_context>
 
 # Agent Self-Evolution and Autonomy: What Actually Changes?
@@ -258,6 +258,35 @@ not be expanded into “the self-improvement process accelerated.”
 [API metadata](https://export.arxiv.org/api/query?id_list=2609.26457), inspected
 2026-09-23. The HN item had one point and no comments at inspection. Scout read
 the paper but did not run the system or reproduce its evaluations.*
+
+### XHS signal: regularize both proposal scope and candidate retention
+
+A directly read [XHS post](https://www.xiaohongshu.com/explore/6ab31bc200000000140031a1)
+from “ncwr” summarizes a paper it identifies as *RRSI: Regularized Recursive
+Self-Improvement of Agent Harnesses* ([arXiv 2609.24972](https://arxiv.org/abs/2609.24972)).
+The post describes two distinct controls over harness evolution. On the proposal
+side, a dynamic budget permits broader changes early and narrows later proposals
+toward one small change, while history is used to discourage repeatedly searching
+the same direction. On the selection side, a critic rejects task-specific
+changes and a pruner removes components judged unused or too costly.
+
+The useful architectural point is that **regularization is needed on both sides
+of promotion**. A held-out admission test can reject an overfit candidate, but
+it does not prevent a proposer from repeatedly spending budget in a narrow
+region. Conversely, proposal diversity does not stop accepted harnesses from
+accumulating dead or expensive components. A credible evaluation should
+therefore report proposal edit size and search diversity separately from
+retained component cost, knockout contribution, and held-out transfer.
+
+The post attributes gains of up to 14.1 points on eight development benchmarks,
+4.7 points on five new tasks, and a 30% token reduction versus an unconstrained
+method. Those numbers remain secondary claims: this XHS-only scan did not inspect
+the named paper, implementation, benchmark splits, baselines, seeds, or token
+accounting. The full post body was readable and showed two likes and one save at
+inspection; those engagement counts measure early reception, not validity.
+
+- **Source:** https://www.xiaohongshu.com/explore/6ab31bc200000000140031a1
+- **Coverage:** complete readable XHS post body; named paper not inspected
 
 ### XHS reception: the evaluation critique has crossed into practitioner media
 
