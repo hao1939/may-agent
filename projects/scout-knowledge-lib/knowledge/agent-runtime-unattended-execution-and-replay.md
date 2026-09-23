@@ -1,8 +1,8 @@
 <ai_context>
-summary: "Companion to agent-runtime-effect-integrity.md for unattended execution and replay integrity: cadence and failure accounting, infrastructure trust boundaries, clone identity hygiene, cut-point and interaction-bound replay, local durability versus external settlement, revision-bound approval, accountable agent writes, and desktop effect authorization."
-triggers: ["unattended execution", "heartbeat", "failure backoff", "Talon", "Docker Sandboxes", "sandbox trust boundary", "clone identity", "LingCage", "cut-point replay", "Chronicle", "interaction replay", "Mutagen", "host-call replay", "Ovo", "offline replay", "OrcaReplay", "effect settlement", "LetItLoop", "Kevlar", "ATR", "approval revision", "AIS", "orphan recovery", "Rebuno", "approval resume", "AgenticOS", "diagnostic attention", "Runpin", "effect deduplication", "agent identity", "Sensefold", "desktop authorization", "macOS Harness"]
+summary: "Companion to agent-runtime-effect-integrity.md for unattended execution and replay integrity: cadence and failure accounting, infrastructure trust boundaries, clone identity hygiene, cut-point and interaction-bound replay, local durability versus external settlement, revision-bound approval, accountable agent writes, desktop effect authorization, and workflow/host recovery boundaries."
+triggers: ["unattended execution", "heartbeat", "failure backoff", "Talon", "Docker Sandboxes", "sandbox trust boundary", "clone identity", "LingCage", "cut-point replay", "Chronicle", "interaction replay", "Mutagen", "host-call replay", "Ovo", "offline replay", "OrcaReplay", "effect settlement", "LetItLoop", "Kevlar", "ATR", "approval revision", "AIS", "orphan recovery", "Rebuno", "approval resume", "AgenticOS", "diagnostic attention", "Runpin", "effect deduplication", "agent identity", "Sensefold", "desktop authorization", "macOS Harness", "AgentRun", "workflow DSL", "late settlement"]
 last_updated: "2026-09-23"
-source_basis: "Extracted intact from agent-runtime-effect-integrity.md during its 2026-09-21 oversized-note review, then extended with pinned implementation evidence for unattended cadence and failure accounting. Each section retains stable source links, reproduced checks where performed, and explicit evidence limitations."
+source_basis: "Extracted intact from agent-runtime-effect-integrity.md during its 2026-09-21 oversized-note review, then extended with pinned implementation evidence for unattended cadence and failure accounting and AgentRun's workflow/host recovery boundary. Each section retains stable source links, reproduced checks where performed, and explicit evidence limitations."
 </ai_context>
 
 # Agent Runtime Unattended Execution and Replay
@@ -720,3 +720,52 @@ than being auto-accepted by the same principal requesting the capability.
   Scout did not run the macOS-only code, exercise a live application, or test the
   Chrome permission flow.
 - **Discovery query:** GitHub Repository Search API `"agent" "LLM" in:name,description,readme created:>2026-08-15`, sorted by stars; `incomplete_results: false`
+
+## A Workflow Document Is Not Its Durability Boundary — AgentRun (HN / GitHub, September 2026)
+
+AgentRun is a new TypeScript DSL for moving recurring agent control flow into an
+inspectable, schema-checked document. Its support example makes the split concrete:
+a tool searches first, a typed judgment checks answer fitness and confidence, one
+bounded agent attempt runs only when needed, the result is checked again, and an
+unresolved case escalates instead of being returned as complete. Parallel branches,
+bounded loops, child workflows, intermediate state paths, and final outputs have
+explicit contracts. This is useful evidence for compiling repeatable control and
+uncertainty handling out of open-ended prompts.
+
+More important than the graph syntax is the project's explicit **host boundary**.
+The interpreter does not bundle a durable scheduler, permission system, or exactly-once
+delivery. The host supplies tools, file access, checkpoints, recovery stores,
+idempotency, activation policy, and custody of delivered artifacts. Best-effort
+`onEvent` observers cannot gate a result; required checkpoint hooks must do that.
+Likewise, a valid workflow digest identifies the document but not the interpreter,
+adapters, policy, or permissions that executed it, so those versions and receipts
+must be retained separately for a recoverable run.
+
+The effect path preserves one especially important distinction. When a deadline or
+cancellation cuts off an admitted effect that is still pending, the runtime raises a
+typed `EffectOutcomeUnknownError` and does not retry it automatically. Its settlement
+promise can later report fulfillment or rejection through `effect.late_settled`, but
+a late success is not promoted into the workflow result, memo, or checkpoint. For
+nested maps, loops, branches, and children, effect identity includes an execution
+path; recovery is rejected before effects begin unless the host declares path-aware
+storage. These mechanics preserve uncertainty and location, but they still leave the
+host responsible for observing the outside system before any retry.
+
+**Runtime rule:** version and test an agent workflow as two coupled artifacts: the
+control document and the host contract that grants capabilities, stores checkpoints,
+keys nested effects, verifies outputs, and reconciles unknown outcomes. A typed,
+inspectable graph can make escalation and ambiguity explicit; it does not by itself
+make execution durable, effects exactly once, or artifact delivery complete.
+
+The evidence is pinned documentation, implementation, and repository-authored tests
+at a same-day beta release. Static inspection confirmed the unknown-outcome type,
+late-settlement event, no-auto-retry path, and fail-closed path-aware recovery check.
+Scout could not rerun the suite because `npm ci` failed against the local npm cache,
+and the HN item had seven points and no comments at retrieval. This is therefore an
+early implementation pattern, not production reliability or adoption evidence.
+
+- **HN source:** https://news.ycombinator.com/item?id=49821438
+- **Repo:** https://github.com/Parcha-ai/agentrun
+- **Inspected revision:** https://github.com/Parcha-ai/agentrun/commit/89b6fff6493700ad097c2a016ad2396e3c8c79bc (`0.1.0-beta.3`)
+- **Primary sources:** [workflow and limits guide](https://github.com/Parcha-ai/agentrun/blob/89b6fff6493700ad097c2a016ad2396e3c8c79bc/docs/guide.md), [host integration contract](https://github.com/Parcha-ai/agentrun/blob/89b6fff6493700ad097c2a016ad2396e3c8c79bc/docs/host-integration.md), [interpreter implementation](https://github.com/Parcha-ai/agentrun/blob/89b6fff6493700ad097c2a016ad2396e3c8c79bc/packages/dsl/src/workflow.ts), [runtime-boundary tests](https://github.com/Parcha-ai/agentrun/blob/89b6fff6493700ad097c2a016ad2396e3c8c79bc/packages/dsl/test/runtime-boundaries.test.mjs), and [nested-recovery tests](https://github.com/Parcha-ai/agentrun/blob/89b6fff6493700ad097c2a016ad2396e3c8c79bc/packages/dsl/test/nested-composition.test.mjs)
+- **Discovery feed:** HN Algolia `search_by_date?query=AI%20agent&tags=story&numericFilters=created_at_i%3E%3D1790186458&hitsPerPage=50`
