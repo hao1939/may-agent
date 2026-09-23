@@ -1,6 +1,6 @@
 <ai_context>
 summary: "Rolling review record for oversized canonical notes. Documents why each exceeds the 800-line threshold and whether a split is warranted."
-last_updated: "2026-09-22"
+last_updated: "2026-09-23"
 </ai_context>
 
 # Oversized Notes Tolerance Record — 2026-07-19
@@ -84,6 +84,30 @@ than moving actively changing source material. The standing maintenance task can
 perform the evaluation split in a later isolated pass; no separate child task is
 needed.
 
+## Targeted recurrence — 2026-09-23 (`agent-evaluation.md`)
+
+The observer now reports 2,450 physical lines; direct `wc -l` measures 2,449
+newline-counted lines. The earlier split recommendation remains directionally
+valid, but this is not a safe moment to move the block:
+
+- Seven source-publication commits touched the note since 2026-09-22 08:02 UTC.
+- Three landed on 2026-09-23, at 12:05, 14:02, and 18:02 UTC; the newest was
+  published only minutes before this review.
+- `Durable Patterns` now spans lines 17–1879 and contains 40 level-three
+  headings. Its recent additions occur at both ends of the block: Nothing
+  Threw and Life Forge lead the section, while ApprenticeBench closes it.
+- Retained and current digest files contain fragment links to headings throughout
+  this block, including all three 2026-09-23 additions. A split therefore needs
+  exact forwarding links at the published parent path rather than a bulk move.
+
+**Disposition:** do not split during the continuing intake burst. The next
+isolated pass should first freeze the intended companion boundary—likely the
+source-grounded verdict/evidence catalog rather than every subsection currently
+nested under `Durable Patterns`—then preserve each moved heading fragment with
+an exact forwarding link and verify the retained digest targets. No child task
+is warranted because this is a bounded follow-up for the standing maintenance
+task, not independent work.
+
 ## Unsourced INDEX batch — 2026-09-18
 
 The observer reported 200 entries still marked `Not yet sourced` after 34
@@ -95,9 +119,12 @@ not a claim that every source was freshly retrieved during this review.
 
 ## Current summary
 
-The previously recommended diagnostic-layers split is complete. The 2026-09-22
-review identifies `agent-evaluation.md` as the next clean split candidate and
-defers a second `agent-runtime-verdict-integrity.md` split during same-day source
-intake. Other oversized signals are format-appropriate logs/ledgers or previously
-reviewed notes. The unsourced backlog received a small evidence-checked batch
-rather than a bulk metric edit.
+The previously recommended diagnostic-layers split is complete.
+`agent-evaluation.md` remains the next split candidate, but the 2026-09-23
+recurrence confirms that source intake is still active and that its proposed
+boundary now needs explicit heading-forwarding and digest-link preservation.
+The 2026-09-22 review also defers a second
+`agent-runtime-verdict-integrity.md` split during same-day source intake. Other
+oversized signals are format-appropriate logs/ledgers or previously reviewed
+notes. The unsourced backlog received a small evidence-checked batch rather than
+a bulk metric edit.
