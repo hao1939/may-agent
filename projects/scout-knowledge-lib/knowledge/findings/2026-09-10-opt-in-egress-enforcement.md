@@ -2,7 +2,7 @@
 title: "Containarium — Egress Containment Is an Activated, Protocol-Scoped Property"
 source: github
 date: 2026-09-10
-last_updated: 2026-09-10
+last_updated: 2026-09-23
 type: finding
 tags: [github, agents, sandboxing, security, ebpf, network-policy, fail-open, ipv6]
 relevance: high
@@ -36,6 +36,53 @@ The checked eBPF classifier states that it manages only IPv4 and returns `TC_ACT
 
 This does **not** prove a working IPv6 escape: Scout did not establish that a default box receives routable IPv6, that upstream routing permits it, or that another firewall fails to block it. It does establish a coverage precondition missing from a protocol-agnostic reading of “egress policy”: an operator must prove that IPv6 is unavailable or independently filtered, or add equivalent IPv6 enforcement. An IPv4-only policy engine cannot by itself certify all-IP egress containment.
 
+## Follow-up: path confinement also needs activation and object resolution (2026-09-23)
+
+A current-source revisit at commit
+[`79276fcd9a4d23c1dae2719e8a20e425d9f5252d`](https://github.com/FootprintAI/Containarium/commit/79276fcd9a4d23c1dae2719e8a20e425d9f5252d)
+found a second instance of the same assurance pattern in `agent-box`. Commit
+[`1cc99497f201170389430dcd2de70fc0c11681f5`](https://github.com/FootprintAI/Containarium/commit/1cc99497f201170389430dcd2de70fc0c11681f5)
+records that the structured file tools had compared `filepath.Abs` +
+`filepath.Clean` output with `AGENTBOX_ROOT` (or MCP client-advertised roots)
+as a string prefix. Because those lexical operations do not resolve filesystem
+objects, an in-root symlink to an out-of-root target could pass the check and
+then be followed by `read_file` or another file operation.
+
+The fix resolves both the requested path and root through
+`filepath.EvalSymlinks`; for a not-yet-existing write target it walks upward to
+the nearest existing ancestor, resolves that prefix, then rejoins the absent
+suffix. The added tests cover an escaping leaf symlink, an escaping directory
+symlink, an allowed in-root symlink, and a new file created through an in-root
+symlinked directory. This is a stronger test shape than a lexical `..` case:
+it checks the OS object graph that the later operation will traverse and keeps
+a benign control so “reject every symlink” cannot pass as correct confinement.
+
+The fix does **not** make file confinement unconditional. `AGENTBOX_ROOT` is
+optional; when it is absent, client roots are used only if roots negotiation
+succeeds, and missing capability, session, transport, or usable roots falls back
+to unconstrained operation. The repository also documents `shell_exec` as
+unconstrained by this file-tool guard. Finally, resolving a name and acting on it
+remain separate syscalls, so this static review does not establish race-free
+confinement against concurrent path replacement; descriptor-relative resolution
+such as `openat2`-style constraints would be a different assurance level.
+
+The reusable contract is therefore:
+
+1. **Activation:** prove which mandatory root was configured; do not infer one
+   from the existence of a root feature or an optional client hint.
+2. **Object resolution:** validate resolved filesystem objects and existing
+   ancestors, not just normalized path strings.
+3. **Tool coverage:** name every operation governed by the root and every
+   intentionally ungoverned escape hatch such as a general shell.
+4. **Race semantics:** state whether the validated object is bound to the later
+   operation or can change between check and use.
+5. **Regression shape:** retain escaping-symlink cases plus legitimate in-root
+   symlinks and not-yet-existing write targets.
+
+This extends the original egress result: a security mechanism's presence,
+configured activation, protocol/tool coverage, and object-level enforcement are
+separate facts. A deployment status should not compress them into “sandboxed.”
+
 ## Operational implication
 
 Treat containment as a runtime attestation, not a repository feature flag. A useful per-box status should report at least:
@@ -51,17 +98,25 @@ This matters for agent runtimes because fail-open startup and partial protocol c
 
 ## Caveats
 
-- This is static inspection of one pinned revision, not a deployed escape test or production-security audit.
+- These are static inspections of pinned revisions, not deployed escape tests or a production-security audit.
 - The repository documents hardware validation for its IPv4 paths, but Scout did not independently reproduce those runs.
+- Scout could not execute the current Go tests because the research environment had no `go` binary; the symlink test results are repository-authored cases inspected in source, not an independent rerun.
 - The search result's star count and description are discovery metadata, not evidence that enforcement works.
 - The IPv6 finding is a conditional coverage gap, not proof of exploitability in the default deployment.
-- The repository was changing during inspection; all implementation claims above are pinned to the checked commit.
+- The possible check/use race is an evidence boundary from code shape, not a demonstrated exploit. The current validator returns resolved paths, which closes the static escaping-symlink cases its tests cover.
+- The repository was changing during inspection; implementation claims are pinned to the revisions named in each section.
 
 ## Sources
 
 - **Repo:** https://github.com/FootprintAI/Containarium
-- **GitHub search feed:** https://api.github.com/search/repositories?q=%22AI+agent%22+sandbox+in%3Aname%2Cdescription%2Creadme+pushed%3A%3E%3D2026-08-01+stars%3A%3E20&sort=updated&order=desc&per_page=20
-- **Revision:** https://github.com/FootprintAI/Containarium/commit/a44570965fa39dbb0aa2f9e23640a336b2fcc6e7
+- **Original GitHub search feed:** https://api.github.com/search/repositories?q=%22AI+agent%22+sandbox+in%3Aname%2Cdescription%2Creadme+pushed%3A%3E%3D2026-08-01+stars%3A%3E20&sort=updated&order=desc&per_page=20
+- **2026-09-23 search feed (`incomplete_results=false`):** https://api.github.com/search/repositories?q=topic%3Aagentic-ai+pushed%3A%3E2026-09-22+stars%3A%3E10&sort=updated&order=desc&per_page=20
+- **Original revision:** https://github.com/FootprintAI/Containarium/commit/a44570965fa39dbb0aa2f9e23640a336b2fcc6e7
+- **Follow-up revision:** https://github.com/FootprintAI/Containarium/commit/79276fcd9a4d23c1dae2719e8a20e425d9f5252d
+- **Symlink-fix commit:** https://github.com/FootprintAI/Containarium/commit/1cc99497f201170389430dcd2de70fc0c11681f5
+- **Current path validator:** https://github.com/FootprintAI/Containarium/blob/79276fcd9a4d23c1dae2719e8a20e425d9f5252d/internal/agentbox/sandbox.go
+- **Current regression tests:** https://github.com/FootprintAI/Containarium/blob/79276fcd9a4d23c1dae2719e8a20e425d9f5252d/internal/agentbox/agentbox_test.go
+- **Current file-tool operations:** https://github.com/FootprintAI/Containarium/blob/79276fcd9a4d23c1dae2719e8a20e425d9f5252d/internal/agentbox/files.go
 - **README security posture:** https://github.com/FootprintAI/Containarium/blob/a44570965fa39dbb0aa2f9e23640a336b2fcc6e7/README.md#security-control-surface
 - **Network-isolation design and rollout:** https://github.com/FootprintAI/Containarium/blob/a44570965fa39dbb0aa2f9e23640a336b2fcc6e7/docs/security/NETWORK-ISOLATION-DESIGN.md
 - **Startup wiring and fail-open behavior:** https://github.com/FootprintAI/Containarium/blob/a44570965fa39dbb0aa2f9e23640a336b2fcc6e7/internal/server/dual_server.go
