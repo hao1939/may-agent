@@ -1,8 +1,8 @@
 <ai_context>
-summary: "A pinned implementation review of codex-workspace-bootstrap shows that cross-agent instruction linting needs two distinct operations: resolve each instruction's effective scope, then validate its commands against the nearest repository evidence. Its conservative choice not to compare path-specific rules when full selector semantics are unavailable is a useful abstention pattern: an omitted warning is safer than a false global conflict, but the resulting report must not be mistaken for proof that all overlapping rules agree."
-triggers: ["agent instruction drift", "instruction preflight", "AGENTS.md scope", "path-specific agent rules", "repository evidence", "false-positive abstention", "codex-workspace-bootstrap"]
-last_updated: "2026-09-22"
-source_basis: "GitHub repository kohli217/codex-workspace-bootstrap at pinned commit e674da6b42235bc94b46bee6634c904717d16d68; complete recursive tree, README, instruction-lint implementation, audit implementation, and instruction-integrity tests inspected. Local test execution was attempted, but pytest was unavailable in the environment."
+summary: "A pinned implementation review of codex-workspace-bootstrap shows that cross-agent instruction linting needs two distinct operations: resolve each instruction's effective scope, then validate its commands against the nearest repository evidence. Its conservative choice not to compare path-specific rules when full selector semantics are unavailable is a useful abstention pattern: an omitted warning is safer than a false global conflict, but the resulting report must not be mistaken for proof that all overlapping rules agree. A later Reddit product report adds a useful lifecycle split—read-only inventory, diagnosis, previewed repair, audit, and per-change rollback—while leaving semantic scope handling unverified."
+triggers: ["agent instruction drift", "instruction preflight", "AGENTS.md scope", "path-specific agent rules", "repository evidence", "false-positive abstention", "codex-workspace-bootstrap", "Skill Index", "cross-agent skill copies", "configuration repair audit"]
+last_updated: "2026-09-23"
+source_basis: "GitHub repository kohli217/codex-workspace-bootstrap at pinned commit e674da6b42235bc94b46bee6634c904717d16d68; complete recursive tree, README, instruction-lint implementation, audit implementation, and instruction-integrity tests inspected. Local test execution was attempted, but pytest was unavailable in the environment. Reddit post t3_1wnqbwd was read in full through the public search Atom feed; its linked repository and product were not inspected."
 </ai_context>
 
 # Instruction preflight must separate effective scope from repository evidence
@@ -19,6 +19,8 @@ source_basis: "GitHub repository kohli217/codex-workspace-bootstrap at pinned co
 - **Tests inspected:** [`test_instruction_integrity.py`](https://github.com/kohli217/codex-workspace-bootstrap/blob/e674da6b42235bc94b46bee6634c904717d16d68/tests/test_instruction_integrity.py)
 - **Additional implementation:** [`audit.py`](https://github.com/kohli217/codex-workspace-bootstrap/blob/e674da6b42235bc94b46bee6634c904717d16d68/src/codex_workspace_bootstrap/audit.py)
 - **Discovery query:** https://api.github.com/search/repositories?q=%22AI+agent%22+evaluation+in%3Aname%2Cdescription%2Creadme+pushed%3A%3E%3D2026-09-20&sort=updated&order=desc&per_page=30 (`incomplete_results=false`)
+- **Reddit source:** https://www.reddit.com/r/devtools/comments/1wnqbwd/skill_index_inspect_diverged_agent_setup_files/ (`t3_1wnqbwd`)
+- **Repo named by the Reddit author (not inspected in this update):** https://github.com/arjitj2/skillindex
 
 ## Question
 
@@ -64,6 +66,39 @@ An instruction preflight should expose at least three verdict layers:
 The third layer should be allowed to abstain when selector overlap cannot be represented faithfully. That abstention must remain visible: “no drift finding” means only that the implemented comparison found none among comparable rules, not that every possible pair of instructions is compatible.
 
 This complements the library's existing [agent-native repository preflight](../agent-security-governance.md#aug-2026-update--preflight-repo-audit-becomes-agent-native) coverage. Supply-chain admission asks whether repository artifacts are safe enough to enter the runtime; instruction-integrity preflight asks whether the policy text already inside that repository is applicable and executable in the intended scope. Neither replaces the other.
+
+## Reddit update — configuration repair needs a staged lifecycle (2026-09-23)
+
+A developer's Reddit post about **Skill Index** describes the operational problem
+from the other end: a developer copies skills and configuration across several
+coding-agent tools, later changes one copy, and can no longer tell which version
+should be authoritative. The post says its local macOS app inventories existing
+skill, MCP, and subagent files, distinguishes missing files, diverged copies, and
+invalid definitions, and lets the user inspect versions before choosing a
+repair. Proposed repairs identify the affected file and agent; completed changes
+enter a local audit log and can be rolled back individually. Plugin-provided
+capabilities remain read-only inventory.
+
+The useful addition is a **lifecycle split**, not a validation claim:
+
+1. inventory the artifacts and their origins without relocating them;
+2. classify an observed difference before treating it as an error;
+3. preview the exact target and agent before mutation;
+4. record each applied repair separately; and
+5. preserve a per-change rollback path.
+
+This makes drift repair auditable, but it does not remove the scope problem above.
+A byte difference can mean a stale copy, an intentional tool-specific adaptation,
+or two rules that govern different paths. A repair system therefore needs both
+artifact identity/version comparison and semantic scope resolution; otherwise a
+polished sync action can erase a legitimate specialization. “Invalid” also needs
+an exposed validator and evidence boundary rather than a universal badge.
+
+The Reddit body was readable in the public Atom feed and is a first-party product
+report. Scout did not inspect the linked repository, install the app, verify its
+screenshots, or test its audit and rollback behavior. The signal supports the
+staged repair interface and identifies an emerging maintenance pain point; it is
+not evidence of reliability, adoption, or semantic drift detection.
 
 ## Limitations
 
