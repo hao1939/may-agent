@@ -1,8 +1,8 @@
 <ai_context>
 summary: "Evidence for agent self-evolution is strongest for bounded changes evaluated with fixed, protected gates. These source profiles distinguish useful mutation mechanisms from promotion evidence, lifecycle integrity, process improvement, and broad autonomous capability claims."
 triggers: ["self-evolution evidence", "harness evolution evidence", "skill learning evidence", "promotion gates", "release controls", "self-improvement evaluation"]
-last_updated: "2026-09-20"
-source_basis: "Companion evidence profiles extracted without substantive alteration from the source-grounded Agent Self-Evolution and Autonomy synthesis. Coverage includes primary papers, pinned repositories, bounded local checks, and explicit abstract-only or non-reproduction limits through 2026-09-19."
+last_updated: "2026-09-23"
+source_basis: "Companion evidence profiles extracted without substantive alteration from the source-grounded Agent Self-Evolution and Autonomy synthesis, plus direct inspection of Entroly's pinned skill-promotion implementation. Coverage includes primary papers, pinned repositories, bounded local checks, and explicit abstract-only or non-reproduction limits through 2026-09-23."
 </ai_context>
 
 # Agent Self-Evolution: Evidence Profiles and Release-Control Boundaries
@@ -277,6 +277,42 @@ candidate artifact and active state.
 **Inspected revision:** https://github.com/ruc-datalab/EvoOntology/commit/ace8ff695f6b1752240cb0e0322f65667d7016eb
 
 **Primary evidence:** [architecture and split contract](https://github.com/ruc-datalab/EvoOntology/blob/ace8ff695f6b1752240cb0e0322f65667d7016eb/docs/architecture.md), [evaluation gate](https://github.com/ruc-datalab/EvoOntology/blob/ace8ff695f6b1752240cb0e0322f65667d7016eb/evoontology/evaluation/evaluation.py), [accept/publish state transition](https://github.com/ruc-datalab/EvoOntology/blob/ace8ff695f6b1752240cb0e0322f65667d7016eb/evoontology/evolution/session.py), [operation boundary](https://github.com/ruc-datalab/EvoOntology/blob/ace8ff695f6b1752240cb0e0322f65667d7016eb/evoontology/runtime/ops.py), [workflow instructions](https://github.com/ruc-datalab/EvoOntology/blob/ace8ff695f6b1752240cb0e0322f65667d7016eb/plugins/claude-code/skills/evo-evolve/SKILL.md), and [lifecycle operation test](https://github.com/ruc-datalab/EvoOntology/blob/ace8ff695f6b1752240cb0e0322f65667d7016eb/tests/test_mcp_ops.py).
+
+### Promotion should consume evidence, not copy a score
+
+Entroly's current skill engine implements the stronger boundary missing from the
+EvoOntology example above. A development benchmark can leave a candidate in
+`testing`, but cannot promote it. Promotion requires caller-supplied cases whose
+input strings do not occur in the candidate's development cases. The decision
+uses the lower bound of a 95% Wilson interval rather than raw pass rate; with the
+current 0.7 threshold, even one successful case is insufficient while ten of ten
+clear the gate.
+
+More importantly, the decision is bound to an evidence object rather than a
+mutable score. The engine hashes the candidate code, development tests,
+evaluation cases, and evaluator source, then records per-case observations in a
+content-addressed HMAC-authenticated record. Promotion re-verifies those inputs,
+requires the selected record to be the newest valid evaluation, and fails back
+to `testing` if code, tests, evaluator, evidence, or key changes. The public
+loader repeats the same checks before returning a promoted skill. Repository
+tests exercise mutations to each of those inputs and verify that mutable
+`metrics.json` values cannot override the authenticated result.
+
+This is a useful **admission-integrity pattern**, not proof that the promoted
+skill is useful or safe. Distinct input strings do not establish independent,
+representative held-out cases; the caller supplies both cases and expected
+outputs. The engine evaluates the candidate in a timeout-limited subprocess but
+does not isolate its filesystem, network, or process permissions. The HMAC key
+and candidate run under the same operating-system account, so this design
+protects primarily against stale results and ordinary artifact tampering, not
+malicious generated code. It also establishes an absolute pass-rate gate rather
+than matched non-inferiority against the previous live behavior. A deployment
+receipt still needs case provenance, evaluator authority, representative
+regressions, isolation for untrusted candidates, and rollback monitoring.
+
+**Repo:** https://github.com/juyterman1000/entroly  
+**Inspected revision:** https://github.com/juyterman1000/entroly/commit/63b24e81bc9e822b0d80e138722f554b3c089def  
+**Primary evidence:** [promotion contract](https://github.com/juyterman1000/entroly/blob/63b24e81bc9e822b0d80e138722f554b3c089def/docs/skill-promotion-evidence.md), [skill-engine implementation](https://github.com/juyterman1000/entroly/blob/63b24e81bc9e822b0d80e138722f554b3c089def/entroly/skill_engine.py), and [mutation/regression tests](https://github.com/juyterman1000/entroly/blob/63b24e81bc9e822b0d80e138722f554b3c089def/tests/test_frontier_evidence_regressions.py). Scout inspected source and tests but did not run the suite; no independent task-quality or security evaluation was performed.
 
 ### RL can expand capability only under identifiable headroom
 
