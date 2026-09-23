@@ -1,58 +1,49 @@
 # Oversized-note review: verified enforcement
 
-**Reviewed:** 2026-09-16  
-**Signal:** `knowledge/agent-security-verified-enforcement.md` at 834 physical lines
+**Reviewed:** 2026-09-16; refreshed 2026-09-23
+
+**Signal:** `knowledge/agent-security-verified-enforcement.md` grew from 834 to 1,246 observed physical lines
 
 ## Decision
 
-A split is warranted, but it should not be performed during this maintenance pass.
-The note has a clean conceptual boundary and a balanced extraction candidate, but
-the candidate block is active uncommitted source work. Moving it now would overlap
-that intake and make its pending links and INDEX edits harder to review.
+The previously recommended split is now complete. On September 16 the clean
+boundary could not safely be used because the implementation-evidence block was
+active uncommitted source work. All subsequent source additions are now committed,
+and the block had grown to 13 coherent studies, so preserving the deferral would
+have left an obsolete maintenance decision.
 
-## Recommended boundary
+The original published path remains the architecture catalog. Its substantive
+content now ends after **“Hardware confinement does not confer signing authority”**
+and the 13 September implementation studies live in
+`knowledge/agent-security-enforcement-evidence.md`.
 
-Keep the formal and architecture-oriented catalog in
-`agent-security-verified-enforcement.md` through **“Hardware confinement does not
-confer signing authority”** (current lines 1–472).
+## Resulting boundaries
 
-After the active source changes are integrated, extract the six September
-implementation-evidence sections at current lines 473–834 into a descriptive
-companion such as `agent-security-enforcement-evidence.md`:
+- `agent-security-verified-enforcement.md`: 524 lines, covering formal and
+  architecture-oriented patterns, with reciprocal companion navigation.
+- `agent-security-enforcement-evidence.md`: 791 lines, covering implementation
+  evidence, assurance limits, runtime path coverage, effect mediation, and
+  positive execution evidence.
+- The original file retains all 13 moved headings as forwarding anchors. Existing
+  links from immutable digest snapshots therefore remain readable and direct
+  readers to the exact retained heading in the companion.
+- `knowledge/INDEX.md` now describes both scopes separately.
 
-- A Signed Verdict Is Not a Replayable Experiment
-- A Receipt's Validity Is a Vector, Not a Boolean
-- Default-Deny Needs a Coverage Contract, Not Just an Allow-List
-- Identity Proven at Mint Is Not Per-Request Possession
-- A Formal Policy Proof Is Only as Broad as Its Action Model
-- “Defense in Depth” Needs Path-Composition Evidence
+The split keeps the source-grounded prose intact rather than summarizing it away.
+Each destination has its own `<ai_context>` summary, triggers, and source basis;
+the companion preserves each section's source links and evidence boundary.
 
-This yields an approximately 472-line architecture catalog and a 362-line
-implementation-evidence companion. The extracted sections cohere around evidence
-quality and runtime path coverage, rather than formal enforcement mechanisms.
+## Verification requirements applied
 
-## Required preservation checks for the later split
+1. The 13 implementation headings occur once with substantive content in the
+   companion and once as forwarding anchors in the original.
+2. Every forwarding link resolves to the same heading in the companion.
+3. The original path and all legacy heading fragments remain readable.
+4. Reciprocal file links and both INDEX entries resolve.
+5. The candidate contains only the two knowledge-note changes, this report
+   refresh, and the required INDEX navigation change; `git diff --check` passes.
 
-1. Preserve the current `<ai_context>` provenance and divide its summary,
-   triggers, and source basis by the actual destination content.
-2. Replace the omission point with an inline link to the exact first retained
-   heading in the companion, and add reciprocal navigation.
-3. Update the six retained digest links that currently target September section
-   fragments in the original file; retained snapshots must not be rewritten, so
-   use a forwarding heading if any snapshot target cannot be changed.
-4. Update the concise INDEX entry only after the files and anchors exist.
-5. Resolve the pre-existing repeated `§2.43` headings as part of the same
-   navigation review; do not renumber blindly because INDEX entries cite §2.43.
-
-## Evidence
-
-- The committed version is 471 lines; the working version is 834 lines.
-- The working diff adds 368 lines and removes 5 in this note, principally the six
-  September sections and their preamble provenance.
-- Both this note and `knowledge/INDEX.md` are currently modified.
-- Inbound references include retained digest snapshots with heading-fragment links
-  to the September sections, so a move requires explicit anchor preservation.
-
-No knowledge file was edited in this pass. The health signal is closed by a
-bounded split review with a concrete boundary; execution is intentionally deferred
-until the active source changes are integrated.
+The repeated historical `§2.43` headings remain unchanged. They are an older
+numbering ambiguity cited by INDEX and scan records, not part of this split; a
+blind renumber would break published references without improving the current
+oversize signal.
