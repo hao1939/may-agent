@@ -1,8 +1,8 @@
 <ai_context>
-summary: "Companion to agent-runtime-effect-integrity.md for unattended execution and replay integrity: infrastructure trust boundaries, clone identity hygiene, cut-point and interaction-bound replay, local durability versus external settlement, revision-bound approval, accountable agent writes, and desktop effect authorization."
-triggers: ["unattended execution", "Docker Sandboxes", "sandbox trust boundary", "clone identity", "LingCage", "cut-point replay", "Chronicle", "interaction replay", "Mutagen", "host-call replay", "Ovo", "offline replay", "OrcaReplay", "effect settlement", "LetItLoop", "Kevlar", "ATR", "approval revision", "AIS", "orphan recovery", "Rebuno", "approval resume", "AgenticOS", "diagnostic attention", "Runpin", "effect deduplication", "agent identity", "Sensefold", "desktop authorization", "macOS Harness"]
-last_updated: "2026-09-21"
-source_basis: "Extracted intact from agent-runtime-effect-integrity.md during its 2026-09-21 oversized-note review. Each section retains its stable source links, pinned revisions, reproduced checks where performed, and explicit evidence limitations."
+summary: "Companion to agent-runtime-effect-integrity.md for unattended execution and replay integrity: cadence and failure accounting, infrastructure trust boundaries, clone identity hygiene, cut-point and interaction-bound replay, local durability versus external settlement, revision-bound approval, accountable agent writes, and desktop effect authorization."
+triggers: ["unattended execution", "heartbeat", "failure backoff", "Talon", "Docker Sandboxes", "sandbox trust boundary", "clone identity", "LingCage", "cut-point replay", "Chronicle", "interaction replay", "Mutagen", "host-call replay", "Ovo", "offline replay", "OrcaReplay", "effect settlement", "LetItLoop", "Kevlar", "ATR", "approval revision", "AIS", "orphan recovery", "Rebuno", "approval resume", "AgenticOS", "diagnostic attention", "Runpin", "effect deduplication", "agent identity", "Sensefold", "desktop authorization", "macOS Harness"]
+last_updated: "2026-09-23"
+source_basis: "Extracted intact from agent-runtime-effect-integrity.md during its 2026-09-21 oversized-note review, then extended with pinned implementation evidence for unattended cadence and failure accounting. Each section retains stable source links, reproduced checks where performed, and explicit evidence limitations."
 </ai_context>
 
 # Agent Runtime Unattended Execution and Replay
@@ -12,6 +12,54 @@ The parent retains revision admission, guarded writes, ambiguous-delivery recove
 resource quarantine, and core effect-closure patterns. This note covers the trust
 boundaries and settlement evidence needed when execution continues unattended or
 is replayed after interruption.
+
+## Cadence, Attempt, and Settlement Are Different Clocks — Talon (GitHub, September 2026)
+
+Talon's heartbeat implementation exposes a subtle requirement for recurring agents:
+what advances the schedule need not be the same as what counts as successful work.
+The scheduler derives due times from persisted `last_run`, checks every minute, and
+collapses any number of missed intervals after restart or suspend into one catch-up
+run. A one-at-a-time guard prevents overlapping heartbeats. Ordinary failures retain
+the prior successful marker and enter exponential backoff (five minutes doubling to
+a one-hour cap); a session- or rate-limit error with a UTC reset time waits until that
+time plus a two-minute buffer. By contrast, a hard timeout advances `last_run` and
+the run count even though the heartbeat failed, because it consumed the full
+wall-clock budget and should not immediately repeat the same work.
+
+That distinction avoids both a retry storm and an unbounded catch-up storm, but it
+also shows why one `last_run` field is an overloaded receipt. In the state type it is
+documented as the last successfully completed run, while the timeout path writes it
+on failure. The resulting marker is valid as a **cadence-consumed** fact, not as a
+completed-work fact. A dashboard, prompt, or recovery policy that reads it as
+success can overstate progress. The project-authored tests explicitly check missed
+interval collapse, preservation after ordinary failure, backoff, and advancement
+after timeout; they do not turn the timeout marker into evidence that goals advanced
+or that any external effect settled.
+
+Cancellation has the same layered boundary. The shared isolated runner applies a
+hard timeout, calls `AbortController.abort()`, waits a bounded grace period, and can
+ask the backend to evict tagged orphan subprocesses if abort is ignored. This bounds
+local execution, but cannot retract a tool effect already accepted outside the
+process. Run logs are intentionally best-effort and swallow append errors, while
+failure-backoff state is intentionally in-memory and resets on process restart.
+Neither is durable settlement evidence.
+
+**Runtime rule:** persist separate timestamps or states for `scheduled/due`,
+`attempt_started`, `cadence_consumed`, `work_completed`, and each consequential
+effect's settlement. Define catch-up and retry from the relevant state rather than a
+single success-sounding marker. A timeout may consume the recurrence budget while
+leaving work failed and effects indeterminate; surface those facts independently,
+and reconcile external effects before retrying them.
+
+Scout inspected pinned source and repository-authored tests but did not clone the
+repository or execute its Vitest suite. Talon's README describes hourly heartbeats
+that advance persistent goals, but this assessment establishes scheduler behavior
+from source—not reliability in a live deployment or exactly-once goal progress.
+
+- **Repo:** https://github.com/dylanneve1/talon
+- **Inspected revision:** https://github.com/dylanneve1/talon/commit/1a3053efbbfe793d0c6225183cb29644c35f51d0
+- **Primary sources:** [heartbeat scheduler](https://github.com/dylanneve1/talon/blob/1a3053efbbfe793d0c6225183cb29644c35f51d0/src/core/background/heartbeat/scheduler.ts), [persisted heartbeat state](https://github.com/dylanneve1/talon/blob/1a3053efbbfe793d0c6225183cb29644c35f51d0/src/core/background/heartbeat/state.ts), [failure backoff](https://github.com/dylanneve1/talon/blob/1a3053efbbfe793d0c6225183cb29644c35f51d0/src/core/background/failure-backoff.ts), [isolated runner](https://github.com/dylanneve1/talon/blob/1a3053efbbfe793d0c6225183cb29644c35f51d0/src/core/background/isolated-agent.ts), [heartbeat tests](https://github.com/dylanneve1/talon/blob/1a3053efbbfe793d0c6225183cb29644c35f51d0/src/__tests__/heartbeat.test.ts), and [backoff tests](https://github.com/dylanneve1/talon/blob/1a3053efbbfe793d0c6225183cb29644c35f51d0/src/__tests__/failure-backoff.test.ts)
+- **Discovery query:** GitHub Repository Search API `topic:ai-agent pushed:>2026-09-22 stars:>50`, sorted by updated; `total_count: 257`, `incomplete_results: false`
 
 ## Boundary-Explicit Unattended Execution — Docker Sandboxes (HN, August 2026)
 
