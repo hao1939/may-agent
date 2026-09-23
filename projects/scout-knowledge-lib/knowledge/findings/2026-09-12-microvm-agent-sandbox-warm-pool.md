@@ -2,7 +2,7 @@
 title: "Cocoon Sandbox: warm-pool latency and credential-bearing egress as one runtime contract"
 source: github
 date: 2026-09-12
-last_updated: 2026-09-12
+last_updated: 2026-09-23
 type: finding
 tags: [github, agent-infrastructure, microvm, sandboxing, warm-pools, egress, credential-proxy, cloud-hypervisor]
 relevance: high
@@ -11,8 +11,8 @@ relevance: high
 <ai_context>
 summary: "An implementation-backed GitHub signal that agent sandbox latency and security are being designed together: cocoonstack/sandbox combines warm/golden-snapshot MicroVM provisioning with NIC-less default execution and host-side, allow-listed credential injection. Its documentation reports sub-millisecond warm claims while explicitly retaining deployment limitations and refusing snapshot lifecycle operations where egress re-locking would create an exposure window."
 triggers: ["cocoonstack sandbox", "MicroVM warm pool", "golden snapshot clone", "NIC-less agent sandbox", "guarded egress", "host-side credential injection", "Cloud Hypervisor agent runtime"]
-last_updated: "2026-09-12"
-source_basis: "GitHub repository and pinned repository contents at revision f744e313990dd8e7e28d0bdb9266d1d5cca84096, discovered via the GitHub repository Search API."
+last_updated: "2026-09-23"
+source_basis: "GitHub repositories and pinned contents: cocoonstack/sandbox at f744e313990dd8e7e28d0bdb9266d1d5cca84096 and cocoonstack/sandbox-operator at f5f20d91a6c3b4211390e941cb9afb9cc4975251, discovered via the GitHub repository Search API."
 </ai_context>
 
 # Cocoon Sandbox: warm-pool latency and credential-bearing egress as one runtime contract
@@ -60,6 +60,22 @@ The security document is unusually explicit about what the VM does **not** solve
 
 This prevents “MicroVM isolation” from being mistaken for complete runtime governance.
 
+## Follow-up: fast claims create a read-after-write problem (2026-09-23)
+
+The companion **cocoonstack/sandbox-operator** repository exposes a less obvious consequence of moving warm-sandbox ownership transfer into the sub-millisecond path. At inspected revision [`f5f20d91a6c3b4211390e941cb9afb9cc4975251`](https://github.com/cocoonstack/sandbox-operator/tree/f5f20d91a6c3b4211390e941cb9afb9cc4975251), a claimed sandbox is live on its node before the node's periodic `NodeInventory` publish makes it visible to the Kubernetes-facing read model. The project reports a default 30-second publish cadence and measured median visibility delays of 29.0 seconds through its E2B surface and 28.6 seconds through the aggregated API. Thus a successful create could historically be followed by a `404` or `502` on the client's first files, commands, or lifecycle request.
+
+The current implementation repairs **point reads**, not the whole consistency model:
+
+- The API server remembers which node served a claim, consults that node first, and—on a claim-ID miss—can ask every node via `GET /v1/sandboxes/{id}` using the fleet credential. A name that this replica did not create has no equivalent per-node query and can remain invisible until inventory publication.
+- The `envd` proxy deliberately holds no fleet credential. On an inventory miss it probes nodes with `GET /v1/sandboxes/{id}/owner` using the caller's sandbox token; only the owner should answer. It caches a hit for one minute, uses fan-out concurrency of 16, bounds the probe to 500 ms, and limits fresh probes per replica (documented as 200 new sandboxes per second).
+- `List` and `Watch` remain eventually consistent, as can a name lookup on a different API-server replica. When the proxy's probe budget is exhausted, an unpublished sandbox can still return `502` until the next inventory publish.
+
+Tests in the pinned tree cover an unpublished claim-ID lookup, a silent-node timeout, targeting only the node that served a locally known claim, denial without claim-routing credentials, successful proxy use before inventory publication, rejection of another sandbox token, caching of the discovered owner, and refusal to probe beyond the rate limit. Scout inspected these tests but could not execute them because this environment does not have Go installed.
+
+### Operational implication
+
+Warm pools shift the latency bottleneck from **starting compute** to **making ownership discoverable**. A control plane can therefore truthfully report sub-millisecond allocation while still failing the first useful tool call unless its data plane has a credential-safe authoritative lookup path. Consistency claims should be scoped by operation: create acknowledgement, point lookup by opaque ID, name lookup, list/watch visibility, and data-plane routing are distinct guarantees. The fallback also needs an explicit overload contract—bounded fan-out protects the fleet by intentionally reintroducing temporary failure under burst load.
+
 ## Why this matters
 
 A recurring agent-infrastructure tradeoff is framed as **containers are fast; VMs are safe**. This repository points to a more precise formulation:
@@ -86,3 +102,8 @@ The inspected tree contains the documented control-plane, guest, policy, SDK, be
 - **Pinned performance documentation:** https://github.com/cocoonstack/sandbox/blob/f744e313990dd8e7e28d0bdb9266d1d5cca84096/docs/performance.md
 - **Pinned security model:** https://github.com/cocoonstack/sandbox/blob/f744e313990dd8e7e28d0bdb9266d1d5cca84096/docs/security.md
 - **Pinned guarded-egress design:** https://github.com/cocoonstack/sandbox/blob/f744e313990dd8e7e28d0bdb9266d1d5cca84096/docs/egress.md
+- **Operator repo:** https://github.com/cocoonstack/sandbox-operator
+- **Pinned read-after-write change:** https://github.com/cocoonstack/sandbox-operator/commit/f5f20d91a6c3b4211390e941cb9afb9cc4975251
+- **Pinned scaling design:** https://github.com/cocoonstack/sandbox-operator/blob/f5f20d91a6c3b4211390e941cb9afb9cc4975251/docs/scaling-design.md
+- **Pinned live-lookup implementation:** https://github.com/cocoonstack/sandbox-operator/blob/f5f20d91a6c3b4211390e941cb9afb9cc4975251/pkg/scale/sandboxstore_live.go
+- **Pinned proxy resolver:** https://github.com/cocoonstack/sandbox-operator/blob/f5f20d91a6c3b4211390e941cb9afb9cc4975251/pkg/envdproxy/resolver.go
