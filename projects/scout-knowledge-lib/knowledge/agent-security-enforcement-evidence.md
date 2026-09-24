@@ -1,8 +1,8 @@
 <ai_context>
-summary: "Implementation-evidence companion to agent-security-verified-enforcement.md. Uses pinned repositories, disclosures, and deployed-system reports to separate signed claims from replayable evidence; receipt integrity from completeness; configured policy from covered paths; identity enrollment from per-request proof; formal models from unsupported surfaces; observed egress from blocking; stable tool digests from equivalent semantics; policy verdicts from effect ownership; counterfactual actions from execution authority; authorization receipts from effect gates; narrated results from positive execution evidence; sandbox isolation from configuration coherence; and stop requests from observed quiescence."
-triggers: ["SkillProof", "MCP server verification", "replayable evidence", "action receipt", "signed receipt", "evidence completeness", "Pipelock", "PassControl", "sender proof", "bearer visa", "authentication assurance", "default deny", "fail closed", "shell hook", "guardrail regression test", "OpenShell prover", "SMT containment", "path composition", "egress firewall", "uninspected egress", "tool identity", "tool pin", "schema canonicalization", "shadow mode", "mediation ownership", "counterfactual action", "observed policy action", "HOL Guard", "Action Evidence Package", "AEP sandbox", "Codex sandbox", "Overpatch", "Heapjack", "authority derivation", "Meta Muse", "local configuration authority", "APEXA", "execution integrity", "tool execution evidence", "BoxLite", "micro-VM", "sandbox configuration coherence", "guest network", "host jailer grants", "Hard Stop", "SIGSTOP", "process group preemption", "quiescence receipt"]
+summary: "Implementation-evidence companion to agent-security-verified-enforcement.md. Uses pinned repositories, disclosures, and deployed-system reports to separate signed claims from replayable evidence; receipt integrity from completeness; configured policy from covered paths; identity enrollment from per-request proof; formal models from unsupported surfaces; observed egress from blocking; stable tool digests from equivalent semantics; policy verdicts from effect ownership; counterfactual actions from execution authority; authorization receipts from effect gates; narrated results from positive execution evidence; sandbox isolation from configuration coherence; stop requests from observed quiescence; and frozen eval inputs from stable comparison units."
+triggers: ["SkillProof", "MCP server verification", "replayable evidence", "action receipt", "signed receipt", "evidence completeness", "Pipelock", "PassControl", "sender proof", "bearer visa", "authentication assurance", "default deny", "fail closed", "shell hook", "guardrail regression test", "OpenShell prover", "SMT containment", "path composition", "egress firewall", "uninspected egress", "tool identity", "tool pin", "schema canonicalization", "shadow mode", "mediation ownership", "counterfactual action", "observed policy action", "HOL Guard", "Action Evidence Package", "AEP sandbox", "Codex sandbox", "Overpatch", "Heapjack", "authority derivation", "Meta Muse", "local configuration authority", "APEXA", "execution integrity", "tool execution evidence", "BoxLite", "micro-VM", "sandbox configuration coherence", "guest network", "host jailer grants", "Hard Stop", "SIGSTOP", "process group preemption", "quiescence receipt", "run-assert-eval", "ASSERT", "Agent Control Specification", "fixed evaluation", "applicable denominator", "paired comparison", "safety helpfulness split"]
 last_updated: "2026-09-24"
-source_basis: "Pinned-source implementation studies and disclosures reviewed 2026-09-10 through 2026-09-24: SkillProof f5ddb4b, Pipelock f7d1816, agent-guardrails-kit 18c241e, PassControl f9cb702, OpenShell df0ee1a, k8s-rca-agent 29f5fad, secure-agent 017ec5a, Rul1an/assay 900e536, Soup Wall be8db48, HOL Guard 56faea4 and f5d568f, aep-sandbox 3495e27, BoxLite 9e9436e, Hard Stop 45c31bc, HN item 49795755 with Accomplish AI's Codex sandbox disclosure, HN item 49802030 with the Meta Muse endpoint-redirection report, HN item 49830567, and arXiv 2609.24165v1 (abstract and full HTML). Each section states its own evidence boundary."
+source_basis: "Pinned-source implementation studies and disclosures reviewed 2026-09-10 through 2026-09-24: SkillProof f5ddb4b, Pipelock f7d1816, agent-guardrails-kit 18c241e, PassControl f9cb702, OpenShell df0ee1a, k8s-rca-agent 29f5fad, secure-agent 017ec5a, Rul1an/assay 900e536, Soup Wall be8db48, HOL Guard 56faea4 and f5d568f, aep-sandbox 3495e27, BoxLite 9e9436e, Hard Stop 45c31bc, responsibleai/ASSERT 0628e25, HN items 49795755, 49802030, 49830567, and 49834450 with their linked primary sources, plus arXiv 2609.24165v1 (abstract and full HTML). Each section states its own evidence boundary."
 </ai_context>
 
 # Agent Security: Enforcement Evidence and Runtime Coverage
@@ -1044,3 +1044,74 @@ agent, network race, cgroup, or eBPF program. Performance and attack-prevention
 claims remain author-reported; the source inspection establishes only the
 implemented control flow and the mismatch between request timing and observed
 quiescence.
+
+## Frozen Eval Inputs Do Not Guarantee a Fixed Comparison Unit (HN, September 2026)
+
+**Source:** https://news.ycombinator.com/item?id=49834450
+
+**Primary article:** https://commandline.microsoft.com/run-assert-eval-responsible-ai-agent-risk-discovery-at-runtime/
+
+**Repo:** https://github.com/responsibleai/ASSERT
+
+**Pinned observation:** repository commit
+[`0628e25fc2366530f45756bdcc384c71de04c6be`](https://github.com/responsibleai/ASSERT/commit/0628e25fc2366530f45756bdcc384c71de04c6be)
+
+Microsoft's `run-assert-eval` workflow connects four stages that are often kept
+separate: discover candidate risks with Clarity, turn a selected risk into one
+atomic ASSERT suite, generate an Agent Control Specification policy from observed
+violations, and rerun the governed agent. Its most reusable discipline is to keep
+the behavior definition, generated test cases, and judge fixed while changing
+the intended enforcement path. It also reports impermissible-behavior violations
+separately from permissible-behavior violations, so a control cannot look safe
+merely by refusing useful work.
+
+The billing example makes the architecture concrete but also bounds the claim.
+The baseline is a simulated Python agent whose prompt states that it may serve
+only account `ACME-1001`; its mocked read tools nevertheless return records for
+foreign account IDs. The article says a generated ACS rule checks account scope
+at both `pre_tool_call` and `post_tool_call`. It reports cross-customer violations
+falling from 12 of 40 applicable baseline conversations (30.0%) to 2 of 34
+applicable governed conversations (5.9%), with no permissible-behavior violations
+in the governed sample.
+
+Those figures are stronger than two unrelated benchmark runs, but they are not a
+strict paired rate comparison. ASSERT recomputes each headline bucket from the
+judge's per-row `node_judgments`: a row enters a bucket only when the judge marks
+at least one behavior in that bucket relevant. The workflow's own instructions
+warn that the judge decides both applicability and violation for every row and
+that judge sampling can move which rows are considered applicable. Thus the
+same generated conversations can yield different denominators—as the reported
+40-to-34 change demonstrates. Freezing the test set, taxonomy, and judge model
+controls important sources of drift; it does not freeze the analyzed population
+when applicability is re-judged after the intervention changes the transcript.
+
+A defensible baseline-versus-control report should therefore preserve four
+layers separately:
+
+1. **Assignment:** run every fixed case in both arms and retain a stable case ID.
+2. **Paired outcome:** report per-case transitions such as violation→clear,
+   clear→violation, applicable→not-applicable, and the reverse.
+3. **Fixed-denominator rate:** include all assigned cases, or freeze an
+   applicability mask defined independently of the intervention.
+4. **Conditional rate:** retain the useful violation rate among rows judged
+   applicable, but publish both denominators and treat denominator movement as
+   an outcome rather than silently dropping it.
+
+The workflow itself contains several sound safeguards: one behavior per suite,
+a stated sample-size floor, review before enforcing generated Rego, tool-path
+coverage checks, and the safety/helpfulness split. The pinned repository does
+not, however, publish the article's governed billing callable, generated policy,
+raw run artifacts, or judge traces. Its billing README says `artifacts/` is
+Git-ignored, while the governance workflow describes the governed callable and
+policy as generated outputs rather than checked-in example files. The article's
+rates are therefore author-reported demonstration results, not independently
+recomputable evidence at the pinned revision.
+
+**Evidence boundary:** Scout read the complete Microsoft article and statically
+inspected the pinned ASSERT tree, including the skill, governance workflow,
+billing README, baseline agent, cross-customer config, ACS guard, and result-rate
+implementation. Scout did not run the model-backed evaluation, inspect the
+unpublished run artifacts, validate the generated Rego, or test a production
+billing system. The source supports the workflow structure and denominator
+semantics; it does not independently verify the reported violation reductions or
+show that the mocked example generalizes to a live deployment.
