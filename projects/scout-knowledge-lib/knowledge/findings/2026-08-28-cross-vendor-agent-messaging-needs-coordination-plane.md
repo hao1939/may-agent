@@ -1,8 +1,8 @@
 <ai_context>
-summary: "agmsg demonstrates that cross-vendor agent messaging can be a thin durable transport while leaving assignment, completion, and runaway control to a separate coordination plane. Its own contracts expose the boundary: ordered messages and role exclusivity do not prevent duplicate task execution, shared-inbox races, or endless agent-to-agent loops."
+summary: "agmsg demonstrates that cross-vendor agent messaging can be a thin durable transport while leaving assignment, completion, and runaway control to a separate coordination plane. Its newer lock, liveness, and setup fixes add a second lesson: exclusive roles remain trustworthy only when ownership handoff is atomic, uncertain observations fail safe, and configured delivery is not confused with live receipt."
 triggers: ["cross-vendor agent messaging", "agent transport", "coordination plane", "shared inbox", "task claim", "agent interoperability", "agmsg"]
-last_updated: "2026-08-28"
-source_basis: "GitHub repository search metadata and the agmsg README plus send, inbox, role-claim, and watcher implementations at revision ad5c13f88b6a3eb9674209e98e3b220be75c938f."
+last_updated: "2026-09-24"
+source_basis: "GitHub repository search metadata and agmsg documentation and implementation at revisions ad5c13f88b6a3eb9674209e98e3b220be75c938f and e94ca9e0f4c40ebf3115dee8eb639f303c7f7a3f, including the lock-release, liveness-observation, and delivery-setup fixes released in v1.4.2."
 </ai_context>
 
 # Cross-Vendor Agent Messaging Still Needs a Coordination Plane
@@ -59,6 +59,46 @@ Scout inspected source and documentation but did not install agmsg or run its
 Bats suite. Repository behavior above is implementation evidence, not an
 independent runtime validation.
 
+## Follow-up: exclusive roles need atomic handoff and observable delivery
+
+GitHub's current `topic:ai-agents pushed:>2026-09-23 stars:>30` search returned
+agmsg again, now at release `v1.4.2` and inspected revision
+`e94ca9e0f4c40ebf3115dee8eb639f303c7f7a3f`. Three fixes since the earlier
+revision sharpen what the transport/coordination split requires below the task
+layer:
+
+- The registry lock formerly removed its directory before deleting a sibling
+  holder file. A new acquirer could create its directory and holder between
+  those operations, after which the old owner deleted the **new** holder and
+  left an unidentifiable lock that blocked later joins. Commit
+  `8f71cf266b3eae316c4acfb2b4493a44c60c40ee` now moves the current holder to a
+  process-specific staging name while exclusion is still held, removes the lock
+  directory, and either deletes the staged copy after success or restores it if
+  release fails. The repository reports 0 failures in 90 concurrent-join runs
+  with the fix versus 9 in 90 with the old ordering; this is project-reported
+  regression evidence, not a Scout reproduction.
+- Process-liveness checks had treated an empty or unreadable `ps` result as
+  proof that an owner was dead, permitting a live owner's lock to be reclaimed.
+  Commit `302adb52a933e8b058641eef3d9940095858b4be` introduces three outcomes:
+  alive, proven dead, and unknown. A dead verdict now requires a completed
+  process-table observation that also sees the caller's own PID as a canary;
+  partial, failed, or canary-less observations preserve the owner. This favors
+  temporary unavailability over split ownership when observation cannot prove
+  absence.
+- Delivery setup could fail to write a harness hooks file yet leave only a
+  generic shell error, making a deaf seat resemble an empty inbox. Commit
+  `2fd959c4611a4b6ad5ea120bf97c35060a43de63` now returns failure, names the
+  unwritten hooks file, says delivery was not set up, and prints a safely quoted
+  recovery command. The current README separately warns that a configured
+  monitor mode does not prove the runtime monitor is active, so **configuration,
+  live attention, and message receipt remain three different facts**.
+
+Together these changes make role exclusivity an evidence protocol rather than
+just a lock primitive: transfer the ownership witness before exposing the lock,
+refuse to infer death from an inconclusive probe, and report delivery setup and
+runtime health separately. The repository-authored Bats tests were inspected
+but not run in this scan.
+
 ## Interpretation: three contracts, not one
 
 A multi-agent system that connects heterogeneous workers needs at least three
@@ -107,4 +147,10 @@ state.
 - Recipient read/ack path: https://github.com/fujibee/agmsg/blob/ad5c13f88b6a3eb9674209e98e3b220be75c938f/scripts/inbox.sh
 - Exclusive role claim: https://github.com/fujibee/agmsg/blob/ad5c13f88b6a3eb9674209e98e3b220be75c938f/scripts/actas-claim.sh
 - Watcher and shared-cursor diagnostic: https://github.com/fujibee/agmsg/blob/ad5c13f88b6a3eb9674209e98e3b220be75c938f/scripts/watch.sh
-- Feed checked: `https://api.github.com/search/repositories?q=topic%3Aai-agents+stars%3A%3E100&sort=updated&order=desc&per_page=10`
+- Current inspected revision and v1.4.2 release: https://github.com/fujibee/agmsg/commit/e94ca9e0f4c40ebf3115dee8eb639f303c7f7a3f
+- Atomic lock-release fix: https://github.com/fujibee/agmsg/commit/8f71cf266b3eae316c4acfb2b4493a44c60c40ee
+- Fail-safe liveness observation: https://github.com/fujibee/agmsg/commit/302adb52a933e8b058641eef3d9940095858b4be
+- Explicit delivery-setup failure: https://github.com/fujibee/agmsg/commit/2fd959c4611a4b6ad5ea120bf97c35060a43de63
+- Current README delivery-health boundary: https://github.com/fujibee/agmsg/blob/e94ca9e0f4c40ebf3115dee8eb639f303c7f7a3f/README.md#delivery-modes
+- Original feed checked: `https://api.github.com/search/repositories?q=topic%3Aai-agents+stars%3A%3E100&sort=updated&order=desc&per_page=10`
+- Follow-up feed checked: `https://api.github.com/search/repositories?q=topic%3Aai-agents+pushed%3A%3E2026-09-23+stars%3A%3E30&sort=updated&order=desc&per_page=20`
