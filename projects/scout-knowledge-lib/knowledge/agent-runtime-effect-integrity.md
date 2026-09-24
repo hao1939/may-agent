@@ -1,8 +1,8 @@
 <ai_context>
-summary: "Companion to agent-runtime-hardening.md for core effect integrity: centralized effect-mode derivation, interaction-shaped mutation review, approval-channel races, revision-bound workspace admission, evidence-carrying closure, quarantine for unknown effects, operation identity across replanning, transactional review versus atomic commit, guarded writes, apply-time revalidation, ambiguous-delivery recovery, pre-wait provider-attempt journals, session-bound retry safety, observation-bound handover, history/context separation, and externally anchored sandbox authority."
-triggers: ["runtime effect integrity", "central effect gate", "mutation confirmation", "approval race", "permission broker", "modified-input recheck", "revision-bound admission", "effect closure", "unknown effect", "operation identity", "replanning retry", "resource quarantine", "atomic commit", "guarded configuration write", "previewable plan", "ambiguous delivery", "provider attempt journal", "reached wire", "unknown usage", "AID-Guard", "outbound publication", "remote session retry", "desktop handover", "history fidelity", "safe resume", "sandbox escape", "external authority", "agentsgo", "atomic replacement", "compare-and-swap"]
+summary: "Companion to agent-runtime-hardening.md for core effect integrity: centralized effect-mode derivation, interaction-shaped mutation review, approval-channel races, revision-bound workspace admission, evidence-carrying closure, quarantine for unknown effects, operation identity across replanning, receipt identity and ambiguous delivery, transactional review versus atomic commit, guarded writes, apply-time revalidation, pre-wait provider-attempt journals, session-bound retry safety, observation-bound handover, history/context separation, and externally anchored sandbox authority."
+triggers: ["runtime effect integrity", "central effect gate", "mutation confirmation", "approval race", "permission broker", "modified-input recheck", "revision-bound admission", "effect closure", "unknown effect", "operation identity", "replanning retry", "resource quarantine", "atomic commit", "guarded configuration write", "previewable plan", "ambiguous delivery", "delivery receipt", "receipt identity", "forward-only delivery", "provider attempt journal", "reached wire", "unknown usage", "AID-Guard", "outbound publication", "remote session retry", "desktop handover", "history fidelity", "safe resume", "sandbox escape", "external authority", "agentsgo", "atomic replacement", "compare-and-swap"]
 last_updated: "2026-09-24"
-source_basis: "Extracted from agent-runtime-hardening.md during its oversized-note review and subsequently updated with source-grounded findings, including SkillRanker's pre-wait provider-attempt journal and decision-time feedback snapshots. Each retained section preserves stable source links, pinned revisions where applicable, reproduced checks where performed, and explicit evidence limitations. Unattended-execution, replay, approval-resume, settlement, accountable-write, and desktop-authorization sections moved intact to agent-runtime-unattended-execution-and-replay.md during the 2026-09-21 oversized-note review."
+source_basis: "Extracted from agent-runtime-hardening.md during its oversized-note review and subsequently updated with source-grounded findings, including SkillRanker's pre-wait provider-attempt journal and decision-time feedback snapshots and amux's identity-bound steering receipts. Each retained section preserves stable source links, pinned revisions where applicable, reproduced checks where performed, and explicit evidence limitations. Unattended-execution, replay, approval-resume, settlement, accountable-write, and desktop-authorization sections moved intact to agent-runtime-unattended-execution-and-replay.md during the 2026-09-21 oversized-note review."
 </ai_context>
 
 # Agent Runtime Effect Integrity
@@ -270,6 +270,58 @@ command has adopted them.
 - **Feedback-snapshot follow-up revision:** [`b66ddf7d0ee21497b1ef06adf09b5c7facecff45`](https://github.com/Dicklesworthstone/skillranker/commit/b66ddf7d0ee21497b1ef06adf09b5c7facecff45)
 - **Primary sources:** [effect gate](https://github.com/Dicklesworthstone/skillranker/blob/221494f3df8657901910f6b4b7f614872730f7ca/src/effects.rs), [pipeline integration and pre-attempt reauthorization](https://github.com/Dicklesworthstone/skillranker/blob/221494f3df8657901910f6b4b7f614872730f7ca/src/pipeline.rs), [flag-matrix and real-boundary tests](https://github.com/Dicklesworthstone/skillranker/blob/221494f3df8657901910f6b4b7f614872730f7ca/tests/effect_gate.rs), [attempt state and journal contract](https://github.com/Dicklesworthstone/skillranker/blob/fba1991ae8908424a37579f69dcbf432e7ff885b/src/jev/admission.rs), [retry-loop journal integration](https://github.com/Dicklesworthstone/skillranker/blob/fba1991ae8908424a37579f69dcbf432e7ff885b/src/jev/retry.rs), [hard-kill/reached-wire test](https://github.com/Dicklesworthstone/skillranker/blob/fba1991ae8908424a37579f69dcbf432e7ff885b/tests/ledger_attempt_recording.rs#L1000-L1084), [feedback and snapshot ledger logic](https://github.com/Dicklesworthstone/skillranker/blob/b66ddf7d0ee21497b1ef06adf09b5c7facecff45/src/storage/ledger.rs#L5209-L5804), and [snapshot-coverage regression tests](https://github.com/Dicklesworthstone/skillranker/blob/b66ddf7d0ee21497b1ef06adf09b5c7facecff45/tests/feedback_snapshot_coverage.rs)
 - **Current discovery query:** GitHub Repository Search API `topic:ai-agents pushed:>2026-09-23 stars:>30`, sorted by updated; `total_count: 44`, `incomplete_results: false`
+
+## A Receipt Must Join by Durable Identity, Not Resemblance — amux (GitHub, September 2026)
+
+[amux](https://github.com/mixpeek/amux) exposes a concrete failure mode in
+agent-to-agent steering: recording the command and recording its delivery can
+race across a restart, while the same text may legitimately be sent more than
+once. At pinned revision `2b8baa28f1a7ab4512280416399b58d68848dd08`, its
+steering receipt migration joins the user-visible history row to delivery
+history with a unique queue ID. A database trigger settles the history row in
+the same transaction that inserts the delivery outcome. A second trigger
+handles the opposite ordering—delivery history may already exist when the
+history row is linked—and derives the same `confirmed`, `retried`, `voided`, or
+`uncertain` presentation.
+
+The migration's legacy repair is deliberately weaker. It matches session, exact
+text, and enqueue time only when those fields identify exactly one unlinked
+receipt and one queued message. Ambiguous duplicates remain unknown rather than
+being attached to whichever similar row is found first. An earlier migration
+also changes redelivery behavior by claiming a queue row before sending: a crash
+can then leave a visible, reconcilable gap instead of leaving an unclaimed row
+that will certainly be sent again. This does not create exactly-once delivery;
+a crash after the claim and around the send still needs reconciliation.
+
+The repository's newer durable-message API applies the same separation at the
+semantic layer. Message creation persists the body first and queues only its ID,
+using `deliver-<message-id>` as the queue idempotency key. Delivery then advances
+forward through queued, delivered, acknowledged, and acted-on; it may skip a
+stage when stronger evidence is observed, but it cannot move backward or
+re-stamp a stage. Group delivery fans out to a distinct child message and
+receipt per recipient instead of promoting one group-level “sent” claim. An
+`acted_on` receipt may carry the task opened because of the message, preserving
+a causal link without pretending that delivery itself proves work happened.
+
+**Runtime rule:** give the intended message, each delivery attempt, each
+recipient, and any resulting work stable but distinct identities. Join receipts
+on those identities inside the transaction that records the observation, and
+make late-arriving links settle from durable history. Similar text and nearby
+timestamps are repair hints, not identity; only use them when uniqueness is
+proved, otherwise retain unknown. A pre-send claim prevents automatic duplicate
+replay but turns the crash window into an explicit reconciliation obligation—it
+must not be reported as confirmed delivery.
+
+This is static implementation and project-authored test evidence from a rapidly
+changing repository. Scout inspected the complete pinned tree, migration SQL,
+message model/API, a delivery-metadata UI test, and one live lifecycle test, but
+did not build amux or run those tests. The live test is evidence of the project's
+intended end-to-end check, not an independently reproduced delivery guarantee.
+
+- **Repo:** https://github.com/mixpeek/amux
+- **Inspected revision:** [`2b8baa28f1a7ab4512280416399b58d68848dd08`](https://github.com/mixpeek/amux/commit/2b8baa28f1a7ab4512280416399b58d68848dd08)
+- **Primary sources:** [receipt identity and race-settling triggers](https://github.com/mixpeek/amux/blob/2b8baa28f1a7ab4512280416399b58d68848dd08/crates/amux-server/migrations/0086_steering_message_receipts.sql), [pre-send delivery claim](https://github.com/mixpeek/amux/blob/2b8baa28f1a7ab4512280416399b58d68848dd08/crates/amux-server/migrations/0064_steering_delivery_claim.sql), [durable message and forward-only state model](https://github.com/mixpeek/amux/blob/2b8baa28f1a7ab4512280416399b58d68848dd08/crates/amux-core/src/message.rs), [message persistence and per-recipient queueing](https://github.com/mixpeek/amux/blob/2b8baa28f1a7ab4512280416399b58d68848dd08/crates/amux-server/src/api/messages.rs), [delivery-metadata surface test](https://github.com/mixpeek/amux/blob/2b8baa28f1a7ab4512280416399b58d68848dd08/e2e/messages-delivery-metadata.spec.ts), and [live steering lifecycle test](https://github.com/mixpeek/amux/blob/2b8baa28f1a7ab4512280416399b58d68848dd08/e2e/lifecycle/live-steering-pickup.spec.ts)
+- **Discovery query:** GitHub Repository Search API `topic:ai-agents pushed:>2026-09-23 stars:>30`, sorted by updated; `total_count: 227`, `incomplete_results: false`
 
 ## Revision-Bound Workspace Admission (Cross-Source, August 2026)
 
