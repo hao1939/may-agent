@@ -59,6 +59,7 @@ describe("read-only Scout library-health inspection", () => {
       factCount: 0,
       wakeSignalCount: 0,
       truncated: false,
+      observations: { complete: true, read_error_count: 0, read_errors: [] },
     });
     expect(existsSync(join(paths.appDir, ".state"))).toBe(false);
   });

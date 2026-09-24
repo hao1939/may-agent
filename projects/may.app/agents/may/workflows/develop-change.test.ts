@@ -326,7 +326,35 @@ describe("development workflow using real Git and verification", () => {
     },
   );
 
-  test.each(["verification", "review", "contradictory pass"])(
+  test("a passing review retains optional findings and reuses the verified candidate", async () => {
+    const t = trial();
+    t.current.input = t.spec(0);
+    t.current.outcome = t.spec(0).data.outcome;
+    t.current.acceptance = t.spec(0).data.acceptance;
+    t.setJudgment((stage) =>
+      stage === "design"
+        ? {
+            decision: "review",
+            reason: "Inspect existing work",
+            design: "Verify the existing function",
+          }
+        : {
+            decision: "pass",
+            reason: "Acceptance is met; documentation improvement is optional",
+            commit: t.git(t.worktree, "rev-parse", "HEAD"),
+            findings: ["Optional: add another usage example"],
+          },
+    );
+    expect((await t.run()).state).toBe("converged");
+    expect(t.evidence().review.judgment.findings).toEqual([
+      "Optional: add another usage example",
+    ]);
+    expect((await t.run()).state).toBe("converged");
+    expect(t.calls.map((call) => call.stage)).toEqual(["design", "review"]);
+    expect(readFileSync(join(t.worktree, ".checks"), "utf8")).toBe("check\n");
+  });
+
+  test.each(["verification", "review"])(
     "%s cannot certify inconsistent evidence",
     async (phase) => {
       const t = trial();
@@ -365,18 +393,13 @@ describe("development workflow using real Git and verification", () => {
           decision: "pass",
           reason: "Claim accepted",
           commit,
-          findings:
-            phase === "contradictory pass" ? ["Acceptance is not met"] : [],
+          findings: [],
         };
       });
       const result = await t.run();
       expect(result.state).toBe("incomplete");
       expect(result.summary).toContain(
-        phase === "verification"
-          ? "uncommitted"
-          : phase === "review"
-            ? "does not match"
-            : "retains findings",
+        phase === "verification" ? "uncommitted" : "does not match",
       );
       if (phase === "verification")
         expect(t.calls.some((x) => x.stage === "review")).toBe(false);

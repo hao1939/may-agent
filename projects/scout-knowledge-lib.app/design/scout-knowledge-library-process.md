@@ -366,12 +366,22 @@ opening an allowed browser tab belongs to execution setup. Retain independent
 waits and partial work while diagnosing access. Verify source readability after
 setup before claiming a scan or satisfying an access Condition.
 
-**Implementation gap:** the existing `xhsWaitResult` still maps every non-ready
-probe result to a human-owned wait, and the probe conflates login, missing tabs
-and tool failures. The guidance correction makes the intended responsibility
-explicit; those code branches still require a tested source fix. The
-[September behavior review](../../may-agent.app/docs/proposals/app-behavior-convergence-20260925.md)
-records the contrasting acceptance cases and other open gaps.
+The exploration workflow calls `xhs-browse.mjs prepare`: reuse a current XHS
+page, or open the explore page once when none exists, then inspect readability.
+The observer uses `status`, which never opens a tab. Both probes retain a
+successful page inspection's `loginWall` fact separately from access readiness.
+Only a non-ready page with an observed login wall produces the human-login
+Condition. Connection errors, malformed output, timeouts and unrecognized page
+states return the exact failed operation to the current Scout owner through the
+existing workflow failure result. No new recovery Task or error registry is
+needed. Human request delivery still belongs to the native owner.
+
+Search parsing retains usable rows plus discarded-row evidence. A nonempty
+response with no usable records is a failed observation, while a successful
+empty array remains a supported empty result. Partial source evidence reaches
+both the bounded researcher and the owner; valid independent work is preserved.
+The [September behavior review](../../may-agent.app/docs/proposals/app-behavior-convergence-20260925.md)
+records the tested contrasts and remaining live-verification limits.
 
 Human-required XHS credential waits name `human:operator`, show the concrete action,
 and set an hourly `reviewAfterMs`. The existing five-minute credential observer
@@ -389,8 +399,8 @@ revisions, restart, and ready/unavailable transitions.
 The credential preflight runs asynchronously with a 30-second subprocess
 deadline, so a pending browser check does not block the Host event loop. Both
 the observer and exploration workflow await its result. A timeout kills the
-probe. Its failure remains diagnostic evidence for the owner; the current
-implementation still labels it credential unavailability as noted above.
+probe. Its failure remains diagnostic evidence for the owner and does not, by
+itself, establish a human prerequisite.
 
 The observer reads Host-retained `previousObservation` and returns events plus
 `nextObservation`. The Host advances that memory after publishing the facts and
@@ -401,6 +411,18 @@ describe access. Human delivery uses the existing caller/Conversation path and
 requires its own receipt.
 
 ## Library Health
+
+Library reads preserve availability as well as content. The packet retains
+`observations.complete`, exact `read_errors`, and an `observation-unavailable`
+fact through the existing owner-wake mechanism. Readable findings survive when
+another path fails. Unavailable index/digest measurements are null, and a failed
+index read cannot invent a set of structural orphans. File counts describe the
+observed subset when the packet is partial. Only absent optional paths (reports,
+digests, prior packet history) count as empty; permission and I/O errors remain
+visible. Preamble coverage records no numeric sample for an unavailable scan or
+zero readable files, instead of reporting perfect coverage. These are App-local
+observation rules, not a new common health or recovery controller.
+
 
 `agents/scout/workflows/library-health.ts` is code-only observation. It
 collects bounded domain facts and emits signals. It does not decide content

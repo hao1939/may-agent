@@ -69,7 +69,11 @@ const reviewSchema = Type.Object(
     ]),
     reason: text,
     commit: text,
-    findings: Type.Array(text, { maxItems: 16 }),
+    findings: Type.Array(text, {
+      maxItems: 16,
+      description:
+        "Review observations, including optional improvements. Use decision to say whether this candidate is acceptable: pass may retain nonblocking findings; unmet acceptance requires revise, redesign or clarify.",
+    }),
   },
   { additionalProperties: false },
 );
@@ -391,7 +395,6 @@ export async function execute(ctx: WorkflowContext) {
       if (
         saved.verified &&
         saved.review?.judgment.decision === "pass" &&
-        saved.review.judgment.findings.length === 0 &&
         saved.review.judgment.commit === value.commit &&
         sameCandidate(saved.verified, value) &&
         sameCandidate(saved.review.candidate, value)
@@ -481,11 +484,6 @@ export async function execute(ctx: WorkflowContext) {
       ) {
         throw new Error(
           "Review does not match the current candidate; it cannot certify this change",
-        );
-      }
-      if (review.decision === "pass" && review.findings.length) {
-        throw new Error(
-          "Review says pass but retains findings; return revise or an empty findings list",
         );
       }
       saved.review = { candidate: value, judgment: review };

@@ -32,7 +32,8 @@ operator-invented identity; supported recovery begins with fresh human input.
      resourceVersion: number;
      acceptedAttempt?: { id: string };
    };
-   if (!task.acceptedAttempt?.id) throw new Error("No exact accepted result to consume");
+   if (!task.acceptedAttempt?.id)
+     throw new Error("No exact accepted result to consume");
 
    const closed = await sendSocketCommand(socketPath, {
      type: "task.close",
@@ -43,7 +44,8 @@ operator-invented identity; supported recovery begins with fresh human input.
      afterResult: task.acceptedAttempt.id,
      reason: "Owner consumed this completed finite result",
    });
-   if (closed.type !== "ok") throw new Error(`Task completion rejected: ${closed.message}`);
+   if (closed.type !== "ok")
+     throw new Error(`Task completion rejected: ${closed.message}`);
    ```
 
    The fresh read exposes the exact accepted attempt and current fences. The

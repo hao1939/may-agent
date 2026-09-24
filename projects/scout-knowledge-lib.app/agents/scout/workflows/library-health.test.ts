@@ -6,6 +6,7 @@ import {
   mkdtempSync,
   readFileSync,
   rmSync,
+  symlinkSync,
   utimesSync,
   writeFileSync,
 } from "node:fs";
@@ -64,6 +65,103 @@ function oversizedNote(projectDir: string, lines: number): void {
 }
 
 describe("Scout library-health observer", () => {
+  it("retains valid findings alongside unavailable reads and does not invent an empty index", () => {
+    const paths = fixture();
+    oversizedNote(paths.projectDir, 801);
+    const index = join(paths.projectDir, "knowledge", "INDEX.md");
+    rmSync(index);
+    mkdirSync(index); // EISDIR is deterministic even when tests run as root.
+    const packet = buildLibraryHealthPacket(paths);
+    expect(packet.observations).toMatchObject({
+      complete: false,
+      knowledge: {
+        index_lines: null,
+        unsourced_count: null,
+        structural_orphan_count: null,
+      },
+    });
+    expect(packet.wake_signals).toContainEqual(
+      expect.objectContaining({
+        kind: "observation-unavailable",
+        subject: index,
+      }),
+    );
+    expect(packet.facts).toContainEqual(
+      expect.objectContaining({ kind: "oversized-canonical-note" }),
+    );
+    expect(
+      packet.facts.some((fact) => fact.kind === "index-coverage-gap"),
+    ).toBe(false);
+  });
+
+  it("distinguishes empty knowledge from missing or partly unreadable knowledge", () => {
+    const paths = fixture();
+    const knowledge = join(paths.projectDir, "knowledge");
+    rmSync(knowledge, { recursive: true });
+    expect(knowledgePreambleCoverage(paths.projectDir)).toEqual({
+      value: null,
+      sampleSize: 0,
+    });
+    expect(buildLibraryHealthPacket(paths).observations).toMatchObject({
+      complete: false,
+      read_errors: expect.arrayContaining([
+        expect.objectContaining({
+          operation: "list",
+          path: knowledge,
+          code: "ENOENT",
+        }),
+      ]),
+    });
+    mkdirSync(knowledge);
+    expect(knowledgePreambleCoverage(paths.projectDir)).toEqual({
+      value: null,
+      sampleSize: 0,
+    });
+    writeFileSync(
+      join(knowledge, "good.md"),
+      "<ai_context>Supported</ai_context>",
+    );
+    symlinkSync(join(knowledge, "absent"), join(knowledge, "broken.md"));
+    expect(knowledgePreambleCoverage(paths.projectDir)).toEqual({
+      value: null,
+      sampleSize: 1,
+    });
+    const partial = buildLibraryHealthPacket(paths);
+    expect(partial.observations).toMatchObject({ complete: false });
+    rmSync(join(knowledge, "broken.md"));
+    expect(knowledgePreambleCoverage(paths.projectDir)).toEqual({
+      value: 1,
+      sampleSize: 1,
+    });
+  });
+
+  it("publishes observation failure without recording false perfect coverage", async () => {
+    const paths = fixture();
+    rmSync(join(paths.projectDir, "knowledge"), { recursive: true });
+    const records: string[] = [];
+    const ctx = createTestAppWorkflowContext({
+      input: {},
+      workspace: {
+        appRoot: paths.appDir,
+        projectRoot: paths.projectDir,
+        root: paths.projectDir,
+        output: join(paths.appDir, ".state", "output"),
+      },
+      recordMetric: async (id) => {
+        records.push(id);
+      },
+    });
+    const events: any[] = [];
+    ctx.events.emit = async (event) => {
+      events.push(event);
+    };
+    await execute(ctx);
+    expect(records).not.toContain(KNOWLEDGE_PREAMBLE_COVERAGE_METRIC_ID);
+    expect(events[0].data.wakeSignals).toContainEqual(
+      expect.objectContaining({ kind: "observation-unavailable" }),
+    );
+  });
+
   it("keeps signals due when event publication fails", async () => {
     const paths = fixture();
     oversizedNote(paths.projectDir, 801);

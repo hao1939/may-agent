@@ -26,6 +26,10 @@ export function xhsCredentialEvents(
       credential: "xhs",
       state: status.state,
       evidence: status.evidence,
+      reason: status.reason,
+      ...(status.loginWall !== undefined
+        ? { loginWall: status.loginWall }
+        : {}),
     },
   };
   return status.state === "ready" || previous.state !== status.state

@@ -20,7 +20,7 @@ import {
   type WorkflowContext,
 } from "@may-agent/sdk";
 import {
-  inspectXhsCredential,
+  prepareXhsSession,
   type XhsCredentialStatus,
 } from "../tools/lib/xhs-credential.js";
 import {
@@ -80,12 +80,12 @@ type ExploreAgentResult = {
 };
 
 export type ScoutExploreDependencies = {
-  inspectXhsCredential(appDir: string): Promise<XhsCredentialStatus>;
+  prepareXhsSession(appDir: string): Promise<XhsCredentialStatus>;
   searchXhs(appDir: string, query: string): XhsSearchResult;
 };
 
 const defaultDependencies: ScoutExploreDependencies = {
-  inspectXhsCredential,
+  prepareXhsSession,
   searchXhs,
 };
 
@@ -95,7 +95,7 @@ export function buildExploreTask(
     appDir: defaultAppDir,
     projectDir: defaultProjectDir,
   },
-  xhsPacket?: { query: string; items: XhsSearchItem[] },
+  xhsPacket?: { query: string; items: XhsSearchItem[]; evidence?: string[] },
   selectedSource?: SourceName,
 ): string {
   const source = selectedSource ?? reconciliationSource(task);
@@ -193,7 +193,8 @@ export function xhsWaitResult(
   credential: XhsCredentialStatus,
 ): TaskHandlerResult | null {
   if (source !== "xhs") return null;
-  if (credential.state === "ready") return null;
+  if (credential.state === "ready" || credential.loginWall !== true)
+    return null;
 
   const summary =
     "XHS exploration is waiting for the browser credential to become ready; no source agent was started.";
@@ -214,7 +215,7 @@ export function xhsWaitResult(
         expected: { field: "state", equals: "ready" },
         owner: "human:operator",
         requestedAction:
-          "Check the reported browser-access failure. Open Xiaohongshu in the container browser and sign in if prompted; leave the tab open for Scout.",
+          "Sign in to Xiaohongshu in the container browser; the current page inspection found a login screen. Scout will recheck access and resume the same Task.",
         reviewAfterMs: 3_600_000,
       },
     ],
@@ -641,13 +642,22 @@ export async function executeScoutExplore(
   if (!source)
     return ctx.blocked("Scout exploration source is missing or unsupported");
   const now = Date.now();
-  let xhsPacket: { query: string; items: XhsSearchItem[] } | undefined;
+  let xhsPacket:
+    | { query: string; items: XhsSearchItem[]; evidence?: string[] }
+    | undefined;
   let sourceEvidence: string[] = [];
 
   if (source === "xhs") {
-    const credential = await dependencies.inspectXhsCredential(appDir);
+    const credential = await dependencies.prepareXhsSession(appDir);
     const waiting = xhsWaitResult(source, credential);
     if (waiting) return ctx.done(waiting.summary, waiting);
+    if (credential.state !== "ready") {
+      return ctx.blocked(`XHS access check failed: ${credential.reason}`, {
+        facts: xhsAccessEvidence(credential),
+        nextStep:
+          "The owning Scout agent should inspect this failure, try authorized setup or repair, and verify access on the same Task. Request human help only when the evidence establishes a human action or authority is needed.",
+      });
+    }
 
     const search = dependencies.searchXhs(appDir, defaultXhsQuery);
     sourceEvidence = [...xhsAccessEvidence(credential), ...search.evidence];
@@ -673,7 +683,11 @@ export async function executeScoutExplore(
         actions: [],
       } satisfies TaskHandlerResult);
     }
-    xhsPacket = { query: search.query, items: search.items.slice(0, 20) };
+    xhsPacket = {
+      query: search.query,
+      items: search.items.slice(0, 20),
+      evidence: search.evidence,
+    };
   }
 
   // Assign the bounded operation before supplying the owner's standing Task packet.

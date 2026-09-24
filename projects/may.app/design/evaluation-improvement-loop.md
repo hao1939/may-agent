@@ -14,6 +14,14 @@ path. Routine no-concern reports retain a bounded review cost. The
 [convergence review](../../may-agent.app/docs/proposals/app-behavior-convergence-20260925.md)
 records source gaps separately from changed guidance and live behavior.
 
+Repeated waits/no-ops without progress, health/outcome contradictions and
+recurring similar fixes can justify the shared
+[selective deeper review](../../may-agent.app/docs/2b-manual/workflow-authoring.md#when-to-deepen-a-review).
+Evaluation reports the signal and bounded evidence gap; May judges value and
+asks the existing owner to trace the failed decision and try a contrasting case.
+Use ordinary Task input, current reports and the existing improvement path.
+There is no additional daily review, fixed retry threshold or remediation queue.
+
 ## Recover current work; improve future work
 
 Use the common [recovery rule](../../may-agent.app/docs/2a-design/system-boundary.md#recovery-uses-evidence-before-repetition).

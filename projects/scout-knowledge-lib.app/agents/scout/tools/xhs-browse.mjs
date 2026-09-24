@@ -7,6 +7,7 @@
  *
  * Commands:
  *   status                - Check whether the browser session can read XHS
+ *   prepare               - Open an absent XHS tab, then check access
  *   saved-status          - Inspect saved-profile availability without navigation
  *   feed                  - Get explore feed items
  *   search <keyword>      - Search for notes
@@ -67,10 +68,20 @@ function cdpPut(path) {
   });
 }
 
-async function getXHSTab() {
+async function getXHSTab(openIfMissing = false) {
   const tabs = await cdpGet("/json/list");
   const xhsTab = selectXhsCdpTab(tabs);
   if (xhsTab) return xhsTab;
+  if (openIfMissing) {
+    const tab = await cdpPut(
+      "/json/new?" + encodeURIComponent("https://www.xiaohongshu.com/explore"),
+    );
+    if (!tab.webSocketDebuggerUrl)
+      throw new Error("Chrome did not return a usable XHS tab");
+    // Give the newly opened page the same bounded load time as navigation.
+    await new Promise((resolve) => setTimeout(resolve, 4000));
+    return tab;
+  }
   throw new Error(
     "No XHS tab found. Chrome must be running with xiaohongshu.com open.",
   );
@@ -631,6 +642,7 @@ async function main() {
         status: "help",
         commands: [
           "status",
+          "prepare",
           "saved-status",
           "feed",
           "search <keyword>",
@@ -655,13 +667,16 @@ async function main() {
       process.exit(0);
     }
 
-    const tab = await getXHSTab();
+    const tab = await getXHSTab(
+      ["prepare", "feed", "search", "read", "scroll"].includes(command),
+    );
     cdp = new CDPClient(tab.webSocketDebuggerUrl);
     await cdp.connect();
     await cdp.send("Runtime.enable");
 
     let result;
     switch (command) {
+      case "prepare":
       case "status":
         result = await handleStatus(cdp);
         break;
@@ -681,7 +696,7 @@ async function main() {
         throw new Error(
           "Unknown command: " +
             command +
-            ". Use: status, saved-status, feed, search, read, scroll",
+            ". Use: status, prepare, saved-status, feed, search, read, scroll",
         );
     }
 

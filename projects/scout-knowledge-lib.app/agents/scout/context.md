@@ -16,6 +16,9 @@
 - XHS: use
   `node /app/projects/scout-knowledge-lib.app/agents/scout/tools/xhs-browse.mjs`
   with `feed`, `search <keyword>`, `read <url>`, or `scroll`.
+  Use `prepare` for bounded setup: it opens an absent XHS tab and then checks
+  the current page. `status` only observes. A failed probe is diagnostic
+  evidence; a confirmed login screen can justify a human request.
   The browser adapter defaults to Chrome DevTools at `localhost:9222`; when the
   observational browser runs behind explicit container or host wiring, set
   `SCOUT_XHS_CDP_HOST` and `SCOUT_XHS_CDP_PORT` instead of copying credentials.

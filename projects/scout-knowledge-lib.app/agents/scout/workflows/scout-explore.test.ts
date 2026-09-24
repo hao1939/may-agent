@@ -12,6 +12,8 @@ import {
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { createTestAppWorkflowContext } from "@may-agent/sdk/testing";
+import { parseXhsCredentialOutput } from "../tools/lib/xhs-credential";
+import { parseXhsSearchOutput } from "../tools/lib/xhs-source";
 import { publicationTestFixture } from "./lib/publication-test-fixture";
 import { admitTaskReconcileResult, type WorkflowContext } from "@may-agent/sdk";
 import {
@@ -396,6 +398,7 @@ describe("scout-explore workflow prompt", () => {
       state: "unavailable",
       reason: "XHS login is required",
       evidence: ["login-wall:true"],
+      loginWall: true,
     });
 
     expect(result).toMatchObject({
@@ -495,11 +498,12 @@ describe("scout-explore workflow prompt", () => {
         return {};
       }),
       {
-        inspectXhsCredential: async () => ({
+        prepareXhsSession: async () => ({
           credential: "xhs",
           state: "unavailable",
           reason: "login required",
           evidence: ["login-wall:true"],
+          loginWall: true,
         }),
         searchXhs: () => {
           searchCalls += 1;
@@ -519,6 +523,61 @@ describe("scout-explore workflow prompt", () => {
     });
   });
 
+  it.each([
+    JSON.stringify({ status: "error", error: "No XHS tab found" }),
+    JSON.stringify({ status: "error", error: "ECONNREFUSED" }),
+    "null",
+    "invalid JSON",
+    JSON.stringify({
+      status: "success",
+      data: { ready: false, loginWall: false, reason: "no readable content" },
+    }),
+  ])(
+    "returns uncertain access to the owner without inventing a human wait: %s",
+    async (stdout) => {
+      const ctx = workflowContext(async () => {
+        throw Error("research must not run");
+      });
+      const result = await executeScoutExplore(ctx, {
+        prepareXhsSession: async () => parseXhsCredentialOutput(stdout),
+        searchXhs: () => {
+          throw Error("search must not run");
+        },
+      });
+      expect(result.status).toBe("blocked");
+      expect(result.output).toBeUndefined();
+      expect(result.facts).toMatchObject({
+        nextStep: expect.stringContaining("same Task"),
+      });
+      expect(JSON.stringify(result)).not.toContain("human:operator");
+    },
+  );
+
+  it("does not accept unusable search rows as an evidence-backed no-op", async () => {
+    const result = await executeScoutExplore(
+      workflowContext(async () => {
+        throw Error("research must not run");
+      }),
+      {
+        prepareXhsSession: async () =>
+          parseXhsCredentialOutput(
+            JSON.stringify({ status: "success", data: { ready: true } }),
+          ),
+        searchXhs: (_app, query) =>
+          parseXhsSearchOutput(
+            query,
+            JSON.stringify({
+              status: "success",
+              data: [{ id: "missing-content" }],
+            }),
+          ),
+      },
+    );
+    expect(result.status).toBe("blocked");
+    expect(result.summary).toContain("none had usable");
+    expect(JSON.stringify(result)).not.toContain("evidence-backed-no-op");
+  });
+
   it("reports a current search failure without dispatching an artifact-writing agent", async () => {
     let agentCalls = 0;
     const result = await executeScoutExplore(
@@ -527,7 +586,7 @@ describe("scout-explore workflow prompt", () => {
         return {};
       }),
       {
-        inspectXhsCredential: async () => ({
+        prepareXhsSession: async () => ({
           credential: "xhs",
           state: "ready",
           reason: "ready",
@@ -558,7 +617,7 @@ describe("scout-explore workflow prompt", () => {
         return {};
       }),
       {
-        inspectXhsCredential: async () => ({
+        prepareXhsSession: async () => ({
           credential: "xhs",
           state: "ready",
           reason: "ready",
@@ -630,7 +689,7 @@ describe("scout-explore workflow prompt", () => {
     ctx.workspace!.appRoot = appDir;
     ctx.workspace!.projectRoot = projectDir;
     const result = await executeScoutExplore(ctx, {
-      inspectXhsCredential: async () => ({
+      prepareXhsSession: async () => ({
         credential: "xhs",
         state: "ready",
         reason: "ready",
@@ -733,7 +792,7 @@ describe("scout-explore workflow prompt", () => {
         },
       })),
       {
-        inspectXhsCredential: async () => ({
+        prepareXhsSession: async () => ({
           credential: "xhs",
           state: "ready",
           reason: "ready",

@@ -130,9 +130,11 @@ the returned decision and invokes fixed profile names; agents do not construct
 routes, events or timers. A fresh design judgment supersedes the earlier request for repair: when Bob
 chooses review of existing clean work, stale feedback must not force another
 implementation. Existing exact-candidate verification remains reusable.
-Findings in a pass result must be empty. This small
-contract treats all returned findings as unresolved work; optional ideas belong
-in the explanation and do not require a new finding taxonomy.
+The explicit review decision governs acceptance. A pass may retain optional
+findings, which remain in the evidence snapshot and report. Unmet acceptance
+requires revise, redesign or clarify; the reviewer explains why. Code does not
+infer severity from the presence of prose. Exact-candidate verification and
+review fences still apply, including when reusing a previous pass.
 
 Verification argv is supplied in the creator's specification. Code executes it
 as a subprocess without shell interpolation, with bounded duration/output and

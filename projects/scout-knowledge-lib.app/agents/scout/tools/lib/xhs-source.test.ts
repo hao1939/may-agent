@@ -29,7 +29,36 @@ describe("XHS search source parsing", () => {
         "query:AI agent 智能体",
         "items:1",
         "source-ids:note-1",
+        "discarded-items:1",
+        "observation:partial",
       ],
+    });
+  });
+
+  it("distinguishes genuinely empty, wholly unusable and malformed results", () => {
+    expect(
+      parseXhsSearchOutput(
+        "query",
+        JSON.stringify({ status: "success", data: [] }),
+      ),
+    ).toMatchObject({ state: "success", items: [] });
+    for (const data of [
+      [null],
+      [{ id: "x" }],
+      [{ id: {}, title: [], link: 42 }],
+    ]) {
+      expect(
+        parseXhsSearchOutput(
+          "query",
+          JSON.stringify({ status: "success", data }),
+        ),
+      ).toMatchObject({
+        state: "failed",
+        evidence: expect.arrayContaining(["discarded-items:1"]),
+      });
+    }
+    expect(parseXhsSearchOutput("query", "null")).toMatchObject({
+      state: "failed",
     });
   });
 

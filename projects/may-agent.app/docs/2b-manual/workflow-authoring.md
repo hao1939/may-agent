@@ -480,6 +480,38 @@ Expand coverage after relevant changes or observed failures. This is a review
 practice using existing CI, Evaluation, May and optional Gym trials; the record
 does not create another registry, score, queue or runtime admission gate.
 
+#### When to deepen a review
+
+Use this review again when evidence suggests a shared wrong assumption: repeated
+accepted waits/no-ops without useful progress or new evidence; a health claim
+that conflicts with missing outcomes; materially different failures given the
+same disposition; or nearby fixes that keep repairing the same decision.
+Repetition is a reason to inspect, not proof of failure. A stable legitimate
+wait can remain correct. Choose the depth in proportion to likely impact and
+investigation cost, without a mandatory retry threshold or another daily scan.
+
+Follow the exact Task, attempt and evidence links already available:
+
+1. Find the last verified input and the first unsupported transition. Separate
+   the observed fact, the workflow's interpretation and the owner's decision.
+2. Check the authority, tools and existing recovery path available at that
+   point. Test the smallest authorized correction and read back its effect.
+3. Inspect adjacent paths for the same assumption. Exercise the original case
+   and an opposite control, preserving partial useful results and independent
+   obligations in both.
+4. Record the supported finding, exact evidence, unassessed scope and next
+   action in the existing report or Task result. The original owner recovers;
+   May judges whether a systemic candidate is worth its cost. Recheck the
+   original outcome after application.
+
+Evaluation recognizes and reports such signals within its existing bounded
+assessment. If the snapshot is insufficient, it identifies the exact evidence
+gap; May asks the accountable owner for a focused investigation through ordinary
+Task input. This reuses current review, reconciliation and improvement paths.
+Evaluation remains external-App-only; independent supervisor review or a bounded
+comparison checks the evaluator itself. Agents judge whether the premise is
+sound; code enforces evidence identity and mechanically decidable contrasts.
+
 ### Workflow checklist
 
 - The workflow has one owner and one typed input.

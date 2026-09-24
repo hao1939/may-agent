@@ -12,6 +12,7 @@ export type ReadonlyLibraryHealthResult = {
   factCount: number;
   wakeSignalCount: number;
   truncated: boolean;
+  observations: LibraryHealthPacket["observations"];
   facts: LibraryHealthPacket["facts"];
   wakeDecisions: LibraryHealthPacket["wake_decisions"];
 };
@@ -87,6 +88,7 @@ export function inspectLibraryHealthReadonly(
     factCount: packet.facts.length,
     wakeSignalCount: packet.wake_signals.length,
     truncated: packet.truncated,
+    observations: packet.observations,
     facts: packet.facts,
     wakeDecisions: packet.wake_decisions,
   };

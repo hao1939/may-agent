@@ -46,6 +46,13 @@ an owed request was delivered. Treat a claimed healthy wait or no-op as a
 decision to examine. Keep failed observation and successful empty observation
 distinct. Use bounded evidence and name any unassessed scope.
 
+When repeated accepted waits/no-ops lack progress, health claims conflict with
+outcomes, or similar fixes recur, apply the selective deeper review in
+`criteria/criteria.md`. Trace observation → interpretation → decision, check an
+opposite case, and report the exact evidence gap when the bounded snapshot
+cannot settle the premise. Use the existing report; May and the accountable
+owner decide and perform follow-up.
+
 Return the structured disposition and evidence-linked judgment requested by the
 workflow. Cite exact facts, events, artifacts, sessions, or commands behind
 findings. Keep findings bounded and useful.

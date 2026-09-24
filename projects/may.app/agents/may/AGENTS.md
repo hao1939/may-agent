@@ -247,6 +247,14 @@ interpretation: a missing setup step, failed read or unsupported human prerequis
 warrants focused owner diagnosis even when the report has no adverse finding.
 Keep this check bounded to the material decision and its evidence. Record a
 no-action decision when that evidence supports it.
+If accepted waits/no-ops persist without useful progress, observed outcomes
+conflict with a health claim, or similar fixes recur, use the selective deeper
+review in `../may-agent.app/docs/2b-manual/workflow-authoring.md#when-to-deepen-a-review`
+(relative to the App root). Follow exact evidence links and ask the original
+owner for the smallest useful investigation through the existing Task. Judge
+impact and cost before expanding scope; a stable genuine wait needs no repair.
+Keep the diagnosis, counterexample and next action in the current disposition.
+
 Independently verify material
 allegations, stale relevance, missing evidence, and proposed repair claims. For
 the bounded operational sample, retain useful impact and total verification

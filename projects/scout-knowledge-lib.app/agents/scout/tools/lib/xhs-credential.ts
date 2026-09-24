@@ -6,6 +6,8 @@ export type XhsCredentialStatus = {
   state: "ready" | "unavailable";
   reason: string;
   evidence: string[];
+  /** Present only when a successful page inspection observed this fact. */
+  loginWall?: boolean;
 };
 
 type XhsStatusOutput = {
@@ -43,9 +45,16 @@ export function parseXhsCredentialOutput(
     ]);
   }
 
-  if (exitCode !== 0 || parsed.status !== "success" || !parsed.data) {
+  if (
+    exitCode !== 0 ||
+    !parsed ||
+    parsed.status !== "success" ||
+    !parsed.data ||
+    typeof parsed.data !== "object" ||
+    Array.isArray(parsed.data)
+  ) {
     return unavailable(
-      String(parsed.error ?? "XHS credential preflight failed"),
+      String(parsed?.error ?? "XHS credential preflight failed"),
       [`exit:${exitCode}`],
     );
   }
@@ -57,7 +66,9 @@ export function parseXhsCredentialOutput(
   const evidence = [
     `url:${url}`,
     `note-count:${Number.isFinite(noteCount) ? noteCount : 0}`,
-    `login-wall:${loginWall}`,
+    ...(typeof parsed.data.loginWall === "boolean"
+      ? [`login-wall:${loginWall}`]
+      : []),
   ];
   return ready
     ? {
@@ -65,21 +76,41 @@ export function parseXhsCredentialOutput(
         state: "ready",
         reason: "The XHS browser session can read source content.",
         evidence,
+        ...(typeof parsed.data.loginWall === "boolean" ? { loginWall } : {}),
       }
-    : unavailable(
-        String(parsed.data.reason ?? "The XHS browser session requires login."),
-        evidence,
-      );
+    : {
+        ...unavailable(
+          String(
+            parsed.data.reason ?? "XHS source readability was not established.",
+          ),
+          evidence,
+        ),
+        ...(typeof parsed.data.loginWall === "boolean" ? { loginWall } : {}),
+      };
 }
 
 export function inspectXhsCredential(
   appDir: string,
 ): Promise<XhsCredentialStatus> {
+  return runXhsStatus(appDir, "status");
+}
+
+/** Workflow action: restore an absent tab, then inspect the actual page. */
+export function prepareXhsSession(
+  appDir: string,
+): Promise<XhsCredentialStatus> {
+  return runXhsStatus(appDir, "prepare");
+}
+
+function runXhsStatus(
+  appDir: string,
+  command: "status" | "prepare",
+): Promise<XhsCredentialStatus> {
   const toolPath = join(appDir, "agents", "scout", "tools", "xhs-browse.mjs");
   return new Promise((resolve, reject) => {
     execFile(
       "node",
-      [toolPath, "status"],
+      [toolPath, command],
       {
         encoding: "utf8",
         timeout: 30_000,

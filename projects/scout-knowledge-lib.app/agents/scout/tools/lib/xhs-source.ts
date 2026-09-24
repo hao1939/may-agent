@@ -32,9 +32,9 @@ type XhsSearchOutput = {
 function compactItem(value: unknown): XhsSearchItem | null {
   if (!value || typeof value !== "object" || Array.isArray(value)) return null;
   const item = value as Record<string, unknown>;
-  const id = String(item.id ?? "").trim();
-  const title = String(item.title ?? "").trim();
-  const link = String(item.link ?? "").trim();
+  const id = typeof item.id === "string" ? item.id.trim() : "";
+  const title = typeof item.title === "string" ? item.title.trim() : "";
+  const link = typeof item.link === "string" ? item.link.trim() : "";
   if (!id || !title || !link) return null;
   return {
     id,
@@ -69,13 +69,14 @@ export function parseXhsSearchOutput(
 
   if (
     exitCode !== 0 ||
+    !parsed ||
     parsed.status !== "success" ||
     !Array.isArray(parsed.data)
   ) {
     return {
       state: "failed",
       query,
-      reason: String(parsed.error ?? "XHS search failed"),
+      reason: String(parsed?.error ?? "XHS search failed"),
       evidence: [`exit:${exitCode}`],
     };
   }
@@ -83,6 +84,20 @@ export function parseXhsSearchOutput(
   const items = parsed.data
     .map(compactItem)
     .filter((item): item is XhsSearchItem => item !== null);
+  const discarded = parsed.data.length - items.length;
+  if (parsed.data.length > 0 && items.length === 0) {
+    return {
+      state: "failed",
+      query,
+      reason:
+        "XHS search returned records, but none had usable identity, title and link",
+      evidence: [
+        `source:xhs`,
+        `query:${query}`,
+        `discarded-items:${discarded}`,
+      ],
+    };
+  }
   const ids = items.slice(0, 10).map((item) => item.id);
   return {
     state: "success",
@@ -93,6 +108,9 @@ export function parseXhsSearchOutput(
       `query:${query}`,
       `items:${items.length}`,
       ...(ids.length > 0 ? [`source-ids:${ids.join(",")}`] : []),
+      ...(discarded > 0
+        ? [`discarded-items:${discarded}`, "observation:partial"]
+        : []),
     ],
   };
 }

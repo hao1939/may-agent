@@ -31,6 +31,7 @@ const historyPackets = 64;
 type Severity = "P0" | "P1" | "P2";
 
 type FactKind =
+  | "observation-unavailable"
   | "human-navigation-missing"
   | "oversized-canonical-note"
   | "unsourced-backlog"
@@ -71,7 +72,7 @@ export type LibraryHealthPacket = {
   observations: Record<string, unknown>;
 };
 
-type FileStat = { path: string; lines: number };
+type FileStat = { path: string; lines: number | null };
 type FutureTruth = { path: string; field: string; date: string; line?: number };
 type ArtifactIdentityOccurrence = {
   source: string;
@@ -82,84 +83,100 @@ type ArtifactIdentityOccurrence = {
   kind: "finding" | "digest";
 };
 
-function safeRead(path: string): string {
-  try {
-    return readFileSync(path, "utf8");
-  } catch {
-    return "";
+type ReadIssue = {
+  path: string;
+  operation: string;
+  code: string;
+  message: string;
+};
+
+// One observation retains both readable facts and the exact failed reads.
+// Only explicitly optional, absent paths count as empty.
+class LibraryReader {
+  readonly errors = new Map<string, ReadIssue>();
+
+  attempt<T>(
+    path: string,
+    operation: string,
+    read: () => T,
+    optional = false,
+  ): T | undefined {
+    try {
+      return read();
+    } catch (error) {
+      const code = String((error as NodeJS.ErrnoException).code ?? "UNKNOWN");
+      if (!(optional && code === "ENOENT")) {
+        this.errors.set(`${operation}:${path}`, {
+          path,
+          operation,
+          code,
+          message: String(error),
+        });
+      }
+      return undefined;
+    }
+  }
+
+  read(path: string, optional = false): string | undefined {
+    return this.attempt(
+      path,
+      "read",
+      () => readFileSync(path, "utf8"),
+      optional,
+    );
+  }
+
+  entries(path: string, optional = false): string[] {
+    return this.attempt(path, "list", () => readdirSync(path), optional) ?? [];
+  }
+
+  stat(path: string, optional = false) {
+    return this.attempt(path, "stat", () => statSync(path), optional);
+  }
+
+  markdown(root: string, optional = false): string[] {
+    const files: string[] = [];
+    const visit = (dir: string, absentAllowed = false): void => {
+      for (const entry of this.entries(dir, absentAllowed)) {
+        if ([".git", "node_modules", ".state"].includes(entry)) continue;
+        const path = join(dir, entry);
+        const stat = this.stat(path);
+        if (stat?.isDirectory()) visit(path);
+        else if (stat?.isFile() && entry.endsWith(".md")) files.push(path);
+      }
+    };
+    visit(root, optional);
+    return files.sort();
   }
 }
 
-function fileExists(path: string): boolean {
-  try {
-    return statSync(path).isFile();
-  } catch {
-    return false;
-  }
-}
-
-function lineCount(text: string): number {
-  return text ? text.split(/\r?\n/).length : 0;
+function lineCount(text: string | undefined): number | null {
+  return text === undefined ? null : text ? text.split(/\r?\n/).length : 0;
 }
 
 function toPosix(path: string): string {
   return path.split("\\").join("/");
 }
 
-function listMarkdownFiles(root: string): string[] {
-  const files: string[] = [];
-  const visit = (dir: string): void => {
-    let entries: string[];
-    try {
-      entries = readdirSync(dir);
-    } catch {
-      return;
-    }
-    for (const entry of entries) {
-      if (entry === ".git" || entry === "node_modules" || entry === ".state")
-        continue;
-      const path = join(dir, entry);
-      try {
-        const stat = statSync(path);
-        if (stat.isDirectory()) visit(path);
-        else if (stat.isFile() && entry.endsWith(".md")) files.push(path);
-      } catch {
-        // Ignore files that disappear during observation.
-      }
-    }
-  };
-  visit(root);
-  return files.sort();
-}
-
-function listRootMarkdownFiles(root: string): string[] {
-  try {
-    return readdirSync(root)
-      .filter((entry) => {
-        try {
-          return statSync(join(root, entry)).isFile() && entry.endsWith(".md");
-        } catch {
-          return false;
-        }
-      })
-      .sort();
-  } catch {
-    return [];
-  }
-}
-
 export function knowledgePreambleCoverage(projectDir: string): {
-  value: number;
+  value: number | null;
   sampleSize: number;
 } {
-  const files = listMarkdownFiles(join(projectDir, "knowledge"));
-  if (files.length === 0) return { value: 1, sampleSize: 0 };
-  const withPreamble = files.filter((path) =>
-    safeRead(path).slice(0, 8192).includes("<ai_context>"),
+  const reader = new LibraryReader();
+  const files = reader.markdown(join(projectDir, "knowledge"));
+  const contents = files.map((path) => reader.read(path));
+  const readable = contents.filter(
+    (text): text is string => text !== undefined,
+  );
+  const withPreamble = readable.filter((text) =>
+    text.slice(0, 8192).includes("<ai_context>"),
   ).length;
   return {
-    value: Number((withPreamble / files.length).toFixed(4)),
-    sampleSize: files.length,
+    value:
+      reader.errors.size > 0 || readable.length === 0
+        ? null
+        : Number((withPreamble / readable.length).toFixed(4)),
+    sampleSize: readable.length,
   };
 }
 
@@ -208,8 +225,10 @@ function frontmatterField(content: string, name: string): string | undefined {
 function findingArtifactIdentity(
   projectDir: string,
   path: string,
+  reader: LibraryReader,
 ): ArtifactIdentityOccurrence | undefined {
-  const content = safeRead(path);
+  const content = reader.read(path);
+  if (content === undefined) return;
   const title = frontmatterField(content, "title");
   const date = frontmatterField(content, "date");
   const declaredSource = frontmatterField(content, "source");
@@ -231,9 +250,10 @@ function findingArtifactIdentity(
 function digestArtifactIdentities(
   appDir: string,
   path: string,
+  reader: LibraryReader,
 ): ArtifactIdentityOccurrence[] {
   const result: ArtifactIdentityOccurrence[] = [];
-  for (const line of safeRead(path).split(/\r?\n/)) {
+  for (const line of (reader.read(path, true) ?? "").split(/\r?\n/)) {
     const heading = /^#{2,3}\s+(.+?)\s+\((20\d{2}-\d{2}-\d{2})\)\s*$/.exec(
       line,
     );
@@ -252,29 +272,33 @@ function digestArtifactIdentities(
   return result;
 }
 
-function latestArchivedDigest(digestDir: string): string | undefined {
-  try {
-    return readdirSync(digestDir)
-      .filter((entry) =>
-        /^(?:20\d{2}-\d{2}-\d{2}|digest-[a-f0-9]{64})\.md$/.test(entry),
-      )
-      .map((entry) => {
-        const path = join(digestDir, entry);
-        return { path, modified: statSync(path).mtimeMs };
-      })
-      .sort((a, b) => a.modified - b.modified || a.path.localeCompare(b.path))
-      .at(-1)?.path;
-  } catch {
-    return undefined;
-  }
+function latestArchivedDigest(
+  digestDir: string,
+  reader: LibraryReader,
+): string | undefined {
+  return reader
+    .entries(digestDir, true)
+    .filter((entry) =>
+      /^(?:20\d{2}-\d{2}-\d{2}|digest-[a-f0-9]{64})\.md$/.test(entry),
+    )
+    .flatMap((entry) => {
+      const path = join(digestDir, entry);
+      const stat = reader.stat(path);
+      return stat ? [{ path, modified: stat.mtimeMs }] : [];
+    })
+    .sort((a, b) => a.modified - b.modified || a.path.localeCompare(b.path))
+    .at(-1)?.path;
 }
 
-function artifactIdentityCollisionFacts(input: {
-  appDir: string;
-  projectDir: string;
-  knowledgeFiles: string[];
-  digestPath: string;
-}): LibraryHealthFact[] {
+function artifactIdentityCollisionFacts(
+  input: {
+    appDir: string;
+    projectDir: string;
+    knowledgeFiles: string[];
+    digestPath: string;
+  },
+  reader: LibraryReader,
+): LibraryHealthFact[] {
   const digestDir = join(
     input.appDir,
     "agents",
@@ -282,7 +306,7 @@ function artifactIdentityCollisionFacts(input: {
     "workspace",
     "digest",
   );
-  const archive = latestArchivedDigest(digestDir);
+  const archive = latestArchivedDigest(digestDir, reader);
   const occurrences = [
     ...input.knowledgeFiles
       .filter((path) =>
@@ -291,11 +315,15 @@ function artifactIdentityCollisionFacts(input: {
         ),
       )
       .flatMap((path) => {
-        const identity = findingArtifactIdentity(input.projectDir, path);
+        const identity = findingArtifactIdentity(
+          input.projectDir,
+          path,
+          reader,
+        );
         return identity ? [identity] : [];
       }),
     ...[input.digestPath, ...(archive ? [archive] : [])].flatMap((path) =>
-      digestArtifactIdentities(input.appDir, path),
+      digestArtifactIdentities(input.appDir, path, reader),
     ),
   ];
   const byIdentity = new Map<string, ArtifactIdentityOccurrence[]>();
@@ -359,8 +387,11 @@ function fact(
   return { ...input, key, fingerprint };
 }
 
-function readHistory(appDir: string): LibraryHealthPacket[] {
-  return safeRead(join(appDir, ".state", packetFile))
+function readHistory(
+  appDir: string,
+  reader = new LibraryReader(),
+): LibraryHealthPacket[] {
+  return (reader.read(join(appDir, ".state", packetFile), true) ?? "")
     .split(/\r?\n/)
     .map((line) => line.trim())
     .filter(Boolean)
@@ -406,12 +437,15 @@ function futureTruthFields(
   projectDir: string,
   paths: string[],
   today: string,
+  reader: LibraryReader,
 ): FutureTruth[] {
   const result: FutureTruth[] = [];
   const pattern =
     /^\s*(date|last_updated|generated_at)\s*:\s*["']?(20\d{2}-\d{2}-\d{2})/i;
   for (const path of paths) {
-    const lines = safeRead(path).split(/\r?\n/);
+    const content = reader.read(path, path === join(projectDir, "README.md"));
+    if (content === undefined) continue;
+    const lines = content.split(/\r?\n/);
     for (let index = 0; index < lines.length; index += 1) {
       const match = lines[index]?.match(pattern);
       if (!match || !validIsoDate(match[2]) || match[2] <= today) continue;
@@ -519,21 +553,27 @@ export function buildLibraryHealthPacket(input: {
   observationId?: string;
 }): LibraryHealthPacket {
   const now = input.now ?? Date.now();
+  const reader = new LibraryReader();
   // A retry after publication/history append must reconstruct the first
   // attempt, not treat its own packet as prior observation history.
-  const history = readHistory(input.appDir).filter(
+  const history = readHistory(input.appDir, reader).filter(
     (packet) =>
       !input.observationId || packet.observation_id !== input.observationId,
   );
   const knowledgeDir = join(input.projectDir, "knowledge");
   const reportsDir = join(input.projectDir, "reports");
-  const knowledgeFiles = listMarkdownFiles(knowledgeDir);
-  const reportFiles = listMarkdownFiles(reportsDir);
+  const knowledgeFiles = reader.markdown(knowledgeDir);
+  const reportFiles = reader.markdown(reportsDir, true);
   const indexPath = join(knowledgeDir, "INDEX.md");
-  const indexText = safeRead(indexPath);
+  const indexText = reader.read(indexPath);
   const facts: LibraryHealthFact[] = [];
 
-  if (!fileExists(join(knowledgeDir, "README.md"))) {
+  const readmePath = join(knowledgeDir, "README.md");
+  const readme = reader.stat(readmePath, true);
+  if (
+    (!readme && !reader.errors.has(`stat:${readmePath}`)) ||
+    (readme && !readme.isFile())
+  ) {
     facts.push(
       fact({
         kind: "human-navigation-missing",
@@ -548,11 +588,11 @@ export function buildLibraryHealthPacket(input: {
   const topLevelStats: FileStat[] = knowledgeFiles
     .map((path) => ({
       path: toPosix(relative(knowledgeDir, path)),
-      lines: lineCount(safeRead(path)),
+      lines: lineCount(reader.read(path)),
     }))
     .filter((item) => !item.path.includes("/") && item.path !== "INDEX.md");
   for (const item of topLevelStats.filter(
-    (candidate) => candidate.lines > 800,
+    (candidate) => candidate.lines !== null && candidate.lines > 800,
   )) {
     facts.push(
       fact({
@@ -560,13 +600,16 @@ export function buildLibraryHealthPacket(input: {
         subject: `knowledge/${item.path}`,
         severity: "P1",
         reason: `${item.path} has ${item.lines} lines and needs periodic split/rollup review.`,
-        observedValue: item.lines,
+        observedValue: item.lines!,
       }),
     );
   }
 
-  const unsourcedCount = (indexText.match(/Not yet sourced/g) ?? []).length;
-  if (unsourcedCount >= 50) {
+  const unsourcedCount =
+    indexText === undefined
+      ? null
+      : (indexText.match(/Not yet sourced/g) ?? []).length;
+  if (unsourcedCount !== null && unsourcedCount >= 50) {
     const previousValue = history
       .at(-1)
       ?.facts.find(
@@ -608,8 +651,11 @@ export function buildLibraryHealthPacket(input: {
     "digest",
     "today.md",
   );
-  const digestLines = lineCount(safeRead(digestPath));
-  if (digestLines > 1000) {
+  const digestText = reader.read(digestPath, true);
+  const digestLines = lineCount(
+    digestText ?? (reader.errors.has(`read:${digestPath}`) ? undefined : ""),
+  );
+  if (digestLines !== null && digestLines > 1000) {
     facts.push(
       fact({
         kind: "digest-log-oversized",
@@ -622,23 +668,29 @@ export function buildLibraryHealthPacket(input: {
   }
 
   facts.push(
-    ...artifactIdentityCollisionFacts({
-      appDir: input.appDir,
-      projectDir: input.projectDir,
-      knowledgeFiles,
-      digestPath,
-    }),
+    ...artifactIdentityCollisionFacts(
+      {
+        appDir: input.appDir,
+        projectDir: input.projectDir,
+        knowledgeFiles,
+        digestPath,
+      },
+      reader,
+    ),
   );
 
-  const structuralOrphans = knowledgeFiles
-    .map((path) => toPosix(relative(knowledgeDir, path)))
-    .filter(
-      (path) =>
-        path !== "INDEX.md" &&
-        !path.startsWith("inbox/") &&
-        !path.startsWith("findings/") &&
-        !indexText.includes(path),
-    );
+  const structuralOrphans =
+    indexText === undefined
+      ? []
+      : knowledgeFiles
+          .map((path) => toPosix(relative(knowledgeDir, path)))
+          .filter(
+            (path) =>
+              path !== "INDEX.md" &&
+              !path.startsWith("inbox/") &&
+              !path.startsWith("findings/") &&
+              !indexText.includes(path),
+          );
   if (structuralOrphans.length > 0) {
     facts.push(
       fact({
@@ -652,7 +704,9 @@ export function buildLibraryHealthPacket(input: {
     );
   }
 
-  const rootReports = listRootMarkdownFiles(reportsDir);
+  const rootReports = reportFiles
+    .filter((path) => !relative(reportsDir, path).includes("/"))
+    .map((path) => relative(reportsDir, path));
   if (rootReports.length > 0) {
     facts.push(
       fact({
@@ -682,6 +736,7 @@ export function buildLibraryHealthPacket(input: {
         ...reportFiles,
       ],
       today,
+      reader,
     ),
   ];
   const distinctFutureTruth = [
@@ -701,6 +756,19 @@ export function buildLibraryHealthPacket(input: {
         reason: `${item.path} declares future ${item.field} ${item.date}.`,
         observedValue: item.date,
         evidence: item.line ? { line: item.line } : undefined,
+      }),
+    );
+  }
+
+  for (const issue of reader.errors.values()) {
+    facts.push(
+      fact({
+        kind: "observation-unavailable",
+        subject: issue.path,
+        severity: "P1",
+        reason: `Library observation could not ${issue.operation} ${issue.path}: ${issue.code}`,
+        observedValue: issue.code,
+        evidence: issue,
       }),
     );
   }
@@ -729,13 +797,19 @@ export function buildLibraryHealthPacket(input: {
     wake_decisions: wakeDecisions,
     wake_signals: wakeSignals,
     truncated:
-      distinctFacts.length > maxFacts || wakeKeys.size > maxWakeSignals,
+      distinctFacts.length > maxFacts ||
+      wakeKeys.size > maxWakeSignals ||
+      reader.errors.size > maxFacts,
     observations: {
+      complete: reader.errors.size === 0,
+      read_error_count: reader.errors.size,
+      read_errors: [...reader.errors.values()].slice(0, maxFacts),
       knowledge: {
         markdown_files: knowledgeFiles.length,
         index_lines: lineCount(indexText),
         unsourced_count: unsourcedCount,
-        structural_orphan_count: structuralOrphans.length,
+        structural_orphan_count:
+          indexText === undefined ? null : structuralOrphans.length,
       },
       digest: { lines: digestLines },
       reports: { root_markdown_count: rootReports.length },
@@ -829,14 +903,15 @@ export async function execute(ctx: WorkflowContext): Promise<ExecutionResult> {
   });
   ctx.metrics.define(acceptedSourceOutputsMetricDefinition());
   const preambleCoverage = knowledgePreambleCoverage(projectDir);
-  await ctx.metrics.record(
-    KNOWLEDGE_PREAMBLE_COVERAGE_METRIC_ID,
-    preambleCoverage.value,
-    {
-      sampleSize: preambleCoverage.sampleSize,
-      measuredBy: `workflow:${name}`,
-    },
-  );
+  if (preambleCoverage.value !== null)
+    await ctx.metrics.record(
+      KNOWLEDGE_PREAMBLE_COVERAGE_METRIC_ID,
+      preambleCoverage.value,
+      {
+        sampleSize: preambleCoverage.sampleSize,
+        measuredBy: `workflow:${name}`,
+      },
+    );
   const localKey = taskEmissionKey(ctx, "library-health-observed");
   const retained = await ctx.events.read(
     "project.library_health.observed",
@@ -887,9 +962,12 @@ export async function execute(ctx: WorkflowContext): Promise<ExecutionResult> {
   if (!packetAlreadyRecorded(appDir, localKey)) writePacket(packetPath, packet);
 
   const summary =
-    packet.wake_signals.length > 0
+    (packet.observations.complete === false
+      ? `Library observation is partial (${packet.observations.read_error_count} failed reads). `
+      : "") +
+    (packet.wake_signals.length > 0
       ? `Library health recorded ${packet.facts.length} fact(s) and published ${packet.wake_signals.length} actionable signal(s).`
-      : `Library health recorded ${packet.facts.length} fact(s); no owner wake was needed.`;
+      : `Library health recorded ${packet.facts.length} fact(s); no owner wake was needed.`);
   return ctx.done(summary, {
     state: "converged",
     summary,

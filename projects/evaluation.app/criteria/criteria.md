@@ -75,6 +75,15 @@ lacks needed authority/tool context, name that limitation with
 `insufficient-evidence`. A report covers the inspected Task and behavior; keep
 unexamined paths visibly unassessed.
 
+When repeated accepted waits/no-ops, contradictory health/outcome evidence, or
+recurring nearby fixes suggest a shared assumption, use the
+[selective deeper review](../../may-agent.app/docs/2b-manual/workflow-authoring.md#when-to-deepen-a-review).
+Trace the raw observation behind the disposition and consider an opposite case.
+Stay within the supplied evidence and name any exact missing capability or
+source context; May can request focused owner investigation. A consistent wait
+is not automatically justified, and repetition alone is not automatically a
+failure. Retain this judgment in the existing findings and verification fields.
+
 ## Historical responsibility contract
 
 Use the Task's original input, outcome, acceptance, creator, generation, and

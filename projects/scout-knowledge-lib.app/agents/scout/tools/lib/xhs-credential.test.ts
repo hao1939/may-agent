@@ -88,14 +88,15 @@ describe("XHS credential status", () => {
     }
   });
 
-  it("keeps unexpected parser failures in the caller's promise", async () => {
+  it("retains a malformed provider value as unknown access, not login", async () => {
     const fixture = probeFixture();
     const pending = inspectXhsCredential(fixture.root);
     const outcome = pending.catch((error: unknown) => error);
     try {
       await fixture.started;
       fixture.release("null");
-      expect(await outcome).toBeInstanceOf(TypeError);
+      expect(await outcome).toMatchObject({ state: "unavailable" });
+      expect(await outcome).not.toHaveProperty("loginWall");
     } finally {
       fixture.close();
       await pending.catch(() => {});
@@ -147,7 +148,11 @@ describe("XHS credential status", () => {
           },
         }),
       ),
-    ).toMatchObject({ credential: "xhs", state: "unavailable" });
+    ).toMatchObject({
+      credential: "xhs",
+      state: "unavailable",
+      loginWall: true,
+    });
     expect(parseXhsCredentialOutput("not-json", "", 1).state).toBe(
       "unavailable",
     );
