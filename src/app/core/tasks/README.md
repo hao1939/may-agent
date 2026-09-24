@@ -64,6 +64,23 @@ route when handling is required, before returning a receipt. Handling runs
 separately: the worker reads current requirements and facts, acts and reports.
 A failed handler leaves accepted work available for the same recovery path.
 A receipt confirms acceptance; the saved result establishes what was handled.
+Admission and result projection persist their own bounded retry deadlines, so an
+unchanged failure is paced while fresh exact evidence and unrelated obligations
+can still advance. Before a Task exists, admission failure returns through the
+saved typed App caller when one exists; replay must reach that caller's normal
+Task consideration path, not merely emit an event or invoke a callback. Inputs
+without a typed App caller retain diagnostics and retry, but do not acquire a
+guessed fallback owner.
+
+Exact Task reads expose `currentObligations` as the common, read-only account of
+current timing and retained input work. `{ available: false }` means Runtime
+cannot authoritatively supply this projection; it is not evidence that no
+obligations exist. When available, `reviewAt` is the Task's authoritative
+absolute reconsideration deadline, and `inputWaits.items` is a bounded list of
+exact admission keys with input/admission correlation, per-input review timing
+and Condition counts. `maxItems` and `truncated` disclose the bound: omitted
+items remain obligations and callers must not infer fulfillment from absence.
+App-specific policy may interpret this evidence, but does not redefine it.
 
 Adapters translate source-specific information at the boundary. For example,
 `lib/escalation-feedback.ts` resolves saved provenance to an exact Task address;

@@ -2612,6 +2612,88 @@ describe("canonical App task runtime", () => {
       .toEqual(expect.arrayContaining([{ sample: 1 }, { sample: 2 }]));
   });
 
+  it("returns a pre-Task admission blocker through the installed caller route for actual consideration", async () => {
+    const f = fixture();
+    const bus = eventBus();
+    const persistDir = join(f.root, "state");
+    const writer = new DbWriter(persistDir);
+    bus.setPersistenceSubscriber(writer.handler);
+    bus.setDeliveryRecorder(writer.recordDelivery);
+    const targetDir = join(f.projectsRoot, "target.app");
+    mkdirSync(targetDir, { recursive: true });
+    let callerAttempts = 0;
+    let considered: Record<string, unknown> | undefined;
+    const caller = defineApp({ ...definition(), tasks: {} });
+    const target = defineApp({
+      id: "target", version: 1, agent: "target-owner",
+      inputSchema: Type.Object({ kind: Type.Literal("review"), data: Type.Object({}) }),
+      tasks: {},
+      task: () => { throw new Error("target mapping temporarily unavailable"); },
+    });
+    const entries = [
+      { appDir: f.appDir, definition: caller },
+      { appDir: targetDir, definition: target },
+    ];
+    const registry = new AppRegistry(async () => entries);
+    await registry.reload();
+    await installCoreTaskRuntimes({
+      ...options(f, bus), installControllers: false, taskAppIds: ["sample"],
+      appRegistrySnapshot: { id: "pre-task-caller-consideration", generation: 1, entries },
+      executors: {
+        owner: async (attempt) => {
+          callerAttempts++;
+          const feedback = attempt.events.items.findLast(
+            ({ event }) => event.type === "app.dependency.updated" && event.data.status === "blocked",
+          )?.event.data;
+          if (feedback) {
+            considered = structuredClone(feedback);
+            return { state: "converged", summary: "Caller considered the target admission blocker",
+              facts: ["target-admission-blocked"] };
+          }
+          return { state: "waiting", summary: "Waiting for the target review", facts: [],
+            dependencies: [{ id: "review", appId: "target", input: { kind: "review", data: {} } }] };
+        },
+      },
+    });
+    const inbox = await startAppInboxRuntime({
+      db: getDb(persistDir), bus, registry, deferStart: true,
+      attachTask: (input) => admitTaskInput(loadedTaskConfig(f), input),
+    });
+    const config = loadedTaskConfig(f);
+    observeAppTaskIntent(config, { appAgent: "sample-owner", intent: {
+      id: "work/caller-consideration", parentId: "operations", executor: "owner",
+      outcome: "Obtain the target review", acceptance: ["Consider target admission failure"],
+    } });
+    const run = () => reconcileLoadedAppTaskOnce({ bus, appId: "sample", taskId: "work/caller-consideration",
+      dispatch: { enqueuedAt: 1, startedAt: 2, readyWaitMs: 1, lane: "normal" } });
+    try {
+      await run();
+      const request = listAppInboxItems(getDb(persistDir), { appId: "target" })[0]!;
+      expect(request).toMatchObject({ source: { kind: "app", id: "sample" }, status: "pending",
+        recovery: { "input-admission": { error: "target mapping temporarily unavailable", failures: 1 } } });
+      expect(config.resourceStore.readTask("work/caller-consideration")?.status.phase).toBe("waiting");
+      expect(callerAttempts).toBe(1);
+
+      // The blocker was emitted before the caller committed its wait. Installed
+      // recovery must return it to a later executor attempt for consideration.
+      await recoverInstalledAppTasks(bus);
+      await run();
+      expect(callerAttempts).toBe(2);
+      expect(considered).toMatchObject({ kind: "app", id: request.id, status: "blocked", result: {
+        appId: "target", requestId: request.id, stage: "input-admission", disposition: "recovery-pending",
+      } });
+      expect(readAcceptedRuntimeAttempt(config, "work/caller-consideration")?.acceptedResult).toMatchObject({
+        summary: "Caller considered the target admission blocker", facts: ["target-admission-blocked"],
+      });
+      // Consideration does not pretend the unanswered target obligation was fulfilled.
+      expect(config.resourceStore.readTask("work/caller-consideration")?.status).toMatchObject({
+        phase: "waiting", conditionIds: [`app-request:${request.id}`],
+      });
+    } finally {
+      inbox.close();
+    }
+  });
+
   it.each(["live", "lost-notification", "restart", "owner-cancel"] as const)(
     "follows A -> B -> C -> B -> A through explicit inputs, with discussion and a blocker (%s)",
     async (route) => {
