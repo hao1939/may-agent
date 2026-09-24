@@ -16,6 +16,8 @@ import type {
 import { resolve } from "node:path";
 import { assertValidAppInput } from "../apps/definition-validation.js";
 import { getDb } from "../../../lib/db/connection.js";
+import { listTerminalTaskSessionBindings } from "../../../lib/db/sessions.js";
+import { readSessionMeta } from "../../../lib/persistence.js";
 import { stateTransaction } from "../../../lib/db/transaction.js";
 import { canonicalAppEvent } from "../../canonical-app-event.js";
 import { EVENT_ROW_ID, eventData, type AgentEvent, type DeliveryResult, type EventBus } from "../events/bus.js";
@@ -1064,6 +1066,40 @@ export function publishLoadedAppTaskEvent(input: {
   }).publish(input.localKey, input.event);
 }
 
+export function settleTerminalAppTaskSessions(
+  opts: AppTaskRuntimeOptions,
+  descriptor: Pick<AppTaskRuntimeDescriptor, "id">,
+): string[] {
+  if (!opts.persistDir || !opts.sessions) return [];
+  const settled: string[] = [];
+  for (const candidate of listTerminalTaskSessionBindings(opts.persistDir, descriptor.id)) {
+    const meta = readSessionMeta(opts.persistDir, candidate.sessionId);
+    const binding = meta ? appTaskSessionBinding(meta.taskBinding) : null;
+    // meta.json is authoritative for the session. The SQL projection may lag;
+    // require both durable identities to agree before terminalizing anything.
+    if (
+      !binding ||
+      binding.appId !== candidate.appId ||
+      binding.taskId !== candidate.taskId ||
+      binding.generation !== candidate.generation ||
+      binding.attemptId !== candidate.attemptId
+    ) {
+      continue;
+    }
+    // A current manager session or process-instance marker remains live even
+    // when the Task attempt has already settled; its shutdown is not inferred.
+    if (hasLiveAppTaskSession(opts, candidate.sessionId)) continue;
+    interruptSupersededAgentSession(
+      opts,
+      candidate.sessionId,
+      `Task ${candidate.taskId} attempt ${candidate.attemptId} is already terminal; reconciling its stale session projection`,
+      candidate.taskId,
+    );
+    settled.push(candidate.sessionId);
+  }
+  return settled;
+}
+
 function recoverInterruptedAppTasks(
   opts: AppTaskRuntimeOptions,
   descriptors: AppTaskRuntimeDescriptor[],
@@ -1073,6 +1109,7 @@ function recoverInterruptedAppTasks(
   for (const descriptor of descriptors) {
     const controller = controllers.get(descriptor.id);
     const config = appTaskConfig(descriptor);
+    settleTerminalAppTaskSessions(opts, descriptor);
     const runningRecoveryTaskIds = config.resourceStore.listTaskIdsByPhase(["running"], 512);
     const attentionRecoveryTaskIds = config.resourceStore.listTaskIdsByPhase(["attention"], 512);
     const waitingRecoveryTaskIds = config.resourceStore.listTaskIdsByPhase(["waiting"], 512);

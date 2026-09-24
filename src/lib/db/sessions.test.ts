@@ -3,7 +3,13 @@ import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { closeDb, getDb } from "./connection.js";
-import { readSessionLastActivityAt, upsertSession, updateSessionDb, updateSessionProgress } from "./sessions.js";
+import {
+  listTerminalTaskSessionBindings,
+  readSessionLastActivityAt,
+  upsertSession,
+  updateSessionDb,
+  updateSessionProgress,
+} from "./sessions.js";
 
 describe("session DB progress", () => {
   it("replaces or clears the whole Task binding on start, but preserves it on status/progress updates", () => {
@@ -46,6 +52,51 @@ describe("session DB progress", () => {
       updateSessionDb(persistDir, entry.sessionId, { status: "done" });
       closeDb(persistDir);
       expect(binding()).toEqual(unbound);
+    } finally {
+      closeDb(persistDir);
+      rmSync(persistDir, { recursive: true, force: true });
+    }
+  });
+
+  it("discovers only running session rows with an exact terminal Task attempt", () => {
+    const persistDir = mkdtempSync(join(tmpdir(), "may-session-db-"));
+    try {
+      const db = getDb(persistDir);
+      const addAttempt = (id: string, taskId: string, generation: number, state: string) =>
+        db.run(
+          `INSERT INTO app_task_attempts
+             (app_id, attempt_id, task_id, task_generation, state, lease_until, started_at, attempt_json)
+           VALUES ('sample', ?, ?, ?, ?, NULL, 1, '{}')`,
+          [id, taskId, generation, state],
+        );
+      addAttempt("terminal", "task-one", 2, "completed");
+      addAttempt("live", "task-two", 1, "running");
+      addAttempt("wrong-generation", "task-three", 3, "failed");
+      for (const [sessionId, taskId, generation, attemptId] of [
+        ["eligible", "task-one", 2, "terminal"],
+        ["still-running", "task-two", 1, "live"],
+        ["mismatched", "task-three", 2, "wrong-generation"],
+        ["missing", "task-four", 1, "absent"],
+      ] as const) {
+        upsertSession(persistDir, {
+          sessionId,
+          agent: "worker",
+          task: taskId,
+          status: "running",
+          startedAt: 1,
+          taskBinding: { appId: "sample", taskId, generation, attemptId },
+        });
+      }
+
+      expect(listTerminalTaskSessionBindings(persistDir, "sample")).toEqual([
+        {
+          sessionId: "eligible",
+          appId: "sample",
+          taskId: "task-one",
+          generation: 2,
+          attemptId: "terminal",
+        },
+      ]);
     } finally {
       closeDb(persistDir);
       rmSync(persistDir, { recursive: true, force: true });

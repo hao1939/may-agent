@@ -181,6 +181,45 @@ export function updateSessionProgress(
   );
 }
 
+/**
+ * Find Task-bound session rows whose exact recorded attempt is already terminal.
+ * The caller must still exclude current/in-process sessions and verify artifacts;
+ * missing markers or inactivity are never sufficient evidence on their own.
+ */
+export type TerminalTaskSessionBinding = {
+  sessionId: string;
+  appId: string;
+  taskId: string;
+  generation: number;
+  attemptId: string;
+};
+
+export function listTerminalTaskSessionBindings(
+  persistDir: string,
+  appId: string,
+  limit = 512,
+): TerminalTaskSessionBinding[] {
+  const boundedLimit = Math.max(1, Math.min(2_000, Math.floor(limit)));
+  return getDb(persistDir)
+    .prepare(
+      `SELECT s.sessionId, s.app_id AS appId, s.task_id AS taskId,
+              s.task_generation AS generation, s.attempt_id AS attemptId
+       FROM sessions s
+       JOIN app_task_attempts a
+         ON a.app_id = s.app_id
+        AND a.task_id = s.task_id
+        AND a.task_generation = s.task_generation
+        AND a.attempt_id = s.attempt_id
+       WHERE s.app_id = ?
+         AND s.status IN ('running', 'idle')
+         AND s.endedAt IS NULL
+         AND a.state IN ('completed', 'failed', 'interrupted')
+       ORDER BY s.startedAt, s.sessionId
+       LIMIT ?`,
+    )
+    .all(appId, boundedLimit) as TerminalTaskSessionBinding[];
+}
+
 /** Read durable session liveness without loading session artifacts. */
 export function readSessionLastActivityAt(persistDir: string, sessionId: string): number | null {
   const row = getDb(persistDir).prepare("SELECT lastActivityAt FROM sessions WHERE sessionId = ?").get(sessionId) as
