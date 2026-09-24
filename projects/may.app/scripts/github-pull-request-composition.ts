@@ -148,8 +148,13 @@ bus.setPersistenceSubscriber((event: any) => {
 });
 bus.setDeliveryRecorder(writer.recordDelivery);
 const observations: any[] = [],
+  observerFailures: any[] = [],
   admissions: any[] = [];
 bus.subscribeDurableRoute((event: any) => {
+  if (event.type === "app.observer.failed") {
+    observerFailures.push(event);
+    return;
+  }
   if (!event.type.startsWith("may.github.pull-request.")) return;
   observations.push(event);
   const canonical = {
@@ -173,6 +178,7 @@ bus.subscribeDurableRoute((event: any) => {
   return result.delivery;
 });
 let merged = false,
+  discoveryUnavailable = false,
   httpCalls = 0,
   currentTime = Date.now(),
   passes = 0;
@@ -192,6 +198,8 @@ const provider: any = async (u: any) => {
     merge_commit_sha: merged ? "b".repeat(40) : null,
   };
   if (url.includes("?state=")) {
+    if (discoveryUnavailable)
+      return Response.json({ message: "unavailable" }, { status: 503 });
     const state = new URL(url).searchParams.get("state");
     return Response.json(state === (merged ? "closed" : "open") ? [pull] : []);
   }
@@ -299,6 +307,24 @@ try {
     store.readTaskConditions(taskId).map((c: any) => c.metadata.id),
     ["human-review", "independent-dependency"],
   );
+
+  const failuresBeforeDiscoveryOutage = observerFailures.length;
+  discoveryUnavailable = true;
+  currentTime += observer.intervalMs;
+  await scan();
+  assert.equal(observerFailures.length, failuresBeforeDiscoveryOutage + 1);
+  assert.deepEqual(observerFailures.at(-1).target, { project: "may" });
+  assert.deepEqual(observerFailures.at(-1).data, {
+    appId: "may",
+    observerId: "github-pull-request",
+    error:
+      "GitHub pull-request discovery unavailable: open: GitHub read failed HTTP 503; closed: GitHub read failed HTTP 503",
+  });
+  discoveryUnavailable = false;
+  currentTime += observer.intervalMs;
+  await scan();
+  assert.equal(observerFailures.length, failuresBeforeDiscoveryOutage + 1);
+
   report.transitionWithoutRegistration = {
     sameTaskId: taskId,
     metadataBlock: ownerBody,
@@ -310,6 +336,9 @@ try {
     unchangedSuppressed: true,
     publicationFailureRetried: true,
     runtimeRestartRepublishedSafely: true,
+    totalDiscoveryFailurePublished:
+      observerFailures.length === failuresBeforeDiscoveryOutage + 1,
+    discoveryRecoveredNormally: true,
     durableEventId: fact[EVENT_ROW_ID],
     status: readRuntimeTaskView({ taskStateConfig: config }, taskId).status,
   };

@@ -476,10 +476,18 @@ async function discoverResources(
   scope: GitHubPullRequestScope,
   fetchImpl: FetchLike,
   budget: RequestBudget,
-): Promise<{ resources: Resource[]; truncated: boolean; failures: string[] }> {
+): Promise<{
+  resources: Resource[];
+  truncated: boolean;
+  failures: string[];
+  successfulPages: number;
+  deferred: boolean;
+}> {
   const found = new Map<number, Resource>();
   const failures: string[] = [];
   let truncated = false;
+  let successfulPages = 0;
+  let deferred = false;
   for (const state of ["open", "closed"] as const) {
     let next: string | null = listUrl(scope.repository, state);
     const visited = new Set<string>();
@@ -506,6 +514,7 @@ async function discoverResources(
         );
         if (!Array.isArray(page.value))
           throw new Error("GitHub discovery response is not an array");
+        successfulPages++;
         for (const item of page.value) {
           const pr = record(item);
           const number = pr.number;
@@ -531,10 +540,19 @@ async function discoverResources(
       failures.push(
         `${state}: ${error instanceof Error ? error.message : String(error)}`,
       );
-      if (error instanceof DeferredReadError) break;
+      if (error instanceof DeferredReadError) {
+        deferred = true;
+        break;
+      }
     }
   }
-  return { resources: [...found.values()], truncated, failures };
+  return {
+    resources: [...found.values()],
+    truncated,
+    failures,
+    successfulPages,
+    deferred,
+  };
 }
 
 function ownerIsCurrent(task: TaskDetail | null, owner: Owner): boolean {
@@ -565,23 +583,25 @@ export async function observeGitHubPullRequests(
   if (previous.deferUntil && previous.deferUntil > budget.nowMs)
     return { events: [], nextObservation: previous };
 
-  let discovered: Resource[] = [];
-  try {
-    const result = await discoverResources(scope, fetchImpl, budget);
-    discovered = result.resources;
-    for (const failure of result.failures)
-      ctx.log.warn(
-        `GitHub pull-request discovery coverage incomplete: ${failure}`,
-      );
-    if (result.truncated)
-      ctx.log.warn(
-        `GitHub pull-request discovery exceeded the bounded ${MAX_DISCOVERY_PAGES_PER_STATE}-page-per-state window`,
-      );
-  } catch (error) {
-    ctx.log.warn(
-      `GitHub pull-request discovery failed: ${error instanceof Error ? error.message : String(error)}`,
+  const discovery = await discoverResources(scope, fetchImpl, budget);
+  if (
+    discovery.failures.length > 0 &&
+    discovery.successfulPages === 0 &&
+    !discovery.deferred
+  ) {
+    throw new Error(
+      `GitHub pull-request discovery unavailable: ${discovery.failures.join("; ")}`,
     );
   }
+  const discovered = discovery.resources;
+  for (const failure of discovery.failures)
+    ctx.log.warn(
+      `GitHub pull-request discovery coverage incomplete: ${failure}`,
+    );
+  if (discovery.truncated)
+    ctx.log.warn(
+      `GitHub pull-request discovery exceeded the bounded ${MAX_DISCOVERY_PAGES_PER_STATE}-page-per-state window`,
+    );
 
   // Admit remembered open resources first, up to their explicit reservation.
   // Newest provider discoveries fill the remaining capacity. This makes every

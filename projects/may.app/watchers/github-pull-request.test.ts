@@ -417,6 +417,32 @@ describe("May GitHub pull-request resource ownership", () => {
     expect(maxCalls).toBeLessThanOrEqual(11);
   });
 
+  test("distinguishes successful empty discovery from total provider failure and recovers normally", async () => {
+    const empty = await observe(context(new Map()), provider(new Map()));
+    expect(empty).toEqual({
+      events: [],
+      nextObservation: { cursor: 0, resources: [], states: {} },
+    });
+
+    let unavailable = true;
+    const fetcher = (async () =>
+      unavailable
+        ? response({ message: "unavailable" }, 503)
+        : response([])) as typeof fetch;
+    await expect(observe(context(new Map()), fetcher)).rejects.toThrow(
+      "discovery unavailable: open: GitHub read failed HTTP 503; closed: GitHub read failed HTTP 503",
+    );
+
+    unavailable = false;
+    const recovered = await observe(context(new Map()), fetcher);
+    expect(recovered.events).toEqual([]);
+    expect(recovered.nextObservation).toEqual({
+      cursor: 0,
+      resources: [],
+      states: {},
+    });
+  });
+
   test("services successful discovery despite a later provider failure and reports incomplete coverage", async () => {
     const ctx = context(new Map([["goal/linked-pr", task("goal/linked-pr")]]));
     const fetcher = (async (input: string | URL | Request) => {

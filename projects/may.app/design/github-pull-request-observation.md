@@ -40,9 +40,15 @@ deployment, Task-close, or Condition-satisfaction authority.
 
 Each fifteen-minute pass reads at most two newest-updated pages for each state
 (open and recently closed): up to four discovery reads from the shared request
-budget. A failure on a later page or state is reported as incomplete coverage;
-already valid discoveries are still serviced with the remaining budget. The
-observer then directly reads candidate PRs before routing, because list responses
+budget. Successful empty list reads are an ordinary empty observation. If every
+attempted list read fails before any valid page is available, the run rejects so
+the Host's existing `app.observer.failed` producer records that discovery was
+unavailable; it must not commit the same snapshot as a successful empty run. A
+rate-limit response instead records the existing provider deferral and returns
+normally, and the next eligible pass retries without an incident service. A
+failure on a later page or state is reported as incomplete coverage; already
+valid discoveries are still serviced with the remaining budget. The observer
+then directly reads candidate PRs before routing, because list responses
 are not authoritative for body, author, merge, or review state. The
 direct response must match repository, number, configured author, and one valid
 owner block. Only then does the observer perform `tasks.get(exactTaskId)`; it
@@ -89,14 +95,26 @@ a busy owner retains input, while a quiet owner can wake. They do not create,
 remove, or satisfy independent human/dependency Conditions. May rereads current
 Task state and decides what changed.
 
+May explicitly subscribes to its Host-produced `app.observer.failed` facts and
+normalizes them into the ordinary message/Task path with the exact observer ID,
+error, and original Event. This is the accountable owner policy for total
+discovery failure. May verifies current evidence and allows normal retry and
+recovery; one failure fact is neither proof that a GitHub operation failed nor
+a reason to create an incident or human escalation. Partial review failure keeps
+the valid PR state and emits the typed targeted
+`may.github.pull-request.read-failed` evidence. A partial discovery window keeps
+valid discoveries usable and reports its bounded coverage warning.
+
 ## Verification and limits
 
 Unit regressions cover the prior gap (a quiet `done` owner with only a human
 Condition), initial merged and open-to-merged state, unchanged suppression,
-metadata removal/change, closed/unknown/cross-App/untrusted owners, partial
-reviews, request bounds, memory, and deferral. The composition trial uses the
-production App observer, provider parser, Host event bus, persistence, targeted
-admission, and Task reconciler against an isolated database with mocked GitHub
+metadata removal/change, closed/unknown/cross-App/untrusted owners, successful
+empty versus total failed discovery, recovery, partial reviews, request bounds,
+memory, deferral, and May's exact generic-failure subscription. The composition
+trial uses the production App observer, provider parser, Host event bus,
+persistence, targeted admission, and Task reconciler against an isolated
+database with mocked GitHub
 HTTP. It asserts same-Task delivery, unchanged suppression, and preservation of
 the unrelated human Condition without any PR Condition.
 

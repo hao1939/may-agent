@@ -603,12 +603,15 @@ delivery promise or a requirement to retain every intermediate provider change.
 
 **Implementation boundary:** May already has observer execution, exact Task
 admission and durable Task input recovery. This refinement does not claim a
-shared provider-discovery adapter or a publication-aware observer checkpoint
-API exists. In the reviewed Scout credential observer, cached state advances
-before Host publication, so an unpublished unchanged `unavailable` observation
-can be suppressed. That producer-side gap is not repaired by downstream event
-recovery; verify it alongside resource discovery before claiming end-to-end
-feedback reliability.
+shared provider-discovery adapter exists. The Host now owns an observer's
+`previousObservation`/`nextObservation` snapshot and advances it only after the
+returned facts receive durable publication receipts; the reviewed Scout
+credential observer uses that contract and no longer advances a module-local
+publication checkpoint. Provider discovery still has to distinguish a successful
+empty read from total read failure so the existing `app.observer.failed` path can
+run, and an installed App subscription or exact Task route must own any semantic
+consideration. Emitting or logging the failure alone is not evidence that an
+owner considered it.
 
 ## Durability and retention
 
