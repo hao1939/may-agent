@@ -311,8 +311,11 @@ async function githubJson(
   if (deferred) budget.deferUntil = deferred;
   if (response.redirected || (response.url && response.url !== requested.href))
     throw new Error("refused redirected GitHub response");
-  if (!response.ok)
-    throw new Error(`GitHub read failed HTTP ${response.status}`);
+  if (!response.ok) {
+    const message = `GitHub read failed HTTP ${response.status}`;
+    if (deferred) throw new DeferredReadError(message);
+    throw new Error(message);
+  }
   return {
     value: await response.json(),
     next: parseLinkNext(response.headers.get("link")),

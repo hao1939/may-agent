@@ -443,6 +443,37 @@ describe("May GitHub pull-request resource ownership", () => {
     });
   });
 
+  test("preserves provider deferral across mixed discovery failures in either state ordering", async () => {
+    const nowMs = new Date("2026-09-21T01:00:00Z").getTime();
+    for (const rateLimitedState of ["open", "closed"] as const) {
+      const calls: string[] = [];
+      const ctx = context(new Map());
+      const result = await observe(ctx, (async (
+        input: string | URL | Request,
+      ) => {
+        const state = new URL(String(input)).searchParams.get("state");
+        calls.push(String(state));
+        return state === rateLimitedState
+          ? response({ message: "limited" }, 429, { "retry-after": "60" })
+          : response({ message: "unavailable" }, 503);
+      }) as typeof fetch);
+      expect(result.events).toEqual([]);
+      expect(result.nextObservation).toMatchObject({
+        deferUntil: nowMs + 15 * 60_000,
+        resources: [],
+        states: {},
+      });
+      expect(ctx.warnings).toContainEqual(
+        expect.stringContaining(
+          `${rateLimitedState}: GitHub read failed HTTP 429`,
+        ),
+      );
+      expect(calls).toEqual(
+        rateLimitedState === "open" ? ["open"] : ["open", "closed"],
+      );
+    }
+  });
+
   test("services successful discovery despite a later provider failure and reports incomplete coverage", async () => {
     const ctx = context(new Map([["goal/linked-pr", task("goal/linked-pr")]]));
     const fetcher = (async (input: string | URL | Request) => {
