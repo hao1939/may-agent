@@ -342,27 +342,42 @@ updated, consolidated, or left unchanged.
 
 ## External Waits
 
-External facts are Conditions, not blocked holder tasks and not fake agents.
-The XHS credential flow is the reference case:
+Apply the common [recovery behavior](../../may-agent.app/docs/2a-design/system-boundary.md#recovery-uses-evidence-before-repetition).
+Scout owns diagnosis and authorized setup for its source access. Tool results
+retain observations; the owner judges whether those observations require human
+help. The intended XHS flow distinguishes these cases:
 
 ```text
-explore-xhs finds credentials unavailable
+access check finds setup missing or an unknown failure
+  -> current Scout owner inspects and performs useful authorized recovery
+  -> verify access and resume the original scan
+
+access check establishes a human login or authority requirement
   -> return waiting
   -> Condition: credential.state / credential:xhs / state=ready
-  -> infrastructure notifies the human outside task execution
+  -> report the exact request through existing May/Conversation delivery
   -> credential watcher or human action emits the semantic observation
   -> the Condition becomes true
   -> explore-xhs wakes and reconciles again
 ```
 
-Scout remains the owner throughout. The design must not create or repeatedly
-run a child task owned by `human`.
+Scout remains the owner throughout. Keep credential observations read-only;
+opening an allowed browser tab belongs to execution setup. Retain independent
+waits and partial work while diagnosing access. Verify source readability after
+setup before claiming a scan or satisfying an access Condition.
 
-New XHS credential waits name `human:operator`, show the browser-access action,
+**Implementation gap:** the existing `xhsWaitResult` still maps every non-ready
+probe result to a human-owned wait, and the probe conflates login, missing tabs
+and tool failures. The guidance correction makes the intended responsibility
+explicit; those code branches still require a tested source fix. The
+[September behavior review](../../may-agent.app/docs/proposals/app-behavior-convergence-20260925.md)
+records the contrasting acceptance cases and other open gaps.
+
+Human-required XHS credential waits name `human:operator`, show the concrete action,
 and set an hourly `reviewAfterMs`. The existing five-minute credential observer
-can satisfy the wait sooner. The review deadline is not credential readiness;
-an unavailable browser must never dispatch a source agent or claim a source
-check succeeded. Tests admit this wait through the current Host result contract.
+can satisfy the wait sooner. Source retrieval starts after readiness is verified;
+the owner can diagnose setup before that point. The review deadline schedules
+reconsideration. Tests admit this wait through the current Host result contract.
 
 Credential observations are level-triggered. A transition to `ready` wakes the
 waiting source task once; repeated `ready` observations and stale observations
@@ -374,16 +389,16 @@ revisions, restart, and ready/unavailable transitions.
 The credential preflight runs asynchronously with a 30-second subprocess
 deadline, so a pending browser check does not block the Host event loop. Both
 the observer and exploration workflow await its result. A timeout kills the
-probe and reports credential unavailability; it does not claim source access.
+probe. Its failure remains diagnostic evidence for the owner; the current
+implementation still labels it credential unavailability as noted above.
 
-The observer puts a temporary probe marker in its existing transition cache.
-Only the latest invocation may replace that cache and return facts, including
-when an App reload creates another module instance. An abandoned marker is
-replaced by the next ordinary scan. This is a local stale-result check, not a
-retry or recovery service. A closed observer's process may continue until its
-deadline; the Host discards facts from the closed generation. Ready facts replay
-on later scans. Unavailable notifications remain transition-only and best
-effort, so a transition lost during shutdown may not be replayed.
+The observer reads Host-retained `previousObservation` and returns events plus
+`nextObservation`. The Host advances that memory after publishing the facts and
+discards results from a replaced observer generation. A closed observer's
+process may continue until its subprocess deadline. Ready facts replay on later
+scans; unavailable facts are emitted on a state transition. These observations
+describe access. Human delivery uses the existing caller/Conversation path and
+requires its own receipt.
 
 ## Library Health
 

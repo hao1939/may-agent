@@ -21,28 +21,59 @@ agent's explanation of its own performance.
 
 Evidence priority is:
 
-1. accepted Task facts, final validation, and artifact read-back;
-2. tool results, durable artifacts, and publication receipts;
-3. tool calls and actions from linked attempts;
-4. agent reasoning and summaries;
-5. agent self-assessment, which has no scoring weight.
+1. direct observations, relevant validation, and artifact read-back for the claim;
+2. exact Task, attempt, tool and publication records establishing identity and actions;
+3. attributed explanations and interpretations to verify against those observations.
 
-When two sources conflict, the higher source wins. A later failing test or
-missing artifact overrides an earlier success claim. Publication, owner
-acknowledgment, a fix claim, and an independent recheck remain distinct states.
+Accepted Task results establish what was recorded. Inspect the support for a
+claim according to its content: an author's assertion retains that evidential
+status when copied into Task facts, a workflow result or a published report.
+When evidence conflicts, compare its scope, timing and relevance to the claimed
+outcome. A later relevant failing check can overturn an earlier success claim;
+an unrelated check leaves independently verified work intact. Publication,
+owner acknowledgment, a fix claim, and independent recheck remain distinct facts.
 
 ## Ongoing-obligation contract
 
 An ongoing review judges the exact current Task snapshot at its retained due phase; it does not grade unfinished work as though the final outcome were already due. Inspect whether:
 
 - active work is useful, bounded, and still owned by the current Task;
-- a wait names a real fact, return route, owner, and reasonable review boundary;
+- a wait names a real fact, return route, owner, and reasonable review boundary,
+  and the evidence justifies why that external contribution is needed;
 - failed attempts preserve useful evidence and recovery continues on the same identity;
 - dependencies and linked repairs are reused rather than duplicated;
 - exact approval remains pending where application or activation requires it; and
 - overdue review, missing observations, stale evidence, or drift is reported explicitly without mutating, cancelling, or reassigning the subject.
 
 A valid wait, useful active execution, pending approval, or recovered transient failure is not a failure by status or age alone. A current accepted/converged result can legitimately appear as App status `done` and Task detail status `up-to-date` while `terminal=false` and `ready=false`: the current outcome is reconciled, while the durable Task remains open for later input. If it has no current Conditions, dependencies, input waits, or other obligations, no review deadline is required; do not mistake open lifetime or non-claimability for unfinished work. If the public snapshot does not expose enough evidence to distinguish those states, return `insufficient-evidence`; do not call absent coverage healthy.
+
+## Shared behavior review
+
+Agents and workflows follow the same model: read current facts, choose useful
+authorized work, verify the effect, and retain remaining obligations. Inspect
+the material decision through the existing report fields:
+
+- **Recovery:** what failed, what the available authority and tools permitted,
+  and whether a useful correction or diagnosis was performed. A demonstrated
+  human-only action can justify an immediate request; recovery quality depends
+  on the decision and evidence, rather than a required number of attempts.
+- **Wait necessity:** distinguish the observed prerequisite from the decision
+  to ask a particular owner. For example, a missing browser tab permits checking
+  normal setup; a confirmed login challenge may require a human. Workflow
+  authorship establishes where the decision came from, not its necessity.
+- **Observation quality:** distinguish a successful empty read from an
+  unavailable read or unusable response. Retain partial useful results and
+  uncertainty together; judge the scope actually supported.
+- **Follow-through:** check resumption of the original outcome and delivery of
+  any owed caller or human request. Independently pending work and waits can
+  coexist with that progress.
+
+A no-op or quiet wait merits the same evidence-based judgment as an explicit
+failure. State the observed action, expected behavior, practical consequence and
+scope of evidence in `findings` and `verification`. Where the bounded snapshot
+lacks needed authority/tool context, name that limitation with
+`insufficient-evidence`. A report covers the inspected Task and behavior; keep
+unexamined paths visibly unassessed.
 
 ## Historical responsibility contract
 

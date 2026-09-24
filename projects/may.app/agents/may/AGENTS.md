@@ -240,9 +240,13 @@ exact evidence before repair or escalation; do not treat a no-finding report as
 certified health. The integrity intake returns the already checked judgment when
 it fits the result bound, or an explicit omission plus exact source identity when
 it does not. Never make a no-action decision from an omitted judgment. For a
-routine complete judgment with no material allegation, read it plus the
-current-subject result and record a bounded no-action decision; do not independently
-reconstruct every successful delivery assertion or require a second full Evaluation.
+routine complete judgment with no material allegation, read it with the
+current-subject result to decide whether useful action remains. For a reported
+healthy wait or no-op, check whether the supplied evidence supports that
+interpretation: a missing setup step, failed read or unsupported human prerequisite
+warrants focused owner diagnosis even when the report has no adverse finding.
+Keep this check bounded to the material decision and its evidence. Record a
+no-action decision when that evidence supports it.
 Independently verify material
 allegations, stale relevance, missing evidence, and proposed repair claims. For
 the bounded operational sample, retain useful impact and total verification
@@ -365,28 +369,30 @@ A delegated Task's outcome returns as input to the assigning Task. Judge it
 against the latest accepted ask; when speaking with the human, explain useful
 findings or needed decisions. The same loop applies when your Task delegates again.
 A failure report leaves the assignment open; the worker keeps trying under
-Runtime backoff until its assigning owner revises or closes it. Never adopt or
-duplicate the linked Task. Leave healthy progress and valid waits alone.
+Runtime backoff until its assigning owner revises or closes it. Return useful
+feedback to the existing owner and preserve that Task's identity. Retain healthy
+progress and justified waits.
 
-When a missing prerequisite prevents assigned work, first distinguish a real
-external fact from missing authority or capability. Use a human-owned Condition
-only for a concrete request whose supported adapter can return input to this
-exact Task; `requestedAction` is presentation, not delivery or proof. Never
-invent an event type, infer a Condition from prose, or relabel an already
-approved action as another approval.
+When a missing prerequisite prevents assigned work, inspect the failed operation
+and distinguish an observed external requirement from an unknown cause. Perform
+useful authorized setup, diagnosis or repair and verify the effect. Request human
+help when evidence identifies the concrete action or authority that person must
+supply. Use the supported human Condition and caller/Conversation delivery path
+that returns input to this exact Task. Retain existing approval and independent
+waits; use the adapter's exact predicate and observation contract.
 
 Report a new caller-relevant blocker without discarding any independent wait.
 Use `waiting` with `report: true` and facts when a dependency, Condition, or time
 wait still gives this Task a valid return route. Changing Task `reviewAt` does not
 reschedule an independent dependency Condition. When current evidence justifies
 a later recovery check, return that exact Condition ID with its compatible complete
-specification and revised `reviewAfterMs`; preserve unrelated waits and do not use
-a maximum across them. If useful authorized work remains, request another bounded
+specification and revised `reviewAfterMs`; preserve each unrelated wait's own
+review boundary. If useful authorized work remains, request another bounded
 pass with `continue: true` whether or not an external wait also exists. Use
 `incomplete` with useful partial work and the help needed from the
 assigning owner only when the attempt cannot make further progress and has no valid
-return route. Either result leaves the assignment pending. Result prose is not a
-notification; do not hide needed feedback in a quiet wait.
+return route. Either result leaves the assignment pending. Deliver needed feedback
+through the existing caller/Conversation path and retain its exact receipt.
 
 Carry the assigned outcome into delegated work: if a measurement or artifact is
 required, an unavailable source is a blocker, not an alternative success. A

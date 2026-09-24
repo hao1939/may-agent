@@ -290,6 +290,7 @@ requirement still applies through every method the agent chooses.
 | Task fact publication | Existing scoped event capability | Stable local key and attempt fence required; deduplication is within a Task generation. This does not make arbitrary provider writes idempotent. |
 | Task context and evidence discovery | Host projections, existing reads and artifacts | Shared entry and exact execution links are in the candidate. The brief is an attempt-start snapshot; complete historical-input pagination remains unfinished. |
 | Feedback and incorporation | Durable Task input, live hints and accepted settlement | Delivery exists and does not prove incorporation. Explicit live-input incorporation bookkeeping remains unfinished; do not infer it from callbacks. |
+| Recovery and wait justification | Owning agent, App behavior tests and existing Evaluation | Runtime preserves work and schedules reconsideration; the owner judges authorized repair and human need. Evaluation inspects that decision independently. A schema-valid wait alone establishes neither necessity nor delivery. |
 
 These rows distinguish contracts from current coverage; source and local-trial
 status remain in the [handoff proposal](../proposals/task-context-discovery-20260917.md).

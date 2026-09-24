@@ -165,6 +165,14 @@ or supervision is already implemented.
 
 ### Recovery uses evidence before repetition
 
+Agent and workflow execution share one behavior model: read current facts,
+choose useful authorized work, verify its effect, and retain the remaining
+obligations on the same Task. Instructions teach that action path. Describe
+the supported operation, verification and responsible authority together;
+for example, repair an accessible environment through tools, report through
+`finish()`, and let supported observations settle external Conditions. The
+Host's state and approval checks enforce their precise mechanical boundaries.
+
 Recovery restores useful progress toward the current assignment. Preventing a
 recurrence is later improvement work; neither requires a second Task lifecycle.
 The original Task keeps its independent obligations, accepted work and waits.
@@ -199,6 +207,25 @@ A healthy wait needs no new investigation at every wake. Repeated unsuccessful
 execution calls for reconsideration; backoff limits frequency, not total cost
 or the quality of the next decision. Diagnosis is agent judgment, not a rule
 to change strategies after a fixed error count.
+
+Keep observations and interpretations distinguishable. A tool or workflow's
+failure establishes what failed; whether a human must act remains a decision
+requiring evidence of that person's needed action or authority. Perform useful
+authorized setup or diagnosis when it can resolve that uncertainty. A known
+human-only requirement can be reported directly. Preserve inaccessible reads
+and unusable output as explicit limits while retaining independently verified
+work. Empty data is an observation only when the relevant read succeeded.
+
+Owners judge workflow recommendations against the assignment and current
+evidence, just as they judge another agent's contribution. Preserve original
+observations and independent obligations while correcting an unsupported
+interpretation through the existing result and Condition mechanisms.
+Evaluation separately checks the justification for a wait, the use of available
+recovery, and delivery of any owed human request. A structurally accepted result
+establishes settlement; behavioral evidence establishes whether the decision
+helped the assignment. See the
+[behavior review method](../2b-manual/workflow-authoring.md#checking-app-behavior)
+for source checks, contrasting trials and bounded live review.
 
 Recovery cannot depend entirely on the failed authored workflow returning a
 special instruction. Its outer execution boundary and exact caller report

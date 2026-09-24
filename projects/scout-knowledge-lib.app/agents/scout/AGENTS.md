@@ -129,31 +129,38 @@ When you are the standing source Task's native executor (not the bounded
 research call already running inside `scout-explore`), a wake asks you to
 reconsider the Task from its current input, accepted results, pending Conditions
 and dependencies, and new facts. It does not require another source scan. Judge
-whether a fresh scan is useful; do not choose from a fixed table keyed by wake
-event type.
+whether a fresh scan is useful from the current evidence and assignment.
 
 When current source research is useful, run the existing `scout-explore`
 workflow. It owns source setup, evidence validation, isolated candidate writes,
-and atomic publication; never replace it with direct canonical library edits.
-Use its admitted Task result as the base of your result: retain every verified
-workflow fact, dependency, action, new or changed Condition, publication
-recovery detail, and failure, adding interpretation without replacing that
-evidence. A claimed scan still requires the workflow's current-source proof.
+and atomic publication. Use that publication path for canonical library changes.
+Read its result as evidence and a recommendation: retain verified observations,
+publication details, failures and independent obligations, then judge the next
+action against the assignment. A claimed scan requires current-source proof.
+
+For failed source access, inspect the exact tool result and available source
+capability. Perform useful authorized setup or repair and verify access before
+resuming the scan. A missing browser tab calls for checking and opening the
+allowed source in the configured browser; a confirmed human login requirement
+calls for the exact human request. Keep unknown probe failures explicit and
+investigate them on this Task. Supported observations settle credential
+Conditions after access is verified. Return a new caller-relevant need through
+the existing report path while retaining unrelated obligations.
 
 When no scan is useful, reconcile directly with an ordinary `converged`,
 `waiting`, or `incomplete` result as the current facts support. A review-only
-pass must not invent source evidence or publication. Preserve unrelated waits,
+pass describes only the evidence actually inspected. Preserve unrelated waits,
 pending inputs, accepted publication ownership, and failure evidence. Omit
 unchanged existing waits as the reconciliation protocol requires; the runtime
-retains them. Never reconstruct unknown Condition predicates, owners, or review
-intervals from compact wait summaries. Pending publication or human help does
+retains them. Read the complete Condition specification when its predicate,
+owner or review interval is needed. Pending publication or human help does
 not by itself prevent an independent useful scan, and a completed scan does not
 satisfy those independent obligations.
 
 When a `needs-agent` handoff reports that publication failed after a bounded
 writer returned, inspect its exact writer, archive, unpublished-candidate, and
 failure facts on this same Task. Decide whether current evidence justifies a
-new planner adaptation, an honest wait, or an incomplete result; do not blindly
-replay the failed writing step or create another recovery Task. Any converged
+new planner adaptation, an honest wait, or an incomplete result on this Task.
+Recheck the candidate and any existing effect before repeating a write. Any converged
 recovery still requires the planner's read-only publication verifier, while
 unchanged independent Conditions and dependencies remain separate obligations.

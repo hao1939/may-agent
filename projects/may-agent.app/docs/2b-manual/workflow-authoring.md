@@ -439,6 +439,49 @@ that all installed workflows follow this guidance.
 
 ## Integrity Checklist
 
+### Checking App behavior
+
+Apply the same model to agents and workflows: **read current facts → choose
+useful authorized work → verify the effect → retain remaining obligations**.
+Write instructions as actions with their evidence and authority: explain how
+to recover, report, wait or request a decision. Keep the common rule in
+[System Boundary](../2a-design/system-boundary.md#recovery-uses-evidence-before-repetition)
+and local source/tool details in the owning App.
+
+Use existing checks and review paths to assess adherence:
+
+| Question | Evidence and owner |
+| --- | --- |
+| Are shared mechanics respected? | Host contract tests and the existing canonical-App check establish identity, result admission, retained waits and supported APIs. |
+| Do domain decisions preserve the facts? | Owning App tests contrast recoverable setup, a genuine external prerequisite, failed observation and a successful empty result through production entry/return paths. |
+| Does the agent choose a useful action? | A bounded agent trial checks diagnosis, authorized repair, exact human help when needed, and resumption of the original outcome. Fake replies establish wiring only. |
+| Does ordinary work follow the model? | Evaluation samples actual Task/attempt evidence through its existing failure and periodic inputs; the accountable owner handles recovery and May judges worthwhile improvements. |
+| Which cases remain unknown? | A dated review records App/revision, inspected paths, exercised behavior, exact evidence, gaps and next action. Existing Task results and reports hold this evidence. |
+
+Give each important decision a contrasting case. For example, opening a missing
+authorized browser tab and asking a human to sign in exercise different
+authority boundaries; a failed read and a successful empty read exercise
+different evidence boundaries. Include a case where useful work and an external
+wait coexist. Checks assess the behavior, rather than counting particular words
+in instructions or requiring every App to run an identical procedure.
+
+Evaluation's ordinary report can state the observed behavior, expected action,
+practical impact and coverage limits in its existing fields. Review claims of
+healthy waits and no-ops as well as explicit failures. Report integrity,
+successful tests and sampled behavior are separate evidence. Keep unexamined
+Apps, paused Apps and unexercised paths visibly unassessed; passing samples
+support only their stated scope. Review Evaluation itself through independent
+supervisor review or a bounded comparison, preserving its external-App-only
+responsibility.
+
+Use the installed App catalog to bound a live review and source discovery to
+check authored paths. Follow existing Task and evidence links for each sample.
+Expand coverage after relevant changes or observed failures. This is a review
+practice using existing CI, Evaluation, May and optional Gym trials; the record
+does not create another registry, score, queue or runtime admission gate.
+
+### Workflow checklist
+
 - The workflow has one owner and one typed input.
 - Every call is bounded to the current run.
 - Normal branches return a truthful terminal contribution; failures retain available evidence.

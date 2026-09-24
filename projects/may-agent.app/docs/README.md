@@ -34,6 +34,13 @@ small shared state boundary.
 
 ## Current focus
 
+The [App behavior convergence review](proposals/app-behavior-convergence-20260925.md)
+compares active App paths with the common recovery model. It replaces ambiguous
+prohibitions with action guidance and records remaining code and trial gaps.
+The [review method](2b-manual/workflow-authoring.md#checking-app-behavior) uses
+existing checks, Evaluation and owner decisions to assess adherence within an
+explicit scope.
+
 The [recovery review](proposals/recovery-from-execution-evidence-20260922.md)
 connects previous failures to the existing recovery mechanisms: use current
 structured facts, follow linked execution evidence when needed, and restore

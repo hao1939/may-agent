@@ -123,6 +123,7 @@ current-design list.
 | [sdk-quickstart.md](2b-manual/sdk-quickstart.md)                           | Checked App quickstart and public capability guide.                                         |
 | [handler-authoring.md](2b-manual/handler-authoring.md)                     | Task reconciler results, waits and mutation rules.                                    |
 | [workflow-authoring.md](2b-manual/workflow-authoring.md)                   | Workflow authoring, advisory best practices and checked examples. |
+| [Checking App behavior](2b-manual/workflow-authoring.md#checking-app-behavior) | Common behavior review using contract tests, contrasting trials and bounded Evaluation evidence. |
 | [agent-app-adoption-playbook.md](2b-manual/agent-app-adoption-playbook.md) | Adoption checklist using the shared quickstart.                   |
 | [agent-convention.md](2b-manual/agent-convention.md)                       | Agent directory and definition conventions.                 |
 | [metric-alerts.md](2b-manual/metric-alerts.md)                             | Alert triage, repair, calibration, and escalation.          |

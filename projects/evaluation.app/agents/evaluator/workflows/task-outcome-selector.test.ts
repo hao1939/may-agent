@@ -434,7 +434,8 @@ describe("automatic task outcome selector", () => {
     } as never;
     const result = await runTaskOutcomeSelector(
       ctx,
-      catalogCommand({ may: [task("may", long)] }),
+      // The production entry uses the wall clock; keep this outcome recent.
+      catalogCommand({ may: [{ ...task("may", long), updatedAt: Date.now() }] }),
       deepseekConfig,
       root,
     );
@@ -448,6 +449,7 @@ describe("automatic task outcome selector", () => {
 
   test("gives retained requested reviews priority over routine sampling", async () => {
     const root = mkdtempSync(join(tmpdir(), "selector-request-priority-"));
+    const routine = { ...task("may", "goal/routine"), updatedAt: Date.now() };
     let emitted = false;
     const context = (live: Record<string, unknown>[], truncated = false) =>
       ({
@@ -472,7 +474,7 @@ describe("automatic task outcome selector", () => {
           status: "waiting",
         },
       ]),
-      catalogCommand({ may: [task("may", "goal/routine")] }),
+      catalogCommand({ may: [routine] }),
       deepseekConfig,
       root,
     );
@@ -492,7 +494,7 @@ describe("automatic task outcome selector", () => {
           status: "waiting",
         },
       ]),
-      catalogCommand({ may: [task("may", "goal/routine")] }),
+      catalogCommand({ may: [routine] }),
       deepseekConfig,
       root,
     );
@@ -506,7 +508,7 @@ describe("automatic task outcome selector", () => {
           status: "waiting",
         },
       ]),
-      catalogCommand({ may: [task("may", "goal/routine")] }),
+      catalogCommand({ may: [routine] }),
       config,
       root,
     );
@@ -517,7 +519,7 @@ describe("automatic task outcome selector", () => {
 
     const incomplete = await runTaskOutcomeSelector(
       context([], true),
-      catalogCommand({ may: [task("may", "goal/routine")] }),
+      catalogCommand({ may: [routine] }),
       config,
       root,
     );

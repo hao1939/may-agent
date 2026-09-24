@@ -1497,7 +1497,6 @@ describe("evaluation task policy", () => {
     expect(instructions).toContain("exact `<type>:<id>` form");
     expect(instructions).toContain("event:project.task.child-transitioned");
     expect(instructions).toContain("Put target filters");
-    expect(instructions).toContain("never use prose");
   });
 
   test("keeps Task actions inside open-ended Evaluation work", () => {
