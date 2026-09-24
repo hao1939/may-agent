@@ -5,12 +5,17 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return value !== null && typeof value === "object" && !Array.isArray(value);
 }
 
-export function appTaskSessionBinding(value: unknown): { appId: string; taskId: string; generation: number } | null {
+export function appTaskSessionBinding(
+  value: unknown,
+): { appId: string; taskId: string; generation: number; attemptId?: string } | null {
   if (!isRecord(value)) return null;
   const appId = typeof value.appId === "string" ? value.appId.trim().replace(/\.app$/, "") : "";
   const taskId = typeof value.taskId === "string" ? value.taskId.trim() : "";
+  const hasAttemptId = Object.prototype.hasOwnProperty.call(value, "attemptId");
+  const attemptId = typeof value.attemptId === "string" ? value.attemptId.trim() : "";
+  if (hasAttemptId && !attemptId) return null;
   const generation = value.generation;
   return appId && taskId && typeof generation === "number" && Number.isInteger(generation) && generation > 0
-    ? { appId, taskId, generation }
+    ? { appId, taskId, generation, ...(attemptId ? { attemptId } : {}) }
     : null;
 }

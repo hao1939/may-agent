@@ -1199,7 +1199,14 @@ function attachAppEventRouter(opts: AppTaskRuntimeOptions, descriptors: AppTaskR
       const event = flattenEvent(rawEvent);
       const startedSessionId =
         event.type === "session.start" && typeof event.sessionId === "string" ? event.sessionId.trim() : "";
-      const sessionBinding = startedSessionId ? appTaskSessionBinding(event.taskBinding) : null;
+      const parentSessionId = firstNonEmptyString(
+        event.parentSessionId,
+        isRecord(event.data) ? event.data.parentSessionId : undefined,
+      );
+      // Helpers inherit Task context for reads and tracing, but that inherited
+      // context does not transfer ownership of the reconciliation attempt or
+      // its recovery lease away from the session that launched the helper.
+      const sessionBinding = startedSessionId && !parentSessionId ? appTaskSessionBinding(event.taskBinding) : null;
       if (sessionBinding) {
         const descriptor = (appRouterDescriptorsByBus.get(opts.bus) ?? []).find(
           (candidate) => candidate.id === sessionBinding.appId,

@@ -3170,7 +3170,7 @@ export function recordAppTaskAttemptSession(config: AppTaskContext, claim: AppTa
  */
 export function associateAppTaskSession(
   config: AppTaskContext,
-  binding: { taskId: string; generation: number },
+  binding: { taskId: string; generation: number; attemptId?: string },
   sessionId: string,
 ): AppTaskSessionAssociation {
   const tree = config.resourceStore.readTaskContext({ taskIds: [binding.taskId] });
@@ -3187,7 +3187,8 @@ export function associateAppTaskSession(
     !attempt ||
     attempt.state !== "running" ||
     attempt.taskId !== binding.taskId ||
-    attempt.taskGeneration !== binding.generation
+    attempt.taskGeneration !== binding.generation ||
+    (binding.attemptId !== undefined && attempt.metadata.id !== binding.attemptId)
   ) {
     return { status: "superseded", taskId: binding.taskId };
   }

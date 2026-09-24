@@ -3785,7 +3785,7 @@ describe("App task reconciler state", () => {
     expect(
       associateAppTaskSession(
         config,
-        { taskId: claim.taskId, generation: claim.generation },
+        { taskId: claim.taskId, generation: claim.generation, attemptId: claim.attemptId },
         "nested-workflow-session",
       ),
     ).toEqual({ status: "recorded", taskId: claim.taskId });
@@ -3794,6 +3794,22 @@ describe("App task reconciler state", () => {
     const associatedVersion = associated?.metadata.resourceVersion;
     expect(recordAppTaskAttemptSession(config, claim, "nested-workflow-session")).toBe(true);
     expect(readTaskSnapshot(config).attempts?.[claim.attemptId].metadata.resourceVersion).toBe(associatedVersion);
+    expect(
+      associateAppTaskSession(
+        config,
+        { taskId: claim.taskId, generation: claim.generation, attemptId: "different-attempt-same-generation" },
+        "stale-attempt-session",
+      ),
+    ).toEqual({ status: "superseded", taskId: claim.taskId });
+    expect(readTaskSnapshot(config).attempts?.[claim.attemptId].sessionId).toBe("nested-workflow-session");
+    expect(
+      associateAppTaskSession(
+        config,
+        { taskId: claim.taskId, generation: claim.generation, attemptId: claim.attemptId },
+        "next-workflow-session",
+      ),
+    ).toEqual({ status: "recorded", taskId: claim.taskId });
+    expect(readTaskSnapshot(config).attempts?.[claim.attemptId].sessionId).toBe("next-workflow-session");
 
     const revised: AppTaskIntent = {
       ...original,

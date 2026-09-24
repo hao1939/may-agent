@@ -5817,6 +5817,93 @@ describe("canonical App task runtime", () => {
     expect(accepted("work/completed")).toEqual(completed);
   });
 
+  it("keeps inherited helper context separate from the attempt owner session and lease", async () => {
+    const f = fixture();
+    const bus = eventBus();
+    const interruptions: string[] = [];
+    await installCoreTaskRuntimes(
+      {
+        ...options(f, bus),
+        sessions: {
+          handoff: () => undefined,
+          isLive: () => false,
+          lastActivityAt: () => null,
+          workflowInterrupted: () => false,
+          read: () => null,
+          interrupt: (sessionId, _reason, taskId) => interruptions.push(`${sessionId}:${taskId}`),
+        },
+        installControllers: false,
+        appRegistrySnapshot: {
+          id: "helper-session-ownership",
+          generation: 1,
+          entries: [{ appDir: f.appDir, definition: definition() }],
+        },
+      },
+      { deferRecovery: true },
+    );
+    const config = loadedTaskConfig(f);
+    observeAppTaskIntent(config, {
+      appAgent: "sample-owner",
+      intent: {
+        id: "work/helper-owner",
+        parentId: "operations",
+        outcome: "Keep helper context separate from execution ownership",
+        acceptance: ["The owner lease remains exact"],
+      },
+    });
+    const claim = claimObservedAppTask(config, {
+      taskId: "work/helper-owner",
+      appAgent: "sample-owner",
+      handler: "agent:sample-owner",
+    });
+    if (claim.kind !== "claimed") throw new Error("expected claim");
+    expect(recordAppTaskAttemptSession(config, claim, "owner-session")).toBeTrue();
+    const before = config.resourceStore.readAttempt(claim.attemptId);
+
+    const emitStart = (sessionId: string, attemptId: unknown, parentSessionId?: string) =>
+      bus.emit({
+        type: "session.start",
+        owner: "agent:sample-owner",
+        data: {
+          sessionId,
+          agent: "sample-owner",
+          task: "bounded task session",
+          trigger: "test",
+          firedAt: Date.now(),
+          ...(parentSessionId ? { parentSessionId } : {}),
+          taskBinding: {
+            appId: "sample",
+            taskId: claim.taskId,
+            generation: claim.generation,
+            attemptId,
+          },
+        },
+      } as AgentEvent);
+
+    emitStart("helper-session", claim.attemptId, "owner-session");
+    await Bun.sleep(10);
+    const afterHelper = config.resourceStore.readAttempt(claim.attemptId);
+    expect(afterHelper?.sessionId).toBe("owner-session");
+    expect(afterHelper?.lease).toEqual(before?.lease);
+
+    emitStart("next-workflow-session", claim.attemptId);
+    await Bun.sleep(10);
+    const afterSequential = config.resourceStore.readAttempt(claim.attemptId);
+    expect(afterSequential?.sessionId).toBe("next-workflow-session");
+
+    emitStart("stale-attempt-session", "different-attempt-same-generation");
+    await Bun.sleep(10);
+    const afterStale = config.resourceStore.readAttempt(claim.attemptId);
+    expect(afterStale?.sessionId).toBe("next-workflow-session");
+    expect(afterStale?.lease).toEqual(afterSequential?.lease);
+    expect(interruptions).toEqual([`stale-attempt-session:${claim.taskId}`]);
+
+    emitStart("malformed-attempt-session", "   ");
+    await Bun.sleep(10);
+    expect(config.resourceStore.readAttempt(claim.attemptId)).toEqual(afterStale);
+    expect(interruptions).toEqual([`stale-attempt-session:${claim.taskId}`]);
+  });
+
   it.each(["reload", "close and reinstall", "rejected reload"] as const)(
     "uses current session adapters after %s without adding another listener",
     async (replacement) => {
