@@ -2619,6 +2619,7 @@ describe("canonical App task runtime", () => {
       const persistDir = join(f.root, "state");
       let bus = eventBus();
       let host: AppInboxHost;
+      const resultRefreshes: Promise<void>[] = [];
       let sourceReady = false;
       const calls: string[] = [];
       const contexts: Parameters<TaskExecutor>[0][] = [];
@@ -2701,6 +2702,12 @@ describe("canonical App task runtime", () => {
           },
         });
         bus.subscribe((event) => {
+          if (event.type === "project.task.reconciled" || event.type === "app.task.cancelled") {
+            const appId = String(event.data.project ?? event.data.appId ?? "");
+            const taskId = String(event.data.taskId ?? "");
+            if (appId && taskId) resultRefreshes.push(host.refreshTaskResults(appId, taskId));
+            return;
+          }
           if (event.type !== "app.input.requested") return;
           host.admit({
             id: String(event.data.requestId),
@@ -2712,6 +2719,9 @@ describe("canonical App task runtime", () => {
           return { accepted: true, by: "fixture", route: "direct" };
         });
       };
+      const drainResultRefreshes = async () => {
+        while (resultRefreshes.length) await Promise.all(resultRefreshes.splice(0));
+      };
       const run = (taskId: string) =>
         reconcileLoadedAppTaskOnce({
           bus,
@@ -2720,10 +2730,13 @@ describe("canonical App task runtime", () => {
           dispatch: { enqueuedAt: 1, startedAt: 2, readyWaitMs: 1, lane: "normal" },
         });
       const refresh = async () => {
+        await drainResultRefreshes();
         await host.recoverTaskResults();
         await recoverInstalledAppTasks(bus);
+        await drainResultRefreshes();
       };
       const reopen = async () => {
+        await drainResultRefreshes();
         host.close();
         await closeInstalledAppTaskRuntimes(bus);
         closeDb(persistDir);

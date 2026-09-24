@@ -58,12 +58,14 @@ for (const failure of ["mapping", "link-write", "report-write"] as const) {
     const bus = new EventBus();
     const writer = new DbWriter(root);
     const failures: AgentEvent[] = [];
+    const feedback: AgentEvent[] = [];
     const diagnostic = spyOn(console, "error").mockImplementation(() => {});
     bus.setPersistenceSubscriber((event) => {
       if (event.type === "handler.failed") {
         failures.push(event);
         if (failure === "report-write") throw new Error("diagnostic storage unavailable");
       }
+      if (event.type === "app.dependency.updated") feedback.push(event);
       return writer.handler(event);
     });
     bus.setDeliveryRecorder(writer.recordDelivery);
@@ -96,7 +98,7 @@ for (const failure of ["mapping", "link-write", "report-write"] as const) {
         type: "app.input.requested",
         source: "fixture",
         owner: "app:example",
-        data: { appId: app.id, requestId: id, input: { kind: "message", data: {} }, source: { kind: "human", id } },
+        data: { appId: app.id, requestId: id, input: { kind: "message", data: {} }, source: { kind: "app", id: "may" } },
       });
     try {
       expect(publish("first")[EVENT_DELIVERY_RESULT]).toMatchObject({ accepted: true });
@@ -105,6 +107,26 @@ for (const failure of ["mapping", "link-write", "report-write"] as const) {
       publish("unrelated");
       expect(runtime.host.get("unrelated")?.waitingOn?.id).toBe("unrelated");
       expect(failures).toHaveLength(1);
+      expect(feedback).toHaveLength(1);
+      expect(feedback[0]).toMatchObject({
+        type: "app.dependency.updated",
+        owner: "app:may",
+        data: {
+          idempotencyKey: expect.stringContaining("app-input-recovery:example:first:"),
+          kind: "app",
+          id: "first",
+          status: "blocked",
+          result: {
+            appId: "example",
+            requestId: "first",
+            stage: "input-admission",
+            disposition: "recovery-pending",
+          },
+        },
+      });
+      // This fixture has no retained May Task wait, so publication is durable
+      // but the generic noop receipt must not be mistaken for caller delivery.
+      expect(runtime.host.get("first")?.recovery?.["input-admission"]?.reportedAt).toBeUndefined();
       expect(readConversationRequest(db, app.id, "chat", "ask")).toEqual(accepted);
       broken = false;
       if (failure === "link-write") db.exec("DROP TRIGGER fail_link");
@@ -121,6 +143,10 @@ for (const failure of ["mapping", "link-write", "report-write"] as const) {
         () => runtime.host.get("first")?.status === "done" && runtime.host.get("unrelated")?.status === "done",
       );
       expect(runtime.host.get("first")?.result?.summary).toBe("Verified");
+      expect(feedback.findLast((event) => event.data.id === "first" && event.data.status === "done")).toMatchObject({
+        owner: "app:may",
+        data: { kind: "app", id: "first", status: "done", summary: "Verified" },
+      });
       expect(db.prepare("SELECT COUNT(*) AS count FROM app_inbox_items WHERE lease_owner IS NOT NULL").get()).toEqual({
         count: 0,
       });
@@ -133,3 +159,119 @@ for (const failure of ["mapping", "link-write", "report-write"] as const) {
     }
   });
 }
+
+test("deduplicates accepted pre-Task feedback and heals its reported marker after restart-safe replay", async () => {
+  const root = mkdtempSync(join(tmpdir(), "may-recovery-feedback-"));
+  let db = getDb(root);
+  let now = 1_000;
+  const app = defineApp({
+    id: "example",
+    version: 1,
+    agent: "example-owner",
+    inputSchema: Type.Object({ kind: Type.Literal("message"), data: Type.Object({}) }),
+    tasks: {},
+    task: () => {
+      throw new Error("mapping unavailable");
+    },
+  });
+  const registry = new AppRegistry(async () => [{ appDir: root, definition: app }]);
+  await registry.reload();
+  let bus = new EventBus();
+  let writer = new DbWriter(root);
+  const attachWriter = () => {
+    bus.setPersistenceSubscriber(writer.handler);
+    bus.setDeliveryRecorder(writer.recordDelivery);
+  };
+  const attachCallerRoute = () =>
+    bus.subscribeDurableRoute((event) =>
+      event.type === "app.dependency.updated"
+        ? { accepted: true, by: "may-fixture", route: "direct" }
+        : undefined,
+    );
+  attachWriter();
+  db.exec(`CREATE TRIGGER fail_reported_marker BEFORE UPDATE OF recovery_json ON app_inbox_items
+    WHEN NEW.id = 'first'
+      AND json_extract(OLD.recovery_json, '$.input-admission.reportedAt') IS NULL
+      AND json_extract(NEW.recovery_json, '$.input-admission.reportedAt') IS NOT NULL
+    BEGIN SELECT RAISE(ABORT, 'reported marker unavailable'); END`);
+  let runtime = await startAppInboxRuntime({
+    db,
+    bus,
+    registry,
+    deferStart: true,
+    now: () => now,
+    attachTask: () => {
+      throw new Error("unexpected attachment");
+    },
+  });
+  try {
+    expect(
+      bus.emit({
+        type: "app.input.requested",
+        source: "fixture",
+        owner: "app:example",
+        data: {
+          appId: app.id,
+          requestId: "first",
+          input: { kind: "message", data: {} },
+          source: { kind: "app", id: "may" },
+        },
+      })[EVENT_DELIVERY_RESULT],
+    ).toMatchObject({ accepted: true });
+    const first = runtime.host.get("first")!;
+    expect(first.recovery?.["input-admission"]?.reportedAt).toBeUndefined();
+    const idempotencyKey = `app-input-recovery:example:first:${first.recovery!["input-admission"]!.fingerprint}`;
+    expect(
+      db.prepare("SELECT COUNT(*) AS count FROM events WHERE idempotency_key = ?").get(idempotencyKey),
+    ).toEqual({ count: 1 });
+    expect(
+      db.prepare("SELECT delivery_status, accepted_by, delivery_route FROM events WHERE idempotency_key = ?").get(idempotencyKey),
+    ).toEqual({ delivery_status: "accepted", accepted_by: "app-input-result", delivery_route: "noop" });
+
+    attachCallerRoute();
+    now = first.availableAt!;
+    await runtime.host.recoverAdmissions();
+    expect(runtime.host.get("first")?.recovery?.["input-admission"]).toMatchObject({
+      failures: 2,
+      firstFailedAt: 1_000,
+    });
+    expect(runtime.host.get("first")?.recovery?.["input-admission"]?.reportedAt).toBeUndefined();
+    expect(
+      db.prepare("SELECT delivery_status, accepted_by, delivery_route FROM events WHERE idempotency_key = ?").get(idempotencyKey),
+    ).toEqual({ delivery_status: "accepted", accepted_by: "may-fixture", delivery_route: "direct" });
+
+    const replayAt = runtime.host.get("first")!.availableAt!;
+    runtime.close();
+    closeDb(root);
+    db = getDb(root);
+    db.exec("DROP TRIGGER fail_reported_marker");
+    bus = new EventBus();
+    writer = new DbWriter(root);
+    attachWriter();
+    attachCallerRoute();
+    runtime = await startAppInboxRuntime({
+      db,
+      bus,
+      registry,
+      deferStart: true,
+      now: () => now,
+      attachTask: () => {
+        throw new Error("unexpected attachment");
+      },
+    });
+    now = replayAt;
+    await runtime.host.recoverAdmissions();
+    expect(runtime.host.get("first")?.recovery?.["input-admission"]).toMatchObject({
+      failures: 3,
+      firstFailedAt: 1_000,
+      reportedAt: now,
+    });
+    expect(
+      db.prepare("SELECT COUNT(*) AS count FROM events WHERE idempotency_key = ?").get(idempotencyKey),
+    ).toEqual({ count: 1 });
+  } finally {
+    runtime.close();
+    closeDb(root);
+    rmSync(root, { recursive: true, force: true });
+  }
+});

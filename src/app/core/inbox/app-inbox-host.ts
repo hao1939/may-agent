@@ -32,6 +32,7 @@ import {
   hasConversationExecutionTask,
   listAppInboxItemsWaitingOnTask,
   listAppInboxTaskDependencyKeys,
+  markAppInboxRecoveryReported,
   recordAppInboxRecoveryFailure,
   resolveAppInboxRecovery,
   type AppTurnTarget,
@@ -118,8 +119,8 @@ export type AppInboxHostOptions = {
   now?: () => number;
   /** Wake-only notification after a visible Conversation projection change. */
   onConversationChanged?: (appId: string, conversationId: string) => void;
-  /** Notification of saved caller feedback; a blocker does not complete input. */
-  onRequestUpdated?: (item: AppInboxItem, result: AppResult, status: "done" | "blocked") => void;
+  /** Notification of saved caller feedback; true proves an accountable route accepted it. */
+  onRequestUpdated?: (item: AppInboxItem, result: AppResult, status: "done" | "blocked") => boolean | void;
   onFailure?: (failure: AppInboxFailure) => void;
 };
 
@@ -456,6 +457,38 @@ export class AppInboxHost {
       });
     } catch {
       // Diagnostics cannot discard durable input or change its accepted result.
+    }
+    if (
+      evidence &&
+      stage === "input-admission" &&
+      evidence.reportedAt === undefined &&
+      item.source.kind === "app" &&
+      this.#onRequestUpdated
+    ) {
+      const result: AppResult = {
+        summary: `App input ${item.id} could not complete ${stage}: ${message}`,
+        facts: [
+          `app-input:${item.appId}/${item.id}`,
+          `recovery-stage:${stage}`,
+          `recovery-fingerprint:${evidence.fingerprint}`,
+        ],
+        result: {
+          appId: item.appId,
+          requestId: item.id,
+          stage,
+          disposition: "recovery-pending",
+          fingerprint: evidence.fingerprint,
+          firstFailedAt: evidence.firstFailedAt,
+        },
+      };
+      try {
+        const delivered = this.#onRequestUpdated(item, result, "blocked");
+        if (delivered === true)
+          markAppInboxRecoveryReported(this.#db, item.id, stage, evidence.fingerprint, this.#now());
+      } catch {
+        // The unchanged failure remains due for paced replay when publication
+        // or the durable reported marker could not be committed.
+      }
     }
   }
 

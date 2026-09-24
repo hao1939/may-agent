@@ -38,6 +38,8 @@ export type AppInboxRecoveryFailure = {
   firstFailedAt: number;
   lastFailedAt: number;
   retryAt: number;
+  /** The unchanged failure was returned through the exact App caller path. */
+  reportedAt?: number;
   recoveredAt?: number;
 };
 export type AppInboxRecovery = Partial<Record<AppInboxRecoveryStage, AppInboxRecoveryFailure>>;
@@ -272,14 +274,18 @@ export function recordAppInboxRecoveryFailure(
     const failures = prior && prior.recoveredAt === undefined ? prior.failures + 1 : 1;
     const retryAt = now + taskExecutionRetryDelay(failures);
     const boundedError = error.slice(0, MAX_RECOVERY_ERROR_LENGTH);
+    const fingerprint = createHash("sha256").update(`${stage}\0${boundedError}`).digest("hex");
     const failure: AppInboxRecoveryFailure = {
       failures,
-      fingerprint: createHash("sha256").update(`${stage}\0${boundedError}`).digest("hex"),
+      fingerprint,
       ...(observationFingerprint ? { observationFingerprint } : {}),
       error: boundedError,
       firstFailedAt: prior && prior.recoveredAt === undefined ? prior.firstFailedAt : now,
       lastFailedAt: now,
       retryAt,
+      ...(prior?.fingerprint === fingerprint && prior.reportedAt !== undefined
+        ? { reportedAt: prior.reportedAt }
+        : {}),
     };
     const recovery: AppInboxRecovery = { ...item.recovery, [stage]: failure };
     const dueColumn = stage === "input-admission" ? "available_at" : "review_at";
@@ -291,6 +297,32 @@ export function recordAppInboxRecoveryFailure(
       .run(JSON.stringify(recovery), retryAt, now, now, inputId).changes;
     if (changed !== 1) throw new Error(`App inbox item ${inputId} is no longer recoverable`);
     return failure;
+  });
+}
+
+/** Record successful delivery of one unchanged failure without resolving the failed operation. */
+export function markAppInboxRecoveryReported(
+  db: SqliteDb,
+  inputId: string,
+  stage: AppInboxRecoveryStage,
+  fingerprint: string,
+  now: number,
+): boolean {
+  return stateTransaction(db, () => {
+    const item = getAppInboxItem(db, inputId);
+    const prior = item?.recovery?.[stage];
+    if (!item || !prior || prior.recoveredAt !== undefined || prior.fingerprint !== fingerprint) return false;
+    if (prior.reportedAt !== undefined) return true;
+    const recovery: AppInboxRecovery = {
+      ...item.recovery,
+      [stage]: { ...prior, reportedAt: now },
+    };
+    return db
+      .prepare(
+        `UPDATE app_inbox_items SET recovery_json = ?, changed_at = ?, updated_at = ?
+         WHERE id = ? AND status != 'done'`,
+      )
+      .run(JSON.stringify(recovery), now, now, inputId).changes === 1;
   });
 }
 

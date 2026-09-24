@@ -340,6 +340,88 @@ describe("App inbox host", () => {
     expect(failedMappings).toBe(2);
   });
 
+  it("returns pre-Task admission failure to the exact App caller and replays lost publication", async () => {
+    let now = 1_000;
+    let repaired = false;
+    let answerAvailable = false;
+    let loseFirstPublication = true;
+    const notifications: Array<{ status: "done" | "blocked"; summary: string }> = [];
+    const host = new AppInboxHost({
+      db,
+      now: () => now,
+      apps: [app()],
+      attachTask: fakeTaskAttacher(db, () => {
+        if (!repaired) throw new Error("mapping service unavailable");
+        return { taskId: "probe/caller-recovery" };
+      }),
+      readDependency: async ({ dependency }) => ({
+        ...dependency,
+        status: answerAvailable ? "done" : "pending",
+        summary: answerAvailable ? "Recovered exact answer" : "Still working",
+        ...(answerAvailable ? { result: { value: 42 } } : {}),
+      }),
+      onRequestUpdated: (_item, result, status) => {
+        notifications.push({ status, summary: result.summary });
+        if (status === "blocked" && loseFirstPublication) {
+          loseFirstPublication = false;
+          throw new Error("synthetic lost publication");
+        }
+        return true;
+      },
+    });
+
+    const item = host.admit({
+      id: "caller-recovery",
+      appId: "evaluation",
+      source: { kind: "app", id: "may" },
+      input: { kind: "probe", data: { value: "caller-recovery" } },
+    }).item;
+    expect(item).toMatchObject({
+      id: "caller-recovery",
+      status: "pending",
+      recovery: { "input-admission": { failures: 1, retryAt: 1_250 } },
+    });
+    expect(notifications).toEqual([
+      { status: "blocked", summary: expect.stringContaining("mapping service unavailable") },
+    ]);
+    expect(host.get(item.id)?.recovery?.["input-admission"]?.reportedAt).toBeUndefined();
+
+    now = 1_250;
+    await host.recoverAdmissions();
+    expect(notifications).toHaveLength(2);
+    expect(notifications[1]).toEqual({
+      status: "blocked",
+      summary: expect.stringContaining("mapping service unavailable"),
+    });
+    expect(host.get(item.id)).toMatchObject({
+      recovery: { "input-admission": { failures: 2, firstFailedAt: 1_000, reportedAt: 1_250, retryAt: 1_750 } },
+    });
+
+    now = 1_750;
+    await host.recoverAdmissions();
+    expect(notifications).toHaveLength(2);
+    const retryAt = host.get(item.id)!.recovery!["input-admission"]!.retryAt;
+    repaired = true;
+    now = retryAt;
+    await host.recoverAdmissions();
+    expect(host.get(item.id)).toMatchObject({
+      id: "caller-recovery",
+      status: "handling",
+      waitingOn: { kind: "task", id: "probe/caller-recovery" },
+      taskAdmissionKey: "task:caller-recovery",
+      recovery: { "input-admission": { failures: 3, reportedAt: 1_250, recoveredAt: retryAt } },
+    });
+
+    answerAvailable = true;
+    await host.refreshTaskResults("evaluation", "probe/caller-recovery");
+    expect(host.get(item.id)).toMatchObject({
+      id: "caller-recovery",
+      status: "done",
+      result: { summary: "Recovered exact answer", result: { value: 42 } },
+    });
+    expect(notifications.at(-1)).toEqual({ status: "done", summary: "Recovered exact answer" });
+  });
+
   it("paces failed admission at the row boundary while unrelated input and same-input repair continue", async () => {
     let now = 1_000;
     let repaired = false;
