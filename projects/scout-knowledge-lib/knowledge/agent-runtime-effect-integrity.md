@@ -1,8 +1,8 @@
 <ai_context>
 summary: "Companion to agent-runtime-hardening.md for core effect integrity: centralized effect-mode derivation, interaction-shaped mutation review, approval-channel races, revision-bound workspace admission, evidence-carrying closure, quarantine for unknown effects, operation identity across replanning, transactional review versus atomic commit, guarded writes, apply-time revalidation, ambiguous-delivery recovery, pre-wait provider-attempt journals, session-bound retry safety, observation-bound handover, history/context separation, and externally anchored sandbox authority."
 triggers: ["runtime effect integrity", "central effect gate", "mutation confirmation", "approval race", "permission broker", "modified-input recheck", "revision-bound admission", "effect closure", "unknown effect", "operation identity", "replanning retry", "resource quarantine", "atomic commit", "guarded configuration write", "previewable plan", "ambiguous delivery", "provider attempt journal", "reached wire", "unknown usage", "AID-Guard", "outbound publication", "remote session retry", "desktop handover", "history fidelity", "safe resume", "sandbox escape", "external authority", "agentsgo", "atomic replacement", "compare-and-swap"]
-last_updated: "2026-09-22"
-source_basis: "Extracted from agent-runtime-hardening.md during its oversized-note review and subsequently updated with source-grounded findings, including SkillRanker's pre-wait provider-attempt journal. Each retained section preserves stable source links, pinned revisions where applicable, reproduced checks where performed, and explicit evidence limitations. Unattended-execution, replay, approval-resume, settlement, accountable-write, and desktop-authorization sections moved intact to agent-runtime-unattended-execution-and-replay.md during the 2026-09-21 oversized-note review."
+last_updated: "2026-09-24"
+source_basis: "Extracted from agent-runtime-hardening.md during its oversized-note review and subsequently updated with source-grounded findings, including SkillRanker's pre-wait provider-attempt journal and decision-time feedback snapshots. Each retained section preserves stable source links, pinned revisions where applicable, reproduced checks where performed, and explicit evidence limitations. Unattended-execution, replay, approval-resume, settlement, accountable-write, and desktop-authorization sections moved intact to agent-runtime-unattended-execution-and-replay.md during the 2026-09-21 oversized-note review."
 </ai_context>
 
 # Agent Runtime Effect Integrity
@@ -228,19 +228,48 @@ of a remote attempt before entering the unbounded or killable wait. Do not turn
 success, clean failure, or zero cost. Keep that outcome open until independent
 reconciliation can close it.
 
+### Revision follow-up: bind corrective feedback to the decision-time choice set
+
+At revision `b66ddf7d0ee21497b1ef06adf09b5c7facecff45`, SkillRanker's local
+feedback path also preserves what could actually have been recommended when the
+ranking was made. Each event can reference a bounded roster snapshot containing
+stable skill IDs, invocation names, content hashes, source, and historical
+eligibility. This prevents a later roster from silently changing what a past
+name meant or making a newly installed skill look like an alternative the
+selector had missed.
+
+The implementation distinguishes claims that need different evidence. A stable
+ID found in a partial snapshot can support feedback about that exact member, but
+an invocation name requires complete membership because an omitted skill may
+share the name. A paired “use this instead” correction requires a complete
+snapshot and resolves both references before writing either judgment. If the
+alternative was present but ineligible, the correction is refused. If it was
+absent, the system records a prospective proposal and writes neither the
+negative label for the original nor a counterfactual positive label. The
+project-authored tests check that an ambiguous name under partial coverage
+leaves both the judgment count and store generation unchanged.
+
+**Additional evaluation rule:** corrective feedback is evidence about a
+historical decision only when it is joined to the decision-time candidate set,
+stable identities, and eligibility. “A different skill is useful now” is not
+proof that the old selector missed an available choice. Preserve incomplete
+membership as unknown, and make multi-label corrections atomic so a failed
+alternative lookup cannot leave a misleading standalone negative label.
+
 This is implementation and project-authored test evidence from a young,
-fast-changing repository. Scout could not run the Rust test suite because
-`cargo` is absent from the environment. The original effect-gate assessment
+fast-changing repository. Scout did not run the Rust test suite; the assessment
+is based on the pinned source and tests. The original effect-gate assessment
 also found documentation drift: `docs/effect-gate.md` said no shipped command
-read the gate while the earlier pinned `src/pipeline.rs` did. Treat both patterns
-as concrete designs, not production validation or a claim that every command
-has adopted them.
+read the gate while the earlier pinned `src/pipeline.rs` did. Treat these
+patterns as concrete designs, not production validation or a claim that every
+command has adopted them.
 
 - **Repo:** https://github.com/Dicklesworthstone/skillranker
 - **Original inspected revision:** [`221494f3df8657901910f6b4b7f614872730f7ca`](https://github.com/Dicklesworthstone/skillranker/commit/221494f3df8657901910f6b4b7f614872730f7ca)
-- **Follow-up revision:** [`fba1991ae8908424a37579f69dcbf432e7ff885b`](https://github.com/Dicklesworthstone/skillranker/commit/fba1991ae8908424a37579f69dcbf432e7ff885b)
-- **Primary sources:** [effect gate](https://github.com/Dicklesworthstone/skillranker/blob/221494f3df8657901910f6b4b7f614872730f7ca/src/effects.rs), [pipeline integration and pre-attempt reauthorization](https://github.com/Dicklesworthstone/skillranker/blob/221494f3df8657901910f6b4b7f614872730f7ca/src/pipeline.rs), [flag-matrix and real-boundary tests](https://github.com/Dicklesworthstone/skillranker/blob/221494f3df8657901910f6b4b7f614872730f7ca/tests/effect_gate.rs), [attempt state and journal contract](https://github.com/Dicklesworthstone/skillranker/blob/fba1991ae8908424a37579f69dcbf432e7ff885b/src/jev/admission.rs), [retry-loop journal integration](https://github.com/Dicklesworthstone/skillranker/blob/fba1991ae8908424a37579f69dcbf432e7ff885b/src/jev/retry.rs), and [hard-kill/reached-wire test](https://github.com/Dicklesworthstone/skillranker/blob/fba1991ae8908424a37579f69dcbf432e7ff885b/tests/ledger_attempt_recording.rs#L1000-L1084)
-- **Discovery query:** GitHub Repository Search API `topic:ai-agents created:>2026-09-15 stars:>10`, sorted by stars; `incomplete_results: false`
+- **Attempt-journal follow-up revision:** [`fba1991ae8908424a37579f69dcbf432e7ff885b`](https://github.com/Dicklesworthstone/skillranker/commit/fba1991ae8908424a37579f69dcbf432e7ff885b)
+- **Feedback-snapshot follow-up revision:** [`b66ddf7d0ee21497b1ef06adf09b5c7facecff45`](https://github.com/Dicklesworthstone/skillranker/commit/b66ddf7d0ee21497b1ef06adf09b5c7facecff45)
+- **Primary sources:** [effect gate](https://github.com/Dicklesworthstone/skillranker/blob/221494f3df8657901910f6b4b7f614872730f7ca/src/effects.rs), [pipeline integration and pre-attempt reauthorization](https://github.com/Dicklesworthstone/skillranker/blob/221494f3df8657901910f6b4b7f614872730f7ca/src/pipeline.rs), [flag-matrix and real-boundary tests](https://github.com/Dicklesworthstone/skillranker/blob/221494f3df8657901910f6b4b7f614872730f7ca/tests/effect_gate.rs), [attempt state and journal contract](https://github.com/Dicklesworthstone/skillranker/blob/fba1991ae8908424a37579f69dcbf432e7ff885b/src/jev/admission.rs), [retry-loop journal integration](https://github.com/Dicklesworthstone/skillranker/blob/fba1991ae8908424a37579f69dcbf432e7ff885b/src/jev/retry.rs), [hard-kill/reached-wire test](https://github.com/Dicklesworthstone/skillranker/blob/fba1991ae8908424a37579f69dcbf432e7ff885b/tests/ledger_attempt_recording.rs#L1000-L1084), [feedback and snapshot ledger logic](https://github.com/Dicklesworthstone/skillranker/blob/b66ddf7d0ee21497b1ef06adf09b5c7facecff45/src/storage/ledger.rs#L5209-L5804), and [snapshot-coverage regression tests](https://github.com/Dicklesworthstone/skillranker/blob/b66ddf7d0ee21497b1ef06adf09b5c7facecff45/tests/feedback_snapshot_coverage.rs)
+- **Current discovery query:** GitHub Repository Search API `topic:ai-agents pushed:>2026-09-23 stars:>30`, sorted by updated; `total_count: 44`, `incomplete_results: false`
 
 ## Revision-Bound Workspace Admission (Cross-Source, August 2026)
 
