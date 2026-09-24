@@ -138,9 +138,9 @@ function interruptSupersededAgentSession(
   sessionId: string,
   reason: string,
   taskId?: string,
-): void {
+): boolean {
   const cleanSessionId = sessionId.trim();
-  if (!cleanSessionId) return;
+  if (!cleanSessionId) return false;
   if (opts.manager.hasActiveSession(cleanSessionId)) {
     opts.manager.cancel(cleanSessionId);
   } else if (hasLiveAppTaskSession(opts, cleanSessionId)) {
@@ -163,7 +163,20 @@ function interruptSupersededAgentSession(
       `Cannot recover session ${cleanSessionId}: one or more durable bash process groups did not exit after bounded SIGTERM/SIGKILL drain`,
     );
   }
-  if (!meta || (meta.status !== "running" && meta.status !== "idle")) return;
+  if (!meta) return false;
+  if (meta.status !== "running" && meta.status !== "idle") {
+    if (!opts.persistDir) return false;
+    // meta.json is authoritative. Repair only its known terminal lifecycle
+    // fields in SQL; do not invent historical timing or rewrite retained
+    // outcome/result evidence that may describe an accepted result.
+    updateSessionDb(opts.persistDir, cleanSessionId, {
+      status: meta.status,
+      ...(meta.endedAt !== undefined ? { endedAt: meta.endedAt, lastActivityAt: meta.endedAt } : {}),
+      ...(meta.error ? { error: meta.error } : {}),
+    });
+    markSessionInactive(opts.persistDir, cleanSessionId);
+    return true;
+  }
 
   // Capture a completed finish call before repairing genuinely pending tool
   // calls: finish() may be the final transcript entry, and synthesizing an
@@ -249,6 +262,7 @@ function interruptSupersededAgentSession(
       ...(repairedPendingTools.length > 0 ? { recoveredPendingTools: repairedPendingTools } : {}),
     },
   } as AgentEvent);
+  return true;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

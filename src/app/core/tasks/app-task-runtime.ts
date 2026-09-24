@@ -1089,13 +1089,13 @@ export function settleTerminalAppTaskSessions(
     // A current manager session or process-instance marker remains live even
     // when the Task attempt has already settled; its shutdown is not inferred.
     if (hasLiveAppTaskSession(opts, candidate.sessionId)) continue;
-    interruptSupersededAgentSession(
+    const reconciled = interruptSupersededAgentSession(
       opts,
       candidate.sessionId,
       `Task ${candidate.taskId} attempt ${candidate.attemptId} is already terminal; reconciling its stale session projection`,
       candidate.taskId,
     );
-    settled.push(candidate.sessionId);
+    if (reconciled) settled.push(candidate.sessionId);
   }
   return settled;
 }

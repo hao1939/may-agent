@@ -5912,7 +5912,10 @@ describe("canonical App task runtime", () => {
           lastActivityAt: () => null,
           workflowInterrupted: () => false,
           read: () => null,
-          interrupt: (sessionId, _reason, taskId) => interruptions.push(`${sessionId}:${taskId}`),
+          interrupt: (sessionId, _reason, taskId) => {
+            interruptions.push(`${sessionId}:${taskId}`);
+            return true;
+          },
         },
         installControllers: false,
         appRegistrySnapshot: {
@@ -6029,6 +6032,7 @@ describe("canonical App task runtime", () => {
         interrupt(sessionId, _reason, taskId) {
           calls.push(`${name}:interrupt:${sessionId}:${taskId}`);
           handled();
+          return true;
         },
       });
       const install = (generation: number) => installCoreTaskRuntimes({
@@ -6105,7 +6109,7 @@ describe("canonical App task runtime", () => {
         isLive: () => false,
         lastActivityAt: () => null,
         workflowInterrupted: () => false,
-        interrupt: () => {},
+        interrupt: () => true,
         read: (sessionId) => {
           calls.push(`${generation}:read:${sessionId}`);
           return null;
