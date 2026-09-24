@@ -435,7 +435,9 @@ describe("automatic task outcome selector", () => {
     const result = await runTaskOutcomeSelector(
       ctx,
       // The production entry uses the wall clock; keep this outcome recent.
-      catalogCommand({ may: [{ ...task("may", long), updatedAt: Date.now() }] }),
+      catalogCommand({
+        may: [{ ...task("may", long), updatedAt: Date.now() }],
+      }),
       deepseekConfig,
       root,
     );
@@ -556,8 +558,59 @@ describe("automatic task outcome selector", () => {
     expect(selected).toEqual([
       { appId: "may", taskId: "goal/may-1" },
       { appId: "scout", taskId: "goal/scout-1" },
+      { appId: "zeta", taskId: "goal/zeta-1" },
       { appId: "may", taskId: "goal/may-2" },
-      { appId: "scout", taskId: "goal/scout-2" },
+    ]);
+  });
+
+  test("includes canonical Gym and arbitrary external Apps while excluding Evaluation", async () => {
+    const root = mkdtempSync(join(tmpdir(), "selector-external-apps-"));
+    const base = catalogCommand({
+      delegated: [task("delegated", "goal/evaluation-created")],
+      gym: [task("gym", "goal/gym")],
+      "new-external-app": [task("new-external-app", "goal/new-external-app")],
+    });
+    const command: PublicCommand = async (request) => {
+      if (request.type === "apps.list")
+        return {
+          type: "ok",
+          command: "apps.list",
+          apps: [
+            { id: "Evaluation.app", appId: "evaluation" },
+            { id: "delegated.app" },
+            { id: "gym.app" },
+            { appId: "new-external-app.app" },
+          ],
+        };
+      const response = await base(request);
+      if (request.type !== "app.task.get" || request.appId !== "delegated")
+        return response;
+      return {
+        ...response,
+        task: {
+          ...(response.task as Record<string, unknown>),
+          creator: { source: { appId: "Evaluation.app" } },
+        },
+      };
+    };
+
+    const first = await selectFairCandidate(
+      command,
+      config,
+      root,
+      undefined,
+      NOW,
+    );
+    const second = await selectFairCandidate(
+      command,
+      config,
+      root,
+      first.state,
+      NOW,
+    );
+    expect([first.candidate, second.candidate]).toEqual([
+      { appId: "gym", taskId: "goal/gym" },
+      { appId: "new-external-app", taskId: "goal/new-external-app" },
     ]);
   });
 

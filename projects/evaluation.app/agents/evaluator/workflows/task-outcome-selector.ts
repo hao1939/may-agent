@@ -27,7 +27,6 @@ const MAX_NAVIGATION_FACTS = 20;
 // completion receipt, while `attention` is the current unresolved status.
 const OPEN_STATUSES = new Set(["pending", "running", "waiting", "attention"]);
 const OUTCOME_STATUSES = new Set(["up-to-date", "closed", "cancelled", "done"]);
-const PILOT_APPS = new Set(["may", "scout", "scout-knowledge-lib"]);
 
 type Input = { reason?: string };
 type SelectorConfig = {
@@ -67,6 +66,11 @@ function canonical(value: unknown): string {
   return text(value)
     .toLowerCase()
     .replace(/\.app$/, "");
+}
+function catalogAppId(app: Record<string, unknown>): string {
+  const identities = [app.appId, app.id].map(canonical).filter(Boolean);
+  if (identities.includes("evaluation")) return "";
+  return identities[0] ?? "";
 }
 function object(value: unknown): Record<string, unknown> {
   return value && typeof value === "object" && !Array.isArray(value)
@@ -294,9 +298,13 @@ export async function selectFairCandidate(
   const reviewer = reviewerProfile(config.reviewer).reviewer;
   const state = cleanState(priorState);
   const provider = createPublicTaskEvidenceProvider(command);
-  const apps = (await provider.listApps(config.maxApps))
-    .map((app) => text(app.id ?? app.appId))
-    .filter((id) => id && PILOT_APPS.has(canonical(id)))
+  const apps = [
+    ...new Set(
+      (await provider.listApps(config.maxApps))
+        .map(catalogAppId)
+        .filter(Boolean),
+    ),
+  ]
     .sort((a, b) => a.localeCompare(b))
     .slice(0, config.maxApps);
   if (!apps.length)

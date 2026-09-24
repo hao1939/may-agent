@@ -62,6 +62,7 @@ function createTestAppWorkflowContext(
 
 const appId = "sample";
 const taskId = "goal/one";
+const VALIDITY_NOW = Date.UTC(2026, 8, 17);
 const appTask = {
   id: taskId,
   status: "up-to-date",
@@ -93,6 +94,26 @@ const detail = {
   diagnostics: { owner: appId, attemptCount: 1, conditions: [] },
 };
 
+function assessmentSubject(
+  currentDetail: Record<string, unknown>,
+  currentObligations?: Record<string, unknown>,
+) {
+  return {
+    disposition: "eligible" as const,
+    reason: "verified",
+    appId,
+    taskId,
+    evidenceHash: "a".repeat(64),
+    task: {
+      appTask: {
+        ...appTask,
+        ...(currentObligations ? { currentObligations } : {}),
+      },
+      detail: currentDetail,
+    },
+  };
+}
+
 function condition(
   id: string,
   observedAt: string,
@@ -122,6 +143,7 @@ function condition(
 
 function reader(
   currentDetail: () => Record<string, unknown> = () => detail,
+  currentAppTask: () => Record<string, unknown> = () => appTask,
 ): PublicCommand {
   return async (command) => {
     if (command.type === "apps.list")
@@ -143,7 +165,7 @@ function reader(
         command: "app.task.get",
         appId,
         taskId: command.taskId,
-        task: appTask,
+        task: currentAppTask(),
       };
     return { type: "ok", command: "task.get", task: currentDetail() };
   };
@@ -287,29 +309,19 @@ describe("Task outcome review", () => {
   });
   test("derives every unresolved review boundary from the production task.get envelope", () => {
     const observedAt = "2026-09-18T12:00:00.000Z";
-    const subject = {
-      disposition: "eligible" as const,
-      reason: "verified",
-      appId,
-      taskId,
-      evidenceHash: "a".repeat(64),
-      task: {
-        appTask,
-        detail: {
-          ...detail,
-          // Guessed lookalikes outside diagnostics must never become deadlines.
-          conditions: [{ dueAt: 1 }],
-          diagnostics: {
-            ...detail.diagnostics,
-            conditions: [
-              condition("later", observedAt, 120_000),
-              condition("first", observedAt, 60_000, "false"),
-              condition("resolved", observedAt, 60_000, "true"),
-            ],
-          },
-        },
+    const subject = assessmentSubject({
+      ...detail,
+      // Guessed lookalikes outside diagnostics must never become deadlines.
+      conditions: [{ dueAt: 1 }],
+      diagnostics: {
+        ...detail.diagnostics,
+        conditions: [
+          condition("later", observedAt, 120_000),
+          condition("first", observedAt, 60_000, "false"),
+          condition("resolved", observedAt, 60_000, "true"),
+        ],
       },
-    };
+    });
     const before = assessmentContext(
       subject,
       "ongoing",
@@ -357,6 +369,115 @@ describe("Task outcome review", () => {
         afterBoth.validityIdentity,
       ]).size,
     ).toBe(3);
+  });
+
+  test("combines Task, input-wait, and independent later Condition deadlines from real public endpoint shapes", async () => {
+    const first = VALIDITY_NOW + 60_000;
+    const later = VALIDITY_NOW + 180_000;
+    const subject = await readSubjectTask(
+      { appId, taskId },
+      reader(
+        () => ({
+          ...detail,
+          // Human task.get lookalikes are not authoritative scheduling fields.
+          currentObligations: { available: true, reviewAt: 1 },
+          diagnostics: {
+            ...detail.diagnostics,
+            conditions: [
+              condition(
+                "middle-condition",
+                new Date(VALIDITY_NOW).toISOString(),
+                120_000,
+              ),
+            ],
+          },
+        }),
+        () => ({
+          ...appTask,
+          currentObligations: {
+            available: true,
+            reviewAt: first,
+            inputWaits: {
+              items: [
+                { key: "input-without-deadline", conditionCount: 0 },
+                { key: "later-input", reviewAt: later, conditionCount: 1 },
+              ],
+              maxItems: 20,
+              truncated: false,
+            },
+          },
+        }),
+      ),
+    );
+
+    const before = assessmentContext(subject, "ongoing", VALIDITY_NOW);
+    const afterFirst = assessmentContext(subject, "ongoing", first);
+    expect(before.validity).toEqual({
+      phase: "before-due",
+      dueAt: first,
+      boundaries: [
+        { taskReviewAt: true, dueAt: first, phase: "before-due" },
+        {
+          conditionId: "middle-condition",
+          dueAt: VALIDITY_NOW + 120_000,
+          phase: "before-due",
+        },
+        { inputWaitKey: "later-input", dueAt: later, phase: "before-due" },
+      ],
+    });
+    expect(afterFirst.validity.phase).toBe("due");
+    expect(afterFirst.validity.boundaries).toEqual([
+      { taskReviewAt: true, dueAt: first, phase: "due" },
+      {
+        conditionId: "middle-condition",
+        dueAt: VALIDITY_NOW + 120_000,
+        phase: "before-due",
+      },
+      { inputWaitKey: "later-input", dueAt: later, phase: "before-due" },
+    ]);
+    expect(afterFirst.validityIdentity).not.toBe(before.validityIdentity);
+  });
+
+  test("keeps no-deadline obligations unknown and identities renewed waits", () => {
+    const withoutDeadline = assessmentSubject(detail, {
+      available: true,
+      inputWaits: {
+        items: [{ key: "open-input", conditionCount: 0 }],
+        maxItems: 20,
+        truncated: false,
+      },
+    });
+    expect(
+      assessmentContext(withoutDeadline, "ongoing", VALIDITY_NOW).validity,
+    ).toEqual({ phase: "unknown", dueAt: null, boundaries: [] });
+
+    const renewed = (reviewAt: number) =>
+      assessmentSubject(detail, {
+        available: true,
+        inputWaits: {
+          items: [{ key: "open-input", reviewAt, conditionCount: 0 }],
+          maxItems: 20,
+          truncated: false,
+        },
+      });
+    const original = assessmentContext(
+      renewed(VALIDITY_NOW + 60_000),
+      "ongoing",
+      VALIDITY_NOW,
+    );
+    const replacement = assessmentContext(
+      renewed(VALIDITY_NOW + 120_000),
+      "ongoing",
+      VALIDITY_NOW,
+    );
+    expect(original.validity.boundaries).toEqual([
+      {
+        inputWaitKey: "open-input",
+        dueAt: VALIDITY_NOW + 60_000,
+        phase: "before-due",
+      },
+    ]);
+    expect(replacement.validityIdentity).not.toBe(original.validityIdentity);
   });
 
   test("publishes an ongoing assessment with its rubric and due-phase identity", async () => {
