@@ -5,6 +5,7 @@ import { Check } from "typebox/value";
 import app, {
   evaluationHumanDecisionInput,
   evaluationTaskReportInput,
+  observerFailureInput,
   scoutResearchHandoffInput,
   taskForMayInput,
 } from "./app.ts";
@@ -46,6 +47,7 @@ describe("canonical May conversation App", () => {
     expect(app.observers?.map(({ id }) => id)).toEqual(["github-pull-request"]);
     expect(app.description).toContain("may.github.pull-request.state");
     expect(app.subscriptions?.map(({ id }) => id)).toEqual([
+      "observer-failure-review",
       "scout-research-qualified",
       "evaluation-human-decision",
       "evaluation-task-report",
@@ -455,6 +457,56 @@ describe("canonical May conversation App", () => {
         data: { message: "Review the latest state" },
       }),
     ).toBeTrue();
+  });
+
+  test("routes Host observer failures to ordinary May judgment without automatic escalation", () => {
+    const subscription = app.subscriptions?.find(
+      ({ id }) => id === "observer-failure-review",
+    );
+    if (!subscription) throw new Error("missing observer failure subscription");
+    const event: AppEvent<Record<string, unknown>> = {
+      type: "app.observer.failed",
+      source: "app-host",
+      owner: "app:may",
+      target: { project: "may" },
+      data: {
+        appId: "may",
+        observerId: "github-pull-request",
+        error: "GitHub pull-request discovery unavailable",
+      },
+    };
+    expect(matchesEventSelector(subscription.event, event)).toBeTrue();
+    const input = observerFailureInput(event)!;
+    expect(input).toMatchObject({
+      kind: "message",
+      data: {
+        context: {
+          observerFailure: {
+            observerId: "github-pull-request",
+            error: "GitHub pull-request discovery unavailable",
+          },
+          event,
+        },
+      },
+    });
+    expect((input.data as any).message).toContain("normal retry and recovery");
+    expect((input.data as any).message).toContain(
+      "not an operation failure or a reason for human escalation",
+    );
+    expect(Check(app.inputSchema, input)).toBeTrue();
+    expect(observerFailureInput({ ...event, source: "app:other" })).toBeNull();
+    expect(
+      observerFailureInput({
+        ...event,
+        data: { ...event.data, appId: "other" },
+      }),
+    ).toBeNull();
+    expect(() =>
+      observerFailureInput({
+        ...event,
+        data: { ...event.data, error: "" },
+      }),
+    ).toThrow("requires non-empty error");
   });
 
   test("normalizes Evaluation escalations into messages with original correlation context", () => {

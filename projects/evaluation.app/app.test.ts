@@ -48,7 +48,9 @@ import { createAppInboxItem } from "../may-agent/src/app/core/state/app-inbox-st
 import { admitTaskInput } from "../may-agent/src/app/core/state/inbox.ts";
 import { appTaskTestContext } from "../may-agent/src/app/core/tasks/app-task-test-support.ts";
 import {
+  assertAppTaskClaimCurrent,
   claimObservedAppTask,
+  completeAppTask,
   deferAppTask,
   observeAppTaskIntent,
 } from "../may-agent/src/app/core/tasks/app-task-reconciler.ts";
@@ -925,22 +927,161 @@ describe("evaluation fact admission", () => {
     ).toBeNull();
   });
 
-  test("turns review failures into evaluation's own project-health request", () => {
-    expect(
-      taskInputForEvent(
-        event("evaluation.review_failed", {
-          sessionId: "s-1",
-          reason: "artifact invalid",
-        }),
-      ),
-    ).toMatchObject({
+  test("routes exact review failures as trigger evidence without revising standing owner input", () => {
+    const input = taskInputForEvent(
+      event("evaluation.review_failed", {
+        sessionId: "s-1",
+        reason: "artifact invalid",
+      }),
+    );
+    expect(input).toMatchObject({
       kind: "owner-review",
-      data: { reason: "review-failed" },
+      data: {
+        reason: "review-failed",
+        reviewFailure: { sessionId: "s-1", reason: "artifact invalid" },
+      },
     });
+    expect(taskIntentForInput(input!)).toMatchObject({
+      id: "runtime/compat/owner-review",
+      input: { scope: "evaluation.app" },
+    });
+    expect(taskIntentForInput(input!)).not.toHaveProperty(
+      "input.reviewFailure",
+    );
   });
 });
 
 describe("evaluation task policy", () => {
+  test("keeps owner generation stable and replays durable wake evidence after active work", () => {
+    const root = mkdtempSync(join(tmpdir(), "evaluation-owner-evidence-"));
+    const config = appTaskTestContext({
+      appDir: root,
+      appId: "evaluation",
+      agent: "evaluator",
+      maxConcurrent: 1,
+      tree: {
+        groups: {
+          "evaluation-system": {
+            id: "evaluation-system",
+            parent_id: null,
+          },
+        },
+      },
+    });
+    const reviewFailure = (
+      eventId: number,
+      taskId: string,
+      error: string,
+    ): Record<string, unknown> => ({
+      ...event(
+        "evaluation.review_failed",
+        {
+          reason: "automatic-evidence-acquisition-failed",
+          stage: "subject-evidence-acquisition",
+          appId: "may",
+          taskId,
+          error,
+        },
+        { target: { appId: "evaluation", project: "evaluation" } },
+      ),
+      eventId,
+    });
+    const tick: Record<string, unknown> = {
+      ...event(
+        "evaluation.tick",
+        { reason: "scheduled" },
+        { target: { appId: "evaluation", project: "evaluation" } },
+      ),
+      eventId: 103,
+    };
+    const observe = (trigger: Record<string, unknown>) => {
+      const intent = taskIntentForEvent(
+        trigger as AppEvent<Record<string, unknown>>,
+      );
+      if (!intent) throw new Error("expected owner intent");
+      return observeAppTaskIntent(config, {
+        intent,
+        appAgent: "evaluator",
+        trigger,
+      });
+    };
+
+    try {
+      const failureA = reviewFailure(101, "goal/a", "catalog unavailable A");
+      const failureB = reviewFailure(102, "goal/b", "catalog unavailable B");
+      const failureAReplay = reviewFailure(
+        104,
+        "goal/a",
+        "catalog unavailable A",
+      );
+      expect(observe(failureA)).toMatchObject({
+        taskId: "runtime/compat/owner-review",
+        generation: 1,
+      });
+      const firstClaim = claimObservedAppTask(config, {
+        taskId: "runtime/compat/owner-review",
+        appAgent: "evaluator",
+        handler: "agent:evaluator",
+      });
+      if (firstClaim.kind !== "claimed")
+        throw new Error("expected first owner claim");
+      expect(firstClaim.intent.input).toEqual({ scope: "evaluation.app" });
+      expect(firstClaim.events.map(({ event }) => event)).toEqual([failureA]);
+
+      for (const trigger of [failureB, tick, failureAReplay]) {
+        expect(observe(trigger)).toMatchObject({ generation: 1 });
+        expect(() =>
+          assertAppTaskClaimCurrent(config, firstClaim),
+        ).not.toThrow();
+      }
+      expect(config.resourceStore.readTask(firstClaim.taskId)).toMatchObject({
+        metadata: { generation: 1 },
+        spec: { input: { scope: "evaluation.app" } },
+        status: {
+          phase: "running",
+          currentAttemptId: firstClaim.attemptId,
+        },
+      });
+
+      expect(
+        completeAppTask(config, firstClaim, {
+          summary: "Handled the first failure; newer wakes remain pending.",
+          facts: ["owner-reviewed:event-101"],
+        }),
+      ).toMatchObject({ status: "applied", taskContinues: true });
+      const secondClaim = claimObservedAppTask(config, {
+        taskId: firstClaim.taskId,
+        appAgent: "evaluator",
+        handler: "agent:evaluator",
+      });
+      if (secondClaim.kind !== "claimed")
+        throw new Error("expected replay owner claim");
+      expect(secondClaim.generation).toBe(1);
+      expect(secondClaim.intent.input).toEqual({ scope: "evaluation.app" });
+      expect(secondClaim.events.map(({ event }) => event)).toEqual([
+        failureB,
+        tick,
+        failureAReplay,
+      ]);
+      expect(
+        config.resourceStore.readAttempt(secondClaim.attemptId)?.events,
+      ).toEqual(secondClaim.events);
+      const secondCompletion = completeAppTask(config, secondClaim, {
+        summary: "Consumed the retained owner wake batch.",
+        facts: ["owner-reviewed:events-102-104"],
+      });
+      expect(secondCompletion).toMatchObject({ status: "applied" });
+      expect(secondCompletion).not.toHaveProperty("taskContinues");
+      expect(config.resourceStore.readTask(firstClaim.taskId)).toMatchObject({
+        metadata: { generation: 1 },
+        status: { phase: "converged", observedGeneration: 1 },
+      });
+    } finally {
+      config.resourceStore.close();
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
   test("keeps explicit session task identities collision-safe", () => {
     const first = taskIntentForInput({
       kind: "evaluate-session",
@@ -980,8 +1121,11 @@ describe("evaluation task policy", () => {
       evidenceHash: "b".repeat(64),
     });
     const ongoing = review({ assessmentPurpose: "ongoing" });
+    const automatic = review({ automatic: true });
 
     expect(omittedPurpose).toEqual(explicitOutcome);
+    expect(automatic?.id).not.toBe(omittedPurpose?.id);
+    expect(automatic?.input).toMatchObject({ automatic: true });
     expect(full).toEqual(duplicate);
     expect(review({ taskId: "goal/example" })?.id).not.toBe(
       review({ taskId: "goal-example-96ccaaaa0f4c" })?.id,
@@ -1193,6 +1337,7 @@ describe("evaluation task policy", () => {
             appId: "may",
             taskId: "goal/example",
             assessmentPurpose: "ongoing",
+            automatic: true,
           },
         });
       }
@@ -1247,6 +1392,7 @@ describe("evaluation task policy", () => {
           appId: "may",
           taskId: "goal/example",
           assessmentPurpose: "ongoing",
+          automatic: true,
           reviewer: "evaluator-deepseek",
         },
       });
@@ -1278,6 +1424,7 @@ describe("evaluation task policy", () => {
         subjectGeneration: 7,
         evidenceHash: "b".repeat(64),
         assessmentPurpose: "ongoing",
+        automatic: true,
       },
     });
     expect(taskIntentForInput(input!)).toMatchObject({
@@ -1286,6 +1433,7 @@ describe("evaluation task policy", () => {
         subjectGeneration: 7,
         evidenceHash: "b".repeat(64),
         assessmentPurpose: "ongoing",
+        automatic: true,
       },
     });
   });

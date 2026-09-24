@@ -59,6 +59,7 @@ type Input = {
   evidenceHash?: string;
   assessmentPurpose?: AssessmentPurpose;
   reviewer?: "evaluator" | "evaluator-deepseek";
+  automatic?: true;
 };
 type Judgment = {
   disposition: "assessed" | "insufficient-evidence";
@@ -487,9 +488,29 @@ export async function reviewTaskOutcome(
   );
   if (subject.disposition !== "eligible") {
     const summary = `${subject.disposition}: ${subject.reason}`;
+    if (ctx.input?.automatic === true && subject.acquisitionFailed) {
+      await ctx.events.emit({
+        type: "evaluation.review_failed",
+        localKey: taskEmissionKey(ctx, "automatic-evidence-acquisition-failed"),
+        data: {
+          reason: "automatic-evidence-acquisition-failed",
+          stage: "subject-evidence-acquisition",
+          appId,
+          taskId,
+          error: subject.reason,
+          disposition: subject.disposition,
+          reviewTaskId: ctx.reconciliation?.taskId ?? "unknown",
+          reviewGeneration: ctx.reconciliation?.generation ?? null,
+        },
+        target: { appId: "evaluation", project: "evaluation" },
+      });
+    }
     return done(ctx, summary, [
       `review-disposition:${subject.disposition}`,
       `subject:${appId}/${taskId}`,
+      ...(ctx.input?.automatic === true && subject.acquisitionFailed
+        ? ["owner-review:automatic-evidence-acquisition-failed"]
+        : []),
     ]);
   }
   const expectedGeneration = Number(ctx.input?.subjectGeneration);

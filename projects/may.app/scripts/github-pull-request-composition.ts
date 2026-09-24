@@ -37,6 +37,13 @@ const { EventBus, EVENT_ROW_ID } = await import(
 const { createAppObserverRuntime } = await import(
   `${host}/src/app/adapters/producers/app-observer-runtime.ts`
 );
+const { startAppInboxRuntime } = await import(
+  `${host}/src/app/composition/app-inbox-runtime.ts`
+);
+const { AppRegistry } = await import(`${host}/src/app/core/apps/registry.ts`);
+const { admitConversationTaskInput, readConversationTaskInputs } = await import(
+  `${host}/src/app/core/state/conversation-task-turns.ts`
+);
 const { AppTaskResourceStore } = await import(
   `${host}/src/app/core/state/app-task-resource-store.ts`
 );
@@ -148,8 +155,13 @@ bus.setPersistenceSubscriber((event: any) => {
 });
 bus.setDeliveryRecorder(writer.recordDelivery);
 const observations: any[] = [],
+  observerFailures: any[] = [],
   admissions: any[] = [];
 bus.subscribeDurableRoute((event: any) => {
+  if (event.type === "app.observer.failed") {
+    observerFailures.push(event);
+    return;
+  }
   if (!event.type.startsWith("may.github.pull-request.")) return;
   observations.push(event);
   const canonical = {
@@ -173,6 +185,7 @@ bus.subscribeDurableRoute((event: any) => {
   return result.delivery;
 });
 let merged = false,
+  discoveryUnavailable = false,
   httpCalls = 0,
   currentTime = Date.now(),
   passes = 0;
@@ -192,6 +205,8 @@ const provider: any = async (u: any) => {
     merge_commit_sha: merged ? "b".repeat(40) : null,
   };
   if (url.includes("?state=")) {
+    if (discoveryUnavailable)
+      return Response.json({ message: "unavailable" }, { status: 503 });
     const state = new URL(url).searchParams.get("state");
     return Response.json(state === (merged ? "closed" : "open") ? [pull] : []);
   }
@@ -224,7 +239,8 @@ const createRuntime = () =>
       log: { info: () => {}, warn: () => {}, debug: () => {}, error: () => {} },
     }),
   });
-let runtime = createRuntime();
+let runtime = createRuntime(),
+  inboxRuntime: any = null;
 const entries = [
   { appDir: root, definition: { ...definition, observers: [observer] } },
 ];
@@ -299,6 +315,95 @@ try {
     store.readTaskConditions(taskId).map((c: any) => c.metadata.id),
     ["human-review", "independent-dependency"],
   );
+
+  // Install the actual May definition into the Host inbox runtime before the
+  // outage. Observing app.observer.failed on the bus is not proof that May got
+  // it: the subscription must normalize, durably admit, and attach it to May's
+  // ordinary conversation Task before this trial calls it delivered.
+  const installedDefinition = { ...definition, observers: [], schedules: [] };
+  const registry = new AppRegistry(async () => [
+    { appDir: root, definition: installedDefinition },
+  ]);
+  await registry.reload();
+  let failureContinuationTaskId: string | undefined;
+  inboxRuntime = await startAppInboxRuntime({
+    registry,
+    db,
+    bus,
+    schedulesEnabled: false,
+    scanIntervalMs: 60_000,
+    admitConversation(input: any) {
+      const admitted = admitConversationTaskInput(config, {
+        ...input,
+        intent: {
+          parentId: "root",
+          outcome: "Continue May's ordinary owner conversation",
+          acceptance: [
+            "Judge every admitted fact without losing independent work",
+          ],
+          agent: "may",
+        },
+        conversationInputKinds: definition.conversation?.inputKinds,
+      });
+      failureContinuationTaskId = admitted.taskId;
+      return admitted;
+    },
+  });
+
+  const failuresBeforeDiscoveryOutage = observerFailures.length;
+  discoveryUnavailable = true;
+  currentTime += observer.intervalMs;
+  await scan();
+  assert.equal(observerFailures.length, failuresBeforeDiscoveryOutage + 1);
+  assert.deepEqual(observerFailures.at(-1).target, { project: "may" });
+  const exactFailure = {
+    appId: "may",
+    observerId: "github-pull-request",
+    error:
+      "GitHub pull-request discovery unavailable: open: GitHub read failed HTTP 503; closed: GitHub read failed HTTP 503",
+  };
+  assert.deepEqual(observerFailures.at(-1).data, exactFailure);
+  assert.ok(
+    failureContinuationTaskId,
+    "installed May subscription must admit the failure",
+  );
+  const failureClaim = claimObservedAppTask(config, {
+    taskId: failureContinuationTaskId,
+    appAgent: "may",
+    handler: "agent",
+  });
+  assert.equal(failureClaim.kind, "claimed");
+  if (failureClaim.kind !== "claimed")
+    throw new Error("expected admitted observer failure continuation");
+  const failureInputs = readConversationTaskInputs(config, failureClaim);
+  assert.equal(failureInputs.length, 1);
+  assert.deepEqual(failureInputs[0].input.data.context.observerFailure, {
+    observerId: exactFailure.observerId,
+    error: exactFailure.error,
+  });
+  assert.deepEqual(
+    failureInputs[0].input.data.context.event.data,
+    exactFailure,
+  );
+  deferAppTask(config, failureClaim, {
+    disposition: "waiting",
+    continue: true,
+    summary:
+      "Exact observer failure reached May; independent owner work remains",
+    facts: [
+      "Installed subscription and ordinary conversation continuation verified",
+    ],
+    conditions: [],
+  });
+  assert.deepEqual(
+    store.readTaskConditions(taskId).map((c: any) => c.metadata.id),
+    ["human-review", "independent-dependency"],
+  );
+  discoveryUnavailable = false;
+  currentTime += observer.intervalMs;
+  await scan();
+  assert.equal(observerFailures.length, failuresBeforeDiscoveryOutage + 1);
+
   report.transitionWithoutRegistration = {
     sameTaskId: taskId,
     metadataBlock: ownerBody,
@@ -310,6 +415,12 @@ try {
     unchangedSuppressed: true,
     publicationFailureRetried: true,
     runtimeRestartRepublishedSafely: true,
+    totalDiscoveryFailurePublished:
+      observerFailures.length === failuresBeforeDiscoveryOutage + 1,
+    installedFailureSubscriptionAdmitted: true,
+    ownerContinuationTaskId: failureContinuationTaskId,
+    exactFailureReachedOwnerContinuation: true,
+    discoveryRecoveredNormally: true,
     durableEventId: fact[EVENT_ROW_ID],
     status: readRuntimeTaskView({ taskStateConfig: config }, taskId).status,
   };
@@ -317,11 +428,12 @@ try {
   report.fixtureOnly = true;
   report.externalBodyBytes = Boolean(process.env.PR_BODY_FILE);
   report.limit =
-    "Production observer, reconstructed Host observer runtime, durable publication and busy-owner admission/settlement; HTTP and owner judgment are fixtures. A full Host process/container restart and real GitHub writes are not proved. No production DB writes.";
+    "Production observer, installed May subscription/input mapping, reconstructed Host observer and inbox runtimes, durable publication, ordinary May conversation-Task continuation, and busy-owner admission/settlement; HTTP and owner judgment are fixtures. A full Host process/container restart and real GitHub writes are not proved. No production DB writes.";
   writeFileSync(output, JSON.stringify(report, null, 2) + "\n");
   console.log(JSON.stringify(report));
 } finally {
   runtime.close();
+  inboxRuntime?.close();
   closeDb(root);
   rmSync(root, { recursive: true, force: true });
 }

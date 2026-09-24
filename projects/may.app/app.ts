@@ -285,6 +285,25 @@ export function scoutResearchHandoffInput(
   };
 }
 
+export function observerFailureInput(
+  event: AppEvent<Record<string, unknown>>,
+): AppInput | null {
+  const data = record(event.data);
+  if (event.source !== "app-host" || data.appId !== "may") return null;
+  const observerId = requiredText(data, "observerId", event.type);
+  const error = requiredText(data, "error", event.type);
+  return {
+    kind: "message",
+    data: {
+      message: `Review the failed May observer run for ${observerId}. Verify current provider and runtime evidence, allow normal retry and recovery, preserve unrelated work, and report only actionable persistent impact. This fact alone is not an operation failure or a reason for human escalation.`,
+      context: {
+        observerFailure: { observerId, error },
+        event: structuredClone(event),
+      },
+    },
+  };
+}
+
 export function evaluationHumanDecisionInput(
   event: AppEvent<Record<string, unknown>>,
 ): AppInput {
@@ -432,6 +451,11 @@ export default defineApp({
   },
   observers: [githubPullRequestObserver],
   subscriptions: [
+    {
+      id: "observer-failure-review",
+      event: { type: "app.observer.failed", project: "may" },
+      toInput: observerFailureInput,
+    },
     {
       id: "scout-research-qualified",
       event: { type: "scout.research.qualified", project: "may" },

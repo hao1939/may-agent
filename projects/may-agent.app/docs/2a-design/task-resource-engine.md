@@ -59,6 +59,24 @@ reconciles the task. The Host completes the correlated request from the
 accepted task result. Conversation and presentation adapters observe that
 result independently; transport delivery never gates Task completion.
 
+Admission and accepted-result projection failures retain their consecutive
+failure count, first-failure time and next eligible recovery deadline. Repeating
+the same failure advances bounded backoff instead of resetting it, while new
+exact evidence can trigger prompt reconsideration; the due recovery scan repairs
+a lost wake. A projection failure cannot replace the accepted Task outcome or
+consume unrelated waits, inputs or work.
+
+Before Task attachment, a typed App source has an exact asynchronous caller
+link. Runtime returns its first admission blocker through that link and replays
+the same idempotent fact until the accountable route accepts it. Receipt by a
+callback or publication of a diagnostic event is not proof that the caller
+considered the blocker; that requires evidence from the caller's later Task
+execution or accepted result. Sources without a typed App caller retain paced
+recovery and `handler.failed` diagnostics, but Runtime does not guess a fallback
+owner. An installation that requires accountable return for such a source must
+declare its own exact route; no universal supervisor or per-retry human
+escalation is implied.
+
 Every Task-based App input creates, revises, attaches to, or wakes a
 Task. A simple task converges on its first bounded attempt and leaves a compact
 receipt. The same resource naturally supports repeated reconciliation, exact
@@ -149,6 +167,16 @@ dependencies, linked Conditions/receipts, and a bounded attempt window. It does
 not deserialize unrelated state. The shared reader powers SDK, agent, control
 and HTTP views. Any remaining path-based UI migration must preserve that same
 read contract rather than introduce another Task model.
+
+An exact SDK Task read also exposes `currentObligations`, the common read-only
+projection of current timing and retained input work. `{ available: false }`
+means Runtime cannot authoritatively provide this projection; it never proves
+that no obligations exist. When available, `reviewAt` is the Task's authoritative
+absolute reconsideration deadline. `inputWaits.items` is bounded exact input
+obligation evidence, including its admission key, input/admission correlation,
+per-input review deadline and Condition count. Callers must honor `maxItems` and
+`truncated`: absence from a truncated page is not fulfillment. App-specific
+review policy may interpret this common evidence but does not redefine it.
 
 ## Task identity and state
 

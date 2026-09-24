@@ -414,6 +414,9 @@ const evaluationInputSchema = Type.Union([
               Type.Literal("evaluator-deepseek"),
             ]),
           ),
+          // Internal automatic requests retain their origin so an acquisition
+          // failure can return to Evaluation's existing owner path.
+          automatic: Type.Optional(Type.Literal(true)),
         },
         { additionalProperties: false },
       ),
@@ -622,6 +625,7 @@ export function taskIntentForInput(input: AppInput): TaskIntent | null {
       const subjectGeneration = Number(data.subjectGeneration);
       const evidenceHash = stringValue(data.evidenceHash);
       const reviewer = stringValue(data.reviewer);
+      const automatic = data.automatic === true;
       if (
         reviewer &&
         reviewer !== "evaluator" &&
@@ -648,6 +652,7 @@ export function taskIntentForInput(input: AppInput): TaskIntent | null {
         ...(evidenceHash ? { evidenceHash } : {}),
         assessmentPurpose,
         ...(reviewer === "evaluator-deepseek" ? { reviewer } : {}),
+        ...(automatic ? { automatic: true } : {}),
       };
       const contractHash = createHash("sha256")
         .update(JSON.stringify(normalizedInput))
@@ -870,6 +875,9 @@ export function taskIntentForInput(input: AppInput): TaskIntent | null {
         ],
         agent: "evaluator",
         executor: evaluationExecutor,
+        // Per-wake context is retained in the admitted trigger batch. Keep the
+        // standing desired input stable so observations never revise or fence
+        // an owner attempt that is already handling earlier evidence.
         input: { scope: "evaluation.app" },
         priority: "P1",
       };
@@ -953,6 +961,7 @@ export function taskInputForEvent(
                 : {}),
               ...(evidenceHash ? { evidenceHash } : {}),
               ...(reviewer ? { reviewer } : {}),
+              automatic: true,
               ...(assessmentPurpose === "ongoing" ||
               assessmentPurpose === "outcome"
                 ? { assessmentPurpose }
@@ -980,6 +989,7 @@ export function taskInputForEvent(
               appId,
               taskId,
               assessmentPurpose: "ongoing",
+              automatic: true,
               ...(automatic.reviewer === "evaluator-deepseek"
                 ? { reviewer: automatic.reviewer }
                 : {}),
