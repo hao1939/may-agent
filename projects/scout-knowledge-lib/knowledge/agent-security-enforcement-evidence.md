@@ -1,8 +1,8 @@
 <ai_context>
-summary: "Implementation-evidence companion to agent-security-verified-enforcement.md. Uses pinned repositories, disclosures, and deployed-system reports to separate signed claims from replayable evidence; receipt integrity from completeness; configured policy from covered paths; identity enrollment from per-request proof; formal models from unsupported surfaces; observed egress from blocking; stable tool digests from equivalent semantics; policy verdicts from effect ownership; counterfactual actions from execution authority; authorization receipts from effect gates; narrated results from positive execution evidence; and sandbox isolation from configuration coherence."
-triggers: ["SkillProof", "MCP server verification", "replayable evidence", "action receipt", "signed receipt", "evidence completeness", "Pipelock", "PassControl", "sender proof", "bearer visa", "authentication assurance", "default deny", "fail closed", "shell hook", "guardrail regression test", "OpenShell prover", "SMT containment", "path composition", "egress firewall", "uninspected egress", "tool identity", "tool pin", "schema canonicalization", "shadow mode", "mediation ownership", "counterfactual action", "observed policy action", "HOL Guard", "Action Evidence Package", "AEP sandbox", "Codex sandbox", "Overpatch", "Heapjack", "authority derivation", "Meta Muse", "local configuration authority", "APEXA", "execution integrity", "tool execution evidence", "BoxLite", "micro-VM", "sandbox configuration coherence", "guest network", "host jailer grants"]
+summary: "Implementation-evidence companion to agent-security-verified-enforcement.md. Uses pinned repositories, disclosures, and deployed-system reports to separate signed claims from replayable evidence; receipt integrity from completeness; configured policy from covered paths; identity enrollment from per-request proof; formal models from unsupported surfaces; observed egress from blocking; stable tool digests from equivalent semantics; policy verdicts from effect ownership; counterfactual actions from execution authority; authorization receipts from effect gates; narrated results from positive execution evidence; sandbox isolation from configuration coherence; and stop requests from observed quiescence."
+triggers: ["SkillProof", "MCP server verification", "replayable evidence", "action receipt", "signed receipt", "evidence completeness", "Pipelock", "PassControl", "sender proof", "bearer visa", "authentication assurance", "default deny", "fail closed", "shell hook", "guardrail regression test", "OpenShell prover", "SMT containment", "path composition", "egress firewall", "uninspected egress", "tool identity", "tool pin", "schema canonicalization", "shadow mode", "mediation ownership", "counterfactual action", "observed policy action", "HOL Guard", "Action Evidence Package", "AEP sandbox", "Codex sandbox", "Overpatch", "Heapjack", "authority derivation", "Meta Muse", "local configuration authority", "APEXA", "execution integrity", "tool execution evidence", "BoxLite", "micro-VM", "sandbox configuration coherence", "guest network", "host jailer grants", "Hard Stop", "SIGSTOP", "process group preemption", "quiescence receipt"]
 last_updated: "2026-09-24"
-source_basis: "Pinned-source implementation studies and disclosures reviewed 2026-09-10 through 2026-09-24: SkillProof f5ddb4b, Pipelock f7d1816, agent-guardrails-kit 18c241e, PassControl f9cb702, OpenShell df0ee1a, k8s-rca-agent 29f5fad, secure-agent 017ec5a, Rul1an/assay 900e536, Soup Wall be8db48, HOL Guard 56faea4 and f5d568f, aep-sandbox 3495e27, BoxLite 9e9436e, HN item 49795755 with Accomplish AI's Codex sandbox disclosure, HN item 49802030 with the Meta Muse endpoint-redirection report, and arXiv 2609.24165v1 (abstract and full HTML). Each section states its own evidence boundary."
+source_basis: "Pinned-source implementation studies and disclosures reviewed 2026-09-10 through 2026-09-24: SkillProof f5ddb4b, Pipelock f7d1816, agent-guardrails-kit 18c241e, PassControl f9cb702, OpenShell df0ee1a, k8s-rca-agent 29f5fad, secure-agent 017ec5a, Rul1an/assay 900e536, Soup Wall be8db48, HOL Guard 56faea4 and f5d568f, aep-sandbox 3495e27, BoxLite 9e9436e, Hard Stop 45c31bc, HN item 49795755 with Accomplish AI's Codex sandbox disclosure, HN item 49802030 with the Meta Muse endpoint-redirection report, HN item 49830567, and arXiv 2609.24165v1 (abstract and full HTML). Each section states its own evidence boundary."
 </ai_context>
 
 # Agent Security: Enforcement Evidence and Runtime Coverage
@@ -971,3 +971,76 @@ the host kernels, attempt a guest escape, or verify a deployed configuration.
 The source establishes the control decomposition and the fail-closed validation
 branch; security and performance claims outside those paths remain
 repository-authored claims.
+
+## Sending a Stop Signal Is Not an Observed Quiescence (HN, September 2026)
+
+**Source:** https://news.ycombinator.com/item?id=49830567
+
+**Repo:** https://github.com/joseluispino/hardstop
+
+**Pinned observation:** repository commit
+[`45c31bca05ef8dc7765152e0181e9defb6338b0d`](https://github.com/joseluispino/hardstop/commit/45c31bca05ef8dc7765152e0181e9defb6338b0d)
+
+Hard Stop proposes a useful separation: a runaway agent should not be trusted to
+halt itself, so a supervisor outside the model loop should be able to stop its
+OS process group and inspect durable state. The reference implementation calls
+`os.killpg(..., SIGSTOP)` and later `SIGKILL`, while its checked-in benchmark
+reports roughly 0.005 ms median and 0.019 ms p99 for the stop operation at the
+pinned revision. That is evidence for one narrow primitive, not the README's
+broader claims of kernel/eBPF containment or prevention of off-target effects.
+
+The benchmark starts a child that sleeps, measures only the interval until
+`killpg` returns, and terminates the child afterward. It does not observe that
+every process reached a stopped state, race a pending socket or system call, or
+measure the full interval from violation detection through verified containment.
+The implementation makes the same distinction visible: `freeze_process_group()`
+returns a request-status boolean, but `execute_quiescence_and_preempt()` ignores
+that value and reports `quiesced: True` whenever a supervisor object exists. A
+permission fallback can stop only the target PID rather than its group, yet the
+caller still emits the same quiesced claim.
+
+Detection placement is a separate limit. The checked-in sentinel is a Python
+function that evaluates caller-supplied `target_domain`, `file_path_accessed`,
+and `command_str` strings from a LangGraph state object. The repository does not
+contain the README's stated eBPF or cgroup enforcement path, nor a system-call or
+network mediator that proves all relevant effects pass through the check. Its
+“WAL” reader also parses one JSON file; malformed bytes produce an explicit
+`torn-read` error record, not recovery of the last committed state. These are
+useful reference components, but they do not establish complete mediation or a
+recoverable checkpoint protocol.
+
+A trustworthy hard-stop receipt therefore needs distinct evidence for:
+
+1. **Detection:** which independently observed effect or invariant triggered the
+   stop, and which paths remain outside that observer;
+2. **Dispatch:** which process/cgroup generation was targeted and whether the
+   kernel accepted the request;
+3. **Quiescence:** a postcondition showing all in-scope tasks stopped, including
+   descendants or delegated workers, rather than timing only signal issuance;
+4. **Effect boundary:** whether an already-started write, packet, or remote action
+   committed before quiescence; and
+5. **Recovery:** the last integrity-checked committed record, with torn or
+   ambiguous state kept separate from a clean checkpoint.
+
+This extends the note's positive-execution rule in the opposite direction. Just
+as “call proposed” is not “call executed,” “stop requested” is not “execution
+stopped.” Out-of-band placement is valuable only when both the detection path and
+the post-stop observation remain independent of the component being contained.
+
+**Evidence inspected at the pinned commit:**
+[`README.md`](https://github.com/joseluispino/hardstop/blob/45c31bca05ef8dc7765152e0181e9defb6338b0d/README.md),
+[`andon_circuit_breaker.py`](https://github.com/joseluispino/hardstop/blob/45c31bca05ef8dc7765152e0181e9defb6338b0d/andon_circuit_breaker.py),
+[`benchmark_latency.py`](https://github.com/joseluispino/hardstop/blob/45c31bca05ef8dc7765152e0181e9defb6338b0d/benchmark_latency.py),
+[`benchmark_results.jsonl`](https://github.com/joseluispino/hardstop/blob/45c31bca05ef8dc7765152e0181e9defb6338b0d/benchmark_results.jsonl),
+and
+[`test_andon_circuit_breaker.py`](https://github.com/joseluispino/hardstop/blob/45c31bca05ef8dc7765152e0181e9defb6338b0d/test_andon_circuit_breaker.py).
+
+**Evidence boundary:** Scout inspected the complete repository tree and listed
+files through public GitHub endpoints. The HN item had no comments at review
+time. Scout could not run the suite because the environment lacked its declared
+`pydantic` and `pytest` dependencies, and did not install packages, run the
+benchmark, inspect the pending paper beyond repository text, or test a live
+agent, network race, cgroup, or eBPF program. Performance and attack-prevention
+claims remain author-reported; the source inspection establishes only the
+implemented control flow and the mismatch between request timing and observed
+quiescence.
