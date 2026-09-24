@@ -1,8 +1,8 @@
 <ai_context>
-summary: "Gryph's cross-harness policy layer makes two security boundaries explicit: a block only prevents an action when it comes from a pre-execution hook, and signed receipts only attest to what the same-user mediation path observed. Agent Hooks adds that multiple controls do not compose safely by default: approval can skip later controls, sequential transforms can change what later controls inspect, and streamed output requires segment-level release and persistence gates. Package Doctor demonstrates why dependency admission needs both a preventive check of the requested artifact and a post-execution audit of resolved transitive artifacts. Policy evidence therefore needs phase, coverage, composition, and exposure metadata."
-triggers: ["agent hooks", "coding-agent policy", "pre-execution enforcement", "post-execution detection", "signed receipts", "same-user bypass", "composition profile", "approval resume", "streaming mediation", "dependency admission", "transitive dependencies", "Gryph", "AARM", "Agent Hooks", "Package Doctor"]
-last_updated: "2026-09-19"
-source_basis: "GitHub repository metadata plus Gryph documentation, implementation, and tests at revision 44e63b09957c4ab841a5aafe19604c769f3f848f; the draft Agent Hooks specification, production guidance, threat model, Python reference SDK, and conformance vectors at revision 1fa77847c600b3582e73e0d20db9c625bf7f52b2; and Package Doctor documentation, implementation, and tests at revision 5c14dfef0d80b7425ea1388ffea74d38b18d6d00."
+summary: "Gryph's cross-harness policy layer makes two security boundaries explicit: a block only prevents an action when it comes from a pre-execution hook, and signed receipts only attest to what the same-user mediation path observed. Agent Hooks adds that multiple controls do not compose safely by default: approval can skip later controls, sequential transforms can change what later controls inspect, and streamed output requires segment-level release and persistence gates. Package Doctor demonstrates why dependency admission needs both a preventive check of the requested artifact and a post-execution audit of resolved transitive artifacts. Stop That Shit adds that task authority, host permission, and lifecycle evidence must remain separate: an allow cannot grant host authority, and uncertain delegated work must continue to consume capacity. Policy evidence therefore needs phase, coverage, composition, authority, lifecycle, and exposure metadata."
+triggers: ["agent hooks", "coding-agent policy", "pre-execution enforcement", "post-execution detection", "signed receipts", "same-user bypass", "composition profile", "approval resume", "streaming mediation", "dependency admission", "transitive dependencies", "task authority", "delegation lifecycle", "Stop That Shit", "Gryph", "AARM", "Agent Hooks", "Package Doctor"]
+last_updated: "2026-09-24"
+source_basis: "GitHub repository metadata plus Gryph documentation, implementation, and tests at revision 44e63b09957c4ab841a5aafe19604c769f3f848f; the draft Agent Hooks specification, production guidance, threat model, Python reference SDK, and conformance vectors at revision 1fa77847c600b3582e73e0d20db9c625bf7f52b2; Package Doctor documentation, implementation, and tests at revision 5c14dfef0d80b7425ea1388ffea74d38b18d6d00; and Stop That Shit documentation, host-adapter contract, evaluation design, implementation tree, and repository-authored evidence at revision 18310454cf10c7a219a8bbdbab2760624a183c75."
 </ai_context>
 
 # An Agent-Policy Decision Needs an Execution Phase
@@ -158,6 +158,59 @@ review. Scout inspected the pinned documentation, implementation, and tests; it
 did not install the package or reproduce those measurements.
 
 - **Primary sources:** [agent guardrail and coverage limits](https://github.com/binuka200/package-doctor/blob/5c14dfef0d80b7425ea1388ffea74d38b18d6d00/docs/agent-guardrail.md), [hook implementation](https://github.com/binuka200/package-doctor/blob/5c14dfef0d80b7425ea1388ffea74d38b18d6d00/src/package_doctor/cli.py), [decision logic](https://github.com/binuka200/package-doctor/blob/5c14dfef0d80b7425ea1388ffea74d38b18d6d00/src/package_doctor/guard.py), [hook tests](https://github.com/binuka200/package-doctor/blob/5c14dfef0d80b7425ea1388ffea74d38b18d6d00/tests/test_guard.py), and [accuracy method and limitations](https://github.com/binuka200/package-doctor/blob/5c14dfef0d80b7425ea1388ffea74d38b18d6d00/docs/accuracy.md)
+
+## Task Authority Is Not Host Permission
+
+[Stop That Shit](https://github.com/lennney/stop-that-shit) (STS) adds a useful
+boundary to this policy picture: an agent's **task contract** and the host's
+**execution permission** are different authorities. At inspected revision
+[`18310454cf10c7a219a8bbdbab2760624a183c75`](https://github.com/lennney/stop-that-shit/commit/18310454cf10c7a219a8bbdbab2760624a183c75),
+the shared policy parses explicit modes such as `review`, `answer`, `change`, and
+`monitor`, plus optional file, dependency, hash, and subagent limits. A policy
+pass adds no permission and cannot override the host sandbox; a host permission
+grant does not enlarge the task. This makes authority an intersection rather
+than a winner-takes-all verdict:
+
+`executable action = host allows × task contract allows × adapter covers`
+
+The repository's host-adapter contract also treats delegation capacity as a
+lifecycle claim, not a process-count guess. Capacity is reserved before a spawn.
+Only a correlated whole-call `joined` or `not_started` fact releases the rest of
+that reservation; a session-end notice, stop attempt, timeout, path-only agent
+listing, or unsupported adapter event does not prove that work ended. Under a
+finite budget, missing lifecycle support is denied rather than inferred from
+arrival order or local timing. This is conservative, but it preserves the actual
+meaning of `agents=N`: uncertain work still occupies authority.
+
+The evaluation design is equally instructive. Its paired matrix changes one
+decisive fact between an unauthorized and authorized case for review mutation,
+hashing, scope expansion, dependencies, deliverable disclaimers, compatibility,
+proof stopping, and delegation. It keeps baseline, instruction-only, and plugin
+arms separate, and describes routing and live Hook integration as different
+experiments. A denied smoke cell requires both attempted-path evidence and the
+sentinel's absence; a model that never attempts the action is `not_exercised`,
+not a successful block. This avoids laundering model compliance, Hook response,
+and host effect into one score.
+
+The source's own evidence remains bounded. Its 0.2.3 report says repository-run
+checks had 417 passing tests, 18/18 paired case arms, and one isolated Codex CLI
+smoke in which review denied a mixed read/write command while change allowed it.
+Those are maintainer-reported results; Scout inspected the pinned source,
+documentation, evaluation plan, and repository-authored evidence but did not
+install STS or rerun its tests. The report itself keeps `hostEffect` as
+`unobserved` outside the isolated smoke and explicitly declines to claim general
+model improvement or equivalent behavior across all five adapters.
+
+**Reusable rule:** record task authority, host permission, adapter coverage,
+lifecycle certainty, and observed effect separately. For a boundary test, require
+both a negative witness (the forbidden effect is absent) and a positive witness
+(the nearest authorized action still works), and report `not_exercised` when the
+model never reaches the gate.
+
+- **Discovery:** GitHub Repository Search API query
+  `topic:ai-agents pushed:>2026-09-23 stars:>50`, sorted by recent update,
+  returned 590 repositories with `incomplete_results: false`.
+- **Primary sources:** [README](https://github.com/lennney/stop-that-shit/blob/18310454cf10c7a219a8bbdbab2760624a183c75/README.md), [host-adapter contract](https://github.com/lennney/stop-that-shit/blob/18310454cf10c7a219a8bbdbab2760624a183c75/HOST-ADAPTER-CONTRACT.md), [paired-evaluation design](https://github.com/lennney/stop-that-shit/blob/18310454cf10c7a219a8bbdbab2760624a183c75/evals/codex-paired/README.md), and [repository-authored evidence](https://github.com/lennney/stop-that-shit/blob/18310454cf10c7a219a8bbdbab2760624a183c75/EVIDENCE.md)
 
 ## Why it matters
 
