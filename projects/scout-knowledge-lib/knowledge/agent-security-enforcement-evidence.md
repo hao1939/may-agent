@@ -1,8 +1,8 @@
 <ai_context>
 summary: "Implementation-evidence companion to agent-security-verified-enforcement.md. Uses pinned repositories, disclosures, and deployed-system reports to separate signed claims from replayable evidence; receipt integrity from completeness; configured policy from covered paths; identity enrollment from per-request proof; formal models from unsupported surfaces; observed egress from blocking; stable tool digests from equivalent semantics; policy verdicts from effect ownership; counterfactual actions from execution authority; authorization receipts from effect gates; narrated results from positive execution evidence; and sandbox isolation from configuration coherence."
 triggers: ["SkillProof", "MCP server verification", "replayable evidence", "action receipt", "signed receipt", "evidence completeness", "Pipelock", "PassControl", "sender proof", "bearer visa", "authentication assurance", "default deny", "fail closed", "shell hook", "guardrail regression test", "OpenShell prover", "SMT containment", "path composition", "egress firewall", "uninspected egress", "tool identity", "tool pin", "schema canonicalization", "shadow mode", "mediation ownership", "counterfactual action", "observed policy action", "HOL Guard", "Action Evidence Package", "AEP sandbox", "Codex sandbox", "Overpatch", "Heapjack", "authority derivation", "Meta Muse", "local configuration authority", "APEXA", "execution integrity", "tool execution evidence", "BoxLite", "micro-VM", "sandbox configuration coherence", "guest network", "host jailer grants"]
-last_updated: "2026-09-23"
-source_basis: "Pinned-source implementation studies and disclosures reviewed 2026-09-10 through 2026-09-23: SkillProof f5ddb4b, Pipelock f7d1816, agent-guardrails-kit 18c241e, PassControl f9cb702, OpenShell df0ee1a, k8s-rca-agent 29f5fad, secure-agent 017ec5a, Rul1an/assay 900e536, Soup Wall be8db48, HOL Guard 56faea4, aep-sandbox 3495e27, BoxLite 9e9436e, HN item 49795755 with Accomplish AI's Codex sandbox disclosure, HN item 49802030 with the Meta Muse endpoint-redirection report, and arXiv 2609.24165v1 (abstract and full HTML). Each section states its own evidence boundary."
+last_updated: "2026-09-24"
+source_basis: "Pinned-source implementation studies and disclosures reviewed 2026-09-10 through 2026-09-24: SkillProof f5ddb4b, Pipelock f7d1816, agent-guardrails-kit 18c241e, PassControl f9cb702, OpenShell df0ee1a, k8s-rca-agent 29f5fad, secure-agent 017ec5a, Rul1an/assay 900e536, Soup Wall be8db48, HOL Guard 56faea4 and f5d568f, aep-sandbox 3495e27, BoxLite 9e9436e, HN item 49795755 with Accomplish AI's Codex sandbox disclosure, HN item 49802030 with the Meta Muse endpoint-redirection report, and arXiv 2609.24165v1 (abstract and full HTML). Each section states its own evidence boundary."
 </ai_context>
 
 # Agent Security: Enforcement Evidence and Runtime Coverage
@@ -625,6 +625,63 @@ harness. The ownership-grade document identifies itself as a release baseline,
 and current harness documentation contains more detailed, evolving adapter
 claims; the matrix is therefore evidence of an explicit classification model,
 not an independently verified current guarantee for every named host.
+
+### Follow-up: declared support and observed compatibility need separate evidence
+
+**Pinned observation:** repository commit
+[`f5d568f9c60d03cf26ec8ace7ed9aa8686af7ca7`](https://github.com/hashgraph-online/hol-guard/commit/f5d568f9c60d03cf26ec8ace7ed9aa8686af7ca7)
+
+HOL Guard's new per-event capability report turns the earlier ownership grades
+into a stricter evidence contract. A row declares one exact harness event,
+transport, mode, host/version scope, OS/architecture, error behavior, and known
+blind spots, while deployment health and evidence level remain separate. The
+default is `unverified` plus `not_run`; an unknown host becomes an explicit
+unsupported row rather than inheriting a generic adapter claim, and a synthetic
+canary is never promoted into live enforcement evidence.
+
+The validator will label a deployment `healthy` only when the evidence is a
+non-stale `live_block` for the same build, host/version scope, and OS/architecture;
+the row must describe a real blocking boundary, include both denied and allowed
+witnesses, and mark compatibility verified. Future-dated and expired evidence is
+rejected. This makes compatibility a time-bounded conjunction instead of a static
+support badge:
+
+`declared event boundary × exact deployment scope × negative witness × positive witness × freshness`
+
+The positive witness matters because a system that merely blocks every call can
+produce a convincing denied example without being compatible. Exact build and
+host matching matter because a live result from one adapter version cannot safely
+upgrade a changed installation. The report's current checked-in Cline rows remain
+conservatively `unverified`/`not_run`, so the schema demonstrates the admission
+rule without claiming that those deployments have passed it.
+
+The same revision illustrates why event granularity matters. Native Cline
+`PostToolUse` is documented as observation-only, while the AgentPlugin path may
+replace or withhold output before model delivery. On that plugin path, an
+`allow_original` result is honored only when Guard's reviewed SHA-256 matches the
+exact output; missing, ambiguous, unavailable, or mismatched review is withheld.
+Even that source-level behavior is not called compatible until live proof shows
+both pre-tool suppression and model-visible post-tool replacement, plus plugin
+load and file-integrity evidence.
+
+**Reusable rule:** publish support as per-event rows, not a product-level checkmark,
+and let current deployment evidence upgrade only the exact row it exercised.
+Keep source capability, installed health, synthetic contract checks, and live
+allow/deny behavior as distinct claims.
+
+**Evidence inspected at the pinned commit:**
+[`harness-support.md`](https://github.com/hashgraph-online/hol-guard/blob/f5d568f9c60d03cf26ec8ace7ed9aa8686af7ca7/docs/guard/harness-support.md),
+[`harness-capability-report.v1.schema.json`](https://github.com/hashgraph-online/hol-guard/blob/f5d568f9c60d03cf26ec8ace7ed9aa8686af7ca7/docs/guard/schemas/harness-capability-report.v1.schema.json),
+[`capability_report.py`](https://github.com/hashgraph-online/hol-guard/blob/f5d568f9c60d03cf26ec8ace7ed9aa8686af7ca7/src/codex_plugin_scanner/guard/adapters/capability_report.py),
+[`cline-local-protection-contract.md`](https://github.com/hashgraph-online/hol-guard/blob/f5d568f9c60d03cf26ec8ace7ed9aa8686af7ca7/docs/guard/cline-local-protection-contract.md),
+[`cline_plugin.py`](https://github.com/hashgraph-online/hol-guard/blob/f5d568f9c60d03cf26ec8ace7ed9aa8686af7ca7/src/codex_plugin_scanner/guard/adapters/cline_plugin.py), and
+[`test_harness_capability_report.py`](https://github.com/hashgraph-online/hol-guard/blob/f5d568f9c60d03cf26ec8ace7ed9aa8686af7ca7/tests/test_harness_capability_report.py).
+
+**Evidence boundary:** Scout statically inspected the pinned source,
+documentation, schemas, and repository-authored tests but did not install HOL
+Guard, run its tests, or exercise Cline. The report and tests establish an
+inspectable evidence-admission design, not that any current deployment is
+healthy or that all harness events traverse the declared boundary.
 
 ## An Authorization Receipt Is Not an Effect Gate (GitHub, September 2026)
 
