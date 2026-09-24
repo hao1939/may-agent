@@ -5898,10 +5898,32 @@ describe("canonical App task runtime", () => {
     expect(afterStale?.lease).toEqual(afterSequential?.lease);
     expect(interruptions).toEqual([`stale-attempt-session:${claim.taskId}`]);
 
+    bus.emit({
+      type: "session.start",
+      owner: "agent:sample-owner",
+      data: {
+        sessionId: "legacy-missing-attempt-session",
+        agent: "sample-owner",
+        task: "bounded task session",
+        trigger: "test",
+        firedAt: Date.now(),
+        taskBinding: { appId: "sample", taskId: claim.taskId, generation: claim.generation },
+      },
+    } as AgentEvent);
+    await Bun.sleep(10);
+    expect(config.resourceStore.readAttempt(claim.attemptId)).toEqual(afterStale);
+    expect(interruptions).toEqual([
+      `stale-attempt-session:${claim.taskId}`,
+      `legacy-missing-attempt-session:${claim.taskId}`,
+    ]);
+
     emitStart("malformed-attempt-session", "   ");
     await Bun.sleep(10);
     expect(config.resourceStore.readAttempt(claim.attemptId)).toEqual(afterStale);
-    expect(interruptions).toEqual([`stale-attempt-session:${claim.taskId}`]);
+    expect(interruptions).toEqual([
+      `stale-attempt-session:${claim.taskId}`,
+      `legacy-missing-attempt-session:${claim.taskId}`,
+    ]);
   });
 
   it.each(["reload", "close and reinstall", "rejected reload"] as const)(

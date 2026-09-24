@@ -3810,6 +3810,11 @@ describe("App task reconciler state", () => {
       ),
     ).toEqual({ status: "recorded", taskId: claim.taskId });
     expect(readTaskSnapshot(config).attempts?.[claim.attemptId].sessionId).toBe("next-workflow-session");
+    const beforeMissingAttempt = readTaskSnapshot(config).attempts?.[claim.attemptId];
+    expect(
+      associateAppTaskSession(config, { taskId: claim.taskId, generation: claim.generation }, "legacy-session"),
+    ).toEqual({ status: "superseded", taskId: claim.taskId });
+    expect(readTaskSnapshot(config).attempts?.[claim.attemptId]).toEqual(beforeMissingAttempt);
 
     const revised: AppTaskIntent = {
       ...original,
@@ -3825,9 +3830,6 @@ describe("App task reconciler state", () => {
       generation: claim.generation + 1,
       changed: true,
     });
-    expect(
-      associateAppTaskSession(config, { taskId: claim.taskId, generation: claim.generation }, "nested-workflow-session"),
-    ).toEqual({ status: "recorded", taskId: claim.taskId });
     expect(associateAppTaskSession(config, { taskId: "missing-task", generation: 1 }, "missing-session")).toEqual({
       status: "missing",
       taskId: "missing-task",
