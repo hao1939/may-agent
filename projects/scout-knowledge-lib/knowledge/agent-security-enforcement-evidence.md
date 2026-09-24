@@ -1,8 +1,8 @@
 <ai_context>
-summary: "Implementation-evidence companion to agent-security-verified-enforcement.md. Uses pinned repositories, disclosures, and deployed-system reports to separate signed claims from replayable evidence; receipt integrity from completeness; configured policy from covered paths; identity enrollment from per-request proof; formal models from unsupported surfaces; observed egress from blocking; stable tool digests from equivalent semantics; policy verdicts from effect ownership; counterfactual actions from execution authority; authorization receipts from effect gates; narrated results from positive execution evidence; sandbox isolation from configuration coherence; stop requests from observed quiescence; and frozen eval inputs from stable comparison units."
-triggers: ["SkillProof", "MCP server verification", "replayable evidence", "action receipt", "signed receipt", "evidence completeness", "Pipelock", "PassControl", "sender proof", "bearer visa", "authentication assurance", "default deny", "fail closed", "shell hook", "guardrail regression test", "OpenShell prover", "SMT containment", "path composition", "egress firewall", "uninspected egress", "tool identity", "tool pin", "schema canonicalization", "shadow mode", "mediation ownership", "counterfactual action", "observed policy action", "HOL Guard", "Action Evidence Package", "AEP sandbox", "Codex sandbox", "Overpatch", "Heapjack", "authority derivation", "Meta Muse", "local configuration authority", "APEXA", "execution integrity", "tool execution evidence", "BoxLite", "micro-VM", "sandbox configuration coherence", "guest network", "host jailer grants", "Hard Stop", "SIGSTOP", "process group preemption", "quiescence receipt", "run-assert-eval", "ASSERT", "Agent Control Specification", "fixed evaluation", "applicable denominator", "paired comparison", "safety helpfulness split"]
+summary: "Implementation-evidence companion to agent-security-verified-enforcement.md. Uses pinned repositories, disclosures, and deployed-system reports to separate signed claims from replayable evidence; receipt integrity from completeness; configured policy from covered paths; identity enrollment from per-request proof; formal models from unsupported surfaces; observed egress from blocking; stable tool digests from equivalent semantics; policy verdicts from effect ownership; counterfactual actions from execution authority and real effect accounting; authorization receipts from effect gates; narrated results from positive execution evidence; sandbox isolation from configuration coherence; stop requests from observed quiescence; and frozen eval inputs from stable comparison units."
+triggers: ["SkillProof", "MCP server verification", "replayable evidence", "action receipt", "signed receipt", "evidence completeness", "Pipelock", "PassControl", "sender proof", "bearer visa", "authentication assurance", "default deny", "fail closed", "shell hook", "guardrail regression test", "OpenShell prover", "SMT containment", "path composition", "egress firewall", "uninspected egress", "tool identity", "tool pin", "schema canonicalization", "shadow mode", "mediation ownership", "counterfactual action", "observed policy action", "real effect accounting", "ctrlrun", "HOL Guard", "Action Evidence Package", "AEP sandbox", "Codex sandbox", "Overpatch", "Heapjack", "authority derivation", "Meta Muse", "local configuration authority", "APEXA", "execution integrity", "tool execution evidence", "BoxLite", "micro-VM", "sandbox configuration coherence", "guest network", "host jailer grants", "Hard Stop", "SIGSTOP", "process group preemption", "quiescence receipt", "run-assert-eval", "ASSERT", "Agent Control Specification", "fixed evaluation", "applicable denominator", "paired comparison", "safety helpfulness split"]
 last_updated: "2026-09-24"
-source_basis: "Pinned-source implementation studies and disclosures reviewed 2026-09-10 through 2026-09-24: SkillProof f5ddb4b, Pipelock f7d1816, agent-guardrails-kit 18c241e, PassControl f9cb702, OpenShell df0ee1a, k8s-rca-agent 29f5fad, secure-agent 017ec5a, Rul1an/assay 900e536, Soup Wall be8db48, HOL Guard 56faea4 and f5d568f, aep-sandbox 3495e27, BoxLite 9e9436e, Hard Stop 45c31bc, responsibleai/ASSERT 0628e25, HN items 49795755, 49802030, 49830567, and 49834450 with their linked primary sources, plus arXiv 2609.24165v1 (abstract and full HTML). Each section states its own evidence boundary."
+source_basis: "Pinned-source implementation studies and disclosures reviewed 2026-09-10 through 2026-09-24: SkillProof f5ddb4b, Pipelock f7d1816, agent-guardrails-kit 18c241e, PassControl f9cb702, OpenShell df0ee1a, k8s-rca-agent 29f5fad, secure-agent 017ec5a, Rul1an/assay 900e536, Soup Wall be8db48, HOL Guard 56faea4 and f5d568f, ctrlrun 8ebc5a8, aep-sandbox 3495e27, BoxLite 9e9436e, Hard Stop 45c31bc, responsibleai/ASSERT 0628e25, HN items 49795755, 49802030, 49830567, 49834450, and 49834720 with their linked primary sources, plus arXiv 2609.24165v1 (abstract and full HTML). Each section states its own evidence boundary."
 </ai_context>
 
 # Agent Security: Enforcement Evidence and Runtime Coverage
@@ -625,6 +625,63 @@ harness. The ownership-grade document identifies itself as a release baseline,
 and current harness documentation contains more detailed, evolving adapter
 claims; the matrix is therefore evidence of an explicit classification model,
 not an independently verified current guarantee for every named host.
+
+### Follow-up: shadow authority and real effect state need different write rules (ctrlrun, HN, September 2026)
+
+**Source:** https://news.ycombinator.com/item?id=49834720
+
+**Repo:** https://github.com/CTRLRun/ctrlrun
+
+**Pinned observation:** repository commit
+[`8ebc5a8efb9fc308f619805e40937f98e503b697`](https://github.com/CTRLRun/ctrlrun/commit/8ebc5a8efb9fc308f619805e40937f98e503b697)
+
+ctrlrun's observe mode adds a state-transition refinement to the counterfactual
+receipt model above: shadow policy authority is fictional, but the effect that
+runs under it is real. An action that policy would deny or send for approval is
+still executed in observe mode. The receipt therefore keeps the counterfactual
+block reason separate from the observed execution outcome, while the state
+store still reserves the effect key and records whether that real execution
+committed, failed before acting, or became ambiguous.
+
+The write asymmetry matters. Observe mode does not create a human approval
+request, and when a caller presents an existing single-use approval it checks
+rather than consumes the grant: a counterfactual verdict did not authorize the
+execution, so spending the grant would invent an authority transition. Yet the
+same path does reserve and settle the effect key because an external action did
+happen. The repository's tests preserve the resulting handoff: after changing
+the same store from observe to enforce, a committed effect from the observation
+period is refused as a duplicate. Observe mode also does not overwrite another
+attempt's existing reservation or resolve an ambiguous effect merely to keep
+executing.
+
+This yields two independent shadow-mode write questions:
+
+1. **Which authority transitions were only simulated?** Do not consume an
+   approval, create an approval request, or claim a deny was enforced.
+2. **Which world transitions actually occurred?** Persist operation identity,
+   attempt ownership, outcome, and ambiguity even when policy decisions were
+   counterfactual.
+
+A shadow implementation that suppresses all writes can preserve the first rule
+while violating the second: promotion to enforcement then forgets effects that
+already happened and may repeat them. Conversely, a shadow path that consumes
+approval state turns a measurement into a real authorization side effect. Mode
+names such as `observe` or `audit` are therefore insufficient; the contract
+should enumerate writes separately for policy authority, effect identity,
+outcome, and evidence.
+
+**Evidence inspected at the pinned commit:**
+[`README.md`](https://github.com/CTRLRun/ctrlrun/blob/8ebc5a8efb9fc308f619805e40937f98e503b697/README.md),
+[`control.py`](https://github.com/CTRLRun/ctrlrun/blob/8ebc5a8efb9fc308f619805e40937f98e503b697/src/ctrlrun/control.py),
+[`test_observe.py`](https://github.com/CTRLRun/ctrlrun/blob/8ebc5a8efb9fc308f619805e40937f98e503b697/tests/test_observe.py), and
+[the successful pinned CI run](https://github.com/CTRLRun/ctrlrun/actions/runs/35530467048).
+
+**Evidence boundary:** Scout statically inspected the pinned implementation and
+repository-authored tests but did not install the package, run the suite, connect
+a live provider, or independently verify the README's production-use claim. The
+CI jobs establish that the project's own checks passed for this revision, not
+that every adapter mediates all effects or that a remote provider honors the
+library's operation identity.
 
 ### Follow-up: declared support and observed compatibility need separate evidence
 
