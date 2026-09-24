@@ -875,15 +875,10 @@ export function taskIntentForInput(input: AppInput): TaskIntent | null {
         ],
         agent: "evaluator",
         executor: evaluationExecutor,
-        input: {
-          scope: "evaluation.app",
-          ...(stringValue(data.reason)
-            ? { reason: stringValue(data.reason) }
-            : {}),
-          ...(Object.keys(record(data.reviewFailure)).length
-            ? { reviewFailure: record(data.reviewFailure) }
-            : {}),
-        },
+        // Per-wake context is retained in the admitted trigger batch. Keep the
+        // standing desired input stable so observations never revise or fence
+        // an owner attempt that is already handling earlier evidence.
+        input: { scope: "evaluation.app" },
         priority: "P1",
       };
     default:

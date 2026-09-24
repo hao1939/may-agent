@@ -1268,17 +1268,11 @@ describe("Task outcome review", () => {
     });
     expect(taskIntentForInput(ownerInput!)).toMatchObject({
       id: "runtime/compat/owner-review",
-      input: {
-        scope: "evaluation.app",
-        reason: "review-failed",
-        reviewFailure: {
-          stage: "subject-evidence-acquisition",
-          appId,
-          taskId,
-          error: "catalog temporarily unavailable",
-        },
-      },
+      input: { scope: "evaluation.app" },
     });
+    expect(taskIntentForInput(ownerInput!)).not.toHaveProperty(
+      "input.reviewFailure",
+    );
   });
 
   test("keeps explicit and legitimate neutral evidence failures off the automatic owner route", async () => {
