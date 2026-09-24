@@ -100,7 +100,13 @@ ID and linked session read to observe progress.
 Awaited agent calls carry `parentSessionId` where available. Workflow steps also
 carry `workflowRunId`; a workflow without a parent agent session need not invent
 one. Task ownership uses the exact runtime-supplied Task/attempt binding, not
-either lineage field. Trace links describe event causality. The [cooperation
+either lineage field. A current session may mutate the attempt's owner session
+and recovery lease only when that binding includes the exact current
+`attemptId`; generation and Task identity alone are insufficient authority.
+Legacy bindings without an attempt ID remain readable as historical context but
+cannot acquire current execution ownership. Helpers inherit Task context without
+replacing the owner; a later sequential workflow owner can associate only with
+its exact attempt binding. Trace links describe event causality. The [cooperation
 contract](agents.md) owns helper lifetime; the consolidation candidate enforces
 it using the live caller's execution scope.
 
