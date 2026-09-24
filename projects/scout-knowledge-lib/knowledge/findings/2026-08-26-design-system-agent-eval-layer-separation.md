@@ -1,8 +1,8 @@
 <ai_context>
-summary: "Sanity's design-system agent harness shows why documentation tests and assisted-production tests must be separate. Structured docs raised reported clean-build rates sharply, while reusable code chunks and deterministic linting improved some accessibility and responsive-design markers—but those aids also masked recently introduced documentation failures. The reusable pattern is a layered evaluation: isolate the knowledge interface first, then test the full assisted path, and treat each layer's delta as diagnostic rather than collapsing it into one success score."
-triggers: ["design system agent eval", "agent-facing documentation", "documentation regression", "code chunks for agents", "deterministic lint agent", "assistance masks documentation failure", "Sanity UI eval"]
-last_updated: "2026-08-26"
-source_basis: "HN item 49453117, Sanity's linked engineering report, and the open-source design-system-agent-tester README were inspected. All outcome measurements are vendor-reported and the system under test was changing during the evaluation."
+summary: "Agent-facing evaluation needs separable layers. Sanity's design-system harness shows that production assistance can mask documentation failures; Phyll adds a complementary UX case where source-code heuristics, rendered-page measurements, and first-job trajectories answer different questions. Keep each layer's evidence and delta visible rather than collapsing them into one success score."
+triggers: ["design system agent eval", "agent-facing documentation", "documentation regression", "code chunks for agents", "deterministic lint agent", "assistance masks documentation failure", "Sanity UI eval", "UX review agent", "task trajectory evaluation", "Phyll"]
+last_updated: "2026-09-24"
+source_basis: "HN item 49453117, Sanity's linked engineering report, and the open-source design-system-agent-tester README were inspected. Follow-up: HN item 49827601 plus Phyll's repository metadata, README, recursive tree, and checked-in example report at commit 544a0358d24167ec1192b5291886ee59150561c7. All outcomes are author-reported or author-constructed; neither system received independent evaluation in this review."
 </ai_context>
 
 # Separate knowledge-interface tests from assisted-production tests
@@ -42,8 +42,22 @@ Compare deltas between adjacent layers rather than reporting only the full-stack
 
 This extends beyond design systems. Any agent platform that combines instructions, retrieval, templates, and deterministic repair needs both **isolation evals** for each interface and **integration evals** for the delivered workflow.
 
+## Follow-up: source, rendered state, and task path are different evidence layers
+
+HN later surfaced [Phyll](https://news.ycombinator.com/item?id=49827601), a repository-authored UX-review workflow for coding agents. At inspected commit [`544a0358d24167ec1192b5291886ee59150561c7`](https://github.com/carlosphyll/phyll/tree/544a0358d24167ec1192b5291886ee59150561c7), the repository contains a 53-rule source scanner, browser screenshots and probes at desktop and mobile sizes, and checked-in reports that record click-by-click user journeys. Its README describes the layers explicitly: scan source; capture and measure rendered pages; then walk two or three first-user jobs and count clicks, screens, and dead ends.
+
+The checked-in Replyloop example shows why these signals should not be collapsed. A source location can establish that a submit button is disabled without an explanation; a screenshot can establish where an action appears relative to an empty state; only the journey records that the apparent “Create Flow” action did nothing and that the user later reached a credential dead end. Conversely, journey prose is stronger when it points back to a screenshot, probe, and file location. The reusable evaluation unit is therefore a **triangulated claim**:
+
+1. **Source evidence** identifies the implementation and supports deterministic regression checks.
+2. **Rendered evidence** records what was visible and measurable at a viewport and state.
+3. **Task-path evidence** records the action sequence, transitions, dead ends, and whether user value was reached.
+
+Keep the three scores and artifacts separable. A source-level “AI tell index” is a heuristic conformance measure, not proof that a task fails; task completion alone can hide contrast, focus, or responsive defects; and screenshots alone do not establish that controls work. Fixes should be evaluated against the affected layer and then replayed on the full task path.
+
 ## Evidence limits
 
 These are Sanity's own measurements of an evolving Sanity library with an author-built harness, not an independent benchmark. The article does not publish raw per-run outputs, confidence intervals, prompt snapshots, package revisions, or a preregistered analysis. It also changes the Haiku label between sections (4.5 and 4.6), and comparisons between the “current” and “new” UI can conflate library API changes, documentation changes, and assistance changes.
 
 The harness currently supports Claude models and executes generated code plus package installs, so its own README recommends sandboxing. Metrics such as successful build, axe violations, inline-style counts, and pixel diffs are useful but do not fully measure interface quality. The reported n=30 conditions show directional evidence for this specific setup; they do not establish universal effect sizes for JSON documentation, chunks, or linting.
+
+Phyll is also author-built evidence from a repository created the day of the HN submission. Scout inspected repository metadata, README, the recursive tree, the rule catalog, and one checked-in example report, but did not install or execute the scanner, browser connector, hosted scoring engine, or fix workflow. The before/after apps and expected reports are constructed by the product author, not an independent comparison; they demonstrate artifact structure, not measured effectiveness on external applications.
