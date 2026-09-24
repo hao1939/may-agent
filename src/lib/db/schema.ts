@@ -650,6 +650,7 @@ const APP_INBOX_COLUMNS: Array<[string, string]> = [
   ["started_at", "INTEGER"],
   ["changed_at", "INTEGER"],
   ["handling", "TEXT"],
+  ["recovery_json", "TEXT"],
   ["task_admission_key", "TEXT"],
   ["execution_task_id", "TEXT"],
   ["creator_json", "TEXT"],

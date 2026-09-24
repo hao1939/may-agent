@@ -65,6 +65,7 @@ describe("canonical database schema", () => {
       expect(inboxColumns.some(({ name }) => name === "reply_to_source_id")).toBe(true);
       expect(inboxColumns.some(({ name }) => name === "origin_event_id")).toBe(true);
       expect(inboxColumns.some(({ name }) => name === "topic_id")).toBe(true);
+      expect(inboxColumns.some(({ name }) => name === "recovery_json")).toBe(true);
       expect(inboxIndexes.some(({ name }) => name === "idx_app_inbox_idempotency")).toBe(true);
       expect(inboxIndexes.some(({ name }) => name === "idx_app_inbox_origin_event")).toBe(true);
       expect(inboxIndexes.some(({ name }) => name === "idx_app_inbox_conversation_sequence")).toBe(true);
@@ -249,6 +250,10 @@ describe("canonical database schema", () => {
           updated_at INTEGER NOT NULL,
           completed_at INTEGER
         );
+        INSERT INTO app_inbox_items (
+          id, app_id, source_kind, source_id, input_kind, input_data, status,
+          available_at, created_at, updated_at
+        ) VALUES ('legacy-pending', 'may', 'system', 'fixture', 'message', '{}', 'pending', 1, 1, 1);
       `);
 
       expect(() => applyDbSchema(db)).not.toThrow();
@@ -263,8 +268,11 @@ describe("canonical database schema", () => {
           "channel_message_id",
           "reply_to_source_id",
           "origin_event_id",
+          "recovery_json",
         ]),
       );
+      expect(db.prepare("SELECT status, available_at, recovery_json FROM app_inbox_items WHERE id = ?").get("legacy-pending"))
+        .toEqual({ status: "pending", available_at: 1, recovery_json: null });
       expect(() =>
         db.run(
           `INSERT INTO app_inbox_items (

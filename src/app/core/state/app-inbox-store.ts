@@ -1,5 +1,5 @@
 import { storedResultFacts } from "./result-facts.js";
-import { randomUUID } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import { isDeepStrictEqual } from "node:util";
 import type {
   AppConversationResource,
@@ -10,8 +10,9 @@ import type {
   ResourceCreator,
 } from "@may-agent/sdk";
 import type { SqliteDb } from "../../../lib/db.js";
-import type { AppTaskAttempt } from "../tasks/app-task-state.js";
+import { taskExecutionRetryDelay, type AppTaskAttempt } from "../tasks/app-task-state.js";
 import { taskInputAdmissionKeys } from "../tasks/app-task-inputs.js";
+import { stateTransaction } from "../../../lib/db/transaction.js";
 
 export type AppInboxStatus = "pending" | "handling" | "done";
 export type AppInboxWaitKind = "app" | "task" | "session" | "analysis";
@@ -26,6 +27,18 @@ export type AppInboxHandling =
 export type AppTurnTarget = { appId: string; conversationId: string; turnId: string; expectedRevision: number };
 
 export type AppInboxTaskDependencyKey = { appId: string; taskId: string; inputId: string; admissionKey?: string };
+
+export type AppInboxRecoveryStage = "input-admission" | "input-result";
+export type AppInboxRecoveryFailure = {
+  failures: number;
+  fingerprint: string;
+  error: string;
+  firstFailedAt: number;
+  lastFailedAt: number;
+  retryAt: number;
+  recoveredAt?: number;
+};
+export type AppInboxRecovery = Partial<Record<AppInboxRecoveryStage, AppInboxRecoveryFailure>>;
 
 export type AppInboxTaskDependencyPage = {
   items: AppInboxTaskDependencyKey[];
@@ -61,6 +74,8 @@ export type AppInboxItem = {
   executionTaskId?: string;
   result?: AppResult;
   handling?: AppInboxHandling;
+  /** Durable row-level failure evidence; pacing never replaces handling or accepted results. */
+  recovery?: AppInboxRecovery;
   availableAt?: number;
   reviewAt?: number;
   lease?: { generation: number; owner: string; expiresAt: number };
@@ -177,6 +192,7 @@ function rowToItem(row: InboxRow): AppInboxItem {
     executionTaskId: optionalText(row.execution_task_id),
     result: result ? storedResultFacts(parseJson<AppResult>(result, "result")) : undefined,
     handling: row.handling ? parseJson<AppInboxHandling>(row.handling, "handling") : undefined,
+    recovery: row.recovery_json ? parseJson<AppInboxRecovery>(row.recovery_json, "recovery_json") : undefined,
     availableAt: optionalNumber(row.available_at),
     reviewAt: optionalNumber(row.review_at),
     lease:
@@ -236,6 +252,67 @@ export function getAppInboxItem(db: SqliteDb, id: string): AppInboxItem | null {
   return row ? rowToItem(row) : null;
 }
 
+const MAX_RECOVERY_ERROR_LENGTH = 1_000;
+
+/** Retain a failed boundary and pace only that input; accepted result/handling facts are untouched. */
+export function recordAppInboxRecoveryFailure(
+  db: SqliteDb,
+  inputId: string,
+  stage: AppInboxRecoveryStage,
+  error: string,
+  now: number,
+): AppInboxRecoveryFailure {
+  return stateTransaction(db, () => {
+    const item = getAppInboxItem(db, inputId);
+    if (!item) throw new Error(`App inbox item ${inputId} is missing`);
+    const prior = item.recovery?.[stage];
+    const failures = prior && prior.recoveredAt === undefined ? prior.failures + 1 : 1;
+    const retryAt = now + taskExecutionRetryDelay(failures);
+    const boundedError = error.slice(0, MAX_RECOVERY_ERROR_LENGTH);
+    const failure: AppInboxRecoveryFailure = {
+      failures,
+      fingerprint: createHash("sha256").update(`${stage}\0${boundedError}`).digest("hex"),
+      error: boundedError,
+      firstFailedAt: prior && prior.recoveredAt === undefined ? prior.firstFailedAt : now,
+      lastFailedAt: now,
+      retryAt,
+    };
+    const recovery: AppInboxRecovery = { ...item.recovery, [stage]: failure };
+    const dueColumn = stage === "input-admission" ? "available_at" : "review_at";
+    const changed = db
+      .prepare(
+        `UPDATE app_inbox_items SET recovery_json = ?, ${dueColumn} = ?, changed_at = ?, updated_at = ?
+         WHERE id = ? AND status != 'done'`,
+      )
+      .run(JSON.stringify(recovery), retryAt, now, now, inputId).changes;
+    if (changed !== 1) throw new Error(`App inbox item ${inputId} is no longer recoverable`);
+    return failure;
+  });
+}
+
+/** Clear only the stage deadline while retaining the evidence that recovery occurred. */
+export function resolveAppInboxRecovery(
+  db: SqliteDb,
+  inputId: string,
+  stage: AppInboxRecoveryStage,
+  now: number,
+): void {
+  stateTransaction(db, () => {
+    const item = getAppInboxItem(db, inputId);
+    const prior = item?.recovery?.[stage];
+    if (!item || !prior || prior.recoveredAt !== undefined) return;
+    const recovery: AppInboxRecovery = {
+      ...item.recovery,
+      [stage]: { ...prior, recoveredAt: now },
+    };
+    const dueColumn = stage === "input-admission" ? "available_at" : "review_at";
+    db.prepare(
+      `UPDATE app_inbox_items SET recovery_json = ?, ${dueColumn} = NULL, changed_at = ?, updated_at = ?
+       WHERE id = ?`,
+    ).run(JSON.stringify(recovery), now, now, inputId);
+  });
+}
+
 /**
  * Check exact Conversation executor membership without scanning unrelated inbox history.
  * Any retained Conversation binding is sufficient, so conflicting corrupt bindings still fail closed.
@@ -275,8 +352,9 @@ export function readActiveAppTurn(
       .map((key) =>
         key.startsWith("conversation-input:") ? getAppInboxItem(db, key.slice("conversation-input:".length)) : null,
       )
-      .filter((item) =>
-        item?.appId === appId && item.conversationId === conversationId && item.executionTaskId === claimed.taskId,
+      .filter(
+        (item) =>
+          item?.appId === appId && item.conversationId === conversationId && item.executionTaskId === claimed.taskId,
       );
     const source = inputs.filter((item) => item?.source.kind === "human").at(-1) ?? inputs.at(-1);
     return {
@@ -405,7 +483,12 @@ export function listAppInboxItems(db: SqliteDb, query: AppInboxQuery = {}): AppI
 }
 
 /** Open App requests currently awaiting one exact Task. */
-export function listAppInboxItemsWaitingOnTask(db: SqliteDb, appId: string, taskId: string): AppInboxItem[] {
+export function listAppInboxItemsWaitingOnTask(
+  db: SqliteDb,
+  appId: string,
+  taskId: string,
+  now = Date.now(),
+): AppInboxItem[] {
   return db
     .prepare(
       `SELECT * FROM app_inbox_items
@@ -413,9 +496,10 @@ export function listAppInboxItemsWaitingOnTask(db: SqliteDb, appId: string, task
          AND status = 'handling'
          AND waiting_on_kind = 'task'
          AND waiting_on_id = ?
+         AND (review_at IS NULL OR review_at <= ?)
        ORDER BY created_at, id`,
     )
-    .all(requiredText(appId, "appId"), requiredText(taskId, "taskId"))
+    .all(requiredText(appId, "appId"), requiredText(taskId, "taskId"), now)
     .map(rowToItem);
 }
 
@@ -447,9 +531,10 @@ export function listAppInboxConversationItems(
 /** One bounded page of input-to-Task links awaiting their exact results. */
 export function listAppInboxTaskDependencyKeys(
   db: SqliteDb,
-  options: { after?: AppInboxTaskDependencyKey; limit?: number } = {},
+  options: { after?: AppInboxTaskDependencyKey; limit?: number; now?: number } = {},
 ): AppInboxTaskDependencyPage {
   const limit = options.limit ?? 256;
+  const now = options.now ?? Date.now();
   if (!Number.isSafeInteger(limit) || limit < 1 || limit > 1_000) {
     throw new Error("App inbox task dependency limit must be an integer from 1 to 1000");
   }
@@ -462,13 +547,20 @@ export function listAppInboxTaskDependencyKeys(
          AND lease_owner IS NULL
          AND waiting_on_kind = 'task'
          AND waiting_on_id IS NOT NULL
+         AND (review_at IS NULL OR review_at <= ?)
          ${after ? "AND (app_id, waiting_on_id, id) > (?, ?, ?)" : ""}
        ORDER BY app_id, waiting_on_id, id
        LIMIT ?`,
     )
     .all(
-      ...(after ? [requiredText(after.appId, "after.appId"), requiredText(after.taskId, "after.taskId"),
-        requiredText(after.inputId, "after.inputId")] : []),
+      now,
+      ...(after
+        ? [
+            requiredText(after.appId, "after.appId"),
+            requiredText(after.taskId, "after.taskId"),
+            requiredText(after.inputId, "after.inputId"),
+          ]
+        : []),
       limit + 1,
     )
     .map((row) => ({

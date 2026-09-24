@@ -193,8 +193,10 @@ describe("App inbox host", () => {
   it("uses the exact target before Conversation routing and recovers that same attachment", async () => {
     let received: Readonly<AppInputContext> | undefined;
     let available = false;
+    let now = 1_000;
     const host = new AppInboxHost({
       db,
+      now: () => now,
       apps: [
         {
           ...app(),
@@ -204,7 +206,9 @@ describe("App inbox host", () => {
           },
         },
       ],
-      admitConversation: () => { throw new Error("explicit Task input must not enter Conversation"); },
+      admitConversation: () => {
+        throw new Error("explicit Task input must not enter Conversation");
+      },
       attachTask: fakeTaskAttacher(db, ({ attachment, inputContext }) => {
         if (!available) throw new Error("temporarily unavailable");
         expect(attachment).toEqual({ kind: "existing", taskId: "existing" });
@@ -221,6 +225,7 @@ describe("App inbox host", () => {
     });
     expect(host.get("feedback")).toMatchObject({ status: "pending", targetTaskId: "existing" });
     available = true;
+    now = 1_250;
     await host.recoverAdmissions();
     expect(host.get("feedback")?.waitingOn).toEqual({ kind: "task", id: "existing" });
     expect(received).toMatchObject({ id: "feedback", humanRequested: true });
@@ -238,10 +243,7 @@ describe("App inbox host", () => {
       input: { kind: "probe", data: { value: "original" } },
       now: 1,
     });
-    db.prepare("UPDATE app_inbox_items SET execution_task_id = ? WHERE id = ?").run(
-      executionTaskId,
-      original.item.id,
-    );
+    db.prepare("UPDATE app_inbox_items SET execution_task_id = ? WHERE id = ?").run(executionTaskId, original.item.id);
     const routed: Array<Record<string, unknown>> = [];
     const host = new AppInboxHost({
       db,
@@ -303,8 +305,10 @@ describe("App inbox host", () => {
     const failures: unknown[] = [];
     let repaired = false;
     let failedMappings = 0;
+    let now = 1_000;
     const host = new AppInboxHost({
       db,
+      now: () => now,
       apps: [
         {
           ...app(),
@@ -330,9 +334,205 @@ describe("App inbox host", () => {
     expect(failedMappings).toBe(1);
     expect(failures).toMatchObject([{ stage: "input-admission", error: "App mapping unavailable" }]);
     repaired = true;
+    now = 1_250;
     await host.recoverAdmissions();
     expect(host.get("broken")?.waitingOn?.id).toBe("probe/broken");
     expect(failedMappings).toBe(2);
+  });
+
+  it("paces failed admission at the row boundary while unrelated input and same-input repair continue", async () => {
+    let now = 1_000;
+    let repaired = false;
+    let brokenMappings = 0;
+    const host = new AppInboxHost({
+      db,
+      now: () => now,
+      apps: [
+        {
+          ...app(),
+          task: (input) => {
+            if (input.id === "paced-admission") {
+              brokenMappings++;
+              if (!repaired) throw new Error("mapping temporarily unavailable");
+            }
+            return desiredTask(input.id);
+          },
+        },
+      ],
+      attachTask: fakeTaskAttacher(db, ({ attachment }) => ({
+        taskId: attachment.kind === "existing" ? attachment.taskId : attachment.intent.id,
+      })),
+    });
+
+    expect(admit(host, "paced-admission")).toMatchObject({
+      status: "pending",
+      availableAt: 1_250,
+      recovery: {
+        "input-admission": {
+          failures: 1,
+          error: "mapping temporarily unavailable",
+          firstFailedAt: 1_000,
+          lastFailedAt: 1_000,
+          retryAt: 1_250,
+        },
+      },
+    });
+    expect(admit(host, "paced-admission").status).toBe("pending");
+    await host.recoverAdmissions();
+    expect(brokenMappings).toBe(1);
+
+    expect(admit(host, "unrelated-during-admission-retry").waitingOn?.id).toBe(
+      "probe/unrelated-during-admission-retry",
+    );
+    now = 1_250;
+    await host.recoverAdmissions();
+    expect(brokenMappings).toBe(2);
+    expect(host.get("paced-admission")).toMatchObject({
+      availableAt: 1_750,
+      recovery: { "input-admission": { failures: 2, firstFailedAt: 1_000, retryAt: 1_750 } },
+    });
+
+    repaired = true;
+    await host.recoverAdmissions();
+    expect(brokenMappings).toBe(2);
+    now = 1_750;
+    await host.recoverAdmissions();
+    expect(brokenMappings).toBe(3);
+    expect(host.get("paced-admission")).toMatchObject({
+      status: "handling",
+      waitingOn: { kind: "task", id: "probe/paced-admission" },
+      taskAdmissionKey: "task:paced-admission",
+      recovery: { "input-admission": { failures: 2, recoveredAt: 1_750 } },
+    });
+    expect(host.get("unrelated-during-admission-retry")?.status).toBe("handling");
+  });
+
+  it("paces failed exact-result projection without replacing the saved link or unrelated results", async () => {
+    let now = 2_000;
+    let reads = 0;
+    let projectionState: "throw" | "missing" | "done" = "throw";
+    const host = new AppInboxHost({
+      db,
+      now: () => now,
+      apps: [app()],
+      attachTask: fakeTaskAttacher(db, ({ inputContext }) => ({ taskId: `work/${inputContext.id}` })),
+      readDependency: async ({ dependency, admissionKey }) => {
+        if (dependency.id === "work/paced-result") {
+          reads++;
+          if (projectionState === "throw") throw new Error("result store temporarily unavailable");
+          if (projectionState === "missing") return null;
+        }
+        return { ...dependency, status: "done", summary: `answer for ${admissionKey}` };
+      },
+    });
+    admit(host, "paced-result");
+    admit(host, "unrelated-result");
+
+    await host.refreshTaskResults("evaluation", "work/paced-result");
+    expect(host.get("paced-result")).toMatchObject({
+      status: "handling",
+      waitingOn: { kind: "task", id: "work/paced-result" },
+      taskAdmissionKey: "task:paced-result",
+      reviewAt: 2_250,
+      recovery: {
+        "input-result": {
+          failures: 1,
+          error: "result store temporarily unavailable",
+          firstFailedAt: 2_000,
+          retryAt: 2_250,
+        },
+      },
+    });
+    await host.refreshTaskResults("evaluation", "work/paced-result");
+    await host.recoverTaskResults();
+    expect(reads).toBe(1);
+    expect(host.get("unrelated-result")?.result?.summary).toBe("answer for task:unrelated-result");
+
+    projectionState = "missing";
+    await host.refreshTaskResults("evaluation", "work/paced-result");
+    expect(reads).toBe(1);
+    now = 2_250;
+    await host.refreshTaskResults("evaluation", "work/paced-result");
+    expect(reads).toBe(2);
+    expect(host.get("paced-result")).toMatchObject({
+      status: "handling",
+      reviewAt: 2_750,
+      recovery: {
+        "input-result": {
+          failures: 2,
+          error: "Task dependency evidence is unavailable",
+          firstFailedAt: 2_000,
+          retryAt: 2_750,
+        },
+      },
+    });
+    await host.recoverTaskResults();
+    expect(reads).toBe(2);
+
+    projectionState = "done";
+    now = 2_750;
+    await host.refreshTaskResults("evaluation", "work/paced-result");
+    expect(reads).toBe(3);
+    expect(host.get("paced-result")).toMatchObject({
+      status: "done",
+      result: { summary: "answer for task:paced-result" },
+      waitingOn: { kind: "task", id: "work/paced-result" },
+      taskAdmissionKey: "task:paced-result",
+      recovery: { "input-result": { failures: 2, recoveredAt: 2_750 } },
+    });
+  });
+
+  it("keeps consecutive pacing until a pending report is actually delivered", async () => {
+    let now = 3_000;
+    let reads = 0;
+    let deliveryAvailable = false;
+    const host = new AppInboxHost({
+      db,
+      now: () => now,
+      apps: [app()],
+      attachTask: fakeTaskAttacher(db, () => ({ taskId: "reported-work" })),
+      readDependency: async ({ dependency }) => {
+        reads++;
+        return {
+          ...dependency,
+          status: "pending",
+          report: { summary: "Worker is waiting on a legitimate dependency", facts: ["wait:valid"] },
+        };
+      },
+      onRequestUpdated: (_item, _result, status) => {
+        expect(status).toBe("blocked");
+        if (!deliveryAvailable) throw new Error("caller feedback temporarily unavailable");
+      },
+    });
+    admit(host, "paced-report");
+
+    await host.refreshTaskResults("evaluation", "reported-work");
+    expect(host.get("paced-report")).toMatchObject({
+      status: "handling",
+      reviewAt: 3_250,
+      recovery: { "input-result": { failures: 1, firstFailedAt: 3_000, retryAt: 3_250 } },
+    });
+    await host.refreshTaskResults("evaluation", "reported-work");
+    expect(reads).toBe(1);
+
+    now = 3_250;
+    await host.refreshTaskResults("evaluation", "reported-work");
+    expect(host.get("paced-report")).toMatchObject({
+      status: "handling",
+      reviewAt: 3_750,
+      recovery: { "input-result": { failures: 2, firstFailedAt: 3_000, retryAt: 3_750 } },
+    });
+    expect(reads).toBe(2);
+
+    deliveryAvailable = true;
+    now = 3_750;
+    await host.refreshTaskResults("evaluation", "reported-work");
+    expect(reads).toBe(3);
+    expect(host.get("paced-report")).toMatchObject({
+      status: "handling",
+      waitingOn: { kind: "task", id: "reported-work" },
+      recovery: { "input-result": { failures: 2, firstFailedAt: 3_000, recoveredAt: 3_750 } },
+    });
   });
 
   it("projects exact answers once and scopes result notifications by App", async () => {
@@ -368,9 +568,11 @@ describe("App inbox host", () => {
 
   it("keeps an accepted answer when notification fails and rejects mismatched observations", async () => {
     let mismatch = true;
+    let now = 1_000;
     const failures: unknown[] = [];
     const host = new AppInboxHost({
       db,
+      now: () => now,
       apps: [app()],
       attachTask: fakeTaskAttacher(db, () => ({ taskId: "work" })),
       readDependency: async () => ({
@@ -389,6 +591,7 @@ describe("App inbox host", () => {
     expect(host.get("one")?.status).toBe("handling");
     expect(failures).toHaveLength(1);
     mismatch = false;
+    now = 1_250;
     await host.recoverTaskResults();
     expect(host.get("one")?.result?.summary).toBe("Verified");
   });
@@ -443,12 +646,14 @@ it("recovery advances past a page of disabled Apps without claiming input", asyn
         appId: "disabled",
         source: { kind: "system", id: "fixture" },
         input: { kind: "probe", data: { value: "old" } },
+        now: 1,
       });
     createAppInboxItem(db, {
       id: "z-ready",
       appId: "evaluation",
       source: { kind: "system", id: "fixture" },
       input: { kind: "probe", data: { value: "ready" } },
+      now: 1,
     });
     const host = new AppInboxHost({
       db,

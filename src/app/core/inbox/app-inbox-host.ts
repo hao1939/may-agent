@@ -20,15 +20,22 @@ import {
 } from "@may-agent/sdk";
 import { Check } from "typebox/value";
 import type { SqliteDb } from "../../../lib/db.js";
-import { assertValidAppDefinition, assertValidAppInput, assertValidSchemaInput } from "../apps/definition-validation.js";
+import {
+  assertValidAppDefinition,
+  assertValidAppInput,
+  assertValidSchemaInput,
+} from "../apps/definition-validation.js";
 import {
   createAppInboxItem,
   getAppInboxItem,
   hasConversationExecutionTask,
   listAppInboxItemsWaitingOnTask,
   listAppInboxTaskDependencyKeys,
+  recordAppInboxRecoveryFailure,
+  resolveAppInboxRecovery,
   type AppTurnTarget,
   type AppInboxItem,
+  type AppInboxRecoveryStage,
   type AppInboxTaskDependencyKey,
   type CreateAppInboxItem,
 } from "../state/app-inbox-store.js";
@@ -90,6 +97,11 @@ export type AppInboxFailure = {
   stage: string;
   error: string;
   disposition: string;
+  failures?: number;
+  fingerprint?: string;
+  firstFailedAt?: number;
+  lastFailedAt?: number;
+  retryAt?: number;
 };
 
 export type AppInboxHostOptions = {
@@ -391,7 +403,15 @@ export class AppInboxHost {
     return app;
   }
 
-  #failure(item: AppInboxItem, stage: string, error: unknown): void {
+  #failure(item: AppInboxItem, stage: AppInboxRecoveryStage, error: unknown): void {
+    const message = errorMessage(error);
+    let evidence;
+    try {
+      evidence = recordAppInboxRecoveryFailure(this.#db, item.id, stage, message, this.#now());
+    } catch {
+      // A diagnostics callback still gets the original boundary failure. A state
+      // storage failure cannot be made durable by another write on this path.
+    }
     try {
       this.#onFailure?.({
         appId: item.appId,
@@ -399,8 +419,9 @@ export class AppInboxHost {
         conversationId: item.conversationId,
         agent: this.#apps.get(item.appId)?.agent ?? this.#apps.get(item.appId)?.owner,
         stage,
-        error: errorMessage(error),
-        disposition: "recovery-pending",
+        error: message,
+        disposition: evidence ? "recovery-pending" : "recovery-evidence-unavailable",
+        ...(evidence ?? {}),
       });
     } catch {
       // Diagnostics cannot discard durable input or change its accepted result.
@@ -408,8 +429,10 @@ export class AppInboxHost {
   }
 
   #admitTask(item: AppInboxItem): void {
+    const now = this.#now();
     if (item.status === "done" || item.executionTaskId) return;
-    if (item.lease && item.lease.expiresAt > this.#now()) return;
+    if (item.availableAt !== undefined && item.availableAt > now) return;
+    if (item.lease && item.lease.expiresAt > now) return;
     try {
       const app = this.#requiredApp(item.appId);
       // Recheck retained inputs at the attachment boundary. A target that did
@@ -418,7 +441,11 @@ export class AppInboxHost {
       if (item.targetTaskId && hasConversationExecutionTask(this.#db, app.id, item.targetTaskId)) {
         throw new Error("Conversation Task input must use conversationId without targetTaskId");
       }
-      if (!item.targetTaskId && app.conversation && (!app.conversation.inputKinds || app.conversation.inputKinds.includes(item.input.kind)))
+      if (
+        !item.targetTaskId &&
+        app.conversation &&
+        (!app.conversation.inputKinds || app.conversation.inputKinds.includes(item.input.kind))
+      )
         throw new Error("Conversation input requires offline cutover to its Task execution owner");
       if (item.waitingOn?.kind === "task") {
         // An old Host may have stopped while projecting an already attached
@@ -446,15 +473,21 @@ export class AppInboxHost {
         appId: app.id,
         // Absence of a delegated creator on this saved inbox row is the
         // trusted App-only provenance. A task-bound row keeps its exact caller.
-        creator: appRevision ? item.creator ?? { appId: app.id } : item.creator,
+        creator: appRevision ? (item.creator ?? { appId: app.id }) : item.creator,
         creatorRevision: appRevision ? true : undefined,
         attachment,
         inputContext,
         inboxInputId: item.id,
         idempotencyKey: `task:${item.id}`,
-        now: this.#now(),
+        now,
         topicId: item.topicId,
       });
+      try {
+        resolveAppInboxRecovery(this.#db, item.id, "input-admission", now);
+      } catch {
+        // The committed Task link is authoritative; recovery bookkeeping
+        // failure cannot relabel the successfully attached input.
+      }
     } catch (error) {
       if (isAppTaskRevisionAdmissionError(error)) {
         const result = rejectTaskInputRevision(this.#db, item, error, this.#now());
@@ -468,7 +501,6 @@ export class AppInboxHost {
         }
         return;
       }
-      // Recovery has a fixed cadence; new unrelated inputs do not retry this row.
       this.#failure(item, "input-admission", error);
     }
   }
@@ -483,10 +515,11 @@ export class AppInboxHost {
       WHERE status != 'done' AND execution_task_id IS NULL
         AND (waiting_on_kind IS NULL OR waiting_on_kind != 'task' OR lease_owner IS NOT NULL)
         AND (lease_expires_at IS NULL OR lease_expires_at <= ?)
+        AND (available_at IS NULL OR available_at <= ?)
         ${this.#admissionCursor ? "AND id > ?" : ""}
       ORDER BY id LIMIT 64`,
         )
-        .all(this.#now(), ...(this.#admissionCursor ? [this.#admissionCursor] : []));
+        .all(this.#now(), this.#now(), ...(this.#admissionCursor ? [this.#admissionCursor] : []));
     let rows = readPage();
     if (!rows.length && this.#admissionCursor) {
       this.#admissionCursor = undefined;
@@ -504,11 +537,20 @@ export class AppInboxHost {
   /** Project exact accepted outcomes; Task failure/retry is not input completion. */
   async refreshTaskResults(appId: string, taskId: string): Promise<void> {
     if (this.#closed) return;
-    for (const item of listAppInboxItemsWaitingOnTask(this.#db, appId, taskId)) await this.#projectTaskResult(item);
+    for (const item of listAppInboxItemsWaitingOnTask(this.#db, appId, taskId, this.#now()))
+      await this.#projectTaskResult(item);
   }
 
   async #projectTaskResult(item: AppInboxItem): Promise<void> {
-    if (this.#closed || !this.#readDependency || item.status === "done" || item.waitingOn?.kind !== "task") return;
+    const now = this.#now();
+    if (
+      this.#closed ||
+      !this.#readDependency ||
+      item.status === "done" ||
+      item.waitingOn?.kind !== "task" ||
+      (item.reviewAt !== undefined && item.reviewAt > now)
+    )
+      return;
     try {
       const admissionKey = recoverTaskInputAdmissionKey(this.#db, item);
       if (!admissionKey)
@@ -519,9 +561,14 @@ export class AppInboxHost {
         { kind: "task", id: item.waitingOn.id },
         admissionKey,
       );
-      if (this.#closed || !observed) return;
+      if (this.#closed) return;
+      if (!observed) {
+        this.#failure(item, "input-result", new Error("Task dependency evidence is unavailable"));
+        return;
+      }
       if (!REVIEWABLE_TASK_DEPENDENCY_STATUSES.has(observed.status)) {
         if (observed.report) this.#onRequestUpdated?.(item, observed.report, "blocked");
+        resolveAppInboxRecovery(this.#db, item.id, "input-result", this.#now());
         return;
       }
       const result: AppResult = {
@@ -531,6 +578,7 @@ export class AppInboxHost {
         facts: observed.facts,
       };
       if (!completeTaskInput(this.#db, { ...item, taskAdmissionKey: admissionKey }, result, this.#now())) return;
+      resolveAppInboxRecovery(this.#db, item.id, "input-result", this.#now());
       try {
         this.#onRequestUpdated?.(item, result, "done");
         if (item.conversationId) this.#onConversationChanged?.(item.appId, item.conversationId);
@@ -545,10 +593,10 @@ export class AppInboxHost {
   /** Repair missed result notifications with a bounded, yielding scan. */
   async recoverTaskResults(): Promise<void> {
     if (this.#closed) return;
-    let page = listAppInboxTaskDependencyKeys(this.#db, { after: this.#resultCursor });
+    let page = listAppInboxTaskDependencyKeys(this.#db, { after: this.#resultCursor, now: this.#now() });
     if (page.items.length === 0 && this.#resultCursor) {
       this.#resultCursor = undefined;
-      page = listAppInboxTaskDependencyKeys(this.#db);
+      page = listAppInboxTaskDependencyKeys(this.#db, { now: this.#now() });
     }
     this.#resultCursor = page.nextCursor;
     for (const { inputId } of page.items) {
