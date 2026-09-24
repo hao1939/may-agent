@@ -2,7 +2,7 @@
 summary: "Agent self-evolution is not one mechanism. The credible core is a governed release loop over explicit mutable surfaces: skills, memory, routing, harness code, weights, world models, or evaluators. Current evidence is strongest when an external fixed evaluator controls admission, and much weaker for self-generated or co-evolving judges and broad-goal autonomy."
 triggers: ["agent self-evolution", "self-improving agents", "recursive self-improvement", "agent autonomy", "skill evolution", "harness evolution", "world models", "co-evolving evaluators"]
 last_updated: "2026-09-24"
-source_basis: "A source-agnostic 984-row lead ledger: 908 observed cards from the human's Xiaohongshu collection, including a bounded authenticated frontier of 11 readable text bodies and one image-only cover; 69 primary paper, repository, benchmark, survey, blog, and interview records; and 8 existing Scout artifacts, plus 2026-09-10 direct XHS inspection of HarnessEvolve reception, an HN-surfaced primary-paper inspection of Procedural Graphs (arXiv 2609.09153), 2026-09-11 inspection of HN-surfaced Salesforce Beagle at commit 15f12b7, 2026-09-11 full-paper inspection of Ecdysis (arXiv 2609.11677v1), 2026-09-12 direct XHS inspection of the Seed/TokenWave Self-Developing Agents announcement, 2026-09-13 direct XHS inspection of Procedural Graphs reception, 2026-09-14 direct XHS inspection of a six-survey self-evolution reading map and its practitioner discussion, 2026-09-15 inspection of the HN-surfaced rekursiv.ai auto-autoresearch report plus its runnable NanoChat recipe at Priml commit 92c6bd2, 2026-09-16 inspection of EvoOntology's ontology-evolution lifecycle and admission boundary at commit ace8ff69, 2026-09-19 abstract-level inspection of SoL-Pi (arXiv 2609.20519v1), 2026-09-19 inspection of SourceShift/mini-ork's path-specific self-modification controls at commit 962bf478, 2026-09-22 direct XHS inspection of Chinese-language reception of the matched-budget harness-evolution critique and RSIAgent's exploration-memory framing, 2026-09-23 full-paper inspection of the HN-surfaced AIDE² recursive harness-improvement study (arXiv 2609.26457v1), 2026-09-23 direct XHS inspection of a secondary RRSI explainer (arXiv 2609.24972 named but not inspected), and 2026-09-24 direct XHS inspection of a secondary Mobile Planner Agent explainer. Claims are traced to full primary sources and pinned code where available; XHS reception is labeled as secondary commentary, and titles remain discovery metadata, never technical evidence."
+source_basis: "A source-agnostic 984-row lead ledger: 908 observed cards from the human's Xiaohongshu collection, including a bounded authenticated frontier of 11 readable text bodies and one image-only cover; 69 primary paper, repository, benchmark, survey, blog, and interview records; and 8 existing Scout artifacts, plus 2026-09-10 direct XHS inspection of HarnessEvolve reception, an HN-surfaced primary-paper inspection of Procedural Graphs (arXiv 2609.09153), 2026-09-11 inspection of HN-surfaced Salesforce Beagle at commit 15f12b7, 2026-09-11 full-paper inspection of Ecdysis (arXiv 2609.11677v1), 2026-09-12 direct XHS inspection of the Seed/TokenWave Self-Developing Agents announcement, 2026-09-13 direct XHS inspection of Procedural Graphs reception, 2026-09-14 direct XHS inspection of a six-survey self-evolution reading map and its practitioner discussion, 2026-09-15 inspection of the HN-surfaced rekursiv.ai auto-autoresearch report plus its runnable NanoChat recipe at Priml commit 92c6bd2, 2026-09-16 inspection of EvoOntology's ontology-evolution lifecycle and admission boundary at commit ace8ff69, 2026-09-19 abstract-level inspection of SoL-Pi (arXiv 2609.20519v1), 2026-09-19 inspection of SourceShift/mini-ork's path-specific self-modification controls at commit 962bf478, 2026-09-22 direct XHS inspection of Chinese-language reception of the matched-budget harness-evolution critique and RSIAgent's exploration-memory framing, 2026-09-23 full-paper inspection of the HN-surfaced AIDE² recursive harness-improvement study (arXiv 2609.26457v1), 2026-09-23 direct XHS inspection of a secondary RRSI explainer (arXiv 2609.24972 named but not inspected), 2026-09-24 direct XHS inspection of a secondary Mobile Planner Agent explainer, and 2026-09-24 inspection of Bitterbot's peer-skill admission and propagation controls at commit 873e5d58. Claims are traced to full primary sources and pinned code where available; XHS reception is labeled as secondary commentary, and titles remain discovery metadata, never technical evidence."
 </ai_context>
 
 # Agent Self-Evolution and Autonomy: What Actually Changes?
@@ -125,6 +125,62 @@ commit; it did not run the probe suite, exercise rollback, or independently test
 that all mutation entry points pass through these gates. The model-based patch
 critic is also not an independent deterministic evaluator, even though its
 missing or non-approving verdict fails closed.
+
+## Peer reputation should buy evaluation priority, not activation
+
+**Observed 2026-09-24. Repo:** [Bitterbot-AI/bitterbot-desktop](https://github.com/Bitterbot-AI/bitterbot-desktop) at commit [`873e5d58ce95eccd7908d1d0bf0f28112db4bbe7`](https://github.com/Bitterbot-AI/bitterbot-desktop/commit/873e5d58ce95eccd7908d1d0bf0f28112db4bbe7).
+
+Bitterbot's peer-skill pipeline implements a useful separation between trusting
+an identity and trusting its artifact. Its
+[`ingest.ts`](https://github.com/Bitterbot-AI/bitterbot-desktop/blob/873e5d58ce95eccd7908d1d0bf0f28112db4bbe7/src/agents/skills/ingest.ts)
+verifies envelope structure, signature and content hash, runs injection and
+routing checks, and normally quarantines received skills. Under `auto` policy,
+a sufficiently trusted peer can skip operator review, but the skill only enters
+staging. [`peer-staging.ts`](https://github.com/Bitterbot-AI/bitterbot-desktop/blob/873e5d58ce95eccd7908d1d0bf0f28112db4bbe7/src/agents/skills/peer-staging.ts)
+binds that stage to author key, peer identity, content hash and receipt time;
+it refuses to replace a local pending proposal or another author's same-name
+stage. Trust therefore changes intake friction, not service state.
+
+Activation is a separate empirical decision. The
+[`validation gate`](https://github.com/Bitterbot-AI/bitterbot-desktop/blob/873e5d58ce95eccd7908d1d0bf0f28112db4bbe7/src/memory/skill-evolution/validation-gate.ts)
+requires a received skill to beat its incumbent on the receiving node's own
+private capability tasks. Public canonical tasks are treated as a memorizable
+baseline and cannot promote a peer skill by themselves. Model-predicted replay
+judgments are diagnostic only; missing or underpowered evidence holds the
+candidate, measured non-improvement rejects it, and acceptance uses paired real
+rollouts with a one-sided sign test before a canary release. Republishing the
+same author/name lineage does not buy unlimited validation attempts, and exact
+bytes already measured negatively on that node are not rerun.
+
+The repository makes the policy explicit in a test named
+[`trust-not-evidence.test.ts`](https://github.com/Bitterbot-AI/bitterbot-desktop/blob/873e5d58ce95eccd7908d1d0bf0f28112db4bbe7/src/memory/skill-evolution/trust-not-evidence.test.ts):
+peer trust is excluded from activation fitness and used only to prioritize
+which candidate gets evaluated first. Sender attestations similarly remain
+claims. A local regression can disable a live peer skill, while two fresh
+current-generation verdicts from configured attesters are required for remote
+demotion; unknown attesters do not count.
+
+Outbound propagation applies another boundary. The
+[`P2P publisher`](https://github.com/Bitterbot-AI/bitterbot-desktop/blob/873e5d58ce95eccd7908d1d0bf0f28112db4bbe7/src/memory/skill-evolution/p2p-publish.ts)
+selects only locally evolved skills with an accepted validation verdict that
+have reached stable state and survived a default three-day maturity delay. It
+refuses bodies containing detected secrets or user-specific identifiers and
+ships signed provenance so receivers can inspect the sender's evidence, then
+re-gate locally rather than inherit the verdict.
+
+The reusable control is to assign peer reputation only narrowly scoped rights:
+transport eligibility, review bypass, and evaluation priority. **Activation
+should require artifact-bound local evidence.** A signature establishes who
+made a claim; reputation can decide which claim is economical to test; neither
+establishes that the procedure helps this node, model, task distribution or
+tool environment. This avoids both extremes of ignoring useful network
+reputation and turning it into transitive execution authority.
+
+Limits: this was a source inspection at one pinned revision. Scout did not run
+the repository's tests, benchmark the skill gate, exercise a two-node transfer,
+or verify live network behavior. Comments, tests and project documentation
+show intended invariants plus implementation paths, not proof that every
+runtime path enforces them or that the statistical gate is well calibrated.
 
 ## Six comparisons that matter in practice
 
