@@ -1,8 +1,8 @@
 <ai_context>
-summary: "Companion to agent-runtime-effect-integrity.md for unattended execution and replay integrity: cadence and failure accounting, infrastructure trust boundaries, clone identity hygiene, cut-point and interaction-bound replay, local durability versus external settlement, revision-bound approval, accountable agent writes, desktop effect authorization, and workflow/host recovery boundaries."
-triggers: ["unattended execution", "heartbeat", "failure backoff", "Talon", "Docker Sandboxes", "sandbox trust boundary", "clone identity", "LingCage", "cut-point replay", "Chronicle", "interaction replay", "Mutagen", "host-call replay", "Ovo", "offline replay", "OrcaReplay", "effect settlement", "LetItLoop", "Kevlar", "ATR", "approval revision", "AIS", "orphan recovery", "Rebuno", "approval resume", "AgenticOS", "diagnostic attention", "Runpin", "effect deduplication", "agent identity", "Sensefold", "desktop authorization", "macOS Harness", "AgentRun", "workflow DSL", "late settlement"]
-last_updated: "2026-09-23"
-source_basis: "Extracted intact from agent-runtime-effect-integrity.md during its 2026-09-21 oversized-note review, then extended with pinned implementation evidence for unattended cadence and failure accounting and AgentRun's workflow/host recovery boundary. Each section retains stable source links, reproduced checks where performed, and explicit evidence limitations."
+summary: "Companion to agent-runtime-effect-integrity.md for unattended execution and replay integrity: lifecycle-bound resume identity, cadence and failure accounting, infrastructure trust boundaries, clone identity hygiene, cut-point and interaction-bound replay, local durability versus external settlement, revision-bound approval, accountable agent writes, desktop effect authorization, and workflow/host recovery boundaries."
+triggers: ["unattended execution", "session resume", "lifecycle generation", "Daintree", "heartbeat", "failure backoff", "Talon", "Docker Sandboxes", "sandbox trust boundary", "clone identity", "LingCage", "cut-point replay", "Chronicle", "interaction replay", "Mutagen", "host-call replay", "Ovo", "offline replay", "OrcaReplay", "effect settlement", "LetItLoop", "Kevlar", "ATR", "approval revision", "AIS", "orphan recovery", "Rebuno", "approval resume", "AgenticOS", "diagnostic attention", "Runpin", "effect deduplication", "agent identity", "Sensefold", "desktop authorization", "macOS Harness", "AgentRun", "workflow DSL", "late settlement"]
+last_updated: "2026-09-24"
+source_basis: "Extracted intact from agent-runtime-effect-integrity.md during its 2026-09-21 oversized-note review, then extended with pinned implementation evidence for lifecycle-bound session resume, unattended cadence and failure accounting, and AgentRun's workflow/host recovery boundary. Each section retains stable source links, reproduced checks where performed, and explicit evidence limitations."
 </ai_context>
 
 # Agent Runtime Unattended Execution and Replay
@@ -12,6 +12,62 @@ The parent retains revision admission, guarded writes, ambiguous-delivery recove
 resource quarantine, and core effect-closure patterns. This note covers the trust
 boundaries and settlement evidence needed when execution continues unattended or
 is replayed after interruption.
+
+## Resume the Process Generation, Not the Reused Pane — Daintree (GitHub, September 2026)
+
+Daintree's passive coding-agent session capture exposes a general identity problem:
+a stable UI pane or terminal ID can host several process incarnations, while a late
+close path from the predecessor can finish after the successor has started. Treating
+the pane ID as the resume identity can therefore suppress the successor's record or
+write the predecessor's conversation onto the live pane.
+
+At pinned revision `8e314b3e06e3260fd8df564aa1beae373656c6ad`, Daintree freezes a
+launch generation before initiating a kill and funnels overlapping close paths
+through one journal gate keyed by `(terminalId, generation)`. A ledger mark is only
+a reservation: if persistence fails, the mark is rescinded, and the recorded event
+is emitted only after the durable write. If the bounded lifecycle ledger has already
+forgotten a predecessor, an explicit unknown generation fails open rather than
+consulting the current generation; that may admit a duplicate, but it cannot spend
+the successor's exactly-once slot. Session-ID deduplication remains a second line of
+defense.
+
+The same capture is projected independently into two stores. The global history
+supports a resume picker, while the saved pane's session ID supports cold in-place
+restore. Journal failure does not suppress pane writeback, nor does pane failure
+suppress journaling. Pane writeback is narrower: it accepts only a final exit with a
+numeric generation, rechecks generation, project, and agent ownership when the
+serialized state update actually runs, and never overwrites a different ID that the
+renderer or user owns. A fresh confirmed relaunch clears a module-authored ID unless
+that launch explicitly resumes it. This prevents a recovery hint from turning into
+an accidental command to reopen an abandoned conversation forever.
+
+Shutdown has two explicit barriers. The PTY host registers each asynchronous capture
+tail before its first await, stops waiting for optional branch enrichment once
+finishing begins, and reports whether a bounded drain left records undelivered. Main
+seals acceptance and separately drains accepted journal and pane writes. The local
+history's read-modify-write operations are serialized to avoid lost updates, and an
+existing but unreadable journal is distinct from an absent one: mutation aborts
+rather than replacing unknown records with an empty list. Proven malformed JSON is
+quarantined only when that move succeeds.
+
+**Runtime rule:** bind recovery credentials to the process incarnation that produced
+them, not only to a reusable UI or resource ID. Freeze that incarnation before
+teardown, revalidate ownership at apply time, and distinguish reservation from
+durable receipt. When one observation feeds multiple recovery projections, persist
+them independently and report each outcome. On shutdown, make both delivery to the
+persistence owner and settlement inside that owner bounded, observable barriers;
+optional enrichment must not delay the credential itself.
+
+Scout inspected pinned source and repository-authored Vitest cases but did not clone
+the repository, run its test suite, or exercise an actual Claude, Codex, or Gemini
+resume. The evidence establishes static safeguards and authored regression coverage,
+not crash-consistent resume in deployment. The fail-open path explicitly prefers a
+rare duplicate over losing a resume record.
+
+- **Repo:** https://github.com/daintreehq/daintree
+- **Inspected revision:** https://github.com/daintreehq/daintree/commit/8e314b3e06e3260fd8df564aa1beae373656c6ad
+- **Primary sources:** [journal generation gate](https://github.com/daintreehq/daintree/blob/8e314b3e06e3260fd8df564aa1beae373656c6ad/electron/services/pty/agentSessionJournal.ts), [independent journal and pane projections](https://github.com/daintreehq/daintree/blob/8e314b3e06e3260fd8df564aa1beae373656c6ad/electron/services/pty/agentSessionCapturePersistence.ts), [host-side shutdown delivery barrier](https://github.com/daintreehq/daintree/blob/8e314b3e06e3260fd8df564aa1beae373656c6ad/electron/services/pty/agentSessionCaptureDelivery.ts), [serialized and guarded history writes](https://github.com/daintreehq/daintree/blob/8e314b3e06e3260fd8df564aa1beae373656c6ad/electron/services/pty/agentSessionHistory.ts), [journal tests](https://github.com/daintreehq/daintree/blob/8e314b3e06e3260fd8df564aa1beae373656c6ad/electron/services/pty/__tests__/agentSessionJournal.test.ts), and [persistence tests](https://github.com/daintreehq/daintree/blob/8e314b3e06e3260fd8df564aa1beae373656c6ad/electron/services/pty/__tests__/agentSessionCapturePersistence.test.ts)
+- **Discovery query:** GitHub Repository Search API `topic:ai-agents pushed:>2026-09-23 stars:>30`, sorted by updated; `total_count: 369`, `incomplete_results: false`
 
 ## Cadence, Attempt, and Settlement Are Different Clocks — Talon (GitHub, September 2026)
 
