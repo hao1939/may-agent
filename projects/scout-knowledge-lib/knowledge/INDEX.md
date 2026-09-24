@@ -2,7 +2,7 @@
 summary: "Entry point for Scout's project-owned knowledge library. Use this before creating or updating Scout-local knowledge notes."
 triggers: ["scout knowledge", "agent architecture research", "multi-agent trends", "XHS trends", "knowledge library maintenance"]
 last_updated: "2026-09-23"
-source_basis: "Maintained index of Scout canonical notes, companion notes, findings, and durable reports. Current navigation includes source-grounded finding batches through 2026-09-22 and the §37–§40 Agent Evaluation Research: Diagnostic Layers companion without duplicating the full index. Runtime task, credential, backlog, and health status belongs in the project UI or dated reports."
+source_basis: "Maintained index of Scout canonical notes, companion notes, findings, and durable reports. Current navigation includes source-grounded finding batches through 2026-09-23 and the §37–§40 Agent Evaluation Research: Diagnostic Layers companion without duplicating the full index. Runtime task, credential, backlog, and health status belongs in the project UI or dated reports."
 findings_date_convention: "Use the actual observation date in YYYY-MM-DD filenames; never create a future-dated finding."
 </ai_context>
 
@@ -69,6 +69,25 @@ Migration and project-operation artifacts live outside `knowledge/`:
 - [Hermes Agent and OpenClaw comparative investigation (2026-09-02)](../reports/research/hermes-agent-openclaw-comparative-investigation-2026-09-02.md) — UTC-dated pinned-source architecture, memory, skill-learning, authority, recovery, issue, and cost comparison; reconciles all 28 existing matching leads and records bounded reproduction limits.
 
 ## Recent Source-Grounded Findings
+
+### 2026-09-23
+
+- [A sacrificial model can expose prompt-injection effects without receiving authority](./findings/2026-09-23-sacrificial-model-prompt-injection-sensor.md) — pinned Little Canary inspection separates a tool-less behavioral probe, probabilistic classification, degraded coverage, and the host's actual deny channel; tests and live models were not run.
+- [Deterministic orchestration needs state provenance](./findings/2026-09-23-deterministic-orchestration-needs-state-provenance.md) — pinned Consort inspection shows why reusable phase state needs a work-item owner and why a verification primitive does not prove runtime enforcement; the whole system was not independently evaluated.
+- [Agent learning needs semantic attempt accounting](./findings/2026-09-23-agent-learning-needs-semantic-attempt-accounting.md) — pinned NEEDLE inspection separates decomposition, unknown cost, evidence scope, process exit, and authoritative resolution before execution history feeds adaptation; tests and historical counts were not reproduced.
+- [Gwae makes agent status a terminal protocol problem](./findings/2026-09-23-hn-gwae-agent-fleet-terminal.md) — shell protocol verdicts, harness lifecycle, freshness, and triage precedence form a stronger status contract than output activity; live terminal behavior and author-reported benchmarks were not reproduced.
+- [Code-derived skills add an executable validation anchor](./findings/2026-09-23-code2skill-code-derived-agent-skills.md) — a full XHS post read describes source-blind reconstruction for code-derived skills, but the underlying paper, corpus, code, and benchmark artifacts were not inspected.
+- [A visual agent workflow has control planes the graph does not show](./findings/2026-09-23-visual-workflows-have-hidden-control-planes.md) — pinned RondoFlow inspection separates graph routing, agent-step admission, tool policy, built-in effects, and Director fallback; no live workflow was run.
+- [Reversible context eviction still needs recall-safety tests](./findings/2026-09-23-reversible-context-eviction-needs-recall-tests.md) — a complete Reddit post distinguishes archive preservation, discoverability, and effective recall; linked implementation and runtime behavior were not reviewed.
+- [One agent session is also one trust domain](./findings/2026-09-23-one-session-is-a-trust-domain.md) — pinned Kern inspection separates continuity, origin labels, reply routing, admission, and context isolation across interfaces; no deployment or security test was performed.
+- [Agent personas are adoption interfaces, not control boundaries](./findings/2026-09-23-agent-personas-are-adoption-interfaces-not-controls.md) — one company's anecdotal deployment separates memorable social identity from role, capability, authority, evaluation, and accountable ownership.
+- [Group agents need both member-data and collective-action boundaries](./findings/2026-09-23-group-agents-need-member-and-action-boundaries.md) — Google's CC announcement distinguishes selective member-data sharing from authority to approve group effects; the product was not independently tested.
+
+#### Prior findings extended on 2026-09-23
+
+- [Audit integrity needs a capture boundary and an external tail anchor](./findings/2026-09-14-audit-integrity-needs-external-tail-anchor.md) — a Rubric Decision Attestation follow-up separates content commitment, anchor verification, completeness, raw-content custody, and semantic validity.
+- [HN Scan 522 — Talon](./findings/2026-07-18-hn-scan-522.md) — the retained discovery note now routes to a pinned scheduler assessment separating cadence, attempt, and settlement clocks.
+- [Containarium: egress containment needs activation and coverage proof](./findings/2026-09-10-opt-in-egress-enforcement.md) — a pinned follow-up extends the activation-and-coverage rule from IPv4 egress to symlink-aware path confinement and exact enforcement wiring.
 
 ### 2026-09-22
 
