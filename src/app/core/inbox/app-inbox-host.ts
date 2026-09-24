@@ -1,4 +1,5 @@
-import { readInputContext, observeTaskDependency, type AppDependencyReader } from "./input-context.js";
+import { createHash } from "node:crypto";
+import { readInputContext, observeTaskDependency, type AppDependencyReader, type TaskInputObservation } from "./input-context.js";
 import {
   completeTaskInput,
   isAppTaskRevisionAdmissionError,
@@ -151,6 +152,24 @@ function validateAppDefinition(app: AppDefinition): RegisteredApp {
 
 function errorMessage(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
+}
+
+function stableObservationValue(value: unknown): unknown {
+  if (Array.isArray(value)) return value.map(stableObservationValue);
+  if (!value || typeof value !== "object") return value;
+  return Object.fromEntries(
+    Object.entries(value)
+      .sort(([left], [right]) => left.localeCompare(right))
+      .map(([key, nested]) => [key, stableObservationValue(nested)]),
+  );
+}
+
+function taskObservationFingerprint(observed: TaskInputObservation | null): string {
+  return createHash("sha256").update(JSON.stringify(stableObservationValue(observed))).digest("hex");
+}
+
+function taskObservationErrorFingerprint(error: unknown): string {
+  return createHash("sha256").update(`error\0${errorMessage(error)}`).digest("hex");
 }
 
 export class AppInboxHost {
@@ -403,11 +422,23 @@ export class AppInboxHost {
     return app;
   }
 
-  #failure(item: AppInboxItem, stage: AppInboxRecoveryStage, error: unknown): void {
+  #failure(
+    item: AppInboxItem,
+    stage: AppInboxRecoveryStage,
+    error: unknown,
+    observationFingerprint?: string,
+  ): void {
     const message = errorMessage(error);
     let evidence;
     try {
-      evidence = recordAppInboxRecoveryFailure(this.#db, item.id, stage, message, this.#now());
+      evidence = recordAppInboxRecoveryFailure(
+        this.#db,
+        item.id,
+        stage,
+        message,
+        this.#now(),
+        observationFingerprint,
+      );
     } catch {
       // A diagnostics callback still gets the original boundary failure. A state
       // storage failure cannot be made durable by another write on this path.
@@ -537,20 +568,25 @@ export class AppInboxHost {
   /** Project exact accepted outcomes; Task failure/retry is not input completion. */
   async refreshTaskResults(appId: string, taskId: string): Promise<void> {
     if (this.#closed) return;
-    for (const item of listAppInboxItemsWaitingOnTask(this.#db, appId, taskId, this.#now()))
-      await this.#projectTaskResult(item);
+    // A committed exact-Task event may carry newer evidence than the report
+    // whose failed delivery established reviewAt. Re-read only this Task's
+    // callers; #projectTaskResult still suppresses an unchanged failed retry.
+    for (const item of listAppInboxItemsWaitingOnTask(this.#db, appId, taskId, this.#now(), true))
+      await this.#projectTaskResult(item, true);
   }
 
-  async #projectTaskResult(item: AppInboxItem): Promise<void> {
+  async #projectTaskResult(item: AppInboxItem, probeFreshEvidence = false): Promise<void> {
     const now = this.#now();
+    const deferred = item.reviewAt !== undefined && item.reviewAt > now;
     if (
       this.#closed ||
       !this.#readDependency ||
       item.status === "done" ||
       item.waitingOn?.kind !== "task" ||
-      (item.reviewAt !== undefined && item.reviewAt > now)
+      (deferred && !probeFreshEvidence)
     )
       return;
+    let observationFingerprint: string | undefined;
     try {
       const admissionKey = recoverTaskInputAdmissionKey(this.#db, item);
       if (!admissionKey)
@@ -561,9 +597,22 @@ export class AppInboxHost {
         { kind: "task", id: item.waitingOn.id },
         admissionKey,
       );
+      observationFingerprint = taskObservationFingerprint(observed);
+      const failedObservation = item.recovery?.["input-result"];
+      if (
+        deferred &&
+        failedObservation?.recoveredAt === undefined &&
+        failedObservation?.observationFingerprint === observationFingerprint
+      )
+        return;
       if (this.#closed) return;
       if (!observed) {
-        this.#failure(item, "input-result", new Error("Task dependency evidence is unavailable"));
+        this.#failure(
+          item,
+          "input-result",
+          new Error("Task dependency evidence is unavailable"),
+          observationFingerprint,
+        );
         return;
       }
       if (!REVIEWABLE_TASK_DEPENDENCY_STATUSES.has(observed.status)) {
@@ -586,7 +635,15 @@ export class AppInboxHost {
         // The accepted result remains readable even if its notification fails.
       }
     } catch (error) {
-      this.#failure(item, "input-result", error);
+      const failureObservationFingerprint = observationFingerprint ?? taskObservationErrorFingerprint(error);
+      const failedObservation = item.recovery?.["input-result"];
+      if (
+        deferred &&
+        failedObservation?.recoveredAt === undefined &&
+        failedObservation?.observationFingerprint === failureObservationFingerprint
+      )
+        return;
+      this.#failure(item, "input-result", error, failureObservationFingerprint);
     }
   }
 

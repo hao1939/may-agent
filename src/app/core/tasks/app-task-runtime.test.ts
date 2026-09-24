@@ -247,6 +247,110 @@ describe("caller feedback PoC", () => {
     expect(() => getLoadedAppInputContract({ bus, appId: "absent" })).toThrow("no installed Task input contract");
   });
 
+  it("reads an exact accepted admission from a caller-only registry without starting target execution", async () => {
+    const f = fixture();
+    const bus = eventBus();
+    const persistDir = join(f.root, "state");
+    const workerDir = join(f.projectsRoot, "worker.app");
+    mkdirSync(workerDir, { recursive: true });
+    const worker = defineApp({
+      id: "worker",
+      version: 1,
+      agent: "worker",
+      tasks: {},
+      inputSchema: Type.Object({ kind: Type.Literal("measure"), data: Type.Object({ sample: Type.String() }) }),
+      task: () => ({
+        kind: "desired",
+        intent: { id: "measurement", parentId: "root", outcome: "Measure", acceptance: ["Verified"] },
+      }),
+    });
+    const target = appTaskContext({
+      appDir: workerDir,
+      projectDir: workerDir,
+      agent: "worker",
+      maxConcurrent: 1,
+      resourceStore: AppTaskResourceStore.fromDb(getDb(persistDir), "worker"),
+    });
+    target.resourceStore.bootstrapSnapshot(
+      {
+        project: "worker",
+        project_lifecycle: "active",
+        root_task_id: "root",
+        groups: { root: { id: "root", parent_id: null } },
+      },
+      "fixture",
+    );
+    admitTaskInput(target, {
+      appId: "worker",
+      attachment: worker.task!({
+        id: "original",
+        source: { kind: "app", id: "sample" },
+        input: { kind: "measure", data: { sample: "original" } },
+      }),
+      idempotencyKey: "task:original",
+      inputContext: {
+        id: "original",
+        source: { kind: "app", id: "sample" },
+        input: { kind: "measure", data: { sample: "original" } },
+      },
+    });
+    const original = claimObservedAppTask(target, { taskId: "measurement", appAgent: "worker", handler: "auto" });
+    if (original.kind !== "claimed") throw new Error("Expected original target claim");
+    completeAppTask(target, original, { summary: "Original exact answer", result: { value: 42 } });
+    admitTaskInput(target, {
+      appId: "worker",
+      attachment: { kind: "existing", taskId: "measurement" },
+      idempotencyKey: "task:later",
+      inputContext: {
+        id: "later",
+        source: { kind: "app", id: "another-caller" },
+        input: { kind: "measure", data: { sample: "later" } },
+      },
+    });
+    const later = claimObservedAppTask(target, { taskId: "measurement", appAgent: "worker", handler: "auto" });
+    if (later.kind !== "claimed") throw new Error("Expected later target claim");
+    completeAppTask(target, later, { summary: "Later answer", result: { value: 7 } });
+
+    const { installed } = await installCoreTaskRuntimes({
+      ...options(f, bus),
+      installControllers: false,
+      taskAppIds: ["sample"],
+      appRegistrySnapshot: {
+        id: "caller-only-exact-read",
+        generation: 1,
+        entries: [
+          { appDir: f.appDir, definition: definition() },
+          { appDir: workerDir, definition: worker },
+        ],
+      },
+    });
+    expect(installed.map((entry) => entry.id)).toEqual(["sample"]);
+    const capability = createAppTaskCapability({ bus });
+    expect(capability.get({ appId: "worker", taskId: "measurement" })?.result).toEqual({ value: 7 });
+    expect(
+      await capability.readDependency({
+        appDir: workerDir,
+        dependency: { kind: "task", id: "measurement" },
+        admissionKey: "task:original",
+      }),
+    ).toMatchObject({ status: "done", summary: "Original exact answer", result: { value: 42 } });
+    expect(
+      await capability.readDependency({
+        appDir: workerDir,
+        dependency: { kind: "task", id: "missing" },
+        admissionKey: "task:missing",
+      }),
+    ).toBeNull();
+    expect(
+      await capability.readDependency({
+        appDir: join(f.projectsRoot, "absent.app"),
+        dependency: { kind: "task", id: "measurement" },
+        admissionKey: "task:original",
+      }),
+    ).toBeNull();
+    expect(installed.map((entry) => entry.id)).toEqual(["sample"]);
+  });
+
   it("recovers delegated creator after lost admission and revises across Apps from a caller-only runtime", async () => {
     const f = fixture();
     const bus = eventBus();
@@ -773,7 +877,17 @@ describe("caller feedback PoC", () => {
         }
         ready = true;
         await run("work/collector");
+        // The committed Task observation is a targeted level-triggered refresh.
+        // It must consider this new exact answer even when an older report's
+        // failed notification left the same input under retry pacing.
+        await host!.refreshTaskResults("sample", "work/collector");
         await host!.recoverTaskResults();
+        // onRequestUpdated always throws in this fixture. The exact answer is
+        // nevertheless durable before the original caller considers it.
+        expect(host!.get(requestId)).toMatchObject({
+          status: "done",
+          result: { summary: "Observed sample", result: { score: 0.92 } },
+        });
         await recoverInstalledAppTasks(bus);
         await run("work/caller");
         await host!.recoverTaskResults();

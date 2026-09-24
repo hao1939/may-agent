@@ -445,15 +445,16 @@ describe("App inbox host", () => {
     });
     await host.refreshTaskResults("evaluation", "work/paced-result");
     await host.recoverTaskResults();
-    expect(reads).toBe(1);
+    expect(reads).toBe(2);
+    expect(host.get("paced-result")?.recovery?.["input-result"]?.failures).toBe(1);
     expect(host.get("unrelated-result")?.result?.summary).toBe("answer for task:unrelated-result");
 
     projectionState = "missing";
-    await host.refreshTaskResults("evaluation", "work/paced-result");
-    expect(reads).toBe(1);
+    await host.recoverTaskResults();
+    expect(reads).toBe(2);
     now = 2_250;
     await host.refreshTaskResults("evaluation", "work/paced-result");
-    expect(reads).toBe(2);
+    expect(reads).toBe(3);
     expect(host.get("paced-result")).toMatchObject({
       status: "handling",
       reviewAt: 2_750,
@@ -467,18 +468,18 @@ describe("App inbox host", () => {
       },
     });
     await host.recoverTaskResults();
-    expect(reads).toBe(2);
+    expect(reads).toBe(3);
 
     projectionState = "done";
-    now = 2_750;
+    now = 2_251;
     await host.refreshTaskResults("evaluation", "work/paced-result");
-    expect(reads).toBe(3);
+    expect(reads).toBe(4);
     expect(host.get("paced-result")).toMatchObject({
       status: "done",
       result: { summary: "answer for task:paced-result" },
       waitingOn: { kind: "task", id: "work/paced-result" },
       taskAdmissionKey: "task:paced-result",
-      recovery: { "input-result": { failures: 2, recoveredAt: 2_750 } },
+      recovery: { "input-result": { failures: 2, recoveredAt: 2_251 } },
     });
   });
 
@@ -513,7 +514,8 @@ describe("App inbox host", () => {
       recovery: { "input-result": { failures: 1, firstFailedAt: 3_000, retryAt: 3_250 } },
     });
     await host.refreshTaskResults("evaluation", "reported-work");
-    expect(reads).toBe(1);
+    expect(reads).toBe(2);
+    expect(host.get("paced-report")?.recovery?.["input-result"]?.failures).toBe(1);
 
     now = 3_250;
     await host.refreshTaskResults("evaluation", "reported-work");
@@ -522,17 +524,65 @@ describe("App inbox host", () => {
       reviewAt: 3_750,
       recovery: { "input-result": { failures: 2, firstFailedAt: 3_000, retryAt: 3_750 } },
     });
-    expect(reads).toBe(2);
+    expect(reads).toBe(3);
 
     deliveryAvailable = true;
     now = 3_750;
     await host.refreshTaskResults("evaluation", "reported-work");
-    expect(reads).toBe(3);
+    expect(reads).toBe(4);
     expect(host.get("paced-report")).toMatchObject({
       status: "handling",
       waitingOn: { kind: "task", id: "reported-work" },
       recovery: { "input-result": { failures: 2, firstFailedAt: 3_000, recoveredAt: 3_750 } },
     });
+  });
+
+  it("considers fresh exact evidence promptly while pacing an unchanged failed report delivery", async () => {
+    let now = 4_000;
+    let answerAvailable = false;
+    let reads = 0;
+    let deliveries = 0;
+    const host = new AppInboxHost({
+      db,
+      now: () => now,
+      apps: [app()],
+      attachTask: fakeTaskAttacher(db, () => ({ taskId: "fresh-work" })),
+      readDependency: async ({ dependency }) => {
+        reads++;
+        return answerAvailable
+          ? { ...dependency, status: "done", summary: "Fresh exact answer", result: { value: 42 } }
+          : {
+              ...dependency,
+              status: "pending",
+              report: { attemptId: "r_report", summary: "Useful unchanged report" },
+            };
+      },
+      onRequestUpdated: (_item, _result, status) => {
+        deliveries++;
+        if (status === "blocked") throw new Error("old report delivery failed");
+      },
+    });
+    admit(host, "fresh-answer");
+
+    await host.refreshTaskResults("evaluation", "fresh-work");
+    expect(host.get("fresh-answer")?.reviewAt).toBe(4_250);
+    expect(deliveries).toBe(1);
+
+    now++;
+    await host.refreshTaskResults("evaluation", "fresh-work");
+    expect(host.get("fresh-answer")?.status).toBe("handling");
+    expect(deliveries).toBe(1);
+
+    answerAvailable = true;
+    now++;
+    await host.refreshTaskResults("evaluation", "fresh-work");
+    expect(host.get("fresh-answer")).toMatchObject({
+      status: "done",
+      result: { summary: "Fresh exact answer", result: { value: 42 } },
+      recovery: { "input-result": { failures: 1, recoveredAt: 4_002 } },
+    });
+    expect(deliveries).toBe(2);
+    expect(reads).toBe(3);
   });
 
   it("projects exact answers once and scopes result notifications by App", async () => {

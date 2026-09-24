@@ -32,6 +32,8 @@ export type AppInboxRecoveryStage = "input-admission" | "input-result";
 export type AppInboxRecoveryFailure = {
   failures: number;
   fingerprint: string;
+  /** Exact dependency evidence whose projection failed, when it was readable. */
+  observationFingerprint?: string;
   error: string;
   firstFailedAt: number;
   lastFailedAt: number;
@@ -261,6 +263,7 @@ export function recordAppInboxRecoveryFailure(
   stage: AppInboxRecoveryStage,
   error: string,
   now: number,
+  observationFingerprint?: string,
 ): AppInboxRecoveryFailure {
   return stateTransaction(db, () => {
     const item = getAppInboxItem(db, inputId);
@@ -272,6 +275,7 @@ export function recordAppInboxRecoveryFailure(
     const failure: AppInboxRecoveryFailure = {
       failures,
       fingerprint: createHash("sha256").update(`${stage}\0${boundedError}`).digest("hex"),
+      ...(observationFingerprint ? { observationFingerprint } : {}),
       error: boundedError,
       firstFailedAt: prior && prior.recoveredAt === undefined ? prior.firstFailedAt : now,
       lastFailedAt: now,
@@ -488,6 +492,7 @@ export function listAppInboxItemsWaitingOnTask(
   appId: string,
   taskId: string,
   now = Date.now(),
+  includeDeferred = false,
 ): AppInboxItem[] {
   return db
     .prepare(
@@ -496,10 +501,10 @@ export function listAppInboxItemsWaitingOnTask(
          AND status = 'handling'
          AND waiting_on_kind = 'task'
          AND waiting_on_id = ?
-         AND (review_at IS NULL OR review_at <= ?)
+         ${includeDeferred ? "" : "AND (review_at IS NULL OR review_at <= ?)"}
        ORDER BY created_at, id`,
     )
-    .all(requiredText(appId, "appId"), requiredText(taskId, "taskId"), now)
+    .all(requiredText(appId, "appId"), requiredText(taskId, "taskId"), ...(includeDeferred ? [] : [now]))
     .map(rowToItem);
 }
 

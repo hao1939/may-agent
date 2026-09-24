@@ -873,6 +873,44 @@ export function attachLoadedAppTask(input: {
   return { taskId: observation.taskId };
 }
 
+function readableAppTaskContext(bus: EventBus, appDir: string): AppTaskContext | null {
+  const normalizedAppDir = resolve(appDir);
+  const descriptor = (appRouterDescriptorsByBus.get(bus) ?? []).find(
+    (candidate) => resolve(candidate.appDir) === normalizedAppDir,
+  );
+  if (descriptor) return appTaskConfig(descriptor);
+
+  // A one-App worker retains read authority for accepted registry entries, but
+  // must not install the target descriptor/controller or bootstrap missing state.
+  const opts = appRouterOptionsByBus.get(bus);
+  if (!opts?.taskAppIds) return null;
+  const entry = configuredRegistryEntries(opts).find(
+    (candidate) => resolve(candidate.appDir) === normalizedAppDir && candidate.definition.tasks,
+  );
+  const resourceStore = entry && opts?.persistDir
+    ? AppTaskResourceStore.activeFromDb(getDb(opts.persistDir), entry.definition.id)
+    : null;
+  if (!entry || !resourceStore) return null;
+  return appTaskContext({
+    appDir: entry.appDir,
+    projectDir: entry.appDir,
+    agent: configuredAppAgent(entry.definition, entry.appDir),
+    maxConcurrent: entry.definition.tasks?.maxConcurrent ?? 1,
+    resourceStore,
+  });
+}
+
+function readableAppTaskContextById(bus: EventBus, appId: string): AppTaskContext | null {
+  const normalizedAppId = appId.trim().replace(/\.app$/, "");
+  const descriptor = (appRouterDescriptorsByBus.get(bus) ?? []).find((candidate) => candidate.id === normalizedAppId);
+  if (descriptor) return appTaskConfig(descriptor);
+  const opts = appRouterOptionsByBus.get(bus);
+  const entry = opts && configuredRegistryEntries(opts).find(
+    (candidate) => candidate.definition.id === normalizedAppId && candidate.definition.tasks,
+  );
+  return entry ? readableAppTaskContext(bus, entry.appDir) : null;
+}
+
 /** Read one input's accepted answer without using a later Task cycle's result. */
 export function readLoadedAppTaskInputResult(input: {
   bus: EventBus;
@@ -881,26 +919,14 @@ export function readLoadedAppTaskInputResult(input: {
   admissionKey: string;
   kind?: "answer" | "report";
 }) {
-  const appDir = resolve(input.appDir);
-  const descriptor = (appRouterDescriptorsByBus.get(input.bus) ?? []).find((entry) => resolve(entry.appDir) === appDir);
-  return descriptor
-    ? readAppTaskAdmissionOutcome(appTaskConfig(descriptor), input.taskId, input.admissionKey, input.kind)
-    : null;
+  const config = readableAppTaskContext(input.bus, input.appDir);
+  return config ? readAppTaskAdmissionOutcome(config, input.taskId, input.admissionKey, input.kind) : null;
 }
 
 /** Read the stable task projection for an inbox dependency after any restart. */
 export function readLoadedAppTaskView(input: { bus: EventBus; appDir: string; taskId: string }): TaskDetail | null {
-  const normalizedAppDir = resolve(input.appDir);
-  const descriptor = (appRouterDescriptorsByBus.get(input.bus) ?? []).find(
-    (candidate) => resolve(candidate.appDir) === normalizedAppDir,
-  );
-  if (!descriptor) return null;
-  return readRuntimeTaskView(
-    {
-      taskStateConfig: appTaskConfig(descriptor),
-    },
-    input.taskId,
-  );
+  const config = readableAppTaskContext(input.bus, input.appDir);
+  return config ? readRuntimeTaskView({ taskStateConfig: config }, input.taskId) : null;
 }
 
 /** Read the same installed contract used by dependency admission, without projecting away constraints. */
@@ -953,43 +979,9 @@ export function getLoadedAppTaskView(input: {
   taskId: string;
   options?: TaskReadOptions;
 }): TaskDetail | null {
-  const appId = input.appId.trim().replace(/\.app$/, "");
-  const descriptor = (appRouterDescriptorsByBus.get(input.bus) ?? []).find((candidate) => candidate.id === appId);
-  if (!descriptor) {
-    // A one-App worker installs only its execution runtime, but supervision
-    // still needs exact reads of other Apps in its accepted registry. Reuse
-    // existing resource authority without loading agents, bootstrapping state,
-    // installing controllers, or making disabled Apps available.
-    const opts = appRouterOptionsByBus.get(input.bus);
-    const entry = opts?.taskAppIds
-      ? (opts.appRegistrySnapshot ?? opts.appRegistry?.snapshot())?.entries.find(
-          ({ definition }) => definition.id === appId && definition.tasks,
-        )
-      : undefined;
-    const resourceStore =
-      entry && opts?.persistDir ? AppTaskResourceStore.activeFromDb(getDb(opts.persistDir), appId) : null;
-    if (!entry || !resourceStore) throw new Error(`App ${input.appId} has no loaded Task runtime`);
-    return readRuntimeTaskView(
-      {
-        taskStateConfig: appTaskContext({
-          appDir: entry.appDir,
-          projectDir: entry.appDir,
-          agent: configuredAppAgent(entry.definition, entry.appDir),
-          maxConcurrent: entry.definition.tasks?.maxConcurrent ?? 1,
-          resourceStore,
-        }),
-      },
-      input.taskId,
-      input.options,
-    );
-  }
-  return readRuntimeTaskView(
-    {
-      taskStateConfig: appTaskConfig(descriptor),
-    },
-    input.taskId,
-    input.options,
-  );
+  const config = readableAppTaskContextById(input.bus, input.appId);
+  if (!config) throw new Error(`App ${input.appId} has no loaded Task runtime`);
+  return readRuntimeTaskView({ taskStateConfig: config }, input.taskId, input.options);
 }
 
 /** Common creator capability; App selection and delivery are ordinary runtime wiring. */

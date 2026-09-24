@@ -108,6 +108,9 @@ for (const failure of ["mapping", "link-write", "report-write"] as const) {
       expect(readConversationRequest(db, app.id, "chat", "ask")).toEqual(accepted);
       broken = false;
       if (failure === "link-write") db.exec("DROP TRIGGER fail_link");
+      // This is the timer-driven retry of the same failed admission, not a new
+      // exact Task observation. Honor the row's containment deadline.
+      now = runtime.host.get("first")!.availableAt!;
       await runtime.start();
       await until(() => runtime.host.get("first")?.waitingOn?.kind === "task");
       finishTask(config, "first");
