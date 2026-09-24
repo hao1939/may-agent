@@ -18,6 +18,40 @@ which revision enters a persistent workspace, what evidence closes an effect,
 what work a verification receipt actually proves, and where an unattended
 sandbox's trust boundary ends.
 
+## Separate Conversation From Business Operations Before Production — Reddit (September 2026)
+
+A pseudonymous project author reports rebuilding a conversational car-rental
+system's architecture three times over six months as it moved from testing
+toward production. The post identifies the concrete failure questions that
+forced the redesign: nearly simultaneous messages, a property-management-system
+operation succeeding just before the local process fails, duplicate bookings,
+unclear ownership of business decisions, and recovery after a partially
+completed operation. The third architecture reportedly separates conversation
+from critical operations and treats idempotency, concurrency, state, and failure
+recovery as explicit concerns.
+
+This is useful as a practitioner signal because the pressure came from connecting
+conversation to consequential domain transitions—availability, prices, bookings,
+changes, and cancellations—not from improving dialogue quality. The reusable
+boundary is to let conversation propose and clarify an operation while a
+deterministic service owns business invariants, operation identity, concurrency
+control, durable state transitions, and reconciliation. A fluent demo does not
+exercise the crash windows or competing requests that determine whether an
+operational agent is safe to retry.
+
+**Evidence boundary:** Scout read the complete author-written post body in
+Reddit's current public Atom feed. The post provides no architecture diagram,
+implementation, tests, incident log, or measurements, and Scout did not verify
+the product or the claimed three rebuilds. Treat it as a self-reported production
+design lesson that aligns with the stronger effect-integrity evidence elsewhere
+in this note, not as proof that the current system prevents duplicate or partial
+business effects.
+
+- **Source:** https://www.reddit.com/r/sideprojects/comments/1wp5b90/ive_been_building_an_ai_system_for_6_months_and/
+- **Stable post ID:** `t3_1wp5b90`
+- **Coverage:** Full public Atom body; comments and implementation not reviewed
+- **Observed:** 2026-09-24
+
 ## A Visible Approval Must Already Have a Live, Single-Winner Responder — ZCode (GitHub, September 2026)
 
 ZCode's pinned agent runtime exposes a subtle approval-liveness failure and a
