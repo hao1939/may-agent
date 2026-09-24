@@ -1,14 +1,14 @@
 <ai_context>
-summary: "Agent browsers are separating into task-specific operating points. Cloudflare's Kitesurf beta trades full Chromium compatibility and latency for disposable isolation and lower resource use, while Safari MCP reuses a logged-in human browser but must add per-session tab identity and fail-closed ownership guards. The shared lesson is that browser selection and browser-state authority both belong in the agent runtime, not in an undifferentiated browse tool."
-triggers: ["Kitesurf", "Safari MCP", "agent-first browser", "V8 isolates", "Browser Run", "agent browser runtime", "Chromium alternative", "CDP", "disposable browser", "tab ownership", "authenticated browser"]
-last_updated: "2026-08-09"
-source_basis: "HN item 49208393, Cloudflare's Kitesurf launch post, and Safari MCP repository revision 5d28de6; performance claims remain vendor-reported rather than independent benchmarks."
+summary: "Agent browsers are separating into task-specific operating points and explicit action-safety contracts. Kitesurf trades compatibility and latency for disposable isolation; Safari MCP reuses a logged-in browser but needs session-scoped ownership; Public Browser v3 prevents ambiguous selectors and retired element references from silently retargeting actions, and reports an unobserved drag effect as unconfirmed rather than successful. Browser selection, target identity, state authority, and outcome confidence belong in the runtime—not in an undifferentiated browse tool."
+triggers: ["Kitesurf", "Safari MCP", "Public Browser", "agent-first browser", "V8 isolates", "Browser Run", "agent browser runtime", "Chromium alternative", "CDP", "disposable browser", "tab ownership", "authenticated browser", "stale ref", "strict selector", "unconfirmed action"]
+last_updated: "2026-09-24"
+source_basis: "HN items 49208393 and 49836880, Cloudflare's Kitesurf launch post, Safari MCP revision 5d28de6, and Public Browser v3.0.0 revision 99df536; performance claims remain project-authored rather than independent benchmarks."
 </ai_context>
 
 # Agent Browsers Are Becoming Task-Specific Runtimes
 
 Date: 2026-08-07
-last_updated: 2026-08-07
+last_updated: 2026-09-24
 Source: https://news.ycombinator.com/item?id=49208393
 Source: https://blog.cloudflare.com/kitesurf/
 Tags: hn, agent-browser, browser-runtime, isolation, resource-efficiency, cdp, cloudflare-workers
@@ -84,6 +84,26 @@ Browser routing should include state and isolation requirements, not only compat
 3. choose a logged-in native browser only when existing user state is necessary, and require session-scoped identity markers, explicit ownership checks on destructive and script-execution paths, and fail-closed recovery when identity cannot be re-established.
 
 This third lane is not simply a faster browser option. It is delegated use of a human security principal. A shared browser daemon can reduce process overhead, but process sharing must not imply authority sharing.
+
+## 2026-09-24 HN update: target identity and outcome confidence are separate contracts
+
+Source: https://news.ycombinator.com/item?id=49836880  
+Release: https://github.com/Silbercue/public-browser/releases/tag/v3.0.0  
+Revision checked: https://github.com/Silbercue/public-browser/commit/99df53606796f36472e9fbe9f83f651280be9f72
+
+Public Browser v3.0.0 adds three complementary fail-loud behaviors to a full-Chrome MCP and scripting control layer:
+
+1. A CSS selector matching multiple elements performs no action and returns up to five candidates instead of choosing the first match.
+2. Element-reference numbers are kept per tab and never reused across navigation, reload, or removal. A reference from an earlier document is therefore reported as stale rather than silently resolving to whichever new node inherited its number.
+3. A drag is reported as `Drag not confirmed` when a short post-action probe sees neither the relevant drop nor a nearby DOM/input reaction. The tool explicitly asks for a fresh observation instead of translating dispatch into success.
+
+These mechanisms guard different boundaries. Strict selectors reject ambiguous **intent-to-target binding**. Non-reused references preserve **observed-target identity** across changing page state. Post-action probes qualify **effect confidence** after input dispatch. Conflating any two recreates false success: an unambiguous old reference can still be stale, and correctly dispatched input can still have no observable effect.
+
+The checked-in implementation and tests support the first two contracts: the shared resolver throws before acting on an ambiguous selector, and accessibility-tree tests retire old references while continuing the global counter. The drag implementation is deliberately weaker than an outcome oracle. Its probe watches only the source document for roughly 250 ms; it cannot see later changes, shadow DOM, iframe effects, or pixels on a canvas. Accordingly, absence of a detected reaction is not reported as failure, and detected mutation is not proof that the task's intended state was reached.
+
+This yields a reusable browser-action receipt with at least four fields: target selector/reference, target-generation identity, dispatch status, and independently observed outcome (including observation scope and an explicit unknown state). Retrying an unconfirmed action before refreshing state can duplicate an effect that occurred outside the probe's view.
+
+The release also reports a five-run, 30-task comparison against `agent-browser` with lower median tokens, cost, tool calls, and time. That benchmark is project-authored, runs on the project's own page, and has not been independently reproduced here. It does not establish general efficiency or correctness; the stronger signal is the source-visible distinction between ambiguous target, stale target, dispatched action, and observed effect.
 
 ### Caveats
 
