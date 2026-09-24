@@ -24,6 +24,8 @@ export type {
   TaskAcceptedEvidencePage,
   TaskAcceptedEvidenceNavigation,
   TaskReadOptions,
+  TaskInputObligation,
+  TaskCurrentObligations,
   TaskDetail,
   TaskEventReceipt,
   TaskExecutor,

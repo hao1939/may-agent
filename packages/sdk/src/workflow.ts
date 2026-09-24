@@ -69,6 +69,38 @@ export type TaskReadOptions = {
   acceptedEvidence?: TaskAcceptedEvidenceOptions;
 };
 
+export type TaskInputObligation = {
+  /** Exact retained admission key; no input or attempt state is inferred from it. */
+  key: string;
+  reviewAt?: number;
+  conditionCount: number;
+  correlation: {
+    input:
+      { available: true; id: string; kind: string; status: "pending" | "handling" | "done" } | { available: false };
+    admission:
+      | {
+          available: true;
+          reportAttemptId?: string;
+          reportRevision?: number;
+          resultAttemptId?: string;
+        }
+      | { available: false };
+  };
+};
+
+export type TaskCurrentObligations =
+  | { available: false }
+  | {
+      available: true;
+      /** Authoritative absolute reconsideration deadline retained on the Task. */
+      reviewAt?: number;
+      inputWaits: {
+        items: TaskInputObligation[];
+        maxItems: number;
+        truncated: boolean;
+      };
+    };
+
 export type TaskView = {
   id: string;
   /** Owner ended execution; a prior accepted result alone does not close the Task. */
@@ -85,6 +117,8 @@ export type TaskView = {
 
 /** Exact desired Task detail returned only by an explicitly scoped get. */
 export type TaskDetail = TaskView & {
+  /** Current timing and exact input obligations; Runtime exact reads report availability explicitly. */
+  currentObligations?: TaskCurrentObligations;
   /** Discoverable immutable history; bodies load only through an explicit bounded read option. */
   acceptedEvidence: TaskAcceptedEvidenceNavigation;
   /** Immutable change authority; absent for historical records with no saved provenance. */

@@ -27,6 +27,74 @@ export type RuntimeAppReadOptions = {
   taskStateConfig?: AppTaskContext;
 };
 
+const TASK_INPUT_OBLIGATION_LIMIT = 100;
+
+type CorrelatedInputRow = {
+  id: string;
+  input_kind: string;
+  status: "pending" | "handling" | "done";
+  task_admission_key: string;
+};
+
+function currentTaskObligations(
+  store: AppTaskContext["resourceStore"],
+  resource: NonNullable<TaskTree["resources"]>[string],
+): NonNullable<TaskDetail["currentObligations"]> {
+  const waits = Object.entries(resource.status.inputWaits ?? {}).sort(([left], [right]) => left.localeCompare(right));
+  const selected = waits.slice(0, TASK_INPUT_OBLIGATION_LIMIT);
+  const keys = selected.map(([key]) => key);
+  const admissions = keys.length
+    ? (store.readTaskContext({ taskIds: [], admissionIds: keys }, { childLimit: 0 }).appTaskAdmissions ?? {})
+    : {};
+  const inputRows = keys.length
+    ? (store.db
+        .prepare(
+          `SELECT id, input_kind, status, task_admission_key
+           FROM app_inbox_items
+           WHERE app_id = ? AND task_admission_key IN (${keys.map(() => "?").join(", ")})
+             AND ((status = 'handling' AND waiting_on_kind = 'task' AND waiting_on_id = ?)
+               OR execution_task_id = ?)
+           ORDER BY id`,
+        )
+        .all(store.appId, ...keys, resource.metadata.id, resource.metadata.id) as CorrelatedInputRow[])
+    : [];
+  const inputs = new Map<string, CorrelatedInputRow | null>();
+  for (const row of inputRows) {
+    inputs.set(row.task_admission_key, inputs.has(row.task_admission_key) ? null : row);
+  }
+
+  return {
+    available: true,
+    ...(resource.status.reviewAt !== undefined ? { reviewAt: resource.status.reviewAt } : {}),
+    inputWaits: {
+      maxItems: TASK_INPUT_OBLIGATION_LIMIT,
+      truncated: waits.length > TASK_INPUT_OBLIGATION_LIMIT,
+      items: selected.map(([key, wait]) => {
+        const input = inputs.get(key);
+        const admission = admissions[key];
+        return {
+          key,
+          ...(wait.reviewAt !== undefined ? { reviewAt: wait.reviewAt } : {}),
+          conditionCount: wait.conditions.length,
+          correlation: {
+            input: input
+              ? { available: true as const, id: input.id, kind: input.input_kind, status: input.status }
+              : { available: false as const },
+            admission: admission
+              ? {
+                  available: true as const,
+                  ...(admission.reportAttemptId ? { reportAttemptId: admission.reportAttemptId } : {}),
+                  ...(admission.reportRevision !== undefined ? { reportRevision: admission.reportRevision } : {}),
+                  ...(admission.resultAttemptId ? { resultAttemptId: admission.resultAttemptId } : {}),
+                }
+              : { available: false as const },
+          },
+        };
+      }),
+    },
+  };
+}
+
 export function readRuntimeTaskView(
   opts: Pick<RuntimeAppReadOptions, "taskStateConfig">,
   taskId: string,
@@ -46,6 +114,7 @@ export function readRuntimeTaskView(
   const current = store.readTaskForView(taskId);
   if (current) {
     return resourceTaskDetail(
+      store,
       current.resource,
       current.phase,
       acceptedEvidence,
@@ -99,6 +168,7 @@ function receiptTaskDetail(
 ): TaskDetail {
   return {
     ...receiptTaskView(receipt),
+    currentObligations: { available: false },
     acceptedEvidence,
     parentId: receipt.parentId,
     acceptance: [...receipt.acceptance],
@@ -113,6 +183,7 @@ function receiptTaskDetail(
 }
 
 function resourceTaskDetail(
+  store: AppTaskContext["resourceStore"],
   resource: NonNullable<TaskTree["resources"]>[string],
   phase: NonNullable<TaskTree["resources"]>[string]["status"]["phase"],
   acceptedEvidence: TaskDetail["acceptedEvidence"],
@@ -122,6 +193,7 @@ function resourceTaskDetail(
 ): TaskDetail {
   return {
     ...resourceTaskView(resource, phase, closed),
+    currentObligations: currentTaskObligations(store, resource),
     acceptedEvidence,
     ...(resource.metadata.creator ? { creator: structuredClone(resource.metadata.creator) } : {}),
     ...(acceptedAttempt && acceptedAttempt.acceptedResult
