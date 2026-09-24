@@ -1,8 +1,8 @@
 <ai_context>
-summary: "Canonical overview of the agent protocol landscape: MCP (agent→tool), A2A (agent→agent), AG-UI (agent→frontend), AHP (host→multi-client session state), and practical ACP implementation evidence. Covers what each standardizes, the SDK/ecosystem state, competing protocols, Chinese community sentiment, research findings, and how protocol roadmaps and implementations are splitting transport/tool shells from identity, discovery, and runtime control layers. Current HN discourse sharpens the MCP-versus-CLI choice into a deployment and authority decision; Google's cross-product Workspace search also shows why a read-only tool still needs corpus-level disclosure controls."
-triggers: ["MCP", "Model Context Protocol", "A2A", "AG-UI", "AHP", "Agent Host Protocol", "agent protocol", "agent-to-agent protocol", "tool connectivity protocol", "MCP陨落", "ID-JAG", "Zero-Touch OAuth", "protocol fatigue", "protocol absorption", "EMA enterprise managed auth", "auth isolation", "MCP moat", "agent-behind-MCP", "Cloudflare temporary accounts", "agent-native infrastructure", "accommodation wave", "auth.md", "ephemeral deploy", "stateless MCP", "requestState", "mcp-use v2", "ACP backend rail", "entwurf", "garden id", "progressive discovery", "capability-conditioned discovery", "Ripwire", "mcp-assert", "MCP fuzzing", "fault classification", "MCP versus CLI", "shell authority", "workload identity federation", "DPoP", "MCP roadmap", "Universal Search MCP", "Workspace search", "cross-product search", "read-only disclosure"]
-last_updated: "2026-09-22"
-source_basis: "GitHub trending repos June 2026, XHS Chinese AI community May-June 2026, arXiv briefings June 2026, HN explorations June-Sep 2026 (incl. scan #33 and HN items 49131438, 49198472, 49399591, 49453910, 49779329, and 49794043), arXiv 2606.30317 (MCP Architecture Patterns), scan #262, Simon Willison's stateless MCP write-up (2026-07-31), Manufact's mcp-use v2 stateless-MCP rebuild write-up (2026-07-29), the current GitHub repo junghan0611/entwurf checked 2026-08-06 for ACP/backend-rail implementation evidence, the official MCP roadmap published 2026-08-22, VS Code's first-party Agent Host launch post (2026-08-26), redhat-et/ripwire inspected at commit 5c4235b9befd4cd5b6f9f3a489940d7b79f86520 for capability-conditioned MCP catalog evidence (2026-09-11), blackwell-systems/mcp-assert inspected at commit f2389c6511fdd205bc8732b0529e90eb1d25dd4b for transport-level fuzzing and fault-classification evidence (2026-09-19), Maharshi Patel's MCP critique plus its HN discussion (2026-09-20), and Google's Universal Search MCP documentation (2026-09-18 page update, reviewed 2026-09-22). See source declarations below."
+summary: "Canonical overview of the agent protocol landscape: MCP (agent→tool), A2A (agent→agent), AG-UI (agent→frontend), AHP (host→multi-client session state), and practical ACP implementation evidence. Covers what each standardizes, the SDK/ecosystem state, competing protocols, Chinese community sentiment, research findings, and how protocol roadmaps and implementations are splitting transport/tool shells from identity, discovery, and runtime control layers. Current HN discourse sharpens the MCP-versus-CLI choice into a deployment and authority decision; Google's cross-product Workspace search shows why a read-only tool still needs corpus-level disclosure controls; A2M shows that tool discovery metadata and tool returns form a coupled semantic supply-chain surface."
+triggers: ["MCP", "Model Context Protocol", "A2A", "AG-UI", "AHP", "Agent Host Protocol", "agent protocol", "agent-to-agent protocol", "tool connectivity protocol", "MCP陨落", "ID-JAG", "Zero-Touch OAuth", "protocol fatigue", "protocol absorption", "EMA enterprise managed auth", "auth isolation", "MCP moat", "agent-behind-MCP", "Cloudflare temporary accounts", "agent-native infrastructure", "accommodation wave", "auth.md", "ephemeral deploy", "stateless MCP", "requestState", "mcp-use v2", "ACP backend rail", "entwurf", "garden id", "progressive discovery", "capability-conditioned discovery", "Ripwire", "mcp-assert", "MCP fuzzing", "fault classification", "MCP versus CLI", "shell authority", "workload identity federation", "DPoP", "MCP roadmap", "Universal Search MCP", "Workspace search", "cross-product search", "read-only disclosure", "A2M", "agent hijacking", "malicious tool metadata", "semantic supply chain"]
+last_updated: "2026-09-24"
+source_basis: "GitHub trending repos June 2026, XHS Chinese AI community May-June 2026, arXiv briefings June 2026, HN explorations June-Sep 2026 (incl. scan #33 and HN items 49131438, 49198472, 49399591, 49453910, 49779329, and 49794043), arXiv 2606.30317 (MCP Architecture Patterns), scan #262, Simon Willison's stateless MCP write-up (2026-07-31), Manufact's mcp-use v2 stateless-MCP rebuild write-up (2026-07-29), the current GitHub repo junghan0611/entwurf checked 2026-08-06 for ACP/backend-rail implementation evidence, the official MCP roadmap published 2026-08-22, VS Code's first-party Agent Host launch post (2026-08-26), redhat-et/ripwire inspected at commit 5c4235b9befd4cd5b6f9f3a489940d7b79f86520 for capability-conditioned MCP catalog evidence (2026-09-11), blackwell-systems/mcp-assert inspected at commit f2389c6511fdd205bc8732b0529e90eb1d25dd4b for transport-level fuzzing and fault-classification evidence (2026-09-19), Maharshi Patel's MCP critique plus its HN discussion (2026-09-20), Google's Universal Search MCP documentation (2026-09-18 page update, reviewed 2026-09-22), and the abstract of arXiv 2609.26761v1 (A2M, reviewed 2026-09-24). See source declarations below."
 </ai_context>
 
 # Agent Protocols: MCP, A2A, and the Emerging Stack
@@ -245,6 +245,47 @@ multiple vulnerability types.
   surface), MCP Auth (defense layer), Diagnostic Deficit (#476, server
   observability gaps).
 - **Source**: [2607.07461] SPELLSMITH, arXiv July 2026. Categories: cs.CR, cs.SE.
+
+### A2M: Tool Discovery and Tool Output Form One Attack Chain (arXiv, September 2026)
+
+A2M (Attraction-to-Manipulation) treats MCP agent hijacking as two coupled
+black-box optimization problems. First, an attacker tunes third-party tool
+metadata so semantic tool selection routes the agent to the malicious tool.
+Then the attacker uses execution traces to refine the tool's returned content
+and steer later reasoning or actions. The distinction matters: vetting only a
+tool's implementation or only its output misses the discovery surface that
+puts the tool into the trajectory.
+
+The abstract reports the following LiveMCPBench results for attacks optimized
+and evaluated on GLM-4.6 across four scenarios:
+
+- **93.6%** macro-average malicious-tool invocation rate;
+- **32.4×** the benign weighted-token baseline for cognitive denial of service;
+- **74.4%** mean attack success across information exfiltration, environment
+  integrity compromise, and reasoning derailment.
+
+Without re-optimization, transfer to four other models fell to corresponding
+macro-averages of **63.6%**, **2.7×**, and **24.5%**. That drop is operationally
+important: the paper supports a transferable attack surface, but not a
+model-invariant success rate.
+
+**Design implication:** treat tool metadata and tool returns as one semantic
+supply chain. Admission should bind reviewed metadata to an immutable tool
+revision; runtime policy should separately authorize effects, isolate tool
+execution, and preserve which tool output influenced each consequential action.
+A high tool-selection rate is not itself proof of a completed harmful effect,
+and the abstract does not establish that metadata pinning, isolation, or any
+specific defense defeats A2M.
+
+**Evidence boundary:** this update is based on the v1 abstract, not a full-paper
+or code audit. The abstract does not expose per-model/per-scenario denominators,
+uncertainty, benign-task utility, or the exact success predicates behind the
+reported aggregates.
+
+- **Source:** [arXiv 2609.26761v1](https://arxiv.org/abs/2609.26761v1), Li et al.,
+  accepted by AACL-IJCNLP 2026; abstract reviewed 2026-09-24. The abstract also
+  names the authors' public code repository, which was not inspected in this
+  scan.
 
 ---
 
