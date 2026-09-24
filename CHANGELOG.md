@@ -1,5 +1,21 @@
 # Changelog
 
+## [5.1.0](https://github.com/hao1939/may-agent/compare/v5.0.1...v5.1.0) (2026-09-22)
+
+
+### Features
+
+* **models:** add experimental DeepSeek option ([#224](https://github.com/hao1939/may-agent/issues/224)) ([1c04195](https://github.com/hao1939/may-agent/commit/1c04195bd5ae48f30817bd21b762b01f976ee7c5))
+
+
+### Bug Fixes
+
+* **apps:** expose input contracts and explain rejected requests ([#225](https://github.com/hao1939/may-agent/issues/225)) ([941d003](https://github.com/hao1939/may-agent/commit/941d0036db2c06a1cf4a95b910be687c4385a8a1))
+* **execution:** report the tools available to direct runs ([#223](https://github.com/hao1939/may-agent/issues/223)) ([efddecb](https://github.com/hao1939/may-agent/commit/efddecb4cb9dd5eace619e8783be6ed9cbfe01a9))
+* preserve app input validation diagnostics ([#226](https://github.com/hao1939/may-agent/issues/226)) ([2004991](https://github.com/hao1939/may-agent/commit/20049916b79d2ba2d2265edf5eeb605ff0e59c05))
+* **tasks:** separate completion cleanup from cancellation ([#227](https://github.com/hao1939/may-agent/issues/227)) ([17a7cda](https://github.com/hao1939/may-agent/commit/17a7cdaef016c2d0e4a15daddbf6ca1fe3f0300c))
+* **telegram:** reduce duplicate alerts and distinguish human actions ([#221](https://github.com/hao1939/may-agent/issues/221)) ([1283ea7](https://github.com/hao1939/may-agent/commit/1283ea7ad900aa8f679658b5e61f3db878e58d34))
+
 ## [5.0.1](https://github.com/hao1939/may-agent/compare/v5.0.0...v5.0.1) (2026-09-20)
 
 
