@@ -15,7 +15,11 @@ import { EvidenceStore } from "../../../../../shared/tools/task-evidence.js";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { taskForEvaluationInput } from "../../../app.ts";
+import {
+  taskForEvaluationInput,
+  taskInputForEvent,
+  taskIntentForInput,
+} from "../../../app.ts";
 import {
   assessmentContext,
   claimSemanticAllowance,
@@ -1207,6 +1211,106 @@ describe("Task outcome review", () => {
       "review-disposition:insufficient-evidence",
     );
     expect(calls).toBe(0);
+  });
+
+  test("returns an automatic acquisition failure through the existing owner-review route", async () => {
+    const root = mkdtempSync(join(tmpdir(), "task-review-acquisition-"));
+    const emitted: Record<string, unknown>[] = [];
+    let modelCalls = 0;
+    const result = await reviewTaskOutcome(
+      createTestAppWorkflowContext({
+        input: { appId, taskId, automatic: true },
+        reconciliation: reconciliation(),
+        emit: async (value) => {
+          emitted.push(value as Record<string, unknown>);
+        },
+        callAgent: async () => {
+          modelCalls += 1;
+          throw new Error("must not call");
+        },
+      }),
+      async (command) => {
+        if (command.type === "apps.list")
+          throw new Error("catalog temporarily unavailable");
+        return reader()(command);
+      },
+      root,
+    );
+
+    expect(admitTaskReconcileResult(result.output).ok).toBeTrue();
+    expect(modelCalls).toBe(0);
+    expect(listTaskReports(root)).toEqual([]);
+    expect(emitted).toHaveLength(1);
+    expect(emitted[0]).toMatchObject({
+      type: "evaluation.review_failed",
+      data: {
+        reason: "automatic-evidence-acquisition-failed",
+        stage: "subject-evidence-acquisition",
+        appId,
+        taskId,
+        error: "catalog temporarily unavailable",
+      },
+      target: { appId: "evaluation", project: "evaluation" },
+    });
+
+    const ownerInput = taskInputForEvent(
+      emitted[0] as Parameters<typeof taskInputForEvent>[0],
+    );
+    expect(ownerInput).toMatchObject({
+      kind: "owner-review",
+      data: {
+        reason: "review-failed",
+        reviewFailure: {
+          reason: "automatic-evidence-acquisition-failed",
+          error: "catalog temporarily unavailable",
+        },
+      },
+    });
+    expect(taskIntentForInput(ownerInput!)).toMatchObject({
+      id: "runtime/compat/owner-review",
+      input: {
+        scope: "evaluation.app",
+        reason: "review-failed",
+        reviewFailure: {
+          stage: "subject-evidence-acquisition",
+          appId,
+          taskId,
+          error: "catalog temporarily unavailable",
+        },
+      },
+    });
+  });
+
+  test("keeps explicit and legitimate neutral evidence failures off the automatic owner route", async () => {
+    for (const input of [
+      { appId, taskId },
+      { appId: "evaluation", taskId, automatic: true as const },
+    ]) {
+      const emitted: Record<string, unknown>[] = [];
+      let calls = 0;
+      const result = await reviewTaskOutcome(
+        createTestAppWorkflowContext({
+          input,
+          emit: async (value) => emitted.push(value as Record<string, unknown>),
+          callAgent: async () => {
+            calls += 1;
+            throw new Error("must not call");
+          },
+        }),
+        input.appId === "evaluation"
+          ? reader()
+          : async () => {
+              throw new Error("catalog temporarily unavailable");
+            },
+      );
+      expect(factsOf(result)).toContain(
+        input.appId === "evaluation"
+          ? "review-disposition:excluded"
+          : "review-disposition:insufficient-evidence",
+      );
+      expect(calls).toBe(0);
+      expect(emitted).toEqual([]);
+    }
   });
 
   test("exclusion and evidence failures do not call the evaluator", async () => {

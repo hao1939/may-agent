@@ -70,6 +70,8 @@ export type SubjectEvidence = {
   taskId: string;
   evidenceHash?: string;
   task?: Record<string, unknown>;
+  /** The canonical read failed, rather than reaching a supported neutral exclusion. */
+  acquisitionFailed?: boolean;
 };
 
 function text(value: unknown): string {
@@ -590,6 +592,7 @@ export async function readSubjectTask(
       reason: error instanceof Error ? error.message : String(error),
       appId,
       taskId,
+      acquisitionFailed: true,
     };
   }
 }

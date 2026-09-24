@@ -925,17 +925,27 @@ describe("evaluation fact admission", () => {
     ).toBeNull();
   });
 
-  test("turns review failures into evaluation's own project-health request", () => {
-    expect(
-      taskInputForEvent(
-        event("evaluation.review_failed", {
-          sessionId: "s-1",
-          reason: "artifact invalid",
-        }),
-      ),
-    ).toMatchObject({
+  test("turns review failures into evaluation's owner request with exact failure context", () => {
+    const input = taskInputForEvent(
+      event("evaluation.review_failed", {
+        sessionId: "s-1",
+        reason: "artifact invalid",
+      }),
+    );
+    expect(input).toMatchObject({
       kind: "owner-review",
-      data: { reason: "review-failed" },
+      data: {
+        reason: "review-failed",
+        reviewFailure: { sessionId: "s-1", reason: "artifact invalid" },
+      },
+    });
+    expect(taskIntentForInput(input!)).toMatchObject({
+      id: "runtime/compat/owner-review",
+      input: {
+        scope: "evaluation.app",
+        reason: "review-failed",
+        reviewFailure: { sessionId: "s-1", reason: "artifact invalid" },
+      },
     });
   });
 });
@@ -980,8 +990,11 @@ describe("evaluation task policy", () => {
       evidenceHash: "b".repeat(64),
     });
     const ongoing = review({ assessmentPurpose: "ongoing" });
+    const automatic = review({ automatic: true });
 
     expect(omittedPurpose).toEqual(explicitOutcome);
+    expect(automatic?.id).not.toBe(omittedPurpose?.id);
+    expect(automatic?.input).toMatchObject({ automatic: true });
     expect(full).toEqual(duplicate);
     expect(review({ taskId: "goal/example" })?.id).not.toBe(
       review({ taskId: "goal-example-96ccaaaa0f4c" })?.id,
@@ -1193,6 +1206,7 @@ describe("evaluation task policy", () => {
             appId: "may",
             taskId: "goal/example",
             assessmentPurpose: "ongoing",
+            automatic: true,
           },
         });
       }
@@ -1247,6 +1261,7 @@ describe("evaluation task policy", () => {
           appId: "may",
           taskId: "goal/example",
           assessmentPurpose: "ongoing",
+          automatic: true,
           reviewer: "evaluator-deepseek",
         },
       });
@@ -1278,6 +1293,7 @@ describe("evaluation task policy", () => {
         subjectGeneration: 7,
         evidenceHash: "b".repeat(64),
         assessmentPurpose: "ongoing",
+        automatic: true,
       },
     });
     expect(taskIntentForInput(input!)).toMatchObject({
@@ -1286,6 +1302,7 @@ describe("evaluation task policy", () => {
         subjectGeneration: 7,
         evidenceHash: "b".repeat(64),
         assessmentPurpose: "ongoing",
+        automatic: true,
       },
     });
   });
