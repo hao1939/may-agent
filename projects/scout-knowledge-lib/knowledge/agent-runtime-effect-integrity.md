@@ -948,16 +948,16 @@ Moved to [the companion section](./agent-runtime-unattended-execution-and-replay
 Moved to [the companion section](./agent-runtime-unattended-execution-and-replay.md#a-cloneable-vm-template-is-also-an-identity-factory--lingcage-github-september-2026).
 
 ### Cut-Point Replay Turns Incidents Into Boundary-Explicit Regression Tests — Chronicle (arXiv, September 2026)
-Moved to [the companion section](./agent-runtime-unattended-execution-and-replay.md#cut-point-replay-turns-incidents-into-boundary-explicit-regression-tests--chronicle-arxiv-september-2026).
+Moved to [the replay companion section](./agent-runtime-replay-evidence-and-boundaries.md#cut-point-replay-turns-incidents-into-boundary-explicit-regression-tests--chronicle-arxiv-september-2026).
 
 ### Lossy Interaction Records Can Make Candidate Replay Lie — Mutagen (GitHub, September 2026)
-Moved to [the companion section](./agent-runtime-unattended-execution-and-replay.md#lossy-interaction-records-can-make-candidate-replay-lie--mutagen-github-september-2026).
+Moved to [the replay companion section](./agent-runtime-replay-evidence-and-boundaries.md#lossy-interaction-records-can-make-candidate-replay-lie--mutagen-github-september-2026).
 
 ### Replay Consistency Is Not Effect Completeness — Ovo (GitHub, August 2026)
-Moved to [the companion section](./agent-runtime-unattended-execution-and-replay.md#replay-consistency-is-not-effect-completeness--ovo-github-august-2026).
+Moved to [the replay companion section](./agent-runtime-replay-evidence-and-boundaries.md#replay-consistency-is-not-effect-completeness--ovo-github-august-2026).
 
 ### Offline Model Replay Still Re-executes Tool Effects — OrcaReplay (GitHub, September 2026)
-Moved to [the companion section](./agent-runtime-unattended-execution-and-replay.md#offline-model-replay-still-re-executes-tool-effects--orcareplay-github-september-2026).
+Moved to [the replay companion section](./agent-runtime-replay-evidence-and-boundaries.md#offline-model-replay-still-re-executes-tool-effects--orcareplay-github-september-2026).
 
 ### A Local Marker Can Trade Duplicate Effects for Missing Effects — LetItLoop (HN, August 2026)
 Moved to [the companion section](./agent-runtime-unattended-execution-and-replay.md#a-local-marker-can-trade-duplicate-effects-for-missing-effects--letitloop-hn-august-2026).
