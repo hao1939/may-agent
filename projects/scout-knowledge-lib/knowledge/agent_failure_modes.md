@@ -1,8 +1,8 @@
 <ai_context>
-summary: "Agent failure modes observed in production and research: context overflow, tool misuse, infinite loops, status errors, error-lifecycle confusion, and retries that reproduce latent or semantic faults. Covers symptoms, causes, evidence limits, and mitigations, including controlled replay for separating causal repair from stochastic resampling."
-triggers: ["failure mode", "agent failure", "blocked", "context overflow", "tool hallucination", "infinite loop", "scope confusion", "false blocked", "status misclassification", "blind retry", "cascade radius", "OrchestraBench", "trusted state", "SymTrace", "SymFail", "controlled replay", "stochastic repair", "intervention anchor"]
-last_updated: "2026-08-27"
-source_basis: "Original: May 2024 community discourse synthesis. Updated 2026-06-22 with scope-boundary confusion and infrastructure status-misclassification evidence; 2026-08-07 with TrajDebug's error-lifecycle model; 2026-08-09 with OrchestraBench's controlled retry, cascade, and trusted-state probes; and 2026-08-27 with SymTrace/SymFail's controlled comparison of replay, rerun, and symptom-driven intervention."
+summary: "Agent failure modes observed in production and research: context overflow, tool misuse, infinite loops, status errors, error-lifecycle confusion, retries that reproduce latent or semantic faults, and incorrect in-context examples that overpower explicit skill rules. Covers symptoms, causes, evidence limits, and mitigations, including controlled replay for separating causal repair from stochastic resampling."
+triggers: ["failure mode", "agent failure", "blocked", "context overflow", "tool hallucination", "infinite loop", "scope confusion", "false blocked", "status misclassification", "blind retry", "cascade radius", "OrchestraBench", "trusted state", "SymTrace", "SymFail", "controlled replay", "stochastic repair", "intervention anchor", "skill rule", "conflicting history", "bad examples", "session history"]
+last_updated: "2026-09-25"
+source_basis: "Original: May 2024 community discourse synthesis. Updated 2026-06-22 with scope-boundary confusion and infrastructure status-misclassification evidence; 2026-08-07 with TrajDebug's error-lifecycle model; 2026-08-09 with OrchestraBench's controlled retry, cascade, and trusted-state probes; 2026-08-27 with SymTrace/SymFail's controlled comparison of replay, rerun, and symptom-driven intervention; and 2026-09-25 with a controlled Qwen3 8B demonstration-history experiment surfaced on Hacker News."
 </ai_context>
 
 # AI Agent Failure Modes & Solutions (Research Synthesis)
@@ -262,3 +262,49 @@ not model or environmental variation after it.
 Source: https://arxiv.org/abs/2608.25920  
 Source: https://arxiv.org/html/2608.25920  
 Source: https://export.arxiv.org/api/query?id_list=2608.25920
+
+### 10. Incorrect demonstrations overpower an explicit skill rule (September 2026)
+
+A small controlled experiment surfaced on Hacker News isolates a more specific
+form of context pollution: earlier assistant outputs can act as demonstrations
+that outweigh a skill file's explicit format rule. The author gave Qwen3 8B a
+skill requiring one-line conventional commit messages, then varied only the
+preceding session history. Five final requests were tested after 0, 2, 4, 6, 8,
+10, 15, or 20 prior exchanges under three conditions: compliant examples,
+noncompliant examples with multi-line bodies, or noncompliant examples followed
+by an immediate correction and compliant retry.
+
+In the conflicting-history condition, **2 of 5** final requests violated the
+one-line rule after two prior exchanges, **3 of 5** after four, and **5 of 5**
+after six; once a request began failing, it continued to fail at every longer
+history length tested. The equally long clean-history control had no violations
+at any of the eight lengths. That contrast is more informative than a generic
+"long context hurts" claim: in this setup, the content of prior assistant
+examples, not history length by itself, predicted the failure.
+
+Corrections reduced but did not erase the effect. All five corrected-history
+requests remained compliant through ten prior exchanges, but one failed at 15
+and another at 20. An in-chat correction therefore provides useful local
+counterevidence, yet leaving the original bad demonstration in the transcript
+can preserve the competing pattern.
+
+**Operational implication:** treat a known-bad assistant output as contaminated
+context, not merely a completed mistake. For machine-checkable rules, validate
+the output outside the model and reject it before it becomes an accepted
+example. Test skill changes in a fresh session as well as a realistic retained
+session, and prefer restarting or pruning after repeated format violations over
+assuming that a verbal correction has neutralized them. This sharpens the
+OrchestraBench result above: "context pollution" can be caused by the agent's
+own visible outputs even when the authoritative instruction remains present.
+
+**Evidence limits:** This is one author's reproducible demonstration using one
+local model (`qwen3:8b`), one simple formatting rule, five semantically similar
+commit-message requests, and deterministic string-based scoring. Scout read the
+full article and HN item but did not inspect the companion notebook or rerun the
+experiment. It supports a mechanism and a regression-test pattern, not a
+cross-model failure rate or evidence that every skill type behaves similarly.
+The HN submission had two points and no comments at retrieval, so community
+reception adds no corroboration.
+
+Source: https://codecut.ai/agent-skills-bad-session-history/  
+HN: https://news.ycombinator.com/item?id=49839869
