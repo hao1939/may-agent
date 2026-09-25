@@ -1,8 +1,8 @@
 <ai_context>
-summary: "Agent-facing evaluation needs separable layers. Sanity's design-system harness shows that production assistance can mask documentation failures; Phyll adds a complementary UX case where source-code heuristics, rendered-page measurements, and first-job trajectories answer different questions. Keep each layer's evidence and delta visible rather than collapsing them into one success score."
-triggers: ["design system agent eval", "agent-facing documentation", "documentation regression", "code chunks for agents", "deterministic lint agent", "assistance masks documentation failure", "Sanity UI eval", "UX review agent", "task trajectory evaluation", "Phyll"]
-last_updated: "2026-09-24"
-source_basis: "HN item 49453117, Sanity's linked engineering report, and the open-source design-system-agent-tester README were inspected. Follow-up: HN item 49827601 plus Phyll's repository metadata, README, recursive tree, and checked-in example report at commit 544a0358d24167ec1192b5291886ee59150561c7. All outcomes are author-reported or author-constructed; neither system received independent evaluation in this review."
+summary: "Agent-facing design systems need separable evaluation layers and a stateful collaboration contract. Sanity shows that production assistance can mask documentation failures; Phyll separates source, rendered-state, and task-path evidence; Proxima Forma shows why a shared editable canvas also needs scoped agent access, revision checks, atomic edits, and comment-state handoff."
+triggers: ["design system agent eval", "agent-facing documentation", "documentation regression", "code chunks for agents", "deterministic lint agent", "assistance masks documentation failure", "Sanity UI eval", "UX review agent", "task trajectory evaluation", "Phyll", "agent design canvas", "editable agent design", "design revision conflict", "Proxima Forma"]
+last_updated: "2026-09-25"
+source_basis: "HN item 49453117, Sanity's linked engineering report, and the open-source design-system-agent-tester README were inspected. Follow-ups: HN item 49827601 plus Phyll's repository metadata, README, recursive tree, and checked-in example report at commit 544a0358d24167ec1192b5291886ee59150561c7; HN item 49842063 plus Proxima Forma's landing page, getting-started documentation, custom-connector page, and changelog v0.1/v0.2. All outcomes are author-reported or author-constructed; none of the systems received independent evaluation in this review."
 </ai_context>
 
 # Separate knowledge-interface tests from assisted-production tests
@@ -54,6 +54,29 @@ The checked-in Replyloop example shows why these signals should not be collapsed
 
 Keep the three scores and artifacts separable. A source-level “AI tell index” is a heuristic conformance measure, not proof that a task fails; task completion alone can hide contrast, focus, or responsive defects; and screenshots alone do not establish that controls work. Fixes should be evaluated against the affected layer and then replayed on the full task path.
 
+## Follow-up: an editable design canvas is also a concurrency and authority contract
+
+- **Source:** https://news.ycombinator.com/item?id=49842063
+- **Source:** https://proximaforma.com/
+- **Source:** https://proximaforma.com/docs
+- **Source:** https://proximaforma.com/changelog
+- **Tags:** design-collaboration, shared-artifact, MCP, optimistic-concurrency, scoped-access
+
+Proxima Forma's HN launch describes the problem as replacing screenshot handoffs with a design representation that agents can read and humans can continue editing. Its current first-party documentation makes that representation more concrete: one workspace retains nested layers, components, project revisions, comments, replies, comment status, and activity; agents connect through MCP or a REST API; and edits remain visible on the same canvas rather than returning only a flattened image.
+
+The more reusable signal is that **a shared editable artifact needs collaboration semantics, not just a machine-readable format**. The documented local release uses atomic editing batches and rejects stale revisions. The getting-started flow tells an agent to read the latest revision, reply to feedback, and mark handled comments; when another edit wins, the agent must reread and retry its intended change against the latest revision. Agent access defaults to one canvas with design-and-comment permission for 30 days, while the later changelog adds key expiry and revocation plus separate view-only and commenting invitations.
+
+That yields a compact contract for human-agent creative work:
+
+1. **Structured artifact:** preserve editable objects, hierarchy, and properties rather than only rendered pixels.
+2. **Revision identity:** bind every read and proposed mutation to a specific project revision.
+3. **Conflict behavior:** reject stale writes, reread current state, and require the agent to re-express the intended delta; do not silently overwrite.
+4. **Review state:** retain comments, replies, locations, and resolution status beside the artifact so feedback is not reconstructed from chat history.
+5. **Scoped authority:** distinguish viewing, commenting, and design mutation; expire and revoke agent credentials independently of the project.
+6. **Evidence after mutation:** render and inspect the resulting design as a separate verification layer, because a successfully admitted structural edit does not establish visual quality.
+
+This extends the earlier evaluation ladder rather than replacing it. Typed design state improves addressability and replay, while screenshots and task paths still provide independent rendered and behavioral evidence. Conversely, a visually acceptable screenshot cannot prove which revision an agent changed, whether concurrent human work was overwritten, or whether feedback was actually resolved.
+
 ## Evidence limits
 
 These are Sanity's own measurements of an evolving Sanity library with an author-built harness, not an independent benchmark. The article does not publish raw per-run outputs, confidence intervals, prompt snapshots, package revisions, or a preregistered analysis. It also changes the Haiku label between sections (4.5 and 4.6), and comparisons between the “current” and “new” UI can conflate library API changes, documentation changes, and assistance changes.
@@ -61,3 +84,5 @@ These are Sanity's own measurements of an evolving Sanity library with an author
 The harness currently supports Claude models and executes generated code plus package installs, so its own README recommends sandboxing. Metrics such as successful build, axe violations, inline-style counts, and pixel diffs are useful but do not fully measure interface quality. The reported n=30 conditions show directional evidence for this specific setup; they do not establish universal effect sizes for JSON documentation, chunks, or linting.
 
 Phyll is also author-built evidence from a repository created the day of the HN submission. Scout inspected repository metadata, README, the recursive tree, the rule catalog, and one checked-in example report, but did not install or execute the scanner, browser connector, hosted scoring engine, or fix workflow. The before/after apps and expected reports are constructed by the product author, not an independent comparison; they demonstrate artifact structure, not measured effectiveness on external applications.
+
+Proxima Forma evidence is likewise first-party documentation and a launch post with no HN comments at inspection time. Scout did not create an account, connect an agent, inspect the underlying repository, or exercise revision conflicts, permission expiry, revocation, export fidelity, or concurrent editing. The documented controls support a collaboration-contract pattern; they do not establish operational reliability, security, visual quality, or adoption.
