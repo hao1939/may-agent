@@ -17,6 +17,7 @@ import { DbWriter } from "../../../lib/db-writer.js";
 import { openDatabase } from "../../../lib/db.js";
 import { EVENT_ROW_ID, EventBus, type AgentEvent } from "../events/bus.js";
 import { loadPersistedEvent } from "../events/persisted.js";
+import { createEventInterface } from "../events/interface.js";
 import { startAppInboxRuntime } from "../../composition/app-inbox-runtime.js";
 import { appInputFeedbackEvent } from "../inbox/input-result.js";
 import { AppInboxHost } from "../inbox/app-inbox-host.js";
@@ -3101,6 +3102,360 @@ describe("canonical App task runtime", () => {
       host!.close();
     },
   );
+
+  it("automatically recovers an exact saved answer through owner due-review and waiting settlement", async () => {
+    const runTrial = async (automaticRecovery: boolean) => {
+      const f = fixture();
+      const persistDir = join(f.root, "state");
+      const bus = eventBus();
+      const writer = new DbWriter(persistDir);
+      let droppedNotifications = 0;
+      let notificationLostAt = 0;
+      bus.setPersistenceSubscriber((event) => {
+        if (
+          event.type === "app.dependency.updated" &&
+          event.data.status === "done" &&
+          (event.data.result as { score?: number } | undefined)?.score === 0.92
+        ) {
+          droppedNotifications += 1;
+          notificationLostAt = Date.now();
+          throw new Error("Fixture deliberately lost the original completion notification before journaling");
+        }
+        writer.handler(event);
+      });
+      bus.setDeliveryRecorder(writer.recordDelivery);
+
+      let releaseFirstReview = () => {};
+      const firstReviewGate = new Promise<void>((resolve) => {
+        releaseFirstReview = resolve;
+      });
+      let reviewerCalls = 0;
+      let unrelatedCalls = 0;
+      const ownerInputs: Parameters<TaskExecutor>[0]["events"][] = [];
+      const ownerDispatches: Array<{ at: number; eventTypes: string[] }> = [];
+      let executorReturnedAt = 0;
+      let laterAnswerSavedAt = 0;
+      const app = defineApp({
+        ...definition(),
+        task: ({ input }) => {
+          const kind = input.kind;
+          return {
+            kind: "desired",
+            intent: {
+              id: kind === "owner" ? "work/owner" : kind === "unrelated" ? "work/unrelated" : "work/reviewer",
+              parentId: "operations",
+              outcome:
+                kind === "owner"
+                  ? "Judge the first sample"
+                  : kind === "unrelated"
+                    ? "Wait for an unrelated fact"
+                    : "Review the supplied sample",
+              acceptance: [kind === "owner" ? "Use the exact requested review" : "Return the requested evidence"],
+              executor: kind === "owner" ? "owner" : kind === "unrelated" ? "unrelated" : "reviewer",
+            },
+          };
+        },
+      });
+      const registry = new AppRegistry(async () => [{ appDir: f.appDir, definition: app }]);
+      await registry.reload();
+      const { installed } = await installCoreTaskRuntimes({
+        ...options(f, bus),
+        appRegistrySnapshot: registry.snapshot(),
+        executors: {
+          owner: async (attempt) => {
+            ownerInputs.push(structuredClone(attempt.events));
+            ownerDispatches.push({ at: Date.now(), eventTypes: attempt.events.items.map((item) => item.event.type) });
+            const answer = attempt.events.items.find(({ event }) => event.type === "app.dependency.updated");
+            if (answer) {
+              expect(answer.event.data).toMatchObject({
+                kind: "app",
+                status: "done",
+                response: "First sample: 0.92",
+                result: { score: 0.92 },
+                facts: ["sample:1"],
+              });
+              executorReturnedAt = Date.now();
+              return {
+                state: "converged",
+                summary: "Reviewed the original saved answer",
+                facts: ["sample:1"],
+                result: { acceptedScore: 0.92 },
+              };
+            }
+            return {
+              state: "waiting",
+              summary: "Waiting for the exact first review",
+              facts: [],
+              dependencies: [{ id: "review", appId: "sample", input: { kind: "review", data: { sample: 1 } } }],
+              reviewAt: Date.now() + 5_000,
+            };
+          },
+          reviewer: async () => {
+            reviewerCalls += 1;
+            if (reviewerCalls === 1) await firstReviewGate;
+            return {
+              state: "converged",
+              summary: reviewerCalls === 1 ? "Reviewed first sample" : "Reviewed later sample",
+              response: reviewerCalls === 1 ? "First sample: 0.92" : "Later sample: 0.50",
+              result: { score: reviewerCalls === 1 ? 0.92 : 0.5 },
+              facts: [`sample:${reviewerCalls}`],
+            };
+          },
+          unrelated: async () => {
+            unrelatedCalls += 1;
+            return {
+              state: "waiting",
+              summary: "Waiting for an unrelated fact",
+              facts: [],
+              conditions: [
+                {
+                  id: "independent-obligation",
+                  type: "sample.independent",
+                  subject: "sample:independent",
+                  expected: true,
+                  owner: "app:sample",
+                  reviewAfterMs: 300_000,
+                },
+              ],
+            };
+          },
+        },
+      });
+      const tasks = createAppTaskCapability({ bus });
+      const inbox = await startAppInboxRuntime({
+        registry,
+        db: getDb(persistDir),
+        bus,
+        attachTask: (input) => tasks.attach(input),
+        readDependency: (input) => tasks.readDependency(input),
+        scanIntervalMs: 60_000,
+      });
+      await inbox.start();
+      const events = createEventInterface({
+        bus,
+        db: getDb(persistDir),
+        hasApp: (id) => inbox.host.hasApp(id),
+        validateAppInput: (id, input) => inbox.host.assertAcceptsInput(id, input),
+        hasAgent: () => false,
+        hasSession: () => false,
+      });
+      const admit = (input: {
+        appId: string;
+        idempotencyKey: string;
+        source: { kind: "system"; id: string };
+        input: { kind: string; data: unknown };
+      }) =>
+        events.publish(
+          {
+            type: "app.input.requested",
+            target: { appId: input.appId },
+            idempotencyKey: input.idempotencyKey,
+            data: { input: input.input },
+          },
+          { source: "control-socket", inputSource: input.source },
+        );
+      const waitFor = async (description: string, predicate: () => boolean, timeoutMs = 15_000) => {
+        const deadline = performance.now() + timeoutMs;
+        while (!predicate() && performance.now() < deadline) await Bun.sleep(10);
+        if (!predicate())
+          console.info(
+            "automatic-recovery-timeout",
+            description,
+            listAppInboxItems(getDb(persistDir)),
+            readTaskSnapshot(config),
+          );
+        expect(predicate(), `Timed out waiting for ${description}`).toBeTrue();
+      };
+      const admissionTimes: Record<string, number> = {};
+      const recoveryScans: Array<{ at: number; taskIds: string[] }> = [];
+      const config = loadedTaskConfig(f);
+      const source = installed[0]!.resourceStore;
+      const listRecoveryCandidates = source.listRecoveryCandidates.bind(source);
+      source.listRecoveryCandidates = ((...args: Parameters<typeof source.listRecoveryCandidates>) => {
+        const page = listRecoveryCandidates(...args);
+        recoveryScans.push({ at: Date.now(), taskIds: page.items.map((item) => item.taskId) });
+        return automaticRecovery ? page : { ...page, items: [] };
+      }) as typeof source.listRecoveryCandidates;
+
+      try {
+        admissionTimes.unrelated = Date.now();
+        admit({
+          appId: "sample",
+          idempotencyKey: `automatic-recovery:unrelated:${automaticRecovery}`,
+          source: { kind: "system", id: "fixture" },
+          input: { kind: "unrelated", data: {} },
+        });
+        await waitFor(
+          "the independent obligation",
+          () => config.resourceStore.readTask("work/unrelated")?.status.phase === "waiting",
+        );
+        const unrelatedBefore = structuredClone(config.resourceStore.readTask("work/unrelated"));
+        const unrelatedConditionsBefore = structuredClone(config.resourceStore.readTaskConditions("work/unrelated"));
+
+        admissionTimes.owner = Date.now();
+        admit({
+          appId: "sample",
+          idempotencyKey: `automatic-recovery:owner:${automaticRecovery}`,
+          source: { kind: "system", id: "fixture" },
+          input: { kind: "owner", data: {} },
+        });
+        await waitFor(
+          "the owner wait and blocked producer",
+          () => config.resourceStore.readTask("work/owner")?.status.phase === "waiting" && reviewerCalls === 1,
+        );
+        const originalRequest = listAppInboxItems(getDb(persistDir)).find(
+          (item) => item.source.kind === "app" && item.input.kind === "review",
+        );
+        expect(originalRequest).toBeDefined();
+
+        releaseFirstReview();
+        await waitFor(
+          "the exact producer result to be saved despite notification loss",
+          () => inbox.host.get(originalRequest!.id)?.status === "done" && droppedNotifications === 1,
+        );
+        expect(
+          getDb(persistDir)
+            .prepare(
+              "SELECT COUNT(*) AS n FROM events WHERE event_type = 'app.dependency.updated' AND json_extract(data, '$.id') = ?",
+            )
+            .get(originalRequest!.id),
+        ).toEqual({ n: 0 });
+
+        admissionTimes.later = Date.now();
+        admit({
+          appId: "sample",
+          idempotencyKey: `automatic-recovery:later:${automaticRecovery}`,
+          source: { kind: "system", id: "fixture" },
+          input: { kind: "review", data: { sample: 2 } },
+        });
+        await waitFor("the newer destination answer", () =>
+          listAppInboxItems(getDb(persistDir)).some(
+            (item) =>
+              item.source.kind === "system" &&
+              item.input.kind === "review" &&
+              item.status === "done" &&
+              (item.result?.result as { score?: number } | undefined)?.score === 0.5,
+          ),
+        );
+        const laterRequest = listAppInboxItems(getDb(persistDir)).find(
+          (item) => item.source.kind === "system" && item.input.kind === "review",
+        )!;
+        expect(laterRequest.completedAt).toBeDefined();
+        laterAnswerSavedAt = laterRequest.completedAt!;
+
+        if (automaticRecovery) {
+          await waitFor(
+            "automatic due-query, exact saved-answer replay, and accepted owner result",
+            () =>
+              readAcceptedRuntimeAttempt(config, "work/owner")?.acceptedResult?.summary ===
+              "Reviewed the original saved answer",
+          );
+          const exactAnswer = ownerInputs
+            .flatMap((batch) => batch.items)
+            .find(({ event }) => event.type === "app.dependency.updated")?.event.data;
+          expect(exactAnswer).toMatchObject({ id: originalRequest!.id, result: { score: 0.92 } });
+          expect(exactAnswer?.id).not.toBe(laterRequest.id);
+          const dueQuery = recoveryScans.find(
+            (scan) => scan.at >= notificationLostAt && scan.taskIds.includes("work/owner"),
+          );
+          const dueReviewDispatch = ownerDispatches.find(
+            (dispatch) => dispatch.at >= notificationLostAt && !dispatch.eventTypes.includes("app.dependency.updated"),
+          );
+          const exactAnswerDispatch = ownerDispatches.find(
+            (dispatch) => dispatch.at >= notificationLostAt && dispatch.eventTypes.includes("app.dependency.updated"),
+          );
+          const acceptedAttempt = readAcceptedRuntimeAttempt(config, "work/owner");
+          expect(dueQuery).toBeDefined();
+          expect(dueReviewDispatch).toBeDefined();
+          expect(exactAnswerDispatch).toBeDefined();
+          expect(dueQuery!.at).toBeLessThanOrEqual(dueReviewDispatch!.at);
+          expect(dueReviewDispatch!.at).toBeLessThanOrEqual(exactAnswerDispatch!.at);
+          expect(laterAnswerSavedAt).toBeLessThanOrEqual(exactAnswerDispatch!.at);
+          expect(exactAnswerDispatch!.at).toBeLessThanOrEqual(executorReturnedAt);
+          expect(acceptedAttempt?.acceptedResult).toMatchObject({
+            state: "converged",
+            result: { acceptedScore: 0.92 },
+          });
+          expect(acceptedAttempt?.metadata.id).toBe(
+            config.resourceStore.readTask("work/owner")?.status.observedAttemptId,
+          );
+          expect(acceptedAttempt?.finishedAt).toBeDefined();
+          const acceptedPersistedAt = Date.parse(acceptedAttempt!.finishedAt!);
+          expect(acceptedPersistedAt).toBeGreaterThanOrEqual(executorReturnedAt);
+          expect(laterAnswerSavedAt).toBeLessThanOrEqual(acceptedPersistedAt);
+          expect(config.resourceStore.readTaskConditions("work/owner")).toEqual([]);
+          const storedOwner = config.resourceStore.readTask("work/owner");
+          expect(storedOwner?.status.reviewAt).toBeUndefined();
+          expect(storedOwner?.status.executionRetryAt).toBeUndefined();
+          expect(
+            getDb(persistDir)
+              .prepare("SELECT next_check_at FROM app_tasks WHERE app_id = ? AND task_id = ?")
+              .get("sample", "work/owner"),
+          ).toEqual({ next_check_at: null });
+          expect(reviewerCalls).toBe(2);
+          expect(unrelatedCalls).toBe(1);
+          expect(config.resourceStore.readTask("work/unrelated")).toEqual(unrelatedBefore);
+          expect(config.resourceStore.readTaskConditions("work/unrelated")).toEqual(unrelatedConditionsBefore);
+          const settledCounts = { owner: ownerInputs.length, reviewer: reviewerCalls, unrelated: unrelatedCalls };
+          await Bun.sleep(1_400);
+          expect({ owner: ownerInputs.length, reviewer: reviewerCalls, unrelated: unrelatedCalls }).toEqual(
+            settledCounts,
+          );
+          console.info(
+            "automatic-recovery-evidence",
+            JSON.stringify({
+              automaticRecovery,
+              taskIds: { owner: "work/owner", producer: "work/reviewer", unrelated: "work/unrelated" },
+              requestIds: { original: originalRequest!.id, later: laterRequest.id },
+              admissionTimes,
+              notificationLostAt,
+              recoveryScans: recoveryScans.filter((scan) => scan.at >= notificationLostAt),
+              ownerDispatches,
+              route:
+                "installed indexed scheduler nearest-due query -> owner reviewAt dispatch -> waiting settlement recovery",
+              scope:
+                "in-process installed Task runtime with deterministic executors and a real timer; not default dependency timing, native agent judgment, restart, or OS/daemon proof",
+              executorReturnedAt,
+              acceptedAttempt: {
+                id: acceptedAttempt!.metadata.id,
+                finishedAt: acceptedAttempt!.finishedAt,
+              },
+              laterAnswerSavedAt,
+            }),
+          );
+        } else {
+          await waitFor("the disconnected nearest-due query to select the owner", () =>
+            recoveryScans.some((scan) => scan.at >= notificationLostAt && scan.taskIds.includes("work/owner")),
+          );
+          await Bun.sleep(1_400);
+          expect(readAcceptedRuntimeAttempt(config, "work/owner")?.acceptedResult?.summary).not.toBe(
+            "Reviewed the original saved answer",
+          );
+          expect(ownerInputs).toHaveLength(1);
+          expect(config.resourceStore.readTask("work/unrelated")).toEqual(unrelatedBefore);
+          expect(config.resourceStore.readTaskConditions("work/unrelated")).toEqual(unrelatedConditionsBefore);
+          console.info(
+            "automatic-recovery-control",
+            JSON.stringify({
+              automaticRecovery,
+              originalRequestId: originalRequest!.id,
+              notificationLostAt,
+              suppressedCandidates: recoveryScans.filter((scan) => scan.at >= notificationLostAt),
+              ownerDispatches,
+            }),
+          );
+        }
+      } finally {
+        source.listRecoveryCandidates = listRecoveryCandidates;
+        inbox.close();
+        await closeInstalledAppTaskRuntimes(bus);
+        closeDb(persistDir);
+      }
+    };
+
+    await runTrial(true);
+    await runTrial(false);
+  }, 40_000);
 
   it.each(["live", "lost", "restart"])(
     "returns one blocker and the later exact answer through the same caller wait (%s)",
