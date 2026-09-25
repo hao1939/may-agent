@@ -2,6 +2,7 @@
 summary: "Canonical reference for agent evaluation patterns and testing tooling: live benchmarks, execution-trace verification, task-grounded memory evaluation, diversity-seeking adversarial scenario archives, categorical observer-based progress forecasting, conversation-level certification, reviewer agents, operational metrics (MTBF, CPT, context efficiency), repeated A/B tests of agent-tooling configurations, artifact-grounded reproduction, induced-objective red-team interpretation, XHS community trends, June 2026 testing tooling landscape (promptfoo, RagaAI, Layer-Isolated methodology, CI containment tools), benchmark-saturation responses from HN practitioners, benchmark-family/data-engine patterns, trace-to-eval asset compilation, the Diagnostic Refinement wave (typed failure characterization via LegalHalluLens, EARS, Thermodynamic Signatures, Rift), Deployment Unit Turn (configuration-level evaluation), and the Observability Inversion (process discipline evaluation via RigorBench, small critics, structural code quality). Research-frontier patterns (§12–§35) extracted to companion note agent-evaluation-research.md."
 triggers: ["evaluation", "benchmark", "reviewer agent", "feedback", "Agent-Eval-Agent", "evaluator agent", "gym", "MTBF", "context efficiency", "trajectory", "testing tooling", "promptfoo", "agent testing", "CI agent", "layer-isolated", "A/B test", "agent tooling experiment", "skill selection reliability", "request exposure", "conditional quality", "diagnostic refinement", "typed hallucination", "LegalHalluLens", "EARS abstention", "Rift deception", "thermodynamic signatures", "process discipline", "process observability", "RigorBench", "small critic", "structural code quality", "Topos", "benchmark family", "data engine", "harness variance", "anytime-valid", "confidence sequence", "optional stopping", "pseudoreplication", "cluster bootstrap", "holdout leakage", "SkillTV-Bench", "JudgeSkill", "skill-aware verification", "rollout selection", "EvoTrace", "trace mining", "executable eval assets", "verifier provenance", "environment reconstruction", "claim verification", "negative memory", "evidence ledger", "information-weighted verification", "reproducibility bundle", "replay coverage", "claim-artifact matrix", "evaluation fingerprint", "source closure", "verifiable credential", "self-reported transcript", "Agents School", "evaluation evidence class", "causal witness", "matched null", "behavior-first evaluation", "reconstruction test", "artifact-grounded reproduction", "agent-generated evidence", "outside feedback", "insurance benchmark", "document routing", "system reliability", "abstention", "induced objective", "red-team interpretation", "effect-state classification", "conversation-level evaluation", "compositional certification", "evidence-cited diagnosis", "declared observed delegation", "prompt treatment", "measurement ownership", "paired prompt evaluation", "production feedback loop", "progress forecasting", "Jev sentinel", "AgentJev", "local decision model", "categorical progress rubric", "remaining time prediction", "DolphinBench", "agent memory evaluation", "memory Pareto frontier", "OSWorld-Pro", "process-based evaluation", "subgoal feasibility", "failure persistence", "infeasible persistence", "process judge calibration", "PhysAudit", "scientific validation", "domain invariant", "claim-specific check", "deterministic numerical verdict", "Life Forge", "MAP-Elites", "quality-diversity", "adversarial scenario archive"]
 last_updated: "2026-09-25"
+source_update_2026_09_25_caliper: "edonadei/caliper at commit 40c7a0e954e4b1fde6990184f8a18a19e7f4ffdb; README, result/spec documentation, six design records, comparison/ablation/result implementation, and selected tests were inspected. No test suite or agent evaluation was run."
 source_update_2026_09_25_hippo_memory: "kitfunso/hippo-memory at commit d4e163339d1e0a842caa759eadda6cce5161771b; preregistrations, result reports, raw-result references, public benchmark artifacts, and the folded independent critique were inspected. No benchmark or test suite was run."
 source_update_2026_09_25_kitaru: "zenml-io/kitaru at commit 618e58f06a828b39aa9b2195a1aa97d748f05155; replay, cohort, and experiment documentation plus Mastra replay-safety tests were inspected. The suite was not run."
 source_update_2026_09_25_agentlens: "HN item 49848914 and fang520huang-lgtm/AgentLens at commit 30a5301f1ce76bc6048ee28a879aaca2c710a7e8; README, session schema, comparison and redaction implementation, tests, and complete repository tree were inspected. All 12 repository tests passed locally under Node."
@@ -18,6 +19,66 @@ execution-based verification and continuous operational metrics. This note
 consolidates durable evaluation patterns and dated XHS trend observations.
 
 ## Durable Patterns
+
+### An ablation needs a recorded environment, not only a missing component — Caliper (GitHub, Sep 2026)
+
+Caliper's skill-evaluation design makes the control arm an ordinary saved run:
+remove one declared skill or MCP server, record what was removed, then compare
+that run with a full-neighborhood run. This is more informative than repeatedly
+calling an agent with and without some prompt text. The removed component cannot
+influence its control, the control can be reused while that component changes,
+and leave-one-out tests can ask whether each neighbor earns its place. The
+control must be rerun when tasks or the surviving neighborhood change, not every
+time the removed skill is edited.
+
+The implementation illustrates what makes that contrast admissible. A saved run
+records an explicit ablation marker, installed skill snapshots, surviving MCP
+server names, and whether user customizations were loaded. A bare name is refused
+when a skill and server collide. `compare` recognizes an ablation pair only when
+the marker agrees with recorded membership and both arms report compatible user
+customizations; unmatched tasks and unusable attempts remain visible rather than
+silently becoming failures. Activation is also scored separately from task
+success, because “the agent selected the skill” and “the task passed” answer
+different questions.
+
+This exposes a realism-versus-portability choice that other agent experiments
+should make explicit. Caliper loads the runner's user skills, rules, plugins,
+settings, connectors, and MCP configuration by default to answer “does this work
+in my actual setup?” Published, cross-machine, model, or backend comparisons
+instead need isolated runs. Even equal recorded customization names are only a
+weak identity check: the repository states that file contents, versions, server
+configuration, and hook behavior are not fingerprinted. A credible pair should
+therefore bind both arms to the same task/spec version, model and backend,
+component snapshots or content digests, tool configuration, customization mode,
+and repetition policy.
+
+The scoring choice is equally important. Caliper headlines raw per-attempt
+success (`successes / usable`) rather than pass@k because a production skill is
+usually invoked once and there is no oracle selecting the best of several
+attempts. At one success in three, the repository's design record notes that
+pass@k would report 70.4%, obscuring the observed 33.3% single-run reliability.
+Keep retry-optimistic and all-pass views as secondary diagnostics, but do not let
+them replace the operational question.
+
+**Reusable rule:** an ablation supports a component-contribution claim only when
+(1) the removed subject is explicit, (2) the surviving environment is identified,
+(3) tasks and outcome checks are held fixed, (4) unusable and unmatched cases are
+preserved, and (5) repeated single-run reliability is reported separately from
+activation and retry-derived metrics. A reusable control reduces cost; it does
+not remain valid after the tasks, model, tools, ambient setup, or judge changes.
+
+**Evidence boundary:** Scout statically inspected the complete, non-truncated
+repository tree plus the README, result/spec documentation, six relevant design
+records, comparison/ablation/result implementation, and selected comparison,
+ablation, and user-customization tests at pinned commit
+`40c7a0e954e4b1fde6990184f8a18a19e7f4ffdb`. Scout did not install Caliper, run
+its tests, execute an agent evaluation, or validate an LLM judge. The repository
+also says an attempt is measurement isolation rather than a security boundary;
+agent code still runs with the user's filesystem authority.
+
+- **Repo:** https://github.com/edonadei/caliper
+- **Pinned revision:** https://github.com/edonadei/caliper/commit/40c7a0e954e4b1fde6990184f8a18a19e7f4ffdb
+- **Primary sources:** [results and comparison](https://github.com/edonadei/caliper/blob/40c7a0e954e4b1fde6990184f8a18a19e7f4ffdb/docs/results.md), [ablation design](https://github.com/edonadei/caliper/blob/40c7a0e954e4b1fde6990184f8a18a19e7f4ffdb/docs/adr/0015-ablation-names-its-subject-at-the-invocation.md), [user-customization design](https://github.com/edonadei/caliper/blob/40c7a0e954e4b1fde6990184f8a18a19e7f4ffdb/docs/adr/0028-runs-load-user-customizations-by-default.md), and [single-run metric design](https://github.com/edonadei/caliper/blob/40c7a0e954e4b1fde6990184f8a18a19e7f4ffdb/docs/adr/0007-raw-success-rate-is-the-primary-metric.md)
 
 ### Preregistration must prove the treatment can act and the guard measures the intended harm — Hippo Memory (GitHub, Sep 2026)
 
