@@ -1,8 +1,8 @@
 <ai_context>
-summary: "Implementation-evidence companion to agent-security-verified-enforcement.md. Uses pinned repositories, disclosures, and deployed-system reports to separate signed claims from replayable evidence; verifier correctness from adversarial agent resistance; receipt integrity from completeness; configured policy from covered paths; identity enrollment from per-request proof; formal models from unsupported surfaces; observed egress from blocking; stable tool digests from equivalent semantics; policy verdicts from effect ownership; counterfactual actions from execution authority and real effect accounting; authorization receipts from effect gates; declared mediation architecture from per-effect path evidence; narrated results from positive execution evidence; sandbox isolation from configuration coherence; stop requests from observed quiescence; frozen eval inputs from stable comparison units; and untrusted analysis failure from trusted configuration degradation."
-triggers: ["SkillProof", "MCP server verification", "replayable evidence", "action receipt", "signed receipt", "evidence completeness", "MAX Authorization Sandbox", "signed policy", "adversary capability", "rollback state", "Pipelock", "PassControl", "sender proof", "bearer visa", "authentication assurance", "default deny", "fail closed", "shell hook", "guardrail regression test", "OpenShell prover", "SMT containment", "path composition", "egress firewall", "uninspected egress", "tool identity", "tool pin", "schema canonicalization", "shadow mode", "mediation ownership", "counterfactual action", "observed policy action", "real effect accounting", "ctrlrun", "HOL Guard", "Action Evidence Package", "AEP sandbox", "Codex sandbox", "Overpatch", "Heapjack", "authority derivation", "Meta Muse", "local configuration authority", "APEXA", "execution integrity", "tool execution evidence", "BoxLite", "micro-VM", "sandbox configuration coherence", "guest network", "host jailer grants", "Hard Stop", "SIGSTOP", "process group preemption", "quiescence receipt", "run-assert-eval", "ASSERT", "Agent Control Specification", "fixed evaluation", "applicable denominator", "paired comparison", "safety helpfulness split", "CC Safety Net", "analysis budget", "configuration degradation", "typed failure policy"]
+summary: "Implementation-evidence companion to agent-security-verified-enforcement.md. Uses pinned repositories, disclosures, and deployed-system reports to separate signed claims from replayable evidence; verifier correctness from adversarial agent resistance; receipt integrity from completeness; configured policy from covered paths; identity enrollment from per-request proof; formal models from unsupported surfaces; observed egress from blocking; stable tool digests from equivalent semantics; policy verdicts from effect ownership; counterfactual actions from execution authority and real effect accounting; authorization receipts from effect gates; declared mediation architecture from per-effect path evidence; narrated results from positive execution evidence; sandbox isolation from configuration coherence; stop requests from observed quiescence; frozen eval inputs from stable comparison units; untrusted analysis failure from trusted configuration degradation; and human approval records from end-to-end effect binding."
+triggers: ["SkillProof", "MCP server verification", "replayable evidence", "action receipt", "signed receipt", "evidence completeness", "MAX Authorization Sandbox", "signed policy", "adversary capability", "rollback state", "Pipelock", "PassControl", "sender proof", "bearer visa", "authentication assurance", "default deny", "fail closed", "shell hook", "guardrail regression test", "OpenShell prover", "SMT containment", "path composition", "egress firewall", "uninspected egress", "tool identity", "tool pin", "schema canonicalization", "shadow mode", "mediation ownership", "counterfactual action", "observed policy action", "real effect accounting", "ctrlrun", "HOL Guard", "Action Evidence Package", "AEP sandbox", "Codex sandbox", "Overpatch", "Heapjack", "authority derivation", "Meta Muse", "local configuration authority", "APEXA", "execution integrity", "tool execution evidence", "BoxLite", "micro-VM", "sandbox configuration coherence", "guest network", "host jailer grants", "Hard Stop", "SIGSTOP", "process group preemption", "quiescence receipt", "run-assert-eval", "ASSERT", "Agent Control Specification", "fixed evaluation", "applicable denominator", "paired comparison", "safety helpfulness split", "CC Safety Net", "analysis budget", "configuration degradation", "typed failure policy", "emisar", "approval binding", "bridge attestation", "pack hash"]
 last_updated: "2026-09-25"
-source_basis: "Pinned-source implementation studies and disclosures reviewed 2026-09-10 through 2026-09-25: SkillProof f5ddb4b, MAX Authorization Sandbox 380efe6, Pipelock f7d1816, agent-guardrails-kit 18c241e, PassControl f9cb702, OpenShell df0ee1a, k8s-rca-agent 29f5fad, secure-agent 017ec5a, Rul1an/assay 900e536, Soup Wall be8db48, HOL Guard 56faea4 and f5d568f, ctrlrun 8ebc5a8, aep-sandbox 3495e27, BoxLite 9e9436e, Hard Stop 45c31bc, responsibleai/ASSERT 0628e25, CC Safety Net 0439757, HN items 49795755, 49802030, 49830567, 49834450, 49834720, 49840107, 49841469, and 49844056 with their linked primary sources, plus arXiv 2609.24165v1 and 2609.29808v1 (abstracts and full HTML). Each section states its own evidence boundary."
+source_basis: "Pinned-source implementation studies and disclosures reviewed 2026-09-10 through 2026-09-25: SkillProof f5ddb4b, MAX Authorization Sandbox 380efe6, Pipelock f7d1816, agent-guardrails-kit 18c241e, PassControl f9cb702, OpenShell df0ee1a, k8s-rca-agent 29f5fad, secure-agent 017ec5a, Rul1an/assay 900e536, Soup Wall be8db48, HOL Guard 56faea4 and f5d568f, ctrlrun 8ebc5a8, aep-sandbox 3495e27, BoxLite 9e9436e, Hard Stop 45c31bc, responsibleai/ASSERT 0628e25, CC Safety Net 0439757, AndrewDryga/emisar ac0d942, HN items 49795755, 49802030, 49830567, 49834450, 49834720, 49840107, 49841469, and 49844056 with their linked primary sources, plus arXiv 2609.24165v1 and 2609.29808v1 (abstracts and full HTML). Each section states its own evidence boundary."
 </ai_context>
 
 # Agent Security: Enforcement Evidence and Runtime Coverage
@@ -1399,3 +1399,69 @@ coding-agent host was connected, and no bypass-resistance or production behavior
 was independently validated. The observed repository tree was complete
 (`truncated: false`); its documented host limitations and test cases bound the
 claim rather than proving every integration mediates every effect.
+
+## A Human Approval Record Is Not Yet an Executor-Bound Authorization (GitHub, September 2026)
+
+**Repo:** https://github.com/AndrewDryga/emisar
+
+**Pinned observation:** repository commit
+[`ac0d9425fd42be266e8e78bb3c9d192e98a22eab`](https://github.com/AndrewDryga/emisar/commit/ac0d9425fd42be266e8e78bb3c9d192e98a22eab)
+
+Emisar makes several approval facts durable before an infrastructure action is
+released. The run freezes an immutable pack reference and hash, records an
+`args_sha256`, and attributes the request to the initiating membership. Its
+authority tests also recheck the initiating member and API-key lineage when a
+queued run resumes. Standing grants remain explicit about their breadth: the
+operator chooses exact arguments or `any_args`, while the grant still binds the
+action and exact pack contract. These are useful control-plane properties, but
+they do not by themselves prove that the host executed the request a human saw.
+
+The repository exposes that missing step through an optional, stronger path.
+When bridge-attested dispatch is enforced, the runner verifies a signature over
+the canonical portal origin, action, immutable pack, digest of the exact JSON
+arguments, complete identity-bound runner-reference set, justification digests,
+operation, nonce, and issuance time. The runner also recomputes the trusted pack
+hash and validates arguments immediately before execution. Freshness and durable
+nonce state prevent a previously approved signed request from being replayed as
+new authority on the same runner identity. In this mode, the approval narrative
+and the executor's accepted effect can share a cryptographic subject.
+
+The distinction matters because bridge attestation is not the default universal
+property. The README labels it optional, and the security model says protection
+against a compromised control plane depends on `signing.enforce_signatures`.
+Without that setting, local validation still restricts execution to installed,
+trusted pack bytes and their declared argument schema, but a human approval row
+is not an end-to-end proof that the relayed action, arguments, and target are the
+ones approved. A pack hash answers “which executable contract?”; it does not
+alone answer “who authorized this invocation?”
+
+A reusable approval-evidence contract therefore has four distinct bindings:
+
+1. **Decision subject:** freeze action, exact arguments or an explicit wildcard,
+   target set, and immutable tool or pack identity in the approval record.
+2. **Current authority:** recheck requester, approver, key lineage, scope,
+   revocation, and expiry when delayed work is released.
+3. **Executor proof:** carry those same facts in a signature or capability that
+   the effect-owning host verifies, rather than trusting a relay's reconstruction.
+4. **Replay lifecycle:** bind nonce and freshness state to runner identity and
+   define what replacement, restore, or lost replay state requires.
+
+This pattern also clarifies reporting. “Human approved,” “policy released,”
+“runner admitted,” and “effect completed” are separate receipts. A system can
+have a well-formed approval audit and a strongly validated action pack while
+still lacking proof that the approval authorized the exact host-side effect.
+
+**Primary evidence at the pinned commit:**
+[`README.md`](https://github.com/AndrewDryga/emisar/blob/ac0d9425fd42be266e8e78bb3c9d192e98a22eab/README.md),
+[`security-model.md`](https://github.com/AndrewDryga/emisar/blob/ac0d9425fd42be266e8e78bb3c9d192e98a22eab/.agent/kb/specs/security-model.md),
+[`approvals.ex`](https://github.com/AndrewDryga/emisar/blob/ac0d9425fd42be266e8e78bb3c9d192e98a22eab/portal/apps/emisar/lib/emisar/approvals.ex),
+[`runs.ex`](https://github.com/AndrewDryga/emisar/blob/ac0d9425fd42be266e8e78bb3c9d192e98a22eab/portal/apps/emisar/lib/emisar/runs.ex),
+[`approval_grant_authority_test.exs`](https://github.com/AndrewDryga/emisar/blob/ac0d9425fd42be266e8e78bb3c9d192e98a22eab/portal/apps/emisar/test/emisar/approval_grant_authority_test.exs), and
+[`runs_dispatch_authority_test.exs`](https://github.com/AndrewDryga/emisar/blob/ac0d9425fd42be266e8e78bb3c9d192e98a22eab/portal/apps/emisar/test/emisar/runs_dispatch_authority_test.exs).
+
+**Evidence boundary:** Scout statically inspected the pinned repository and its
+author-authored tests; the repository Search API tree was complete
+(`truncated: false`). Scout did not run the Elixir or Go suites, connect a runner,
+validate a real signature, or exercise a production approval. The source supports
+the binding design and its documented optional/default boundary, not a claim
+that every Emisar deployment enables attestation or resists compromise.
