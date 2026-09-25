@@ -1,8 +1,8 @@
 <ai_context>
-summary: "Reusable verification and verdict-integrity patterns: protected separation of review, diagnostic validation, and official measurement; enforcement-reachability checks proving that typed evidence is required by the authoritative completion transition; frozen session inputs with snapshot-bound but intentionally limited checks; typed lifecycle evidence for unattended agent runs; multi-plane completion proofs; behavior-derived tests challenged by mutation negatives; evidence bound to the verified subject; explicit receipt coverage and valid anomalies; claim-level platform enforcement evidence; negative controls for the verdict path; state-based effect grading with honest and adversarial oracle controls; freshness binding for replayed traces; evaluator immutability across repair; proof of the inspected universe behind a clean sweep; cross-artifact conformance for executable governance; phase-aware calibration of probabilistic rule checks; and separation of reviewer diversity from verdict transport."
-triggers: ["verification subject binding", "captured inputs", "session snapshot", "postconditions", "CLAMP", "NickCamacho15/clamp", "Brigade", "receipt coverage", "not_checked", "invocation_ref", "ASQAV", "claim-level platform evidence", "RTQ", "sandbox enforcement", "construction-only test", "meta-verification", "false-green verifier", "negative control", "ProjectGuard", "state-based grading", "reward hacking", "Compound Evals", "kyisaiah47/compound-evals", "trace freshness", "recorded trace", "skilldiff", "agent skill regression", "frozen tests", "test identity", "failure fingerprint", "RepoPilot", "post-merge outcome", "evaluation identity", "independent runner", "inspected universe", "compared-nothing-reported-clean", "cross-artifact conformance", "decision table", "DMN", "OutTheBox", "probabilistic rule check", "phase-specific precision", "Abide", "event-backed write", "Dream Studio", "reviewer diversity", "cross-provider review", "verdict transport", "portable DSH", "unattended agent run", "fresh branch", "missing upstream", "launch failure", "lifecycle receipt", "CodeMidas", "GameLogicBench", "behavior-derived test", "mutant validation", "tick-level assertion", "multi-plane completion proof", "capture coverage", "world-state verification", "minecraft-agent", "VibeSys", "uw-syfi/vibesys", "protected measurement plane", "official evaluation", "judge-audited validation recipe", "Custos", "civi0411/Custos", "completion gate", "enforcement reachability", "evidence pipeline"]
-last_updated: "2026-09-23"
-source_basis: "Extracted intact from agent-runtime-effect-integrity.md during its 2026-09-14 oversized-note review. Sources are pinned revisions of Brigade, ASQAV, ProjectGuard, skilldiff, RepoPilot, Dream Studio, OutTheBox, Abide, Compound Evals, Portable DSH, RTQ, rmalde/minecraft-agent, NickCamacho15/clamp, uw-syfi/vibesys, and civi0411/Custos; reproduced checks and static-inspection limits remain stated in each section. Also includes HN 49782797 and Alkis Yuvanelis's complete linked incident essay, whose published minimal shell reproduction Scout reran for a missing child and a successful immediate no-op, plus abstract-level arXiv evidence from CodeMidas and GameLogicBench on behavior-derived tests and mutant validation. Acceptance authority, actor-bound review, release reconciliation, and audit normalization moved intact to agent-runtime-acceptance-and-reconciliation.md during the 2026-09-21 oversized-note review."
+summary: "Reusable verification and verdict-integrity patterns: protected separation of review, diagnostic validation, and official measurement; enforcement-reachability checks proving that typed evidence is required by the authoritative completion transition; frozen session inputs with snapshot-bound but intentionally limited checks; typed lifecycle evidence for unattended agent runs; multi-plane completion proofs; behavior-derived tests challenged by mutation negatives; evidence bound to the verified subject; explicit receipt coverage and valid anomalies; claim-level platform enforcement evidence; negative controls for the verdict path; state-based effect grading with honest and adversarial oracle controls; freshness binding for replayed traces; evaluator immutability across repair; proof of the inspected universe behind a clean sweep; production-boundary tests for absence-versus-empty semantics; cross-artifact conformance for executable governance; phase-aware calibration of probabilistic rule checks; and separation of reviewer diversity from verdict transport."
+triggers: ["verification subject binding", "captured inputs", "session snapshot", "postconditions", "CLAMP", "NickCamacho15/clamp", "Brigade", "receipt coverage", "not_checked", "invocation_ref", "ASQAV", "claim-level platform evidence", "RTQ", "sandbox enforcement", "construction-only test", "meta-verification", "false-green verifier", "negative control", "ProjectGuard", "state-based grading", "reward hacking", "Compound Evals", "kyisaiah47/compound-evals", "trace freshness", "recorded trace", "skilldiff", "agent skill regression", "frozen tests", "test identity", "failure fingerprint", "RepoPilot", "post-merge outcome", "evaluation identity", "independent runner", "inspected universe", "compared-nothing-reported-clean", "absence versus empty", "production boundary test", "sandbase harness", "commit-pinned cache", "cross-artifact conformance", "decision table", "DMN", "OutTheBox", "probabilistic rule check", "phase-specific precision", "Abide", "event-backed write", "Dream Studio", "reviewer diversity", "cross-provider review", "verdict transport", "portable DSH", "unattended agent run", "fresh branch", "missing upstream", "launch failure", "lifecycle receipt", "CodeMidas", "GameLogicBench", "behavior-derived test", "mutant validation", "tick-level assertion", "multi-plane completion proof", "capture coverage", "world-state verification", "minecraft-agent", "VibeSys", "uw-syfi/vibesys", "protected measurement plane", "official evaluation", "judge-audited validation recipe", "Custos", "civi0411/Custos", "completion gate", "enforcement reachability", "evidence pipeline"]
+last_updated: "2026-09-25"
+source_basis: "Extracted intact from agent-runtime-effect-integrity.md during its 2026-09-14 oversized-note review. Sources are pinned revisions of Brigade, ASQAV, ProjectGuard, skilldiff, RepoPilot, Dream Studio, OutTheBox, Abide, Compound Evals, Portable DSH, RTQ, rmalde/minecraft-agent, NickCamacho15/clamp, uw-syfi/vibesys, civi0411/Custos, and sandbaseai/sandbase-harness; reproduced checks and static-inspection limits remain stated in each section. Also includes HN 49782797 and Alkis Yuvanelis's complete linked incident essay, whose published minimal shell reproduction Scout reran for a missing child and a successful immediate no-op, plus abstract-level arXiv evidence from CodeMidas and GameLogicBench on behavior-derived tests and mutant validation. Acceptance authority, actor-bound review, release reconciliation, and audit normalization moved intact to agent-runtime-acceptance-and-reconciliation.md during the 2026-09-21 oversized-note review."
 </ai_context>
 
 # Agent Runtime Verdict Integrity
@@ -865,6 +865,50 @@ actually execute. Fail closed on absent input, not only on detected violations.
 - **Inspected revision:** [`1014fc185cbade7cb5b11bdf67b7150ce1e47d13`](https://github.com/SeayInsights/dream-studio/commit/1014fc185cbade7cb5b11bdf67b7150ce1e47d13)
 - **Primary sources:** [event-backed-write gate](https://github.com/SeayInsights/dream-studio/blob/1014fc185cbade7cb5b11bdf67b7150ce1e47d13/core/gates/event_backed_write.py), [focused gate tests](https://github.com/SeayInsights/dream-studio/blob/1014fc185cbade7cb5b11bdf67b7150ce1e47d13/tests/unit/test_event_backed_write.py), [task projection declaration](https://github.com/SeayInsights/dream-studio/blob/1014fc185cbade7cb5b11bdf67b7150ce1e47d13/core/projections/task_projection.py), and [blocking pre-push wiring](https://github.com/SeayInsights/dream-studio/blob/1014fc185cbade7cb5b11bdf67b7150ce1e47d13/canonical/workflows/pre-push.yaml#L569-L587)
 - **Discovery query:** GitHub Repository Search API `"AI agent" pushed:>=2026-09-14`, sorted by update time; `incomplete_results: false`
+
+## A Test Double Can Conceal a Production Absence Contract — Sandbase Harness (GitHub, September 2026)
+
+Sandbase Harness exposes a compact version of the same false-green problem at a
+resource boundary. Its commit-pinned GitHub resource path probes a content cache by
+asking the production `listFiles` adapter to list the cache directory: resolution
+means “cache exists,” rejection means “cache miss.” The recursive production
+implementation caught `readdir` errors and returned an empty array. A directory
+that did not exist therefore looked like a valid empty checkout, so every
+commit-pinned resource skipped cloning, mounted no repository files, and still
+reported a successful cached materialization. Branch and tag paths did not use the
+same cache-key path, which narrowed the failure enough to hide it.
+
+The previous unit seam encoded the correct contract while masking the defect: its
+fake `listFiles` threw `ENOENT` for an unplanted path. The repaired repository
+changes production listing to propagate unreadable-directory errors and adds tests
+that retain only Git as a fake. Those tests use a real temporary cache root and the
+production list/read/remove adapters to distinguish four states: a missing cache
+must reject, a planted cache must be reused, a clone into a missing cache must
+produce a mounted file, and a post-clone listing failure must fail without a partial
+mount. A separate assertion keeps `.git` content out of the sandbox, showing that
+the real enumeration also crosses the filtering boundary.
+
+This sharpens two reusable rules. First, “empty,” “absent,” and “unreadable” are
+separate epistemic states whenever the result controls cache reuse, resource
+admission, or a clean verdict. Second, a fake should not implement the contract
+more faithfully than production at the very boundary under test. Keep external
+network or process effects fake when necessary, but exercise the production
+adapter that interprets their durable result.
+
+The evidence is a pinned repository-authored change, implementation diff, contract,
+and focused tests inspected statically. Scout did not run the suite, reproduce the
+pre-fix failure, or verify a deployed Sandbase instance, so this is implementation
+and regression-test evidence rather than an independent runtime validation.
+
+**Runtime rule:** when absence semantics decide whether work happened, test the
+real adapter against real local state. Fail on inaccessible input; do not collapse
+it into a valid empty result, and require a positive witness that the admitted
+resource reached the consumer.
+
+- **Repo:** https://github.com/sandbaseai/sandbase-harness
+- **Inspected revision:** [`214e52e6ad33fb449e8bef59dd12a1acc818e702`](https://github.com/sandbaseai/sandbase-harness/commit/214e52e6ad33fb449e8bef59dd12a1acc818e702)
+- **Primary sources:** [resource contract](https://github.com/sandbaseai/sandbase-harness/blob/214e52e6ad33fb449e8bef59dd12a1acc818e702/contracts/anthropic-cma/github-repository.md), [production listing adapter](https://github.com/sandbaseai/sandbase-harness/blob/214e52e6ad33fb449e8bef59dd12a1acc818e702/src/core/resources/github-runtime.ts), and [production-boundary regression tests](https://github.com/sandbaseai/sandbase-harness/blob/214e52e6ad33fb449e8bef59dd12a1acc818e702/tests/unit/github-materialization-cache-probe.test.ts)
+- **Discovery query:** GitHub Repository Search API `topic:ai-agents pushed:>2026-09-24 stars:>10`, sorted by update time; 858 results, `incomplete_results: false`
 
 ## Acceptance and Reconciliation Companion
 
