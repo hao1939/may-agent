@@ -1,8 +1,8 @@
 <ai_context>
-summary: "Implementation-evidence companion to agent-security-verified-enforcement.md. Uses pinned repositories, disclosures, and deployed-system reports to separate signed claims from replayable evidence; receipt integrity from completeness; configured policy from covered paths; identity enrollment from per-request proof; formal models from unsupported surfaces; observed egress from blocking; stable tool digests from equivalent semantics; policy verdicts from effect ownership; counterfactual actions from execution authority and real effect accounting; authorization receipts from effect gates; narrated results from positive execution evidence; sandbox isolation from configuration coherence; stop requests from observed quiescence; and frozen eval inputs from stable comparison units."
+summary: "Implementation-evidence companion to agent-security-verified-enforcement.md. Uses pinned repositories, disclosures, and deployed-system reports to separate signed claims from replayable evidence; receipt integrity from completeness; configured policy from covered paths; identity enrollment from per-request proof; formal models from unsupported surfaces; observed egress from blocking; stable tool digests from equivalent semantics; policy verdicts from effect ownership; counterfactual actions from execution authority and real effect accounting; authorization receipts from effect gates; declared mediation architecture from per-effect path evidence; narrated results from positive execution evidence; sandbox isolation from configuration coherence; stop requests from observed quiescence; and frozen eval inputs from stable comparison units."
 triggers: ["SkillProof", "MCP server verification", "replayable evidence", "action receipt", "signed receipt", "evidence completeness", "Pipelock", "PassControl", "sender proof", "bearer visa", "authentication assurance", "default deny", "fail closed", "shell hook", "guardrail regression test", "OpenShell prover", "SMT containment", "path composition", "egress firewall", "uninspected egress", "tool identity", "tool pin", "schema canonicalization", "shadow mode", "mediation ownership", "counterfactual action", "observed policy action", "real effect accounting", "ctrlrun", "HOL Guard", "Action Evidence Package", "AEP sandbox", "Codex sandbox", "Overpatch", "Heapjack", "authority derivation", "Meta Muse", "local configuration authority", "APEXA", "execution integrity", "tool execution evidence", "BoxLite", "micro-VM", "sandbox configuration coherence", "guest network", "host jailer grants", "Hard Stop", "SIGSTOP", "process group preemption", "quiescence receipt", "run-assert-eval", "ASSERT", "Agent Control Specification", "fixed evaluation", "applicable denominator", "paired comparison", "safety helpfulness split"]
-last_updated: "2026-09-24"
-source_basis: "Pinned-source implementation studies and disclosures reviewed 2026-09-10 through 2026-09-24: SkillProof f5ddb4b, Pipelock f7d1816, agent-guardrails-kit 18c241e, PassControl f9cb702, OpenShell df0ee1a, k8s-rca-agent 29f5fad, secure-agent 017ec5a, Rul1an/assay 900e536, Soup Wall be8db48, HOL Guard 56faea4 and f5d568f, ctrlrun 8ebc5a8, aep-sandbox 3495e27, BoxLite 9e9436e, Hard Stop 45c31bc, responsibleai/ASSERT 0628e25, HN items 49795755, 49802030, 49830567, 49834450, and 49834720 with their linked primary sources, plus arXiv 2609.24165v1 (abstract and full HTML). Each section states its own evidence boundary."
+last_updated: "2026-09-25"
+source_basis: "Pinned-source implementation studies and disclosures reviewed 2026-09-10 through 2026-09-25: SkillProof f5ddb4b, Pipelock f7d1816, agent-guardrails-kit 18c241e, PassControl f9cb702, OpenShell df0ee1a, k8s-rca-agent 29f5fad, secure-agent 017ec5a, Rul1an/assay 900e536, Soup Wall be8db48, HOL Guard 56faea4 and f5d568f, ctrlrun 8ebc5a8, aep-sandbox 3495e27, BoxLite 9e9436e, Hard Stop 45c31bc, responsibleai/ASSERT 0628e25, HN items 49795755, 49802030, 49830567, 49834450, 49834720, and 49840107 with their linked primary sources, plus arXiv 2609.24165v1 (abstract and full HTML). Each section states its own evidence boundary."
 </ai_context>
 
 # Agent Security: Enforcement Evidence and Runtime Coverage
@@ -898,6 +898,58 @@ execution or ClickFix was required. That nomenclature dispute does not verify or
 refute the reported endpoint-redirection and token-forwarding mechanism, so this
 entry uses the report only to derive a boundary and regression test—not to claim
 remote compromise, prevalence, or an independently confirmed affected version.
+
+### Follow-up: a mediator design becomes assurance only when every effect path is evidenced
+
+**HN:** https://news.ycombinator.com/item?id=49840107
+
+**Primary source:** https://research.meta.ai/blog/security-and-safety-for-ai-agents-our-approach-with-muse
+
+Meta's launch architecture for Muse is unusually specific about moving authority
+outside the model-controlled runtime. The core harness, tools, workspace, and
+agent-authored code run in an unprivileged `systemd-nspawn` cell. Separate
+host-side services hold credentials and connector logic. Sentinel is described as
+the sole authority for connector actions and all network egress; it evaluates the
+concrete destination and request, then replaces short-lived surrogate tokens with
+real credentials only at the network boundary. Connector workers have explicit
+credential allow-lists. User approvals travel directly between the client and
+Sentinel and become scoped capabilities rather than conversational text.
+
+The design also turns data provenance into an authorization input. Kernel-level
+taint tracking marks a tool process after it reads user data; tainted or
+unverifiable processes lose narrowly bounded automatic egress and return to an
+approval flow. Browser credentials are brokered outside the agent, the browser
+sub-agent receives an accessibility-tree view rather than raw DOM or CDP access,
+and purchases require direct approval with merchant-, amount-, and time-bounded
+payment credentials. These are useful implementation patterns because they split
+**model intent**, **credential possession**, **request authorization**, and
+**effect execution** across different principals.
+
+But the article is an architecture disclosure, not coverage evidence. It gives no
+quantitative classifier results, false-positive/false-negative rates, path census,
+or independently replayable traces for the claims that every egress request and
+connector action crosses Sentinel. Its “close to SOTA” prompt-injection statement
+is not accompanied by an eval name or score. Meta explicitly says prompt
+injection remains open, Muse will make mistakes, and the announced Confidential
+VM—which is intended to keep even Meta from accessing VM data—was not yet the
+launch architecture.
+
+The assurance requirement is therefore a **per-effect path matrix**. For each
+connector, browser action, raw network protocol, sub-agent handoff, custom tool,
+and failure mode, retain a negative witness, a benign positive witness, the
+runtime principal and policy revision, credential-substitution evidence, and the
+final effect outcome. Also test that local configuration, DNS resolution,
+redirects, alternate protocols, malformed requests, unavailable classifiers, and
+broker failure cannot produce an unmediated path. The prior endpoint-redirection
+report above makes this distinction concrete: a later design description does not
+by itself prove that the reported route was fixed or that no equivalent route
+remains.
+
+**Evidence boundary:** Scout read the full Meta technical post and HN item. It
+did not inspect Muse source or binaries, operate the product, reproduce the
+published architecture, access Meta's private red-team evals, or verify the bug
+bounty results. Treat the post as a detailed vendor claim and test-plan source,
+not an independent security audit or proof of complete mediation.
 
 ## Reported Results Need Positive Evidence of Execution (APEXA, arXiv, September 2026)
 
