@@ -1,8 +1,8 @@
 <ai_context>
-summary: "Companion to agent-runtime-effect-integrity.md for unattended execution integrity: lifecycle-bound resume identity, cadence and failure accounting, infrastructure trust boundaries, clone identity hygiene, local durability versus external settlement, revision-bound approval, accountable agent writes, desktop effect authorization, and workflow/host recovery boundaries."
-triggers: ["unattended execution", "session resume", "lifecycle generation", "Daintree", "heartbeat", "failure backoff", "Talon", "Docker Sandboxes", "sandbox trust boundary", "clone identity", "LingCage", "effect settlement", "LetItLoop", "Kevlar", "ATR", "approval revision", "AIS", "orphan recovery", "Rebuno", "approval resume", "AgenticOS", "diagnostic attention", "Runpin", "effect deduplication", "agent identity", "Sensefold", "desktop authorization", "macOS Harness", "AgentRun", "workflow DSL", "late settlement"]
-last_updated: "2026-09-24"
-source_basis: "Extracted intact from agent-runtime-effect-integrity.md during its 2026-09-21 oversized-note review, then extended with pinned implementation evidence for lifecycle-bound session resume, unattended cadence and failure accounting, and AgentRun's workflow/host recovery boundary. Replay-specific Chronicle, Mutagen, Ovo, and OrcaReplay sections moved intact to agent-runtime-replay-evidence-and-boundaries.md during the 2026-09-24 oversized-note review. Each retained section preserves stable source links, reproduced checks where performed, and explicit evidence limitations."
+summary: "Companion to agent-runtime-effect-integrity.md for unattended execution integrity: lifecycle-bound resume identity, cadence and failure accounting, infrastructure trust boundaries, clone identity hygiene, local durability versus external settlement, revision-bound approval, accountable agent writes, desktop effect authorization, and deterministic workflow/host recovery boundaries."
+triggers: ["unattended execution", "session resume", "lifecycle generation", "Daintree", "heartbeat", "failure backoff", "Talon", "Docker Sandboxes", "sandbox trust boundary", "clone identity", "LingCage", "effect settlement", "LetItLoop", "Kevlar", "ATR", "approval revision", "AIS", "orphan recovery", "Rebuno", "approval resume", "AgenticOS", "diagnostic attention", "Runpin", "effect deduplication", "agent identity", "Sensefold", "desktop authorization", "macOS Harness", "AgentRun", "workflow DSL", "late settlement", "Kiso", "recovery projection", "crash matrix"]
+last_updated: "2026-09-25"
+source_basis: "Extracted intact from agent-runtime-effect-integrity.md during its 2026-09-21 oversized-note review, then extended with pinned implementation evidence for lifecycle-bound session resume, unattended cadence and failure accounting, AgentRun's workflow/host recovery boundary, and Kiso's deterministic recovery projection and crash-window handling. Replay-specific Chronicle, Mutagen, Ovo, and OrcaReplay sections moved intact to agent-runtime-replay-evidence-and-boundaries.md during the 2026-09-24 oversized-note review. Each retained section preserves stable source links, reproduced checks where performed, and explicit evidence limitations."
 </ai_context>
 
 # Agent Runtime Unattended Execution and Replay
@@ -659,3 +659,55 @@ early implementation pattern, not production reliability or adoption evidence.
 - **Inspected revision:** https://github.com/Parcha-ai/agentrun/commit/89b6fff6493700ad097c2a016ad2396e3c8c79bc (`0.1.0-beta.3`)
 - **Primary sources:** [workflow and limits guide](https://github.com/Parcha-ai/agentrun/blob/89b6fff6493700ad097c2a016ad2396e3c8c79bc/docs/guide.md), [host integration contract](https://github.com/Parcha-ai/agentrun/blob/89b6fff6493700ad097c2a016ad2396e3c8c79bc/docs/host-integration.md), [interpreter implementation](https://github.com/Parcha-ai/agentrun/blob/89b6fff6493700ad097c2a016ad2396e3c8c79bc/packages/dsl/src/workflow.ts), [runtime-boundary tests](https://github.com/Parcha-ai/agentrun/blob/89b6fff6493700ad097c2a016ad2396e3c8c79bc/packages/dsl/test/runtime-boundaries.test.mjs), and [nested-recovery tests](https://github.com/Parcha-ai/agentrun/blob/89b6fff6493700ad097c2a016ad2396e3c8c79bc/packages/dsl/test/nested-composition.test.mjs)
 - **Discovery feed:** HN Algolia `search_by_date?query=AI%20agent&tags=story&numericFilters=created_at_i%3E%3D1790186458&hitsPerPage=50`
+
+## Recovery Is Easier to Audit as a Pure Next-Step Projection — Kiso (GitHub, September 2026)
+
+Kiso's recovery design turns an append-only session prefix into one deterministic
+next action rather than maintaining a second mutable recovery state machine. At the
+pinned revision, `deriveRecoveryPlan(events, scope)` has no clock, ID generation, or
+I/O. It applies a fixed order: recognize terminal/completed runs, surface a started
+execution with no receipt, void an uncommitted model draft, recover permission and
+execution gaps, repair missing model-facing results from durable receipts, then
+continue the model. The driver appends one derived repair and projects again. This
+makes recovery idempotence a local property: if a repair write itself is lost, the
+same prefix must derive the same repair instead of inventing another transition.
+
+The important safety boundary is what the projection **cannot** know. The tool crash
+matrix lands both “execution started but effect did not run” and “effect ran but its
+receipt did not land” on the same durable prefix. Both therefore become
+`RESOLVE_UNCERTAIN`; neither is automatically replayed. A human may abandon or rerun
+that logical execution. By contrast, when a success or failure receipt exists but the
+corresponding model-facing `tool_result` is absent, recovery repairs the result from
+the receipt and does not invoke the tool again. Execution identity is framework-
+generated (`executionId`), so a legitimate later call with the same tool name and
+input remains a different operation rather than being swallowed by content-based
+deduplication.
+
+Kiso also separates an unfinished **model draft** from a potentially effected tool
+call. A model suffix without a committed stop can be voided, but once a durable
+`tool_execution_started` exists the call is no longer treated as discardable text;
+receipt repair or uncertainty resolution owns it. Pending approvals survive only
+when the invocation itself remains executable. This avoids resurrecting an approval
+for a voided “ghost” call while preserving a decision that belongs to a committed
+invocation.
+
+The repository-authored crash matrix injects holds at persistence, model, tool, and
+human boundaries, checks crash-before and crash-after prefixes, and includes crashes
+of recovery's own repair appends. That is a useful testing pattern: define effect
+boundaries, derive the expected next action from each durable cut, and verify that
+reopening converges without silently turning an ambiguous effect into a retry. It is
+not proof of production exactly-once behavior. Scout inspected pinned source, ADRs,
+and tests but did not clone the repository, execute its suite, or reproduce a real
+`kill -9`; the matrix is project-authored evidence, and human resolution still cannot
+determine an external effect's outcome without provider-side reconciliation.
+
+**Runtime rule:** make recovery a deterministic projection over admitted durable
+facts, keep model-draft repair separate from effect repair, and test every effect
+boundary on both sides of the crash cut. If two real-world outcomes share one durable
+prefix, preserve that ambiguity as an explicit resolution obligation rather than
+choosing the convenient replay path.
+
+- **Repo:** https://github.com/vincemakes/kiso
+- **Inspected revision:** https://github.com/vincemakes/kiso/commit/3f77d06741cb39e2e98d09d8f55afae6d3bfe0ee
+- **Primary sources:** [recovery projection](https://github.com/vincemakes/kiso/blob/3f77d06741cb39e2e98d09d8f55afae6d3bfe0ee/packages/runtime/src/recovery-plan.ts), [execution identity and receipt repair ADR](https://github.com/vincemakes/kiso/blob/3f77d06741cb39e2e98d09d8f55afae6d3bfe0ee/docs/adrs/0025-execution-identity-and-crash-safe-recovery.md), [pure-projection ADR](https://github.com/vincemakes/kiso/blob/3f77d06741cb39e2e98d09d8f55afae6d3bfe0ee/docs/adrs/0048-recovery-as-projection.md), [crash matrix](https://github.com/vincemakes/kiso/blob/3f77d06741cb39e2e98d09d8f55afae6d3bfe0ee/packages/runtime/tests/crash-matrix.test.ts), and [purity checks](https://github.com/vincemakes/kiso/blob/3f77d06741cb39e2e98d09d8f55afae6d3bfe0ee/packages/runtime/tests/recovery-purity.test.ts)
+- **Discovery query:** GitHub Repository Search API `topic:ai-agent pushed:>2026-09-24 stars:>20`, sorted by updated; `total_count: 160`, `incomplete_results: false`
