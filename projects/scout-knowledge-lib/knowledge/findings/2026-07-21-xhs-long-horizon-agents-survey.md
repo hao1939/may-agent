@@ -1,7 +1,7 @@
 ---
 title: "Long-Horizon Agents Survey & Meta Proactive Reminding"
 date: 2026-07-21
-last_updated: 2026-07-21
+last_updated: 2026-09-25
 source_platform: xhs
 query: "AI agent 智能体"
 tags: [long-horizon-agents, agent-memory, proactive-reminding, survey]
@@ -25,6 +25,29 @@ our agent-architectures notes.
 - Source: https://www.xiaohongshu.com/explore/6a59efef0000000010026a8f
 - Author: Xiaoxi
 - Engagement: 367 likes
+
+### Body-level follow-up: recovery, not elapsed time, defines the horizon (2026-09-25)
+
+A separate XHS explainer of the same named survey makes a more operational
+claim: a long horizon is a deepening dependency chain, not merely a large step
+count or a long wall-clock runtime. It presents the agent as a model policy
+combined with a harness (`Agent = πθ ⊕ H`), where the harness owns state,
+tools, permissions, memory, verification, and recovery. It then describes three
+levels:
+
+1. **H1:** repeated act/observe/verify/revise cycles within one context window;
+2. **H2:** checkpointed state and handoff across contexts or sessions; and
+3. **H3:** reusable experience accumulated across tasks.
+
+This is a useful design hierarchy because each level adds a distinct continuity
+obligation. More tokens can extend H1, but they do not by themselves provide H2
+recovery or H3 learning. For evaluations, endpoint success should therefore be
+paired with evidence that the system can detect an error, restore a known state,
+resume from a checkpoint, and preserve only validated lessons for later runs.
+
+- **Source:** [长时程 Agent，如何走向长任务？](https://www.xiaohongshu.com/explore/6a7177fb0000000028003df5) — AF智域心识, note ID `6a7177fb0000000028003df5`
+- **Coverage:** Full text body and the visible comment area; attached images and the underlying survey were not inspected in this follow-up.
+- **Limitation:** This is the XHS author's interpretation of the survey, not a verification of the survey's taxonomy or formula. The post provides no paper URL, authors, experiments, benchmark results, or failure-rate measurements. Treat H1–H3 as a useful secondary-source framing until checked against the paper.
 
 ## Finding 2: Meta — Proactive Reminding to Solve Agent Forgetting
 
