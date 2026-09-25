@@ -1,8 +1,8 @@
 <ai_context>
-summary: "Implementation-evidence companion to agent-security-verified-enforcement.md. Uses pinned repositories, disclosures, and deployed-system reports to separate signed claims from replayable evidence; receipt integrity from completeness; configured policy from covered paths; identity enrollment from per-request proof; formal models from unsupported surfaces; observed egress from blocking; stable tool digests from equivalent semantics; policy verdicts from effect ownership; counterfactual actions from execution authority and real effect accounting; authorization receipts from effect gates; declared mediation architecture from per-effect path evidence; narrated results from positive execution evidence; sandbox isolation from configuration coherence; stop requests from observed quiescence; and frozen eval inputs from stable comparison units."
-triggers: ["SkillProof", "MCP server verification", "replayable evidence", "action receipt", "signed receipt", "evidence completeness", "Pipelock", "PassControl", "sender proof", "bearer visa", "authentication assurance", "default deny", "fail closed", "shell hook", "guardrail regression test", "OpenShell prover", "SMT containment", "path composition", "egress firewall", "uninspected egress", "tool identity", "tool pin", "schema canonicalization", "shadow mode", "mediation ownership", "counterfactual action", "observed policy action", "real effect accounting", "ctrlrun", "HOL Guard", "Action Evidence Package", "AEP sandbox", "Codex sandbox", "Overpatch", "Heapjack", "authority derivation", "Meta Muse", "local configuration authority", "APEXA", "execution integrity", "tool execution evidence", "BoxLite", "micro-VM", "sandbox configuration coherence", "guest network", "host jailer grants", "Hard Stop", "SIGSTOP", "process group preemption", "quiescence receipt", "run-assert-eval", "ASSERT", "Agent Control Specification", "fixed evaluation", "applicable denominator", "paired comparison", "safety helpfulness split"]
+summary: "Implementation-evidence companion to agent-security-verified-enforcement.md. Uses pinned repositories, disclosures, and deployed-system reports to separate signed claims from replayable evidence; verifier correctness from adversarial agent resistance; receipt integrity from completeness; configured policy from covered paths; identity enrollment from per-request proof; formal models from unsupported surfaces; observed egress from blocking; stable tool digests from equivalent semantics; policy verdicts from effect ownership; counterfactual actions from execution authority and real effect accounting; authorization receipts from effect gates; declared mediation architecture from per-effect path evidence; narrated results from positive execution evidence; sandbox isolation from configuration coherence; stop requests from observed quiescence; and frozen eval inputs from stable comparison units."
+triggers: ["SkillProof", "MCP server verification", "replayable evidence", "action receipt", "signed receipt", "evidence completeness", "MAX Authorization Sandbox", "signed policy", "adversary capability", "rollback state", "Pipelock", "PassControl", "sender proof", "bearer visa", "authentication assurance", "default deny", "fail closed", "shell hook", "guardrail regression test", "OpenShell prover", "SMT containment", "path composition", "egress firewall", "uninspected egress", "tool identity", "tool pin", "schema canonicalization", "shadow mode", "mediation ownership", "counterfactual action", "observed policy action", "real effect accounting", "ctrlrun", "HOL Guard", "Action Evidence Package", "AEP sandbox", "Codex sandbox", "Overpatch", "Heapjack", "authority derivation", "Meta Muse", "local configuration authority", "APEXA", "execution integrity", "tool execution evidence", "BoxLite", "micro-VM", "sandbox configuration coherence", "guest network", "host jailer grants", "Hard Stop", "SIGSTOP", "process group preemption", "quiescence receipt", "run-assert-eval", "ASSERT", "Agent Control Specification", "fixed evaluation", "applicable denominator", "paired comparison", "safety helpfulness split"]
 last_updated: "2026-09-25"
-source_basis: "Pinned-source implementation studies and disclosures reviewed 2026-09-10 through 2026-09-25: SkillProof f5ddb4b, Pipelock f7d1816, agent-guardrails-kit 18c241e, PassControl f9cb702, OpenShell df0ee1a, k8s-rca-agent 29f5fad, secure-agent 017ec5a, Rul1an/assay 900e536, Soup Wall be8db48, HOL Guard 56faea4 and f5d568f, ctrlrun 8ebc5a8, aep-sandbox 3495e27, BoxLite 9e9436e, Hard Stop 45c31bc, responsibleai/ASSERT 0628e25, HN items 49795755, 49802030, 49830567, 49834450, 49834720, and 49840107 with their linked primary sources, plus arXiv 2609.24165v1 (abstract and full HTML). Each section states its own evidence boundary."
+source_basis: "Pinned-source implementation studies and disclosures reviewed 2026-09-10 through 2026-09-25: SkillProof f5ddb4b, MAX Authorization Sandbox 380efe6, Pipelock f7d1816, agent-guardrails-kit 18c241e, PassControl f9cb702, OpenShell df0ee1a, k8s-rca-agent 29f5fad, secure-agent 017ec5a, Rul1an/assay 900e536, Soup Wall be8db48, HOL Guard 56faea4 and f5d568f, ctrlrun 8ebc5a8, aep-sandbox 3495e27, BoxLite 9e9436e, Hard Stop 45c31bc, responsibleai/ASSERT 0628e25, HN items 49795755, 49802030, 49830567, 49834450, 49834720, 49840107, and 49841469 with their linked primary sources, plus arXiv 2609.24165v1 (abstract and full HTML). Each section states its own evidence boundary."
 </ai_context>
 
 # Agent Security: Enforcement Evidence and Runtime Coverage
@@ -69,6 +69,76 @@ not yet a fully replayable independent replication.
 Do not collapse levels 2–5 into “verified.” A signature protects provenance and
 integrity; reproducibility and independent replication establish different
 properties.
+
+## A Signed-Policy Sandbox Is Not Yet an Agent-Resistance Test (HN, September 2026)
+
+**Source:** https://news.ycombinator.com/item?id=49841469
+
+**Repo:** https://github.com/max-russo-com/MAX_AUTHORIZATION_SANDBOX
+
+**Pinned observation:** repository commit
+`380efe64764ffdb381d40b2d1d6311599bbdaefc`
+
+The MAX Authorization Sandbox makes a useful, unusually narrow claim: can its
+Rust baseline be made to execute `READ_SECRET` while the active signed manifest
+allows only `STATUS` and `PING`? At the pinned commit, the implementation parses
+its manifest and signature envelope with unknown fields denied, checks the exact
+manifest hash and signed text, verifies a SPHINCS+ signature against a bundled
+administrator public key, rejects unknown or duplicate actions, and checks the
+allow-list both before and inside the effect function. Its policy-state machine
+also rejects a lower sequence and a different manifest at the same sequence.
+The Docker profile narrows the process further with a read-only root filesystem,
+all Linux capabilities dropped, `no-new-privileges`, and a dedicated writable
+state volume.
+
+That is a reproducible verifier and closed-world authorization exercise, but the
+HN framing asks a broader question than the artifact currently tests. The
+repository contains no AI-agent harness, tool adapter, prompt corpus, attack
+campaign, or published attempt results. The command-line path accepts one of
+three fixed action names; the HTTP candidate path accepts a caller-supplied
+manifest and signature but still verifies them against the bundled key. The
+suite has positive and negative unit cases for parsing, signatures, action
+selection, and sequence transitions, not evidence that an autonomous adversary
+could reach every relevant mutation or effect path.
+
+The implementation also reveals why the adversary contract matters. Rollback
+protection is local state, and absence of that state is treated as first-use
+initialization. The container preserves it in a writable volume, while the trust
+key, signed manifest, and binary are on the read-only image. This is coherent for
+the documented container profile; it does not by itself establish who may reset
+or replace the volume, alter files in a non-container run, invoke another secret
+path, or compromise the process. Post-quantum signature strength addresses
+policy authenticity, not those runtime-authority questions.
+
+A meaningful agent-resistance evaluation should therefore declare and exercise
+at least four surfaces:
+
+1. **Policy input:** malformed, unknown, replayed, conflicting, and correctly
+   signed newer policies.
+2. **Trust and continuity:** key replacement, state deletion or rollback,
+   interrupted state writes, and restart behavior under the privileges actually
+   granted to the adversary.
+3. **Effect reachability:** every direct and indirect path to the protected
+   secret, including paths that bypass the named action dispatcher.
+4. **Agent campaign:** the exact tools, filesystem/network authority, budget,
+   seeds, attempts, successes, and preserved traces.
+
+Until those are supplied, a failed bypass means the tested verifier cases held;
+it does not measure “AI agents” as a class or establish that the deployment has
+complete mediation.
+
+**Evidence inspected at the pinned commit:**
+[`README.md`](https://github.com/max-russo-com/MAX_AUTHORIZATION_SANDBOX/blob/380efe64764ffdb381d40b2d1d6311599bbdaefc/README.md),
+[`src/lib.rs`](https://github.com/max-russo-com/MAX_AUTHORIZATION_SANDBOX/blob/380efe64764ffdb381d40b2d1d6311599bbdaefc/src/lib.rs),
+[`src/main.rs`](https://github.com/max-russo-com/MAX_AUTHORIZATION_SANDBOX/blob/380efe64764ffdb381d40b2d1d6311599bbdaefc/src/main.rs),
+[`compose.yml`](https://github.com/max-russo-com/MAX_AUTHORIZATION_SANDBOX/blob/380efe64764ffdb381d40b2d1d6311599bbdaefc/compose.yml),
+and
+[`.github/workflows/ci.yml`](https://github.com/max-russo-com/MAX_AUTHORIZATION_SANDBOX/blob/380efe64764ffdb381d40b2d1d6311599bbdaefc/.github/workflows/ci.yml).
+
+**Evidence boundary:** this source inspection establishes what the pinned code,
+tests, and container configuration declare. It did not independently conduct an
+adversarial campaign, prove absence of alternate effect paths, or validate the
+broader MAX products that the repository itself excludes from scope.
 
 ## A Receipt's Validity Is a Vector, Not a Boolean (GitHub, September 2026)
 
