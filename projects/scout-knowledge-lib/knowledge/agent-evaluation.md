@@ -1,7 +1,8 @@
 <ai_context>
 summary: "Canonical reference for agent evaluation patterns and testing tooling: live benchmarks, execution-trace verification, task-grounded memory evaluation, diversity-seeking adversarial scenario archives, categorical observer-based progress forecasting, conversation-level certification, reviewer agents, operational metrics (MTBF, CPT, context efficiency), repeated A/B tests of agent-tooling configurations, artifact-grounded reproduction, induced-objective red-team interpretation, XHS community trends, June 2026 testing tooling landscape (promptfoo, RagaAI, Layer-Isolated methodology, CI containment tools), benchmark-saturation responses from HN practitioners, benchmark-family/data-engine patterns, trace-to-eval asset compilation, the Diagnostic Refinement wave (typed failure characterization via LegalHalluLens, EARS, Thermodynamic Signatures, Rift), Deployment Unit Turn (configuration-level evaluation), and the Observability Inversion (process discipline evaluation via RigorBench, small critics, structural code quality). Research-frontier patterns (§12–§35) extracted to companion note agent-evaluation-research.md."
-triggers: ["evaluation", "benchmark", "reviewer agent", "feedback", "Agent-Eval-Agent", "evaluator agent", "gym", "MTBF", "context efficiency", "trajectory", "testing tooling", "promptfoo", "agent testing", "CI agent", "layer-isolated", "A/B test", "agent tooling experiment", "skill selection reliability", "request exposure", "conditional quality", "diagnostic refinement", "typed hallucination", "LegalHalluLens", "EARS abstention", "Rift deception", "thermodynamic signatures", "process discipline", "process observability", "RigorBench", "small critic", "structural code quality", "Topos", "benchmark family", "data engine", "harness variance", "anytime-valid", "confidence sequence", "optional stopping", "pseudoreplication", "cluster bootstrap", "holdout leakage", "SkillTV-Bench", "JudgeSkill", "skill-aware verification", "rollout selection", "EvoTrace", "trace mining", "executable eval assets", "verifier provenance", "environment reconstruction", "claim verification", "negative memory", "evidence ledger", "information-weighted verification", "reproducibility bundle", "replay coverage", "claim-artifact matrix", "evaluation fingerprint", "source closure", "verifiable credential", "self-reported transcript", "Agents School", "evaluation evidence class", "causal witness", "matched null", "behavior-first evaluation", "reconstruction test", "artifact-grounded reproduction", "agent-generated evidence", "outside feedback", "insurance benchmark", "document routing", "system reliability", "abstention", "induced objective", "red-team interpretation", "effect-state classification", "conversation-level evaluation", "compositional certification", "evidence-cited diagnosis", "declared observed delegation", "prompt treatment", "measurement ownership", "paired prompt evaluation", "production feedback loop", "progress forecasting", "Jev sentinel", "AgentJev", "local decision model", "categorical progress rubric", "remaining time prediction", "DolphinBench", "agent memory evaluation", "memory Pareto frontier", "OSWorld-Pro", "process-based evaluation", "subgoal feasibility", "failure persistence", "infeasible persistence", "process judge calibration", "PhysAudit", "scientific validation", "domain invariant", "claim-specific check", "deterministic numerical verdict", "Life Forge", "MAP-Elites", "quality-diversity", "adversarial scenario archive"]
+triggers: ["evaluation", "benchmark", "reviewer agent", "feedback", "Agent-Eval-Agent", "evaluator agent", "gym", "MTBF", "context efficiency", "trajectory", "testing tooling", "promptfoo", "agent testing", "CI agent", "layer-isolated", "A/B test", "agent tooling experiment", "skill selection reliability", "request exposure", "conditional quality", "diagnostic refinement", "typed hallucination", "LegalHalluLens", "EARS abstention", "Rift deception", "thermodynamic signatures", "process discipline", "process observability", "RigorBench", "small critic", "structural code quality", "Topos", "benchmark family", "data engine", "harness variance", "anytime-valid", "confidence sequence", "optional stopping", "pseudoreplication", "cluster bootstrap", "holdout leakage", "SkillTV-Bench", "JudgeSkill", "skill-aware verification", "rollout selection", "EvoTrace", "trace mining", "executable eval assets", "verifier provenance", "environment reconstruction", "claim verification", "negative memory", "evidence ledger", "information-weighted verification", "reproducibility bundle", "replay coverage", "claim-artifact matrix", "evaluation fingerprint", "source closure", "verifiable credential", "self-reported transcript", "Agents School", "evaluation evidence class", "causal witness", "matched null", "behavior-first evaluation", "reconstruction test", "artifact-grounded reproduction", "agent-generated evidence", "outside feedback", "insurance benchmark", "document routing", "system reliability", "abstention", "induced objective", "red-team interpretation", "effect-state classification", "conversation-level evaluation", "compositional certification", "evidence-cited diagnosis", "declared observed delegation", "prompt treatment", "measurement ownership", "paired prompt evaluation", "production feedback loop", "progress forecasting", "Jev sentinel", "AgentJev", "local decision model", "categorical progress rubric", "remaining time prediction", "DolphinBench", "agent memory evaluation", "memory Pareto frontier", "OSWorld-Pro", "process-based evaluation", "subgoal feasibility", "failure persistence", "infeasible persistence", "process judge calibration", "PhysAudit", "scientific validation", "domain invariant", "claim-specific check", "deterministic numerical verdict", "measurement state", "not measured", "Vigiles", "Life Forge", "MAP-Elites", "quality-diversity", "adversarial scenario archive"]
 last_updated: "2026-09-25"
+source_update_2026_09_25_vigiles: "zernie/vigiles at commit 95e18bed473b1d4e56dfa8fd8b9c735c4f76e2f1; README, complete repository tree, audit scoring implementation and tests, harness-test and eval-lock implementation, command documentation, and package scripts were inspected. No test suite, audit, harness test, or live-model evaluation was run."
 source_update_2026_09_25_caliper: "edonadei/caliper at commit 40c7a0e954e4b1fde6990184f8a18a19e7f4ffdb; README, result/spec documentation, six design records, comparison/ablation/result implementation, and selected tests were inspected. No test suite or agent evaluation was run."
 source_update_2026_09_25_hippo_memory: "kitfunso/hippo-memory at commit d4e163339d1e0a842caa759eadda6cce5161771b; preregistrations, result reports, raw-result references, public benchmark artifacts, and the folded independent critique were inspected. No benchmark or test suite was run."
 source_update_2026_09_25_kitaru: "zenml-io/kitaru at commit 618e58f06a828b39aa9b2195a1aa97d748f05155; replay, cohort, and experiment documentation plus Mastra replay-safety tests were inspected. The suite was not run."
@@ -19,6 +20,42 @@ execution-based verification and continuous operational metrics. This note
 consolidates durable evaluation patterns and dated XHS trend observations.
 
 ## Durable Patterns
+
+### Score the observation state before scoring the result — Vigiles (GitHub, Sep 2026)
+
+Vigiles implements a useful three-way distinction for agent-harness evaluation:
+**not applicable**, **not measured**, and **measured zero**. Its audit scorer
+uses `null` without a flag when no evaluable surface exists, `null` plus a
+`notMeasured` flag when a surface exists but no firing check ran, and numeric
+`0` when the firing tier actually ran and covered nothing. Tests assert that
+all three render differently. This prevents an unasked question from looking
+like a failed experiment—or, more dangerously, an empty surface from looking
+healthy because no check could fail.
+
+The repository also separates four evidence layers. `lint` checks deterministic
+references and contracts; `test` drives scripted harness behavior without a
+model; `eval` measures live-model behavior; and `audit` reports the available
+evidence. The package exposes distinct scripts for unit, integration, E2E,
+harness, and live evaluation runs. That split makes “the configuration parses,”
+“the guard blocks,” and “the skill helps a model” separate claims rather than
+successively stronger labels for one result.
+
+A caveat is equally instructive: the current headline integrity grade excludes
+the advisory Tested and Evaluated rings. A structurally clean harness can
+therefore retain a high overall grade while behavioral or model-level evidence
+is explicitly `not measured`. Consumers should preserve that policy boundary:
+show structural health and evidence coverage separately, and never translate a
+high static grade into an empirical effectiveness claim.
+
+**Reusable rule:** define the measurement-state enum before the metric. At
+minimum, preserve inapplicable, unasked, attempted-with-no-valid-result, measured
+failure, and measured success through storage, scoring, and presentation. Then
+bind each claim to the weakest evidence layer that actually supports it.
+
+- **Repo:** [zernie/vigiles](https://github.com/zernie/vigiles)
+- **Inspected revision:** [`95e18bed473b1d4e56dfa8fd8b9c735c4f76e2f1`](https://github.com/zernie/vigiles/tree/95e18bed473b1d4e56dfa8fd8b9c735c4f76e2f1)
+- **Evidence inspected:** [audit scorer](https://github.com/zernie/vigiles/blob/95e18bed473b1d4e56dfa8fd8b9c735c4f76e2f1/src/audit-score.ts), [scorer tests](https://github.com/zernie/vigiles/blob/95e18bed473b1d4e56dfa8fd8b9c735c4f76e2f1/src/audit-score.test.ts), [command model](https://github.com/zernie/vigiles/blob/95e18bed473b1d4e56dfa8fd8b9c735c4f76e2f1/docs/commands-and-how-they-relate.md), and [package scripts](https://github.com/zernie/vigiles/blob/95e18bed473b1d4e56dfa8fd8b9c735c4f76e2f1/package.json).
+- **Coverage limit:** static repository inspection only; Scout did not run Vigiles, its tests, a harness test, or a live-model evaluation.
 
 ### An ablation needs a recorded environment, not only a missing component — Caliper (GitHub, Sep 2026)
 
