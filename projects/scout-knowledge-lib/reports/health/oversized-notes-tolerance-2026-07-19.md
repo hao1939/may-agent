@@ -1,6 +1,6 @@
 <ai_context>
 summary: "Rolling review record for oversized canonical notes. Documents why each exceeds the 800-line threshold and whether a split is warranted."
-last_updated: "2026-09-23"
+last_updated: "2026-09-25"
 </ai_context>
 
 # Oversized Notes Tolerance Record — 2026-07-19
@@ -108,6 +108,25 @@ an exact forwarding link and verify the retained digest targets. No child task
 is warranted because this is a bounded follow-up for the standing maintenance
 task, not independent work.
 
+## Targeted recurrence — 2026-09-25 (evaluation, runtime, and enforcement)
+
+The observer named three canonical notes. Direct counts again differ by one from
+its physical-line convention: `agent-evaluation.md` is 2,561 newline-counted
+lines, `agent-runtime-hardening.md` is 987, and
+`agent-security-enforcement-evidence.md` is 1,467.
+
+| Note | Observer / direct lines | Current evidence and disposition |
+|------|------------------------:|----------------------------------|
+| `agent-evaluation.md` | 2562 / 2561 | **Defer the already-planned split during current intake.** Two source publications landed on September 25 at 14:06 and 16:07 UTC, adding 112 net lines. `Durable Patterns` now reaches line 1,991 and the whole note has 66 level-three headings. Thirty-two distinct inbound fragments from knowledge, reports, and retained/working digests make a bulk move unsafe without exact forwarding anchors. The September 22 split direction remains useful, but the boundary must be frozen in an isolated pass after intake settles. |
+| `agent-runtime-hardening.md` | 988 / 987 | **Retain the catalog.** It has 29 substantive level-two patterns plus one closing companion catalog; the patterns span runtime-state admission, bounded recovery, transactional effects, harness controls, restoration, and adaptation rather than one duplicate or independently reusable tail. The latest source addition was September 23, and only five inbound fragments were found, but line count alone does not establish a better boundary. Re-review if a coherent multi-pattern cluster emerges or growth materially exceeds 1,000 lines. |
+| `agent-security-enforcement-evidence.md` | 1468 / 1467 | **Retain during continuing intake.** The dedicated enforcement review was refreshed earlier on September 25 at 1,365 newline-counted lines. Two later source publications at 14:03 and 18:06 UTC added 115 and removed 13 lines, so the newest landed effectively with this observer packet. The note now has 19 level-two studies and five level-three follow-ups. This strengthens the existing no-split reason: freeze a thematic boundary and preserve fragments only after the active source burst settles. |
+
+No child task, second report, or threshold-only split is warranted. The existing
+standing maintenance task can revisit the evaluation boundary after the source
+lane stabilizes; the runtime catalog has no newly verified lossless boundary,
+and the enforcement companion's dedicated review already defines the criteria
+for a later second split.
+
 ## Unsourced INDEX batch — 2026-09-18
 
 The observer reported 200 entries still marked `Not yet sourced` after 34
@@ -120,11 +139,12 @@ not a claim that every source was freshly retrieved during this review.
 ## Current summary
 
 The previously recommended diagnostic-layers split is complete.
-`agent-evaluation.md` remains the next split candidate, but the 2026-09-23
+`agent-evaluation.md` remains the next split candidate, but the September 25
 recurrence confirms that source intake is still active and that its proposed
-boundary now needs explicit heading-forwarding and digest-link preservation.
-The 2026-09-22 review also defers a second
-`agent-runtime-verdict-integrity.md` split during same-day source intake. Other
-oversized signals are format-appropriate logs/ledgers or previously reviewed
-notes. The unsourced backlog received a small evidence-checked batch rather than
-a bulk metric edit.
+boundary needs explicit heading-forwarding and digest-link preservation.
+`agent-runtime-hardening.md` remains a broad pattern catalog without a newly
+verified reusable split boundary. The enforcement-evidence companion also
+received a source publication effectively with the current observer packet, so
+its dedicated no-second-split criteria still apply. Other oversized signals are
+format-appropriate logs/ledgers or previously reviewed notes. The unsourced
+backlog received a small evidence-checked batch rather than a bulk metric edit.
