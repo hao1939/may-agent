@@ -2,6 +2,7 @@
 summary: "Canonical reference for agent evaluation patterns and testing tooling: live benchmarks, execution-trace verification, task-grounded memory evaluation, diversity-seeking adversarial scenario archives, categorical observer-based progress forecasting, conversation-level certification, reviewer agents, operational metrics (MTBF, CPT, context efficiency), repeated A/B tests of agent-tooling configurations, artifact-grounded reproduction, induced-objective red-team interpretation, XHS community trends, June 2026 testing tooling landscape (promptfoo, RagaAI, Layer-Isolated methodology, CI containment tools), benchmark-saturation responses from HN practitioners, benchmark-family/data-engine patterns, trace-to-eval asset compilation, the Diagnostic Refinement wave (typed failure characterization via LegalHalluLens, EARS, Thermodynamic Signatures, Rift), Deployment Unit Turn (configuration-level evaluation), and the Observability Inversion (process discipline evaluation via RigorBench, small critics, structural code quality). Research-frontier patterns (§12–§35) extracted to companion note agent-evaluation-research.md."
 triggers: ["evaluation", "benchmark", "reviewer agent", "feedback", "Agent-Eval-Agent", "evaluator agent", "gym", "MTBF", "context efficiency", "trajectory", "testing tooling", "promptfoo", "agent testing", "CI agent", "layer-isolated", "A/B test", "agent tooling experiment", "skill selection reliability", "request exposure", "conditional quality", "diagnostic refinement", "typed hallucination", "LegalHalluLens", "EARS abstention", "Rift deception", "thermodynamic signatures", "process discipline", "process observability", "RigorBench", "small critic", "structural code quality", "Topos", "benchmark family", "data engine", "harness variance", "anytime-valid", "confidence sequence", "optional stopping", "pseudoreplication", "cluster bootstrap", "holdout leakage", "SkillTV-Bench", "JudgeSkill", "skill-aware verification", "rollout selection", "EvoTrace", "trace mining", "executable eval assets", "verifier provenance", "environment reconstruction", "claim verification", "negative memory", "evidence ledger", "information-weighted verification", "reproducibility bundle", "replay coverage", "claim-artifact matrix", "evaluation fingerprint", "source closure", "verifiable credential", "self-reported transcript", "Agents School", "evaluation evidence class", "causal witness", "matched null", "behavior-first evaluation", "reconstruction test", "artifact-grounded reproduction", "agent-generated evidence", "outside feedback", "insurance benchmark", "document routing", "system reliability", "abstention", "induced objective", "red-team interpretation", "effect-state classification", "conversation-level evaluation", "compositional certification", "evidence-cited diagnosis", "declared observed delegation", "prompt treatment", "measurement ownership", "paired prompt evaluation", "production feedback loop", "progress forecasting", "Jev sentinel", "AgentJev", "local decision model", "categorical progress rubric", "remaining time prediction", "DolphinBench", "agent memory evaluation", "memory Pareto frontier", "OSWorld-Pro", "process-based evaluation", "subgoal feasibility", "failure persistence", "infeasible persistence", "process judge calibration", "PhysAudit", "scientific validation", "domain invariant", "claim-specific check", "deterministic numerical verdict", "Life Forge", "MAP-Elites", "quality-diversity", "adversarial scenario archive"]
 last_updated: "2026-09-25"
+source_update_2026_09_25_hippo_memory: "kitfunso/hippo-memory at commit d4e163339d1e0a842caa759eadda6cce5161771b; preregistrations, result reports, raw-result references, public benchmark artifacts, and the folded independent critique were inspected. No benchmark or test suite was run."
 source_update_2026_09_25_kitaru: "zenml-io/kitaru at commit 618e58f06a828b39aa9b2195a1aa97d748f05155; replay, cohort, and experiment documentation plus Mastra replay-safety tests were inspected. The suite was not run."
 source_update_2026_09_23: "HN item 49813880 and Life Forge repository at commit b747337d6de0a280af7c9e19b8a4e794137121e8; relevant source, bundled reports, test-suite manifest, and an offline reference-agent run were inspected."
 source_update_2026_09_23_detection_modes: "HN item 49815867 and the Nothing Threw essay, README, taxonomy, and September field notes were reviewed at repository commit c17bc3afb70c1168708082a7d94884075a8e293e."
@@ -16,6 +17,59 @@ execution-based verification and continuous operational metrics. This note
 consolidates durable evaluation patterns and dated XHS trend observations.
 
 ## Durable Patterns
+
+### Preregistration must prove the treatment can act and the guard measures the intended harm — Hippo Memory (GitHub, Sep 2026)
+
+Hippo Memory's public evaluation ledger provides an unusually useful negative
+lesson: locking a rule before a run prevents one class of hindsight, but does
+not make the rule or workload meaningful. In its first decay-default campaign,
+a 365-day half-life improved the declared current-fact metric by 45.5 percentage
+points over seven days, yet failed a guard based on how often a marked-bad
+memory remained in the top five. The post-run analysis found that seven days
+looked safer mainly because it forgot the correct answer too. The authors kept
+the locked verdict for that seed block, declared the guard mistake, and opened
+a new registration on untouched seeds 41–60 using `cleanTrapR5` plus explicit
+demoted- and superseded-memory break-even tests. That second campaign selected
+365 days.
+
+A later mechanism audit exposes two other pre-run validity checks that should
+be part of the registration itself:
+
+1. **Treatment observability.** A 20-session synthetic workload barely exercises
+a 365-day half-life. The report explicitly says its decay null was weak and that
+this limitation was knowable when the lane was registered. Before spending a
+lane, estimate the treatment's expected exposure or require a manipulation
+check showing that the compared configurations actually diverge on the sampled
+workload.
+2. **Population validity before verdict computation.** One seed in the R4 lane
+missed its workload-validity threshold, so the report preserved diagnostics but
+issued no verdict—even though the descriptive differences looked favorable.
+Run such eligibility gates before the expensive trial where possible, and keep
+failed-gate data outside the confirmatory claim.
+3. **Guard semantics, not only guard thresholds.** Test a guard against trivial
+strategies that reduce the named harm while destroying utility: forget
+everything, abstain always, or suppress all retrieval. A safety metric should
+usually be paired with retained-task performance or a conditional measure on
+cases where the hazard is actually present.
+
+The repository's folded independent critique also corrected direction errors,
+a scorer-dependent overclaim, a replication mismatch, and missing migration
+risk before release sign-off. This supports a broader four-part contract for a
+confirmatory agent evaluation: lock the decision rule; prove the treatment can
+act; adversarially test the guard's semantics; and retain a correction channel
+that can invalidate the claim without silently rewriting the locked run. If the
+correction changes the rule after outcomes were seen, freeze that run as
+diagnostic and use a fresh population for the new confirmatory claim.
+
+**Evidence boundary:** this is static inspection of repository-authored plans,
+result reports, raw-result references, and the critique folded into the result
+at commit `d4e163339d1e0a842caa759eadda6cce5161771b`. I did not run the benchmark,
+recompute its intervals, or independently inspect the home-box artifacts that
+the result says were not committed.
+
+- **Repo:** https://github.com/kitfunso/hippo-memory
+- **Inspected revision:** [`d4e163339d1e0a842caa759eadda6cce5161771b`](https://github.com/kitfunso/hippo-memory/commit/d4e163339d1e0a842caa759eadda6cce5161771b)
+- **Primary sources:** [first decay result and guard diagnosis](https://github.com/kitfunso/hippo-memory/blob/d4e163339d1e0a842caa759eadda6cce5161771b/docs/evals/2026-09-24-decay-default-result.md), [fresh-seed registration](https://github.com/kitfunso/hippo-memory/blob/d4e163339d1e0a842caa759eadda6cce5161771b/docs/evals/2026-09-24-decay-default-prereg-2.md), and [mechanism audit with validity gates, self-audit, and folded critique](https://github.com/kitfunso/hippo-memory/blob/d4e163339d1e0a842caa759eadda6cce5161771b/docs/evals/2026-09-23-mechanism-audit-round2-result.md)
 
 ### Counterfactual replay needs a fidelity gate and a sealed effect boundary — Kitaru (GitHub, Sep 2026)
 
