@@ -70,6 +70,10 @@ Migration and project-operation artifacts live outside `knowledge/`:
 
 ## Recent Source-Grounded Findings
 
+### 2026-09-25
+
+- [Agent file exchange needs grant identity after execution starts](./findings/2026-09-25-grant-scoped-agent-files.md) — pinned Nanocodex source carries grant identity through immutable input receipts, retained turn ownership, artifact publication, and exact retrieval routes, while explicitly leaving shared execution memory outside that isolation boundary; tests were inspected but not run.
+
 ### 2026-09-24
 
 - [A passing agent patch still spends someone else's review budget](./findings/2026-09-24-agent-patch-review-consent.md) — a merged VisiData patch separates artifact provenance, attributable human verification, bot identity, repository consent, and maintainer review capacity; the broader marketplace dispute remains social evidence rather than a controlled study.
