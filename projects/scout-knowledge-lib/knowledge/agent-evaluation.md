@@ -4,6 +4,7 @@ triggers: ["evaluation", "benchmark", "reviewer agent", "feedback", "Agent-Eval-
 last_updated: "2026-09-25"
 source_update_2026_09_25_hippo_memory: "kitfunso/hippo-memory at commit d4e163339d1e0a842caa759eadda6cce5161771b; preregistrations, result reports, raw-result references, public benchmark artifacts, and the folded independent critique were inspected. No benchmark or test suite was run."
 source_update_2026_09_25_kitaru: "zenml-io/kitaru at commit 618e58f06a828b39aa9b2195a1aa97d748f05155; replay, cohort, and experiment documentation plus Mastra replay-safety tests were inspected. The suite was not run."
+source_update_2026_09_25_agentlens: "HN item 49848914 and fang520huang-lgtm/AgentLens at commit 30a5301f1ce76bc6048ee28a879aaca2c710a7e8; README, session schema, comparison and redaction implementation, tests, and complete repository tree were inspected. All 12 repository tests passed locally under Node."
 source_update_2026_09_23: "HN item 49813880 and Life Forge repository at commit b747337d6de0a280af7c9e19b8a4e794137121e8; relevant source, bundled reports, test-suite manifest, and an offline reference-agent run were inspected."
 source_update_2026_09_23_detection_modes: "HN item 49815867 and the Nothing Threw essay, README, taxonomy, and September field notes were reviewed at repository commit c17bc3afb70c1168708082a7d94884075a8e293e."
 source_update_2026_09_23_apprenticebench: "HN item 49819853 and NeoCognition's ApprenticeBench article were reviewed. The evidence is a first-party benchmark report; no public task corpus, trajectories, or independent reproduction was located from the linked benchmark sites."
@@ -127,6 +128,59 @@ structure and provenance still determine how strong a causal claim can be.
 - **Mastra safety tests:** https://github.com/zenml-io/kitaru/blob/618e58f06a828b39aa9b2195a1aa97d748f05155/packages/mastra/test/replay-safety.test.ts
 - **Coverage:** complete repository README and the three concept pages above;
   selected Mastra replay-safety test file; repository tree was not truncated
+
+### A first captured divergence is a localization clue, not a causal verdict — AgentLens (HN/GitHub, Sep 2026)
+
+AgentLens wraps Codex's JSONL stream and takes bounded workspace snapshots before
+and after a run. Its comparison report aligns two normalized timelines and marks
+the first event whose kind, command, status, exit code, output, file, or message
+differs. It also presents unique commands and inferred file views, patch
+differences, token deltas, and changes in prompt, requested model, Git state, or
+sandbox. The useful pattern is a compact **divergence packet**: preserve enough
+run identity and evidence to tell a reviewer where two executions first became
+observably different, instead of asking them to compare two prose summaries.
+
+The boundary is as important as the feature. This is post-hoc capture and
+visualization, not deterministic execution replay. File views are inferred from
+read/search commands rather than recorded by a complete access monitor;
+workspace snapshots skip binaries and enforce per-file, total-size, and
+file-count limits; the requested model is `null` when Codex chooses its default;
+and a recovered interrupted run may lack the final patch. The tool itself says
+the first captured difference is not a proven cause. Two runs can therefore
+look identical until a late event even when an unobserved dependency diverged
+earlier, or appear different because capture coverage and environment identity
+were not comparable.
+
+For evaluation, treat the report as a localization aid with an admission gate:
+compare producer and agent versions, model identity, Git and dirty state,
+platform, sandbox, outcome, and capture coverage before interpreting the first
+difference. Preserve skipped-file reasons beside the comparison. If the aim is
+a causal treatment claim, still require controlled repeat structure and an
+effect-sealed replay or equivalent environmental control; a side-by-side trace
+alone does not provide either.
+
+Default-redacted standalone HTML is useful for review, but it is a separate
+claim from complete evidence. AgentLens uses pattern-based redaction and warns
+that it cannot guarantee every secret is caught; the local artifacts retain
+original commands, outputs, and code. Redacted exports should therefore be
+reviewed before sharing, and masked differences must not be interpreted as
+absence of divergence.
+
+**Evidence boundary:** Scout inspected the complete, non-truncated repository
+tree plus the README, session schema, comparison implementation, redaction
+implementation, and feature tests at pinned revision
+`30a5301f1ce76bc6048ee28a879aaca2c710a7e8`. All 12 repository tests passed
+locally under Node, including synthetic JSONL normalization, comparison,
+redaction, recovery, and signal-finalization cases. Scout did not record a real
+Codex run, validate redaction against an independent secret corpus, or test the
+capture limits on a large workspace.
+
+- **HN item:** https://news.ycombinator.com/item?id=49848914
+- **Repo:** https://github.com/fang520huang-lgtm/AgentLens
+- **Pinned revision:** https://github.com/fang520huang-lgtm/AgentLens/commit/30a5301f1ce76bc6048ee28a879aaca2c710a7e8
+- **Session schema:** https://github.com/fang520huang-lgtm/AgentLens/blob/30a5301f1ce76bc6048ee28a879aaca2c710a7e8/docs/session-schema.md
+- **Comparison implementation:** https://github.com/fang520huang-lgtm/AgentLens/blob/30a5301f1ce76bc6048ee28a879aaca2c710a7e8/src/compare.js
+- **Feature tests:** https://github.com/fang520huang-lgtm/AgentLens/blob/30a5301f1ce76bc6048ee28a879aaca2c710a7e8/test/features.test.js
 
 ### Record how failures were detected, not only what failed — Nothing Threw (HN/GitHub, Sep 2026)
 
