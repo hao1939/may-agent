@@ -1,8 +1,8 @@
 <ai_context>
-summary: "Agent failure modes observed in production and research: context overflow, tool misuse, infinite loops, status errors, error-lifecycle confusion, retries that reproduce latent or semantic faults, and incorrect in-context examples that overpower explicit skill rules. Covers symptoms, causes, evidence limits, and mitigations, including controlled replay for separating causal repair from stochastic resampling."
-triggers: ["failure mode", "agent failure", "blocked", "context overflow", "tool hallucination", "infinite loop", "scope confusion", "false blocked", "status misclassification", "blind retry", "cascade radius", "OrchestraBench", "trusted state", "SymTrace", "SymFail", "controlled replay", "stochastic repair", "intervention anchor", "skill rule", "conflicting history", "bad examples", "session history"]
+summary: "Agent failure modes observed in production, research, and practitioner reports: context overflow, tool misuse, infinite loops, status errors, error-lifecycle confusion, retries that reproduce latent or semantic faults, incorrect in-context examples that overpower explicit skill rules, and long-running-agent blind spots around liveness, stale status, delegated access, and persistent jobs. Covers symptoms, causes, evidence limits, and mitigations, including controlled replay for separating causal repair from stochastic resampling."
+triggers: ["failure mode", "agent failure", "blocked", "context overflow", "tool hallucination", "infinite loop", "scope confusion", "false blocked", "status misclassification", "blind retry", "cascade radius", "OrchestraBench", "trusted state", "SymTrace", "SymFail", "controlled replay", "stochastic repair", "intervention anchor", "skill rule", "conflicting history", "bad examples", "session history", "persistent agent", "known-answer liveness", "stale status", "restore test", "delegated access", "persistent job"]
 last_updated: "2026-09-25"
-source_basis: "Original: May 2024 community discourse synthesis. Updated 2026-06-22 with scope-boundary confusion and infrastructure status-misclassification evidence; 2026-08-07 with TrajDebug's error-lifecycle model; 2026-08-09 with OrchestraBench's controlled retry, cascade, and trusted-state probes; 2026-08-27 with SymTrace/SymFail's controlled comparison of replay, rerun, and symptom-driven intervention; and 2026-09-25 with a controlled Qwen3 8B demonstration-history experiment surfaced on Hacker News."
+source_basis: "Original: May 2024 community discourse synthesis. Updated 2026-06-22 with scope-boundary confusion and infrastructure status-misclassification evidence; 2026-08-07 with TrajDebug's error-lifecycle model; 2026-08-09 with OrchestraBench's controlled retry, cascade, and trusted-state probes; 2026-08-27 with SymTrace/SymFail's controlled comparison of replay, rerun, and symptom-driven intervention; and 2026-09-25 with a controlled Qwen3 8B demonstration-history experiment surfaced on Hacker News plus a pseudonymous Reddit account of four failures in a months-running agent."
 </ai_context>
 
 # AI Agent Failure Modes & Solutions (Research Synthesis)
@@ -308,3 +308,53 @@ reception adds no corroboration.
 
 Source: https://codecut.ai/agent-skills-bad-session-history/  
 HN: https://news.ycombinator.com/item?id=49839869
+
+### 11. Long-running agents need external positive checks and bounded persistence (September 2026)
+
+A pseudonymous Reddit post describes four failures attributed to an AI agent
+running for months with disk memory and scheduled jobs. The account is unusually
+useful because each incident separates a superficially reassuring observation
+from the evidence that would actually settle the operational question:
+
+- Memory retrieval returned valid but empty responses for most of a day. A
+  transport health check would therefore have passed. The proposed correction
+  is an external monitor that issues a known-answer query and treats a missed
+  deadline as failure.
+- Several memory backups failed because the mounted and compiled paths differed.
+  The agent first labeled them "unverified" without running an available
+  scheduler-status check, then later mistook a pre-fix `lastStatus: error` for a
+  current result. Fresh backup files were still weaker evidence than exercising
+  a restore.
+- A child agent lacked mail access, but the parent had it. Treating the child's
+  local block as global led to a fabricated draft about an unread thread; the
+  mismatch was caught only when the parent opened the mailbox before sending.
+- A one-shot cleanup script was installed with launchd `KeepAlive=true`, causing
+  repeated relaunches. Its target overlapped the agent's own process tree, so the
+  agent could not remain alive long enough to repair the persistent job and a
+  human had to intervene.
+
+These incidents support a common **positive-evidence boundary**. For every
+long-running dependency, state which known artifact or answer must be observed,
+which independent component checks it, how fresh the observation must be, and
+what deadline converts silence into failure. An `unverified` label should name
+the settling check and whether it was attempted; a repair claim should bind to a
+post-change execution rather than the latest status field; and backup health
+should mean a restore drill, not existence or modification time.
+
+Delegation and persistence need separate controls. A child's blocked result
+should trigger a parent-side capability check before improvisation, without
+assuming the parent necessarily has broader authority. Jobs that outlive the
+agent should default to bounded execution, be observed across more than one
+trigger interval, and retain a recovery path outside the process tree or
+supervisor they can disrupt. Verifying a script body is not the same as
+verifying its launch and restart semantics.
+
+**Evidence limits:** Scout read the complete body of stable post `t3_1wpm4hn`
+from Reddit's public Atom feed. The incidents, duration, logs, and claim that the
+post was written by the agent were not independently verified; no underlying
+configuration, scheduler output, backup artifact, mailbox, or process trace was
+available. This is a self-reported practitioner signal and operational
+checklist, not a measured failure rate or proof that the proposed controls were
+implemented successfully.
+
+Reddit: https://www.reddit.com/r/AI_Agents/comments/1wpm4hn/four_failures_from_running_an_ai_agent_for_months/
