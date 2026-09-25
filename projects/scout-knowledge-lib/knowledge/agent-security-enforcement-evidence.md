@@ -1,8 +1,8 @@
 <ai_context>
-summary: "Implementation-evidence companion to agent-security-verified-enforcement.md. Uses pinned repositories, disclosures, and deployed-system reports to separate signed claims from replayable evidence; verifier correctness from adversarial agent resistance; receipt integrity from completeness; configured policy from covered paths; identity enrollment from per-request proof; formal models from unsupported surfaces; observed egress from blocking; stable tool digests from equivalent semantics; policy verdicts from effect ownership; counterfactual actions from execution authority and real effect accounting; authorization receipts from effect gates; declared mediation architecture from per-effect path evidence; narrated results from positive execution evidence; sandbox isolation from configuration coherence; stop requests from observed quiescence; and frozen eval inputs from stable comparison units."
-triggers: ["SkillProof", "MCP server verification", "replayable evidence", "action receipt", "signed receipt", "evidence completeness", "MAX Authorization Sandbox", "signed policy", "adversary capability", "rollback state", "Pipelock", "PassControl", "sender proof", "bearer visa", "authentication assurance", "default deny", "fail closed", "shell hook", "guardrail regression test", "OpenShell prover", "SMT containment", "path composition", "egress firewall", "uninspected egress", "tool identity", "tool pin", "schema canonicalization", "shadow mode", "mediation ownership", "counterfactual action", "observed policy action", "real effect accounting", "ctrlrun", "HOL Guard", "Action Evidence Package", "AEP sandbox", "Codex sandbox", "Overpatch", "Heapjack", "authority derivation", "Meta Muse", "local configuration authority", "APEXA", "execution integrity", "tool execution evidence", "BoxLite", "micro-VM", "sandbox configuration coherence", "guest network", "host jailer grants", "Hard Stop", "SIGSTOP", "process group preemption", "quiescence receipt", "run-assert-eval", "ASSERT", "Agent Control Specification", "fixed evaluation", "applicable denominator", "paired comparison", "safety helpfulness split"]
+summary: "Implementation-evidence companion to agent-security-verified-enforcement.md. Uses pinned repositories, disclosures, and deployed-system reports to separate signed claims from replayable evidence; verifier correctness from adversarial agent resistance; receipt integrity from completeness; configured policy from covered paths; identity enrollment from per-request proof; formal models from unsupported surfaces; observed egress from blocking; stable tool digests from equivalent semantics; policy verdicts from effect ownership; counterfactual actions from execution authority and real effect accounting; authorization receipts from effect gates; declared mediation architecture from per-effect path evidence; narrated results from positive execution evidence; sandbox isolation from configuration coherence; stop requests from observed quiescence; frozen eval inputs from stable comparison units; and untrusted analysis failure from trusted configuration degradation."
+triggers: ["SkillProof", "MCP server verification", "replayable evidence", "action receipt", "signed receipt", "evidence completeness", "MAX Authorization Sandbox", "signed policy", "adversary capability", "rollback state", "Pipelock", "PassControl", "sender proof", "bearer visa", "authentication assurance", "default deny", "fail closed", "shell hook", "guardrail regression test", "OpenShell prover", "SMT containment", "path composition", "egress firewall", "uninspected egress", "tool identity", "tool pin", "schema canonicalization", "shadow mode", "mediation ownership", "counterfactual action", "observed policy action", "real effect accounting", "ctrlrun", "HOL Guard", "Action Evidence Package", "AEP sandbox", "Codex sandbox", "Overpatch", "Heapjack", "authority derivation", "Meta Muse", "local configuration authority", "APEXA", "execution integrity", "tool execution evidence", "BoxLite", "micro-VM", "sandbox configuration coherence", "guest network", "host jailer grants", "Hard Stop", "SIGSTOP", "process group preemption", "quiescence receipt", "run-assert-eval", "ASSERT", "Agent Control Specification", "fixed evaluation", "applicable denominator", "paired comparison", "safety helpfulness split", "CC Safety Net", "analysis budget", "configuration degradation", "typed failure policy"]
 last_updated: "2026-09-25"
-source_basis: "Pinned-source implementation studies and disclosures reviewed 2026-09-10 through 2026-09-25: SkillProof f5ddb4b, MAX Authorization Sandbox 380efe6, Pipelock f7d1816, agent-guardrails-kit 18c241e, PassControl f9cb702, OpenShell df0ee1a, k8s-rca-agent 29f5fad, secure-agent 017ec5a, Rul1an/assay 900e536, Soup Wall be8db48, HOL Guard 56faea4 and f5d568f, ctrlrun 8ebc5a8, aep-sandbox 3495e27, BoxLite 9e9436e, Hard Stop 45c31bc, responsibleai/ASSERT 0628e25, HN items 49795755, 49802030, 49830567, 49834450, 49834720, 49840107, and 49841469 with their linked primary sources, plus arXiv 2609.24165v1 (abstract and full HTML). Each section states its own evidence boundary."
+source_basis: "Pinned-source implementation studies and disclosures reviewed 2026-09-10 through 2026-09-25: SkillProof f5ddb4b, MAX Authorization Sandbox 380efe6, Pipelock f7d1816, agent-guardrails-kit 18c241e, PassControl f9cb702, OpenShell df0ee1a, k8s-rca-agent 29f5fad, secure-agent 017ec5a, Rul1an/assay 900e536, Soup Wall be8db48, HOL Guard 56faea4 and f5d568f, ctrlrun 8ebc5a8, aep-sandbox 3495e27, BoxLite 9e9436e, Hard Stop 45c31bc, responsibleai/ASSERT 0628e25, CC Safety Net 0439757, HN items 49795755, 49802030, 49830567, 49834450, 49834720, 49840107, and 49841469 with their linked primary sources, plus arXiv 2609.24165v1 (abstract and full HTML). Each section states its own evidence boundary."
 </ai_context>
 
 # Agent Security: Enforcement Evidence and Runtime Coverage
@@ -1294,3 +1294,72 @@ unpublished run artifacts, validate the generated Rego, or test a production
 billing system. The source supports the workflow structure and denominator
 semantics; it does not independently verify the reported violation reductions or
 show that the mocked example generalizes to a live deployment.
+
+## “Fail Closed” Is a Typed Failure Policy, Not One Global Switch (GitHub, September 2026)
+
+**Repo:** https://github.com/kenryu42/cc-safety-net
+
+**Pinned observation:** repository commit
+[`043975720b8416012d911e2096eb7342f088800f`](https://github.com/kenryu42/cc-safety-net/commit/043975720b8416012d911e2096eb7342f088800f)
+
+CC Safety Net exposes an instructive asymmetry. Inputs controlled by an agent are
+bounded before or during analysis: hook input, recursive tool payloads, command
+length, token count, nesting, derived child commands, wrapper peeling, heredoc
+tracking, and control-flow states all have fixed caps. Crossing those caps yields
+a denial rather than a partial allow. The repository's tests cover each named
+analyzer counter at and below its boundary, and a packaged-path test sends an
+exact one-MiB command through the built CLI hook and expects a deny verdict.
+This prevents an attacker from turning parser exhaustion into permission.
+
+Invalid optional policy configuration takes the opposite availability decision.
+A bad or unreadable source produces a visible `degraded` snapshot: the invalid
+rulebook contributes no custom denials, while validated sources and built-in
+protections continue. The project explicitly acknowledges that this weakens the
+configured posture, but argues that denying all work would not protect the
+source under its current authority model: an agent that can alter `rule.json`
+can already remove the rulebook cleanly, without causing a parse error. Universal
+fail-closed handling would therefore create lockout without closing the tamper
+path. Rulebooks are also monotone—they may add blocks but cannot disable built-in
+catastrophic protection—so dropping one has a bounded fallback meaning rather
+than turning malformed configuration into an allow-list.
+
+The general lesson is not that configuration failures should fail open. It is
+that failure behavior should be derived from a **typed authority and fallback
+contract**:
+
+1. **Who controls the failed input?** Attacker-shaped command complexity should
+   not buy an allow; trusted-operator configuration may need a recoverable mode.
+2. **What authority disappears?** Record the exact rules or effect paths lost,
+   not just a generic warning.
+3. **Is the fallback monotonic and bounded?** Continuing is easier to justify
+   when rejected extensions can only add denials and a known built-in baseline
+   remains active.
+4. **Can the same actor obtain the fallback without causing a failure?** If an
+   unprotected source can simply be removed, fail-closed parse handling alone is
+   availability theater; protect the source or state the tamper boundary.
+5. **Can the host honor the decision?** The repository separately documents that
+   some host hook failures proceed regardless of adapter intent, so an internal
+   deny path is not proof of effect ownership.
+
+This refines “default deny” guidance: apply it to uncertainty reachable through
+untrusted effect requests, while treating operator recovery, optional policy
+extensions, and host-level fail-open behavior as distinct states. A deployment
+report should therefore separate `analysis denied`, `degraded baseline active`,
+`configured rule absent`, and `host proceeded after hook failure` rather than
+compressing all four into “guard enabled.”
+
+**Evidence inspected at the pinned commit:**
+[`README.md`](https://github.com/kenryu42/cc-safety-net/blob/043975720b8416012d911e2096eb7342f088800f/README.md),
+[`SECURITY.md`](https://github.com/kenryu42/cc-safety-net/blob/043975720b8416012d911e2096eb7342f088800f/SECURITY.md),
+[`src/gate/pipeline.ts`](https://github.com/kenryu42/cc-safety-net/blob/043975720b8416012d911e2096eb7342f088800f/src/gate/pipeline.ts),
+[`tests/gate/analysis-budget.test.ts`](https://github.com/kenryu42/cc-safety-net/blob/043975720b8416012d911e2096eb7342f088800f/tests/gate/analysis-budget.test.ts),
+[`tests/gate/failure-injection.test.ts`](https://github.com/kenryu42/cc-safety-net/blob/043975720b8416012d911e2096eb7342f088800f/tests/gate/failure-injection.test.ts),
+and
+[`tests/e2e/structural-limit-packaged.test.ts`](https://github.com/kenryu42/cc-safety-net/blob/043975720b8416012d911e2096eb7342f088800f/tests/e2e/structural-limit-packaged.test.ts).
+
+**Evidence boundary:** Scout statically inspected the pinned implementation,
+security model, and repository-authored tests. The test suite was not run, no
+coding-agent host was connected, and no bypass-resistance or production behavior
+was independently validated. The observed repository tree was complete
+(`truncated: false`); its documented host limitations and test cases bound the
+claim rather than proving every integration mediates every effect.
