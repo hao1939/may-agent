@@ -1,8 +1,8 @@
 <ai_context>
-summary: "Companion to agent-runtime-effect-integrity.md for unattended execution integrity: lifecycle-bound resume identity, cadence and failure accounting, infrastructure trust boundaries, clone identity hygiene, local durability versus external settlement, revision-bound approval, accountable agent writes, desktop effect authorization, and deterministic workflow/host recovery boundaries."
-triggers: ["unattended execution", "session resume", "lifecycle generation", "Daintree", "heartbeat", "failure backoff", "Talon", "Docker Sandboxes", "sandbox trust boundary", "clone identity", "LingCage", "effect settlement", "LetItLoop", "Kevlar", "ATR", "approval revision", "AIS", "orphan recovery", "Rebuno", "approval resume", "AgenticOS", "diagnostic attention", "Runpin", "effect deduplication", "agent identity", "Sensefold", "desktop authorization", "macOS Harness", "AgentRun", "workflow DSL", "late settlement", "Kiso", "recovery projection", "crash matrix"]
+summary: "Companion to agent-runtime-effect-integrity.md for unattended execution integrity: lifecycle-bound resume identity, cadence and failure accounting, infrastructure trust boundaries, clone identity hygiene, local durability versus external settlement, revision-bound approval, accountable agent writes, desktop effect authorization, deterministic workflow/host recovery boundaries, and pause-versus-execution authority."
+triggers: ["unattended execution", "session resume", "lifecycle generation", "Daintree", "heartbeat", "failure backoff", "Talon", "Docker Sandboxes", "sandbox trust boundary", "clone identity", "LingCage", "effect settlement", "LetItLoop", "Kevlar", "ATR", "approval revision", "AIS", "orphan recovery", "Rebuno", "approval resume", "AgenticOS", "diagnostic attention", "Runpin", "effect deduplication", "agent identity", "Sensefold", "desktop authorization", "macOS Harness", "AgentRun", "workflow DSL", "late settlement", "Kiso", "recovery projection", "crash matrix", "LoopX", "hard lease", "agent pause", "lease retirement"]
 last_updated: "2026-09-25"
-source_basis: "Extracted intact from agent-runtime-effect-integrity.md during its 2026-09-21 oversized-note review, then extended with pinned implementation evidence for lifecycle-bound session resume, unattended cadence and failure accounting, AgentRun's workflow/host recovery boundary, and Kiso's deterministic recovery projection and crash-window handling. Replay-specific Chronicle, Mutagen, Ovo, and OrcaReplay sections moved intact to agent-runtime-replay-evidence-and-boundaries.md during the 2026-09-24 oversized-note review. Each retained section preserves stable source links, reproduced checks where performed, and explicit evidence limitations."
+source_basis: "Extracted intact from agent-runtime-effect-integrity.md during its 2026-09-21 oversized-note review, then extended with pinned implementation evidence for lifecycle-bound session resume, unattended cadence and failure accounting, AgentRun's workflow/host recovery boundary, Kiso's deterministic recovery projection, and LoopX's pause/lease transaction boundary. Replay-specific Chronicle, Mutagen, Ovo, and OrcaReplay sections moved intact to agent-runtime-replay-evidence-and-boundaries.md during the 2026-09-24 oversized-note review. Each retained section preserves stable source links, reproduced checks where performed, and explicit evidence limitations."
 </ai_context>
 
 # Agent Runtime Unattended Execution and Replay
@@ -711,3 +711,41 @@ choosing the convenient replay path.
 - **Inspected revision:** https://github.com/vincemakes/kiso/commit/3f77d06741cb39e2e98d09d8f55afae6d3bfe0ee
 - **Primary sources:** [recovery projection](https://github.com/vincemakes/kiso/blob/3f77d06741cb39e2e98d09d8f55afae6d3bfe0ee/packages/runtime/src/recovery-plan.ts), [execution identity and receipt repair ADR](https://github.com/vincemakes/kiso/blob/3f77d06741cb39e2e98d09d8f55afae6d3bfe0ee/docs/adrs/0025-execution-identity-and-crash-safe-recovery.md), [pure-projection ADR](https://github.com/vincemakes/kiso/blob/3f77d06741cb39e2e98d09d8f55afae6d3bfe0ee/docs/adrs/0048-recovery-as-projection.md), [crash matrix](https://github.com/vincemakes/kiso/blob/3f77d06741cb39e2e98d09d8f55afae6d3bfe0ee/packages/runtime/tests/crash-matrix.test.ts), and [purity checks](https://github.com/vincemakes/kiso/blob/3f77d06741cb39e2e98d09d8f55afae6d3bfe0ee/packages/runtime/tests/recovery-purity.test.ts)
 - **Discovery query:** GitHub Repository Search API `topic:ai-agent pushed:>2026-09-24 stars:>20`, sorted by updated; `total_count: 160`, `incomplete_results: false`
+
+## Pausing Work Must Not Reuse Execution Authority — LoopX (GitHub, September 2026)
+
+LoopX's hard-lease Todo lifecycle exposes a subtle control-plane distinction: an
+owner-directed pause is neither completed work nor another execution attempt. At the
+pinned revision, its narrow `open` ↔ `blocked` path accepts only a status, a non-empty
+reason, and clearing the old resume condition. It rejects bundled content edits and
+execution-lease proofs, refuses to pause while a lease is active, and requires a
+registered actor. If a retained lease is expired but not yet released, the same
+provider compare-and-set writes the blocked Todo and retires that lease; reopening
+still grants no execution authority and requires a fresh lease.
+
+This is stronger than changing a status label and cleaning up authority later. A
+separate lease write would leave a crash window in which the task says “blocked”
+while the old holder still appears authorized, or the lease is gone before the pause
+is durable. The transition also preserves claim ownership, validation requirements,
+and successor links while clearing the prior wait and its derived readiness. That
+prevents “pause” from being misread as delivery, reassignment, dependency
+satisfaction, or permission to continue.
+
+**Runtime rule:** model pause/resume as lifecycle transactions, not work receipts.
+Reject a pause while execution authority is live; atomically retire only inactive
+authority with the status transition; preserve ownership and acceptance topology;
+and require a newly acquired execution grant after reopen. Stable operation identity
+and provider revision checks make retries recoverable without turning a repeated
+pause into a second semantic action.
+
+Scout inspected pinned documentation, TypeScript implementation, and repository-
+authored file/SQLite parity tests but did not clone the repository or execute its
+suite. The tests establish authored coverage for expired-lease retirement, replay,
+intent mismatch, stale-wait clearing, reopen, live-lease rejection, and bundled-edit
+rejection—not production linearizability or behavior of an independently deployed
+provider.
+
+- **Repo:** https://github.com/loopx-project/loopx
+- **Inspected revision:** https://github.com/loopx-project/loopx/commit/ab83c672b9e11bb2cabb446bafeef838639472bb
+- **Primary sources:** [hard-lease lifecycle implementation](https://github.com/loopx-project/loopx/blob/ab83c672b9e11bb2cabb446bafeef838639472bb/loopx/control_plane/coordination/todo_blocked_lifecycle.ts), [atomic update integration](https://github.com/loopx-project/loopx/blob/ab83c672b9e11bb2cabb446bafeef838639472bb/loopx/control_plane/coordination/todo_update.ts), [admission checks](https://github.com/loopx-project/loopx/blob/ab83c672b9e11bb2cabb446bafeef838639472bb/loopx/control_plane/coordination/todo_update_admission.ts), [lifecycle contract](https://github.com/loopx-project/loopx/blob/ab83c672b9e11bb2cabb446bafeef838639472bb/docs/project-agent-todo-contract.md), and [file/SQLite tests](https://github.com/loopx-project/loopx/blob/ab83c672b9e11bb2cabb446bafeef838639472bb/tests/control_plane_ts/blocked_hard_lease_lifecycle.test.ts)
+- **Discovery query:** GitHub Repository Search API `topic:ai-agents pushed:>2026-09-24 stars:>10`, sorted by updated; `total_count: 726`, `incomplete_results: false`
