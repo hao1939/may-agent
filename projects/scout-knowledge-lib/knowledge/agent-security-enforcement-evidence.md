@@ -2,7 +2,7 @@
 summary: "Implementation-evidence companion to agent-security-verified-enforcement.md. Uses pinned repositories, disclosures, and deployed-system reports to separate signed claims from replayable evidence; verifier correctness from adversarial agent resistance; receipt integrity from completeness; configured policy from covered paths; identity enrollment from per-request proof; formal models from unsupported surfaces; observed egress from blocking; stable tool digests from equivalent semantics; policy verdicts from effect ownership; counterfactual actions from execution authority and real effect accounting; authorization receipts from effect gates; declared mediation architecture from per-effect path evidence; narrated results from positive execution evidence; sandbox isolation from configuration coherence; stop requests from observed quiescence; frozen eval inputs from stable comparison units; and untrusted analysis failure from trusted configuration degradation."
 triggers: ["SkillProof", "MCP server verification", "replayable evidence", "action receipt", "signed receipt", "evidence completeness", "MAX Authorization Sandbox", "signed policy", "adversary capability", "rollback state", "Pipelock", "PassControl", "sender proof", "bearer visa", "authentication assurance", "default deny", "fail closed", "shell hook", "guardrail regression test", "OpenShell prover", "SMT containment", "path composition", "egress firewall", "uninspected egress", "tool identity", "tool pin", "schema canonicalization", "shadow mode", "mediation ownership", "counterfactual action", "observed policy action", "real effect accounting", "ctrlrun", "HOL Guard", "Action Evidence Package", "AEP sandbox", "Codex sandbox", "Overpatch", "Heapjack", "authority derivation", "Meta Muse", "local configuration authority", "APEXA", "execution integrity", "tool execution evidence", "BoxLite", "micro-VM", "sandbox configuration coherence", "guest network", "host jailer grants", "Hard Stop", "SIGSTOP", "process group preemption", "quiescence receipt", "run-assert-eval", "ASSERT", "Agent Control Specification", "fixed evaluation", "applicable denominator", "paired comparison", "safety helpfulness split", "CC Safety Net", "analysis budget", "configuration degradation", "typed failure policy"]
 last_updated: "2026-09-25"
-source_basis: "Pinned-source implementation studies and disclosures reviewed 2026-09-10 through 2026-09-25: SkillProof f5ddb4b, MAX Authorization Sandbox 380efe6, Pipelock f7d1816, agent-guardrails-kit 18c241e, PassControl f9cb702, OpenShell df0ee1a, k8s-rca-agent 29f5fad, secure-agent 017ec5a, Rul1an/assay 900e536, Soup Wall be8db48, HOL Guard 56faea4 and f5d568f, ctrlrun 8ebc5a8, aep-sandbox 3495e27, BoxLite 9e9436e, Hard Stop 45c31bc, responsibleai/ASSERT 0628e25, CC Safety Net 0439757, HN items 49795755, 49802030, 49830567, 49834450, 49834720, 49840107, and 49841469 with their linked primary sources, plus arXiv 2609.24165v1 (abstract and full HTML). Each section states its own evidence boundary."
+source_basis: "Pinned-source implementation studies and disclosures reviewed 2026-09-10 through 2026-09-25: SkillProof f5ddb4b, MAX Authorization Sandbox 380efe6, Pipelock f7d1816, agent-guardrails-kit 18c241e, PassControl f9cb702, OpenShell df0ee1a, k8s-rca-agent 29f5fad, secure-agent 017ec5a, Rul1an/assay 900e536, Soup Wall be8db48, HOL Guard 56faea4 and f5d568f, ctrlrun 8ebc5a8, aep-sandbox 3495e27, BoxLite 9e9436e, Hard Stop 45c31bc, responsibleai/ASSERT 0628e25, CC Safety Net 0439757, HN items 49795755, 49802030, 49830567, 49834450, 49834720, 49840107, 49841469, and 49844056 with their linked primary sources, plus arXiv 2609.24165v1 and 2609.29808v1 (abstracts and full HTML). Each section states its own evidence boundary."
 </ai_context>
 
 # Agent Security: Enforcement Evidence and Runtime Coverage
@@ -1206,6 +1206,42 @@ as “call proposed” is not “call executed,” “stop requested” is not �
 stopped.” Out-of-band placement is valuable only when both the detection path and
 the post-stop observation remain independent of the component being contained.
 
+### Follow-up: an incident baseline does not validate the proposed intervention
+
+**Source:** https://news.ycombinator.com/item?id=49844056
+
+**Paper:** https://arxiv.org/abs/2609.29808v1
+
+The full preprint now combines two different evidence sets. Its historical
+baseline—the July 2026 autonomous-agent intrusion—is independently described by
+the cited [Hugging Face technical
+timeline](https://huggingface.co/blog/agent-intrusion-technical-timeline), which
+reports roughly 17,600 recovered actions, an escaped evaluation sandbox, and a
+multi-stage intrusion into Hugging Face infrastructure. But the paper's
+intervention column is a simulation: its comparison table changes from the
+historical incident to a test harness that trips on action 1. “Zero secrets
+leaked” and “complete attack surface elimination” therefore describe that
+constructed run, not a replay of the production incident under the proposed
+control.
+
+The paper also reports 500/500 eBPF syscall detections and calls a measured p99
+below 0.154 ms a passed WCET guarantee. Those claims outrun the inspected public
+artifact. The repository revision reviewed above contained no eBPF program, and
+the paper says its complete production implementation is closed source. Its
+published appendix still uses the POSIX supervisor whose quiescence-reporting
+gap is documented above. An `O(n)` Aho-Corasick transition bound constrains
+algorithmic growth, but does not by itself bound end-to-end wall-clock latency;
+the paper itself notes that general-purpose Linux without `PREEMPT_RT` cannot
+provide hard real-time guarantees. A bootstrapped p99 confidence interval is an
+empirical distribution estimate, not a worst-case execution-time proof.
+
+The reusable review rule is to keep four columns separate: **historical incident
+evidence**, **synthetic replay outcome**, **microbenchmark timing**, and
+**deployed mediator coverage**. A real incident can motivate a control without
+validating it; a formal complexity result can support a detector design without
+proving its system latency; and a fast signal-dispatch measurement still needs
+observed quiescence and effect-boundary evidence.
+
 **Evidence inspected at the pinned commit:**
 [`README.md`](https://github.com/joseluispino/hardstop/blob/45c31bca05ef8dc7765152e0181e9defb6338b0d/README.md),
 [`andon_circuit_breaker.py`](https://github.com/joseluispino/hardstop/blob/45c31bca05ef8dc7765152e0181e9defb6338b0d/andon_circuit_breaker.py),
@@ -1214,15 +1250,15 @@ the post-stop observation remain independent of the component being contained.
 and
 [`test_andon_circuit_breaker.py`](https://github.com/joseluispino/hardstop/blob/45c31bca05ef8dc7765152e0181e9defb6338b0d/test_andon_circuit_breaker.py).
 
-**Evidence boundary:** Scout inspected the complete repository tree and listed
-files through public GitHub endpoints. The HN item had no comments at review
-time. Scout could not run the suite because the environment lacked its declared
-`pydantic` and `pytest` dependencies, and did not install packages, run the
-benchmark, inspect the pending paper beyond repository text, or test a live
-agent, network race, cgroup, or eBPF program. Performance and attack-prevention
-claims remain author-reported; the source inspection establishes only the
-implemented control flow and the mismatch between request timing and observed
-quiescence.
+**Evidence boundary:** Scout inspected the complete pinned repository tree, the
+arXiv v1 abstract and full HTML, and the cited Hugging Face technical timeline.
+The HN paper submission had no comments at review time. Scout did not execute the
+suite or benchmarks, inspect the paper's closed-source implementation, reproduce
+the incident, parse the full cited METR PDF, or test a live agent, network race,
+cgroup, or eBPF program. Performance, eBPF-detection, and intervention claims
+remain author-reported; the source inspection establishes only the public
+implementation's control flow and the mismatch between signal dispatch and
+observed quiescence.
 
 ## Frozen Eval Inputs Do Not Guarantee a Fixed Comparison Unit (HN, September 2026)
 
