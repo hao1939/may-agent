@@ -1,6 +1,6 @@
 # Oversized-note review: verified enforcement
 
-**Reviewed:** 2026-09-16; refreshed 2026-09-23
+**Reviewed:** 2026-09-16; refreshed 2026-09-23 and 2026-09-25
 
 **Signal:** `knowledge/agent-security-verified-enforcement.md` grew from 834 to
 1,246 observed physical lines; follow-up review observed
@@ -52,6 +52,31 @@ record this tolerance decision. Reconsider a split when several committed studie
 form a distinct reusable cluster (for example, sandbox configuration and platform
 isolation), rather than responding to the line threshold alone. No child task or
 INDEX change is needed for this unchanged navigation structure.
+
+## Recurrence review (2026-09-25)
+
+The companion now measures 1,365 newline-counted lines (1,366 under the
+observer's counting convention) and contains 18 level-two studies plus four
+level-three follow-ups. Eight source-publication commits have changed it since
+the September 23 review. Three landed
+on September 25 at 06:02, 08:04, and 12:07 UTC; together those three commits
+added 200 lines and removed nine, and the newest landed only minutes before this
+review.
+
+This growth is real, but it does not yet establish a safe second split. The new
+material crosses several existing concerns—sandbox policy, observed quiescence,
+evaluation denominators, and typed failure behavior—rather than forming one
+settled reusable cluster. The current working digest and retained digest
+snapshots also link directly to headings in this recently added tail. Splitting
+while the source lane is still adding studies would require fragment-preserving
+forwarders and a frozen thematic boundary that the present evidence does not
+supply.
+
+Retain the note for this cycle. Reconsider after source intake settles and a
+bounded review can identify a coherent multi-study block, preserve every linked
+heading, and update reciprocal navigation in one isolated change. The line
+threshold alone is not sufficient reason to create another companion or child
+task.
 
 ## Original split verification
 
