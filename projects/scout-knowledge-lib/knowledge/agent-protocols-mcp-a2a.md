@@ -1,8 +1,8 @@
 <ai_context>
-summary: "Canonical overview of the agent protocol landscape: MCP (agent→tool), A2A (agent→agent), AG-UI (agent→frontend), AHP (host→multi-client session state), and practical ACP implementation evidence. Covers what each standardizes, the SDK/ecosystem state, competing protocols, Chinese community sentiment, research findings, and how protocol roadmaps and implementations are splitting transport/tool shells from identity, discovery, and runtime control layers. Current HN discourse sharpens the MCP-versus-CLI choice into a deployment and authority decision; Google's cross-product Workspace search shows why a read-only tool still needs corpus-level disclosure controls; A2M shows that tool discovery metadata and tool returns form a coupled semantic supply-chain surface."
-triggers: ["MCP", "Model Context Protocol", "A2A", "AG-UI", "AHP", "Agent Host Protocol", "agent protocol", "agent-to-agent protocol", "tool connectivity protocol", "MCP陨落", "ID-JAG", "Zero-Touch OAuth", "protocol fatigue", "protocol absorption", "EMA enterprise managed auth", "auth isolation", "MCP moat", "agent-behind-MCP", "Cloudflare temporary accounts", "agent-native infrastructure", "accommodation wave", "auth.md", "ephemeral deploy", "stateless MCP", "requestState", "mcp-use v2", "ACP backend rail", "entwurf", "garden id", "progressive discovery", "capability-conditioned discovery", "Ripwire", "mcp-assert", "MCP fuzzing", "fault classification", "MCP versus CLI", "shell authority", "workload identity federation", "DPoP", "MCP roadmap", "Universal Search MCP", "Workspace search", "cross-product search", "read-only disclosure", "A2M", "agent hijacking", "malicious tool metadata", "semantic supply chain"]
-last_updated: "2026-09-24"
-source_basis: "GitHub trending repos June 2026, XHS Chinese AI community May-June 2026, arXiv briefings June 2026, HN explorations June-Sep 2026 (incl. scan #33 and HN items 49131438, 49198472, 49399591, 49453910, 49779329, and 49794043), arXiv 2606.30317 (MCP Architecture Patterns), scan #262, Simon Willison's stateless MCP write-up (2026-07-31), Manufact's mcp-use v2 stateless-MCP rebuild write-up (2026-07-29), the current GitHub repo junghan0611/entwurf checked 2026-08-06 for ACP/backend-rail implementation evidence, the official MCP roadmap published 2026-08-22, VS Code's first-party Agent Host launch post (2026-08-26), redhat-et/ripwire inspected at commit 5c4235b9befd4cd5b6f9f3a489940d7b79f86520 for capability-conditioned MCP catalog evidence (2026-09-11), blackwell-systems/mcp-assert inspected at commit f2389c6511fdd205bc8732b0529e90eb1d25dd4b for transport-level fuzzing and fault-classification evidence (2026-09-19), Maharshi Patel's MCP critique plus its HN discussion (2026-09-20), Google's Universal Search MCP documentation (2026-09-18 page update, reviewed 2026-09-22), and the abstract of arXiv 2609.26761v1 (A2M, reviewed 2026-09-24). See source declarations below."
+summary: "Canonical overview of the agent protocol landscape: MCP (agent→tool), A2A (agent→agent), AG-UI (agent→frontend), AHP (host→multi-client session state), and practical ACP implementation evidence. Covers what each standardizes, the SDK/ecosystem state, competing protocols, Chinese community sentiment, research findings, and how protocol roadmaps and implementations are splitting transport/tool shells from identity, discovery, and runtime control layers. Current HN discourse sharpens the MCP-versus-CLI choice into a deployment and authority decision; Google's cross-product Workspace search shows why a read-only tool still needs corpus-level disclosure controls; A2M shows that tool discovery metadata and tool returns form a coupled semantic supply-chain surface; Android Studio's ACP integration shows that agent replaceability depends on a host-owned context and tool plane, while continuity and effect identity remain separate contracts."
+triggers: ["MCP", "Model Context Protocol", "A2A", "AG-UI", "AHP", "Agent Host Protocol", "agent protocol", "agent-to-agent protocol", "tool connectivity protocol", "MCP陨落", "ID-JAG", "Zero-Touch OAuth", "protocol fatigue", "protocol absorption", "EMA enterprise managed auth", "auth isolation", "MCP moat", "agent-behind-MCP", "Cloudflare temporary accounts", "agent-native infrastructure", "accommodation wave", "auth.md", "ephemeral deploy", "stateless MCP", "requestState", "mcp-use v2", "ACP backend rail", "entwurf", "garden id", "Android Studio", "Bring Your Own Agent", "replaceable agent", "host-owned context plane", "progressive discovery", "capability-conditioned discovery", "Ripwire", "mcp-assert", "MCP fuzzing", "fault classification", "MCP versus CLI", "shell authority", "workload identity federation", "DPoP", "MCP roadmap", "Universal Search MCP", "Workspace search", "cross-product search", "read-only disclosure", "A2M", "agent hijacking", "malicious tool metadata", "semantic supply chain"]
+last_updated: "2026-09-25"
+source_basis: "GitHub trending repos June 2026, XHS Chinese AI community May-June 2026, arXiv briefings June 2026, HN explorations June-Sep 2026 (incl. scan #33 and HN items 49131438, 49198472, 49399591, 49453910, 49779329, and 49794043), arXiv 2606.30317 (MCP Architecture Patterns), scan #262, Simon Willison's stateless MCP write-up (2026-07-31), Manufact's mcp-use v2 stateless-MCP rebuild write-up (2026-07-29), the current GitHub repo junghan0611/entwurf checked 2026-08-06 for ACP/backend-rail implementation evidence, the official MCP roadmap published 2026-08-22, VS Code's first-party Agent Host launch post (2026-08-26), redhat-et/ripwire inspected at commit 5c4235b9befd4cd5b6f9f3a489940d7b79f86520 for capability-conditioned MCP catalog evidence (2026-09-11), blackwell-systems/mcp-assert inspected at commit f2389c6511fdd205bc8732b0529e90eb1d25dd4b for transport-level fuzzing and fault-classification evidence (2026-09-19), Maharshi Patel's MCP critique plus its HN discussion (2026-09-20), Google's Universal Search MCP documentation (2026-09-18 page update, reviewed 2026-09-22), the abstract of arXiv 2609.26761v1 (A2M, reviewed 2026-09-24), and Reddit post t3_1wpqdl1 plus its linked Android Developers announcement (reviewed 2026-09-25). See source declarations below."
 </ai_context>
 
 # Agent Protocols: MCP, A2A, and the Emerging Stack
@@ -998,6 +998,57 @@ That matters because it updates the usual "protocol wars" framing. The live desi
 
 **Source**: https://github.com/junghan0611/entwurf
 Supporting docs: https://raw.githubusercontent.com/junghan0611/entwurf/main/AGENTS.md, https://raw.githubusercontent.com/junghan0611/entwurf/main/VERIFY.md, https://raw.githubusercontent.com/junghan0611/entwurf/main/docs/acp-backend-rail.md, https://raw.githubusercontent.com/junghan0611/entwurf/main/docs/external-mcp-host.md
+
+#### Follow-up: Replaceable agents require a host-owned context plane (Reddit / Android Studio, 2026-09-25)
+
+A current Reddit post drew the architectural implication from Android Studio's
+new Bring Your Own Agent support: the IDE, rather than any one agent vendor,
+can own the durable project context and native tool surface while ACP-connected
+agents become replaceable reasoning backends. The linked Android Developers
+announcement supports the concrete product claims. Android Studio supplies the
+project graph, build setup, platform details, build diagnostics, Compose
+previews, SDK tools, and emulator control; it accepts any ACP-compliant agent
+and explicitly describes switching when an agent exhausts quota or performs
+poorly.
+
+This is stronger evidence of ACP as a client-to-agent seam than the earlier
+small-repository implementation, but the phrase **replaceable agent** needs a
+strict boundary. The announcement establishes context/tool injection and
+backend substitution. It does not establish that conversation state, pending
+work, approvals, effect receipts, model-specific extensions, or semantic
+behavior transfer losslessly between agents. A robust handoff therefore needs
+at least:
+
+1. **Host-owned context identity:** the replacement receives the same project
+   snapshot, selected files, diagnostics, SDK/tool versions, and workspace
+   identity—not merely another prompt assembled from similar text.
+2. **Host-owned effect history:** completed and pending builds, emulator
+   actions, edits, approvals, and external effects carry stable receipts, so a
+   replacement does not repeat or silently reinterpret them.
+3. **Capability reconciliation:** ACP compatibility proves a common connection
+   surface, not identical tools, extensions, model behavior, or authority.
+   Handoff should record what changed and refuse continuity claims when a
+   required capability is absent.
+4. **Fresh verification after substitution:** the new backend must recheck the
+   current workspace and consequential outcomes rather than inherit the prior
+   agent's self-report.
+
+The reusable implication is narrower than “the agent is a commodity.” A host
+can make reasoning backends operationally substitutable when it owns the
+context, tools, and handoff evidence. Protocol compatibility alone does not
+make execution state or responsibility portable.
+
+**Evidence and limitation:** Reddit's public search Atom feed exposed the full
+post body for stable post ID `t3_1wpqdl1`; the post's dedicated RSS endpoint
+returned HTTP 429 during this scan. The body links the official announcement,
+which Scout read. The Reddit author supplied an architecture interpretation,
+not a benchmark of handoff quality, and Scout did not run Android Studio or
+exercise a live cross-agent handoff.
+
+**Sources**:
+- Reddit post: https://www.reddit.com/r/DevHotTakes/comments/1wpqdl1/maybe_the_ide_should_own_the_context_and_the_ai/
+- Android Developers announcement: https://android-developers.googleblog.com/2026/09/build-your-way-use-any-ai-agent-in-android-studio.html
+- Agent Client Protocol introduction linked by the announcement: https://agentclientprotocol.com/get-started/introduction
 
 ### §8a.3. HN Roadmap Signal (2026-08-22): Progressive Discovery Becomes an Authorization Boundary
 
