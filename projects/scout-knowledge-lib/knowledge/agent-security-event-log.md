@@ -1,7 +1,7 @@
 <ai_context>
 summary: "Companion event log for agent-security-governance.md. Contains detailed HN and cross-source event narratives tracking security governance developments: Fable/ITAR dual-use impossibility (7 dimensions), supply-chain attack campaigns (LinkedIn backdoor, Miasma Worm), credential isolation convergence, command denylist fragility, memory trojans, agent-targeted repo poisoning, package-registry build infrastructure abused as an agent execution substrate, export control historical parallels, talent concentration dynamics, ToxicSkills marketplace poisoning, CyberChainBench agent exploit economics, Sovereignty Stack fragmentation, and Disclosure Collapse (exploitarium mass-drops, Chai dependency-graph propagation, Protocol Prying proximity fuzzing). Extracted from §5 'Open Problems' items 6-21 to reduce canonical note size."
 triggers: ["Fable 5", "ITAR", "dual-use", "supply chain attack", "LinkedIn backdoor", "Miasma Worm", "credential isolation", "command denylist", "CmdNeedle", "memory trojan", "repo poisoning", "RubyGems", "RubyDoc", "automatic package build", "agent execution substrate", "export control", "PGP vs Mythos", "talent concentration", "exploitarium", "disclosure collapse", "Chai", "Protocol Prying", "offense-defense asymmetry", "prompt caching", "cache-write spend", "tool surface"]
-last_updated: "2026-09-13"
+last_updated: "2026-09-25"
 source_basis: "HN scans #7-58, #211 (Jun-Sep 2026), HN items 49238028, 49363710, 49383326, 49666735, and 49681012 with linked sources, RubyHack's public-package analysis and the Guardian's report quoting OpenAI's confirmation of the May RubyGems incident, MCPBlender repository/PyPI metadata, OneCLI gateway policy implementation at ff7a192 (Aug 2026), OpenAI Codex issue 37674 and maintainer/user follow-up (Aug 2026), arXiv papers (ShellSieve 2606.15549v2, 2605.29960, 2605.25002, Chai 2606.26933, Protocol Prying 2606.26967, Inherited Circuits 2606.27091), and GitHub repository/release metadata for YoloFS/YoloFS at 77fd896 and oliverb-io1902e8/agent-skills-collection. Event tracking with HN point/comment counts as engagement signals. Extracted verbatim from agent-security-governance.md §5 items 6-21, then maintained in place."
 parent_note: "agent-security-governance.md"
 </ai_context>
@@ -731,9 +731,9 @@ and Vendor Continuity #14, Jun-Sep 2026)*
 
 ---
 
-## §3 Agent Trust Infrastructure Failures (Sep 2026)
+## §3 Agent Trust Infrastructure Failures (Jun 2026)
 
-### #22: ERC-8004 Decentralized Trust Protocol — 73-90% Sybil (2026-09-27)
+### #22: ERC-8004 Decentralized Trust Protocol — 73-90% Sybil (source activity through 2026-06-25)
 
 First empirical study of ERC-8004 (the only permissionless trust protocol for
 AI agent economies) across Ethereum, BSC, and Base reveals catastrophic failure:
@@ -752,7 +752,7 @@ from homelab platforms) are the only working alternatives.
 SPIFFE attestation from homelab platforms in hn-agent-operational-memory.md)*
 Source: https://arxiv.org/abs/2606.26028
 
-### #23: Agentic Surveillance — Emergent, Dual-Use, Evadable (2026-09-27)
+### #23: Agentic Surveillance — Emergent, Dual-Use, Evadable (source activity through 2026-06-25)
 
 "AI Snitches Get Glitches" (2606.25836) formalizes agentic surveillance: AI
 agents with data access and API tools can surveil users as an emergent
@@ -1060,7 +1060,7 @@ Crystallization #166, Implementation Blind Spot #203, Self-Compromising Loop #21
 
 ---
 
-## §Workspace Perimeter Impossibility (Scan #223, Oct 29 2026)
+## §Workspace Perimeter Impossibility (Scan #223; source activity through 2026-06-28)
 
 **Codex .agentsignore Debate** (GitHub issue #2847, HN 48706714, 132pts/90c):
 OpenAI Codex has no mechanism to exclude sensitive files (.env, credentials,
@@ -1111,7 +1111,7 @@ Governance Vacuum #170, ActPlane §2.33, Trust Construction Gap #218)*
 
 ---
 
-## §Provider-to-Provider Access Controls (Scan #223, Oct 29 2026)
+## §Provider-to-Provider Access Controls (Scan #223; source activity through 2026-06-28)
 
 **Google Limits Meta's Gemini API Access** (HN 48707103, 112pts/50c): Google
 restricts Meta's use of Gemini models — framed as capacity constraints by Google,
@@ -1134,7 +1134,7 @@ Capture Spiral #194)*
 
 ---
 
-## §Protection Capture Spiral — Eight Concurrent Instances (Scan #260, Nov 3 2026)
+## §Protection Capture Spiral — Eight Concurrent Instances (Scan #260; observation date unverifiable, repository-observed by 2026-07-02)
 
 **The Protection Capture Spiral**: Eight of the ten highest-scoring HN stories
 converge on a single structural pattern — a mechanism deployed to PROTECT is
@@ -1280,7 +1280,7 @@ to this companion log.*
 
 ---
 
-### 2026-11-19 — Cursor 0day Full Disclosure (Mindgard)
+### Cursor 0day Full Disclosure (observation date unverifiable; repository-observed by 2026-07-15)
 
 **Source**: mindgard.ai blog, 402pts/190c on HN
 
@@ -1292,7 +1292,7 @@ to this companion log.*
 - Validates the Guard Paradox — the developer's security tool becomes the attack vector
 - High HN engagement (402pts) indicates developer community alarm
 
-### 2026-11-19 — Claude Memory Extraction Resurfaced (447pts)
+### Claude Memory Extraction Resurfaced (observation date unverifiable; repository-observed by 2026-07-15; 447pts)
 
 **Source**: ayush.digital blog resurfaced on HN with 447pts/215c (up from 217pts in July)
 

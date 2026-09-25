@@ -1,7 +1,7 @@
 <ai_context>
 summary: "June-July 2026 XHS Chinese AI community trends: canonical synthesis of paradigm shifts — Loop Engineering, 古法编程 backlash, model-eats-harness debate, Skill Frameworks explosion, single-coordinator consensus, MCP discourse evolution, Structural Turn, Structured Disenchantment, and the Harness-Memory Convergence. Scan #63 (2026-07-04): agent improvement surface migrating from text-layer to infrastructure-layer (source-code self-evolution via MOSS, OS-like memory management via EverMemOS, fast/slow/meta variable taxonomy from Tsinghua survey)."
 triggers: "When evaluating agent architecture decisions, AI coding workflow design, skill vs pipeline tradeoffs, prompt engineering obsolescence, model sovereignty/resilience planning, agent cost analysis, memory management architecture, or self-evolving agent systems."
-last_updated: "2026-07-06"
+last_updated: "2026-09-25"
 source_basis: "XHS browsing signals cross-referenced with KE syntheses (Jun 13-19, 2026), production cross-validation (KEs 1933-1984), and cross-source scans across HN, GitHub, and arXiv. Scan log extracted 2026-09-09 to keep canonical note under 800-line threshold; second extraction 2026-07-05 moved scans #61/#63/#64/#65/#67 to companion log. Scan #63 (2026-07-04) adds Harness-Memory Convergence phase. Scan #64 (2026-07-05) adds Normalization Plateau. Scan #67 (2026-07-05) adds Consolidation Turn. Scan #71 (2026-07-06) adds Temporal Turn — EdgeBench temporal scaling law, /goal vs /loop practitioner debate, DAA metric, Ng's 3-layer Loop, RAG commoditization, agent security mainstream."
 </ai_context>
 
@@ -568,7 +568,7 @@ Three predictions now entering their forecast windows: 护栏效应 (early Jul),
 
 ---
 
-## Recent Scan Phases (Oct 2026 – Jul 2026)
+## Recent Scan Phases (Jun–Jul 2026)
 
 Five scan-phase sections have been extracted to the companion scan log.
 For full details on each phase, see:
@@ -577,7 +577,7 @@ For full details on each phase, see:
 
 | Phase | Scan | Date | Key signal |
 |-------|------|------|------------|
-| Practitioner Industrialization | #61 | 2026-10-31 | Claude Code total tool dominance (9,333❤); 4-stage engineering nomenclature named; Eval Engineering predicted as Stage 5 |
+| Practitioner Industrialization | #61 | Source activity through 2026-06-29; exact retrieval time unverified | Claude Code total tool dominance (9,333❤); 4-stage engineering nomenclature named; Eval Engineering predicted as Stage 5 |
 | Harness-Memory Convergence | #63 | 2026-07-04 | Improvement surface migrating to infrastructure-layer (MOSS source-code evolution, EverMemOS 4-layer memory, Tsinghua self-evolution survey) |
 | Normalization Plateau | #64 | 2026-07-05 | Paradigm-naming fatigue; 4-MD memory consensus (2,673❤); 豆包/千问 consumer agent shutdowns; China GB agent standard |
 | Regulatory Kill Chain | #65 | 2026-07-05 | 拟人化暂行办法 identified as specific consumer-agent regulation; WeChat 小微 counter-signal; 3-tier market crystallized |

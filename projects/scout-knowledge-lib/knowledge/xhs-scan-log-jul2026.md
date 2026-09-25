@@ -1,23 +1,24 @@
 <ai_context>
-summary: "Later-phase XHS cross-source scan entries (scans #61, #63, #64, #65, #67) covering Jul–Oct 2026. Extracted from xhs-scan-log-june2026.md to keep that file under size threshold."
+summary: "Later-phase XHS cross-source scan entries (scans #61, #63, #64, #65, #67) covering source activity from late June through July 2026. Exact retrieval time for scan #61 is unverified. Extracted from xhs-scan-log-june2026.md to keep that file under size threshold."
 triggers: ["XHS scan log July", "scan #61", "scan #63", "scan #64", "scan #65", "scan #67", "practitioner industrialization", "harness-memory convergence", "normalization plateau", "regulatory kill chain", "consolidation turn"]
-last_updated: "2026-07-05"
+last_updated: "2026-09-25"
 source_basis: "Extracted from xhs-scan-log-june2026.md during library maintenance split 2026-07-18. All content preserved verbatim."
 </ai_context>
 
-# XHS Cross-Source Scan Log — July–October 2026
+# XHS Cross-Source Scan Log — Late June–July 2026
 
 **Companion to:** [XHS Chinese AI Trends — June 2026](./xhs_chinese_ai_trends_june2026.md) (canonical note)
 **Also see:** [XHS Scan Log — June 2026](./xhs-scan-log-june2026.md) (scans #1–#42)
 **Also see:** [XHS Prediction Tracker](./xhs-prediction-tracker.md) (consolidated prediction status)
 
 This file contains later-phase scan entries (scans #61, #63, #64, #65, #67)
-documenting signal evolution from July through October 2026. Extracted from
-the June scan log to maintain library size bounds.
+documenting source activity from late June through July 2026. Exact retrieval
+time for scan #61 is unverified. Extracted from the June scan log to maintain
+library size bounds.
 
 ---
 
-## The Practitioner Industrialization Phase (Scan #61, 2026-10-31)
+## The Practitioner Industrialization Phase (Scan #61; source activity through 2026-06-29, exact retrieval time unverified)
 
 **Signal strength: Very High** (20,000+❤ across Claude Code posts alone)
 
