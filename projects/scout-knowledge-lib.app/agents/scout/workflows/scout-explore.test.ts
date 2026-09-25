@@ -609,7 +609,43 @@ describe("scout-explore workflow prompt", () => {
     });
   });
 
-  it("records an evidence-backed no-op when the current search is empty", async () => {
+  it("rejects empty extraction when page status observed stable note identities", async () => {
+    let agentCalls = 0;
+    const result = await executeScoutExplore(
+      workflowContext(async () => {
+        agentCalls += 1;
+        return {};
+      }),
+      {
+        prepareXhsSession: async () =>
+          parseXhsCredentialOutput(
+            JSON.stringify({
+              status: "success",
+              data: { ready: true, noteCount: 27, loginWall: false },
+            }),
+          ),
+        searchXhs: (_appDir, query) => ({
+          state: "success",
+          query,
+          items: [],
+          evidence: ["source:xhs", `query:${query}`, "items:0"],
+        }),
+      },
+    );
+
+    expect(agentCalls).toBe(0);
+    expect(result).toMatchObject({
+      status: "blocked",
+      summary:
+        "XHS extraction failed: page status observed 27 visible note identities, but search extraction returned no usable items",
+      facts: {
+        facts: expect.arrayContaining(["note-count:27", "items:0"]),
+      },
+    });
+    expect(JSON.stringify(result)).not.toContain("evidence-backed-no-op");
+  });
+
+  it("records an evidence-backed no-op when current status and search support emptiness", async () => {
     let agentCalls = 0;
     const result = await executeScoutExplore(
       workflowContext(async () => {
@@ -621,7 +657,7 @@ describe("scout-explore workflow prompt", () => {
           credential: "xhs",
           state: "ready",
           reason: "ready",
-          evidence: ["note-count:12"],
+          evidence: ["note-count:0"],
         }),
         searchXhs: (_appDir, query) => ({
           state: "success",
@@ -638,11 +674,46 @@ describe("scout-explore workflow prompt", () => {
       output: {
         state: "converged",
         facts: expect.arrayContaining([
+          "note-count:0",
           "source:xhs",
           "items:0",
           "result:evidence-backed-no-op",
         ]),
         actions: [],
+      },
+    });
+  });
+
+  it("preserves an empty result when status has no contradictory note-count evidence", async () => {
+    const result = await executeScoutExplore(
+      workflowContext(async () => {
+        throw Error("research must not run");
+      }),
+      {
+        prepareXhsSession: async () => ({
+          credential: "xhs",
+          state: "ready",
+          reason: "ready",
+          evidence: ["login-wall:false"],
+        }),
+        searchXhs: (_appDir, query) => ({
+          state: "success",
+          query,
+          items: [],
+          evidence: ["source:xhs", `query:${query}`, "items:0"],
+        }),
+      },
+    );
+
+    expect(result).toMatchObject({
+      status: "done",
+      output: {
+        state: "converged",
+        facts: expect.arrayContaining([
+          "login-wall:false",
+          "items:0",
+          "result:evidence-backed-no-op",
+        ]),
       },
     });
   });

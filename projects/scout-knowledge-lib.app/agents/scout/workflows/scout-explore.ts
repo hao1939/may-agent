@@ -226,6 +226,14 @@ function xhsAccessEvidence(credential: XhsCredentialStatus): string[] {
   return [`access:${credential.state}`, ...credential.evidence];
 }
 
+function visibleXhsNoteCount(credential: XhsCredentialStatus): number | null {
+  for (const fact of credential.evidence) {
+    const match = /^note-count:(\d+)$/.exec(fact);
+    if (match) return Number(match[1]);
+  }
+  return null;
+}
+
 export function admittedOutputPaths(
   outputs: string[],
   paths: { appDir: string; projectDir: string },
@@ -667,6 +675,13 @@ export async function executeScoutExplore(
       });
     }
     if (search.items.length === 0) {
+      const visibleNoteCount = visibleXhsNoteCount(credential);
+      if (visibleNoteCount !== null && visibleNoteCount > 0) {
+        return ctx.blocked(
+          `XHS extraction failed: page status observed ${visibleNoteCount} visible note identities, but search extraction returned no usable items`,
+          { facts: sourceEvidence },
+        );
+      }
       const summary = `XHS search for "${search.query}" returned no current source items; no artifact was created.`;
       const observation = xhsObservation(
         { query: search.query, items: [] },
