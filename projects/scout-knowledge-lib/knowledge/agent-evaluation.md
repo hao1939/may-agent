@@ -1,7 +1,8 @@
 <ai_context>
 summary: "Canonical reference for agent evaluation patterns and testing tooling: live benchmarks, execution-trace verification, task-grounded memory evaluation, diversity-seeking adversarial scenario archives, categorical observer-based progress forecasting, conversation-level certification, reviewer agents, operational metrics (MTBF, CPT, context efficiency), repeated A/B tests of agent-tooling configurations, artifact-grounded reproduction, induced-objective red-team interpretation, XHS community trends, June 2026 testing tooling landscape (promptfoo, RagaAI, Layer-Isolated methodology, CI containment tools), benchmark-saturation responses from HN practitioners, benchmark-family/data-engine patterns, trace-to-eval asset compilation, the Diagnostic Refinement wave (typed failure characterization via LegalHalluLens, EARS, Thermodynamic Signatures, Rift), Deployment Unit Turn (configuration-level evaluation), and the Observability Inversion (process discipline evaluation via RigorBench, small critics, structural code quality). Research-frontier patterns (§12–§35) extracted to companion note agent-evaluation-research.md."
 triggers: ["evaluation", "benchmark", "reviewer agent", "feedback", "Agent-Eval-Agent", "evaluator agent", "gym", "MTBF", "context efficiency", "trajectory", "testing tooling", "promptfoo", "agent testing", "CI agent", "layer-isolated", "A/B test", "agent tooling experiment", "skill selection reliability", "request exposure", "conditional quality", "diagnostic refinement", "typed hallucination", "LegalHalluLens", "EARS abstention", "Rift deception", "thermodynamic signatures", "process discipline", "process observability", "RigorBench", "small critic", "structural code quality", "Topos", "benchmark family", "data engine", "harness variance", "anytime-valid", "confidence sequence", "optional stopping", "pseudoreplication", "cluster bootstrap", "holdout leakage", "SkillTV-Bench", "JudgeSkill", "skill-aware verification", "rollout selection", "EvoTrace", "trace mining", "executable eval assets", "verifier provenance", "environment reconstruction", "claim verification", "negative memory", "evidence ledger", "information-weighted verification", "reproducibility bundle", "replay coverage", "claim-artifact matrix", "evaluation fingerprint", "source closure", "verifiable credential", "self-reported transcript", "Agents School", "evaluation evidence class", "causal witness", "matched null", "behavior-first evaluation", "reconstruction test", "artifact-grounded reproduction", "agent-generated evidence", "outside feedback", "insurance benchmark", "document routing", "system reliability", "abstention", "induced objective", "red-team interpretation", "effect-state classification", "conversation-level evaluation", "compositional certification", "evidence-cited diagnosis", "declared observed delegation", "prompt treatment", "measurement ownership", "paired prompt evaluation", "production feedback loop", "progress forecasting", "Jev sentinel", "AgentJev", "local decision model", "categorical progress rubric", "remaining time prediction", "DolphinBench", "agent memory evaluation", "memory Pareto frontier", "OSWorld-Pro", "process-based evaluation", "subgoal feasibility", "failure persistence", "infeasible persistence", "process judge calibration", "PhysAudit", "scientific validation", "domain invariant", "claim-specific check", "deterministic numerical verdict", "Life Forge", "MAP-Elites", "quality-diversity", "adversarial scenario archive"]
-last_updated: "2026-09-23"
+last_updated: "2026-09-25"
+source_update_2026_09_25_kitaru: "zenml-io/kitaru at commit 618e58f06a828b39aa9b2195a1aa97d748f05155; replay, cohort, and experiment documentation plus Mastra replay-safety tests were inspected. The suite was not run."
 source_update_2026_09_23: "HN item 49813880 and Life Forge repository at commit b747337d6de0a280af7c9e19b8a4e794137121e8; relevant source, bundled reports, test-suite manifest, and an offline reference-agent run were inspected."
 source_update_2026_09_23_detection_modes: "HN item 49815867 and the Nothing Threw essay, README, taxonomy, and September field notes were reviewed at repository commit c17bc3afb70c1168708082a7d94884075a8e293e."
 source_update_2026_09_23_apprenticebench: "HN item 49819853 and NeoCognition's ApprenticeBench article were reviewed. The evidence is a first-party benchmark report; no public task corpus, trajectories, or independent reproduction was located from the linked benchmark sites."
@@ -15,6 +16,63 @@ execution-based verification and continuous operational metrics. This note
 consolidates durable evaluation patterns and dated XHS trend observations.
 
 ## Durable Patterns
+
+### Counterfactual replay needs a fidelity gate and a sealed effect boundary — Kitaru (GitHub, Sep 2026)
+
+Kitaru makes a useful distinction between possessing a production trace and
+having a counterfactual that can support a change claim. Its documented method
+first re-runs the recorded session **unchanged** against the original agent
+version. Only after that replay reproduces the baseline does it fork the run
+with one prompt, model, parameter, or code change. The unchanged replay is a
+fidelity gate: if recorded inputs, agent code, tool responses, or runtime
+behavior cannot reproduce the observed baseline, the changed replay is not yet
+evidence that the treatment caused the difference.
+
+The repository also treats effect isolation as part of evaluation validity,
+not merely deployment safety. A `history` policy matches tool name and arguments
+to recorded results; with `on_miss="fail"`, an unrecorded call stops the replay
+rather than reaching a live system. The inspected Mastra adapter tests reject
+replay when executable tool inventory is unavailable, a tool lacks a local
+interception point, framework rewriting changes its visible name, input
+processors can mutate tools, or live memory defaults could leak into the run.
+They also assert that a policy miss prevents both the unmatched tool and a later
+side-effecting tool in the same model response from executing. This is stronger
+than labelling a run “replay”: the harness must prove that every reachable
+effect is either substituted or deliberately admitted.
+
+At population scale, Kitaru freezes session membership in immutable cohort
+versions and binds an experiment run to one cohort version plus one agent
+version. Failed replays remain failed instead of silently disappearing from the
+denominator. That yields a reusable four-part contract for trace-backed
+experiments:
+
+1. reproduce the untreated run before interpreting a treatment;
+2. freeze and identify the evaluated population;
+3. fail when an effect path cannot be intercepted or matched; and
+4. preserve failed executions in the reported denominator.
+
+Two operational warnings in the docs expose why explicit configuration matters.
+The server's current fallback without a tool policy may execute live tools, and
+replay creation is not idempotent, so a timeout must be reconciled by listing
+existing replays before retry. A replay system therefore needs effect policy
+and operation identity in addition to stored traces.
+
+**Evidence boundary:** this is static inspection of project-authored
+documentation and selected repository tests at pinned revision `618e58f`; Scout
+did not run the test suite, execute a replay, inspect a deployed worker, or
+validate product claims across every supported adapter. The tests demonstrate
+intended Mastra behavior, not production coverage. Replaying one changed run
+also does not by itself remove model stochasticity or environment drift; repeat
+structure and provenance still determine how strong a causal claim can be.
+
+- **Repo:** https://github.com/zenml-io/kitaru
+- **Pinned revision:** https://github.com/zenml-io/kitaru/commit/618e58f06a828b39aa9b2195a1aa97d748f05155
+- **Replay concept:** https://github.com/zenml-io/kitaru/blob/618e58f06a828b39aa9b2195a1aa97d748f05155/docs/book/concepts/replay.md
+- **Cohort concept:** https://github.com/zenml-io/kitaru/blob/618e58f06a828b39aa9b2195a1aa97d748f05155/docs/book/concepts/cohorts.md
+- **Experiment concept:** https://github.com/zenml-io/kitaru/blob/618e58f06a828b39aa9b2195a1aa97d748f05155/docs/book/concepts/experiments.md
+- **Mastra safety tests:** https://github.com/zenml-io/kitaru/blob/618e58f06a828b39aa9b2195a1aa97d748f05155/packages/mastra/test/replay-safety.test.ts
+- **Coverage:** complete repository README and the three concept pages above;
+  selected Mastra replay-safety test file; repository tree was not truncated
 
 ### Record how failures were detected, not only what failed — Nothing Threw (HN/GitHub, Sep 2026)
 
