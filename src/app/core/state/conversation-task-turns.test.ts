@@ -1145,6 +1145,7 @@ test("recovery cannot attach an earlier exact target after it becomes a Conversa
   const f = fixture();
   const executionTaskId = conversationTaskId(app.id, "chat");
   const failures: string[] = [];
+  let now = 1_000;
   const ingressApp = defineApp({
     ...app,
     conversation: { mode: "agent", inputKinds: ["message"] },
@@ -1159,6 +1160,7 @@ test("recovery cannot attach an earlier exact target after it becomes a Conversa
     attachTask: (input) => admitTaskInput(f.context(), input),
     admitConversation: (input) => admitConversationTaskInput(f.context(), { ...f.input(input.id), ...input }),
     onFailure: (failure) => failures.push(failure.error),
+    now: () => now,
   });
 
   // The target is not a Task yet, so ordinary admission retains the input for
@@ -1176,6 +1178,7 @@ test("recovery cannot attach an earlier exact target after it becomes a Conversa
 
   const conversation = f.admit();
   expect(conversation.taskId).toBe(executionTaskId);
+  now = host.get("early-feedback")!.availableAt!;
   await host.recoverAdmissions();
 
   expect(getAppInboxItem(f.db, "early-feedback")).toMatchObject({

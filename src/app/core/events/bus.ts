@@ -1294,7 +1294,7 @@ export class EventBus {
       for (const fn of this.durableRouteSubscribers) {
         try {
           const result = normalizeDeliveryResult(this.runSubscriber(event, "first", fn));
-          delivery ??= result;
+          delivery = preferredDelivery(delivery, result);
         } catch (err) {
           durableRouteFailed = true;
           this.reportSubscriberFailure(event, "first", err);
@@ -1307,7 +1307,7 @@ export class EventBus {
         for (const fn of this.firstSubscribers) {
           try {
             const result = normalizeDeliveryResult(this.runSubscriber(event, "first", fn));
-            delivery ??= result;
+            delivery = preferredDelivery(delivery, result);
           } catch (err) {
             this.reportSubscriberFailure(event, "first", err);
           }
@@ -1315,7 +1315,7 @@ export class EventBus {
         for (const fn of this.normalSubscribers) {
           try {
             const result = normalizeDeliveryResult(this.runSubscriber(event, "normal", fn));
-            delivery ??= result;
+            delivery = preferredDelivery(delivery, result);
           } catch (err) {
             /* subscriber errors never break the bus */
             this.reportSubscriberFailure(event, "normal", err);
@@ -1489,6 +1489,15 @@ function normalizeDeliveryResult(result: SubscriberResult): DeliveryResult | und
     ...(result.route ? { route: result.route } : {}),
     ...(result.note ? { note: result.note } : {}),
   };
+}
+
+function preferredDelivery(
+  current: DeliveryResult | undefined,
+  candidate: DeliveryResult | undefined,
+): DeliveryResult | undefined {
+  if (!current) return candidate;
+  if (current.route === "noop" && candidate && candidate.route !== "noop") return candidate;
+  return current;
 }
 
 function pairTrackerFallback(event: AgentEvent): DeliveryResult | undefined {

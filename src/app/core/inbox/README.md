@@ -17,8 +17,12 @@ scan; failure of that projection cannot roll back the Task outcome.
 and linked Conversation observations. The runtime emits no second Task-level
 dependency notification. A saved input's first accepted failure produces
 `app.dependency.updated` with `blocked`; its eventual answer or owner closure
-produces `done`. The caller's retained Condition suppresses repeated reports
-without satisfying the wait. Ordinary waits do not relay a caller wake.
+produces `done`. A pre-Task admission failure uses the same exact input identity
+and a stable recovery fingerprint. It is marked reported only when an
+accountable route accepts the blocker; journal persistence or the generic noop
+receipt alone is not caller delivery. Until then, paced recovery replays the
+same idempotent fact. The caller's retained Condition suppresses repeated
+reports without satisfying the wait. Ordinary waits do not relay a caller wake.
 Review deadlines and explicit App event routes remain available.
 
 [`input-context.ts`](input-context.ts) reads and freezes input identity and human

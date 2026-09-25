@@ -5,11 +5,16 @@ import type { AppInboxItem } from "../state/app-inbox-store.js";
 /** The same exact caller feedback for live notification and saved-state recovery. */
 export function appInputFeedbackEvent(item: AppInboxItem, result: AppResult & { attemptId?: string; reportRevision?: number }, status: "done" | "blocked" = "done"): AgentEvent | null {
   if (item.source.kind !== "app") return null;
+  const recoveryFingerprint = result.facts?.find((fact) => fact.startsWith("recovery-fingerprint:"))
+    ?.slice("recovery-fingerprint:".length);
   return {
     type: "app.dependency.updated",
     source: `app-inbox:${item.appId}`,
     owner: `app:${item.source.id}`,
     data: {
+      ...(recoveryFingerprint
+        ? { idempotencyKey: `app-input-recovery:${item.appId}:${item.id}:${recoveryFingerprint}` }
+        : {}),
       kind: "app",
       id: item.id,
       status,

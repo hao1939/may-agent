@@ -27,6 +27,7 @@ CREATE TABLE IF NOT EXISTS app_inbox_items (
   execution_task_id   TEXT,
   result              TEXT,
   handling            TEXT,
+  recovery_json       TEXT,
   available_at        INTEGER,
   review_at           INTEGER,
   lease_generation    INTEGER NOT NULL DEFAULT 0,

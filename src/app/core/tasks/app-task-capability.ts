@@ -166,6 +166,9 @@ export function createAppTaskCapability(options: {
           admissionKey,
           kind: "report",
         });
+        // An unavailable target is not ordinary pending work. Independently
+        // retained exact answers/reports above remain readable without it.
+        if (!task && !report) return null;
         return {
           kind: "task",
           id: dependency.id,

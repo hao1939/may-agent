@@ -25,6 +25,9 @@ import { createLastSessionWriter } from "../../src/lib/session-subscribers.js";
 import { buildAgentDefinition } from "../../src/app/loader/agent-definition.js";
 import { resolveRuntimeAgentDirectory } from "../../src/app/loader/agent-discovery.js";
 import { shouldResumeStartupSession } from "../../src/app/core/tasks/startup-recovery.js";
+import { settleTerminalAppTaskSessions } from "../../src/app/core/tasks/app-task-runtime.js";
+import { createTaskSessionRecovery } from "../../src/app/adapters/executors/session-recovery.js";
+import type { AppTaskRuntimeOptions } from "../../src/app/core/tasks/runtime-options.js";
 
 function userMessage(text: string): AgentMessage {
   return {
@@ -639,6 +642,105 @@ describe("SubagentManager.resumeStaleSessions()", () => {
     expect(resumed).toEqual([]);
     expect(interrupted).toEqual([]);
   });
+
+  it.each(["running", "done"] as const)(
+    "reconciles %s authoritative meta through the production Task session adapter",
+    (metaStatus) => {
+      const sessionId = `marker-missing-${metaStatus}-meta`;
+      const taskBinding = {
+        appId: "sample",
+        taskId: `task-${metaStatus}`,
+        generation: 2,
+        attemptId: `attempt-${metaStatus}`,
+      };
+      const attemptJson = JSON.stringify({
+        metadata: { id: taskBinding.attemptId },
+        taskId: taskBinding.taskId,
+        taskGeneration: taskBinding.generation,
+        state: "completed",
+        acceptedResult: { state: "converged", summary: "historical answer" },
+      });
+      const startedAt = Date.now() - 60_000;
+      writeSessionMeta(persistDir, sessionId, {
+        agent: "agent-a",
+        task: "bound work",
+        status: metaStatus,
+        kind: "call",
+        source: "app-task-agent",
+        startedAt,
+        taskBinding,
+      });
+      const authoritativeMeta = readSessionMeta(persistDir, sessionId)!;
+      upsertSession(persistDir, {
+        sessionId,
+        agent: "agent-a",
+        task: "bound work",
+        status: "running",
+        kind: "call",
+        source: "app-task-agent",
+        startedAt,
+        outcome: "retained SQL outcome",
+        taskBinding,
+      });
+      getDb(persistDir).run(
+        `INSERT INTO app_task_attempts
+           (app_id, attempt_id, task_id, task_generation, state, lease_until, started_at, attempt_json)
+         VALUES (?, ?, ?, ?, 'completed', NULL, 1, ?)`,
+        [taskBinding.appId, taskBinding.attemptId, taskBinding.taskId, taskBinding.generation, attemptJson],
+      );
+      const bus = new EventBus();
+      const opts = {
+        persistDir,
+        bus,
+        manager: new SubagentManager({ persistDir }),
+      };
+      const runtimeOpts = {
+        persistDir,
+        sessions: createTaskSessionRecovery(opts),
+      } as unknown as AppTaskRuntimeOptions;
+
+      writeSessionMeta(persistDir, sessionId, {
+        ...authoritativeMeta,
+        taskBinding: { ...taskBinding, attemptId: "authoritative-other-attempt" },
+      });
+      expect(settleTerminalAppTaskSessions(runtimeOpts, { id: "sample" })).toEqual([]);
+      expect(
+        getDb(persistDir)
+          .prepare("SELECT status, endedAt, outcome FROM sessions WHERE sessionId = ?")
+          .get(sessionId),
+      ).toEqual({ status: "running", endedAt: null, outcome: "retained SQL outcome" });
+      writeSessionMeta(persistDir, sessionId, authoritativeMeta);
+
+      expect(settleTerminalAppTaskSessions(runtimeOpts, { id: "sample" })).toEqual([sessionId]);
+      const meta = readSessionMeta(persistDir, sessionId)!;
+      const sql = getDb(persistDir)
+        .prepare("SELECT status, endedAt, outcome FROM sessions WHERE sessionId = ?")
+        .get(sessionId) as { status: string; endedAt: number | null; outcome: string | null };
+      expect(meta.status).toBe(metaStatus === "running" ? "interrupted" : "done");
+      expect(sql.status).toBe(meta.status);
+      if (metaStatus === "running") {
+        expect(sql.endedAt).toBe(meta.endedAt);
+        expect(sql.endedAt).not.toBeNull();
+      } else {
+        expect(meta).toEqual(authoritativeMeta);
+        expect(sql.endedAt).toBeNull();
+        expect(sql.outcome).toBe("retained SQL outcome");
+      }
+      expect(
+        getDb(persistDir)
+          .prepare("SELECT state, attempt_json FROM app_task_attempts WHERE app_id = ? AND attempt_id = ?")
+          .get(taskBinding.appId, taskBinding.attemptId),
+      ).toEqual({ state: "completed", attempt_json: attemptJson });
+
+      expect(settleTerminalAppTaskSessions(runtimeOpts, { id: "sample" })).toEqual([]);
+      expect(readSessionMeta(persistDir, sessionId)).toEqual(meta);
+      expect(
+        getDb(persistDir)
+          .prepare("SELECT status, endedAt, outcome FROM sessions WHERE sessionId = ?")
+          .get(sessionId),
+      ).toEqual(sql);
+    },
+  );
 
   it("does not scan unmarked terminal records during stale recovery", () => {
     const terminalDir = join(persistDir, "sessions", "unmarked-running");

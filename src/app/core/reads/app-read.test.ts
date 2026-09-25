@@ -160,6 +160,160 @@ describe("App read projections", () => {
     await expect(read.tasks.list({ cursor: "not-a-cursor" })).rejects.toThrow("Invalid Task cursor");
   });
 
+  it("gets bounded current obligations across legacy and execution inbox links without inferring fulfillment", async () => {
+    const config = resourceConfig();
+    observeAppTaskIntent(config, {
+      appAgent: "evaluation",
+      intent: {
+        id: "review/standing",
+        parentId: "review",
+        outcome: "Keep standing review current",
+        acceptance: ["Follow-ups and future cycles remain visible"],
+        agent: "evaluation",
+      },
+    });
+    const resource = config.resourceStore.readTask("review/standing")!;
+    resource.status.reviewAt = 9_000;
+    resource.status.inputWaits = {
+      "follow-up:answered": {
+        taskGeneration: 1,
+        conditions: [{ id: "answer-condition", generation: 2 }],
+        reviewAt: 7_000,
+      },
+      "follow-up:missing-correlation": { taskGeneration: 1, conditions: [], reviewAt: 8_000 },
+      "follow-up:unanswered": { taskGeneration: 1, conditions: [], reviewAt: 9_000 },
+    };
+    db.prepare("UPDATE app_tasks SET resource_json = ? WHERE app_id = ? AND task_id = ?").run(
+      JSON.stringify(resource),
+      "evaluation",
+      "review/standing",
+    );
+
+    const legacy = createAppInboxItem(db, {
+      id: "legacy-answered",
+      appId: "evaluation",
+      source: { kind: "human", id: "human:reviewer" },
+      input: { kind: "message", data: { text: "answered follow-up" } },
+      now: 1,
+    }).item;
+    db.prepare(
+      `UPDATE app_inbox_items SET status = 'handling', waiting_on_kind = 'task', waiting_on_id = ?,
+       task_admission_key = ? WHERE id = ?`,
+    ).run("review/standing", "follow-up:answered", legacy.id);
+    const current = createAppInboxItem(db, {
+      id: "current-unanswered",
+      appId: "evaluation",
+      source: { kind: "human", id: "human:reviewer" },
+      input: { kind: "message", data: { text: "unanswered follow-up" } },
+      now: 2,
+    }).item;
+    db.prepare("UPDATE app_inbox_items SET execution_task_id = ?, task_admission_key = ? WHERE id = ?").run(
+      "review/standing",
+      "follow-up:unanswered",
+      current.id,
+    );
+    const insertAdmission = db.prepare(
+      "INSERT INTO app_task_admissions(app_id, task_id, admission_json) VALUES ('evaluation', ?, ?)",
+    );
+    insertAdmission.run(
+      "follow-up:answered",
+      JSON.stringify({
+        taskId: "review/standing",
+        taskGeneration: 1,
+        specHash: "standing",
+        admittedAt: new Date(1).toISOString(),
+        reportAttemptId: "report-answered",
+        reportRevision: 3,
+        resultAttemptId: "result-answered",
+      }),
+    );
+    insertAdmission.run(
+      "follow-up:unanswered",
+      JSON.stringify({
+        taskId: "review/standing",
+        taskGeneration: 1,
+        specHash: "standing",
+        admittedAt: new Date(2).toISOString(),
+        reportAttemptId: "report-unanswered",
+        reportRevision: 4,
+      }),
+    );
+
+    const exact = (await createRuntimeAppRead({ getDb: () => db, taskStateConfig: config }).tasks.get(
+      "review/standing",
+    ))!;
+    expect(exact.currentObligations).toEqual({
+      available: true,
+      reviewAt: 9_000,
+      inputWaits: {
+        maxItems: 100,
+        truncated: false,
+        items: [
+          {
+            key: "follow-up:answered",
+            reviewAt: 7_000,
+            conditionCount: 1,
+            correlation: {
+              input: { available: true, id: "legacy-answered", kind: "message", status: "handling" },
+              admission: {
+                available: true,
+                reportAttemptId: "report-answered",
+                reportRevision: 3,
+                resultAttemptId: "result-answered",
+              },
+            },
+          },
+          {
+            key: "follow-up:missing-correlation",
+            reviewAt: 8_000,
+            conditionCount: 0,
+            correlation: { input: { available: false }, admission: { available: false } },
+          },
+          {
+            key: "follow-up:unanswered",
+            reviewAt: 9_000,
+            conditionCount: 0,
+            correlation: {
+              input: { available: true, id: "current-unanswered", kind: "message", status: "pending" },
+              admission: { available: true, reportAttemptId: "report-unanswered", reportRevision: 4 },
+            },
+          },
+        ],
+      },
+    });
+    expect(listRuntimeTaskViews({ taskStateConfig: config }).items[0]).not.toHaveProperty("currentObligations");
+  });
+
+  it("marks exact input obligations truncated at the public bound", () => {
+    const config = resourceConfig();
+    observeAppTaskIntent(config, {
+      appAgent: "evaluation",
+      intent: { id: "review/bounded", parentId: "review", outcome: "Bound evidence", acceptance: ["Bounded"] },
+    });
+    const resource = config.resourceStore.readTask("review/bounded")!;
+    resource.status.inputWaits = Object.fromEntries(
+      Array.from({ length: 101 }, (_, index) => [
+        `input:${String(index).padStart(3, "0")}`,
+        { taskGeneration: 1, conditions: [] },
+      ]),
+    );
+    db.prepare("UPDATE app_tasks SET resource_json = ? WHERE app_id = ? AND task_id = ?").run(
+      JSON.stringify(resource),
+      "evaluation",
+      "review/bounded",
+    );
+
+    const obligations = readRuntimeTaskView({ taskStateConfig: config }, "review/bounded")!.currentObligations!;
+    expect(obligations.available).toBeTrue();
+    if (!obligations.available) throw new Error("expected current obligation authority");
+    expect(obligations.inputWaits).toMatchObject({ maxItems: 100, truncated: true });
+    expect(obligations.inputWaits.items).toHaveLength(100);
+    expect(obligations.inputWaits.items[0]?.correlation).toEqual({
+      input: { available: false },
+      admission: { available: false },
+    });
+  });
+
   it("reads later Task mutations from the same resource authority", async () => {
     const config = resourceConfig();
     observeAppTaskIntent(config, {

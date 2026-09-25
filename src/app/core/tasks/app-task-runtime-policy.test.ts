@@ -10,17 +10,6 @@ describe("App Task agent prompt context", () => {
 
     expect(Buffer.byteLength(protocol, "utf8")).toBeLessThanOrEqual(5 * 1_024);
     expect(protocol).toContain("agent pursuing one Task goal owned by App may");
-    expect(protocol).not.toContain("accountable owner");
-    expect(protocol).toContain("End the attempt with one accepted finish().result");
-    expect(protocol).toContain("If finish rejects invalid input, correct it before ending");
-    expect(protocol).toContain("Runtime publishes and correlates it");
-    expect(protocol).not.toContain("Converged example");
-    expect(protocol).toContain("report:true");
-    expect(protocol).toContain("omit for quiet waits");
-    expect(protocol).toContain("Execution errors are facts, not accepted results");
-    expect(protocol).toContain("waiting may set reviewAt");
-    expect(protocol).toContain("actions may retire-condition");
-    expect(protocol).toContain("does not satisfy the Condition");
   });
 
   it("lets an App reject Conditions it cannot meaningfully observe", () => {

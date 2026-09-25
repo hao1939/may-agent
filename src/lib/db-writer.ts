@@ -10,6 +10,7 @@ import { createHash } from "node:crypto";
 import { readTaskEventTarget } from "../app/core/events/task-target.js";
 import {
   EVENT_DEDUPLICATED,
+  EVENT_DELIVERY_RESULT,
   EVENT_INGRESS_SOURCE,
   EVENT_INTERFACE_INPUT,
   EVENT_REDELIVERY_REQUIRED,
@@ -725,8 +726,8 @@ export class DbWriter {
       if (idempotencyKey) {
         const existing = this.db
           .prepare(
-            `SELECT e.id, e.idempotency_hash, e.delivery_status, e.source, e.owner, e.timestamp,
-                    t.trace_id, t.parent_event_id
+            `SELECT e.id, e.idempotency_hash, e.delivery_status, e.accepted_by, e.delivery_route,
+                    e.source, e.owner, e.timestamp, t.trace_id, t.parent_event_id
              FROM events e
              LEFT JOIN event_traces t ON t.event_id = e.id
              WHERE e.event_type = ?
@@ -740,6 +741,8 @@ export class DbWriter {
               id?: unknown;
               idempotency_hash?: unknown;
               delivery_status?: unknown;
+              accepted_by?: unknown;
+              delivery_route?: unknown;
               source?: unknown;
               owner?: unknown;
               timestamp?: unknown;
@@ -764,11 +767,27 @@ export class DbWriter {
           }
           Object.defineProperty(event, EVENT_ROW_ID, { value: existingId, configurable: true });
           Object.defineProperty(event, EVENT_DEDUPLICATED, { value: true, configurable: true });
-          if (existing.delivery_status === "pending" || existing.delivery_status === "unhandled") {
+          if (
+            existing.delivery_status === "accepted" &&
+            typeof existing.accepted_by === "string" &&
+            existing.delivery_route !== "noop"
+          ) {
+            const route = existing.delivery_route === "direct" ? existing.delivery_route : undefined;
+            Object.defineProperty(event, EVENT_DELIVERY_RESULT, {
+              value: Object.freeze({ accepted: true, by: existing.accepted_by, ...(route ? { route } : {}) }),
+              configurable: true,
+            });
+          }
+          if (
+            existing.delivery_status === "pending" ||
+            existing.delivery_status === "unhandled" ||
+            (existing.delivery_status === "accepted" && existing.delivery_route === "noop")
+          ) {
             Object.defineProperty(event, EVENT_REDELIVERY_REQUIRED, { value: true, configurable: true });
           }
-          // The mutation and event committed together. A retry returns that
-          // receipt; replaying the edit could overwrite newer accepted state.
+          // A prior direct acceptance is the receipt. A noop only proved
+          // durable storage, so retry-safe routes may still acquire the fact.
+          // In either case the producer mutation must never be replayed.
           commit();
           return existingId;
         }

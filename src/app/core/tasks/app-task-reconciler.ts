@@ -3164,13 +3164,13 @@ export function recordAppTaskAttemptSession(config: AppTaskContext, claim: AppTa
 }
 
 /**
- * Associate a session launched inside a task workflow with the current
- * reconciliation attempt, including when requirements changed during launch.
- * An unrelated attempt's session must still be rejected.
+ * Associate a session launched inside a task workflow with the exact current
+ * reconciliation attempt. Legacy persisted bindings may omit attemptId for
+ * historical reads, but they cannot authorize a current session/lease mutation.
  */
 export function associateAppTaskSession(
   config: AppTaskContext,
-  binding: { taskId: string; generation: number },
+  binding: { taskId: string; generation: number; attemptId?: string },
   sessionId: string,
 ): AppTaskSessionAssociation {
   const tree = config.resourceStore.readTaskContext({ taskIds: [binding.taskId] });
@@ -3187,7 +3187,9 @@ export function associateAppTaskSession(
     !attempt ||
     attempt.state !== "running" ||
     attempt.taskId !== binding.taskId ||
-    attempt.taskGeneration !== binding.generation
+    attempt.taskGeneration !== binding.generation ||
+    !binding.attemptId ||
+    attempt.metadata.id !== binding.attemptId
   ) {
     return { status: "superseded", taskId: binding.taskId };
   }

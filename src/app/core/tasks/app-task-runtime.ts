@@ -16,6 +16,8 @@ import type {
 import { resolve } from "node:path";
 import { assertValidAppInput } from "../apps/definition-validation.js";
 import { getDb } from "../../../lib/db/connection.js";
+import { listTerminalTaskSessionBindings } from "../../../lib/db/sessions.js";
+import { readSessionMeta } from "../../../lib/persistence.js";
 import { stateTransaction } from "../../../lib/db/transaction.js";
 import { canonicalAppEvent } from "../../canonical-app-event.js";
 import { EVENT_ROW_ID, eventData, type AgentEvent, type DeliveryResult, type EventBus } from "../events/bus.js";
@@ -873,6 +875,44 @@ export function attachLoadedAppTask(input: {
   return { taskId: observation.taskId };
 }
 
+function readableAppTaskContext(bus: EventBus, appDir: string): AppTaskContext | null {
+  const normalizedAppDir = resolve(appDir);
+  const descriptor = (appRouterDescriptorsByBus.get(bus) ?? []).find(
+    (candidate) => resolve(candidate.appDir) === normalizedAppDir,
+  );
+  if (descriptor) return appTaskConfig(descriptor);
+
+  // A one-App worker retains read authority for accepted registry entries, but
+  // must not install the target descriptor/controller or bootstrap missing state.
+  const opts = appRouterOptionsByBus.get(bus);
+  if (!opts?.taskAppIds) return null;
+  const entry = configuredRegistryEntries(opts).find(
+    (candidate) => resolve(candidate.appDir) === normalizedAppDir && candidate.definition.tasks,
+  );
+  const resourceStore = entry && opts?.persistDir
+    ? AppTaskResourceStore.activeFromDb(getDb(opts.persistDir), entry.definition.id)
+    : null;
+  if (!entry || !resourceStore) return null;
+  return appTaskContext({
+    appDir: entry.appDir,
+    projectDir: entry.appDir,
+    agent: configuredAppAgent(entry.definition, entry.appDir),
+    maxConcurrent: entry.definition.tasks?.maxConcurrent ?? 1,
+    resourceStore,
+  });
+}
+
+function readableAppTaskContextById(bus: EventBus, appId: string): AppTaskContext | null {
+  const normalizedAppId = appId.trim().replace(/\.app$/, "");
+  const descriptor = (appRouterDescriptorsByBus.get(bus) ?? []).find((candidate) => candidate.id === normalizedAppId);
+  if (descriptor) return appTaskConfig(descriptor);
+  const opts = appRouterOptionsByBus.get(bus);
+  const entry = opts && configuredRegistryEntries(opts).find(
+    (candidate) => candidate.definition.id === normalizedAppId && candidate.definition.tasks,
+  );
+  return entry ? readableAppTaskContext(bus, entry.appDir) : null;
+}
+
 /** Read one input's accepted answer without using a later Task cycle's result. */
 export function readLoadedAppTaskInputResult(input: {
   bus: EventBus;
@@ -881,26 +921,14 @@ export function readLoadedAppTaskInputResult(input: {
   admissionKey: string;
   kind?: "answer" | "report";
 }) {
-  const appDir = resolve(input.appDir);
-  const descriptor = (appRouterDescriptorsByBus.get(input.bus) ?? []).find((entry) => resolve(entry.appDir) === appDir);
-  return descriptor
-    ? readAppTaskAdmissionOutcome(appTaskConfig(descriptor), input.taskId, input.admissionKey, input.kind)
-    : null;
+  const config = readableAppTaskContext(input.bus, input.appDir);
+  return config ? readAppTaskAdmissionOutcome(config, input.taskId, input.admissionKey, input.kind) : null;
 }
 
 /** Read the stable task projection for an inbox dependency after any restart. */
 export function readLoadedAppTaskView(input: { bus: EventBus; appDir: string; taskId: string }): TaskDetail | null {
-  const normalizedAppDir = resolve(input.appDir);
-  const descriptor = (appRouterDescriptorsByBus.get(input.bus) ?? []).find(
-    (candidate) => resolve(candidate.appDir) === normalizedAppDir,
-  );
-  if (!descriptor) return null;
-  return readRuntimeTaskView(
-    {
-      taskStateConfig: appTaskConfig(descriptor),
-    },
-    input.taskId,
-  );
+  const config = readableAppTaskContext(input.bus, input.appDir);
+  return config ? readRuntimeTaskView({ taskStateConfig: config }, input.taskId) : null;
 }
 
 /** Read the same installed contract used by dependency admission, without projecting away constraints. */
@@ -953,43 +981,9 @@ export function getLoadedAppTaskView(input: {
   taskId: string;
   options?: TaskReadOptions;
 }): TaskDetail | null {
-  const appId = input.appId.trim().replace(/\.app$/, "");
-  const descriptor = (appRouterDescriptorsByBus.get(input.bus) ?? []).find((candidate) => candidate.id === appId);
-  if (!descriptor) {
-    // A one-App worker installs only its execution runtime, but supervision
-    // still needs exact reads of other Apps in its accepted registry. Reuse
-    // existing resource authority without loading agents, bootstrapping state,
-    // installing controllers, or making disabled Apps available.
-    const opts = appRouterOptionsByBus.get(input.bus);
-    const entry = opts?.taskAppIds
-      ? (opts.appRegistrySnapshot ?? opts.appRegistry?.snapshot())?.entries.find(
-          ({ definition }) => definition.id === appId && definition.tasks,
-        )
-      : undefined;
-    const resourceStore =
-      entry && opts?.persistDir ? AppTaskResourceStore.activeFromDb(getDb(opts.persistDir), appId) : null;
-    if (!entry || !resourceStore) throw new Error(`App ${input.appId} has no loaded Task runtime`);
-    return readRuntimeTaskView(
-      {
-        taskStateConfig: appTaskContext({
-          appDir: entry.appDir,
-          projectDir: entry.appDir,
-          agent: configuredAppAgent(entry.definition, entry.appDir),
-          maxConcurrent: entry.definition.tasks?.maxConcurrent ?? 1,
-          resourceStore,
-        }),
-      },
-      input.taskId,
-      input.options,
-    );
-  }
-  return readRuntimeTaskView(
-    {
-      taskStateConfig: appTaskConfig(descriptor),
-    },
-    input.taskId,
-    input.options,
-  );
+  const config = readableAppTaskContextById(input.bus, input.appId);
+  if (!config) throw new Error(`App ${input.appId} has no loaded Task runtime`);
+  return readRuntimeTaskView({ taskStateConfig: config }, input.taskId, input.options);
 }
 
 /** Common creator capability; App selection and delivery are ordinary runtime wiring. */
@@ -1072,6 +1066,40 @@ export function publishLoadedAppTaskEvent(input: {
   }).publish(input.localKey, input.event);
 }
 
+export function settleTerminalAppTaskSessions(
+  opts: AppTaskRuntimeOptions,
+  descriptor: Pick<AppTaskRuntimeDescriptor, "id">,
+): string[] {
+  if (!opts.persistDir || !opts.sessions) return [];
+  const settled: string[] = [];
+  for (const candidate of listTerminalTaskSessionBindings(opts.persistDir, descriptor.id)) {
+    const meta = readSessionMeta(opts.persistDir, candidate.sessionId);
+    const binding = meta ? appTaskSessionBinding(meta.taskBinding) : null;
+    // meta.json is authoritative for the session. The SQL projection may lag;
+    // require both durable identities to agree before terminalizing anything.
+    if (
+      !binding ||
+      binding.appId !== candidate.appId ||
+      binding.taskId !== candidate.taskId ||
+      binding.generation !== candidate.generation ||
+      binding.attemptId !== candidate.attemptId
+    ) {
+      continue;
+    }
+    // A current manager session or process-instance marker remains live even
+    // when the Task attempt has already settled; its shutdown is not inferred.
+    if (hasLiveAppTaskSession(opts, candidate.sessionId)) continue;
+    const reconciled = interruptSupersededAgentSession(
+      opts,
+      candidate.sessionId,
+      `Task ${candidate.taskId} attempt ${candidate.attemptId} is already terminal; reconciling its stale session projection`,
+      candidate.taskId,
+    );
+    if (reconciled) settled.push(candidate.sessionId);
+  }
+  return settled;
+}
+
 function recoverInterruptedAppTasks(
   opts: AppTaskRuntimeOptions,
   descriptors: AppTaskRuntimeDescriptor[],
@@ -1081,6 +1109,7 @@ function recoverInterruptedAppTasks(
   for (const descriptor of descriptors) {
     const controller = controllers.get(descriptor.id);
     const config = appTaskConfig(descriptor);
+    settleTerminalAppTaskSessions(opts, descriptor);
     const runningRecoveryTaskIds = config.resourceStore.listTaskIdsByPhase(["running"], 512);
     const attentionRecoveryTaskIds = config.resourceStore.listTaskIdsByPhase(["attention"], 512);
     const waitingRecoveryTaskIds = config.resourceStore.listTaskIdsByPhase(["waiting"], 512);
@@ -1207,7 +1236,14 @@ function attachAppEventRouter(opts: AppTaskRuntimeOptions, descriptors: AppTaskR
       const event = flattenEvent(rawEvent);
       const startedSessionId =
         event.type === "session.start" && typeof event.sessionId === "string" ? event.sessionId.trim() : "";
-      const sessionBinding = startedSessionId ? appTaskSessionBinding(event.taskBinding) : null;
+      const parentSessionId = firstNonEmptyString(
+        event.parentSessionId,
+        isRecord(event.data) ? event.data.parentSessionId : undefined,
+      );
+      // Helpers inherit Task context for reads and tracing, but that inherited
+      // context does not transfer ownership of the reconciliation attempt or
+      // its recovery lease away from the session that launched the helper.
+      const sessionBinding = startedSessionId && !parentSessionId ? appTaskSessionBinding(event.taskBinding) : null;
       if (sessionBinding) {
         const descriptor = (appRouterDescriptorsByBus.get(opts.bus) ?? []).find(
           (candidate) => candidate.id === sessionBinding.appId,

@@ -3785,7 +3785,7 @@ describe("App task reconciler state", () => {
     expect(
       associateAppTaskSession(
         config,
-        { taskId: claim.taskId, generation: claim.generation },
+        { taskId: claim.taskId, generation: claim.generation, attemptId: claim.attemptId },
         "nested-workflow-session",
       ),
     ).toEqual({ status: "recorded", taskId: claim.taskId });
@@ -3794,6 +3794,27 @@ describe("App task reconciler state", () => {
     const associatedVersion = associated?.metadata.resourceVersion;
     expect(recordAppTaskAttemptSession(config, claim, "nested-workflow-session")).toBe(true);
     expect(readTaskSnapshot(config).attempts?.[claim.attemptId].metadata.resourceVersion).toBe(associatedVersion);
+    expect(
+      associateAppTaskSession(
+        config,
+        { taskId: claim.taskId, generation: claim.generation, attemptId: "different-attempt-same-generation" },
+        "stale-attempt-session",
+      ),
+    ).toEqual({ status: "superseded", taskId: claim.taskId });
+    expect(readTaskSnapshot(config).attempts?.[claim.attemptId].sessionId).toBe("nested-workflow-session");
+    expect(
+      associateAppTaskSession(
+        config,
+        { taskId: claim.taskId, generation: claim.generation, attemptId: claim.attemptId },
+        "next-workflow-session",
+      ),
+    ).toEqual({ status: "recorded", taskId: claim.taskId });
+    expect(readTaskSnapshot(config).attempts?.[claim.attemptId].sessionId).toBe("next-workflow-session");
+    const beforeMissingAttempt = readTaskSnapshot(config).attempts?.[claim.attemptId];
+    expect(
+      associateAppTaskSession(config, { taskId: claim.taskId, generation: claim.generation }, "legacy-session"),
+    ).toEqual({ status: "superseded", taskId: claim.taskId });
+    expect(readTaskSnapshot(config).attempts?.[claim.attemptId]).toEqual(beforeMissingAttempt);
 
     const revised: AppTaskIntent = {
       ...original,
@@ -3809,9 +3830,6 @@ describe("App task reconciler state", () => {
       generation: claim.generation + 1,
       changed: true,
     });
-    expect(
-      associateAppTaskSession(config, { taskId: claim.taskId, generation: claim.generation }, "nested-workflow-session"),
-    ).toEqual({ status: "recorded", taskId: claim.taskId });
     expect(associateAppTaskSession(config, { taskId: "missing-task", generation: 1 }, "missing-session")).toEqual({
       status: "missing",
       taskId: "missing-task",

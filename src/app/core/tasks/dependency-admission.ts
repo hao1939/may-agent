@@ -334,6 +334,7 @@ export function recoverTaskConditions(
        FROM events
        WHERE (
          project_id = ?
+         OR owner = ?
          OR (
            json_valid(data) = 1
            AND (
@@ -346,7 +347,7 @@ export function recoverTaskConditions(
        ORDER BY id DESC
        LIMIT 2000`,
     )
-    .all(descriptor.id, descriptor.id, descriptor.id, ...eventTypes) as Array<{
+    .all(descriptor.id, `app:${descriptor.id}`, descriptor.id, descriptor.id, ...eventTypes) as Array<{
     id: number;
     event_type?: unknown;
     source?: unknown;

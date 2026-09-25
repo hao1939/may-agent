@@ -18,7 +18,14 @@ import {
 import { log } from "../../lib/log.js";
 import type { SqliteDb } from "../../lib/db.js";
 import { loadPersistedEvent } from "../core/events/persisted.js";
-import { EVENT_ROW_ID, eventData, type AgentEvent, type DeliveryResult, type EventBus } from "../core/events/bus.js";
+import {
+  EVENT_DELIVERY_RESULT,
+  EVENT_ROW_ID,
+  eventData,
+  type AgentEvent,
+  type DeliveryResult,
+  type EventBus,
+} from "../core/events/bus.js";
 import {
   AppInboxHost,
   type AppInboxFailure,
@@ -338,7 +345,9 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
     onConversationChanged: notifyConversationUpdated,
     onRequestUpdated(item, result, status) {
       const event = appInputFeedbackEvent(item, result, status);
-      if (event) options.bus.emit(event);
+      if (!event) return false;
+      const delivered = options.bus.emit(event)[EVENT_DELIVERY_RESULT];
+      return delivered?.accepted === true && delivered.route !== "noop";
     },
   });
   let closed = false;
