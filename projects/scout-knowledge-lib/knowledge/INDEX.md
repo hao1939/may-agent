@@ -1,8 +1,8 @@
 <ai_context>
 summary: "Entry point for Scout's project-owned knowledge library. Use this before creating or updating Scout-local knowledge notes."
 triggers: ["scout knowledge", "agent architecture research", "multi-agent trends", "XHS trends", "knowledge library maintenance"]
-last_updated: "2026-09-23"
-source_basis: "Maintained index of Scout canonical notes, companion notes, findings, and durable reports. Current navigation includes source-grounded finding batches through 2026-09-23 and the §37–§40 Agent Evaluation Research: Diagnostic Layers companion without duplicating the full index. Runtime task, credential, backlog, and health status belongs in the project UI or dated reports."
+last_updated: "2026-09-25"
+source_basis: "Maintained index of Scout canonical notes, companion notes, findings, and durable reports. Current navigation includes source-grounded finding batches through 2026-09-24 and the §37–§40 Agent Evaluation Research: Diagnostic Layers companion without duplicating the full index. Runtime task, credential, backlog, and health status belongs in the project UI or dated reports."
 findings_date_convention: "Use the actual observation date in YYYY-MM-DD filenames; never create a future-dated finding."
 </ai_context>
 
@@ -69,6 +69,26 @@ Migration and project-operation artifacts live outside `knowledge/`:
 - [Hermes Agent and OpenClaw comparative investigation (2026-09-02)](../reports/research/hermes-agent-openclaw-comparative-investigation-2026-09-02.md) — UTC-dated pinned-source architecture, memory, skill-learning, authority, recovery, issue, and cost comparison; reconciles all 28 existing matching leads and records bounded reproduction limits.
 
 ## Recent Source-Grounded Findings
+
+### 2026-09-24
+
+- [A passing agent patch still spends someone else's review budget](./findings/2026-09-24-agent-patch-review-consent.md) — a merged VisiData patch separates artifact provenance, attributable human verification, bot identity, repository consent, and maintainer review capacity; the broader marketplace dispute remains social evidence rather than a controlled study.
+- [Benign tasks can produce hostile intermediate actions](./findings/2026-09-24-agent-instrumental-hacking-public-relay.md) — public relay records motivate authorizing each resolved network action instead of trusting a benign task label; no successful exploitation was observed and attribution remains qualified.
+- [Agent IAP: credential non-disclosure is not data-egress control](./findings/2026-09-24-agent-credential-proxy-is-not-data-egress-control.md) — pinned documentation separates credential custody, request authority, response scope, and onward egress; the proxy and its reported tests were not run.
+- [Mjolnir: recovery proof must gate destructive session transitions](./findings/2026-09-24-agent-session-checkpoint-teardown-gate.md) — static source inspection binds teardown to checkpoint integrity, frontier freshness, exact target ownership, durable lifecycle state, and serialized recovery; project-authored tests were not reproduced.
+- [Enterprise agent work can be mostly integration work](./findings/2026-09-24-enterprise-agent-integration-debt.md) — one unverified XHS practitioner account reports legacy MES integration dominating orchestration work, while its market and hiring figures remain unsourced.
+- [Agent-manager: live review needs target identity, not just line coordinates](./findings/2026-09-24-live-agent-code-review-anchor.md) — pinned source and tests preserve review scope, load generation, a frozen interaction frame, and ambiguity-aware re-anchoring; Scout did not execute the program or tests.
+- [PI-Desktop: permission order is part of the security boundary](./findings/2026-09-24-pi-desktop-host-owned-agent-permissions.md) — host-side mode ceilings precede path, risk, and grant checks, while direct Node access in plugin processes remains outside the brokered tool gate; the application was not run.
+- [Self-improving research agents need evaluation outside the selection loop](./findings/2026-09-24-weco-self-improving-research-agent.md) — a complete XHS post describes seven accepted self-revisions followed by four held-out tasks, but supplies no paper, code, benchmark identities, run history, or controlled baseline.
+- [An executable contract must observe the effect, not a convenient projection](./findings/2026-09-24-waku-agent-executable-contract-coverage.md) — pinned Waku Agent inspection shows effect-adjacent enumeration, independent bidirectional derivation, scanner-closure checks, and explicit assurance limits; no builds, tests, or reported mutation probes were reproduced.
+
+#### Prior findings extended on 2026-09-24
+
+- [Agent-first browser runtime tradeoffs](./findings/2026-08-07-agent-first-browser-runtime-tradeoffs.md) — a Public Browser v3 follow-up separates target identity and generation, dispatch, and scoped outcome confidence so an unconfirmed effect does not trigger an immediate duplicate retry.
+- [Design-system agent evaluation layer separation](./findings/2026-08-26-design-system-agent-eval-layer-separation.md) — a Phyll follow-up distinguishes source rules, rendered-state evidence, and first-user task-path evidence.
+- [Hook policy enforcement boundaries](./findings/2026-08-27-hook-policy-enforcement-boundaries.md) — a Stop That Shit follow-up separates task authority from host permission and requires attempted-path evidence before calling a forbidden action blocked.
+- [Cross-vendor agent messaging still needs a coordination plane](./findings/2026-08-28-cross-vendor-agent-messaging-needs-coordination-plane.md) — an agmsg follow-up requires atomic role handoff, inconclusive-liveness preservation, and observable delivery failure.
+- [Audit integrity needs a capture boundary and an external tail anchor](./findings/2026-09-14-audit-integrity-needs-external-tail-anchor.md) — current follow-ups separate anchored content commitment, semantic validity, and write-settlement semantics.
 
 ### 2026-09-23
 
