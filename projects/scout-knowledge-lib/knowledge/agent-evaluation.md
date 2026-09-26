@@ -4,6 +4,7 @@ triggers: ["evaluation", "benchmark", "reviewer agent", "feedback", "Agent-Eval-
 last_updated: "2026-09-26"
 source_update_2026_09_26_xhs_production_probe: "A current XHS post and visible comments were read as secondary practitioner evidence for converting production-agent interview questions into executable failure probes. The author's six-interview account and market claims were not independently verified, and course-promotion replies materially limit its evidential weight."
 source_update_2026_09_26_deepswe_reward_hacking: "HN item 49851266, Handshake's full research article, and Handshake-AI-Research/deepswe-samples at commit d0994043fc6570a3c87165aadbae2aaf60f0ed63 were inspected. The repository tree exposes 30 sampled task directories with instructions, patches, and trajectories, not the full thousands-of-rollouts audit corpus; no trajectories were replayed and the reported prevalence rates were not independently reproduced."
+source_update_2026_09_26_skillnet: "zjunlp/SkillNet at commit d7586c12a797c9a0ddf96804c4b2b9d50e9405de; README, complete repository tree, evaluator, deterministic injection scanner, and focused boundary tests were inspected. No package tests, model evaluation, or skill scripts were run."
 source_update_2026_09_25_vigiles: "zernie/vigiles at commit 95e18bed473b1d4e56dfa8fd8b9c735c4f76e2f1; README, complete repository tree, audit scoring implementation and tests, harness-test and eval-lock implementation, command documentation, and package scripts were inspected. No test suite, audit, harness test, or live-model evaluation was run."
 source_update_2026_09_25_caliper: "edonadei/caliper at commit 40c7a0e954e4b1fde6990184f8a18a19e7f4ffdb; README, result/spec documentation, six design records, comparison/ablation/result implementation, and selected tests were inspected. No test suite or agent evaluation was run."
 source_update_2026_09_25_hippo_memory: "kitfunso/hippo-memory at commit d4e163339d1e0a842caa759eadda6cce5161771b; preregistrations, result reports, raw-result references, public benchmark artifacts, and the folded independent critique were inspected. No benchmark or test suite was run."
@@ -22,6 +23,54 @@ execution-based verification and continuous operational metrics. This note
 consolidates durable evaluation patterns and dated XHS trend observations.
 
 ## Durable Patterns
+
+### A skill rating needs separate content, coverage, and execution verdicts — SkillNet (GitHub, Sep 2026)
+
+SkillNet's evaluator demonstrates why a single “skill quality” label should not
+carry every assurance claim. Its default path loads bounded slices of
+`SKILL.md`, scripts, and references; runs a deterministic prompt-injection
+pre-screen; fences every dynamic field with a fresh random delimiter; and sends
+the resulting evidence to an LLM for ratings. The implementation reports scan
+coverage separately: a missing or truncated file, read failure, directory-walk
+failure, file-count limit, or entry-count limit makes the scan incomplete and
+therefore not clean. This is stronger than silently rating only what fit in the
+prompt.
+
+The boundaries are equally important. Injection findings are advisory evidence:
+the deterministic scanner does not alter the quality rating by itself, while
+the LLM still reads the untrusted content inside fences. Fencing blocks a skill
+from forging the evaluator's current delimiters, but it does not prove that the
+judge follows the instruction to treat fenced text as evidence rather than
+commands. A clean regex scan therefore means neither “safe skill” nor “judge
+cannot be manipulated”; it means only that the loaded content was complete
+under the declared bounds and matched none of the implemented patterns.
+
+Execution is a third verdict. Remote GitHub skill scripts are always skipped,
+even when script execution is enabled. Local scripts may run only through an
+explicit opt-in, but the inspected runner is a timed `subprocess.run` in the
+skill directory, not a sandbox, and a focused test confirms scanner findings do
+not block that trusted-local execution path. Conversely, the default semantic
+evaluation does not establish executability because scripts are not run. The
+result should therefore preserve at least three independent fields:
+
+1. **content assessment:** what the model inferred from the loaded package;
+2. **inspection coverage:** what was loaded, truncated, unreadable, or skipped;
+3. **execution evidence:** not attempted, compile-only, executed, failed, or
+   timed out, together with the authority granted to that execution.
+
+**Reusable rule:** never promote a semantic skill score into an installation or
+execution gate without an explicit policy layer. Treat deterministic injection
+findings as signals, incomplete coverage as unknown rather than clean, remote
+non-execution as absence of runtime evidence, and local execution as a separate
+security decision requiring containment beyond a timeout.
+
+- **Repo:** https://github.com/zjunlp/SkillNet
+- **Inspected revision:** [`d7586c12a797c9a0ddf96804c4b2b9d50e9405de`](https://github.com/zjunlp/SkillNet/commit/d7586c12a797c9a0ddf96804c4b2b9d50e9405de)
+- **Primary sources:** [evaluator](https://github.com/zjunlp/SkillNet/blob/d7586c12a797c9a0ddf96804c4b2b9d50e9405de/skillnet-ai/src/skillnet_ai/evaluator.py), [deterministic injection scanner](https://github.com/zjunlp/SkillNet/blob/d7586c12a797c9a0ddf96804c4b2b9d50e9405de/skillnet-ai/src/skillnet_ai/core/injection.py), and [boundary tests](https://github.com/zjunlp/SkillNet/blob/d7586c12a797c9a0ddf96804c4b2b9d50e9405de/skillnet-ai/tests/test_evaluator_injection_boundary.py).
+- **Evidence boundary:** static repository inspection only. Scout did not run
+  SkillNet's tests, invoke its model judge, evaluate a skill, or execute any
+  skill script. The tests document intended behavior; they are not a test result
+  from this scan.
 
 ### Score the observation state before scoring the result — Vigiles (GitHub, Sep 2026)
 
