@@ -702,3 +702,12 @@ exposed the #239 race: it waited for either chat and asserted both. That is a
 validation defect, not proof that removing the maintenance adapter lost a
 notification. Regression checks exercise production boundaries; tests that
 only instantiate removed functionality are retired with that functionality.
+
+Final combined Host source `557d348c` includes all seven candidate PRs. Full
+local CI passes with 3,260 tests, three installation-dependent skips and no
+failures. All current GitHub Quality/Container checks pass; #239 correctly
+omits an unnecessary image build. The final branches merge cleanly. These are
+portable source checks, not deployed-runtime or model-quality claims.
+The companion design integrity check passes with zero errors/warnings, and all
+113 local links in the six changed documents resolve. Repeated Task executor
+and view explanations were condensed while preserving the contract anchors.
