@@ -1,6 +1,6 @@
 <ai_context>
-summary: "Implementation-evidence companion to agent-security-verified-enforcement.md. Uses pinned repositories, disclosures, and deployed-system reports to separate signed claims from replayable evidence; receipt validity from verifier isolation and claim scope; verifier correctness from adversarial agent resistance; receipt integrity from completeness; configured policy from covered paths; identity enrollment from per-request proof; formal models from unsupported surfaces; observed egress from blocking; static egress policy from irreversible post-sensitive-access session restriction; stable tool digests from equivalent semantics; policy verdicts from effect ownership; counterfactual actions from execution authority and real effect accounting; authorization receipts from effect gates; declared mediation architecture from per-effect path evidence; narrated results from positive execution evidence; sandbox isolation from configuration coherence; stop requests from observed quiescence; frozen eval inputs from stable comparison units; untrusted analysis failure from trusted configuration degradation; human approval records from end-to-end effect binding; effect-owning execution routes from provider-reported hook correlation and ambient process coverage; and signed workflow conformance from evidence-grade propagation and independently proved declaration pre-existence."
-triggers: ["SkillProof", "MCP server verification", "replayable evidence", "action receipt", "signed receipt", "evidence completeness", "MAX Authorization Sandbox", "signed policy", "adversary capability", "rollback state", "Pipelock", "HELM AI Kernel", "offline verifier", "verifier isolation", "claim-typed verification", "PassControl", "sender proof", "bearer visa", "authentication assurance", "default deny", "fail closed", "shell hook", "guardrail regression test", "OpenShell prover", "SMT containment", "path composition", "egress firewall", "uninspected egress", "session-aware egress", "sensitive-source transition", "sticky egress restriction", "tool identity", "tool pin", "schema canonicalization", "shadow mode", "mediation ownership", "counterfactual action", "observed policy action", "real effect accounting", "ctrlrun", "HOL Guard", "Action Evidence Package", "AEP sandbox", "Codex sandbox", "Overpatch", "Heapjack", "authority derivation", "Meta Muse", "local configuration authority", "APEXA", "execution integrity", "tool execution evidence", "BoxLite", "micro-VM", "sandbox configuration coherence", "guest network", "host jailer grants", "Hard Stop", "SIGSTOP", "process group preemption", "quiescence receipt", "run-assert-eval", "ASSERT", "Agent Control Specification", "fixed evaluation", "applicable denominator", "paired comparison", "safety helpfulness split", "CC Safety Net", "analysis budget", "configuration degradation", "typed failure policy", "emisar", "approval binding", "bridge attestation", "pack hash", "Aegis", "exact action policy", "provider hook correlation", "direct child execution", "route coverage", "Treeship", "workflow conformance", "evidence grade", "declaration pre-existence"]
+summary: "Implementation-evidence companion to agent-security-verified-enforcement.md. Uses pinned repositories, disclosures, and deployed-system reports to separate signed claims from replayable evidence; receipt validity from verifier isolation and claim scope; verifier correctness from adversarial agent resistance; receipt integrity from completeness; configured policy from covered paths; identity enrollment from per-request proof; formal models from unsupported surfaces; observed egress from blocking; static egress policy from irreversible post-sensitive-access session restriction; stable tool digests from equivalent semantics; policy verdicts from effect ownership; counterfactual actions from execution authority and real effect accounting; authorization receipts from effect gates; declared mediation architecture from per-effect path evidence; narrated results from positive execution evidence; sandbox isolation from configuration coherence; stop requests from observed quiescence; frozen eval inputs from stable comparison units; untrusted analysis failure from trusted configuration degradation; human approval records from end-to-end effect binding; effect-owning execution routes from provider-reported hook correlation and ambient process coverage; signed workflow conformance from evidence-grade propagation and independently proved declaration pre-existence; and workflow stage labels from prerequisite and ship-gate enforcement."
+triggers: ["SkillProof", "MCP server verification", "replayable evidence", "action receipt", "signed receipt", "evidence completeness", "MAX Authorization Sandbox", "signed policy", "adversary capability", "rollback state", "Pipelock", "HELM AI Kernel", "offline verifier", "verifier isolation", "claim-typed verification", "PassControl", "sender proof", "bearer visa", "authentication assurance", "default deny", "fail closed", "shell hook", "guardrail regression test", "OpenShell prover", "SMT containment", "path composition", "egress firewall", "uninspected egress", "session-aware egress", "sensitive-source transition", "sticky egress restriction", "tool identity", "tool pin", "schema canonicalization", "shadow mode", "mediation ownership", "counterfactual action", "observed policy action", "real effect accounting", "ctrlrun", "HOL Guard", "Action Evidence Package", "AEP sandbox", "Codex sandbox", "Overpatch", "Heapjack", "authority derivation", "Meta Muse", "local configuration authority", "APEXA", "execution integrity", "tool execution evidence", "BoxLite", "micro-VM", "sandbox configuration coherence", "guest network", "host jailer grants", "Hard Stop", "SIGSTOP", "process group preemption", "quiescence receipt", "run-assert-eval", "ASSERT", "Agent Control Specification", "fixed evaluation", "applicable denominator", "paired comparison", "safety helpfulness split", "CC Safety Net", "analysis budget", "configuration degradation", "typed failure policy", "emisar", "approval binding", "bridge attestation", "pack hash", "Aegis", "exact action policy", "provider hook correlation", "direct child execution", "route coverage", "Treeship", "workflow conformance", "evidence grade", "declaration pre-existence", "CE-AI", "workflow stage evidence", "ship gate", "prerequisite enforcement"]
 last_updated: "2026-09-26"
 source_basis: "Pinned-source implementation studies and disclosures reviewed 2026-09-10 through 2026-09-26: SkillProof f5ddb4b, MAX Authorization Sandbox 380efe6, Pipelock f7d1816, HELM AI Kernel fe122d4, agent-guardrails-kit 18c241e, PassControl f9cb702, OpenShell df0ee1a, k8s-rca-agent 29f5fad, secure-agent 017ec5a, Rul1an/assay 900e536, Soup Wall be8db48, HOL Guard 56faea4 and f5d568f, ctrlrun 8ebc5a8, aep-sandbox 3495e27, BoxLite 9e9436e, Hard Stop 45c31bc, responsibleai/ASSERT 0628e25, CC Safety Net 0439757, AndrewDryga/emisar ac0d942, antropos17/Aegis 6cae92e, zerkerlabs/treeship 7fd3993, HN items 49795755, 49802030, 49830567, 49834450, 49834720, 49840107, 49841469, 49844056, and 49855568 with their linked primary sources, plus arXiv 2609.24165v1 and 2609.29808v1 (abstracts and full HTML). Each section states its own evidence boundary."
 </ai_context>
@@ -1707,3 +1707,72 @@ entries with `truncated: false`. Scout statically inspected the files above and
 did not run tests, launch a child, connect a provider, validate monitoring
 coverage, or conduct a security assessment. Repository-authored Windows and
 Linux fixture claims remain author-reported; macOS is explicitly unverified.
+
+## A Workflow Stage Is a Ledger Claim Until Its Prerequisites Are Enforced (CE-AI, GitHub, September 2026)
+
+**Repo:** https://github.com/mastepanoski/ce-ai
+
+**Pinned observation:** repository commit
+[`0f4416f1913bf14b1482ee547b3601e90f53ff48`](https://github.com/mastepanoski/ce-ai/commit/0f4416f1913bf14b1482ee547b3601e90f53ff48)
+
+CE-AI usefully separates several meanings often collapsed into “workflow
+governance.” Its checkpoint state is keyed by workspace and branch, saved by an
+atomic temp-file/rename path, and prevents a manual stage jump of more than one
+step. Inferred checkpoints additionally cannot overwrite an equal or later manual
+checkpoint, and auto-advance to verification or later is withheld when the
+OpenSpec task ledger is visibly desynchronized from touched files.
+
+Those controls make the stage ledger orderly, but do not by themselves prove the
+stage's work. The manual checkpoint path validates only transition adjacency; its
+`task` text and stage are caller-supplied. A user can therefore advance one legal
+step at a time without attaching a test result or other stage-completion evidence.
+Likewise, the recorded code-review receipt binds a resolved commit SHA to branch
+state, but the command records that a review ran (or an override reason) without
+verifying review output. The resulting ship-readiness check is explicitly
+observe-only: missing solution artifacts, missing/stale review receipts, and an
+early stage with commits become warnings rather than a blocked ship operation.
+
+The source-level write gate has narrower but real enforcement semantics. In its
+default `enforce` mode, it can return an error before a targeted `src/**` write at
+Stage 4 when `proposal.md`, `spec.md`, or `tasks.md` is absent. That does not make
+it a general lifecycle gate: non-Stage-4 writes pass; organic and minimal modes
+are exempt; debug entry points pass; ambiguous mtime, new-cycle, and uncommitted-
+spec cases are classified as edge cases and do not block; and telemetry and
+receipt persistence are best-effort. The gate also checks artifact presence and
+non-zero length, not their approval or semantic validity, despite the reason text
+calling them an “approved OpenSpec contract.”
+
+**Reusable rule:** type workflow evidence by what the mechanism actually owns:
+
+1. **Ledger integrity:** atomic storage, branch identity, and legal transition
+   order protect bookkeeping.
+2. **Prerequisite evidence:** stage promotion needs machine-checkable receipts for
+   the work claimed by that stage, not only adjacent numbering or task prose.
+3. **Effect enforcement:** name the exact operation and path a gate can withhold,
+   plus every exempt, ambiguous, or uncovered route.
+4. **Release admission:** warnings and commit-bound review markers improve
+   visibility, but only an effect-owning ship path that rejects unmet predicates
+   can justify “cannot skip verification.”
+
+This distinction is operationally important because an orderly state machine can
+truthfully say “Stage 5” while only proving that Stage 4 was the previous label.
+Governance UIs should surface asserted, observed, and enforced stage evidence
+separately rather than letting the strongest verb describe the entire workflow.
+
+**Primary evidence at the pinned commit:**
+[`README.md`](https://github.com/mastepanoski/ce-ai/blob/0f4416f1913bf14b1482ee547b3601e90f53ff48/README.md),
+[`workflow.rs`](https://github.com/mastepanoski/ce-ai/blob/0f4416f1913bf14b1482ee547b3601e90f53ff48/src/commands/workflow.rs),
+[`state.rs`](https://github.com/mastepanoski/ce-ai/blob/0f4416f1913bf14b1482ee547b3601e90f53ff48/src/state/state.rs),
+[`gate.rs`](https://github.com/mastepanoski/ce-ai/blob/0f4416f1913bf14b1482ee547b3601e90f53ff48/src/commands/gate.rs),
+[`workflow tests`](https://github.com/mastepanoski/ce-ai/blob/0f4416f1913bf14b1482ee547b3601e90f53ff48/src/commands/tests/workflow.rs), and
+[`gate tests`](https://github.com/mastepanoski/ce-ai/blob/0f4416f1913bf14b1482ee547b3601e90f53ff48/src/commands/tests/gate.rs).
+
+**Evidence boundary:** GitHub Repository Search for
+`ai agent policy verification in:name,description,readme pushed:>2026-09-23`,
+sorted by recently updated, returned 24,577 matches with
+`incomplete_results: false`. The pinned recursive tree contained 638 entries with
+`truncated: false`. Scout statically inspected the files above and did not clone
+the repository, run its Rust suite, invoke a supported coding harness, test hook
+installation or bypasses, or perform a security assessment. The evidence supports
+the code-visible distinctions above, not repository adoption or runtime
+reliability.
