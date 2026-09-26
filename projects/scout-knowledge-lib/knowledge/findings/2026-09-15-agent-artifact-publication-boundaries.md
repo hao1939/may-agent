@@ -1,8 +1,8 @@
 <ai_context>
-summary: "artifact-site separates uploaded HTML from platform authority with an opaque-origin iframe and a second CSP sandbox, but network egress is unrestricted unless configured and its agent-facing publish tools create a public share by default. Safe agent artifact delivery therefore needs separate containment, egress, and disclosure decisions."
-triggers: ["artifact-site", "agent artifact publishing", "untrusted HTML", "iframe sandbox", "opaque origin", "CSP_CONNECT_SRC", "MCP publishing", "public share default", "publication authority"]
-last_updated: "2026-09-15"
-source_basis: "GitHub repository lexmount/artifact-site at pinned revision 3388d8c216aa542820761a89a5483cb20f7a2840; inspected the complete untruncated tree plus README, security model, preview isolation, iframe, bounded unzip, authorization, MCP publishing, CLI publishing, and targeted test sources. Tests were inspected but not executed."
+summary: "Agent artifact delivery needs separate containment, egress, and disclosure decisions. artifact-site makes those boundaries partly configurable; Botbin's documented no-auth path instead creates a permanent reachable page, and its live viewer combines scripts with same-origin sandboxing while also linking to a permissive raw route."
+triggers: ["artifact-site", "botbin", "agent artifact publishing", "untrusted HTML", "iframe sandbox", "opaque origin", "CSP_CONNECT_SRC", "MCP publishing", "public share default", "publication authority", "raw HTML route"]
+last_updated: "2026-09-26"
+source_basis: "GitHub repository lexmount/artifact-site at pinned revision 3388d8c216aa542820761a89a5483cb20f7a2840; inspected the complete untruncated tree plus README, security model, preview isolation, iframe, bounded unzip, authorization, MCP publishing, CLI publishing, and targeted test sources. Tests were inspected but not executed. Follow-up inspected HN item 49853553, Botbin's complete 2,765-byte agent instructions, MCP descriptor, and response headers plus relevant markup for the two linked live examples; no upload or exploit test was performed."
 </ai_context>
 
 # Agent artifact delivery has three independent boundaries
@@ -34,6 +34,16 @@ The underlying site can be private by default, but the agent-facing paths intent
 
 This is a product choice, not a sandbox failure. It shows why artifact creation and artifact disclosure should remain separately visible in agent plans, prompts, receipts, and approval policies. A page may be well-contained at runtime while being shared more broadly than intended.
 
+## Follow-up: a one-command artifact link can collapse all three boundaries (Botbin, 2026-09-26)
+
+A current [Show HN submission](https://news.ycombinator.com/item?id=49853553) points to Botbin, a hosted service that asks agents to publish self-contained HTML through either unauthenticated `curl` or a remote MCP server. Botbin's complete [`agents.md`](https://botbin.io/agents.md) says a successful publish returns a live URL and edit token, stores the artifact permanently, and lets the author use external scripts and fonts. It documents no private or no-share mode. This makes the convenience operation simultaneously an artifact write and a disclosure to anyone who obtains the returned URL; “unlisted” or indexing behavior was not documented, so this observation establishes reachability rather than discoverability.
+
+The two live examples linked by the homepage add an implementation-level caution. Each viewer embeds its raw page with `sandbox="allow-scripts allow-forms allow-same-origin allow-popups"`. Because the artifact is served from the same `botbin.io` origin as the wrapper, combining `allow-scripts` with `allow-same-origin` does not provide the opaque-origin separation used by artifact-site and is a [known unsafe sandbox combination](https://html.spec.whatwg.org/multipage/iframe-embed-object.html#attr-iframe-sandbox) when embedded content can reach its ancestor. Botbin also exposes a viewer link to `/<id>/raw`; the sampled raw responses execute as `text/html` and declare `Content-Security-Policy: default-src * 'unsafe-inline' 'unsafe-eval' data: blob:;`, allowing broad network and script behavior rather than imposing an egress boundary.
+
+This is a source-visible design assessment, not an exploit report. Scout inspected the two publisher-supplied examples and response headers but did not upload content, test browser escape behavior, inspect private server code, or establish whether additional controls exist outside the documented interface. The HN item had two points and no comments at observation, so it is discovery provenance, not independent validation.
+
+The comparative lesson is that a clean link is a delivery format, not a safety property. Agent hosts should treat calls to generic artifact services as external publication effects, require an explicit disclosure choice, redact or classify content before upload, and open active artifacts on a separate origin with a restrictive response policy. A durable receipt should identify the destination, artifact identity, disclosure scope, retention policy, and containment/egress profile rather than recording only the returned URL.
+
 ## Implication
 
 A robust agent artifact service should report at least three independent decisions:
@@ -62,3 +72,8 @@ Defense in depth is valuable within each layer—the iframe plus response CSP is
 - MCP tool registration and publish default: https://github.com/lexmount/artifact-site/blob/3388d8c216aa542820761a89a5483cb20f7a2840/src/lib/mcp/server.ts
 - CLI publish default: https://github.com/lexmount/artifact-site/blob/3388d8c216aa542820761a89a5483cb20f7a2840/cli/src/publish.ts
 - Complete pinned tree: https://api.github.com/repos/lexmount/artifact-site/git/trees/3388d8c216aa542820761a89a5483cb20f7a2840?recursive=1
+- HN follow-up: https://news.ycombinator.com/item?id=49853553
+- Botbin homepage and agent instructions: https://botbin.io/ and https://botbin.io/agents.md
+- Botbin MCP descriptor: https://botbin.io/mcp
+- Botbin examples inspected: https://botbin.io/7hnaku and https://botbin.io/jey6fx
+- HTML iframe sandbox specification note: https://html.spec.whatwg.org/multipage/iframe-embed-object.html#attr-iframe-sandbox
