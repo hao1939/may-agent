@@ -1,8 +1,8 @@
 <ai_context>
 summary: "Companion to agent-runtime-hardening.md for core effect integrity: centralized effect-mode derivation, interaction-shaped mutation review, approval-channel races, revision-bound workspace admission, evidence-carrying closure, quarantine for unknown effects, operation identity across replanning, receipt identity and ambiguous delivery, transactional review versus atomic commit, guarded writes, apply-time revalidation, pre-wait provider-attempt journals, session-bound retry safety, observation-bound handover, history/context separation, and externally anchored sandbox authority."
 triggers: ["runtime effect integrity", "central effect gate", "mutation confirmation", "approval race", "permission broker", "modified-input recheck", "revision-bound admission", "effect closure", "unknown effect", "operation identity", "replanning retry", "resource quarantine", "atomic commit", "guarded configuration write", "previewable plan", "ambiguous delivery", "delivery receipt", "receipt identity", "forward-only delivery", "provider attempt journal", "reached wire", "unknown usage", "AID-Guard", "outbound publication", "remote session retry", "desktop handover", "history fidelity", "safe resume", "sandbox escape", "external authority", "agentsgo", "atomic replacement", "compare-and-swap"]
-last_updated: "2026-09-24"
-source_basis: "Extracted from agent-runtime-hardening.md during its oversized-note review and subsequently updated with source-grounded findings, including SkillRanker's pre-wait provider-attempt journal and decision-time feedback snapshots and amux's identity-bound steering receipts. Each retained section preserves stable source links, pinned revisions where applicable, reproduced checks where performed, and explicit evidence limitations. Unattended-execution, replay, approval-resume, settlement, accountable-write, and desktop-authorization sections moved intact to agent-runtime-unattended-execution-and-replay.md during the 2026-09-21 oversized-note review."
+last_updated: "2026-09-26"
+source_basis: "Extracted from agent-runtime-hardening.md during its oversized-note review and subsequently updated with source-grounded findings, including SkillRanker's pre-wait provider-attempt journal and decision-time feedback snapshots, amux's identity-bound steering receipts, and Apache Maka's transactional tool ledger. Each retained section preserves stable source links, pinned revisions where applicable, reproduced checks where performed, and explicit evidence limitations. Unattended-execution, replay, approval-resume, settlement, accountable-write, and desktop-authorization sections moved intact to agent-runtime-unattended-execution-and-replay.md during the 2026-09-21 oversized-note review."
 </ai_context>
 
 # Agent Runtime Effect Integrity
@@ -905,9 +905,47 @@ data formats can change and that this storage generation does not import older
 JSONL conversation authority, so “recoverable going forward” should not be
 confused with migration compatibility for existing users.
 
+### Revision follow-up: make the effect boundary and its recovery debt one commit
+
+At revision `50f0d0ecbca4382294bdfe2367942347bb1f7576`, Maka has moved the
+history/effect distinction into a concrete storage protocol. `commitToolPrepared`
+uses one database transaction to insert the model tool-call event, a separate
+pre-dispatch event, a `prepared` journal row, and the operation's current-state
+row. An exact retry returns `created: false`; the implementation compares the
+stored event and operation identity, so reusing an operation ID with different
+arguments or events is rejected rather than treated as idempotent. The matching
+outcome commit advances the same operation. Thus a recovery query can find a
+prepared dispatch without inferring one from transcript shape.
+
+Project-authored provider-conformance tests exercise both prepare and outcome
+under a simulated lost acknowledgement: retrying the identical commit does not
+add another fact, while an identity conflict is rejected. Separate tests require
+a terminal event to seal the run against later appends. The restart path first
+tries to commit explicit interrupted outcomes; if that persistence fails, it
+leaves the run non-terminal, and it refuses to seal any run that still contains
+an indeterminate dispatch. This is a useful ordering rule: **persist recovery
+debt before publishing terminal closure**, or retain the invocation as open.
+
+The same revision also distinguishes immutable prefix proofs from mutable
+streaming snapshots. A project-authored test appends a partial model event and
+shows that neither the immutable high-water position nor its digest changes;
+the proof API also enforces event, total-byte, and per-record-byte budgets. This
+lets a caller prove the exact durable prefix it consumed without promoting a
+replaceable partial rendering into canonical history.
+
+These are stronger implementation and test-contract signals than the earlier
+design documents, but Scout did not install dependencies, run the test suite,
+or inject a real process crash. The transaction protects facts within Maka's
+SQLite boundary; it cannot make the external tool effect atomic with that
+commit. A prepared operation can therefore establish that dispatch was admitted
+and may have crossed the boundary, not whether the external effect completed.
+
 - **Repo:** https://github.com/apache/maka
-- **Inspected revision:** [`52c0e3275eae053ea5a221cefdd3be09bbfb46da`](https://github.com/apache/maka/commit/52c0e3275eae053ea5a221cefdd3be09bbfb46da)
-- **Primary sources:** [runtime core](https://github.com/apache/maka/blob/52c0e3275eae053ea5a221cefdd3be09bbfb46da/docs/architecture/runtime-core-architecture-draft.md), [compaction as projection](https://github.com/apache/maka/blob/52c0e3275eae053ea5a221cefdd3be09bbfb46da/docs/architecture/llm-compaction-events-log-projection-draft.md), and [safe resume](https://github.com/apache/maka/blob/52c0e3275eae053ea5a221cefdd3be09bbfb46da/docs/architecture/runtime-resume-architecture.md)
+- **Original inspected revision:** [`52c0e3275eae053ea5a221cefdd3be09bbfb46da`](https://github.com/apache/maka/commit/52c0e3275eae053ea5a221cefdd3be09bbfb46da)
+- **Current inspected revision:** [`50f0d0ecbca4382294bdfe2367942347bb1f7576`](https://github.com/apache/maka/commit/50f0d0ecbca4382294bdfe2367942347bb1f7576)
+- **Original primary sources:** [runtime core](https://github.com/apache/maka/blob/52c0e3275eae053ea5a221cefdd3be09bbfb46da/docs/architecture/runtime-core-architecture-draft.md), [compaction as projection](https://github.com/apache/maka/blob/52c0e3275eae053ea5a221cefdd3be09bbfb46da/docs/architecture/llm-compaction-events-log-projection-draft.md), and [safe resume](https://github.com/apache/maka/blob/52c0e3275eae053ea5a221cefdd3be09bbfb46da/docs/architecture/runtime-resume-architecture.md)
+- **Current primary sources:** [transactional tool commit](https://github.com/apache/maka/blob/50f0d0ecbca4382294bdfe2367942347bb1f7576/packages/storage/src/sqlite-runtime-store.ts#L3213-L3319), [provider conformance and lost-acknowledgement tests](https://github.com/apache/maka/blob/50f0d0ecbca4382294bdfe2367942347bb1f7576/packages/storage/src/__tests__/execution-provider-conformance.test.ts#L2180-L2260), [restart settlement ordering](https://github.com/apache/maka/blob/50f0d0ecbca4382294bdfe2367942347bb1f7576/packages/runtime/src/session-manager.ts#L4860-L4920), and [immutable-prefix/partial-event test](https://github.com/apache/maka/blob/50f0d0ecbca4382294bdfe2367942347bb1f7576/packages/storage/src/__tests__/sqlite-runtime-store.test.ts#L3614-L3687)
+- **Current discovery query:** GitHub Repository Search API `ai agent durable execution in:name,description,readme pushed:>2026-09-20`, sorted by updated; `total_count: 9502`, `incomplete_results: false`
 
 ## Verification-Evidence Binding — Brigade (GitHub, August 2026)
 
