@@ -2,8 +2,8 @@
  * message-tool.ts — inter-agent communication primitive.
  *
  * The `message` tool replaces notify-style inbox messages and the removed
- * agents.message action. It does not replace agents.fork, which still starts an
- * immediate background session.
+ * agents.message action. It does not replace agents.fork, which starts a
+ * bounded helper owned by the caller.
  *
  * Semantics:
  *   - async, persisted, receiver-owned, never blocking RPC.
@@ -28,8 +28,6 @@ import type { EventTrace } from "../../app/core/events/bus.js";
 export interface MessageToolOptions {
   /** Name of the calling agent. */
   agentName: string;
-  /** Root directory containing agent folders. */
-  agentsRoot: string;
   /** Persistence directory for request tracking DB. */
   persistDir: string;
   /** Emit an event on the bus. */
@@ -76,19 +74,9 @@ const messageParams = Type.Object({
       description: "Additional files the receiver should consult. Appended to content.",
     }),
   ),
-  force: Type.Optional(
-    Type.Boolean({
-      description: "Skip duplicate detection. Use when intentionally re-sending.",
-    }),
-  ),
 });
 
-type MessageParams = Static<typeof messageParams> & {
-  intent?: string;
-  priority?: "P0" | "P1" | "P2" | "P3";
-  context_files?: string[];
-  force?: boolean;
-};
+type MessageParams = Static<typeof messageParams>;
 
 function textResult(text: string): AgentToolResult<undefined> {
   return { content: [{ type: "text" as const, text }], details: undefined };

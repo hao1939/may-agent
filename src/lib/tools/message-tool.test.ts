@@ -20,7 +20,6 @@ function setup(
   const events: CapturedEvent[] = [];
   const tool = createMessageTool({
     agentName: "arc",
-    agentsRoot: "/tmp/agents",
     persistDir: overrides.persistDir ?? "/tmp/.state",
     emit: (e) => events.push(e),
     allowedTargets: overrides.allowedTargets,
@@ -43,7 +42,7 @@ describe("message tool", () => {
         throw new Error("storage unavailable");
       },
     ]) {
-      const tool = createMessageTool({ agentName: "arc", agentsRoot: "/tmp/agents", persistDir: "/tmp/.state", emit });
+      const tool = createMessageTool({ agentName: "arc", persistDir: "/tmp/.state", emit });
       const result = await call(tool, { to: "human", content: "status" });
       expect(result.error).toContain("Message was not recorded");
       expect(result).not.toHaveProperty("delivery");
@@ -55,10 +54,11 @@ describe("message tool", () => {
     expect((await call(tool, { to: "dev" })).error).toMatch(/required/);
   });
 
-  it("emits exactly one message.created event (no legacy dual-emit)", async () => {
+  it("records each message without advertising duplicate detection", async () => {
     const { tool, events } = setup();
     await call(tool, { to: "dev", content: "please implement X" });
 
+    expect(tool.parameters.properties).not.toHaveProperty("force");
     const types = events.map((e) => e.type);
     expect(types).toContain("message.created");
     expect(types).not.toContain("agent.notification");

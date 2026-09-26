@@ -5,7 +5,7 @@
  */
 
 import type { AgentMessage, AgentTool, AgentToolResult } from "@earendil-works/pi-agent-core";
-import { Type, StringEnum } from "@earendil-works/pi-ai";
+import { Type, StringEnum, type Static } from "@earendil-works/pi-ai";
 import type { RegisteredAgent } from "./manager-utils.js";
 import type { SessionInfo, SubagentDefinition, TaskResult } from "./types.js";
 import type { PersistedSession } from "./persistence.js";
@@ -60,8 +60,6 @@ export interface CreateAgentsToolOptions {
   getCallerAgentName?: () => string | undefined;
   /** Agent names that cannot be called directly. Returns error with hint. */
   callDeny?: { agents: string[]; hint: string };
-  /** Root directory of agent definitions (for message action). */
-  agentsRoot?: string;
   validateControl?: (sessionId: string, callerSessionId?: string) => void;
 }
 
@@ -102,12 +100,6 @@ const AgentsToolParams = Type.Object({
         "Task description for 'call' or 'fork'. Be specific: include file paths, expected outcomes, and constraints. The agent runs to completion and returns a summary (call) or session id (fork).",
     }),
   ),
-  message: Type.Optional(
-    Type.String({
-      description:
-        "DEPRECATED — use the `message` tool for FYI notifications, or `task` for 'call'/'fork'. Kept only for backward compatibility.",
-    }),
-  ),
   sessionId: Type.Optional(
     Type.String({ description: "Session ID for 'peek' or 'cancel'. Get session IDs from 'list' output." }),
   ),
@@ -121,12 +113,6 @@ const AgentsToolParams = Type.Object({
     StringEnum(["active", "stale", "failed", "all"] as const, {
       description:
         "Filter for 'sessions' action. 'active': running. 'stale': running for >2h. 'failed': terminal errors. 'all': everything. Default: 'active'.",
-    }),
-  ),
-  force: Type.Optional(
-    Type.Boolean({
-      description:
-        "For 'fork': skip duplicate detection. Use when you intentionally want to re-dispatch a similar task to the same agent.",
     }),
   ),
   context_files: Type.Optional(
@@ -146,11 +132,6 @@ const AgentsToolParams = Type.Object({
       description: "For 'call'/'fork': one explicit skill from the receiving agent's catalog to activate for this task.",
     }),
   ),
-  priority: Type.Optional(
-    StringEnum(["P0", "P1", "P2"] as const, {
-      description: "For 'fork': task priority. P0 = urgent/blocking, P1 = important, P2 = nice-to-have. Default: P1.",
-    }),
-  ),
   scope: Type.Optional(
     StringEnum(["parent", "origin", "root", "workflow"] as const, {
       description:
@@ -159,21 +140,7 @@ const AgentsToolParams = Type.Object({
   ),
 });
 
-interface AgentsToolParamsType {
-  action: "call" | "fork" | "context" | "list" | "peek" | "cancel" | "sessions";
-  agent?: string;
-  task?: string;
-  message?: string;
-  sessionId?: string;
-  limit?: number;
-  filter?: "active" | "stale" | "failed" | "all";
-  force?: boolean;
-  context_files?: string[];
-  success_criteria?: string[];
-  skill?: string;
-  priority?: "P0" | "P1" | "P2";
-  scope?: "parent" | "origin" | "root" | "workflow";
-}
+type AgentsToolParamsType = Static<typeof AgentsToolParams>;
 
 function appendContextFiles(task: string, contextFiles?: string[], successCriteria?: string[]): string {
   const parts = [task];
@@ -247,7 +214,7 @@ export function createAgentsTool(manager: AgentsToolManagerDeps, opts?: CreateAg
     name: "agents",
     label: "Agents",
     description:
-      "Cooperate with other agents. Use 'list' to see available agents, 'call' to run one synchronously, 'fork' to start one in the background, 'peek'/'cancel' to monitor sessions, and 'sessions' to query persisted execution. For one-way FYI notifications, use the separate `message` tool.",
+      "Cooperate with other agents. Use 'list' to see available agents, 'call' to run one synchronously, 'fork' for a bounded helper owned by your live session, 'peek'/'cancel' to monitor sessions, and 'sessions' to query persisted execution. For one-way FYI notifications, use the separate `message` tool.",
     parameters: AgentsToolParams,
     execute: async (_toolCallId, _params, signal) => {
       const params = _params as AgentsToolParamsType;
@@ -258,7 +225,7 @@ export function createAgentsTool(manager: AgentsToolManagerDeps, opts?: CreateAg
           return textResult(
             JSON.stringify({
               error:
-                "The agents.message and agents.send actions have been removed. Use the message tool: message({ to, content, intent?, priority? }) for async inter-agent communication, or agents.fork({ agent, task }) to dispatch work that should start immediately.",
+                "The agents.message and agents.send actions have been removed. Use the message tool: message({ to, content, intent?, priority? }) for async inter-agent communication, or agents.call/agents.fork with { agent, task } for a bounded helper. Durable work belongs to an App Task.",
             }),
           );
         }
@@ -323,10 +290,10 @@ export function createAgentsTool(manager: AgentsToolManagerDeps, opts?: CreateAg
           }
 
           case "fork": {
-            if (!params.agent || !(params.task || params.message)) {
+            if (!params.agent || !params.task) {
               return textResult(JSON.stringify({ error: "'fork' requires 'agent' and 'task'" }));
             }
-            const forkTask = appendContextFiles(params.task || params.message!, params.context_files, params.success_criteria);
+            const forkTask = appendContextFiles(params.task, params.context_files, params.success_criteria);
             // Guard: reject if target matches a tool in caller's toolset
             const callerAgentRun = getCallerAgentName?.();
             if (callerAgentRun) {
@@ -511,7 +478,7 @@ export function createAgentsTool(manager: AgentsToolManagerDeps, opts?: CreateAg
 
               // Query canonical session state.
               let whereClause = "";
-              const queryParams: any[] = [];
+              const queryParams: Array<string | number> = [];
 
               switch (filter) {
                 case "active":
@@ -534,11 +501,20 @@ export function createAgentsTool(manager: AgentsToolManagerDeps, opts?: CreateAg
               }
 
               const sessions = db
-                .prepare(`SELECT sessionId, agent, task, status, kind, startedAt, endedAt, error FROM sessions ${whereClause} ORDER BY startedAt DESC LIMIT ${limit}`)
-                .all(...queryParams) as any[];
+                .prepare(`SELECT sessionId, agent, task, status, kind, startedAt, endedAt, error FROM sessions ${whereClause} ORDER BY startedAt DESC LIMIT ?`)
+                .all(...queryParams, limit) as Array<{
+                  sessionId: string;
+                  agent: string;
+                  task: string;
+                  status: string;
+                  kind: string | null;
+                  startedAt: number;
+                  endedAt: number | null;
+                  error: string | null;
+                }>;
 
-              const formatted = sessions.map((s: any) => ({
-                id: s.sessionId.slice(0, 16),
+              const formatted = sessions.map((s) => ({
+                id: s.sessionId,
                 agent: s.agent,
                 task: (s.task || "").slice(0, 120),
                 status: s.status,
