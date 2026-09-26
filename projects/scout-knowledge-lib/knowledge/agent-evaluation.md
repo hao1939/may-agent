@@ -2,6 +2,7 @@
 summary: "Canonical reference for agent evaluation patterns and testing tooling: live benchmarks, execution-trace verification, task-grounded memory evaluation, diversity-seeking adversarial scenario archives, categorical observer-based progress forecasting, conversation-level certification, reviewer agents, operational metrics (MTBF, CPT, context efficiency), repeated A/B tests of agent-tooling configurations, artifact-grounded reproduction, induced-objective red-team interpretation, XHS community trends, June 2026 testing tooling landscape (promptfoo, RagaAI, Layer-Isolated methodology, CI containment tools), benchmark-saturation responses from HN practitioners, benchmark-family/data-engine patterns, trace-to-eval asset compilation, the Diagnostic Refinement wave (typed failure characterization via LegalHalluLens, EARS, Thermodynamic Signatures, Rift), Deployment Unit Turn (configuration-level evaluation), and the Observability Inversion (process discipline evaluation via RigorBench, small critics, structural code quality). Research-frontier patterns (§12–§35) extracted to companion note agent-evaluation-research.md."
 triggers: ["evaluation", "benchmark", "reviewer agent", "feedback", "Agent-Eval-Agent", "evaluator agent", "gym", "MTBF", "context efficiency", "trajectory", "testing tooling", "promptfoo", "agent testing", "CI agent", "layer-isolated", "A/B test", "agent tooling experiment", "skill selection reliability", "request exposure", "conditional quality", "diagnostic refinement", "typed hallucination", "LegalHalluLens", "EARS abstention", "Rift deception", "thermodynamic signatures", "process discipline", "process observability", "RigorBench", "small critic", "structural code quality", "Topos", "benchmark family", "data engine", "harness variance", "anytime-valid", "confidence sequence", "optional stopping", "pseudoreplication", "cluster bootstrap", "holdout leakage", "SkillTV-Bench", "JudgeSkill", "skill-aware verification", "rollout selection", "EvoTrace", "trace mining", "executable eval assets", "verifier provenance", "environment reconstruction", "claim verification", "negative memory", "evidence ledger", "information-weighted verification", "reproducibility bundle", "replay coverage", "claim-artifact matrix", "evaluation fingerprint", "source closure", "verifiable credential", "self-reported transcript", "Agents School", "evaluation evidence class", "causal witness", "matched null", "behavior-first evaluation", "reconstruction test", "artifact-grounded reproduction", "agent-generated evidence", "outside feedback", "insurance benchmark", "document routing", "system reliability", "abstention", "induced objective", "red-team interpretation", "effect-state classification", "conversation-level evaluation", "compositional certification", "evidence-cited diagnosis", "declared observed delegation", "prompt treatment", "measurement ownership", "paired prompt evaluation", "production feedback loop", "progress forecasting", "Jev sentinel", "AgentJev", "local decision model", "categorical progress rubric", "remaining time prediction", "DolphinBench", "agent memory evaluation", "memory Pareto frontier", "OSWorld-Pro", "process-based evaluation", "subgoal feasibility", "failure persistence", "infeasible persistence", "process judge calibration", "PhysAudit", "scientific validation", "domain invariant", "claim-specific check", "deterministic numerical verdict", "measurement state", "not measured", "Vigiles", "Life Forge", "MAP-Elites", "quality-diversity", "adversarial scenario archive"]
 last_updated: "2026-09-26"
+source_update_2026_09_26_xhs_production_probe: "A current XHS post and visible comments were read as secondary practitioner evidence for converting production-agent interview questions into executable failure probes. The author's six-interview account and market claims were not independently verified, and course-promotion replies materially limit its evidential weight."
 source_update_2026_09_26_deepswe_reward_hacking: "HN item 49851266, Handshake's full research article, and Handshake-AI-Research/deepswe-samples at commit d0994043fc6570a3c87165aadbae2aaf60f0ed63 were inspected. The repository tree exposes 30 sampled task directories with instructions, patches, and trajectories, not the full thousands-of-rollouts audit corpus; no trajectories were replayed and the reported prevalence rates were not independently reproduced."
 source_update_2026_09_25_vigiles: "zernie/vigiles at commit 95e18bed473b1d4e56dfa8fd8b9c735c4f76e2f1; README, complete repository tree, audit scoring implementation and tests, harness-test and eval-lock implementation, command documentation, and package scripts were inspected. No test suite, audit, harness test, or live-model evaluation was run."
 source_update_2026_09_25_caliper: "edonadei/caliper at commit 40c7a0e954e4b1fde6990184f8a18a19e7f4ffdb; README, result/spec documentation, six design records, comparison/ablation/result implementation, and selected tests were inspected. No test suite or agent evaluation was run."
@@ -340,6 +341,50 @@ no comments when checked.
 - **Pinned revision:** https://github.com/taylorancapital/nothing-threw/commit/c17bc3afb70c1168708082a7d94884075a8e293e
 - **Coverage:** complete HN item; complete essay, README, taxonomy, and September
   field notes at the pinned revision; no private business-repository anchors
+
+### XHS practitioner signal: test incident reasoning, not framework recall
+
+A high-engagement XHS post framed the gap between demo familiarity and
+production-agent competence through failure questions rather than framework
+names. Its prompts cover malformed tool arguments, downstream timeouts,
+long-conversation information loss, repeated tool-call loops, token growth,
+branch failure, and rollback. A visible commenter sharpened one case: a global
+step cap only stops a loop after consuming its budget, whereas detecting the
+same tool with the same arguments on consecutive calls can stop that specific
+failure earlier. The post also asks candidates to reconstruct one incident from
+initial detection through diagnosis and repair, not merely describe the final
+fix.
+
+The reusable value is an evaluation design, not a hiring conclusion. Convert
+these questions into executable probes: inject a schema-invalid tool result and
+a timeout; remove an early fact after context compression; return an unchanged
+observation to repeated identical calls; fail one workflow branch after a
+partial effect; and provide a trace with an ambiguous detection point. Score
+whether the system or operator identifies the failure class, preserves the
+relevant evidence, bounds retries and cost, chooses a safe fallback, and can
+replay the incident. A verbal mention of exponential backoff, schema validation,
+maximum steps, or human fallback is only a hypothesis about competence until a
+trace demonstrates the behavior.
+
+This also extends the detection-mode rule above. Asking only “how would you fix
+it?” rewards memorized controls; asking “how was it first noticed, what evidence
+localized it, and what would catch the next variant?” tests whether the account
+contains an actual feedback loop. The same rubric applies to evaluating an
+agent implementation: framework inventory is configuration metadata, while
+failure injection plus incident reconstruction is behavioral evidence.
+
+**Evidence boundary:** the post is one pseudonymous author's unverified account
+of six interviews, not labor-market data or proof that the listed controls were
+used in production. Several author replies steer readers toward paid training,
+which creates a promotional incentive. Engagement (976 likes, 1,196 saves, 89
+comments when read) measures interest, not validity. Scout read the full visible
+post body and returned comment excerpt; no resumes, interviews, systems, or
+incidents were independently inspected.
+
+- **Source:** https://www.xiaohongshu.com/explore/6aa90464000000002b027b34
+- **Stable note ID:** `6aa90464000000002b027b34`
+- **Coverage:** full visible body and the comment excerpt returned by the XHS
+  detail reader; attached images and collapsed comments were not inspected
 
 ### A failure-search archive is not a population denominator — Life Forge (HN/GitHub, Sep 2026)
 
