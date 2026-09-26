@@ -1,8 +1,8 @@
 <ai_context>
-summary: "Implementation-evidence companion to agent-security-verified-enforcement.md. Uses pinned repositories, disclosures, and deployed-system reports to separate signed claims from replayable evidence; verifier correctness from adversarial agent resistance; receipt integrity from completeness; configured policy from covered paths; identity enrollment from per-request proof; formal models from unsupported surfaces; observed egress from blocking; stable tool digests from equivalent semantics; policy verdicts from effect ownership; counterfactual actions from execution authority and real effect accounting; authorization receipts from effect gates; declared mediation architecture from per-effect path evidence; narrated results from positive execution evidence; sandbox isolation from configuration coherence; stop requests from observed quiescence; frozen eval inputs from stable comparison units; untrusted analysis failure from trusted configuration degradation; and human approval records from end-to-end effect binding."
-triggers: ["SkillProof", "MCP server verification", "replayable evidence", "action receipt", "signed receipt", "evidence completeness", "MAX Authorization Sandbox", "signed policy", "adversary capability", "rollback state", "Pipelock", "PassControl", "sender proof", "bearer visa", "authentication assurance", "default deny", "fail closed", "shell hook", "guardrail regression test", "OpenShell prover", "SMT containment", "path composition", "egress firewall", "uninspected egress", "tool identity", "tool pin", "schema canonicalization", "shadow mode", "mediation ownership", "counterfactual action", "observed policy action", "real effect accounting", "ctrlrun", "HOL Guard", "Action Evidence Package", "AEP sandbox", "Codex sandbox", "Overpatch", "Heapjack", "authority derivation", "Meta Muse", "local configuration authority", "APEXA", "execution integrity", "tool execution evidence", "BoxLite", "micro-VM", "sandbox configuration coherence", "guest network", "host jailer grants", "Hard Stop", "SIGSTOP", "process group preemption", "quiescence receipt", "run-assert-eval", "ASSERT", "Agent Control Specification", "fixed evaluation", "applicable denominator", "paired comparison", "safety helpfulness split", "CC Safety Net", "analysis budget", "configuration degradation", "typed failure policy", "emisar", "approval binding", "bridge attestation", "pack hash"]
-last_updated: "2026-09-25"
-source_basis: "Pinned-source implementation studies and disclosures reviewed 2026-09-10 through 2026-09-25: SkillProof f5ddb4b, MAX Authorization Sandbox 380efe6, Pipelock f7d1816, agent-guardrails-kit 18c241e, PassControl f9cb702, OpenShell df0ee1a, k8s-rca-agent 29f5fad, secure-agent 017ec5a, Rul1an/assay 900e536, Soup Wall be8db48, HOL Guard 56faea4 and f5d568f, ctrlrun 8ebc5a8, aep-sandbox 3495e27, BoxLite 9e9436e, Hard Stop 45c31bc, responsibleai/ASSERT 0628e25, CC Safety Net 0439757, AndrewDryga/emisar ac0d942, HN items 49795755, 49802030, 49830567, 49834450, 49834720, 49840107, 49841469, and 49844056 with their linked primary sources, plus arXiv 2609.24165v1 and 2609.29808v1 (abstracts and full HTML). Each section states its own evidence boundary."
+summary: "Implementation-evidence companion to agent-security-verified-enforcement.md. Uses pinned repositories, disclosures, and deployed-system reports to separate signed claims from replayable evidence; receipt validity from verifier isolation and claim scope; verifier correctness from adversarial agent resistance; receipt integrity from completeness; configured policy from covered paths; identity enrollment from per-request proof; formal models from unsupported surfaces; observed egress from blocking; stable tool digests from equivalent semantics; policy verdicts from effect ownership; counterfactual actions from execution authority and real effect accounting; authorization receipts from effect gates; declared mediation architecture from per-effect path evidence; narrated results from positive execution evidence; sandbox isolation from configuration coherence; stop requests from observed quiescence; frozen eval inputs from stable comparison units; untrusted analysis failure from trusted configuration degradation; and human approval records from end-to-end effect binding."
+triggers: ["SkillProof", "MCP server verification", "replayable evidence", "action receipt", "signed receipt", "evidence completeness", "MAX Authorization Sandbox", "signed policy", "adversary capability", "rollback state", "Pipelock", "HELM AI Kernel", "offline verifier", "verifier isolation", "claim-typed verification", "PassControl", "sender proof", "bearer visa", "authentication assurance", "default deny", "fail closed", "shell hook", "guardrail regression test", "OpenShell prover", "SMT containment", "path composition", "egress firewall", "uninspected egress", "tool identity", "tool pin", "schema canonicalization", "shadow mode", "mediation ownership", "counterfactual action", "observed policy action", "real effect accounting", "ctrlrun", "HOL Guard", "Action Evidence Package", "AEP sandbox", "Codex sandbox", "Overpatch", "Heapjack", "authority derivation", "Meta Muse", "local configuration authority", "APEXA", "execution integrity", "tool execution evidence", "BoxLite", "micro-VM", "sandbox configuration coherence", "guest network", "host jailer grants", "Hard Stop", "SIGSTOP", "process group preemption", "quiescence receipt", "run-assert-eval", "ASSERT", "Agent Control Specification", "fixed evaluation", "applicable denominator", "paired comparison", "safety helpfulness split", "CC Safety Net", "analysis budget", "configuration degradation", "typed failure policy", "emisar", "approval binding", "bridge attestation", "pack hash"]
+last_updated: "2026-09-26"
+source_basis: "Pinned-source implementation studies and disclosures reviewed 2026-09-10 through 2026-09-26: SkillProof f5ddb4b, MAX Authorization Sandbox 380efe6, Pipelock f7d1816, HELM AI Kernel fe122d4, agent-guardrails-kit 18c241e, PassControl f9cb702, OpenShell df0ee1a, k8s-rca-agent 29f5fad, secure-agent 017ec5a, Rul1an/assay 900e536, Soup Wall be8db48, HOL Guard 56faea4 and f5d568f, ctrlrun 8ebc5a8, aep-sandbox 3495e27, BoxLite 9e9436e, Hard Stop 45c31bc, responsibleai/ASSERT 0628e25, CC Safety Net 0439757, AndrewDryga/emisar ac0d942, HN items 49795755, 49802030, 49830567, 49834450, 49834720, 49840107, 49841469, and 49844056 with their linked primary sources, plus arXiv 2609.24165v1 and 2609.29808v1 (abstracts and full HTML). Each section states its own evidence boundary."
 </ai_context>
 
 # Agent Security: Enforcement Evidence and Runtime Coverage
@@ -195,6 +195,67 @@ and
 **Evidence boundary:** this repository inspection verifies the implementation and
 documented semantics at one commit. It does not independently establish detection
 accuracy, deployment coverage, or the README's broader product-performance claims.
+
+### Follow-up: isolate the verifier and type each claim (HELM AI Kernel, September 2026)
+
+**Repo:** https://github.com/Mindburn-Labs/helm-ai-kernel
+
+**Pinned observation:** repository commit
+[`fe122d461529f62a270397c5104641697202a799`](https://github.com/Mindburn-Labs/helm-ai-kernel/commit/fe122d461529f62a270397c5104641697202a799)
+
+HELM's `receiptverify` package adds two useful disciplines to the receipt-validity
+vector above. First, the offline verifier is deliberately a separate leaf package
+rather than a path through the producer's larger cryptographic stack. An in-tree
+test walks the non-test import closure of both the package and verifier binary and
+fails if `net`, `net/http`, `crypto/tls`, or `os/exec` becomes reachable. Another
+test rejects wall-clock reads from production verifier code. This turns “offline”
+from a runtime promise into two checkable build properties: no transitive transport
+or subprocess path, and no date-dependent reinterpretation of an old receipt.
+
+Second, its result is claim-typed rather than a single undifferentiated green
+check. The verifier separately reports identity, integrity, policy, execution
+observation, chain closure, and permit checks; `not_applicable` is not silently
+promoted to success. The code comments also bound each claim. Policy verification
+means `policy_hash` and verdict were signed, not that the policy was evaluated.
+Execution verification means argument and output hashes were signed, not that the
+payloads were supplied or the action re-executed. Permit verification preserves
+signed terms and evidence obligations, but the receipt format lacks a `permit_id`
+link and expiry belongs to dispatch time. For a single receipt, chain closure is
+explicitly not applicable.
+
+The trust path is similarly explicit. The CLI requires a caller-owned Ed25519
+public-key file and exits non-zero unless the signature verifies under it. An
+embedded key can establish only self-consistency; it is not a trust root. The
+`receipt.v5` parser rejects duplicate members, trailing JSON values, non-integer
+Lamport spellings, missing signed members, unknown signature versions, and partial
+or contradictory signature metadata instead of retrying a declared v5 artifact
+against a legacy preimage.
+
+This yields a reusable verifier contract:
+
+1. **Isolation:** prove the verifier's dependency and I/O closure, not just that
+   one code path happens not to call the network.
+2. **Temporal purity:** keep historical cryptographic validation independent of
+   the current clock; evaluate expiry as a separately named dispatch-time claim.
+3. **Claim typing:** expose what was checked, what was absent, and what requires
+   external evidence rather than returning an ambiguous `valid=true`.
+4. **External trust:** resolve signer keys from caller-controlled material, never
+   from the artifact being verified.
+5. **Version closure:** reject unknown or contradictory profiles without downgrade
+   retries.
+
+**Evidence inspected at the pinned commit:**
+[`README.md`](https://github.com/Mindburn-Labs/helm-ai-kernel/blob/fe122d461529f62a270397c5104641697202a799/README.md),
+[`receipt-v5.md`](https://github.com/Mindburn-Labs/helm-ai-kernel/blob/fe122d461529f62a270397c5104641697202a799/protocols/specs/receipts/receipt-v5.md),
+[`receiptverify.go`](https://github.com/Mindburn-Labs/helm-ai-kernel/blob/fe122d461529f62a270397c5104641697202a799/core/pkg/receiptverify/receiptverify.go),
+[`receiptverify_test.go`](https://github.com/Mindburn-Labs/helm-ai-kernel/blob/fe122d461529f62a270397c5104641697202a799/core/pkg/receiptverify/receiptverify_test.go), and
+[`verify_receipt_cmd.go`](https://github.com/Mindburn-Labs/helm-ai-kernel/blob/fe122d461529f62a270397c5104641697202a799/core/cmd/helm-ai-kernel/verify_receipt_cmd.go).
+
+**Evidence boundary:** Scout statically inspected source, specifications, and
+repository-authored tests at one revision. It did not run the Go tests or verifier,
+validate a real receipt, audit every receipt family, or establish that a deployed
+agent's effects all traverse HELM. The source supports verifier semantics and
+build-time assertions, not the repository's broader enforcement or product claims.
 
 ## Default-Deny Needs a Coverage Contract, Not Just an Allow-List (HN, September 2026)
 
