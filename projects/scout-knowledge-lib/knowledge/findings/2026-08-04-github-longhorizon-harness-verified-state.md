@@ -2,7 +2,7 @@
 title: "LongHorizon-Harness — Fresh Context, Durable Verified State"
 source: github
 date: 2026-08-04
-last_updated: 2026-08-26
+last_updated: 2026-09-26
 type: finding
 tags: [github, long-horizon-agents, harness, verification, state-management, computer-use, coding-agents]
 relevance: high
@@ -78,6 +78,16 @@ This extends the claim–contract–evidence binding above into a **claim–cont
 
 The evidence is an early, documentation-only practitioner signal. The repository had 65 stars at observation, was created on 2026-08-23, and its tree contains playbooks, skills, examples, and demo assets but no executable test suite that independently enforces these rules. Its README says the patterns arose from 18 boards and production incidents, but the repository does not publish those incident records or comparative failure rates. The value is the explicit recovery contract, not a demonstrated reliability gain.
 
+## 2026-09-26 Update — Completion Is a Recoverable Settlement, Not a Status Label
+
+A later GLLA revision, [`72a848d`](https://github.com/DraconDev/pi-goal-list-loop-audit/tree/72a848d36e5e3fbfac4a193bff99bc7bd1231631), extends revision-bound auditing across the crash window between **approval** and **publication of completion**. Its lifecycle projection distinguishes `starting`, `running`, `settling`, `recovery-needed`, and `retry-waiting`; importantly, `approved` is not a persisted claim phase. It is returned only after the archive has landed and the summary has been queued. Legacy or unknown phases normalize to recovery-needed rather than completion.
+
+The settlement driver enforces a useful write order: persist the approval verdict and a `settling` claim, attempt the archive, then admit terminal rendering. If archiving fails, the approved claim remains durable with a named recovery reason. On restart or explicit resume, the system re-drives the owed archive without asking another auditor to reassess already-approved work. This preserves both sides of the boundary: no success card before the terminal artifact exists, and no needless second verdict after the first one is durably recorded.
+
+Repository tests encode the main failure cases. A cold reload parks an orphaned running claim without archiving it; a settling claim resumes without an `audit_started` event; repeated contacts produce one summary; and a refused archive retains the attempt identity while emitting no terminal success. The retention tests separately refuse to delete lockless unfinished or corrupt job directories because their liveness is ambiguous, while allowing cleanup when death is evidenced. Together these behaviors suggest a broader rule: **terminality should be derived from a re-drivable settlement receipt, not from an in-memory status transition or an evaluator's approval alone**.
+
+This is static implementation evidence from a fast-moving repository (25 stars in the current search result). Scout inspected the pinned lifecycle module, cold-restart and retention tests, package scripts, and the repository's own audit report, but did not run its reported 2,347-test fast suite, slow suite, TypeScript check, packaging checks, or a live auditor. The repository's audit report is therefore supporting author evidence, not an independent reproduction.
+
 ## Why This Matters
 
 1. **Long-horizon reliability is moving out of the model and into the harness.** This repo argues that progress persistence, auditability, and recoverability matter more than carrying one swollen context window for hours.
@@ -107,6 +117,11 @@ The evidence is an early, documentation-only practitioner signal. The repository
 - **README at inspected revision:** https://github.com/DraconDev/pi-goal-list-loop-audit/blob/a8777ebbda5ad3a3407d5f2b1a6f52943684e2bb/README.md
 - **Detached auditor process:** https://github.com/DraconDev/pi-goal-list-loop-audit/blob/6c4971c0cb0906b2188910c1d9978b372072620c/extensions/goal-loop-auditor-process.ts
 - **Revision-bound audit tests:** https://github.com/DraconDev/pi-goal-list-loop-audit/blob/553d28ef31c023d0a42df818a1bdccb86adbbd27/tests/revision-bound-audit.test.ts
+- **GLLA follow-up revision:** https://github.com/DraconDev/pi-goal-list-loop-audit/tree/72a848d36e5e3fbfac4a193bff99bc7bd1231631
+- **Detached audit lifecycle:** https://github.com/DraconDev/pi-goal-list-loop-audit/blob/72a848d36e5e3fbfac4a193bff99bc7bd1231631/extensions/audit-lifecycle.ts
+- **Cold-restart settlement tests:** https://github.com/DraconDev/pi-goal-list-loop-audit/blob/72a848d36e5e3fbfac4a193bff99bc7bd1231631/tests/audit-settlement-restart.test.ts
+- **Audit-job retention tests:** https://github.com/DraconDev/pi-goal-list-loop-audit/blob/72a848d36e5e3fbfac4a193bff99bc7bd1231631/tests/audit-job-retention.test.ts
+- **Repository audit report:** https://github.com/DraconDev/pi-goal-list-loop-audit/blob/72a848d36e5e3fbfac4a193bff99bc7bd1231631/audit/DETACHED-AUDIT-LIFECYCLE-2026-09-25.md
 - **Hermes Conductor repo at inspected revision:** https://github.com/forcewake/hermes-conductor/commit/ab0d8eab0301b3f18e6977416d080d5fa574f169
 - **Controller-managed worktree lanes:** https://github.com/forcewake/hermes-conductor/blob/ab0d8eab0301b3f18e6977416d080d5fa574f169/patterns/01-controller-managed-external-worktree-lanes.md
 - **Workspace isolation and recovery:** https://github.com/forcewake/hermes-conductor/blob/ab0d8eab0301b3f18e6977416d080d5fa574f169/patterns/02-workspace-isolation.md
