@@ -33,16 +33,17 @@ describe("AppTaskRecoveryScheduler", () => {
   });
 
   it("uses one nearest-due timer without polling before it is due", async () => {
-    let dueAt = Date.now() + 30;
-    let recoveries = 0;
+    let dueAt: number | null = null;
+    const recoveryTimes: number[] = [];
     const queued: string[] = [];
+    let onEnqueue: () => void = () => {};
     const scheduler = new AppTaskRecoveryScheduler({
       source: {
         listRecoveryCandidates(now = Date.now()) {
-          recoveries += 1;
+          recoveryTimes.push(now);
           return {
             items:
-              now >= dueAt
+              dueAt !== null && now >= dueAt
                 ? [
                     {
                       taskId: "due-task",
@@ -59,25 +60,34 @@ describe("AppTaskRecoveryScheduler", () => {
         },
         nextDueAt: () => dueAt,
       },
-      enqueue: (taskId) => queued.push(taskId),
+      enqueue: (taskId) => {
+        queued.push(taskId);
+        onEnqueue();
+      },
       safetyIntervalMs: 10_000,
     });
 
-    scheduler.start();
-    expect(recoveries).toBe(1);
-    await Bun.sleep(10);
-    expect(recoveries).toBe(1);
-    expect(queued).toEqual([]);
-    await Bun.sleep(35);
-    expect(recoveries).toBe(2);
-    expect(queued).toEqual(["due-task"]);
+    try {
+      scheduler.start();
+      expect(recoveryTimes).toHaveLength(1);
+      expect(queued).toEqual([]);
 
-    dueAt = Date.now() + 25;
-    scheduler.stateChanged();
-    await Bun.sleep(30);
-    expect(recoveries).toBe(3);
-    expect(queued).toEqual(["due-task", "due-task"]);
-    scheduler.close();
+      for (let occurrence = 1; occurrence <= 2; occurrence++) {
+        const deadline = Date.now() + 30;
+        await new Promise<void>((resolve) => {
+          onEnqueue = resolve;
+          dueAt = deadline;
+          scheduler.stateChanged();
+        });
+        // Record when recovery actually ran. A sleep can resume after its
+        // requested delay, so it cannot prove the deadline is still ahead.
+        expect(recoveryTimes).toHaveLength(occurrence + 1);
+        expect(recoveryTimes[occurrence]).toBeGreaterThanOrEqual(deadline);
+        expect(queued).toEqual(Array(occurrence).fill("due-task"));
+      }
+    } finally {
+      scheduler.close();
+    }
   });
 
   it("advances through bounded recovery pages instead of repeating the first page", () => {
