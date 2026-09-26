@@ -126,7 +126,7 @@ export function taskReads(opts: AppTaskRuntimeOptions, descriptor: AppTaskRuntim
         },
       });
     },
-    get: async (id) => readRuntimeTaskView(config, id),
+    get: async (id, options) => readRuntimeTaskView(config, id, options),
   };
 }
 

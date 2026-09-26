@@ -16,7 +16,10 @@ import {
   completeAppTask,
   closeAppTask,
   readAppTaskChildContext,
+  deferAppTask,
+  recordAppTaskTrigger,
 } from "../tasks/app-task-reconciler.js";
+import { trackAppTaskConditionEventForTasks } from "../tasks/app-task-condition-tracker.js";
 
 describe("App read projections", () => {
   let db: SqliteDb;
@@ -61,6 +64,40 @@ describe("App read projections", () => {
       resourceStore: store,
     });
   }
+
+  it("reads current Condition observations without conflating approval, new input and accepted progress", () => {
+    const config = resourceConfig();
+    const taskId = "review/context";
+    observeAppTaskIntent(config, { appAgent: "evaluation", intent: {
+      id: taskId, parentId: "review", outcome: "Review draft", acceptance: ["Retain evidence"],
+    } });
+    const claim = claimObservedAppTask(config, { taskId, appAgent: "evaluation", handler: "agent:evaluation" });
+    if (claim.kind !== "claimed") throw new Error("Expected claim");
+    deferAppTask(config, claim, { disposition: "waiting", summary: "Draft v3 prepared", result: { version: "v3" },
+      conditions: [
+        { id: "approval", type: "approval.observed", subject: "draft:v3", expected: { field: "approved", equals: true },
+          owner: "human:reviewer", requestedAction: "Approve v3", reviewAfterMs: 3600000 },
+        { id: "check", type: "check.observed", subject: "draft:v3", expected: { field: "passed", equals: true },
+          owner: "agent:reviewer", requestedAction: "Check v3", reviewAfterMs: 3600000 },
+      ] });
+    const before = readRuntimeTaskView({ taskStateConfig: config }, taskId)!;
+    expect(before.conditions.every((c) => c.observation?.state === "unknown")).toBe(true);
+    trackAppTaskConditionEventForTasks(config, {
+      type: "approval.observed", eventId: 700, data: { draft: "v3", approved: true },
+    }, [taskId]);
+    recordAppTaskTrigger(config, taskId, { type: "message.created", eventId: 701, data: { content: "New correction" } });
+    const after = readRuntimeTaskView({ taskStateConfig: config }, taskId)!;
+    expect(after.resourceVersion).toBeGreaterThan(before.resourceVersion!);
+    expect(after.conditions.find((c) => c.id === "approval")?.observation).toMatchObject({ state: "true", observedGeneration: 1 });
+    expect(after.conditions.find((c) => c.id === "check")?.observation?.state).toBe("unknown");
+    expect(after.result).toEqual({ version: "v3" });
+    expect(after.pendingEvents?.items.some((e) => e.eventId === 701)).toBe(true);
+    expect(config.resourceStore.readTrigger(taskId)?.events?.some((e) => e.event.eventId === 701)).toBe(true);
+    expect(before.conditions.every((c) => c.observation?.state === "unknown")).toBe(true);
+    // A bad read option must release the snapshot and leave ordinary writes usable.
+    expect(() => readRuntimeTaskView({ taskStateConfig: config }, taskId, { acceptedEvidence: { limit: 1000 } })).toThrow();
+    expect(recordAppTaskTrigger(config, taskId, { type: "message.created", eventId: 702 })).toEqual({ kind: "recorded" });
+  });
 
   it("returns only the authored result for a completed inbox item", async () => {
     createAppInboxItem(db, {
