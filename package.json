@@ -1,5 +1,6 @@
 {
   "dependencies": {
+    "@may-agent/gym": "file:projects/gym",
     "@may-agent/sdk": "file:projects/may-agent/bundle/sdk-current",
     "azure-cli": "^0.10.20",
     "puppeteer-core": "^24.43.1"

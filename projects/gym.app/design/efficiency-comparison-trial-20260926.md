@@ -30,6 +30,15 @@ The App imports that same contract. Existing callers and historical manifests
 without an objective retain quality semantics. All existing evidence, framework,
 truth and regression requirements remain in force.
 
+Deployment preflight exposed a dependency gap: the source TypeScript alias
+resolved the parser, but the frozen App release omitted the sibling Gym tree.
+Its workflow import failed before activation. Declaring the existing Gym package
+in the workspace manifest and lockfile fixes normal package resolution from the
+snapshot. A clean frozen-lockfile installation and a bundled import of the
+archived workflow then passed. This uses the existing package and reload paths;
+it adds no Host resolver or source-copy rule. Deploy the runner and App revision
+together and retain both identities in the deployment receipt.
+
 ## How to use and read it
 
 Declare the duration objective on the baseline command, for example:
