@@ -217,6 +217,29 @@ accountability architecture that worked at lower levels simply doesn't
 map. Legal frameworks handle Level 1-2. No existing framework handles
 Level 3-4.
 
+**September 2026 policy signal:** HN surfaced a Reuters report under the title
+“FTC chair suggests AI developers should be liable for conduct of agents.” The
+most substantive discussion did not treat an agent as an independent legal
+actor. One commenter summarized the reported position as treating agents like
+other tools and “resist[ing] anthropomorphizing.” Another comment split
+responsibility between a user who intentionally directs an illegal act and the
+maker of a product that takes unintended dangerous action, while locating the
+operative product boundary at the harness that turns untrusted model output into
+action, not at the text-generating model alone.
+
+This does not settle how liability will be allocated, and the linked Reuters
+article returned HTTP 401 during this review, so the chair's complete remarks
+were not independently checked. It is nevertheless a useful change in the HN
+signal: the earlier operator-only consensus is becoming a **layered
+responsibility** question spanning developer, harness builder, deployer, and
+user. Anti-anthropomorphism closes the attempted escape route—“the agent did
+it”—but does not by itself decide which human organization bears which part of
+the loss.
+
+Source: https://news.ycombinator.com/item?id=49850999
+
+Linked report (access blocked during review): https://www.reuters.com/business/ftc-chair-pushes-back-treating-ai-agents-independent-actors-2026-09-25/
+
 ### 3. Containment Maps to the Wrong Layer
 
 Current agent containment infrastructure concentrates at Levels 1-2:
