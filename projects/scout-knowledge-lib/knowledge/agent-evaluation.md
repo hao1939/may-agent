@@ -2,6 +2,7 @@
 summary: "Canonical reference for agent evaluation patterns and testing tooling: live benchmarks, execution-trace verification, task-grounded memory evaluation, diversity-seeking adversarial scenario archives, categorical observer-based progress forecasting, conversation-level certification, reviewer agents, operational metrics (MTBF, CPT, context efficiency), repeated A/B tests of agent-tooling configurations, artifact-grounded reproduction, induced-objective red-team interpretation, XHS community trends, June 2026 testing tooling landscape (promptfoo, RagaAI, Layer-Isolated methodology, CI containment tools), benchmark-saturation responses from HN practitioners, benchmark-family/data-engine patterns, trace-to-eval asset compilation, the Diagnostic Refinement wave (typed failure characterization via LegalHalluLens, EARS, Thermodynamic Signatures, Rift), Deployment Unit Turn (configuration-level evaluation), and the Observability Inversion (process discipline evaluation via RigorBench, small critics, structural code quality). Research-frontier patterns (§12–§35) extracted to companion note agent-evaluation-research.md."
 triggers: ["evaluation", "benchmark", "reviewer agent", "feedback", "Agent-Eval-Agent", "evaluator agent", "gym", "MTBF", "context efficiency", "trajectory", "testing tooling", "promptfoo", "agent testing", "CI agent", "layer-isolated", "A/B test", "agent tooling experiment", "skill selection reliability", "request exposure", "conditional quality", "diagnostic refinement", "typed hallucination", "LegalHalluLens", "EARS abstention", "Rift deception", "thermodynamic signatures", "process discipline", "process observability", "RigorBench", "small critic", "structural code quality", "Topos", "benchmark family", "data engine", "harness variance", "anytime-valid", "confidence sequence", "optional stopping", "pseudoreplication", "cluster bootstrap", "holdout leakage", "SkillTV-Bench", "JudgeSkill", "skill-aware verification", "rollout selection", "EvoTrace", "trace mining", "executable eval assets", "verifier provenance", "environment reconstruction", "claim verification", "negative memory", "evidence ledger", "information-weighted verification", "reproducibility bundle", "replay coverage", "claim-artifact matrix", "evaluation fingerprint", "source closure", "verifiable credential", "self-reported transcript", "Agents School", "evaluation evidence class", "causal witness", "matched null", "behavior-first evaluation", "reconstruction test", "artifact-grounded reproduction", "agent-generated evidence", "outside feedback", "insurance benchmark", "document routing", "system reliability", "abstention", "induced objective", "red-team interpretation", "effect-state classification", "conversation-level evaluation", "compositional certification", "evidence-cited diagnosis", "declared observed delegation", "prompt treatment", "measurement ownership", "paired prompt evaluation", "production feedback loop", "progress forecasting", "Jev sentinel", "AgentJev", "local decision model", "categorical progress rubric", "remaining time prediction", "DolphinBench", "agent memory evaluation", "memory Pareto frontier", "OSWorld-Pro", "process-based evaluation", "subgoal feasibility", "failure persistence", "infeasible persistence", "process judge calibration", "PhysAudit", "scientific validation", "domain invariant", "claim-specific check", "deterministic numerical verdict", "measurement state", "not measured", "Vigiles", "Life Forge", "MAP-Elites", "quality-diversity", "adversarial scenario archive"]
 last_updated: "2026-09-26"
+source_update_2026_09_26_reddit_harness_confounding: "Complete public Atom body for Reddit post t3_1wqk9di was read. Its 19-task scores, harness tuning, and cost figures are first-party self-reports; Scout did not inspect tasks, code, traces, experiment records, provider bills, or repeated runs."
 source_update_2026_09_26_xhs_production_probe: "A current XHS post and visible comments were read as secondary practitioner evidence for converting production-agent interview questions into executable failure probes. The author's six-interview account and market claims were not independently verified, and course-promotion replies materially limit its evidential weight."
 source_update_2026_09_26_deepswe_reward_hacking: "HN item 49851266, Handshake's full research article, and Handshake-AI-Research/deepswe-samples at commit d0994043fc6570a3c87165aadbae2aaf60f0ed63 were inspected. The repository tree exposes 30 sampled task directories with instructions, patches, and trajectories, not the full thousands-of-rollouts audit corpus; no trajectories were replayed and the reported prevalence rates were not independently reproduced."
 source_update_2026_09_26_skillnet: "zjunlp/SkillNet at commit d7586c12a797c9a0ddf96804c4b2b9d50e9405de; README, complete repository tree, evaluator, deterministic injection scanner, and focused boundary tests were inspected. No package tests, model evaluation, or skill scripts were run."
@@ -23,6 +24,56 @@ execution-based verification and continuous operational metrics. This note
 consolidates durable evaluation patterns and dated XHS trend observations.
 
 ## Durable Patterns
+
+### A model comparison must disclose which harness received the tuning budget — Reddit (Sep 2026)
+
+A first-party Reddit post supplies a compact example of why an agent benchmark's
+unit is the **model–harness configuration**, not the base model. The author says
+one coding harness scored Qwen3.6-35B at 95% pass@1 and GPT-OSS-120B at 53% on
+the same 19 repository tasks with hidden deterministic verifiers. The post also
+explicitly says the harness had been tuned for Qwen3.6-35B, while GPT-OSS-120B
+was a conveniently available larger model tried out of the box. That disclosure
+is more informative than the headline: equal tasks and one nominally shared
+harness do not produce a model-only comparison when prior optimization effort
+favored one arm.
+
+The evaluation design described in the post has useful ingredients—difficulty
+strata, sandboxed work on a Git branch, tests inserted only after the run, and
+code rather than an LLM assigning the binary reward. None removes the treatment
+confound. Hidden tests reduce answer leakage; they do not make the harness
+neutral. A fair deployment comparison should either freeze a preregistered
+common harness before tuning on either model, or allocate a declared and equal
+adaptation budget to each model and compare the resulting configurations on a
+fresh held-out task set. Report both views when they answer different questions:
+common-harness results estimate drop-in compatibility, while independently
+tuned results estimate attainable deployment performance.
+
+The post's cost comparison needs a similar boundary. It reports about $0.13 for
+1.2 million tokens through OpenRouter versus $0.46 for the same Qwen workload on
+Modal, while noting that tasks ran one at a time and left the rented GPU idle.
+That observation measures the stated **serial workload and billing policies**,
+not a general token-versus-GPU price ordering. A reusable cost record should
+include concurrency, utilization, wall time, retries, caching, provider and
+pricing snapshot, and completed-task denominator alongside tokens.
+
+**Reusable rule:** attach tuning history and budget to every model–harness result.
+Do not infer that a smaller model is intrinsically better from a comparison in
+which its harness was optimized and the larger model's was not. Keep task
+secrecy, verifier determinism, harness neutrality, repeated-run uncertainty,
+and deployment cost as separate evidence dimensions.
+
+**Evidence boundary:** Scout read the complete body in Reddit's public Atom feed.
+The 19 tasks, scores, pricing, sandbox behavior, hidden-test timing, and tuning
+history are author-reported. The post links no task corpus, code, traces, run
+counts, experiment export, or billing artifacts in the feed body; Scout did not
+reproduce either score or cost figure. With only 19 binary tasks and no repeated
+runs or per-task verdicts, the reported percentages do not establish uncertainty
+or explain which tasks drove the gap.
+
+- **Source:** https://www.reddit.com/r/AI_Agents/comments/1wqk9di/a_35b_model_beat_a_120b_one_on_my_coding_agent_95/
+- **Stable post ID:** `t3_1wqk9di`
+- **Coverage:** complete post body from the public Atom entry; comments and any
+  off-post artifacts were not inspected
 
 ### A skill rating needs separate content, coverage, and execution verdicts — SkillNet (GitHub, Sep 2026)
 
