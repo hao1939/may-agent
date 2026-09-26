@@ -17,7 +17,7 @@
 
 import { resolve } from "node:path";
 import { existsSync, readFileSync } from "node:fs";
-import { daemonSocketPath, sendAgentMessage } from "../../packages/control/src/client.js";
+import { daemonSocketPath, sendAgentMessage } from "@may-agent/control/client";
 
 
 export interface SendOptions {

@@ -23,7 +23,7 @@ import type { AppConversationMessage, AppConversationTopic, AppConversationResou
 import type { EventInput, EventReceipt } from "@may-agent/control/events";
 import { EVENT_DELIVERY_RESULT, eventData, type EventBus } from "../core/events/bus.js";
 import { loadPersistedEvent } from "../core/events/persisted.js";
-import { getDb } from "../../lib/requests.js";
+import { getDb } from "../../lib/db/connection.js";
 import {
   getNotificationMessage,
   hasCompletedHumanActionDelivery,

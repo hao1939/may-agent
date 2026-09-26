@@ -2,8 +2,8 @@ import { afterEach, describe, expect, it } from "bun:test";
 import { existsSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { buildAgentSDK } from "./sdk-impl.js";
-import type { SDKDeps } from "./sdk-impl.js";
+import { buildMaintenanceAPI } from "./maintenance-api-impl.js";
+import type { MaintenanceAPIDeps } from "./maintenance-api-impl.js";
 import { EventBus } from "../app/core/events/bus.js";
 import { DbWriter } from "./db-writer.js";
 import { closeDb } from "./requests.js";
@@ -18,7 +18,7 @@ function makeSdk() {
   bus.setPersistenceSubscriber(writer.handler);
   bus.setDeliveryRecorder(writer.recordDelivery);
   bus.subscribe((event) => events.push(event as EmittedEvent));
-  const deps: SDKDeps = {
+  const deps: MaintenanceAPIDeps = {
     bus,
     persistDir: root,
     projectRoot: root,
@@ -27,7 +27,7 @@ function makeSdk() {
     projectsRoot: join(root, "projects"),
     agentName: "dev",
   };
-  return { sdk: buildAgentSDK(deps), events, root };
+  return { sdk: buildMaintenanceAPI(deps), events, root };
 }
 
 const roots: string[] = [];

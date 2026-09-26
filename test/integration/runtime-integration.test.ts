@@ -6,7 +6,7 @@ import { HostMaintenance } from "../../src/app/adapters/maintenance/runtime.js";
 import { EventBus } from "../../src/app/core/events/bus.js";
 import { DbWriter } from "../../src/lib/db-writer.js";
 import { closeDb, getDb } from "../../src/lib/requests.js";
-import { buildAgentSDK, type SDKDeps } from "../../src/lib/sdk-impl.js";
+import { buildMaintenanceAPI, type MaintenanceAPIDeps } from "../../src/lib/maintenance-api-impl.js";
 import { SubagentManager } from "../../src/lib/manager.js";
 import { createWorkflowTool } from "../../src/lib/workflow-tool.js";
 import type { WorkflowToolResult } from "../../src/lib/workflow.js";
@@ -127,7 +127,7 @@ describe("runtime integration", () => {
     const writer = new DbWriter(stateDir);
     bus.setPersistenceSubscriber(writer.handler);
 
-    const deps: SDKDeps = {
+    const deps: MaintenanceAPIDeps = {
       bus,
       persistDir: stateDir,
       projectRoot: root,
@@ -136,7 +136,7 @@ describe("runtime integration", () => {
       projectsRoot: join(root, "projects"),
       agentName: "dev",
     };
-    const sdk = buildAgentSDK(deps);
+    const sdk = buildMaintenanceAPI(deps);
 
     sdk.emit("host.credentials.observed", { available: false });
     sdk.message("reviewer", "Please inspect the migration.");
@@ -172,7 +172,7 @@ describe("runtime integration", () => {
     const writer = new DbWriter(stateDir);
     bus.setPersistenceSubscriber(writer.handler);
 
-    const sdk = buildAgentSDK({
+    const sdk = buildMaintenanceAPI({
       bus,
       persistDir: stateDir,
       projectRoot: root,

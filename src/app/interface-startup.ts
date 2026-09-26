@@ -2,7 +2,7 @@ import { existsSync, mkdirSync, unlinkSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 import type { EventInterface } from "./core/events/interface.js";
 import { attachSocketUI, type SocketUI } from "./transport/socket.js";
-import type { AttachControlSocketOptions } from "../../packages/control/src/server.js";
+import type { AttachControlSocketOptions } from "@may-agent/control/server";
 
 export interface InterfaceStartupOptions {
   socketEnabled: boolean;

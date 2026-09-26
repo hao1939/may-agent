@@ -7,7 +7,7 @@
 
 import { Type } from "@earendil-works/pi-ai";
 import type { AgentTool, AgentToolResult } from "@earendil-works/pi-agent-core";
-import { getDb } from "../requests.js";
+import { getDb } from "../db/connection.js";
 
 const DEFAULT_LIMIT = 50;
 const MAX_LIMIT = 200;

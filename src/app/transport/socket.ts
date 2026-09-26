@@ -11,8 +11,8 @@ import {
   attachControlSocket,
   type AttachControlSocketOptions,
   type ControlSocket,
-} from "../../../packages/control/src/server.js";
-export type { SocketFrame } from "../../../packages/control/src/protocol.js";
+} from "@may-agent/control/server";
+export type { SocketFrame } from "@may-agent/control/protocol";
 
 export interface SocketUIOptions {
   socketPath: string;

@@ -3,7 +3,7 @@ import {
   emitDaemonEventWithRetry,
   type EmitDaemonEventRetryOptions,
   type SocketEndpoint,
-} from "../../../packages/control/src/client.js";
+} from "@may-agent/control/client";
 
 export interface EmitMode {
   event: string;

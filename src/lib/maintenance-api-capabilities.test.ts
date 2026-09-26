@@ -5,7 +5,7 @@ import { join } from "node:path";
 import { EventBus } from "../app/core/events/bus.js";
 import { SubagentManager } from "./manager.js";
 import { closeDb } from "./requests.js";
-import { buildAgentSDK } from "./sdk-impl.js";
+import { buildMaintenanceAPI } from "./maintenance-api-impl.js";
 
 const roots: string[] = [];
 afterEach(() => {
@@ -20,7 +20,7 @@ function setup() {
   roots.push(root);
   const workflowDir = join(root, "agents", "owner", "workflows");
   mkdirSync(workflowDir, { recursive: true });
-  const sdk = buildAgentSDK({
+  const sdk = buildMaintenanceAPI({
     bus: new EventBus(),
     persistDir: root,
     projectRoot: root,

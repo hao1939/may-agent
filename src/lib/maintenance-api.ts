@@ -9,9 +9,9 @@ import type { SqliteDb } from "./db.js";
 import type { MetricService } from "./metrics.js";
 import type { QueryAPI } from "./query-service.js";
 
-// ── Core SDK ──────────────────────────────────────────────────────────
+// ── Host maintenance API ──────────────────────────────────────────────
 
-export interface AgentSDK {
+export interface MaintenanceAPI {
   /** Retained standalone cron adapter only; not exposed to maintenance handler files. */
   runWorkflow(name: string, task: string, opts?: RunOpts): Promise<WorkflowResult>;
 

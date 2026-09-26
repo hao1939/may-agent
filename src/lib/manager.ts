@@ -55,16 +55,15 @@ import {
   RegistryStore,
   sessionDir,
 } from "./persistence.js";
+import { updateSessionDb, updateSessionProgress } from "./db/sessions.js";
 import {
-  updateSessionDb,
-  updateSessionProgress,
   getWorkflowRun,
   getWorkflowStepSessions,
   listChildWorkflowRunIds,
   listRunningWorkflowRunIdsBefore,
   updateWorkflowRun,
-  getDb,
-} from "./requests.js";
+} from "./db/workflows.js";
+import { getDb } from "./db/connection.js";
 import { EVENT_ROW_ID, type EventBus, type EventTrace } from "../app/core/events/bus.js";
 import type { SubagentDefinition, SessionInfo, TaskResult } from "./types.js";
 import type { SessionKind, PersistedSession, TaskBinding } from "./persistence.js";

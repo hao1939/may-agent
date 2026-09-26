@@ -15,7 +15,7 @@ import { createModelRegistry } from "./model-registry.js";
 import { parseAppArgs } from "./app-args.js";
 import { runAppRuntime } from "./app-runtime.js";
 import { createAppReporting } from "./composition/reporting.js";
-import { getDb } from "../lib/requests.js";
+import { getDb } from "../lib/db/connection.js";
 import { enterTaskWorkerProcess } from "../lib/task-worker-context.js";
 import { resolveRuntimeRoots } from "./path-roots.js";
 import { runMaintenanceMode } from "./modes/maintenance.js";

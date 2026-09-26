@@ -9,7 +9,7 @@
 
 import { resolve, dirname } from "node:path";
 import { childEventTrace, EVENT_ROW_ID, type EventBus, type SystemEvent } from "../../core/events/bus.js";
-import { getDb } from "../../../lib/requests.js";
+import { getDb } from "../../../lib/db/connection.js";
 import type { MaintenanceEntry } from "./contracts.js";
 import { readMaintenanceEntries } from "./configuration.js";
 import type { EventEnvelope } from "../../core/events/bus.js";

@@ -20,7 +20,8 @@ import {
   type AgentEvent,
   type DeliveryResult,
 } from "../app/core/events/bus.js";
-import { getDb, upsertSession, updateSessionDb } from "./requests.js";
+import { getDb } from "./db/connection.js";
+import { upsertSession, updateSessionDb } from "./db/sessions.js";
 import type { SqliteDb } from "./db.js";
 import { isCanonicalEventEnvelope, isRecord } from "../../packages/control/src/event-envelope.js";
 import { withSqliteBusyRetry } from "./db/busy-retry.js";

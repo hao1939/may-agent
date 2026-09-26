@@ -1,5 +1,5 @@
 /**
- * RuntimeCtx — internal infrastructure surface used by workflow-tool and sdk-impl.
+ * RuntimeCtx — internal infrastructure surface used by workflow-tool and maintenance-api-impl.
  *
  * NOT exported to handlers — they use HandlerContext (which has sdk + helpers).
  * Workflow execution adapts this into the narrow SDK context; it is never spread into App code.
@@ -7,7 +7,7 @@
 
 import type { EventBus } from "../app/core/events/bus.js";
 import type { SqliteDb } from "./db.js";
-import { getDb } from "./requests.js";
+import { getDb } from "./db/connection.js";
 import { log as globalLog } from "./log.js";
 import { createMetricService, type MetricService } from "./metrics.js";
 import { createQueryService, type QueryAPI } from "./query-service.js";

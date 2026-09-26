@@ -3,7 +3,7 @@ import { readEventTaskTarget } from "../../core/events/task-target.js";
 import { spawn, type ChildProcess } from "node:child_process";
 import { basename, resolve } from "node:path";
 import { SubagentManager } from "../../../lib/index.js";
-import { closeAllDbs, getDb } from "../../../lib/requests.js";
+import { closeAllDbs, getDb } from "../../../lib/db/connection.js";
 import { AppRegistry } from "../../core/apps/registry.js";
 import { discoverAppDefinitions } from "../../adapters/discovery/app-definitions.js";
 import { DefinitionSourceReleaseStore, type DefinitionSourceRelease } from "../../app-source-release.js";

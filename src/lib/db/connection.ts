@@ -13,7 +13,7 @@ export type DatabaseConnectionOptions = {
 };
 
 /**
- * Get or create a SQLite database for request tracking.
+ * Get or create the shared Host SQLite database.
  * Uses WAL mode for concurrent read safety and busy_timeout for write contention.
  */
 export function getDb(persistDir: string, options: DatabaseConnectionOptions = {}): SqliteDb {

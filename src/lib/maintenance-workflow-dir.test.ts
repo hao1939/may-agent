@@ -3,7 +3,7 @@ import { mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
-import { agentWorkflowDirForApp } from "./sdk-impl.ts";
+import { agentWorkflowDirForApp } from "./maintenance-api-impl.ts";
 
 function tempRoot(): string {
   const root = join(tmpdir(), `project-workflow-dir-${Date.now()}-${Math.random().toString(36).slice(2)}`);

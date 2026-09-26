@@ -5,7 +5,7 @@ import type { HandlerContext, HandlerModule, HandlerSDK } from "./context.js";
 import type { EventEnvelope } from "../../core/events/bus.js";
 import type { MaintenanceEntry } from "./contracts.js";
 import { buildSessionHelpers } from "../../../lib/runtime-ctx.js";
-import { buildAgentSDK } from "../../../lib/sdk-impl.js";
+import { buildMaintenanceAPI } from "../../../lib/maintenance-api-impl.js";
 import { importRuntimeModule } from "../../../lib/runtime-import.js";
 import { HostMaintenance, type MaintenanceHandler } from "./runtime.js";
 import type { EventBus } from "../../core/events/bus.js";
@@ -43,7 +43,7 @@ export async function loadMaintenanceHandlers(
       projectsRoot,
       agentName,
     });
-    const fullSdk = buildAgentSDK({
+    const fullSdk = buildMaintenanceAPI({
       bus,
       persistDir,
       projectRoot,

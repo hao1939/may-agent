@@ -12,7 +12,7 @@
  * See projects/may-agent.app/docs/2a-design/sessions.md for the contract.
  */
 
-import { getDb } from "./requests.js";
+import { getDb } from "./db/connection.js";
 import { describeText, sessionMetaRef } from "./artifacts.js";
 import { log } from "./log.js";
 
