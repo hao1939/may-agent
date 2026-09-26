@@ -1,8 +1,8 @@
 <ai_context>
-summary: "An official WeLM team post describes WeAgent-MMSearch as keeping retrieved images available for multi-turn reasoning and citation, and introduces VisTarget-Bench to separate image-retrieval failures from visual-understanding failures. The durable evaluation lesson is to preserve evidence across turns and score evidence acquisition separately from evidence interpretation; the reported model gains remain author claims because this XHS-specific review did not inspect the linked paper or benchmark assets."
-triggers: ["WeAgent-MMSearch", "VisTarget-Bench", "multimodal search agent", "visual evidence provenance", "image retrieval evaluation", "6aaf9a2a000000002603036b"]
-last_updated: "2026-09-20"
-source_basis: "Full text of one current Xiaohongshu post by the WeLM technical team. The post links arXiv:2608.28062, but the paper and benchmark assets were not independently inspected in this XHS-specific run."
+summary: "An official WeLM team post describes WeAgent-MMSearch as keeping retrieved images available for multi-turn reasoning and citation, and introduces VisTarget-Bench to separate image-retrieval failures from visual-understanding failures. A later secondary XHS post adds a useful training claim: fault-aware GSPO recovers or filters infrastructure-damaged trajectories instead of treating tool failures as learning signal. The durable lesson is to preserve evidence across turns, score acquisition separately from interpretation, and classify trajectory validity before reinforcement updates; the paper, code, and benchmark assets were not independently inspected."
+triggers: ["WeAgent-MMSearch", "VisTarget-Bench", "FA-GSPO", "fault-aware trajectory filtering", "multimodal search agent", "visual evidence provenance", "image retrieval evaluation", "6aaf9a2a000000002603036b", "6a9564b0000000000a009691"]
+last_updated: "2026-09-26"
+source_basis: "Full text of an official WeLM-team Xiaohongshu post and a later secondary XHS explanation by AI先声. The official post links arXiv:2608.28062, but the paper, code, and benchmark assets were not independently inspected in these XHS-specific reviews."
 </ai_context>
 
 # Multimodal search agents need separate retrieval and interpretation checks
@@ -30,6 +30,14 @@ This distinction matters because an incorrect final answer does not identify whi
 The post says automated data construction, supervised fine-tuning, and GSPO reinforcement learning produced an average score of **55.97% across eight benchmarks**, described as a **19.22% improvement over the model before post-training**. These numbers are author-reported claims from the XHS post. The post does not name the eight benchmarks, define whether the improvement is relative or percentage-point, provide per-benchmark results, or disclose variance in its text.
 
 The same post links arXiv:2608.28062, but this source-specific run did not inspect the paper, benchmark questions, code, model artifacts, or evaluation protocol. The reported scores therefore should not be treated as independently verified or directly compared with other multimodal-agent systems.
+
+## Follow-up: keep infrastructure failures out of the learning signal
+
+A later secondary XHS explanation by AI先声 ([post `6a9564b0000000000a009691`](https://www.xiaohongshu.com/explore/6a9564b0000000000a009691)) adds implementation and ablation claims not present in the official post's readable text. It says the harness gives retrieved images persistent references so later turns can reopen and cite them, and combines web, image, reverse-image, and code tools.
+
+More importantly, it describes **FA-GSPO** as distinguishing recoverable execution trouble from unusable trajectories. Local tool-parameter errors are first repaired; trajectories that remain usable can continue into training; unrecoverable samples are filtered. The post reports an eight-benchmark average of **36.75** for the base harness, **51.04** after supervised fine-tuning, and **55.97** after reinforcement learning. It also reports a comparison of ordinary GSPO at **51.10** versus FA-GSPO at **55.97**, with VisTarget-Bench moving from **9.78** to **30.22** in that comparison. These are secondary-source claims: Scout did not inspect the paper table needed to confirm conditions, denominators, or whether the configurations differ only in fault handling.
+
+The reusable training lesson is narrower than the score claim. In long tool-using trajectories, an execution timeout, malformed call, context overflow, or exhausted interaction budget is not automatically evidence that the agent's reasoning policy was poor. Before computing a reinforcement update, the trainer should record the failure class, whether recovery changed the trajectory, what observations remained valid, and why a sample was retained or excluded. Otherwise infrastructure noise can be rewarded or punished as if it were model behavior. Filtering is not neutral either: exclusion rates and failure classes should be reported, because removing difficult or failure-prone runs can inflate the apparent policy score.
 
 ## Scout assessment
 
