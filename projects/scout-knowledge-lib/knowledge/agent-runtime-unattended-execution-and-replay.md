@@ -1,8 +1,8 @@
 <ai_context>
-summary: "Companion to agent-runtime-effect-integrity.md for unattended execution integrity: lifecycle-bound resume identity, cadence and failure accounting, infrastructure trust boundaries, clone identity hygiene, local durability versus external settlement, revision-bound approval, accountable agent writes, desktop effect authorization, deterministic workflow/host recovery boundaries, and pause-versus-execution authority."
-triggers: ["unattended execution", "session resume", "lifecycle generation", "Daintree", "heartbeat", "failure backoff", "Talon", "Docker Sandboxes", "sandbox trust boundary", "clone identity", "LingCage", "effect settlement", "LetItLoop", "Kevlar", "ATR", "approval revision", "AIS", "orphan recovery", "Rebuno", "approval resume", "AgenticOS", "diagnostic attention", "Runpin", "effect deduplication", "agent identity", "Sensefold", "desktop authorization", "macOS Harness", "AgentRun", "workflow DSL", "late settlement", "Kiso", "recovery projection", "crash matrix", "LoopX", "hard lease", "agent pause", "lease retirement"]
-last_updated: "2026-09-25"
-source_basis: "Extracted intact from agent-runtime-effect-integrity.md during its 2026-09-21 oversized-note review, then extended with pinned implementation evidence for lifecycle-bound session resume, unattended cadence and failure accounting, AgentRun's workflow/host recovery boundary, Kiso's deterministic recovery projection, and LoopX's pause/lease transaction boundary. Replay-specific Chronicle, Mutagen, Ovo, and OrcaReplay sections moved intact to agent-runtime-replay-evidence-and-boundaries.md during the 2026-09-24 oversized-note review. Each retained section preserves stable source links, reproduced checks where performed, and explicit evidence limitations."
+summary: "Companion to agent-runtime-effect-integrity.md for unattended execution integrity: lifecycle-bound resume identity, cadence and failure accounting, infrastructure trust boundaries, clone identity hygiene, local durability versus external settlement, site-action reconciliation, revision-bound approval, accountable agent writes, desktop effect authorization, deterministic workflow/host recovery boundaries, and pause-versus-execution authority."
+triggers: ["unattended execution", "session resume", "lifecycle generation", "Daintree", "heartbeat", "failure backoff", "Talon", "Docker Sandboxes", "sandbox trust boundary", "clone identity", "LingCage", "effect settlement", "LetItLoop", "Kevlar", "ATR", "approval revision", "AIS", "orphan recovery", "Rebuno", "approval resume", "AgenticOS", "diagnostic attention", "site action ledger", "uncertain effect", "identity drift", "rules drift", "Runpin", "effect deduplication", "agent identity", "Sensefold", "desktop authorization", "macOS Harness", "AgentRun", "workflow DSL", "late settlement", "Kiso", "recovery projection", "crash matrix", "LoopX", "hard lease", "agent pause", "lease retirement"]
+last_updated: "2026-09-26"
+source_basis: "Extracted intact from agent-runtime-effect-integrity.md during its 2026-09-21 oversized-note review, then extended with pinned implementation evidence for lifecycle-bound session resume, unattended cadence and failure accounting, AgentRun's workflow/host recovery boundary, Kiso's deterministic recovery projection, and LoopX's pause/lease transaction boundary, plus explicitly limited Reddit practitioner reports about diagnostic attention and site-action reconciliation. Replay-specific Chronicle, Mutagen, Ovo, and OrcaReplay sections moved intact to agent-runtime-replay-evidence-and-boundaries.md during the 2026-09-24 oversized-note review. Each retained section preserves stable source links, reproduced checks where performed, and explicit evidence limitations."
 </ai_context>
 
 # Agent Runtime Unattended Execution and Replay
@@ -490,6 +490,42 @@ covered by unresolved harness alerts.
 - **Stable post ID:** `t3_1wene1q`
 - **Evidence level:** full post body observed in Reddit's public Atom search feed;
   pseudonymous self-report, not independently validated
+
+## A Site-Action Ledger Needs an Uncertain State and Live Preconditions — Reddit Practitioner Report (September 2026)
+
+A tool builder reported six failure modes from one week of letting Claude Code or
+Codex post through the operator's own browser. The most reusable observation is not
+Reddit-specific: a slow page can accept a write before the tool times out. Treating
+the timeout as failure and retrying can duplicate the effect. The reported response
+was to reserve a ledger row before dispatch, require a permalink as positive proof,
+mark a send without proof as `uncertain`, and block both retry and new sends until
+account history and the target thread were reconciled. Because account history could
+lag for minutes, absence in one view was not treated as proof of non-delivery.
+
+The report adds two pre-dispatch checks that a pure effect ledger does not cover.
+Browser identity can drift, so the writer reads the signed-in account and refuses a
+mismatch before every write. Site policy can also drift across surfaces: the builder
+reports checking both community rules and the live composer because required flair
+may appear only there. A CAPTCHA after a burst of activity became a stop condition
+for human review rather than a challenge for the agent to solve.
+
+These are plausible operational controls, but the evidence is a pseudonymous,
+self-promotional account: no raw ledger, incident log, implementation, or independent
+reproduction was supplied, and the linked open-source read-only component does not
+establish the paid writer's behavior. The report therefore corroborates the stronger
+implementation evidence elsewhere in this note; it does not establish incidence
+rates, correctness, or safe autonomous posting.
+
+**Runtime rule:** represent consequential site actions as
+`reserved → dispatched → settled | uncertain`; let uncertainty block retry until
+multiple authoritative views are reconciled; and revalidate actor identity, live
+rules, and challenge state immediately before dispatch. A negative observation from
+a lagging history view is not a failure receipt.
+
+- **Source:** https://www.reddit.com/r/ArtificialInteligence/comments/1wqtvos/an_ai_agent_that_takes_real_actions_needs_a/
+- **Stable post ID:** `t3_1wqtvos`
+- **Evidence level:** full post body observed in Reddit's public Atom search feed;
+  pseudonymous promotional self-report, not independently validated
 
 ## Durable Queue State Is Not Downstream Effect Deduplication — Runpin (GitHub, September 2026)
 
