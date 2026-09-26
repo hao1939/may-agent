@@ -141,6 +141,11 @@ meaning within that evidence and state its coverage.
 
 ## Decision and next experiment
 
+The [focused follow-up](task-context-reuse-followup-20260926.md) separates optional
+workspace discovery from the full Host change and tests clearer App/tool reuse
+wording. Its new runs and controls are reported separately; they preserve the
+earlier results.
+
 Keep the demonstrated claim narrow: the candidate reduced discovery/model work
 in this cohort and preserved current facts at predictable boundaries. Behavioral
 reliability did not improve in the observed sample; reliable reuse is unfinished.

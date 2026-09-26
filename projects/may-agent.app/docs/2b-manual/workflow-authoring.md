@@ -254,6 +254,22 @@ count. Explicit user constraints and established App acceptance still apply.
 | Evidence | Keep compact findings and exact references; use the supplied workspace and existing artifact helpers. | Could another agent find, read and assess the result without repeating the investigation? |
 | Reuse | Check prior evidence against the current requirement and actual target state. | Which reused facts became stale, and which rechecks were unnecessary? |
 
+For work that may already be complete, describe the decision before the action:
+compare the accepted result with current evidence; return its existing receipt
+when it still fits; otherwise do the missing work and return the new evidence.
+An unchanged output version can still need a new assessment when its governing
+facts change. Independent approval or repair obligations remain visible alongside
+a completed contribution.
+
+Keep a tool's effects distinct from advice about when to call it. If each call
+creates a new artifact or replaces a file, say so in its description. Explain
+reuse as returning existing evidence unless the tool actually implements reuse.
+Describe ambiguous result fields too: distinguish the state observed from the
+state required when either could plausibly fill the same field. This is App/tool
+authoring guidance, not a generic Host rule for deciding which results match.
+The [focused comparison](../proposals/task-context-reuse-followup-20260926.md)
+records the evidence and its limits.
+
 For long work, `await` suspends that dependency, while the Host continues admitting
 input. Agents receive live hints; a workflow may use `ctx.events.onEvent` to mark
 that new information needs inspection at its next useful decision point. Keep
@@ -262,7 +278,9 @@ normal execution. A listener is optional. It should not launch a competing
 executor, accept input, or invent a private durable inbox. Choose checkpoint
 placement through experience; a callback per step is not required.
 
-The current reconciliation context and Task brief are attempt-start snapshots.
+The reconciliation context and `TASK.md` discovery snapshot describe attempt-start
+state. Where the Host supplies a refreshed decision brief, its observation and
+coverage identify what was reread; follow its detail references when needed.
 Live delivery does not prove incorporation, and explicit incorporation bookkeeping
 is still unfinished. Use current reads and retained input; let a subsequent
 same-Task attempt reconsider pending input where needed. Do not promise instant
