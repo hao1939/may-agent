@@ -10,6 +10,12 @@ import {
   writeFileSync,
 } from "node:fs";
 import { basename, dirname, isAbsolute, join, resolve, sep } from "node:path";
+import {
+  parseComparisonObjective,
+  sameComparisonObjective,
+  describeComparisonObjective,
+  type ComparisonObjective,
+} from "@may-agent/gym/comparison";
 import type { ExecutionResult, WorkflowContext } from "@may-agent/sdk";
 
 export const name = "compare-candidate";
@@ -18,6 +24,7 @@ export const description =
 
 export type Comparison = {
   requestId: string;
+  objective?: ComparisonObjective;
   agent: "may" | "scout";
   baselineRunId: string;
   baselinePath: string;
@@ -37,6 +44,7 @@ export type Comparison = {
 
 type Manifest = {
   run_id: string;
+  comparison_objective?: unknown;
   baseline_run_id: string | null;
   agent: string;
   benchmark: string;
@@ -134,6 +142,7 @@ export function parseComparison(value: unknown): Comparison {
     throw new Error("invalid totalAllowanceMs");
   return {
     requestId: text(data.requestId, "requestId"),
+    objective: parseComparisonObjective(data.objective),
     agent,
     baselineRunId: safeSegment(
       text(data.baselineRunId, "baselineRunId"),
@@ -261,6 +270,7 @@ export async function compareCandidate(
     : "";
   const preflight =
     baseline.run_id === request.baselineRunId &&
+    sameComparisonObjective(baseline.comparison_objective, request.objective) &&
     completeTrialScope(baseline, request) &&
     fingerprintTree(baselineDir) === request.baselineFingerprint &&
     baseline.agent === request.agent &&
@@ -278,7 +288,7 @@ export async function compareCandidate(
     shaFile(scorerPath) === request.scorerRevision;
   if (!preflight)
     return ctx.blocked(
-      "Frozen baseline/candidate/scenario/scorer/model/framework identity mismatch before comparison",
+      "Frozen baseline/candidate/objective/scenario/scorer/model/framework identity mismatch before comparison",
     );
   const signal =
     (ctx as WorkflowContext & { signal?: AbortSignal }).signal ??
@@ -378,6 +388,11 @@ export async function compareCandidate(
     artifactsUnchanged &&
     manifest!.run_id === basename(runDir) &&
     manifest!.baseline_run_id === request.baselineRunId &&
+    sameComparisonObjective(
+      manifest!.comparison_objective,
+      request.objective,
+    ) &&
+    sameComparisonObjective(comparison?.objective, request.objective) &&
     manifest!.candidate === request.candidate &&
     manifest!.agent === request.agent &&
     manifest!.benchmark === request.benchmark &&
@@ -429,7 +444,7 @@ export async function compareCandidate(
   writeFileSync(receiptPath, receiptBytes, { flag: "wx" });
   if (shaFile(receiptPath) !== receiptHash)
     throw new Error("saved comparison receipt hash mismatch");
-  const summary = `Frozen comparison ${verdict}; receipt ${receiptPath}. Gym evidence is not approval.`;
+  const summary = `Frozen comparison ${verdict}. Objective: ${describeComparisonObjective(request.objective)}. Receipt ${receiptPath}. Gym evidence is not approval.`;
   return ctx.done(summary, {
     state: "converged",
     summary,

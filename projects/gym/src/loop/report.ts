@@ -1,8 +1,10 @@
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 
+import { describeComparisonObjective, parseComparisonObjective, sameComparisonObjective } from "./objective";
 import { fingerprintValue, readAdjudications } from "./store";
 import type {
+  DurationComparison,
   GroundTruthCatalog,
   LoopRunManifest,
   RunComparison,
@@ -22,6 +24,39 @@ function counts(trials: StoredTrial[]): { pass: number; fail: number; invalid: n
     fail: trials.filter((trial) => trial.machine_verdict === "fail").length,
     invalid: trials.filter((trial) => trial.machine_verdict === "invalid").length,
   };
+}
+
+function durationSummary(trials: StoredTrial[]): DurationComparison["baseline"] {
+  const measured = trials.filter((trial) =>
+    typeof trial.duration_ms === "number" && Number.isFinite(trial.duration_ms) && trial.duration_ms >= 0,
+  );
+  const total = measured.reduce((sum, trial) => sum + trial.duration_ms!, 0);
+  return {
+    measured_trials: measured.length,
+    total_trials: trials.length,
+    total_ms: measured.length === trials.length && Number.isFinite(total) ? total : null,
+  };
+}
+
+function compareDurations(baselineTrials: StoredTrial[], candidateTrials: StoredTrial[]): DurationComparison {
+  const baseline = durationSummary(baselineTrials);
+  const candidate = durationSummary(candidateTrials);
+  return {
+    baseline,
+    candidate,
+    reduction_percent: baseline.total_ms !== null && baseline.total_ms > 0 && candidate.total_ms !== null
+      ? (1 - candidate.total_ms / baseline.total_ms) * 100
+      : null,
+  };
+}
+
+function durationLines(duration: DurationComparison): string[] {
+  const display = (value: DurationComparison["baseline"]) =>
+    `${value.total_ms === null ? "unknown" : `${value.total_ms} ms`} (${value.measured_trials}/${value.total_trials} measured trials)`;
+  return [
+    `- Execution duration: ${display(duration.baseline)} → ${display(duration.candidate)}`,
+    `- Measured duration reduction: ${duration.reduction_percent === null ? "unknown (requires complete timing and a positive baseline)" : `${duration.reduction_percent.toFixed(2)}%`}`,
+  ];
 }
 
 function sameStrings(left: string[], right: string[]): boolean {
@@ -129,6 +164,11 @@ export function compareRuns(
     !sameStrings(baseline.proof.models, candidate.proof.models) ||
     !sameStrings(baseline.proof.framework_revisions, candidate.proof.framework_revisions)
   ) throw new Error("Cannot compare runs with different frozen inputs or execution identities");
+  const objective = parseComparisonObjective(baseline.comparison_objective);
+  if (!sameComparisonObjective(objective, candidate.comparison_objective)) {
+    throw new Error("Cannot compare different frozen comparison objectives");
+  }
+  const duration = compareDurations(baseline.trials, candidate.trials);
   const scenarios = baseline.scenarios.map((scenario): ScenarioComparison => {
     const baselineCounts = counts(baseline.trials.filter((trial) => trial.scenario === scenario));
     const candidateCounts = counts(candidate.trials.filter((trial) => trial.scenario === scenario));
@@ -138,6 +178,10 @@ export function compareRuns(
       candidate: candidateCounts,
       delta_passes: candidateCounts.pass - baselineCounts.pass,
       regression: candidateCounts.pass < baselineCounts.pass,
+      duration: compareDurations(
+        baseline.trials.filter((trial) => trial.scenario === scenario),
+        candidate.trials.filter((trial) => trial.scenario === scenario),
+      ),
     };
   });
   const labelsApproved = baseline.scenarios.every((scenario) => labels?.labels[scenario]?.status === "approved");
@@ -149,8 +193,13 @@ export function compareRuns(
   const noInvalidRuns = [...baseline.trials, ...candidate.trials].every((trial) => trial.machine_verdict !== "invalid");
   const noRegressions = scenarios.every((scenario) => !scenario.regression);
   const improved = scenarios.some((scenario) => scenario.delta_passes > 0);
-  const machineGatePassed =
-    sameFrameworkRevision && noInvalidRuns && noRegressions && improved;
+  const objectiveMet = objective.metric === "quality"
+    ? improved
+    : duration.reduction_percent === null ? null
+    // Compare totals directly so an exact threshold is not lost to percentage rounding.
+    : duration.candidate.total_ms! < duration.baseline.total_ms! &&
+      duration.candidate.total_ms! <= duration.baseline.total_ms! * (1 - objective.min_reduction_percent / 100);
+  const qualityGatePassed = sameFrameworkRevision && noInvalidRuns && noRegressions;
   return {
     baseline_run_id: baseline.run_id,
     candidate_run_id: candidate.run_id,
@@ -159,9 +208,13 @@ export function compareRuns(
     no_invalid_runs: noInvalidRuns,
     no_regressions: noRegressions,
     improved,
+    objective,
+    objective_met: objectiveMet,
+    duration,
     // Draft truth cannot produce a definitive regression or release verdict.
     // Review/approve it first, then create a fresh frozen baseline.
-    gate: !labelsApproved ? "needs-human-review" : machineGatePassed ? "pass" : "fail",
+    gate: !labelsApproved ? "needs-human-review" : !qualityGatePassed ? "fail"
+      : objectiveMet === null ? "needs-human-review" : objectiveMet ? "pass" : "fail",
     scenarios,
   };
 }
@@ -199,7 +252,7 @@ function latestReview(
 export function renderReport(
   runDir: string,
   manifest: LoopRunManifest,
-  comparison?: RunComparison,
+  comparison: RunComparison | undefined = readJson<RunComparison>(join(runDir, "comparison.json")),
 ): string {
   const reviews = readAdjudications(runDir);
   const result = counts(manifest.trials);
@@ -219,6 +272,7 @@ export function renderReport(
     `- Candidate: \`${manifest.candidate}\``,
     `- Agent: \`${manifest.agent}\``,
     `- Trials: ${manifest.trials.length}`,
+    `- Objective: ${describeComparisonObjective(manifest.comparison_objective)}`,
     `- Human adjudications: ${reviews.length}`,
     "",
     "## Review status",
@@ -230,9 +284,26 @@ export function renderReport(
       ? "- Result status: machine verdicts use human-approved truth"
       : "- Result status: **provisional — draft or missing truth cannot establish a May regression**",
     "",
-    "## Machine evaluation",
-    "",
   ];
+  if (comparison) {
+    lines.push(
+      "## Comparison summary",
+      "",
+      `Gate: **${comparison.gate}**`,
+      `- Benefit target: ${describeComparisonObjective(comparison.objective)}`,
+      `- Measured benefit target met: ${comparison.objective_met === undefined ? comparison.improved : comparison.objective_met === null ? "unknown" : comparison.objective_met}`,
+      `- At least one quality improvement: ${comparison.improved}`,
+      `- No per-scenario quality regressions: ${comparison.no_regressions}`,
+      `- Ground truth approved: ${comparison.labels_approved}`,
+      `- One matching framework revision: ${comparison.same_framework_revision}`,
+      `- No invalid runs: ${comparison.no_invalid_runs}`,
+      ...(comparison.duration ? durationLines(comparison.duration) : []),
+      "",
+      "This gate reports observed evidence, not approval or statistical proof of future reliability. Review absolute quality, per-case tradeoffs, timing variability, implementation cost and the simpler alternative. Execution time is not a model-cost estimate; optimization spend is separate.",
+      "",
+    );
+  }
+  lines.push("## Machine evaluation", "");
 
   for (const scenario of manifest.scenarios) {
     const scenarioTrials = manifest.trials.filter((trial) => trial.scenario === scenario);
@@ -282,22 +353,15 @@ export function renderReport(
   }
 
   if (comparison) {
-    lines.push("", "## Baseline comparison", "");
+    lines.push("", "## Per-scenario comparison", "");
     for (const item of comparison.scenarios) {
       const sign = item.delta_passes > 0 ? `+${item.delta_passes}` : String(item.delta_passes);
       lines.push(
         `${item.regression ? "✗" : "✓"} ${item.scenario}: ${item.baseline.pass} → ${item.candidate.pass} passes (${sign})`,
+        ...(item.duration ? durationLines(item.duration) : []),
       );
     }
-    lines.push(
-      "",
-      `Gate: **${comparison.gate}**`,
-      `- Ground truth approved: ${comparison.labels_approved}`,
-      `- One matching framework revision: ${comparison.same_framework_revision}`,
-      `- No invalid runs: ${comparison.no_invalid_runs}`,
-      `- No regressions: ${comparison.no_regressions}`,
-      `- At least one improvement: ${comparison.improved}`,
-    );
+
   }
 
   lines.push("");

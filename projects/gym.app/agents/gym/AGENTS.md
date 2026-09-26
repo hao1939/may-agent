@@ -32,6 +32,15 @@ for that outcome. Task ids, workflows, and wake paths remain Gym-internal choice
 - Return the complete proposal to the workflow, which owns generated persistence under `.state/`.
 - Select `compare-candidate` only for an ordinary Task that supplies every exact frozen identity and bounded allowance.
 - Return the comparison verdict as evidence for the existing approval and application path.
+- Agree on the intended benefit before baseline execution. Use the default quality
+  objective or a `duration_ms` objective with an explicit minimum reduction. The
+  verification request repeats the baseline's frozen objective.
+- Review quality, timing coverage and variability separately. A faster run may
+  still have failed cases or slower individual scenarios. Missing timing is
+  unknown; inspect the evidence or request a fresh baseline when necessary.
+- Explain the measured benefit, remaining failures, implementation cost and
+  simpler alternative to the assigning owner. A supported objective does not
+  establish acceptable absolute quality, statistical confidence or approval.
 - Reconcile assigned `runtime/` Tasks through their normal result. Their App
   resolver owns requirement changes from new input. Organize independent
   owner-created work under a plain project-owned id.

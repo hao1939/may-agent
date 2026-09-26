@@ -9,6 +9,7 @@ import {
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 
+import { parseComparisonObjective, sameComparisonObjective, type ComparisonObjective } from "./objective";
 import { compareRuns, renderReport } from "./report";
 import {
   applyEvaluatorScenarioOverlay,
@@ -39,6 +40,7 @@ export interface RunOptions {
   candidate: string;
   trials: number;
   baselineRunId?: string;
+  objective?: ComparisonObjective;
   timeout?: number;
   agentsRoot?: string;
 }
@@ -184,6 +186,16 @@ export function assertFrozenInputs(
   baselineDir: string,
   baseline: LoopRunManifest,
 ): void {
+  const objectiveFile = join(baselineDir, "inputs", "comparison-objective.json");
+  const frozenObjective = existsSync(objectiveFile)
+    ? JSON.parse(readFileSync(objectiveFile, "utf8"))
+    : undefined;
+  if (!sameComparisonObjective(baseline.comparison_objective, frozenObjective)) {
+    throw new Error("Frozen comparison objective changed; create a new baseline");
+  }
+  if (fingerprintTree(join(baselineDir, "inputs")) !== baseline.proof.input_fingerprint) {
+    throw new Error("Frozen input fingerprint changed; create a new baseline");
+  }
   const { suite, path: suitePath } = loadSuite(baseline.benchmark);
   if (!baseline.source.harness_snapshot || !baseline.proof.harness_fingerprint) {
     throw new Error("Historical baseline has no frozen Gym harness; create a new baseline");
@@ -311,6 +323,7 @@ export async function runLoop(
     suitePath,
     labelsPath,
     baselineRunId: options.baselineRunId,
+    objective: options.objective,
     candidate: options.candidate,
     agent: options.agent,
     trials: options.trials,
@@ -398,6 +411,7 @@ export async function verifyLoop(input: {
     candidate: input.candidate,
     trials,
     baselineRunId: baseline.run_id,
+    objective: parseComparisonObjective(baseline.comparison_objective),
     timeout: input.timeout,
     agentsRoot: input.agentsRoot,
   });

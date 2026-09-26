@@ -1,3 +1,5 @@
+import type { ComparisonObjective } from "./objective";
+
 export type MachineVerdict = "pass" | "fail" | "invalid";
 export type HumanVerdict = "pass" | "fail";
 export type ReviewClassification =
@@ -101,6 +103,8 @@ export interface LoopRunManifest {
   benchmark: string;
   benchmark_version: number;
   baseline_run_id: string | null;
+  /** Absent historical values mean quality. Frozen under inputs/ for new runs. */
+  comparison_objective?: ComparisonObjective;
   candidate: string;
   agent: string;
   trials_per_scenario: number;
@@ -151,12 +155,20 @@ export interface HumanAdjudication {
   created_at: string;
 }
 
+export interface DurationComparison {
+  baseline: { measured_trials: number; total_trials: number; total_ms: number | null };
+  candidate: { measured_trials: number; total_trials: number; total_ms: number | null };
+  /** Null when coverage is incomplete or baseline duration is zero. */
+  reduction_percent: number | null;
+}
+
 export interface ScenarioComparison {
   scenario: string;
   baseline: { pass: number; fail: number; invalid: number };
   candidate: { pass: number; fail: number; invalid: number };
   delta_passes: number;
   regression: boolean;
+  duration: DurationComparison;
 }
 
 export interface RunComparison {
@@ -166,7 +178,11 @@ export interface RunComparison {
   same_framework_revision: boolean;
   no_invalid_runs: boolean;
   no_regressions: boolean;
+  /** Quality improvement only; retained for existing readers. */
   improved: boolean;
+  objective: ComparisonObjective;
+  objective_met: boolean | null;
+  duration: DurationComparison;
   gate: "pass" | "fail" | "needs-human-review";
   scenarios: ScenarioComparison[];
 }

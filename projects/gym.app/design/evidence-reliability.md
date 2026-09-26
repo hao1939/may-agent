@@ -13,6 +13,14 @@ Open-ended meaning is not a synonym checklist. Deterministic checks should own e
 
 A comparison must reject incomplete or invalid timestamps, unknown verdicts, incomplete/duplicate grids, model/framework/input/label/judge drift, a mismatched truth catalog, and truth that was draft when executed. It also freezes the Gym-owned execution/scoring harness (`src/cli.ts`, `src/model-registry.ts`, `src/loop`, `src/scenarios`, `src/scoring`, and the built scorer artifact when present); historical runs without this identity remain readable but are not comparison baselines. This snapshot does not freeze the Host, provider service, or operating environment, so their separately recorded provenance and diagnostics still matter. Candidate prompts are the intended treatment and may differ; their observed per-trial fingerprints are retained rather than forced equal. Diagnostic rescoring is useful only as new diagnostic evidence: it does not retroactively make a failed execution valid, approve truth, or become a release baseline.
 
+A comparison also retains its predeclared objective. Check quality and efficiency
+separately: a missing timing observation is unknown rather than zero, and a
+measured speedup does not cancel a quality regression. Use the exact frozen
+objective and threshold through baseline, verification and the App receipt.
+Current efficiency support is observed execution duration; report variability,
+coverage and per-case tradeoffs before drawing a value judgment. See the
+[comparison contract](frozen-comparison-service.md).
+
 ## Practical maintenance and self-correction
 
 May owns diagnosis and an isolated candidate; a technical specialist may implement focused runner/scorer changes and a second teammate or reviewer challenges the contract with independent controls. Neither May nor Gym approves its own behavior change. Use this trace:

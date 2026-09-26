@@ -5,7 +5,8 @@
   "description": "Portable scenario-based evaluation project for agents and Agent Apps.",
   "exports": {
     "./scoring": "./dist/@may-agent/gym/scoring.js",
-    "./loop": "./src/loop/index.ts"
+    "./loop": "./src/loop/index.ts",
+    "./comparison": "./src/loop/objective.ts"
   },
   "scripts": {
     "build": "bun build ./src/scoring/gym-score-utils.ts --target=node --format=cjs --outfile ./dist/@may-agent/gym/scoring.js",

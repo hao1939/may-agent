@@ -5,6 +5,7 @@
     "moduleResolution": "Bundler",
     "strict": true,
     "paths": {
+      "@may-agent/gym/comparison": ["../gym/src/loop/objective.ts"],
       "@may-agent/gym/loop": ["../gym/src/loop/index.ts"],
       "@may-agent/sdk": ["../may-agent/bundle/sdk-current/src/index.ts"],
       "@may-agent/sdk/testing": [

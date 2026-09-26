@@ -10,6 +10,7 @@ import {
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
+import { parseComparisonObjective } from "../src/loop/objective";
 import { compareRuns, renderReport } from "../src/loop/report";
 import { rescoreRun } from "../src/loop/rescore";
 import {
@@ -241,6 +242,122 @@ describe("loop evaluation", () => {
     expect(() => compareRuns(manifest("baseline", ["fail"]), invalidTimeline, approvedLabels)).toThrow(
       "incomplete or invalid candidate run",
     );
+  });
+
+  it("supports a declared timing benefit separately from quality", () => {
+    const baseline = manifest("baseline", ["pass", "fail"]);
+    const candidate = manifest("candidate", ["pass", "fail"]);
+    candidate.trials.forEach((trial) => { trial.duration_ms = 800; });
+    const qualityOnly = compareRuns(baseline, candidate, approvedLabels);
+    expect(qualityOnly.gate).toBe("fail");
+    expect(qualityOnly.duration.reduction_percent).toBeCloseTo(20);
+    for (const run of [baseline, candidate]) {
+      run.comparison_objective = { metric: "duration_ms", min_reduction_percent: 20 };
+    }
+    const compared = compareRuns(baseline, candidate, approvedLabels);
+    expect(compared.gate).toBe("pass");
+    expect(compared.improved).toBe(false);
+    expect(compared.objective_met).toBe(true);
+    expect(compared.duration.baseline.total_ms).toBe(2000);
+    expect(compared.duration.candidate.total_ms).toBe(1600);
+    candidate.trials[0]!.duration_ms = 801;
+    expect(compareRuns(baseline, candidate, approvedLabels).objective_met).toBe(false);
+    candidate.trials.forEach((trial) => { trial.duration_ms = 1000; });
+    expect(compareRuns(baseline, candidate, approvedLabels).gate).toBe("fail");
+  });
+
+  it("keeps missing timing unknown without erasing quality evidence", () => {
+    for (const unavailable of [null, undefined, -1, NaN, Infinity, "700"]) {
+      const baseline = manifest("baseline", ["fail", "pass"]);
+      const candidate = manifest("candidate", ["pass", "pass"]);
+      candidate.trials[0]!.duration_ms = unavailable as number | null;
+      expect(compareRuns(baseline, candidate, approvedLabels).gate).toBe("pass");
+      for (const run of [baseline, candidate]) {
+        run.comparison_objective = { metric: "duration_ms", min_reduction_percent: 20 };
+      }
+      const compared = compareRuns(baseline, candidate, approvedLabels);
+      expect(compared.gate).toBe("needs-human-review");
+      expect(compared.improved).toBe(true);
+      expect(compared.objective_met).toBeNull();
+      expect(compared.duration.candidate.measured_trials).toBe(1);
+      expect(compared.duration.candidate.total_ms).toBeNull();
+      expect(compared.duration.reduction_percent).toBeNull();
+    }
+    const baseline = manifest("baseline", ["pass"]);
+    const candidate = manifest("candidate", ["pass"]);
+    for (const run of [baseline, candidate]) {
+      run.comparison_objective = { metric: "duration_ms", min_reduction_percent: 20 };
+      run.trials[0]!.duration_ms = 0;
+    }
+    expect(compareRuns(baseline, candidate, approvedLabels).objective_met).toBeNull();
+  });
+
+  it("reports a timing benefit but holds a per-scenario regression despite equal total passes", () => {
+    const baseline = manifest("baseline", ["pass"]);
+    const candidate = manifest("candidate", ["fail"]);
+    const labels = structuredClone(approvedLabels);
+    labels.labels["case-b"] = structuredClone(labels.labels["case-a"]!);
+    for (const run of [baseline, candidate]) {
+      run.scenarios.push("case-b");
+      run.trials.push(trial("case-b", 1, run === baseline ? "fail" : "pass"));
+      run.proof.label_catalog_fingerprint = fingerprintValue(labels);
+      run.comparison_objective = { metric: "duration_ms", min_reduction_percent: 20 };
+    }
+    candidate.trials.forEach((trial) => { trial.duration_ms = 500; });
+    const compared = compareRuns(baseline, candidate, labels);
+    expect(compared.objective_met).toBe(true);
+    expect(compared.improved).toBe(true);
+    expect(compared.no_regressions).toBe(false);
+    expect(compared.gate).toBe("fail");
+    expect(compared.scenarios[0]!.duration.reduction_percent).toBe(50);
+    candidate.trials[0]!.duration_ms = null;
+    const missingTiming = compareRuns(baseline, candidate, labels);
+    expect(missingTiming.objective_met).toBeNull();
+    expect(missingTiming.gate).toBe("fail");
+  });
+
+  it("validates the objective and prevents switching it for verification", () => {
+    expect(parseComparisonObjective(undefined)).toEqual({ metric: "quality" });
+    for (const value of [null, {}, "duration_ms", { metric: "cost" },
+      { metric: "quality", min_reduction_percent: 20 },
+      ...[0, -1, 101, NaN, Infinity, "20"].map((min_reduction_percent) => ({ metric: "duration_ms", min_reduction_percent })),
+    ]) expect(() => parseComparisonObjective(value)).toThrow();
+    const baseline = manifest("baseline", ["pass"]);
+    const candidate = manifest("candidate", ["pass"]);
+    candidate.comparison_objective = { metric: "duration_ms", min_reduction_percent: 20 };
+    expect(() => compareRuns(baseline, candidate, approvedLabels)).toThrow("different frozen comparison objectives");
+    baseline.comparison_objective = { metric: "duration_ms", min_reduction_percent: 30 };
+    expect(() => compareRuns(baseline, candidate, approvedLabels)).toThrow("different frozen comparison objectives");
+  });
+
+  it("renders the objective, independent quality, timing coverage and evidence limits", () => {
+    const root = mkdtempSync(join(tmpdir(), "gym-objective-report-"));
+    try {
+      const baseline = manifest("baseline", ["pass"]);
+      const candidate = manifest("candidate", ["pass"]);
+      for (const run of [baseline, candidate]) {
+        run.comparison_objective = { metric: "duration_ms", min_reduction_percent: 20 };
+      }
+      candidate.trials[0]!.duration_ms = 700;
+      const comparison = compareRuns(baseline, candidate, approvedLabels);
+      writeFileSync(join(root, "comparison.json"), JSON.stringify(comparison));
+      const report = renderReport(root, candidate);
+      expect(report.indexOf("## Comparison summary")).toBeLessThan(report.indexOf("## Machine evaluation"));
+      appendAdjudication(root, {
+        run_id: candidate.run_id, scenario: "case-a", trial: 1,
+        verdict: "pass", reviewer: "fixture-reviewer", reason: "Contract fixture", created_at: "2026-01-01T00:02:00Z",
+      });
+      expect(renderReport(root, candidate)).toContain("Measured benefit target met: true");
+      expect(report).toContain("At least 20% lower");
+      expect(report).toContain("At least one quality improvement: false");
+      expect(report).toContain("Measured benefit target met: true");
+      expect(report).toContain("1000 ms (1/1 measured trials) → 700 ms");
+      expect(report).toContain("not approval or statistical proof");
+      candidate.trials[0]!.duration_ms = null;
+      const incomplete = renderReport(root, candidate, compareRuns(baseline, candidate, approvedLabels));
+      expect(incomplete).toContain("Measured benefit target met: unknown");
+      expect(incomplete).toContain("unknown (0/1 measured trials)");
+    } finally { rmSync(root, { recursive: true, force: true }); }
   });
 
   it("rejects comparisons with mixed or different framework revisions", () => {

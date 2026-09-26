@@ -2,6 +2,7 @@ import { afterEach, describe, expect, test } from "bun:test";
 import { createHash } from "node:crypto";
 import {
   existsSync,
+  cpSync,
   mkdtempSync,
   mkdirSync,
   readFileSync,
@@ -23,7 +24,15 @@ afterEach(() => {
     rmSync(root, { recursive: true, force: true });
 });
 
-function fixture(mode: "valid" | "fail" | "abort" | "control" | "wrong-scope") {
+function fixture(
+  mode:
+    | "valid"
+    | "fail"
+    | "abort"
+    | "control"
+    | "wrong-scope"
+    | "wrong-objective",
+) {
   const root = mkdtempSync(join(tmpdir(), "gym-adapter-"));
   roots.push(root);
   const gym = join(root, "projects", "gym");
@@ -93,7 +102,7 @@ const manifest = { ...base, run_id: runId, baseline_run_id: base.run_id, candida
   trials_per_scenario: mode === "wrong-scope" ? 2 : 1,
   proof: { ...base.proof, candidate_fingerprint: ${JSON.stringify(fingerprintTree(candidate))} } };
 writeFileSync(join(run, "manifest.json"), JSON.stringify(manifest));
-writeFileSync(join(run, "comparison.json"), JSON.stringify({ baseline_run_id: base.run_id, candidate_run_id: runId, gate: mode === "control" ? "fail" : "pass" }));
+writeFileSync(join(run, "comparison.json"), JSON.stringify({ baseline_run_id: base.run_id, candidate_run_id: runId, objective: mode === "wrong-objective" ? { metric: "duration_ms", min_reduction_percent: 20 } : undefined, gate: mode === "control" ? "fail" : "pass" }));
 console.log(run);
 if (mode === "fail") process.exit(7);
 if (mode === "control") process.exit(1);
@@ -176,6 +185,24 @@ describe("standalone Gym comparison adapter", () => {
     expect(existsSync(join(setup.output, "gym-state", "spawned"))).toBeFalse();
   });
 
+  test("checks the requested objective both before execution and on return", async () => {
+    const mismatch = fixture("valid");
+    mismatch.request.objective = {
+      metric: "duration_ms",
+      min_reduction_percent: 20,
+    };
+    expect((await compareCandidate(context(mismatch))).status).toBe("blocked");
+    expect(
+      existsSync(join(mismatch.output, "gym-state", "spawned")),
+    ).toBeFalse();
+    const wrongOutput = fixture("wrong-objective");
+    const saved = result(await compareCandidate(context(wrongOutput)));
+    expect(saved.verdict).toBe("hold");
+    expect(
+      JSON.parse(readFileSync(saved.receiptPath, "utf8")).outputMatches,
+    ).toBeFalse();
+  });
+
   test("retains a bounded hold receipt for a failing subprocess", async () => {
     const setup = fixture("fail");
     const execution = await compareCandidate(context(setup));
@@ -241,4 +268,171 @@ describe("standalone Gym comparison adapter", () => {
       existsSync(join(setup.output, "gym-state", "leaked-descendant")),
     ).toBeFalse();
   });
+});
+
+// Exercise the production baseline/verify CLI and App adapter with a deterministic
+// scenario executor. This proves contract plumbing, not model performance.
+describe("frozen objective through the real Gym runner", () => {
+  for (const mode of [
+    "faster",
+    "unchanged",
+    "regression",
+    "missing-timing",
+  ] as const) {
+    test(mode, async () => {
+      const setup = fixture("valid");
+      cpSync(
+        new URL("../../../../gym/src/loop", import.meta.url),
+        join(setup.gym, "src/loop"),
+        { recursive: true },
+      );
+      const benchmark = join(setup.gym, "benchmarks", "tiny");
+      mkdirSync(benchmark, { recursive: true });
+      writeFileSync(
+        join(benchmark, "suite.json"),
+        JSON.stringify({
+          name: "tiny",
+          version: 1,
+          scenarios: setup.request.scenarios,
+          labels_file: "labels.json",
+          evaluator: "score.js",
+        }),
+      );
+      writeFileSync(join(benchmark, "score.js"), "export default true;\n");
+      writeFileSync(
+        join(benchmark, "labels.json"),
+        JSON.stringify({
+          version: 1,
+          benchmark: "tiny",
+          labels: Object.fromEntries(
+            setup.request.scenarios.map((scenario) => [
+              scenario,
+              {
+                status: "approved",
+                source: "synthetic",
+                rationale: "Contract fixture only",
+                approved_by: "test-fixture",
+                approved_at: "2026-01-01T00:00:00Z",
+              },
+            ]),
+          ),
+        }),
+      );
+      for (const scenario of setup.request.scenarios) {
+        mkdirSync(join(setup.gym, "scenarios", scenario), { recursive: true });
+        writeFileSync(
+          join(setup.gym, "scenarios", scenario, "task.md"),
+          "Synthetic contract check",
+        );
+      }
+      writeFileSync(
+        join(setup.gym, "src", "cli.ts"),
+        `
+const scenario = process.argv[2];
+const candidate = process.argv.includes("--lab");
+const mode = ${JSON.stringify(mode)};
+const passed = !(candidate && mode === "regression" && scenario === "incident");
+const duration = !candidate || mode === "unchanged" ? 1000 : mode === "missing-timing" ? null : 700;
+console.log(JSON.stringify({ scenario, agent: "may", passed,
+  checks: [{ name: "contract-fixture", passed }], agent_status: "success",
+  duration_ms: duration, model: "fixture-model", framework_sha: "fixture-framework",
+  prompt_hash: candidate ? "candidate-prompt" : "baseline-prompt" }));
+`,
+      );
+      const baseline = Bun.spawn(
+        [
+          "bun",
+          join(setup.gym, "src/loop/cli.ts"),
+          "test",
+          "--benchmark",
+          "tiny",
+          "--trials",
+          "1",
+          "--objective",
+          "duration_ms",
+          "--min-reduction-percent",
+          "20",
+        ],
+        {
+          cwd: setup.gym,
+          env: {
+            ...process.env,
+            GYM_STATE_DIR: join(setup.root, "baseline-state"),
+          },
+          stdout: "pipe",
+          stderr: "pipe",
+        },
+      );
+      const [stdout, stderr, code] = await Promise.all([
+        new Response(baseline.stdout).text(),
+        new Response(baseline.stderr).text(),
+        baseline.exited,
+      ]);
+      expect({ code, stderr: code === 0 ? "" : stderr }).toEqual({
+        code: 0,
+        stderr: "",
+      });
+      const baselinePath = stdout.trim();
+      const manifest = JSON.parse(
+        readFileSync(join(baselinePath, "manifest.json"), "utf8"),
+      );
+      setup.request.baselinePath = baselinePath;
+      setup.request.baselineRunId = manifest.run_id;
+      setup.request.baselineFingerprint = fingerprintTree(baselinePath);
+      setup.request.objective = {
+        metric: "duration_ms",
+        min_reduction_percent: 20,
+      };
+      expect(
+        JSON.parse(
+          readFileSync(
+            join(baselinePath, "inputs/comparison-objective.json"),
+            "utf8",
+          ),
+        ),
+      ).toEqual(setup.request.objective);
+      const saved = result(await compareCandidate(context(setup)));
+      const receipt = JSON.parse(readFileSync(saved.receiptPath, "utf8"));
+      expect(receipt.outputMatches).toBe(true);
+      expect(receipt.comparison.objective).toEqual(setup.request.objective);
+      expect(receipt.comparison.improved).toBe(false);
+      expect(saved.verdict).toBe(
+        mode === "faster" ? "candidate-supported" : "hold",
+      );
+      expect(receipt.comparison.gate).toBe(
+        mode === "faster"
+          ? "pass"
+          : mode === "missing-timing"
+            ? "needs-human-review"
+            : "fail",
+      );
+      expect(receipt.comparison.objective_met).toBe(
+        mode === "missing-timing" ? null : mode !== "unchanged",
+      );
+      expect(receipt.comparison.no_regressions).toBe(mode !== "regression");
+      expect(readFileSync(join(receipt.runDir, "report.md"), "utf8")).toContain(
+        "At least 20% lower",
+      );
+      expect(fingerprintTree(baselinePath)).toBe(
+        setup.request.baselineFingerprint,
+      );
+
+      // A revised objective needs a new baseline, even if the manifest is edited.
+      manifest.comparison_objective.min_reduction_percent = 10;
+      writeFileSync(
+        join(baselinePath, "manifest.json"),
+        JSON.stringify(manifest),
+      );
+      setup.request.objective.min_reduction_percent = 10;
+      setup.request.baselineFingerprint = fingerprintTree(baselinePath);
+      const changed = result(await compareCandidate(context(setup)));
+      const changedReceipt = JSON.parse(
+        readFileSync(changed.receiptPath, "utf8"),
+      );
+      expect(changed.verdict).toBe("hold");
+      expect(changedReceipt.stderr.text).toContain(
+        "Frozen comparison objective changed",
+      );
+    });
+  }
 });

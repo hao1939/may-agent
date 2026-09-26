@@ -87,6 +87,22 @@ bun run loop -- test \
   --trials 3
 ```
 
+Declare the intended benefit before the baseline. The default is quality:
+more passing trials without a per-scenario regression. To measure execution
+time instead, add:
+
+```bash
+--objective duration_ms --min-reduction-percent 20
+```
+
+This objective requires at least 20% lower total observed execution duration
+across the complete matched trial grid, with no per-scenario quality regression.
+It is saved in the manifest and `inputs/comparison-objective.json` before trial 1
+and included in the frozen input fingerprint. Verification inherits it; changing
+it requires a fresh baseline. The App's comparison request must name the same
+objective. An omitted objective on a historical manifest means quality; all
+other provenance requirements still apply.
+
 Omit `--scenario` to run the whole suite. Before trial 1, Gym snapshots the
 selected scenario directories and benchmark evaluator. The runner executes
 those snapshots, not the live definitions. The command prints the durable run
@@ -148,9 +164,32 @@ The verification gate requires:
 - approved labels;
 - no invalid trials;
 - no scenario regression;
-- at least one improved scenario.
+- the benefit declared by the frozen objective: more passing trials for quality,
+  or a measured duration reduction meeting the specified threshold.
 
-An unchanged perfect baseline therefore does not masquerade as an improvement.
+An unchanged perfect baseline with unchanged timing is not an improvement.
+Equal quality can support a timing benefit when duration was the declared
+objective. `comparison.json` retains `improved` as quality improvement, and adds
+`objective`, `objective_met` (true, false or null), and per-scenario/overall
+`duration` observations. Missing, negative or nonfinite timings produce unknown
+coverage and totals; a zero baseline leaves percentage reduction unknown.
+Unknown timing cannot pass a timing objective and does not erase quality
+findings. A known quality regression still fails the gate. A quality objective
+can pass without timing evidence.
+
+Read the report's objective and overall observations first, then per-scenario
+quality and duration, then linked trial evidence. All selected trials contribute
+to total execution time, including valid behavioral failures. Fewer passes in
+one scenario cannot be offset by gains elsewhere. A faster total may include
+slower individual scenarios; review those tradeoffs and absolute failure counts.
+The machine gate is evidence for May's judgment, not automatic approval.
+
+Duration covers the scenario's agent execution phases and their orchestration,
+before final scoring. It is not billing or complete benchmark wall clock. Keep
+one-time optimization spend separate. Repeat matched comparisons when timing
+noise could change the decision; the reduction threshold alone is not proof of
+statistical significance. Compare the simplest useful alternative and report
+maintenance cost alongside the measured benefit.
 For release decisions, baseline and candidate should cover the full suite and
 use at least five trials.
 

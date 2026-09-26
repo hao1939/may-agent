@@ -3,6 +3,7 @@
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 
+import { parseComparisonObjective } from "./objective";
 import { renderReport } from "./report";
 import { renderRescore, rescoreRun } from "./rescore";
 import { appendAdjudication, readManifest, resolveRunDir } from "./store";
@@ -25,6 +26,8 @@ interface Args {
   reasonCodes: string[];
   trial: number;
   timeout?: number;
+  objective?: string;
+  minReductionPercent?: number;
 }
 
 function parseArgs(argv: string[]): Args {
@@ -61,6 +64,10 @@ function parseArgs(argv: string[]): Args {
       case "--classification": args.classification = value; index++; break;
       case "--reason-code": args.reasonCodes.push(value); index++; break;
       case "--trial": args.trial = Number(value); index++; break;
+      case "--objective":
+        if (!value || value.startsWith("--")) throw new Error("--objective requires quality or duration_ms");
+        args.objective = value; index++; break;
+      case "--min-reduction-percent": args.minReductionPercent = Number(value); index++; break;
       case "--timeout": args.timeout = Number(value); index++; break;
       default: throw new Error(`Unknown argument: ${key}`);
     }
@@ -70,7 +77,7 @@ function parseArgs(argv: string[]): Args {
 
 function usage(): never {
   console.error(`Usage:
-  bun run loop -- test [--benchmark may-alignment] [--scenario ID] [--trials 3]
+  bun run loop -- test [--benchmark may-alignment] [--scenario ID] [--trials 3] [--objective duration_ms --min-reduction-percent 20]
   bun run loop -- verify --baseline RUN_ID --candidate LAB_FORK [--trials 3]
   bun run loop -- review --run RUN_ID --scenario ID --trial N --verdict pass|fail --reviewer NAME --reason TEXT [--classification may-behavior|ground-truth|scorer|harness|unclear] [--reason-code CODE]
   bun run loop -- rescore --run RUN_ID
@@ -79,6 +86,9 @@ function usage(): never {
 }
 
 const args = parseArgs(process.argv);
+if (args.command !== "test" && (args.objective !== undefined || args.minReductionPercent !== undefined)) {
+  throw new Error("Declare the comparison objective with test; verify inherits the frozen baseline objective");
+}
 
 switch (args.command) {
   case "test": {
@@ -86,6 +96,10 @@ switch (args.command) {
     if (!Number.isInteger(trials) || trials < 1) throw new Error("--trials must be a positive integer");
     const created = await runLoop({
       phase: "test",
+      objective: parseComparisonObjective({
+        metric: args.objective ?? "quality",
+        ...(args.minReductionPercent !== undefined ? { min_reduction_percent: args.minReductionPercent } : {}),
+      }),
       benchmark: args.benchmark,
       scenarios: args.scenarios,
       agent: args.agent,

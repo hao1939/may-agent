@@ -13,6 +13,8 @@ import {
 } from "node:fs";
 import { basename, dirname, join, relative, resolve } from "node:path";
 
+import { parseComparisonObjective, type ComparisonObjective } from "./objective";
+
 import type {
   BenchmarkSuite,
   GroundTruthCatalog,
@@ -185,6 +187,7 @@ export function createRunManifest(input: {
   suitePath: string;
   labelsPath: string | null;
   baselineRunId?: string;
+  objective?: ComparisonObjective;
   candidate: string;
   agent: string;
   trials: number;
@@ -192,11 +195,13 @@ export function createRunManifest(input: {
   candidateFingerprint: string | null;
   candidatePath: string | null;
 }): { manifest: LoopRunManifest; runDir: string } {
+  const objective = parseComparisonObjective(input.objective);
   const runId = `${safeName(input.benchmark)}-${input.phase}-${timestampId()}-${crypto.randomUUID().slice(0, 8)}`;
   const runDir = join(stateRoot(), "benchmarks", runId);
   mkdirSync(join(runDir, "cases"), { recursive: true });
   const inputsDir = join(runDir, "inputs");
   mkdirSync(inputsDir, { recursive: true });
+  writeFileSync(join(inputsDir, "comparison-objective.json"), `${JSON.stringify(objective, null, 2)}\n`);
   const sourceBenchmarkDir = benchmarkDir(input.benchmark);
   const frozenBenchmarkDir = join(
     inputsDir,
@@ -280,6 +285,7 @@ export function createRunManifest(input: {
     benchmark: input.benchmark,
     benchmark_version: input.suite.version,
     baseline_run_id: input.baselineRunId ?? null,
+    comparison_objective: objective,
     candidate: input.candidate,
     agent: input.agent,
     trials_per_scenario: input.trials,

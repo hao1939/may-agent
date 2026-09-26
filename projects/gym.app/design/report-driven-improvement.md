@@ -122,7 +122,11 @@ The standalone `projects/gym` runner already retains benchmark snapshots,
 baseline/candidate manifests, provenance and human adjudications. `verifyLoop`
 requires matching scenario/trial scope and frozen source inputs; its comparison
 requires approved truth, a common framework revision, no invalid runs, no
-regressions and an improvement. Reuse these capabilities after adapter validation.
+per-scenario quality regressions and a demonstrated benefit under the objective
+frozen before the baseline. The default objective is more passing trials; an
+explicit duration objective can support lower measured execution time with
+unchanged quality. Quality, timing coverage and objective attainment remain
+separate observations; see [the comparison contract](frozen-comparison-service.md). Reuse these capabilities after adapter validation.
 Do not transplant the old campaign orchestration.
 
 The archived Gym implementation listened to `evaluation.recorded`, assumed a
