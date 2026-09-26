@@ -1,8 +1,8 @@
 <ai_context>
-summary: "Implementation-evidence companion to agent-security-verified-enforcement.md. Uses pinned repositories, disclosures, and deployed-system reports to separate signed claims from replayable evidence; receipt validity from verifier isolation and claim scope; verifier correctness from adversarial agent resistance; receipt integrity from completeness; configured policy from covered paths; identity enrollment from per-request proof; formal models from unsupported surfaces; observed egress from blocking; stable tool digests from equivalent semantics; policy verdicts from effect ownership; counterfactual actions from execution authority and real effect accounting; authorization receipts from effect gates; declared mediation architecture from per-effect path evidence; narrated results from positive execution evidence; sandbox isolation from configuration coherence; stop requests from observed quiescence; frozen eval inputs from stable comparison units; untrusted analysis failure from trusted configuration degradation; and human approval records from end-to-end effect binding."
-triggers: ["SkillProof", "MCP server verification", "replayable evidence", "action receipt", "signed receipt", "evidence completeness", "MAX Authorization Sandbox", "signed policy", "adversary capability", "rollback state", "Pipelock", "HELM AI Kernel", "offline verifier", "verifier isolation", "claim-typed verification", "PassControl", "sender proof", "bearer visa", "authentication assurance", "default deny", "fail closed", "shell hook", "guardrail regression test", "OpenShell prover", "SMT containment", "path composition", "egress firewall", "uninspected egress", "tool identity", "tool pin", "schema canonicalization", "shadow mode", "mediation ownership", "counterfactual action", "observed policy action", "real effect accounting", "ctrlrun", "HOL Guard", "Action Evidence Package", "AEP sandbox", "Codex sandbox", "Overpatch", "Heapjack", "authority derivation", "Meta Muse", "local configuration authority", "APEXA", "execution integrity", "tool execution evidence", "BoxLite", "micro-VM", "sandbox configuration coherence", "guest network", "host jailer grants", "Hard Stop", "SIGSTOP", "process group preemption", "quiescence receipt", "run-assert-eval", "ASSERT", "Agent Control Specification", "fixed evaluation", "applicable denominator", "paired comparison", "safety helpfulness split", "CC Safety Net", "analysis budget", "configuration degradation", "typed failure policy", "emisar", "approval binding", "bridge attestation", "pack hash"]
+summary: "Implementation-evidence companion to agent-security-verified-enforcement.md. Uses pinned repositories, disclosures, and deployed-system reports to separate signed claims from replayable evidence; receipt validity from verifier isolation and claim scope; verifier correctness from adversarial agent resistance; receipt integrity from completeness; configured policy from covered paths; identity enrollment from per-request proof; formal models from unsupported surfaces; observed egress from blocking; stable tool digests from equivalent semantics; policy verdicts from effect ownership; counterfactual actions from execution authority and real effect accounting; authorization receipts from effect gates; declared mediation architecture from per-effect path evidence; narrated results from positive execution evidence; sandbox isolation from configuration coherence; stop requests from observed quiescence; frozen eval inputs from stable comparison units; untrusted analysis failure from trusted configuration degradation; human approval records from end-to-end effect binding; and effect-owning execution routes from provider-reported hook correlation and ambient process coverage."
+triggers: ["SkillProof", "MCP server verification", "replayable evidence", "action receipt", "signed receipt", "evidence completeness", "MAX Authorization Sandbox", "signed policy", "adversary capability", "rollback state", "Pipelock", "HELM AI Kernel", "offline verifier", "verifier isolation", "claim-typed verification", "PassControl", "sender proof", "bearer visa", "authentication assurance", "default deny", "fail closed", "shell hook", "guardrail regression test", "OpenShell prover", "SMT containment", "path composition", "egress firewall", "uninspected egress", "tool identity", "tool pin", "schema canonicalization", "shadow mode", "mediation ownership", "counterfactual action", "observed policy action", "real effect accounting", "ctrlrun", "HOL Guard", "Action Evidence Package", "AEP sandbox", "Codex sandbox", "Overpatch", "Heapjack", "authority derivation", "Meta Muse", "local configuration authority", "APEXA", "execution integrity", "tool execution evidence", "BoxLite", "micro-VM", "sandbox configuration coherence", "guest network", "host jailer grants", "Hard Stop", "SIGSTOP", "process group preemption", "quiescence receipt", "run-assert-eval", "ASSERT", "Agent Control Specification", "fixed evaluation", "applicable denominator", "paired comparison", "safety helpfulness split", "CC Safety Net", "analysis budget", "configuration degradation", "typed failure policy", "emisar", "approval binding", "bridge attestation", "pack hash", "Aegis", "exact action policy", "provider hook correlation", "direct child execution", "route coverage"]
 last_updated: "2026-09-26"
-source_basis: "Pinned-source implementation studies and disclosures reviewed 2026-09-10 through 2026-09-26: SkillProof f5ddb4b, MAX Authorization Sandbox 380efe6, Pipelock f7d1816, HELM AI Kernel fe122d4, agent-guardrails-kit 18c241e, PassControl f9cb702, OpenShell df0ee1a, k8s-rca-agent 29f5fad, secure-agent 017ec5a, Rul1an/assay 900e536, Soup Wall be8db48, HOL Guard 56faea4 and f5d568f, ctrlrun 8ebc5a8, aep-sandbox 3495e27, BoxLite 9e9436e, Hard Stop 45c31bc, responsibleai/ASSERT 0628e25, CC Safety Net 0439757, AndrewDryga/emisar ac0d942, HN items 49795755, 49802030, 49830567, 49834450, 49834720, 49840107, 49841469, and 49844056 with their linked primary sources, plus arXiv 2609.24165v1 and 2609.29808v1 (abstracts and full HTML). Each section states its own evidence boundary."
+source_basis: "Pinned-source implementation studies and disclosures reviewed 2026-09-10 through 2026-09-26: SkillProof f5ddb4b, MAX Authorization Sandbox 380efe6, Pipelock f7d1816, HELM AI Kernel fe122d4, agent-guardrails-kit 18c241e, PassControl f9cb702, OpenShell df0ee1a, k8s-rca-agent 29f5fad, secure-agent 017ec5a, Rul1an/assay 900e536, Soup Wall be8db48, HOL Guard 56faea4 and f5d568f, ctrlrun 8ebc5a8, aep-sandbox 3495e27, BoxLite 9e9436e, Hard Stop 45c31bc, responsibleai/ASSERT 0628e25, CC Safety Net 0439757, AndrewDryga/emisar ac0d942, antropos17/Aegis 6cae92e, HN items 49795755, 49802030, 49830567, 49834450, 49834720, 49840107, 49841469, and 49844056 with their linked primary sources, plus arXiv 2609.24165v1 and 2609.29808v1 (abstracts and full HTML). Each section states its own evidence boundary."
 </ai_context>
 
 # Agent Security: Enforcement Evidence and Runtime Coverage
@@ -1526,3 +1526,77 @@ author-authored tests; the repository Search API tree was complete
 validate a real signature, or exercise a production approval. The source supports
 the binding design and its documented optional/default boundary, not a claim
 that every Emisar deployment enables attestation or resists compromise.
+
+## One Policy Can Produce Control, Correlation, or Neither—Depending on the Route (GitHub, September 2026)
+
+**Repo:** https://github.com/antropos17/Aegis
+
+**Pinned observation:** repository commit
+[`6cae92e921dc8ea4aa94ffa4e0d90cf37bf43885`](https://github.com/antropos17/Aegis/commit/6cae92e921dc8ea4aa94ffa4e0d90cf37bf43885)
+
+Aegis makes an unusually explicit comparison possible because one repository
+contains monitoring, a provider-hook policy session, and an effect-owning direct
+execution route. The same word—policy—does not give those paths the same control
+semantics.
+
+The direct route evaluates an exact action tuple: executable, working directory,
+ordered arguments, and explicit environment. Default `allow` is invalid, duplicate
+equivalent rules invalidate the policy, and any changed field fails to match. The
+runner starts its own child with `shell: false` only after an `allow`; `ask`, `deny`,
+invalid or unavailable input, cancellation during preparation, and a late decision
+do not launch. Its child environment starts from deterministic empty defaults
+rather than inheriting the parent. These are meaningful fail-closed properties
+because this component owns the particular spawn it governs.
+
+By contrast, the provider-hook session correlates a pre-tool decision with a
+provider-reported post-tool event. It exact-matches IDs, working directory, and
+tool input, rejects replay or changed reports, and preserves sticky uncertainty
+when expected reports are absent. Yet its own output remains
+`processBinding: unbound`, `activityCoverage: unknown`, and
+`control: provider-hook-fail-open`. A matching post event is a provider claim,
+not independent execution evidence; even a reported event after `deny` does not
+prove that prevention succeeded. Default process monitoring is weaker still: it
+observes and logs but does not automatically block.
+
+The reusable reporting rule is to attach each verdict to an **effect route**, not
+to a product or policy file:
+
+1. **Effect owner:** which component can physically withhold this exact effect?
+2. **Decision binding:** which action fields, configuration revision, approval,
+   and attempt does its decision cover?
+3. **Execution observation:** is completion observed by the owner, reported by
+   the provider, or inferred from ambient monitoring?
+4. **Route coverage:** which other commands, tools, descendants, or agent launch
+   paths bypass this component?
+5. **Containment:** what authority remains after admission?
+
+Aegis also bounds the strongest route carefully. Exact path matching is not
+executable-content identity; same-user files may change, and the allowed program
+retains the caller's account, filesystem, network, interpreter, and descendant
+authority. The five-second timeout controls only the direct child and may leave
+descendants running. Thus “exact allow-list + owned spawn” is stronger than hook
+correlation, but it is still an admission gate rather than a sandbox or proof of
+complete activity coverage.
+
+Its audit chain reinforces the same typed-evidence discipline. Per-day SHA-256
+chaining detects surviving-record edits and interior insertion/deletion, while a
+valid prefix cannot reveal tail truncation, pre-sequence buffer loss, deletion of
+an entire day, or missing events that were never observed. Chain integrity should
+therefore remain separate from event completeness and route coverage.
+
+**Primary evidence at the pinned commit:**
+[`README.md`](https://github.com/antropos17/Aegis/blob/6cae92e921dc8ea4aa94ffa4e0d90cf37bf43885/README.md),
+[`ACTION-EXECUTION.md`](https://github.com/antropos17/Aegis/blob/6cae92e921dc8ea4aa94ffa4e0d90cf37bf43885/docs/ACTION-EXECUTION.md),
+[`ACTION-POLICY-SESSION.md`](https://github.com/antropos17/Aegis/blob/6cae92e921dc8ea4aa94ffa4e0d90cf37bf43885/docs/ACTION-POLICY-SESSION.md),
+[`execution-policy.js`](https://github.com/antropos17/Aegis/blob/6cae92e921dc8ea4aa94ffa4e0d90cf37bf43885/src/main/execution-policy.js),
+[`action-policy-session.js`](https://github.com/antropos17/Aegis/blob/6cae92e921dc8ea4aa94ffa4e0d90cf37bf43885/src/main/action-policy-session.js),
+[`audit-hashchain.js`](https://github.com/antropos17/Aegis/blob/6cae92e921dc8ea4aa94ffa4e0d90cf37bf43885/src/main/audit-hashchain.js),
+[`execution-policy.test.js`](https://github.com/antropos17/Aegis/blob/6cae92e921dc8ea4aa94ffa4e0d90cf37bf43885/tests/main/execution-policy.test.js), and
+[`audit-hashchain.test.js`](https://github.com/antropos17/Aegis/blob/6cae92e921dc8ea4aa94ffa4e0d90cf37bf43885/tests/main/audit-hashchain.test.js).
+
+**Evidence boundary:** GitHub Repository Search returned 646 matches with
+`incomplete_results: false`, and the pinned recursive tree contained 1,458
+entries with `truncated: false`. Scout statically inspected the files above and
+did not run tests, launch a child, connect a provider, validate monitoring
+coverage, or conduct a security assessment. Repository-authored Windows and
+Linux fixture claims remain author-reported; macOS is explicitly unverified.
