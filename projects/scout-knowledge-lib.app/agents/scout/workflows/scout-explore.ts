@@ -161,8 +161,9 @@ Output contract:
 - A draft or digest alone is not library integration. For a useful new finding, return at least one created or updated knowledge file; preserve unfinished drafts and report partial progress instead of success.
 - A read-only error applies to the exact path checked, not the whole library. Never bypass a protected file. If no suitable existing note is writable, a distinct source-grounded finding under the knowledge root may be appropriate; otherwise retain the draft and report the exact blocker.
 - Append short user-facing highlights to \`${paths.appDir}/agents/scout/workspace/digest/today.md\` when useful.
-- Search existing Scout knowledge files first and update an existing topical file when the topic already exists.
+- Search existing Scout knowledge files first and compare matching notes with the current source evidence and requested question.
 - Search primary Source:/Repo: URLs case-insensitively before writing. If any search returns a matching file, open it before deciding. Never create a new finding that repeats a primary source already present elsewhere; update the matched file or return an evidence-backed no-op.
+- When an existing note still covers the question and current evidence, leave it unchanged, return outputs: [], and cite its path and the comparison in summary. When evidence or required coverage changes, update the fitting note; create a finding only when no existing note fits. A shared topic alone does not make two subjects the same.
 - Before creating a finding, inspect the exact target path. Choose an unused descriptive topic slug; do not use a scan number as a shared filename allocator.
 - Update an existing finding only for the same subject, and preserve all of its existing primary Source:/Repo: declarations.
 - Read every created or changed output back before returning it.
@@ -914,9 +915,15 @@ run Git publication or edit the canonical library in this call.`;
       error: error instanceof Error ? error.message : String(error),
     });
   }
-  return ctx.done(structured.summary, {
+  // Publication can remove the candidate even on a no-op. Keep returned links
+  // in the same canonical namespace as the published output paths.
+  const summary = structured.summary.replaceAll(
+    `${candidateProjectDir}${sep}`,
+    `${beforePublication.canonicalProjectRoot}${sep}`,
+  );
+  return ctx.done(summary, {
     state: "converged",
-    summary: structured.summary,
+    summary,
     facts: [
       ...new Set([
         ...sourceEvidence,

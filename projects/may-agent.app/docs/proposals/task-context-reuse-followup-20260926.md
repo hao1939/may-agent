@@ -174,6 +174,12 @@ explains the comparison and the distinction between tool effects and caller advi
 
 ## Evidence and reproduction
 
+The subsequent [App review and Scout trial](../../../scout-knowledge-lib.app/docs/verification/scout-reuse-guidance-20260926.md)
+applies this guidance to existing consumers. It retains May/Evaluation's current
+reuse paths, clarifies two Scout instructions, and fixes a dead returned link
+found during the trial. Its App source and activation status are separate from
+this comparison and Host PR #230.
+
 The evidence root is
 `/app/.state/review-pilots/task-context-followup-20260926/`. `INVESTIGATION.md`
 records the initial source/transcript findings. `matched/PLAN.md` and

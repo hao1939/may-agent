@@ -50,7 +50,10 @@ a different source.
   `/app/projects/scout-knowledge-lib.app/agents/scout/workspace/digest/today.md`
 
 Search by topic, title, source URL, paper ID, repository, or post ID before
-creating a file. Update an existing note when it already covers the topic. Use
+creating a file. Read matching notes and compare their subject, coverage, and
+evidence with the current question and source. Keep a fitting note unchanged when
+it still covers both; update it when evidence or required coverage changes. Use a
+new finding when no existing note fits, even if the broad topic is shared. Use
 the workflow-supplied candidate root for hosted library edits; the roots above
 are the final publication locations. Code publishes accepted changes and returns
 their canonical paths with Git evidence. Failed candidates remain available for

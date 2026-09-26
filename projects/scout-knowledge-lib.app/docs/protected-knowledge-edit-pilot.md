@@ -28,6 +28,24 @@ agent's output list. Failed or rejected calls are not published; their isolated
 candidate and changed-path inventory are retained in workflow evidence for
 review instead of contaminating the shared library.
 
+For routine exploration, Scout compares existing notes with the current question
+and source evidence before choosing a write. A fitting, still-current note can
+stay unchanged: return `outputs: []` and cite the note and comparison in the
+summary. Changed evidence or required coverage can justify updating the matching
+note even when the source URL is unchanged. A shared topic alone does not make
+two subjects interchangeable; use a new finding when no note fits. This is
+Scout's judgment, using the existing no-change publication path. It adds no
+Host reuse rule or publication state. Requested source assessments retain their
+separate code-owned coverage and archive contract.
+
+After successful exploration publication, code translates candidate-root paths
+in the returned summary to canonical library paths, just as it returns canonical
+output paths. This applies to both changed and unchanged results: a no-change
+candidate is removed too. Failed publication keeps its original failure and
+candidate evidence; it does not claim a canonical result.
+The [reuse and return-link trial](verification/scout-reuse-guidance-20260926.md)
+records the observed failure, correction, and validation limits.
+
 ## Git transaction and recovery
 
 Publication stages only the exact changed paths in the isolated candidate; it

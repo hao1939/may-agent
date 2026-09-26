@@ -945,6 +945,55 @@ describe("scout-explore workflow prompt", () => {
     expect(serialized).not.toContain("token=secret");
   });
 
+  it.each([false, true])(
+    "returns a readable canonical summary link after publication (changed=%s)",
+    async (changed) => {
+      const fixture = publicationTestFixture();
+      temporaryRoots.push(fixture.repositoryRoot);
+      const canonical = join(
+        fixture.workspace.projectRoot,
+        "knowledge/README.md",
+      );
+      const originalHead = fixture.git("rev-parse", "HEAD");
+      let candidateOutput = "";
+      const ctx = workflowContext(async (_agent, task) => {
+        candidateOutput = join(
+          candidateProjectFromPrompt(task),
+          "knowledge/README.md",
+        );
+        if (changed) writeFileSync(candidateOutput, "# Updated knowledge\n");
+        return {
+          status: "done",
+          sessionId: "s_summary_link",
+          structuredResult: {
+            summary: `See [the note](${candidateOutput}) for the assessed source.`,
+            source: {
+              name: "hn",
+              queryOrFeed: "https://news.ycombinator.com/newest",
+              itemIdsOrUrls: ["https://news.ycombinator.com/item?id=123"],
+            },
+            outputs: changed ? [candidateOutput] : [],
+          },
+        };
+      }, "hn");
+      ctx.workspace = { ...fixture.workspace };
+      const result = await executeScoutExplore(ctx);
+      const expected = `See [the note](${canonical}) for the assessed source.`;
+      expect(result).toMatchObject({
+        status: "done",
+        summary: expected,
+        output: { state: "converged", summary: expected },
+      });
+      expect(existsSync(candidateOutput)).toBe(false);
+      expect(readFileSync(canonical, "utf8")).toBe(
+        changed ? "# Updated knowledge\n" : "# Knowledge\n",
+      );
+      expect(
+        Number(fixture.git("rev-list", "--count", `${originalHead}..HEAD`)),
+      ).toBe(changed ? 1 : 0);
+    },
+  );
+
   it("rejects a stale reported output when another publication changed its bytes", async () => {
     const fixture = publicationTestFixture();
     temporaryRoots.push(fixture.repositoryRoot);
