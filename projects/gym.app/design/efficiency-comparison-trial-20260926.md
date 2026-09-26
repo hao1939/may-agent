@@ -32,9 +32,12 @@ truth and regression requirements remain in force.
 
 Deployment preflight exposed a dependency gap: the source TypeScript alias
 resolved the parser, but the frozen App release omitted the sibling Gym tree.
-Its workflow import failed before activation. Declaring the existing Gym package
-in the workspace manifest and lockfile fixes normal package resolution from the
-snapshot. A clean frozen-lockfile installation and a bundled import of the
+Its workflow import failed before activation. Declaring Gym as a local
+package-manager workspace in the root manifest and lockfile fixes normal package
+resolution from the snapshot. A `file:` dependency copied the entire local
+project, including runtime data, and failed on an unreadable runtime file during
+deployment. The workspace dependency instead links the canonical package.
+A clean frozen-lockfile installation and a bundled import of the
 archived workflow then passed. This uses the existing package and reload paths;
 it adds no Host resolver or source-copy rule. Deploy the runner and App revision
 together and retain both identities in the deployment receipt.

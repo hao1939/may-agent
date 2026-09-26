@@ -33,7 +33,8 @@ bun --cwd=projects/gym.app run check
 
 For local deployment, merge the Gym runner and App together, run
 `bun install --frozen-lockfile --ignore-scripts` at the workspace root, then
-reload App definitions. The workspace dependency makes `@may-agent/gym/comparison`
+reload App definitions. Gym is a local package-manager workspace, so installation
+links its source rather than copying its runtime data. This dependency makes `@may-agent/gym/comparison`
 available to frozen workflows; the App's development TypeScript path alone is
 not enough. Verify the frozen workflow import as well as the accepted reload
 revision. No Host binary or container update is needed for this change.

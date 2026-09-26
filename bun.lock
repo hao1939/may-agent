@@ -4,7 +4,7 @@
   "workspaces": {
     "": {
       "dependencies": {
-        "@may-agent/gym": "file:projects/gym",
+        "@may-agent/gym": "workspace:*",
         "@may-agent/sdk": "file:projects/may-agent/bundle/sdk-current",
         "azure-cli": "^0.10.20",
         "puppeteer-core": "^24.43.1",
@@ -14,6 +14,15 @@
         "@types/node": "^25.6.0",
         "fast-check": "^4.7.0",
         "typescript": "^5.7.3",
+      },
+    },
+    "projects/gym": {
+      "name": "@may-agent/gym",
+      "version": "0.1.0",
+      "devDependencies": {
+        "@types/bun": "^1.3.14",
+        "@types/node": "^22.20.0",
+        "typescript": "^6.0.3",
       },
     },
   },
@@ -74,7 +83,7 @@
 
     "@google/genai": ["@google/genai@1.52.0", "", { "dependencies": { "google-auth-library": "^10.3.0", "p-retry": "^4.6.2", "protobufjs": "^7.5.4", "ws": "^8.18.0" }, "peerDependencies": { "@modelcontextprotocol/sdk": "^1.25.2" }, "optionalPeers": ["@modelcontextprotocol/sdk"] }, "sha512-gwSvbpiN/17O9TbsqSsE/OzZcpv5Fo4RQjdngGgogtuB9RsyJ8ZHhX5KjHj1bp5N9snN2eK8LDGXSaWW2hof8Q=="],
 
-    "@may-agent/gym": ["@may-agent/gym@file:projects/gym", { "devDependencies": { "@types/bun": "^1.3.14", "@types/node": "^22.20.0", "typescript": "^6.0.3" } }],
+    "@may-agent/gym": ["@may-agent/gym@workspace:projects/gym"],
 
     "@may-agent/sdk": ["@may-agent/sdk@file:projects/may-agent/bundle/sdk-current", { "dependencies": { "@earendil-works/pi-ai": "0.81.1", "typebox": "1.1.38" } }],
 
