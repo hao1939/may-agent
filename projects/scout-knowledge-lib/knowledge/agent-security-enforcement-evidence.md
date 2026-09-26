@@ -1,8 +1,8 @@
 <ai_context>
-summary: "Implementation-evidence companion to agent-security-verified-enforcement.md. Uses pinned repositories, disclosures, and deployed-system reports to separate signed claims from replayable evidence; receipt validity from verifier isolation and claim scope; verifier correctness from adversarial agent resistance; receipt integrity from completeness; configured policy from covered paths; identity enrollment from per-request proof; formal models from unsupported surfaces; observed egress from blocking; static egress policy from irreversible post-sensitive-access session restriction; stable tool digests from equivalent semantics; policy verdicts from effect ownership; counterfactual actions from execution authority and real effect accounting; authorization receipts from effect gates; declared mediation architecture from per-effect path evidence; narrated results from positive execution evidence; sandbox isolation from configuration coherence; stop requests from observed quiescence; frozen eval inputs from stable comparison units; untrusted analysis failure from trusted configuration degradation; human approval records from end-to-end effect binding; and effect-owning execution routes from provider-reported hook correlation and ambient process coverage."
-triggers: ["SkillProof", "MCP server verification", "replayable evidence", "action receipt", "signed receipt", "evidence completeness", "MAX Authorization Sandbox", "signed policy", "adversary capability", "rollback state", "Pipelock", "HELM AI Kernel", "offline verifier", "verifier isolation", "claim-typed verification", "PassControl", "sender proof", "bearer visa", "authentication assurance", "default deny", "fail closed", "shell hook", "guardrail regression test", "OpenShell prover", "SMT containment", "path composition", "egress firewall", "uninspected egress", "session-aware egress", "sensitive-source transition", "sticky egress restriction", "tool identity", "tool pin", "schema canonicalization", "shadow mode", "mediation ownership", "counterfactual action", "observed policy action", "real effect accounting", "ctrlrun", "HOL Guard", "Action Evidence Package", "AEP sandbox", "Codex sandbox", "Overpatch", "Heapjack", "authority derivation", "Meta Muse", "local configuration authority", "APEXA", "execution integrity", "tool execution evidence", "BoxLite", "micro-VM", "sandbox configuration coherence", "guest network", "host jailer grants", "Hard Stop", "SIGSTOP", "process group preemption", "quiescence receipt", "run-assert-eval", "ASSERT", "Agent Control Specification", "fixed evaluation", "applicable denominator", "paired comparison", "safety helpfulness split", "CC Safety Net", "analysis budget", "configuration degradation", "typed failure policy", "emisar", "approval binding", "bridge attestation", "pack hash", "Aegis", "exact action policy", "provider hook correlation", "direct child execution", "route coverage"]
+summary: "Implementation-evidence companion to agent-security-verified-enforcement.md. Uses pinned repositories, disclosures, and deployed-system reports to separate signed claims from replayable evidence; receipt validity from verifier isolation and claim scope; verifier correctness from adversarial agent resistance; receipt integrity from completeness; configured policy from covered paths; identity enrollment from per-request proof; formal models from unsupported surfaces; observed egress from blocking; static egress policy from irreversible post-sensitive-access session restriction; stable tool digests from equivalent semantics; policy verdicts from effect ownership; counterfactual actions from execution authority and real effect accounting; authorization receipts from effect gates; declared mediation architecture from per-effect path evidence; narrated results from positive execution evidence; sandbox isolation from configuration coherence; stop requests from observed quiescence; frozen eval inputs from stable comparison units; untrusted analysis failure from trusted configuration degradation; human approval records from end-to-end effect binding; effect-owning execution routes from provider-reported hook correlation and ambient process coverage; and signed workflow conformance from evidence-grade propagation and independently proved declaration pre-existence."
+triggers: ["SkillProof", "MCP server verification", "replayable evidence", "action receipt", "signed receipt", "evidence completeness", "MAX Authorization Sandbox", "signed policy", "adversary capability", "rollback state", "Pipelock", "HELM AI Kernel", "offline verifier", "verifier isolation", "claim-typed verification", "PassControl", "sender proof", "bearer visa", "authentication assurance", "default deny", "fail closed", "shell hook", "guardrail regression test", "OpenShell prover", "SMT containment", "path composition", "egress firewall", "uninspected egress", "session-aware egress", "sensitive-source transition", "sticky egress restriction", "tool identity", "tool pin", "schema canonicalization", "shadow mode", "mediation ownership", "counterfactual action", "observed policy action", "real effect accounting", "ctrlrun", "HOL Guard", "Action Evidence Package", "AEP sandbox", "Codex sandbox", "Overpatch", "Heapjack", "authority derivation", "Meta Muse", "local configuration authority", "APEXA", "execution integrity", "tool execution evidence", "BoxLite", "micro-VM", "sandbox configuration coherence", "guest network", "host jailer grants", "Hard Stop", "SIGSTOP", "process group preemption", "quiescence receipt", "run-assert-eval", "ASSERT", "Agent Control Specification", "fixed evaluation", "applicable denominator", "paired comparison", "safety helpfulness split", "CC Safety Net", "analysis budget", "configuration degradation", "typed failure policy", "emisar", "approval binding", "bridge attestation", "pack hash", "Aegis", "exact action policy", "provider hook correlation", "direct child execution", "route coverage", "Treeship", "workflow conformance", "evidence grade", "declaration pre-existence"]
 last_updated: "2026-09-26"
-source_basis: "Pinned-source implementation studies and disclosures reviewed 2026-09-10 through 2026-09-26: SkillProof f5ddb4b, MAX Authorization Sandbox 380efe6, Pipelock f7d1816, HELM AI Kernel fe122d4, agent-guardrails-kit 18c241e, PassControl f9cb702, OpenShell df0ee1a, k8s-rca-agent 29f5fad, secure-agent 017ec5a, Rul1an/assay 900e536, Soup Wall be8db48, HOL Guard 56faea4 and f5d568f, ctrlrun 8ebc5a8, aep-sandbox 3495e27, BoxLite 9e9436e, Hard Stop 45c31bc, responsibleai/ASSERT 0628e25, CC Safety Net 0439757, AndrewDryga/emisar ac0d942, antropos17/Aegis 6cae92e, HN items 49795755, 49802030, 49830567, 49834450, 49834720, 49840107, 49841469, 49844056, and 49855568 with their linked primary sources, plus arXiv 2609.24165v1 and 2609.29808v1 (abstracts and full HTML). Each section states its own evidence boundary."
+source_basis: "Pinned-source implementation studies and disclosures reviewed 2026-09-10 through 2026-09-26: SkillProof f5ddb4b, MAX Authorization Sandbox 380efe6, Pipelock f7d1816, HELM AI Kernel fe122d4, agent-guardrails-kit 18c241e, PassControl f9cb702, OpenShell df0ee1a, k8s-rca-agent 29f5fad, secure-agent 017ec5a, Rul1an/assay 900e536, Soup Wall be8db48, HOL Guard 56faea4 and f5d568f, ctrlrun 8ebc5a8, aep-sandbox 3495e27, BoxLite 9e9436e, Hard Stop 45c31bc, responsibleai/ASSERT 0628e25, CC Safety Net 0439757, AndrewDryga/emisar ac0d942, antropos17/Aegis 6cae92e, zerkerlabs/treeship 7fd3993, HN items 49795755, 49802030, 49830567, 49834450, 49834720, 49840107, 49841469, 49844056, and 49855568 with their linked primary sources, plus arXiv 2609.24165v1 and 2609.29808v1 (abstracts and full HTML). Each section states its own evidence boundary."
 </ai_context>
 
 # Agent Security: Enforcement Evidence and Runtime Coverage
@@ -256,6 +256,62 @@ repository-authored tests at one revision. It did not run the Go tests or verifi
 validate a real receipt, audit every receipt family, or establish that a deployed
 agent's effects all traverse HELM. The source supports verifier semantics and
 build-time assertions, not the repository's broader enforcement or product claims.
+
+### Follow-up: workflow conformance needs an evidence algebra (Treeship, September 2026)
+
+**Repo:** https://github.com/zerkerlabs/treeship
+
+**Pinned observation:** repository commit
+[`7fd39938ed821c8a871366b43e6f14a4f15df9d5`](https://github.com/zerkerlabs/treeship/commit/7fd39938ed821c8a871366b43e6f14a4f15df9d5)
+
+Treeship extends the receipt-validity vector from individual actions to declared
+workflows, but its useful contribution is the refusal to flatten unlike evidence.
+The conformance reducer carries three grades—`checked`, `captured`, and
+`asserted`—and every aggregate inherits the weakest required grade. It reports
+undeclared nodes and edges, missing terminal nodes, out-of-scope tools, and loop
+budget violations separately. A transition touching asserted input is retained
+as an `asserted_edge`, rather than silently promoted because neighboring actions
+have valid signatures.
+
+The composed verification path also separates **a signed declaration** from
+**proof that the declaration predates the run**. It verifies the declaration and
+the first run artifact, checks that the signed `session.start` binds the same
+workflow, and grants `checked` pre-existence only when earlier and later Merkle
+checkpoints, inclusion proofs, leaf ordering, log identity, and consistency all
+hold. Without that proof it replaces any caller-supplied grade with `asserted`.
+Signed timestamps alone are therefore not ordering evidence.
+
+The observation builder applies the same discipline to attribution. It derives a
+node from signed actor/capability and action fields; a runtime-provided node label
+may break a genuine ambiguity but cannot override an inadmissible mapping or lift
+the grade above `captured`. Unattributable actions are returned as issues, and an
+empty action set is refused instead of producing a vacuously clean report.
+
+This suggests a reusable contract for workflow receipts:
+
+1. **Type evidence by strength** and propagate the weakest dependency into every
+   aggregate verdict.
+2. **Prove policy chronology independently**; a valid signature and claimed time
+   do not show that the policy existed before execution.
+3. **Recompute attribution from signed fields**; treat runtime labels as bounded
+   hints, not authority.
+4. **Preserve omissions and ambiguity** as gaps or issues instead of dropping
+   evidence that cannot be placed.
+5. **Keep presentation claims scoped**: Treeship's own README says package
+   narrative, timeline, and side-effect summaries derive from an unsigned event
+   log, while signed artifacts and the Merkle root are the authenticated layer.
+
+**Evidence inspected at the pinned commit:**
+[`README.md`](https://github.com/zerkerlabs/treeship/blob/7fd39938ed821c8a871366b43e6f14a4f15df9d5/README.md),
+[`workflow_conformance.rs`](https://github.com/zerkerlabs/treeship/blob/7fd39938ed821c8a871366b43e6f14a4f15df9d5/packages/core/src/verify/workflow_conformance.rs),
+[`workflow_conformance_golden.rs`](https://github.com/zerkerlabs/treeship/blob/7fd39938ed821c8a871366b43e6f14a4f15df9d5/packages/core/tests/workflow_conformance_golden.rs),
+[`receipt.rs`](https://github.com/zerkerlabs/treeship/blob/7fd39938ed821c8a871366b43e6f14a4f15df9d5/packages/core/src/session/receipt.rs), and
+[`package_anchors.rs`](https://github.com/zerkerlabs/treeship/blob/7fd39938ed821c8a871366b43e6f14a4f15df9d5/packages/core/tests/package_anchors.rs).
+
+**Evidence boundary:** this is static inspection of implementation and
+repository-authored tests at one revision. Scout did not execute the suite,
+verify a live receipt, audit the cryptography, or establish capture completeness
+or real-world adoption.
 
 ## Default-Deny Needs a Coverage Contract, Not Just an Allow-List (HN, September 2026)
 
