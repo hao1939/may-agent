@@ -365,6 +365,7 @@ export function hasConversationExecutionTask(db: SqliteDb, appId: string, taskId
   );
 }
 
+/** Present the current Task attempt; retained inbox leases are historical evidence. */
 export function readActiveAppTurn(
   db: SqliteDb,
   appId: string,
@@ -372,14 +373,13 @@ export function readActiveAppTurn(
 ): AppConversationResource["activeTurn"] {
   const attempt = db
     .prepare(
-      `SELECT a.attempt_id, a.task_generation, a.attempt_json FROM app_tasks t
+      `SELECT a.attempt_id, a.task_generation, a.attempt_json FROM app_inbox_items i
+     JOIN app_tasks t ON t.app_id = i.app_id AND t.task_id = i.execution_task_id
      JOIN app_task_attempts a ON a.app_id = t.app_id AND a.attempt_id = t.current_attempt_id
-     WHERE t.app_id = ? AND t.task_id = (
-       SELECT execution_task_id FROM app_inbox_items
-       WHERE app_id = ? AND conversation_id = ? AND execution_task_id IS NOT NULL LIMIT 1
-     ) AND a.state = 'running'`,
+     WHERE i.app_id = ? AND i.conversation_id = ? AND a.state = 'running'
+     LIMIT 1`,
     )
-    .get(appId, appId, conversationId);
+    .get(appId, conversationId);
   if (attempt) {
     const claimed = parseJson<AppTaskAttempt>(attempt.attempt_json, "Task attempt");
     // Match the claimed batch's reply destination; newly queued input cannot
@@ -402,58 +402,7 @@ export function readActiveAppTurn(
       ...(source?.channelMessageId ? { channelMessageId: source.channelMessageId } : {}),
     };
   }
-  const row = db
-    .prepare(
-      `SELECT id, lease_generation, channel, channel_target_id, channel_thread_id, channel_message_id FROM app_inbox_items
-    WHERE app_id = ? AND conversation_id = ? AND source_kind = 'human'
-      AND status = 'handling' AND lease_owner IS NOT NULL
-    ORDER BY conversation_seq, created_at LIMIT 1`,
-    )
-    .get(appId, conversationId);
-  return row
-    ? {
-        id: String(row.id),
-        revision: Number(row.lease_generation),
-        ...(row.channel ? { channel: String(row.channel) } : {}),
-        ...(row.channel_target_id ? { channelTargetId: String(row.channel_target_id) } : {}),
-        ...(row.channel_thread_id ? { channelThreadId: String(row.channel_thread_id) } : {}),
-        ...(row.channel_message_id ? { channelMessageId: Number(row.channel_message_id) } : {}),
-      }
-    : undefined;
-}
-
-/** Called inside the Host's stop transaction; terminal input cannot restart. */
-export function stopAppInboxTurn(db: SqliteDb, target: AppTurnTarget, now = Date.now()): boolean {
-  if (!Number.isSafeInteger(target.expectedRevision) || target.expectedRevision < 1)
-    throw new Error("Invalid turn revision");
-  const row = db.prepare("SELECT * FROM app_inbox_items WHERE id = ?").get(target.turnId);
-  if (
-    !row ||
-    row.app_id !== target.appId ||
-    row.conversation_id !== target.conversationId ||
-    row.source_kind !== "human" ||
-    row.lease_generation !== target.expectedRevision
-  )
-    throw new Error("Turn control is stale or mismatched");
-  if (row.status === "done") return false;
-  const reason = "Human stopped this turn";
-  db.run(
-    `UPDATE app_inbox_items SET status = 'done', handling = ?, result = ?,
-    available_at = NULL, review_at = NULL, waiting_on_kind = NULL, waiting_on_id = NULL,
-    lease_owner = NULL, lease_expires_at = NULL, completed_at = ?, changed_at = ?, updated_at = ? WHERE id = ?`,
-    [
-      JSON.stringify({ phase: "stopped", reason }),
-      JSON.stringify({
-        summary: reason,
-        response: "Stopped this turn. The ask remains unresolved; already admitted background Tasks continue.",
-      }),
-      now,
-      now,
-      now,
-      target.turnId,
-    ],
-  );
-  return true;
+  return undefined;
 }
 
 /** Unfinished requests created by one exact parent Task generation. */

@@ -288,6 +288,10 @@ test("fresh human input creates a linked successor without rebinding replay or s
   expect(f.store.readCancellation(input.taskId)?.reason).toBe("Historical terminal Conversation");
 
   const successorClaim = f.claim(successor.taskId);
+  f.reopen();
+  expect(readAppConversationResource(f.db, app.id, "chat").activeTurn).toEqual({
+    id: successorClaim.attemptId, revision: successorClaim.generation,
+  });
   let preparedBinding: { appId: string; taskId: string; generation: number; attemptId: string } | undefined;
   await executeConversationTaskTurn({
     config: f.context(),
@@ -311,11 +315,15 @@ test("fresh human input creates a linked successor without rebinding replay or s
     generation: successorClaim.generation,
     attemptId: successorClaim.attemptId,
   });
+  expect(readAppConversationResource(f.db, app.id, "chat").activeTurn).toBeUndefined();
   expect(getAppInboxItem(f.db, "fresh")?.result?.response).toBe("The linked successor handled this turn.");
   expect(readConversationRequest(f.db, app.id, "chat", "successor")).toMatchObject({ status: "open", revision: 1 });
 
   const stopped = f.admit("stop-successor", 3, "Pause this turn");
   const stoppedClaim = f.claim(stopped.taskId);
+  expect(readAppConversationResource(f.db, app.id, "chat").activeTurn).toEqual({
+    id: stoppedClaim.attemptId, revision: stoppedClaim.generation,
+  });
   expect(
     stopConversationTaskTurn(f.context(), {
       appId: app.id,
@@ -325,6 +333,7 @@ test("fresh human input creates a linked successor without rebinding replay or s
     }).taskId,
   ).toBe(successor.taskId);
   expect(getAppInboxItem(f.db, "stop-successor")?.handling).toMatchObject({ phase: "stopped" });
+  expect(readAppConversationResource(f.db, app.id, "chat").activeTurn).toBeUndefined();
 
   const currentSuccessor = f.store.readTask(successor.taskId)!;
   cancelAppTask(f.context(), {

@@ -5,7 +5,7 @@ import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { openDatabase, type SqliteDb } from "../../../lib/db.js";
 import { applyDbSchema } from "../../../lib/db/schema.js";
-import { createAppInboxItem } from "./app-inbox-store.js";
+import { createAppInboxItem, getAppInboxItem } from "./app-inbox-store.js";
 import { claimAppInboxItem, completeAppInboxClaim, waitAppInboxClaim } from "../../../../test/fixtures/legacy-inbox.js";
 import {
   createConversationTopic,
@@ -117,6 +117,30 @@ describe("Conversation store", () => {
     expect(readAppConversationResource(db, "may", "may:primary")).toMatchObject({
       messages: [{ id: "console:1" }, { id: "event:11" }],
     });
+  });
+
+  it("retains historical inbox evidence without presenting its lease as an active Turn", () => {
+    const now = Date.now();
+    createAppInboxItem(db, {
+      id: "old-input",
+      appId: "may",
+      conversationId: "may:primary",
+      conversationSequence: 1,
+      source: { kind: "human", id: "old-message" },
+      input: { kind: "message", data: { message: "Review this work" } },
+      channel: "telegram",
+      channelTargetId: "123",
+      channelMessageId: 42,
+      now,
+    });
+    expect(claimAppInboxItem(db, "old-input", "retired-worker", 60_000, now)).not.toBeNull();
+    const retained = getAppInboxItem(db, "old-input");
+    const conversation = readAppConversationResource(db, "may", "may:primary");
+    expect(conversation.activeTurn).toBeUndefined();
+    expect(conversation.messages).toContainEqual(
+      expect.objectContaining({ id: "old-message", text: "Review this work" }),
+    );
+    expect(getAppInboxItem(db, "old-input")).toEqual(retained);
   });
 
   it("projects only the latest durable command view per adapter surface", () => {

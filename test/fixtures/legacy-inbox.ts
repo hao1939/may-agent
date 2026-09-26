@@ -4,6 +4,7 @@ import type { AppResult } from "@may-agent/sdk";
 import {
   getAppInboxItem,
   type AppInboxItem,
+  type AppTurnTarget,
   type AppInboxHandling,
   type AppInboxWaitKind,
 } from "../../src/app/core/state/app-inbox-store.js";
@@ -251,4 +252,38 @@ function wakeAppInboxItemsWaitingOnScope(
     [now, now, now, waitingOn.kind, waitingOn.id, ...(appId ? [appId] : []), now],
   );
   return result.changes;
+}
+
+/** Retired Stop implementation, used only to seed historical cutover records. */
+export function stopAppInboxTurn(db: SqliteDb, target: AppTurnTarget, now = Date.now()): boolean {
+  if (!Number.isSafeInteger(target.expectedRevision) || target.expectedRevision < 1)
+    throw new Error("Invalid turn revision");
+  const row = db.prepare("SELECT * FROM app_inbox_items WHERE id = ?").get(target.turnId);
+  if (
+    !row ||
+    row.app_id !== target.appId ||
+    row.conversation_id !== target.conversationId ||
+    row.source_kind !== "human" ||
+    row.lease_generation !== target.expectedRevision
+  )
+    throw new Error("Turn control is stale or mismatched");
+  if (row.status === "done") return false;
+  const reason = "Human stopped this turn";
+  db.run(
+    `UPDATE app_inbox_items SET status = 'done', handling = ?, result = ?,
+    available_at = NULL, review_at = NULL, waiting_on_kind = NULL, waiting_on_id = NULL,
+    lease_owner = NULL, lease_expires_at = NULL, completed_at = ?, changed_at = ?, updated_at = ? WHERE id = ?`,
+    [
+      JSON.stringify({ phase: "stopped", reason }),
+      JSON.stringify({
+        summary: reason,
+        response: "Stopped this turn. The ask remains unresolved; already admitted background Tasks continue.",
+      }),
+      now,
+      now,
+      now,
+      target.turnId,
+    ],
+  );
+  return true;
 }
