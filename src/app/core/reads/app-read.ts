@@ -8,6 +8,7 @@ import type {
   TaskView,
 } from "@may-agent/sdk/app";
 import type { AppTaskContext, TaskTree } from "../tasks/app-task-store.js";
+import { projectAppTaskReconciliationEvents } from "../tasks/app-task-context.js";
 import { getExecutionResultFromDb } from "../../../lib/execution-result.js";
 import type { SqliteDb } from "../../../lib/db.js";
 import { getAppInboxItem } from "../state/app-inbox-store.js";
@@ -102,6 +103,25 @@ export function readRuntimeTaskView(
 ): TaskDetail | null {
   const store = opts.taskStateConfig?.resourceStore;
   if (!store) return null;
+  // One synchronous read snapshot, including Condition observations and input.
+  // SAVEPOINT also joins a caller's transaction without taking a writer lock.
+  store.db.exec("SAVEPOINT task_detail_read");
+  try {
+    const result = readTaskDetail(store, taskId, options);
+    store.db.exec("RELEASE task_detail_read");
+    return result;
+  } catch (error) {
+    store.db.exec("ROLLBACK TO task_detail_read");
+    store.db.exec("RELEASE task_detail_read");
+    throw error;
+  }
+}
+
+function readTaskDetail(
+  store: AppTaskContext["resourceStore"],
+  taskId: string,
+  options?: TaskReadOptions,
+): TaskDetail | null {
   // Retained Task state owns current decisions. The fallback below only
   // exposes pre-cutover history when no retained resource exists.
   const acceptedEvidence: TaskDetail["acceptedEvidence"] = {
@@ -121,6 +141,11 @@ export function readRuntimeTaskView(
       store.readTaskConditions(taskId).map((condition) => ({
         id: condition.metadata.id,
         ...structuredClone(condition.spec),
+        observation: {
+          generation: condition.metadata.generation,
+          resourceVersion: condition.metadata.resourceVersion,
+          ...structuredClone(condition.status),
+        },
       })),
       current.resource.status.observedAttemptId ? store.readAttempt(current.resource.status.observedAttemptId) : null,
       current.closed,
@@ -193,6 +218,8 @@ function resourceTaskDetail(
 ): TaskDetail {
   return {
     ...resourceTaskView(resource, phase, closed),
+    resourceVersion: resource.metadata.resourceVersion,
+    pendingEvents: pendingTaskEvents(store, resource.metadata.id),
     currentObligations: currentTaskObligations(store, resource),
     acceptedEvidence,
     ...(resource.metadata.creator ? { creator: structuredClone(resource.metadata.creator) } : {}),
@@ -219,6 +246,14 @@ function resourceTaskDetail(
     ...(resource.spec.outputs ? { outputs: [...resource.spec.outputs] } : {}),
     conditions,
   };
+}
+
+function pendingTaskEvents(store: AppTaskContext["resourceStore"], taskId: string) {
+  const trigger = store.readTrigger(taskId);
+  const events = trigger ? (trigger.events ?? [{ event: trigger.event, observedAt: trigger.observedAt }]) : [];
+  // Match the bounded attempt input window. Remaining input stays pending for
+  // subsequent reconciliation; this is not a complete historical Event reader.
+  return projectAppTaskReconciliationEvents({ events: events.slice(0, 32), eventsTruncated: events.length > 32 });
 }
 
 function encodeTaskCursor(taskId: string): string {

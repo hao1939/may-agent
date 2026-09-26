@@ -148,6 +148,7 @@ async function executeTaskAgent(
   const taskContext = taskExecutionContext(input, definitions);
   const agentOptions = {
     taskContext,
+    contextPrompt: `${appTaskAgentProtocol(descriptor.id)}\n\nThe Task decision brief supplies the current assignment, input, results and obligations. Follow its exact detail references when coverage is incomplete.`,
     taskBinding: taskContext.taskBinding,
     signal: attempt.signal,
     sessionStarted: input.sessionStarted,

@@ -14,6 +14,8 @@ import { streamSimple } from "@earendil-works/pi-ai/compat";
 import { existsSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { createCompactionTransform, type CompactionInfo } from "./compaction.js";
+import type { TaskExecutionContext } from "./task-execution-context.js";
+import { createTaskDecisionContext } from "./task-decision-context.js";
 import { formatBoundedSkillCatalog, invokeCatalogSkill, parseExplicitSkill, type MaySkill } from "./skills.js";
 import type { SubagentDefinition } from "./types.js";
 import { composeGuards, toGuardContext, type BeforeToolCallHook } from "./tools/compose-guards.js";
@@ -205,6 +207,9 @@ export type AgentPreparationOptions = {
   projectRoot: string;
   sessionId: string;
   task: string;
+  /** Optional Host rendering; explicit App context preparation still receives the original task. */
+  contextPrompt?: string;
+  taskContext?: TaskExecutionContext;
   persistentChat?: boolean;
   skill?: string;
   requireFinish?: boolean;
@@ -497,7 +502,7 @@ function prepareExecution(options: AgentPreparationOptions): Omit<PreparedAgentE
   const contextTask: unknown =
     !options.persistentChat && options.definition.contextPreparation
       ? options.definition.contextPreparation({ task })
-      : task;
+      : options.contextPrompt ?? task;
   if (typeof contextTask !== "string" || (task.trim() && !contextTask.trim())) {
     // Reject async adapters under the synchronous contract, but consume their
     // rejection so it cannot escape the caller's ordinary failure handling.
@@ -541,13 +546,16 @@ function prepareExecution(options: AgentPreparationOptions): Omit<PreparedAgentE
           },
         })
       : undefined;
-  const transformContext = compact
+  const taskDecisionContext = options.taskContext ? createTaskDecisionContext(options.taskContext) : undefined;
+  const transformContext = compact || taskDecisionContext
     ? async (messages: AgentMessage[]) => {
         compactInfo = undefined;
-        const compacted = await compact(messages);
+        const compacted = compact ? await compact(messages) : messages;
         if (compacted !== messages) messages.splice(0, messages.length, ...compacted);
         if (compactInfo) options.onCompact?.(compactInfo, messages);
-        return messages;
+        // A disposable provider view: the brief is rebuilt after compaction and
+        // does not accumulate copies in the durable conversation transcript.
+        return taskDecisionContext ? [...messages, await taskDecisionContext()] : messages;
       }
     : undefined;
   const systemPrompt = resolveSystemPrompt(normalizedOptions, tools, requireFinish);

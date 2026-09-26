@@ -114,6 +114,7 @@ export interface RunOptions {
   /** Current fenced App Task attempt exposed only to scoped Task tools. */
   taskBinding?: TaskBinding;
   taskContext?: TaskExecutionContext;
+  contextPrompt?: string;
   /** Runtime that exclusively owns crash recovery for this session. */
   recoveryOwner?: string;
   orderId?: string;
@@ -145,6 +146,7 @@ export type CallAgentOptions = Pick<
   | "projectId"
   | "taskBinding"
   | "taskContext"
+  | "contextPrompt"
   | "recoveryOwner"
   | "stepLabel"
   | "trace"
@@ -582,6 +584,11 @@ export class SubagentManager {
         opts.taskContext.agentDefinitions?.values() ?? [...this.agents.values()].map((agent) => agent.definition),
       );
       task = `${task}\n\n${taskWorkspacePrompt(brief)}`;
+      if (opts.contextPrompt) opts = {
+        ...opts,
+        // If discovery cannot be saved, preserve the full original inline input.
+        contextPrompt: "taskFile" in brief ? `${opts.contextPrompt}\n\n${taskWorkspacePrompt(brief)}` : undefined,
+      };
     }
     const timeoutMs = executionTimeout(opts?.timeoutMs ?? def.timeoutMs, opts?.deadlineAt);
     const sessionId = opts?.sessionId ?? generateId(def.sessionIdPrefix);
@@ -627,6 +634,8 @@ export class SubagentManager {
       sessionId,
       task,
       persistentChat,
+      taskContext: opts?.taskContext,
+      contextPrompt: opts?.contextPrompt,
       skill: opts?.skill,
       requireFinish: opts?.requireFinish,
       outputSchema: opts?.outputSchema,
@@ -1038,6 +1047,7 @@ export class SubagentManager {
       taskContext: opts?.taskContext,
       recoveryOwner: opts?.recoveryOwner,
       stepLabel: opts?.stepLabel,
+      contextPrompt: opts?.contextPrompt,
       timeoutMs: opts?.timeout,
       deadlineAt: opts?.deadlineAt,
       signal: opts?.signal,

@@ -117,6 +117,10 @@ export type TaskView = {
 
 /** Exact desired Task detail returned only by an explicitly scoped get. */
 export type TaskDetail = TaskView & {
+  /** Current resource revision; absent for legacy receipts without a current resource. */
+  resourceVersion?: number;
+  /** Input still awaiting a claim. Reading it does not account for it. */
+  pendingEvents?: TaskReconciliationEvents;
   /** Current timing and exact input obligations; Runtime exact reads report availability explicitly. */
   currentObligations?: TaskCurrentObligations;
   /** Discoverable immutable history; bodies load only through an explicit bounded read option. */
@@ -144,7 +148,18 @@ export type TaskDetail = TaskView & {
   category?: string;
   dependsOn?: string[];
   outputs?: string[];
-  conditions: Condition[];
+  conditions: Array<Condition & {
+    /** Observed facts are separate from the requested Condition specification. */
+    observation?: {
+      generation: number;
+      resourceVersion: number;
+      observedGeneration: number;
+      state: "unknown" | "false" | "true";
+      observed?: unknown;
+      observedAt?: string;
+      facts?: string[];
+    };
+  }>;
 };
 
 export type TaskListOptions = {
