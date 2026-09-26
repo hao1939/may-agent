@@ -148,6 +148,29 @@ source intake settles; freeze the exact heading boundary and preserve the
 existing inbound fragments with exact forwarding links. This recurrence does
 not justify a duplicate report, child task, or dependency.
 
+## Targeted recurrence — 2026-09-26 (`agent-security-enforcement-evidence.md`)
+
+The observer reports 1,654 physical lines; direct `wc -l` measures 1,653
+newline-counted lines. The September 25 active-intake disposition remains the
+smallest safe response:
+
+- Three source-publication commits landed after the prior review, at 02:05,
+  08:05, and 12:04 UTC on September 26.
+- Together they inserted 196 lines and removed ten, a net increase of 186 lines.
+- The three additions are distributed rather than a settled tail: a verifier
+  follow-up near line 199, a sticky sensitive-access transition near line 1085,
+  and a route-coverage study beginning near line 1581.
+- The note now has 20 level-two headings and seven level-three follow-ups. Its
+  latest publication landed about five minutes before this health packet.
+
+**Disposition:** retain the published path for this cycle. This note was itself
+created by a verified split on September 23, and the current growth remains an
+actively changing implementation-evidence catalog rather than a clean second
+companion boundary. Revisit after source intake settles; before moving any
+section, freeze a thematic boundary and preserve every inbound heading fragment
+with an exact forwarding link. This recurrence warrants neither a threshold-only
+split nor a child task.
+
 ## Unsourced INDEX batch — 2026-09-18
 
 The observer reported 200 entries still marked `Not yet sourced` after 34
@@ -166,7 +189,9 @@ recurrence confirms that source intake is still active: four publications added
 new signal. Its proposed boundary still needs explicit heading-forwarding and
 digest-link preservation after intake settles. `agent-runtime-hardening.md`
 remains a broad pattern catalog without a newly verified reusable split boundary.
-The enforcement-evidence companion's dedicated review still defines its
-no-second-split criteria. Other oversized signals are format-appropriate
+The enforcement-evidence companion also remains in active intake: three
+September 26 publications added 186 net lines at distributed positions, with
+the latest only about five minutes before its recurrence signal, so no stable
+second split is yet evidenced. Other oversized signals are format-appropriate
 logs/ledgers or previously reviewed notes. The unsourced backlog received a
 small evidence-checked batch rather than a bulk metric edit.
