@@ -1,6 +1,6 @@
 <ai_context>
 summary: "Rolling review record for oversized canonical notes. Documents why each exceeds the 800-line threshold and whether a split is warranted."
-last_updated: "2026-09-25"
+last_updated: "2026-09-26"
 </ai_context>
 
 # Oversized Notes Tolerance Record — 2026-07-19
@@ -127,6 +127,27 @@ lane stabilizes; the runtime catalog has no newly verified lossless boundary,
 and the enforcement companion's dedicated review already defines the criteria
 for a later second split.
 
+## Targeted recurrence — 2026-09-26 (`agent-evaluation.md`)
+
+The observer reports 2,761 physical lines; direct `wc -l` measures 2,760
+newline-counted lines. This is a current but unchanged-in-kind signal, not a safe
+split window:
+
+- Four source-publication commits touched the note after the September 25 review,
+  at 20:03, 20:06, and 22:03 UTC on September 25 and 00:05 UTC on September 26.
+- Together they inserted 201 lines and removed two, a net increase of 199 lines.
+- The note now has 70 level-three headings. The four new patterns—Vigiles,
+  Caliper, AgentLens, and an imagined-grader pattern—were inserted at multiple
+  positions within `Durable Patterns`, rather than forming one settled tail.
+- The newest source publication landed about ten minutes before this observer
+  packet, so the active-intake reason recorded on September 25 still applies.
+
+**Disposition:** retain the published path and do not perform a threshold-only
+split. Reconsider the already-planned verdict-and-evidence companion only after
+source intake settles; freeze the exact heading boundary and preserve the
+existing inbound fragments with exact forwarding links. This recurrence does
+not justify a duplicate report, child task, or dependency.
+
 ## Unsourced INDEX batch — 2026-09-18
 
 The observer reported 200 entries still marked `Not yet sourced` after 34
@@ -139,12 +160,13 @@ not a claim that every source was freshly retrieved during this review.
 ## Current summary
 
 The previously recommended diagnostic-layers split is complete.
-`agent-evaluation.md` remains the next split candidate, but the September 25
-recurrence confirms that source intake is still active and that its proposed
-boundary needs explicit heading-forwarding and digest-link preservation.
-`agent-runtime-hardening.md` remains a broad pattern catalog without a newly
-verified reusable split boundary. The enforcement-evidence companion also
-received a source publication effectively with the current observer packet, so
-its dedicated no-second-split criteria still apply. Other oversized signals are
-format-appropriate logs/ledgers or previously reviewed notes. The unsourced
-backlog received a small evidence-checked batch rather than a bulk metric edit.
+`agent-evaluation.md` remains the next split candidate, but the September 26
+recurrence confirms that source intake is still active: four publications added
+199 net lines after the prior review, including one about ten minutes before the
+new signal. Its proposed boundary still needs explicit heading-forwarding and
+digest-link preservation after intake settles. `agent-runtime-hardening.md`
+remains a broad pattern catalog without a newly verified reusable split boundary.
+The enforcement-evidence companion's dedicated review still defines its
+no-second-split criteria. Other oversized signals are format-appropriate
+logs/ledgers or previously reviewed notes. The unsourced backlog received a
+small evidence-checked batch rather than a bulk metric edit.
