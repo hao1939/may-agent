@@ -3,8 +3,10 @@
 **Design status:** Accepted.
 **Implementation status:** Implemented, including per-turn trace propagation,
 fail-closed start persistence, and terminal error persistence. Shared execution
-limits, scoped helpers and explicit standalone recovery are a
-[locally tested candidate](../archive/reviews/execution-consolidation-poc-20260914.md), not deployed behavior.
+limits, scoped helpers and explicit standalone recovery were merged in #186
+as `91ed9ca6`. The [earlier trial](../archive/reviews/execution-consolidation-poc-20260914.md)
+retains its original scope and limits; source status does not establish the
+deployed artifact.
 
 ## The Model
 
@@ -259,3 +261,19 @@ chat-turn path (`running → idle`) rather than the bounded job path
 Periodic App review uses ordinary input, Task, and attempt execution. See
 [Heartbeat](heartbeat.md) for liveness signals and [Cron](cron.md) for optional
 time-based input production; neither defines a session kind.
+
+## Tool discovery and exact identity
+
+The agent tool describes bounded helpers owned by the live caller. Both `call`
+and `fork` take `task`; scheduling priority belongs to durable work policy,
+not a no-op helper argument. Message priority remains receiver context.
+Tools should expose implemented controls and derive parameter types from the
+same schema given to the model. Session list results retain exact IDs for
+subsequent reads or permitted control; only human-readable previews shorten.
+[#237](https://github.com/hao1939/may-agent/pull/237) implements this cleanup.
+
+Completion suggestions are saved evidence, not activated behavior. The daemon
+registers digest and last-session writers. The unregistered context updater
+and file-read tracker are removed by candidate
+[#238](https://github.com/hao1939/may-agent/pull/238); historical rows and saved
+completion facts remain. See the [reporting/adoption convention](../2b-manual/agent-convention.md#reporting-is-not-adoption).

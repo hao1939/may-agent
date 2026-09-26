@@ -2,17 +2,18 @@
 
 **Design status:** Accepted.
 **Implementation status:** SQLite holds canonical work and admission state;
-files hold full execution artifacts. Bounded read projections coexist with
-those authorities. The Conversation state API below consolidates existing
-guarantees; #129 extracted their shared state operations. The focused source review used Host
-`99bc1a31` on September 10, 2026.
+files hold full execution artifacts. Conversation execution uses the shared
+Task claim and settlement lifecycle introduced in #158; Task outcome/closure
+simplification landed in #168. This source review uses Host `0ddad3aa` on
+September 27, 2026. Source status does not establish the deployed artifact.
 
-The [inbox/Conversation implementation review](../proposals/storage-state-service.md#candidate-review-and-landing-order)
-records the state/handler extraction, merged in #129 as `0bedd93a`, and its
-actual code map. This updates the source boundary; deployment remains separate.
-The [one-lifecycle baseline](../proposals/conversation-input-unification.md)
-moves Conversation execution authority into Task claims and settlement. It needs
-the changes identified below; they are not yet source guarantees.
+The [storage extraction review](../proposals/storage-state-service.md#candidate-review-and-landing-order)
+retains the earlier #129 boundary work. The
+[one-lifecycle baseline](../proposals/conversation-input-unification.md)
+is implemented, rather than a pending inbox-to-Task migration. Candidate
+[#235](https://github.com/hao1939/may-agent/pull/235) completes the active-Turn
+read alignment by removing historical lease fallback and finding running
+successor Tasks.
 
 ## Decision
 
@@ -192,16 +193,17 @@ uses a Task claim as the single authority for Conversation execution. Ordered
 input and caller correlation remain; an inbox row must not hold a second
 independent execution claim. Fenced Task settlement composes typed conversation
 operations so the input outcome, explanation and Request closure commit together.
-This does not require one table or a generic CRUD/settlement API. The current
-inbox-claim operations below describe the source that must migrate.
+This does not require one table or a generic CRUD/settlement API.
+`core/state/conversation-task-turns.ts` composes the current operations; the
+historical inbox claim fields are retained evidence, not live authority.
 
-Task reads will distinguish accepted outcomes, pending work and explicit closure.
+Task reads distinguish accepted outcomes, pending work and explicit closure.
 A caller waits for its exact assignment's outcome, not resource closure; stored
 input/generation/result references prevent an old result satisfying a new ask.
 Owner closure prevents claims and stale settlement while preserving evidence and
 visible non-success for unresolved work. It must not imply Request fulfillment.
-These storage changes are pending; current receipts and mode semantics remain
-readable until the coordinated migration.
+Retained legacy receipts remain readable; they do not reinstate the retired
+mode or inbox execution lifecycle.
 
 Group the API by what the caller needs to accomplish:
 
@@ -210,21 +212,22 @@ Group the API by what the caller needs to accomplish:
 | Read Conversation | Return bounded messages, active Turn with its human/system origin, and related context; paging must use stable identities |
 | Read/list accepted Requests | Scope by App/Conversation; page open asks and read an exact full scope, revision, links and closure |
 | Find/read Topics | Return bounded context and exact Task references; Topic has no work status |
-| Accept a Turn decision | Check the current inbox claim (target: the conversation Task attempt fence); save the validated decision, Topic changes and accepted/refined Request versions together before handoff |
+| Accept a Turn decision | Check the Conversation Task attempt fence; save the validated decision, Topic changes and accepted/refined Request versions together before handoff |
 | Admit Task with conversation links | Commit Task admission and supplied Topic/Request links together, checking current authority and Request revision |
 | Complete a Turn | Commit input result, completion and any Request closure with durable answer evidence; failure/Stop never implies fulfillment |
-| Admit a linked Task review (pending) | Validate saved links and source; reuse identity for the same Task change and Conversation/Topic, distinguishing a newly linked or revised Request |
-| Complete a system review (pending) | Use normal Turn completion, recording handled evidence and the observed Request revision; allow a quiet outcome without a message or closure |
-| Find missed follow-up (pending) | Return a bounded, progressing page of unhandled linked outcomes/decisions; honor pending, handled, stopped and exhausted input dispositions |
+| Admit a linked Task review | Validate saved links and source; reuse identity for the same Task change and Conversation/Topic, distinguishing a newly linked or revised Request |
+| Complete a system review | Use normal Turn completion, recording handled evidence and the observed Request revision; allow a quiet outcome without a message or closure |
+| Find missed follow-up | Return a bounded, progressing page of unhandled linked outcomes/decisions; honor pending, handled, stopped and exhausted input dispositions |
 
-These are operation families, not new exported signatures. The pending review
-operations extend the existing inbox and result evidence, not a new queue or
-subscription table. The current `recordConversationTaskOutcome` operation
-still commits the supervision Task's explanation and Request updates together;
-its exclusive projection path retires only when the unified consumer replaces
-it. Retain any shared transaction helpers used by ordinary completion.
+These are operation families. `admitConversationTaskInput` attaches input to
+its Task; `updateConversationTaskRequest` and `completeConversationTaskTurn`
+fence updates through the current attempt. `listPendingConversationTaskChanges`
+and `admitConversationTaskChange` recover linked outcomes through the same
+input route. Completion commits Request updates, durable explanations and
+handled-change evidence together. There is no separate supervision Task or
+`recordConversationTaskOutcome` completion path.
 
-Stop keeps its exact-turn meaning; the target enforces it through the common
+Stop keeps its exact-turn meaning; `stopConversationTaskTurn` enforces it through the common
 Task attempt/input fence instead of a separate inbox execution authority. Topic
 creation and Request updates join their enclosing operation; callers must not sequence independent saves to
 manufacture atomicity.
@@ -239,8 +242,8 @@ not require a new messages table or an independently successful adapter send.
 Repeated accepted operations reuse existing identity/version checks. Retain one
 writer for each fact, and never reconstruct accepted asks by guessing from chat.
 
-Events admit human input and, under the pending shared-input route, linked
-Task reviews. They also announce meaningful changes. After commit,
+Events admit human input and linked Task reviews through the shared-input
+route. They also announce meaningful changes. After commit,
 `conversation.updated` tells readers to reread state. Losing a presentation hint
 must not lose the result. A wake that creates work must retain its existing
 durable admission/recovery guarantee; it is not merely a best-effort UI callback.

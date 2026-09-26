@@ -1,13 +1,12 @@
 # Simplify the system: fewer paths, clear owners
 
-**Status:** Task/HTTP, caller-feedback, script-retirement and event-delivery
-changes are merged. Independent tool cleanup remains an unmerged candidate;
-workflow redo and provider-facing delivery still need their separate evidence.
-**Reviewed:** September 18, 2026, against local Host `main` `dd548cab` for source
-status. The September 12 review at `f6a11d1c` (#172), earlier #129/#164 findings
-and candidate checks below retain their dated evidence. They are not a new
-implementation backlog or fresh validation. Source review does not identify
-the deployed release.
+**Status:** Task/HTTP, caller-feedback, script-retirement, event-delivery and
+checkpoint/tool-state cleanup are merged. The September 27 repository-wide
+cleanup is a set of review candidates; see its inventory below. Workflow redo
+and provider-facing delivery still need their separate evidence.
+**Reviewed:** September 27, 2026, against Host `0ddad3aa`. Earlier dated findings
+and candidate checks below remain historical evidence, not a fresh backlog or
+proof of the deployed release.
 
 Make ordinary conversation and authorized work easier to understand, change and
 operate at acceptable total cost. Directory organization now has an explicit
@@ -29,13 +28,13 @@ to reduce the line count.
 | Shared execution and ownership | Conversation already executes through one stable Task in merged #158; child-wait retirement, component layout and core policy cleanup are also merged. Do not repeat those changes. |
 | Task outcome names, vocabulary and execution path | [#168](https://github.com/hao1939/may-agent/pull/168) integrated [#170](https://github.com/hao1939/may-agent/pull/170) and [#171](https://github.com/hao1939/may-agent/pull/171), merged as `c0cbb59e`. Preserve its paired App contract and retained-state verification; do not reimplement the stack. |
 | Session review UI ownership | [#173](https://github.com/hao1939/may-agent/pull/173) integrated in `c0cbb59e`: HTTP-owned generation and inline feedback writes were removed; historical notes and the existing Evaluation App action remain. This deliberately gives up inline corrections, without claiming an equivalent replacement. |
-| Independent tool-state cleanup | Apply checkpoint numbering from retained session evidence, one shared test declaration, and removal of the advertised obsolete CLI reuse choice. See [candidate and verification](#independent-tool-cleanup). No Task schema or controller changes. |
+| Independent tool-state cleanup | Merged in #198 as `28670dd2`: retained checkpoint numbering, one test declaration and removal of obsolete CLI reuse discovery. The [candidate evidence](#independent-tool-cleanup) is historical; do not reimplement it. |
 | Caller feedback and retired experiments | #169 merged as `b1c7cbef`; #174 merged as `649d801c`. Preserve caller reports and the supported checks without restoring `scripts/poc/`. |
 | Duplicate event delivery | #175 merged as `e38d2861`. Retain exact per-Task delivery identities; [Events](../2a-design/events.md#duplicate-delivery-and-safe-reconsideration) owns the common contract. |
 | Workflow redo, model-quality comparison and App-owned delivery | Deferred experiments with the explicit evidence/authority requirements below. They do not block the independent cleanup or authorize deployment. |
 
-Resume the independent tool candidate against current `main`. Preserve the
-already merged CLI vocabulary changes from #170 during integration.
+Review the September 27 candidates against current `main`. Preserve the
+already merged execution, Task and checkpoint contracts during integration.
 The historical sections below explain prior decisions. The table above and
 [remaining work](#remaining-work) are the current plan.
 
@@ -518,7 +517,7 @@ Task algorithm rewrites and the remaining feature reductions require separate de
 
 | Work | Boundary and next proof |
 | --- | --- |
-| Finish independent tool cleanup | Refresh the retained candidate; repeat the four previously reproduced checkpoint regressions and check one test declaration and honest CLI discovery. Complete full local/hosted checks and review before merge. |
+| Complete repository hygiene review | Review the September 27 candidates below and their current checks. Check actual consumers before retiring the retained compatibility boundaries. |
 | Further HTTP organization | Directory moves #141/#142 are merged. Extract a retained route family only when its responsibility is clearer; #173's feature removal does not claim the server has been split. |
 | Review workflow redo | Select one real workload and measure discarded effort and effect risk before removing reuse. |
 | Measure the context cleanup's behavioral effect | Compare baseline and candidate on the same small conversation cases. Existing scripted regressions establish supplied context and mechanics, not improved model judgment. |
@@ -652,3 +651,54 @@ remain separate from these source checks.
 PR #142 was rebased onto the squash merge of #141 on September 11. Candidate
 `b8297fad` has the same source tree as `7754e376`; only its ancestry changes.
 The PR now targets `main` directly, without replaying the merged core commits.
+
+## September 27 repository-wide hygiene review
+
+The scope covers runtime, agent tools, adapters, storage, packages, scripts,
+tests and documentation. A legacy-name search is an inventory, not evidence of
+dead code. Trace production callers, sibling Apps, persisted data and current
+design before deleting a path. This is a source review; no installed records
+are moved, no deployment is inferred and no new recovery mechanism is added.
+
+| Candidate | Change and value | Compatibility / cost |
+| --- | --- | --- |
+| [#233](https://github.com/hao1939/may-agent/pull/233) | Extract existing HTTP read routes into a focused module. | Response contracts stay intact; Task and Conversation remain distinct read views of shared execution. |
+| [#235](https://github.com/hao1939/may-agent/pull/235) | Derive active Turns from linked Tasks' current running attempts, including successors; remove historical inbox-lease authority and the unused production Stop helper. | Preserve historical rows and offline cutover fixtures; verify restart, successor and Telegram Stop behavior. |
+| [#236](https://github.com/hao1939/may-agent/pull/236) | Remove the unused maintenance workflow-launch adapter, its App-path discovery, manager dependency and redundant capability wrapper. | Named handler capabilities remain; standalone workflow execution uses its existing entry point. Retire adapter-only tests. |
+| [#237](https://github.com/hao1939/may-agent/pull/237) | Remove ignored tool controls and redundant parameter declarations; return full session IDs that can be used for evidence reads. | `task` is the call/fork argument; retired message actions still explain the supported tools. Message priority and tool-call context files keep their real behavior. |
+| [#238](https://github.com/hao1939/may-agent/pull/238) | Remove unregistered context/file-read subscribers and tests that described them as production; keep result suggestions and real completion/recovery coverage. | Removes optional private helper imports. No current caller found; historical file-read rows and read views remain. Reporting does not become automatic adoption. |
+| [#239](https://github.com/hao1939/may-agent/pull/239) | Wait for both Telegram destinations before asserting both received a notification. | Repairs a test race exposed by full CI; no production change, fixed sleep or retry. |
+| [#240](https://github.com/hao1939/may-agent/pull/240) | Preserve the complete declared maintenance event envelope through the existing canonical builder; remove a narrower duplicate method signature. | Trace, visibility, action and routing coexist. The regression checks published metadata and persisted trace links; no new schema or mechanism. |
+
+These are independent main-based PRs. Merge the small test correction first;
+review the source changes separately and refresh any branch that conflicts.
+The source guides travel with their owning changes. Canonical storage,
+scheduling and reporting/adoption notes live here. Candidate status does not
+mean deployed behavior or measured improvement in model judgment.
+
+Retained boundaries and next review targets:
+
+- SDK `owner`/result aliases and the `requests.ts` facade still have sibling
+  source consumers. Migrate callers before removing exports.
+- `context_files` in agent definitions is still declared by installed Apps,
+  including a nonempty judge configuration; its mapped `contextFiles` has no
+  execution reader. Resolve that knowledge/context contract with the owning
+  App, then remove the ignored configuration. Tool-call `context_files` is a
+  different, working feature and remains.
+- Historical inbox leases, CLI upgrade fences, old Task receipt/hash formats
+  and retained session restrictions protect upgrades or preserve evidence.
+  Remove them only with an explicit supported-upgrade decision.
+- Gym scripts and the direct-agent entry have actual external callers. Their
+  removal needs a coordinated migration of the consumer and result store.
+- HTTP project discovery, workflow history and the `file_reads` table serve
+  historical views. UI hash aliases preserve links. Retire a view only after
+  identifying its replacement or explicitly accepting the loss.
+- The commit guard still understands installation and old agent-repository
+  layouts. Its layout-specific path assumptions need a separate demonstrated
+  repair; deleting the fallback alone would not make it generic.
+
+Full suites retain failures and skips in their evidence. The first #236 run
+exposed the #239 race: it waited for either chat and asserted both. That is a
+validation defect, not proof that removing the maintenance adapter lost a
+notification. Regression checks exercise production boundaries; tests that
+only instantiate removed functionality are retired with that functionality.
