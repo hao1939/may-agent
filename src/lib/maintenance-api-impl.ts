@@ -134,7 +134,11 @@ export function buildMaintenanceAPI(deps: MaintenanceAPIDeps): MaintenanceAPI {
       };
     },
 
-    emit(type, data, envelope): void {
+    emit(
+      type: string,
+      data?: Record<string, unknown>,
+      envelope?: Parameters<MaintenanceAPI["emit"]>[2],
+    ): void {
       deps.bus.emit(
         buildCanonicalEventEnvelope(
           type,
