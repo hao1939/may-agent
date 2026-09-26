@@ -2,7 +2,7 @@
 summary: "Entry point for Scout's project-owned knowledge library. Use this before creating or updating Scout-local knowledge notes."
 triggers: ["scout knowledge", "agent architecture research", "multi-agent trends", "XHS trends", "knowledge library maintenance"]
 last_updated: "2026-09-25"
-source_basis: "Maintained index of Scout canonical notes, companion notes, findings, and durable reports. Current navigation includes source-grounded finding batches through 2026-09-24 and the §37–§40 Agent Evaluation Research: Diagnostic Layers companion without duplicating the full index. Runtime task, credential, backlog, and health status belongs in the project UI or dated reports."
+source_basis: "Maintained index of Scout canonical notes, companion notes, findings, and durable reports. Current navigation includes source-grounded finding batches through 2026-09-25 and the §37–§40 Agent Evaluation Research: Diagnostic Layers companion without duplicating the full index. Runtime task, credential, backlog, and health status belongs in the project UI or dated reports."
 findings_date_convention: "Use the actual observation date in YYYY-MM-DD filenames; never create a future-dated finding."
 </ai_context>
 
@@ -73,6 +73,12 @@ Migration and project-operation artifacts live outside `knowledge/`:
 ### 2026-09-25
 
 - [Agent file exchange needs grant identity after execution starts](./findings/2026-09-25-grant-scoped-agent-files.md) — pinned Nanocodex source carries grant identity through immutable input receipts, retained turn ownership, artifact publication, and exact retrieval routes, while explicitly leaving shared execution memory outside that isolation boundary; tests were inspected but not run.
+- [Agentic fuzzing needs separate search, measurement, and containment boundaries](./findings/2026-09-25-agentic-fuzzing-evidence-loop.md) — first-party documentation and pinned repository metadata show persistent campaigns, distinct search and measurement builds, plateau stopping, and a disposable outer-containment requirement; Scout did not run the pipeline or reproduce its reported crashes.
+- [Self-evolving recommendation uses two experiment cadences](./findings/2026-09-25-self-evolving-recommendation-dual-cadence.md) — a complete XHS explainer separates frequent offline proposals from slower online admission and a durable experiment journal, but the underlying paper, code, and reported performance were not verified.
+
+#### Prior finding extended on 2026-09-25
+
+- [Long-horizon agents survey and proactive reminding](./findings/2026-07-21-xhs-long-horizon-agents-survey.md) — a body-level XHS follow-up frames long horizons as checkpointed recovery and cross-task learning rather than elapsed time; the underlying survey was not inspected.
 
 ### 2026-09-24
 
