@@ -1,8 +1,8 @@
 <ai_context>
-summary: "Implementation-evidence companion to agent-security-verified-enforcement.md. Uses pinned repositories, disclosures, and deployed-system reports to separate signed claims from replayable evidence; receipt validity from verifier isolation and claim scope; verifier correctness from adversarial agent resistance; receipt integrity from completeness; configured policy from covered paths; identity enrollment from per-request proof; formal models from unsupported surfaces; observed egress from blocking; stable tool digests from equivalent semantics; policy verdicts from effect ownership; counterfactual actions from execution authority and real effect accounting; authorization receipts from effect gates; declared mediation architecture from per-effect path evidence; narrated results from positive execution evidence; sandbox isolation from configuration coherence; stop requests from observed quiescence; frozen eval inputs from stable comparison units; untrusted analysis failure from trusted configuration degradation; human approval records from end-to-end effect binding; and effect-owning execution routes from provider-reported hook correlation and ambient process coverage."
-triggers: ["SkillProof", "MCP server verification", "replayable evidence", "action receipt", "signed receipt", "evidence completeness", "MAX Authorization Sandbox", "signed policy", "adversary capability", "rollback state", "Pipelock", "HELM AI Kernel", "offline verifier", "verifier isolation", "claim-typed verification", "PassControl", "sender proof", "bearer visa", "authentication assurance", "default deny", "fail closed", "shell hook", "guardrail regression test", "OpenShell prover", "SMT containment", "path composition", "egress firewall", "uninspected egress", "tool identity", "tool pin", "schema canonicalization", "shadow mode", "mediation ownership", "counterfactual action", "observed policy action", "real effect accounting", "ctrlrun", "HOL Guard", "Action Evidence Package", "AEP sandbox", "Codex sandbox", "Overpatch", "Heapjack", "authority derivation", "Meta Muse", "local configuration authority", "APEXA", "execution integrity", "tool execution evidence", "BoxLite", "micro-VM", "sandbox configuration coherence", "guest network", "host jailer grants", "Hard Stop", "SIGSTOP", "process group preemption", "quiescence receipt", "run-assert-eval", "ASSERT", "Agent Control Specification", "fixed evaluation", "applicable denominator", "paired comparison", "safety helpfulness split", "CC Safety Net", "analysis budget", "configuration degradation", "typed failure policy", "emisar", "approval binding", "bridge attestation", "pack hash", "Aegis", "exact action policy", "provider hook correlation", "direct child execution", "route coverage"]
+summary: "Implementation-evidence companion to agent-security-verified-enforcement.md. Uses pinned repositories, disclosures, and deployed-system reports to separate signed claims from replayable evidence; receipt validity from verifier isolation and claim scope; verifier correctness from adversarial agent resistance; receipt integrity from completeness; configured policy from covered paths; identity enrollment from per-request proof; formal models from unsupported surfaces; observed egress from blocking; static egress policy from irreversible post-sensitive-access session restriction; stable tool digests from equivalent semantics; policy verdicts from effect ownership; counterfactual actions from execution authority and real effect accounting; authorization receipts from effect gates; declared mediation architecture from per-effect path evidence; narrated results from positive execution evidence; sandbox isolation from configuration coherence; stop requests from observed quiescence; frozen eval inputs from stable comparison units; untrusted analysis failure from trusted configuration degradation; human approval records from end-to-end effect binding; and effect-owning execution routes from provider-reported hook correlation and ambient process coverage."
+triggers: ["SkillProof", "MCP server verification", "replayable evidence", "action receipt", "signed receipt", "evidence completeness", "MAX Authorization Sandbox", "signed policy", "adversary capability", "rollback state", "Pipelock", "HELM AI Kernel", "offline verifier", "verifier isolation", "claim-typed verification", "PassControl", "sender proof", "bearer visa", "authentication assurance", "default deny", "fail closed", "shell hook", "guardrail regression test", "OpenShell prover", "SMT containment", "path composition", "egress firewall", "uninspected egress", "session-aware egress", "sensitive-source transition", "sticky egress restriction", "tool identity", "tool pin", "schema canonicalization", "shadow mode", "mediation ownership", "counterfactual action", "observed policy action", "real effect accounting", "ctrlrun", "HOL Guard", "Action Evidence Package", "AEP sandbox", "Codex sandbox", "Overpatch", "Heapjack", "authority derivation", "Meta Muse", "local configuration authority", "APEXA", "execution integrity", "tool execution evidence", "BoxLite", "micro-VM", "sandbox configuration coherence", "guest network", "host jailer grants", "Hard Stop", "SIGSTOP", "process group preemption", "quiescence receipt", "run-assert-eval", "ASSERT", "Agent Control Specification", "fixed evaluation", "applicable denominator", "paired comparison", "safety helpfulness split", "CC Safety Net", "analysis budget", "configuration degradation", "typed failure policy", "emisar", "approval binding", "bridge attestation", "pack hash", "Aegis", "exact action policy", "provider hook correlation", "direct child execution", "route coverage"]
 last_updated: "2026-09-26"
-source_basis: "Pinned-source implementation studies and disclosures reviewed 2026-09-10 through 2026-09-26: SkillProof f5ddb4b, MAX Authorization Sandbox 380efe6, Pipelock f7d1816, HELM AI Kernel fe122d4, agent-guardrails-kit 18c241e, PassControl f9cb702, OpenShell df0ee1a, k8s-rca-agent 29f5fad, secure-agent 017ec5a, Rul1an/assay 900e536, Soup Wall be8db48, HOL Guard 56faea4 and f5d568f, ctrlrun 8ebc5a8, aep-sandbox 3495e27, BoxLite 9e9436e, Hard Stop 45c31bc, responsibleai/ASSERT 0628e25, CC Safety Net 0439757, AndrewDryga/emisar ac0d942, antropos17/Aegis 6cae92e, HN items 49795755, 49802030, 49830567, 49834450, 49834720, 49840107, 49841469, and 49844056 with their linked primary sources, plus arXiv 2609.24165v1 and 2609.29808v1 (abstracts and full HTML). Each section states its own evidence boundary."
+source_basis: "Pinned-source implementation studies and disclosures reviewed 2026-09-10 through 2026-09-26: SkillProof f5ddb4b, MAX Authorization Sandbox 380efe6, Pipelock f7d1816, HELM AI Kernel fe122d4, agent-guardrails-kit 18c241e, PassControl f9cb702, OpenShell df0ee1a, k8s-rca-agent 29f5fad, secure-agent 017ec5a, Rul1an/assay 900e536, Soup Wall be8db48, HOL Guard 56faea4 and f5d568f, ctrlrun 8ebc5a8, aep-sandbox 3495e27, BoxLite 9e9436e, Hard Stop 45c31bc, responsibleai/ASSERT 0628e25, CC Safety Net 0439757, AndrewDryga/emisar ac0d942, antropos17/Aegis 6cae92e, HN items 49795755, 49802030, 49830567, 49834450, 49834720, 49840107, 49841469, 49844056, and 49855568 with their linked primary sources, plus arXiv 2609.24165v1 and 2609.29808v1 (abstracts and full HTML). Each section states its own evidence boundary."
 </ai_context>
 
 # Agent Security: Enforcement Evidence and Runtime Coverage
@@ -1081,6 +1081,57 @@ did not inspect Muse source or binaries, operate the product, reproduce the
 published architecture, access Meta's private red-team evals, or verify the bug
 bounty results. Treat the post as a detailed vendor claim and test-plan source,
 not an independent security audit or proof of complete mediation.
+
+### Follow-up: sensitive access should be a sticky session transition, not a per-call guess
+
+**HN:** https://news.ycombinator.com/item?id=49855568
+
+**Primary source:** https://a16y.ai/blog/securing-ai-agents-when-no-human-is-watching
+
+Autonomous Security describes a related control with one useful refinement: the
+agent's network authority changes after the first declared sensitive-source
+access. Before that transition, the background coding agent uses its ordinary
+network policy. After it queries a production database, log system, or other
+administrator-marked sensitive source, the session may communicate only with
+destinations approved in advance for that workflow. The restriction is one-way
+for the rest of the session. Approved repository pushes, pull-request creation,
+and internal-service calls can continue; arbitrary websites and newly discovered
+remote tools cannot become exfiltration routes.
+
+That is stronger than independently classifying each later request. A detector
+does not need to infer whether the model was prompt-injected or whether a
+particular outbound payload contains a secret. The trusted runtime records a
+security-relevant state transition—`sensitive source accessed`—and monotonically
+narrows the egress set. Credentials for production systems remain behind an
+MCP/API gateway, while runtime interception is intended to cover file, shell,
+and local-tool activity that the gateway cannot see.
+
+The reusable pattern is a **sticky authority transition**:
+
+1. administrators declare which access paths can introduce sensitive data;
+2. the effect-owning mediator records when one of those paths succeeds;
+3. that event irreversibly narrows the session's allowed destinations; and
+4. the restricted state persists across later tool calls, subprocesses, and
+   agent-generated code until the session ends.
+
+This complements Meta Muse's taint-based loss of automatic egress above. The
+narrower source-declaration design avoids asking a content classifier whether
+each response is sensitive, but shifts assurance to trigger coverage and state
+integrity. A deployment still needs tests for alternate access paths, concurrent
+processes, pre-existing connections, redirects and DNS changes, session restart
+or checkpoint restore, broker failure, and every destination that remains on the
+post-transition allow-list. Otherwise “restricted after sensitive access” can be
+true for the advertised gateway path while another process or restore path keeps
+the earlier authority.
+
+**Evidence boundary:** this is a complete reading of a vendor-authored design
+article surfaced by a two-point, zero-comment HN submission. The article says the
+three layers are used on the vendor's own unattended engineering agents, but it
+provides no source code, configuration, test corpus, bypass evaluation, incident
+counts, or measured false-positive/false-negative results. Scout did not operate
+the product or independently verify that the transition is immutable or that all
+egress paths are mediated. Treat this as a concrete architecture pattern and
+verification checklist, not production proof or comparative evidence.
 
 ## Reported Results Need Positive Evidence of Execution (APEXA, arXiv, September 2026)
 
