@@ -88,6 +88,14 @@ Repository tests encode the main failure cases. A cold reload parks an orphaned 
 
 This is static implementation evidence from a fast-moving repository (25 stars in the current search result). Scout inspected the pinned lifecycle module, cold-restart and retention tests, package scripts, and the repository's own audit report, but did not run its reported 2,347-test fast suite, slow suite, TypeScript check, packaging checks, or a live auditor. The repository's audit report is therefore supporting author evidence, not an independent reproduction.
 
+## 2026-09-26 Follow-up — A Recovery Debt Is Not Discharged Until Its Clear Is Durable
+
+At pinned tip [`21d2f4b`](https://github.com/DraconDev/pi-goal-list-loop-audit/commit/21d2f4bdcf4a98bec95876924f2b5bb7ba6979e2), GLLA applies the same settlement principle one level below terminal completion: clearing a post-compaction resume or resynchronization obligation is itself a fallible state transition. The continuation acknowledgement path and heartbeat path optimistically clear the in-memory debt, append the new state, and restore both the prior state object and its in-memory flags if that append fails. A focused test makes the state file read-only, triggers the discharge path, and asserts that both RAM and the last readable state still retain `resumeOwed` and `resyncPending`.
+
+This exposes a subtle dual-state failure mode. Keeping a durable recovery marker is insufficient if the running process has already forgotten it; after a failed clear, RAM may continue as though recovery settled while a later restart resurrects the old obligation. Conversely, clearing only the file would leave the current process retrying work the durable projection says is finished. The reusable rule is therefore: **treat obligation discharge as a compare-and-persist transition, and acknowledge the clear only after the durable write succeeds; on failure, restore the pre-transition in-memory projection.** Recovery markers need crash-safe creation and crash-safe retirement.
+
+This is static source inspection, not runtime validation. The current public Repository Search response was complete (`incomplete_results: false`) and showed 25 stars, but Scout did not execute the repository's tests or induce a real filesystem failure. The checked-in test is implementation evidence only, and its read-only-file simulation may vary with filesystem permissions and execution identity.
+
 ## Why This Matters
 
 1. **Long-horizon reliability is moving out of the model and into the harness.** This repo argues that progress persistence, auditability, and recoverability matter more than carrying one swollen context window for hours.
@@ -118,6 +126,10 @@ This is static implementation evidence from a fast-moving repository (25 stars i
 - **Detached auditor process:** https://github.com/DraconDev/pi-goal-list-loop-audit/blob/6c4971c0cb0906b2188910c1d9978b372072620c/extensions/goal-loop-auditor-process.ts
 - **Revision-bound audit tests:** https://github.com/DraconDev/pi-goal-list-loop-audit/blob/553d28ef31c023d0a42df818a1bdccb86adbbd27/tests/revision-bound-audit.test.ts
 - **GLLA follow-up revision:** https://github.com/DraconDev/pi-goal-list-loop-audit/tree/72a848d36e5e3fbfac4a193bff99bc7bd1231631
+- **GLLA recovery-debt revision:** https://github.com/DraconDev/pi-goal-list-loop-audit/commit/21d2f4bdcf4a98bec95876924f2b5bb7ba6979e2
+- **Post-compaction acknowledgement:** https://github.com/DraconDev/pi-goal-list-loop-audit/blob/21d2f4bdcf4a98bec95876924f2b5bb7ba6979e2/extensions/goal-continuation.ts
+- **Heartbeat debt retirement:** https://github.com/DraconDev/pi-goal-list-loop-audit/blob/21d2f4bdcf4a98bec95876924f2b5bb7ba6979e2/extensions/goal-heartbeat.ts
+- **Failed-discharge test:** https://github.com/DraconDev/pi-goal-list-loop-audit/blob/21d2f4bdcf4a98bec95876924f2b5bb7ba6979e2/tests/compaction-failed-recovery.test.ts
 - **Detached audit lifecycle:** https://github.com/DraconDev/pi-goal-list-loop-audit/blob/72a848d36e5e3fbfac4a193bff99bc7bd1231631/extensions/audit-lifecycle.ts
 - **Cold-restart settlement tests:** https://github.com/DraconDev/pi-goal-list-loop-audit/blob/72a848d36e5e3fbfac4a193bff99bc7bd1231631/tests/audit-settlement-restart.test.ts
 - **Audit-job retention tests:** https://github.com/DraconDev/pi-goal-list-loop-audit/blob/72a848d36e5e3fbfac4a193bff99bc7bd1231631/tests/audit-job-retention.test.ts
