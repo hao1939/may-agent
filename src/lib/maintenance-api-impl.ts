@@ -4,17 +4,13 @@
  * Used by Host maintenance handlers, not the public bounded workflow SDK.
  */
 
-import type { MaintenanceAPI, RunOpts, WorkflowResult } from "./maintenance-api.js";
+import type { MaintenanceAPI } from "./maintenance-api.js";
 import type { EventBus } from "../app/core/events/bus.js";
 import type { SqliteDb } from "./db.js";
-import type { SubagentManager } from "./manager.js";
 import { getDb } from "./db/connection.js";
 import { log as globalLog } from "./log.js";
-import { buildRuntimeCtx } from "./runtime-ctx.js";
 import { createMetricService } from "./metrics.js";
 import { createQueryService } from "./query-service.js";
-import { existsSync, readFileSync, readdirSync } from "node:fs";
-import { basename, join } from "node:path";
 import { buildCanonicalEventEnvelope, normalizeEventOwner } from "../../packages/control/src/event-envelope.js";
 
 // ── Dependencies (injected, not imported directly) ────────────────────
@@ -27,62 +23,6 @@ export interface MaintenanceAPIDeps {
   sharedRoot: string;
   projectsRoot: string;
   agentName: string;
-  /** Manager instance — for runWorkflow delegation. */
-  manager?: SubagentManager;
-}
-
-// ── Workflow path helpers ──────────────────────────────────────────────
-
-/**
- * Resolve the workflow directory for a App-local agent.
- * When an App provides its own agent (e.g. scout-knowledge-lib.app/agents/scout/),
- * the agent's workflows live at <projectId>.app/agents/<agent>/workflows/ rather than
- * the global agents/<agent>/workflows/ directory.
- */
-export function agentWorkflowDirForApp(
-  projectsRoot: string,
-  projectId: string | undefined,
-  agentName: string,
-): string | undefined {
-  if (!projectId || !agentName) return undefined;
-
-  const clean = projectId
-    .trim()
-    .replace(/^projects\//, "")
-    .replace(/\/project\.md$/, "")
-    .replace(/\/$/, "");
-  if (!clean) return undefined;
-
-  const appDirs = [join(projectsRoot, `${clean}.app`), join(projectsRoot, clean, ".app")];
-  const shortName = basename(clean);
-  if (shortName && shortName !== clean) {
-    appDirs.push(join(projectsRoot, `${shortName}.app`));
-    appDirs.push(join(projectsRoot, shortName, ".app"));
-  }
-
-  for (const appDir of appDirs) {
-    const direct = join(appDir, "agents", agentName, "workflows");
-    if (existsSync(direct)) return direct;
-    const agentsDir = join(appDir, "agents");
-    let entries: string[];
-    try {
-      entries = readdirSync(agentsDir);
-    } catch {
-      continue;
-    }
-    for (const entry of entries.sort()) {
-      const configPath = join(agentsDir, entry, "agent.json");
-      try {
-        const config = JSON.parse(readFileSync(configPath, "utf8")) as { name?: unknown };
-        if (config.name !== agentName) continue;
-        const workflows = join(agentsDir, entry, "workflows");
-        if (existsSync(workflows)) return workflows;
-      } catch {
-        // Ignore malformed or non-agent directories; registration reports them separately.
-      }
-    }
-  }
-  return undefined;
 }
 
 function messageOwner(target: string): string {
@@ -95,45 +35,6 @@ export function buildMaintenanceAPI(deps: MaintenanceAPIDeps): MaintenanceAPI {
   let metrics: MaintenanceAPI["metrics"] | undefined;
   let query: MaintenanceAPI["query"] | undefined;
   return {
-    async runWorkflow(name: string, task: string, opts?: RunOpts): Promise<WorkflowResult> {
-      const { runWorkflowDirect } = await import("./workflow-tool.js");
-      if (!deps.manager) throw new Error("runWorkflow requires manager in MaintenanceAPIDeps");
-      const runtimeCtx = buildRuntimeCtx({
-        bus: deps.bus,
-        persistDir: deps.persistDir,
-        projectRoot: deps.projectRoot,
-        agentsRoot: deps.agentsRoot,
-        sharedRoot: deps.sharedRoot,
-        projectsRoot: deps.projectsRoot,
-        agentName: deps.agentName,
-      });
-      const agentForWorkflow = opts?.source ?? deps.agentName;
-      const globalWorkflowDir = join(deps.agentsRoot, agentForWorkflow, "workflows");
-      // When an App owns the agent (e.g. scout in scout-knowledge-lib.app/agents/scout/),
-      // workflows live in the App-local agent dir, not the global agents/ dir.
-      const appAgentWorkflowDir = agentWorkflowDirForApp(deps.projectsRoot, opts?.projectId, agentForWorkflow);
-      const workflowDir = appAgentWorkflowDir ?? globalWorkflowDir;
-      const { result, runId } = await runWorkflowDirect({
-        workflowName: name,
-        task,
-        manager: deps.manager,
-        runtimeCtx,
-        agentName: agentForWorkflow,
-        sessionSource: opts?.sessionSource,
-        persistDir: deps.persistDir,
-        workflowDir,
-        guardsDir: join(deps.agentsRoot, agentForWorkflow, "guards"),
-        sharedGuardsDir: join(deps.sharedRoot, "guards"),
-        projectId: opts?.projectId,
-        ...(opts?.input !== undefined ? { workflowInput: opts.input } : {}),
-      });
-      return {
-        status: result.type === "done" ? "done" : "blocked",
-        summary: result.type === "done" ? result.summary : (result.reason ?? "blocked"),
-        runId,
-      };
-    },
-
     emit(
       type: string,
       data?: Record<string, unknown>,

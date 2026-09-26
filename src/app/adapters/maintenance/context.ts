@@ -1,5 +1,5 @@
 /**
- * HandlerContext — the harness passed to agent-owned cron handlers.
+ * HandlerContext — capabilities passed to named Host maintenance handlers.
  *
  * Handlers access the system through ctx.sdk (HandlerSDK) for all standard
  * operations. A few handler-specific helpers remain on ctx directly.
@@ -13,7 +13,7 @@ import type { MaintenanceAPI } from "../../../lib/maintenance-api.js";
 import type { EventEnvelope } from "../../core/events/bus.js";
 
 /** Host maintenance files can observe/repair mechanics, but cannot launch App work. */
-export type HandlerSDK = Pick<MaintenanceAPI, "emit" | "getDb" | "query" | "metrics" | "log" | "message" | "paths">;
+export type HandlerSDK = MaintenanceAPI;
 
 /**
  * HandlerContext — flat interface for handler code.

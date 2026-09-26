@@ -4,8 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { HostMaintenance } from "./runtime.js";
 import { EventBus } from "../../core/events/bus.js";
-import { SubagentManager } from "../../../lib/manager.js";
-import { closeDb } from "../../../lib/requests.js";
+import { closeDb } from "../../../lib/db/connection.js";
 import { importRuntimeModule } from "../../../lib/runtime-import.js";
 import { loadMaintenanceHandlers } from "./handler-loader.js";
 
@@ -17,7 +16,6 @@ async function setup(timers: boolean) {
   mkdirSync(join(agentDir, "handlers"), { recursive: true });
   const configPath = join(agentDir, "cron.json");
   const bus = new EventBus();
-  const manager = new SubagentManager({ persistDir: root });
   let installed = Promise.withResolvers<void>();
   const reports: unknown[] = [];
   bus.subscribe((event) => {
@@ -84,7 +82,6 @@ export function create(ctx, entry) {
     agentsRoot: join(root, "agents"),
     persistDir: root,
     projectRoot: root,
-    manager,
     bus,
     agentMaintenance: new Map([["owner", cron]]),
   });

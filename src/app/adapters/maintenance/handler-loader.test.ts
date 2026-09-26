@@ -4,8 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { MaintenanceEntry } from "./contracts.js";
 import type { EventEnvelope } from "../../core/events/bus.js";
-import { SubagentManager } from "../../../lib/manager.js";
-import { closeDb } from "../../../lib/requests.js";
+import { closeDb } from "../../../lib/db/connection.js";
 import type { HostMaintenance } from "./runtime.js";
 import { EventBus } from "../../core/events/bus.js";
 import { loadMaintenanceHandlers } from "./handler-loader.js";
@@ -48,7 +47,6 @@ function setup(entries: MaintenanceEntry[]) {
       projectsRoot: join(root, "projects"),
       persistDir: root,
       projectRoot: root,
-      manager: new SubagentManager({ persistDir: root }),
       bus,
       agentMaintenance: new Map([["owner", cron]]),
     });
