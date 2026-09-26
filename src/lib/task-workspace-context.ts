@@ -54,7 +54,7 @@ export function prepareTaskWorkspaceContext(
       "# Task context",
       "",
       `Task: ${JSON.stringify(binding)}. Resource version: ${rec.resourceVersion}. Generated: ${generatedAt}.`,
-      "This is an attempt-start snapshot. Read current Task state before settling work. Files do not change Task authority or acknowledge input.",
+      "This is an attempt-start snapshot. Use current Task observations for settlement; this historical snapshot alone cannot establish freshness. Files do not change Task authority or acknowledge input.",
       "",
       "## Task outcome and acceptance",
       String(rec.outcome ?? "Read context.json for the assignment."),
@@ -102,6 +102,6 @@ export function prepareTaskWorkspaceContext(
 
 export function taskWorkspacePrompt(brief: TaskWorkspaceBrief): string {
   return "taskFile" in brief
-    ? `Task entry: ${JSON.stringify(brief.taskFile)}. Read it to discover the full Task context and omitted information before working. It is shared by the Task's agents and workflows; your current assignment defines your role.`
+    ? `Task entry: ${JSON.stringify(brief.taskFile)}. Follow its links when you need details or discovery beyond the supplied context. It is shared by the Task's agents and workflows; your current assignment defines your role.`
     : brief.error;
 }
