@@ -32,6 +32,7 @@ archive.
 | Which state is authoritative and rebuildable? | [storage.md](2a-design/storage.md) |
 | How does the Host start, recover and shut down? | [runtime.md](2a-design/runtime.md) |
 | How are desired-state Tasks reconciled? | [task-resource-engine.md](2a-design/task-resource-engine.md) |
+| How does current Task context reach a worker? | [Context passing](2a-design/agents.md#context-passing) and the [decision-context integration record](proposals/task-decision-context-integration-20260926.md). |
 | How does admitted input/fact routing work? | [events.md](2a-design/events.md) |
 | How do humans share context across adapters? | [human-control-surfaces.md](2a-design/human-control-surfaces.md) |
 | How does a particular subsystem behave? | Its Tier 2a subsystem document |

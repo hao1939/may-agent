@@ -147,6 +147,24 @@ the appropriate App contract rather than relying on a generic owner inbox.
 
 ## Context passing
 
+Task-bound managed execution prepares a shared decision brief from the existing
+Task reader before each model request, including helper calls and requests after
+compaction. The caller's request still defines the contribution. The brief shows
+assignment, accepted understanding/results, Condition observations, pending input
+and exact detail links; reading it does not account for the input. It is a
+disposable provider view, not another message queue or accepted Task record.
+
+Automatic refresh failure retains the last successful snapshot, or the supplied
+attempt-start snapshot when no refresh succeeded. Freshness and missing coverage
+remain explicit. Agents diagnose through ordinary reads and obtain evidence for
+the particular action that needs it. Detail-file failure preserves inline facts;
+when the initial workspace entry cannot be saved, the root keeps its full input.
+Explicit App context preparation still receives the original call request.
+
+The [integration record](../proposals/task-decision-context-integration-20260926.md)
+tracks candidate source, trials and rollout. This does not add mid-command
+steering to native executors or change workflow result/Task settlement rules.
+
 - Agent calls receive the supplied task, explicitly selected context, tool
   policy, and execution lineage.
 - A cross-App dependency receives typed input and a stable parent relationship; it does

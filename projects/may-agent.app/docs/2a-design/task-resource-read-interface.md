@@ -55,6 +55,26 @@ The get form returns one exact `TaskDetail`, including parent, acceptance,
 input, selected execution mechanism, dependencies, and Conditions. Attempt and
 activity evidence remain linked records rather than copied Task truth.
 
+The decision-context candidate also exposes `resourceVersion` and an observation
+beside each Condition definition: its generation/revision, observed generation,
+state, retained evidence and observation time. A declared requirement is not an
+observation that it has been met. Historical receipts may lack a current revision
+and observations; absence does not establish satisfaction.
+
+`pendingEvents` shows up to 32 currently unclaimed inputs, with exact Event
+identities and explicit truncation. The active attempt's input remains separately
+available in its supplied context. This is a bounded current-input window, not a
+complete history or a fulfillment flag. Remaining input keeps its existing later
+reconciliation opportunity. Reading the window does not consume it.
+
+The exact read uses one synchronous SQLite read snapshot for the resource,
+Conditions and input. It also forwards explicit `acceptedEvidence` options
+through the Task-bound reader. Model-facing briefs shorten large bodies and link
+content-addressed detail snapshots under the existing attempt context directory.
+The public Task reader remains authoritative; these files retain the scope and
+coverage of the original read. See the
+[integration record](../proposals/task-decision-context-integration-20260926.md).
+
 The optional outcome projection groups exact Task identities for a simpler read
 view while preserving every member and link. It is not a new work resource,
 write API, or completion authority; list/get remain the exact Task interface.
