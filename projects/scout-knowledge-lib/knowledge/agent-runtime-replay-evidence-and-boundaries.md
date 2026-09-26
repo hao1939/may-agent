@@ -1,8 +1,8 @@
 <ai_context>
-summary: "Companion to agent-runtime-unattended-execution-and-replay.md for replay evidence and boundary design: cut-point regression replay, interaction-identity preservation, request-hashed host-call replay, and the separation of model, workspace, tool, effect, and evidence planes."
-triggers: ["agent replay", "cut-point replay", "Chronicle", "interaction replay", "Mutagen", "host-call replay", "Ovo", "offline replay", "OrcaReplay", "replay evidence", "replay boundary", "effect safety"]
-last_updated: "2026-09-24"
-source_basis: "Extracted intact from agent-runtime-unattended-execution-and-replay.md during its 2026-09-24 oversized-note review. Each section retains stable source links, pinned revisions where applicable, reproduced checks where performed, and explicit evidence limitations."
+summary: "Companion to agent-runtime-unattended-execution-and-replay.md for replay evidence and boundary design: cut-point regression replay, interaction-identity preservation, model-fixture key scope, request-hashed host-call replay, and the separation of model, workspace, tool, effect, and evidence planes."
+triggers: ["agent replay", "cut-point replay", "Chronicle", "interaction replay", "Mutagen", "model fixture", "replay key", "Weft", "host-call replay", "Ovo", "offline replay", "OrcaReplay", "replay evidence", "replay boundary", "effect safety"]
+last_updated: "2026-09-26"
+source_basis: "Extracted intact from agent-runtime-unattended-execution-and-replay.md during its 2026-09-24 oversized-note review, then extended with pinned Weft implementation evidence about model-fixture key scope and ordering. Each section retains stable source links, pinned revisions where applicable, reproduced checks where performed, and explicit evidence limitations."
 </ai_context>
 
 # Agent Runtime Replay Evidence and Boundaries
@@ -103,6 +103,56 @@ adoption or production validation.
 - **Inspected revision:** [`21b755b44eed7cf5ea53fb7d9dbab6bf3612a9a8`](https://github.com/z-chenhao/Mutagen/commit/21b755b44eed7cf5ea53fb7d9dbab6bf3612a9a8)
 - **Primary sources:** [scope and explicit non-claims](https://github.com/z-chenhao/Mutagen/blob/21b755b44eed7cf5ea53fb7d9dbab6bf3612a9a8/README.md), [observation-boundary experiment](https://github.com/z-chenhao/Mutagen/blob/21b755b44eed7cf5ea53fb7d9dbab6bf3612a9a8/docs/experiments/0001-replay-boundary.md), [record-ablation experiment](https://github.com/z-chenhao/Mutagen/blob/21b755b44eed7cf5ea53fb7d9dbab6bf3612a9a8/docs/experiments/0002-replay-record-ablation.md), and [ablation implementation](https://github.com/z-chenhao/Mutagen/blob/21b755b44eed7cf5ea53fb7d9dbab6bf3612a9a8/crates/mutagen-runtime/examples/exp_0002_replay_record_ablation.rs)
 - **Discovery query:** GitHub Repository Search API `"AI agent" in:name,description created:>=2026-09-20`, sorted by updated; `total_count: 1046`, `incomplete_results: false`
+
+## A Green Model Replay Is Only as Sensitive as Its Match Key — Weft (GitHub, September 2026)
+
+Weft's pinned test helper makes one replay boundary inspectable: it records each
+model request and event stream as readable JSON, then substitutes the recorded
+model events while leaving the agent loop, middleware, approvals, and deterministic
+test tools live. Missing keys fail loudly, repeated identical requests are consumed
+in recorded order, recording replaces a test's fixture directory rather than merging
+stale entries, and abandoned or failed streams remain visible in the fixture. Those
+are useful controls against silent fixture reuse.
+
+The important qualification is what counts as the “same” request. At revision
+`6da758c13508588926569684f58ec9f002e0e0f1`, the key covers transcript messages,
+sorted tool names, thinking configuration, tool choice, and the sequential-tools
+flag. It deliberately excludes the system prompt, tool descriptions, and tool
+schemas. The complete system prompt is stored for human diff review, but replay
+reconstructs its key from the reduced request document; the project-authored
+`TestReplayKeyIgnoresSystem` confirms that two different system prompts consume the
+same fixture queue. Consequently, changing instructions or a same-named tool's
+contract can leave offline replay green without exercising the model's response to
+that change. Readable fixtures and deliberate re-recording mitigate this only when a
+reviewer notices the drift; they are not automatic invalidation.
+
+Fixture order is part of the matching contract too. The recorder numbers files and
+the replayer loads the directory in lexical order before grouping by key. The current
+revision widened the sequence pad from three to five digits after recognizing that
+`1000-…` sorted before `999-…`, which could reverse repeated identical requests
+across that boundary. Old recordings still load because matching uses the key inside
+the file, but the episode shows that deterministic output can still be bound to the
+wrong historical occurrence when storage order and logical order diverge.
+
+**Runtime rule:** publish the replay match function as part of the test claim. Bind
+fixtures to every input whose change should invalidate model behavior—including
+instruction and tool-contract revisions—or require an explicit re-record receipt
+when an intentionally excluded field changes. Separately preserve occurrence order
+with a numeric field or parsed sequence rather than relying on filename lexical
+order. A green model replay proves only that the candidate matched this declared key
+and consumed these recorded events; it does not prove prompt sensitivity, provider
+behavior, or external-effect safety.
+
+Scout statically inspected the pinned implementation, ADRs, and repository-authored
+tests. The environment did not provide the Go toolchain, so Scout could not run the
+focused replay tests. The repository had one star at retrieval; this is an early,
+source-visible testing pattern rather than evidence of broad adoption or production
+reliability.
+
+- **Repo:** https://github.com/weftgo/weft
+- **Inspected revision:** https://github.com/weftgo/weft/commit/6da758c13508588926569684f58ec9f002e0e0f1
+- **Primary sources:** [request key, recorder, and replayer](https://github.com/weftgo/weft/blob/6da758c13508588926569684f58ec9f002e0e0f1/wefttest/replay.go), [replay contract tests](https://github.com/weftgo/weft/blob/6da758c13508588926569684f58ec9f002e0e0f1/wefttest/replay_test.go), and [testing-conventions ADR](https://github.com/weftgo/weft/blob/6da758c13508588926569684f58ec9f002e0e0f1/docs/adr/0017-testing-conventions.md)
+- **Discovery query:** GitHub Repository Search API `AI agent trace replay deterministic in:name,description,readme pushed:>2026-09-20`, sorted by updated; `total_count: 4300`, `incomplete_results: false`
 
 ## Replay Consistency Is Not Effect Completeness — Ovo (GitHub, August 2026)
 
