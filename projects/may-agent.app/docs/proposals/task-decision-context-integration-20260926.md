@@ -89,7 +89,11 @@ continuation, not optimal execution cost or universal judgment reliability.
 The initial large-input request was about 29.7 KB; later ordinary Task reads
 loaded additional background, bringing total serialized requests to about
 242 KB. That is a useful reminder to measure the entire run, not only the first
-brief. No matched final-baseline speed or monetary saving is claimed.
+brief. Those initial trials established no matched final-baseline speed or
+monetary saving. The later [60-run behavior comparison](task-decision-context-behavior-comparison-20260926.md)
+found fewer model calls and lower input volume, but no overall behavioral
+reliability improvement and several candidate reuse failures. Monetary savings
+remain unverified.
 
 Scout's live review prompted an omitted-reference trial. The first fixture (r4)
 was inadequate: its required key already appeared in the initial brief, so a
@@ -167,6 +171,14 @@ CI. The final evidence entry point is
 classifications and live review identities. Negative receipts are unchanged.
 
 ## Value, cost and limits
+
+The subsequent [matched comparison](task-decision-context-behavior-comparison-20260926.md)
+is the current behavior/value assessment: correct final review content in 30/30
+runs for each version, full behavioral acceptance in 29/30 baseline versus 27/30
+candidate runs, and 33% fewer candidate model calls. The accepted review was
+already visible in the two failed reuse cases. Context delivery and correct
+use of that context are separate claims; the comparison does not establish
+general superiority or prove which part of this PR earns the saving.
 
 The value is consistent delivery of current decision facts, less duplicated
 large input, and recovery that preserves what is already known. Each model
