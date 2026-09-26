@@ -36,6 +36,12 @@ owns acceptance of Task results.
 | Coding tools and skills | `tools/`, `skills.ts` |
 | Host maintenance capabilities | `app/adapters/maintenance/context.ts` and `handler-loader.ts` |
 
+`session-subscribers.ts` contains the digest and last-session writers registered
+by `app/daemon-events.ts`. Completion suggestions stay in the saved result;
+they do not rewrite guidance or enter future prompts automatically. The retired
+context updater and unregistered file-read tracker are removed. Historical
+`file_reads` rows remain readable by the project history view.
+
 `requests.ts` is a compatibility facade for database helpers, not the owner of
 Conversation Requests. New internal callers use the corresponding `db/` module.
 `index.ts` is a broad compatibility export and also re-exports the App loader;

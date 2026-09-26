@@ -7,18 +7,16 @@
  * Replaces inline side effects that were in manager.ts handleCompletion.
  */
 
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { eventData, type AgentEvent } from "../app/core/events/bus.js";
 import { resolveRuntimeAgentDirectory } from "../app/loader/agent-discovery.js";
 import { log } from "./log.js";
 import { createStartDigest, createEndDigest } from "./session-digest.js";
 import { writeLastSession } from "./last-session.js";
-import { getDb } from "./db/connection.js";
 
 // ── Digest Writer ───────────────────────────────────────────────────────
 // Creates session digest entries on session lifecycle events.
-// Phase 1: session.start (CREATE) and session.end (END digest).
+// session.start creates the digest; session.end records its result.
 
 export function createDigestWriter(persistDir: string): (event: AgentEvent) => void {
   return (event: AgentEvent) => {
@@ -74,9 +72,6 @@ export function createDigestWriter(persistDir: string): (event: AgentEvent) => v
   };
 }
 
-// ── Context Updater ─────────────────────────────────────────────────────
-// Applies durable `finish().context_updates` to the registered agent's context.md.
-
 function writableAgentDir(projectRoot: string, agent: string, agentRelativeDir?: string): string {
   // Completion belongs to the selected definition even after a marker or registry
   // change. Resolve against writable installation files, never a source release.
@@ -86,98 +81,9 @@ function writableAgentDir(projectRoot: string, agent: string, agentRelativeDir?:
     ?? join(projectRoot, "agents", agent);
 }
 
-export function createContextUpdater(projectRoot: string): (event: AgentEvent) => void {
-  return (event: AgentEvent) => {
-    if (event.type !== "session.end") return;
-    const info = eventData(event) as any;
-
-    const updates = (info.finishParams as any)?.context_updates;
-    if (!Array.isArray(updates) || updates.length === 0) return;
-
-    const agentDir = writableAgentDir(projectRoot, info.agent, info.agentRelativeDir);
-    const contextPath = join(agentDir, "context.md");
-
-    try {
-      mkdirSync(agentDir, { recursive: true });
-      const existing = existsSync(contextPath) ? readFileSync(contextPath, "utf-8") : "";
-      let lines = existing.split(/\r?\n/).filter((line) => line.length > 0);
-
-      for (const update of updates) {
-        if (!update || typeof update.content !== "string") continue;
-        const content = update.content.trim();
-        if (!content) continue;
-
-        if (update.action === "remove") {
-          lines = lines.filter((line) => !line.includes(content));
-        } else if (update.action === "add") {
-          const normalized = content.startsWith("- ") ? content : `- ${content}`;
-          if (!lines.includes(normalized)) lines.push(normalized);
-        }
-      }
-
-      writeFileSync(contextPath, `${lines.join("\n")}${lines.length > 0 ? "\n" : ""}`);
-    } catch (err) {
-      log("warn", `[context-updater] failed for ${info.agent}: ${err}`);
-    }
-  };
-}
-
-// ── File Read Tracker ───────────────────────────────────────────────────
-// Records cross-agent and shared file reads for observability.
-
-function producerFromPath(path: string): string | null {
-  const normalized = path.replace(/^\.\//, "").replace(/\/+/g, "/");
-  const match = normalized.match(/^agents\/([^/]+)\//);
-  return match?.[1] ?? null;
-}
-
-export function createFileReadTracker(persistDir: string): (event: AgentEvent) => void {
-  return (event: AgentEvent) => {
-    if (event.type !== "tool_call" || event.tool !== "read") return;
-
-    const path = (event.args as any)?.path;
-    if (typeof path !== "string" || !path.trim()) return;
-
-    const producerAgent = producerFromPath(path);
-    if (producerAgent === event.agent) return;
-
-    try {
-      const db = getDb(persistDir);
-      db.prepare(
-        "INSERT INTO file_reads (sessionId, agent, filePath, readAt, producerAgent) VALUES (?, ?, ?, ?, ?)",
-      ).run(event.sessionId, event.agent, path, Date.now(), producerAgent);
-    } catch (err) {
-      log("warn", `[file-read-tracker] failed for ${event.agent}: ${err}`);
-    }
-  };
-}
-
-export interface FileReadStat {
-  reader: string;
-  producer: string | null;
-  fileCount: number;
-  readCount: number;
-}
-
-export function getFileReadStats(persistDir: string, days = 7): FileReadStat[] {
-  const since = Date.now() - Math.max(0, days) * 24 * 60 * 60 * 1000;
-  const db = getDb(persistDir);
-  return db.prepare(
-    `SELECT agent as reader,
-            producerAgent as producer,
-            COUNT(DISTINCT filePath) as fileCount,
-            COUNT(*) as readCount
-       FROM file_reads
-      WHERE readAt >= ?
-      GROUP BY agent, producerAgent
-      ORDER BY readCount DESC, reader ASC`,
-  ).all(since) as unknown as FileReadStat[];
-}
-
 // ── Last-Session Writer ─────────────────────────────────────────────────
 // Writes the registered agent's last-session.md at session end so the next session
-// can read a single file instead of querying DB + scanning files.
-// Part of: cold-start-fix milestone 1.
+// can read a single summary; exact Task state and retained evidence remain authoritative.
 
 export function createLastSessionWriter(projectRoot: string): (event: AgentEvent) => void {
   return (event: AgentEvent) => {

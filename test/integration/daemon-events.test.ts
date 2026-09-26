@@ -1,4 +1,4 @@
-import { mkdtempSync, rmSync } from "node:fs";
+import { mkdtempSync, mkdirSync, readFileSync, writeFileSync, existsSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "bun:test";
@@ -121,6 +121,36 @@ describe("daemon event subscribers", () => {
       expect(db.prepare("SELECT resolved_at FROM metric_alerts WHERE id = ?").get(7)).toEqual({ resolved_at: 456 });
     } finally {
       rmSync(persistDir, { recursive: true, force: true });
+    }
+  });
+
+  it("retains context suggestions as evidence without changing the agent's guidance", async () => {
+    const root = mkdtempSync(join(tmpdir(), "session-report-"));
+    try {
+      const agentDir = join(root, "agents", "worker");
+      mkdirSync(agentDir, { recursive: true });
+      writeFileSync(join(agentDir, "context.md"), "Existing guidance\n");
+      const bus = new EventBus();
+      attachEventPersistence({ bus, persistDir: root });
+      attachDaemonEventSubscribers({ bus, manager: {} as any, persistDir: root, projectRoot: root });
+      const suggestions = [{ action: "add", content: "Proposed guidance" }];
+      bus.emit({
+        type: "session.end", source: "runtime", owner: "agent:worker",
+        data: {
+          sessionId: "reported-session", agent: "worker", status: "done",
+          finishParams: { status: "success", summary: "Review complete", context_updates: suggestions },
+        },
+      });
+      const row = getDb(root).prepare("SELECT data FROM events WHERE event_type = 'session.end'").get() as { data: string };
+      expect(JSON.parse(row.data).finishParams.context_updates).toEqual(suggestions);
+      const handoff = join(agentDir, "last-session.md");
+      const deadline = Date.now() + 2_000;
+      while (!existsSync(handoff) && Date.now() < deadline) await Bun.sleep(5);
+      expect(readFileSync(handoff, "utf8")).toContain("Review complete");
+      expect(readFileSync(join(agentDir, "context.md"), "utf8")).toBe("Existing guidance\n");
+    } finally {
+      closeDb(root);
+      rmSync(root, { recursive: true, force: true });
     }
   });
 
