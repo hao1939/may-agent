@@ -61,6 +61,8 @@ enter through `composition/workers/task-admission-process.ts` and `composition/w
 Task context is assembled in `core/tasks/app-task-context.ts`; shared App summaries live in
 `app-dependency-catalog.ts`. Runtime persistence primitives are under `../lib/db/`;
 transcripts/artifacts are handled by `../lib/persistence.ts` and `../lib/artifacts.ts`.
+For hosted sessions, context preparation and workflow execution, follow the
+[execution source map](../lib/README.md).
 Component guides cover [inbox](core/inbox/README.md), [Tasks](core/tasks/README.md),
 [state](core/state/README.md), [scheduling](core/scheduling/README.md), and
 [composition](composition/README.md).
