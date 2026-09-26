@@ -6,9 +6,9 @@ export {
   sendDaemonInput,
   sendSocketCommand,
   waitForSocketEvent,
-} from "../../packages/control/src/client.js";
+} from "@may-agent/control/client";
 export type {
   SocketEndpoint,
   SocketEvent,
   SocketResponse,
-} from "../../packages/control/src/client.js";
+} from "@may-agent/control/client";

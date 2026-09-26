@@ -3,7 +3,8 @@ import type { AppTaskClaim } from "../../core/tasks/app-task-reconciler.js";
 import { existsSync } from "node:fs";
 import { join } from "node:path";
 import type { SubagentManager } from "../../../lib/index.js";
-import { getDb, readSessionLastActivityAt, updateSessionDb } from "../../../lib/requests.js";
+import { getDb } from "../../../lib/db/connection.js";
+import { readSessionLastActivityAt, updateSessionDb } from "../../../lib/db/sessions.js";
 import {
   appendSessionMessage,
   markSessionInactive,

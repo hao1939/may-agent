@@ -17,7 +17,7 @@ import type { AgentTool } from "@earendil-works/pi-agent-core";
 import { existsSync, readFileSync, statSync, openSync, readSync, closeSync } from "node:fs";
 import { join } from "node:path";
 import type { PersistedSession } from "../persistence.js";
-import { getDb } from "../requests.js";
+import { getDb } from "../db/connection.js";
 import type { ExecutionStatus } from "../../app/core/reads/execution-status.js";
 
 // ── Tail utility ────────────────────────────────────────────────────────

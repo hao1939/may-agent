@@ -2,7 +2,7 @@ import { spawnSync } from "node:child_process";
 import { runDbMaintenancePass } from "../../lib/db/maintenance.js";
 import { closeAllDbs, getDb } from "../../lib/db/connection.js";
 import { DbWriter, EVENT_DELIVERY_HOUSEKEEPING_INTERVAL_MS } from "../../lib/db-writer.js";
-import { daemonSocketPath, sendSocketCommand } from "../../../packages/control/src/client.js";
+import { daemonSocketPath, sendSocketCommand } from "@may-agent/control/client";
 import { readExecutionStatus } from "../core/reads/execution-status.js";
 
 const LIVENESS_INTERVAL_MS = 30_000;

@@ -1,14 +1,14 @@
 /**
- * Host-internal AgentSDK implementation wrapping existing services.
+ * Host-internal MaintenanceAPI implementation wrapping existing services.
  *
  * Used by Host maintenance handlers, not the public bounded workflow SDK.
  */
 
-import type { AgentSDK, RunOpts, WorkflowResult } from "./sdk.js";
+import type { MaintenanceAPI, RunOpts, WorkflowResult } from "./maintenance-api.js";
 import type { EventBus } from "../app/core/events/bus.js";
 import type { SqliteDb } from "./db.js";
 import type { SubagentManager } from "./manager.js";
-import { getDb } from "./requests.js";
+import { getDb } from "./db/connection.js";
 import { log as globalLog } from "./log.js";
 import { buildRuntimeCtx } from "./runtime-ctx.js";
 import { createMetricService } from "./metrics.js";
@@ -19,7 +19,7 @@ import { buildCanonicalEventEnvelope, normalizeEventOwner } from "../../packages
 
 // ── Dependencies (injected, not imported directly) ────────────────────
 
-export interface SDKDeps {
+export interface MaintenanceAPIDeps {
   bus: EventBus;
   persistDir: string;
   projectRoot: string;
@@ -89,15 +89,15 @@ function messageOwner(target: string): string {
   return normalizeEventOwner(target);
 }
 
-// ── Build AgentSDK ────────────────────────────────────────────────────
+// ── Build MaintenanceAPI ────────────────────────────────────────────────────
 
-export function buildAgentSDK(deps: SDKDeps): AgentSDK {
-  let metrics: AgentSDK["metrics"] | undefined;
-  let query: AgentSDK["query"] | undefined;
+export function buildMaintenanceAPI(deps: MaintenanceAPIDeps): MaintenanceAPI {
+  let metrics: MaintenanceAPI["metrics"] | undefined;
+  let query: MaintenanceAPI["query"] | undefined;
   return {
     async runWorkflow(name: string, task: string, opts?: RunOpts): Promise<WorkflowResult> {
       const { runWorkflowDirect } = await import("./workflow-tool.js");
-      if (!deps.manager) throw new Error("runWorkflow requires manager in SDKDeps");
+      if (!deps.manager) throw new Error("runWorkflow requires manager in MaintenanceAPIDeps");
       const runtimeCtx = buildRuntimeCtx({
         bus: deps.bus,
         persistDir: deps.persistDir,

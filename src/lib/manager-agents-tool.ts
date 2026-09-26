@@ -9,7 +9,7 @@ import { Type, StringEnum } from "@earendil-works/pi-ai";
 import type { RegisteredAgent } from "./manager-utils.js";
 import type { SessionInfo, SubagentDefinition, TaskResult } from "./types.js";
 import type { PersistedSession } from "./persistence.js";
-import { getDb } from "./requests.js";
+import { getDb } from "./db/connection.js";
 import { agentExecutionResult } from "./execution-handoff.js";
 import { readIdentity } from "./instance-identity.js";
 import type { EventTrace } from "../app/core/events/bus.js";

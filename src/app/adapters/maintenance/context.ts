@@ -9,11 +9,11 @@ import type { MaintenanceEntry } from "./contracts.js";
 import type { PersistedSession } from "../../../lib/persistence.js";
 import type { DigestRow, DigestInput, DigestAction } from "../../../lib/session-digest.js";
 import type { ErrorClass } from "../../../lib/classify-error.js";
-import type { AgentSDK } from "../../../lib/sdk.js";
+import type { MaintenanceAPI } from "../../../lib/maintenance-api.js";
 import type { EventEnvelope } from "../../core/events/bus.js";
 
 /** Host maintenance files can observe/repair mechanics, but cannot launch App work. */
-export type HandlerSDK = Pick<AgentSDK, "emit" | "getDb" | "query" | "metrics" | "log" | "message" | "paths">;
+export type HandlerSDK = Pick<MaintenanceAPI, "emit" | "getDb" | "query" | "metrics" | "log" | "message" | "paths">;
 
 /**
  * HandlerContext — flat interface for handler code.

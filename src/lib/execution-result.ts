@@ -1,5 +1,5 @@
 import type { SqliteDb } from "./db.js";
-import { getDb } from "./requests.js";
+import { getDb } from "./db/connection.js";
 import type { TaskResult } from "./types.js";
 import type { WorkflowToolResult } from "./workflow.js";
 

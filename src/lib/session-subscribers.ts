@@ -14,7 +14,7 @@ import { resolveRuntimeAgentDirectory } from "../app/loader/agent-discovery.js";
 import { log } from "./log.js";
 import { createStartDigest, createEndDigest } from "./session-digest.js";
 import { writeLastSession } from "./last-session.js";
-import { getDb } from "./requests.js";
+import { getDb } from "./db/connection.js";
 
 // ── Digest Writer ───────────────────────────────────────────────────────
 // Creates session digest entries on session lifecycle events.

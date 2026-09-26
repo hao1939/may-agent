@@ -29,7 +29,7 @@ import {
   SocketCommandError,
   type SocketEndpoint,
   type SocketResponse,
-} from "../../../packages/control/src/client.js";
+} from "@may-agent/control/client";
 import { buildCanonicalEventEnvelope } from "../../../packages/control/src/event-envelope.js";
 import { loadProjectReadModel } from "../core/tasks/app-task-runtime-state.js";
 import { openStateDb, type SqliteDb } from "./read-model/state-db.js";

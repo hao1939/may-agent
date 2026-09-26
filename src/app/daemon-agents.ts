@@ -14,7 +14,7 @@ import { createTaskExecutionBackends } from "./composition/task-execution.js";
 import type { AppRegistry } from "./core/apps/registry.js";
 import type { HostCapacity } from "./core/scheduling/host-capacity.js";
 import { createCodexGoalExecutor, migrateCodexGoalBindingFile } from "./adapters/executors/codex/codex-goal-executor.js";
-import { getDb } from "../lib/requests.js";
+import { getDb } from "../lib/db/connection.js";
 
 function hasRetainedCodexGoalTrialTask(persistDir: string): boolean {
   return Boolean(

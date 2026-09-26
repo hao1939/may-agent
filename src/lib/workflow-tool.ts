@@ -60,7 +60,7 @@ export interface WorkflowStep {
   endedAt: number;
   lastAssistantText: string | null;
 }
-import { insertWorkflowRun, updateWorkflowRun, getWorkflowRun, getWorkflowStepSessions } from "./requests.js";
+import { insertWorkflowRun, updateWorkflowRun, getWorkflowRun, getWorkflowStepSessions } from "./db/workflows.js";
 import { retainWorkflowResultPayload } from "./workflow-payload.js";
 import { log } from "./log.js";
 import { createWorkflowDiagnostics } from "./workflow-diagnostics.js";

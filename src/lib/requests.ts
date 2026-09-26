@@ -1,10 +1,9 @@
 /**
  * requests.ts — compatibility facade for DB helpers.
  *
- * The original `requests` table has been removed — work tracking uses the
- * sessions table and events table (event-native architecture). New DB code
- * should prefer the focused modules under `./db/`; this file preserves the
- * existing public import surface while Phase 9c splits storage by concern.
+ * Retained for callers outside the Host that use the old import path.
+ * Host code imports the owning module under `./db/` directly. Conversation
+ * Request state belongs to `app/core/state/conversation-requests.ts`.
  */
 
 export { getDb, closeDb, closeAllDbs } from "./db/connection.js";
