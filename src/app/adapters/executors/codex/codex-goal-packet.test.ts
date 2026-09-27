@@ -77,7 +77,7 @@ describe("Codex goal Task packet", () => {
   it("renders every Runtime-selected semantic field into Codex transport", () => {
     const canonical = packet();
     const rendered = renderCodexGoalTaskAttempt(canonical);
-    expect(rendered.developerInstructions).toContain("## Canonical May Task Attempt\n" + JSON.stringify(canonical));
+    expect(rendered.developerInstructions).toEndWith("## Canonical May Task Attempt\n" + JSON.stringify(canonical));
   });
 
   it("keeps the goal stable across same-generation attempts and event replay", () => {
@@ -101,7 +101,7 @@ describe("Codex goal Task packet", () => {
     const nextRendered = renderCodexGoalTaskAttempt(next);
     expect(nextRendered.goalObjective).toBe(firstRendered.goalObjective);
     expect(nextRendered.developerInstructions).not.toBe(firstRendered.developerInstructions);
-    expect(nextRendered.developerInstructions).toContain("## Canonical May Task Attempt\n" + JSON.stringify(next));
+    expect(nextRendered.developerInstructions).toEndWith("## Canonical May Task Attempt\n" + JSON.stringify(next));
   });
 
   it("retains generation identity while bounding the objective length", () => {
