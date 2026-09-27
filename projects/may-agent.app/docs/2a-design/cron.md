@@ -35,9 +35,19 @@ execution begins only after an admitted App request or persisted task
 reconciliation requires it. A Host maintenance job invokes only its explicitly configured deterministic
 handler; it is not an alternative App execution route.
 
-The scheduler implementation retains the historical internal name `Cron`, and
-the long-running CLI flag remains `--cron`. Those names do not expose cron
-handlers as the canonical App authoring model.
+The private adapter is `HostMaintenance`; its conventional file remains
+`cron.json`, and the long-running CLI flag remains `--cron`. Those names do not
+make maintenance handlers the canonical App authoring model.
+
+Merged [#236](https://github.com/hao1939/may-agent/pull/236)
+removes an unused private workflow-launch method and the wrapper that hid it
+from handlers. `MaintenanceAPI` directly describes the capabilities supplied
+to named handlers. This repairs implementation drift without changing the
+accepted scheduling boundary. Merged
+[#240](https://github.com/hao1939/may-agent/pull/240) also preserves every
+declared event-envelope field through the existing canonical builder, including
+trace links and visibility; the adapter must not narrow that contract by
+copying only a subset.
 
 ## Shared timing, separate responsibilities
 

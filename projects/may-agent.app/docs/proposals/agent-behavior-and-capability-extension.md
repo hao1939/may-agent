@@ -702,6 +702,14 @@ records the Console/Telegram selector-forwarding gap. The
 distinguishes reporting, source edits, activation and later use. These are
 truthful-contract corrections, not production adoption or a new learning policy.
 
+**September 27 source follow-up:** The optional writer described above has no
+current production or sibling App caller. Merged
+[#238](https://github.com/hao1939/may-agent/pull/238) retires it and its
+writer-only tests. The daemon subscriber regression now checks saved suggestion
+evidence and an unchanged `context.md`; completion-file and recovery tests
+retain the exact selected agent directory. This does not add automatic learning
+or establish future-session retrieval. The earlier #161 evidence remains dated.
+
 ### First: prove an agent can operate the mechanism
 
 Give the agent a bounded improvement objective and standing authority over a

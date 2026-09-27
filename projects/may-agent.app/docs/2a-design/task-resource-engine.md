@@ -838,22 +838,16 @@ Tests and audits must prove:
 
 ## One attempt interface
 
-Executor choice does not change Task semantics. A Task may use its App's
-default agent executor, name a workflow, or select a registered executor;
-`codex` and `claude` are the built-in native adapters. `workflow` and
-`executor` are mutually exclusive; omitting both means the default agent.
-
-The executor extension boundary is deliberately small:
+Executor choice does not change Task semantics:
 
 ```ts
 type TaskExecutor = (attempt: TaskAttempt) => Promise<TaskReconcileResult>;
 ```
 
-`TaskAttempt` supplies the exact App and attempt identities, cancellation
-signal, resolved role, current `TaskDetail`, working/output paths, direct child
-and wait views, ordered unaccepted Events, result schema, and the fenced
-`publish`/`onEvent` capabilities. The SDK owns this type; transport adapters
-may project it to JSON but must not define a narrower semantic contract.
+The SDK-owned `TaskAttempt` supplies exact App/attempt identities, cancellation,
+resolved role, current `TaskDetail`, working/output paths, direct child/wait views,
+ordered unaccepted Events, result schema and fenced `publish`/`onEvent`.
+Transport adapters preserve this contract when projecting it to JSON.
 
 An executor reads current Task state and its bounded unobserved event batch,
 keeps working while safe progress is available, optionally publishes retry-safe
@@ -875,53 +869,30 @@ implements no scheduler, queue, retry loop across Task attempts, or Task storage
 Bounded repair inside one execution follows the
 [workflow repair convention](workflows.md#repair-within-an-attempt).
 
-`signal` stops current execution resources, including on fenced Turn Stop or
-owner closure. Adapters translate it into managed-session cancellation,
-workflow-step cancellation, Codex interruption or CLI process-tree termination.
-The signal does not replace durable controls or result-admission fences, and
-aborting an attempt alone does not close its Task.
+`signal` cancels current managed, workflow or native execution, including on
+fenced Turn Stop or owner closure. It complements durable controls and result
+fences; aborting an attempt alone does not close its Task.
 
-Every adapter receives the same bounded Task detail and ordered event batch,
-may publish a fact through the current generation/attempt fence, and returns
-one `TaskReconcileResult`. An event addressed to `{ appId, taskId }` is durable
-feedback, approval, or steering for that Task. Live forwarding is optional:
-managed sessions support it, while a headless CLI that cannot accept a live
-message receives the event on the next attempt.
-
-Runtime creates one fenced attempt and gives it to the selected adapter.
-Omitted or `agent` selects the managed-agent adapter. For another name, a Host
-registration takes precedence over the built-in `codex` and `claude` adapters.
-A missing name records visible failure and paced retry. Selection never creates
-another scheduler or recovery system.
-
-Codex/Claude process records, native session IDs, prompts, and output files are
-attempt evidence only. They do not create another Task, retry policy, queue, or
-completion authority. The Host accepts their result only through the same
-generation-fenced Task result transaction.
+An event addressed to `{ appId, taskId }` is durable Task input. Managed
+sessions can receive it live; a headless CLI that cannot accept a live message
+receives it on the next attempt. Both return through the same result fence.
+Executor selection follows [the selection contract](#selecting-the-attempt-mechanism):
+Host registrations take precedence over built-in adapters, and a missing name
+records visible failure and paced retry. Native process records, session IDs,
+prompts and outputs are attempt evidence, never another work authority.
 
 ## Task and task view
 
-A task is the resource. It has one stable `(appId, taskId)` identity, desired
-outcome, current observation, and acceptance evidence.
-
-Tasks may name a parent for decomposition and dependencies for ordering. A UI
-may arrange those relationships as a tree, but the tree is not another
-resource:
-
-```text
-parent task
-  -> child task A
-  -> child task B
-```
-
-The Host schedules task IDs from canonical task state. It never schedules a
-tree, restores state from a tree, or treats tree placement as ownership.
-The Task view supplies progress and diagnostic detail. Input handling and conversational Request fulfillment remain distinct; see
+A Task has one stable `(appId, taskId)` identity, desired outcome, current
+observation and acceptance evidence. Parent and dependency links may be shown
+as a tree; that view is neither another resource nor ownership authority.
+The Host schedules Task IDs from canonical state, never from tree placement.
+The view supplies progress and diagnostic detail. Input handling and
+conversational Request fulfillment remain distinct; see
 [Message Lifecycle](message-lifecycle.md#requests-acceptance-and-closure).
 
 ## Resource read interface
 
-The transport-neutral `tasks.list`, `tasks.get`, and opt-in `tasks.outcomes` contract,
-scope bindings, pagination, human-action projection, and write boundary are specified in [Task resource read interface](task-resource-read-interface.md).
-Exact reads remain backed by canonical Task state; adapters do not create a
-second model or mutation authority.
+[Task resource read interface](task-resource-read-interface.md) defines
+`tasks.list/get/outcomes`, scoping, pagination, human actions and write boundaries.
+Reads derive from canonical Task state.
