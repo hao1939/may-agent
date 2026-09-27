@@ -182,3 +182,49 @@ and zero failures in each run. Both GitHub checks passed on every PR. The common
 design integrity, checked examples and canonical App checks also passed. These
 are source/build checks; none of the three revised branches was deployed during
 this cleanup.
+
+
+## September 28: separating authority from context and execution
+
+Host [#262](https://github.com/hao1939/may-agent/pull/262) follows the review of
+responsibility boundaries, not another split of the earlier PR. It removes
+prompt visibility as a Task-operation gate. Core derives reply identity,
+requirements and cancellation authority from exact claimed inputs. Context
+selects evidence; the model adapter receives the schema and scoped capabilities.
+Prepared cancellation targets contain identities and observed versions, not
+mutable Task stores. Settlement resolves installed Apps under the existing
+transaction; no registry, migration or second work lifecycle is added.
+
+The first revision `f0a51251` passed 119 focused tests and full CI (3,251 pass,
+three installation-specific skips, zero failures). May independently reviewed
+that revision through input `app_02554ef6-4564-4b10-af00-a995327d6aac`. She found
+that the separately prepared follow-up attachment could disagree with the
+agent's decision, although shipped composition produced matching data. Rather
+than add another version or comparison, revision `18d017be` removes that
+attachment entirely. Core interprets `decision.followUp` once at settlement,
+using the attempt's pinned App declaration and current Task state. Explicit Task
+reuse bypasses mapping; otherwise the App's pure mapping runs once.
+
+The focused suite then passed 121 tests. Regressions cover omitted/misleading
+context, creator versus direct-human authority, scoped reads, JSON roundtrip
+and database reopen, missing/mismatched Apps and Tasks, changed generation and
+resourceVersion, single-source handoff targets, and ordinary runtime recovery.
+The follow-up review is input `app_b7fa7725-4429-4022-9446-f699b08ef20a`.
+Revision `083272a8` only tidies formatting; normalized JavaScript output matches
+`18d017be`.
+These are synthetic source/contract checks, not a model-quality comparison or a
+live rollout. The model still judges which authorized target fits the ask.
+
+May's follow-up review confirmed the finding is closed and identified no remaining
+concrete defect. She reviewed an archive of exact `18d017be`, independently ran
+100 focused tests and `check:ci`, and explicitly did not certify GitHub checks or
+a rollout. Her review is pinned to the semantic revision rather than claiming
+review of the subsequent formatting commit.
+
+Final full `bun run ci` passed: 3,253 tests, three installation-specific skips,
+zero failures across 311 files. Host/SDK type checks, the canonical App boundary,
+ESLint, real runtime/worker/reopen tests and browser checks all ran. The common
+design integrity, canonical App checks and checked documentation examples passed.
+The three formatting-only files compile to identical normalized JavaScript in
+`18d017be` and final `083272a8`. The GitHub Container check passed on `083272a8`;
+the current PR retains the independent Quality result and review requirement.

@@ -181,6 +181,9 @@ identity, authority, revision checks or settlement. Changing an App's Task
 mapping uses its existing declaration. Changing accepted state rules belongs in
 core and requires review of that contract. These are dependency boundaries,
 not a guarantee that every feature change touches only one file.
+Host [#262](https://github.com/hao1939/may-agent/pull/262) contains this boundary
+cleanup and its replacement, reopen and settlement checks; source validation
+does not establish deployment.
 
 Without a conversational frontend, new chat handling is unavailable but unrelated
 Tasks and Events continue. Retained messages, Requests and Task links remain
