@@ -384,7 +384,7 @@ function formatMarkdown(
     const done = history.filter((s) => s.meta.status === "done");
     const errors = history.filter((s) => s.meta.status === "error");
     const interrupted = history.filter((s) => s.meta.status === "interrupted");
-    const successRate = history.length > 0 ? Math.round((done.length / history.length) * 100) : 0;
+    const sessionCompletionRate = history.length > 0 ? Math.round((done.length / history.length) * 100) : 0;
 
     // Compute avg duration
     const durations = history
@@ -393,7 +393,7 @@ function formatMarkdown(
     const avgDuration = durations.length > 0 ? durations.reduce((a, b) => a + b, 0) / durations.length : 0;
 
     lines.push(`- **Throughput**: ${history.length} sessions completed`);
-    lines.push(`- **Success Rate**: ${successRate}% (${done.length}/${history.length})`);
+    lines.push(`- **Session completion**: ${sessionCompletionRate}% (${done.length}/${history.length})`);
     if (avgDuration > 0) {
       lines.push(`- **Avg Duration**: ${formatDuration(avgDuration)}`);
     }
