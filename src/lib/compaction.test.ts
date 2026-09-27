@@ -951,7 +951,7 @@ describe("extractKeyFacts", () => {
 
 describe("formatKeyFacts", () => {
   it("formats files and exec commands", () => {
-    const facts: KeyFacts = {
+    const facts: Partial<KeyFacts> = {
       filesRead: new Set(["a.ts", "b.ts"]),
       filesWritten: new Set(["c.ts"]),
       execCommands: [
@@ -970,7 +970,7 @@ describe("formatKeyFacts", () => {
 
   it("truncates long commands", () => {
     const longCmd = "A".repeat(200);
-    const facts: KeyFacts = {
+    const facts: Partial<KeyFacts> = {
       filesRead: new Set(),
       filesWritten: new Set(),
       execCommands: [{ command: longCmd, failed: false }],
@@ -983,7 +983,7 @@ describe("formatKeyFacts", () => {
   });
 
   it("returns empty array for empty facts", () => {
-    const facts: KeyFacts = {
+    const facts: Partial<KeyFacts> = {
       filesRead: new Set(),
       filesWritten: new Set(),
       execCommands: [],
