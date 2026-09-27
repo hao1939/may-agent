@@ -366,7 +366,7 @@ export function evaluationTaskReportInput(
   return {
     kind: "message",
     data: {
-      message: `Review the published Evaluation report for ${appId}/${taskId}. Run evaluation-report-intake with this exact context.publication before any duplicate or reuse conclusion; the intake checks exact publication identity before reusing a prior intake, and an unrelated prior disposition is not this report. Then verify material concerns against current evidence and record an ordinary Task disposition. Reuse linked work; do not prepare a candidate for a duplicate, no-op, or recovered finding.`,
+      message: `Review the published Evaluation report for ${appId}/${taskId}. Run evaluation-report-intake with this exact context.publication before any duplicate or reuse conclusion; the intake checks exact publication identity before reusing a prior intake, and an unrelated prior disposition is not this report. Then verify material concerns against current evidence and record an ordinary Task disposition. Reuse linked work. Settle the immediate incident separately from the population finding: current recovery does not erase recurring failures, cost or uncertainty. A duplicate or harmless one-off can need no change; a supported recurring pattern can justify the smallest investigation even after recovery. Before proposing a candidate, judge practical value versus cost and whether a simpler solution would suffice.`,
       context: {
         publication,
         caller: {

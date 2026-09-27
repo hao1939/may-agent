@@ -1,9 +1,9 @@
 # Detecting systemic problems after individual Tasks recover
 
-**Status:** Proposed implementation, September 27, 2026. Evidence and judgment
-trials are in the [experiment](../experiments/systemic-pattern-review-20260927/README.md).
-No collector, selector, agent instruction or live App is changed by this proposal.
-Trials demonstrate a bounded capability, not dependable unattended operation.
+**Status:** Implemented candidate, September 27, 2026; local rollout/trial is recorded below.
+Earlier judgment trials are in the [experiment](../experiments/systemic-pattern-review-20260927/README.md).
+This extends the existing selector and immutable Task assessment; it introduces
+no separate monitoring owner or automatic repair authority.
 
 ## Outcome and boundary
 
@@ -30,10 +30,8 @@ evidence and recommendations; a metric never authorizes a patch or deployment.
 | Immutable report and May intake | Recovery became a sufficient reason to stop | Separate current disposition from remaining recurrence, cost and uncertainty |
 
 The older project-health lanes and eleven legacy Evaluation metrics were retired.
-Do not reactivate their Tasks or revive session-only scoring. The current public
-Evaluation provider has neither an aggregate Task-attempt read nor exact
-failed-attempt session navigation. These are implementation gaps, not connected
-capabilities this proposal assumes exist.
+Do not reactivate their Tasks or revive session-only scoring. The candidate repairs those two missing public reads. The HTTP reporting endpoint is
+`GET /api/task-attempts`; Evaluation uses it alongside ordinary socket Task reads.
 
 ## Measure a population, inspect examples
 
@@ -267,3 +265,50 @@ what failure modes can successful-looking output hide? Their old numerical and
 paper claims were not independently reverified in this trial. Borrow those
 questions, not their historical statistics as current evidence. Record review
 latency/tokens and keep a successful-but-wrong-output control in the trial.
+
+## First implementation and its deliberate limits
+
+Host reporting reads two adjacent cohorts from one SQLite read snapshot. The
+required App identity and fixed cut bound the query; each window is at most seven
+days, with 24 hours used by Evaluation. The response includes App, exact Task and
+other-Task denominators, handler groups, structured failure-reason groups and
+bounded examples. Exact `appId/taskId/attemptId` reads expose canonical session
+and workflow links even when settlement failed. No raw SQL capability is exposed
+to Apps. An unavailable source is an evidence gap, not a zero.
+
+The existing selector alternates a population turn with ordinary Task navigation.
+It visits external Apps fairly, uses an hourly population cut, and retains the
+last selected/observed cut in its existing result facts. Those facts say
+`report-pending`, `no-activity`, `representative-unavailable`, source unavailable or
+backlog deferral; selection is not completed assessment coverage. Requested reviews
+still have priority and use the existing reviewer allowance. A population review
+selects at most three distinct representative Tasks to find one readable subject.
+No task records move and no extra registry owns progress.
+
+`populationEnd` travels through normal review admission into the workflow input.
+The report pins the public population alongside its exact Task snapshot, uses
+`task-obligation-v2`, and includes that population in the evidence hash. Retry and
+May intake read the same cut; changes in the Task do not silently slide it forward.
+Historical outcome/v1 reports retain their original renderer and remain readable.
+The first rollout adds population scope to selector-originated population reviews
+and explicitly requested reviews with `populationEnd`; existing direct incident
+requests keep their original scope and identity.
+
+Code renders counts/rates in the Markdown report and supplies the same table to
+the evaluator. The model interprets recurrence, quality, uncertainty and practical
+value. May separately decides whether investigation is worthwhile. Recovery of
+the immediate input alone is not a reason to dismiss a supported population pattern.
+
+The process reader examines up to three recent attempts, one canonical session
+per attempt, and labels additional workflow/helper execution unassessed. Workflow
+links remain available for investigation. It does not claim full workflow tracing,
+verify recovery of every historical input, or infer delivered contributions from
+attempt counts. Scalar metric histories, an all-App coverage dashboard and automatic
+population-only report reuse across distinct Tasks are deferred. Ordinary selector
+facts, review Tasks and report links are the progress surface for this trial.
+
+Portable tests cover the Host cohorts and exact links plus the actual App chain:
+selector → admission → evidence → report publication/reuse → May intake. A read-only
+historical replay through production reporting reproduced 271/222 terminal attempts,
+10/23 failures and exact-Task 1/22 failures in about 34 ms. That measurement did not
+justify adding an index or a materialized rollup.

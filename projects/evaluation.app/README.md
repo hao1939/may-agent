@@ -91,3 +91,10 @@ bun run bundle
 ```
 
 No source check deploys, mutates runtime state, or enables automatic sampling.
+
+Population review uses the same scheduled selector and Task review path. Its
+`task-obligation-v2` reports show two fixed 24-hour attempt populations, separate
+from the exact Task's current state. Inspect `selector:population-*` facts for
+selection/deferral, then follow the selected review Task to its immutable report.
+A selection marked `report-pending` is not completed coverage. See the
+[implementation and limits](design/systemic-pattern-review-20260927.md#first-implementation-and-its-deliberate-limits).

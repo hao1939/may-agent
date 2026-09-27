@@ -58,7 +58,7 @@ export async function readTaskProcessEvidence(
   appId: string,
   taskId: string,
   detail: Record<string, unknown>,
-  provider: Pick<PublicTaskEvidenceProvider, "getEvent">,
+  provider: Pick<PublicTaskEvidenceProvider, "getEvent" | "readAttempts">,
   readSession: SessionRead = readPublicSession,
 ) {
   const gaps: string[] = [];
@@ -120,14 +120,17 @@ export async function readTaskProcessEvidence(
         data.attemptId !== ref.attemptId
       )
         throw new Error("reconciled event correlation mismatch");
-      const sessionId = data.workflowRunId;
-      if (
-        typeof sessionId !== "string" ||
-        !/^s_[a-zA-Z0-9_-]+$/.test(sessionId)
-      )
-        throw new Error(
-          "execution link absent or unsupported (workflow runs are not sessions)",
-        );
+      const attempt = await provider.readAttempts({ appId, taskId, attemptId: ref.attemptId });
+      if (attempt.available !== true || attempt.appId !== appId || attempt.taskId !== taskId ||
+          attempt.attemptId !== ref.attemptId || attempt.generation !== ref.generation)
+        throw new Error("canonical attempt correlation mismatch");
+      const linkedSessions = Array.isArray(attempt.sessions) ? attempt.sessions.map(object) : [];
+      const sessionId = typeof attempt.sessionId === "string" && /^s_[a-zA-Z0-9_-]+$/.test(attempt.sessionId)
+        ? attempt.sessionId : linkedSessions[0]?.sessionId;
+      if (typeof sessionId !== "string" || !/^s_[a-zA-Z0-9_-]+$/.test(sessionId))
+        throw new Error("No readable session linked by canonical attempt; workflow-only process unassessed");
+      if (linkedSessions.length > 1 || attempt.executionsTruncated)
+        gaps.push(`Only one linked session read for ${ref.attemptId}; other workflow/helper execution unassessed`);
       function binding(response: Record<string, unknown>) {
         const session = object(response.session);
         if (
@@ -231,6 +234,7 @@ export async function readTaskProcessEvidence(
         source,
         transcriptSha256: hash(transcript),
         eventSha256: hash(event),
+        executionLinks: attempt,
         status: clipped ? "truncated" : "read",
         messageCount: transcript.messageCount,
         messages,
@@ -254,5 +258,6 @@ export async function readTaskProcessEvidence(
     limits,
     attempts: JSON.parse(JSON.stringify(attempts)) as typeof attempts,
     gaps,
+    coverage: { requested: Math.min(references.length, limits.attempts), readable: attempts.filter((a) => a.status !== "unavailable").length },
   };
 }

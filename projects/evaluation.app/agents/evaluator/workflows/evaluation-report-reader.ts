@@ -6,6 +6,7 @@ import {
   isPublishedTaskReportPath,
   listTaskReports,
   ONGOING_TASK_RUBRIC_VERSION,
+  SYSTEMIC_TASK_RUBRIC_VERSION,
   readPublishedTaskReport,
   resolveTaskReportPath,
   TASK_OUTCOME_RUBRIC_VERSION,
@@ -63,7 +64,7 @@ export function readPublishedEvaluationReport(
     (assessmentPurpose === "outcome" &&
       (rubricVersion !== TASK_OUTCOME_RUBRIC_VERSION || validityIdentity)) ||
     (assessmentPurpose === "ongoing" &&
-      (rubricVersion !== ONGOING_TASK_RUBRIC_VERSION || !validityIdentity))
+      (![ONGOING_TASK_RUBRIC_VERSION, SYSTEMIC_TASK_RUBRIC_VERSION].includes(rubricVersion) || !validityIdentity))
   )
     return {
       status: "invalid",

@@ -371,3 +371,20 @@ the sequence simple:
 5. resolve the alert only when the stated recovery evidence exists.
 
 Metrics provide observation. Apps retain judgment and ownership.
+
+### Task-attempt public reporting
+
+`GET /api/task-attempts?appId=example&end=<epoch-ms>` reads two adjacent
+24-hour started-at cohorts from one snapshot. Optional `windowMs` is bounded to
+seven days per cohort; optional `taskId` adds exact-Task and other-Task rows.
+A terminal outcome counts only when finished before that cohort's cut.
+`terminal = completed + failed + interrupted`; failure is a subset, and no
+activity has no percentage. Undated terminal outcomes and unknown durations are
+reported independently. Nested sessions/workflows are evidence, not extra attempts.
+
+With `appId`, `taskId`, and `attemptId`, the same endpoint reads the exact retained
+attempt and bounded canonical session/workflow links, including unsuccessful
+settlement. Missing identities are unavailable, not guessed from event payloads.
+Group/example limits are in the response. The Host reports frequency and recorded
+wall time; Apps judge cause, usefulness, cost and whether action is worthwhile.
+The first implementation uses indexed App reads without a cache or rollup.

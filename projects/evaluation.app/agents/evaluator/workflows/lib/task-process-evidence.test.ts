@@ -65,7 +65,10 @@ function fixture(summaries = ["direct success"]) {
     const index = Number(id.slice(2));
     return transcript ? transcripts[index] : { session: sessions[index] };
   };
+  const attempts = summaries.map((_, index) => ({ version: 1, available: true, appId: "may", taskId: "goal/one",
+    attemptId: `attempt-${index}`, generation: 2, sessionId: `s_${index}` }));
   const provider = {
+    readAttempts: async (input: Record<string, unknown>) => attempts.find(a => a.attemptId === input.attemptId)! ,
     getEvent: async (id: string | number) => events.find((e) => e.id === id)!,
   };
   const detail = { status: "waiting", generation: 2, history };
@@ -73,6 +76,7 @@ function fixture(summaries = ["direct success"]) {
     readTaskProcessEvidence("may", "goal/one", detail, provider, read);
   return {
     history,
+    attempts,
     events,
     sessions,
     transcripts,
@@ -138,7 +142,7 @@ describe("Task-bound process evidence", () => {
       expect(f.reads).toEqual([]);
     },
   );
-  test("excludes Evaluation ownership and worker process, unsupported workflow IDs, active sessions", async () => {
+  test("excludes Evaluation ownership and worker process, irrelevant event execution IDs, active sessions", async () => {
     const f = fixture();
     expect(
       (
@@ -158,7 +162,10 @@ describe("Task-bound process evidence", () => {
     f.sessions[0].status = "running";
     expect((await f.run()).gaps.join()).toContain("not terminal");
     f.events[0].data.workflowRunId = "wr_not-a-session";
-    expect((await f.run()).gaps.join()).toContain("unsupported");
+    f.sessions[0].status = "done";
+    expect((await f.run()).attempts[0].status).toBe("read");
+    delete (f.events[0].data as any).workflowRunId;
+    expect((await f.run()).attempts[0].status).toBe("read");
   });
   test("missing evidence is coverage, not a failed wait; no guessed result session", async () => {
     const f = fixture();
@@ -226,6 +233,7 @@ describe("Task-bound process evidence", () => {
   test("subject snapshot binds process and preserves unavailable relative artifacts", async () => {
     const f = fixture();
     const command: PublicCommand = async (cmd) => {
+      if (cmd.type === "task.attempts.read") return f.provider.readAttempts(cmd);
       if (cmd.type === "apps.list")
         return { command: cmd.type, apps: [{ id: "may" }] };
       if (cmd.type === "event.get")

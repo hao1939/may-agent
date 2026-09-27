@@ -321,7 +321,7 @@ describe("automatic task outcome selector", () => {
       ).toString("utf8"),
     );
     expect(decoded).toMatchObject({
-      version: 6,
+      version: 7,
       taskCursorByApp: { ["b".repeat(64)]: "historical-cursor" },
       unresolvedCursorByApp: {},
       unresolvedExhaustedByApp: {},
@@ -902,7 +902,7 @@ describe("automatic task outcome selector", () => {
     let exactReads = 0;
     const base = catalogCommand({ may: tasks });
     const command: PublicCommand = async (request) => {
-      if (request.type === "apps.list") return base(request);
+      if (request.type === "apps.list" || request.type === "task.attempts.read") return base(request);
       if (request.type !== "tasks.list") {
         exactReads += 1;
         return base(request);
@@ -1042,12 +1042,12 @@ describe("automatic task outcome selector", () => {
       NOW,
     );
     expect(result.candidate).toEqual({ appId: "scout", taskId: "goal/good" });
-    expect(result.navigationFacts).toEqual([
+    expect(result.navigationFacts.filter(f => !f.startsWith("selector:population-"))).toEqual([
       "selector-navigation-failed:may:pages-read=1:tasks.list item has no usable updatedAt",
       "selector-navigation-failed:may:pages-read=2:tasks.list item has no usable updatedAt",
     ]);
     expect(result.state).not.toHaveProperty("taskCursor");
-    expect(result.state.version).toBe(6);
+    expect(result.state.version).toBe(7);
   });
 
   test("advances past malformed and non-reviewable items within a page", async () => {
@@ -1079,7 +1079,7 @@ describe("automatic task outcome selector", () => {
       taskId: "goal/running",
       assessmentPurpose: "ongoing",
     });
-    expect(result.navigationFacts).toEqual([
+    expect(result.navigationFacts.filter(f => !f.startsWith("selector:population-"))).toEqual([
       "selector-navigation-failed:may:pages-read=1:tasks.list item has no usable updatedAt",
     ]);
   });
@@ -1149,7 +1149,7 @@ describe("automatic task outcome selector", () => {
     );
     expect(result.candidate).toEqual({ appId: "may", taskId: "goal/later" });
     expect(cursors).toEqual([undefined, "later"]);
-    expect(result.navigationFacts).toEqual([
+    expect(result.navigationFacts.filter(f => !f.startsWith("selector:population-"))).toEqual([
       "selector-navigation-failed:may:pages-read=2:tasks.list response has no items array",
     ]);
   });
@@ -1232,7 +1232,8 @@ describe("automatic task outcome selector", () => {
       NOW,
     );
     expect(result.candidate).toBeNull();
-    expect(taskReads).toBe(6);
+    // Three bounded aggregate reads plus six ordinary navigation reads.
+    expect(taskReads).toBe(9);
   });
 
   test("deduplicates unchanged evidence outside recent-100 while allowing changed evidence", async () => {

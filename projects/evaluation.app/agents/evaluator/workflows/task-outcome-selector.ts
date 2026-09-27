@@ -1,7 +1,9 @@
+import { readPopulation, populationCut } from "./lib/task-population-evidence.js";
 import { createHash } from "node:crypto";
 import type { ExecutionResult, WorkflowContext } from "@may-agent/sdk";
 import {
   createPublicTaskEvidenceProvider,
+  sendPublicReadCommand,
   readSubjectTask,
   type PublicCommand,
 } from "./lib/public-task-evidence.js";
@@ -18,7 +20,7 @@ export const name = "task-outcome-selector";
 export const description =
   "Select at most one recent external Task candidate through bounded public App reads.";
 
-const STATE_VERSION = 6;
+const STATE_VERSION = 7;
 const MAX_STATE_APPS = 20;
 const MAX_STATE_HISTORY_BYTES = 6_000;
 const MAX_NAVIGATION_FACT_BYTES = 3_000;
@@ -43,6 +45,7 @@ type Candidate = {
   appId: string;
   taskId: string;
   assessmentPurpose?: "ongoing";
+  populationEnd?: number;
 };
 type AssessmentPurpose = "outcome" | "ongoing";
 type SelectorState = {
@@ -52,6 +55,8 @@ type SelectorState = {
   taskCursorByApp: Record<string, string>;
   unresolvedCursorByApp: Record<string, string>;
   unresolvedExhaustedByApp: Record<string, string>;
+  populationEndByApp: Record<string, string>;
+  populationTurn: boolean;
 };
 type Selection = {
   candidate: Candidate | null;
@@ -195,6 +200,8 @@ function emptyState(): SelectorState {
     taskCursorByApp: {},
     unresolvedCursorByApp: {},
     unresolvedExhaustedByApp: {},
+    populationEndByApp: {},
+    populationTurn: true,
   };
 }
 function boundedTaskCursors(value: unknown): Record<string, string> {
@@ -220,17 +227,18 @@ function boundedTaskCursors(value: unknown): Record<string, string> {
 function cleanState(value: unknown): SelectorState {
   const item = object(value);
   const version = Number(item.version);
-  if (version !== STATE_VERSION && version !== 5) return emptyState();
+  if (![STATE_VERSION, 6, 5].includes(version)) return emptyState();
   const taskCursorByApp = boundedTaskCursors(item.taskCursorByApp);
   const unresolvedCursorByApp =
-    version === STATE_VERSION
+    version >= 6
       ? boundedTaskCursors(item.unresolvedCursorByApp)
       : {};
   const unresolvedExhaustedByApp =
-    version === STATE_VERSION
+    version >= 6
       ? boundedTaskCursors(item.unresolvedExhaustedByApp)
       : {};
   const history = {
+    populationEndByApp: boundedTaskCursors(item.populationEndByApp),
     taskCursorByApp,
     unresolvedCursorByApp,
     unresolvedExhaustedByApp,
@@ -240,6 +248,7 @@ function cleanState(value: unknown): SelectorState {
       unresolvedExhaustedByApp,
       unresolvedCursorByApp,
       taskCursorByApp,
+      history.populationEndByApp,
     ].find((candidate) => Object.keys(candidate).length);
     if (!map) break;
     delete map[Object.keys(map)[0]!];
@@ -249,6 +258,7 @@ function cleanState(value: unknown): SelectorState {
     appId: /^[a-f0-9]{64}$/.test(text(item.appId)) ? text(item.appId) : "",
     appIndex: Math.max(0, Math.trunc(Number(item.appIndex) || 0)),
     ...history,
+    populationTurn: item.populationTurn !== false,
   };
 }
 export function selectorStateFact(state: SelectorState): string {
@@ -315,7 +325,7 @@ export async function selectFairCandidate(
   );
   const start =
     rememberedIndex >= 0 ? rememberedIndex : state.appIndex % apps.length;
-  let nextState = state;
+  let nextState = { ...state, populationTurn: true };
   const navigationFacts: string[] = [];
   const cutoff = nowMs - config.recentWindowMs;
 
@@ -324,6 +334,33 @@ export async function selectFairCandidate(
     const appId = apps[appIndex]!;
     const key = appKey(appId);
     const reportKey = canonical(appId);
+    const end = populationCut(nowMs);
+    if (state.populationTurn && Number(state.populationEndByApp[key] ?? 0) < end) {
+      try {
+        const population = await readPopulation(command ?? sendPublicReadCommand, appId, end);
+        const current = object(population.current);
+        const previous = object(population.previous);
+        const representatives = [...(Array.isArray(current.examples) ? current.examples : []),
+          ...(Array.isArray(previous.examples) ? previous.examples : [])].map(object);
+        nextState = cleanState({ ...nextState,
+          populationEndByApp: { ...nextState.populationEndByApp, [key]: String(end) } });
+        const distinct = [...new Map(representatives.map(sample => [taskId(sample), sample])).values()];
+        for (const sample of distinct.slice(0, 3)) {
+          const exactTaskId = taskId(sample);
+          if (!exactTaskId) continue;
+          const subject = await readSubjectTask({ appId, taskId: exactTaskId }, command);
+          if (subject.disposition !== "eligible") continue;
+          nextState = cleanState({ ...nextState, appId: appKey(apps[(appIndex + 1) % apps.length]!),
+            appIndex: (appIndex + 1) % apps.length, populationTurn: false });
+          appendNavigationFact(navigationFacts, `selector:population-selected:${appId}:cut=${end}:lag-ms=${nowMs-end}:report-pending`);
+          return { candidate: { appId, taskId: exactTaskId, assessmentPurpose: "ongoing", populationEnd: end },
+            state: nextState, navigationFacts };
+        }
+        appendNavigationFact(navigationFacts, `selector:population-observed:${appId}:cut=${end}:${representatives.length ? "representative-unavailable" : "no-activity"}`);
+      } catch (error) {
+        appendNavigationFact(navigationFacts, `selector:population-unavailable:${appId}:${String(error).slice(0, 160)}`);
+      }
+    }
     let cursor = state.taskCursorByApp[key] ?? "";
     let continuationCursor = cursor;
     let unresolvedCursor = state.unresolvedCursorByApp[key] ?? "";
@@ -476,6 +513,7 @@ export async function selectFairCandidate(
     if (unresolvedExhausted) unresolvedExhaustedByApp[key] = "1";
     else delete unresolvedExhaustedByApp[key];
     nextState = cleanState({
+      ...nextState,
       version: STATE_VERSION,
       appId: appKey(apps[nextIndex]!),
       appIndex: nextIndex,
@@ -566,6 +604,7 @@ export async function runTaskOutcomeSelector(
         ...(taskSnapshot?.truncated
           ? ["selector:task-snapshot-truncated"]
           : []),
+        `selector:population-deferred:cut=${populationCut()}:requested-review-backlog`,
         selectorStateFact(priorState),
         ...retainedRequests
           .slice(0, 8)

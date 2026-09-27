@@ -1,3 +1,4 @@
+import { readPublicAttempts, readPopulation } from "./task-population-evidence.js";
 import { createHash } from "node:crypto";
 import { Socket } from "node:net";
 import { resolve } from "node:path";
@@ -57,6 +58,7 @@ export type PublicTaskEvidenceProvider = {
     taskId: string,
     acceptedEvidence?: { limit?: number; cursor?: string },
   ): Promise<Record<string, unknown>>;
+  readAttempts(input: Record<string, unknown>): Promise<Record<string, unknown>>;
   getEvent(eventId: string | number): Promise<Record<string, unknown>>;
 };
 export type SubjectDisposition =
@@ -138,6 +140,7 @@ export function taskEvidenceHash(
         appTask: task.appTask,
         detail: meaningfulTaskDetail(object(task.detail)),
         readBack: task.readBack,
+        ...(task.population ? { population: task.population } : {}),
       }),
     )
     .digest("hex");
@@ -158,6 +161,8 @@ export function sendPublicReadCommand(
   options: { socketPath?: string; timeoutMs?: number; maxBytes?: number } = {},
 ): Promise<Record<string, unknown>> {
   const commandType = text(command.type);
+  // This adapter combines public HTTP reporting and socket resource reads.
+  if (commandType === "task.attempts.read") return readPublicAttempts(command);
   if (!ALLOWED_COMMANDS.has(commandType)) {
     return Promise.reject(
       new Error(
@@ -290,6 +295,7 @@ export function createPublicTaskEvidenceProvider(
   command: PublicCommand = sendPublicReadCommand,
 ): PublicTaskEvidenceProvider {
   return {
+    readAttempts: (input) => command({ type: "task.attempts.read", ...input }),
     async listApps(limit = 50) {
       const response = await command({
         type: "apps.list",
@@ -502,7 +508,7 @@ export function unresolvedReviewSubject(
 }
 
 export async function readSubjectTask(
-  subject: { appId: string; taskId: string },
+  subject: { appId: string; taskId: string; populationEnd?: number },
   command: PublicCommand = sendPublicReadCommand,
   readSession?: SessionRead,
 ): Promise<SubjectEvidence> {
@@ -576,7 +582,14 @@ export async function readSubjectTask(
       readBack.gaps.push(
         "Optional creator/delegation provenance is unavailable; the owning App is verified, but who initiated this work is unknown.",
       );
-    const evidenceHash = taskEvidenceHash(appId, taskId, { ...task, readBack });
+    let population: Record<string, unknown> | undefined;
+    if (subject.populationEnd !== undefined) {
+      try { population = await readPopulation(command, appId, subject.populationEnd, taskId); }
+      catch (error) { population = { available: false, appId, taskId, end: subject.populationEnd,
+        reason: error instanceof Error ? error.message : String(error) }; }
+    }
+    const snapshot = { ...task, readBack, ...(population ? { population } : {}) };
+    const evidenceHash = taskEvidenceHash(appId, taskId, snapshot);
     return {
       disposition: "eligible",
       reason:
@@ -584,7 +597,7 @@ export async function readSubjectTask(
       appId,
       taskId,
       evidenceHash,
-      task: { ...task, readBack },
+      task: snapshot,
     };
   } catch (error) {
     return {

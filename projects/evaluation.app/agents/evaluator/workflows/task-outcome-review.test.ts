@@ -230,7 +230,9 @@ describe("Task outcome review", () => {
       ],
     }));
     const command: PublicCommand = async (cmd) =>
-      cmd.type === "event.get"
+      cmd.type === "task.attempts.read"
+        ? { version: 1, available: true, appId, taskId, attemptId: "a1", generation: 1, sessionId: "s_subject" }
+        : cmd.type === "event.get"
         ? {
             command: "event.get",
             event: {

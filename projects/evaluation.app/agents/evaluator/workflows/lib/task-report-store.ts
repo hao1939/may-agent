@@ -1,3 +1,4 @@
+import { renderPopulation } from "./task-population-evidence.js";
 import { createHash } from "node:crypto";
 import {
   existsSync,
@@ -10,10 +11,12 @@ import {
 import { dirname, isAbsolute, join, resolve, sep } from "node:path";
 
 export const TASK_OUTCOME_RUBRIC_VERSION = "task-outcome-v2";
+export const SYSTEMIC_TASK_RUBRIC_VERSION = "task-obligation-v2";
 export const ONGOING_TASK_RUBRIC_VERSION = "task-obligation-v1";
 export const SUPPORTED_TASK_RUBRIC_VERSIONS = new Set([
   TASK_OUTCOME_RUBRIC_VERSION,
   ONGOING_TASK_RUBRIC_VERSION,
+  SYSTEMIC_TASK_RUBRIC_VERSION,
 ]);
 
 export type AssessmentPurpose = "outcome" | "ongoing";
@@ -88,7 +91,7 @@ function purposeMatchesRubric(
 ): purpose is AssessmentPurpose {
   return (
     (purpose === "outcome" && rubricVersion === TASK_OUTCOME_RUBRIC_VERSION) ||
-    (purpose === "ongoing" && rubricVersion === ONGOING_TASK_RUBRIC_VERSION)
+    (purpose === "ongoing" && [ONGOING_TASK_RUBRIC_VERSION, SYSTEMIC_TASK_RUBRIC_VERSION].includes(rubricVersion))
   );
 }
 
@@ -231,6 +234,7 @@ export function renderTaskReportMarkdown(payload: unknown): string | null {
     !Object.keys(freshness).length
   )
     return `# Evaluation report\n\n- Subject: \`${appId}/${taskId}\`\n- Evidence: \`${evidenceHash}\`\n- Rubric: \`${rubricVersion}\`\n- Source revision: \`${sourceRevision}\`\n${reviewerLines}- Disposition: \`${disposition}\`\n- Created: \`${new Date(createdAt).toISOString()}\`\n- Evaluator execution: \`${executionId}\`\n- Cost: unknown\n\n## Summary\n\n${summary}\n\n## Responsibility\n\n${responsibility}\n\n## Findings\n\n${findings.map((item) => `- ${item}`).join("\n") || "- None."}\n\n## Verification and delivery\n\n${verification.map((item) => `- ${item}`).join("\n") || "- No verification cited."}\n- Delivery: ${delivery}\n`;
+  const populationMarkdown = renderPopulation(object(object(report.evidence).population));
   const validityLines =
     purpose === "ongoing"
       ? `- Validity phase: \`${text(validity.phase) || "unknown"}\`\n- Due boundary: \`${representableTimestamp(validity.dueAt) ? new Date(validity.dueAt).toISOString() : "unavailable"}\`\n`
@@ -238,7 +242,7 @@ export function renderTaskReportMarkdown(payload: unknown): string | null {
   const freshnessLines = Object.keys(freshness).length
     ? `- Snapshot generation: \`${Number(snapshot.generation)}\`\n- Snapshot freshness at check: \`${freshnessStatus}\`\n- Freshness checked: \`${new Date(Number(freshness.checkedAt)).toISOString()}\`\n`
     : "";
-  return `# Evaluation report\n\n- Subject: \`${appId}/${taskId}\`\n- Evidence: \`${evidenceHash}\`\n- Purpose: \`${purpose}\`\n- Rubric: \`${rubricVersion}\`\n- Source revision: \`${sourceRevision}\`\n${validityLines}${freshnessLines}${reviewerLines}- Disposition: \`${disposition}\`\n- Created: \`${new Date(createdAt).toISOString()}\`\n- Evaluator execution: \`${executionId}\`\n- Cost: unknown\n\n## Summary\n\n${summary}\n\n## Responsibility\n\n${responsibility}\n\n## Findings\n\n${findings.map((item) => `- ${item}`).join("\n") || "- None."}\n\n## Verification and delivery\n\n${verification.map((item) => `- ${item}`).join("\n") || "- No verification cited."}\n- Delivery: ${delivery}\n`;
+  return `# Evaluation report\n\n- Subject: \`${appId}/${taskId}\`\n- Evidence: \`${evidenceHash}\`\n- Purpose: \`${purpose}\`\n- Rubric: \`${rubricVersion}\`\n- Source revision: \`${sourceRevision}\`\n${validityLines}${freshnessLines}${reviewerLines}- Disposition: \`${disposition}\`\n- Created: \`${new Date(createdAt).toISOString()}\`\n- Evaluator execution: \`${executionId}\`\n- Cost: unknown\n\n## Summary\n\n${summary}\n\n${populationMarkdown}## Responsibility\n\n${responsibility}\n\n## Findings\n\n${findings.map((item) => `- ${item}`).join("\n") || "- None."}\n\n## Verification and delivery\n\n${verification.map((item) => `- ${item}`).join("\n") || "- No verification cited."}\n- Delivery: ${delivery}\n`;
 }
 
 export function markTaskReportPublished(

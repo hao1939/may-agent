@@ -21,6 +21,7 @@ type Input = PublishedReportRequest;
 type SubjectReader = (subject: {
   appId: string;
   taskId: string;
+  populationEnd?: number;
 }) => Promise<SubjectEvidence>;
 function object(value: unknown): Record<string, unknown> {
   return value && typeof value === "object" && !Array.isArray(value)
@@ -129,6 +130,8 @@ export async function intakeEvaluationReport(
   const subject = await subjectReader({
     appId: publication.appId,
     taskId: publication.taskId,
+    ...(Number.isSafeInteger(object(object(read.facts.evidence).population).end)
+      ? { populationEnd: Number(object(object(read.facts.evidence).population).end) } : {}),
   });
   if (
     subject.disposition !== "eligible" ||

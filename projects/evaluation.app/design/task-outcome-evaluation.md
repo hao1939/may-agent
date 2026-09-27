@@ -20,11 +20,11 @@ daily cadence was a bounded pilot and has been superseded for this installation.
 
 ## Boundary
 
-**Proposed extension:** [Systemic pattern review](systemic-pattern-review-20260927.md)
+**Population extension (September 27 candidate):** [Systemic pattern review](systemic-pattern-review-20260927.md)
 adds bounded App-attempt aggregates and exact examples to this assessment path.
 Current recovery and a remaining systemic concern are independent findings. The
-proposal records missing public attempt navigation and aggregate selection;
-these capabilities are not yet implemented or activated.
+implementation adds public attempt navigation and aggregate selection. See the
+linked implementation/trial record for activation evidence and current limits.
 
 Evaluation reviews an accepted outcome, not merely one worker session. The unit is an exact `(appId, taskId)` resolved through the Host's public control socket:
 
@@ -62,8 +62,9 @@ later documentation-only commit does not change those active runtime bytes.
 
 `readBack.process` follows up to three newest distinct `project.task.reconciled`
 references in the public Task history, independent of waiting/completed status
-or summary. Exact `event.get` supplies the attempt's `workflowRunId`; only `s_`
-session links are supported. Public GET `/api/sessions/<id>` must match App,
+or summary. Exact `event.get` verifies the historical reference. Public
+`GET /api/task-attempts?appId=...&taskId=...&attemptId=...` supplies canonical
+session/workflow links; the event's `workflowRunId` is not a session identity. Public GET `/api/sessions/<id>` must match App,
 Task, generation and attempt, identify a non-Evaluation worker, and be terminal.
 Its binding is checked again after GET `/api/sessions/<id>/transcript`. Missing,
 mismatched, active or workflow-shaped execution is explicitly unassessed; no

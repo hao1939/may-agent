@@ -405,6 +405,7 @@ const evaluationInputSchema = Type.Union([
           evidenceHash: Type.Optional(
             Type.String({ minLength: 64, maxLength: 64 }),
           ),
+          populationEnd: Type.Optional(Type.Integer({ minimum: 1 })),
           assessmentPurpose: Type.Optional(
             Type.Union([Type.Literal("outcome"), Type.Literal("ongoing")]),
           ),
@@ -651,6 +652,7 @@ export function taskIntentForInput(input: AppInput): TaskIntent | null {
           : {}),
         ...(evidenceHash ? { evidenceHash } : {}),
         assessmentPurpose,
+        ...(Number.isSafeInteger(data.populationEnd) && Number(data.populationEnd) > 0 ? { populationEnd: Number(data.populationEnd) } : {}),
         ...(reviewer === "evaluator-deepseek" ? { reviewer } : {}),
         ...(automatic ? { automatic: true } : {}),
       };
@@ -962,6 +964,7 @@ export function taskInputForEvent(
               ...(evidenceHash ? { evidenceHash } : {}),
               ...(reviewer ? { reviewer } : {}),
               automatic: true,
+              ...(Number.isSafeInteger(data.populationEnd) && Number(data.populationEnd) > 0 ? { populationEnd: Number(data.populationEnd) } : {}),
               ...(assessmentPurpose === "ongoing" ||
               assessmentPurpose === "outcome"
                 ? { assessmentPurpose }
@@ -1336,6 +1339,7 @@ const baseApp = defineApp({
           evidenceHash: Type.Optional(
             Type.String({ minLength: 64, maxLength: 64 }),
           ),
+          populationEnd: Type.Optional(Type.Integer({ minimum: 1 })),
           assessmentPurpose: Type.Optional(
             Type.Union([Type.Literal("outcome"), Type.Literal("ongoing")]),
           ),

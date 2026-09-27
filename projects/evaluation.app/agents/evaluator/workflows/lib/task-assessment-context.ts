@@ -2,6 +2,7 @@ import { createHash } from "node:crypto";
 import type { SubjectEvidence } from "./public-task-evidence.js";
 import {
   ONGOING_TASK_RUBRIC_VERSION,
+  SYSTEMIC_TASK_RUBRIC_VERSION,
   TASK_OUTCOME_RUBRIC_VERSION,
   type AssessmentPurpose,
 } from "./task-report-store.js";
@@ -159,7 +160,7 @@ export function assessmentContext(
     : "condition-boundaries:none";
   return {
     purpose,
-    rubricVersion: ONGOING_TASK_RUBRIC_VERSION,
+    rubricVersion: subject.task?.population ? SYSTEMIC_TASK_RUBRIC_VERSION : ONGOING_TASK_RUBRIC_VERSION,
     validityIdentity,
     validity: { phase, dueAt, boundaries },
   };
