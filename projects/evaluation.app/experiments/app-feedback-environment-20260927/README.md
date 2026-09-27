@@ -242,3 +242,71 @@ behavior is unchanged.
 Final revision `f94aefa4` passed full local CI again (3,253 pass, three expected
 installation skips, zero failures). Both GitHub Quality and Container passed in
 run `36335045725`. PR #262 is ready for human review; no source rollout occurred.
+
+## September 28: retaining the declared Event destination
+
+Host PR [#262](https://github.com/hao1939/may-agent/pull/262) merged as
+`8c1ad408`. The next focused repair is
+[#263](https://github.com/hao1939/may-agent/pull/263), source
+`11d72058a005f8a347c29fee1ab0185fbdf862a4`.
+
+Read-only inspection of the existing runtime reproduced the earlier publication
+readback problem on event `6459856`: subject App `may` was combined with the
+Evaluation producer's Task ID as its target. The authored publication had a
+different destination. Both diagnostic reads and recovery rebuilt an address
+from correlation because the event writer never stored the original target.
+
+The change adds one nullable `target_json` column to existing Event storage.
+The writer retains the authored target; both readers use it. Task producer
+indexes, payload identity, idempotency and fenced Task settlement retain their
+existing roles. New untargeted events store `{}`. Old rows retain SQL NULL and
+are not backfilled from incomplete evidence.
+
+The first regression failed for both inline and large-body publication.
+The follow-up compatibility trial exposed a second failure: an unresolved
+legacy translator could interpret a lost target as no target and settle a
+no-op. Revision `11d72058` retains that command as pending with an explicit
+investigation error. Already resolved commands use their frozen destinations
+independently. The new regression failed before this change and passed after
+it; the six focused suites now contain 103 passing tests. No new registry,
+queue, Task lifecycle or App-specific repair branch was added.
+
+May reviewed the candidate through input `app_950dc248-74fe-46c0-8881-1d08307fc900`.
+During review she removed the author's ongoing uncommitted regression and
+implementation edits from the shared worktree. The author restored and
+committed both, then sent the correction through ordinary Conversation input
+`app_f579df57-ed18-42dd-9f1e-be2954d629b6`. May re-reviewed exact `11d72058` from
+a private archive, passed 103 tests (532 assertions), and found no remaining
+concrete defect in scope. Her acknowledgment incorrectly attributes those
+original edits to a delegated reviewer; the author's tool history establishes
+their origin. The technical re-review does not erase this review-process issue.
+Future review assignments should provide an isolated pinned snapshot and
+preserve shared edits rather than trying to make a shared checkout match HEAD.
+
+Operational evidence remains under `/tmp/event-target-*` for this session.
+The runtime was observed, not upgraded, during this repair. Source validation
+and exact final hosted checks are recorded below separately from live adoption.
+
+A separate operational boundary appeared while correcting the review. Exact
+Task-addressed App input event `6460642` was rejected with
+`Conversation Task input must use conversationId without targetTaskId`
+(subscriber failure `6460643`). It acquired no inbox link and later became
+unhandled. Ordinary Conversation input `6460652` was accepted and considered.
+This is an existing Conversation-ingress rule, not target-storage corruption;
+review the rule and its rejection receipt before proposing another mechanism.
+No historical event or Task was rewritten to make that trial succeed.
+Source/design follow-up confirms that Conversation-addressing restriction is
+intentional (`agent-app.md`, App input identity): the stable Conversation ID
+selects its current executor, and an exact executor must not acquire ordinary
+Task-input authority. The attempted targeted correction was caller misuse;
+it is not evidence to remove that guard. Rejection visibility can be assessed
+separately using the recorded event and subscriber diagnostic.
+
+Final verification on unchanged `11d72058` passed full Host `bun run ci`:
+**3,257 passed, three expected installation-specific skips, zero failures**.
+GitHub **Quality** and **Container** both passed in run `36336223122` on that
+same revision. Common design integrity, checked documentation examples and
+canonical App checks passed against the candidate source. The candidate
+worktree was clean after the complete run. PR #263 is ready for human review;
+it has not been merged or deployed. The public read of old event `6459856`
+remains historical evidence, not a claim that its lost target was reconstructed.

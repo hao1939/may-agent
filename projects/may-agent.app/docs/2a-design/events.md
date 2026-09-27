@@ -727,6 +727,26 @@ metadata. Large immutable bodies may be stored content-addressably before the
 row commits. Routing consumers use the bounded projection; audit/detail readers
 resolve the full body only when required.
 
+The declared envelope `target` is retained separately from indexed evidence
+correlation. For example, Evaluation can publish a report about a May Task to
+an App subscription: the producer Task, reviewed Task and destination have
+different roles. Save/read/restart must preserve the declared destination,
+including an event with no destination. Public reads and recovery use that
+same retained target; neither payload identity nor a producer index supplies
+missing routing authority.
+
+The Host stores this field as `events.target_json`. New untargeted events store
+an empty object; pre-existing rows retain SQL NULL because their original
+target was not saved. Readers omit that unknown target rather than inventing
+one or rewriting history. Already frozen admission commands and Task-event
+links retain their own exact destinations and continue through normal recovery.
+An older admission still awaiting translation remains pending with an explicit
+failure when its original target is unavailable. It needs investigation rather
+than interpreting unknown routing as no target. Already translated commands
+continue independently; this change cannot recover information never retained.
+Invalid stored target JSON is an explicit read failure and cannot be replayed
+as an untargeted event.
+
 Retention protects:
 
 - events referenced by unfinished App requests, task triggers, or Conditions;

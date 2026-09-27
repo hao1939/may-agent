@@ -70,6 +70,10 @@ reference/hash/size metadata.
 | Metrics and alerts | SQLite definitions, samples and alert state | Definitions may be reloaded; historical samples cannot be recreated by remeasurement |
 | Task lists, human-action views, event graphs and dashboards | Read projections of the authorities above | Disposable views; never restore Task state from presentation |
 
+Event routing is stored independently of producer/subject correlation; see
+[event durability](events.md#durability-and-retention) for exact target retention
+and the limits of older records.
+
 Host inbox rows track input handling. Separate `conversation_requests` implement the
 [conversational Request contract](message-lifecycle.md#requests-acceptance-and-closure)
 across turns. The Host fences updates by revision and commits closure with its
