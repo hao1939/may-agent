@@ -156,6 +156,30 @@ Core owns the stored fact that an ask is open and rejects a stale closure; May
 judges whether the ask has been addressed. State operations validate a proposed
 decision without reading chat text to infer intent or calling a model.
 
+The execution boundary keeps three responsibilities separate:
+
+- Core reads the exact claimed input, derives reply requirements and control
+  authority, prepares exact Task targets and commits accepted effects.
+- Context preparation selects bounded evidence, including current records named
+  by a rejected result. It supplies information, never authorization.
+- The model adapter consumes the supplied result schema and scoped read/write
+  capabilities, then returns a decision. It receives no database or Task store.
+
+`AppInputResolver` is the Host execution contract in `core/tasks/execution.ts`.
+Composition binds its Conversation read capability to admitted identity and
+connects the context builder and adapter. `TaskConversationRunner` is the
+Host composition hook around that adapter; its Host configuration is not passed
+through to model execution. Prepared proposals carry only decisions, App/Task
+identities, attachments and observed versions. At settlement core resolves the
+installed App again and checks current state in the same transaction as the
+reply and Request changes. There is no serialized store handle or new registry.
+
+Changing context selection or replacing the model adapter does not change
+identity, authority, revision checks or settlement. Changing an App's Task
+mapping uses its existing declaration. Changing accepted state rules belongs in
+core and requires review of that contract. These are dependency boundaries,
+not a guarantee that every feature change touches only one file.
+
 Without a conversational frontend, new chat handling is unavailable but unrelated
 Tasks and Events continue. Retained messages, Requests and Task links remain
 readable; open asks do not silently disappear or close. Removing the Task-event
