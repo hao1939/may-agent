@@ -470,7 +470,7 @@ export async function runTaskAttempt(input: {
           observer,
         });
       }
-      if (handoffWorkflow?.verifier) primaryResult!.verifier = handoffWorkflow.verifier;
+      if (handoffWorkflow?.verifier) primaryResult = { ...primaryResult!, verifier: handoffWorkflow.verifier };
     }
 
     if (!primaryResult) throw new Error(`Task ${primary.taskId} produced no handler result`);

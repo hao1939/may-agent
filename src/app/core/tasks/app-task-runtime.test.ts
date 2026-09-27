@@ -1277,10 +1277,10 @@ it("does not release an agent handoff until its required workflow verifier is av
     role: (agent) => ({ agent, instructions: "Fixture" }),
     async execute() {
       agentCalls++;
-      return {
-        handlerResult: { state: "converged", summary: "Agent proposes completion", facts: [], actions: [] },
+      return Object.freeze({
+        handlerResult: Object.freeze({ state: "converged", summary: "Agent proposes completion", facts: [], actions: [] }),
         runId: null,
-      };
+      });
     },
   };
   const workflows: TaskWorkflowRunner = {
