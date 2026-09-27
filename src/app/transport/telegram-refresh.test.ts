@@ -336,7 +336,11 @@ describe("Telegram refresh lifecycle", () => {
         () =>
           f.sent.some((send) => send.text.includes("Explicit Console /todo result")) &&
           f.sent.some((send) => send.text.includes("Explicit cross-channel human message")) &&
-          f.sent.some((send) => send.text.includes("Run the already-authorized maintenance step.")),
+          ["123", "456"].every((chatId) =>
+            f.sent.some(
+              (send) => send.chat_id === chatId && send.text.includes("Run the already-authorized maintenance step."),
+            ),
+          ),
       );
 
       expect(f.sent.some((send) => send.text.includes("automatic Console alert"))).toBe(false);
