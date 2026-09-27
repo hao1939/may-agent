@@ -229,7 +229,7 @@ the exact turn disposition before aborting that execution.
 
 Code collects bounded structured context:
 
-- the current Turn and visible adapter scope;
+- the current Turn's complete claimed input batch, in order, and its separate reply destination;
 - a focused Task's complete decision view, when supplied;
 - the selected or replied-to Topic and its exact Task links;
 - the previous proposal or question and bounded recent Turns;
@@ -240,6 +240,22 @@ Code collects bounded structured context:
 
 The LLM decides meaning. Code validates identities and executes the decision.
 There is no keyword router or second intent classifier.
+
+The reply destination selects where the answer goes; it does not select which
+input matters. The default Conversation capability presents each batch input
+once in `inputs`, with its source, and labels response routing separately as
+`replyTo`. Bounded history, Requests and previous-attempt evidence remain context.
+This is a presentation choice, not an SDK schema or authority change: core still
+derives the reply requirement and allowed effects from the claimed inputs.
+
+The agent considers independent asks together and applies corrections to the
+same accepted ask. It saves unfinished accepted asks through the existing
+Request capability before work, and returns their disposition with the answer.
+Observations and corrections do not each require a new Request. Settlement
+marks the considered input batch handled; it does not mechanically prove that
+every ask was recognized. See [accepted Request storage](#accepted-request-storage)
+for that behavioral limit. The [batch-context trial](../../experiments/conversation-batch-context-20260928/README.md)
+records the candidate source, controlled comparison and activation status.
 Human input's `metadata.topicId` is preserved as `input.data.context.conversationTopicId`
 during admission. Context preparation validates its App/Conversation scope and
 prefers an explicit reply's Topic. This hint is distinct from the committed
