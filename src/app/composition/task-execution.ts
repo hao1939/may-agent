@@ -29,7 +29,6 @@ export function createTaskExecutionBackends(input: {
         resolveConversationInput: createConversationAgentResolver({
           manager: input.manager,
           taskContext: taskExecutionContext(turn.execution, definitions),
-          db: turn.config.resourceStore.db,
           definitions,
           registry: { snapshot: () => turn.registry },
         }),

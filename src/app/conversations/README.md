@@ -18,13 +18,17 @@ human input / linked Task outcome / relevant timer-discovered change
 
 [`context.ts`](context.ts) selects bounded messages, Topics, Requests and canonical
 Task observations. [`turn-agent.ts`](turn-agent.ts) invokes the model/tool runner
-and validates `ConversationTurnResult`. The agent can answer, request a handoff,
+and supplies the core-selected result schema to the finish tool. The agent can answer, request a handoff,
 or apply an authorized control; it does not manage admission receipts or retry.
-The `conversation_context` tool reads omitted history and full Request records.
+The `conversation_context` tool uses a read capability bound to the admitted
+Conversation, even when the prompt omits its history or identity. The model
+adapter receives no database handle. Its contract is `AppInputResolver` in
+[`core/tasks/execution.ts`](../core/tasks/execution.ts).
 
 [`composition/conversation-task-turn.ts`](../composition/conversation-task-turn.ts)
-prepares the judgment under the current Task claim and validates contextual
-handoff/control targets. [`composition/task-execution.ts`](../composition/task-execution.ts)
+connects context preparation and agent execution to core-owned proposal
+preparation. It binds capabilities to the admitted Conversation, independently
+of the rendered context. [`composition/task-execution.ts`](../composition/task-execution.ts)
 wires this handler into the [Task runtime](../core/tasks/README.md), which owns
 capacity, attempts, session binding, cancellation and backoff for every Task.
 A handler-specific result shape is not a second lifecycle.
@@ -32,7 +36,15 @@ A handler-specific result shape is not a second lifecycle.
 ## Durable effects and follow-through
 
 [`core/state/conversation-task-turns.ts`](../core/state/conversation-task-turns.ts)
-commits the reply, Topic selection, Request updates, Task result and any admitted
+derives the reply target, reply requirement and control authority from claimed
+input. It validates exact installed Task targets and prepares data-only proposals
+with control target identities and observed versions. A handoff has one target
+authority, `decision.followUp`; core resolves it and invokes the App’s pure Task
+mapping once during settlement. No separately prepared attachment can redirect it. Task references in context help
+discovery; they neither grant authority nor limit authorized exact targets.
+
+The same core module resolves current stores at settlement and commits the
+reply, Topic selection, Request updates, Task result and any admitted
 work or authorized control in one fenced transaction. Failed settlement retains
 the input for normal Task retry. Rejected proposals do not publish a misleading
 reply. Previous-attempt facts let the App correct its decision after backoff,
@@ -60,7 +72,7 @@ separately from accepted state, including its originating attempt/session and
 the returned facts. Each repair claim saves that evidence before execution, so
 ordinary failure, interruption and restart retain it. An accepted result retires
 it from future repair context; the original failed attempt remains in history.
-The Conversation adapter also reads the
+Context preparation also reads the
 current Requests named by the rejected decision, including closed asks. The
 agent judges whether to repair its decision or perform more work; failed
 settlement never automatically replays the proposed effects or establishes

@@ -1,11 +1,13 @@
+import { assertValidAppInput } from "../apps/definition-validation.js";
+import { assertResourceCreator } from "./resource-creator.js";
 import { createHash } from "node:crypto";
 import { isDeepStrictEqual } from "node:util";
 import { Check } from "typebox/value";
 import type { SqliteDb } from "../../../lib/db.js";
 import {
   conversationTurnResultSchema,
+  type AppDefinition,
   type AppTaskInput,
-  type AppTaskAttachment,
   type AppConversationRequest,
   type ConversationTurnResult,
   type TaskAcceptanceBasis,
@@ -88,14 +90,58 @@ export function isConversationTask(config: AppTaskContext, taskId: string): bool
 /** A prepared judgment has no authority to settle or close its executing Task. */
 export type ConversationTaskProposal = {
   decision: ConversationTurnResult;
-  followUp?: { config: AppTaskContext; attachment: AppTaskAttachment };
   taskControls?: Array<{
-    config: AppTaskContext;
+    appId: string;
     taskId: string;
     generation: number;
     resourceVersion: number;
   }>;
 };
+
+/** Installed App lookup is a Host dependency, never part of a proposed result. */
+export type ConversationTaskAppResolver = (appId: string) => { app: Readonly<AppDefinition>; config: AppTaskContext };
+
+function resolveConversationTaskApp(config: AppTaskContext, appId: string, getTaskApp?: ConversationTaskAppResolver) {
+  const target = getTaskApp?.(appId);
+  if (
+    !target?.app.tasks ||
+    target.app.id !== appId ||
+    target.config.resourceStore.appId !== appId ||
+    target.config.resourceStore.db !== config.resourceStore.db
+  )
+    throw new Error("Conversation operation requires an installed Task App in the same Host state");
+  return target;
+}
+
+/** Capture exact targets and versions; settlement rechecks them under the Task fence. */
+export function prepareConversationTaskProposal(
+  config: AppTaskContext,
+  claim: AppTaskClaim,
+  decision: ConversationTurnResult,
+  getTaskApp?: ConversationTaskAppResolver,
+): ConversationTaskProposal {
+  const { replyInput: item, hasHumanInput, outputSchema } = readConversationTaskTurn(config, claim);
+  if (!Check(outputSchema, decision))
+    throw new Error("Invalid Conversation decision: result must satisfy the claimed input's result schema");
+  const taskControls: NonNullable<ConversationTaskProposal["taskControls"]> = [];
+  for (const control of decision.taskControls ?? []) {
+    if (control.appId === item.appId && control.taskId === claim.taskId)
+      throw new Error("A Conversation worker cannot close its own Task");
+    if (taskControls.some((prior) => prior.appId === control.appId && prior.taskId === control.taskId))
+      throw new Error("Conversation decision repeats a Task control");
+    const target = resolveConversationTaskApp(config, control.appId, getTaskApp);
+    const task = target.config.resourceStore.readTask(control.taskId);
+    if (!task) throw new Error("Task control requires an exact Task");
+    if (!hasHumanInput) assertResourceCreator(task.metadata.creator, { appId: item.appId, taskId: claim.taskId });
+    taskControls.push({
+      appId: control.appId,
+      taskId: control.taskId,
+      generation: task.metadata.generation,
+      resourceVersion: task.metadata.resourceVersion,
+    });
+  }
+  return { decision, taskControls };
+}
 
 /** Stop exactly the input considered by this Turn. Newer input remains pending. */
 export function stopConversationTaskTurn(config: AppTaskContext, target: AppTurnTarget, now = Date.now()) {
@@ -292,8 +338,7 @@ export function readConversationTaskInputs(config: AppTaskContext, claim: AppTas
     return item;
   });
   if (!items.length) throw new Error("Conversation attempt has no admitted input");
-  // The final item supplies the Turn's current ask and reply destination.
-  // Keep system facts before human input, including retained input from an earlier attempt.
+  // Presentation order: system facts before human input, including retained input.
   return items.sort((left, right) => Number(left.source.kind === "human") - Number(right.source.kind === "human"));
 }
 
@@ -302,6 +347,18 @@ export function conversationTaskResultSchema(inputs: readonly Pick<AppTaskInput,
   return inputs.some(({ source }) => source.kind === "human")
     ? { ...conversationTurnResultSchema, required: [...conversationTurnResultSchema.required!, "response"] }
     : conversationTurnResultSchema;
+}
+
+/** Reply identity and control authority come from admitted input, independently of presentation. */
+export function readConversationTaskTurn(config: AppTaskContext, claim: AppTaskClaim) {
+  const items = readConversationTaskInputs(config, claim);
+  const humanInput = items.filter((item) => item.source.kind === "human").at(-1);
+  return {
+    items,
+    replyInput: humanInput ?? items.at(-1)!,
+    hasHumanInput: Boolean(humanInput),
+    outputSchema: conversationTaskResultSchema(items),
+  };
 }
 
 /** Save the owner's accepted requirements under the same live claim as its other effects. */
@@ -313,7 +370,7 @@ export function updateConversationTaskRequest(
 ): AppConversationRequest {
   return stateTransaction(config.resourceStore.db, () => {
     assertAppTaskEffectFresh(config, claim);
-    const item = readConversationTaskInputs(config, claim).at(-1)!;
+    const { replyInput: item } = readConversationTaskTurn(config, claim);
     applyConversationRequestUpdates(config.resourceStore.db, {
       actor: { appId: item.appId, taskId: claim.taskId },
       appId: item.appId,
@@ -334,9 +391,9 @@ export function completeConversationTaskTurn(
   decision: ConversationTurnResult,
   options: {
     now?: number;
-    followUp?: ConversationTaskProposal["followUp"];
     taskControls?: ConversationTaskProposal["taskControls"];
     acceptanceBasis?: TaskAcceptanceBasis;
+    getTaskApp?: ConversationTaskAppResolver;
   } = {},
 ): ReturnType<typeof completeAppTask> & {
   admittedTasks?: Array<{ appId: string; taskId: string }>;
@@ -345,14 +402,11 @@ export function completeConversationTaskTurn(
   const db = config.resourceStore.db;
   const now = options.now ?? Date.now();
   return stateTransaction(db, () => {
-    const items = readConversationTaskInputs(config, claim);
-    const item = items.at(-1)!;
-    if (!Check(conversationTaskResultSchema(items), decision))
+    const { items, replyInput: item, hasHumanInput, outputSchema } = readConversationTaskTurn(config, claim);
+    if (!Check(outputSchema, decision))
       throw new Error("Invalid Conversation decision: result must satisfy the claimed input's result schema");
     if ((decision.taskControls?.length ?? 0) !== (options.taskControls?.length ?? 0))
       throw new Error("Conversation Task controls must be prepared");
-    if (Boolean(decision.followUp) !== Boolean(options.followUp))
-      throw new Error("Conversation follow-up must be prepared");
     const accepted = completeAppTask(config, claim, {
       summary: decision.summary,
       response: decision.response,
@@ -405,27 +459,35 @@ export function completeConversationTaskTurn(
     for (const [index, control] of (decision.taskControls ?? []).entries()) {
       const prepared = options.taskControls![index]!;
       if (
-        prepared.config.resourceStore.db !== db ||
-        prepared.config.resourceStore.appId !== control.appId ||
+        prepared.appId !== control.appId ||
         prepared.taskId !== control.taskId ||
         (control.appId === item.appId && control.taskId === claim.taskId)
       )
         throw new Error("Conversation Task control has a mismatched or self-owned target");
       cancelledTasks.push(
-        cancelAppTask(prepared.config, {
+        cancelAppTask(resolveConversationTaskApp(config, prepared.appId, options.getTaskApp).config, {
           ...control,
-          ...(item.source.kind !== "human" ? { actor: { appId: item.appId, taskId: claim.taskId } } : {}),
+          ...(!hasHumanInput ? { actor: { appId: item.appId, taskId: claim.taskId } } : {}),
           expectedGeneration: prepared.generation,
           expectedResourceVersion: prepared.resourceVersion,
           controlKey: `conversation-control:${claim.attemptId}:${index}`,
         }),
       );
     }
-    if (decision.followUp && options.followUp) {
+    if (decision.followUp) {
       if (!topicId) throw new Error("Conversation follow-up requires a Topic");
-      const { config: target, attachment } = options.followUp;
-      if (target.resourceStore.db !== db || target.resourceStore.appId !== decision.followUp.appId)
-        throw new Error("Conversation follow-up must use the same Host state and selected App");
+      const desired = decision.followUp;
+      const { app: targetApp, config: target } = resolveConversationTaskApp(config, desired.appId, options.getTaskApp);
+      if (!targetApp.task) throw new Error("Conversation follow-up requires an installed Task App");
+      assertValidAppInput(targetApp, desired.input);
+      if (desired.task && (desired.task.appId !== desired.appId || !target.resourceStore.readTask(desired.task.taskId)))
+        throw new Error("Follow-up requires an exact Task in the selected App");
+      // The decision is the only handoff authority. Map once, under settlement,
+      // using the attempt's installed App declaration rather than a second target.
+      const attachment = desired.task
+        ? { kind: "existing" as const, taskId: desired.task.taskId }
+        : targetApp.task({ id: item.id, source: item.source, input: desired.input });
+      if (!attachment) throw new Error("App selected no Task for Conversation follow-up");
       const request = decision.followUp.requestId
         ? readConversationRequest(db, item.appId, conversationId, decision.followUp.requestId)
         : null;
