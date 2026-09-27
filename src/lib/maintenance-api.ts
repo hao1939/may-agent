@@ -12,9 +12,6 @@ import type { QueryAPI } from "./query-service.js";
 // ── Host maintenance API ──────────────────────────────────────────────
 
 export interface MaintenanceAPI {
-  /** Retained standalone cron adapter only; not exposed to maintenance handler files. */
-  runWorkflow(name: string, task: string, opts?: RunOpts): Promise<WorkflowResult>;
-
   /** Emit a typed event (persisted to events table). */
   emit(type: string, data?: Record<string, unknown>, envelope?: EventEnvelopeOptions): void;
 
@@ -45,15 +42,6 @@ export interface MaintenanceAPI {
 
 // ── Supporting types ──────────────────────────────────────────────────
 
-export interface RunOpts {
-  source?: string;
-  /** Session classification for agent steps started by a workflow. */
-  sessionSource?: string;
-  projectId?: string;
-  /** Structured workflow input; never encode control data into task prose. */
-  input?: unknown;
-}
-
 export interface EventEnvelopeOptions {
   owner?: string;
   source?: string;
@@ -67,10 +55,4 @@ export interface EventEnvelopeOptions {
     parentEventId?: number;
     links?: Array<{ eventId: number; type?: "reference" | "closure"; label?: string }>;
   };
-}
-
-export interface WorkflowResult {
-  status: "done" | "blocked";
-  summary: string;
-  runId?: string;
 }

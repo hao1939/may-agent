@@ -174,7 +174,7 @@ export async function reloadAgents(
   return reloadAgentsFromRegistry(opts, registryRuntime());
 }
 
-/** Prepare legacy handlers without attaching routes or starting timers. */
+/** Prepare named maintenance handlers without attaching routes or starting timers. */
 export async function prepareAgentTriggers(loaderOpts: AgentLoaderOptions): Promise<void> {
   const { bus } = loaderOpts;
   const handlerResult = await loadMaintenanceHandlers({ ...loaderOpts, agentMaintenance });

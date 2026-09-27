@@ -7,7 +7,10 @@ bounded Task attempts. Maintenance is not another work authority.
 `contracts.ts` owns the private declaration. `configuration.ts` reads the
 conventional agent-local `cron.json`; a declaration names a module in the adjacent
 `handlers/` directory. `handler-loader.ts` supplies the private capabilities in
-`context.ts`. These are trusted Host modules, not sandboxed App workflows.
+`context.ts`. The loader passes the same `MaintenanceAPI` implemented in
+`src/lib/maintenance-api-impl.ts`; it neither constructs an agent manager nor
+wraps a larger execution API. These are trusted Host modules, not sandboxed
+App workflows.
 
 `composition/maintenance.ts` prepares registrations during agent-generation
 preparation, whether or not the agent has the `cron` tool. No timer or subscription

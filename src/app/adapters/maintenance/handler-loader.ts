@@ -1,7 +1,6 @@
 import { existsSync } from "node:fs";
 import { dirname, resolve } from "node:path";
-import type { SubagentManager } from "../../../lib/manager.js";
-import type { HandlerContext, HandlerModule, HandlerSDK } from "./context.js";
+import type { HandlerContext, HandlerModule } from "./context.js";
 import type { EventEnvelope } from "../../core/events/bus.js";
 import type { MaintenanceEntry } from "./contracts.js";
 import { buildSessionHelpers } from "../../../lib/runtime-ctx.js";
@@ -16,7 +15,6 @@ export interface AgentHandlerLoaderOptions {
   projectsRoot: string;
   persistDir: string;
   projectRoot: string;
-  manager: SubagentManager;
   bus: EventBus;
   agentMaintenance: ReadonlyMap<string, HostMaintenance>;
 }
@@ -26,7 +24,7 @@ type CronWithConfigPath = HostMaintenance & { getConfigPath?: () => string; hasH
 export async function loadMaintenanceHandlers(
   opts: AgentHandlerLoaderOptions,
 ): Promise<{ registered: string[]; errors: string[] }> {
-  const { agentsRoot, sharedRoot, projectsRoot, persistDir, projectRoot, manager, bus } = opts;
+  const { agentsRoot, sharedRoot, projectsRoot, persistDir, projectRoot, bus } = opts;
   const registered: string[] = [];
   const errors: string[] = [];
 
@@ -43,7 +41,7 @@ export async function loadMaintenanceHandlers(
       projectsRoot,
       agentName,
     });
-    const fullSdk = buildMaintenanceAPI({
+    const sdk = buildMaintenanceAPI({
       bus,
       persistDir,
       projectRoot,
@@ -51,21 +49,7 @@ export async function loadMaintenanceHandlers(
       sharedRoot,
       projectsRoot,
       agentName,
-      manager,
     });
-    const sdk: HandlerSDK = {
-      emit: fullSdk.emit,
-      getDb: fullSdk.getDb,
-      get query() {
-        return fullSdk.query;
-      },
-      get metrics() {
-        return fullSdk.metrics;
-      },
-      log: fullSdk.log,
-      message: fullSdk.message,
-      paths: fullSdk.paths,
-    };
     const ctx: HandlerContext = {
       sdk,
       agentName,
