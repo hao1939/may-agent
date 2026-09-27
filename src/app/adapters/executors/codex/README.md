@@ -19,21 +19,17 @@ unavailable under the existing recovery contract while other executors remain
 usable. Drain active execution before removing a backend.
 
 Colocated tests cover process bounds, bindings, exact-turn results, progress and
-stale ownership. `codex-goal-fencing.test.ts` exercises the Host boundary. Protocol
-compatibility verification uses `bun run check:codex-goal-protocol` and the
-`scripts/codex-goal-protocol*` fixtures; it is not live model proof.
+stale ownership. `codex-goal-fencing.test.ts` exercises the Host boundary.
 
-The snapshot was reviewed against generated schemas from Codex 0.154.0 and
-0.156.1. Eleven of the 22 tracked files changed: image inputs now also accept
-file IDs, replies can include MCP presentation and saved plugin/collaboration
-settings, and personality/rollback descriptions changed. Existing image URL
-forms remain accepted. May sends text inputs, supplies instructions directly,
-does not call rollback, and reads specific response fields; these changes need
-no client adaptation. Goal set/get, interrupt, and goal-update notification
-schemas are unchanged.
+`bun run check:codex-goal-protocol` exercises the production client against the
+installed Codex CLI. It initializes a thread, saves a paused goal, observes its
+notification, restarts the process, and reads the same thread and goal. It uses
+disposable state without inherited credentials or a model call. The image smoke
+test runs this check with the shipped CLI as the runtime user.
 
-Keep the version and reviewed hashes together when upgrading the container CLI.
-Generate schemas from both versions as described in the [official app-server
-documentation](https://developers.openai.com/codex/app-server#message-schema);
-review differences before refreshing the snapshot. The existing drift check
-continues to reject an unreviewed upgrade.
+This tests the protocol behavior May uses for setup and persistence. It does
+not test model turns, tool execution or live provider compatibility. Keep the
+colocated turn/error/cancellation tests and review upstream release changes when
+upgrading the pinned CLI. Generated schemas can help investigate a failure;
+whole-schema fingerprints are not a compatibility contract. See the
+[official app-server documentation](https://developers.openai.com/codex/app-server).

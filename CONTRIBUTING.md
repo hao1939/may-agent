@@ -174,9 +174,10 @@ Claude's installer and the native/platform packages are part of the executable
 runtime. Review CLI manifest and lockfile
 changes together, run `npm audit --prefix container --omit=dev`, and validate
 versions, flags/configuration, runtime-user PATH behavior, and the image smoke
-test. For Codex, compare generated schemas with the old CLI before updating
-`scripts/codex-goal-protocol.snapshot.json`; the image smoke test checks that
-snapshot against the shipped CLI without a model call. Node/npm move together
+test. For Codex, run `bun run check:codex-goal-protocol` against the old and new
+CLI and review upstream changes. The image smoke test runs the same production
+client check against the shipped CLI without a model call; it covers thread and
+paused-goal persistence, not model turns or tool execution. Node/npm move together
 through the Node base image. Upgrading the standalone Pi CLI does not upgrade
 the Pi libraries linked into May. A new CLI version still needs model-backed
 checks before claiming live provider compatibility.
