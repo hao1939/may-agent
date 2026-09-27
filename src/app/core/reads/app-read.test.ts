@@ -82,6 +82,8 @@ describe("App read projections", () => {
       ] });
     const before = readRuntimeTaskView({ taskStateConfig: config }, taskId)!;
     expect(before.conditions.every((c) => c.observation?.state === "unknown")).toBe(true);
+    for (const c of before.conditions)
+      expect(c.observation?.reviewAt).toBe(Date.parse(c.observation!.observedAt!) + 3600000);
     trackAppTaskConditionEventForTasks(config, {
       type: "approval.observed", eventId: 700, data: { draft: "v3", approved: true },
     }, [taskId]);
@@ -90,6 +92,7 @@ describe("App read projections", () => {
     expect(after.resourceVersion).toBeGreaterThan(before.resourceVersion!);
     expect(after.conditions.find((c) => c.id === "approval")?.observation).toMatchObject({ state: "true", observedGeneration: 1 });
     expect(after.conditions.find((c) => c.id === "check")?.observation?.state).toBe("unknown");
+    expect(after.conditions.find((c) => c.id === "approval")?.observation?.reviewAt).toBeUndefined();
     expect(after.result).toEqual({ version: "v3" });
     expect(after.pendingEvents?.items.some((e) => e.eventId === 701)).toBe(true);
     expect(config.resourceStore.readTrigger(taskId)?.events?.some((e) => e.event.eventId === 701)).toBe(true);
