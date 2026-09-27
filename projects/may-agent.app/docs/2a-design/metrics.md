@@ -55,6 +55,20 @@ Task outcomes, and state their window, denominator, freshness and coverage.
 Unavailable evidence is unknown, not zero; an interruption alone is not a proven
 error. Follow the [definition contract](#definition-contract).
 
+Incident recovery and recurring system cost are independent observations. An
+accepted result can settle current work while the same failure pattern still
+warrants investigation. Current state does not erase retained failed attempts;
+an aggregate finding does not itself reopen a settled Task. Show counts and
+representative exact evidence together so Apps can judge significance, scope and
+value. A later success on a long-lived Task establishes recovery of a particular
+input only when the input or operation relationship supports that conclusion.
+
+The [Evaluation pattern-review proposal](../../../evaluation.app/design/systemic-pattern-review-20260927.md)
+applies these rules to bounded Task-attempt summaries and the existing assessment
+path. The initial replay is offline; aggregate public reads and periodic selection
+are implementation gaps. Existing default workflow-run measurements do not cover
+every native agent or Conversation Task attempt.
+
 A broken collector or investigation must not roll back accepted results or stop
 unrelated work. Expose missing or stale observations and reuse retained evidence
 where possible. These properties do not require a new telemetry queue or error

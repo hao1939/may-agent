@@ -1,0 +1,1169 @@
+[
+  {
+    "id": "case-a",
+    "evidence": {
+      "provenance": "Projected historical snapshot; exact source report preserved outside this fixture. No historical evaluator judgment included.",
+      "subject": {
+        "appId": "may",
+        "taskId": "conversation_ec854e2f09f1c38566a25857_successor_2"
+      },
+      "asOf": "2026-09-27T08:11:43.617Z",
+      "current": {
+        "status": "up-to-date",
+        "summary": "The exact 08:00 UTC May hygiene Evaluation publication is current and supports an assessed\u2014no action disposition. Current Task state, report bytes, commit, and evidence artifacts corroborate the valid before-due wait; no repair or improvement candidate is warranted.",
+        "acceptedAttempt": {
+          "id": "r_1_70b21f57-45e0-4ed4-8c99-6af489356f30",
+          "generation": 1,
+          "startedAt": "2026-09-27T08:08:38.535Z",
+          "finishedAt": "2026-09-27T08:08:47.921Z"
+        },
+        "terminal": false
+      },
+      "conditions": [],
+      "history": [
+        {
+          "eventId": 6457498,
+          "eventType": "project.task.reconcile.skipped",
+          "timestamp": 1790496530956,
+          "generation": 1
+        },
+        {
+          "eventId": 6457495,
+          "eventType": "project.task.reconciled",
+          "timestamp": 1790496527926,
+          "attemptId": "r_1_70b21f57-45e0-4ed4-8c99-6af489356f30",
+          "handler": "executor:conversation",
+          "generation": 1,
+          "summary": "The exact 08:00 UTC May hygiene Evaluation publication is current and supports an assessed\u2014no action disposition. Current Task state, report bytes, commit, and evidence artifacts corroborate the valid before-due wait; no repair or improvement candidate is warranted.",
+          "disposition": "converged"
+        },
+        {
+          "eventId": 6457491,
+          "eventType": "project.task.reconcile.started",
+          "timestamp": 1790496518583,
+          "attemptId": "r_1_70b21f57-45e0-4ed4-8c99-6af489356f30",
+          "handler": "executor:conversation",
+          "generation": 1
+        },
+        {
+          "eventId": 6457486,
+          "eventType": "project.task.reconciled",
+          "timestamp": 1790496516707,
+          "attemptId": "r_1_34485bb0-1abd-4359-a967-9110f0cb4077",
+          "handler": "executor:conversation",
+          "generation": 1,
+          "summary": "Handler actions were rejected: Conversation decision requires a reply",
+          "disposition": "retrying"
+        },
+        {
+          "eventId": 6457472,
+          "eventType": "project.task.reconcile.started",
+          "timestamp": 1790496453884,
+          "attemptId": "r_1_34485bb0-1abd-4359-a967-9110f0cb4077",
+          "handler": "executor:conversation",
+          "generation": 1
+        },
+        {
+          "eventId": 6457461,
+          "eventType": "project.task.reconcile.skipped",
+          "timestamp": 1790496395620,
+          "generation": 1
+        },
+        {
+          "eventId": 6457434,
+          "eventType": "project.task.reconcile.skipped",
+          "timestamp": 1790496207672,
+          "generation": 1
+        },
+        {
+          "eventId": 6457432,
+          "eventType": "project.task.reconciled",
+          "timestamp": 1790496205949,
+          "attemptId": "r_1_0a85a6fd-9bf0-4faf-a5ce-5b4c56b4cf0e",
+          "handler": "executor:conversation",
+          "generation": 1,
+          "summary": "The exact GitHub exploration Evaluation report is current and its assessed judgment is supported by independent checks. The GenOS finding is accurately scoped static evidence, the recurring Task remains coherent, and no repair or improvement candidate is warranted.",
+          "disposition": "converged"
+        },
+        {
+          "eventId": 6457420,
+          "eventType": "project.task.reconcile.started",
+          "timestamp": 1790496130009,
+          "attemptId": "r_1_0a85a6fd-9bf0-4faf-a5ce-5b4c56b4cf0e",
+          "handler": "executor:conversation",
+          "generation": 1
+        },
+        {
+          "eventId": 6457409,
+          "eventType": "project.task.reconcile.skipped",
+          "timestamp": 1790496109964,
+          "generation": 1
+        },
+        {
+          "eventId": 6457265,
+          "eventType": "project.task.reconcile.skipped",
+          "timestamp": 1790494242228,
+          "generation": 1
+        },
+        {
+          "eventId": 6457263,
+          "eventType": "project.task.reconciled",
+          "timestamp": 1790494239208,
+          "attemptId": "r_1_b231d6f5-19ac-4731-8ad6-89bd3d48a951",
+          "handler": "executor:conversation",
+          "generation": 1,
+          "summary": "The exact May hygiene Evaluation report is current and its assessed judgment is supported by canonical evidence. The 04:00 UTC cycle was a valid no-change review, and the stated older-history coverage limits do not establish a current defect or justify candidate work.",
+          "disposition": "converged"
+        },
+        {
+          "eventId": 6457252,
+          "eventType": "project.task.reconcile.started",
+          "timestamp": 1790494120757,
+          "attemptId": "r_1_b231d6f5-19ac-4731-8ad6-89bd3d48a951",
+          "handler": "executor:conversation",
+          "generation": 1
+        },
+        {
+          "eventId": 6457094,
+          "eventType": "project.task.reconcile.skipped",
+          "timestamp": 1790491672044,
+          "generation": 1
+        },
+        {
+          "eventId": 6457092,
+          "eventType": "project.task.reconciled",
+          "timestamp": 1790491670584,
+          "attemptId": "r_1_c552f626-0c8d-4fe1-a239-ec4622e6100b",
+          "handler": "executor:conversation",
+          "generation": 1,
+          "summary": "The exact arXiv exploration Evaluation report is current and its assessed judgment is supported by canonical evidence. The live scan and prior recovery support an evidence-backed no-op, while the stated bounded-history limits do not establish a defect or justify additional work.",
+          "disposition": "converged"
+        },
+        {
+          "eventId": 6457084,
+          "eventType": "project.task.reconcile.started",
+          "timestamp": 1790491618210,
+          "attemptId": "r_1_c552f626-0c8d-4fe1-a239-ec4622e6100b",
+          "handler": "executor:conversation",
+          "generation": 1
+        },
+        {
+          "eventId": 6457059,
+          "eventType": "project.task.reconcile.skipped",
+          "timestamp": 1790491477852,
+          "generation": 1
+        },
+        {
+          "eventId": 6457057,
+          "eventType": "project.task.reconciled",
+          "timestamp": 1790491476442,
+          "attemptId": "r_1_e2e1ca6f-642d-4d77-a98f-d0585053336f",
+          "handler": "executor:conversation",
+          "generation": 1,
+          "summary": "The exact XHS exploration Evaluation report is current and its assessed judgment is supported by canonical evidence. The transient extraction was demonstrably recovered, and the stated coverage limits do not establish a defect or justify additional work.",
+          "disposition": "converged"
+        },
+        {
+          "eventId": 6457049,
+          "eventType": "project.task.reconcile.started",
+          "timestamp": 1790491417410,
+          "attemptId": "r_1_e2e1ca6f-642d-4d77-a98f-d0585053336f",
+          "handler": "executor:conversation",
+          "generation": 1
+        },
+        {
+          "eventId": 6457020,
+          "eventType": "project.task.reconcile.skipped",
+          "timestamp": 1790491162809,
+          "generation": 1
+        }
+      ],
+      "historyTruncated": true,
+      "process": {
+        "version": 1,
+        "limits": {
+          "attempts": 3,
+          "messages": 96,
+          "fieldChars": 800,
+          "projectionBytes": 65536,
+          "responseBytes": 1000000
+        },
+        "attempts": [
+          {
+            "eventId": 6457495,
+            "attemptId": "r_1_70b21f57-45e0-4ed4-8c99-6af489356f30",
+            "generation": 1,
+            "status": "unavailable",
+            "reason": "execution link absent or unsupported (workflow runs are not sessions)"
+          },
+          {
+            "eventId": 6457486,
+            "attemptId": "r_1_34485bb0-1abd-4359-a967-9110f0cb4077",
+            "generation": 1,
+            "status": "unavailable",
+            "reason": "execution link absent or unsupported (workflow runs are not sessions)"
+          },
+          {
+            "eventId": 6457432,
+            "attemptId": "r_1_0a85a6fd-9bf0-4faf-a5ce-5b4c56b4cf0e",
+            "generation": 1,
+            "status": "unavailable",
+            "reason": "execution link absent or unsupported (workflow runs are not sessions)"
+          }
+        ],
+        "gaps": [
+          "Process window limited to three newest referenced attempts; older execution unassessed",
+          "Process unavailable: r_1_70b21f57-45e0-4ed4-8c99-6af489356f30: execution link absent or unsupported (workflow runs are not sessions)",
+          "Process unavailable: r_1_34485bb0-1abd-4359-a967-9110f0cb4077: execution link absent or unsupported (workflow runs are not sessions)",
+          "Process unavailable: r_1_0a85a6fd-9bf0-4faf-a5ce-5b4c56b4cf0e: execution link absent or unsupported (workflow runs are not sessions)"
+        ]
+      },
+      "deliveryScope": "Assessment of automated Evaluation report intake; current state is coherent. The linked hygiene task is in a valid wait. Artifact claims not independently covered by this projection."
+    }
+  },
+  {
+    "id": "case-b",
+    "evidence": {
+      "provenance": "Projected historical snapshot; exact source report preserved outside this fixture. No historical evaluator judgment included.",
+      "subject": {
+        "appId": "may",
+        "taskId": "conversation_ec854e2f09f1c38566a25857_successor_2"
+      },
+      "asOf": "2026-09-27T08:11:43.617Z",
+      "current": {
+        "status": "up-to-date",
+        "summary": "The exact 08:00 UTC May hygiene Evaluation publication is current and supports an assessed\u2014no action disposition. Current Task state, report bytes, commit, and evidence artifacts corroborate the valid before-due wait; no repair or improvement candidate is warranted.",
+        "acceptedAttempt": {
+          "id": "r_1_70b21f57-45e0-4ed4-8c99-6af489356f30",
+          "generation": 1,
+          "startedAt": "2026-09-27T08:08:38.535Z",
+          "finishedAt": "2026-09-27T08:08:47.921Z"
+        },
+        "terminal": false
+      },
+      "conditions": [],
+      "history": [
+        {
+          "eventId": 6457498,
+          "eventType": "project.task.reconcile.skipped",
+          "timestamp": 1790496530956,
+          "generation": 1
+        },
+        {
+          "eventId": 6457495,
+          "eventType": "project.task.reconciled",
+          "timestamp": 1790496527926,
+          "attemptId": "r_1_70b21f57-45e0-4ed4-8c99-6af489356f30",
+          "handler": "executor:conversation",
+          "generation": 1,
+          "summary": "The exact 08:00 UTC May hygiene Evaluation publication is current and supports an assessed\u2014no action disposition. Current Task state, report bytes, commit, and evidence artifacts corroborate the valid before-due wait; no repair or improvement candidate is warranted.",
+          "disposition": "converged"
+        },
+        {
+          "eventId": 6457491,
+          "eventType": "project.task.reconcile.started",
+          "timestamp": 1790496518583,
+          "attemptId": "r_1_70b21f57-45e0-4ed4-8c99-6af489356f30",
+          "handler": "executor:conversation",
+          "generation": 1
+        },
+        {
+          "eventId": 6457486,
+          "eventType": "project.task.reconciled",
+          "timestamp": 1790496516707,
+          "attemptId": "r_1_34485bb0-1abd-4359-a967-9110f0cb4077",
+          "handler": "executor:conversation",
+          "generation": 1,
+          "summary": "Handler actions were rejected: Conversation decision requires a reply",
+          "disposition": "retrying"
+        },
+        {
+          "eventId": 6457472,
+          "eventType": "project.task.reconcile.started",
+          "timestamp": 1790496453884,
+          "attemptId": "r_1_34485bb0-1abd-4359-a967-9110f0cb4077",
+          "handler": "executor:conversation",
+          "generation": 1
+        },
+        {
+          "eventId": 6457461,
+          "eventType": "project.task.reconcile.skipped",
+          "timestamp": 1790496395620,
+          "generation": 1
+        },
+        {
+          "eventId": 6457434,
+          "eventType": "project.task.reconcile.skipped",
+          "timestamp": 1790496207672,
+          "generation": 1
+        },
+        {
+          "eventId": 6457432,
+          "eventType": "project.task.reconciled",
+          "timestamp": 1790496205949,
+          "attemptId": "r_1_0a85a6fd-9bf0-4faf-a5ce-5b4c56b4cf0e",
+          "handler": "executor:conversation",
+          "generation": 1,
+          "summary": "The exact GitHub exploration Evaluation report is current and its assessed judgment is supported by independent checks. The GenOS finding is accurately scoped static evidence, the recurring Task remains coherent, and no repair or improvement candidate is warranted.",
+          "disposition": "converged"
+        },
+        {
+          "eventId": 6457420,
+          "eventType": "project.task.reconcile.started",
+          "timestamp": 1790496130009,
+          "attemptId": "r_1_0a85a6fd-9bf0-4faf-a5ce-5b4c56b4cf0e",
+          "handler": "executor:conversation",
+          "generation": 1
+        },
+        {
+          "eventId": 6457409,
+          "eventType": "project.task.reconcile.skipped",
+          "timestamp": 1790496109964,
+          "generation": 1
+        },
+        {
+          "eventId": 6457265,
+          "eventType": "project.task.reconcile.skipped",
+          "timestamp": 1790494242228,
+          "generation": 1
+        },
+        {
+          "eventId": 6457263,
+          "eventType": "project.task.reconciled",
+          "timestamp": 1790494239208,
+          "attemptId": "r_1_b231d6f5-19ac-4731-8ad6-89bd3d48a951",
+          "handler": "executor:conversation",
+          "generation": 1,
+          "summary": "The exact May hygiene Evaluation report is current and its assessed judgment is supported by canonical evidence. The 04:00 UTC cycle was a valid no-change review, and the stated older-history coverage limits do not establish a current defect or justify candidate work.",
+          "disposition": "converged"
+        },
+        {
+          "eventId": 6457252,
+          "eventType": "project.task.reconcile.started",
+          "timestamp": 1790494120757,
+          "attemptId": "r_1_b231d6f5-19ac-4731-8ad6-89bd3d48a951",
+          "handler": "executor:conversation",
+          "generation": 1
+        },
+        {
+          "eventId": 6457094,
+          "eventType": "project.task.reconcile.skipped",
+          "timestamp": 1790491672044,
+          "generation": 1
+        },
+        {
+          "eventId": 6457092,
+          "eventType": "project.task.reconciled",
+          "timestamp": 1790491670584,
+          "attemptId": "r_1_c552f626-0c8d-4fe1-a239-ec4622e6100b",
+          "handler": "executor:conversation",
+          "generation": 1,
+          "summary": "The exact arXiv exploration Evaluation report is current and its assessed judgment is supported by canonical evidence. The live scan and prior recovery support an evidence-backed no-op, while the stated bounded-history limits do not establish a defect or justify additional work.",
+          "disposition": "converged"
+        },
+        {
+          "eventId": 6457084,
+          "eventType": "project.task.reconcile.started",
+          "timestamp": 1790491618210,
+          "attemptId": "r_1_c552f626-0c8d-4fe1-a239-ec4622e6100b",
+          "handler": "executor:conversation",
+          "generation": 1
+        },
+        {
+          "eventId": 6457059,
+          "eventType": "project.task.reconcile.skipped",
+          "timestamp": 1790491477852,
+          "generation": 1
+        },
+        {
+          "eventId": 6457057,
+          "eventType": "project.task.reconciled",
+          "timestamp": 1790491476442,
+          "attemptId": "r_1_e2e1ca6f-642d-4d77-a98f-d0585053336f",
+          "handler": "executor:conversation",
+          "generation": 1,
+          "summary": "The exact XHS exploration Evaluation report is current and its assessed judgment is supported by canonical evidence. The transient extraction was demonstrably recovered, and the stated coverage limits do not establish a defect or justify additional work.",
+          "disposition": "converged"
+        },
+        {
+          "eventId": 6457049,
+          "eventType": "project.task.reconcile.started",
+          "timestamp": 1790491417410,
+          "attemptId": "r_1_e2e1ca6f-642d-4d77-a98f-d0585053336f",
+          "handler": "executor:conversation",
+          "generation": 1
+        },
+        {
+          "eventId": 6457020,
+          "eventType": "project.task.reconcile.skipped",
+          "timestamp": 1790491162809,
+          "generation": 1
+        }
+      ],
+      "historyTruncated": true,
+      "process": {
+        "version": 1,
+        "limits": {
+          "attempts": 3,
+          "messages": 96,
+          "fieldChars": 800,
+          "projectionBytes": 65536,
+          "responseBytes": 1000000
+        },
+        "attempts": [
+          {
+            "eventId": 6457495,
+            "attemptId": "r_1_70b21f57-45e0-4ed4-8c99-6af489356f30",
+            "generation": 1,
+            "status": "unavailable",
+            "reason": "execution link absent or unsupported (workflow runs are not sessions)"
+          },
+          {
+            "eventId": 6457486,
+            "attemptId": "r_1_34485bb0-1abd-4359-a967-9110f0cb4077",
+            "generation": 1,
+            "status": "unavailable",
+            "reason": "execution link absent or unsupported (workflow runs are not sessions)"
+          },
+          {
+            "eventId": 6457432,
+            "attemptId": "r_1_0a85a6fd-9bf0-4faf-a5ce-5b4c56b4cf0e",
+            "generation": 1,
+            "status": "unavailable",
+            "reason": "execution link absent or unsupported (workflow runs are not sessions)"
+          }
+        ],
+        "gaps": [
+          "Process window limited to three newest referenced attempts; older execution unassessed",
+          "Process unavailable: r_1_70b21f57-45e0-4ed4-8c99-6af489356f30: execution link absent or unsupported (workflow runs are not sessions)",
+          "Process unavailable: r_1_34485bb0-1abd-4359-a967-9110f0cb4077: execution link absent or unsupported (workflow runs are not sessions)",
+          "Process unavailable: r_1_0a85a6fd-9bf0-4faf-a5ce-5b4c56b4cf0e: execution link absent or unsupported (workflow runs are not sessions)"
+        ]
+      },
+      "deliveryScope": "Assessment of automated Evaluation report intake; current state is coherent. The linked hygiene task is in a valid wait. Artifact claims not independently covered by this projection.",
+      "population": {
+        "appCurrent": {
+          "window": {
+            "start": "2026-09-26T08:11:43.617000+00:00",
+            "endExclusive": "2026-09-27T08:11:43.617000+00:00"
+          },
+          "cohort": "retained Task attempts started in window; outcome observed before endExclusive",
+          "started": 222,
+          "settled": 222,
+          "states": {
+            "failed": 23,
+            "completed": 199
+          },
+          "failureRate": {
+            "numerator": 23,
+            "denominator": 222,
+            "value": 0.1036036036036036
+          },
+          "acceptedStates": {
+            "converged": 186,
+            "waiting": 10,
+            "unavailable": 3
+          },
+          "failedAttemptWallMs": 1517711,
+          "invalidFailedDurations": 0,
+          "patterns": [
+            {
+              "handler": "executor:conversation",
+              "failureReason": "HandlerResultSettlementFailed",
+              "count": 22,
+              "affectedTasks": 1,
+              "firstStartedAt": "2026-09-26T08:17:37.818000+00:00",
+              "lastStartedAt": "2026-09-27T08:07:33.839000+00:00",
+              "summaries": [
+                {
+                  "text": "Handler actions were rejected: Conversation decision requires a reply",
+                  "count": 19
+                },
+                {
+                  "text": "Handler actions were rejected: Request app_19d63dfc-2b22-468b-85f3-a0845eb343b0 names a Task outside this Conversation",
+                  "count": 1
+                },
+                {
+                  "text": "Handler actions were rejected: Conversation topic topic_cba84acc70a42f791d9478fc conflicts with an existing topic",
+                  "count": 1
+                },
+                {
+                  "text": "Handler actions were rejected: Request app_28675ee6-67e2-42b2-a6d9-2e62cee5caa7 names a Task outside this Conversation",
+                  "count": 1
+                }
+              ],
+              "examples": [
+                {
+                  "appId": "may",
+                  "taskId": "conversation_ec854e2f09f1c38566a25857_successor_2",
+                  "generation": 1,
+                  "attemptId": "r_1_e5450737-b332-4918-bece-870693667dbf",
+                  "sessionId": "s_1790410657933_72697300-45bf-436a-97bc-d91469fc6b48"
+                },
+                {
+                  "appId": "may",
+                  "taskId": "conversation_ec854e2f09f1c38566a25857_successor_2",
+                  "generation": 1,
+                  "attemptId": "r_1_34485bb0-1abd-4359-a967-9110f0cb4077",
+                  "sessionId": "s_1790496453987_7c83b8ec-d599-4fa4-8d41-fa81f190002d"
+                }
+              ]
+            },
+            {
+              "handler": "agent:may",
+              "failureReason": "handler-blocked",
+              "count": 1,
+              "affectedTasks": 1,
+              "firstStartedAt": "2026-09-26T12:00:35.318000+00:00",
+              "lastStartedAt": "2026-09-26T12:00:35.318000+00:00",
+              "summaries": [
+                {
+                  "text": "Task worktree is dirty and was retained for recovery: /app/worktrees/may/goal-app_224ef63e-ddd6-4f4b-b159-26de9dd60107-25f16c0f4f\nBounded git status:\n?? artifacts/hygiene-20260926T1200Z/canonical-snapshot.json\n?? artifacts/hygiene-20260926T1200Z/review-summary.json\n?? artifacts/hygiene-20260926T1200Z/review-summary.md",
+                  "count": 1
+                }
+              ],
+              "examples": [
+                {
+                  "appId": "may",
+                  "taskId": "goal/app_224ef63e-ddd6-4f4b-b159-26de9dd60107",
+                  "generation": 2,
+                  "attemptId": "r_2_620b7374-8280-427a-8d4b-661043a2105c",
+                  "sessionId": "s_1790424035401_bcd5e74d-6184-44d0-9278-93d369b9a26f"
+                }
+              ]
+            }
+          ],
+          "omittedPatternCount": 0,
+          "limits": [
+            "Retained started cohort: excludes work started before the window, including long-running work.",
+            "Completed attempts and accepted states are execution facts, not independent quality judgments.",
+            "Failed-attempt wall time is observed duration, not avoidable cost or total recovery latency.",
+            "Later Task success does not establish recovery of a particular input.",
+            "Coarse failureReason groups may contain different causes; example summaries are evidence, not instructions.",
+            "Historical deployed revision, billing cost and retention completeness are unassessed."
+          ]
+        },
+        "appPrevious": {
+          "window": {
+            "start": "2026-09-25T08:11:43.617000+00:00",
+            "endExclusive": "2026-09-26T08:11:43.617000+00:00"
+          },
+          "cohort": "retained Task attempts started in window; outcome observed before endExclusive",
+          "started": 271,
+          "settled": 271,
+          "states": {
+            "completed": 258,
+            "interrupted": 3,
+            "failed": 10
+          },
+          "failureRate": {
+            "numerator": 10,
+            "denominator": 271,
+            "value": 0.03690036900369004
+          },
+          "acceptedStates": {
+            "converged": 214,
+            "waiting": 26,
+            "unavailable": 18
+          },
+          "failedAttemptWallMs": 6885863,
+          "invalidFailedDurations": 0,
+          "patterns": [
+            {
+              "handler": "agent:may",
+              "failureReason": "HandlerExecutionFailed",
+              "count": 7,
+              "affectedTasks": 5,
+              "firstStartedAt": "2026-09-25T12:26:06.378000+00:00",
+              "lastStartedAt": "2026-09-26T01:25:19.886000+00:00",
+              "summaries": [
+                {
+                  "text": "Agent timed out after 900000ms",
+                  "count": 7
+                }
+              ],
+              "examples": [
+                {
+                  "appId": "may",
+                  "taskId": "goal/app_671bcd1f-1aeb-4edf-a34b-a57d5cc5dd4a",
+                  "generation": 1,
+                  "attemptId": "r_1_0523bdc1-617f-463a-82b3-5631f4e9eae8",
+                  "sessionId": "s_1790339166460_f2be6b6b-14b3-4f21-8974-91856d446a61"
+                },
+                {
+                  "appId": "may",
+                  "taskId": "goal/app_7f961b2f-7fdb-4811-abcd-0e513840ee08",
+                  "generation": 1,
+                  "attemptId": "r_1_83970a72-dd84-4aea-8bab-eda2e069a231",
+                  "sessionId": "s_1790385922156_419153b1-ae78-428d-a55c-80182aee3f4f"
+                }
+              ]
+            },
+            {
+              "handler": "agent:may",
+              "failureReason": "handler-blocked",
+              "count": 2,
+              "affectedTasks": 2,
+              "firstStartedAt": "2026-09-25T20:10:00.743000+00:00",
+              "lastStartedAt": "2026-09-26T01:47:50.484000+00:00",
+              "summaries": [
+                {
+                  "text": "Task worktree is dirty and was retained for recovery: /app/worktrees/may/goal-appdep_e615c2ff27a683c64e117334-f80a83c616\nBounded git status:\n?? artifacts/scout-xhs-guard-activation.json",
+                  "count": 1
+                },
+                {
+                  "text": "Task worktree is dirty and was retained for recovery: /app/worktrees/may/goal-conversation-result-may-may-primary-topic_de7e470407e3d87444746621--265549a07f\nBounded git status:\n?? .host-approval-target/",
+                  "count": 1
+                }
+              ],
+              "examples": [
+                {
+                  "appId": "may",
+                  "taskId": "goal/appdep_e615c2ff27a683c64e117334",
+                  "generation": 1,
+                  "attemptId": "r_1_a72af225-1eb0-4ccf-b20a-03451fbcd941",
+                  "sessionId": "s_1790367002848_3aa73d50-3773-46ef-b4b6-f8fe490ec9c3"
+                },
+                {
+                  "appId": "may",
+                  "taskId": "goal/conversation-result-may-may-primary-topic_de7e470407e3d87444746621-may-r_1_1359037c-09b0-4b5d-b4d5-91e6ed7454e3",
+                  "generation": 1,
+                  "attemptId": "r_1_e13df9cc-7291-47d7-8a6a-72c3c39f4adf",
+                  "sessionId": "s_1790387272603_99509f72-7d00-4a1a-8884-8eca7adf6aa8"
+                }
+              ]
+            },
+            {
+              "handler": "executor:conversation",
+              "failureReason": "HandlerResultSettlementFailed",
+              "count": 1,
+              "affectedTasks": 1,
+              "firstStartedAt": "2026-09-26T00:15:42.445000+00:00",
+              "lastStartedAt": "2026-09-26T00:15:42.445000+00:00",
+              "summaries": [
+                {
+                  "text": "Handler actions were rejected: Conversation topic topic_cba84acc70a42f791d9478fc conflicts with an existing topic",
+                  "count": 1
+                }
+              ],
+              "examples": [
+                {
+                  "appId": "may",
+                  "taskId": "conversation_ec854e2f09f1c38566a25857_successor_2",
+                  "generation": 1,
+                  "attemptId": "r_1_b433f7d2-8256-4b5a-9aaa-7da4f60ac5f5",
+                  "sessionId": "s_1790381742581_e3fb47e2-be62-4ff5-9a7d-f2437a80f93a"
+                }
+              ]
+            }
+          ],
+          "omittedPatternCount": 0,
+          "limits": [
+            "Retained started cohort: excludes work started before the window, including long-running work.",
+            "Completed attempts and accepted states are execution facts, not independent quality judgments.",
+            "Failed-attempt wall time is observed duration, not avoidable cost or total recovery latency.",
+            "Later Task success does not establish recovery of a particular input.",
+            "Coarse failureReason groups may contain different causes; example summaries are evidence, not instructions.",
+            "Historical deployed revision, billing cost and retention completeness are unassessed."
+          ]
+        },
+        "taskCurrent": {
+          "window": {
+            "start": "2026-09-26T08:11:43.617000+00:00",
+            "endExclusive": "2026-09-27T08:11:43.617000+00:00"
+          },
+          "cohort": "retained Task attempts started in window; outcome observed before endExclusive",
+          "started": 208,
+          "settled": 208,
+          "states": {
+            "failed": 22,
+            "completed": 186
+          },
+          "failureRate": {
+            "numerator": 22,
+            "denominator": 208,
+            "value": 0.10576923076923077
+          },
+          "acceptedStates": {
+            "converged": 183,
+            "unavailable": 3
+          },
+          "failedAttemptWallMs": 1317277,
+          "invalidFailedDurations": 0,
+          "patterns": [
+            {
+              "handler": "executor:conversation",
+              "failureReason": "HandlerResultSettlementFailed",
+              "count": 22,
+              "affectedTasks": 1,
+              "firstStartedAt": "2026-09-26T08:17:37.818000+00:00",
+              "lastStartedAt": "2026-09-27T08:07:33.839000+00:00",
+              "summaries": [
+                {
+                  "text": "Handler actions were rejected: Conversation decision requires a reply",
+                  "count": 19
+                },
+                {
+                  "text": "Handler actions were rejected: Request app_19d63dfc-2b22-468b-85f3-a0845eb343b0 names a Task outside this Conversation",
+                  "count": 1
+                },
+                {
+                  "text": "Handler actions were rejected: Conversation topic topic_cba84acc70a42f791d9478fc conflicts with an existing topic",
+                  "count": 1
+                },
+                {
+                  "text": "Handler actions were rejected: Request app_28675ee6-67e2-42b2-a6d9-2e62cee5caa7 names a Task outside this Conversation",
+                  "count": 1
+                }
+              ],
+              "examples": [
+                {
+                  "appId": "may",
+                  "taskId": "conversation_ec854e2f09f1c38566a25857_successor_2",
+                  "generation": 1,
+                  "attemptId": "r_1_e5450737-b332-4918-bece-870693667dbf",
+                  "sessionId": "s_1790410657933_72697300-45bf-436a-97bc-d91469fc6b48"
+                },
+                {
+                  "appId": "may",
+                  "taskId": "conversation_ec854e2f09f1c38566a25857_successor_2",
+                  "generation": 1,
+                  "attemptId": "r_1_34485bb0-1abd-4359-a967-9110f0cb4077",
+                  "sessionId": "s_1790496453987_7c83b8ec-d599-4fa4-8d41-fa81f190002d"
+                }
+              ]
+            }
+          ],
+          "omittedPatternCount": 0,
+          "limits": [
+            "Retained started cohort: excludes work started before the window, including long-running work.",
+            "Completed attempts and accepted states are execution facts, not independent quality judgments.",
+            "Failed-attempt wall time is observed duration, not avoidable cost or total recovery latency.",
+            "Later Task success does not establish recovery of a particular input.",
+            "Coarse failureReason groups may contain different causes; example summaries are evidence, not instructions.",
+            "Historical deployed revision, billing cost and retention completeness are unassessed."
+          ]
+        },
+        "taskPrevious": {
+          "window": {
+            "start": "2026-09-25T08:11:43.617000+00:00",
+            "endExclusive": "2026-09-26T08:11:43.617000+00:00"
+          },
+          "cohort": "retained Task attempts started in window; outcome observed before endExclusive",
+          "started": 207,
+          "settled": 207,
+          "states": {
+            "completed": 206,
+            "failed": 1
+          },
+          "failureRate": {
+            "numerator": 1,
+            "denominator": 207,
+            "value": 0.004830917874396135
+          },
+          "acceptedStates": {
+            "converged": 196,
+            "unavailable": 10
+          },
+          "failedAttemptWallMs": 41754,
+          "invalidFailedDurations": 0,
+          "patterns": [
+            {
+              "handler": "executor:conversation",
+              "failureReason": "HandlerResultSettlementFailed",
+              "count": 1,
+              "affectedTasks": 1,
+              "firstStartedAt": "2026-09-26T00:15:42.445000+00:00",
+              "lastStartedAt": "2026-09-26T00:15:42.445000+00:00",
+              "summaries": [
+                {
+                  "text": "Handler actions were rejected: Conversation topic topic_cba84acc70a42f791d9478fc conflicts with an existing topic",
+                  "count": 1
+                }
+              ],
+              "examples": [
+                {
+                  "appId": "may",
+                  "taskId": "conversation_ec854e2f09f1c38566a25857_successor_2",
+                  "generation": 1,
+                  "attemptId": "r_1_b433f7d2-8256-4b5a-9aaa-7da4f60ac5f5",
+                  "sessionId": "s_1790381742581_e3fb47e2-be62-4ff5-9a7d-f2437a80f93a"
+                }
+              ]
+            }
+          ],
+          "omittedPatternCount": 0,
+          "limits": [
+            "Retained started cohort: excludes work started before the window, including long-running work.",
+            "Completed attempts and accepted states are execution facts, not independent quality judgments.",
+            "Failed-attempt wall time is observed duration, not avoidable cost or total recovery latency.",
+            "Later Task success does not establish recovery of a particular input.",
+            "Coarse failureReason groups may contain different causes; example summaries are evidence, not instructions.",
+            "Historical deployed revision, billing cost and retention completeness are unassessed."
+          ]
+        },
+        "byHandler": {
+          "agent:may": {
+            "window": {
+              "start": "2026-09-26T08:11:43.617000+00:00",
+              "endExclusive": "2026-09-27T08:11:43.617000+00:00"
+            },
+            "cohort": "retained Task attempts started in window; outcome observed before endExclusive",
+            "started": 12,
+            "settled": 12,
+            "states": {
+              "completed": 11,
+              "failed": 1
+            },
+            "failureRate": {
+              "numerator": 1,
+              "denominator": 12,
+              "value": 0.08333333333333333
+            },
+            "acceptedStates": {
+              "converged": 2,
+              "waiting": 9
+            },
+            "failedAttemptWallMs": 200434,
+            "invalidFailedDurations": 0,
+            "patterns": [
+              {
+                "handler": "agent:may",
+                "failureReason": "handler-blocked",
+                "count": 1,
+                "affectedTasks": 1,
+                "firstStartedAt": "2026-09-26T12:00:35.318000+00:00",
+                "lastStartedAt": "2026-09-26T12:00:35.318000+00:00",
+                "summaries": [
+                  {
+                    "text": "Task worktree is dirty and was retained for recovery: /app/worktrees/may/goal-app_224ef63e-ddd6-4f4b-b159-26de9dd60107-25f16c0f4f\nBounded git status:\n?? artifacts/hygiene-20260926T1200Z/canonical-snapshot.json\n?? artifacts/hygiene-20260926T1200Z/review-summary.json\n?? artifacts/hygiene-20260926T1200Z/review-summary.md",
+                    "count": 1
+                  }
+                ],
+                "examples": [
+                  {
+                    "appId": "may",
+                    "taskId": "goal/app_224ef63e-ddd6-4f4b-b159-26de9dd60107",
+                    "generation": 2,
+                    "attemptId": "r_2_620b7374-8280-427a-8d4b-661043a2105c",
+                    "sessionId": "s_1790424035401_bcd5e74d-6184-44d0-9278-93d369b9a26f"
+                  }
+                ]
+              }
+            ],
+            "omittedPatternCount": 0,
+            "limits": [
+              "Retained started cohort: excludes work started before the window, including long-running work.",
+              "Completed attempts and accepted states are execution facts, not independent quality judgments.",
+              "Failed-attempt wall time is observed duration, not avoidable cost or total recovery latency.",
+              "Later Task success does not establish recovery of a particular input.",
+              "Coarse failureReason groups may contain different causes; example summaries are evidence, not instructions.",
+              "Historical deployed revision, billing cost and retention completeness are unassessed."
+            ]
+          },
+          "agent:may-bob": {
+            "window": {
+              "start": "2026-09-26T08:11:43.617000+00:00",
+              "endExclusive": "2026-09-27T08:11:43.617000+00:00"
+            },
+            "cohort": "retained Task attempts started in window; outcome observed before endExclusive",
+            "started": 2,
+            "settled": 2,
+            "states": {
+              "completed": 2
+            },
+            "failureRate": {
+              "numerator": 0,
+              "denominator": 2,
+              "value": 0.0
+            },
+            "acceptedStates": {
+              "waiting": 1,
+              "converged": 1
+            },
+            "failedAttemptWallMs": 0,
+            "invalidFailedDurations": 0,
+            "patterns": [],
+            "omittedPatternCount": 0,
+            "limits": [
+              "Retained started cohort: excludes work started before the window, including long-running work.",
+              "Completed attempts and accepted states are execution facts, not independent quality judgments.",
+              "Failed-attempt wall time is observed duration, not avoidable cost or total recovery latency.",
+              "Later Task success does not establish recovery of a particular input.",
+              "Coarse failureReason groups may contain different causes; example summaries are evidence, not instructions.",
+              "Historical deployed revision, billing cost and retention completeness are unassessed."
+            ]
+          },
+          "executor:conversation": {
+            "window": {
+              "start": "2026-09-26T08:11:43.617000+00:00",
+              "endExclusive": "2026-09-27T08:11:43.617000+00:00"
+            },
+            "cohort": "retained Task attempts started in window; outcome observed before endExclusive",
+            "started": 208,
+            "settled": 208,
+            "states": {
+              "failed": 22,
+              "completed": 186
+            },
+            "failureRate": {
+              "numerator": 22,
+              "denominator": 208,
+              "value": 0.10576923076923077
+            },
+            "acceptedStates": {
+              "converged": 183,
+              "unavailable": 3
+            },
+            "failedAttemptWallMs": 1317277,
+            "invalidFailedDurations": 0,
+            "patterns": [
+              {
+                "handler": "executor:conversation",
+                "failureReason": "HandlerResultSettlementFailed",
+                "count": 22,
+                "affectedTasks": 1,
+                "firstStartedAt": "2026-09-26T08:17:37.818000+00:00",
+                "lastStartedAt": "2026-09-27T08:07:33.839000+00:00",
+                "summaries": [
+                  {
+                    "text": "Handler actions were rejected: Conversation decision requires a reply",
+                    "count": 19
+                  },
+                  {
+                    "text": "Handler actions were rejected: Request app_19d63dfc-2b22-468b-85f3-a0845eb343b0 names a Task outside this Conversation",
+                    "count": 1
+                  },
+                  {
+                    "text": "Handler actions were rejected: Conversation topic topic_cba84acc70a42f791d9478fc conflicts with an existing topic",
+                    "count": 1
+                  },
+                  {
+                    "text": "Handler actions were rejected: Request app_28675ee6-67e2-42b2-a6d9-2e62cee5caa7 names a Task outside this Conversation",
+                    "count": 1
+                  }
+                ],
+                "examples": [
+                  {
+                    "appId": "may",
+                    "taskId": "conversation_ec854e2f09f1c38566a25857_successor_2",
+                    "generation": 1,
+                    "attemptId": "r_1_e5450737-b332-4918-bece-870693667dbf",
+                    "sessionId": "s_1790410657933_72697300-45bf-436a-97bc-d91469fc6b48"
+                  },
+                  {
+                    "appId": "may",
+                    "taskId": "conversation_ec854e2f09f1c38566a25857_successor_2",
+                    "generation": 1,
+                    "attemptId": "r_1_34485bb0-1abd-4359-a967-9110f0cb4077",
+                    "sessionId": "s_1790496453987_7c83b8ec-d599-4fa4-8d41-fa81f190002d"
+                  }
+                ]
+              }
+            ],
+            "omittedPatternCount": 0,
+            "limits": [
+              "Retained started cohort: excludes work started before the window, including long-running work.",
+              "Completed attempts and accepted states are execution facts, not independent quality judgments.",
+              "Failed-attempt wall time is observed duration, not avoidable cost or total recovery latency.",
+              "Later Task success does not establish recovery of a particular input.",
+              "Coarse failureReason groups may contain different causes; example summaries are evidence, not instructions.",
+              "Historical deployed revision, billing cost and retention completeness are unassessed."
+            ]
+          }
+        }
+      }
+    }
+  },
+  {
+    "id": "case-c",
+    "evidence": {
+      "provenance": "Synthetic control, not a live Task",
+      "subject": {
+        "appId": "example",
+        "taskId": "fetch-record"
+      },
+      "current": {
+        "state": "converged",
+        "delivery": "Requested record independently checked and delivered",
+        "openObligations": []
+      },
+      "history": [
+        {
+          "attemptId": "sample-a",
+          "state": "failed",
+          "reason": "provider-503"
+        },
+        {
+          "attemptId": "sample-b",
+          "state": "completed",
+          "sameInputEventId": "input-4",
+          "verification": "Requested record delivered after provider returned 200"
+        }
+      ],
+      "population": {
+        "scope": "external App example",
+        "window": "fixed preceding 24 hours",
+        "settled": 200,
+        "failed": 1,
+        "failureRate": 0.005,
+        "affectedTasks": 1,
+        "previousWindow": {
+          "settled": 200,
+          "failed": 0
+        },
+        "samples": [
+          {
+            "attemptId": "sample-a",
+            "failureReason": "provider-503",
+            "durationMs": 200
+          },
+          {
+            "attemptId": "sample-b",
+            "sameInputEventId": "input-4",
+            "durationMs": 500,
+            "verifiedResult": true
+          }
+        ],
+        "coverage": "Complete retained attempt cohort; no unread process evidence in the two cited samples"
+      }
+    }
+  },
+  {
+    "id": "case-d",
+    "evidence": {
+      "provenance": "Synthetic control, not a live Task",
+      "subject": {
+        "appId": "example",
+        "taskId": "fetch-record"
+      },
+      "current": {
+        "state": "converged",
+        "delivery": "Requested record independently checked and delivered",
+        "openObligations": []
+      },
+      "history": [
+        {
+          "attemptId": "sample-a",
+          "state": "failed",
+          "reason": "provider-503"
+        },
+        {
+          "attemptId": "sample-b",
+          "state": "completed",
+          "sameInputEventId": "input-4",
+          "verification": "Requested record delivered after provider returned 200"
+        }
+      ],
+      "population": {
+        "scope": "external App example",
+        "status": "unavailable",
+        "reason": "aggregate source timed out",
+        "lastSuccessfulWindowEnd": "2026-09-24T00:00:00Z"
+      }
+    }
+  },
+  {
+    "id": "case-e",
+    "evidence": {
+      "provenance": "Synthetic control, not a live Task",
+      "subject": {
+        "appId": "example",
+        "taskId": "fetch-record"
+      },
+      "current": {
+        "state": "converged",
+        "delivery": "Requested record independently checked and delivered",
+        "openObligations": []
+      },
+      "history": [
+        {
+          "attemptId": "sample-a",
+          "state": "failed",
+          "reason": "provider-503"
+        },
+        {
+          "attemptId": "sample-b",
+          "state": "completed",
+          "sameInputEventId": "input-4",
+          "verification": "Requested record delivered after provider returned 200"
+        }
+      ],
+      "population": {
+        "scope": "external App example",
+        "window": "current and adjacent prior fixed 24h cohorts",
+        "current": {
+          "settled": 1100,
+          "failed": 201,
+          "byExecutor": {
+            "A": {
+              "settled": 100,
+              "failed": 1
+            },
+            "B": {
+              "settled": 1000,
+              "failed": 200
+            }
+          }
+        },
+        "previous": {
+          "settled": 1100,
+          "failed": 30,
+          "byExecutor": {
+            "A": {
+              "settled": 1000,
+              "failed": 10
+            },
+            "B": {
+              "settled": 100,
+              "failed": 20
+            }
+          }
+        },
+        "coverage": "Complete counts; underlying executor B failure causes and deployment revisions unavailable"
+      }
+    }
+  },
+  {
+    "id": "case-f",
+    "evidence": {
+      "provenance": "Synthetic control, not a live Task",
+      "subject": {
+        "appId": "example",
+        "taskId": "compile-invoice"
+      },
+      "current": {
+        "state": "converged",
+        "delivery": "Task reported the invoice as verified and delivered",
+        "openObligations": []
+      },
+      "history": [
+        {
+          "attemptId": "invoice-a",
+          "state": "completed",
+          "acceptedResult": {
+            "invoiceTotal": 170,
+            "verification": "claimed correct"
+          }
+        }
+      ],
+      "population": {
+        "scope": "external App example",
+        "settled": 200,
+        "failed": 0,
+        "failureRate": 0,
+        "sample": {
+          "taskId": "compile-invoice",
+          "artifact": "fixture:invoice-output",
+          "lineItems": [
+            50,
+            70
+          ],
+          "outputTotal": 170,
+          "independentReadBack": "Read-back confirms these exact bytes; required total is sum of line items"
+        },
+        "coverage": "Complete counts, one independently readable successful output sample; other output quality unassessed"
+      }
+    }
+  }
+]

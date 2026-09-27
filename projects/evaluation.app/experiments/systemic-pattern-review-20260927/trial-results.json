@@ -1,0 +1,377 @@
+{
+  "version": 1,
+  "meaning": "Manual claim review of12 frozen-context native runs; not a population pass rate",
+  "records": [
+    {
+      "round": "round-1",
+      "caseId": "case-a",
+      "status": "done",
+      "model": "deepseek-v4-flash",
+      "durationMs": 57350,
+      "promptSha256": "de618793b493b86e3aab682b3a26d33b36501a3d89f7c6549c83f3b834505f82",
+      "evidenceSha256": "fca667a6379f408de3ad928584e91c1299b90a96b2ddc5ec519a1f3059a94c9e",
+      "criteriaSha256": "be62aff848d01036cc34c6931c4e81066b9e064065c4f5e847172e754e65119c",
+      "instructionsSha256": "ce1d7ece2f4819423644117f5789e15803789452578ed851dbc1420983ac8824",
+      "schemaSha256": "3d54da416029c8a33bcf7256828dd8a2af2a90f7c33413b1e2028e0f2b567c63",
+      "tools": {
+        "agent": "evaluator-deepseek",
+        "configuredTools": [
+          "finish"
+        ],
+        "deniedTools": [],
+        "effectiveTools": [
+          "finish"
+        ]
+      },
+      "receiptPath": "/app/.state/review-pilots/evaluation-systemic-20260927/round-1/case-a/receipt.json",
+      "receiptSha256": "4760475f0182c2dc16b66eec98da9f98a3d901219672a2be7478d41b80fab481",
+      "summary": "The exact Task snapshot shows a durable automated-Evaluation-report intake successor Task in a coherent current state: the latest reconcile (r_1_70b21f57, finished 2026-09-27T08:08:47.921Z, before asOf 08:11:43.617Z) converged, a prior transient rejection ('Conversation decision requires a reply') was recovered by an immediate retry on the same Task identity, conditions are empty, and terminal=false is consistent with the Task's durable open intake role rather than unfinished work. The recurring no-op reconciles each address a distinct Evaluation publication, so they are new-input reviews rather than looping waste. However, the projection cannot independently verify the substantive claims inside the converged summaries (report bytes, commit, evidence artifacts), the rejected attempt's intended decision, or the underlying Evaluation reports' own judgments; those remain named evidence gaps, not healthy coverage.",
+      "manualReview": "Expected limited baseline: current recovery accepted; no access to recurrence."
+    },
+    {
+      "round": "round-1",
+      "caseId": "case-b",
+      "status": "done",
+      "model": "deepseek-v4-flash",
+      "durationMs": 86856,
+      "promptSha256": "c66fbbe20814207e56c6901ebef01ea04be5613d70955560c9cae8ea6237e9eb",
+      "evidenceSha256": "6fb7a22cbcb93cf83f3474e035b22ce6f0221cc904d7731c899521c22b91b310",
+      "criteriaSha256": "be62aff848d01036cc34c6931c4e81066b9e064065c4f5e847172e754e65119c",
+      "instructionsSha256": "ce1d7ece2f4819423644117f5789e15803789452578ed851dbc1420983ac8824",
+      "schemaSha256": "3d54da416029c8a33bcf7256828dd8a2af2a90f7c33413b1e2028e0f2b567c63",
+      "tools": {
+        "agent": "evaluator-deepseek",
+        "configuredTools": [
+          "finish"
+        ],
+        "deniedTools": [],
+        "effectiveTools": [
+          "finish"
+        ]
+      },
+      "receiptPath": "/app/.state/review-pilots/evaluation-systemic-20260927/round-1/case-b/receipt.json",
+      "receiptSha256": "66e1d71a4f1f47fc6de04ba02b5926b868dffdaf71f8936073f8a986752bcec3",
+      "summary": "Current Task state and wait are coherent: the newest attempt r_1_70b21f57 converged at 08:08:47Z with an assessed\u2014no-action disposition immediately after a rejected attempt on the same Task identity, and terminal=false with conditions=[] is a legitimate durable open state awaiting the next scheduled Evaluation publication, not unfinished work. The material quality concern is not the current outcome but a recurring settlement-failure pattern: all 22 failed executor:conversation attempts in the current window belong to this single Task, including 19 identical 'Conversation decision requires a reply' rejections, each recovered \u2014 a nearby-fix repetition that justifies focused owner investigation rather than remediation from this review.",
+      "manualReview": "Detected recurrence; unsupported all-recovered, definite authoring cause and avoidable-cost claims."
+    },
+    {
+      "round": "round-1",
+      "caseId": "case-c",
+      "status": "done",
+      "model": "deepseek-v4-flash",
+      "durationMs": 43747,
+      "promptSha256": "1c9c59abbfc30d973ec1486001a5ea086cadee9702bad4df139498a0bc248708",
+      "evidenceSha256": "b7a723dd9ea6393600b43c2aeb7b40aa0ca8e8c2ff4b5e1afa7e98d867183537",
+      "criteriaSha256": "be62aff848d01036cc34c6931c4e81066b9e064065c4f5e847172e754e65119c",
+      "instructionsSha256": "ce1d7ece2f4819423644117f5789e15803789452578ed851dbc1420983ac8824",
+      "schemaSha256": "3d54da416029c8a33bcf7256828dd8a2af2a90f7c33413b1e2028e0f2b567c63",
+      "tools": {
+        "agent": "evaluator-deepseek",
+        "configuredTools": [
+          "finish"
+        ],
+        "deniedTools": [],
+        "effectiveTools": [
+          "finish"
+        ]
+      },
+      "receiptPath": "/app/.state/review-pilots/evaluation-systemic-20260927/round-1/case-c/receipt.json",
+      "receiptSha256": "33ea135965df8b2e7ff85592ba11bb426b5c6f8e1a4badeb65bc899da8649d54",
+      "summary": "The current snapshot (example/fetch-record) shows converged state with a verified delivery and no open obligations. The single failed attempt was a transient provider-503 that was recovered on the same Task identity; population evidence shows one isolated failure in 200 settled tasks. No review deadline, deeper-review trigger, or evidence gap applies.",
+      "manualReview": "Desired transient-recovery disposition; one attempt/Task unit slip."
+    },
+    {
+      "round": "round-1",
+      "caseId": "case-d",
+      "status": "done",
+      "model": "deepseek-v4-flash",
+      "durationMs": 33959,
+      "promptSha256": "3bb7ef6f5e9cc247fc66e1488d50d59c8940284b6c7dc1c34077fd5967dda8fe",
+      "evidenceSha256": "7a1038ca37b0edd6c1056fcf6290fb5d92aad59b81f02cb69de05f38dd34889d",
+      "criteriaSha256": "be62aff848d01036cc34c6931c4e81066b9e064065c4f5e847172e754e65119c",
+      "instructionsSha256": "ce1d7ece2f4819423644117f5789e15803789452578ed851dbc1420983ac8824",
+      "schemaSha256": "3d54da416029c8a33bcf7256828dd8a2af2a90f7c33413b1e2028e0f2b567c63",
+      "tools": {
+        "agent": "evaluator-deepseek",
+        "configuredTools": [
+          "finish"
+        ],
+        "deniedTools": [],
+        "effectiveTools": [
+          "finish"
+        ]
+      },
+      "receiptPath": "/app/.state/review-pilots/evaluation-systemic-20260927/round-1/case-d/receipt.json",
+      "receiptSha256": "9c1b71f6f8d255ab4c79799f1114856aa6c358d5670c480bdf389d5ee36bcf07",
+      "summary": "Assessed the synthetic control snapshot for example/fetch-record: a transient provider-503 failure was validly recovered on the same input event, and the current converged state with no open obligations is coherent. The delivery claim rests on recorded attempt verification rather than an independent read-back, and population-level coverage is unavailable, so conclusions are bounded to this single Task.",
+      "manualReview": "Preserved recovery and unknown aggregate coverage."
+    },
+    {
+      "round": "round-1",
+      "caseId": "case-e",
+      "status": "done",
+      "model": "deepseek-v4-flash",
+      "durationMs": 34808,
+      "promptSha256": "1c8430d67238b49bd2452dd68957c483ade2444f18b4fda73b298a78c5d222c7",
+      "evidenceSha256": "f365f3eb15bc2bed1220f366334c667a85b3fd0dfb7c62257d0cfe2b630dc871",
+      "criteriaSha256": "be62aff848d01036cc34c6931c4e81066b9e064065c4f5e847172e754e65119c",
+      "instructionsSha256": "ce1d7ece2f4819423644117f5789e15803789452578ed851dbc1420983ac8824",
+      "schemaSha256": "3d54da416029c8a33bcf7256828dd8a2af2a90f7c33413b1e2028e0f2b567c63",
+      "tools": {
+        "agent": "evaluator-deepseek",
+        "configuredTools": [
+          "finish"
+        ],
+        "deniedTools": [],
+        "effectiveTools": [
+          "finish"
+        ]
+      },
+      "receiptPath": "/app/.state/review-pilots/evaluation-systemic-20260927/round-1/case-e/receipt.json",
+      "receiptSha256": "9440c8ff69776dd81a2d351ae1b391c9ad5c1cd7fe5ce28c89d9df479d001307",
+      "summary": "Assessed the exact external Task snapshot {appId: example, taskId: fetch-record}, a synthetic control: it is converged with the requested record independently checked and delivered, a recovered provider-503 transient on the same input event, and no open obligations, so the current state is coherent and no review deadline applies. Population-level executor-B failure-rate shift is outside this Task's evidence and its causes are unavailable per the snapshot's own coverage note.",
+      "manualReview": "Dismissed population as outside Task scope; did not explain mix."
+    },
+    {
+      "round": "round-1",
+      "caseId": "case-f",
+      "status": "done",
+      "model": "deepseek-v4-flash",
+      "durationMs": 41348,
+      "promptSha256": "fea7fcaeca3680effa9f21149047618c2d2ed33b4c8366c30dea5aa69d0142e2",
+      "evidenceSha256": "539c26edee5ab3fe4647a3429dbbf1a5d32ad0b159a0aaca8c8ab2eee13273e9",
+      "criteriaSha256": "be62aff848d01036cc34c6931c4e81066b9e064065c4f5e847172e754e65119c",
+      "instructionsSha256": "ce1d7ece2f4819423644117f5789e15803789452578ed851dbc1420983ac8824",
+      "schemaSha256": "3d54da416029c8a33bcf7256828dd8a2af2a90f7c33413b1e2028e0f2b567c63",
+      "tools": {
+        "agent": "evaluator-deepseek",
+        "configuredTools": [
+          "finish"
+        ],
+        "deniedTools": [],
+        "effectiveTools": [
+          "finish"
+        ]
+      },
+      "receiptPath": "/app/.state/review-pilots/evaluation-systemic-20260927/round-1/case-f/receipt.json",
+      "receiptSha256": "be66ab7218f51b7e883a74ee5ae083d20e932eff5f89fe4551c7d6ba43bb768f",
+      "summary": "The example/compile-invoice Task converged on a false-good result: the accepted invoice total of 170 is arithmetically wrong against the supplied evidence (line items 50 + 70 = 120), and the 'claimed correct' verification was never independently validated before the Task was reported as verified and delivered.",
+      "manualReview": "Detected wrong output; invented verification procedure and lack of prior validation."
+    },
+    {
+      "round": "round-2",
+      "caseId": "case-b-refined",
+      "status": "done",
+      "model": "deepseek-v4-flash",
+      "durationMs": 85794,
+      "promptSha256": "2384c1cd8ca76252649b7f58a3fd3d12162a5cc953adbf8dd977fecb65abefcd",
+      "evidenceSha256": "4398b071ec08e5f80e7fdc030b0be7e3663a300907b9dc289f8aada1f635a4f0",
+      "criteriaSha256": "be62aff848d01036cc34c6931c4e81066b9e064065c4f5e847172e754e65119c",
+      "instructionsSha256": "ce1d7ece2f4819423644117f5789e15803789452578ed851dbc1420983ac8824",
+      "schemaSha256": "3d54da416029c8a33bcf7256828dd8a2af2a90f7c33413b1e2028e0f2b567c63",
+      "tools": {
+        "agent": "evaluator-deepseek",
+        "configuredTools": [
+          "finish"
+        ],
+        "deniedTools": [],
+        "effectiveTools": [
+          "finish"
+        ]
+      },
+      "receiptPath": "/app/.state/review-pilots/evaluation-systemic-20260927/round-2/case-b-refined/receipt.json",
+      "receiptSha256": "a733dcd57b75c19b4633aa724de5343ec808858e0c98037a9159d24b3f11f627",
+      "summary": "Current Task state is coherent and healthy: accepted attempt r_1_70b21f57 converged at 2026-09-27T08:08:47.921Z, conditions is empty, terminal=false represents the valid reconciled-but-open shape, and an immediately preceding 'Conversation decision requires a reply' retry was recovered on the same identity. The 24h population failure-rate rise (0.48% to 10.6%) is real but fully concentrated in 22 HandlerResultSettlementFailed attempts on this single Task; the underlying cause is unassessed because execution history is unavailable, warranting one bounded investigation rather than repair work on the current Task.",
+      "manualReview": "Detected recurrence; wrong complementary denominator and every-cycle-settled claim remained."
+    },
+    {
+      "round": "round-2",
+      "caseId": "case-e-refined",
+      "status": "done",
+      "model": "deepseek-v4-flash",
+      "durationMs": 77094,
+      "promptSha256": "24ce141de75aa2bc3816129f4c0833b7e7a6bed417fbadf863407bb8af13483e",
+      "evidenceSha256": "f365f3eb15bc2bed1220f366334c667a85b3fd0dfb7c62257d0cfe2b630dc871",
+      "criteriaSha256": "be62aff848d01036cc34c6931c4e81066b9e064065c4f5e847172e754e65119c",
+      "instructionsSha256": "ce1d7ece2f4819423644117f5789e15803789452578ed851dbc1420983ac8824",
+      "schemaSha256": "3d54da416029c8a33bcf7256828dd8a2af2a90f7c33413b1e2028e0f2b567c63",
+      "tools": {
+        "agent": "evaluator-deepseek",
+        "configuredTools": [
+          "finish"
+        ],
+        "deniedTools": [],
+        "effectiveTools": [
+          "finish"
+        ]
+      },
+      "receiptPath": "/app/.state/review-pilots/evaluation-systemic-20260927/round-2/case-e-refined/receipt.json",
+      "receiptSha256": "2fdac4fee288cae821b3671e5362d9de879abb1e2257259e0635d219479eaab9",
+      "summary": "Synthetic-control Task example/fetch-record is a converged outcome with no open obligations: one transient provider-503 attempt failure was recovered on the same input event and the record was delivered with recorded verification. The population's aggregate failure-rate rise (2.66% to 15.45%) is fully a workload-mix effect; per-executor rates are unchanged, and executor B's persistent ~16.7% failure rate with unavailable causes is the one material pattern warranting the smallest follow-up investigation.",
+      "manualReview": "Recognized mix effect but treated terminal population as successes and double-counted failures."
+    },
+    {
+      "round": "round-2",
+      "caseId": "case-f-refined",
+      "status": "done",
+      "model": "deepseek-v4-flash",
+      "durationMs": 30286,
+      "promptSha256": "e231fef9517911ba61b563ab9d8cf3be127f7001672ecda485e8c69906bfb19e",
+      "evidenceSha256": "539c26edee5ab3fe4647a3429dbbf1a5d32ad0b159a0aaca8c8ab2eee13273e9",
+      "criteriaSha256": "be62aff848d01036cc34c6931c4e81066b9e064065c4f5e847172e754e65119c",
+      "instructionsSha256": "ce1d7ece2f4819423644117f5789e15803789452578ed851dbc1420983ac8824",
+      "schemaSha256": "3d54da416029c8a33bcf7256828dd8a2af2a90f7c33413b1e2028e0f2b567c63",
+      "tools": {
+        "agent": "evaluator-deepseek",
+        "configuredTools": [
+          "finish"
+        ],
+        "deniedTools": [],
+        "effectiveTools": [
+          "finish"
+        ]
+      },
+      "receiptPath": "/app/.state/review-pilots/evaluation-systemic-20260927/round-2/case-f-refined/receipt.json",
+      "receiptSha256": "2182830cc678aec0e034367c0caea2f2e02235f340a3e8ea34bf4e829c1794d0",
+      "summary": "The converged Task delivered an invoice total of 170 against line items summing to 120; the independent read-back confirms the wrong bytes and falsifies the attempt's 'claimed correct' verification. The population's 0% failure rate is a status count, not a correctness measure, so the true output-defect rate is unknown.",
+      "manualReview": "Kept cause explicitly unknown in one finding but still invented verification procedure elsewhere and conflated Task/attempt units."
+    },
+    {
+      "round": "round-2",
+      "caseId": "case-g",
+      "status": "done",
+      "model": "deepseek-v4-flash",
+      "durationMs": 55360,
+      "promptSha256": "0759bbe9daec201874fea9092394488982d5a3b26ef0fbdd61e5f3cf4fe9de1b",
+      "evidenceSha256": "ddb56cf7126e4624d3a2663a29ff0600ebd90e03703b3ca0d9829ee3c8433f48",
+      "criteriaSha256": "be62aff848d01036cc34c6931c4e81066b9e064065c4f5e847172e754e65119c",
+      "instructionsSha256": "ce1d7ece2f4819423644117f5789e15803789452578ed851dbc1420983ac8824",
+      "schemaSha256": "3d54da416029c8a33bcf7256828dd8a2af2a90f7c33413b1e2028e0f2b567c63",
+      "tools": {
+        "agent": "evaluator-deepseek",
+        "configuredTools": [
+          "finish"
+        ],
+        "deniedTools": [],
+        "effectiveTools": [
+          "finish"
+        ]
+      },
+      "receiptPath": "/app/.state/review-pilots/evaluation-systemic-20260927/round-2/case-g/receipt.json",
+      "receiptSha256": "08f5049f19ceb640650018a974325e09ed3e89a3364c68800cdecec613b58820",
+      "summary": "Current state 'converged' with empty openObligations is supported for input-new only; the disposition of failed input-old is explicitly unavailable in the supplied snapshot, so the current-state/wait coherence of the standing Task cannot be confirmed. Population and causal conclusions are bounded accordingly: one failed attempt, no baseline window, root cause unavailable.",
+      "manualReview": "Correctly distinguished unrelated-input success; unsupported speculation about dependency between inputs."
+    },
+    {
+      "round": "round-3",
+      "caseId": "case-b-final",
+      "status": "done",
+      "model": "deepseek-v4-flash",
+      "durationMs": 103483,
+      "promptSha256": "a259b2011ea2106306976ef30cf38835855eafabcf8e32936e22805ecd170b7f",
+      "evidenceSha256": "954007e743feb746325b79ea9217859a97cead561eed4d63ee7820a243c55728",
+      "criteriaSha256": "be62aff848d01036cc34c6931c4e81066b9e064065c4f5e847172e754e65119c",
+      "instructionsSha256": "ce1d7ece2f4819423644117f5789e15803789452578ed851dbc1420983ac8824",
+      "schemaSha256": "3d54da416029c8a33bcf7256828dd8a2af2a90f7c33413b1e2028e0f2b567c63",
+      "tools": {
+        "agent": "evaluator-deepseek",
+        "configuredTools": [
+          "finish"
+        ],
+        "deniedTools": [],
+        "effectiveTools": [
+          "finish"
+        ]
+      },
+      "receiptPath": "/app/.state/review-pilots/evaluation-systemic-20260927/round-3/case-b-final/receipt.json",
+      "receiptSha256": "db4e2e87953da59b9522da588eb8831438c87bc3b8e68b28e3a3cff85c5121bd",
+      "summary": "Ongoing-work assessment returns 'assessed': the Task's current state is a coherent converged snapshot (up-to-date, terminal=false, no Conditions) with an accepted attempt at 08:08:47Z following the last recorded failure at 08:07:33Z, and one byte-verified input-equal recovery pair. The App failure-rate increase is entirely concentrated in 22 handler settlement failures on this one Task, 19 with the same 'requires a reply' rejection; cause is unassessed because execution links are absent, supporting a smallest-useful investigation rather than the snapshot's stronger 'no improvement candidate' claim.",
+      "manualReview": "Targeted acceptance: noticed recurrence, exactly one verified recovery, remaining21 unknown, correct subgroup rates, cause and avoidability unassessed. Minor terminology slip called Request IDs App IDs; not a perfect general judgment.",
+      "judgment": {
+        "delivery": "Returned as the structured finish() result to the calling workflow; no files written, no Tasks mutated, no state changed. Accountable ownership remains with App may for the conversation Task; the systemic investigation is a recommendation, not a performed repair. Unassessed scope (procedure/cause, publication bytes, 21 recovery attributions, older attempts) is preserved as unassessed rather than resolved by assumption.",
+        "disposition": "assessed",
+        "findings": [
+          "STATE_COHERENT: The current snapshot is internally coherent as a converged non-terminal state: status 'up-to-date', terminal=false, conditions=[], and accepted attempt r_1_70b21f57 (generation 1) finished 2026-09-27T08:08:47.921Z, about 3 minutes before asOf 08:11:43.617Z. With no open Conditions, dependencies, or input waits, the Task's open lifetime and non-claimability require no review deadline and are not unfinished work.",
+          "VERIFIED_RECOVERY: Exactly one input-correlated recovery is proven: failed attempt r_1_34485bb0 (event 6457486) was succeeded by accepted attempt r_1_70b21f57 (event 6457495) with exactly equal retained input (same type, target, data, idempotencyKey conversation-input:app_78967adb-4e79-4287-8f88-9d59cc6296d6, sha256 66e7ad07bc2b92eaa98e562b69fcc949c6fc7f96d4239dbb4ee769ae7cf81b13). Recovery on the same identity is confirmed for this pair only; the other 21 failed attempts in the cohort are explicitly unattributed and are not counted as recovered incidents.",
+          "TASK_CONCENTRATION: The App-level failure-rate rise (3.69% to 10.36%; 10/271 to 23/222) does not survive decomposition: 22 of 23 current-window failed attempts are HandlerResultSettlementFailed on executor:conversation for this exact Task (affectedTasks=1), while other Tasks improved (9/64=14.06% to 1/14=7.14%, small denominator, wide uncertainty). No broad population regression is supported. Units preserved: these are attempts, not Tasks or delivered contributions; failed-attempt wall time fell from 6,885,863 ms to 1,517,711 ms app-wide (observed effort only).",
+          "RECURRING_REJECTION (systemic candidate): 19 of 22 failures share one rejection text, 'Conversation decision requires a reply', recurring from 2026-09-26T08:17:37Z to 2026-09-27T08:07:33Z (~24h) on a single Task. Cause is unassessed because execution links are absent for all three referenced attempts ('workflow runs are not sessions'). Smallest useful investigation: sample rejected handler actions plus the handler's reply requirement to determine whether the conversation agent's decisions, the specific input, or the validation rule drives the repetition. The two 'names a Task outside this Conversation' rejections (distinct app IDs app_19d63dfc and app_28675ee6) and one topic-conflict rejection are single occurrences, noted but not patterned.",
+          "OVERSTATED_NO_CANDIDATE: current.summary asserts 'no repair or improvement candidate is warranted.' No repair to the Task's current state is owed (state is coherent and the accepted attempt followed the last recorded failure), but a 19x identical rejection over 24 hours on one Task is a material pattern with uncertain cause; the summary's no-improvement-candidate claim is stronger than the pattern evidence supports. A bounded investigation can coexist with the already-recovered current work.",
+          "EVIDENCE_GAPS: (a) execution history is unavailable for r_1_70b21f57, r_1_34485bb0, and r_1_0a85a6fd, so the procedure that produced the repeated rejections is unknown and the repeated-outcome pattern cannot be confirmed as repeated unchanged behavior (LOOPING is not established); (b) the process window covers only the three newest referenced attempts, older execution unassessed; (c) the 08:00 UTC publication's report bytes and commit are asserted in current.summary and deliveryScope explicitly excludes artifact claims from this projection, so publication currency/correctness is unverified here; (d) avoidability of the ~22 minutes of failed-attempt wall time on this Task is unassessed; (e) historical deployed revision and retention completeness are unavailable/unassessed."
+        ],
+        "responsibility": "The subject Task is owned by App may under its conversation-owner boundary; the current accepted result is an automated Evaluation publication intake recorded by the workflow, and May owns any resulting conversation obligation. This review exercised no authority over the Task, Host state, or the linked publication. The recurring handler-rejection pattern is an App-level concern for may's accountable owner; the systemic recommendation is returned here rather than enacted.",
+        "summary": "Ongoing-work assessment returns 'assessed': the Task's current state is a coherent converged snapshot (up-to-date, terminal=false, no Conditions) with an accepted attempt at 08:08:47Z following the last recorded failure at 08:07:33Z, and one byte-verified input-equal recovery pair. The App failure-rate increase is entirely concentrated in 22 handler settlement failures on this one Task, 19 with the same 'requires a reply' rejection; cause is unassessed because execution links are absent, supporting a smallest-useful investigation rather than the snapshot's stronger 'no improvement candidate' claim.",
+        "verification": [
+          "metricTable internal consistency: taskCurrent(22)+otherTasksCurrent(1)=appCurrent(23) and taskPrevious(1)+otherTasksPrevious(9)=appPrevious(10); all six failurePercent values recompute correctly from the stated numerators and denominators (e.g., 23/222=10.36%, 22/208=10.577%, 1/14=7.143%).",
+          "patterns: count 22 = 19 'requires a reply' + 1 topic conflict + 2 'Task outside this Conversation' summaries; affectedTasks=1; first/last startedAt (09-26T08:17:37.818Z to 09-27T08:07:33.839Z) fall inside the taskCurrent 24h window (09-26T08:11:43Z to 09-27T08:11:43Z).",
+          "recoveryEvidence.verifiedPairs[0] supplies the exact-equality claim with both event ids (6457486 failed, 6457495 accepted), idempotencyKey, and input sha256; counters failedAttemptsInCurrentCohort=22, withVerifiedRecoveryPair=1, otherRecoveryAttributionUnassessed=21 bound the recovery claim.",
+          "current fields: status 'up-to-date', terminal=false, conditions=[]; acceptedAttempt r_1_70b21f57 started 08:08:38.535Z and finished 08:08:47.921Z, immediately after the last failed attempt start 08:07:33.839Z from patterns.",
+          "process.gaps record all three referenced attempts as 'unavailable: execution link absent or unsupported (workflow runs are not sessions)' and the window as three newest attempts; these records bound every causal and procedural claim in this report.",
+          "Timing vs asOf: the accepted attempt finished about 2m56s before asOf 2026-09-27T08:11:43.617Z, so the accepted result predates the snapshot and no newer attempt or condition postdates it in the supplied evidence."
+        ]
+      }
+    },
+    {
+      "round": "round-3",
+      "caseId": "case-e-final",
+      "status": "done",
+      "model": "deepseek-v4-flash",
+      "durationMs": 39075,
+      "promptSha256": "7060be8efc6982679d0ac04b392baa9b3de8c7ada217578653eaf0b40db99e4d",
+      "evidenceSha256": "b3d908d825ec448762f1bd582224b8e4efb2fb8fea3f7c4b1317fc730ceb55cb",
+      "criteriaSha256": "be62aff848d01036cc34c6931c4e81066b9e064065c4f5e847172e754e65119c",
+      "instructionsSha256": "ce1d7ece2f4819423644117f5789e15803789452578ed851dbc1420983ac8824",
+      "schemaSha256": "3d54da416029c8a33bcf7256828dd8a2af2a90f7c33413b1e2028e0f2b567c63",
+      "tools": {
+        "agent": "evaluator-deepseek",
+        "configuredTools": [
+          "finish"
+        ],
+        "deniedTools": [],
+        "effectiveTools": [
+          "finish"
+        ]
+      },
+      "receiptPath": "/app/.state/review-pilots/evaluation-systemic-20260927/round-3/case-e-final/receipt.json",
+      "receiptSha256": "280e80b5036779ab44c484db29c032a7676882624965dd58130b3d7d55986535",
+      "summary": "The exact Task (example/fetch-record) is converged with independently verified delivery and a recovered transient provider-503 failure. The overall population failure-rate rise is a workload-mix effect with flat per-executor rates; executor B's stable 20% failure cause is the main unassessed gap.",
+      "manualReview": "Targeted acceptance: correct supplied rates, workload-mix explanation, current recovery preserved, B cause unknown.",
+      "judgment": {
+        "delivery": "No external artifact was owed; the assessment itself is the deliverable, returned through finish() in the existing report schema. No files were written and no subject state was mutated, cancelled, or reassigned.",
+        "disposition": "assessed",
+        "findings": [
+          "Task disposition: subject example/fetch-record is in state 'converged' with delivery 'Requested record independently checked and delivered' and empty openObligations. With no current Condition, dependency, or input wait, the non-terminal/open lifetime requires no review deadline; this is a coherent resolved state, not unfinished work.",
+          "Recovery quality: history shows attempt sample-a failed with 'provider-503' and attempt sample-b completed for the same inputEventId 'input-4' with recorded verification 'Requested record delivered after provider returned 200'. This is a recovered transient provider failure on the same Task identity with verification preserved; it is a valid outcome, and the failure does not erase the preceding execution or the recovery.",
+          "Population pattern: within-executor failure rates are flat across windows \u2014 A: 1% (10/1000) previous to 1% (1/100) current; B: 20% (20/100) previous to 20% (200/1000) current. The overall rise from 2.727% (30/1100) to 18.273% (201/1100) is a workload-mix effect (B's share moved from 100/1100 to 1000/1100), not a rate regression in either executor population. No overall rate change remains after comparing the supplied executor populations.",
+          "Persistent subpopulation signal: executor B fails at 20% in both cohorts (220/1100 total terminal attempts across windows). This is a real frequency in the stated population, but the recorded coverage states underlying executor B failure causes and deployment revisions are unavailable, so cause, avoidability, and recovery of those failures are unassessed, not healthy and not yet attributable.",
+          "Sample-size caution: executor A's current window has only 100 terminal attempts (1 failed), down from 1000 in the previous window, while B's grew from 100 to 1000. A's flat 1% is directionally supported but the current-window estimate is coarse; this does not change the mix-effect conclusion, which is arithmetic on complete counts.",
+          "Scope boundary: the subject Task is synthetic control evidence ('Synthetic control, not a live Task'). Its healthy disposition supports the reviewed Task outcome only and must not be projected as App-level health for 'example'; conversely, B's unexplained 20% rate does not implicate the subject Task's delivery.",
+          "Smallest useful investigation if pursued: obtain executor B failure-cause breakdown and deployment revision linkage for one cohort, to classify B's stable 20% as input-correlated, environment, or procedure-related. Candidate remediation would need a separate value-versus-cost judgment and is not supported by current evidence."
+        ],
+        "responsibility": "The exact external subject {appId: example, taskId: fetch-record} is a synthetic control, not a live Task, and is explicitly marked as such in provenance. The accountable owner is the example App; the recorded history shows executor-level attempts (sample-a, sample-b) against one input event, with the App-level current state recording converged delivery and no open obligations. No Evaluation-owned or delegated-reviewer work is claimed for this subject, so no exclusion applies. Responsibility boundaries are clean: the population metrics describe the external App population and are kept separate from the Task-level judgment.",
+        "summary": "The exact Task (example/fetch-record) is converged with independently verified delivery and a recovered transient provider-503 failure. The overall population failure-rate rise is a workload-mix effect with flat per-executor rates; executor B's stable 20% failure cause is the main unassessed gap.",
+        "verification": [
+          "Provenance: snapshot field 'provenance' = 'Synthetic control, not a live Task'; subject {appId: example, taskId: fetch-record}.",
+          "Current state: snapshot current = {state: 'converged', delivery: 'Requested record independently checked and delivered', openObligations: []}.",
+          "History attempt sample-a: state 'failed', reason 'provider-503'.",
+          "History attempt sample-b: state 'completed', sameInputEventId 'input-4', verification 'Requested record delivered after provider returned 200'.",
+          "MetricTable 'all' current: 1100 totalTerminalAttempts, 201 failedAttempts, 18.273% (201/1100 = 18.2727...); previous: 1100, 30, 2.727%.",
+          "MetricTable A: previous 1000/10 failed = 1%; current 100/1 failed = 1%.",
+          "MetricTable B: previous 100/20 failed = 20%; current 1000/200 failed = 20%.",
+          "Denominators check: completed + failed + interrupted includes failures as stated; previous A+B = 1000+100 = 1100 and current A+B = 100+1000 = 1100, matching the 'all' totals in both windows.",
+          "Coverage statement: population.scope = 'external App example'; coverage = 'Complete counts; underlying executor B failure causes and deployment revisions unavailable'."
+        ]
+      }
+    }
+  ],
+  "totals": {
+    "durationMs": 689160,
+    "replies": 28,
+    "input": 95850,
+    "cacheRead": 300480,
+    "cacheWrite": 0,
+    "output": 65382,
+    "toolCalls": 28
+  },
+  "estimatedCost": null,
+  "costLimitation": "No priced replies for this gateway; runtime zero estimates are not free-cost evidence."
+}

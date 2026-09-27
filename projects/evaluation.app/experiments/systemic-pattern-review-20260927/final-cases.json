@@ -1,0 +1,312 @@
+[
+  {
+    "id": "case-b-final",
+    "guidance": "Assess current incident disposition, population pattern, causal explanation,\npractical value and evidence coverage separately. Recovery of current work can\ncoexist with a systemic improvement opportunity.\n\nThe supplied external App population is also within this review's scope. Assess\nits observations even when the exact Task is healthy; identify Task-level and\nApp-level conclusions separately. State whether an overall rate change remains\nafter comparing the supplied executor populations. Preserve units: an attempt is\nnot a Task or a delivered contribution.\n\nAggregate counts establish frequency in the stated population. Recorded durations\nestablish observed effort. Treat the cause, avoidability and recovery of other\ninputs as unassessed until their process or input/operation links support those\nclaims. Use workload breakdowns and contrasting examples to check interpretations.\nAn incorrect output establishes an output defect; unavailable execution history\nleaves the procedure that produced it unknown.\n\nRecommend the smallest useful investigation when a material pattern is supported\nbut its cause is uncertain. A candidate or immediate action needs a separate\nvalue-versus-cost judgment. Retain independently supported current recovery,\nquality findings and evidence gaps in the same report.\n\nUse the supplied code-calculated comparison table for numerical claims. Recovery counts refer only to input-correlated evidence; an unresolved attribution is not a recovered incident.\n",
+    "evidence": {
+      "provenance": "Historical snapshot with code-calculated comparison table; exact recovery-pair input equality additionally read from retained attempts.",
+      "subject": {
+        "appId": "may",
+        "taskId": "conversation_ec854e2f09f1c38566a25857_successor_2"
+      },
+      "asOf": "2026-09-27T08:11:43.617Z",
+      "current": {
+        "status": "up-to-date",
+        "summary": "The exact 08:00 UTC May hygiene Evaluation publication is current and supports an assessed\u2014no action disposition. Current Task state, report bytes, commit, and evidence artifacts corroborate the valid before-due wait; no repair or improvement candidate is warranted.",
+        "acceptedAttempt": {
+          "id": "r_1_70b21f57-45e0-4ed4-8c99-6af489356f30",
+          "generation": 1,
+          "startedAt": "2026-09-27T08:08:38.535Z",
+          "finishedAt": "2026-09-27T08:08:47.921Z"
+        },
+        "terminal": false
+      },
+      "conditions": [],
+      "scopeAndUncertainty": {
+        "assessmentScope": "Exact Task and this external App population; sampled evidence only",
+        "rootCause": "unassessed: process transcripts unavailable",
+        "avoidableEffort": "unassessed: wall time is observed effort",
+        "historicalDeployedRevision": "unavailable",
+        "retentionCompleteness": "unassessed"
+      },
+      "metricTable": [
+        {
+          "id": "appCurrent",
+          "scope": "appCurrent",
+          "window": {
+            "start": "2026-09-26T08:11:43.617000+00:00",
+            "endExclusive": "2026-09-27T08:11:43.617000+00:00"
+          },
+          "failedAttempts": 23,
+          "failurePercent": 10.36,
+          "failedAttemptWallMs": 1517711,
+          "totalTerminalAttempts": 222,
+          "denominatorDefinition": "completed + failed + interrupted; failedAttempts is a subset of totalTerminalAttempts"
+        },
+        {
+          "id": "appPrevious",
+          "scope": "appPrevious",
+          "window": {
+            "start": "2026-09-25T08:11:43.617000+00:00",
+            "endExclusive": "2026-09-26T08:11:43.617000+00:00"
+          },
+          "failedAttempts": 10,
+          "failurePercent": 3.69,
+          "failedAttemptWallMs": 6885863,
+          "totalTerminalAttempts": 271,
+          "denominatorDefinition": "completed + failed + interrupted; failedAttempts is a subset of totalTerminalAttempts"
+        },
+        {
+          "id": "taskCurrent",
+          "scope": "taskCurrent",
+          "window": {
+            "start": "2026-09-26T08:11:43.617000+00:00",
+            "endExclusive": "2026-09-27T08:11:43.617000+00:00"
+          },
+          "failedAttempts": 22,
+          "failurePercent": 10.577,
+          "failedAttemptWallMs": 1317277,
+          "totalTerminalAttempts": 208,
+          "denominatorDefinition": "completed + failed + interrupted; failedAttempts is a subset of totalTerminalAttempts"
+        },
+        {
+          "id": "taskPrevious",
+          "scope": "taskPrevious",
+          "window": {
+            "start": "2026-09-25T08:11:43.617000+00:00",
+            "endExclusive": "2026-09-26T08:11:43.617000+00:00"
+          },
+          "failedAttempts": 1,
+          "failurePercent": 0.483,
+          "failedAttemptWallMs": 41754,
+          "totalTerminalAttempts": 207,
+          "denominatorDefinition": "completed + failed + interrupted; failedAttempts is a subset of totalTerminalAttempts"
+        },
+        {
+          "id": "otherTasksCurrent",
+          "scope": "otherTasksCurrent",
+          "window": {
+            "start": "2026-09-26T08:11:43.617000+00:00",
+            "endExclusive": "2026-09-27T08:11:43.617000+00:00"
+          },
+          "failedAttempts": 1,
+          "failurePercent": 7.143,
+          "failedAttemptWallMs": 200434,
+          "totalTerminalAttempts": 14,
+          "denominatorDefinition": "completed + failed + interrupted; failedAttempts is a subset of totalTerminalAttempts"
+        },
+        {
+          "id": "otherTasksPrevious",
+          "scope": "otherTasksPrevious",
+          "window": {
+            "start": "2026-09-25T08:11:43.617000+00:00",
+            "endExclusive": "2026-09-26T08:11:43.617000+00:00"
+          },
+          "failedAttempts": 9,
+          "failurePercent": 14.062,
+          "failedAttemptWallMs": 6844109,
+          "totalTerminalAttempts": 64,
+          "denominatorDefinition": "completed + failed + interrupted; failedAttempts is a subset of totalTerminalAttempts"
+        }
+      ],
+      "patterns": [
+        {
+          "handler": "executor:conversation",
+          "failureReason": "HandlerResultSettlementFailed",
+          "count": 22,
+          "affectedTasks": 1,
+          "firstStartedAt": "2026-09-26T08:17:37.818000+00:00",
+          "lastStartedAt": "2026-09-27T08:07:33.839000+00:00",
+          "summaries": [
+            {
+              "text": "Handler actions were rejected: Conversation decision requires a reply",
+              "count": 19
+            },
+            {
+              "text": "Handler actions were rejected: Request app_19d63dfc-2b22-468b-85f3-a0845eb343b0 names a Task outside this Conversation",
+              "count": 1
+            },
+            {
+              "text": "Handler actions were rejected: Conversation topic topic_cba84acc70a42f791d9478fc conflicts with an existing topic",
+              "count": 1
+            },
+            {
+              "text": "Handler actions were rejected: Request app_28675ee6-67e2-42b2-a6d9-2e62cee5caa7 names a Task outside this Conversation",
+              "count": 1
+            }
+          ],
+          "examples": [
+            {
+              "appId": "may",
+              "taskId": "conversation_ec854e2f09f1c38566a25857_successor_2",
+              "generation": 1,
+              "attemptId": "r_1_e5450737-b332-4918-bece-870693667dbf",
+              "sessionId": "s_1790410657933_72697300-45bf-436a-97bc-d91469fc6b48"
+            },
+            {
+              "appId": "may",
+              "taskId": "conversation_ec854e2f09f1c38566a25857_successor_2",
+              "generation": 1,
+              "attemptId": "r_1_34485bb0-1abd-4359-a967-9110f0cb4077",
+              "sessionId": "s_1790496453987_7c83b8ec-d599-4fa4-8d41-fa81f190002d"
+            }
+          ]
+        }
+      ],
+      "recoveryEvidence": {
+        "verifiedPairs": [
+          {
+            "failedAttemptId": "r_1_34485bb0-1abd-4359-a967-9110f0cb4077",
+            "acceptedAttemptId": "r_1_70b21f57-45e0-4ed4-8c99-6af489356f30",
+            "source": "Both retained attempt events match exactly, including type, target, data and idempotencyKey",
+            "inputIdempotencyKey": "conversation-input:app_78967adb-4e79-4287-8f88-9d59cc6296d6",
+            "inputEnvelopeSha256": "66e7ad07bc2b92eaa98e562b69fcc949c6fc7f96d4239dbb4ee769ae7cf81b13",
+            "failedEventId": 6457486,
+            "acceptedEventId": 6457495
+          }
+        ],
+        "failedAttemptsInCurrentCohort": 22,
+        "withVerifiedRecoveryPair": 1,
+        "otherRecoveryAttributionUnassessed": 21
+      },
+      "process": {
+        "version": 1,
+        "limits": {
+          "attempts": 3,
+          "messages": 96,
+          "fieldChars": 800,
+          "projectionBytes": 65536,
+          "responseBytes": 1000000
+        },
+        "attempts": [
+          {
+            "eventId": 6457495,
+            "attemptId": "r_1_70b21f57-45e0-4ed4-8c99-6af489356f30",
+            "generation": 1,
+            "status": "unavailable",
+            "reason": "execution link absent or unsupported (workflow runs are not sessions)"
+          },
+          {
+            "eventId": 6457486,
+            "attemptId": "r_1_34485bb0-1abd-4359-a967-9110f0cb4077",
+            "generation": 1,
+            "status": "unavailable",
+            "reason": "execution link absent or unsupported (workflow runs are not sessions)"
+          },
+          {
+            "eventId": 6457432,
+            "attemptId": "r_1_0a85a6fd-9bf0-4faf-a5ce-5b4c56b4cf0e",
+            "generation": 1,
+            "status": "unavailable",
+            "reason": "execution link absent or unsupported (workflow runs are not sessions)"
+          }
+        ],
+        "gaps": [
+          "Process window limited to three newest referenced attempts; older execution unassessed",
+          "Process unavailable: r_1_70b21f57-45e0-4ed4-8c99-6af489356f30: execution link absent or unsupported (workflow runs are not sessions)",
+          "Process unavailable: r_1_34485bb0-1abd-4359-a967-9110f0cb4077: execution link absent or unsupported (workflow runs are not sessions)",
+          "Process unavailable: r_1_0a85a6fd-9bf0-4faf-a5ce-5b4c56b4cf0e: execution link absent or unsupported (workflow runs are not sessions)"
+        ]
+      },
+      "deliveryScope": "Assessment of automated Evaluation report intake; current state is coherent. The linked hygiene task is in a valid wait. Artifact claims not independently covered by this projection."
+    }
+  },
+  {
+    "id": "case-e-final",
+    "guidance": "Assess current incident disposition, population pattern, causal explanation,\npractical value and evidence coverage separately. Recovery of current work can\ncoexist with a systemic improvement opportunity.\n\nThe supplied external App population is also within this review's scope. Assess\nits observations even when the exact Task is healthy; identify Task-level and\nApp-level conclusions separately. State whether an overall rate change remains\nafter comparing the supplied executor populations. Preserve units: an attempt is\nnot a Task or a delivered contribution.\n\nAggregate counts establish frequency in the stated population. Recorded durations\nestablish observed effort. Treat the cause, avoidability and recovery of other\ninputs as unassessed until their process or input/operation links support those\nclaims. Use workload breakdowns and contrasting examples to check interpretations.\nAn incorrect output establishes an output defect; unavailable execution history\nleaves the procedure that produced it unknown.\n\nRecommend the smallest useful investigation when a material pattern is supported\nbut its cause is uncertain. A candidate or immediate action needs a separate\nvalue-versus-cost judgment. Retain independently supported current recovery,\nquality findings and evidence gaps in the same report.\n\nUse the supplied code-calculated comparison table for numerical claims. Recovery counts refer only to input-correlated evidence; an unresolved attribution is not a recovered incident.\n",
+    "evidence": {
+      "provenance": "Synthetic control, not a live Task",
+      "subject": {
+        "appId": "example",
+        "taskId": "fetch-record"
+      },
+      "current": {
+        "state": "converged",
+        "delivery": "Requested record independently checked and delivered",
+        "openObligations": []
+      },
+      "history": [
+        {
+          "attemptId": "sample-a",
+          "state": "failed",
+          "reason": "provider-503"
+        },
+        {
+          "attemptId": "sample-b",
+          "state": "completed",
+          "sameInputEventId": "input-4",
+          "verification": "Requested record delivered after provider returned 200"
+        }
+      ],
+      "population": {
+        "scope": "external App example",
+        "window": "current and adjacent prior fixed 24h cohorts",
+        "coverage": "Complete counts; underlying executor B failure causes and deployment revisions unavailable",
+        "denominatorDefinition": "totalTerminalAttempts includes failed attempts; completed + failed + interrupted",
+        "comparison": {
+          "A": {
+            "previousFailurePercent": 1,
+            "currentFailurePercent": 1
+          },
+          "B": {
+            "previousFailurePercent": 20,
+            "currentFailurePercent": 20
+          },
+          "overall": {
+            "previousFailurePercent": 2.727,
+            "currentFailurePercent": 18.273
+          }
+        }
+      },
+      "metricTable": [
+        {
+          "scope": "all",
+          "window": "current",
+          "totalTerminalAttempts": 1100,
+          "failedAttempts": 201,
+          "failurePercent": 18.273,
+          "denominatorDefinition": "completed + failed + interrupted; failures included"
+        },
+        {
+          "scope": "A",
+          "window": "current",
+          "totalTerminalAttempts": 100,
+          "failedAttempts": 1,
+          "failurePercent": 1.0,
+          "denominatorDefinition": "completed + failed + interrupted; failures included"
+        },
+        {
+          "scope": "B",
+          "window": "current",
+          "totalTerminalAttempts": 1000,
+          "failedAttempts": 200,
+          "failurePercent": 20.0,
+          "denominatorDefinition": "completed + failed + interrupted; failures included"
+        },
+        {
+          "scope": "all",
+          "window": "previous",
+          "totalTerminalAttempts": 1100,
+          "failedAttempts": 30,
+          "failurePercent": 2.727,
+          "denominatorDefinition": "completed + failed + interrupted; failures included"
+        },
+        {
+          "scope": "A",
+          "window": "previous",
+          "totalTerminalAttempts": 1000,
+          "failedAttempts": 10,
+          "failurePercent": 1.0,
+          "denominatorDefinition": "completed + failed + interrupted; failures included"
+        },
+        {
+          "scope": "B",
+          "window": "previous",
+          "totalTerminalAttempts": 100,
+          "failedAttempts": 20,
+          "failurePercent": 20.0,
+          "denominatorDefinition": "completed + failed + interrupted; failures included"
+        }
+      ]
+    }
+  }
+]

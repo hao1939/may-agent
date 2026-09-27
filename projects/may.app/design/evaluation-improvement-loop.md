@@ -5,6 +5,14 @@ controller. Evaluation findings and observed execution failures share owner
 judgment and the later improvement stages; they keep different evidence readers.
 Normal execution recovery remains in the original work.
 
+The [systemic pattern-review proposal](../../evaluation.app/design/systemic-pattern-review-20260927.md)
+refines recovered-finding disposition: May may settle an individual incident and
+still investigate a repeated cause, material cost or coverage gap. A systemic
+concern is evidence for value judgment, not an instruction to reopen the subject
+or prepare a candidate. Reuse linked investigation work and preserve the exact
+population window. The aggregate evidence/selection path remains proposed, not
+activated.
+
 The shared [behavior review method](../../may-agent.app/docs/2b-manual/workflow-authoring.md#checking-app-behavior)
 uses existing App tests, bounded agent trials and Evaluation. May judges a
 report's material interpretation against its evidence, including a claimed

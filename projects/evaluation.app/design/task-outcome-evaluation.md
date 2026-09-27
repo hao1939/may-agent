@@ -20,6 +20,12 @@ daily cadence was a bounded pilot and has been superseded for this installation.
 
 ## Boundary
 
+**Proposed extension:** [Systemic pattern review](systemic-pattern-review-20260927.md)
+adds bounded App-attempt aggregates and exact examples to this assessment path.
+Current recovery and a remaining systemic concern are independent findings. The
+proposal records missing public attempt navigation and aggregate selection;
+these capabilities are not yet implemented or activated.
+
 Evaluation reviews an accepted outcome, not merely one worker session. The unit is an exact `(appId, taskId)` resolved through the Host's public control socket:
 
 1. `apps.list` establishes that the subject App is registered.

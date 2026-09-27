@@ -1,0 +1,527 @@
+[
+  {
+    "id": "case-b-refined",
+    "evidence": {
+      "provenance": "Projected historical snapshot; exact source report preserved outside this fixture. No historical evaluator judgment included.",
+      "subject": {
+        "appId": "may",
+        "taskId": "conversation_ec854e2f09f1c38566a25857_successor_2"
+      },
+      "asOf": "2026-09-27T08:11:43.617Z",
+      "current": {
+        "status": "up-to-date",
+        "summary": "The exact 08:00 UTC May hygiene Evaluation publication is current and supports an assessed\u2014no action disposition. Current Task state, report bytes, commit, and evidence artifacts corroborate the valid before-due wait; no repair or improvement candidate is warranted.",
+        "acceptedAttempt": {
+          "id": "r_1_70b21f57-45e0-4ed4-8c99-6af489356f30",
+          "generation": 1,
+          "startedAt": "2026-09-27T08:08:38.535Z",
+          "finishedAt": "2026-09-27T08:08:47.921Z"
+        },
+        "terminal": false
+      },
+      "conditions": [],
+      "history": [
+        {
+          "eventId": 6457498,
+          "eventType": "project.task.reconcile.skipped",
+          "timestamp": 1790496530956,
+          "generation": 1
+        },
+        {
+          "eventId": 6457495,
+          "eventType": "project.task.reconciled",
+          "timestamp": 1790496527926,
+          "attemptId": "r_1_70b21f57-45e0-4ed4-8c99-6af489356f30",
+          "handler": "executor:conversation",
+          "generation": 1,
+          "summary": "The exact 08:00 UTC May hygiene Evaluation publication is current and supports an assessed\u2014no action disposition. Current Task state, report bytes, commit, and evidence artifacts corroborate the valid before-due wait; no repair or improvement candidate is warranted.",
+          "disposition": "converged"
+        },
+        {
+          "eventId": 6457491,
+          "eventType": "project.task.reconcile.started",
+          "timestamp": 1790496518583,
+          "attemptId": "r_1_70b21f57-45e0-4ed4-8c99-6af489356f30",
+          "handler": "executor:conversation",
+          "generation": 1
+        },
+        {
+          "eventId": 6457486,
+          "eventType": "project.task.reconciled",
+          "timestamp": 1790496516707,
+          "attemptId": "r_1_34485bb0-1abd-4359-a967-9110f0cb4077",
+          "handler": "executor:conversation",
+          "generation": 1,
+          "summary": "Handler actions were rejected: Conversation decision requires a reply",
+          "disposition": "retrying"
+        },
+        {
+          "eventId": 6457472,
+          "eventType": "project.task.reconcile.started",
+          "timestamp": 1790496453884,
+          "attemptId": "r_1_34485bb0-1abd-4359-a967-9110f0cb4077",
+          "handler": "executor:conversation",
+          "generation": 1
+        },
+        {
+          "eventId": 6457461,
+          "eventType": "project.task.reconcile.skipped",
+          "timestamp": 1790496395620,
+          "generation": 1
+        },
+        {
+          "eventId": 6457434,
+          "eventType": "project.task.reconcile.skipped",
+          "timestamp": 1790496207672,
+          "generation": 1
+        },
+        {
+          "eventId": 6457432,
+          "eventType": "project.task.reconciled",
+          "timestamp": 1790496205949,
+          "attemptId": "r_1_0a85a6fd-9bf0-4faf-a5ce-5b4c56b4cf0e",
+          "handler": "executor:conversation",
+          "generation": 1,
+          "summary": "The exact GitHub exploration Evaluation report is current and its assessed judgment is supported by independent checks. The GenOS finding is accurately scoped static evidence, the recurring Task remains coherent, and no repair or improvement candidate is warranted.",
+          "disposition": "converged"
+        },
+        {
+          "eventId": 6457420,
+          "eventType": "project.task.reconcile.started",
+          "timestamp": 1790496130009,
+          "attemptId": "r_1_0a85a6fd-9bf0-4faf-a5ce-5b4c56b4cf0e",
+          "handler": "executor:conversation",
+          "generation": 1
+        },
+        {
+          "eventId": 6457409,
+          "eventType": "project.task.reconcile.skipped",
+          "timestamp": 1790496109964,
+          "generation": 1
+        },
+        {
+          "eventId": 6457265,
+          "eventType": "project.task.reconcile.skipped",
+          "timestamp": 1790494242228,
+          "generation": 1
+        },
+        {
+          "eventId": 6457263,
+          "eventType": "project.task.reconciled",
+          "timestamp": 1790494239208,
+          "attemptId": "r_1_b231d6f5-19ac-4731-8ad6-89bd3d48a951",
+          "handler": "executor:conversation",
+          "generation": 1,
+          "summary": "The exact May hygiene Evaluation report is current and its assessed judgment is supported by canonical evidence. The 04:00 UTC cycle was a valid no-change review, and the stated older-history coverage limits do not establish a current defect or justify candidate work.",
+          "disposition": "converged"
+        },
+        {
+          "eventId": 6457252,
+          "eventType": "project.task.reconcile.started",
+          "timestamp": 1790494120757,
+          "attemptId": "r_1_b231d6f5-19ac-4731-8ad6-89bd3d48a951",
+          "handler": "executor:conversation",
+          "generation": 1
+        },
+        {
+          "eventId": 6457094,
+          "eventType": "project.task.reconcile.skipped",
+          "timestamp": 1790491672044,
+          "generation": 1
+        },
+        {
+          "eventId": 6457092,
+          "eventType": "project.task.reconciled",
+          "timestamp": 1790491670584,
+          "attemptId": "r_1_c552f626-0c8d-4fe1-a239-ec4622e6100b",
+          "handler": "executor:conversation",
+          "generation": 1,
+          "summary": "The exact arXiv exploration Evaluation report is current and its assessed judgment is supported by canonical evidence. The live scan and prior recovery support an evidence-backed no-op, while the stated bounded-history limits do not establish a defect or justify additional work.",
+          "disposition": "converged"
+        },
+        {
+          "eventId": 6457084,
+          "eventType": "project.task.reconcile.started",
+          "timestamp": 1790491618210,
+          "attemptId": "r_1_c552f626-0c8d-4fe1-a239-ec4622e6100b",
+          "handler": "executor:conversation",
+          "generation": 1
+        },
+        {
+          "eventId": 6457059,
+          "eventType": "project.task.reconcile.skipped",
+          "timestamp": 1790491477852,
+          "generation": 1
+        },
+        {
+          "eventId": 6457057,
+          "eventType": "project.task.reconciled",
+          "timestamp": 1790491476442,
+          "attemptId": "r_1_e2e1ca6f-642d-4d77-a98f-d0585053336f",
+          "handler": "executor:conversation",
+          "generation": 1,
+          "summary": "The exact XHS exploration Evaluation report is current and its assessed judgment is supported by canonical evidence. The transient extraction was demonstrably recovered, and the stated coverage limits do not establish a defect or justify additional work.",
+          "disposition": "converged"
+        },
+        {
+          "eventId": 6457049,
+          "eventType": "project.task.reconcile.started",
+          "timestamp": 1790491417410,
+          "attemptId": "r_1_e2e1ca6f-642d-4d77-a98f-d0585053336f",
+          "handler": "executor:conversation",
+          "generation": 1
+        },
+        {
+          "eventId": 6457020,
+          "eventType": "project.task.reconcile.skipped",
+          "timestamp": 1790491162809,
+          "generation": 1
+        }
+      ],
+      "historyTruncated": true,
+      "process": {
+        "version": 1,
+        "limits": {
+          "attempts": 3,
+          "messages": 96,
+          "fieldChars": 800,
+          "projectionBytes": 65536,
+          "responseBytes": 1000000
+        },
+        "attempts": [
+          {
+            "eventId": 6457495,
+            "attemptId": "r_1_70b21f57-45e0-4ed4-8c99-6af489356f30",
+            "generation": 1,
+            "status": "unavailable",
+            "reason": "execution link absent or unsupported (workflow runs are not sessions)"
+          },
+          {
+            "eventId": 6457486,
+            "attemptId": "r_1_34485bb0-1abd-4359-a967-9110f0cb4077",
+            "generation": 1,
+            "status": "unavailable",
+            "reason": "execution link absent or unsupported (workflow runs are not sessions)"
+          },
+          {
+            "eventId": 6457432,
+            "attemptId": "r_1_0a85a6fd-9bf0-4faf-a5ce-5b4c56b4cf0e",
+            "generation": 1,
+            "status": "unavailable",
+            "reason": "execution link absent or unsupported (workflow runs are not sessions)"
+          }
+        ],
+        "gaps": [
+          "Process window limited to three newest referenced attempts; older execution unassessed",
+          "Process unavailable: r_1_70b21f57-45e0-4ed4-8c99-6af489356f30: execution link absent or unsupported (workflow runs are not sessions)",
+          "Process unavailable: r_1_34485bb0-1abd-4359-a967-9110f0cb4077: execution link absent or unsupported (workflow runs are not sessions)",
+          "Process unavailable: r_1_0a85a6fd-9bf0-4faf-a5ce-5b4c56b4cf0e: execution link absent or unsupported (workflow runs are not sessions)"
+        ]
+      },
+      "deliveryScope": "Assessment of automated Evaluation report intake; current state is coherent. The linked hygiene task is in a valid wait. Artifact claims not independently covered by this projection.",
+      "scopeAndUncertainty": {
+        "currentTask": "Current accepted state coherent; final event pair shows a retry followed by convergence. Original input correlation for all earlier failures is not supplied.",
+        "recoveryOfOtherFailures": "unassessed: a later success on the same Task can handle another input",
+        "cause": "unassessed: failed decision and exact process unreadable in this snapshot",
+        "avoidability": "unassessed: duration is observed execution time, not confirmed waste or savings",
+        "deployedRevision": "unavailable",
+        "populationCoverage": "retained attempts; full retention completeness unknown"
+      },
+      "population": {
+        "taskCurrent": {
+          "window": {
+            "start": "2026-09-26T08:11:43.617000+00:00",
+            "endExclusive": "2026-09-27T08:11:43.617000+00:00"
+          },
+          "cohort": "retained Task attempts started in window; outcome observed before endExclusive",
+          "started": 208,
+          "settled": 208,
+          "states": {
+            "failed": 22,
+            "completed": 186
+          },
+          "failureRate": {
+            "numerator": 22,
+            "denominator": 208,
+            "value": 0.10576923076923077
+          },
+          "acceptedStates": {
+            "converged": 183,
+            "unavailable": 3
+          },
+          "failedAttemptWallMs": 1317277,
+          "invalidFailedDurations": 0,
+          "patterns": [
+            {
+              "handler": "executor:conversation",
+              "failureReason": "HandlerResultSettlementFailed",
+              "count": 22,
+              "affectedTasks": 1,
+              "firstStartedAt": "2026-09-26T08:17:37.818000+00:00",
+              "lastStartedAt": "2026-09-27T08:07:33.839000+00:00",
+              "summaries": [
+                {
+                  "text": "Handler actions were rejected: Conversation decision requires a reply",
+                  "count": 19
+                },
+                {
+                  "text": "Handler actions were rejected: Request app_19d63dfc-2b22-468b-85f3-a0845eb343b0 names a Task outside this Conversation",
+                  "count": 1
+                },
+                {
+                  "text": "Handler actions were rejected: Conversation topic topic_cba84acc70a42f791d9478fc conflicts with an existing topic",
+                  "count": 1
+                },
+                {
+                  "text": "Handler actions were rejected: Request app_28675ee6-67e2-42b2-a6d9-2e62cee5caa7 names a Task outside this Conversation",
+                  "count": 1
+                }
+              ],
+              "examples": [
+                {
+                  "appId": "may",
+                  "taskId": "conversation_ec854e2f09f1c38566a25857_successor_2",
+                  "generation": 1,
+                  "attemptId": "r_1_e5450737-b332-4918-bece-870693667dbf",
+                  "sessionId": "s_1790410657933_72697300-45bf-436a-97bc-d91469fc6b48"
+                },
+                {
+                  "appId": "may",
+                  "taskId": "conversation_ec854e2f09f1c38566a25857_successor_2",
+                  "generation": 1,
+                  "attemptId": "r_1_34485bb0-1abd-4359-a967-9110f0cb4077",
+                  "sessionId": "s_1790496453987_7c83b8ec-d599-4fa4-8d41-fa81f190002d"
+                }
+              ]
+            }
+          ],
+          "omittedPatternCount": 0
+        },
+        "taskPrevious": {
+          "window": {
+            "start": "2026-09-25T08:11:43.617000+00:00",
+            "endExclusive": "2026-09-26T08:11:43.617000+00:00"
+          },
+          "cohort": "retained Task attempts started in window; outcome observed before endExclusive",
+          "started": 207,
+          "settled": 207,
+          "states": {
+            "completed": 206,
+            "failed": 1
+          },
+          "failureRate": {
+            "numerator": 1,
+            "denominator": 207,
+            "value": 0.004830917874396135
+          },
+          "acceptedStates": {
+            "converged": 196,
+            "unavailable": 10
+          },
+          "failedAttemptWallMs": 41754,
+          "invalidFailedDurations": 0,
+          "patterns": [
+            {
+              "handler": "executor:conversation",
+              "failureReason": "HandlerResultSettlementFailed",
+              "count": 1,
+              "affectedTasks": 1,
+              "firstStartedAt": "2026-09-26T00:15:42.445000+00:00",
+              "lastStartedAt": "2026-09-26T00:15:42.445000+00:00",
+              "summaries": [
+                {
+                  "text": "Handler actions were rejected: Conversation topic topic_cba84acc70a42f791d9478fc conflicts with an existing topic",
+                  "count": 1
+                }
+              ],
+              "examples": [
+                {
+                  "appId": "may",
+                  "taskId": "conversation_ec854e2f09f1c38566a25857_successor_2",
+                  "generation": 1,
+                  "attemptId": "r_1_b433f7d2-8256-4b5a-9aaa-7da4f60ac5f5",
+                  "sessionId": "s_1790381742581_e3fb47e2-be62-4ff5-9a7d-f2437a80f93a"
+                }
+              ]
+            }
+          ],
+          "omittedPatternCount": 0
+        },
+        "appContext": {
+          "current": {
+            "started": 222,
+            "failureRate": {
+              "numerator": 23,
+              "denominator": 222,
+              "value": 0.1036036036036036
+            }
+          },
+          "previous": {
+            "started": 271,
+            "failureRate": {
+              "numerator": 10,
+              "denominator": 271,
+              "value": 0.03690036900369004
+            }
+          },
+          "note": "One Conversation accounts for 22 of 23 current App failures; wider App cause prevalence is not established."
+        }
+      }
+    },
+    "guidance": "Assess current incident disposition, population pattern, causal explanation,\npractical value and evidence coverage separately. Recovery of current work can\ncoexist with a systemic improvement opportunity.\n\nThe supplied external App population is also within this review's scope. Assess\nits observations even when the exact Task is healthy; identify Task-level and\nApp-level conclusions separately. State whether an overall rate change remains\nafter comparing the supplied executor populations. Preserve units: an attempt is\nnot a Task or a delivered contribution.\n\nAggregate counts establish frequency in the stated population. Recorded durations\nestablish observed effort. Treat the cause, avoidability and recovery of other\ninputs as unassessed until their process or input/operation links support those\nclaims. Use workload breakdowns and contrasting examples to check interpretations.\nAn incorrect output establishes an output defect; unavailable execution history\nleaves the procedure that produced it unknown.\n\nRecommend the smallest useful investigation when a material pattern is supported\nbut its cause is uncertain. A candidate or immediate action needs a separate\nvalue-versus-cost judgment. Retain independently supported current recovery,\nquality findings and evidence gaps in the same report.\n"
+  },
+  {
+    "id": "case-g",
+    "guidance": "Assess current incident disposition, population pattern, causal explanation,\npractical value and evidence coverage separately. Recovery of current work can\ncoexist with a systemic improvement opportunity.\n\nThe supplied external App population is also within this review's scope. Assess\nits observations even when the exact Task is healthy; identify Task-level and\nApp-level conclusions separately. State whether an overall rate change remains\nafter comparing the supplied executor populations. Preserve units: an attempt is\nnot a Task or a delivered contribution.\n\nAggregate counts establish frequency in the stated population. Recorded durations\nestablish observed effort. Treat the cause, avoidability and recovery of other\ninputs as unassessed until their process or input/operation links support those\nclaims. Use workload breakdowns and contrasting examples to check interpretations.\nAn incorrect output establishes an output defect; unavailable execution history\nleaves the procedure that produced it unknown.\n\nRecommend the smallest useful investigation when a material pattern is supported\nbut its cause is uncertain. A candidate or immediate action needs a separate\nvalue-versus-cost judgment. Retain independently supported current recovery,\nquality findings and evidence gaps in the same report.\n",
+    "evidence": {
+      "provenance": "Synthetic held-out counterexample: different input identities on one standing Task",
+      "subject": {
+        "appId": "example",
+        "taskId": "standing-conversation"
+      },
+      "current": {
+        "state": "converged",
+        "result": "Answered input-new: supplied requested URL",
+        "openObligations": []
+      },
+      "attempts": [
+        {
+          "attemptId": "failed-old",
+          "inputEventId": "input-old",
+          "state": "failed",
+          "reason": "provider-503",
+          "requestedOutcome": "fetch old document",
+          "finishedAt": 100
+        },
+        {
+          "attemptId": "success-new",
+          "inputEventId": "input-new",
+          "state": "completed",
+          "requestedOutcome": "supply URL",
+          "finishedAt": 200
+        }
+      ],
+      "population": {
+        "scope": "same external Task, fixed 24-hour started cohort",
+        "settled": 2,
+        "failed": 1,
+        "failureRate": 0.5,
+        "failedAttemptWallMs": 800,
+        "previousWindow": {
+          "settled": 0,
+          "failureRate": null
+        }
+      },
+      "coverage": {
+        "originalInputDisposition": "unavailable: no accepted handling or owner closure for input-old in supplied snapshot",
+        "rootCause": "unavailable",
+        "otherAttemptsRecovery": "unassessed"
+      }
+    }
+  },
+  {
+    "id": "case-e-refined",
+    "evidence": {
+      "provenance": "Synthetic control, not a live Task",
+      "subject": {
+        "appId": "example",
+        "taskId": "fetch-record"
+      },
+      "current": {
+        "state": "converged",
+        "delivery": "Requested record independently checked and delivered",
+        "openObligations": []
+      },
+      "history": [
+        {
+          "attemptId": "sample-a",
+          "state": "failed",
+          "reason": "provider-503"
+        },
+        {
+          "attemptId": "sample-b",
+          "state": "completed",
+          "sameInputEventId": "input-4",
+          "verification": "Requested record delivered after provider returned 200"
+        }
+      ],
+      "population": {
+        "scope": "external App example",
+        "window": "current and adjacent prior fixed 24h cohorts",
+        "current": {
+          "settled": 1100,
+          "failed": 201,
+          "byExecutor": {
+            "A": {
+              "settled": 100,
+              "failed": 1
+            },
+            "B": {
+              "settled": 1000,
+              "failed": 200
+            }
+          }
+        },
+        "previous": {
+          "settled": 1100,
+          "failed": 30,
+          "byExecutor": {
+            "A": {
+              "settled": 1000,
+              "failed": 10
+            },
+            "B": {
+              "settled": 100,
+              "failed": 20
+            }
+          }
+        },
+        "coverage": "Complete counts; underlying executor B failure causes and deployment revisions unavailable"
+      }
+    },
+    "guidance": "Assess current incident disposition, population pattern, causal explanation,\npractical value and evidence coverage separately. Recovery of current work can\ncoexist with a systemic improvement opportunity.\n\nThe supplied external App population is also within this review's scope. Assess\nits observations even when the exact Task is healthy; identify Task-level and\nApp-level conclusions separately. State whether an overall rate change remains\nafter comparing the supplied executor populations. Preserve units: an attempt is\nnot a Task or a delivered contribution.\n\nAggregate counts establish frequency in the stated population. Recorded durations\nestablish observed effort. Treat the cause, avoidability and recovery of other\ninputs as unassessed until their process or input/operation links support those\nclaims. Use workload breakdowns and contrasting examples to check interpretations.\nAn incorrect output establishes an output defect; unavailable execution history\nleaves the procedure that produced it unknown.\n\nRecommend the smallest useful investigation when a material pattern is supported\nbut its cause is uncertain. A candidate or immediate action needs a separate\nvalue-versus-cost judgment. Retain independently supported current recovery,\nquality findings and evidence gaps in the same report.\n"
+  },
+  {
+    "id": "case-f-refined",
+    "evidence": {
+      "provenance": "Synthetic control, not a live Task",
+      "subject": {
+        "appId": "example",
+        "taskId": "compile-invoice"
+      },
+      "current": {
+        "state": "converged",
+        "delivery": "Task reported the invoice as verified and delivered",
+        "openObligations": []
+      },
+      "history": [
+        {
+          "attemptId": "invoice-a",
+          "state": "completed",
+          "acceptedResult": {
+            "invoiceTotal": 170,
+            "verification": "claimed correct"
+          }
+        }
+      ],
+      "population": {
+        "scope": "external App example",
+        "settled": 200,
+        "failed": 0,
+        "failureRate": 0,
+        "sample": {
+          "taskId": "compile-invoice",
+          "artifact": "fixture:invoice-output",
+          "lineItems": [
+            50,
+            70
+          ],
+          "outputTotal": 170,
+          "independentReadBack": "Read-back confirms these exact bytes; required total is sum of line items"
+        },
+        "coverage": "Complete counts, one independently readable successful output sample; other output quality unassessed"
+      }
+    },
+    "guidance": "Assess current incident disposition, population pattern, causal explanation,\npractical value and evidence coverage separately. Recovery of current work can\ncoexist with a systemic improvement opportunity.\n\nThe supplied external App population is also within this review's scope. Assess\nits observations even when the exact Task is healthy; identify Task-level and\nApp-level conclusions separately. State whether an overall rate change remains\nafter comparing the supplied executor populations. Preserve units: an attempt is\nnot a Task or a delivered contribution.\n\nAggregate counts establish frequency in the stated population. Recorded durations\nestablish observed effort. Treat the cause, avoidability and recovery of other\ninputs as unassessed until their process or input/operation links support those\nclaims. Use workload breakdowns and contrasting examples to check interpretations.\nAn incorrect output establishes an output defect; unavailable execution history\nleaves the procedure that produced it unknown.\n\nRecommend the smallest useful investigation when a material pattern is supported\nbut its cause is uncertain. A candidate or immediate action needs a separate\nvalue-versus-cost judgment. Retain independently supported current recovery,\nquality findings and evidence gaps in the same report.\n"
+  }
+]

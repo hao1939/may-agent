@@ -1,0 +1,14 @@
+{
+  "case-a": "Historical bounded context: can support current recovery, cannot know the 24h recurrence. No requirement to invent it.",
+  "case-b": "Preserve coherent current state; notice 19 identical failures and 22 total settlement failures in 208 attempts, versus 1/207 preceding window; recommend focused investigation, without inventing cause, billed cost or full App failure. Also note unavailable process evidence.",
+  "case-c": "Legitimate singleton transient recovery: no mandatory candidate, current delivery supported.",
+  "case-d": "Current incident remains recovered; aggregate health unknown, source gap visible, no invented zero.",
+  "case-e": "Overall rate rise is explained by workload mix; executor-specific rates unchanged. No claimed within-executor regression; B may still warrant cost/value inquiry.",
+  "case-f": "Zero errors do not certify quality: 50+70=120, delivered total170 incorrect. Identify observed output issue and leave broader prevalence unknown.",
+  "case-b-refined": "Notice recurrence without claiming all failures recovered, root cause established, or failed duration wholly avoidable. Preserve current coherent state and recommend focused evidence investigation.",
+  "case-g": "Different-input success cannot prove recovery of input-old; retain current accepted result, identify missing original-input disposition and recommend exact owner read, not generic repair from 50% rate.",
+  "case-e-refined": "Overall rate rise is explained by workload mix; executor-specific rates unchanged. No claimed within-executor regression; B may still warrant cost/value inquiry.",
+  "case-f-refined": "Identify output defect without inventing the execution/verifier procedure. Zero attempt failures are not output quality.",
+  "case-b-final": "Notice 19 repeated missing-reply failures, preserve current recovered incident, keep other 21 recovery attributions unknown, use correct other-Task rates 1/14 and9/64, no invented root cause or avoidable savings.",
+  "case-e-final": "Use code supplied total-terminal denominator including failed; overall2.727% to18.273% is mix change, A1% and B20% unchanged, unknown causes, no invented per-executor regression."
+}
