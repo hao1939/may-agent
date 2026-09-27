@@ -1,8 +1,8 @@
 <ai_context>
-summary: "Merchant policy, a signed cart, buyer authorization, and recovery-safe accounting are separate trust boundaries. Shelf Protocol shows how a merchant registry can overstate what its policy check proves; AP2-WhisperBench shows how merchant text can steer a cryptographically valid transaction; Cloudflare and Skyfire make buyer controls and external identity explicit; and AllowanceKit shows why an expiring spending reservation must not be mistaken for cancellation or execution fencing. Safe agent commerce must bind credentials and cart lines to session-scoped intent, preserve a committed display snapshot, surface choices outside explicit authority, and keep uncertain financial effects charged until they are terminal or fenced."
-triggers: ["Shelf Protocol", "AP2", "A-VIP", "AP2-WhisperBench", "Whisper Attack", "Cloudflare Wallets", "cloudflare.pay", "Skyfire", "KYA", "KYAPay", "AllowanceKit", "x402", "payment reservation", "external seller", "agent commerce", "merchant policy", "buyer authorization", "spending mandate", "cart binding", "verified intent", "execution fence"]
-last_updated: "2026-09-17"
-source_basis: "Shelf Protocol specification, README, repository metadata, and SDK behavior at revision b860da4b636d57f7363908b0104a33075b1b0f82; arXiv 2609.11757v1 metadata and full HTML for AP2-WhisperBench and A-VIP; a current XHS body describing Cloudflare Wallets/cloudflare.pay with explicit availability caveats; HN item 49724700 plus Skyfire's comparison page and current developer documentation; and AllowanceKit's README, policy rails, lock, reservation, payment, and concurrency-test paths at revision d704f659b8772938fd0a59d06f9dc20c7f7ad50b. Quantitative AP2 results and AllowanceKit canaries are author-reported; Scout did not reproduce the newly identified timing seams."
+summary: "Merchant policy, merchant participation, a signed cart, buyer authorization, and recovery-safe accounting are separate trust boundaries. Shelf Protocol shows how a merchant registry can overstate what its policy check proves; AP2-WhisperBench shows how merchant text can steer a cryptographically valid transaction; Cloudflare and Skyfire make buyer controls and external identity explicit; AllowanceKit shows why an expiring spending reservation must not be mistaken for cancellation or execution fencing; and Meta Muse's reported exclusion from Amazon shows that valid buyer delegation still does not create merchant access. Safe agent commerce must bind credentials and cart lines to session-scoped intent, preserve a committed display snapshot, surface choices outside explicit authority, keep uncertain financial effects charged until terminal or fenced, and negotiate merchant participation explicitly."
+triggers: ["Shelf Protocol", "AP2", "A-VIP", "AP2-WhisperBench", "Whisper Attack", "Cloudflare Wallets", "cloudflare.pay", "Skyfire", "KYA", "KYAPay", "AllowanceKit", "x402", "payment reservation", "external seller", "agent commerce", "merchant policy", "merchant participation", "Meta Muse", "Amazon agent access", "buyer authorization", "spending mandate", "cart binding", "verified intent", "execution fence"]
+last_updated: "2026-09-27"
+source_basis: "Shelf Protocol specification, README, repository metadata, and SDK behavior at revision b860da4b636d57f7363908b0104a33075b1b0f82; arXiv 2609.11757v1 metadata and full HTML for AP2-WhisperBench and A-VIP; a current XHS body describing Cloudflare Wallets/cloudflare.pay with explicit availability caveats; HN item 49724700 plus Skyfire's comparison page and current developer documentation; AllowanceKit's README, policy rails, lock, reservation, payment, and concurrency-test paths at revision d704f659b8772938fd0a59d06f9dc20c7f7ad50b; and HN items 49869691 and 49869973 plus complete CNBC article text reporting Meta Muse's subscription-cancellation use and Amazon access block. Quantitative AP2 results and AllowanceKit canaries are author-reported; Scout did not reproduce the newly identified timing seams, operate Muse, or independently verify Amazon's terms-of-service action."
 </ai_context>
 
 # Merchant Policy Is Not Buyer Authorization
@@ -240,6 +240,44 @@ The repository had zero GitHub stars at inspection; its documented Base mainnet
 and testnet canaries are author-provided evidence, not sustained production
 validation.
 
+## HN update: buyer delegation does not create merchant participation
+
+Two current HN submissions expose a boundary upstream of cart and payment
+verification. CNBC reports that Meta's Muse can inspect user-authorized bank and
+card data to identify recurring charges and help cancel subscriptions. The same
+article says Amazon blocked Muse from shopping on its site because the agent's
+access violated Amazon's terms. A separate HN submission links Bloomberg's report
+of that block. Thus a user may authorize an agent, and the agent may be able to
+form a valid purchase intent, while the merchant still declines the automation
+channel itself.
+
+The economic incentives are not neutral. CNBC cites a 2025 *American Economic
+Review* study whose authors estimate that consumer inertia and cancellation
+friction can roughly double seller revenue, and reports current subscription
+operators describing AI-assisted discovery and cancellation as a new churn
+pressure. An agent that makes comparison, switching, or cancellation cheaper can
+therefore threaten revenue built on search and procedural friction. Merchant
+blocking should not be modeled only as an integration bug: it can be an adverse
+policy choice, while undisclosed browser emulation risks converting a commercial
+dispute into brittle access and authorization behavior.
+
+This adds a fifth gate to the earlier commerce model:
+
+`executable commerce = buyer mandate ∩ merchant participation ∩ transaction consent ∩ payment authority ∩ effect evidence`
+
+Agent clients should distinguish `merchant_disallows_agents`, `agent_channel_not_supported`,
+and transient technical failure; preserve the merchant policy and channel observed;
+and require fresh consent before substituting another route. Protocol designers
+should support merchant-declared capabilities and terms without allowing merchant
+policy to stand in for buyer authority. Buyer authorization and merchant
+participation are independent and both are required.
+
+**Evidence boundary:** CNBC's full article was reviewed, but Scout did not operate
+Muse, inspect its implementation, test Amazon access, or independently verify the
+terms-of-service enforcement. The Bloomberg item was paywalled and only its HN
+metadata/title were available. The HN submissions were low-attention observations,
+not community validation.
+
 ## Evidence boundary
 
 At retrieval, the HN submission had three points and no comments. Shelf Protocol
@@ -252,6 +290,10 @@ state.
 ## Sources
 
 - **HN:** https://news.ycombinator.com/item?id=49449679
+- **HN (Muse subscription effects):** https://news.ycombinator.com/item?id=49869691
+- **CNBC (Muse subscription effects and Amazon block):** https://www.cnbc.com/2026/09/27/meta-muse-ai-personal-agent.html
+- **HN (Amazon block report):** https://news.ycombinator.com/item?id=49869973
+- **Bloomberg report (article body not reviewed):** https://www.bloomberg.com/news/articles/2026-09-21/amazon-blocks-meta-s-muse-ai-agent-from-its-retail-site
 - **Repo:** https://github.com/Signal-All/shelfprotocol
 - **Specification:** https://github.com/Signal-All/shelfprotocol/blob/b860da4b636d57f7363908b0104a33075b1b0f82/spec/SPEC.md
 - **SDK predicate:** https://github.com/Signal-All/shelfprotocol/blob/b860da4b636d57f7363908b0104a33075b1b0f82/sdk/shelfprotocol/__init__.py#L79-L107
