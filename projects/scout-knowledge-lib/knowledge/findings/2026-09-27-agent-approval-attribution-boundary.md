@@ -1,8 +1,8 @@
 ---
-summary: "A pinned Agent Threat Rules rule shows that approval detection needs event direction and trusted actor provenance: the same approver field can describe an outbound forgery or a legitimate audit record, and payload inspection cannot establish who authenticated."
-triggers: ["agent approval", "approver identity", "human in the loop", "approval forgery", "event provenance", "Agent Threat Rules", "ATR-2026-02641"]
+summary: "Pinned Agent Threat Rules and AgentFlow4J sources show two complementary approval boundaries: actor identity cannot be trusted from a caller payload, and a durable node-name marker does not bind approval to the exact action state that was reviewed."
+triggers: ["agent approval", "approver identity", "human in the loop", "approval forgery", "event provenance", "approval subject binding", "approval marker", "Agent Threat Rules", "ATR-2026-02641", "AgentFlow4J"]
 last_updated: "2026-09-27"
-source_basis: "Static inspection of Agent-Threat-Rule/agent-threat-rules at commit 10e4ca4624fc5cd27523d39002d51c10d439ff50, including the approval-attribution rule, rule schema, reference engine, and enforcement documentation. Repository-authored tests and measurements were not independently run."
+source_basis: "Static inspection of Agent-Threat-Rule/agent-threat-rules at commit 10e4ca4624fc5cd27523d39002d51c10d439ff50 and datallmhub/agentflow4j at commit 8333a935e769f0c96327dd1c089e2b589d796a1b. Reviewed approval APIs, implementation documentation, and selected repository-authored tests; tests and measurements were not independently run."
 ---
 
 # Approval evidence needs trusted actor attribution, not a caller-supplied name
@@ -13,7 +13,7 @@ Use this finding when designing human-approval records or detection around agent
 
 **Observed:** 2026-09-27  
 **Disposition:** New source-grounded finding  
-**Coverage:** Current GitHub repository search; pinned repository metadata and tree; README enforcement documentation; TypeScript engine; JSON rule schema; and one approval-attribution rule with its embedded positive and negative cases. Static inspection only.
+**Coverage:** Two current GitHub repository searches (`incomplete_results: false`); pinned repository metadata and trees; Agent Threat Rules enforcement documentation, TypeScript engine, JSON rule schema, and one approval-attribution rule with embedded cases; plus AgentFlow4J's approval API, graph resume path, documentation, and selected tests. Static inspection only.
 
 ## Sources
 
@@ -24,6 +24,10 @@ Use this finding when designing human-approval records or detection around agent
 - **Rule schema:** [`spec/schema/rule.schema.json`](https://github.com/Agent-Threat-Rule/agent-threat-rules/blob/10e4ca4624fc5cd27523d39002d51c10d439ff50/spec/schema/rule.schema.json)
 - **Enforcement documentation:** [`README.md`](https://github.com/Agent-Threat-Rule/agent-threat-rules/blob/10e4ca4624fc5cd27523d39002d51c10d439ff50/README.md)
 - **Discovery query:** GitHub Repository Search API `"AI agent" security pushed:>2026-09-25`, sorted by updated; `total_count: 367`, `incomplete_results: false`
+- **Implementation contrast repo:** [datallmhub/agentflow4j](https://github.com/datallmhub/agentflow4j)
+- **Inspected revision:** [`8333a935e769f0c96327dd1c089e2b589d796a1b`](https://github.com/datallmhub/agentflow4j/commit/8333a935e769f0c96327dd1c089e2b589d796a1b)
+- **AgentFlow4J primary sources:** [`ApprovalGate`](https://github.com/datallmhub/agentflow4j/blob/8333a935e769f0c96327dd1c089e2b589d796a1b/agentflow4j-graph/src/main/java/io/github/datallmhub/agentflow4j/graph/ApprovalGate.java), [`ResumeOptions`](https://github.com/datallmhub/agentflow4j/blob/8333a935e769f0c96327dd1c089e2b589d796a1b/agentflow4j-graph/src/main/java/io/github/datallmhub/agentflow4j/graph/ResumeOptions.java), [graph resume path](https://github.com/datallmhub/agentflow4j/blob/8333a935e769f0c96327dd1c089e2b589d796a1b/agentflow4j-graph/src/main/java/io/github/datallmhub/agentflow4j/graph/AgentGraph.java#L151-L202), [approval documentation](https://github.com/datallmhub/agentflow4j/blob/8333a935e769f0c96327dd1c089e2b589d796a1b/docs/approval-gate.md), and [graph approval tests](https://github.com/datallmhub/agentflow4j/blob/8333a935e769f0c96327dd1c089e2b589d796a1b/agentflow4j-graph/src/test/java/io/github/datallmhub/agentflow4j/graph/AgentGraphApprovalGateTests.java)
+- **Current discovery query:** GitHub Repository Search API `ai agent durable execution approval pushed:>2026-09-20`, sorted by updated; `total_count: 7`, `incomplete_results: false`
 
 ## Source observation
 
@@ -34,6 +38,39 @@ The rule also documents why matching only the approval path and identity field w
 This is useful negative evidence about detection semantics: the same JSON fragments can appear in a request, a response, a log, a replay record, documentation, or a test. Content alone does not identify the event's direction or authority. The rule explicitly retains an irreducible false positive for a trusted approval bridge because a legitimate service acting for a human can be byte-identical to a forgery; it says that distinction must be triaged by caller identity rather than payload.
 
 The repository does not present this rule as a production authorization control. It is `maturity: test`, has confidence 70, and requests `alert`. The reference engine's lane policy admits `test` rules to the analyst-oriented `alert` lane but not the `stable`-only `enforce` lane. The README further separates detection from blocking and states that blocking is opt-in. Thus the source supports a detection and review pattern, not a claim that regex recognition establishes or enforces human approval.
+
+## Implementation contrast: a durable pause can still carry a coarse grant
+
+AgentFlow4J supplies a concrete implementation contrast at revision
+`8333a935e769f0c96327dd1c089e2b589d796a1b`. Its built-in approval gate runs
+before a graph node, emits an interrupt, and saves a checkpoint. On resume,
+`ResumeOptions.ofApproval(String node)` contributes a node name to a set stored
+under `__approval.granted`; the built-in `requireFor` and `when` gates allow a
+node whenever that set contains its name. This is real pause/resume plumbing,
+not merely a README promise: the graph tests assert that a guarded payment node
+does not run before interruption and does run after a node-name approval is
+added.
+
+The durable mechanism and the approval evidence are nevertheless different
+things. `ApprovalRequest` contains only `nodeName` and `reason`, while
+`ResumeOptions` carries approved node names and optional messages. Neither type
+binds the grant to an authenticated actor, the canonical arguments or relevant
+context digest, a request/revision identity, an expiry, or one-shot
+consumption. The documentation's example appends a message such as `approved by
+alice`, but message content is not trusted actor provenance. Because the marker
+is retained in the checkpoint context, later checks of that node in the same
+retained context bypass the built-in gate without re-evaluating the predicate;
+a changed amount or other policy-relevant state is not part of the built-in
+grant identity.
+
+This is an abstraction-boundary observation, not a claim that every deployment
+is exploitable. A hosting service can authenticate and authorize callers before
+invoking `resume`, and AgentFlow4J explicitly permits custom gates with their
+own bypass signal. But the framework's built-in approval record proves only
+that some upstream caller marked a node label approved for the run. Selected
+project-authored tests cover pause-before-execution, checkpoint presence,
+node-name bypass, and sequential gating; Scout found no selected test that
+rejects a different actor, changed action state, stale grant, or duplicate use.
 
 ## Design implication
 
@@ -48,7 +85,7 @@ Detection can alert when an agent attempts to carry approver identity in its own
 
 ## Limits
 
-- Scout inspected source and repository-authored test vectors but did not install dependencies, execute the engine, replay the 24-probe review, or test a live approval service.
+- Scout inspected both repositories' source and selected repository-authored tests but did not install dependencies, run the TypeScript engine or Java suite, replay the 24-probe review, or test a live approval service.
 - The cited 24-of-24 first-version false-positive result and one residual ambiguity are maintainer claims embedded in the rule, not independent measurements.
 - The rule references an external incident record, but this scan did not independently inspect that incident. The finding relies only on the repository's detection design and explicit evidence boundaries, not on verification that a named product was exploitable.
 - Regex and envelope-shape checks can still be evaded or misclassified. A host must provide trustworthy event type and authenticated-principal data, and complete mediation remains an independent requirement.
