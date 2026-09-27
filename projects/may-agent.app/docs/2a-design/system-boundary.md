@@ -54,6 +54,12 @@ outside core. Folder location alone does not establish ownership.
 | App and responsible agent | Desired outcomes, useful actions, acceptance, scope, help and closure decisions | Implementing queues, polling bookkeeping, leases or storage recovery |
 | Composition/installation | Select and connect concrete capabilities, trusted operational scope and any supervisor route | Owning a competing scheduler or inferring domain success |
 
+Host health observations report execution facts such as current sessions,
+process ownership and workflow runs. The Evaluation App selects work for
+assessment and owns exclusions; an agent name is not an evaluation policy in
+the session manager. Typed capability connections should use their existing
+contracts so the compiler can check the boundary.
+
 The agent sees useful actions and their results. Capability implementations
 handle whether those actions use an awaited helper, a Task or an external
 provider's operation. Keep the differences needed for correct cancellation,

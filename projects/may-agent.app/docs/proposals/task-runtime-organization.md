@@ -32,9 +32,59 @@ The [one-lifecycle design](conversation-input-unification.md) now owns the
 accepted common Task lifecycle: explicit outcomes, rest between inputs and
 owner-controlled closure. Conversation uses a stable execution Task, retaining
 message/Request records and replacing separate inbox execution and supervision.
-The design removes mode-dependent lifetime rules; implementation and migration
-are pending. Existing claims and Request closure evidence below proves only the
-current source, not the new lifecycle.
+This lifecycle is implemented in Host source through #158 and subsequent cleanup,
+including removal of mode-dependent authoring. Older implementation/migration
+checklists below are historical; installation adoption still requires its own
+evidence. The September 27 section records the current source cleanup.
+
+## September 27 readability refinement
+
+The current cleanup keeps the established lifecycle and storage authority.
+The first slice removes the session manager's unused evaluation classification
+(`unevaluated`, including name-based `actionable`/`autoSkippable`) and connects
+the agents tool through its existing checked interface. Factual health reads
+remain, including the worker-process regression; neither an Evaluation selector
+nor a new health service is introduced. No current Host or sibling App source
+consumer was found for the removed classification.
+
+The second slice makes waiting settlement a single sequence: fence/finalize the
+workspace, validate existing and declared Condition identities, admit/reuse App
+dependencies, commit through `deferAppTask()`, then recover saved feedback.
+Failures return through the same existing retry/diagnostic settlement. The
+executor's proposed result stays unchanged while Host settlement prepares its
+observations. Existing waits, accepted facts, failure evidence and useful
+continuation remain independent. No persisted format, event, controller or
+App authoring contract changes.
+
+This is a focused source refactor. Keep the proposal/settlement distinction local
+to the existing attempt runner; do not create another durable result lifecycle.
+Keep the current ordering and transaction fences. Tests must continue to cover
+Condition conflicts before publication, stale generations, workspace rejection,
+independent waits/continuation and feedback already saved before a wait commits.
+The existing agent/workflow parity and verifier-handoff cases also exercise
+immutable adapter proposals. Context timing is documented in the Host's existing execution guide:
+attempt-start discovery files, preparation-time instructions, and a refreshed
+decision brief before each model call have different, explicit roles.
+
+Broad file renaming and further reconciler extraction remain deferred until a
+specific reading problem justifies the import churn. Source candidates are
+[Host #252](https://github.com/hao1939/may-agent/pull/252), `52abb62c`, and
+[Host #253](https://github.com/hao1939/may-agent/pull/253), `92c98451`, both based
+on merged #251 (`0ee8ed40`). They merge cleanly together in source `0e31a41a`.
+
+Before the rebase, full local CI passed for the manager slice (`56b793b3`:
+3,238 pass, three installation-only skips, no failures) and the waiting slice
+(`83bde3d7`: 3,240 pass, three skips, no failures), on base `8068c3e3`.
+The focused Task suite passed 208 tests. The two strengthened adapter scenarios
+fail against base production source and pass on the final waiting candidate:
+a waiting workflow result must be accepted without mutation, and an agent result
+must retain its proposal while the Host attaches the required verifier.
+These are source/adapter contract checks, not live deployment or model-behavior
+claims. Final combined CI on `0e31a41a` passed with 3,238 tests, three
+installation-only skips and no failures. Both PRs passed GitHub Quality and
+Container on the named final revisions. Canonical design integrity also passed
+with zero errors/warnings. The Host PRs are ready for human review; this record
+does not authorize or establish deployment.
 
 ## Task lifecycle review
 
