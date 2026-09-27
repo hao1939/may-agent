@@ -45,8 +45,29 @@ existing acquisition-failure route are unchanged. Logs use
 The full App check is not green: formatting reports the same five files recorded
 in the prior baseline (`app.ts`, `public-task-evidence.ts`,
 `task-process-evidence.test.ts`, `task-process-evidence.ts`, `task-report-store.ts`).
-No formatting-only sweep or live activation is included. Independent review is
-recorded below when complete.
+No formatting-only sweep or live activation is included.
+
+May independently reviewed exact source `3745784375` through ordinary Task
+`may/goal/app_60e4b484-06c5-4bf3-bbec-fdd15382ed7d`. Her private-archive
+verification passed TypeScript, syntax, **220 tests** (1,166 assertions), design
+checks and whitespace checks, with **no findings**. The initial archive lacked
+the linked Host source needed by App integration tests; after adding that
+dependency link, the complete suite passed. This setup failure is not hidden as
+a successful run.
+
+Her first finish retained an uncommitted review artifact, so the existing Task
+runtime rejected completion. Ordinary recovery resumed the same Task; May read
+the saved result, committed only her artifact as `f65a3a8d60`, verified a clean
+worktree and completed without a manual wake or repeated semantic review. The
+artifact is `artifacts/evaluation-owner-feedback-review-3745784375.md` in her
+Task workspace, SHA-256
+`9ffd4f05690cdda035827facbebb98d3f9d251c0850dab44846430a78d6453cf`.
+This is one observed recovery, not proof that every failure recovers.
+
+Candidate source and design are committed on
+`fix/evaluation-owner-feedback-20260928`; they have not been integrated into the
+local App checkout or activated. Host PR #263 remains separately ready for human
+review, unmerged and undeployed.
 
 ## Remaining independent gaps
 
@@ -61,6 +82,16 @@ The #263 review also exposed mixed Conversation input loss. Input
 `s_1790534775161_bf30106c-22d7-43a1-889e-523b5a8311f5`, but only the newer report
 was addressed. Settlement marked both inputs handled, and the PR review had no
 accepted Request. The ordinary Task path completed the recovered review.
+
+An isolated SQLite trial on Host `8952003b` reproduced the settlement boundary
+for system/system, human/system and human/human pairs: a scripted result covering
+only the selected primary input was accepted; the other supplied input became
+`done`, had no Request, and left zero recovery candidates. Human priority changed
+which input was primary but did not change batch consumption. This exercises
+production preparation and settlement, not model judgment. The local harness and
+results are `/tmp/conversation-batch-audit.ts` and
+`/tmp/conversation-batch-audit.jsonl`; the live session above supplies the separate
+observed model failure.
 
 Investigate the existing Conversation context and Request contract before
 adding another acknowledgment mechanism: the prompt foregrounds a single reply
