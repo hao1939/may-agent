@@ -1,8 +1,8 @@
 <ai_context>
 summary: "Current Hermes Agent and OpenClaw both have native learning loops, subagents, persistent memory, and recovery machinery. Their useful distinction is direct mutation versus governed state transitions; neither has controlled evidence of general self-improvement."
 triggers: ["Hermes Agent comparison", "OpenClaw comparison", "learning-loop governance", "Skill Workshop", "background skill review"]
-last_updated: "2026-09-22"
-source_basis: "Official repositories pinned at Hermes 1cb3ab6 and OpenClaw 1212f99, official docs/releases, bounded isolated Hermes checks, six attributed issue records, and one observational XHS discussion read on 2026-09-22."
+last_updated: "2026-09-27"
+source_basis: "Official repositories pinned at Hermes 8f897d2 (with the learning-loop comparison anchored at 1cb3ab6) and OpenClaw 1212f99, official docs/releases, bounded isolated Hermes checks, six attributed issue records, one observational XHS discussion, and a current GitHub repository search and pinned Hermes durability-fix inspection on 2026-09-27."
 </ai_context>
 
 # Hermes Agent vs OpenClaw: the difference is mutation governance
@@ -43,6 +43,42 @@ an always-on catastrophic-command floor; OpenClaw has broad sender, tool,
 device, and audit controls. Their normal local defaults still grant broad
 operator authority, and neither workspaces nor multi-agent routing provide
 hostile tenant isolation.
+
+## September 27 update: durability is being enforced at destructive boundaries
+
+A current topic-led GitHub repository search for agentic runtimes returned
+`incomplete_results: false`; Hermes was the highest-starred result that was not
+already a skills-only repository. The repository was then inspected at
+[`8f897d2`](https://github.com/NousResearch/hermes-agent/tree/8f897d2d23a338f7a062ebc4fa7aedc287d087de).
+This observation does not re-establish the learning claims above, but it adds a
+useful implementation signal: several recent fixes put transaction or path
+checks directly around destructive effects rather than relying on operator
+intent.
+
+- Session deletion now refuses a row protected by an active turn lease or
+  compression lock, and bulk deletion skips protected rows. The check occurs
+  inside the same write transaction as deletion
+  ([`4052360`](https://github.com/NousResearch/hermes-agent/commit/40523600b09238d19e711c39ef28c381d9ac2b58)).
+- Kanban scratch cleanup now requires both resolved and lexical containment
+  beneath a managed workspace root. This prevents a symlinked broad directory
+  from making unrelated user paths eligible for recursive removal
+  ([`b8a149c`](https://github.com/NousResearch/hermes-agent/commit/b8a149cf48500dc1f63688c96aeb239d3e82da79)).
+- Cron persistence now refuses to overwrite an unreadable store during merge;
+  repair uses replacement only for explicitly recognized unmergeable shapes
+  ([`c642f42`](https://github.com/NousResearch/hermes-agent/commit/c642f42bc3b6745843119e387e4cf1e3dbd244d8)).
+- File previews now hold an admission lock across raw reads of a live SQLite
+  database and its WAL sidecars, refusing unsafe previews rather than risking
+  cancellation of the process's POSIX locks
+  ([`af595ff`](https://github.com/NousResearch/hermes-agent/commit/af595ff8a68bb75702f6d779cd236d62009dfaa1)).
+
+These are source-and-test inspection results, not a live deployment audit. They
+support a narrower maturity claim: Hermes is increasingly encoding
+**destructive-boundary invariants** in the runtime. They do not show that every
+entry point uses the guards, that recovery always works, or that the agent's
+self-learning improves task outcomes. For Scout, the reusable pattern is to
+make path containment, live-writer exclusion, unreadable-store refusal, and
+SQLite access admission properties of the effect itself—not optional caller
+conventions.
 
 ## XHS adoption signal: visibility decay is not project death
 
