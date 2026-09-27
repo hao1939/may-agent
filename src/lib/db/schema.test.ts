@@ -174,8 +174,8 @@ describe("canonical database schema", () => {
       const indexes = db.prepare("PRAGMA index_list(events)").all() as Array<{ name: string }>;
 
       expect(columns.some(({ name }) => name === "session_id")).toBe(true);
-      expect(db.prepare("SELECT target_json, data FROM events WHERE id = 1").get()).toEqual({
-        target_json: null,
+      expect(db.prepare("SELECT envelope_json, data FROM events WHERE id = 1").get()).toEqual({
+        envelope_json: null,
         data: '{"appId":"subject"}',
       });
       expect(columns.some(({ name }) => name === "workflow_run_id")).toBe(true);

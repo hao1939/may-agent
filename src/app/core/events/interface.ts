@@ -9,7 +9,7 @@ import type {
 } from "@may-agent/control/events";
 import { findPersistedEventId } from "../../../lib/db-writer.js";
 import { readEventTaskTarget } from "./task-target.js";
-import { readPersistedEventTarget } from "./persisted.js";
+import { readPersistedEventEnvelope } from "./persisted.js";
 import type { SqliteDb } from "../../../lib/db.js";
 import {
   EVENT_INGRESS_SOURCE,
@@ -45,6 +45,8 @@ export type EventInterface = {
 
 type EventDefinition = {
   taskControl?: "retry" | "close" | "cancel";
+  /** Payload aliases that this contract defines as the addressed resource. */
+  addressFields?: readonly (keyof EventTarget)[];
   delivery: "record" | "required";
   validate(input: EventInput, options: CreateEventInterfaceOptions): void;
 };
@@ -56,6 +58,7 @@ type EventDefinition = {
  */
 const EVENT_DEFINITIONS: Readonly<Record<string, EventDefinition>> = {
   "conversation.message.created": {
+    addressFields: ["appId"],
     delivery: "required",
     validate: (input, options) => {
       const appId = requiredTarget(input, "appId");
@@ -118,6 +121,7 @@ const EVENT_DEFINITIONS: Readonly<Record<string, EventDefinition>> = {
     },
   },
   "app.input.requested": {
+    addressFields: ["appId", "taskId"],
     delivery: "required",
     validate: (input, options) => {
       const appId = requiredTarget(input, "appId");
@@ -129,11 +133,13 @@ const EVENT_DEFINITIONS: Readonly<Record<string, EventDefinition>> = {
     },
   },
   "app.task.retry.requested": {
+    addressFields: ["appId", "taskId"],
     taskControl: "retry",
     delivery: "required",
     validate: (input, options) => validateTaskControl(input, options, false),
   },
   "conversation.turn.stop.requested": {
+    addressFields: ["appId"],
     delivery: "required",
     validate: (input, options) => {
       const appId = requiredTarget(input, "appId");
@@ -146,11 +152,13 @@ const EVENT_DEFINITIONS: Readonly<Record<string, EventDefinition>> = {
     },
   },
   "app.task.cancel.requested": {
+    addressFields: ["appId", "taskId"],
     taskControl: "cancel",
     delivery: "required",
     validate: (input, options) => validateTaskControl(input, options, true),
   },
   "app.task.close.requested": {
+    addressFields: ["appId", "taskId"],
     taskControl: "close",
     delivery: "required",
     validate: (input, options) => {
@@ -172,6 +180,7 @@ const EVENT_DEFINITIONS: Readonly<Record<string, EventDefinition>> = {
     },
   },
   "session.steer.requested": {
+    addressFields: ["sessionId"],
     delivery: "required",
     validate: (input, options) => {
       const sessionId = requiredTarget(input, "sessionId");
@@ -181,6 +190,7 @@ const EVENT_DEFINITIONS: Readonly<Record<string, EventDefinition>> = {
     },
   },
   "session.cancel.requested": {
+    addressFields: ["sessionId"],
     delivery: "required",
     validate: (input, options) => {
       const sessionId = requiredTarget(input, "sessionId");
@@ -213,6 +223,7 @@ const EVENT_DEFINITIONS: Readonly<Record<string, EventDefinition>> = {
   "runtime.restart.requested": { delivery: "required", validate: validateOptionalReason },
   "runtime.shutdown.requested": { delivery: "required", validate: validateOptionalReason },
   "evaluation.session.requested": {
+    addressFields: ["appId", "sessionId"],
     delivery: "record",
     validate: (input, options) => {
       const appId = requiredTarget(input, "appId");
@@ -393,7 +404,7 @@ function targetValue(input: EventInput, field: keyof EventTarget): string | unde
 }
 
 function eventOwner(input: EventInput): string {
-  const appId = targetValue(input, "appId");
+  const appId = optionalText(input.target?.appId) ?? optionalText(input.data.appId);
   if (appId) return `app:${appId}`;
   const agent = optionalText(input.data.agent);
   if (agent) return `agent:${agent.replace(/^agent:/, "")}`;
@@ -404,14 +415,13 @@ function eventOwner(input: EventInput): string {
 
 function canonicalEvent(input: EventInput, context: EventPublisherContext): AgentEvent {
   const source = requiredText(context.source, "Event source");
-  const appId = targetValue(input, "appId");
-  const taskId = targetValue(input, "taskId");
-  const sessionId = targetValue(input, "sessionId");
+  const address = Object.fromEntries((EVENT_DEFINITIONS[input.type]?.addressFields ?? []).flatMap((field) => {
+    const value = targetValue(input, field);
+    return value ? [[field, value]] : [];
+  }));
   const data: Record<string, unknown> = {
     ...input.data,
-    ...(appId ? { appId } : {}),
-    ...(taskId ? { taskId } : {}),
-    ...(sessionId ? { sessionId } : {}),
+    ...address,
     ...(input.idempotencyKey ? { idempotencyKey: input.idempotencyKey } : {}),
   };
 
@@ -635,13 +645,14 @@ export function getEventView(db: SqliteDb, eventId: number): EventView | undefin
   const row = db
     .prepare(
       `SELECT id, event_type, source, owner, data, timestamp, delivery_status,
-                accepted_by, delivery_note, target_json
+                accepted_by, delivery_note, envelope_json
          FROM events WHERE id = ?`,
     )
     .get(eventId) as Record<string, unknown> | undefined;
   if (!row) return undefined;
   const data = parseData(row.data);
-  const target = publicTarget(readPersistedEventTarget(row.target_json));
+  const envelope = readPersistedEventEnvelope(row.envelope_json);
+  const metadata = envelope ?? { type: row.event_type, source: row.source, owner: row.owner, timestamp: row.timestamp };
   const storedStatus = optionalText(row.delivery_status) ?? "pending";
   const required = eventDeliveryContract(String(row.event_type)) === "required";
   const state =
@@ -654,13 +665,9 @@ export function getEventView(db: SqliteDb, eventId: number): EventView | undefin
           : "recorded";
   return {
     event: {
+      ...publicEvent({ ...metadata, data } as AgentEvent),
       id: Number(row.id),
-      type: String(row.event_type),
-      ...(optionalText(row.source) ? { source: optionalText(row.source) } : {}),
-      ...(optionalText(row.owner) ? { owner: optionalText(row.owner) } : {}),
-      ...(target ? { target } : {}),
-      data,
-      timestamp: Number(row.timestamp),
+      timestamp: Number(metadata.timestamp),
     },
     delivery: {
       state,

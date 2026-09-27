@@ -1,5 +1,6 @@
 import type { SqliteDb } from "../../../lib/db.js";
 import { describeText, readJsonArtifactWithDescriptor } from "../../../lib/artifacts.js";
+import { readEventTraceMetadata } from "../../../lib/db/event-traces.js";
 import { EVENT_ROW_ID, type AgentEvent } from "./bus.js";
 
 function parseStoredEventData(value: unknown): Record<string, unknown> | null {
@@ -12,28 +13,34 @@ function parseStoredEventData(value: unknown): Record<string, unknown> | null {
   }
 }
 
-/** Historical correlation fields cannot establish an event's original destination. */
-export function readPersistedEventTarget(value: unknown): Record<string, unknown> | undefined {
+/** The document preserves semantic metadata; SQL correlation columns are search projections. */
+export function readPersistedEventEnvelope(value: unknown): Record<string, unknown> | undefined {
   if (value == null) return undefined;
-  const target = parseStoredEventData(value);
-  if (!target) throw new Error("Stored event target must be a JSON object");
-  return Object.keys(target).length ? target : undefined;
+  const envelope = parseStoredEventData(value);
+  if (!envelope || typeof envelope.type !== "string" || !envelope.type.trim()) {
+    throw new Error("Stored event envelope must be an object with an event type");
+  }
+  if (envelope.target !== undefined &&
+    (!envelope.target || typeof envelope.target !== "object" || Array.isArray(envelope.target))) {
+    throw new Error("Stored event envelope target must be an object");
+  }
+  return envelope;
 }
 
 /** Rebuild the immutable event input needed to finish a plan after restart. */
 export function loadPersistedEvent(db: SqliteDb, eventId: number, persistDir?: string): AgentEvent | null {
   const row = db
     .prepare(
-      `SELECT event_type, source, owner, data, target_json, body_ref, body_sha256, body_bytes,
+      `SELECT event_type, source, owner, data, envelope_json, body_ref, body_sha256, body_bytes,
               timestamp, urgency, ttl_ms
        FROM events
        WHERE id = ?`,
     )
     .get(eventId);
   if (!row || typeof row.event_type !== "string") return null;
-  let target: Record<string, unknown> | undefined;
+  let envelope: Record<string, unknown> | undefined;
   try {
-    target = readPersistedEventTarget(row.target_json);
+    envelope = readPersistedEventEnvelope(row.envelope_json);
   } catch {
     return null;
   }
@@ -63,16 +70,17 @@ export function loadPersistedEvent(db: SqliteDb, eventId: number, persistDir?: s
   if (!data || typeof data !== "object" || Array.isArray(data)) return null;
   const payload = data as Record<string, unknown>;
   const event = {
-    type: row.event_type,
-    ...(typeof row.source === "string" ? { source: row.source } : {}),
-    ...(typeof row.owner === "string" ? { owner: row.owner } : {}),
-    ...(target ? { target } : {}),
+    // Old rows retain their known fields, never a guessed address or action.
+    ...(envelope ?? {
+      type: row.event_type,
+      ...(typeof row.source === "string" ? { source: row.source } : {}),
+      ...(typeof row.owner === "string" ? { owner: row.owner } : {}),
+      ...(typeof row.timestamp === "number" ? { timestamp: row.timestamp } : {}),
+      ...(typeof row.urgency === "string" ? { urgency: row.urgency } : {}),
+      ...(typeof row.ttl_ms === "number" ? { ttl_ms: row.ttl_ms } : {}),
+    }),
     data: payload,
-    ...(typeof row.timestamp === "number" ? { timestamp: row.timestamp } : {}),
-    ...(row.urgency === "low" || row.urgency === "normal" || row.urgency === "high" || row.urgency === "immediate"
-      ? { urgency: row.urgency }
-      : {}),
-    ...(typeof row.ttl_ms === "number" ? { ttl_ms: row.ttl_ms } : {}),
+    ...readEventTraceMetadata(db, eventId),
   } as AgentEvent;
   Object.defineProperty(event, EVENT_ROW_ID, { value: eventId, configurable: true });
   return event;

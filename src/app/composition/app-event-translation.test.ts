@@ -22,7 +22,7 @@ async function until(predicate: () => boolean) {
   }
 }
 
-for (const failure of ["throw", "invalid-input", "resolver", "invalid-intent", "ambiguous"] as const) {
+for (const failure of ["throw", "invalid-input", "resolver", "invalid-intent", "ambiguous", "action"] as const) {
   test(`recovers ${failure} translation after database reopen without blocking another App or duplicating work`, async () => {
     const root = mkdtempSync(join(tmpdir(), "may-event-translation-"));
     let db = getDb(root);
@@ -69,6 +69,10 @@ for (const failure of ["throw", "invalid-input", "resolver", "invalid-intent", "
                   expect(db.prepare("SELECT COUNT(*) AS n FROM app_event_admission_commands").get()?.n).toBe(2);
                   if ((failure !== "resolver" && failure !== "invalid-intent") || id !== "broken") calls[id]++;
                   if (id === "broken" && broken && failure === "throw") throw new Error("translation unavailable");
+                  if (id === "broken" && failure === "action") {
+                    if (broken) throw new Error("translation unavailable");
+                    if (event.action !== "review") return null;
+                  }
                   return {
                     kind: "message",
                     data: {
@@ -139,6 +143,7 @@ for (const failure of ["throw", "invalid-input", "resolver", "invalid-intent", "
         type: "probe.changed",
         source: "fixture",
         owner: "fixture",
+        ...(failure === "action" ? { action: "review" } : {}),
         data: { value: "evidence" },
       });
       const eventId = emitted[EVENT_ROW_ID]!;

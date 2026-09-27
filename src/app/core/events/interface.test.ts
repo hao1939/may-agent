@@ -45,6 +45,27 @@ function fixture(conversationAppId?: string) {
 }
 
 describe("simple event interface", () => {
+  it("preserves independent fact subjects and addresses without adding subject fields", () => {
+    const { events } = fixture();
+    for (const data of [{ appId: "subject", taskId: "subject-task", sessionId: "subject-session" }, { summary: "Observed" }]) {
+      const target = { appId: "sample", taskId: "recipient-task", sessionId: "s_known" };
+      const receipt = events.publish({ type: "fixture.report", target, data }, { source: "fixture", allowUnregisteredFact: true });
+      expect(events.get(receipt.eventId)?.event).toMatchObject({ target, data });
+      expect(events.get(receipt.eventId)?.event.data).toEqual(data);
+    }
+  });
+
+  it.each([
+    { type: "app.input.requested", target: { appId: "sample" }, data: { appId: "other", input: { kind: "message", data: {} } } },
+    { type: "session.cancel.requested", target: { sessionId: "s_known" }, data: { sessionId: "other" } },
+    { type: "app.task.retry.requested", idempotencyKey: "conflicting-address", target: { appId: "sample", taskId: "work" },
+      data: { taskId: "other", expectedGeneration: 1, expectedResourceVersion: 1 } },
+  ])("rejects conflicting address aliases for $type", (input) => {
+    const { events, db } = fixture();
+    expect(() => events.publish(input, { source: "fixture" })).toThrow("conflicts");
+    expect(db.prepare("SELECT COUNT(*) AS n FROM events").get()?.n).toBe(0);
+  });
+
   it.each(["type", "scope", "ingress", "payload"])(
     "publication confirmation cannot borrow another %s receipt",
     (difference) => {
@@ -413,7 +434,7 @@ describe("simple event interface", () => {
         source: "control-socket",
         owner: "app:sample",
         target: { appId: "sample", taskId: "review/one" },
-        data: { appId: "sample", taskId: "review/one", reason: "review", idempotencyKey: "review-one" },
+        data: { reason: "review", idempotencyKey: "review-one" },
       },
       delivery: { state: "recorded" },
     });

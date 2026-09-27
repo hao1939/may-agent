@@ -8,6 +8,7 @@ import { closeDb, getDb } from "../../../lib/requests.js";
 import { EVENT_ROW_ID, EventBus } from "./bus.js";
 import { loadPersistedEvent } from "./persisted.js";
 import { getEventView } from "./interface.js";
+import { canonicalAppEvent } from "../../canonical-app-event.js";
 
 test("persisted event replay uses verified full facts, never a truncated or corrupt body", () => {
   const root = mkdtempSync(join(tmpdir(), "may-event-replay-"));
@@ -57,13 +58,13 @@ test("stored targets retain internal fields; missing history stays unknown and d
     closeDb(root);
     const db = getDb(root);
     expect(loadPersistedEvent(db, id)).toMatchObject({ target });
-    db.prepare("UPDATE events SET target_json = NULL WHERE id = ?").run(id);
+    db.prepare("UPDATE events SET envelope_json = NULL WHERE id = ?").run(id);
     expect(loadPersistedEvent(db, id)).not.toHaveProperty("target");
     expect(getEventView(db, id)?.event).not.toHaveProperty("target");
-    for (const value of ["{broken", "[]", "null"]) {
-      db.prepare("UPDATE events SET target_json = ? WHERE id = ?").run(value, id);
+    for (const value of ["{broken", "[]", "null", "{}", JSON.stringify({ type: "fixture.observed", target: [] })]) {
+      db.prepare("UPDATE events SET envelope_json = ? WHERE id = ?").run(value, id);
       expect(loadPersistedEvent(db, id)).toBeNull();
-      expect(() => getEventView(db, id)).toThrow("Stored event target");
+      expect(() => getEventView(db, id)).toThrow("Stored event envelope");
     }
   } finally {
     closeDb(root);
@@ -101,6 +102,49 @@ test("inline replay verifies stored bytes and hash and requires an object, inclu
     }
     update.run(original.data, null, null, id);
     expect(loadPersistedEvent(db, id, root)?.data).toEqual(data);
+  } finally {
+    closeDb(root);
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("reopening preserves the complete App event and causal context for recovered children", () => {
+  const root = mkdtempSync(join(tmpdir(), "may-event-contract-"));
+  try {
+    const bus = new EventBus();
+    bus.setPersistenceSubscriber(new DbWriter(root).handler);
+    const reference = bus.emit({ type: "fixture.reference", source: "fixture", owner: "app:producer", data: {} });
+    const referenceId = Number(reference[EVENT_ROW_ID]);
+    bus.subscribeDurableRoute((event) => {
+      if (event.type !== "fixture.observed") return;
+      bus.emit({ type: "fixture.child", source: "fixture", owner: "app:consumer", data: {} });
+      return { accepted: true, by: "fixture", route: "direct" };
+    });
+    const trace = { traceId: "original-chain", parentEventId: referenceId,
+      links: [{ eventId: referenceId, type: "reference" as const, label: "support" }] };
+    const original = bus.emit({
+      type: "fixture.observed", source: "fixture", owner: "app:producer",
+      target: { appId: "recipient", taskId: "recipient-task" }, action: "review",
+      trace, visibility: "detail", ttl_ms: 90_000,
+      data: { appId: "subject", taskId: "subject-task", text: "evidence ".repeat(1_000) },
+      extension: { label: "future-envelope-field", value: 1 },
+    });
+    const id = Number(original[EVENT_ROW_ID]);
+    closeDb(root);
+    const db = getDb(root);
+    bus.setPersistenceSubscriber(new DbWriter(root).handler);
+    const restored = loadPersistedEvent(db, id, root)!;
+    expect(canonicalAppEvent(original)).toMatchObject({ action: "review", urgency: "normal" });
+    expect(canonicalAppEvent(restored)).toEqual(canonicalAppEvent(original));
+    expect(restored).toMatchObject({ trace, visibility: "detail", ttl_ms: 90_000,
+      extension: { label: "future-envelope-field", value: 1 } });
+    bus.redeliverPersisted(restored, id);
+    const children = db.prepare(`SELECT t.trace_id, t.parent_event_id FROM events e
+      JOIN event_traces t ON t.event_id = e.id WHERE e.event_type = 'fixture.child' ORDER BY e.id`).all();
+    expect(children).toEqual([
+      { trace_id: "original-chain", parent_event_id: id },
+      { trace_id: "original-chain", parent_event_id: id },
+    ]);
   } finally {
     closeDb(root);
     rmSync(root, { recursive: true, force: true });

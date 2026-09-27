@@ -1311,7 +1311,7 @@ describe("App inbox runtime", () => {
         expect.objectContaining({
           kind: "unresolved",
           status: "pending",
-          lastError: expect.stringContaining("original routing target"),
+          lastError: expect.stringContaining("original envelope"),
         }),
       ],
     });

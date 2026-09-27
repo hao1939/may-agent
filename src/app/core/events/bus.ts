@@ -10,6 +10,7 @@
  */
 
 import { AsyncLocalStorage } from "node:async_hooks";
+import type { AppEventTarget } from "@may-agent/sdk";
 import { log } from "../../../lib/log.js";
 
 // ── Event Types ────────────────────────────────────────────────────────
@@ -26,13 +27,7 @@ export interface EventEnvelope {
   ttl_ms?: number;
   visibility?: "default" | "detail";
   trace?: EventTrace;
-  target?: {
-    project?: string;
-    taskId?: string;
-    owner?: string;
-    sessionId?: string;
-    human?: boolean;
-  };
+  target?: AppEventTarget;
   data: Record<string, unknown>;
 }
 
