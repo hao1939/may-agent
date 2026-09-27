@@ -63,7 +63,11 @@ function conversationTaskLineage(
   return { taskId, ...(predecessorTaskId ? { predecessorTaskId } : {}) };
 }
 
-export function conversationTaskExecutionId(config: AppTaskContext, appId: string, conversationId: string): string {
+export function conversationTaskExecutionId(
+  config: AppTaskContext,
+  appId: string,
+  conversationId: string,
+): string {
   return conversationTaskLineage(config, appId, conversationId).taskId;
 }
 
@@ -257,11 +261,7 @@ export function admitConversationTaskInput(
     )
       throw new Error("Conversation input identity was reused for different input");
     if (prior?.status === "done") {
-      return {
-        item: prior,
-        taskId: prior.executionTaskId ?? conversationTaskId(input.appId, input.conversationId),
-        created: false,
-      };
+      return { item: prior, taskId: prior.executionTaskId ?? conversationTaskId(input.appId, input.conversationId), created: false };
     }
     const lineage = prior?.executionTaskId
       ? { taskId: prior.executionTaskId, predecessorTaskId: undefined }
@@ -286,11 +286,7 @@ export function admitConversationTaskInput(
                 ? {
                     input: {
                       ...input.intent.input,
-                      conversationLineage: {
-                        appId: input.appId,
-                        conversationId: input.conversationId,
-                        predecessorTaskId,
-                      },
+                      conversationLineage: { appId: input.appId, conversationId: input.conversationId, predecessorTaskId },
                     },
                   }
                 : {}),

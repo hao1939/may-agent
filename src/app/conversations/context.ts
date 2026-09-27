@@ -30,7 +30,9 @@ function encodedBytes(value: unknown): number {
 function inputContext(input: AppInput): Record<string, unknown> {
   if (!input.data || typeof input.data !== "object" || Array.isArray(input.data)) return {};
   const context = (input.data as Record<string, unknown>).context;
-  return context && typeof context === "object" && !Array.isArray(context) ? (context as Record<string, unknown>) : {};
+  return context && typeof context === "object" && !Array.isArray(context)
+    ? (context as Record<string, unknown>)
+    : {};
 }
 
 function focusedTaskIdentity(context: Record<string, unknown>): { appId: string; taskId: string } | null {
