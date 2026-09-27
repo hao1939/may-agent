@@ -196,19 +196,50 @@ These sources coexist. Placement later in a prompt does not make an event,
 document or tool output authoritative over the accepted assignment. A schema
 can enforce an allowed result shape without proving the work is sufficient.
 
-**Current assembly limits:** Task and Conversation entry adapters still mix
-Host instructions with request text that an App preparer or compaction can
-replace. Finish schemas survive separately with tool definitions. Helper scope
-has an existing session-evidence reference, but detailed contribution/skill
-text can be compacted. The compatibility chat and native executors have
-different context paths. Session transcripts alone do not reproduce every
-post-transform provider input.
+### Extending capabilities without changing the execution mechanism
 
-The [prompt assembly review](../proposals/agent-prompt-assembly-review-20260927.md)
-records source evidence, boundary probes and a proposed cleanup using the
-existing preparation, schema and context mechanisms. Its remaining changes are
-proposals, not deployed guarantees. The [assembly manual](../2b-manual/agent-convention.md#system-prompt-assembly)
-maps what is loaded today and when it changes.
+| Concern | Infrastructure owns | App extends |
+| --- | --- | --- |
+| Standing instructions | Assembly order and the bundled Host execution contract | Shared installation guidance and each agent's `AGENTS.md` |
+| Situational methods | Scoped discovery and explicit skill loading | Skills, knowledge and domain judgment |
+| Actions | Tool binding, execution scope, validation and result delivery | App tools with accurate descriptions, parameter schemas and implementation |
+| Procedures | Bounded calls, workflow execution and caller/Task correlation | Workflows that compose capabilities and return their declared result |
+| Results | Caller-supplied result validation, admission and persistence | Output schemas, domain acceptance and review of returned evidence |
+| Context | Original managed-session assignment, current Task reader, compaction and exact evidence links | Input content, required references and optional `contextPreparation` |
+
+A new capability normally changes the owning App's definition, tool, workflow,
+skill or schema. It should not require an agent-name branch in the Host prompt
+assembler. If the needed primitive is absent, add a generic Host/SDK capability
+with its own tested contract, then let Apps compose it. A prompt cannot grant
+an unavailable tool, change authority or prove that a returned outcome is good.
+
+The App context preparer projects the request only. Shared Host instructions,
+capability schemas and current Task observations are assembled independently.
+The Host checks synchronous, nonempty returns; purity is the authoring contract.
+Its imported code is trusted, not sandboxed. The App remains responsible for
+preserving the meaning of the assignment and required evidence. Keep it optional until a measured
+context problem justifies it; ordinary role files, skills and references suffice
+for most extensions.
+
+The Task and Conversation adapters supply data, while runtime orientation is
+bundled in `src/lib/execution-instructions.md`. Contract details live with SDK
+result schemas and tool descriptions. May's interpretation, intent echo and
+human communication policy live in `may.app/agents/may/AGENTS.md`. These roles
+cooperate through existing preparation and validation, without a prompt registry
+or a second work lifecycle.
+
+**Limits:** a required reference guarantees discoverability, not that the model
+read or understood it. Bounded managed sessions retain an exact assignment link
+and explicitly selected skill reference through compaction; direct callers
+without session persistence must supply their own needed references. Persistent
+chat skills are turn-scoped and remain in history/catalog discovery, not pinned
+as a standing assignment. Native CLI executors keep their own prompt contracts.
+Session transcripts do not capture every post-transform provider input.
+
+The [assembly manual](../2b-manual/agent-convention.md#system-prompt-assembly)
+explains ordering, extension choices and activation. The
+[implementation record](../proposals/agent-prompt-assembly-review-20260927.md#implementation-and-verification)
+records source and test status separately from deployment and behavioral quality.
 
 ## Choosing the mechanism
 

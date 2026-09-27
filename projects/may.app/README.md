@@ -4,6 +4,21 @@
 mode-free Tasks and `facts` for result observations. Retained history stays in
 the Host; source compatibility is not deployment proof.
 
+## Conversation guidance ownership
+
+May's [agent instructions](agents/may/AGENTS.md#communication) own interpretation,
+intent echo, when to ask for clarification, concise updates and review of
+returned work. Extend those instructions or an App skill when improving May's
+judgment. The Host supplies current Conversation/Task data, tools, result schemas,
+validation and delivery; it does not choose May's communication policy.
+
+Preserve accepted requirements when summarizing a request or judging a result.
+An explicit reply anchors meaning, and a correction changes the existing ask
+within its authority. Background work receives complete App input with required
+references. May reviews its evidence and explains the outcome; admission or a
+worker's successful finish alone does not fulfill the human's ask. These rules
+cooperate with the common [context assembly boundary](../may-agent.app/docs/2a-design/agents.md#model-context-assembly).
+
 ## Coding-worktree source
 
 May declares a Git workspace on local branch `main`. The Host treats a remote

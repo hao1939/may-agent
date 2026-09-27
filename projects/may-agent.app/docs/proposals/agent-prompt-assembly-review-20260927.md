@@ -1,7 +1,7 @@
 # Agent prompt assembly: source review and simplification proposal
 
-**Status:** Proposed cleanup. Assembly probes and existing contract tests passed;
-production behavior has not been changed or deployed by this review.
+**Status:** Cleanup implemented on candidate source; verification recorded below.
+Not deployed. The source review and initial probes below describe the baseline.
 
 ## Decision
 
@@ -323,3 +323,77 @@ and [history-pollution note](../../../../shared/knowledge/library/deep-dives/DD-
 suggest useful comparison questions. Treat their reported research results as
 leads, not validated performance predictions for May. They do not justify a new
 context classifier or automatic deletion of history.
+
+
+## Implementation and verification
+
+The candidate keeps the existing preparation mechanism. It deletes
+`appTaskAgentProtocol` and duplicated Conversation instructions, bundles a short
+Host orientation in `src/lib/execution-instructions.md`, and puts result/tool
+semantics beside their SDK schemas and capabilities. May's communication and
+interpretation policy is in `may.app`; the common boundary is documented in
+[agents.md](../2a-design/agents.md#model-context-assembly) and the
+[authoring manual](../2b-manual/agent-convention.md#how-to-extend).
+
+Managed bounded invocations link their existing session assignment in system
+context. Explicit skills retain their canonical reference. App preparation can
+still project the request, while compaction leaves these instructions, tool
+schemas and the current Task brief available. Compatibility chat observations
+move from system instructions into a refreshed data message. Chat does not pin
+an earlier turn's scope or skill as standing authority. Native CLI adapters retain their own context paths; these managed refresh
+guarantees do not apply to them.
+
+The companion App change corrects the `context_updates` and guard claims and
+replaces an obsolete escalation roster with owner/capability discovery. Shared
+assignment guidance retains the convention for large context and required links. It also
+removes the unused `shared/lib/prompt-builder.ts`, its private context filter and
+its tests/export; tracked source search found no production consumers. These
+were not the Host's assembler. Host tests that merely asserted a session result
+exists were replaced with actual provider-boundary and compiled-asset checks.
+
+The first implementation put too much repeated prose on shared schema fields.
+Inspection showed the Task schema grew from 8,587 to 16,088 UTF-8 bytes. The
+revised version states common semantics once and keeps field notes short:
+12,118 bytes. After ignoring descriptions, Task and Conversation JSON schemas
+are identical to the baseline. No accepted shape or admission rule changed.
+
+A fixture containing the prepared system text, one finish tool/schema and the
+Task adapter's default request measured 14,454 bytes before and 13,843 after.
+It excludes real App roles, other tools and current Task data, so it is a narrow
+assembly comparison, not production token/cost evidence. Conversation schema
+size rises from 2,503 to 4,600 bytes while its duplicated request instructions
+are removed. Generic helpers gain the short Host orientation; their exact
+scope and own output schema remain independent of any shared Task context.
+
+Provider fixtures exercise real preparation and the model/tool loop with a
+recording fake provider. They prove fresh Task state after forced compaction,
+retained Host and selected-skill references with an App preparer, an App-owned
+helper schema and rejection of the wrong result, and refreshed chat observations
+outside system text and durable history. A compiled preparation fixture runs
+without installation prompt files and proves the Markdown is in the artifact.
+The initial full suite found six obsolete text/layout assertions. These were
+removed or updated at the owning contract tests; the on-demand-file and explicit
+override guarantees were retained in the actual preparation tests. A legacy
+hierarchy test also read the real installation's shared instructions; its
+replacement uses only temporary fixtures.
+
+Verified Host candidate: `adc64089212124d0aa30a2a0e2a0b7f7ac323c1e`
+on `refactor/agent-prompt-assembly`, based on `e55f932a7fd26009fd12d7b9d60fa64b306d1973`.
+Companion Apps source is the commit containing this implementation record.
+
+| Check | Result |
+| --- | --- |
+| Host `bun run ci` | Passed: 3,237 tests, 15,718 assertions, zero failures |
+| Installed-fleet checks in portable CI | Three intentionally skipped; require explicit installation scope |
+| Browser and compiled-asset checks | Executed and passed in the Host suite |
+| Apps `bun run check:may-design` | Passed: design integrity, compiled SDK examples, canonical App check |
+| Apps `bun test shared/lib/__tests__` | 60 passed |
+| May `bun test ./projects/may.app/agents/may/workflows/develop-change.test.ts` | 32 passed |
+
+The retained regression entrypoints are Host `src/lib/agent-execution.test.ts`,
+`task-decision-context.test.ts`, `system-prompt-cache.test.ts`, the Conversation
+contract tests, and `test/integration/{task-workflow-context,task-decision-context,execution-instructions-build}.test.ts`.
+Run them from the Host checkout or run its complete `bun run ci`.
+There is no live model comparison or deployment claim. Guidance should land
+before Host activation; it remains compatible with the old Host. This is a
+source/definition rollout, with no Task migration or new storage mechanism.

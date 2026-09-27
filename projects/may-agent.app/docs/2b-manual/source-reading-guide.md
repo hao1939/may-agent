@@ -159,7 +159,7 @@ and where is capacity released after either success or failure?
 ### 5. Follow one agent execution and its context
 
 For the complete path from authored instructions to system text, tool schemas
-and transformed messages, use the [prompt assembly map](../proposals/agent-prompt-assembly-review-20260927.md#how-the-current-prompt-reaches-the-model).
+and transformed messages, use the [prompt assembly manual](agent-convention.md#system-prompt-assembly).
 It also distinguishes the initial request, current Task brief and later
 compaction/recovery input.
 
@@ -171,6 +171,11 @@ Continue through [manager.ts](../../../may-agent/src/lib/manager.ts),
 `prepareAgentExecution()` in
 [agent-execution.ts](../../../may-agent/src/lib/agent-execution.ts), and
 `createAgentRun()` in [agent-runner.ts](../../../may-agent/src/lib/agent-runner.ts).
+
+Read the short Host `src/lib/execution-instructions.md` and the supplied SDK
+result schema next. They survive request preparation and
+compaction independently. App roles and methods remain in their own definitions;
+see the [extension boundary](../2a-design/agents.md#extending-capabilities-without-changing-the-execution-mechanism).
 
 The manager owns hosted sessions. Preparation binds instructions, tools and
 context. The runner performs the bounded model/tool loop. A session result is
