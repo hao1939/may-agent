@@ -1,374 +1,392 @@
 # Reading the May source
 
-This guide follows one piece of work through the system, then offers deeper
-routes for the parts you want to review. It describes Host source at
-`1ff18acc` (2026-09-27, including #252 and #253). This is a
-source guide; the running binary and installed App definitions have their own
-release identities.
+Start with one Task, follow its agent execution, then choose the part you want
+to review. This guide was checked against Host `7f349322` (2026-09-27, through
+#256). It describes source; the running binary and activated App definitions
+have separate release identities.
 
-Start with the [System Model](../2a-design/system-model.md). Keep the
+Read the [System Model](../2a-design/system-model.md) for the concepts. Keep the
 [Host source map](../../../may-agent/src/app/README.md) beside this guide for
-file lookup. The model owns the concepts; this guide explains where to inspect
-their implementation.
+file lookup. Paths such as `src/lib/` below are relative to `projects/may-agent/`.
 
-## What the system does
+## Choose a reading route
 
-May turns human requests and observed changes into work that can continue
-across multiple executions. Apps decide what work means and what counts as a
-useful answer. The Host stores the assignment and evidence, runs an agent or
-workflow, and preserves unfinished work through waits and failures.
+| What you want to understand | Start here |
+| --- | --- |
+| The core system and one complete piece of work | [Follow one Task](#follow-one-task) |
+| What actually runs after a Task is claimed | [Read the attempt's main path](#4-read-the-attempts-main-path) |
+| How the final model input is built | [Follow the agent and its context](#follow-the-agent-and-its-context) |
+| How to inspect progress, tool calls and new input | [Trace a running execution](#trace-a-running-execution) |
+| Where to add an App capability or change Host mechanics | [Find the extension owner](#find-the-extension-owner) |
+| Conversation, workflows, recovery or deployment | [Choose a deeper route](#choose-a-deeper-route) |
 
-The capabilities worth reviewing are:
+For a first pass, read the named types and functions, then follow their callees
+when a responsibility is unclear. Reading every large file from top to bottom
+makes the main path harder to see.
 
-| Capability | What it provides | Main source home |
-| --- | --- | --- |
-| Extensible Apps | Input contracts, ownership, selected executors, routes and schedules | SDK declarations; `src/app/core/apps/` |
-| Durable work | Current assignment, accepted results, pending input, waits, attempts and explicit closure | `src/app/core/tasks/` and `core/state/` |
-| Agent and workflow execution | Instructions, context, tools, model calls, procedure steps and execution evidence | `src/lib/` and `src/app/adapters/executors/` |
-| Conversation and cooperation | Human discussion, accepted asks, delegation and correlated answers | `src/app/conversations/`, inbox and Task state |
-| Events and recovery | Relevant wakes, timer input, missed-change discovery and paced retry | Events, Task recovery and producer adapters |
-| Inspection and control | Shared Task reads, evidence, Stop/close controls, console, HTTP and Telegram | Core reads, transport, HTTP and client packages |
+## Keep the responsibilities clear
 
-Evaluation and Gym use these capabilities to assess and improve work. Their
-judgment, selection rules and approval policy live in Apps. The Host does not
-contain an automatic rule that every completed Task must be evaluated or changed.
+Apps decide what work means, how to do it and what counts as a useful outcome.
+The Host admits input, stores state, schedules bounded execution, checks result
+contracts and preserves unfinished work through waits and failures.
 
-## The repository boundaries
+Three records appear throughout the call chain:
 
-Paths in the table below are relative to `projects/may-agent/`.
+| Record | What it answers |
+| --- | --- |
+| Task | What is wanted, what is currently understood, and what work remains? |
+| Attempt | Who claimed this execution, which assignment did it observe, and what did it report? |
+| Session | What did this agent invocation receive, do and return? |
+
+One Task can have many attempts. An attempt can use agent sessions, workflow
+steps or another executor. A successful session supplies evidence; the Task
+still needs to accept the outcome. Current progress, failure evidence, waits
+and pending input can coexist. Reading only a scheduling `phase` loses that detail.
+
+The source layout follows those responsibilities:
 
 | Location | Read it as |
 | --- | --- |
-| `packages/sdk/src/` | The contract App and workflow authors use |
-| `src/app/core/` | Admission, events, state and Task mechanics |
-| `src/app/adapters/` | Implementations connected to those mechanics: executors, Git workspaces, producers and reporting |
-| `src/app/composition/` | Wiring: which implementations this Host uses and how they start/stop |
-| `src/lib/` | Hosted execution, model/tool integration and lower-level persistence; it contains substantial behavior despite its broad name |
+| `packages/sdk/src/` | Public App, Task and workflow contracts |
+| `src/app/core/` | Admission, events, state, scheduling and Task transitions |
+| `src/app/adapters/` | Executor, workspace, producer and reporting implementations |
+| `src/app/composition/` | Selection, wiring, activation and cleanup of implementations |
+| `src/lib/` | Hosted sessions, model/tool integration and persistence helpers |
 | `src/app/http/`, `src/app/transport/`, `packages/control/`, `packages/terminal/`, `packages/webui/` | Human/client surfaces over shared capabilities |
-| `test/`, adjacent `*.test.ts` | Cross-component examples and focused contract tests |
-| `scripts/`, `container/`, `.github/workflows/` | Build, checks, release and operational tooling |
+| Adjacent `*.test.ts`, `test/` | Focused contracts and cross-component examples |
+| `scripts/`, `container/`, `.github/workflows/` | Checks, build, release and operational tooling |
 
-Outside that repository, `may-agent.app/docs/` is the common design home.
-`may.app`, `scout-knowledge-lib.app`, `evaluation.app` and `gym.app` own their
-domain behavior. The agent named May is declared under
-[may.app/agents/may](../../../may.app/agents/may/); the Host loads agent
-definitions rather than hard-coding that personality into the Task engine.
+Common design lives outside the Host in `may-agent.app/docs/`. Domain behavior
+lives in `may.app`, `scout-knowledge-lib.app`, `evaluation.app` and `gym.app`.
+For example, [May's agent definition](../../../may.app/agents/may/) belongs to
+May's App; the Host loads it. Evaluation selection and Gym's improvement
+judgment are also App capabilities.
 
-Core, adapters and composition describe responsibility and import direction.
-They do not imply separate services or processes. See
-[Architecture](../2a-design/architecture.md) for the four core responsibilities.
-
-## First pass: follow one Task
-
-Allow roughly an hour to skim this route. Read the named types and functions
-first; follow their callees when a responsibility is unclear. Several files are
-large, so reading them from top to bottom obscures the main path.
+## Follow one Task
 
 ```text
-human / another App / schedule / observer
-                  |
-         declared route + admission
-                  |
-       saved input attached to a Task
-                  |
-      queue hint -> capacity -> current claim
-                  |
-       bounded agent / workflow / executor
-                  |
-          proposed result + evidence
-                  |
-       validation + fenced state commit
-                  |
-     accepted result / wait / paced retry
-                  |
-        exact caller feedback + future wakes
+input or observed change
+  -> declared route and durable admission
+  -> saved Task input / desired state
+  -> queue hint, capacity and current execution claim
+  -> agent / workflow / other executor
+  -> proposed result and evidence
+  -> validation and fenced state commit
+  -> accepted progress, wait or paced retry
+  -> exact caller feedback and future reconciliation
 ```
 
-The arrows combine events and ordinary function calls. A local `await` waits
-for one bounded operation; a durable wait saves what must happen and releases
-the Task's execution capacity. The Task remains available until its owner closes it.
+Events carry meaningful changes; ordinary calls perform local reads and writes.
+Admission saves the relevant resource change before the owner reacts. A small
+setter or explicit control can complete its write synchronously. This does not
+require every local operation to become a separate asynchronous event handler.
 
-### 1. Understand what an App declares
+### 1. Read the App contract
 
-Read [app.ts](../../../may-agent/packages/sdk/src/app.ts): `AppDefinition`,
-`AppTaskAttachment`, `AppTaskPolicy`, and `defineApp`. Then read
-[task.ts](../../../may-agent/packages/sdk/src/task.ts): `TaskIntent`, `Condition`
-and `TaskReconcileResult`.
+Start with [SDK app.ts](../../../may-agent/packages/sdk/src/app.ts):
+`AppDefinition`, `AppTaskAttachment`, `AppTaskPolicy` and `defineApp`. Then read
+[SDK task.ts](../../../may-agent/packages/sdk/src/task.ts): `TaskIntent`,
+`Condition` and `TaskReconcileResult`. The [checked quickstart](sdk-quickstart.md)
+is a smaller example than a production App.
 
-An App declares input and maps it to an existing Task or a desired assignment.
-Its `agent` selects a default executor. A Task's intent can select an agent,
-workflow or registered executor. `defineApp()` itself simply returns the
-declaration; Host loading and admission perform validation.
+The App's `task` mapping attaches input to existing work or supplies a desired
+assignment. `agent` selects its default executor; an intent can select an agent,
+workflow or registered executor. `tasks` declares Task policy. `defineApp()`
+returns a declaration; loading and admission perform validation.
 
-Use the [checked quickstart](sdk-quickstart.md) as a small example before opening
-a production App with many routes.
+**Check:** which decision belongs to this App, and which guarantee must work for
+every App?
 
-**Review question:** where does App judgment end, and what does the Host promise
-to preserve regardless of which App made the decision?
+### 2. Follow input to its durable owner
 
-### 2. See how input acquires a durable owner
+In [app-inbox-host.ts](../../../may-agent/src/app/core/inbox/app-inbox-host.ts),
+start at `AppInboxHost.admit()`. Follow the App mapping and Task attachment;
+Conversation input uses the supplied `admitConversation` capability. Then read
+`admitTaskInput()` in [state/inbox.ts](../../../may-agent/src/app/core/state/inbox.ts).
 
-Read [app-inbox-host.ts](../../../may-agent/src/app/core/inbox/app-inbox-host.ts),
-starting with `AppInboxHost.admit()`. Follow ordinary input through the App's
-`task` mapping and Task attachment; Conversation input uses `admitConversation`.
-Then inspect `admitTaskInput` in
-[state/inbox.ts](../../../may-agent/src/app/core/state/inbox.ts).
+The receipt retains the exact input-to-Task link. That lets the caller receive
+the answer to its own input. Admission does not run another agent loop. Failed
+mapping retains the input for recovery; subscribed-event translation has an
+earlier admission record described in the recovery route below.
 
-The input receipt and exact Task link let a caller later receive the answer
-to its own input. This inbox admits and correlates work; it does not execute a
-second agent loop. Mapping failures retain an input that recovery can revisit.
+**Check:** if this step fails or repeats, what retains ownership and prevents
+an unrelated duplicate assignment?
 
-**Review question:** if admission is repeated, or fails halfway through, which
-identity survives and prevents a second unrelated assignment?
-
-### 3. Read the stored model before its transitions
+### 3. Read the state before its transitions
 
 Read `AppTaskResource`, `AppTaskAttempt` and `AppTaskCondition` in
-[app-task-state.ts](../../../may-agent/src/app/core/tasks/app-task-state.ts).
-Inspect `readTask`, `readAttempt` and `commit` in
+[app-task-state.ts](../../../may-agent/src/app/core/tasks/app-task-state.ts),
+then `readTask`, `readAttempt` and `commit` in
 [app-task-resource-store.ts](../../../may-agent/src/app/core/state/app-task-resource-store.ts).
 
-The desired assignment is in `spec`; current observations are in `status`.
-`generation` identifies assignment revisions. `resourceVersion` detects
-concurrent writes. Attempt identity records the execution that produced evidence.
-A fence is a check that a writer still has authority over the version and
-execution it is trying to change.
+`spec` holds the desired assignment; `status` holds current observations.
+`generation` identifies assignment revisions; `resourceVersion` detects
+concurrent writes. A claim identifies the current execution. A fence checks
+that a writer still has authority over the assignment and execution it changes.
+The resource store owns canonical SQLite persistence; `app-task-store.ts`
+provides snapshot and mutation helpers.
 
-Accepted evidence, failure facts, open Conditions and pending input can coexist.
-The scheduling `phase` alone cannot tell you whether the user's whole ask is done.
+**Check:** where is the authoritative fact, and which transaction protects it?
 
-**Review question:** which transaction protects the fact you are reviewing,
-and what happens when another writer changes it first?
+### 4. Read the attempt's main path
 
-### 4. Follow dispatch into an attempt
+Follow `AppTaskController.enqueue()`, `pump()` and `run()` in
+[controller.ts](../../../may-agent/src/app/core/tasks/controller.ts).
+[app-task-runtime.ts](../../../may-agent/src/app/core/tasks/app-task-runtime.ts)
+wires its reconciliation callback. Execution may cross a worker boundary, but
+both paths reach [attempt-runner.ts](../../../may-agent/src/app/core/tasks/attempt-runner.ts):
 
-Skim [app-task-capability.ts](../../../may-agent/src/app/core/tasks/app-task-capability.ts)
-for the Host-facing operations. Follow `AppTaskController.enqueue()` and dispatch
-in [controller.ts](../../../may-agent/src/app/core/tasks/controller.ts), then
-open `runTaskAttempt()` in
-[attempt-runner.ts](../../../may-agent/src/app/core/tasks/attempt-runner.ts).
+```text
+runTaskAttempt()
+  claimObservedAppTask()          acquire authority or explain why not ready
+  runClaimedTask()
+    prepare workspace/context
+    executeTaskHandler()         invoke the selected handler once
+    examine its report
+    validate, finalize and commit the appropriate outcome
+```
 
-Find its call to `claimObservedAppTask()`, then the executor call. The queue is
-a scheduling hint; the durable Task and current claim decide whether execution
-is allowed. [host-capacity.ts](../../../may-agent/src/app/core/scheduling/host-capacity.ts)
-owns the shared capacity slots.
+`runClaimedTask()` is the main reading target. Follow its workspace preparation,
+then jump to `executeTaskHandler()` to see selection of Conversation, workflow,
+registered executor or managed agent. Return to the result branches afterwards.
+Preparation failure returns through `finishUnsuccessfulAttempt()` before the
+handler runs. Each result branch settles its report or returns a rejection.
 
-**Review question:** what prevents two wakes from running competing attempts,
-and where is capacity released after either success or failure?
+In [attempt-execution.ts](../../../may-agent/src/app/core/tasks/attempt-execution.ts),
+`runTaskExecutorAttempt()` wraps the selected execution with a shared
+`TaskAttempt`, event access and lease renewal. `runTaskAgent()`,
+`runTaskCapability()` and `runRegisteredTaskExecutor()` connect the concrete
+backends. Read the bounded-execution contract in
+[SDK workflow.ts](../../../may-agent/packages/sdk/src/workflow.ts) alongside them.
 
-### 5. Follow one agent execution and its context
+The surrounding time code has distinct purposes:
 
-For the complete path from authored instructions to system text, tool schemas
-and transformed messages, use the [prompt assembly manual](agent-convention.md#system-prompt-assembly).
-It also distinguishes the initial request, current Task brief and later
-compaction/recovery input.
+| Where | Why it exists |
+| --- | --- |
+| Controller and `host-capacity.ts` | Queue work and release capacity in `finally` |
+| `runTaskExecutorAttempt()` | Renew the current execution lease; remove its timer/listeners on exit |
+| `ExecutionScope` in `src/lib/execution-scope.ts` | Bound an invocation and propagate cancellation/deadlines |
+| `reportTiming` and session usage records | Observe queue wait, elapsed time and usage |
+| The zero-delay yield in `runClaimedTask()` | Let other event-loop work run after synchronous state writes |
 
-Read `runTaskExecutorAttempt()` in
-[attempt-execution.ts](../../../may-agent/src/app/core/tasks/attempt-execution.ts),
-then the managed-agent adapter in
-[managed-agent.ts](../../../may-agent/src/app/adapters/executors/managed-agent.ts).
-Continue through [manager.ts](../../../may-agent/src/lib/manager.ts),
-`prepareAgentExecution()` in
-[agent-execution.ts](../../../may-agent/src/lib/agent-execution.ts), and
-`createAgentRun()` in [agent-runner.ts](../../../may-agent/src/lib/agent-runner.ts).
+Read claim → execute → settle first, then these bounds. A local `await` joins a
+bounded operation. A durable wait records what must happen, ends the attempt
+and releases capacity; it does not keep that JavaScript call suspended forever.
 
-Read the short Host `src/lib/execution-instructions.md` and the supplied SDK
-result schema next. They survive request preparation and
-compaction independently. App roles and methods remain in their own definitions;
-see the [extension boundary](../2a-design/agents.md#extending-capabilities-without-changing-the-execution-mechanism).
+**Check:** what prevents competing attempts, and who cleans up after every exit?
 
-The manager owns hosted sessions. Preparation binds instructions, tools and
-context. The runner performs the bounded model/tool loop. A session result is
-evidence returned to the Task engine; its existence does not establish Task acceptance.
+### 5. Follow settlement and caller feedback
 
-Before reading provider details, inspect `createTaskDecisionContext()` in
-[task-decision-context.ts](../../../may-agent/src/lib/task-decision-context.ts).
-It shows the current understanding, obligations, pending input and links that
-the model receives. The deeper context route below explains freshness.
+Back in `runClaimedTask()`, follow the branch matching the returned state:
 
-**Review question:** can the agent see what remains to do, what already succeeded,
-what failed, and where to read omitted detail?
+| Report | Follow |
+| --- | --- |
+| `converged` | `establishTaskAcceptance()`, workspace finalization, then `completeAppTask()` or `completeConversationTaskTurn()` |
+| `waiting` | Fence/finalize workspace, `admitWaitingConditions()`, `deferAppTask()`, then recover already-saved feedback |
+| `incomplete` | `reportAppTaskFailure()` retains partial facts and unfinished work |
+| Failure or rejected result | `finishUnsuccessfulAttempt()` and `failAppTaskAttempt()` |
 
-### 6. Follow the result back into durable state
+The canonical transitions live in
+[app-task-reconciler.ts](../../../may-agent/src/app/core/tasks/app-task-reconciler.ts).
+Existing waits survive omission from later reports. New input can make a
+successful result progress rather than full convergence. A failed settlement
+retains evidence without treating the proposed effects as accepted.
 
-Return to `runTaskAttempt()` after the executor returns. Follow result validation,
-verification, dependency admission and settlement. In
-[app-task-reconciler.ts](../../../may-agent/src/app/core/tasks/app-task-reconciler.ts),
-read these functions in order:
+Trace `AppInboxHost.refreshTaskResults()` to `completeTaskInput()` for exact
+caller feedback. Projection can retry without undoing the accepted outcome.
+`completeAppTask()` accepts an outcome; `closeAppTask()` ends the Task's
+availability for further execution. These are separate decisions.
 
-1. `claimObservedAppTask()` — obtain the execution authority.
-2. `completeAppTask()` — accept an outcome for the work considered.
-3. `deferAppTask()` — retain waits and any continuation/review requirements.
-4. `failAppTaskAttempt()` — retain failure evidence and pace another attempt.
-5. `closeAppTask()` — apply an authorized end to the Task's lifetime.
+**Check:** if execution finishes but the next write fails, what is accepted,
+what remains pending and what can the next attempt inspect?
 
-Each uses the same resource store. Trace an accepted result through
-`AppInboxHost.refreshTaskResults()` and `completeTaskInput()` to see how the
-exact caller receives it. Feedback projection can be retried without undoing
-the accepted Task outcome.
+## Follow the agent and its context
 
-**Review question:** if the agent finishes but settlement fails, what is accepted,
-what remains pending, and what evidence does the next attempt receive?
+For a managed Task agent, the source path is:
 
-## Deeper routes
+```text
+attempt-execution.ts: runTaskAgent()
+  adapters/executors/managed-agent.ts: executeTaskAgent()
+    manager.ts: callAgentDefinition() / callAgent()
+      runDefinition()
+        agent-execution.ts: prepareAgentExecution()
+        agent-runner.ts: createAgentRun()
+      startManagedExecution() -> executeSession()
+        agent.prompt() -> model/tool loop
+```
 
-### Context: what is fresh, what is a snapshot?
+The [managed-agent adapter](../../../may-agent/src/app/adapters/executors/managed-agent.ts)
+supplies assignment data and the Task result schema. The
+[manager](../../../may-agent/src/lib/manager.ts) owns session identity,
+persistence and execution lifetime. [Preparation](../../../may-agent/src/lib/agent-execution.ts)
+binds the model's inputs. The thin [runner](../../../may-agent/src/lib/agent-runner.ts)
+wraps `Agent` from `@earendil-works/pi-agent-core`; that dependency implements
+the actual model/tool loop.
 
-| Context | Producer | When to trust it |
+### Inspect all three model inputs
+
+| Model input | Follow in `agent-execution.ts` | What contributes |
 | --- | --- | --- |
-| Assignment, input batch, previous attempt, children and waits supplied to execution | [attempt-execution.ts](../../../may-agent/src/app/core/tasks/attempt-execution.ts), [app-task-context.ts](../../../may-agent/src/app/core/tasks/app-task-context.ts) | Describes what was supplied to that attempt; later observations may differ |
-| `TASK.md`, `context.json`, `catalog.json` | `prepareTaskWorkspaceContext()` in [task-workspace-context.ts](../../../may-agent/src/lib/task-workspace-context.ts) | Discovery files written for the attempt; they are not the writable authority for Task state |
-| Managed agent's decision brief | [task-decision-context.ts](../../../may-agent/src/lib/task-decision-context.ts), connected by `transformContext` in `agent-execution.ts` | Refreshed for model requests; failures and omitted data are marked, with links for deeper reads |
-| Human discussion and accepted asks | [conversations/context.ts](../../../may-agent/src/app/conversations/context.ts) | Bounded messages plus Request and canonical Task observations; older discussion is available through the context tool |
-| Permission to apply an effect | Claim/freshness checks in `app-task-reconciler.ts` and the storage transaction | Checked at the write boundary; a prompt snapshot alone cannot grant it |
+| System instructions | `resolveSystemPrompt()` | Shared guidance, agent `AGENTS.md`, skill catalog and environment; then bundled Host instructions, execution references and completion requirements |
+| Tools and their schemas | `resolveTools()` | Loaded capabilities, execution binding and the caller's output schema on `finish` |
+| Messages | `prepareExecution()` and `transformContext` | Prepared request, selected skill, model/tool history, steering; compaction followed by current observations and Task brief |
 
-Read the brief's coverage metadata as carefully as its text. Reading an event
-does not fulfill its requested work. A failed refresh does not erase the last
-known facts or make them current. Larger evidence stays linked rather than
-being copied into every prompt. The managed-agent transform is one executor
-integration; inspect a native executor's adapter before assuming identical refresh behavior.
+Read the short [execution-instructions.md](../../../may-agent/src/lib/execution-instructions.md)
+for Host-wide guidance, then [SDK task-contract.ts](../../../may-agent/packages/sdk/src/task-contract.ts)
+for result semantics. The old `appTaskAgentProtocol` and `assignment-guidance.ts`
+were removed. Role and domain methods belong in App guidance; schema meanings
+and tool behavior belong beside their contracts.
 
-### Conversation: same execution, additional product records
+Request preparation has an explicit order: an App's optional
+`contextPreparation` transforms the full request; otherwise the Host uses the
+supplied shorter `contextPrompt` or the full request. An explicitly selected
+skill wraps that prepared request. System instructions, actual tools and the
+output schema are assembled independently. A custom `systemPrompt` replaces
+convention-based role assembly but still receives the Host execution instructions.
 
-Start with the [Conversation source guide](../../../may-agent/src/app/conversations/README.md).
-Then follow `prepareConversationTaskTurn()` in
-[composition/conversation-task-turn.ts](../../../may-agent/src/app/composition/conversation-task-turn.ts)
-to [turn-agent.ts](../../../may-agent/src/app/conversations/turn-agent.ts) and
-[state/conversation-task-turns.ts](../../../may-agent/src/app/core/state/conversation-task-turns.ts).
+### Distinguish assignment, current facts and history
 
-A Turn runs under a Task claim. Its accepted decision commits the reply, Request
-updates and authorized effects together. The Request records the human ask;
-the Task records execution responsibility. Ending a Turn or accepting a child
-result does not itself close the Request. Stop addresses the observed Turn;
-Task closure has a different scope.
+| Material | Owner and lifetime |
+| --- | --- |
+| Original invocation assignment | Bounded managed session `meta.json`, linked from execution context; a helper retains its own contribution |
+| `TASK.md`, `context.json`, `catalog.json` | [task-workspace-context.ts](../../../may-agent/src/lib/task-workspace-context.ts): attempt discovery files and links |
+| Current Task decision brief | [task-decision-context.ts](../../../may-agent/src/lib/task-decision-context.ts): refreshed before managed model calls, after compaction |
+| Transcript and compacted snapshot | [persistence.ts](../../../may-agent/src/lib/persistence.ts): execution history and saved compaction context |
+| Authority to accept an effect | Current claim and state transaction, checked at the write boundary |
 
-For a concrete walkthrough, trace: human asks for a paper review → May explains
-the handoff → Scout's Task accepts a result → the exact result returns as input
-to May → May judges whether it fulfills the accepted ask. Follow the Task/input
-references at each boundary rather than selecting the newest result by time.
+Read the brief's freshness and omission markers. A failed refresh retains scoped
+last-known facts; a changed generation is not silently adopted by the old
+attempt. Reading an event does not fulfill its request. Shared Task background
+does not expand a helper's assignment or replace its caller's result schema.
 
-### Workflows and cooperation
+The managed brief is a disposable provider view, not another copy appended to
+the transcript. Native CLI executors build their own context; inspect their
+adapters before assuming the same refresh behavior. Compatibility persistent
+chat also has a distinct path: it refreshes observations as message data and
+does not pin its first turn as every later turn's assignment.
 
-Read `TaskAttempt`, `TaskExecutor` and `WorkflowContext` in
-[SDK workflow.ts](../../../may-agent/packages/sdk/src/workflow.ts). Follow
-[executors/workflow.ts](../../../may-agent/src/app/adapters/executors/workflow.ts)
-to `runWorkflowDirect()` and `createWorkflowRunner()` in
-[workflow-tool.ts](../../../may-agent/src/lib/workflow-tool.ts).
+For the full authoring order and limits, use
+[System Prompt Assembly](agent-convention.md#system-prompt-assembly).
 
-A workflow orchestrates operations inside an execution boundary. It uses the
-shared Task context, event and result rules. A workflow's local `await` is not a
-persisted continuation that automatically resumes at the same JavaScript line
-after a process crash. Read [workflow authoring](workflow-authoring.md) for how
-to keep progress discoverable and return a durable wait when appropriate.
+## Trace a running execution
 
-For durable cooperation, trace `TaskAppDependency` through
-[dependency-admission.ts](../../../may-agent/src/app/core/tasks/dependency-admission.ts)
-and [input-result.ts](../../../may-agent/src/app/core/inbox/input-result.ts).
-For a bounded helper, inspect
-[manager-agents-tool.ts](../../../may-agent/src/lib/manager-agents-tool.ts).
-Current source still offers `call` and `fork`; a fork belongs to its live caller.
-Those calls do not establish another durable Task lifecycle. The
-[message tool](../../../may-agent/src/lib/tools/message-tool.ts) uses declared
-App routes. Inspect the result promise and ownership of each capability, not
-just its action name.
+Follow exact references from Task → attempt → session or workflow run. Choosing
+the latest session by agent name can select unrelated work.
 
-### Events, waiting and recovery
+1. Read current Task state through
+   [app-read.ts](../../../may-agent/src/app/core/reads/app-read.ts), including
+   pending input, obligations, waits and the current attempt.
+2. For a managed session, inspect `<persistDir>/sessions/<sessionId>/meta.json`
+   for its assignment, Task binding and caller links; `session.jsonl` for
+   messages and tool results; `session-compact.jsonl` for a saved compaction
+   snapshot when present. `appendSessionMessage()` writes transcript messages.
+3. In `manager.ts`, read `executeSession()` for execution and result collection,
+   and `bridgeEvents()` for model/tool observations. Useful observation points
+   are `message_end`, `tool_execution_start` and `tool_execution_end`.
+4. Follow [observeTaskFeedback()](../../../may-agent/src/lib/task-execution-context.ts)
+   through the manager's `withExecutionScope()` and `send()` to `agent.steer()`.
+   A live hint enters the execution loop; it does not interrupt an arbitrary
+   tool synchronously or acknowledge the durable input. A missed hint leaves
+   the input available for normal reconciliation.
+5. Return to Task settlement to see whether the session's result was accepted.
+   Session status alone cannot establish fulfillment of the human ask.
 
-Read [events/interface.ts](../../../may-agent/src/app/core/events/interface.ts)
-and [events/bus.ts](../../../may-agent/src/app/core/events/bus.ts), then
-[app-inbox-runtime.ts](../../../may-agent/src/app/composition/app-inbox-runtime.ts)
-for how routes, admission and recovery connect. The
-[producer guide](../../../may-agent/src/app/adapters/producers/README.md) explains
-schedules and observers.
+To debug what the model actually saw, inspect `prepared.systemPrompt`,
+`prepared.tools` and the messages after `transformContext`, at the runner's
+`streamFn` boundary. The ordinary transcript omits the disposable current brief
+and is not a complete capture of every provider request. Existing integration
+tests use a fixture provider at that boundary without operating live Apps.
 
-Follow [app-task-recovery.ts](../../../may-agent/src/app/core/tasks/app-task-recovery.ts),
-[startup-recovery.ts](../../../may-agent/src/app/core/tasks/startup-recovery.ts)
-and [session-recovery.ts](../../../may-agent/src/app/adapters/executors/session-recovery.ts).
-Task-bound execution recovers through the Task. Session files retain diagnostic
-evidence; they do not independently authorize replay or completion.
+## Find the extension owner
 
-Review three boundaries: input saved before a missed wake; execution ended before
-settlement; outcome accepted before caller notification. Each should retain
-enough identity and evidence for the existing recovery path. Code handles
-bookkeeping and eligibility; an agent must still diagnose uncertain failures.
-Retry alone cannot guarantee a useful diagnosis or repair arbitrary broken code.
+| Intended change | App entry point | Host code to read |
+| --- | --- | --- |
+| Role, judgment or communication style | `agents/<name>/AGENTS.md`; situational methods in skills | `resolveSystemPrompt()` and `src/lib/skills.ts` |
+| New action | `agents/<name>/tools/<capability>.ts`, default-exporting a named tool factory | [agent-local-tools.ts](../../../may-agent/src/app/loader/agent-local-tools.ts), [toolset-loader.ts](../../../may-agent/src/app/loader/toolset-loader.ts) |
+| Procedure combining actions/agents | App workflow with explicit inputs and result contract | `adapters/executors/workflow.ts`, `src/lib/workflow-tool.ts` |
+| Smaller request presentation | Optional `agent.json.contextPreparation` module | [agent-definition.ts](../../../may-agent/src/app/loader/agent-definition.ts), `prepareExecution()` |
+| New input, schedule or observed change | App declaration and its mapping to owned work | SDK `app.ts`, admission and producer adapters |
+| Persistence, fencing, execution or delivery guarantee | Common Host mechanism and matching SDK contract | Core contract, adapter implementation and composition wiring |
 
-### Wiring, interfaces and delivery
+There is no `AppDefinition.tools` field. `agent.json.tools` selects Host presets;
+local tools are discovered from the agent's directory. The loader currently
+reports and skips failed factories, so check activation and the prepared toolset.
+An App request preparer changes request presentation; it does not replace Host
+instruction assembly, tool binding or Task authority.
 
-After the lifecycle is familiar, read `runAppRuntime()` in
-[app-runtime.ts](../../../may-agent/src/app/app-runtime.ts) and
-`createTaskExecutionBackends()` in
-[composition/task-execution.ts](../../../may-agent/src/app/composition/task-execution.ts).
-Use the [composition guide](../../../may-agent/src/app/composition/README.md)
-to follow startup, reload and shutdown. This shows how capabilities are selected
-without putting provider details into the reconciler.
+Use the [extension convention](agent-convention.md#how-to-extend) for exact module
+shapes and the [ownership design](../2a-design/agents.md#extending-capabilities-without-changing-the-execution-mechanism)
+for the boundary. New capabilities normally fit these existing entry points.
+A change to a shared guarantee belongs in infrastructure and its common design.
 
-Follow [app-read.ts](../../../may-agent/src/app/core/reads/app-read.ts) into the
-[HTTP guide](../../../may-agent/src/app/http/README.md) and
-[control package](../../../may-agent/packages/control/README.md) for user-facing
-reads and commands. Follow [scripts](../../../may-agent/scripts/README.md) and
-[CONTRIBUTING](../../../may-agent/CONTRIBUTING.md) when reviewing release/deployment.
-Source checkout, compiled binary, image and installed definition release are
-separate things to verify.
+## Choose a deeper route
+
+| Area | Reading path and central question |
+| --- | --- |
+| Conversation | [Source guide](../../../may-agent/src/app/conversations/README.md) → `composition/conversation-task-turn.ts` → `conversations/turn-agent.ts` → `core/state/conversation-task-turns.ts`. A Turn uses the Task claim; reply, Request updates and authorized effects settle together. Does the answer fulfill the saved ask? |
+| Workflow and cooperation | SDK `TaskAttempt`/`WorkflowContext` → [workflow adapter](../../../may-agent/src/app/adapters/executors/workflow.ts) → `runWorkflowDirect()`/`createWorkflowRunner()` in [workflow-tool.ts](../../../may-agent/src/lib/workflow-tool.ts). Which operations are bounded helpers, and which require durable delegated work? |
+| Delegation and return | [dependency-admission.ts](../../../may-agent/src/app/core/tasks/dependency-admission.ts) → [input-result.ts](../../../may-agent/src/app/core/inbox/input-result.ts). Follow the exact input answer; a parent link alone creates no wait or feedback subscription. |
+| Event admission | [events/interface.ts](../../../may-agent/src/app/core/events/interface.ts) → [events/bus.ts](../../../may-agent/src/app/core/events/bus.ts) → [app-inbox-runtime.ts](../../../may-agent/src/app/composition/app-inbox-runtime.ts). What is saved before translation, and what remains if translation fails? |
+| Task recovery | [app-task-recovery.ts](../../../may-agent/src/app/core/tasks/app-task-recovery.ts) → [startup-recovery.ts](../../../may-agent/src/app/core/tasks/startup-recovery.ts) → [session-recovery.ts](../../../may-agent/src/app/adapters/executors/session-recovery.ts). What restores eligibility without mistaking session evidence for accepted work? |
+| Startup and interfaces | `runAppRuntime()` in [app-runtime.ts](../../../may-agent/src/app/app-runtime.ts) → [composition guide](../../../may-agent/src/app/composition/README.md) → [HTTP](../../../may-agent/src/app/http/README.md)/[control](../../../may-agent/packages/control/README.md). Do all surfaces read and change the same resource? |
+| Release and activation | [Scripts](../../../may-agent/scripts/README.md) and [CONTRIBUTING](../../../may-agent/CONTRIBUTING.md). Which source, binary, image and captured App definition are actually active? |
+
+For event failures before a Task exists, inspect
+[app-event-admission-store.ts](../../../may-agent/src/app/core/state/app-event-admission-store.ts)
+and `recoverAdmissionPlans()` in composition. Unresolved translation retains its
+responsible route for retry; an already translated command is retained for
+replay. Task retry cannot recover input that was never durably routed.
+
+For cooperation, the current [agents tool](../../../may-agent/src/lib/manager-agents-tool.ts)
+still offers bounded `call` and `fork`; the fork remains owned by its live caller.
+The [message tool](../../../may-agent/src/lib/tools/message-tool.ts) uses declared
+App routes. Neither a helper call nor a local workflow `await` creates a durable
+continuation that resumes at the same JavaScript line after a crash. See
+[workflow authoring](workflow-authoring.md).
+
+Review recovery at three boundaries: input saved before a missed wake; execution
+ended before settlement; accepted outcome before caller feedback. Code preserves
+identity, evidence and retry eligibility. Agents diagnose uncertain failures;
+retry alone does not guarantee a useful diagnosis.
 
 ## Read tests as examples
 
-Start with a named scenario and its assertions, then follow the production calls.
-These are good examples of boundaries that have mattered in real fixes:
+Start with a scenario and its assertions, then follow production calls. These
+examples exercise the boundaries above:
 
 | Question | Executable example |
 | --- | --- |
-| Does saved input run after a missed wake? | [conversation-runtime.test.ts](../../../may-agent/src/app/core/tasks/conversation-runtime.test.ts): `Conversation admission survives reopen and runs without an ingress wake` |
-| Can a bad handoff be corrected using retained input? | Same file: `invalid handoff is repairable after reopen and only complete referenced input creates the worker assignment` |
-| Do failures preserve unfinished work? | [app-task-reconciler.test.ts](../../../may-agent/src/app/core/tasks/app-task-reconciler.test.ts): `retains all input through repeated failure and becomes eligible when backoff expires` |
-| Do new dependency decisions preserve older waits? | [app-task-runtime.test.ts](../../../may-agent/src/app/core/tasks/app-task-runtime.test.ts): `explains rejected dependencies, preserves existing waits, and admits a corrected input` |
-| What does the model see when context changes? | [task-decision-context.test.ts](../../../may-agent/src/lib/task-decision-context.test.ts) |
+| Can translation failure recover through the same route? | [app-event-translation.test.ts](../../../may-agent/src/app/composition/app-event-translation.test.ts): translation failures followed by database reopen and repair |
+| Does saved human input survive a missed wake? | [conversation-runtime.test.ts](../../../may-agent/src/app/core/tasks/conversation-runtime.test.ts): `Conversation admission survives reopen and runs without an ingress wake` |
+| Do new dependencies preserve older waits? | [app-task-runtime.test.ts](../../../may-agent/src/app/core/tasks/app-task-runtime.test.ts): `explains rejected dependencies, preserves existing waits, and admits a corrected input` |
+| Can App preparation change the brief while retaining execution controls? | [agent-execution.test.ts](../../../may-agent/src/lib/agent-execution.test.ts): `replaces only the task brief, retaining current execution controls and original input` |
+| What reaches the model after compaction and refresh failure? | [task-decision-context.test.ts](../../../may-agent/src/lib/task-decision-context.test.ts) and [integration coverage](../../../may-agent/test/integration/task-decision-context.test.ts) |
+| Does a helper retain its own assignment and schema? | [task-workflow-context.test.ts](../../../may-agent/test/integration/task-workflow-context.test.ts) |
+| Are Host instructions included in the built binary? | [execution-instructions-build.test.ts](../../../may-agent/test/integration/execution-instructions-build.test.ts) |
 | Are state changes atomic and version checked? | [app-task-resource-store.test.ts](../../../may-agent/src/app/core/state/app-task-resource-store.test.ts), [conversation-task-turns.test.ts](../../../may-agent/src/app/core/state/conversation-task-turns.test.ts) |
 
-See the [test guide](../../../may-agent/test/README.md) for the separate ownership
-of daemon, worker-death, reopen and UI coverage. A mocked executor test proves
-Host handling of that result; it does not prove that a real model reliably makes
-the right judgment. Model trials and App evaluation answer that separate question.
+The [test guide](../../../may-agent/test/README.md) maps process, restart and UI
+coverage. Fixture-provider tests prove context and handling mechanics. Paired
+model trials and App evaluation address whether those mechanics produce better
+judgment in real work.
 
-## Then inspect the actual Apps
+## Then inspect the Apps
 
-Open the declaration first, follow its selected agent instructions, then read
-the specific workflow/observer named by the route you care about.
+Open the declaration, follow its selected agent guidance, then inspect the
+workflow or observer for the behavior you care about.
 
-| App | Start here | Focus |
+| App | Entry point | Focus |
 | --- | --- | --- |
 | May | [may.app/app.ts](../../../may.app/app.ts) | Conversation, team assignment, review and human decisions |
-| Scout | [scout-knowledge-lib.app/app.ts](../../../scout-knowledge-lib.app/app.ts) | Source discovery, knowledge processing, stored results and library maintenance |
-| Evaluation | [evaluation.app/app.ts](../../../evaluation.app/app.ts) | Which work to assess, what evidence is sufficient and who receives findings |
-| Gym | [gym.app/app.ts](../../../gym.app/app.ts) | Candidate improvement, comparison and evidence for an adoption decision |
+| Scout | [scout-knowledge-lib.app/app.ts](../../../scout-knowledge-lib.app/app.ts) | Discovery, knowledge processing and committed results |
+| Evaluation | [evaluation.app/app.ts](../../../evaluation.app/app.ts) | Selection, sufficient evidence and delivery of findings |
+| Gym | [gym.app/app.ts](../../../gym.app/app.ts) | Candidate improvement, comparison and adoption evidence |
 
-For the improvement loop, trace one exact output between these Apps and check
-its consumer. A declaration of an event or schedule alone does not prove the
-whole loop is making progress. The
-[learning-loop design](../2a-design/practice-learning-loop.md) describes the
-integration; live reports and retained execution evidence show its actual behavior.
+Trace one paper-review input from May to Scout, then follow its exact answer
+back to May's saved Request. For the [learning loop](../2a-design/practice-learning-loop.md),
+follow one result through Evaluation and Gym to an adoption decision. A declared
+schedule alone does not establish that the whole loop is progressing.
 
-## Names and details to watch
-
-- `completeAppTask()` accepts an outcome. `closeAppTask()` ends availability for
-  future execution. `converged` is therefore not synonymous with closed.
-- `app.task` is the input-to-Task mapping. `app.tasks` declares Task policy.
-  Neither is a second controller.
-- `AppInboxItem` tracks admitted input; `AppConversationRequest` retains an
-  accepted human ask until an explicit closure decision. Input handling can
-  finish before that ask is fulfilled.
-- `app-task-store.ts` contains snapshot/mutation helpers; the resource store owns
-  canonical persistence. `src/lib/requests.ts` is a historical database facade.
-- `manager.ts` owns hosted execution and factual health observations. Evaluation
-  eligibility belongs to the Evaluation App.
-- Parent/child organization does not automatically establish a dependency,
-  subscribe to results or grant change authority. Follow the explicit links.
-
-On the first pass, leave offline cutovers, provider protocols, UI rendering and
-historical compatibility code for later. They matter when reviewing those
-boundaries, but they make the main lifecycle harder to see.
-
-For each change you review, ask: **who owns this fact; where is it saved; what
-wakes its owner; what does the agent see; which write accepts the outcome; and
-what remains if the next step fails?** Those questions connect the design to
-the implementation without requiring you to memorize every helper.
+During review, ask: **who owns the fact, where is it saved, what wakes its owner,
+what does the agent see, which write accepts the outcome, and what survives if
+the next step fails?**

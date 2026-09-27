@@ -123,7 +123,7 @@ current-design list.
 | Document                                                                   | Purpose                                                     |
 | -------------------------------------------------------------------------- | ----------------------------------------------------------- |
 | [user-guide.md](2b-manual/user-guide.md)                                   | CLI flags, Docker, socket, and chat commands.               |
-| [source-reading-guide.md](2b-manual/source-reading-guide.md)               | Core features, a guided Task walkthrough, source entrypoints and review questions. |
+| [source-reading-guide.md](2b-manual/source-reading-guide.md)               | Task and agent execution, model context, evidence tracing and extension ownership. |
 | [sdk-quickstart.md](2b-manual/sdk-quickstart.md)                           | Checked App quickstart and public capability guide.                                         |
 | [handler-authoring.md](2b-manual/handler-authoring.md)                     | Task reconciler results, waits and mutation rules.                                    |
 | [workflow-authoring.md](2b-manual/workflow-authoring.md)                   | Workflow authoring, advisory best practices and checked examples. |
