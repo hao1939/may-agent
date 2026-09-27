@@ -95,21 +95,6 @@ export function readLatestCheckpoint(persistDir: string, sessionId: string): Che
   return entries.length > 0 ? entries[entries.length - 1] : null;
 }
 
-/**
- * Read the latest checkpoint for an agent (across all sessions).
- * Uses the per-agent latest pointer at `.state/checkpoints/latest/<agentName>.json`.
- * Returns null if no checkpoints exist for this agent.
- */
-export function readLatestCheckpointForAgent(persistDir: string, agentName: string): CheckpointEntry | null {
-  const filePath = resolve(persistDir, "checkpoints", "latest", `${agentName}.json`);
-  if (!existsSync(filePath)) return null;
-  try {
-    return JSON.parse(readFileSync(filePath, "utf-8"));
-  } catch {
-    return null;
-  }
-}
-
 // ── Tool factory ───────────────────────────────────────────────────────
 
 /**
