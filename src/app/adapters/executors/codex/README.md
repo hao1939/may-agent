@@ -22,3 +22,18 @@ Colocated tests cover process bounds, bindings, exact-turn results, progress and
 stale ownership. `codex-goal-fencing.test.ts` exercises the Host boundary. Protocol
 compatibility verification uses `bun run check:codex-goal-protocol` and the
 `scripts/codex-goal-protocol*` fixtures; it is not live model proof.
+
+The snapshot was reviewed against generated schemas from Codex 0.154.0 and
+0.156.1. Eleven of the 22 tracked files changed: image inputs now also accept
+file IDs, replies can include MCP presentation and saved plugin/collaboration
+settings, and personality/rollback descriptions changed. Existing image URL
+forms remain accepted. May sends text inputs, supplies instructions directly,
+does not call rollback, and reads specific response fields; these changes need
+no client adaptation. Goal set/get, interrupt, and goal-update notification
+schemas are unchanged.
+
+Keep the version and reviewed hashes together when upgrading the container CLI.
+Generate schemas from both versions as described in the [official app-server
+documentation](https://developers.openai.com/codex/app-server#message-schema);
+review differences before refreshing the snapshot. The existing drift check
+continues to reject an unreviewed upgrade.
