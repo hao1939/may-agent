@@ -98,3 +98,45 @@ execution conflict with the current recovery model. She accepted that correction
 Keep the remaining fallback proposal focused on existing Task-reconciliation
 events, Evaluation's standing owner Task and May's judgment. Test an owner failure
 and a healthy recovered case before installing any additional route or timer.
+
+## Fresh live result
+
+The pinned review first settled a budget wait, then the normal scheduler resumed
+it at `2026-09-27T15:20:09.182Z` without a manual wake. DeepSeek execution
+`s_1790522410899_319d5f60-6643-4122-8290-64d04f22374a` produced a fresh assessment
+with `before-due` and checkpoint `1790560522616`; freshness readback retained the
+same evidence hash. Publication event `6459856` linked ordinary May input
+`app_ca6f0697-dc54-48f4-866d-90dcd713eaf4`.
+
+May completed that input on the candidate Host. She independently checked current
+state and report hashes, preserved the existing human approval gate, and declined
+a duplicate candidate. Her Request closure included the required reply and
+settled successfully. This proves one fresh Evaluation-to-May passage and valid
+live use of the shared reply schema. The invalid-first-finish correction remains
+a scripted execution test; no reduced long-term failure rate is claimed. The
+linked-deadline regression is established by replaying the earlier report's exact
+link; the fresh model trial reviewed the waiting Task directly, so it is not a
+controlled before/after model-quality comparison of the original parent report.
+
+The report is overly long, and its summary says “no review deadline is owed”
+where its structured facts and findings correctly say “not yet due.” May's final
+reply uses the latter meaning and retains the Condition. Keep that wording
+limitation visible rather than treating one correct deadline as perfect judgment.
+
+## Follow-up found while tracing the publication
+
+The exact `event.get` read of publication `6459856` reconstructs a target with
+subject App `may` and producer Task `evaluation/runtime/task-outcome/...` (the
+Task ID alone is attached beneath `may`). Authored publication targets
+`{appId: "evaluation"}`. `loadPersistedEvent` currently rebuilds the target from
+`payload.appId` and indexed producer correlation; it does not retain the authored
+target envelope. May's subscription used the exact subject in `data` and delivered
+successfully, so this did not block the trial. It is nevertheless an existing
+read/replay boundary mismatch, separate from this candidate.
+
+Before extending failure routing, test a publication whose producer, subject and
+destination differ through save/read/restart. Preserve declared routing separately
+from origin and subject correlation, using the existing event store. Do not invent
+a registry, infer a destination from arbitrary payload fields, or rewrite old
+records without evidence of their original target. This requires its own small
+Host contract review; it is not fixed by the checkpoint or reply changes.
