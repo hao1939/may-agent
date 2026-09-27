@@ -83,7 +83,7 @@ unsupported shell-created resource does not acquire automatic feedback by
 convention alone. The capability must say what it actually supports.
 
 Typed delegation preserves exact caller links. The
-[tested implementation candidate](../archive/reviews/execution-feedback-poc-20260913.md)
+[execution feedback trial](../archive/reviews/execution-feedback-poc-20260913.md)
 adds explicit parent continuation at the existing attempt boundary. Scout's
 credential capability already supplies its wait. General tool-driven wait
 setup remains source-specific; arbitrary shell operations do not gain feedback
@@ -156,18 +156,13 @@ the Task and report the interruption honestly. Agents choose actions, rather
 than tracking timers. Intervention can wait for the current execution boundary
 unless a demonstrated need justifies review while a helper is still running.
 
-**Implementation limit:** Task ownership, caller feedback and mechanical recovery
-exist. The [consolidated candidate](../archive/reviews/execution-consolidation-poc-20260914.md)
-removes silence stopping and heuristic standalone revival across the supported
-entry points. Its scoped helper cleanup is locally tested; rollout remains
-separate. The [consolidation proposal](../proposals/execution-entrypoint-consolidation.md)
-records the changed defaults and consumer guidance. Automatic supervisor fallback and review
-during an awaited helper remain deferred. The
-[ownership review](../archive/reviews/ownership-boundary-review-20260913.md)
-separates reproduced gaps from source findings; the
-[feedback proposal](../proposals/execution-feedback-and-review.md) records the
-implemented candidate repairs. This contract does not claim universal delivery
-or supervision is already implemented.
+**Implementation limit:** Task ownership, exact caller feedback and mechanical
+recovery are implemented. Hosted helpers inherit scope and cleanup; startup
+avoids heuristic standalone revival. The [consolidation record](../archive/reviews/execution-consolidation-poc-20260914.md)
+retains the evidence. Automatic supervisor fallback and semantic review during
+an awaited helper remain deferred. The [ownership review](../archive/reviews/ownership-boundary-review-20260913.md)
+records their rationale; this contract does not promise universal recovery or
+that a human has been notified merely because a failure was saved.
 
 ### Recovery uses evidence before repetition
 
@@ -401,7 +396,7 @@ All supported Host executions share rules for limits, cancellation, cleanup and
 results. Entry points and provider adapters may differ; they do not select a
 second work lifecycle. Core owns durable Task admission and result fences;
 execution helpers/adapters run the work, and composition supplies trusted scope.
-The [candidate and evidence](../archive/reviews/execution-consolidation-poc-20260914.md)
+The [implementation and evidence](../archive/reviews/execution-consolidation-poc-20260914.md)
 record consolidation of these entry points; this is not a deployment claim.
 
 Direct execution reports its actual model-visible tool surface. In its execution
@@ -433,7 +428,7 @@ agents judge continuation or steering without managing timeout counters. The
 allowance bounds active work, not an idle chat's lifetime or a durable Task's life.
 Unconfirmed cleanup is a visible failure, not permission to overlap executions.
 
-When no limit is configured, the candidate uses a 30-minute invocation default,
+When no limit is configured, hosted execution uses a 30-minute invocation default,
 matching the existing Task workflow default. One-shot CLI keeps its five-minute
 default and explicit positive configured limits remain supported. Each active
 direct chat turn gets a fresh allowance; idle time consumes none. These are

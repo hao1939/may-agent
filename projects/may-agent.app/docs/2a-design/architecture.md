@@ -1,25 +1,11 @@
 # Architecture
 
 **Design status:** Accepted.
-**Implementation status:** The four responsibilities below are implemented in
-current Host source. The source map follows the directory moves merged in Host
-#141/#142. The [boundary cleanup](../proposals/authority-boundary-simplification.md#core-policy-cleanup)
-tracks subsequent candidate changes separately.
-Task activation and startup recovery are independent of optional schedules.
-[Open work](../proposals/task-runtime-organization.md) is tracked separately;
-this page does not identify the deployed release. The
-[unified conversation-input design](../proposals/conversation-input-unification.md)
-merged in Host #158: Conversation, ordinary work and maintenance use one Task
-execution lifecycle, with explicit outcomes and owner-controlled closure.
-The inbox admits and correlates input; it no longer executes a second agent
-loop. Host #168 (`c0cbb59e`) subsequently removed mode-dependent Task behavior
-and integrated the attempt-path extraction. New `TaskIntent` values have no
-`mode`; retained persistence and stale paused consumers are compatibility
-evidence, not part of that contract.
-
-The [inbox/Conversation implementation review](../proposals/storage-state-service.md#candidate-review-and-landing-order)
-records the state/handler extraction, merged in #129 as `0bedd93a`, and its
-actual code map. This updates the source boundary; deployment remains separate.
+**Implementation status:** The four responsibilities below are implemented.
+Conversation, ordinary work and maintenance share Task execution; the inbox
+admits and correlates input. Task activation and recovery work independently
+of optional schedules. The [source reading guide](../2b-manual/source-reading-guide.md)
+maps these boundaries to current code; source status does not identify deployment.
 
 Read [System Model](system-model.md) for the product vocabulary and a complete
 example. This page owns component boundaries, dependencies and code placement.
@@ -139,7 +125,7 @@ One `HostCapacity` limit governs execution with App limits and an interactive
 reserve. Pending human Conversation input selects foreground capacity; ordinary
 background reviews use the normal lane. Reads and admission need no execution
 slot. Durable input ordering remains with the common Task controller. See
-[Runtime](runtime.md#capacity) for scheduling detail and candidate status.
+[Runtime](runtime.md#capacity) for scheduling detail.
 
 Reload publishes one validated definition generation. A rejected reload retains
 the previous generation; running attempts keep their captured definitions.

@@ -1,33 +1,19 @@
 # Human Control Surfaces
 
 **Design status:** Accepted.
-**Implementation status:** The shared commands, Conversation reads, Task reads,
-and one-watch interaction are implemented for May Console and Telegram.
-Canonical message identity across bounded fallback projections is implemented.
-Exact attempt-scoped progress and suppression of unchanged watch output are
-also implemented. Console correlates a canonical Conversation result with its
-exact watched Task and suppresses the equivalent supporting terminal card.
-Human-action projection follows exact dependency leaves and preserves legacy
-`Hao` approval visibility while canonical `human:<role>` ownership is adopted.
-Durable May admission exposes the responsible Task directly. The
-[shared conversation-input handler](message-lifecycle.md#one-conversation-input-path)
-runs through the Conversation's stable Task, including linked-result reviews;
-it replaced the separate supervision Task in #158. Historical supervision
-records are not an additional current work owner.
-The focused review at Host `99bc1a31` includes durable turn Stop, accepted Request
-storage/closure, Console Esc and Telegram/browser Stop-button bindings. Current-turn
-steering remains open. App judgment needs separate
-[behavioral evidence](message-lifecycle.md#current-implementation-and-gaps).
+**Implementation status:** Shared Conversation and Task reads, watch controls,
+human-action projection, contextual replies and exact Turn Stop are implemented.
+Console Esc and Telegram/browser Stop buttons use the same durable control.
+Current-turn steering remains an explicit gap; App judgment and installed
+experience require separate behavioral evidence.
 
 **Aligned with:** [system-model.md](system-model.md),
 [message-lifecycle.md](message-lifecycle.md), [may-console.md](may-console.md),
 and [telegram-notifications.md](telegram-notifications.md).
 
-The [Telegram experience candidate](../proposals/telegram-conversation-experience.md)
-implements optional contextual Task buttons, compact progress and source-aware
-turn display. The shared active-turn read adds only optional source coordinates;
-exact control identity and revision checks remain unchanged. This candidate is
-not yet a merged or deployed experience claim.
+The [Telegram experience record](../proposals/telegram-conversation-experience.md)
+retains the design and trials. Source-aware turns and contextual controls retain
+exact identity and revision checks; their availability depends on the installed release.
 
 ## Mental model
 
@@ -70,12 +56,11 @@ The installed maintenance App owns its assigned runtime-change Tasks. An agent
 run named `may` is an execution profile selected for a bounded attempt, not an
 implicit runtime administrator.
 
-The target distinguishes an accepted outcome from Task closure in reads and
+The shared model distinguishes an accepted outcome from Task closure in reads and
 controls. Esc/Stop ends the current Turn; Request closure resolves an ask; Task
 closure ends future execution. Background pause must leave conversation handling
 available. Ordinary Apps can close work after accepting its result; no extra
-user action is needed for that convention. The command/view details below still
-describe current source, including `maintain`/`done`; their migration is pending.
+user action is needed for that convention. No Task mode changes these rules.
 No new slash command is specified by this design.
 
 ## Shared resource interface
@@ -147,7 +132,7 @@ shared Conversation plus its selected App, Topic, and watched Task context.
 
 Each adapter surface keeps one selected App, initially `may`. `/apps` lists
 Apps and `/apps <app>` changes that local selection. `/tasks` reads live Tasks
-for the selected App, including `maintain` Tasks that are currently converged;
+for the selected App, including open Tasks that are currently converged;
 `all` widens the read to every App, and `history` adds retained terminal Tasks.
 Selection is a small Console-process or Telegram chat/topic variable, not
 another durable resource. An exact `/task <ref>` may cross the selected App
@@ -215,7 +200,7 @@ Task wakes make the adapter re-read canonical Task state; they do not append a
 message for every internal event. Adapters render meaningful states in their
 native style: queued, working with the latest useful progress, waiting with an
 exact blocker and resume condition, needs-human-action, up to date for a live
-converged maintain Task, or done with a terminal result. A claim that work is
+converged Task, or explicitly closed/cancelled work with retained evidence. A claim that work is
 active must come from Task/execution state, never from May's prose alone.
 
 An explicitly requested App or Task view is appended as a command-authored
@@ -240,10 +225,10 @@ does not recover a hidden goal from arbitrary App input and does not ask a model
 to rewrite generic Task text.
 
 Each compact Task row shows the stable reference, owning App, a plain state
-(`queued`, `working`, `waiting`, `needs review`, `up to date`, `done`, or
-`cancelled`), how recently it changed, its goal, and either `needs you` or `no
-action from you`. `up to date` means a live `maintain` Task is converged with
-no pending cycle; `done` is terminal. If a new wake makes that Task changed or
+(`queued`, `working`, `waiting`, `needs review`, `up to date`, `closed`, or
+`cancelled`; `done` remains for historical receipts), how recently it changed, its goal, and either `needs you` or `no
+action from you`. `up to date` means an open Task has a current accepted
+outcome and no newly runnable input. Closure is a separate owner decision. If a new wake makes that Task changed or
 ready, show it as queued even while its last accepted phase remains converged.
 Exact reads, lists, and status filters must agree; this is a projection of
 existing readiness, not a second stored phase or lifecycle.
@@ -338,7 +323,7 @@ described below.
 
 **Current boundary:** same-App focused Conversation and Telegram replies already
 resume the exact Task; `/todo` already projects the saved Condition. The Host
-candidate saves the exact Task, Task generation, Condition ID and Condition
+saves the exact Task, Task generation, Condition ID and Condition
 generation only after a complete Telegram card delivery, then projects that
 receipt identity into the existing ordinary human input event. An exact reply
 receipt Condition can therefore match `source: human` plus those four saved

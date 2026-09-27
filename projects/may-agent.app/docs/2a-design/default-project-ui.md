@@ -1,9 +1,11 @@
 # Default Project UI
 
 **Design status:** Accepted.
-**Implementation status:** The project UI exists, but its Task view still uses
-older path-based endpoints and a generated projection. Migration to the shared
-App-ID Task reader remains open.
+**Implementation status:** The Task board uses bounded human Task list/detail
+reads through the daemon. It no longer loads a path-based whole-App snapshot.
+Tree layout and richer classification remain presentation guidance, not a second
+state model. Some browser copy still calls convergence recurring work; that is
+an implementation wording gap. See [the review](../archive/reviews/design-doc-hygiene-20260927.md).
 
 The default project UI is the shared control surface for every App.
 Domain UIs may go deeper, but a person should be able to open any project and
@@ -24,13 +26,13 @@ Project overview
   goal | owner | posture | last movement
 
 Task status
-  needs attention | running | ready | pending | waiting | healthy standing
+  needs attention | running | pending | waiting | up to date | closed
 
 Current work
   attention, running, and ready resources
 
 Waiting and standing work
-  exact Conditions and converged maintain resources
+  exact Conditions and open Tasks with accepted outcomes
 
 Structure and review
   tasks | selected task | optional relationship tree | recent completions
@@ -47,18 +49,20 @@ diagnostic tables and healthy standing work stay collapsed until requested.
 The UI presents the accepted task-resource model; it does not translate it
 back into a Kanban lifecycle.
 
-| Human label      | Canonical basis                              | Meaning                                                        |
-| ---------------- | -------------------------------------------- | -------------------------------------------------------------- |
-| Needs attention  | `phase=attention`                            | Normal recovery did not produce an applicable result           |
-| Running          | `phase=running`                              | One current attempt owns this generation                       |
-| Ready            | `phase=pending` and task-projected readiness | The resource can be claimed now                                |
-| Pending          | `phase=pending` but not ready                | A known dependency, lifecycle, or capacity fact prevents claim |
-| Waiting          | `phase=waiting`                              | One or more exact Conditions remain open                       |
-| Healthy standing | `mode=maintain`, `phase=converged`           | Current desired standing state is satisfied                    |
+| Human label | Canonical basis | Meaning |
+| --- | --- | --- |
+| Needs attention | `phase=attention` | An attempt needs recovery or owner judgment; not automatically a human action |
+| Running | Current running attempt | Execution is in progress; waits or accepted results may also exist |
+| Pending | Eligible or gated unfinished work | Read readiness, retry and dependency facts for the reason |
+| Waiting | `phase=waiting` | The current pass yielded; exact Conditions and review deadlines explain what can wake it |
+| Up to date | Open converged Task without newly runnable work | Accepted work is current; the Task can accept later input |
+| Closed / cancelled | Explicit owner closure record | No future execution; retained evidence may include success and unresolved work |
 
-Completed `achieve` resources leave the live graph. They appear only as bounded
-completion activity or trace evidence. `Review` is a human action or project
-posture, not a task phase.
+These labels summarize a view. Conditions, accepted results, failures and pending
+input remain independent facts. `done` in an SDK Task read means an accepted
+outcome; inspect its `closed` field for lifetime. Human views use `up-to-date`
+for open convergence and retain `done` for historical completion receipts.
+Accepted outcomes remain on Tasks; they are not physically moved out of storage.
 
 Structural groups explain containment. They may appear in a relationship tree,
 never in work lanes, readiness, or capacity counts.
@@ -70,26 +74,27 @@ current state snapshot. The server joins that projection with app metadata and
 operational observations. The browser renders those facts and performs only
 presentation work.
 
-The collection read model must provide:
+The shared list/detail capabilities together provide bounded views of:
 
 - project identity, owner, posture, and configured concurrency;
-- current task resources and structural groups;
-- canonical phase, mode, generation, and observed generation;
-- task-projected readiness and its exact reason;
+- a page of current Tasks, with exact parent/dependency links on detail;
+- canonical phase, closure, generation, and observed generation;
+- task-projected state and its available readiness/retry explanation;
 - current Conditions and task-to-Condition links;
 - current status summary and evidence;
 - active attempt and attempt count;
 - compact satisfied-dependency identities;
-- freshness timestamps and integrity problems; and
+- freshness and explicit missing/truncated information; and
 - bounded recent completion activity.
 
 The browser must not infer readiness, capacity, worker liveness, or health from
 missing fields. Unknown stays unknown.
 
-After an App's guarded cutover, its EventHub task-resource rows are canonical.
-`.state/tasks/state.json` is retained only as legacy evidence and must not be
-recreated; `.state/tasks/tree.json` is a compact disposable projection, not a
-second authority or a history archive.
+SQLite Task resources are authoritative. The board reads `/api/tasks` and
+`/api/task` using exact App/Task identity and opaque paging cursors. It does not
+rebuild a whole-App tree or infer global capacity/integrity from one page.
+Legacy `.state/tasks/state.json` is retained evidence; any generated tree view
+is disposable and cannot override current Task records.
 
 ## Tasks view
 
@@ -97,7 +102,7 @@ Cards lead with human purpose, followed by task identity and machine state.
 Each executable card shows:
 
 - outcome;
-- phase and reconciliation mode;
+- current state and explicit closure;
 - agent and workflow or direct-agent binding;
 - priority and parent context;
 - current summary or exact wait reason;
@@ -106,8 +111,8 @@ Each executable card shows:
 - generation drift when desired and observed state differ.
 
 The default ordering is attention, running, ready, pending, waiting, then
-healthy standing. Waiting resources may be grouped by Condition type and
-subject. Healthy standing resources are collapsed by default.
+up-to-date work. Grouping by Condition and optional tree layout are presentation
+guidance. Current paging and filters operate over the shared read API.
 
 An optional tree layout explains decomposition and ownership, not scheduling.
 It shows the same tasks and groups with descendant phase counts; it is not a
@@ -152,8 +157,8 @@ Diagnostics show raw facts before hints. Useful generic inputs include:
 Every hint names the raw fact, confidence, affected resources, and clear
 condition. Absence of a signal is not proof of health.
 
-Maintain tasks are the normal representation for durable loops. The shared UI
-does not need a separate loop scheduler, lifecycle, or registry.
+An ordinary open Task with declared observation inputs can support a durable
+loop. The shared UI does not need a separate loop scheduler, lifecycle, or registry.
 
 ## Steering
 
@@ -170,8 +175,10 @@ purpose, generation, phase, summary, Conditions, selected evidence, and the
 expected owner response. Confirmation says `accepted` or `queued`, never
 `completed`.
 
-Retry, rerun, pause, resume, and domain actions appear only when the App
-declares a typed action.
+Shared execution controls use the existing Host control contract and its
+authority checks. Domain-specific actions require a declared App input schema.
+The UI exposes a control only when that surface supports it; this guidance does
+not imply every control already has a button.
 
 ## Domain extensions
 
@@ -198,14 +205,14 @@ The server reads the generated deployment target:
 
 Explicit deployment refreshes that target. The
 [UI source/build boundary](webui.md#source-ownership) distinguishes checkout-local
-staging from activation, including the older `ui:sync` default. Project-specific
+staging from activation, using the current `ui:sync` staging default. Project-specific
 UI directories are independent extensions, not copies of the shared source.
 
 ## Acceptance
 
 The default UI is complete when a person can:
 
-- distinguish current work, exact waits, and healthy standing state;
+- distinguish current work, exact waits, and up-to-date work and explicit closure;
 - see desired state beside current observation;
 - explain every readiness or attention classification from raw facts;
 - inspect Conditions, evidence, and current execution without reading JSON;

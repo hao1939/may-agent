@@ -170,7 +170,7 @@ trace link, not a complete acceptance explanation.
 Reusable experience belongs in workflows, skills, tests, design, and domain
 evidence. Completed tasks leave the live graph; they do not form an archive
 tree. Repetition may justify improving the task specification, extracting a
-workflow, or creating a maintain task, but frequency alone does not justify
+workflow, or creating a Task with recurring observation, but frequency alone does not justify
 automation.
 
 ## Standalone agents

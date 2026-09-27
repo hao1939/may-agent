@@ -1,19 +1,11 @@
 # Escalation
 
 **Design status:** Accepted.
-**Implementation status:** Exact task/human Conditions and typed Runtime-managed
-cross-App Task dependencies are implemented. Request dispositions are removed.
-New caller feedback uses the shared Task path merged in #169. Historical
-event-pair and source-session records should be evidence only, but the reviewed
-Host `649d801c` still registers a legacy resolution-to-resume subscriber and
-emits legacy recovery escalations. Its retirement requires the consumer and
-unfinished-obligation checks in the [boundary cleanup](../proposals/app-policy-and-host-boundary-cleanup.md).
-
-The caller-owned-recovery candidate in [PR #178](https://github.com/hao1939/may-agent/pull/178)
-closes a narrower gap: circuit-breaking a bounded call preserves its exact
-cancellation reason without opening an independent escalation to May. Its
-caller already owns the failed attempt. Standalone-job compatibility and the
-legacy resolution subscriber remain; this is not a live-obligation migration.
+**Implementation status:** Exact human Conditions, typed Task dependencies and
+caller feedback use the shared Task path. Retained legacy escalation feedback
+resolves saved provenance to an exact Task address; missing ownership is recorded
+as unresolved. It does not resume a session or infer a supervisor. See
+`src/lib/escalation-feedback.ts` and `src/lib/db-writer.ts` in the Host.
 
 ## Purpose
 
@@ -64,13 +56,13 @@ Use the actual installed App's input schema. A workflow returns that result as:
 return ctx.done(dependencyResult.summary, dependencyResult);
 ```
 
-The Task result itself must contain `summary` and `evidence`; the outer workflow
+The Task result itself must contain `summary` and `facts`; the outer workflow
 summary does not populate its output. `bun run check:may-design` validates the
 linked result through production Task result admission.
 
-The Runtime durably admits the destination request, then retains its exact
-dependency on the source Task. Request coordination attaches the destination
-Task asynchronously. Its accepted result wakes the parent, which reviews it
+The Host saves the destination input and attempts synchronous Task attachment
+through the destination App's mapping. A failed attachment remains recorded for
+admission recovery. The source Task retains the exact input dependency. Its accepted result wakes the parent, which reviews it
 and decides how it changes the original obligation. If admission succeeds but
 the source attempt is interrupted, recovery reuses the correlated request.
 
@@ -203,9 +195,9 @@ Health readouts surface:
   source obligation.
 
 Historical escalation events and traces remain readable as evidence. New work
-uses caller reports and App request/task dependencies. The still-active legacy
-runtime path noted above is an implementation gap; it must not be advertised
-as read-only until its actions have actually been retired.
+uses caller reports and exact Task dependencies. Legacy resolution facts retain
+a resolved Task target or an explicit unresolved route. They do not grant
+permission to start an unrelated agent or resume historical execution.
 
 ## Integrity checklist
 

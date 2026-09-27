@@ -1,11 +1,11 @@
 # Workflow Discovery And Execution
 
 **Design status:** Accepted.
-**Implementation status:** Bounded TypeScript workflows use the canonical scoped
-context. The shared Task-context and feedback candidate covers agent-selected,
-Task-bound and conversation invocation; local activation evidence is recorded in
-[the iteration review](../archive/reviews/shared-execution-20260917.md).
-Host internals are not App capabilities.
+**Implementation status:** Bounded workflows use the scoped SDK context,
+Task-bound execution, cancellation, retained results and shared result admission.
+Agent-selected workflow calls and workflow-selected agent calls preserve the
+caller's Task binding. [Enforcement and guidance](#enforcement-infrastructure-and-guidance)
+separates mechanical guarantees from author judgment and remaining gaps.
 
 ## Purpose
 
@@ -285,15 +285,17 @@ requirement still applies through every method the agent chooses.
 | --- | --- | --- |
 | Task/caller identity and accepted state | Host Task admission and execution adapters | Existing scope propagation and settlement fences. Helpers do not gain Task ownership. This is not an OS sandbox for arbitrary TypeScript. |
 | Finite execution and cancellation | Shared execution scope | Existing deadlines, cooperative cancellation and child cleanup. No preemption of synchronous JavaScript or rollback of external effects. |
-| Terminal status, identity and returned evidence | Shared result adapters and retained run artifacts | Handoff candidate normalizes explicit partial work and preserves returned output/facts across terminal statuses. Retention is bounded; pre-return work and historical replay are not universally captured. |
+| Terminal status, identity and returned evidence | Shared result adapters and retained run artifacts | Explicit partial work and returned output/facts survive terminal statuses. Retention is bounded; pre-return work and historical replay are not universally captured. |
 | Structured data and required domain checks | Workflow/App validation at use and admission | SDK supports structured agent results; authors supply domain schemas and checks. TypeScript input types alone do not validate caller data. Host cannot prove semantic sufficiency. |
 | Task fact publication | Existing scoped event capability | Stable local key and attempt fence required; deduplication is within a Task generation. This does not make arbitrary provider writes idempotent. |
-| Task context and evidence discovery | Host projections, existing reads and artifacts | Shared entry and exact execution links are in the candidate. The brief is an attempt-start snapshot; complete historical-input pagination remains unfinished. |
-| Feedback and incorporation | Durable Task input, live hints and accepted settlement | Delivery exists and does not prove incorporation. Explicit live-input incorporation bookkeeping remains unfinished; do not infer it from callbacks. |
+| Task context and evidence discovery | Host projections, existing reads and artifacts | Shared entry and exact execution links are implemented. Managed-agent briefs refresh before model requests; workflow invocation context remains a snapshot with explicit reads. Pending input is bounded, not complete history. |
+| Feedback and incorporation | Durable Task input, live hints and accepted settlement | Executor acknowledgments are consumed only with accepted settlement. Generic workflow event callbacks observe input but expose no acknowledgment; neither delivery nor reading a brief proves incorporation. |
 | Recovery and wait justification | Owning agent, App behavior tests and existing Evaluation | Runtime preserves work and schedules reconsideration; the owner judges authorized repair and human need. Evaluation inspects that decision independently. A schema-valid wait alone establishes neither necessity nor delivery. |
 
-These rows distinguish contracts from current coverage; source and local-trial
-status remain in the [handoff proposal](../proposals/task-context-discovery-20260917.md).
+These rows distinguish contracts from current coverage. The
+[handoff trials](../proposals/task-context-discovery-20260917.md) and
+[context integration](../proposals/task-decision-context-integration-20260926.md)
+retain evidence at their recorded revisions.
 An unavailable capability must be reported truthfully rather than replaced by
 an App-local copy of Task storage, scheduling or recovery.
 
@@ -321,7 +323,7 @@ for observations that can justify a later change.
 | Review and verification | Choose domain evidence, commands and whether independent review is required. A paper assessment need not run a compiler; an explicit acceptance requirement cannot be silently weakened. |
 | Input and output shape | Own private procedure parameters and structured step results. Add public App input only for a distinct caller-facing contract, not for each workflow or task. Keep results bounded and large evidence referenced. |
 | Repair and feedback response | Choose bounded local repair, another agent judgment or return to the caller. Check updates at useful operation boundaries; long operations must cooperate with cancellation or expose bounded observation opportunities. No fixed retry count or review graph applies to every workflow. |
-| Evidence format and reuse | Define the artifacts and applicability rules the domain needs. Preserve readable retained references, or report incompatibility and inspect current state. This does not establish a universal workspace/file layout. |
+| Evidence format and reuse | Define domain artifacts and applicability rules while retaining shared Task entry/discovery links. Preserve readable references, or report incompatibility and inspect current state. |
 
 The agent chooses a method within its assignment. Once it invokes a workflow,
 code enforces that workflow's declared procedure and required checks; agent
@@ -376,6 +378,9 @@ New input is saved durably against its owning Task. Shared managed-agent executi
 supplies live hints to active agents, including workflow specialists; workflows
 may optionally observe the same input with `ctx.events.onEvent`. Delivery does
 not acknowledge input, expand authority, or prove that a correction was followed.
+The executor's lower-level `TaskAttempt.onEvent` callback can mark an exact
+event for consumption with accepted settlement; `ctx.events.onEvent` is only an
+observation API. Reading a refreshed brief also leaves input pending.
 Accepted Task settlement owns consumption. Missed live hints remain available
 for reconciliation; callbacks are a responsiveness aid, not durable state.
 
@@ -438,20 +443,16 @@ current authority, input, result shape and allowed changes before committing.
 This convention uses existing workflow control flow and adds no repair service
 or automatic verifier-feedback protocol.
 
-## Execution evidence candidate
+<a id="execution-evidence-candidate"></a>
 
-The [workflow-first proposal](../proposals/workflow-tracing-and-health-metrics.md#first-implementation-candidate)
-has a first source slice at Host `676b3692`, under review, not a deployed claim.
-It retains bounded `ctx.log` diagnostics beside the run and exposes them with
-outcomes, reasons, timing and exact child/step links through existing trace reads.
-Diagnostic persistence and presentation failures cannot fail unrelated execution;
-required execution-state persistence remains required. This needs neither a
-metric collector nor an error subscriber. The proposal owns candidate limits,
-verification and remaining input/output, retention and presentation gaps.
+## Execution evidence
 
-The later [stability PoC candidate](../proposals/workflow-stability-poc-20260912.md#local-source-candidate),
-now extracted into [Host PR #159](https://github.com/hao1939/may-agent/pull/159),
-adds two narrow contracts, not yet a released capability:
+Workflow runs retain step timing/status, input summaries, source errors and
+bounded result evidence. Optional observations cannot veto a successful result;
+required execution-state persistence remains required. The
+[workflow tracing record](../proposals/workflow-tracing-and-health-metrics.md)
+and [stability trials](../proposals/workflow-stability-poc-20260912.md)
+retain the original evidence. Current source supplies these contracts:
 
 - `ctx.signal` is aborted on caller cancellation, the run or parent deadline,
   and settlement. Pass it to cooperative I/O and check it before another
@@ -471,8 +472,8 @@ adds two narrow contracts, not yet a released capability:
   nested undefined values and sparse arrays, or oversized/deep structures is
   explicitly unavailable and does not change the execution
   outcome. No field means no captured payload, not proof of no source evidence.
-  The handoff candidate extends this retention across all terminal statuses and
-  retains output and facts together; the earlier slice retained only one field.
+  Retention covers all terminal statuses and preserves output and facts together
+  when both are returned. Missing data stays explicitly unavailable.
 
 Existing artifact integrity checks cover that copy. Missing or corrupt artifacts
 remain explicit failures of inspection; required run-state persistence remains
@@ -507,9 +508,9 @@ In the current typed dependency path, returning the dependency ends the parent
 pass before the Host submits it. It is not a mid-pass background-start tool.
 Several independent dependencies can be returned together; their execution is
 subject to ordinary capacity. A later pass can work while those results remain
-pending. Immediate parent continuation after submission needs an explicit
-supported continuation path; do not fake it with a failed result or a polling
-timer. See the [feedback proposal](../proposals/execution-feedback-and-review.md#delegation-and-useful-parent-work).
+pending. A `waiting` result with `continue: true` requests that next bounded
+pass. Use it when independent work remains; no failed result or polling timer
+is needed. See [Task result admission](task-resource-engine.md#one-attempt-interface).
 
 An asynchronous TypeScript function or subprocess is not automatically a
 durable operation. Awaited helpers remain within the current attempt and its

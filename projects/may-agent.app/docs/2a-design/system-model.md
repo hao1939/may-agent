@@ -1,18 +1,11 @@
 # System Model
 
 **Design status:** Accepted.
-**Implementation status:** App Tasks, bounded conversational work, shared reads,
-and event-driven follow-through are implemented in current Host source. The
-accepted baseline below uses one Task execution lifecycle for Conversation,
-ordinary work and maintenance, with explicit outcomes and owner-controlled
-closure. Shared execution replaced separate conversation execution and
-supervision in [#158](../proposals/conversation-input-unification.md). New
-`TaskIntent` values no longer have a mode; retained state and paused consumers
-are compatibility evidence, not current SDK vocabulary.
-The focused Conversation review at Host `99bc1a31` confirms accepted Request
-storage, durable turn Stop and Esc/button bindings. Current-turn steering remains
-[open](human-control-surfaces.md#current-turn-control); App judgment
-needs separate [behavioral evidence](message-lifecycle.md#current-implementation-and-gaps).
+**Implementation status:** Conversation, ordinary work and maintenance use one
+Task execution lifecycle. Accepted Requests, explicit outcomes, owner-controlled
+closure and durable Turn Stop are implemented. Live steering of a running Turn
+remains [limited](human-control-surfaces.md#current-turn-control). Source checks
+do not establish the quality of App judgment or the installed release.
 
 May helps a human discuss, decide and get useful work done. An App owns a
 responsibility and decides what a useful outcome means. The Host records work,
@@ -46,7 +39,7 @@ cycle. [Message Lifecycle](message-lifecycle.md#mental-model) owns the detailed
 vocabulary and its current code-name mismatches.
 
 A Request can span turns and link Tasks. Ending a turn, starting a Task, and
-fulfilling the ask are different outcomes. Current Host `AppRequest`/inbox rows
+fulfilling the ask are different outcomes. Host `AppInboxItem` rows
 track input handling, which can finish at handoff. Separate `conversation_requests`
 records retain the accepted scope, revision, exact Task links and closure.
 The App judges [acceptance and closure](message-lifecycle.md#requests-acceptance-and-closure);
@@ -79,11 +72,9 @@ and retains evidence; it never implies success or silently cancels its children.
 Esc/Stop ends only the current Turn, so later discussion remains possible.
 
 [Architecture](architecture.md#one-reconciliation-model) defines the execution
-boundary. The [proposal](../proposals/conversation-input-unification.md) records
-controls, exact-result correlation, migration and the code deletion to prove.
-Shared execution is implemented. Removing the retained `achieve`/`maintain`
-SDK vocabulary is separate from that execution change and does not imply
-another Task controller.
+boundary. The [implementation record](../proposals/conversation-input-unification.md)
+retains the migration evidence. Current `TaskIntent` has no lifetime mode;
+historical `achieve`/`maintain` values do not select a different lifecycle.
 
 ## Execution and outstanding results
 
@@ -148,15 +139,13 @@ The same agent profile can serve several Tasks. One Task waiting does not make
 that agent globally unavailable. Within one Task, preserve one current attempt;
 outstanding dependencies do not authorize a second competing parent attempt.
 
-**Implementation limit:** current Task state already retains waits during a
-later running attempt. The canonical typed dependency path submits new work
-when the parent returns `waiting`; it does not yet express immediate parent
-continuation after that handoff without another wake. Human Task detail also
-hides its ordinary wait list during running execution. The agent protocol still
-requires explicit Condition mechanics for some sources. The
-[clarification review](../archive/reviews/ownership-boundary-review-20260913.md#clarification-review-execution-and-pending-results)
-records the evidence and scoped changes; this model does not claim those gaps
-are already fixed.
+**Execution boundary:** typed dependencies are admitted when a Task returns a
+`waiting` result. That result may also request `continue: true` for another
+bounded pass of useful independent work; existing waits remain intact. It does
+not continue the same JavaScript stack after a durable handoff. Current Task
+reads expose Conditions independently of the scheduling phase; compact human
+views may show only the facts relevant to their presentation. Agents still
+need to name an observable Condition for sources without a typed dependency.
 
 ## A turn or a Task?
 

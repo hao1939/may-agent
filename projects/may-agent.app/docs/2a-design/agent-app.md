@@ -1,13 +1,11 @@
 # App Contract
 
 **Design status:** Accepted.
-**Implementation status:** Every current App uses Task reconciliation for
-durable side-effecting work. Pure translators and Task resolvers select durable
-work during admission; they cannot perform it. Request storage correlates Task
-results without a second owner or delivery loop. Scoped Task list/get reads are
-implemented across the SDK, agent tool, control socket, and HTTP. The Host
-Operations App passes its complete local source check; remaining Host and App
-simplification gaps stay in the convergence tracker.
+**Implementation status:** App admission maps input to Tasks; agents, workflows
+and native executors perform bounded attempts under the shared lifecycle.
+Task reads are exposed through the SDK, tools, control socket and HTTP. Pure
+translators perform no work. App-specific behavior and installation state need
+their own evidence; Host source checks do not certify every App.
 
 An App is one durable address with one accountable responsibility. It declares
 inputs, Task mapping, execution selection and acceptance. Agents, workflows and
@@ -41,11 +39,13 @@ an App must make an outcome true       -> task
 something happened but creates no work -> fact
 ```
 
-Every input or fact first enters as an event. The Host records caller
-correlation when needed, and pure App policy decides which task the admitted
-input creates, revises, attaches to, or wakes. In code, a request is stored in
-the App inbox and the deferred request coordinator calls `task(input)`. The
-inbox never reconciles that Task or runs a second work loop.
+External inputs and facts use the declared Event ingress. Internal typed
+calls use the same durable admission and correlation boundary; App code does
+not need to publish a raw Host event for every call. Pure App policy decides
+which Task the admitted input creates, revises, attaches to, or wakes. A caller
+request is stored in the App inbox. Admission calls `task(input)` synchronously and commits the
+exact Task link. Failed attachment is retained for recovery. The inbox never
+reconciles that Task or runs a second work loop.
 
 Human input, a cross-App dependency, an action, a schedule, or a subscribed
 fact may create a caller request and task. A metric, provider observation,
@@ -274,8 +274,9 @@ with a return route. A Condition's `requestedAction` records the desired action;
 it does not notify someone. A waiting update uses the existing caller report
 route. These result rules apply to ordinary Tasks and conversational callers.
 
-The source candidate removes redundant Conversation handoff fields and shares
-this guidance across both agent entrypoints. Old unaccepted decisions remain
+Conversation handoffs use the destination App input plus an optional exact
+Task reference. Both agent entrypoints use the shared result guidance.
+Old unaccepted decisions remain
 execution evidence; they are not replayed as new executable handoffs. Deployment
 and the real-source trial are recorded in May's
 [iteration evidence](../../../may.app/docs/research-handoff-iteration-20260916.md).
@@ -287,9 +288,10 @@ I/O, invokes an agent, or mutates state. See the
 [source types](../../../may-agent/packages/sdk/src/app.ts).
 
 Addressed ingress uses `app.input.requested`. Admission persists the event and
-caller correlation before returning; request-to-Task coordination runs
-asynchronously. The request then links to the responsible Task and completes
-from its accepted result. See [Events](events.md) for exact admission guarantees.
+caller correlation, then maps and attaches the Task input before returning
+where possible. Failed attachment remains durable for recovery. Execution runs
+asynchronously; caller completion projects the exact accepted result.
+See [Events](events.md) for admission guarantees.
 
 An App may declare `conversation: { mode: "agent", inputKinds: [...] }` for bounded
 conversational input. That turn can finish authorized work directly or admit

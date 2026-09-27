@@ -70,7 +70,7 @@ owning document and keep implementation details there.
 | -------------------------------------------------------------- | ------------------------------------------------------------- |
 | [agents.md](2a-design/agents.md)                               | Agent identity, cooperation, and app-local registration.      |
 | [runtime.md](2a-design/runtime.md)                             | Host process modes, startup, capacity, reload and recovery.   |
-| [sessions.md](2a-design/sessions.md)                           | Durable execution lifecycle and persistence.                  |
+| [sessions.md](2a-design/sessions.md)                           | Bounded execution, continuity and retained evidence.           |
 | [workflows.md](2a-design/workflows.md)                         | App-local execution contract, enforcement owners and support limits. |
 | [skills.md](2a-design/skills.md)                               | Scoped reusable judgment guidance.                            |
 | [sdk.md](2a-design/sdk.md)                                     | Stable agent and workflow capability surface.                 |
@@ -133,77 +133,36 @@ current-design list.
 | [guard-runtime-audit.md](2b-manual/guard-runtime-audit.md)                 | Inspect guard volume and signal quality.                    |
 | [app-operations-recovery.md](2b-manual/app-operations-recovery.md)         | Restart, recovery, migration, and deployment verification.  |
 
-## Tier 3 — Active proposals and trackers
+## Proposal and implementation records
+
+The current contracts are indexed above. These records retain decisions, trials
+and implementation history at stable paths. Inclusion here does not mean a
+change is pending, unmerged or deployed. Read the record's evidence and the
+current owning contract together; use Git for current PR/source status.
 
 - [Recover current work from execution evidence](proposals/recovery-from-execution-evidence-20260922.md)
-  — lessons from failed recovery, structured facts and step-by-step diagnosis,
-  current guarantees and gaps, and bounded trials before more mechanisms;
 - [Task context discovery](proposals/task-context-discovery-20260917.md)
-  — shared Task entry, bounded discovery references, and contribution handoff;
 - [Design documentation live-truth review](proposals/design-doc-live-truth-review-20260920.md)
-  — reviewed documentation corrections, evidence boundaries, and deferred runtime work;
 - [Ordinary commands from Task workers](proposals/task-worker-command-context-20260919.md)
-  — reproduced environment inheritance failure and an isolated comparison of
-  explicit worker entry with process-local database behavior;
 - [Wait corrections and unanswered input recovery](proposals/task-wait-recovery-20260918.md)
-
-Active reviews are:
-
 - [Reduce context cost through App knowledge and agent methods](proposals/focused-session-continuation.md)
-  — separates App context policy, agent methods and supporting system capabilities;
-  compares their effects on complete work and retains the extension-rule review;
 - [Keep domain policy in Apps, keep the Host generic](proposals/app-policy-and-host-boundary-cleanup.md)
-  — accepted direction with source application in progress: clear domain
-  ownership, retirement of legacy project policy, and explicit remaining
-  permission/deployment/maintenance dependencies;
 - [A recurring task to review and improve May](proposals/may-project-review-loop-20260912.md)
-  — source-grounded method using an ordinary periodic May Task;
-  [pilot evidence](archive/reviews/may-project-review-pilot-20260912.md) records
-  the three-review container trial, failed extension and isolated comparison, while
-  [research and case studies](archive/reviews/may-project-development-method-20260912.md)
-  preserve session and PR sources;
-- [Review Host scripts and retire completed PoCs](proposals/poc-retirement-and-knowledge-20260912.md#accepted-decision)
-  — accepted direction removes the completed PoC directory while retaining
-  useful checks, findings, and the explicit command surface; the proposal owns
-  the current inventory and candidate evidence;
+- [Review Host scripts and retire completed PoCs](proposals/poc-retirement-and-knowledge-20260912.md)
 - [Teaching agents: from a correction to dependable behavior](proposals/agent-behavior-and-capability-extension.md)
-  — proposed conversational teaching, scoped adoption and verified activation;
-  [guidance PoC](proposals/agent-adoption-poc-20260912.md) and
-  [workflow process-stability follow-up](proposals/workflow-stability-poc-20260912.md) and
-  [real-daemon teaching / natural procedure selection](proposals/conversation-adoption-poc-20260912.md);
+- [guidance PoC](proposals/agent-adoption-poc-20260912.md)
+- [workflow process-stability follow-up](proposals/workflow-stability-poc-20260912.md)
+- [real-daemon teaching / natural procedure selection](proposals/conversation-adoption-poc-20260912.md)
 - [Telegram: a natural conversation with reliable follow-through](proposals/telegram-conversation-experience.md)
-  — candidate fixes for five reproduced defects, contextual follow-up and
-  compact progress; source verification and separate live experience trial;
 - [Conversation and Task: one reconciliation model](proposals/conversation-input-unification.md)
-  — accepted and implemented common Task lifecycle, explicit outcomes and
-  owner-controlled closure; dated migration inventories and remaining usage-cost
-  evidence are retained separately from deployment status;
-
 - [Workflow tracing by default and useful health metrics](proposals/workflow-tracing-and-health-metrics.md)
-  — first source slice under review: run diagnostics, replaceable outcome
-  observations, explicit limits and remaining investigation/UI work;
 - [External components: simple, solid, and clearly organized](proposals/external-components-simplification.md)
-  — three focused fixes, explicit feature/reliability tradeoffs, and conditional
-  evaluation, metric, and layout follow-ups;
 - [Reliable observer feedback without a subscription system](proposals/observer-feedback-and-resource-conventions.md)
-  — proposed publication-safe observation memory, Scout regression fix and one
-  convention-based GitHub PR adapter using the existing Task route;
 - [Storage: a state service backed by SQLite](proposals/storage-state-service.md)
-  — implemented input-to-Task attachment, Conversation state/handler separation
-  and consistent naming, merged through #129;
 - [Task controller pattern](proposals/task-controller-pattern.md)
-  — controller/lifecycle direction: ordinary reconciliation, bounded retries,
-  recovery and evidence required before claiming simplification;
 - [Stable core and replaceable capabilities](proposals/task-runtime-organization.md)
-  — compact remaining-work plan; canonical boundaries live in Architecture
-  and completed separation/recovery evidence lives in the archive;
 - [Simplify the system: fewer paths, clear owners](proposals/authority-boundary-simplification.md)
-  — [current implementation plan](proposals/authority-boundary-simplification.md#current-implementation-plan)
-  separates merged Task/HTTP and event-delivery work from the unmerged checkpoint,
-  typing and CLI cleanup; workflow redo and live delivery remain conditional;
 - [design-implementation-convergence.md](proposals/design-implementation-convergence.md)
-  — index of known source gaps and their owning contracts, including Request
-  closure, turn control, owner decisions and remaining metric migration.
 
 Earlier reviewed drafts were resolved as follows:
 
@@ -217,28 +176,6 @@ Earlier reviewed drafts were resolved as follows:
 The decision records and current authorities are indexed under
 [archive/](archive/README.md).
 
-Completed proposals do not remain in the active proposal folder. The lightweight
-Event/Task decision, Codex evaluation, Task interface, human-action projection,
-and earlier presentation evidence are archived below.
-
-## Historical material
-
-[Core simplicity and robustness review — September 10](archive/reviews/core-simplicity-review-20260910.md)
-records the latest source findings and reproducible probes; follow-up priorities
-remain in the active core proposal.
-
-[Error handling, metrics and responsive conversation — paused September 10](archive/reviews/error-handling-and-conversation-discussion-20260910.md)
-preserves the open choices, earlier draft and live PoC. App placement and
-consolidation remain undecided. The narrower
-[workflow-first proposal](proposals/workflow-tracing-and-health-metrics.md)
-resumes tracing and metrics for review without adopting those alternatives.
-
-[Documentation clarity review and cleanup](archive/reviews/documentation-clarity-20260909.md)
-records the source-backed September 9 audit and fixes.
-
-[Archive index](archive/README.md) contains:
-
-- accepted decision records whose durable rules moved into Tier 2;
-- dated design reviews;
-- completed implementation plans and trackers; and
-- V2 specifications and migration records.
+Keep records at stable paths. Update status and links when a decision lands;
+current contracts belong in the design tier, and dated evidence does not define
+the running installation. See the [documentation review](archive/reviews/design-doc-hygiene-20260927.md).

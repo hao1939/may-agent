@@ -3,8 +3,8 @@
 **Design status:** Accepted.
 **Implementation status:** Implemented, including per-turn trace propagation,
 fail-closed start persistence, and terminal error persistence. Shared execution
-limits, scoped helpers and explicit standalone recovery were merged in #186
-as `91ed9ca6`. The [earlier trial](../archive/reviews/execution-consolidation-poc-20260914.md)
+limits, scoped helpers and caller-driven standalone resume are implemented.
+The [earlier trial](../archive/reviews/execution-consolidation-poc-20260914.md)
 retains its original scope and limits; source status does not establish the
 deployed artifact.
 
@@ -109,7 +109,7 @@ Legacy bindings without an attempt ID remain readable as historical context but
 cannot acquire current execution ownership. Helpers inherit Task context without
 replacing the owner; a later sequential workflow owner can associate only with
 its exact attempt binding. Trace links describe event causality. The [cooperation
-contract](agents.md) owns helper lifetime; the consolidation candidate enforces
+contract](agents.md) owns helper lifetime; the hosted execution scope enforces
 it using the live caller's execution scope.
 
 ## Persistence
@@ -161,8 +161,8 @@ does not renew the invocation allowance. Silence and repeated tool errors are
 evidence for the owner, not independent permission to stop or steer work. The
 [execution boundary](system-boundary.md#execution) owns these shared rules.
 
-The [consolidation candidate](../archive/reviews/execution-consolidation-poc-20260914.md)
-removes manager silence cancellation and error-count stopping. The common scope
+The [execution consolidation record](../archive/reviews/execution-consolidation-poc-20260914.md)
+documents removal of manager silence cancellation and error-count stopping. The common scope
 uses a 30-minute default when no invocation limit is configured; a caller's
 remaining allowance can shorten it. One-shot CLI retains its five-minute default.
 Direct chat creates a scope per active turn, closes it before becoming idle, and
@@ -179,7 +179,7 @@ An interrupted `call` returns to its caller; generic session auto-resume must
 not start it again independently. The owning workflow or Task decides the next
 bounded attempt using current state. Otherwise a timed-out call can keep editing
 after its workflow settled, outside Task capacity and result fencing. Explicit
-cancellation is likewise not an automatic retry request. The candidate removes
+cancellation is likewise not an automatic retry request. The startup policy omits
 automatic standalone `job` resume: durable obligations belong to Tasks; local
 invocations return to their caller. Explicit permitted user resume and
 stale-state/process cleanup remain, without inventing another work owner.

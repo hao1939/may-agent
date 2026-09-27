@@ -1,7 +1,7 @@
 # Heartbeat terminology
 
 **Design status:** Accepted.
-**Implementation status:** Reviewed Host `649d801c` has no standalone heartbeat
+**Implementation status:** The Host has no standalone heartbeat
 workflow loader or public heartbeat-start command. Recurring App work uses
 declared schedules and the shared Task runtime.
 

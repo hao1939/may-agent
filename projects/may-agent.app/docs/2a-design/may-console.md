@@ -241,7 +241,7 @@ changed; it does not replay intermediate updates. An explicit `/task <ref>` is
 an intentional read and may repeat current information.
 
 The shared Task view reports only observations belonging to the active attempt.
-When a maintained Task begins new work, a result from its prior attempt remains
+When an open Task begins new work, a result from its prior attempt remains
 history and is not rendered as the current watch update.
 
 Reconnect preserves the in-process watch preference, resubscribes, and reads

@@ -1,10 +1,9 @@
 # Projects
 
 **Design status:** Accepted.
-**Implementation status:** Canonical Apps own current work. Historical Markdown
-is intended to be read-only evidence. The command router in reviewed Host
-`649d801c` still mutates it; the [boundary cleanup](../proposals/app-policy-and-host-boundary-cleanup.md)
-tracks removal of that path and its socket/browser regression evidence.
+**Implementation status:** Canonical Apps and Tasks own current work. The command
+router applies runtime/session controls and admits semantic work through App
+routes. Historical Markdown remains evidence, not a second writable work system.
 
 ## Purpose
 

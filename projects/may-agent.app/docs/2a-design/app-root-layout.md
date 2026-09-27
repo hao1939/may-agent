@@ -8,10 +8,11 @@ blurring source, runtime state, project workspaces, and research scratch.
 
 ## Root Contract
 
-`/app` is the shared source checkout on `main`. Integrate verified source work
-and keep its tracked/untracked Git status clean. Use checkouts outside `/app`
-for temporary branches; do not create `/app/worktrees/` or project-level
-worktree containers. Coordinate checkout changes with active writers.
+`/app` is this installation's shared source checkout; it is not a required Host
+path. Integrate verified source and coordinate checkout changes with active
+writers. Use isolated worktrees for experiments, conventionally outside the
+checkout or under ignored local `.state/worktrees/`. Their location grants no
+runtime authority. Keep source, generated evidence and live state distinguishable.
 
 The root should contain only:
 
@@ -37,7 +38,7 @@ intentional local data; a clean source checkout does not require deleting them.
   archives. Its own classification lives in `projects/README.md`.
 - `projects/scout-knowledge-lib/knowledge/` - Scout-maintained external
   research and paper/doc knowledge library.
-- `projects/gym/` - standalone agent behavior and evaluation project.
+- `projects/gym/` - Gym comparison workspace; `projects/gym.app/` owns its App contract.
 - `contracts/` - explicit contracts used by the system.
 - `scripts/` - reusable app-level scripts.
 
@@ -68,11 +69,11 @@ Do not use top-level `docs/` for new paper/doc storage.
 - Project-owned outputs and evidence belong inside the owning project
   workspace.
 - `test-results/` - generated test output.
-- Temporary checkouts, scratch copies and recovery bundles belong outside
-  `/app`, conventionally under `~/workspace-worktrees/` or `~/workspace-archive/`.
-  Preserve unique commits, dirty files and evidence before removing a checkout.
-  Keep a recovery manifest; promote meaningful verified source to `main` and
-  retain unfinished experiments explicitly as candidates in the archive.
+- Temporary checkouts and scratch copies belong in an explicitly local worktree
+  or scratch directory. Before cleanup, inspect ownership, dirty files and unique
+  commits. Keep useful evidence at stable paths; moving records into an archive
+  is not cleanup or a lifecycle transition. Remove a worktree only after its
+  unique work is integrated or deliberately abandoned.
 
 ## Runtime And Local State
 

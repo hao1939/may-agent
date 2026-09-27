@@ -1,16 +1,11 @@
 # Task Resource Engine
 
 **Design status:** Accepted.
-**Implementation status:** SQLite resource authority, fenced reconciliation,
-exact Conditions/dependencies, bounded execution, accepted results and indexed
-recovery are implemented. New waits require canonical owners and review
-intervals; historical fields remain readable. Task activation is independent
-of `--cron`; that flag selects optional schedule producers.
-The one-lifecycle change (#158) supersedes finite stop and failure-count
-limits; explicit input returns (#164) supersede implicit parent waits/wakes.
-These contracts were checked against Host `8026aff9`; #167 further shares
-workflow failure handling without changing Task lifetime. This is source
-status, not deployment evidence. App judgment needs separate live evidence.
+**Implementation status:** SQLite authority, fenced attempts, Conditions,
+exact input dependencies, accepted outcomes and indexed recovery are implemented.
+Task activation is independent of optional schedules. Attempts are bounded;
+unfinished work retries with backoff until progress or authorized owner closure.
+Source checks and App behavior/deployment evidence remain separate.
 
 This page owns the durable Task contract. Historical `achieve`/`maintain` mode
 data does not select a lifecycle; result labels describe attempts, not lifetime.
@@ -24,8 +19,8 @@ Read the lifecycle below first. Use [the executor contract](#one-attempt-interfa
 and [resource reads](#resource-read-interface) as references when implementing an adapter.
 
 ## One lifecycle baseline
-**Accepted and implemented in merged Host #158/#164.** One Task lifecycle serves
-ordinary work, maintenance and Conversation. Deployment is a separate check.
+
+One Task lifecycle serves ordinary work, maintenance and Conversation.
 
 A Task remains open after an outcome: the worker chooses how to proceed; its owner
 decides whether to retain, revise or close the assignment. Unfinished failure keeps
@@ -220,7 +215,7 @@ Stale generation, foreign creator, self-revision and concurrent-change controls
 reject the whole update. There is no generic write API, manager-transfer
 lifecycle, or ownership encoded in ID prefixes.
 
-**Candidate boundary:** task-bound `tasks update` is unchanged. Ordinary
+**Revision boundary:** task-bound `tasks update` is unchanged. Ordinary
 `targetTaskId` input remains attach-only and bypasses mapping, so it cannot
 revise scope. A typed App policy may instead return desired intent for an exact
 existing ID with the caller-observed `expectedGeneration`. Only a saved
@@ -228,8 +223,9 @@ non-delegated inbox input receives App-only revision authority; task-bound,
 foreign, missing, closed, and stale targets terminate with readable correction
 feedback rather than an unbounded recovery retry. Exact accepted admission
 replay remains idempotent, but the same identity cannot authorize changed
-requirements. This paired Host/App behavior remains a source candidate until
-reviewed, integrated, deployed, and observed separately.
+requirements. This admission capability is implemented; each App mapping must
+deliberately opt into creator-authorized revision. Deployment and behavior of a
+particular mapping require separate evidence.
 
 ## Controller
 
@@ -327,6 +323,12 @@ The source [Task types](../../../may-agent/packages/sdk/src/task.ts) and
 the executable contract. A result supplies `state`, `summary`, `facts`, and
 optional bounded `result`, caller `response`, Task `actions`, Conditions, and
 `TaskAppDependency` entries. `actions` are Task changes, not App commands.
+
+The result union selects how this attempt settles; it does not make stored
+facts mutually exclusive. A waiting result may report progress and request
+continuation while old Conditions, accepted results and other pending inputs
+remain. Omitted waits are preserved; an exact accepted action retires one.
+
 When a file materially supports a completion or recovery claim, the result should
 retain a structured verified Artifact reference such as
 `artifacts: [{ path, sha256 }]`. A prose path is not discoverable by bounded
@@ -365,7 +367,7 @@ backoff, or answers the caller. An early sleeping re-wait that omits `reviewAt` 
 future deadline; after it is due, sleeping again requires another Condition or a
 new future deadline. `continue: true` instead requests immediate bounded work and
 requires no invented wait. A failed verifier cannot establish completion. Result settlement,
-including newer input, uses the fences described below; this table does not override them. The [wait-recovery candidate](../proposals/task-wait-recovery-20260918.md) returns inputs with obsolete waits for reconsideration without satisfying replacement or unrelated waits.
+including newer input, uses the fences described below; this table does not override them. The [wait-recovery implementation record](../proposals/task-wait-recovery-20260918.md) returns inputs with obsolete waits for reconsideration without satisfying replacement or unrelated waits.
 
 `incomplete` requires a summary and non-empty facts; it cannot include actions, Conditions
 or child App requests. The Host checks eligibility inside the fenced transaction.
@@ -412,10 +414,10 @@ Mechanical validation proves that a result is safe to apply, not that its
 domain claim is true. Every completed receipt records:
 
 ```ts
-type AcceptanceBasis = {
+type TaskAcceptanceBasis = {
   method: "deterministic" | "workflow-contract" | "agent-judgment";
   verifier?: string;
-  evidence: string[];
+  facts: string[];
 };
 ```
 
@@ -832,7 +834,7 @@ Tests and audits must prove:
 10. A task-owned emitted event is visible only after durable acceptance, and a
     retry with the same local key cannot duplicate it.
 11. Every durable App Task, including Conversation, uses this engine.
-    Direct non-App execution such as CLI experiments and Gym stays independent.
+    Direct non-App CLI experiments remain bounded caller-owned execution.
 12. Resource-backed Task contention never uses a synchronous filesystem wait,
     and slow Task I/O cannot delay event admission or resource reads.
 
@@ -883,13 +885,9 @@ prompts and outputs are attempt evidence, never another work authority.
 
 ## Task and task view
 
-A Task has one stable `(appId, taskId)` identity, desired outcome, current
-observation and acceptance evidence. Parent and dependency links may be shown
-as a tree; that view is neither another resource nor ownership authority.
-The Host schedules Task IDs from canonical state, never from tree placement.
-The view supplies progress and diagnostic detail. Input handling and
-conversational Request fulfillment remain distinct; see
-[Message Lifecycle](message-lifecycle.md#requests-acceptance-and-closure).
+A Task's stable identity and canonical state drive scheduling. A tree of parent
+and dependency links is only a view. Task reads expose progress and evidence;
+input handling remains distinct from [Request fulfillment](message-lifecycle.md#requests-acceptance-and-closure).
 
 ## Resource read interface
 

@@ -1,181 +1,139 @@
 # Agent improvement: an optional App integration
 
 **Design status:** Accepted as an App integration, not a required Host subsystem.
-**Implementation status:** Implemented for Evaluation evidence, generated agent
-feedback, and Gym's May-improvement intake. Actual feedback consumption and
-verified activation after approved source promotion remain adoption gaps below;
-this is not yet a verified end-to-end installed improvement loop.
-**Aligned with:** [Work Model](../1-principles/work-model.md),
-[Agent Evolution](../1-principles/evolution.md),
-[Session Evaluation Trail](session-eval-trail.md), [Projects](projects.md), and
-[Metrics](metrics.md).
+**Implementation status:** Evaluation reviews external App Tasks; May receives
+published findings; Gym provides bounded comparisons. These App contracts are
+implemented in source. A complete installed improvement cycle requires separate
+proof of report consumption, candidate preparation, comparison, approval,
+application and fresh behavior. This document does not certify that cycle.
 
 ## Purpose
 
-Agents can improve behavior using ordinary Tasks, evidence, authorized source
-edits, isolated checks and verified activation. No Coach, Gym or Evaluation App
-is required by the generic execution mechanism. The responsible App chooses
-the method and judges its result; the human need not operate every step.
-
-This document describes the workspace's Evaluation/Gym integration. Its scoring,
-benchmark and promotion rules belong to those Apps. It is one way to learn from
-real work, not a mandatory organization or another work lifecycle:
+Agents improve through ordinary work, evidence, authorized changes and later
+verification. Each part has one focused responsibility. The Host supplies Task
+identity, execution, state, feedback and recovery; the Apps decide what deserves
+investigation, whether a change is worthwhile and who may approve it.
 
 ```text
-session ends
-  -> Evaluation records one bounded judgment
-  -> evaluation.recorded becomes durable evidence
-  -> Evaluation refreshes disposable agent feedback
-  -> Gym classifies May evidence independently
-  -> only actionable May failures enter Gym review
-  -> Gym tests one isolated candidate against approved truth
-  -> an exact verified artifact requires human approval
-  -> later evaluations test whether behavior improved
+work produces evidence
+  -> Evaluation reviews selected external Task evidence
+  -> May verifies the finding and decides whether investigation is worthwhile
+  -> an assigned worker prepares an isolated candidate
+  -> Gym compares the candidate with a frozen baseline
+  -> May judges value, cost and simpler alternatives
+  -> required human approval binds the exact proposed change
+  -> an authorized worker applies and verifies it
+  -> later work and evaluation test the claimed benefit
 ```
 
-One evaluation can reveal a problem. It cannot by itself change an agent,
-workflow, skill, guard, benchmark, or task.
+These are responsibility transitions, not mandatory new services or a second
+workflow engine. Use ordinary Tasks and exact input/result links. A report may
+lead to no change, reuse of existing work, or repair within the original Task.
+An improvement is justified by useful evidence and value, not by report volume.
 
 ## Authority
 
-| Record                                     | Meaning                                                          |
-| ------------------------------------------ | ---------------------------------------------------------------- |
-| Root event, request, task, and trace       | Why work began and which obligation owns the result              |
-| Session transcript and result              | What the agent saw, did, and claimed                             |
-| `session.eval.jsonl`                       | Append-only supporting evaluator or human notes for that session |
-| `evaluation.recorded`                      | Durable automatic Evaluation fact                                |
-| `evaluations` table                        | Query projection derived from Evaluation facts                   |
-| `evaluation.app/generated/agent-feedback/` | Disposable latest-issue context for an evaluated agent           |
-| `gym.app/.state/learning/evidence/`        | Gym-owned idempotent classification input for May improvement    |
-| Gym benchmark runs and approved labels     | Evidence that a candidate is better and safe to propose          |
-| App requests and task resources            | Durable owner work and desired outcomes                          |
+| Responsibility | Owner | What its output establishes |
+| --- | --- | --- |
+| Original work | Responsible App/Task | Its accepted result and outstanding obligations |
+| Assessment | Evaluation | An evidence-backed judgment with stated scope and limits |
+| Investigation and candidate preparation | May's assigned worker/team | A concrete proposed change and why it fits |
+| Frozen comparison | Gym | Comparison evidence under declared objectives and constraints |
+| Pursuit and readiness decision | May | Whether the candidate is worth its total cost and ready to propose |
+| Required final approval | Human through the exact approval contract | Permission for the identified change and scope |
+| Application and activation | Authorized worker/operator | What source/artifact was applied and what became active |
+| Later verification | Relevant work and Evaluation | Whether observed behavior supports the claimed improvement |
 
-There is no global learning-candidate log, promotion registry, learning queue,
-or mutable evaluation lifecycle. Historical files with those names are old
-evidence, not current authority.
+Task records own work. Reports, session trails, command receipts and generated
+feedback are evidence or projections. None automatically grants permission to
+change live behavior, and a successful comparison is not an approval.
 
 ## Evaluation
 
-Evaluation distinguishes the cause before assigning work:
+[Evaluation's contract](../../../evaluation.app/design/task-outcome-evaluation.md)
+owns eligibility, evidence identity, rubrics and report publication. Current
+review targets exact external App Tasks, including bounded current obligations
+and historical outcomes. It excludes its own App. Session scoring and annotation
+remain compatibility capabilities; a session ending does not require a new review.
 
-| Target         | Question                                                  |
-| -------------- | --------------------------------------------------------- |
-| Intent/context | Was the triggering intent current, grounded, and bounded? |
-| Execution      | Did the agent choose and adapt useful actions?            |
-| Result         | Did the run produce a useful, honest result?              |
-| Verification   | Does evidence support the completion claim?               |
+Automatic sampling is configured by Evaluation and may be disabled. A report
+with no finding does not certify system health. Missing evidence is uncertainty,
+not failure of the target or evidence of success. May's
+[report intake](../../../may.app/agents/may/workflows/evaluation-report-intake.ts)
+checks exact publication identity and verifies material findings before acting.
 
-A guard trigger, failed session, red metric, or reviewer disagreement is a
-hypothesis. The evaluator compares bounded transcript evidence, tool results,
-project context, and the final claim before producing `evaluation.recorded`.
-
-Concrete findings for an accountable App use `project.owner.requested`. Only a
-specific human decision, approval, or missing input creates a May request.
-Routine critique remains evidence and generated feedback; it does not create
-owner work.
+Generated feedback is an optional discovery aid. Read its current owned path
+and source timestamp; source presence does not prove that a later agent consumed
+it. Retained session annotation has its own [trail contract](session-eval-trail.md).
 
 ## Gym intake
 
-Gym explicitly subscribes to `evaluation.recorded` and accepts only non-skipped
-evaluations whose nested `evaluation.agent` is `may`. One stable intake task
-records positive or negative evidence idempotently. Only a negative, actionable
-May finding creates an incident review request.
+[Gym](../../../gym.app/README.md) accepts ordinary `goal` and `message` inputs.
+Its owner can select the `compare-candidate` workflow, which invokes frozen
+baseline/verification primitives and returns evidence. Current Gym has no
+automatic Evaluation subscriptions or schedules. It does not prepare, approve,
+apply, merge or deploy candidates.
 
-Gym preserves approved benchmark truth and withheld evaluation boundaries. It
-may build and test an isolated candidate, but production May changes only after
-the exact fingerprinted artifact passes required comparisons and the authorized
-human approves that artifact under this integration's promotion policy.
-
-This makes Evaluation and Gym independent:
-
-- Evaluation judges whether a session was good;
-- Gym decides whether the evidence teaches May anything reusable;
-- the owning mechanism decides how to implement a reviewed change; and
-- later evidence decides whether to keep, revise, or retire it.
+The [comparison contract](../../../gym.app/design/frozen-comparison-service.md)
+owns quality gates, declared performance objectives, input/evidence identity and
+invalid-run handling. The
+[report-driven improvement design](../../../gym.app/design/report-driven-improvement.md)
+connects it to May and the preparing worker. Keep those domain rules there.
+Older May-only intake and automatic-promotion descriptions are historical records,
+not the active Gym contract.
 
 ## Choosing the mechanism
 
-The owner selects the smallest durable mechanism matching the cause:
+Use the smallest change that addresses the confirmed cause:
 
-| Observed cause                   | Likely response                             |
-| -------------------------------- | ------------------------------------------- |
-| Changing environment fact        | Owned context or knowledge                  |
-| Reusable judgment method         | Skill                                       |
-| Repeated ordered process         | Agent-owned workflow                        |
-| Missing deterministic capability | Tool or SDK                                 |
-| Precise mechanical risk          | Calibrated guard                            |
-| Trigger or observation gap       | Subscription, schedule, observer, or metric |
-| Durable multi-attempt outcome    | App task resource                     |
-| Cross-owner required action      | Linked child App request or exact Condition |
+| Cause | Candidate mechanism |
+| --- | --- |
+| Missing or stale environment knowledge | Owned context or knowledge |
+| Reusable judgment method | Agent instructions or a skill |
+| Repeated procedure | A focused workflow |
+| Missing deterministic capability or broken mechanics | Existing tool, SDK or Host implementation |
+| Missing relevant observation | Existing subscription, observer, schedule or metric |
+| Coordination failure | Repair the existing Task/input/result connection |
 
-Frequency alone does not justify automation. Diagnose misleading input,
-benchmark truth, scorer, harness, and provider failures before changing May.
+First examine the existing mechanism that should handle the situation. An
+implementation defect does not by itself justify another recovery layer. A
+candidate may simplify or remove code. Keep protected truth and withheld
+comparison cases separate from the candidate being improved.
 
 ## Validation
 
-A landed change is not proof of improvement. Its evidence names:
+A reviewable change links the finding, baseline, proposed source/artifact,
+comparison objective and evidence. Ask whether a simpler solution gives similar
+value at lower implementation and operating cost. Declining a low-value change
+is a valid outcome.
 
-- expected behavior change and affected scope;
-- approved comparison cases and framework revision;
-- baseline and candidate fingerprints;
-- invalid-run and regression policy;
-- the exact approval identity when promotion is requested; and
-- later session or metric evidence that can challenge the change.
+Application proof distinguishes saved source, committed source, activated
+definitions/binary and fresh execution. An existing worker may retain its
+starting definitions after reload. Approval must still match the candidate,
+current target and scope at application time; changed evidence needs reconsideration.
+Follow the existing [deployment boundary](../2b-manual/app-operations-recovery.md#runtime-deployment-target)
+when Host artifacts change.
 
 ## Remaining adoption gaps
 
-The bounded [agent-operated](../proposals/agent-operated-improvement-poc-20260912.md)
-and [ordinary-Task](../proposals/task-improvement-poc-20260912.md) trials show why
-evidence must distinguish saved source, successful activation, fresh execution
-and useful behavior. Their unsuccessful wiring/scoring trials remain visible;
-they are not automatically failures of the target agent. Those trials support
-the mechanism, not an installed autonomous improvement service. Their completed
-harnesses follow the [retirement decision](../proposals/poc-retirement-and-knowledge-20260912.md);
-use the existing runtime/activation regressions, not obsolete main-branch commands.
+The installed loop must be assessed from one exact trace through its handoffs.
+Check who received each report, where investigation is recorded, which candidate
+Gym compared, who requested/received approval, what was applied, and which fresh
+execution verified the result. Do not infer these transitions from independently
+passing component tests or from an old rollout paragraph.
 
-The [local integration candidate](../proposals/feedback-adoption-integration-20260912.md)
-restores Evaluation-owned generated feedback and labels source-only promotion
-as unverified owner attention. Four isolated model checks prove the reference
-can be read and updated without reload. Its ordinary-Task follow-up proves
-adoption in fresh dispatches and retains an unsuccessful immediate-wake trial:
-an already-dispatched worker may still use old source after reload succeeds.
-The linked-Gym no-model trial returns exact source evidence through an existing
-App dependency to the same owning Task. It also fixes a missing source-event
-key and preserves completed-copy evidence across publication failure. This is
-not deployed; production owner acceptance of behavior evidence against Gym's
-pending checkpoint remains unimplemented.
-The following source findings describe the baseline that motivated that candidate.
-
-Source review and the [isolated method trial](../proposals/extension-methods-poc-20260912.md)
-distinguish three existing boundaries; the trial changes no production policy:
-
-- Evaluation's projection prefers the target agent's `last-eval.md`, whereas
-  installed shared guidance names a generated feedback path. Normal prompt
-  preparation loads neither body. Agree one owned output/reference path and
-  verify the target actually reads the relevant evidence. A UI listing a file
-  under prompt content is not execution proof. Feedback is mutable evidence;
-  its reference must reach the current record, not an old definition snapshot.
-- Gym's approved-agent-overlay branch validates the artifact fingerprint,
-  copies the files and emits `agent.revision.changed`. It does not itself
-  commit, reload or verify active definitions. “Applied source” must not imply
-  “active behavior.” Use the existing authorized source activation boundary
-  and a fresh relevant execution to prove adoption.
-- Current intake and improvement plans target May. A bounded experiment shows
-  one agent can author another agent's isolated guidance, but does not implement
-  or authorize general automatic cross-agent promotion.
-
-Reuse the existing candidate comparison/revision loop and Task evidence; no
-new learning controller is needed. Preserve exact-artifact approval, protected
-evaluation truth, valid-run accounting and unrelated/regression controls.
-Stored source can survive restart without being active; feedback can survive
-without being read. Later outcomes must be able to challenge an adopted lesson.
+The [convergence index](../proposals/design-implementation-convergence.md) records
+confirmed source gaps. Prior
+[agent-operated trials](../proposals/agent-operated-improvement-poc-20260912.md)
+and [feedback/adoption trials](../proposals/feedback-adoption-integration-20260912.md)
+retain both successful and unsuccessful evidence at their original paths. They
+are examples with bounded claims, not current source inventories.
 
 ## Invariants
 
-1. Evaluation facts are evidence, not commands.
-2. Evaluation never edits another App's task state or implementation.
-3. Gym never changes approved truth or production May without exact approval.
-4. Generated feedback and Gym intake files are projections/evidence, not work
-   authorities.
-5. A workflow or skill change remains owned by the agent that operates it.
-6. Later observations may overturn an earlier evaluator or Gym judgment.
+1. Evaluation reports evidence and leaves remediation authority with the owner.
+2. Gym compares the supplied candidate and leaves preparation/application to its callers.
+3. Approval identifies the exact change; comparison and application remain separate.
+4. Findings can coexist with accepted results, waits and ongoing work.
+5. Each handoff keeps exact Task, input and evidence identity.
+6. Later observations can challenge the original assessment or claimed benefit.

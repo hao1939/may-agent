@@ -2,13 +2,11 @@
 
 **Design status:** One Task owns each durable outcome; native workers supply
 bounded execution or evidence.
-**Implementation status:** The bounded `run_cli_agent` replacement is merged
-in [Host PR #56](https://github.com/hao1939/may-agent/pull/56). Apply this
-companion revision with that Host revision; neither change is deployed by
-editing or merging source. The existing `codex-goal` Task executor is unchanged.
-The Host evidence projection is merged in
-[PR #57](https://github.com/hao1939/may-agent/pull/57). Its Gym correction remains
-a source companion; integrate the updated Host/SDK before enabling that Gym revision.
+**Implementation status:** Bounded `run_cli_agent` calls and the `codex-goal`
+Task executor are implemented with exact Task binding, retained evidence and
+shared execution limits. Caller-driven native resume is distinct from durable
+Task recovery. Installation must align Host, SDK and native CLI versions;
+source presence does not establish the active release.
 
 ## The simple model
 
@@ -111,10 +109,8 @@ Start a fresh native context for an independent opinion. Pass
 `resumeSessionId` only to continue an exact known native thread.
 Implicit shared `reuseSession: true` is rejected without an explicit ID.
 The tool neither reads nor writes an owner-wide latest-session map.
-The [tool cleanup candidate](../proposals/authority-boundary-simplification.md#independent-tool-cleanup)
-would also remove that retired option from model-facing discovery. Host source
-`dd548cab` still advertises it; the compatibility runner rejects old implicit-reuse
-calls, and exact native resume is unchanged.
+The model-facing schema exposes exact `resumeSessionId` only. The internal
+compatibility runner rejects retained implicit-reuse calls without an exact ID.
 
 Native process groups are recorded against the exact caller session using
 the same tracking and drain code as shell commands. Cancellation and timeout
@@ -153,7 +149,7 @@ endpoint through its standard Anthropic environment variables.
 | `src/lib/tools/run-cli-agent.ts` | Tool schema; capture caller identity, trace, and signal; await result. |
 | `src/lib/cli-agent.ts` | Native command, bounded parsing, evidence, process execution, legacy upgrade check. |
 | `src/lib/tools/bash.ts` and `persistence.ts` | Shared caller-session process-group tracking and cleanup. |
-| `src/app/codex-goal-executor.ts` | Existing persistent Codex Task adapter. |
+| `src/app/adapters/executors/codex/codex-goal-executor.ts` | Existing persistent Codex Task adapter. |
 
 The `native-coding-worker` skill teaches packet preparation and evidence
 review. Host code enforces mechanics; it does not decide whether another

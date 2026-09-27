@@ -38,8 +38,11 @@ Use bounded `tasks.list` for discovery and `tasks.get` for exact Task detail.
 The current shared `TaskView` is deliberately small:
 
 ```text
-{ id, status, generation, outcome, summary?, response?, result?, facts? }
+{ id, status, closed?, generation, outcome, summary?, response?, result?, facts? }
 ```
+
+`status: "done"` describes accepted convergence; `closed` separately records
+owner closure. Accepted results, Conditions and pending work can coexist.
 
 The list form returns bounded views from live resources and immutable completed
 receipts. It accepts exact status filters, a capped page size, and an opaque
@@ -55,7 +58,7 @@ The get form returns one exact `TaskDetail`, including parent, acceptance,
 input, selected execution mechanism, dependencies, and Conditions. Attempt and
 activity evidence remain linked records rather than copied Task truth.
 
-The decision-context candidate also exposes `resourceVersion` and an observation
+The current Task reader also exposes `resourceVersion` and an observation
 beside each Condition definition: its generation/revision, observed generation,
 state, retained evidence and observation time. A declared requirement is not an
 observation that it has been met. Historical receipts may lack a current revision

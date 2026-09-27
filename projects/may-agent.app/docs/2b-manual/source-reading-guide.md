@@ -2,8 +2,7 @@
 
 This guide follows one piece of work through the system, then offers deeper
 routes for the parts you want to review. It describes Host source at
-`4f7351db4a7733b83f4e57536c79d2c64723be8a` (2026-09-27, including #252).
-The waiting-result refactor in #253 is still outside this baseline. This is a
+`1ff18acc` (2026-09-27, including #252 and #253). This is a
 source guide; the running binary and installed App definitions have their own
 release identities.
 

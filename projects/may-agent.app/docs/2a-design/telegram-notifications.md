@@ -25,10 +25,10 @@ is implemented; Task cancellation and ending a watch have separate effects.
 Request deadlines and close cancellation merged in Host
 [PR #133](https://github.com/hao1939/may-agent/pull/133) as `39a23f22`.
 Source checks and merge state are not a deployment claim.
-The [conversation experience candidate](../proposals/telegram-conversation-experience.md)
-adds admission-before-acknowledgment, chat-scoped links, admission visibility,
-contextual buttons and compact updates. These source changes are not yet merged
-or verified against a live bot.
+The [conversation experience record](../proposals/telegram-conversation-experience.md)
+retains the acknowledgment, contextual-button and compact-update trials.
+Current source includes those mechanisms; a live bot's behavior depends on its
+binary, App definitions, permissions and provider state.
 
 ## Purpose
 

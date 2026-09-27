@@ -1,14 +1,11 @@
 # Message Lifecycle
 
-**Design status:** Accepted; one Task lifecycle baseline refined September 11, 2026.
-**Implementation status:** Reviewed Host `649d801c` implements human Turns,
-direct Task handoff, accepted Requests and atomic closure. Human input and linked
-Task/timer reviews execute through one stable Conversation Task, merged in #158.
-The [unification review](../proposals/conversation-input-unification.md) records
-the paired App changes and acceptance evidence. Remaining old SDK mode names
-are a separate contract cleanup, not a second inbox or supervision executor.
-Current-turn steering remains separate work. Conversational child waits were
-retired in Host #140; retained-state behavior is described below.
+**Design status:** Accepted.
+**Implementation status:** Human Turns, accepted Requests, correlated handoffs,
+linked-result review and Turn Stop use the shared Task lifecycle. New input is
+durable; immediate redirection of a running Turn remains limited. The
+[implementation and gaps](#current-implementation-and-gaps) distinguish Host
+mechanics from App judgment and installation evidence.
 
 ## Mental model
 
@@ -448,13 +445,12 @@ declared background-attempt limit, within the total Host limit. Multiple human
 Conversations in the same App share that interactive slot. A paused App can
 handle admitted human input while its background Tasks and system reviews wait.
 The [source checkpoint](../proposals/controller-poc-recovery-review.md#conversation-capacity-and-background-pause)
-exercises this through the common queue and storage claim; installed cutover
-remains unfinished.
+records the queue/storage trial. Deployment must be verified independently.
 
 The active Turn exposes the same exact Stop control regardless of its trigger.
 Stop cancels that execution, preserves accepted Requests and leaves independent
-Tasks under their own controls. A timer must not recreate the same stopped or
-retry-exhausted review. A later meaningful change or explicit human input can
+Tasks under their own controls. A timer must not recreate the same stopped
+review. Failed attempts retain paced retry; a later meaningful change or human input can
 justify a fresh review; an open Request alone cannot.
 
 ### Timer safety net
@@ -650,7 +646,8 @@ root.
 6. Discussion stays in Conversation; exact Topic/Task links return independent
    work's evidence to that discussion without a waiting parent or supervisor.
 7. Task resources own progress/results. Existing unfinished work is addressed
-   by exact identity; completed one-off Tasks stay immutable.
+   by exact identity; owner-closed Tasks stay immutable while accepted results
+   remain available on open Tasks.
 8. Closure uses the latest accepted Request scope and commits its explanation
    consistently. Adapter acknowledgements do not gate closure.
 9. Event and timer reviews use the same admission, decision and commit path.
@@ -698,24 +695,24 @@ remain discoverable. Request updates use at most eight records per decision,
 2,000 characters per scope and 32 exact Task links per ask. These are explicit
 bounded-context limits, not a guarantee of bounded total SQL query cost.
 
-The existing supervision wake includes current Request records. May may return
-the same `requestUpdates` contract in `result.conversation`; its closure and
-message are stored together, with stale revisions rejected. The existing
-recovery scan includes terminal linked Tasks while their accepted ask remains
-open, so losing the first completion wake need not lose the owed explanation.
-An open discussion without linked work waits for human input, not another
-controller. Stopped-turn recovery remains suppressed even when its ask is open.
+Linked results and missed-change discovery enter the same Conversation Task.
+The handler receives current Request records and returns `requestUpdates` through
+`ConversationTurnResult`. Accepted updates and the reply settle together; stale
+revisions reject. There is no separate supervisor result protocol.
 
-Host and May App changes must be reviewed together: the Host validates and
-stores the decision; May's supervision guidance supplies meaning and judgment.
-Portable tests prove storage, fencing and context availability, not that a live
-model always recognizes or fulfills every ask. Existing historical messages
+The `conversation_request` tool can save a new ask or accepted scope correction
+before work starts. Its write is fenced by the current claim and Request revision.
+That saved correction survives a later failed or stopped attempt. Final closure
+still requires a current decision and explanation; it cannot silently revise scope.
+
+Core tests prove storage, fencing and context availability. They do not prove
+that a model recognizes every ask or closes it truthfully. Historical messages
 are not automatically converted into accepted Requests.
 
 ### Input handling remains separate
 
 The Host uses `AppInputContext` and `app_inbox_items` for accepted input
-handling; `AppRequest` remains a deprecated compatibility alias. These rows are
+handling. These rows are
 created before May understands the input. The
 [request handler](../../../may-agent/src/app/core/inbox/app-inbox-host.ts) completes a
 frontend row after a direct answer or durable follow-up admission; Task-based
@@ -725,81 +722,57 @@ and its Conversation explanation; it adds no execution controller or queue.
 
 ### Current response projection
 
-The current follow-up projection uses stored Host input correlation where
-available, otherwise the validated Conversation/Topic named in the Task result.
-If neither resolves, it reports rejection rather than successful communication.
-Unification moves this response through normal conversation input completion.
+Accepted replies and exact caller feedback enter the shared Conversation read
+projection. Input correlation and Topic/Task links preserve their origin; missing
+required identity is a failed projection, not successful communication. The input
+result can be projected again without accepting another Task outcome.
 
-Direct answers use `result:<requestId>` for both their explicit message and
-bounded compatibility projection; reads prefer the explicit message. The
-inbox result remains execution evidence, not a second message. Failed handling
-uses `failure:<inputId>` so an earlier acknowledgment cannot hide its failure.
-Preserve these identities and historical messages when retiring the old path.
+Direct replies use `result:<inputId>` as their stable message identity. Historical
+fallback reads prefer an explicit message when one exists. Failed handling uses
+`failure:<inputId>` so an acknowledgment cannot hide a later failure. Neither a
+receipt nor a rendered message independently establishes Request fulfillment.
 
 ### Naming and organization
 
-Use `AppInputContext` for admitted input context, `ConversationTurnResult` for
-the conversational result, and `modelStepCount` for internal cycles. These
-names and the shared state/handler boundary landed through
-[#129](https://github.com/hao1939/may-agent/pull/129) as `0bedd93a`; the
-[implementation review](../proposals/storage-state-service.md#candidate-review-and-landing-order)
-records the code map and verification. `AppRequest` remains a deprecated input
-context alias. With child-wait retirement, `AppRequestDecision` and
-`appRequestAgentResultSchema` become deprecated aliases of the single
-`ConversationTurnResult` contract; they no longer accept `dependencies`. Existing execution event names such as `turn_start` and retained
-`turnCount` counters describe model steps, not human Conversation Turns.
+Use `AppInputContext` for admitted input context, `ConversationTurnResult` and
+`conversationTurnResultSchema` for the decision, and `modelStepCount` for internal
+cycles. Retired `AppRequest`, `AppRequestDecision` and
+`appRequestAgentResultSchema` aliases are no longer current exports. Existing
+`turn_start` execution events and retained counters describe model activity,
+not a new human Turn lifecycle.
 
-Use `inboxId` for input correlation, `turnId` when targeting its human execution,
-and `requestId` for the accepted ask. A Turn can reuse its inbox identity; this
-requires no new record or identity generator.
-
-Keep durable IDs and existing external compatibility at explicit boundaries;
-do not migrate SQLite columns or published events merely for spelling. The
-[storage proposal](../proposals/storage-state-service.md#conversation-state-and-handler-extraction)
-owns the coordinated extraction and caller migration. Current ten-minute turn
-timeouts and shared tool-count/elapsed-time finish prompts are execution cost
-controls, not evidence of fulfillment. Tune them from observed premature stops
-or excess cost; this refinement does not change their values or add auto-retry.
+Use `inboxId` for input correlation, the exact observed Turn identity for Stop,
+and `requestId` for the accepted ask. Preserve durable IDs and published events
+at compatibility boundaries rather than migrating stored data just for spelling.
+The [source reading guide](../2b-manual/source-reading-guide.md) identifies the
+current context, decision, state and transport modules.
 
 ### Live validation and remaining checks
 
-The [September 11 Request follow-through review](../proposals/task-runtime-organization.md#request-follow-through-review)
-checks Stop plus queued correction across SQLite reopen, linked Task non-success,
-recovery of missing explanation, stale-scope rejection and atomic closure. These
-are deterministic checks of Host mechanics with supplied App decisions; they do
-not establish the model judgments below. Candidate source and validation status
-remain in the review.
+The [Task runtime tests](../../../may-agent/src/app/core/tasks/conversation-runtime.test.ts)
+and [state tests](../../../may-agent/src/app/core/state/conversation-task-turns.test.ts)
+exercise actual admission, handoff, scoped Stop, accepted Requests and recovery
+across storage reopen. The [test guide](../../../may-agent/test/README.md)
+separates these checks from process-loss and browser coverage. Earlier model
+trials remain linked in the [Request follow-through review](../proposals/task-runtime-organization.md#request-follow-through-review)
+and [workflow review](../proposals/workflow-practices-review.md).
 
-The September 10 local May/Scout trial verified a new ask staying open through
-handoff to the exact existing HN Task, a new source-grounded cycle, and May
-returning its result before closing that ask. The standing Task retained its
-identity and generation. The trial exposed and repaired two handoff gaps:
-converged maintained Tasks were rejected as terminal, and the model needed
-explicit guidance to leave handoff link creation to the Host. See the
-[workflow validation record](../proposals/workflow-practices-review.md).
-
-This is one observed path, not long-run certification. Continue verifying: a
-multi-turn discussion creates no delegated Task; acknowledgment needs no redundant
-approval; corrections keep
-the same Request; handoff leaves an unfulfilled Request open; completed Task
-results still produce the owed explanation after restart; a blocked Task does
-not silently close its Request; and cancellation or scope changes have explicit
-outcomes. A delayed closure must not overwrite a newer accepted ask.
+Remaining proof is behavioral: multi-turn discussion should not create unnecessary
+work; clear authorization should not prompt repeated approval; corrections should
+retain their ask and revise the responsible assignment; a child's result should
+produce the owed explanation; a blocker should not silently close the ask.
+Measure these in real use. Source checks alone cannot certify them, and immediate
+current-turn steering remains a distinct interface gap.
 
 ## Retained-state compatibility
 
-The current supervision identity is `may/conversation/follow-up`. Its retirement
-must preserve messages, exact Topic/Task links, Requests, accepted results and
-audit Events. Drain or fence its active execution before switching to the new
-consumer; do not run both response writers for the same work. Retire that exact
-Task through a verified scoped retirement procedure and retain its history
-rather than deleting it or minting a successor supervisor. Current generic Task
-cancellation rejects maintained Tasks; do not assume it can perform this
-retirement. The implementation must establish the supported procedure before
-cutover. Reconstruct eligible pending follow-up from canonical linked evidence
-through the normal new admission path, honoring
-handled and stopped dispositions. The [unification review](../proposals/conversation-input-unification.md#implementation-order)
-owns the source/cutover sequence; [Operations and Recovery](../2b-manual/app-operations-recovery.md)
+The retired supervisor identity `may/conversation/follow-up` is historical
+work, not a current response owner. Offline cutover preserves messages,
+Topic/Task links, Requests, accepted results and audit Events while fencing old
+execution. Current Task controls have no maintained-mode exception. Do not run
+old and new response writers together or rerun historical cutovers as routine
+maintenance. The [unification record](../proposals/conversation-input-unification.md#implementation-order)
+retains migration evidence; [Operations and Recovery](../2b-manual/app-operations-recovery.md)
 owns separately authorized operating procedures.
 
 The retirement upgrade ends unfinished old child waits with

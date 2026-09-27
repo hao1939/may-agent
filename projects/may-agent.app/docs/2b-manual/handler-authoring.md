@@ -56,7 +56,7 @@ link. Those Tasks run independently and do not hold the parent's worker slot.
 Read their correlated reports and answers before accepting the aggregate result.
 Do not author a task-lifecycle Condition or an App-local refill event for this path.
 
-The [continuation candidate](../archive/reviews/execution-feedback-poc-20260913.md)
+The [continuation implementation record](../archive/reviews/execution-feedback-poc-20260913.md)
 allows `continue: true` with new dependencies and progress facts when useful
 independent work remains. Another bounded pass of the same parent can prepare
 that work. Omit it when only results remain. Existing Conditions survive;
@@ -71,9 +71,10 @@ exact Conditions for facts outside the task graph, and a structural group when
 a node has no independently reconcilable outcome. Closing a parent does not
 silently cancel independently owned children.
 
-A running handler must not close, unblock or rewrite its own assignment.
-Its result advances the attempt. Bring necessary scope changes to its assigning
-owner through the normal feedback path. Broad reprioritization,
+Use the current attempt to reconsider waits and advance work. Retire an obsolete
+Condition with its exact observed generation and a reason. Assignment revision
+and closure belong to the assigning owner; request them through normal feedback.
+Broad reprioritization,
 duplicate cleanup, and unrelated-branch changes belong to a bounded App task
 with an explicit outcome.
 

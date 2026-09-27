@@ -1,25 +1,12 @@
 # Metrics And Alerts
 
 **Design status:** Accepted.
-**Implementation status:** `MetricService` and App/workflow-owned measurement
-are implemented, and Cron is the sole Host snapshot scheduler. The maintenance App
-still carries a legacy central catalog for Host measurements and domain metrics
-not yet moved to their Apps. That remaining authority gap is tracked in the
-convergence tracker. The expanded default core-metrics proposal and later
-App-subscriber alternative are [archived](../archive/reviews/error-handling-and-conversation-discussion-20260910.md).
-The narrower [workflow tracing and health metrics proposal](../proposals/workflow-tracing-and-health-metrics.md)
-remains partly unimplemented. Its
-[first source slice](../proposals/workflow-tracing-and-health-metrics.md#first-implementation-candidate)
-merged in Host #143 as `939698ad`, adding optional workflow outcome observations,
-richer SDK reads and retained source errors. Deployment is unverified. The
-SQLite-first reporting reads and browser presentation are implemented in the
-[page candidate](../proposals/workflow-tracing-and-health-metrics.md#page-refinement-candidate),
-Host #147 (`374a99db`), not yet merged or deployed. No new metric types, client
-integration or monitoring service is included.
-An [isolated PoC](../archive/reviews/default-error-metrics-poc-20260909.md) tested a
-Task-attempt collector; it is unpublished and does not change current activation
-or reporting requirements. The existing metric service contract below remains
-accepted.
+**Implementation status:** `MetricService`, App-defined sources, exact-command
+batch sampling, workflow observations and bounded reporting pages are implemented.
+The maintenance App source retains a central metric catalog, and some HTTP
+reports still encode named Evaluation policy. Those ownership gaps remain in
+[the convergence index](../proposals/design-implementation-convergence.md).
+Metrics observe work; they do not accept outcomes or choose improvements.
 
 ## Purpose
 
@@ -102,7 +89,7 @@ snapshot event. This path creates no Task and calls no agent. A query may return
 `value` plus optional `sampleSize`, `measuredAt`, and `note` columns so the
 sample retains its evidence.
 
-The [metric-source candidate (#177)](https://github.com/hao1939/may-agent/pull/177) also lets a command return
+A command may also return
 `{"samples":{"example.count":{"value":7,"sampleSize":10}}}`. Metrics using
 that producer declare the **same exact** `sourceCommand`; the collector runs it
 once per sampling pass and selects each metric by its ID. A single due metric
@@ -112,13 +99,13 @@ metric within that pass. Existing numeric and single-sample command output
 remains supported; a valid top-level `value` takes precedence over an extra
 `samples` field. Query-backed definitions do not execute a command as well.
 
-The candidate removes filename-specific rewriting of `project-metrics.ts` and
+The collector does not perform filename-specific rewriting of `project-metrics.ts` and
 `focus-metric-sample.ts` commands. Existing individual `--json` commands still
 execute as declared, but no longer receive implicit batching. Before adopting
-the Host candidate on an installation with those producers, update their App
+this collector on an installation with legacy producers, update their App
 definitions and output together, and verify invocation counts/cost. No stored
-commands are rewritten automatically. This is a candidate contract, not a
-claim that installed producers have changed.
+commands are rewritten automatically. Source support does not prove that
+installed producer definitions have changed.
 
 `measureInterval` is the metric's minimum normal sampling cadence. The shared
 five-minute event only checks what is due; it does not force every source to
@@ -246,7 +233,7 @@ not prerequisites for running May or viewing its current history.
 
 ### Bounded reporting reads
 
-The page candidate keeps read calculations in optional Host reporting adapters;
+The reporting implementation keeps read calculations in optional Host reporting adapters;
 HTTP and browser consumers share them. Apps still use `MetricService`.
 
 - Workflow summaries use one SQLite read snapshot and fixed `[start, end)`
@@ -287,7 +274,7 @@ HTTP and browser consumers share them. Apps still use `MetricService`.
   runs can differ after late settlement or retention; it does not recreate an
   immutable historical population. Arbitrary metric names imply no such link.
 
-These are interactive-view limits, not a complete bulk export. The candidate
+These are interactive-view limits, not a complete bulk export. The implementation
 adds one workflow end-time index and partial indexes on open alerts ordered
 globally and by metric. Resolved history is excluded from those indexes; the
 read need not scan or sort that history. No alternate outcome store, registry

@@ -3,18 +3,15 @@
 **Design status:** Accepted.
 **Implementation status:** SQLite holds canonical work and admission state;
 files hold full execution artifacts. Conversation execution uses the shared
-Task claim and settlement lifecycle introduced in #158; Task outcome/closure
-simplification landed in #168. The September 27 source review at `0ddad3aa`
-was followed by the cleanup merge at `b79a693f`. Source status does not
-establish the deployed artifact.
+Task claim and settlement lifecycle. Accepted outcomes, explicit closure and
+caller correlation have separate retained records. Source status does not
+establish the deployed artifact; see the [source review](../archive/reviews/design-doc-hygiene-20260927.md).
 
 The [storage extraction review](../proposals/storage-state-service.md#candidate-review-and-landing-order)
-retains the earlier #129 boundary work. The
+retains the earlier boundary work. The
 [one-lifecycle baseline](../proposals/conversation-input-unification.md)
-is implemented, rather than a pending inbox-to-Task migration. Merged
-[#235](https://github.com/hao1939/may-agent/pull/235) completes the active-Turn
-read alignment by removing historical lease fallback and finding running
-successor Tasks.
+records the shared authority decision. Active-Turn reads use current Task
+execution and exact successor links; historical inbox leases are not authority.
 
 ## Decision
 
@@ -87,7 +84,7 @@ fencing old claims. Original wait and session identities and saved decisions
 remain evidence. Completed inputs, child inputs, Task state/results, Topic links
 and accepted Requests remain intact; finishing an obsolete input never closes
 an accepted ask. Reopening the upgraded database does not repeat the transition.
-The source candidate is tracked in the
+The historical conversion is recorded in the
 [simplification proposal](../proposals/authority-boundary-simplification.md#1-one-durable-delegation-path);
 rollout remains separate.
 
@@ -141,15 +138,11 @@ input evidence, accepted answers or feedback remain ambiguous and unlinked.
 Selecting an equivalent alias preserves the historical rows and never reopens
 the work or manufactures an accepted answer.
 
-The following retry-exhaustion rule describes the merged source baseline;
-the continuing-Task proposal replaces that gate with backoff and explicit owner
-closure, preserving unfinished input until it receives its exact answer.
-Retained input is not necessarily runnable work: retry-exhausted attention
-must ready linked requests for review without permitting another execution.
-Ordinary attention with new eligible input must wait for a fresh result.
-Request attachment and the retry-exhaustion readiness correction are merged
-at the [source baseline](../README.md). The [storage proposal](../proposals/storage-state-service.md)
-records their proof and considers further extraction.
+Unsuccessful Task attempts retain input and use persisted backoff. There is no
+fixed failure-count stop. New input does not erase older waits or accepted
+results; an authorized owner decides whether to revise or close the Task.
+Input-result projection uses exact accepted evidence and can recover separately
+from execution. See [failure and retry](task-resource-engine.md#one-lifecycle-baseline).
 
 For artifact-backed records, the file and its SQL projection use this order:
 

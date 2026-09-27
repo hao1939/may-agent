@@ -8,7 +8,7 @@ The [enforcement table](../2a-design/workflows.md#enforcement-infrastructure-and
 identifies what shared code enforces, what it only supports, and known gaps.
 The best practices below guide author decisions; uncertain choices stay advisory
 until experience justifies a stronger contract. This guide targets the shared
-handoff candidate recorded in the [Task context proposal](../proposals/task-context-discovery-20260917.md).
+handoff contract and evidence recorded in the [Task context proposal](../proposals/task-context-discovery-20260917.md).
 
 ## Choose A Skill, Module, Or Workflow
 
@@ -96,7 +96,7 @@ App request or task. The calling App/task boundary validates and admits the
 output.
 
 Use `id`, `kind`, `status`, `summary`, `output` and `facts` consistently for agent
-and workflow contributions. The candidate maps explicit partial agent work to
+and workflow contributions. The execution adapter maps explicit partial agent work to
 `blocked` and preserves the original finish facts. Inspect evidence as well as
 status: normalization cannot establish semantic completeness. A completed review
 can be `done` while the reviewed implementation still needs changes. An unfinished
@@ -181,7 +181,7 @@ A later result or fact wakes that exact authority. Do not reconstruct the
 wait from an event pair, owner label, message, session, or prompt.
 
 Use a namespaced Condition event type and identify its real producer and ingress.
-The wait-recovery candidate rejects unnamespaced types in the shared finish
+The shared result protocol rejects unnamespaced types in the shared finish
 schema and runtime admission. A namespaced name alone does not install a producer:
 the ordinary public publish interface accepts registered events, while an
 explicit operator-fact route may admit custom namespaced facts. A Condition's

@@ -32,6 +32,10 @@ contracts; Tier-2 design governs when wording conflicts.
 
 ## Reviews
 
+- [Design documentation hygiene — 2026-09-27](reviews/design-doc-hygiene-20260927.md)
+  — source-backed corrections to lifecycle, admission, recovery, user controls
+  and improvement ownership; retained implementation gaps and validation limits.
+
 - [Bounded May project-review pilot — 2026-09-12](reviews/may-project-review-pilot-20260912.md)
   — isolated comparison and visible container trials; a stopped scope-extension
   retry, three ordinary periodic reviews on `3644b5a1`, and clock-echo overhead.

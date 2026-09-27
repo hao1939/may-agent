@@ -1,12 +1,10 @@
 # HTTP API And Web UI Boundary
 
 **Design status:** Accepted.
-**Implementation status:** Controls use the shared event publication path.
-Canonical App-ID Task list/get routes are implemented as daemon-read adapters.
-[Host PR #70](https://github.com/hao1939/may-agent/pull/70), revision
-`154581de`, is pending integration: it replaces the default Task board's
-path-based snapshot projection with paged human Task reads. This is not a
-deployment claim.
+**Implementation status:** Controls use shared event publication. Conversation,
+human Task and App-ID Task reads forward through the daemon's shared read
+capabilities. The default Task board uses paged human Task reads. Source entry:
+`src/app/http/task-read-routes.ts` and the HTTP source guide.
 Session evaluation generation still embeds evaluator instructions in HTTP, and
 evaluation comments still append feedback files directly. These are known gaps
 in the thin-adapter boundary, not exceptions to the contract below; their paired
@@ -57,7 +55,7 @@ this design.
 Edit the default UI only in `packages/webui/static`. Build into staging, then
 update the served copy through explicit deployment; see the
 [UI source/build boundary](webui.md#source-ownership) for the repository-local
-default candidate and older-version behavior. Domain UIs use stable HTTP/control
+staging and deployment behavior. Domain UIs use stable HTTP/control
 contracts rather than private runtime storage.
 
 ## Read boundary
@@ -113,7 +111,8 @@ retained evidence. It shows at most 100 direct Conditions/dependencies and
 20 reconciliation events, with visible truncation notices. History includes
 older generations/attempts and cannot establish current completion.
 
-A live converged maintain Task is `up-to-date`, not terminal `done`.
+An open converged Task is `up-to-date`. Explicit closure is separate; `done`
+remains a historical receipt label in human reads.
 Completion/cancellation comes from canonical retained records, not inferred
 events. Read failures remain failures, never empty boards or fabricated
 completion. Browser selection is local; late responses cannot replace a

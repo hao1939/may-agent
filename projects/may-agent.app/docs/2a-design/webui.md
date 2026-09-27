@@ -1,14 +1,12 @@
 # Web UI
 
 **Design status:** Accepted.
-**Implementation status:** The static route-based operator UI is implemented.
-The default project/task surface still uses older path-based projections and
-has not completed migration to the shared App-ID Task reader.
-The workflow health refinement is implemented in Host #147 (`374a99db`),
-building on #143's evidence and SDK reads. It is a source candidate, not yet
-merged or deployed; [candidate evidence](../proposals/workflow-tracing-and-health-metrics.md#page-refinement-candidate)
-records checks and remaining scope. The new Overview Task summary uses the
-shared App-ID reader; it does not migrate the separate project/task surface.
+**Implementation status:** The static operator UI, paged human Task board,
+App-ID Task reads, workflow health views and context-usage reports are implemented.
+Some presentation copy still describes convergence as recurring work; the
+[Task contract](task-resource-engine.md#one-lifecycle-baseline) applies to every
+Task. The [documentation review](../archive/reviews/design-doc-hygiene-20260927.md)
+records remaining presentation and authority gaps. Deployment is separate.
 
 ## Purpose
 
@@ -37,7 +35,8 @@ The UI renders the objects defined in [system-model.md](system-model.md):
 - agents show replaceable execution profiles and their current attempts.
 
 App schedules, observers, Task reconciliation, and accepted results are App
-liveness. Standalone agent heartbeats are agent liveness. The UI must not treat
+liveness. Process/session observations describe execution liveness; optional App review
+schedules have their own meaning. See [Heartbeat](heartbeat.md). The UI must not treat
 heartbeat sessions as the only form of agency.
 
 ## Source Ownership
@@ -54,14 +53,10 @@ By default, the server reads the generated deployment copy at:
 projects/platform/ui/
 ```
 
-Build/staging and deployment are separate operations. In the
-[script-retirement candidate](../proposals/poc-retirement-and-knowledge-20260912.md)
-(Host #174), `bun run ui:sync` and `bun run bundle` stage UI under the Host's
-ignored `bundle/platform-ui` by default. `MAY_AGENT_UI_OUTPUT_DIR` can select
-another staging directory; it is replaced, not merged. Explicit deployment
-activates the served copy. Earlier source versions still default to the sibling
-served target, so use the explicit staging override when building those versions.
-This candidate is not a claim that the installation has been updated.
+Build/staging and deployment are separate operations. `bun run ui:sync` and
+`bun run bundle` stage UI under the Host's ignored `bundle/platform-ui` by
+default. `MAY_AGENT_UI_OUTPUT_DIR` selects another staging directory; staging
+replaces its contents. Explicit deployment activates the served copy.
 
 For development, the WebUI package's `dev` command serves `static/` directly
 through the same HTTP adapter: these editable assets need no compilation or
@@ -167,7 +162,7 @@ A missing or failed read is not a zero value. Load bounded summaries
 on entry and detail/history on demand, not one request and graph for every
 metric. Render names, errors and notes as untrusted text, never executable HTML.
 
-The candidate uses `GET /api/workflow-health` for shared summary, breakdown and
+The UI uses `GET /api/workflow-health` for shared summary, breakdown and
 paged evidence. See [reporting bounds](metrics.md#bounded-reporting-reads) for
 scope, freshness and limits. `/api/metrics` supplies observations; the existing
 per-metric history endpoint is loaded only after selection. Late responses must

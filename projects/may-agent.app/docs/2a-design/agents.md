@@ -1,11 +1,11 @@
 # Agent Cooperation
 
 **Design status:** Accepted.
-**Implementation status:** Bounded agent execution and Runtime-managed
-cross-App Task dependencies are implemented. App delegation dispositions have
-been removed. The [locally tested consolidation candidate](../archive/reviews/execution-consolidation-poc-20260914.md)
-adds caller scope to generic calls/forks and removes automatic standalone
-recovery. It has not been deployed.
+**Implementation status:** Bounded calls/forks and durable cross-App Task
+dependencies are implemented. Helpers retain their live caller's scope and
+cancellation; standalone sessions require an explicit caller to resume. The
+[execution review](../archive/reviews/execution-consolidation-poc-20260914.md)
+retains the trials and their limits.
 
 Agent registration has two scopes:
 
@@ -58,7 +58,7 @@ The model-facing `agents` tool manages bounded execution:
 | `list`     | List registered agents and active sessions | Discovery                                                            |
 | `peek`     | Read recent output from a running child    | Observe a fork                                                       |
 | `cancel`   | Cancel a running child                     | Stop obsolete bounded execution                                      |
-| `context`  | Read/update permitted agent context        | Agent context management                                             |
+| `context`  | Read caller/session lineage context        | Agent context management                                             |
 | `sessions` | Query persisted execution summaries        | Diagnostics/history                                                  |
 
 `call` and `fork` create causal child sessions. Only `call` blocks.
@@ -76,7 +76,7 @@ recoverable work belongs in an App request or task.
 
 Required helpers must be joined or stopped before their caller completes, and
 caller cancellation stops them. Parallel awaited workflow calls already support
-concurrent bounded work. The candidate retains `fork` as a scoped model-tool
+concurrent bounded work. The agents tool retains `fork` as a scoped model-tool
 capability, tested through its public action. It no longer creates detached
 responsibility or a second message notification. Existing durable dispatch
 guidance is migrated to App Tasks. A returned session ID is not a durable result
@@ -162,7 +162,7 @@ when the initial workspace entry cannot be saved, the root keeps its full input.
 Explicit App context preparation still receives the original call request.
 
 The [integration record](../proposals/task-decision-context-integration-20260926.md)
-tracks candidate source, trials and rollout. This does not add mid-command
+records source integration, trials and rollout evidence. This does not add mid-command
 steering to native executors or change workflow result/Task settlement rules.
 
 - Agent calls receive the supplied task, explicitly selected context, tool
@@ -184,7 +184,7 @@ steering to native executors or change workflow result/Task settlement rules.
 | Optional FYI with no result obligation                         | `message` notification                  |
 | Repeatable multi-step bounded process                          | `ctx.workflows.run`                     |
 
-The fork row follows the tested candidate contract above. Do not rely on
+The fork row follows the bounded caller contract above. Do not rely on
 detached auto-resume to fulfill an App obligation.
 Provider-specific helpers and direct CLI calls follow the same
 [execution rules](system-boundary.md#execution) without needing their own Tasks.

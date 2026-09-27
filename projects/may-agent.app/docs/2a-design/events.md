@@ -2,8 +2,8 @@
 
 **Design status:** Accepted.
 **Implementation status:** Event persistence, frozen admission journaling,
-deferred request-to-Task coordination, exact wakes, Condition wakes, and
-ordered per-attempt Event batches are implemented. All current Apps use that
+direct input-to-Task attachment with paced recovery, exact wakes, Condition wakes, and
+ordered per-attempt Event batches are implemented. App admission uses that
 single path; request dispositions have been removed. May's Conversation Task
 handles linked Task facts through the same input path as human discussion;
 there is no separate current supervision Task or proxy for destination work.
@@ -20,7 +20,7 @@ record because a later result is owed; a fact does not create another resource.
 ```text
 publish(event) -> validate -> persist event + exact admission -> receipt
                                       |
-                                      +-> async request coordination / Task handling
+                                      +-> async Task execution / result projection
 ```
 
 The event ID is the root causal identity. An event does not replace mutable work
@@ -33,8 +33,8 @@ and [event-graph.md](event-graph.md) for causal graph details.
 
 ## Public interface
 
-The implementation lives in `src/app/core/events/` at the
-[source baseline](../README.md). Async subscriber promises remain in the bus's
+The implementation lives in [core/events](../../../may-agent/src/app/core/events/).
+Async subscriber promises remain in the bus's
 ordered, error-contained listener path. The observation boundary is:
 
 - `PUBLIC_EVENT_TYPES` governs ingress only, never outbound observation.
@@ -108,10 +108,11 @@ shortcuts are rejected.
 
 Persistence and the exact durable admission authority finish inside `publish`.
 That authority may be a caller request, frozen route-journal row, exact Task
-wake, or control operation. The step may run pure App translators/resolvers,
-but it cannot execute work. Request-to-Task coordination, model calls,
-workflows, commands, network I/O, presentation, broad reads, and other actual
-handling begin asynchronously after `publish` returns.
+wake, or control operation. The step may run pure App translators/resolvers
+and attach input to a Task, but it cannot execute work. Model calls, workflows,
+commands, network I/O, presentation, broad reads and other actual handling
+begin asynchronously after `publish` returns. Failed attachment remains saved
+for recovery through the same admission boundary.
 
 The EventHub does not serialize semantic handling. It records event identity,
 sequence, and causal links, but those facts do not control execution order.
@@ -216,8 +217,8 @@ observe the same addressed fact; this neither consumes its durable input nor
 starts a concurrent attempt. See [input during execution](workflows.md#input-during-execution).
 
 An App subscription has a stable ID and produces input only when its pure
-translator returns a valid value. The deferred request coordinator passes
-addressed input through the App's pure `task(input)` mapping. A direct Task
+translator returns a valid value. App admission passes addressed input through
+the App's pure `task(input)` mapping and atomically attaches its Task/input link. A direct Task
 subscription may use pure `tasks.resolve(event)` during exact admission. The
 Runtime persists the resulting intent and one ordered canonical task-event
 link, then coalesces the stable task ID in its ready set. A targeted task or
@@ -262,8 +263,9 @@ Addressed input uses one standard required event:
 app.input.requested target.appId=<app>
   -> validate App input
   -> create or find caller correlation when a caller expects a result
-  -> return the accepted request link
-  -> asynchronously map it to and persist one App task link
+  -> map and atomically attach input to its Task, or retain failed admission
+  -> return the durable receipt and available exact links
+  -> asynchronously execute/recover through the Task boundary
 ```
 
 - non-conversation callers may publish this event for the `may` App;
@@ -279,7 +281,7 @@ back to a generic owner inbox or May.
 Composition selects the conversational App. Its input must use durable App or
 Conversation admission; `chat.start.requested` cannot bypass that boundary.
 This rule follows the selected capability rather than a name hardcoded in core.
-See the [candidate cleanup](../proposals/authority-boundary-simplification.md#core-policy-cleanup).
+See the [boundary review](../proposals/authority-boundary-simplification.md#core-policy-cleanup).
 
 The request persists caller correlation, dependency links, result, and restart
 recovery. It does not execute App policy. The App sees the
@@ -504,7 +506,7 @@ should not repeatedly invoke judgment merely to rediscover the same state.
 Adapters declare which source fields matter, while the agent decides their
 meaning; no central table of provider-specific repair strategies is needed.
 
-The continuing-Task candidate in Host #158 applies this to typed delegation:
+The shared Task runtime applies this to typed delegation:
 `project.task.reconciled` and `app.task.cancelled` refresh saved input feedback
 and linked Conversation observations. `app.dependency.updated` carries the exact
 input's first accepted failure (`blocked`) or its answer/owner closure (`done`).

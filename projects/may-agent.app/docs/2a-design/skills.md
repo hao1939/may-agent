@@ -351,12 +351,14 @@ prompts, supports explicit and model-selected activation, and emits
 trace-aligned `skill.loaded` evidence. Invalid packages and untrusted symlinks
 are omitted with diagnostics.
 
-Two follow-ups remain:
+Two boundaries matter:
 
-- existing persistent chats retain their original prompt snapshot, so a new
-  session is required to see refreshed catalog metadata; and
-- evaluation records the exact content hash but does not yet provide a stable
-  outcome/regression comparison by hash.
+- Persistent chats retain their prepared catalog. This is the intentional
+  definition-snapshot rule, not failed reload. A fresh execution adopts the
+  activated catalog without replacing the human Conversation or Task.
+- `skill.loaded` records exact content identity. A stable outcome/regression
+  comparison by skill hash needs separate Evaluation design and evidence;
+  recording the hash alone does not supply that comparison.
 
 Improve these paths in place. Skill activation must continue to use the same
 agent runtime and must not create another work lifecycle.

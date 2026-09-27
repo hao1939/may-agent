@@ -9,16 +9,21 @@ trail. HTTP-owned policy and feedback writes also remain a boundary gap. See
 [the authority proposal](../proposals/authority-boundary-simplification.md#remaining-work).
 The write boundary below describes the accepted trail behavior, not proof that every
 step currently runs. Calibration remains an ongoing evaluation concern.
-**Aligned with**: `sessions.md`, `webui.md`, `runtime.md`, `sdk.md`
+**Aligned with:** [Sessions](sessions.md), [Web UI](webui.md),
+[Runtime](runtime.md), [SDK](sdk.md).
 
 ## Purpose
 
-Session evaluation is one pipeline with two views of the same judgment:
+When a session annotation is requested, its summary and line trail provide two
+views of the judgment. This is separate from the current Evaluation App's
+primary [Task-outcome review](../../../evaluation.app/design/task-outcome-evaluation.md):
 
 - session-level summary for querying, metrics, and overview cards
 - turn/line-level evidence for investigation and human correction
 
-The raw `session.jsonl` remains the source of truth. The evaluator writes an append-only sibling trail:
+The raw `session.jsonl` remains execution evidence, not Task acceptance. The
+accepted annotation contract writes an append-only sibling trail when producing
+that requested view; the implementation gaps above remain unresolved:
 
 ```text
 .state/sessions/<id>/session.eval.jsonl
@@ -30,7 +35,7 @@ The `evaluations` database table is a projection/index of the latest session-lev
 
 `session.eval.jsonl` is append-only. Each row has `sessionId`, `source`, `author`, and `createdAt`. Evaluation rows are evidence, not commands; owner-routed findings name who should decide the fix.
 
-Session summary row:
+Illustrative session summary row (the owning Evaluation schema governs emitted fields):
 
 ```json
 {
@@ -144,7 +149,9 @@ POST /api/sessions/:id/eval
 POST /api/sessions/:id/eval/comment
 ```
 
-`POST /api/sessions/:id/eval` is a convenience dispatcher. With an empty body, it asks evaluator to generate/review the whole session trail. With `{ "line": 12 }`, it asks evaluator to focus on that raw line and related feedback. There is no separate mode. The API does not decide repairs; it only dispatches evaluator work and records feedback.
+`POST /api/sessions/:id/eval` is a convenience dispatcher. With an empty body, it asks evaluator to generate/review the whole session trail. With `{ "line": 12 }`, it asks evaluator to focus on that raw line and related feedback. There is no separate mode. This is the accepted dispatch contract. Current source loses the selected line
+and instructions at the Evaluation mapping boundary and still writes human
+feedback in HTTP. Those are implementation gaps, not supported thin-adapter behavior.
 
 ## UI Model
 

@@ -200,22 +200,19 @@ cutover. Deployment must not consult, recreate, or mutate it.
 
 Verification of an exact live commit is not another deployment attempt. Begin
 with the exact receipt path retained before launch and run
-`bun scripts/deploy-receipt.ts read RECEIPT_PATH` from revised PR #220 source
+`bun scripts/deploy-receipt.ts read RECEIPT_PATH` from the Host source checkout
 (or invoke the staged `bundle/deploy-receipt.ts`). The terminal receipt is the
 authoritative binding among `sourceCommit`, `artifactSha`, the loaded artifact,
 health and correlation. Optional `{project, taskId}` fields describe only a
 best-effort notification destination. Internal activation markers and their
 disappearance are not completion evidence.
 
-The [deployment-boundary candidate (#179)](https://github.com/hao1939/may-agent/pull/179) moves receipt interpretation out of the
-generic Task executor. Revised PR #220 scripts retain the older
-`read-task RECEIPT_DIR APP_ID TASK_ID` compatibility lookup for targeted
-receipts, but normal recovery reads the known exact path and does not scan
-unrelated receipts. Invalid or unreadable evidence fails visibly; it is not
-absence or authority to deploy. The standalone `read` interface is revised
-source behavior and is not available in the older installed script until the
-Host change is reviewed, merged and deployed. This document does not claim the
-running image changed.
+Receipt interpretation lives in the deployment script, outside the generic
+Task executor. `read-task RECEIPT_DIR APP_ID TASK_ID` remains a compatibility
+lookup for targeted receipts; normal recovery reads the known exact path.
+Invalid or unreadable evidence fails visibly. It is not authority to deploy
+again. Verify the installed script and receipt format before using an older
+release; this manual does not establish the running image's version.
 
 A successful proof requires `phase: succeeded`,
 `loadedArtifactSha == artifactSha`, `health: healthy`, and

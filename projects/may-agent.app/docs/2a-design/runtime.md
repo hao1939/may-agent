@@ -119,8 +119,8 @@ previous set when readiness fails.
 The Host stores identity and intent before the Runtime wakes work. The code
 calls this "admission":
 
-- an input event, frozen route journal entry, and any caller request are
-  persisted before asynchronous request-to-Task coordination;
+- the input event and frozen route are persisted; addressed App input is saved
+  and synchronously mapped/attached to its Task where possible;
 - a subscribed fact becomes typed App input or an exact task wake;
 - a task trigger is recorded before a worker is woken;
 - a local child and its parent link commit together; and
@@ -130,29 +130,25 @@ calls this "admission":
 
 This is why restart recovery does not depend on an in-memory queue.
 
-The admission journal is crash insurance, not a work queue. A newly accepted
-event arms the asynchronous in-memory coordinator after publication returns.
-Startup and App reload each recover at most 16 retained plans; the safety pass
-runs at most once per minute, selects only plans whose one-minute retry
-cooldown elapsed, and uses the `(status, updated_at)` index. A route that
-remains invalid therefore stays visible without continuously consuming CPU or
-rewriting its error row.
+The admission journal retains unfinished delivery. Ordinary input admission
+uses the App's pure mapping and atomic Task/input attachment directly. Failed
+mapping or storage leaves the durable input available for bounded recovery;
+there is no independently executing inbox pump. Recovery batches and pacing
+are implementation limits, not another owner or a promise of immediate execution.
 
 The [one-lifecycle implementation](../proposals/conversation-input-unification.md#proposed-controller-boundary-and-code-layout)
 replaced Conversation execution in the inbox pump with Task admission and one
 common claim/attempt/settlement path. Caller correlation and admission recovery
 remain; there is no independently executing inbox handler wrapped by a Task.
-Closed Tasks and stopped/exhausted input are not made eligible by a queue hint
+Closed Tasks and owner-stopped input are not made eligible by a queue hint
 or a timer tick.
 
 ## Capacity
 
-The Host constructs one `HostCapacity` limit shared by request decisions and
-task attempts. Per-App task limits apply in addition. The request coordinator
-coalesces App keys and admits at most the Host limit: normal request decisions
-use background capacity, while at most one May decision may use the reserved
-foreground slot. Apps do not configure either mechanical limit. Delivery is
-passive and consumes neither.
+The Host constructs one `HostCapacity` limit for Task attempts. Per-App limits
+apply in addition. Conversation execution uses that same capacity; input
+validation, pure mapping and result projection do not reserve another agent
+execution slot. There is no request-decision capacity queue.
 
 Conversation input uses the existing lanes by admitted input origin: a
 Conversation Task handling human input may use the reserve; automated review and
@@ -277,10 +273,10 @@ notifications are hints to reread durable resources, not a second
 guaranteed-delivery channel. App observers below are different: they are
 bounded external-state readers that produce facts.
 
-Session digest files, `last-session` summaries, terminal agent cleanup, task
-session recovery, stuck detection, auto-resume, escalation follow-up, project
-comment projection, adapter rendering, and public event streams use this
-passive path. The small session-start binding remains synchronous because the
+Session digest files, `last-session` summaries, terminal agent cleanup,
+recovery observations, escalation follow-up, project comment projection,
+adapter rendering and public event streams use this passive path. A notification
+does not authorize standalone session revival. The small session-start binding remains synchronous because the
 execution that follows immediately must see its session identity. Telegram
 rendering and network delivery are passive Conversation observation; Telegram
 has no session-output, notification-review, or approval-ordering route on
@@ -340,16 +336,16 @@ Host detects failed session
 
 An App judges whether a runtime defect warrants separate maintenance work;
 the recovery mechanism cannot invent that assignment or select a named owner.
-The Host does not call a model to decide mechanical recovery. Consecutive
-error-only turns cause one bounded cancellation, interrupted unbound sessions
-receive at most two delayed resume attempts, and exhaustion emits an
-escalation. Any semantic decision after that belongs to the accountable App or
-human, not infrastructure.
+The Host does not call a model to decide mechanical recovery. It preserves
+failures and the exact owner, applies execution bounds, drains owned processes
+and returns work to the Task's normal retry path. Error counts and silence are
+observations; they do not authorize an independent agent revival or an escalation
+assignment. Standalone execution requires an explicit caller to resume.
 
-The separate maintenance process still performs a legacy 30-second delivery
-expiry and lifecycle-pair repair pass. It remains outside `DbWriter`'s insert
-path, but the unused transport-delivery portion should be removed with the dead
-inbox delivery API rather than becoming a current App contract.
+Maintenance retains bounded database, retention and lifecycle-evidence repair.
+Those operations do not create an input-delivery lifecycle or replace Task
+admission/result recovery. Read the selected handlers in composition before
+inferring that a legacy timer or source file runs in the daemon.
 
 ## Recovery
 
@@ -358,7 +354,8 @@ After opening its interfaces, the Host starts an isolated recovery worker that:
 - releases or repairs stale claims and leases;
 - repairs request correlation and requeues runnable tasks;
 - preserves completed results and event-admission evidence;
-- resumes only compatible sessions that are not owned by a Task; and
+- recovers Task-owned execution through its Task; standalone sessions require
+  an explicit caller to resume; and
 - leaves paused task work retained but unqueued.
 
 The interface process does not await this work. A recovery failure is logged

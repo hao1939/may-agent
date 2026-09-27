@@ -68,7 +68,7 @@ procedure. Reload rejects uncommitted executable definitions. Wait for its
 completion result; a reload receipt alone is not successful activation. See
 [Operations and Recovery](app-operations-recovery.md#failed-app-reload).
 
-At the [documented source baseline](../README.md), a daemon runs Tasks without
+A daemon runs Tasks without
 `--cron`; that flag enables optional schedules. Check your installed Host
 revision: this startup separation merged in PR #96 and does not change an older
 running binary. Validation is recorded in the
@@ -95,10 +95,11 @@ Save the returned `eventId` and read it, replacing `123` below:
 bun projects/may-agent.app/docs/examples/client.ts event "$sample_socket" 123
 ```
 
-The receipt reports `recorded` or `accepted`. An accepted App-input event has a
-durable request; its Task may not yet exist. The event view's request link gives
-the Host request ID. In this sample, the mapping below makes the Task ID
-`review/<request-id>`. Read that exact Task once coordination attaches it:
+The receipt reports `recorded` or `accepted`. Admission normally attaches the
+Task immediately; if mapping or storage fails, the durable input remains for
+recovery. The event view's request link gives the Host input ID. In this sample,
+the mapping below makes the Task ID `review/<request-id>`. Read that exact Task
+after attachment:
 
 ```sh
 bun projects/may-agent.app/docs/examples/client.ts task "$sample_socket" 'review/REQUEST_ID'
@@ -107,16 +108,14 @@ bun projects/may-agent.app/docs/examples/client.ts task "$sample_socket" 'review
 A `null` Task read can mean attachment is still pending; reread the event for
 the request's state. Once attached, inspect the Task's status, summary and
 evidence. `pending`/`running` mean work remains, `waiting` names a dependency,
-`attention` needs correction or judgment, and `done` is the finite Task's
-accepted completion. Later reads use the same IDs. Neither publication nor an
-agent process exit proves the review succeeded.
+`attention` needs correction or judgment, and `done` means an accepted outcome.
+Inspect `closed` separately to tell whether the owner ended the Task. Later reads
+use the same IDs. Neither publication nor a process exit proves success.
 
-For a maintained Task, `done` means its latest cycle is up to date, not that
-standing work has ended. New accepted work awaiting execution must read as
-`pending`, even if its retained summary describes a successful earlier cycle.
-Exact reads and status-filtered lists must agree. The
-[local workflow trial](../proposals/workflow-practices-review.md) tracks the
-queued-cycle read fixes separately from the released Host baseline.
+New accepted work awaiting execution reads as `pending`, even when retained
+results describe a successful earlier attempt. Exact reads and status-filtered
+lists agree. Human views label open convergence `up to date`; there is no
+separate maintained-Task lifecycle.
 
 ## 4. Understand the two mappings
 
@@ -149,7 +148,7 @@ result; do not open Task storage or implement a recovery loop.
 The App example also exports `waitingResult` and `dependencyResult`. The first
 names pipeline run 123, its expected state, accountable `app:pipeline`, and a
 five-minute recovery review. The second requests an outcome from another App.
-Both include the Task result's own `summary` and `evidence`.
+Both include the Task result's own `summary` and `facts`.
 
 Use these results after replacing their example identities with your actual
 producer and App contracts. A review deadline is recovery insurance; time passing does

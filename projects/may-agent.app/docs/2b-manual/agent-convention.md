@@ -6,7 +6,7 @@
 agents/<name>/
   agent.json              # Required. Operational config: model, tools, limits.
   AGENTS.md               # Required. Identity and stable operating contract.
-  heartbeat.md            # Optional. Heartbeat-only guidance, not system prompt.
+  heartbeat.md            # Historical convention; loaded only by an explicit App consumer.
   cron.json               # Optional. Cron job definitions (top-level JSON array).
                           # Requires `"cron"` in agent.json tools[]; otherwise ignored.
 
@@ -87,7 +87,7 @@ event. See [workflows.md](../2a-design/workflows.md).
 | "Long metric debugging recipe"                     | `knowledge/*.md`         | Situational reference       |
 | "Read X when handling Y"                           | `knowledge/INDEX.md`     | Discovery routing           |
 | "Use this procedure when task X appears"           | `skills/<name>/SKILL.md` | Situational reusable method |
-| Heartbeat investigation prompts                    | `heartbeat.md`           | Heartbeat workflow only     |
+| Periodic review method                            | App-owned skill/workflow | Selected by ordinary App input; no special heartbeat loader |
 | Recent notes, drafts, temporary plans              | `workspace/`             | Runtime scratch             |
 | Generated session continuity                       | `last-session.md`        | Runtime/session context     |
 
@@ -99,8 +99,8 @@ link it from `knowledge/INDEX.md`.
 
 `finish()` reports the current turn. Its `completed_items` and `new_items` do
 not complete or create Tasks/Requests; use the owning App's authorized controls.
-`context_updates` reports suggestions, not an activated preference. The default
-daemon does not attach the legacy context-writing subscriber, and even a written
+`context_updates` reports suggestions, not an activated preference. The legacy
+context-writing subscriber is retired, and even a written
 `context.md` is not automatically included in a normal prompt. `lessons` attempts
 a best-effort local memory-stream append, not automatic retrieval or learning.
 

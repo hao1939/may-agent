@@ -1,13 +1,13 @@
 # Scheduling And Observation
 
 **Design status:** Accepted.
-**Implementation status:** At the [source baseline](../README.md), daemon Task
+**Implementation status:** Daemon Task
 activation and startup recovery are independent of `--cron`. Shared timing
 serves core duties and optional registrations. App schedules publish input or
 facts; named Host maintenance has no standalone workflow execution path.
-The installed maintenance App still declares metric snapshots in an agent-local
+The maintenance App source declares metric snapshots in an agent-local
 Cron job; Runtime samples App-defined sources on that event and applies each
-source's cadence. This is a remaining installation coupling, not a required
+source's cadence. This source configuration is a remaining coupling, not a required
 named owner in the [accepted boundary](../proposals/app-policy-and-host-boundary-cleanup.md).
 
 ## Purpose

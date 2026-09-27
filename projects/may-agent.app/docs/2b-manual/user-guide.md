@@ -20,11 +20,11 @@ Later: May returns the comparison and explanation.
        -> close the Request, or state what remains unresolved
 ```
 
-**Current implementation:** Human messages are recorded durably and queued for
-May to handle. The Host calls that handling record a request; it can finish
-after an answer or Task admission. Cross-turn Request tracking and explicit
-closure are [accepted design with remaining work](../2a-design/message-lifecycle.md#current-implementation-and-gaps),
-not a shipped separate Request interface.
+**Current implementation:** Messages and input handling are durable. Separate
+Conversation Request records retain accepted asks, scope revisions, exact Task
+links and closure across Turns. May judges fulfillment; code checks revision
+and authority. Completing input handling does not close an accepted ask. See
+[Message Lifecycle](../2a-design/message-lifecycle.md#requests-acceptance-and-closure).
 
 May may group related Turns under a Topic. A Topic remembers what you are
 discussing and links the responsible Tasks; it has no status or execution
@@ -40,11 +40,11 @@ implementing it. New scope or authority outside existing instructions needs
 your decision in the same Conversation. A progress update, blocker, or “Task
 started” acknowledgment does not by itself resolve an outstanding ask.
 
-May may answer directly or send typed input to the responsible App. The target
-App then owns its own Task. In this installation, runtime deployment requires
-the maintenance App's Task (`appId: may-agent`) and the documented deployment
-procedure. Neither a conversational request nor an agent named `may` grants
-deployment access. This is installation policy, not a special core App role.
+May may answer directly or send typed input to the responsible App. That App
+owns its Task. An authorized operator deploys through the standalone
+[deployment procedure](app-operations-recovery.md#runtime-deployment-target).
+Deployment needs installation authority, but no App or Task identity is required.
+An agent name alone grants no deployment authority.
 
 ### May Console controls
 
@@ -62,7 +62,7 @@ deployment access. This is installation policy, not a special core App role.
 | `/watch [ref]`        | Watch or show one Task                                    |
 | `/unwatch`            | Leave the watch without changing the Task                 |
 | `/cancel [ref]`       | Cancel the named or currently watched Task                |
-| `/stop`              | Stop the active conversational turn; current interim control |
+| `Esc`                | Stop the observed active Conversation Turn; leaves background Tasks running |
 | `/help`              | Show available controls                                  |
 
 Local client and Host administration controls:
@@ -80,16 +80,16 @@ human action (or `Nothing needed right now`), and last update time. Technical
 IDs and sessions are shown only as secondary details.
 
 `/cancel <ref>` cancels that Task; bare `/cancel` requires a watched Task.
-`/unwatch` only ends notifications. `/stop` stops the current conversational turn
+`/unwatch` only ends notifications. Esc stops the current conversational turn
 and leaves admitted background Tasks running. It does not withdraw an accepted
 Request or undo earlier effects. Send a new message to continue or correct the
 discussion; text sent during a running turn currently waits for the next claim.
 
-The [accepted interface](../2a-design/human-control-surfaces.md#current-turn-control)
-replaces Console `/stop` with Esc and adds Telegram/browser Stop buttons.
-Those bindings and current-turn steering are not available at the documented
-source baseline. Do not rely on Esc to stop work yet. These command descriptions
-describe that source; an installed release may lag it.
+Console Esc and Telegram/browser Stop buttons use the same exact Turn control.
+Esc first dismisses an open completion menu; otherwise it stops the observed
+Turn. New text during execution is retained for the next claim. Immediate
+current-turn steering remains a separate [implementation gap](../2a-design/human-control-surfaces.md#current-turn-control).
+Older installations may not expose these bindings; verify their binary version.
 
 Bare text always goes through May with the selected App as context. While
 watching, Console also attaches the exact Task identity as context. May decides
@@ -239,7 +239,7 @@ indexes are read on demand.
 
 1. Create `agents/<name>/agent.json`
 2. Create `agents/<name>/AGENTS.md` — identity and mission
-3. Optionally create `heartbeat.md`, `knowledge/INDEX.md`, `knowledge/*.md`, handlers, or workflows
+3. Optionally add skills, knowledge, tools, or workflows under the agent directory
 4. Restart or invoke the `reload` control
 
 See [Agent Convention](agent-convention.md) for full directory layout.
@@ -266,13 +266,13 @@ sessions/event traces for execution and causality.
 message is notification only; durable cross-App work uses a child App request
 and durable desired work uses a task.
 
-The [consolidation candidate](../archive/reviews/execution-consolidation-poc-20260914.md)
+The [execution consolidation record](../archive/reviews/execution-consolidation-poc-20260914.md)
 keeps helpers under their live caller and joins their cleanup. Finishing the
 caller stops unfinished forks; work owed afterward needs an accepted Task.
 Standalone sessions require explicit resume. A CLI used directly by a human is
-not automatically supervised by May. The candidate uses a 30-minute default
+not automatically supervised by May. The execution boundary uses a 30-minute default
 invocation allowance, preserves the one-shot five-minute default, and returns
-the exact one-shot result and error. It is locally tested, not yet deployed.
+the exact one-shot result and error. These source defaults do not identify an installed release.
 
 ## Session Kinds
 

@@ -1,53 +1,57 @@
 # Design and implementation gaps
 
-**Status:** Active index of known source gaps at the [documentation baseline](../README.md).
-Conversation/storage entries include the focused `99bc1a31` review and the
-subsequent merges of #127 and #129. Naming and Conversation/state separation
-are complete in source; the [storage review](storage-state-service.md#candidate-review-and-landing-order)
-records that evidence. This is not a deployment audit or a second subsystem backlog.
+**Status:** Source review index refreshed against Host `1ff18acc` and workspace
+`7f95373b96` on 2026-09-27. This is not a live deployment or App-quality audit.
+The [documentation review](../archive/reviews/design-doc-hygiene-20260927.md)
+records checks and corrections. Current contracts live in
+[System Model](../2a-design/system-model.md), [Architecture](../2a-design/architecture.md)
+and their linked owners.
 
-Start with [System Model](../2a-design/system-model.md) and
-[Architecture](../2a-design/architecture.md). Each row below points to the owner
-of the remaining contract and its acceptance criteria.
+## Confirmed implementation gaps
 
-| Gap or open decision | Owner and next proof |
+| Gap | Evidence and contract owner | Smallest next proof |
+| --- | --- | --- |
+| HTTP embeds session-evaluation policy and directly writes human annotation | `src/app/http/server.ts`; [HTTP boundary](../2a-design/http-boundary.md), [Session trail](../2a-design/session-eval-trail.md) | Preserve the current API while routing the requested judgment/write to its owner; prove exact session/line/input correlation |
+| Requested session line/instructions are lost at the Evaluation mapping | `evaluation.app/app.ts`, `evaluate-session` mapping and `evaluator-aftermath`; [Session trail](../2a-design/session-eval-trail.md) | Either implement the accepted annotation capability end to end or explicitly revise/remove that advertised capability; do not claim a whole-session assessment answered the line request |
+| Some Task-board text equates convergence with recurring work | `packages/webui/static/pages/project-kanban.js`; [Default UI](../2a-design/default-project-ui.md) | Explain open accepted outcomes independently of recurrence and closure; check the rendered board |
+| Domain metrics and reports remain partly centralized | Maintenance App `ALL_METRICS` and named-agent HTTP report filters; [Metrics](../2a-design/metrics.md) | Move demonstrated domain meaning to its App while retaining factual Host measurement and existing readers |
+
+## Intentional limits and evidence still needed
+
+These are not additional implementation assignments merely because they appear
+here. Apply the value/cost review before extending the contract.
+
+| Limit or unanswered question | Current rule and next evidence |
 | --- | --- |
-| One Task lifecycle and Conversation execution | [Accepted baseline](conversation-input-unification.md): explicit outcomes and owner closure, one execution Task per Conversation; replace mode rules and duplicate inbox execution; prove result correlation, scoped controls, routes and retained-state migration |
-| Current-turn redirection | [Request follow-through review](task-runtime-organization.md#request-follow-through-review): Stop then correction survives SQLite reopen in fixtures; add immediate steering only when its value is demonstrated |
-| Request and owner-decision behavior in use | [Message Lifecycle](../2a-design/message-lifecycle.md#current-implementation-and-gaps) and [Request follow-through review](task-runtime-organization.md#request-follow-through-review): core correction, non-success and closure boundaries pass deterministic checks; live recognition, scope and truthful closure still need usage evidence |
-| Recovery query cost | [Core review plan](task-runtime-organization.md): measure realistic scan and responsiveness cost before optimizing |
-| External capability scope and complexity | [External component plan](external-components-simplification.md#conditional-follow-ups): Scout credential fix landed on workspace main; Host #132/#133 merged as `23968acd`/`39a23f22`; further features/migrations require demonstrated value |
-| Contract-and-convention observer integration | [Observer feedback proposal](observer-feedback-and-resource-conventions.md): Host publication-aware observation memory is present at v3.0.1; App adoption and one convention-based GitHub source still need integration proof |
-| Common feedback model, CLI progress and truthful status | [One execution feedback model](execution-feedback-and-review.md): align existing paths; fix demonstrated progress/status gaps. Review during execution and automatic fallback are deferred, not prerequisites |
-| System path reduction and readable code ownership | [System simplification review](authority-boundary-simplification.md#design-choices-before-code-moves): compare Task-only conversational delegation, evaluation UI reduction and affordable redo; selected import/navigation and foreground-App changes are in review; larger deletions remain conditional |
-| Remaining central domain metrics | The migration rule below and [Metrics](../2a-design/metrics.md) |
-| Accepted child-wait retirement, Evaluation/HTTP policy, behavioral comparison and delivery proof | [Authority proposal](authority-boundary-simplification.md#remaining-work): separate bounded work, with its existing scope limits |
+| Immediate redirection of a running Conversation Turn | New input is retained for the next claim; exact Stop is implemented. [Turn control](../2a-design/human-control-surfaces.md#current-turn-control) distinguishes it from live steering. Demonstrate need before adding more control paths. |
+| Explicit incorporation of live workflow input | Executor acknowledgments exist, but generic workflow callbacks only observe; refreshed model context is also a read. [Workflow input](../2a-design/workflows.md#input-during-execution) preserves pending input for later reconciliation. Demonstrate avoidable repeated work before extending the acknowledgment surface. |
+| Automatic supervisor fallback and review inside awaited helpers | [Ownership boundary](../2a-design/system-boundary.md#ownership-and-intervention) keeps these deferred. Unresolved ownership is retained evidence; it is not proof a human saw a `/todo`. Verify an explicit responsible route when that guarantee is needed. |
+| Agent judgment and the installed improvement loop | Follow exact report → investigation → candidate → comparison → approval → application → fresh behavior. [Learning loop](../2a-design/practice-learning-loop.md) owns common boundaries; App contracts own decisions. Component tests do not certify that sequence. |
+| Recovery efficiency at installation scale | Measure indexed query/dispatch behavior and actual backlog before optimizing. [Task runtime](../2a-design/task-resource-engine.md#pause-reload-and-recovery) owns recovery; age/count alone is not proof of a defect. |
+| Skill-level regression comparison | Catalog pinning is intentional. The [skill contract](../2a-design/skills.md#current-implementation-and-remaining-work) records identity, but hash-to-outcome comparison needs distinct evaluation evidence. |
 
-Input containment and Esc/Stop bindings merged in #121. Dispatch-failure pacing
-and cancellation of pending capacity waits merged in #127 (`743aa5de`). These
-are source fixes; their deployment is a separate operating decision.
-Correlated failure events are also implemented; the
-[core review](task-runtime-organization.md#4-improve-failure-evidence-through-existing-events)
-records their existing publishers and containment checks. Further diagnostics
-should answer a demonstrated operating question.
+## Resolved source drift
+
+The following are implemented, not open migrations: one Task lifecycle,
+direct input attachment, accepted Request storage, Turn Stop/Esc/button bindings,
+shared Task/Conversation reads, scoped helper cleanup, exact legacy feedback
+routing, command-source metric batching and standalone deployment receipts.
+The documentation previously mixed their old implementation plans with current
+contracts. Their dated proposals remain evidence, not a current backlog.
 
 ## Remaining metric ownership migration
 
-Host maintenance still has a central `ALL_METRICS` catalog. Scout and Evaluation
-already own several migrated measurements; Runtime samples persisted
-`sourceQuery` and `sourceCommand` definitions on the existing snapshot event,
-respecting each definition's `measureInterval`.
-
-Classify remaining entries, retain small Host-owned runtime measurements, and
-move demonstrated domain meaning to its accountable App one metric at a time.
-Preserve the question, source, denominator, evidence and interval. Verify the
-App definition and Host sampling path; add no second scheduler or lifecycle.
+The maintenance App source retains `ALL_METRICS`. App declarations can own
+`sourceQuery`/`sourceCommand` measurements on the existing cadence. Preserve the
+question, source, denominator, evidence and interval when moving an entry.
+Do not introduce another scheduler or remove a historical sample to change
+ownership. The installed App definitions determine which measurements run.
 
 ## Maintaining this index
 
-Keep detailed decisions and tests with their owner. Remove a row when its
-source contract and checks converge; keep any deployment work explicit and
-separate. The [previous tracker](../archive/implementation/convergence-review-through-20260908.md)
-preserves earlier migration evidence and scoped decisions.
-The [documentation audit](../archive/reviews/documentation-clarity-20260909.md)
-records retired JSON/Condition items; they are not current implementation gaps.
+Keep a gap only with a source location, its owning requirement and a closing
+proof. Remove resolved rows; keep dated evidence at its existing path. A new
+source review can revise this index without inventing runtime work or claiming
+deployment. Historical [convergence evidence](../archive/implementation/convergence-review-through-20260908.md)
+and [earlier documentation review](../archive/reviews/documentation-clarity-20260909.md)
+remain available.
