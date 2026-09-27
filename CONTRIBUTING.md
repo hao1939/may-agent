@@ -198,16 +198,17 @@ order. Do not merge incompatible halves or infer deployment authority from a
 merged PR. Prefer squash merges with a clear scoped title such as
 `fix(tasks): preserve accepted results after restart`.
 
-When the repository plan supports branch protection, configure `main` to
-require a PR, resolved conversations, up-to-date **Quality** and **Container**
-checks, and prohibit force pushes/deletion. Require one approval when there is
-an eligible reviewer other than the author. Do not require an impossible
-self-approval in a single-maintainer repository.
+The active `main` ruleset requires a PR, one approving review, resolved review
+threads and successful **Quality** and **Container** checks from GitHub Actions
+on the current revision, up to date with `main`. It also prohibits force pushes
+and deletion. Preserve the repository's existing administrator bypass policy;
+an emergency bypass is not evidence that validation passed.
 
-At setup time GitHub reported that this private repository's plan does not
-support branch protection or rulesets. These rules are therefore contributor
-policy, not enforced merge restrictions. Enabling paid-plan protection is an
-owner decision; never change visibility or billing to bypass that boundary.
+Repository settings are separate from source: check the active ruleset when
+reviewing enforcement. Release Please explicitly dispatches the ordinary CI
+workflow for its release PRs because events created with `GITHUB_TOKEN` do not
+start PR workflows. If dispatch fails, repair or manually run CI on the release
+branch; do not merge an unchecked release.
 
 Deployment remains separate: an authorized operator uses the documented
 standalone deployment procedure and retains its exact receipt path. A source

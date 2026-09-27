@@ -1,5 +1,5 @@
 import { describe, expect, it } from "bun:test";
-import { existsSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
+import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import { tmpdir } from "node:os";
@@ -35,6 +35,68 @@ async function resolveReleaseTag(event: string, refType: string, refName: string
 }
 
 describe("portable CI contract", () => {
+  it("dispatches ordinary CI on Release Please's branch and exposes dispatch failures", async () => {
+    const release = Bun.YAML.parse(read(".github/workflows/release-please.yml")) as any;
+    const job = release.jobs["release-please"];
+    const step = job.steps.find((step: any) => step.env?.RELEASE_PRS);
+    expect(job.permissions.actions).toBe("write");
+    expect(step.if).toBe("steps.release.outputs.prs_created == 'true'");
+    expect(step.env.RELEASE_PRS).toBe("${{ steps.release.outputs.prs }}");
+    const run = new Function("github", "context", "process", `return (async () => {${step.with.script}})();`);
+    const requests: unknown[] = [];
+    const github = { rest: { actions: { createWorkflowDispatch: async (request: unknown) => requests.push(request) } } };
+    const context = { repo: { owner: "example", repo: "agent" } };
+    const process = { env: { RELEASE_PRS: JSON.stringify([{ headBranchName: "release-candidate" }]) } };
+    await run(github, context, process);
+    expect(requests).toEqual([{ owner: "example", repo: "agent", workflow_id: "ci.yml", ref: "release-candidate" }]);
+    github.rest.actions.createWorkflowDispatch = async () => { throw new Error("dispatch denied"); };
+    await expect(run(github, context, process)).rejects.toThrow("dispatch denied");
+  });
+
+  it("publishes the local image and records the registry digest only after both pushes succeed", async () => {
+    const image = Bun.YAML.parse(read(".github/workflows/release-image.yml")) as any;
+    const script = image.jobs.publish.steps.find((step: any) => step.id === "image").run;
+    const dir = mkdtempSync(join(tmpdir(), "release-push-"));
+    const output = join(dir, "output");
+    const calls = join(dir, "calls");
+    const digest = `sha256:${"a".repeat(64)}`;
+    try {
+      // Substitute only the Docker process boundary; execute the shipped shell.
+      writeFileSync(join(dir, "docker"), `#!/bin/bash
+echo "$*" >> "$CALLS"
+case "$*" in
+  "push ghcr.io/example/agent:v1.2.3") test "$FAIL_AT" != version ;;
+  "push ghcr.io/example/agent:latest") test "$FAIL_AT" != latest ;;
+  "image inspect --format {{index .RepoDigests 0}} ghcr.io/example/agent:v1.2.3") echo "$PUBLISHED" ;;
+  *) exit 2 ;;
+esac
+`, { mode: 0o755 });
+      for (const failure of ["", "version", "latest", "digest"]) {
+        rmSync(output, { force: true });
+        rmSync(calls, { force: true });
+        const result = await promisify(execFile)("bash", ["--noprofile", "--norc", "-euo", "pipefail", "-c", script], {
+          timeout: 2_000,
+          env: {
+            PATH: `${dir}:${process.env.PATH}`,
+            GITHUB_REPOSITORY: "example/agent",
+            RELEASE_TAG: "v1.2.3",
+            GITHUB_OUTPUT: output,
+            CALLS: calls,
+            FAIL_AT: failure,
+            PUBLISHED: failure === "digest" ? "unavailable" : `ghcr.io/example/agent@${digest}`,
+          },
+        }).then(() => 0, (error) => error.code);
+        expect(result === 0).toBe(failure === "");
+        expect(existsSync(output) ? readFileSync(output, "utf8") : "").toBe(failure === "" ? `digest=${digest}\n` : "");
+        const commands = readFileSync(calls, "utf8").trim().split("\n");
+        expect(commands[0]).toBe("push ghcr.io/example/agent:v1.2.3");
+        expect(commands.includes("push ghcr.io/example/agent:latest")).toBe(failure === "" || failure === "latest");
+      }
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
   it("aligns Bun pins and the supported Node major across types, CI, and image", () => {
     expect(read(".bun-version").trim()).toMatch(/^\d+\.\d+\.\d+$/);
     expect(read("container/Dockerfile")).toContain("COPY .bun-version /tmp/may-bun-version");
@@ -116,7 +178,24 @@ describe("portable CI contract", () => {
     const publication = steps.findIndex((step: any) => step.id === "image");
     const notes = steps.findIndex((step: any) => step.id === "release-notes");
     expect(publication).toBeGreaterThan(-1);
-    expect(steps[publication].with.push).toBe(true);
+    const build = steps.findIndex((step: any) => step.id === "build");
+    const smoke = steps.findIndex((step: any) => step.run?.includes("ci-container-smoke.sh"));
+    const login = steps.findIndex((step: any) => step.uses?.startsWith("docker/login-action@"));
+    expect(build).toBeGreaterThan(-1);
+    expect(steps[build].with.load).toBe(true);
+    expect(steps[build].with.push).toBeUndefined();
+    expect(steps[build].with.tags).toContain("ghcr.io/${{ github.repository }}:${{ steps.release.outputs.tag }}");
+    expect(steps[build].with.tags).toContain("ghcr.io/${{ github.repository }}:latest");
+    expect(smoke).toBeGreaterThan(build);
+    expect(steps[smoke].run).toContain('"ghcr.io/$GITHUB_REPOSITORY:$RELEASE_TAG" "$SOURCE_COMMIT"');
+    expect(login).toBeGreaterThan(smoke);
+    expect(publication).toBeGreaterThan(login);
+    for (const index of [build, smoke, login, publication]) {
+      expect(steps[index].if).toBeUndefined(); // Each step requires earlier success.
+    }
+    const diagnostics = steps.find((step: any) => step.uses?.startsWith("actions/upload-artifact@"));
+    expect(diagnostics.if).toBe("${{ !cancelled() }}");
+    expect(diagnostics.with.path).toBe("test-results/");
     expect(notes).toBeGreaterThan(publication);
     expect(steps[notes].if).toBeUndefined(); // Default success gate: never annotate a failed push.
     expect(steps[notes].env).toEqual({
