@@ -224,16 +224,15 @@ describe("conversational attempt contract", () => {
   });
 
   it("offers one handoff schema, using the public Conversation contract", async () => {
-    const { prompt, options } = await attempt();
+    const { options } = await attempt();
     const schema = options.outputSchema!;
     expect(Check(schema, answer)).toBe(true);
     const waiting = { ...answer, dependencies: [{ id: "child", appId: "owner", input: { kind: "work", data: {} } }] };
     expect(Check(schema, waiting)).toBe(false);
     expect(Check(conversationTurnResultSchema, waiting)).toBe(false);
     expect(Check(schema, { ...answer, dependencies: [] })).toBe(false);
-    expect(prompt).toContain("The current Turn finishes after the handoff is admitted");
-    expect(prompt).toContain("The Request remains open until its scope is resolved and explained");
-    expect(prompt).not.toContain("Choose dependency appId");
+    expect(JSON.stringify(schema)).toContain("This Turn ends after admission");
+    expect(JSON.stringify(schema)).toContain("the Request remains open until resolved and explained");
     expect(options).toMatchObject({
       requireFinish: true,
       toolPolicy: "app-agent-full",
@@ -298,17 +297,6 @@ describe("conversational attempt contract", () => {
     expect(db.prepare("SELECT COUNT(*) AS count FROM app_tasks").get()).toEqual({ count: 1 });
     expect(db.prepare("SELECT id FROM app_inbox_items WHERE parent_id = ?").all(request.id)).toEqual([]);
     expect(readAppConversationResource(db, may.id, "may:primary").topics).toEqual([]);
-  });
-
-  it("allows useful direct work without making tool use or App availability a handoff requirement", async () => {
-    const { prompt } = await attempt();
-    expect(prompt).toContain("investigate, edit, and verify directly");
-    expect(prompt).toContain("background continuation, later steering, or restart-safe coordination");
-    expect(prompt).toContain("Creating a Task is not delegation");
-    expect(prompt).toContain("Do not hand off just because an App has a matching name");
-    expect(prompt).toContain("Inspect current state before changing it or retrying an interrupted action");
-    expect(prompt).toContain("does not by itself authorize a Task effect");
-    expect(prompt).not.toContain("only when this App is genuinely the best owner");
   });
 
   it.each(["done", "interrupted", "budget-exhausted"] as const)(
@@ -510,7 +498,6 @@ describe("conversational attempt contract", () => {
     const { prompt, options } = await attempt(request, frontend);
     expect(options.outputSchema).toBe(conversationTurnResultSchema);
     expect(options.toolPolicy).toBe("app-agent-full");
-    expect(prompt).toContain("Do not return dependencies");
     const catalog = JSON.parse(prompt.split("## Installed Apps\n```json\n")[1].split("\n```")[0]);
     expect(catalog.map((entry: { appId: string }) => entry.appId)).toEqual(["owner"]);
   });

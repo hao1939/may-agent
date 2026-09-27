@@ -123,7 +123,7 @@ export function createAppTaskReadTool(options: {
     name: "tasks",
     label: "Tasks",
     description:
-      "List or get Tasks, read an App input contract, publish facts, or update an assignment you created. contract returns the full installed input schema for target.appId (default: current App), including constraints omitted by the compact Installed Apps catalog; no taskId is needed. For update, read the exact Task first and supply its expectedGeneration and complete revised input. Code checks creator authority, saves requirements and wakes the worker. target.appId selects another responsible App; the operation is the same.",
+      "List or get Tasks, read an App input contract, publish facts, or update an assignment you created. contract returns the full installed input schema for target.appId (default: current App), including constraints omitted by the compact Installed Apps catalog; no taskId is needed. Before reusing or revising work, read the exact Task and compare outcome, acceptance, input and execution method; a matching topic alone is insufficient. For update, supply the observed expectedGeneration and complete revised input, preserving required references. Code checks creator authority, saves requirements and wakes the worker. Return proposed changes to your own assignment to its creator. target.appId selects another responsible App; the operation is the same.",
     parameters,
     execute: async (_toolCallId: string, raw: unknown): Promise<AgentToolResult<undefined>> => {
       const params = raw as Params;

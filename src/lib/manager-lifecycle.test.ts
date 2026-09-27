@@ -100,8 +100,8 @@ describe("manager session lifecycle", () => {
       lastAssistantText: "Reply from new",
     });
     expect(requests.map(({ model, systemPrompt }) => ({ model, systemPrompt }))).toEqual([
-      { model: "old", systemPrompt: "Instructions for old" },
-      { model: "new", systemPrompt: "Instructions for new" },
+      { model: "old", systemPrompt: expect.stringContaining("Instructions for old") },
+      { model: "new", systemPrompt: expect.stringContaining("Instructions for new") },
     ]);
   });
 
@@ -115,7 +115,7 @@ describe("manager session lifecycle", () => {
       status: "done",
       lastAssistantText: "Reply from captured",
     });
-    expect(requests[0]).toMatchObject({ model: "captured", systemPrompt: "Instructions for captured" });
+    expect(requests[0]).toMatchObject({ model: "captured", systemPrompt: expect.stringContaining("Instructions for captured") });
   });
 
   it("rejects a premature result and resolves concurrent waiters to the completed result", async () => {
