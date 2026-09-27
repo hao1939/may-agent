@@ -1,83 +1,50 @@
-import {
-  conversationRequestUpdatesSchema,
-  type AppDefinition,
-  type AppTaskAttachment,
-  type ConversationTurnResult,
-} from "@may-agent/sdk";
-import { Check } from "typebox/value";
-import { assertValidAppInput } from "../core/apps/definition-validation.js";
+import type { AppDefinition } from "@may-agent/sdk";
 import type { AppTaskContext } from "../core/tasks/app-task-store.js";
 import { recordAppTaskAttemptSession, type AppTaskClaim } from "../core/tasks/app-task-reconciler.js";
 import {
-  readConversationTaskInputs,
-  conversationTaskResultSchema,
+  readConversationTaskTurn,
+  prepareConversationTaskProposal,
   updateConversationTaskRequest,
   type ConversationTaskProposal,
+  type ConversationTaskAppResolver,
 } from "../core/state/conversation-task-turns.js";
-import { readInputContext, freezeInputContext, type AppDependencyReader } from "../core/inbox/input-context.js";
-import { boundedAppRequestConversation, prepareConversationInput } from "../conversations/context.js";
-import { readConversationTopic } from "../core/state/conversations.js";
-import type { AppInputResolver } from "../conversations/turn-agent.js";
-import { readConversationRequest } from "../core/state/conversation-requests.js";
-import { assertResourceCreator } from "../core/state/resource-creator.js";
+import { freezeInputContext, type AppDependencyReader } from "../core/inbox/input-context.js";
+import { prepareConversationTaskContext } from "../conversations/context.js";
+import { readConversationContext } from "../core/state/conversations.js";
+import type { AppInputResolver } from "../core/tasks/execution.js";
 
-/** Prepare a judgment under the Task claim. The common runtime alone settles it. */
+/** Connect context and model execution to core-owned preparation; runtime settles the result. */
 export async function prepareConversationTaskTurn(input: {
   config: AppTaskContext;
   claim: AppTaskClaim;
   app: Readonly<AppDefinition>;
   resolveConversationInput: AppInputResolver;
   readDependency?: AppDependencyReader;
-  getTaskApp?: (appId: string) => { app: Readonly<AppDefinition>; config: AppTaskContext };
+  getTaskApp?: ConversationTaskAppResolver;
+  prepareContext?: typeof prepareConversationTaskContext;
   signal: AbortSignal;
 }): Promise<ConversationTaskProposal> {
   const { config, claim, app, signal } = input;
   if (app.id !== config.resourceStore.appId) throw new Error("Conversation executor belongs to another App");
   signal.throwIfAborted();
-  const items = readConversationTaskInputs(config, claim);
-  const item = items.at(-1)!;
-  const inputContext = await prepareConversationInput(
-    config.resourceStore.db,
-    item,
-    readInputContext(config.resourceStore.db, item),
+  const turn = readConversationTaskTurn(config, claim);
+  const { replyInput: item } = turn;
+  const db = config.resourceStore.db;
+  const { appId, conversationId } = item;
+  const inputContext = await (input.prepareContext ?? prepareConversationTaskContext)(
+    db,
+    { items: turn.items, replyInput: item },
+    claim.previousAttempt,
     input.readDependency,
   );
-  inputContext.inputs = items.map(({ id, source, input }) => ({ id, source, input }));
-  if (claim.previousAttempt) inputContext.previousAttempt = structuredClone(claim.previousAttempt);
-  // Bring the exact Requests involved in rejected settlement back into bounded
-  // context, including closed asks outside the ordinary context window.
-  const priorDecision = claim.previousAttempt?.unacceptedResult?.result?.conversation;
-  // Historical proposed results are evidence, not executable decisions. Validate
-  // only the references being read so an older handoff shape cannot hide scope.
-  const priorUpdates = priorDecision && typeof priorDecision === "object" && !Array.isArray(priorDecision)
-    ? (priorDecision as Record<string, unknown>).requestUpdates
-    : undefined;
-  if (inputContext.conversation && Check(conversationRequestUpdatesSchema, priorUpdates)) {
-    const requests =
-      (priorUpdates as NonNullable<ConversationTurnResult["requestUpdates"]>).flatMap(({ id }) => {
-        const request = readConversationRequest(config.resourceStore.db, app.id, item.conversationId!, id);
-        return request ? [request] : [];
-      }) ?? [];
-    inputContext.conversation = boundedAppRequestConversation(
-      {
-        ...inputContext.conversation,
-        requests: [
-          ...requests,
-          ...(inputContext.conversation.requests ?? []).filter(
-            (request) => !requests.some((prior) => prior.id === request.id),
-          ),
-        ],
-      },
-      item.id,
-    );
-  }
   const decision = await input.resolveConversationInput({
     app,
     inputContext: freezeInputContext(inputContext),
     execution: {
-      outputSchema: conversationTaskResultSchema(items),
+      outputSchema: turn.outputSchema,
       signal,
       taskBinding: { appId: app.id, taskId: claim.taskId, generation: claim.generation, attemptId: claim.attemptId },
+      readContext: (query) => readConversationContext(db, appId, conversationId!, query),
       updateRequest(change, operationId) {
         signal.throwIfAborted();
         return updateConversationTaskRequest(config, claim, change, operationId);
@@ -88,58 +55,5 @@ export async function prepareConversationTaskTurn(input: {
     },
   });
   signal.throwIfAborted();
-  const selectedTopic =
-    decision.topic.kind === "existing"
-      ? readConversationTopic(config.resourceStore.db, app.id, item.conversationId!, decision.topic.id)
-      : null;
-  const knownTask = (appId: string, taskId: string) =>
-    (inputContext.focusedTask?.appId === appId && inputContext.focusedTask.task.id === taskId) ||
-    inputContext.referencedTasks?.some((entry) => entry.appId === appId && entry.task.id === taskId) ||
-    selectedTopic?.taskRefs.some((entry) => entry.appId === appId && entry.taskId === taskId) ||
-    inputContext.conversation?.topics?.some((topic) =>
-      topic.taskRefs.some((entry) => entry.appId === appId && entry.taskId === taskId),
-    );
-  const taskControls: NonNullable<ConversationTaskProposal["taskControls"]> = [];
-  for (const control of decision.taskControls ?? []) {
-    if (!knownTask(control.appId, control.taskId))
-      throw new Error("Task control target is absent from Conversation context");
-    if (control.appId === app.id && control.taskId === claim.taskId)
-      throw new Error("A Conversation worker cannot close its own Task");
-    if (
-      taskControls.some(
-        (prior) => prior.config.resourceStore.appId === control.appId && prior.taskId === control.taskId,
-      )
-    )
-      throw new Error("Conversation decision repeats a Task control");
-    const target = input.getTaskApp?.(control.appId);
-    const task = target?.config.resourceStore.readTask(control.taskId);
-    if (!target || !task) throw new Error("Task control requires an installed Task App and exact Task");
-    if (item.source.kind !== "human") {
-      assertResourceCreator(task.metadata.creator, { appId: app.id, taskId: claim.taskId });
-    }
-    taskControls.push({
-      config: target.config,
-      taskId: control.taskId,
-      generation: task.metadata.generation,
-      resourceVersion: task.metadata.resourceVersion,
-    });
-  }
-  let followUp: { config: AppTaskContext; attachment: AppTaskAttachment } | undefined;
-  if (decision.followUp) {
-    const desired = decision.followUp;
-    const target = input.getTaskApp?.(desired.appId);
-    if (!target?.app.task || !target.app.tasks || target.app.id !== desired.appId)
-      throw new Error("Conversation follow-up requires an installed Task App");
-    assertValidAppInput(target.app, desired.input);
-    if (desired.task) {
-      if (desired.task.appId !== target.app.id || !knownTask(desired.task.appId, desired.task.taskId))
-        throw new Error("Follow-up Task is absent from Conversation context");
-    }
-    const attachment = desired.task
-      ? { kind: "existing" as const, taskId: desired.task.taskId }
-      : target.app.task({ id: item.id, source: item.source, input: desired.input });
-    if (!attachment) throw new Error("App selected no Task for Conversation follow-up");
-    followUp = { config: target.config, attachment };
-  }
-  return { decision, followUp, taskControls };
+  return prepareConversationTaskProposal(config, claim, decision, input.getTaskApp);
 }

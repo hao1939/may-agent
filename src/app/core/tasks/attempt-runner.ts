@@ -360,6 +360,7 @@ async function runClaimedTask(
                 followUp: report.conversation.followUp,
                 taskControls: report.conversation.taskControls,
                 acceptanceBasis,
+                getTaskApp: (appId) => conversationTaskApp(opts, descriptor, appId),
               })
             : completeAppTask(config, claim, {
                 summary: result.summary,
@@ -667,6 +668,24 @@ async function runClaimedTask(
   }
 }
 
+/** Resolve targets from the same pinned installation for preparation and settlement. */
+function conversationTaskApp(opts: AppTaskRuntimeOptions, descriptor: AppTaskRuntimeDescriptor, appId: string) {
+  const registry = opts.appRegistrySnapshot ?? opts.appRegistry?.snapshot();
+  if (!registry) throw new Error("Conversation execution requires an installed App registry");
+            const entry = registry.entries.find(({ definition }) => definition.id === appId);
+            if (!entry?.definition.tasks || !opts.persistDir)
+              throw new Error(`App ${appId} has no installed Task capability`);
+            const target =
+              appId === descriptor.id
+                ? descriptor
+                : standaloneAppTaskAdmissionDescriptors({
+                    persistDir: opts.persistDir,
+                    projectsRoot: opts.projectsRoot,
+                    entries: [entry],
+                  }).get(appId)!;
+            return { app: target.app, config: appTaskConfig(target) };
+}
+
 /** Select the recorded handler. All paths share Task lifetime and result settlement. */
 async function executeTaskHandler(
   input: Parameters<typeof runTaskAgent>[0] & { conversation: boolean },
@@ -709,20 +728,7 @@ async function executeTaskHandler(
             taskSnapshot: input.taskSnapshot,
             executionPaths: input.executionPaths,
           },
-          getTaskApp(appId) {
-            const entry = registry.entries.find(({ definition }) => definition.id === appId);
-            if (!entry?.definition.tasks || !opts.persistDir)
-              throw new Error(`App ${appId} has no installed Task capability`);
-            const target =
-              appId === descriptor.id
-                ? descriptor
-                : standaloneAppTaskAdmissionDescriptors({
-                    persistDir: opts.persistDir,
-                    projectsRoot: opts.projectsRoot,
-                    entries: [entry],
-                  }).get(appId)!;
-            return { app: target.app, config: appTaskConfig(target) };
-          },
+          getTaskApp: (appId) => conversationTaskApp(opts, descriptor, appId),
         });
         return {
           handlerResult: {

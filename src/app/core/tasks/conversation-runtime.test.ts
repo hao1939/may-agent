@@ -2524,7 +2524,7 @@ test.each(["focus", "command"])(
   },
 );
 
-test("a selected old Topic steers its exact Task even outside the bounded prompt context", async () => {
+test.each([true, false])("an exact Task outside the prompt can receive input (already linked: %s)", async (linked) => {
   const topicId = "topic_00000000abcdef0123456789";
   const f = await fixture(async (_definition, prompt) => {
     const context = JSON.parse(prompt.match(/## Input and context\n```json\n([\s\S]*?)\n```/)![1]!) as AppInputContext;
@@ -2554,7 +2554,7 @@ test("a selected old Topic steers its exact Task even outside the bounded prompt
       originMessageId: `old-${i}`,
       now: i,
     });
-  linkConversationTopicTask(f.db, topicId, app.id, olderReview.id);
+  if (linked) linkConversationTopicTask(f.db, topicId, app.id, olderReview.id);
   const admitted = f.admit("continue-old", "Continue review 00000000");
   await f.run(admitted.taskId);
   expect(getAppInboxItem(f.db, "continue-old"), f.store.readTask(admitted.taskId)?.status.summary).toMatchObject({
@@ -2572,7 +2572,7 @@ test("a selected old Topic steers its exact Task even outside the bounded prompt
 });
 
 test.each(["handoff", "control"] as const)(
-  "rejected guessed %s retains Task input for a corrected attempt after reopen",
+  "rejected missing %s retains Task input for a corrected attempt after reopen",
   async (effect) => {
     let calls = 0;
     const f = await fixture(async (_definition, prompt) => {
@@ -2581,7 +2581,7 @@ test.each(["handoff", "control"] as const)(
         const context = JSON.parse(
           prompt.match(/## Input and context\n```json\n([\s\S]*?)\n```/)![1]!,
         ) as AppInputContext;
-        expect(JSON.stringify(context.previousAttempt)).toContain("absent from Conversation context");
+        expect(JSON.stringify(context.previousAttempt)).toContain("requires an exact Task");
         return { status: "done", structuredResult: answer };
       }
       return {
@@ -2593,13 +2593,13 @@ test.each(["handoff", "control"] as const)(
           ...(effect === "control"
             ? {
                 taskControls: [
-                  { kind: "cancel" as const, appId: app.id, taskId: olderReview.id, reason: "Human requested" },
+                  { kind: "cancel" as const, appId: app.id, taskId: "work/missing", reason: "Human requested" },
                 ],
               }
             : {
                 followUp: {
                   appId: app.id,
-                  task: { appId: app.id, taskId: olderReview.id },
+                  task: { appId: app.id, taskId: "work/missing" },
                   input: { kind: "goal", data: {} },
                 },
               }),
@@ -2610,7 +2610,7 @@ test.each(["handoff", "control"] as const)(
     const original = f.store.readTask(olderReview.id);
     const admitted = f.admit("unknown-target", "Continue it");
     await f.run(admitted.taskId);
-    expect(f.store.readTask(admitted.taskId)?.status.summary).toContain("absent from Conversation context");
+    expect(f.store.readTask(admitted.taskId)?.status.summary).toContain("requires an exact Task");
     expect(f.store.readTask(admitted.taskId)?.status.executionRetryAt).toBeGreaterThan(Date.now());
     expect(f.store.readTask(olderReview.id)).toEqual(original);
     expect(getAppInboxItem(f.db, "unknown-target")?.status).not.toBe("done");

@@ -1,8 +1,13 @@
-import type {
-  AppInput,
-  AppInputContext,
-  AppConversationResource,
-  AppDependencyObservation,
+import { Check } from "typebox/value";
+import type { AppTaskClaim } from "../core/tasks/app-task-reconciler.js";
+import { readConversationRequest } from "../core/state/conversation-requests.js";
+import {
+  conversationRequestUpdatesSchema,
+  type ConversationTurnResult,
+  type AppInput,
+  type AppInputContext,
+  type AppConversationResource,
+  type AppDependencyObservation,
 } from "@may-agent/sdk";
 import type { SqliteDb } from "../../lib/db.js";
 import type { AppInboxItem } from "../core/state/app-inbox-store.js";
@@ -11,10 +16,7 @@ import {
   readConversationMessageTopicId,
   readConversationTopic,
 } from "../core/state/conversations.js";
-import {
-  observeTaskDependency,
-  type AppDependencyReader,
-} from "../core/inbox/input-context.js";
+import { observeTaskDependency, readInputContext, type AppDependencyReader } from "../core/inbox/input-context.js";
 
 export const APP_REQUEST_CONVERSATION_MAX_BYTES = 12 * 1_024;
 const APP_REQUEST_MESSAGE_BYTES = 7_500;
@@ -28,9 +30,7 @@ function encodedBytes(value: unknown): number {
 function inputContext(input: AppInput): Record<string, unknown> {
   if (!input.data || typeof input.data !== "object" || Array.isArray(input.data)) return {};
   const context = (input.data as Record<string, unknown>).context;
-  return context && typeof context === "object" && !Array.isArray(context)
-    ? (context as Record<string, unknown>)
-    : {};
+  return context && typeof context === "object" && !Array.isArray(context) ? (context as Record<string, unknown>) : {};
 }
 
 function focusedTaskIdentity(context: Record<string, unknown>): { appId: string; taskId: string } | null {
@@ -192,4 +192,45 @@ export async function prepareConversationInput(
     }
   }
   return request;
+}
+
+/** Build bounded presentation independently of Task operation authority. */
+export async function prepareConversationTaskContext(
+  db: SqliteDb,
+  turn: { items: readonly AppInboxItem[]; replyInput: AppInboxItem },
+  previousAttempt: AppTaskClaim["previousAttempt"],
+  readDependency?: AppDependencyReader,
+): Promise<Readonly<AppInputContext>> {
+  const { items, replyInput: item } = turn;
+  const inputContext = await prepareConversationInput(db, item, readInputContext(db, item), readDependency);
+  inputContext.inputs = items.map(({ id, source, input }) => ({ id, source, input }));
+  if (previousAttempt) inputContext.previousAttempt = structuredClone(previousAttempt);
+  // Bring the exact Requests involved in rejected settlement back into bounded
+  // context, including closed asks outside the ordinary context window.
+  const priorDecision = previousAttempt?.unacceptedResult?.result?.conversation;
+  // Historical proposed results are evidence, not executable decisions. Validate
+  // only the references being read so an older handoff shape cannot hide scope.
+  const priorUpdates =
+    priorDecision && typeof priorDecision === "object" && !Array.isArray(priorDecision)
+      ? (priorDecision as Record<string, unknown>).requestUpdates
+      : undefined;
+  if (inputContext.conversation && Check(conversationRequestUpdatesSchema, priorUpdates)) {
+    const requests = (priorUpdates as NonNullable<ConversationTurnResult["requestUpdates"]>).flatMap(({ id }) => {
+      const request = readConversationRequest(db, item.appId, item.conversationId!, id);
+      return request ? [request] : [];
+    });
+    inputContext.conversation = boundedAppRequestConversation(
+      {
+        ...inputContext.conversation,
+        requests: [
+          ...requests,
+          ...(inputContext.conversation.requests ?? []).filter(
+            (request) => !requests.some((prior) => prior.id === request.id),
+          ),
+        ],
+      },
+      item.id,
+    );
+  }
+  return inputContext;
 }
