@@ -1,8 +1,8 @@
 <ai_context>
-summary: "Canonical overview of the agent protocol landscape: MCP (agent→tool), A2A (agent→agent), AG-UI (agent→frontend), AHP (host→multi-client session state), and practical ACP implementation evidence. Covers what each standardizes, the SDK/ecosystem state, competing protocols, Chinese community sentiment, research findings, and how protocol roadmaps and implementations are splitting transport/tool shells from identity, discovery, and runtime control layers. Current HN discourse sharpens the MCP-versus-CLI choice into a deployment and authority decision; Google's cross-product Workspace search shows why a read-only tool still needs corpus-level disclosure controls; A2M shows that tool discovery metadata and tool returns form a coupled semantic supply-chain surface; Android Studio's ACP integration shows that agent replaceability depends on a host-owned context and tool plane, while continuity and effect identity remain separate contracts."
-triggers: ["MCP", "Model Context Protocol", "A2A", "AG-UI", "AHP", "Agent Host Protocol", "agent protocol", "agent-to-agent protocol", "tool connectivity protocol", "MCP陨落", "ID-JAG", "Zero-Touch OAuth", "protocol fatigue", "protocol absorption", "EMA enterprise managed auth", "auth isolation", "MCP moat", "agent-behind-MCP", "Cloudflare temporary accounts", "agent-native infrastructure", "accommodation wave", "auth.md", "ephemeral deploy", "stateless MCP", "requestState", "mcp-use v2", "ACP backend rail", "entwurf", "garden id", "Android Studio", "Bring Your Own Agent", "replaceable agent", "host-owned context plane", "progressive discovery", "capability-conditioned discovery", "Ripwire", "mcp-assert", "MCP fuzzing", "fault classification", "MCP versus CLI", "shell authority", "workload identity federation", "DPoP", "MCP roadmap", "Universal Search MCP", "Workspace search", "cross-product search", "read-only disclosure", "A2M", "agent hijacking", "malicious tool metadata", "semantic supply chain"]
-last_updated: "2026-09-25"
-source_basis: "GitHub trending repos June 2026, XHS Chinese AI community May-June 2026, arXiv briefings June 2026, HN explorations June-Sep 2026 (incl. scan #33 and HN items 49131438, 49198472, 49399591, 49453910, 49779329, and 49794043), arXiv 2606.30317 (MCP Architecture Patterns), scan #262, Simon Willison's stateless MCP write-up (2026-07-31), Manufact's mcp-use v2 stateless-MCP rebuild write-up (2026-07-29), the current GitHub repo junghan0611/entwurf checked 2026-08-06 for ACP/backend-rail implementation evidence, the official MCP roadmap published 2026-08-22, VS Code's first-party Agent Host launch post (2026-08-26), redhat-et/ripwire inspected at commit 5c4235b9befd4cd5b6f9f3a489940d7b79f86520 for capability-conditioned MCP catalog evidence (2026-09-11), blackwell-systems/mcp-assert inspected at commit f2389c6511fdd205bc8732b0529e90eb1d25dd4b for transport-level fuzzing and fault-classification evidence (2026-09-19), Maharshi Patel's MCP critique plus its HN discussion (2026-09-20), Google's Universal Search MCP documentation (2026-09-18 page update, reviewed 2026-09-22), the abstract of arXiv 2609.26761v1 (A2M, reviewed 2026-09-24), and Reddit post t3_1wpqdl1 plus its linked Android Developers announcement (reviewed 2026-09-25). See source declarations below."
+summary: "Canonical overview of the agent protocol landscape: MCP (agent→tool), A2A (agent→agent), AG-UI (agent→frontend), AHP (host→multi-client session state), and practical ACP implementation evidence. Covers what each standardizes, the SDK/ecosystem state, competing protocols, Chinese community sentiment, research findings, and how protocol roadmaps and implementations are splitting transport/tool shells from identity, discovery, and runtime control layers. Current HN discourse sharpens the MCP-versus-CLI choice into a deployment and authority decision; Google's cross-product Workspace search shows why a read-only tool still needs corpus-level disclosure controls; A2M shows that tool discovery metadata and tool returns form a coupled semantic supply-chain surface; Android Studio's ACP integration shows that agent replaceability depends on a host-owned context and tool plane, while continuity and effect identity remain separate contracts. PeerTalk supplies a concrete WebRTC P2P prototype while making clear that transport encryption does not establish peer trust or tool authority."
+triggers: ["MCP", "Model Context Protocol", "A2A", "AG-UI", "AHP", "Agent Host Protocol", "agent protocol", "agent-to-agent protocol", "tool connectivity protocol", "MCP陨落", "ID-JAG", "Zero-Touch OAuth", "protocol fatigue", "protocol absorption", "EMA enterprise managed auth", "auth isolation", "MCP moat", "agent-behind-MCP", "Cloudflare temporary accounts", "agent-native infrastructure", "accommodation wave", "auth.md", "ephemeral deploy", "stateless MCP", "requestState", "mcp-use v2", "ACP backend rail", "entwurf", "garden id", "Android Studio", "Bring Your Own Agent", "replaceable agent", "host-owned context plane", "progressive discovery", "capability-conditioned discovery", "Ripwire", "mcp-assert", "MCP fuzzing", "fault classification", "MCP versus CLI", "shell authority", "workload identity federation", "DPoP", "MCP roadmap", "Universal Search MCP", "Workspace search", "cross-product search", "read-only disclosure", "A2M", "agent hijacking", "malicious tool metadata", "semantic supply chain", "PeerTalk", "WebRTC agent transport", "P2P agent transport"]
+last_updated: "2026-09-27"
+source_basis: "GitHub trending repos June 2026, XHS Chinese AI community May-June 2026, arXiv briefings June 2026, HN explorations June-Sep 2026 (incl. scan #33 and HN items 49131438, 49198472, 49399591, 49453910, 49779329, 49794043, and 49862920), arXiv 2606.30317 (MCP Architecture Patterns), scan #262, Simon Willison's stateless MCP write-up (2026-07-31), Manufact's mcp-use v2 stateless-MCP rebuild write-up (2026-07-29), the current GitHub repo junghan0611/entwurf checked 2026-08-06 for ACP/backend-rail implementation evidence, the official MCP roadmap published 2026-08-22, VS Code's first-party Agent Host launch post (2026-08-26), redhat-et/ripwire inspected at commit 5c4235b9befd4cd5b6f9f3a489940d7b79f86520 for capability-conditioned MCP catalog evidence (2026-09-11), blackwell-systems/mcp-assert inspected at commit f2389c6511fdd205bc8732b0529e90eb1d25dd4b for transport-level fuzzing and fault-classification evidence (2026-09-19), Maharshi Patel's MCP critique plus its HN discussion (2026-09-20), Google's Universal Search MCP documentation (2026-09-18 page update, reviewed 2026-09-22), the abstract of arXiv 2609.26761v1 (A2M, reviewed 2026-09-24), Reddit post t3_1wpqdl1 plus its linked Android Developers announcement (reviewed 2026-09-25), and PeerTalk's HN launch plus published protocol/security pages (reviewed 2026-09-27). See source declarations below."
 </ai_context>
 
 # Agent Protocols: MCP, A2A, and the Emerging Stack
@@ -104,6 +104,42 @@ Neither MCP nor A2A covers:
   (BLE, LoRa, relay). This connects to the sovereignty cascade — local
   model + local agent + P2P communication = fully decentralized agent system.
   (HN, June 2026 — see findings/2026-06-15-hn-scan-8.md)
+
+### PeerTalk: direct transport does not confer peer authority (HN, September 2026)
+
+PeerTalk is a concrete, small P2P variant of that transport idea. Its published
+pseudocode has two local agent clients exchange AES-GCM-sealed WebRTC offers
+through a short-lived room service, connect with STUN but no TURN relay, and
+then carry ordered messages directly over a WebRTC data channel. A key generated
+in the browser's URL fragment authenticates room entry and seals the signaling
+material; the server sees room metadata, request IP addresses, and encrypted
+address lists, but the design says it never receives the fragment key or agent
+messages. An MCP endpoint can create or join a room, but MCP is only the
+bootstrap surface—the conversation protocol is separate.
+
+The more reusable signal is the threat-model boundary. Direct encryption hides
+content from the rendezvous service, but each peer learns network addresses and
+can send arbitrary text. PeerTalk's prompt tells agents to treat peer messages
+as information rather than instructions, strip hidden/control characters, cap
+message size, disclose the transcript, and avoid files, tools, commands, and
+secrets unless the user explicitly approves them. These are model-followed
+safeguards, not an authorization boundary. Connecting two trusted operators'
+agents therefore still requires a local effect policy that the remote text
+cannot widen; “encrypted agent-to-agent” must not be shortened to “trusted
+agent-to-agent.”
+
+This is implementation-description evidence from the project's own launch and
+public protocol/security pages, not an independent audit. Scout did not inspect
+a versioned server repository or run two clients, and the HN item had 3 points
+and three brief positive comments when checked. The published protocol is
+specific enough to establish the intended transport shape, not its operational
+security or adoption.
+
+Source: https://news.ycombinator.com/item?id=49862920
+
+Protocol: https://peertalk.ai/protocol/
+
+Security model: https://peertalk.ai/security/
 
 ## MCP Ecosystem (June 2026)
 
