@@ -310,3 +310,109 @@ canonical App checks passed against the candidate source. The candidate
 worktree was clean after the complete run. PR #263 is ready for human review;
 it has not been merged or deployed. The public read of old event `6459856`
 remains historical evidence, not a claim that its lost target was reconstructed.
+
+
+## September 28: Event envelope audit and document storage
+
+The follow-up audit expands the same Host PR #263. The previous target-only
+candidate was not deployed. Current source replaces its unshipped `target_json`
+column with one `envelope_json` document inside SQLite. This is flexible metadata
+storage, not a second database or removal of input validation. Payload bodies,
+trace tables, transactions and searchable columns keep their existing roles.
+Optional metadata survives without a column and migration per field; new search
+indexes and changes in meaning still require deliberate implementation.
+
+The historical example `6459856` showed incorrect diagnostic reconstruction;
+its original report did reach May. It does not prove that the live report was
+lost. Temporary fixtures established further distinct defects: replay omitted
+`action`, trace links and visibility; missing urgency differed between initial
+and recovered App views; some explicit target selectors were ignored or borrowed
+subject IDs; and public generic facts conflated subject and address. The expanded
+regressions failed 11 tests before repair. An action-dependent translator could
+silently settle a no-op after recovery even though its live counterpart admitted
+work. The corrected trial admits both the control input and action-dependent
+input to Tasks after database reopen.
+
+Source `79aae34e` retains metadata with object-rest serialization, restores trace
+metadata from its existing tables, shares normal urgency semantics, matches all
+explicit target fields against the actual address, and limits payload/address
+alias validation to the existing input/control definitions that own it. Unknown
+future metadata is covered by the extension-field round-trip regression. Old
+SQL NULL envelopes remain unknown; frozen commands still recover independently,
+while unresolved legacy translation retains its investigation failure.
+
+The seven focused suites passed 110 tests (583 assertions), and Host type and
+common-design checks passed. The first full CI run then exposed four old
+assertions: two expected omitted urgency, one expected injected subject IDs,
+and the deployment test rejected independent subject/address facts. The revised
+deployment test checks the useful boundary: a report is durably recorded even
+when its exact delivery fails, the missing target Task is not created, and the
+successful deployment receipt remains unchanged. Its first run exposed a real
+missing causal link on queued `subscriber.failed` diagnostics. Source `393fdf32`
+reuses the existing `childEventTrace` helper when queuing that diagnostic. The
+owning bus regression and end-to-end deployment test cover the link; five
+affected suites passed 196 tests with 1,980 assertions.
+
+May reviewed exact `79aae34e` from a private archive through input
+`app_6575d7a9-1e2e-408c-99a7-3bf0f0e2171b`, independently passing all 110 tests.
+She reproduced valid-JSON metadata with invalid address/time values and a type
+disagreeing with the indexed record. `393fdf32` adds shared read validation for
+supported field types and indexed event-type identity. `9bb7eb4e` also rejects
+array-to-string coercion for urgency. Extensions remain preserved; this is not
+a checksum or a guarantee against arbitrary direct database edits. The JSON
+metadata stays authoritative; we do not add a second field-by-field authority
+by reconciling every search column on read.
+
+The validation correction passed the two owning suites (32 tests, 174
+assertions); the final urgency regression passed the owning persisted suite.
+May's follow-up review was admitted as
+`app_1db355a5-2778-4e25-9448-252fdd5e6cb0`. Her container cannot read the author's
+host `/tmp` files, so independent reproduction uses committed fixtures. The
+unavailable audit-file observation is not evidence of a failed trial.
+
+Reproduce from the Host candidate with `bun run ci`; owning regressions live in
+`persisted.test.ts`, `interface.test.ts`, `bus.test.ts`, SDK `event.test.ts`,
+`app-event-translation.test.ts`, `app-inbox-runtime.test.ts`,
+`app-task-emitter.test.ts`, `schema.test.ts` and `scripts/restarter-ui.test.ts`.
+Local detailed outputs use `/tmp/event-contract-*` and
+`/tmp/may-event-*-audit-fixed-20260928.jsonl` in the author's session. These are
+synthetic runtime/storage and integration checks, not a model-quality trial or
+a live rollout. Final complete checks and review are recorded below separately.
+
+
+May's correction review of exact `393fdf32` found no actionable defect. In a
+private archive she passed 61 tests (266 assertions) across bus, persisted,
+interface and deployment suites, plus TypeScript and whitespace checks. She
+confirmed the structural-validation boundary without demanding checksum or
+field-by-field search-projection comparison. Shared worktrees were preserved.
+
+An intermediate local full run overlapped the author's validation edits: Bun
+had already loaded the older reader when it loaded the new regression. It
+reported 3,271 passing tests and one expected mismatch against that stale module.
+That mixed-revision run is retained as `/tmp/event-contract-ci-final.log` but is
+not used as final merge evidence. The final full run is on unchanged `90ae7c1c`;
+its only delta after the validation correction is strict urgency typing and
+restoring the existing inline public target projection instead of adding a
+single-use helper. Final results follow below.
+
+
+Final source `90ae7c1cd9ace51d1898ffab574733027fd983fc` passed complete local
+`bun run ci`: **3,272 passed, three expected installation-specific skips, zero
+failures**, with 15,998 assertions across 311 files. Host/SDK type checks,
+canonical App boundary, lint, real daemon/browser and worker tests ran. Both
+GitHub **Quality** and **Container** passed on that revision in run
+`36339216853`. Common design integrity, checked examples and canonical App
+checks passed. No automatic test retries were used.
+
+May reviewed the final small delta through input
+`app_a0f44267-30f7-47cc-8948-6ad2f5c40a6a` and passed the two owning suites
+(32 tests, 176 assertions) in an archive of exact `90ae7c1c`, finding no
+actionable defect. The original schema and action-recovery trials were rerun
+against that revision: address/payload/action/urgency and trace identity survived
+reopen, mismatched target filters rejected, independent subject/address facts
+were accepted, and both recovered inputs reached Tasks. Final local trial logs
+are `/tmp/may-event-schema-audit-90ae7c1c.jsonl` and
+`/tmp/may-event-action-recovery-audit-90ae7c1c.jsonl`.
+
+PR #263 is ready for human review. It has not been merged or deployed. Source
+acceptance and this synthetic recovery evidence do not establish live adoption.

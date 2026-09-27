@@ -243,7 +243,8 @@ the accepted event.
 
 Subscriber-failure diagnostics are passive Events too. They are emitted one
 per later event-loop turn; a burst of failed consumers must not recursively
-persist and route every diagnostic on the originating publication stack.
+persist and route every diagnostic on the originating publication stack. Each
+retains the failed event as its trace parent so the failure can be followed.
 
 An `async` function is not by itself an asynchronous boundary: its synchronous
 prefix runs immediately until the first `await`. A handler that opens stores,
@@ -735,17 +736,50 @@ including an event with no destination. Public reads and recovery use that
 same retained target; neither payload identity nor a producer index supplies
 missing routing authority.
 
-The Host stores this field as `events.target_json`. New untargeted events store
-an empty object; pre-existing rows retain SQL NULL because their original
-target was not saved. Readers omit that unknown target rather than inventing
-one or rewriting history. Already frozen admission commands and Task-event
-links retain their own exact destinations and continue through normal recovery.
-An older admission still awaiting translation remains pending with an explicit
-failure when its original target is unavailable. It needs investigation rather
-than interpreting unknown routing as no target. Already translated commands
-continue independently; this change cannot recover information never retained.
-Invalid stored target JSON is an explicit read failure and cannot be replayed
-as an untargeted event.
+The Host stores the envelope metadata as one `events.envelope_json` document.
+It preserves `target`, `action`, and future envelope fields without adding a SQL
+column for each field. The existing `data`/body artifact retains the payload;
+the existing trace tables retain causal links and visibility. SQL type, source,
+owner and correlation columns remain indexed projections. Recovery reads the
+document and verified payload and restores causal metadata from its existing
+authority. It does not reconstruct the envelope from search indexes. This uses
+SQLite's transactions and JSON support, not a separate document database.
+
+An omitted App-event urgency means `normal` in both initial translation and
+recovery. A database reopen must preserve the complete supported App event,
+including its action, and the trace inherited by subsequent publications.
+Host-assigned time and other trusted metadata remain Host responsibilities.
+Input schemas still validate meaning and authority; flexible storage does not
+make arbitrary controls valid.
+
+Pre-existing rows retain SQL NULL for the envelope because it was not saved.
+Readers expose known fields and omit unknown target/action information without
+rewriting history. Already frozen admission commands and Task-event links retain
+their own exact destinations and continue through normal recovery. An older
+admission still awaiting translation remains pending with an explicit failure
+when its original envelope is unavailable. Already translated commands continue
+independently; this change cannot recover information never retained. The shared
+reader checks supported field types and agreement with the indexed event type;
+invalid metadata is an explicit read failure, not an untargeted event. Unknown
+extensions survive; this is structural validation, not tamper detection.
+
+### Subject and address matching
+
+`EventSelector.target` constrains the explicit envelope address. Every supplied
+field participates, including `appId`, `executionId`, `metricId` and `human:
+false`; payload fields cannot satisfy or override those constraints. Target
+owner matching retains the supported `agent:` alias. The existing top-level
+`project` selector matches the subject's payload project aliases, with its
+target-project fallback only when no payload alias is present. Use it for
+subject facts; use `target` when the address itself is the constraint.
+
+Public domain facts preserve independent payload subjects and envelope targets.
+The Host does not inject an address into an otherwise absent subject field.
+Controls and addressed inputs explicitly declare which payload fields are
+aliases for their addressed resource; those aliases remain consistent and
+conflicts are rejected. For example, a Task control's `data.taskId` cannot name
+a different Task from `target.taskId`, while a report may describe one Task and
+address another. Apps continue to own translation and acceptance.
 
 Retention protects:
 

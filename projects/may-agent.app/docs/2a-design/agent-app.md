@@ -372,6 +372,10 @@ same task resolver as addressed input. The Host adds caller correlation only
 when the source expects a result. A fact carrying an explicit task target
 bypasses broad resolution and wakes only that task.
 
+Address constraints and payload subjects have independent meanings. Follow the
+[Event matching contract](events.md#subject-and-address-matching) when authoring
+selectors; translation receives the same supported event fields after recovery.
+
 `subscriptions` translates a fact into correlated App input;
 `tasks.subscriptions` directly resolves a callerless fact to Task intent. The
 forms serve different admission semantics but converge on the same Task store

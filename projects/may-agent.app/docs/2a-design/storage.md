@@ -70,9 +70,11 @@ reference/hash/size metadata.
 | Metrics and alerts | SQLite definitions, samples and alert state | Definitions may be reloaded; historical samples cannot be recreated by remeasurement |
 | Task lists, human-action views, event graphs and dashboards | Read projections of the authorities above | Disposable views; never restore Task state from presentation |
 
-Event routing is stored independently of producer/subject correlation; see
-[event durability](events.md#durability-and-retention) for exact target retention
-and the limits of older records.
+Event metadata uses a JSON envelope document within SQLite, independently of
+indexed producer/subject correlation. Payload bodies and trace metadata keep
+their existing storage. See [event durability](events.md#durability-and-retention)
+for document authority, exact recovery and the limits of older records. Optional
+envelope fields need no SQL migration; a new searchable index may still need one.
 
 Host inbox rows track input handling. Separate `conversation_requests` implement the
 [conversational Request contract](message-lifecycle.md#requests-acceptance-and-closure)
