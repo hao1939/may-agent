@@ -162,6 +162,33 @@ The [deferred-review trial](../../may-agent.app/experiments/recovery-workflow-20
 records automatic timer, failure, publication and delivery checks separately from
 model judgment quality.
 
+### Operational feedback for Evaluation's own failures
+
+The existing `project.task.reconciled` subscription returns `incomplete` and
+`retrying` facts for Tasks owned by Evaluation to the same standing
+`runtime/compat/owner-review` Task used by `evaluation.review_failed`. The exact
+Task, generation, attempt and failure remain in its durable trigger context;
+its desired input stays stable. This is operational ownership, separate from
+semantic assessment: Evaluation still excludes itself as an assessment subject.
+Local failure feedback does not depend on the external automatic-assessment
+flag or spend that lane's semantic allowance.
+
+The owner rereads current evidence before choosing an action. Normal retry,
+waiting and later verified recovery remain valid. A recovered incident can need
+no intervention while a supported recurring problem can merit investigation.
+The event is historical evidence, not a command to unblock, reassign or create a
+repair. Unhandled meaning must remain in the owner's accepted result as an
+explicit obstacle, next step or existing linked work.
+
+An owner-review failure uses its existing Task retry and retained input; this
+subscription does not recursively wake that same owner. `converged`, `waiting`
+and `progress` results add no failure review. A missing/broken App that cannot
+produce a reconciliation event is outside this connection. Automatic supervisor
+fallback remains uninstalled; there is no claim that recording such a failure
+notified May or a human. No timer, queue, new workflow or Host recovery rule is
+introduced. The source trial and limitations are retained in the
+[owner feedback review](../experiments/owner-feedback-20260928/README.md).
+
 ### Review-request identity and retained collision recovery
 
 A review Task represents the normalized assessment contract, not only the target

@@ -873,6 +873,7 @@ export function taskIntentForInput(input: AppInput): TaskIntent | null {
           "Keep evaluation.app's own organization coherent and act on evaluator-local exceptions.",
         acceptance: [
           "The owner returns revision-checked typed actions or a justified no-op with evidence.",
+          "Each local failure is checked against current Task evidence; any remaining obstacle and next step are retained without replacing ordinary retry or waits.",
           "The owner does not take remediation ownership for findings about target projects.",
         ],
         agent: "evaluator",
@@ -979,13 +980,24 @@ export function taskInputForEvent(
       const data = eventData(event);
       const appId = stringValue(data.project ?? data.appId);
       const taskId = stringValue(data.taskId);
+      if (
+        !appId ||
+        !taskId ||
+        (data.disposition !== "incomplete" && data.disposition !== "retrying")
+      )
+        return null;
+      // Operational ownership is independent of semantic self-assessment.
+      // The standing owner keeps its own normal retry instead of waking itself.
+      if (canonicalAppId(appId) === projectId) {
+        return taskId === "runtime/compat/owner-review"
+          ? null
+          : {
+              kind: "owner-review",
+              data: { reason: "task-execution-failed", reviewFailure: data },
+            };
+      }
       const automatic = automaticReviewConfig();
-      return automatic.enabled &&
-        (data.disposition === "incomplete" ||
-          data.disposition === "retrying") &&
-        appId &&
-        taskId &&
-        !isEvaluationOwnedReference(appId)
+      return automatic.enabled && !isEvaluationOwnedReference(appId)
         ? {
             kind: "review-task-outcome",
             data: {

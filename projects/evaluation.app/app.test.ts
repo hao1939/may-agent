@@ -52,6 +52,7 @@ import {
   claimObservedAppTask,
   completeAppTask,
   deferAppTask,
+  failAppTaskAttempt,
   observeAppTaskIntent,
 } from "../may-agent/src/app/core/tasks/app-task-reconciler.ts";
 import { applyDbSchema } from "../may-agent/src/lib/db/schema.ts";
@@ -1008,7 +1009,16 @@ describe("evaluation task policy", () => {
 
     try {
       const failureA = reviewFailure(101, "goal/a", "catalog unavailable A");
-      const failureB = reviewFailure(102, "goal/b", "catalog unavailable B");
+      const failureB: Record<string, unknown> = {
+        ...event("project.task.reconciled", {
+          project: "evaluation",
+          taskId: "runtime/task-outcome/example",
+          generation: 1,
+          attemptId: "failed-review-attempt",
+          disposition: "incomplete",
+        }),
+        eventId: 102,
+      };
       const failureAReplay = reviewFailure(
         104,
         "goal/a",
@@ -1018,7 +1028,7 @@ describe("evaluation task policy", () => {
         taskId: "runtime/compat/owner-review",
         generation: 1,
       });
-      const firstClaim = claimObservedAppTask(config, {
+      let firstClaim = claimObservedAppTask(config, {
         taskId: "runtime/compat/owner-review",
         appAgent: "evaluator",
         handler: "agent:evaluator",
@@ -1026,6 +1036,24 @@ describe("evaluation task policy", () => {
       if (firstClaim.kind !== "claimed")
         throw new Error("expected first owner claim");
       expect(firstClaim.intent.input).toEqual({ scope: "evaluation.app" });
+      expect(firstClaim.events.map(({ event }) => event)).toEqual([failureA]);
+
+      const failed = failAppTaskAttempt(config, firstClaim, "Owner provider unavailable");
+      expect(failed.status).toBe("retrying");
+      expect(config.resourceStore.readTask(firstClaim.taskId)?.status.phase).toBe("pending");
+      const realNow = Date.now;
+      try {
+        Date.now = () => failed.retryAt! + 1;
+        firstClaim = claimObservedAppTask(config, {
+          taskId: "runtime/compat/owner-review",
+          appAgent: "evaluator",
+          handler: "agent:evaluator",
+        });
+      } finally {
+        Date.now = realNow;
+      }
+      if (firstClaim.kind !== "claimed") throw new Error("expected owner retry claim");
+      expect(firstClaim.generation).toBe(1);
       expect(firstClaim.events.map(({ event }) => event)).toEqual([failureA]);
 
       for (const trigger of [failureB, tick, failureAReplay]) {
@@ -1351,16 +1379,6 @@ describe("evaluation task policy", () => {
           }),
         ),
       ).toBeNull();
-      expect(
-        taskInputForEvent(
-          event("project.task.reconciled", {
-            project: "evaluation",
-            taskId: "runtime/example",
-            generation: 1,
-            disposition: "incomplete",
-          }),
-        ),
-      ).toBeNull();
     } finally {
       if (previousEnabled === undefined)
         delete process.env.EVALUATION_AUTO_REVIEW_ENABLED;
@@ -1368,6 +1386,52 @@ describe("evaluation task policy", () => {
       if (previousReviewer === undefined)
         delete process.env.EVALUATION_AUTO_REVIEW_REVIEWER;
       else process.env.EVALUATION_AUTO_REVIEW_REVIEWER = previousReviewer;
+    }
+  });
+
+  test("returns Evaluation execution failures to its existing owner without self-assessment or recursive owner wakes", () => {
+    const previous = process.env.EVALUATION_AUTO_REVIEW_ENABLED;
+    try {
+      delete process.env.EVALUATION_AUTO_REVIEW_ENABLED;
+      for (const disposition of ["incomplete", "retrying"]) {
+        const failure = {
+          project: "evaluation",
+          taskId: "runtime/task-outcome/example",
+          generation: 3,
+          attemptId: "failed-attempt",
+          disposition,
+        };
+        const input = taskInputForEvent(event("project.task.reconciled", failure));
+        expect(input).toEqual({
+          kind: "owner-review",
+          data: { reason: "task-execution-failed", reviewFailure: failure },
+        });
+        expect(taskIntentForInput(input!)).toMatchObject({
+          id: "runtime/compat/owner-review",
+          agent: "evaluator",
+          input: { scope: "evaluation.app" },
+        });
+        expect(taskInputForEvent(event("project.task.reconciled", {
+          ...failure, project: "evaluation.app",
+        }))?.kind).toBe("owner-review");
+        expect(taskInputForEvent(event("project.task.reconciled", {
+          ...failure, project: "evaluator-deepseek",
+        }))).toBeNull();
+        expect(taskInputForEvent(event("project.task.reconciled", {
+          ...failure, taskId: "runtime/compat/owner-review",
+        }))).toBeNull();
+        expect(taskInputForEvent(event("project.task.reconciled", {
+          ...failure, taskId: "",
+        }))).toBeNull();
+      }
+      for (const disposition of ["converged", "waiting", "progress"]) {
+        expect(taskInputForEvent(event("project.task.reconciled", {
+          project: "evaluation", taskId: "runtime/task-outcome/example", disposition,
+        }))).toBeNull();
+      }
+    } finally {
+      if (previous === undefined) delete process.env.EVALUATION_AUTO_REVIEW_ENABLED;
+      else process.env.EVALUATION_AUTO_REVIEW_ENABLED = previous;
     }
   });
 
