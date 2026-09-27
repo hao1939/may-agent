@@ -30,7 +30,7 @@ export function readPersistedEventEnvelope(value: unknown, eventType: string): R
   if (typeof envelope.timestamp !== "number" || !Number.isFinite(envelope.timestamp)) {
     throw new Error("Stored event envelope timestamp must be finite");
   }
-  if (!["low", "normal", "high", "immediate"].includes(String(envelope.urgency))) {
+  if (typeof envelope.urgency !== "string" || !["low", "normal", "high", "immediate"].includes(envelope.urgency)) {
     throw new Error("Stored event envelope urgency is invalid");
   }
   if (envelope.action !== undefined && typeof envelope.action !== "string") {

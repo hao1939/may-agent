@@ -69,7 +69,7 @@ test("stored targets retain internal fields; missing history stays unknown and d
     }
     for (const patch of [
       { type: "fixture.changed" }, { source: 42 }, { owner: [] }, { timestamp: "bad" },
-      { urgency: "unknown" }, { action: {} }, { ttl_ms: "90" }, { target: { human: "yes" } },
+      { urgency: "unknown" }, { urgency: ["normal"] }, { action: {} }, { ttl_ms: "90" }, { target: { human: "yes" } },
       ...["appId", "project", "taskId", "executionId", "sessionId", "metricId", "owner"]
         .map((key) => ({ target: { [key]: 42 } })),
     ]) {
