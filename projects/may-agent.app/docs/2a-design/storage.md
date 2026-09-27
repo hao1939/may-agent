@@ -75,6 +75,8 @@ indexed producer/subject correlation. Payload bodies and trace metadata keep
 their existing storage. See [event durability](events.md#durability-and-retention)
 for document authority, exact recovery and the limits of older records. Optional
 envelope fields need no SQL migration; a new searchable index may still need one.
+The same transaction writes event metadata and query columns. Event identity and
+delivery/acceptance state remain runtime authority, distinct from search projections.
 
 Host inbox rows track input handling. Separate `conversation_requests` implement the
 [conversational Request contract](message-lifecycle.md#requests-acceptance-and-closure)

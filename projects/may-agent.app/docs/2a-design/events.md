@@ -740,10 +740,18 @@ The Host stores the envelope metadata as one `events.envelope_json` document.
 It preserves `target`, `action`, and future envelope fields without adding a SQL
 column for each field. The existing `data`/body artifact retains the payload;
 the existing trace tables retain causal links and visibility. SQL type, source,
-owner and correlation columns remain indexed projections. Recovery reads the
+owner and correlation columns keep their query roles and existing indexes. Recovery reads the
 document and verified payload and restores causal metadata from its existing
 authority. It does not reconstruct the envelope from search indexes. This uses
 SQLite's transactions and JSON support, not a separate document database.
+
+The writer saves the document and its query fields in the same transaction.
+Common filters use existing columns; occasional metadata filters can use
+`json_extract(envelope_json, '$.target.appId')`. Add an expression index when a
+real query needs one, rather than a column for every optional field. Producer
+correlation comes from trusted publication context and cannot supply an address.
+Event identity and delivery/acceptance state remain authoritative runtime records,
+not disposable indexes or properties reconstructed from the envelope.
 
 An omitted App-event urgency means `normal` in both initial translation and
 recovery. A database reopen must preserve the complete supported App event,
@@ -751,6 +759,10 @@ including its action, and the trace inherited by subsequent publications.
 Host-assigned time and other trusted metadata remain Host responsibilities.
 Input schemas still validate meaning and authority; flexible storage does not
 make arbitrary controls valid.
+
+An idempotent publication retry checks the caller's input before restoring
+Host-assigned time/source and causal links. It preserves authored fields;
+inserting a presentation default into them must not change a later retry's hash.
 
 Pre-existing rows retain SQL NULL for the envelope because it was not saved.
 Readers expose known fields and omit unknown target/action information without

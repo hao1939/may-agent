@@ -416,3 +416,61 @@ are `/tmp/may-event-schema-audit-90ae7c1c.jsonl` and
 
 PR #263 is ready for human review. It has not been merged or deployed. Source
 acceptance and this synthetic recovery evidence do not establish live adoption.
+
+
+## September 28: PR #263 query-boundary and retry review
+
+A further review of candidate `90ae7c1c` retained the JSON-plus-query-column
+design and found one concrete retry regression. The new trace reader restores
+`visibility: default` from its trace table; copying that entire read result into
+an idempotent publication changes the caller's originally omitted visibility.
+Because the existing publication hash includes authored visibility, the third
+publication of that same event object falsely rejects changed input. Omitted
+visibility failed; explicit default/detail controls passed. The before log is
+`/tmp/pr263-review-retry-before.log` (six passes, one failure).
+
+Source `8952003b` restores only the causal trace after the existing input-hash
+check. Source/owner/time restoration retains its existing role, and authored
+fields already matched. It adds no fingerprint migration, retry lifecycle or
+compatibility branch. The owning regression checks omitted/default/detail
+visibility, repeated receipt identity, one route execution, one saved record,
+original trace identity and rejection of genuinely changed payload. Four
+affected suites passed 56 tests (294 assertions), and TypeScript passed.
+
+The common design now states that the writer commits metadata and query fields
+together, occasional metadata filtering can use SQLite JSON expressions, and
+new indexes should follow an actual query need. It distinguishes search
+projections from authoritative Event identity/delivery state and trusted
+producer correlation. Source inspection of May, Scout, Evaluation and Gym's
+App subscriptions found their subject filters use the retained top-level
+`project` selector; their definitions do not require a target-filter migration.
+This source inspection does not certify live behavior.
+
+May's independent read-only review is input
+`app_560dbe5a-83cb-4147-a457-a0242d1a6036`. Final complete verification and review
+are recorded below; no source deployment is part of this iteration.
+
+Final source `8952003ba429c3487452e27135b5114297c9428f` passed unchanged-revision
+`bun run ci`: **3,275 passed, three expected installation-specific skips, zero
+failures**, with 16,016 assertions across 311 files. Both GitHub **Quality** and
+**Container** passed in run `36341589360`. Common design integrity, checked
+examples and canonical App checks also passed.
+
+The first review input was included in a mixed Conversation batch but received
+no review: session `s_1790534775161_bf30106c-22d7-43a1-889e-523b5a8311f5`
+addressed a newer Evaluation publication, while settlement marked both inputs
+handled. No accepted Conversation Request was saved for the PR review. Inbox
+handling is therefore not review evidence. The same review scope was recovered
+through ordinary May Task `goal/app_dec45b8d-8b7d-4672-bcfc-a8c9c72726fc`.
+
+May independently compared private archives of both exact revisions, reproduced
+the omitted-visibility failure on the old writer (six passes, one failure), and
+passed all four requested suites on the target (56 tests, 294 assertions).
+Her accepted outcome reports **no actionable findings** and confirms the small
+writer correction; shared source remained unchanged. Her retained review is
+`artifacts/pr263-8952003b-independent-review.md` in that Task's workspace, SHA-256
+`33dc1f531868703c72a750c4024a69995cbea2b1faccb5b0f3cb8583bdf0847c`.
+
+PR #263 is ready for human review on this revision. No Host merge or deployment
+was performed. The mixed-input handling failure is a separate follow-up; adding
+it to the Event-storage change would cross its responsibility boundary.
