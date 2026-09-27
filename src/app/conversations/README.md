@@ -38,7 +38,9 @@ A handler-specific result shape is not a second lifecycle.
 [`core/state/conversation-task-turns.ts`](../core/state/conversation-task-turns.ts)
 derives the reply target, reply requirement and control authority from claimed
 input. It validates exact installed Task targets and prepares data-only proposals
-with App/Task identities and observed versions. Task references in context help
+with control target identities and observed versions. A handoff has one target
+authority, `decision.followUp`; core resolves it and invokes the App’s pure Task
+mapping once during settlement. No separately prepared attachment can redirect it. Task references in context help
 discovery; they neither grant authority nor limit authorized exact targets.
 
 The same core module resolves current stores at settlement and commits the

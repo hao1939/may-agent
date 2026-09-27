@@ -27,7 +27,7 @@ Read in this order:
 snapshot/mutation helpers, not another database authority. Context, Conditions,
 event emission and output-path helpers live beside their lifecycle callers.
 `execution.ts` and `workspace.ts` are private contracts; concrete implementations
-live in `adapters/` and are selected in `composition/task-execution.ts`.
+live in `adapters/` and `conversations/`, selected in `composition/task-execution.ts`.
 
 ## Trace one Task
 
@@ -43,7 +43,7 @@ authorized owner -> close Task -> fence running execution and future wakes
 | --- | --- | --- |
 | Admit | `attachLoadedAppTask()` -> `core/state/inbox.ts: admitTaskInput()`; declared event routes use `admitResolvedAppTaskEvent()` -> `observeAppTaskIntent()` | Atomic inbox attachment or idempotent event admission retains the owning Task |
 | Dispatch | `controller.ts` -> `attempt-runner.ts: runTaskAttempt()` (locally or in the worker) -> `claimObservedAppTask()` | Capacity limits local execution; the SQLite claim decides who owns this Task attempt |
-| Execute | `attempt-execution.ts` -> selected handler via `execution.ts`; human context is prepared by `composition/conversation-task-turn.ts` | Every handler uses the same Task claim. It proposes a result without acquiring closure authority |
+| Execute | `attempt-execution.ts` -> selected handler via `execution.ts`; human context comes from `conversations/context.ts` through composition | Every handler uses the same Task claim. It proposes a result without acquiring closure authority |
 | Settle | `establishTaskAcceptance()` -> `completeAppTask()`, `deferAppTask()` or `failAppTaskAttempt()`; human-facing effects use `core/state/conversation-task-turns.ts` | The reconciler fences acceptance. Replies, Request updates and authorized effects commit with the Task result; unfinished input survives failure |
 | Close or stop an attempt | `cancelLoadedAppTask()` -> `cancelAppTask()` closes the assignment; `stopLoadedConversationTurn()` stops the observed human Turn | Closure fences future work. Turn Stop preserves newer input. `reportAppTaskFailure()` records a worker failure report and retries; it does not close the Task |
 | Restart | `recoverInstalledAppTasks()` -> `recoverInterruptedAppTasks()`; `app-task-recovery.ts` restores queue hints | Accepted Task results survive. Uncommitted execution retries the same input after ownership/cleanup checks; session output remains facts for normal execution and validation |

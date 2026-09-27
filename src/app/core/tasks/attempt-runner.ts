@@ -357,7 +357,6 @@ async function runClaimedTask(
         const apply: ReturnType<typeof completeConversationTaskTurn> = persistResult(() =>
           report.conversation
             ? completeConversationTaskTurn(config, claim, report.conversation.decision, {
-                followUp: report.conversation.followUp,
                 taskControls: report.conversation.taskControls,
                 acceptanceBasis,
                 getTaskApp: (appId) => conversationTaskApp(opts, descriptor, appId),

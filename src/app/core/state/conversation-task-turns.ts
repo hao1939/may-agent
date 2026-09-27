@@ -8,7 +8,6 @@ import {
   conversationTurnResultSchema,
   type AppDefinition,
   type AppTaskInput,
-  type AppTaskAttachment,
   type AppConversationRequest,
   type ConversationTurnResult,
   type TaskAcceptanceBasis,
@@ -87,7 +86,6 @@ export function isConversationTask(config: AppTaskContext, taskId: string): bool
 /** A prepared judgment has no authority to settle or close its executing Task. */
 export type ConversationTaskProposal = {
   decision: ConversationTurnResult;
-  followUp?: { appId: string; attachment: AppTaskAttachment };
   taskControls?: Array<{
     appId: string;
     taskId: string;
@@ -138,24 +136,7 @@ export function prepareConversationTaskProposal(
       resourceVersion: task.metadata.resourceVersion,
     });
   }
-  let followUp: ConversationTaskProposal["followUp"];
-  if (decision.followUp) {
-    const desired = decision.followUp;
-    const target = resolveConversationTaskApp(config, desired.appId, getTaskApp);
-    if (!target.app.task) throw new Error("Conversation follow-up requires an installed Task App");
-    assertValidAppInput(target.app, desired.input);
-    if (
-      desired.task &&
-      (desired.task.appId !== desired.appId || !target.config.resourceStore.readTask(desired.task.taskId))
-    )
-      throw new Error("Follow-up requires an exact Task in the selected App");
-    const attachment = desired.task
-      ? { kind: "existing" as const, taskId: desired.task.taskId }
-      : target.app.task({ id: item.id, source: item.source, input: desired.input });
-    if (!attachment) throw new Error("App selected no Task for Conversation follow-up");
-    followUp = { appId: desired.appId, attachment };
-  }
-  return { decision, followUp, taskControls };
+  return { decision, taskControls };
 }
 
 /** Stop exactly the input considered by this Turn. Newer input remains pending. */
@@ -414,7 +395,6 @@ export function completeConversationTaskTurn(
   decision: ConversationTurnResult,
   options: {
     now?: number;
-    followUp?: ConversationTaskProposal["followUp"];
     taskControls?: ConversationTaskProposal["taskControls"];
     acceptanceBasis?: TaskAcceptanceBasis;
     getTaskApp?: ConversationTaskAppResolver;
@@ -431,8 +411,6 @@ export function completeConversationTaskTurn(
       throw new Error("Invalid Conversation decision: result must satisfy the claimed input's result schema");
     if ((decision.taskControls?.length ?? 0) !== (options.taskControls?.length ?? 0))
       throw new Error("Conversation Task controls must be prepared");
-    if (Boolean(decision.followUp) !== Boolean(options.followUp))
-      throw new Error("Conversation follow-up must be prepared");
     const accepted = completeAppTask(config, claim, {
       summary: decision.summary,
       response: decision.response,
@@ -500,12 +478,20 @@ export function completeConversationTaskTurn(
         }),
       );
     }
-    if (decision.followUp && options.followUp) {
+    if (decision.followUp) {
       if (!topicId) throw new Error("Conversation follow-up requires a Topic");
-      const { appId, attachment } = options.followUp;
-      if (appId !== decision.followUp.appId)
-        throw new Error("Conversation follow-up must use the same Host state and selected App");
-      const { config: target } = resolveConversationTaskApp(config, appId, options.getTaskApp);
+      const desired = decision.followUp;
+      const { app: targetApp, config: target } = resolveConversationTaskApp(config, desired.appId, options.getTaskApp);
+      if (!targetApp.task) throw new Error("Conversation follow-up requires an installed Task App");
+      assertValidAppInput(targetApp, desired.input);
+      if (desired.task && (desired.task.appId !== desired.appId || !target.resourceStore.readTask(desired.task.taskId)))
+        throw new Error("Follow-up requires an exact Task in the selected App");
+      // The decision is the only handoff authority. Map once, under settlement,
+      // using the attempt's installed App declaration rather than a second target.
+      const attachment = desired.task
+        ? { kind: "existing" as const, taskId: desired.task.taskId }
+        : targetApp.task({ id: item.id, source: item.source, input: desired.input });
+      if (!attachment) throw new Error("App selected no Task for Conversation follow-up");
       const request = decision.followUp.requestId
         ? readConversationRequest(db, item.appId, conversationId, decision.followUp.requestId)
         : null;

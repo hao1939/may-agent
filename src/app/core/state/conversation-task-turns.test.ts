@@ -455,24 +455,27 @@ test("follow-up admission rolls back with the explanation, Request and Task resu
       input: { kind: "message", data: { text: "Get facts" } },
     },
   };
-  const followUp = {
-    appId: app.id,
-    attachment: {
-      kind: "desired" as const,
-      intent: {
-        id: "measurement",
-        parentId: "root",
-        outcome: "Get facts",
-        acceptance: ["Measure"],
-      },
-    },
-  };
+  const getTaskApp = () => ({
+    app: defineApp({
+      ...app,
+      tasks: {},
+      task: () => ({
+        kind: "desired",
+        intent: {
+          id: "measurement",
+          parentId: "root",
+          outcome: "Get facts",
+          acceptance: ["Measure"],
+        },
+      }),
+    }),
+    config: f.context(),
+  });
   f.db.exec(`CREATE TRIGGER fail_followup_reply BEFORE UPDATE OF result ON app_inbox_items
     WHEN NEW.result IS NOT NULL BEGIN SELECT RAISE(ABORT, 'reply rejected'); END`);
   expect(() =>
     completeConversationTaskTurn(f.context(), claim, handoff, {
-      followUp,
-      getTaskApp: () => ({ app: { ...app, tasks: {} }, config: f.context() }),
+      getTaskApp,
     }),
   ).toThrow("reply rejected");
   expect(f.store.readTask("measurement")).toBeNull();
@@ -481,8 +484,7 @@ test("follow-up admission rolls back with the explanation, Request and Task resu
   expect(f.store.readAttempt(claim.attemptId)?.acceptedResult).toBeUndefined();
   f.db.exec("DROP TRIGGER fail_followup_reply");
   const accepted = completeConversationTaskTurn(f.context(), claim, handoff, {
-    followUp,
-    getTaskApp: () => ({ app: { ...app, tasks: {} }, config: f.context() }),
+    getTaskApp,
   });
   expect(accepted).toMatchObject({ admittedTasks: [{ appId: app.id, taskId: "measurement" }] });
   expect(readConversationRequest(f.db, app.id, "chat", "comparison")).toMatchObject({
@@ -794,6 +796,60 @@ test("settlement resolves the exact App again and rolls back a mismatched or mis
   ).toBe(true);
 });
 
+test.each(["existing", "mapped"] as const)(
+  "%s handoff has one target authority and maps only at settlement",
+  async (kind) => {
+    const f = fixture();
+    const admitted = f.admit();
+    const claim = f.claim(admitted.taskId);
+    const intent = { id: "chosen", parentId: "root", outcome: "Collect facts", acceptance: ["Measure"] };
+    observeAppTaskIntent(f.context(), { appAgent: app.id, intent });
+    let mappings = 0;
+    let selected = "before-settlement";
+    const targetApp = defineApp({
+      ...app,
+      tasks: {},
+      task: () => {
+        mappings++;
+        return { kind: "desired", intent: { ...intent, id: selected } };
+      },
+    });
+    const getTaskApp = () => ({ app: targetApp, config: f.context() });
+    const answer: ConversationTurnResult = {
+      summary: "Continue the work",
+      response: "I will continue the requested work.",
+      topic: { kind: "new", title: "Measurement" },
+      followUp: {
+        appId: app.id,
+        input: { kind: "message", data: { text: "Collect the sample" } },
+        ...(kind === "existing" ? { task: { appId: app.id, taskId: "chosen" } } : {}),
+      },
+    };
+    const proposal = await prepareConversationTaskTurn({
+      config: f.context(),
+      claim,
+      app,
+      signal: new AbortController().signal,
+      getTaskApp,
+      resolveConversationInput: async () => answer,
+    });
+    expect(mappings).toBe(0);
+    selected = "at-settlement";
+    // A stale or forged second target is ignored; only decision.followUp defines the handoff.
+    const options = {
+      ...JSON.parse(JSON.stringify(proposal)),
+      getTaskApp,
+      followUp: { appId: app.id, attachment: { kind: "desired", intent: { ...intent, id: "unrelated" } } },
+    };
+    const result = completeConversationTaskTurn(f.context(), claim, proposal.decision, options);
+    expect(result.admittedTasks).toEqual([{ appId: app.id, taskId: kind === "existing" ? "chosen" : "at-settlement" }]);
+    expect(mappings).toBe(kind === "existing" ? 0 : 1);
+    expect(f.store.readTask("before-settlement")).toBeNull();
+    expect(f.store.readTask("unrelated")).toBeNull();
+    expect(getAppInboxItem(f.db, "first")?.status).toBe("done");
+  },
+);
+
 test("the common controller returns a delegated answer to the real Conversation after intervening input and restart", async () => {
   const f = fixture();
   const first = f.admit("first", 1, "Get the sample measurement in the background and report it here.");
@@ -1026,19 +1082,12 @@ test.each(["answer", "waiting-report", "execution-error"] as const)(
         },
       },
       {
-        getTaskApp: () => ({ app: { ...app, id: "worker", tasks: {} }, config: worker }),
-        followUp: {
-          appId: "worker",
-          attachment: {
-            kind: "desired",
-            intent: {
-              id: "measurement",
-              parentId: "root",
-              outcome: "Collect facts",
-              acceptance: ["Measure"],
-            },
-          },
-        },
+        getTaskApp: () => ({
+          app: defineApp({ ...app, id: "worker", tasks: {}, inputSchema: Type.Object({}), task: () => ({
+            kind: "desired", intent: { id: "measurement", parentId: "root", outcome: "Collect facts", acceptance: ["Measure"] },
+          }) }),
+          config: worker,
+        }),
       },
     );
     expect(handedOff).toMatchObject({ admittedTasks: [{ appId: "worker", taskId: "measurement" }] });
