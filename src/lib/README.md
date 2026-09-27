@@ -46,3 +46,18 @@ coverage is described in the [test guide](../../test/README.md). Gym's direct
 execution and script consumers are listed in the
 [script guide](../../scripts/README.md#gym-compatibility-boundary); inspect them
 before changing an entry path.
+
+## Agent cooperation tools
+
+`manager-agents-tool.ts` offers bounded `call` and `fork` using a `task`
+description, optional context files, success criteria and a selected skill.
+A fork remains owned by its live caller. Durable outcomes use App Tasks.
+`sessions` returns full session IDs usable by `peek` and permitted `cancel`
+operations; only display text is shortened.
+
+`tools/message-tool.ts` records messages through declared App routes. Its
+priority describes the message for the receiver; it does not schedule a helper.
+Neither tool offers duplicate-detection controls. Tool parameter types are
+inferred from their schemas so model discovery and implementation share one
+contract. Old `agents.message`/`agents.send` calls receive a correction pointing
+to the supported tools.

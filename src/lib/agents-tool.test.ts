@@ -1,5 +1,5 @@
 /**
- * Tests for V2 agents tool — call, send, list, peek, cancel.
+ * Tests for bounded agent cooperation and execution evidence.
  */
 
 import { describe, it, expect, beforeEach, afterEach } from "bun:test";
@@ -8,6 +8,9 @@ import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { getBuiltinModel } from "@earendil-works/pi-ai/providers/all";
 import { SubagentManager } from "./manager.js";
+import { appendSessionMessage } from "./persistence.js";
+import { closeDb } from "./db/connection.js";
+import { upsertSession } from "./db/sessions.js";
 import type { AgentTool, AgentToolResult } from "@earendil-works/pi-agent-core";
 
 // ── Helpers ─────────────────────────────────────────────────────────────
@@ -37,25 +40,21 @@ async function callTool(tool: AgentTool, params: Record<string, unknown>): Promi
 
 // ── Tests ───────────────────────────────────────────────────────────────
 
-describe("V2 agents tool", () => {
+describe("agents tool", () => {
   let persistDir: string;
-  let agentsRoot: string;
   let manager: SubagentManager;
 
   beforeEach(() => {
     persistDir = mkdtempSync(join(tmpdir(), "agents-tool-"));
-    agentsRoot = mkdtempSync(join(tmpdir(), "agents-root-"));
     mkdirSync(join(persistDir, "sessions"), { recursive: true });
     mkdirSync(join(persistDir, "memory"), { recursive: true });
     manager = new SubagentManager({ persistDir });
   });
 
   afterEach(() => {
+    closeDb(persistDir);
     try {
       rmSync(persistDir, { recursive: true, force: true });
-    } catch {}
-    try {
-      rmSync(agentsRoot, { recursive: true, force: true });
     } catch {}
   });
 
@@ -82,6 +81,34 @@ describe("V2 agents tool", () => {
     expect(result).toMatchObject({ filter: "all", count: 0, sessions: [] });
     expect(JSON.stringify(tool.parameters)).toContain("sessions");
     expect(JSON.stringify(tool.parameters)).not.toContain('"requests"');
+  });
+
+  it("advertises only implemented delegation options", () => {
+    const { properties } = manager.createAgentsTool().parameters;
+    for (const name of ["force", "priority", "message"]) {
+      expect(properties).not.toHaveProperty(name);
+    }
+    expect(properties).toHaveProperty("task");
+    expect(properties).toHaveProperty("context_files");
+  });
+
+  it("returns exact session IDs that can be used to read their evidence", async () => {
+    const ids = ["s_123456789012345_first", "s_123456789012345_second"];
+    for (const [i, id] of ids.entries()) {
+      const meta = { agent: "worker", task: id, status: "done" as const, startedAt: i + 1 };
+      manager.registryStore.saveSession(id, meta);
+      upsertSession(persistDir, { sessionId: id, ...meta });
+      appendSessionMessage(persistDir, id, { role: "user", content: `Evidence for ${id}`, timestamp: i + 1 });
+    }
+    const tool = manager.createAgentsTool();
+    const result = await callTool(tool, { action: "sessions", filter: "all" });
+    expect(result.sessions.map((s: { id: string }) => s.id)).toEqual([...ids].reverse());
+    for (const { id } of result.sessions) {
+      expect(await callTool(tool, { action: "peek", sessionId: id })).toEqual([
+        { role: "user", content: `Evidence for ${id}` },
+      ]);
+    }
+    expect((await callTool(tool, { action: "sessions", filter: "all", limit: 1 })).sessions).toHaveLength(1);
   });
 
   it("call without agent/task returns error", async () => {
@@ -255,42 +282,11 @@ describe("V2 agents tool", () => {
     expect(result.error).toContain("requires");
   });
 
-  // The agents.message action was removed in commit d15c5249 (notify-split).
-  // It now returns a fixed deprecation error regardless of inputs. Callers should
-  // use notify({ agent, message }) or agents.fork({ agent, task }) instead.
-  it("message action returns deprecation error regardless of inputs", async () => {
-    const deprecation = "agents.message and agents.send actions have been removed";
-    manager.register({
-      name: "coder",
-      description: "Writes code",
-      domain: "coding",
-      model: mockModel(),
-      tools: [echoTool()],
-    });
-
-    // Missing message — deprecation error (not "requires")
-    const t1 = manager.createAgentsTool({ agentsRoot });
-    const r1 = await callTool(t1, { action: "message", agent: "coder" });
-    expect(r1.error).toContain(deprecation);
-
-    // Unregistered agent — deprecation error (not "not registered")
-    const r2 = await callTool(t1, { action: "message", agent: "nonexistent", message: "do stuff" });
-    expect(r2.error).toContain(deprecation);
-
-    // With full config — deprecation error, no sent/message confirmation
-    const t2 = manager.createAgentsTool({
-      agentsRoot,
-      getCallerAgentName: () => "may",
-    });
-    const r3 = await callTool(t2, { action: "message", agent: "coder", message: "fix the login bug" });
-    expect(r3.error).toContain(deprecation);
-    expect(r3.sent).toBeUndefined();
-    expect(r3.heartbeatTriggered).toBeUndefined();
-
-    // No agentsRoot — still deprecation error (not "agentsRoot")
-    const t3 = manager.createAgentsTool();
-    const r4 = await callTool(t3, { action: "message", agent: "coder", message: "do stuff" });
-    expect(r4.error).toContain(deprecation);
+  it.each(["message", "send"])("directs retired %s calls to the supported tools", async (action) => {
+    const result = await callTool(manager.createAgentsTool(), { action, agent: "worker", message: "Review" });
+    expect(result.error).toContain("Use the message tool");
+    expect(result.error).toContain("Durable work belongs to an App Task");
+    expect(result.sent).toBeUndefined();
   });
 
   it("unknown action returns error", async () => {
@@ -328,38 +324,6 @@ describe("V2 agents tool", () => {
     const result = await callTool(tool, { action: "call", agent: "checkpoint", task: "save state" });
     expect(result.error).toContain("is a tool, not an agent");
     expect(result.error).toContain("checkpoint({ ... })");
-  });
-
-  it("message action returns deprecation error even when target is a tool", async () => {
-    // Since the message action now short-circuits with a deprecation error
-    // (commit d15c5249), the tool-vs-agent guard is not reached. Callers
-    // that attempt message on a tool name still get the deprecation error.
-    const checkpointTool: AgentTool = {
-      name: "checkpoint",
-      label: "Checkpoint",
-      description: "Save checkpoint",
-      parameters: {},
-      execute: async () => ({
-        content: [{ type: "text" as const, text: "ok" }],
-        details: "ok",
-      }),
-    };
-
-    manager.register({
-      name: "bob",
-      description: "Architect",
-      domain: "design",
-      model: mockModel(),
-      tools: [echoTool(), checkpointTool],
-    });
-
-    const tool = manager.createAgentsTool({
-      agentsRoot,
-      getCallerAgentName: () => "bob",
-    });
-
-    const result = await callTool(tool, { action: "message", agent: "checkpoint", message: "save state" });
-    expect(result.error).toContain("agents.message and agents.send actions have been removed");
   });
 
   it("call allows when target is an agent, not a tool", async () => {

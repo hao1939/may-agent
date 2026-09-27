@@ -79,7 +79,6 @@ export async function buildTools(config: AgentConfig, opts: ToolsetLoaderOptions
             getCallerSessionId: () => currentAgentSessionId(config.name),
             getCallerAgentName: () => config.name,
             callDeny: denyConfig ? { agents: denyConfig.agents, hint: denyConfig.hint } : undefined,
-            agentsRoot: opts.agentsRoot,
           }),
         );
         break;
@@ -102,7 +101,6 @@ export async function buildTools(config: AgentConfig, opts: ToolsetLoaderOptions
         tools.push(
           createMessageTool({
             agentName: config.name,
-            agentsRoot: messageAgentsRoot,
             persistDir,
             allowedTargets: lazyAllowedTargets,
             emit: (event: { type: string; [key: string]: unknown }) => bus.emit(event as any),
