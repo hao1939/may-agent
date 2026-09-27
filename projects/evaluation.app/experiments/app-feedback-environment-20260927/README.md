@@ -238,3 +238,7 @@ checks the exact 250 ms deadline; the separate real due-timer test remains real.
 The owning retry suite passed all 18 tests. This repairs the observed test race
 rather than hiding the failed run with an unchanged rerun; production retry
 behavior is unchanged.
+
+Final revision `f94aefa4` passed full local CI again (3,253 pass, three expected
+installation skips, zero failures). Both GitHub Quality and Container passed in
+run `36335045725`. PR #262 is ready for human review; no source rollout occurred.
