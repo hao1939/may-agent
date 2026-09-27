@@ -1191,15 +1191,10 @@ export class DbWriter {
         [DEFAULT_UNACCEPTED_TTL_MS, now, this.deliveryTrackingStartedAt],
       );
 
-      // Frozen App plans are explicit current-runtime obligations, unlike
-      // unclassified legacy event history. Reconcile an expired plan even if
-      // its event predates this process so a crash cannot leave it pending for
-      // every later generation.
-      // Once the durable event itself has reached its terminal unhandled
-      // state, its frozen App admission plan cannot remain pending forever.
-      // Preserve both rows and their last_error for diagnosis, but release the
-      // App registry instead of keeping an impossible exact-task target
-      // registered indefinitely.
+      // An unavailable exact target never accepted the requested update and can
+      // expire. Broad App routing already owns admission, even if the process
+      // stopped before recording global Event acceptance. Keep that independent
+      // obligation recoverable instead of discarding it with the Event receipt.
       if (this.reconciledUnhandledAdmissionPlans && newlyUnhandled.changes === 0) {
         return;
       }
@@ -1209,7 +1204,7 @@ export class DbWriter {
          SET status = 'superseded',
              last_error = COALESCE(last_error, 'origin event became unhandled before App admission'),
              updated_at = ?
-         WHERE status = 'pending'
+         WHERE status = 'pending' AND route_kind = 'exact-task'
            AND event_id IN (
              SELECT id FROM events WHERE delivery_status = 'unhandled'
            )`,
@@ -1224,6 +1219,11 @@ export class DbWriter {
          WHERE status = 'pending'
            AND event_id IN (
              SELECT id FROM events WHERE delivery_status = 'unhandled'
+           )
+           AND EXISTS (
+             SELECT 1 FROM app_event_admission_commands command
+             WHERE command.event_id = app_event_admission_plans.event_id
+               AND command.status = 'superseded'
            )
            AND NOT EXISTS (
              SELECT 1 FROM app_event_admission_commands command

@@ -4,6 +4,20 @@ import type { SqliteDb } from "../../../lib/db.js";
 export type AppEventAdmissionRoute =
   | {
       appId: string;
+      kind: "unresolved";
+      routeId: string;
+      subscriptionIds: string[];
+      resolveTask: boolean;
+      conditionTaskIds: string[];
+    }
+  | {
+      appId: string;
+      kind: "noop";
+      routeId: string;
+      conditionTaskIds: string[];
+    }
+  | {
+      appId: string;
       kind: "inbox";
       routeId: string;
       input: AppInput;
@@ -30,6 +44,7 @@ export type AppEventAdmissionCommand = AppEventAdmissionRoute & {
   status: "pending" | "admitted" | "superseded";
   lastError?: string;
   admittedAt?: number;
+  resolvedSnapshotId?: string;
 };
 
 export type AppEventAdmissionPlan = {
@@ -73,6 +88,14 @@ function optionalNumber(value: unknown): number | undefined {
 
 function serializeRoute(route: AppEventAdmissionRoute): string {
   switch (route.kind) {
+    case "unresolved":
+      return JSON.stringify({
+        subscriptionIds: route.subscriptionIds,
+        resolveTask: route.resolveTask,
+        conditionTaskIds: route.conditionTaskIds,
+      });
+    case "noop":
+      return JSON.stringify({ conditionTaskIds: route.conditionTaskIds });
     case "inbox":
       return JSON.stringify({ input: route.input, conditionTaskIds: route.conditionTaskIds });
     case "task":
@@ -129,7 +152,20 @@ function commandFromRow(row: Row): AppEventAdmissionCommand {
     status,
     lastError: optionalText(row.last_error),
     admittedAt: optionalNumber(row.admitted_at),
+    resolvedSnapshotId: optionalText(row.resolved_snapshot_id),
   };
+  if (kind === "unresolved") {
+    if (typeof payload.resolveTask !== "boolean") throw new Error("Invalid App admission resolveTask");
+    return {
+      ...common, kind,
+      subscriptionIds: stringList(payload.subscriptionIds, "subscriptionIds"),
+      resolveTask: payload.resolveTask,
+      conditionTaskIds: stringList(payload.conditionTaskIds, "conditionTaskIds"),
+    };
+  }
+  if (kind === "noop") {
+    return { ...common, kind, conditionTaskIds: stringList(payload.conditionTaskIds, "conditionTaskIds") };
+  }
   if (kind === "inbox") {
     const input = payload.input;
     if (!input || typeof input !== "object" || Array.isArray(input)) {
@@ -193,7 +229,7 @@ export function getAppEventAdmissionPlan(db: SqliteDb, eventId: number): AppEven
   const commands = db
     .prepare(
       `SELECT app_id, route_kind, route_id, payload_version, payload, status, last_error,
-              admitted_at, updated_at
+              admitted_at, updated_at, resolved_snapshot_id
        FROM app_event_admission_commands
        WHERE event_id = ?
        ORDER BY app_id`,
@@ -301,6 +337,26 @@ export function createAppEventAdmissionPlan(
   const created = getAppEventAdmissionPlan(db, input.eventId);
   if (!created) throw new Error("App event admission plan was not persisted");
   return created;
+}
+
+/** Freeze a successful translation before any admission effect. Failed translations stay unresolved. */
+export function resolveAppEventAdmissionCommand(
+  db: SqliteDb,
+  input: {
+    eventId: number;
+    route: Exclude<AppEventAdmissionRoute, { kind: "unresolved" }>;
+    registrySnapshotId: string;
+    now: number;
+  },
+): void {
+  const updated = db.prepare(`
+    UPDATE app_event_admission_commands
+    SET route_kind = ?, route_id = ?, payload_version = ?, payload = ?,
+        resolved_snapshot_id = ?, last_error = NULL, updated_at = ?
+    WHERE event_id = ? AND app_id = ? AND route_kind = 'unresolved' AND status = 'pending'
+  `).run(input.route.kind, input.route.routeId, APP_EVENT_ADMISSION_PAYLOAD_VERSION,
+    serializeRoute(input.route), input.registrySnapshotId, input.now, input.eventId, input.route.appId);
+  if (updated.changes !== 1) throw new Error("App event translation no longer owns its pending command");
 }
 
 export function markAppEventAdmissionCommandAdmitted(

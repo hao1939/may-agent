@@ -291,6 +291,7 @@ CREATE TABLE IF NOT EXISTS app_event_admission_commands (
   app_id                TEXT NOT NULL,
   route_kind            TEXT NOT NULL,
   route_id              TEXT NOT NULL,
+  resolved_snapshot_id  TEXT,
   payload_version       INTEGER NOT NULL DEFAULT 2,
   payload               TEXT NOT NULL,
   status                TEXT NOT NULL DEFAULT 'pending',
@@ -298,7 +299,7 @@ CREATE TABLE IF NOT EXISTS app_event_admission_commands (
   admitted_at           INTEGER,
   updated_at            INTEGER NOT NULL,
   PRIMARY KEY(event_id, app_id),
-  CHECK (route_kind IN ('inbox', 'task', 'exact-task')),
+  CHECK (route_kind IN ('inbox', 'task', 'exact-task', 'unresolved', 'noop')),
   CHECK (status IN ('pending', 'admitted', 'superseded')),
   FOREIGN KEY(event_id) REFERENCES app_event_admission_plans(event_id) ON DELETE CASCADE
 );
@@ -674,6 +675,25 @@ function ensureExistingAppEventAdmissionColumns(db: SqliteDb): void {
   }
   if (tableExists(db, "app_event_admission_commands")) {
     ensureColumn(db, "app_event_admission_commands", "payload_version", "INTEGER NOT NULL DEFAULT 1");
+    ensureColumn(db, "app_event_admission_commands", "resolved_snapshot_id", "TEXT");
+    const schema = String(db.prepare("SELECT sql FROM sqlite_master WHERE name = 'app_event_admission_commands'").get()?.sql);
+    if (!schema.includes("'unresolved'")) {
+      // The journal keeps the same identity and rows; only its route CHECK expands.
+      db.exec(`
+        ALTER TABLE app_event_admission_commands RENAME TO app_event_admission_commands_previous;
+        DROP INDEX IF EXISTS idx_app_event_admission_command_status;
+      `);
+      db.exec(SCHEMA);
+      db.exec(`
+        INSERT INTO app_event_admission_commands
+          (event_id, app_id, route_kind, route_id, payload_version, payload, status,
+           last_error, admitted_at, updated_at, resolved_snapshot_id)
+        SELECT event_id, app_id, route_kind, route_id, payload_version, payload, status,
+           last_error, admitted_at, updated_at, resolved_snapshot_id
+        FROM app_event_admission_commands_previous;
+        DROP TABLE app_event_admission_commands_previous;
+      `);
+    }
   }
 }
 

@@ -135,12 +135,16 @@ describe("App inbox host", () => {
       });
     const host = new AppInboxHost({ db, apps: [subscribed("old.event")] });
 
-    expect(host.subscriptionInputs({ type: "old.event", data: {} })).toHaveLength(1);
-    expect(host.subscriptionInputs({ type: "unrelated.event", data: {} })).toEqual([]);
+    expect(host.subscriptionRoutes({ type: "old.event", data: {} })).toHaveLength(1);
+    expect(host.subscriptionRoutes({ type: "unrelated.event", data: {} })).toEqual([]);
     host.replaceApps([subscribed("new.event")]);
-    expect(host.subscriptionInputs({ type: "old.event", data: {} })).toEqual([]);
-    expect(host.subscriptionInputs({ type: "new.event", data: {} })).toHaveLength(1);
-    expect(routed).toEqual(["old.event", "new.event"]);
+    expect(host.subscriptionRoutes({ type: "old.event", data: {} })).toEqual([]);
+    expect(host.subscriptionRoutes({ type: "new.event", data: {} })).toHaveLength(1);
+    expect(routed).toEqual([]);
+    expect(host.translateSubscription("evaluation", "new.event", { type: "new.event", data: {} })).toEqual({
+      kind: "probe", data: { value: "new.event" },
+    });
+    expect(routed).toEqual(["new.event"]);
   });
 
   it("admits directly, preserves identity, and never remaps an attached input on reload", async () => {

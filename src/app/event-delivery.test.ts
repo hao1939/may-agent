@@ -1832,7 +1832,7 @@ describe("event delivery metadata", () => {
     }
   });
 
-  it("terminalizes a frozen App admission plan when its event becomes unhandled", async () => {
+  it("terminalizes an unaccepted exact-target plan when its event becomes unhandled", async () => {
     const root = tempRoot();
     try {
       const bus = new EventBus();
