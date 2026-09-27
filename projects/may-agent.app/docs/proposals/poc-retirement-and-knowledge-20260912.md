@@ -499,7 +499,8 @@ are no longer another checked-in authority to refresh. The source README and
 contributor guide own the supported command and its limits. The earlier table
 and archived executor experiment retain their historical invocation context.
 
-The broader source review also found dead helpers and tests with no production
+[Host #248](https://github.com/hao1939/may-agent/pull/248), source `5dcb51cf`,
+removes dead helpers and tests with no production
 or sibling App/Gym callers: a fact-merging algorithm the compactor never used,
 transcript deletion and directory-existence wrappers, an unused last-session
 reader, path matcher and metric alias. Their production consumers do not need
@@ -510,7 +511,8 @@ The review retains SDK/Gym compatibility, persisted upgrade readers/fences,
 Task condition/result semantics and historical records. No installed data is
 moved or deleted by this source cleanup.
 
-A separate release change reuses the existing smoke gate before pushing the
+[Host #249](https://github.com/hao1939/may-agent/pull/249), source `978ae0a8`,
+reuses the existing smoke gate before pushing the
 same built image. It also dispatches ordinary CI on Release Please's PR branch,
 which GitHub's built-in token otherwise leaves without checks. The repository's
 active main ruleset now requires Quality and Container from GitHub Actions;
