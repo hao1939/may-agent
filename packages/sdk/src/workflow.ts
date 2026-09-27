@@ -157,8 +157,6 @@ export type TaskDetail = TaskView & {
       state: "unknown" | "false" | "true";
       observed?: unknown;
       observedAt?: string;
-      /** Host-derived next checkpoint in epoch milliseconds; elapsed time does not satisfy the Condition. */
-      reviewAt?: number;
       facts?: string[];
     };
   }>;

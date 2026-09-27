@@ -10,6 +10,7 @@ import type { AppTaskContext } from "../core/tasks/app-task-store.js";
 import { recordAppTaskAttemptSession, type AppTaskClaim } from "../core/tasks/app-task-reconciler.js";
 import {
   readConversationTaskInputs,
+  conversationTaskResultSchema,
   updateConversationTaskRequest,
   type ConversationTaskProposal,
 } from "../core/state/conversation-task-turns.js";
@@ -42,7 +43,6 @@ export async function prepareConversationTaskTurn(input: {
     input.readDependency,
   );
   inputContext.inputs = items.map(({ id, source, input }) => ({ id, source, input }));
-  if (items.some(({ source }) => source.kind === "human")) inputContext.humanRequested = true;
   if (claim.previousAttempt) inputContext.previousAttempt = structuredClone(claim.previousAttempt);
   // Bring the exact Requests involved in rejected settlement back into bounded
   // context, including closed asks outside the ordinary context window.
@@ -75,6 +75,7 @@ export async function prepareConversationTaskTurn(input: {
     app,
     inputContext: freezeInputContext(inputContext),
     execution: {
+      outputSchema: conversationTaskResultSchema(items),
       signal,
       taskBinding: { appId: app.id, taskId: claim.taskId, generation: claim.generation, attemptId: claim.attemptId },
       updateRequest(change, operationId) {
@@ -100,8 +101,6 @@ export async function prepareConversationTaskTurn(input: {
     );
   const taskControls: NonNullable<ConversationTaskProposal["taskControls"]> = [];
   for (const control of decision.taskControls ?? []) {
-    if (!decision.response?.trim() || decision.followUp)
-      throw new Error("Task controls require an explanation without a follow-up handoff");
     if (!knownTask(control.appId, control.taskId))
       throw new Error("Task control target is absent from Conversation context");
     if (control.appId === app.id && control.taskId === claim.taskId)

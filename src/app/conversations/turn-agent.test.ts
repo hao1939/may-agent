@@ -4,7 +4,7 @@ import { afterEach, describe, expect, it, setSystemTime } from "bun:test";
 import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { Type, conversationTurnResultSchema, conversationResultSchema, defineApp, type AppInputContext } from "@may-agent/sdk";
+import { Type, conversationTurnResultSchema, defineApp, type AppInputContext } from "@may-agent/sdk";
 import { Check } from "typebox/value";
 import { executePreparedAgent, prepareAgentExecution } from "../../lib/agent-execution.js";
 import { openDatabase, type SqliteDb } from "../../lib/db.js";
@@ -110,7 +110,9 @@ describe("conversational attempt contract", () => {
   async function attempt(
     current = request,
     app = may,
-    execution: Parameters<AppInputResolver>[0]["execution"] = {
+    execution: Omit<Parameters<AppInputResolver>[0]["execution"], "outputSchema"> & {
+      outputSchema?: Parameters<AppInputResolver>[0]["execution"]["outputSchema"];
+    } = {
       signal: new AbortController().signal,
       sessionStarted: () => {},
       taskBinding: { appId: app.id, taskId: "conversation", generation: 1, attemptId: "attempt" },
@@ -133,7 +135,9 @@ describe("conversational attempt contract", () => {
       snapshot: () => ({ entries: [app, owner].map((definition) => ({ appDir: definition.id, definition })) }),
     } as unknown as AppRegistry;
     const resolve = createConversationAgentResolver({ manager, registry, db });
-    expect(await resolve({ app, inputContext: current, execution })).toEqual(answer);
+    expect(await resolve({
+      app, inputContext: current, execution: { outputSchema: conversationTurnResultSchema, ...execution },
+    })).toEqual(answer);
     return { ...captured!, db, resolve, calls };
   }
 
@@ -223,13 +227,16 @@ describe("conversational attempt contract", () => {
     expect(writes).toBe(0);
   });
 
-  it("requires a reply for direct human input and mixed batches while allowing quiet system observations", async () => {
-    const quiet = { summary: "No change", topic: { kind: "none" } };
-    const human = await attempt();
-    expect(Check(human.options.outputSchema!, quiet)).toBe(false);
-    const system = { ...request, source: { kind: "system" as const, id: "tick" } };
-    expect(Check((await attempt(system)).options.outputSchema!, quiet)).toBe(true);
-    expect(Check((await attempt({ ...system, humanRequested: true })).options.outputSchema!, quiet)).toBe(false);
+  it("passes the supplied result contract to execution without deriving policy from context", async () => {
+    const outputSchema = Type.Object({ response: Type.String() });
+    const execution = {
+      outputSchema, signal: new AbortController().signal, sessionStarted() {},
+      taskBinding: { appId: may.id, taskId: "conversation", generation: 1, attemptId: "attempt" },
+    };
+    for (const source of [{ kind: "human" as const, id: "ask" }, { kind: "system" as const, id: "tick" }]) {
+      const { options } = await attempt({ ...request, source, humanRequested: true }, may, execution);
+      expect(options.outputSchema).toBe(outputSchema);
+    }
   });
 
   it("offers one handoff schema, using the public Conversation contract", async () => {
@@ -512,7 +519,7 @@ describe("conversational attempt contract", () => {
   it("uses the same turn contract for an App without its own Task capability", async () => {
     const frontend = { ...may, conversation: { mode: "agent" as const }, task: undefined, tasks: undefined };
     const { prompt, options } = await attempt(request, frontend);
-    expect(options.outputSchema).toEqual(conversationResultSchema(true));
+    expect(options.outputSchema).toBe(conversationTurnResultSchema);
     expect(options.toolPolicy).toBe("app-agent-full");
     const catalog = JSON.parse(prompt.split("## Installed Apps\n```json\n")[1].split("\n```")[0]);
     expect(catalog.map((entry: { appId: string }) => entry.appId)).toEqual(["owner"]);

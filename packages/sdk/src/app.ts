@@ -389,17 +389,14 @@ export const conversationTurnResultSchema = Type.Object(
         },
       },
     ],
+    not: {
+      required: ["followUp", "taskControls"],
+      properties: { taskControls: { minItems: 1 } },
+    },
     description:
       "Decide one bounded Conversation Turn from its admitted input, current Requests and Task observations. Return through finish().result. previousAttempt.unacceptedResult is unaccepted settlement evidence: inspect current state before repeating tools whose effects may already have completed. A tool's success does not by itself establish fulfillment of the human's ask.",
   },
 );
-
-/** Human input requires a reply even when the turn makes no state changes. */
-export function conversationResultSchema(humanRequested: boolean) {
-  return humanRequested
-    ? { ...conversationTurnResultSchema, required: [...conversationTurnResultSchema.required!, "response"] }
-    : conversationTurnResultSchema;
-}
 
 export type AppEventSubscription = {
   /** Stable identity combined with the source event id for idempotency. */

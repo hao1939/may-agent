@@ -1,4 +1,3 @@
-import { conditionReviewAt } from "./app-task-state.js";
 import { createHash, randomUUID } from "node:crypto";
 import { basename } from "node:path";
 import {
@@ -840,8 +839,16 @@ function openTaskConditionIds(tree: TaskTree, taskId: string): string[] {
 function missedTaskConditionCheckpointIds(tree: TaskTree, taskId: string, nowMs = Date.now()): string[] {
   return taskConditionEntries(tree, taskId).flatMap(([id, condition]) => {
     if (!isOpenCondition(condition)) return [];
-    const dueAt = conditionReviewAt(condition);
-    return dueAt !== undefined && nowMs >= dueAt ? [id] : [];
+    const reviewAfterMs = condition.spec.reviewAfterMs;
+    const observedAtMs = Date.parse(String(condition.status.observedAt ?? ""));
+    if (
+      !Number.isInteger(reviewAfterMs) ||
+      Number(reviewAfterMs) < MIN_APP_TASK_CONDITION_REVIEW_AFTER_MS ||
+      !Number.isFinite(observedAtMs)
+    ) {
+      return [];
+    }
+    return nowMs >= observedAtMs + Number(reviewAfterMs) ? [id] : [];
   });
 }
 
@@ -1848,8 +1855,13 @@ function nextTaskConditionReviewAt(tree: TaskTree, taskId: string): number | nul
     taskConditionEntries(tree, taskId)
       .flatMap(([, condition]) => {
         if (!isOpenCondition(condition)) return [];
-        const dueAt = conditionReviewAt(condition);
-        return dueAt === undefined ? [] : [dueAt];
+        const reviewAfterMs = Number(condition.spec.reviewAfterMs);
+        const observedAt = Date.parse(String(condition.status.observedAt ?? ""));
+        return Number.isInteger(reviewAfterMs) &&
+          reviewAfterMs >= MIN_APP_TASK_CONDITION_REVIEW_AFTER_MS &&
+          Number.isFinite(observedAt)
+          ? [observedAt + reviewAfterMs]
+          : [];
       })
       .sort((left, right) => left - right)[0] ?? null
   );

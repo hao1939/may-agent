@@ -1513,7 +1513,7 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
         name: r.agent,
         lastSession: r.lastSession,
         sessionsToday: r.sessionsToday,
-        sessionCompletionRate: r.sessionsToday > 0 ? Math.round((r.doneCount / r.sessionsToday) * 100) : 0,
+        successRate: r.sessionsToday > 0 ? Math.round((r.doneCount / r.sessionsToday) * 100) : 0,
         status,
       };
     });
@@ -1601,7 +1601,7 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
 
     return json({
       sessionsToday: todayStats.total,
-      sessionCompletionRate: todayStats.total > 0 ? Math.round((todayStats.done / todayStats.total) * 100) : 0,
+      successRate: todayStats.total > 0 ? Math.round((todayStats.done / todayStats.total) * 100) : 0,
       activeAgents: activeAgents.cnt,
       avgDurationMs: todayStats.avgDuration ? Math.round(todayStats.avgDuration) : null,
       errorRateToday: todayErrorRate,

@@ -1,7 +1,7 @@
 import type { TaskExecutionContext } from "../../lib/task-execution-context.js";
 import {
   Type,
-  conversationResultSchema,
+  type TSchema,
   type ConversationTurnResult,
   type AppDefinition,
   type AppInputContext,
@@ -31,6 +31,7 @@ export type AppInputResolver = (input: {
   app: Readonly<AppDefinition>;
   inputContext: Readonly<AppInputContext>;
   execution: {
+    outputSchema: TSchema;
     signal: AbortSignal;
     sessionStarted: (sessionId: string) => void;
     taskBinding: TaskBinding;
@@ -174,7 +175,7 @@ export function createConversationAgentResolver(options: {
         taskBinding: binding.taskBinding,
         taskContext: options.taskContext,
         requireFinish: true,
-        outputSchema: conversationResultSchema(inputContext.humanRequested === true || inputContext.source.kind === "human"),
+        outputSchema: binding.outputSchema,
         // Reuse bounded App execution, without detached lifecycle tools.
         toolPolicy: "app-agent-full",
         timeout: APP_REQUEST_AGENT_TIMEOUT_MS,

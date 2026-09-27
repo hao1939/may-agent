@@ -17,9 +17,9 @@ async function loadHealth() {
     const trendText = data.errorTrend > 0 ? `+${data.errorTrend}%` : data.errorTrend < 0 ? `${data.errorTrend}%` : 'same';
     el.innerHTML = `
       <div class="health-card">
-        <div class="health-label">Sessions in Last 24h</div>
+        <div class="health-label">Sessions Today</div>
         <div class="health-value">${data.sessionsToday}</div>
-        <div class="health-sub">${data.sessionCompletionRate}% completed sessions</div>
+        <div class="health-sub">${data.successRate}% success rate</div>
       </div>
       <div class="health-card">
         <div class="health-label">Recently Seen Agents</div>
@@ -32,7 +32,7 @@ async function loadHealth() {
         <div class="health-sub">per session</div>
       </div>
       <div class="health-card">
-        <div class="health-label">Session Error Rate</div>
+        <div class="health-label">Error Rate</div>
         <div class="health-value">${data.errorRateToday}%</div>
         <div class="health-sub"><span class="${trendClass}">${trendIcon} ${trendText} vs yesterday</span></div>
       </div>
@@ -506,7 +506,7 @@ async function loadAgentGrid() {
       else if (elapsed < 3600000) timeAgo = Math.round(elapsed / 60000) + 'm ago';
       else timeAgo = Math.round(elapsed / 3600000) + 'h ago';
 
-      const barWidth = Math.min(a.sessionCompletionRate, 100);
+      const barWidth = Math.min(a.successRate, 100);
       const isSelected = selectedAgent === a.name;
 
       return `<div class="agent-card ${isSelected ? 'selected' : ''}" onclick="toggleAgentFilter('${esc(a.name)}')">
@@ -517,7 +517,7 @@ async function loadAgentGrid() {
         <div class="agent-meta">
           <span><span>Last active</span><span>${timeAgo}</span></span>
           <span><span>Sessions</span><span>${a.sessionsToday}</span></span>
-          <span><span>Completed sessions</span><span>${a.sessionCompletionRate}%</span></span>
+          <span><span>Success</span><span>${a.successRate}%</span></span>
         </div>
         <div class="agent-bar" style="width:${barWidth}%"></div>
       </div>`;
