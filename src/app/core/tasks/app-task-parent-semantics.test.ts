@@ -8,7 +8,7 @@ import {
   cancelAppTask,
   deferAppTask,
   listRunnableAppTaskIds,
-  markAppTaskAttention,
+  failAppTaskAttempt,
   readAppTaskTrigger,
   appTaskContext,
 } from "./app-task-reconciler.ts";
@@ -95,7 +95,7 @@ describe("Task hierarchy is context, not a return protocol", () => {
     const child = claimChild(config);
     if (kind === "answer") completeAppTask(config, child, { summary: "Child answer", facts: ["proof"] });
     if (kind === "failure")
-      markAppTaskAttention(config, child, { summary: "Provider failed", reason: "handler-blocked" });
+      failAppTaskAttempt(config, child, "Provider failed", { facts: [], reason: "handler-blocked" });
     if (kind === "closure") {
       const resource = config.resourceStore.readTask("child")!;
       cancelAppTask(config, {

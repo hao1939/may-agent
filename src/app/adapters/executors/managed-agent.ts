@@ -170,10 +170,8 @@ async function executeTaskAgent(
   let restoredAgentResidue: string[] = [];
   let result: Awaited<ReturnType<typeof dispatchAgent>>;
   try {
-    input.observer?.providerStarted(Buffer.byteLength(prompt));
     result = await dispatchAgent();
   } finally {
-    input.observer?.providerFinished();
     const cleanupPlan = await planCanonicalAgentResidueCleanup(residueGuard);
     restoredAgentResidue = await applyCanonicalAgentResidueCleanup(cleanupPlan);
   }

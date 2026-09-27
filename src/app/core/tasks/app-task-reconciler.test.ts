@@ -25,7 +25,6 @@ import {
   completeAppTask,
   deferAppTask as deferCanonicalAppTask,
   failAppTaskAttempt,
-  markAppTaskAttention,
   observeAppTaskIntent,
   listRunnableAppTaskQueueEntries,
   listRunnableAppTaskIds,
@@ -133,7 +132,7 @@ describe("durable execution backoff", () => {
       if (index) advanceToTaskRetry(config, intent.id);
       const current = claim();
       recordAppTaskTrigger(config, intent.id, { type: "sample.feedback", eventId: index + 1, data: {} });
-      markAppTaskAttention(config, current, { reason: "HandlerExecutionFailed", summary: "Failed execution" });
+      failAppTaskAttempt(config, current, "Failed execution", { facts: [], reason: "HandlerExecutionFailed" });
     }
     expect(config.resourceStore.readTask(intent.id)!.status).toMatchObject({ phase: "pending", executionFailures: 6 });
     expect(config.resourceStore.readTrigger(intent.id)?.events?.map((entry) => entry.event.eventId)).toEqual([
@@ -1125,9 +1124,9 @@ describe("App task reconciler state", () => {
     };
     expect(
       state === "attention"
-        ? markAppTaskAttention(config, claim, { ...output, reason: "handler-blocked" })
+        ? failAppTaskAttempt(config, claim, output.summary, { ...output, reason: "handler-blocked" })
         : completeAppTask(config, claim, output),
-    ).toMatchObject({ status: "applied" });
+    ).toMatchObject({ status: state === "attention" ? "retrying" : "applied" });
     const tree = readTaskSnapshot(config);
     expect(tree.resources?.[claim.taskId]?.status).toMatchObject({
       phase: "pending",
@@ -1497,10 +1496,7 @@ describe("App task reconciler state", () => {
       reason: "task-controller",
     });
     if (attentionClaim.kind !== "claimed") throw new Error("expected attention claim");
-    markAppTaskAttention(config, attentionClaim, {
-      summary: "owner must decide",
-      reason: "needs-agent",
-    });
+    failAppTaskAttempt(config, attentionClaim, "owner must decide", { facts: [], reason: "needs-agent" });
 
     observeAppTaskIntent(config, { intent: unavailableIntent, appAgent: "app-owner" });
     const unavailableClaim = claimObservedAppTask(config, {
@@ -1510,8 +1506,8 @@ describe("App task reconciler state", () => {
       reason: "task-controller",
     });
     if (unavailableClaim.kind !== "claimed") throw new Error("expected unavailable claim");
-    markAppTaskAttention(config, unavailableClaim, {
-      summary: "workflow is not installed",
+    failAppTaskAttempt(config, unavailableClaim, "workflow is not installed", {
+      facts: [],
       reason: "HandlerUnavailable",
     });
 
@@ -4754,11 +4750,8 @@ describe("App task reconciler state", () => {
     });
     if (primary.kind !== "claimed") throw new Error("expected primary claim");
     expect(
-      markAppTaskAttention(config, primary, {
-        summary: "workflow could not classify the task",
-        reason: "needs-agent",
-      }),
-    ).toMatchObject({ status: "applied" });
+      failAppTaskAttempt(config, primary, "workflow could not classify the task", { facts: [], reason: "needs-agent" }),
+    ).toMatchObject({ status: "handoff" });
 
     const fallback = declareAndClaimTask(config, {
       intent: intent(),
@@ -4790,11 +4783,8 @@ describe("App task reconciler state", () => {
     if (claim.kind !== "claimed") throw new Error("expected claim");
 
     expect(
-      markAppTaskAttention(config, claim, {
-        summary: "reviewer must decide the next move",
-        reason: "handler-blocked",
-      }),
-    ).toMatchObject({ status: "applied" });
+      failAppTaskAttempt(config, claim, "reviewer must decide the next move", { facts: [], reason: "handler-blocked" }),
+    ).toMatchObject({ status: "retrying" });
 
     expect(
       declareAndClaimTask(config, {
@@ -4832,10 +4822,7 @@ describe("App task reconciler state", () => {
       handler: "workflow:known-workflow",
     });
     if (claim.kind !== "claimed") throw new Error("expected claim");
-    markAppTaskAttention(config, claim, {
-      summary: "waiting for new facts",
-      reason: "handler-blocked",
-    });
+    failAppTaskAttempt(config, claim, "waiting for new facts", { facts: [], reason: "handler-blocked" });
 
     const early = declareAndClaimTask(config, {
       intent: intent(),
@@ -5043,8 +5030,7 @@ describe("App task reconciler state", () => {
       trigger: { type: "project.comment.created", eventId: 811, data: { comment: "retained input" } },
     });
     if (failed.kind !== "claimed") throw new Error("expected failed claim");
-    markAppTaskAttention(config, failed, {
-      summary: "operator review required",
+    failAppTaskAttempt(config, failed, "operator review required", {
       reason: "retained-input-review",
       facts: ["failure-log:811"],
     });
@@ -5189,7 +5175,7 @@ describe("App task reconciler state", () => {
       handler: "workflow:known-workflow",
     });
     if (failed.kind !== "claimed") throw new Error("expected claim");
-    markAppTaskAttention(config, failed, { summary: "integration base changed", reason: "transient-base-race" });
+    failAppTaskAttempt(config, failed, "integration base changed", { facts: [], reason: "transient-base-race" });
     const resources = Object.keys(readTaskSnapshot(config).resources!);
     advanceToTaskRetry(config, failed.taskId);
     const next = claimObservedAppTask(config, { taskId: failed.taskId, appAgent: "app-owner", handler: "auto" });

@@ -35,7 +35,6 @@ type TaskExecutionInput = {
   childContext: AppTaskChildContext;
   event?: EventEnvelope;
   fallbackReason?: string;
-  observer?: AppTaskExecutionObserver;
   executionTimeoutMs: number;
 };
 
@@ -55,11 +54,6 @@ export type TaskAgentRunner = {
   execute(input: TaskAgentInput): Promise<TaskCapabilityRun>;
   /** Pin agent definitions at the synchronous App publication boundary. */
   snapshot(): TaskAgentRunner;
-};
-
-export type AppTaskExecutionObserver = {
-  providerStarted(promptBytes: number): void;
-  providerFinished(): void;
 };
 
 export type WorkflowCapability = {
