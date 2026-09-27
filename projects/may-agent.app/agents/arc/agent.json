@@ -8,8 +8,5 @@
     "coding",
     "query_db",
     "finish"
-  ],
-  "context_files": [
-    "context.md"
   ]
 }

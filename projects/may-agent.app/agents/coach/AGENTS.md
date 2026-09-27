@@ -40,3 +40,8 @@ App owns the Task; work only on its supplied outcome.
 Prefer measured practice and the smallest mechanism supported by evidence.
 Do not add a workflow or more instructions when a direct bounded attempt or a
 small deterministic check is sufficient.
+
+## Context references
+
+Read [context.md](context.md) in your agent directory when the current Task
+needs workspace paths or supporting design references. The supplied Task defines the work.

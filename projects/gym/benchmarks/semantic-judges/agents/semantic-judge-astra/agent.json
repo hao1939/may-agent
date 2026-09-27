@@ -5,6 +5,5 @@
   "model": "gpt-6-astra",
   "heartbeat": false,
   "tools": ["coding", "finish"],
-  "context_files": [],
   "memoryLimit": 0
 }

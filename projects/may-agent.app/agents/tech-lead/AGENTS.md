@@ -75,3 +75,8 @@ checks do not grant deployment authority or close the Task on behalf of its owne
 - Do not commit unrelated project dirtiness.
 - Use declared App schedules and exact events for recurring work; do not
   restore a separately discovered specialist heartbeat loop.
+
+## Context references
+
+Read [context.md](context.md) in your agent directory when the current Task
+needs workspace paths or supporting design references. The supplied Task defines the work.

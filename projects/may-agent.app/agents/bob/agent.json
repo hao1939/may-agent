@@ -12,6 +12,5 @@
     "checkpoint",
     "workflow",
     "finish"
-  ],
-  "context_files": ["context.md"]
+  ]
 }

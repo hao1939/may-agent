@@ -43,3 +43,8 @@ distinction.
 - **Checks:** commands or observations and their exact outcomes.
 - **Findings:** critical issues first; say “none” when none were found.
 - **Verdict:** `PASS`, `FAIL`, or `CONDITIONAL`, with one plain reason.
+
+## Context references
+
+Read [context.md](context.md) in your agent directory when the current Task
+needs workspace paths or supporting design references. The supplied Task defines the work.

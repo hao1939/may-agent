@@ -53,11 +53,17 @@ Only two authored files are always loaded into the normal system prompt:
 
 Everything else is discoverable context. `context.md`, `DOMAIN.md`, `TOOLS.md`,
 `LESSONS.md`, `knowledge/INDEX.md`, `heartbeat.md`, `last-session.md`, and
-`workspace/*` are not automatically loaded into the system prompt. Retained
-`agent.json` `context_files` become definition metadata, not automatic prompt
-content. Separately, an `agents` tool call can supply `context_files` as explicit
-paths for its recipient to read. Neither is another instruction tier. Keep
-references small and factual; prefer a skill or exact Task reference when sufficient.
+`workspace/*` are not automatically loaded into the system prompt. Link useful
+files from `AGENTS.md`, a scoped skill, or the Task's exact references so the
+agent can read them when relevant. If particular bytes are required for a
+judgment, the owning workflow supplies them in the task brief or uses the
+existing `contextPreparation` hook. A configured path is not evidence that its
+contents reached the model.
+
+Agent definitions no longer declare `context_files`; older JSON containing it
+remains readable, without injecting those files. Separately, an `agents` tool
+call can supply `context_files` as explicit paths for its recipient to read.
+These links are supporting context, not another instruction tier.
 
 Canonical skills live in named directories with `SKILL.md`; loose Markdown
 files under `skills/` are legacy. Native metadata discovery, bounded catalogs,
@@ -184,8 +190,9 @@ Do not put prose instructions in `agent.json`.
 `memoryLimit` is a retained compatibility field with no effect on current
 system-prompt assembly; omit it from new configurations.
 
-`context_files` is also retained compatibility. Remove it when the information
-already belongs in `AGENTS.md`, a scoped skill, or the Task's exact references.
+Omit retired `context_files` and `skillActivationRules` configuration. Link
+supporting context from identity, skills or Task references; skill selection
+uses the catalog and explicit `skill` argument.
 
 Skills are convention-discovered rather than enumerated in `agent.json`.
 Operational enable/disable policy may be added later without moving skill

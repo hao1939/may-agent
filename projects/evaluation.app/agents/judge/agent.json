@@ -5,6 +5,5 @@
   "model": "claude-opus-5",
   "heartbeat": false,
   "tools": ["coding", "finish"],
-  "context_files": ["context.md"],
   "memoryLimit": 0
 }

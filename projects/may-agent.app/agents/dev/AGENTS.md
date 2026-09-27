@@ -33,3 +33,8 @@ runtime, workflow, metric, database, or observability Task attempt.
   `app:may-agent`, not to its current execution profile.
 - Do not add broad handlers to `agents/may` for project-local platform work.
 - Do not edit unrelated project apps to make a local check look clean.
+
+## Context references
+
+Read [context.md](context.md) in your agent directory when the current Task
+needs workspace paths or supporting design references. The supplied Task defines the work.

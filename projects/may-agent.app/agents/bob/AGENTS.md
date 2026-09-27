@@ -61,3 +61,8 @@ For code changes with concrete deliverables, use an awaited agent helper or a bo
 - Design docs: projects/may-agent.app/docs/2a-design/
 - Evidence-first: projects/may-agent.app/docs/1-principles/evidence-first.md
 - Tech-lead proposals: projects/may-agent.app/agents/tech-lead/workspace/proposals/
+
+## Context references
+
+Read [context.md](context.md) in your agent directory when the current Task
+needs workspace paths or supporting design references. The supplied Task defines the work.

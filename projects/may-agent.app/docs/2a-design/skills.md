@@ -250,9 +250,11 @@ The manager validates the name against the receiving agent's catalog and uses
 turn has at most one explicit primary skill in v1. Other cataloged skills can
 still be read on demand.
 
-`context_files` remains a general compatibility mechanism, but a known skill
+The `agents` tool's `context_files` argument appends explicit file references
+to the recipient's assignment; it does not inject their contents. A known skill
 should use the typed `skill` field so validation, provenance, and evaluation
-remain reliable.
+remain reliable. The retired agent-definition field with the same name has no
+prompt effect; see [prompt files](../2b-manual/agent-convention.md#prompt-files).
 
 ## Trace And Evaluation
 

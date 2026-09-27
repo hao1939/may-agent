@@ -712,3 +712,69 @@ portable source checks, not deployed-runtime or model-quality claims.
 The companion design integrity check passes with zero errors/warnings, and all
 113 local links in the six changed documents resolve. Repeated Task executor
 and view explanations were condensed while preserving the contract anchors.
+
+
+## September 27 follow-up: truthful tests and explicit context
+
+Two source candidates address the remaining narrow cleanup findings:
+
+- [Host #250](https://github.com/hao1939/may-agent/pull/250), `12c01ba4`, replaces
+  permissive manager tests with successful controlled replies through the real
+  agent loop and the existing runner factory. It checks old/new and captured
+  definitions, premature results, concurrent waiters, completed cancellation,
+  progress limits and frozen duration. Temporary sessions settle and their
+  databases close in teardown. The duplicate registry/smoke examples are removed;
+  related lifecycle assertions are grouped. Three unused production helpers are
+  deleted; tests inspect the actual workspace cleanup, emitted Codex packet and
+  saved checkpoint pointer. Checkpoint storage and recovery readers remain.
+- [Host #251](https://github.com/hao1939/may-agent/pull/251), `65a75ba5`, removes
+  ignored agent-definition context metadata. Old JSON remains loadable; the
+  loader test includes a missing retired context file and verifies that the
+  resulting definition has no retired metadata. Agent/message tool arguments
+  with the same spelling still work.
+
+The companion App changes remove 13 obsolete configuration fields across
+Evaluation, Gym, its semantic-judge fixtures and Host Operations profiles.
+Seven useful Host Operations context notes remain in place and are linked from
+`AGENTS.md`. Evaluation's unused judge context note is removed: its substantive
+role, evidence, transcript boundary and conservative verdict instructions already
+live in `AGENTS.md`; its old model and discovery paths are not revived. Evaluation
+already supplies its canonical scoring criteria in the assessment workflow brief.
+Archived configurations and historical evidence are left intact.
+
+This applies the existing context model, rather than introducing another loader:
+identity is always visible; supporting references are read when relevant;
+required content belongs in the supplied Task brief or existing preparation hook.
+The updated [agent convention](../2b-manual/agent-convention.md#prompt-files)
+and [skill invocation guidance](../2a-design/skills.md) own that rule.
+
+A local source trial prepared all 13 revised configurations with old and candidate
+Host code. Prompts were identical for the same revised App source, and the real
+read tool resolved all seven context links. This verifies preparation and file
+access, not whether a model chooses the right reference. Neither source half
+requires the other to land first; source review and App activation remain separate.
+
+The test-reduction trial compared base `671b6900` with #250: 3,248 passing tests
+became 3,240, with the same three installation-only skips and no failures.
+The affected manager suite has seven scenarios instead of fifteen named examples;
+this includes grouping retained assertions, not deleting eight independent
+behaviors. Two deliberate mutations substituted a registered model for a captured
+definition and returned an error result for a still-running execution. The old
+suite passed both broken variants; the revised suite rejected both.
+
+Source line coverage (`src`, `packages`, `scripts`, excluding tests and generated
+temporary modules) was 80.1799% before and 80.1964% after; function coverage was
+91.1841% and 91.1772%. Removed helpers account for removed covered source.
+Two unchanged IPC relay-drain lines were covered only in the first run: that
+conditional depends on whether frames remain when a worker exits. The manager
+examples do not invoke that worker path, whose existing dedicated process tests
+remain. Coverage is an observation, not proof that all failure modes were checked.
+The runs took 205.06s and 215.87s, with other verification overlapping the latter;
+these measurements establish no speedup. The audit does not support a blanket
+30% deletion. Distinct restart, cancellation, identity and historical-reader
+contracts still need their tests even when they visit the same lines.
+
+Both individual local CI runs passed. The context branch's final fixture-link
+wording passed its owning tests; the combined final source is checked separately.
+Hosted checks and combined validation are pending at this writing. No deployment,
+App activation, record migration or model-backed experiment was performed.

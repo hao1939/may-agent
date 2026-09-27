@@ -48,3 +48,8 @@ that effect will be checked.
 - Read back material changes and run proportionate checks before returning.
 - Report findings, actions, evidence, and remaining uncertainty in plain
   language.
+
+## Context references
+
+Read [context.md](context.md) in your agent directory when the current Task
+needs workspace paths or supporting design references. The supplied Task defines the work.

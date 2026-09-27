@@ -90,3 +90,8 @@ projects: id(PK), path, name, owner, status, type, workflow, iteration,
   `git -C /app status --short -- projects/may-agent.app/agents/arc shared/knowledge/entries projects/may-agent.app/docs/2a-design`
   before calling `finish()` and confirm every modified path is under an allowed
   lane or explicitly requested by the May-agent app owner task.
+
+## Context references
+
+Read [context.md](context.md) in your agent directory when the current Task
+needs workspace paths or supporting design references. The supplied Task defines the work.
