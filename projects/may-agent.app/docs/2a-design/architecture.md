@@ -57,6 +57,13 @@ to wrap every arrow in an event. Events carry meaningful inputs and changes;
 local reads, executor invocation and atomic transitions use typed calls.
 Event persistence is the Events boundary's use of storage, not another database.
 
+Admission chooses the accountable resource and records input or observations;
+Task reconciliation chooses the domain response from current state. Existing
+typed writers may complete bounded deterministic updates or authorized controls
+directly. Messages, metrics and receipts need no separate reconciler. The
+[Event/resource boundary](events.md#resource-responsibility-and-reconciliation)
+owns these rules, including recovery before Task creation and passive notifications.
+
 A schedule only produces due input or facts. The work runtime decides when an
 eligible Task attempt runs. The executor performs that bounded attempt. A Task
 can run from admitted input, a relevant event or recovery with schedules disabled.

@@ -4,6 +4,23 @@ A Task reconciler performs one bounded attempt and proposes a result. The App
 owns the outcome; the Host owns scheduling, fencing, persistence and recovery.
 Start with the [SDK Quickstart](sdk-quickstart.md) and its checked App declaration.
 
+## Route input and reconcile current state
+
+Use a pure mapper to select existing or desired Task work. Keep investigation,
+network effects and acceptance decisions in the reconciler. An event such as
+"PR merged" supplies evidence; it does not decide that deployment or the user's
+whole request is complete.
+
+Read the current assignment, accepted results, Conditions and pending input
+together. Preserve useful completed work, assess what the new information
+changes, and return the remaining work or outcome. Reading input is not its
+acknowledgment; use the supported executor/result contract. Code may implement
+a deterministic reconciler without an agent call.
+
+For simple measurements, exact controls and presentation, use the existing
+[resource writers and notification paths](../2a-design/events.md#immediate-reactions).
+Create a Task only when it owns work, not merely because an event arrived.
+
 ## Select the execution
 
 `workflow: "handle-request"` resolves
@@ -24,7 +41,8 @@ Use the SDK's `TaskReconcileResult`, `TaskAction`, `Condition` and
 owns their disposition; do not maintain a second result schema here.
 
 - `converged` claims the current acceptance criteria are satisfied.
-- `waiting` needs an exact external Condition or live child/dependency.
+- `waiting` yields this pass with Conditions, dependencies, a review deadline,
+  or `continue: true` when useful independent work remains.
 - `needs-agent` requests exceptional bounded judgment from the same App's
   selected agent; it does not transfer ownership.
 

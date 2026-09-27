@@ -203,6 +203,13 @@ may translate it to App input, wake an exact task or Condition, or merely
 observe it. Caller correlation is added only when someone expects a result. A
 record-only fact is still valid when nobody needs to act.
 
+Routing identifies responsibility and records relevant input or observations;
+the responsible Task reconciles current state to decide the response. Small
+deterministic resource updates and exact authorized controls can finish through
+their existing writers. This requires neither a Task per event nor a reconciler
+per record. Notifications of committed state prompt a reread, not automatic new
+work on their source. See the [resource boundary](../2a-design/events.md#resource-responsibility-and-reconciliation).
+
 Required input is accepted only by its explicit route. There is no generic
 owner fallback for an unknown target or unhandled fact.
 

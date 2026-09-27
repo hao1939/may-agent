@@ -3,7 +3,10 @@
 **Status:** Source review index refreshed against Host `1ff18acc` and workspace
 `7f95373b96` on 2026-09-27. This is not a live deployment or App-quality audit.
 The [documentation review](../archive/reviews/design-doc-hygiene-20260927.md)
-records checks and corrections. Current contracts live in
+records checks and corrections. The [resource/Event review](../archive/reviews/resource-event-boundary-20260927.md)
+adds a reproduced admission-recovery failure and verified freshness-policy
+coupling against the same Host and workspace `28580398c6`.
+Current contracts live in
 [System Model](../2a-design/system-model.md), [Architecture](../2a-design/architecture.md)
 and their linked owners.
 
@@ -11,6 +14,8 @@ and their linked owners.
 
 | Gap | Evidence and contract owner | Smallest next proof |
 | --- | --- | --- |
+| A failing Event translator prevents all matching Apps from reaching durable admission; no plan means no automatic retry | `AppInboxHost.subscriptionInputs`, `app-inbox-runtime.ts` route construction/recovery; [resource/Event boundary](../2a-design/events.md#resource-responsibility-and-reconciliation) | Retain exact failed routing responsibility through existing admission state, isolate other consumers, then prove recovery without re-publication and without replaying already accepted work |
+| Condition freshness depends on event spelling and one named domain event | `app-task-condition-tracker.ts`, `isFreshLevelObservation`; [observation validity](../2a-design/events.md#changes-that-already-happened) | Move consumer freshness needs to explicit existing expectations; compare equivalent observations under different names, preserving historical result proofs and current wait protections |
 | HTTP embeds session-evaluation policy and directly writes human annotation | `src/app/http/server.ts`; [HTTP boundary](../2a-design/http-boundary.md), [Session trail](../2a-design/session-eval-trail.md) | Preserve the current API while routing the requested judgment/write to its owner; prove exact session/line/input correlation |
 | Requested session line/instructions are lost at the Evaluation mapping | `evaluation.app/app.ts`, `evaluate-session` mapping and `evaluator-aftermath`; [Session trail](../2a-design/session-eval-trail.md) | Either implement the accepted annotation capability end to end or explicitly revise/remove that advertised capability; do not claim a whole-session assessment answered the line request |
 | Some Task-board text equates convergence with recurring work | `packages/webui/static/pages/project-kanban.js`; [Default UI](../2a-design/default-project-ui.md) | Explain open accepted outcomes independently of recurrence and closure; check the rendered board |

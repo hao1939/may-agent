@@ -32,6 +32,10 @@ contracts; Tier-2 design governs when wording conflicts.
 
 ## Reviews
 
+- [Resource/Event boundary review — 2026-09-27](reviews/resource-event-boundary-20260927.md)
+  — clarified routing versus reconciliation and immediate updates; reproduced
+  pre-plan admission recovery failure and checked Condition freshness coupling.
+
 - [Design documentation hygiene — 2026-09-27](reviews/design-doc-hygiene-20260927.md)
   — source-backed corrections to lifecycle, admission, recovery, user controls
   and improvement ownership; retained implementation gaps and validation limits.

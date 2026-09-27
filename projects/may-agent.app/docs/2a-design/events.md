@@ -7,6 +7,9 @@ ordered per-attempt Event batches are implemented. App admission uses that
 single path; request dispositions have been removed. May's Conversation Task
 handles linked Task facts through the same input path as human discussion;
 there is no separate current supervision Task or proxy for destination work.
+Failures before a route plan exists still have a recovery gap, and Condition
+freshness partly depends on event names. The [boundary review](../archive/reviews/resource-event-boundary-20260927.md)
+records the reproductions; the contract below does not claim those gaps are fixed.
 
 ## Purpose
 
@@ -26,6 +29,101 @@ publish(event) -> validate -> persist event + exact admission -> receipt
 The event ID is the root causal identity. An event does not replace mutable work
 state: an App task owns the work, a request correlates a caller and result, and
 exact controls link to their owning session or operation.
+
+## Resource responsibility and reconciliation
+
+Record responsibility before doing owed work. An event brings information to
+an accountable resource; its owner records relevant input or observations, and
+reconciliation decides what work follows from current state. Routing answers
+"where does this belong?" Reconciliation answers "what should happen now?"
+
+```text
+event -> validate and resolve owner -> record input / observation
+                                          |
+                                     eligible Task
+                                          |
+                                 reconcile current state
+                                          |
+                              commit result and remaining work
+```
+
+Resource means the existing authoritative record, not a new base class or a
+controller for every database row. Tasks own durable work. Conversation
+Requests, messages, metrics and execution receipts keep their existing owners
+without acquiring independent execution loops. A bounded helper can execute
+under an existing Task or caller; it needs no Task of its own.
+
+| Boundary | Responsibility | Completion means |
+| --- | --- | --- |
+| Admission | Validate authority and shape; resolve an exact destination or declared App route; retain input and correlation | Responsibility is recorded, or rejection/failure is explicit |
+| Resource update | Use the owning typed writer to save input, evidence, observations or an authorized state change | That update committed; an incoming claim is not automatically an accepted conclusion |
+| Reconciliation | Read current state and pending input; judge relevance, validity and remaining work; use code or agents as appropriate | A proposed result is ready for fenced acceptance |
+| Notification | Announce a committed change so consumers can reread | A hint was sent; it creates no new obligation by itself |
+
+For example, a PR-merged observation can satisfy an exactly declared PR wait.
+It does not finish the enclosing Task: deployment, verification or a reply may
+remain. A human correction becomes input; only an authorized accepted decision
+changes scope or approval. Task conclusions, other waits and pending work remain
+independent. Pure App mapping may select or declare desired work, but cannot
+execute it or declare its success from an event label.
+
+An exact address selects the existing resource. Without one, the declared App
+mapping selects it. Interpretation that needs investigation belongs in that
+App's work, not the router. One fact may serve several accountable resources;
+handling is tracked for each obligation, not by a global "event handled" flag.
+Delivery acceptance and a Task's accepted input are different checkpoints.
+
+Once relevant work is identified, admission failure must leave its exact event,
+intended route and failure discoverable for retry or accountable review, even
+if translation failed before a Task could be created. Recover through existing
+admission state; unrelated routes must remain usable. Invalid input can be
+rejected explicitly. An intentional no-work decision is different from a broken
+translator or an absent owner. A durable event alone does not prove that its
+work reached an owner. Current pre-plan failures do not yet meet this contract.
+
+### Immediate reactions
+
+Immediate handling is compatible with this boundary. The owner can finish a
+small deterministic update directly through its existing writer. Duration
+alone does not decide safety: even a fast network effect may need recovery.
+
+| Case | Appropriate path |
+| --- | --- |
+| Audit fact or metric sample | Persist through its owning store; no agent or Task is required |
+| Exact authorized Stop or Task control | Apply the existing identity/version checks and control promptly; no semantic reconciliation is needed first |
+| Task/UI change notification | Reread committed state and render through a passive listener |
+| New ask, correction, child result or finding | Retain input for the responsible Task; reconcile before deciding its domain consequence |
+| Simple deterministic Task procedure | Use a code executor through normal Task settlement; a model is optional |
+
+Only bounded validation, routing and owner-controlled local writes belong on
+the publication stack. Model calls, workflows, broad reads and external I/O run
+outside it. An asynchronous action whose result is owed remains attached to its
+existing Task, caller or operation. Preserve the evidence needed to distinguish
+accepted, running, succeeded and failed; a returned event receipt is not success.
+Session/Host controls have their own lifetime and recovery guarantees. A saved
+control command is not a promise to replay Stop, restart or shutdown after reboot.
+
+### Changes that already happened
+
+The reverse path is also normal: resource commit -> change notification ->
+reread. A notification must not automatically re-enter its source Task as new
+work. Another Task may legitimately consume the committed change through an
+exact link or declared subscription. Repeated notifications should not create
+duplicate obligations or rewrite the source resource's accepted state.
+
+Reconciliation uses current observations and still-pending input together;
+it does not blindly replay event instructions. New input can request a later
+pass or reach the active executor at a supported boundary. It does not launch
+a competing attempt. A lost wake is repaired from retained work, and coalescing
+wakes does not consume input. See [input during execution](workflows.md#input-during-execution).
+
+Observation validity belongs to the source/consumer contract. Historical proof
+of an immutable result and a report of a changing external state have different
+freshness needs. Use exact identity, revision and declared expectations where
+available; event spelling or arrival order alone cannot establish freshness.
+Preserve conflicting evidence for the owner's judgment. Existing Condition
+expectations support field comparisons; a new global event taxonomy is not
+required by this rule.
 
 Read [system-model.md](system-model.md) for the relationship among requests,
 tasks, facts, and execution; [agent-app.md](agent-app.md) for authoring routes;
@@ -166,10 +264,11 @@ only after installing its receiver; the Host bounds unanswered dispatches and
 preserves the EventHub identity across its process boundary. Pending admission
 links expose their recorded failure instead of hiding it behind `accepted`.
 
-A required consumer does not gain a special synchronous handler. It first
-persists the exact request, Task link, or operation that makes the work
-recoverable, then handles that resource asynchronously. Ordering is local to
-one Task or operation; unrelated consumers run independently.
+A required consumer records its exact input, Task link or operation before
+starting work outside the publication stack. A bounded deterministic resource
+update may complete directly through its authorized writer, as described under
+[immediate reactions](#immediate-reactions). Ordering and recovery belong to
+that resource's contract; unrelated consumers run independently.
 
 Expiry repair for pending admission and lifecycle-pair records runs in the
 separate maintenance process. Event persistence never performs that periodic
@@ -183,9 +282,11 @@ accepted the message; only `author.kind=human` also creates a May request. The
 durable message and request are the acceptance boundary. The derived
 `conversation.updated` presentation wake is coalesced and emitted afterward;
 it cannot delay or invalidate the publisher's receipt.
-Ordinary reported facts are record-only. A required event may remain `recorded`
-after persistence when its route temporarily fails; recovery retries the same
-event and identity.
+Ordinary reported facts are record-only. An event may remain `recorded` after
+persistence when its route fails. Existing input/plan recovery retries retained
+App admission with the same identity. A failure before those records exist is
+currently diagnostic evidence without automatic admission recovery; control
+commands also retain their own recovery contract.
 
 ## Routing outcomes
 

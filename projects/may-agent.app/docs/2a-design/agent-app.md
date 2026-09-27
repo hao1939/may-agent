@@ -47,6 +47,12 @@ request is stored in the App inbox. Admission calls `task(input)` synchronously 
 exact Task link. Failed attachment is retained for recovery. The inbox never
 reconciles that Task or runs a second work loop.
 
+Mapping selects responsibility; reconciliation decides the domain response.
+Keep translators bounded and free of effects. A failed translator is a routing
+failure, not a decision that no work is needed. The Host must retain its
+accountable admission evidence; the [current pre-plan recovery gap](events.md#resource-responsibility-and-reconciliation)
+does not justify an App-local retry queue or a second inbox executor.
+
 Human input, a cross-App dependency, an action, a schedule, or a subscribed
 fact may create a caller request and task. A metric, provider observation,
 lifecycle fact, or scheduled wake normally remains a fact unless the App
