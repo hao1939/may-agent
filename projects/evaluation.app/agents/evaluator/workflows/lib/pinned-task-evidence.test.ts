@@ -99,6 +99,44 @@ describe("pinned Task evidence read-back", () => {
     expect(bundle.gaps).toEqual([]);
   });
 
+  test("attaches current checkpoint validity to the exact linked Task", async () => {
+    const reviewAt = Date.now() + 86400000;
+    const bundle = await readPinnedTaskEvidence(
+      "may",
+      "root",
+      {
+        appTask: { dependsOn: ["child"] },
+        detail: {},
+      },
+      {
+        getAppTask: async () => ({
+          id: "child",
+          conditions: [
+            {
+              id: "approval",
+              observation: { state: "unknown", reviewAt },
+            },
+          ],
+        }),
+        getTask: async () => ({ acceptedEvidence: { page: { items: [] } } }),
+      },
+    );
+    expect(bundle.links).toEqual([
+      expect.objectContaining({
+        appId: "may",
+        taskId: "child",
+        status: "read",
+        validity: {
+          phase: "before-due",
+          dueAt: reviewAt,
+          boundaries: [
+            { conditionId: "approval", dueAt: reviewAt, phase: "before-due" },
+          ],
+        },
+      }),
+    ]);
+  });
+
   test("pages old accepted attempts to reach pinned artifacts without making history current", async () => {
     const store = await archive();
     const ref = await store.put("old accepted evidence", "md");

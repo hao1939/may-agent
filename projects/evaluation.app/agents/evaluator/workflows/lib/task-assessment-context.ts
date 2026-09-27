@@ -57,27 +57,37 @@ function boundaryIdentity(boundary: ValidityBoundary): string {
 }
 
 function conditionDueBoundaries(
+  appTask: Record<string, unknown>,
   detail: Record<string, unknown>,
   nowMs: number,
 ): ValidityBoundary[] {
-  const conditions = object(detail.diagnostics).conditions;
+  // Current public observations are authoritative. Retain the historical
+  // diagnostic envelope only for Hosts predating the public projection.
+  const current = Array.isArray(appTask.conditions);
+  const conditions = current
+    ? appTask.conditions
+    : object(detail.diagnostics).conditions;
   if (!Array.isArray(conditions)) return [];
   return conditions.flatMap((value) => {
     const entry = object(value);
     const conditionId = text(entry.id);
     const condition = object(entry.condition);
-    const spec = object(condition.spec);
-    const status = object(condition.status);
+    const spec = current ? entry : object(condition.spec);
+    const status = current
+      ? object(entry.observation)
+      : object(condition.status);
     if (!conditionId || text(status.state) === "true") return [];
     const reviewAfterMs = Number(spec.reviewAfterMs);
     const observedAt = Date.parse(String(status.observedAt ?? ""));
+    const projected = deadline(status.reviewAt);
     if (
-      !Number.isInteger(reviewAfterMs) ||
-      reviewAfterMs < MIN_CONDITION_REVIEW_AFTER_MS ||
-      !Number.isFinite(observedAt)
+      projected === null &&
+      (!Number.isInteger(reviewAfterMs) ||
+        reviewAfterMs < MIN_CONDITION_REVIEW_AFTER_MS ||
+        !Number.isFinite(observedAt))
     )
       return [];
-    const dueAt = observedAt + reviewAfterMs;
+    const dueAt = projected ?? observedAt + reviewAfterMs;
     return [
       {
         conditionId,
@@ -118,6 +128,28 @@ function currentObligationBoundaries(
   return boundaries;
 }
 
+export function taskReviewValidity(
+  appTask: Record<string, unknown>,
+  detail: Record<string, unknown>,
+  nowMs = Date.now(),
+): AssessmentContext["validity"] {
+  const boundaries = [
+    ...conditionDueBoundaries(appTask, detail, nowMs),
+    ...currentObligationBoundaries(appTask, nowMs),
+  ].sort(
+    (left, right) =>
+      left.dueAt - right.dueAt ||
+      boundaryIdentity(left).localeCompare(boundaryIdentity(right)),
+  );
+  const dueAt = boundaries[0]?.dueAt ?? null;
+  const phase = !boundaries.length
+    ? "unknown"
+    : boundaries.some((boundary) => boundary.phase === "due")
+      ? "due"
+      : "before-due";
+  return { phase, dueAt, boundaries };
+}
+
 export function assessmentContext(
   subject: SubjectEvidence,
   requested: unknown,
@@ -133,21 +165,11 @@ export function assessmentContext(
       validity: { phase: "unknown", dueAt: null, boundaries: [] },
     };
   const task = object(subject.task);
-  const detail = object(task.detail);
-  const boundaries = [
-    ...conditionDueBoundaries(detail, nowMs),
-    ...currentObligationBoundaries(object(task.appTask), nowMs),
-  ].sort(
-    (left, right) =>
-      left.dueAt - right.dueAt ||
-      boundaryIdentity(left).localeCompare(boundaryIdentity(right)),
+  const { phase, dueAt, boundaries } = taskReviewValidity(
+    object(task.appTask),
+    object(task.detail),
+    nowMs,
   );
-  const dueAt = boundaries[0]?.dueAt ?? null;
-  const phase = !boundaries.length
-    ? "unknown"
-    : boundaries.some((boundary) => boundary.phase === "due")
-      ? "due"
-      : "before-due";
   const hasCurrentObligationBoundary = boundaries.some(
     (boundary) => !("conditionId" in boundary),
   );
@@ -160,7 +182,9 @@ export function assessmentContext(
     : "condition-boundaries:none";
   return {
     purpose,
-    rubricVersion: subject.task?.population ? SYSTEMIC_TASK_RUBRIC_VERSION : ONGOING_TASK_RUBRIC_VERSION,
+    rubricVersion: subject.task?.population
+      ? SYSTEMIC_TASK_RUBRIC_VERSION
+      : ONGOING_TASK_RUBRIC_VERSION,
     validityIdentity,
     validity: { phase, dueAt, boundaries },
   };

@@ -1,3 +1,4 @@
+import { taskReviewValidity } from "./task-assessment-context.js";
 import {
   readPinnedArtifact,
   type Artifact,
@@ -133,15 +134,22 @@ export async function readPinnedTaskEvidence(
           throw new Error("generation mismatch");
         const { ref, resourceVersion, updatedAt, progress, ...evidence } =
           detail;
+        const validity = taskReviewValidity(appTask, evidence);
         const bytes = Buffer.byteLength(
-          JSON.stringify({ appTask, detail: evidence }),
+          JSON.stringify({ appTask, detail: evidence, validity }),
         );
         if (bytes > Math.min(32_768, bytesRemaining)) {
           links.push({ ...link, status: "truncated", bytes });
           gaps.add(`linked Task truncated: ${link.appId}/${link.taskId}`);
         } else {
           bytesRemaining -= bytes;
-          links.push({ ...link, status: "read", appTask, detail: evidence });
+          links.push({
+            ...link,
+            status: "read",
+            appTask,
+            detail: evidence,
+            validity,
+          });
           queue.push({
             value: appTask.result,
             source: `task:${link.appId}/${link.taskId}.result`,

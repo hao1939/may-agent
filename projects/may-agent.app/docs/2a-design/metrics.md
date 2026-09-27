@@ -65,9 +65,16 @@ input only when the input or operation relationship supports that conclusion.
 
 The [Evaluation pattern-review proposal](../../../evaluation.app/design/systemic-pattern-review-20260927.md)
 applies these rules to bounded Task-attempt summaries and the existing assessment
-path. The initial replay is offline; aggregate public reads and periodic selection
-are implementation gaps. Existing default workflow-run measurements do not cover
-every native agent or Conversation Task attempt.
+path. Host `/api/task-attempts` exposes fixed Task-attempt cohorts; Evaluation's
+existing periodic selector supplies those observations to bounded reviews.
+The [connected trial](../../../evaluation.app/experiments/systemic-pattern-review-20260927/README.md)
+records local deployment and the first recurrence finding. Default workflow-run
+measurements alone still do not cover every native agent or Conversation attempt.
+
+Session completion is a separate observation from accepted Task settlement.
+Dashboard session percentages describe model sessions only; use Task-attempt
+reports for failed settlement and recurring Task cost. Neither percentage proves
+that an App delivered the requested outcome.
 
 A broken collector or investigation must not roll back accepted results or stop
 unrelated work. Expose missing or stale observations and reuse retained evidence

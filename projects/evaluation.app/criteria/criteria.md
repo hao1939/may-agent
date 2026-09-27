@@ -45,6 +45,14 @@ An ongoing review judges the exact current Task snapshot at its retained due pha
 - exact approval remains pending where application or activation requires it; and
 - overdue review, missing observations, stale evidence, or drift is reported explicitly without mutating, cancelling, or reassigning the subject.
 
+Use the supplied `assessment.validity` for the subject and `readBack.links[].validity`
+for linked Tasks. These checkpoints use the current Condition observation, not
+its creation time; a later observation can move the next review. `before-due`
+means the checkpoint has not elapsed at this snapshot. `due` warrants inspection,
+not an automatic failure judgment. Missing validity is an evidence limit.
+Read App `closed` independently from the work phase: a cancelled Task may retain
+`status: attention` and `closed: true` as evidence of how its execution ended.
+
 A valid wait, useful active execution, pending approval, or recovered transient failure is not a failure by status or age alone. A current accepted/converged result can legitimately appear as App status `done` and Task detail status `up-to-date` while `terminal=false` and `ready=false`: the current outcome is reconciled, while the durable Task remains open for later input. If it has no current Conditions, dependencies, input waits, or other obligations, no review deadline is required; do not mistake open lifetime or non-claimability for unfinished work. If the public snapshot does not expose enough evidence to distinguish those states, return `insufficient-evidence`; do not call absent coverage healthy.
 
 ## Shared behavior review

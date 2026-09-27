@@ -502,6 +502,15 @@ exact links and any Request updates. The Host checks the claim and revisions,
 then commits the input outcome, response and closure consistently. A quiet
 system review records handled evidence without an empty chat message.
 
+The shared result schema requires a nonblank response for any considered human
+input, Request closure, delegation or Task control. Automated observations and
+updates retaining an open Request may stay quiet. The finish tool validates the
+same input-specific schema as settlement, so a missing explanation can be
+corrected inside the current execution. Settlement still checks current identity,
+revisions and authority transactionally; tool validation cannot replace those
+checks. A mixed input batch retains its human reply requirement even when a
+system fact is its most recent input.
+
 Duplicate inputs reuse stable admission/result identities. A human Turn may
 already have explained a result before its queued system input runs; reread
 current closure and handled evidence and complete quietly. This guarantees

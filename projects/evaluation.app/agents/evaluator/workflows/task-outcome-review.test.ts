@@ -231,23 +231,31 @@ describe("Task outcome review", () => {
     }));
     const command: PublicCommand = async (cmd) =>
       cmd.type === "task.attempts.read"
-        ? { version: 1, available: true, appId, taskId, attemptId: "a1", generation: 1, sessionId: "s_subject" }
-        : cmd.type === "event.get"
         ? {
-            command: "event.get",
-            event: {
-              id: 123,
-              type: "project.task.reconciled",
-              data: {
-                project: appId,
-                taskId,
-                generation: 1,
-                attemptId: "a1",
-                workflowRunId: "s_subject",
-              },
-            },
+            version: 1,
+            available: true,
+            appId,
+            taskId,
+            attemptId: "a1",
+            generation: 1,
+            sessionId: "s_subject",
           }
-        : base(cmd);
+        : cmd.type === "event.get"
+          ? {
+              command: "event.get",
+              event: {
+                id: 123,
+                type: "project.task.reconciled",
+                data: {
+                  project: appId,
+                  taskId,
+                  generation: 1,
+                  attemptId: "a1",
+                  workflowRunId: "s_subject",
+                },
+              },
+            }
+          : base(cmd);
     const sessionRead = async (_id: string, transcript: boolean) =>
       transcript
         ? {
@@ -313,6 +321,50 @@ describe("Task outcome review", () => {
     ]);
     expect(payload.freshness.status).toBe("stale");
   });
+  test("uses current Host checkpoints instead of stale creation or diagnostic timestamps", () => {
+    const observedAt = "2026-09-27T01:55:22.616Z";
+    const reviewAt = Date.parse("2026-09-28T01:55:22.616Z");
+    const subject = assessmentSubject({
+      ...detail,
+      diagnostics: {
+        conditions: [
+          condition("approval", "2026-09-25T01:55:22.616Z", 86400000),
+        ],
+      },
+    });
+    Object.assign(subject.task.appTask, {
+      conditions: [
+        {
+          id: "approval",
+          reviewAfterMs: 86400000,
+          observation: {
+            state: "unknown",
+            createdAt: "2026-09-25T01:55:22.616Z",
+            observedAt,
+            reviewAt,
+          },
+        },
+      ],
+    });
+    expect(
+      assessmentContext(subject, "ongoing", Date.parse("2026-09-27T14:00:00Z"))
+        .validity,
+    ).toEqual({
+      phase: "before-due",
+      dueAt: reviewAt,
+      boundaries: [
+        { conditionId: "approval", dueAt: reviewAt, phase: "before-due" },
+      ],
+    });
+    expect(assessmentContext(subject, "ongoing", reviewAt).validity.phase).toBe(
+      "due",
+    );
+    Object.assign(subject.task.appTask, { conditions: [] });
+    expect(assessmentContext(subject, "ongoing", reviewAt).validity.phase).toBe(
+      "unknown",
+    );
+  });
+
   test("derives every unresolved review boundary from the production task.get envelope", () => {
     const observedAt = "2026-09-18T12:00:00.000Z";
     const subject = assessmentSubject({

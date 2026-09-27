@@ -523,6 +523,9 @@ a new generation and cannot inherit an older approval. Condition `reviewAfterMs`
 checkpoints renew after an accepted waiting or converged settlement while the
 fact remains pending. Stale or otherwise unaccepted proposals, including those
 superseded by pending input, do not renew checkpoints.
+Public `observation.reviewAt` uses the scheduler's `observedAt + reviewAfterMs`
+calculation (epoch milliseconds), omitted for satisfied or unusable observations.
+Use this checkpoint, not creation time; passing it warrants review, not failure.
 Task-level `reviewAt` is a recovery checkpoint: a future omitted deadline is
 preserved, a due checkpoint is consumed, and sleeping again must return a new
 explicit deadline or Condition. Immediate `continue: true` work requires neither.

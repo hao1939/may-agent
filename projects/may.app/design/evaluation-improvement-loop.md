@@ -10,8 +10,12 @@ refines recovered-finding disposition: May may settle an individual incident and
 still investigate a repeated cause, material cost or coverage gap. A systemic
 concern is evidence for value judgment, not an instruction to reopen the subject
 or prepare a candidate. Reuse linked investigation work and preserve the exact
-population window. The aggregate evidence/selection path remains proposed, not
-activated.
+population window. The aggregate evidence and periodic selection path is deployed
+locally; its [connected trial](../../evaluation.app/experiments/systemic-pattern-review-20260927/README.md)
+found recurrence and also an unsupported deadline claim. May must inspect exact
+current evidence before adopting a report's interpretation. Automatic report
+intake is proven for that sample; full unattended candidate-to-application success
+is not established by it.
 
 The shared [behavior review method](../../may-agent.app/docs/2b-manual/workflow-authoring.md#checking-app-behavior)
 uses existing App tests, bounded agent trials and Evaluation. May judges a
