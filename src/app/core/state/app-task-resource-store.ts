@@ -26,7 +26,7 @@ import {
   type TaskTree,
 } from "../tasks/app-task-store.js";
 
-const TASK_RESOURCE_SCHEMA_VERSION = 3;
+const TASK_RESOURCE_SCHEMA_VERSION = 4;
 const MAX_CONTEXT_ATTEMPTS_PER_TASK = 16;
 
 // Read projection only: new input can await a claim while the last accepted

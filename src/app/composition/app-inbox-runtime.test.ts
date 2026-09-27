@@ -1013,7 +1013,7 @@ describe("App inbox runtime", () => {
             inputSchema: { type: "object" },
             tasks: {
               subscriptions: [`route.${name}`],
-              resolve: () => ({ id: "routing/task", outcome: name, acceptance: ["done"] }),
+              resolve: () => ({ id: "routing/task", parentId: "root", outcome: name, acceptance: ["done"] }),
             },
             schedules:
               name === "rejected" && scheduleChange === "removed"

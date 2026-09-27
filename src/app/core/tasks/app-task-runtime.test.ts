@@ -2058,6 +2058,7 @@ describe("canonical App task runtime", () => {
       handler: "owner:sample-owner",
     });
     if (claim.kind !== "claimed") throw new Error("expected claimed task");
+    const notBefore = Date.now();
     deferAppTask(config, claim, {
       disposition: "waiting",
       summary: "Waiting for credential readiness",
@@ -2067,15 +2068,13 @@ describe("canonical App task runtime", () => {
           type: "credential.state",
           subject: "credential:xhs",
           expected: { field: "state", equals: "ready" },
+          notBefore,
           owner: "app:credential-provider",
           reviewAfterMs: 300_000,
         },
       ],
     });
-    const establishedAt = Date.parse(
-      readTaskSnapshot(config).conditions?.["credential-ready:xhs"]?.status.observedAt ?? "",
-    );
-    expect(Number.isFinite(establishedAt)).toBeTrue();
+    expect(readTaskSnapshot(config).conditions?.["credential-ready:xhs"]?.spec.notBefore).toBe(notBefore);
     await installAppTaskRuntimes({
       ...options(f, bus),
       persistDir,
@@ -2095,14 +2094,14 @@ describe("canonical App task runtime", () => {
       previewLoadedCanonicalAppTaskEvent({
         bus,
         appId: "sample",
-        event: observation(establishedAt - 1),
+        event: observation(notBefore - 1),
       }),
     ).toEqual([]);
     expect(
       previewLoadedCanonicalAppTaskEvent({
         bus,
         appId: "sample",
-        event: observation(establishedAt + 1),
+        event: observation(notBefore + 1),
       }),
     ).toEqual([intent.id]);
   });

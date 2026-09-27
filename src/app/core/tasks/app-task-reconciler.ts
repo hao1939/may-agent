@@ -915,6 +915,7 @@ function materializeWaitingConditions(
       type: raw.type.trim(),
       subject: raw.subject.trim(),
       expected: raw.expected,
+      ...(raw.notBefore === undefined ? {} : { notBefore: raw.notBefore }),
       ...(raw.requestedAction?.trim() ? { requestedAction: raw.requestedAction.trim() } : {}),
       owner: raw.owner!.trim(),
       reviewAfterMs: raw.reviewAfterMs!,
@@ -3353,6 +3354,9 @@ function validateConditions(
     }
     if (!("expected" in condition)) {
       throw new Error(`Handler result Condition ${identity} requires an expected value`);
+    }
+    if (condition.notBefore !== undefined && (!Number.isSafeInteger(condition.notBefore) || Number(condition.notBefore) < 0)) {
+      throw new Error(`Handler result Condition ${identity} notBefore must be a non-negative safe integer`);
     }
     if (condition.requestedAction !== undefined) {
       requireNonEmptyString(condition.requestedAction, `Handler result Condition ${identity} requestedAction`);

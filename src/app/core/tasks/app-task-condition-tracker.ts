@@ -145,19 +145,6 @@ function timestampMillis(value: unknown): number | null {
   return Number.isFinite(parsed) ? parsed : null;
 }
 
-function isFreshLevelObservation(condition: AppTaskCondition, event: Record<string, unknown>): boolean {
-  const levelObservation =
-    condition.spec.type === "aks.repo-ref.observed" ||
-    condition.spec.type.endsWith(".state") ||
-    condition.spec.type.endsWith(".check") ||
-    condition.spec.type.endsWith(".pulse") ||
-    condition.spec.type.endsWith("-pulse");
-  if (!levelObservation) return true;
-  const conditionEstablishedAt = timestampMillis(condition.status.observedAt);
-  const eventObservedAt = timestampMillis(event.timestamp);
-  if (conditionEstablishedAt === null || eventObservedAt === null) return true;
-  return eventObservedAt >= conditionEstablishedAt;
-}
 
 function matchesExpectedField(expected: Record<string, unknown>, event: Record<string, unknown>): boolean {
   const expectedField = expected.field;
@@ -202,11 +189,11 @@ function matchesExpectedRecord(expected: Record<string, unknown>, event: Record<
 
 function matches(condition: AppTaskCondition, event: Record<string, unknown>): boolean {
   if (condition.spec.type !== event.type) return false;
-  // Level observations are not immutable historical facts. A newly declared
-  // wait must not be satisfied by an older state, check, or pulse replayed from
-  // the event journal. Only an observation made at or after the Condition was
-  // established can prove that the external level subsequently changed.
-  if (!isFreshLevelObservation(condition, event)) return false;
+  // Freshness is declared by the consumer, independently of event spelling.
+  if (condition.spec.notBefore !== undefined) {
+    const observedAt = timestampMillis(event.timestamp);
+    if (observedAt === null || observedAt < condition.spec.notBefore) return false;
+  }
   const subject = typedSubject(condition.spec.subject);
   if (!subject) return false;
   if (String(eventField(event, ...fieldAliases(subject.field)) ?? "") !== subject.value) return false;

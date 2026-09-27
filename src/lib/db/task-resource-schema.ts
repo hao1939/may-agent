@@ -184,6 +184,39 @@ function migrateTaskEventReceipts(db: SqliteDb): void {
   }
 }
 
+/** Preserve the old implicit freshness fence as data once; new waits choose their own policy. */
+function migrateConditionFreshness(db: SqliteDb): void {
+  const apps = db.prepare(
+    "SELECT app_id FROM app_task_store_meta WHERE key = 'schema_version' AND CAST(value AS INTEGER) < 4",
+  ).all();
+  for (const { app_id: appId } of apps) {
+    const rows = db.prepare(
+      "SELECT condition_id, condition_json FROM app_task_conditions WHERE app_id = ? AND state != 'true'",
+    ).all(appId);
+    let changed = false;
+    for (const row of rows) {
+      const condition = JSON.parse(String(row.condition_json));
+      const type = String(condition.spec.type);
+      const wasLevelObservation =
+        type === "aks.repo-ref.observed" || type.endsWith(".state") || type.endsWith(".check") ||
+        type.endsWith(".pulse") || type.endsWith("-pulse");
+      const notBefore = typeof condition.status.observedAt === "number"
+        ? condition.status.observedAt : Date.parse(condition.status.observedAt);
+      if (
+        !wasLevelObservation || condition.spec.notBefore !== undefined ||
+        !Number.isSafeInteger(notBefore) || notBefore < 0
+      ) continue;
+      condition.spec.notBefore = notBefore;
+      condition.metadata.resourceVersion++;
+      db.prepare("UPDATE app_task_conditions SET condition_json = ? WHERE app_id = ? AND condition_id = ?")
+        .run(JSON.stringify(condition), appId, row.condition_id);
+      changed = true;
+    }
+    if (changed) advanceTaskResourceRevision(db, String(appId));
+    db.prepare("UPDATE app_task_store_meta SET value = '4' WHERE app_id = ? AND key = 'schema_version'").run(appId);
+  }
+}
+
 /** Create the resource tables and migrate legacy JSON links once. */
 export function ensureTaskResourceSchema(db: SqliteDb): void {
   db.exec(APP_INBOX_SCHEMA);
@@ -203,7 +236,16 @@ export function ensureTaskResourceSchema(db: SqliteDb): void {
     .get();
   if (!needsConditionRouteBackfill && !needsRelationBackfill) {
     db.exec(TASK_RESOURCE_SCHEMA);
-    migrateTaskEventReceipts(db);
+    db.exec("SAVEPOINT task_resource_upgrades");
+    try {
+      migrateTaskEventReceipts(db);
+      migrateConditionFreshness(db);
+      db.exec("RELEASE SAVEPOINT task_resource_upgrades");
+    } catch (error) {
+      db.exec("ROLLBACK TO SAVEPOINT task_resource_upgrades");
+      db.exec("RELEASE SAVEPOINT task_resource_upgrades");
+      throw error;
+    }
     return;
   }
   // This helper is used both by the top-level schema transaction and by
@@ -242,6 +284,7 @@ export function ensureTaskResourceSchema(db: SqliteDb): void {
       `);
     }
     migrateTaskEventReceipts(db);
+    migrateConditionFreshness(db);
     db.exec("RELEASE SAVEPOINT task_resource_schema");
   } catch (error) {
     try {

@@ -6095,11 +6095,13 @@ describe("App task reconciler state", () => {
 
   it("does not replay an old scheduled check into a newly established pulse wait", () => {
     const { config } = fixture();
+    const notBefore = Date.now();
     const taskIntent = intent("monitor");
     const condition = {
       id: "next-master-validation-check",
       type: "aks.master-validation.check",
       subject: "project:demo",
+      notBefore,
       expected: { field: "project", equals: "demo" },
     } as const;
     const oldPulse = {
@@ -6134,11 +6136,13 @@ describe("App task reconciler state", () => {
 
   it("does not replay an old capacity pulse into a future-slot wait", () => {
     const { config } = fixture();
+    const notBefore = Date.now();
     const taskIntent = intent("monitor");
     const condition = {
       id: "capacity-after-slot-82677:task-holder-a",
       type: "aks.master-validation.capacity-pulse",
       subject: "project:demo",
+      notBefore,
       expected: { field: "cycleSlot", notEquals: 82677 },
     } as const;
     const claim = declareAndClaimTask(config, {
@@ -6152,7 +6156,7 @@ describe("App task reconciler state", () => {
       summary: "waiting for a future capacity slot",
       conditions: [condition],
     });
-    const establishedAt = Date.parse(readTaskSnapshot(config).conditions?.[condition.id]?.status.observedAt ?? "");
+    const establishedAt = readTaskSnapshot(config).conditions?.[condition.id]?.spec.notBefore ?? NaN;
 
     expect(
       trackAppTaskConditionEvent(config, {
@@ -6646,6 +6650,7 @@ describe("App task reconciler state", () => {
 
   it("does not wake a new repo-ref wait from an older journal observation", () => {
     const { config } = fixture();
+    const notBefore = Date.now();
     const claim = declareAndClaimTask(config, {
       intent: intent("monitor"),
       appAgent: "app-owner",
@@ -6661,13 +6666,12 @@ describe("App task reconciler state", () => {
           type: "aks.repo-ref.observed",
           subject: "repoRef:origin/dev",
           expected: { field: "commit", notEquals: "abc" },
+          notBefore,
         },
       ],
     });
 
-    const establishedAt = Date.parse(
-      readTaskSnapshot(config).conditions?.["origin-dev-after-abc"]?.status.observedAt ?? "",
-    );
+    const establishedAt = readTaskSnapshot(config).conditions?.["origin-dev-after-abc"]?.spec.notBefore ?? NaN;
     expect(Number.isFinite(establishedAt)).toBe(true);
 
     expect(
