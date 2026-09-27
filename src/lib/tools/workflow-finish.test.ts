@@ -1,3 +1,4 @@
+import { conversationTurnResultSchema } from "@may-agent/sdk";
 import { describe, expect, it } from "bun:test";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -49,6 +50,38 @@ describe("workflow finish contract", () => {
           toolCall({ status: "success", summary: "Review complete", verification_facts: ["test facts"] }),
         ),
       ).toThrow("result");
+    } finally {
+      rmSync(projectRoot, { recursive: true, force: true });
+    }
+  });
+
+  it("validates quiet bookkeeping and reply-requiring effects through the serialized Conversation schema", () => {
+    const projectRoot = mkdtempSync(join(tmpdir(), "conversation-finish-"));
+    try {
+      const base = createFinishTool({ agentName: "may", projectRoot, persistDir: projectRoot });
+      const tool = createWorkflowFinishTool(base, JSON.parse(JSON.stringify(conversationTurnResultSchema)));
+      const quiet = { summary: "Reviewed", topic: { kind: "none" } };
+      const validate = (result: unknown) => validateToolArguments(tool, toolCall({
+        status: "success", summary: "Reviewed", verification_facts: ["Current state read"], result,
+      }));
+      expect(() => validate(quiet)).not.toThrow();
+      const request = { id: "ask", expectedRevision: 1, scope: "Compare" };
+      expect(() => validate({ ...quiet, requestUpdates: [{ ...request, disposition: "open" }] })).not.toThrow();
+      for (const effect of [
+        { requestUpdates: [{ ...request, disposition: "fulfilled", reason: "Comparison verified" }] },
+        { followUp: { appId: "worker", input: { kind: "work", data: {} } } },
+        { taskControls: [{ kind: "cancel", appId: "worker", taskId: "job", reason: "No longer needed" }] },
+      ]) {
+        expect(() => validate({ ...quiet, ...effect })).toThrow();
+        expect(() => validate({ ...quiet, ...effect, response: " \n " })).toThrow();
+        expect(() => validate({ ...quiet, ...effect, response: "Here is the outcome." })).not.toThrow();
+      }
+      const handoff = { appId: "worker", input: { kind: "work", data: {} } };
+      expect(() => validate({ ...quiet, response: "Delegating.", followUp: handoff, taskControls: [] })).not.toThrow();
+      expect(() => validate({
+        ...quiet, response: "Delegating and cancelling.", followUp: handoff,
+        taskControls: [{ kind: "cancel", appId: "worker", taskId: "job", reason: "No longer needed" }],
+      })).toThrow();
     } finally {
       rmSync(projectRoot, { recursive: true, force: true });
     }

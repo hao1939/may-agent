@@ -4,6 +4,7 @@ import { Check } from "typebox/value";
 import type { SqliteDb } from "../../../lib/db.js";
 import {
   conversationTurnResultSchema,
+  type AppTaskInput,
   type AppTaskAttachment,
   type AppConversationRequest,
   type ConversationTurnResult,
@@ -296,6 +297,13 @@ export function readConversationTaskInputs(config: AppTaskContext, claim: AppTas
   return items.sort((left, right) => Number(left.source.kind === "human") - Number(right.source.kind === "human"));
 }
 
+/** Derive the execution and settlement contract from the exact claimed inputs. */
+export function conversationTaskResultSchema(inputs: readonly Pick<AppTaskInput, "source">[]) {
+  return inputs.some(({ source }) => source.kind === "human")
+    ? { ...conversationTurnResultSchema, required: [...conversationTurnResultSchema.required!, "response"] }
+    : conversationTurnResultSchema;
+}
+
 /** Save the owner's accepted requirements under the same live claim as its other effects. */
 export function updateConversationTaskRequest(
   config: AppTaskContext,
@@ -334,23 +342,17 @@ export function completeConversationTaskTurn(
   admittedTasks?: Array<{ appId: string; taskId: string }>;
   cancelledTasks?: AppTaskCancellationResult[];
 } {
-  if (!Check(conversationTurnResultSchema, decision)) throw new Error("Invalid Conversation decision");
-  if ((decision.taskControls?.length ?? 0) !== (options.taskControls?.length ?? 0))
-    throw new Error("Conversation Task controls must be prepared");
-  if (Boolean(decision.followUp) !== Boolean(options.followUp))
-    throw new Error("Conversation follow-up must be prepared");
   const db = config.resourceStore.db;
   const now = options.now ?? Date.now();
   return stateTransaction(db, () => {
     const items = readConversationTaskInputs(config, claim);
     const item = items.at(-1)!;
-    if (decision.taskControls?.length && decision.followUp)
-      throw new Error("Task controls cannot accompany a follow-up handoff");
-    if (
-      !decision.response?.trim() &&
-      (items.some((entry) => entry.source.kind === "human") || decision.followUp || decision.requestUpdates?.length || decision.taskControls?.length)
-    )
-      throw new Error("Conversation decision requires a reply");
+    if (!Check(conversationTaskResultSchema(items), decision))
+      throw new Error("Invalid Conversation decision: result must satisfy the claimed input's result schema");
+    if ((decision.taskControls?.length ?? 0) !== (options.taskControls?.length ?? 0))
+      throw new Error("Conversation Task controls must be prepared");
+    if (Boolean(decision.followUp) !== Boolean(options.followUp))
+      throw new Error("Conversation follow-up must be prepared");
     const accepted = completeAppTask(config, claim, {
       summary: decision.summary,
       response: decision.response,

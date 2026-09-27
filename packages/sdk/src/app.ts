@@ -320,7 +320,8 @@ export const conversationTurnResultSchema = Type.Object(
       Type.String({
         minLength: 1,
         description:
-          "Human-facing answer or useful update. Required for a human-requested Turn and for followUp; may be omitted for an automated no-op.",
+          "Human-facing answer or useful update. Required for human input, Request closure, delegation and Task controls. Automated observations and open Request bookkeeping may stay quiet.",
+        pattern: "\\S",
       }),
     ),
     facts: Type.Optional(Type.Array(nonEmptyStringSchema, { maxItems: 32 })),
@@ -375,6 +376,23 @@ export const conversationTurnResultSchema = Type.Object(
   },
   {
     additionalProperties: false,
+    // A quiet turn can retain observations and open asks, but cannot silently
+    // close an accepted ask, delegate work or cancel a Task. Tool validation and
+    // transactional settlement use this same rule.
+    anyOf: [
+      { required: ["response"] },
+      {
+        properties: {
+          followUp: { not: {} },
+          taskControls: { maxItems: 0 },
+          requestUpdates: { items: { properties: { disposition: { const: "open" } } } },
+        },
+      },
+    ],
+    not: {
+      required: ["followUp", "taskControls"],
+      properties: { taskControls: { minItems: 1 } },
+    },
     description:
       "Decide one bounded Conversation Turn from its admitted input, current Requests and Task observations. Return through finish().result. previousAttempt.unacceptedResult is unaccepted settlement evidence: inspect current state before repeating tools whose effects may already have completed. A tool's success does not by itself establish fulfillment of the human's ask.",
   },
