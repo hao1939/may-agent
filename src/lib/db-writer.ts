@@ -26,7 +26,7 @@ import type { SqliteDb } from "./db.js";
 import { isCanonicalEventEnvelope, isRecord } from "../../packages/control/src/event-envelope.js";
 import { withSqliteBusyRetry } from "./db/busy-retry.js";
 import { inStateTransaction, stateTransaction } from "./db/transaction.js";
-import { persistEventClosure, persistEventTrace } from "./db/event-traces.js";
+import { persistEventClosure, persistEventTrace, readEventTraceMetadata } from "./db/event-traces.js";
 import { evaluationProjectionFromEventData, upsertEvaluationProjection } from "./db/evaluations.js";
 import { advanceTaskResourceRevision } from "./db/task-resource-schema.js";
 import { describeText, writeContentAddressedJson, writeSessionResult, type ArtifactDescriptor } from "./artifacts.js";
@@ -705,8 +705,8 @@ export class DbWriter {
         envelope.target && typeof envelope.target === "object" && !Array.isArray(envelope.target)
           ? (envelope.target as Record<string, unknown>)
           : {};
-      // The canonical envelope target is routing authority. Persist it in the
-      // indexed correlation columns without copying it into event.data.
+      // Routing and evidence correlation are independent. Retain the authored
+      // target separately; a Task emission indexes its producer, not its destination.
       const emissionFence = (event as AgentEvent & { [EVENT_TASK_EMISSION_FENCE]?: EventTaskEmissionFence })[
         EVENT_TASK_EMISSION_FENCE
       ];
@@ -728,9 +728,8 @@ export class DbWriter {
         const existing = this.db
           .prepare(
             `SELECT e.id, e.idempotency_hash, e.delivery_status, e.accepted_by, e.delivery_route,
-                    e.source, e.owner, e.timestamp, t.trace_id, t.parent_event_id
+                    e.source, e.owner, e.timestamp
              FROM events e
-             LEFT JOIN event_traces t ON t.event_id = e.id
              WHERE e.event_type = ?
                AND e.ingress_source = ?
                AND e.idempotency_scope = ?
@@ -747,8 +746,6 @@ export class DbWriter {
               source?: unknown;
               owner?: unknown;
               timestamp?: unknown;
-              trace_id?: unknown;
-              parent_event_id?: unknown;
             }
           | undefined;
         const existingId = Number(existing?.id);
@@ -760,12 +757,10 @@ export class DbWriter {
           if (typeof existing.source === "string") retryEvent.source = existing.source;
           if (typeof existing.owner === "string") retryEvent.owner = existing.owner;
           if (typeof existing.timestamp === "number") retryEvent.timestamp = existing.timestamp;
-          if (typeof existing.trace_id === "string") {
-            event.trace = {
-              traceId: existing.trace_id,
-              ...(typeof existing.parent_event_id === "number" ? { parentEventId: existing.parent_event_id } : {}),
-            };
-          }
+          // Authored fields already matched the saved hash. Restore causality
+          // without adding defaults that would change a subsequent retry's input.
+          const { trace } = readEventTraceMetadata(this.db, existingId);
+          if (trace) event.trace = trace;
           Object.defineProperty(event, EVENT_ROW_ID, { value: existingId, configurable: true });
           Object.defineProperty(event, EVENT_DEDUPLICATED, { value: true, configurable: true });
           if (
@@ -832,19 +827,26 @@ export class DbWriter {
         }
       }
       const body = prepareEventBody(this.persistDir, persistedPayload);
+      // Preserve envelope extensions without a column per field. Payload and
+      // causal metadata already have their own durable representations.
+      const { data: _data, trace: _trace, visibility: _visibility, ...metadata } =
+        isCanonicalEventEnvelope(event) ? event as Record<string, unknown> : { type: event.type };
+      const storedEnvelope = { ...metadata, type: event.type, source, owner, timestamp, urgency,
+        ...(ttlMs !== null ? { ttl_ms: ttlMs } : {}) };
       const info = this.db.run(
         `INSERT INTO events
-          (event_type, source, owner, data, body_ref, body_sha256, body_bytes,
+          (event_type, source, owner, data, envelope_json, body_ref, body_sha256, body_bytes,
            session_id, workflow_run_id, project_id, task_id, attempt_id, handler,
            metric_id, alert_id, escalation_id, subject_status, duration_ms,
            timestamp, urgency, ttl_ms, idempotency_key, idempotency_scope,
            idempotency_hash, ingress_source)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           event.type,
           source,
           owner,
           body.data,
+          JSON.stringify(storedEnvelope),
           body.artifact.ref || null,
           body.artifact.sha256,
           body.artifact.bytes,

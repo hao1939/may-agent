@@ -30,7 +30,7 @@ describe("Task context projections", () => {
       items: [12, 11].map((eventId) => ({
         eventId,
         observedAt: `observed-${eventId}`,
-        event: { type: "sample.updated", data: { value: eventId } },
+        event: { type: "sample.updated", urgency: "normal", data: { value: eventId } },
       })),
       throughEventId: 12,
       truncated: true,

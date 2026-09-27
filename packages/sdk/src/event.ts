@@ -19,6 +19,7 @@ export type AppEvent<TData = unknown> = {
   owner?: string;
   target?: AppEventTarget;
   action?: string;
+  /** Omission has the same meaning as normal, including after recovery. */
   urgency?: "low" | "normal" | "high" | "immediate";
 };
 
@@ -27,7 +28,9 @@ export type EventSelector =
   | string
   | {
       type: string;
+      /** Match explicit envelope fields; payload subjects cannot supply an address. */
       target?: AppEventTarget;
+      /** Subject project, with the existing target.project fallback when absent from data. */
       project?: string;
       source?: string;
       owner?: string;
@@ -46,9 +49,11 @@ function normalizedOwner(value: unknown): string {
 }
 
 function selectedValue(event: AppEvent<Record<string, unknown>>, ...keys: string[]): unknown {
+  if (keys.includes("action") && event.action !== undefined) return event.action;
   for (const key of keys) {
-    if (key === "action" && event.action !== undefined) return event.action;
     if (event.data[key] !== undefined) return event.data[key];
+  }
+  for (const key of keys) {
     if (event.target?.[key as keyof AppEventTarget] !== undefined) {
       return event.target[key as keyof AppEventTarget];
     }
@@ -61,19 +66,15 @@ export function matchesEventSelector(selector: EventSelector, event: AppEvent<Re
   if (typeof selector === "string") return event.type === selector;
   if (event.type !== selector.type) return false;
 
-  const expectedProject = selector.target?.project ?? selector.project;
-  if (expectedProject && selectedValue(event, "project", "projectId", "project_id") !== expectedProject) return false;
+  if (selector.project && selectedValue(event, "project", "projectId", "project_id") !== selector.project) return false;
   if (selector.source && event.source !== selector.source) return false;
-  if (selector.target?.taskId && selectedValue(event, "taskId", "task_id") !== selector.target.taskId) return false;
-  if (selector.target?.sessionId && selectedValue(event, "sessionId", "session_id") !== selector.target.sessionId) {
-    return false;
-  }
   if (selector.owner && normalizedOwner(event.owner) !== normalizedOwner(selector.owner)) return false;
-  if (selector.target?.owner && normalizedOwner(event.target?.owner) !== normalizedOwner(selector.target.owner)) {
-    return false;
+  for (const [key, expected] of Object.entries(selector.target ?? {})) {
+    if (expected === undefined) continue;
+    const actual = event.target?.[key as keyof AppEventTarget];
+    if (key === "owner" ? normalizedOwner(actual) !== normalizedOwner(expected) : actual !== expected) return false;
   }
-  if (selector.target?.human !== undefined && event.target?.human !== selector.target.human) return false;
-  if (selector.urgency && event.urgency !== selector.urgency) return false;
+  if (selector.urgency && (event.urgency ?? "normal") !== selector.urgency) return false;
 
   const includes = (values: string[] | undefined, ...keys: string[]): boolean => {
     if (!values?.length) return true;
