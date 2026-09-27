@@ -1366,7 +1366,7 @@ export class SubagentManager {
     return sessionId;
   }
 
-  health(): any {
+  health() {
     const activeSessions = this.status();
     return {
       timestamp: new Date().toISOString(),
@@ -1384,7 +1384,7 @@ export class SubagentManager {
     };
   }
 
-  async auditHealth(): Promise<any> {
+  async auditHealth() {
     const now = Date.now();
     const dayAgo = now - 24 * 60 * 60 * 1000;
     const db = getDb(this._persistDir);
@@ -1395,16 +1395,6 @@ export class SubagentManager {
          FROM sessions`,
       )
       .get(dayAgo) as { total?: number | null; recent?: number | null } | null;
-    const unevaluated = db
-      .prepare(
-        `SELECT COUNT(*) AS total,
-                SUM(CASE WHEN session.agent IN ('evaluator', 'optimizer', 'may') THEN 1 ELSE 0 END) AS autoSkippable
-         FROM sessions session
-         LEFT JOIN evaluations evaluation ON evaluation.sessionId = session.sessionId
-         WHERE session.status IN ('done', 'error', 'interrupted')
-           AND evaluation.sessionId IS NULL`,
-      )
-      .get() as { total?: number | null; autoSkippable?: number | null } | null;
     const liveSessionIds = [...this._sessions.keys()];
     const liveSessionFilter = liveSessionIds.length
       ? ` AND sessionId NOT IN (${liveSessionIds.map(() => "?").join(", ")})`
@@ -1442,18 +1432,11 @@ export class SubagentManager {
       running?: number | null;
       interrupted?: number | null;
     } | null;
-    const unevaluatedTotal = Number(unevaluated?.total ?? 0);
-    const autoSkippable = Number(unevaluated?.autoSkippable ?? 0);
 
     return {
       timestamp: new Date().toISOString(),
       sessionsLast24h: Number(sessionCounts?.recent ?? 0),
       totalPersistedSessions: Number(sessionCounts?.total ?? 0),
-      unevaluated: {
-        total: unevaluatedTotal,
-        actionable: unevaluatedTotal - autoSkippable,
-        autoSkippable,
-      },
       staleSessions,
       staleSessionsTruncated: staleCandidates.length > 1000,
       workflowRuns: {
@@ -1465,10 +1448,10 @@ export class SubagentManager {
     };
   }
 
-  async reconcileHealth(): Promise<any> {
+  async reconcileHealth() {
     const health = this.health();
     const audit = await this.auditHealth();
-    const discrepancies = audit.staleSessions.map((s: any) => `Stale session ${s.sessionId} (${s.agent})`);
+    const discrepancies = audit.staleSessions.map((s) => `Stale session ${s.sessionId} (${s.agent})`);
     if (audit.staleSessionsTruncated) discrepancies.push("Session health scan incomplete; more candidates remain");
     return {
       healthy: discrepancies.length === 0,
@@ -1481,7 +1464,7 @@ export class SubagentManager {
   // ── Tool creation ──
 
   createAgentsTool(opts?: CreateAgentsToolOptions): AgentTool {
-    return createAgentsToolFn(this as any, {
+    return createAgentsToolFn(this, {
       ...opts,
       validateControl: (sessionId, callerSessionId) =>
         validateSessionControl(this, "session.cancel.requested", sessionId, { callerSessionId, remote: true }),

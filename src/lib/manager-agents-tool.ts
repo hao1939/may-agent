@@ -19,8 +19,8 @@ import type { EventTrace } from "../app/core/events/bus.js";
 // we define only the methods/properties the agents tool needs.
 
 export interface AgentsToolManagerDeps {
-  agents: Map<string, RegisteredAgent>;
-  activeSessions: Map<
+  agents: ReadonlyMap<string, RegisteredAgent>;
+  activeSessions: ReadonlyMap<
     string,
     {
       definition?: SubagentDefinition;

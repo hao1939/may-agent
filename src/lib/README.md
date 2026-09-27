@@ -42,6 +42,12 @@ they do not rewrite guidance or enter future prompts automatically. The retired
 context updater and unregistered file-read tracker are removed. Historical
 `file_reads` rows remain readable by the project history view.
 
+Manager health reads describe sessions, process ownership and workflow runs.
+They do not select work for evaluation. Evaluation eligibility and exclusions
+belong to the Evaluation App; agent names carry no Host health policy.
+The agents tool consumes the existing typed manager interface directly, with
+read-only views of the agent and active-session maps.
+
 `requests.ts` is a compatibility facade for database helpers, not the owner of
 Conversation Requests. New internal callers use the corresponding `db/` module.
 `index.ts` is a broad compatibility export and also re-exports the App loader;
