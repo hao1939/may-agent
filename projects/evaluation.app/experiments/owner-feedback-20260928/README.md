@@ -64,10 +64,11 @@ Task workspace, SHA-256
 `9ffd4f05690cdda035827facbebb98d3f9d251c0850dab44846430a78d6453cf`.
 This is one observed recovery, not proof that every failure recovers.
 
-Candidate source and design are committed on
-`fix/evaluation-owner-feedback-20260928`; they have not been integrated into the
-local App checkout or activated. Host PR #263 remains separately ready for human
-review, unmerged and undeployed.
+Source and design were reviewed on `fix/evaluation-owner-feedback-20260928`.
+After a conflict-free rebase preserving concurrent Scout commits, unchanged App
+content was integrated into local `main` as `2201986b20` and `eb574803a9`.
+Host PR #263 merged as `6c856911`; the local Host source now includes it.
+Neither source integration activated new definitions or restarted the Host.
 
 ## Remaining independent gaps
 
