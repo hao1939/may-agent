@@ -137,23 +137,14 @@ export function buildMaintenanceAPI(deps: MaintenanceAPIDeps): MaintenanceAPI {
     emit(
       type: string,
       data?: Record<string, unknown>,
-      envelope?: {
-        owner?: string;
-        source?: string;
-        target?: Record<string, unknown>;
-        urgency?: string;
-        ttl_ms?: number;
-      },
+      envelope?: Parameters<MaintenanceAPI["emit"]>[2],
     ): void {
       deps.bus.emit(
         buildCanonicalEventEnvelope(
           type,
           {
+            ...envelope,
             source: envelope?.source ?? `agent:${deps.agentName}`,
-            owner: envelope?.owner,
-            target: envelope?.target,
-            urgency: envelope?.urgency,
-            ttl_ms: envelope?.ttl_ms,
             data: data ?? {},
           },
           { owner: deps.agentName },

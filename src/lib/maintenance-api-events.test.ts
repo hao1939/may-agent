@@ -6,7 +6,7 @@ import { buildMaintenanceAPI } from "./maintenance-api-impl.js";
 import type { MaintenanceAPIDeps } from "./maintenance-api-impl.js";
 import { EventBus } from "../app/core/events/bus.js";
 import { DbWriter } from "./db-writer.js";
-import { closeDb } from "./requests.js";
+import { closeDb, getDb } from "./db/connection.js";
 
 type EmittedEvent = { type: string; [key: string]: unknown };
 
@@ -77,6 +77,30 @@ describe("Host SDK events", () => {
       urgency: "high",
       data: { metricId: "system.health", message: "check" },
     });
+  });
+
+  it("preserves the complete envelope and stores its linked trace evidence", () => {
+    const { sdk, events, root } = makeSdk();
+    roots.push(root);
+    sdk.emit("fixture.parent", { summary: "Observed work" });
+    const db = getDb(root);
+    const parent = db.prepare("SELECT id FROM events WHERE event_type = 'fixture.parent'").get() as { id: number };
+    const trace = { traceId: "maintenance-review", parentEventId: parent.id,
+      links: [{ eventId: parent.id, type: "reference" as const, label: "supporting observation" }] };
+    const envelope = {
+      source: "fixture:review", owner: "app:sample", target: { appId: "sample", taskId: "task" },
+      action: "review", urgency: "high" as const, visibility: "detail" as const, ttl_ms: 30_000, trace,
+    };
+    sdk.emit("fixture.observed", { summary: "Ready for review" }, envelope);
+    expect(events).toContainEqual({ type: "fixture.observed", ...envelope, data: { summary: "Ready for review" } });
+    const row = db.prepare("SELECT id, owner FROM events WHERE event_type = 'fixture.observed'").get() as {
+      id: number; owner: string;
+    };
+    expect(row.owner).toBe("app:sample");
+    expect(db.prepare("SELECT trace_id, parent_event_id, visibility FROM event_traces WHERE event_id = ?").get(row.id))
+      .toEqual({ trace_id: trace.traceId, parent_event_id: parent.id, visibility: "detail" });
+    expect(db.prepare("SELECT to_event_id, type, label FROM event_trace_links WHERE from_event_id = ? AND type = 'reference'").all(row.id))
+      .toContainEqual({ to_event_id: parent.id, type: "reference", label: "supporting observation" });
   });
 
   it("uses only human as the message shorthand for human:operator", () => {
