@@ -228,3 +228,17 @@ design integrity, canonical App checks and checked documentation examples passed
 The three formatting-only files compile to identical normalized JavaScript in
 `18d017be` and final `083272a8`. The GitHub Container check passed on `083272a8`;
 the current PR retains the independent Quality result and review requirement.
+
+The first final GitHub Quality run (`36334668665`) exposed an unrelated timing
+assumption in `app-task-retry.test.ts`: the persistence rollback test compared a
+250 ms retry deadline with the wall clock after database work. The test took
+357.58 ms, and the deadline was already 77 ms past when asserted. All 3,252 other
+tests passed. Revision `f94aefa4` freezes time only in this persistence test and
+checks the exact 250 ms deadline; the separate real due-timer test remains real.
+The owning retry suite passed all 18 tests. This repairs the observed test race
+rather than hiding the failed run with an unchanged rerun; production retry
+behavior is unchanged.
+
+Final revision `f94aefa4` passed full local CI again (3,253 pass, three expected
+installation skips, zero failures). Both GitHub Quality and Container passed in
+run `36335045725`. PR #262 is ready for human review; no source rollout occurred.
