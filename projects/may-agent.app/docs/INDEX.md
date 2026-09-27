@@ -33,6 +33,7 @@ archive.
 | How does the Host start, recover and shut down? | [runtime.md](2a-design/runtime.md) |
 | How are desired-state Tasks reconciled? | [task-resource-engine.md](2a-design/task-resource-engine.md) |
 | How does current Task context reach a worker? | [Context passing](2a-design/agents.md#context-passing) and the [decision-context integration record](proposals/task-decision-context-integration-20260926.md). |
+| What instructions, tools and context actually reach the model? | [Model context assembly](2a-design/agents.md#model-context-assembly), [assembly manual](2b-manual/agent-convention.md#system-prompt-assembly), and [source review](proposals/agent-prompt-assembly-review-20260927.md) |
 | How does admitted input/fact routing work? | [events.md](2a-design/events.md) |
 | When should an event update a resource, wake reconciliation or react directly? | [Resource responsibility and immediate reactions](2a-design/events.md#resource-responsibility-and-reconciliation) |
 | How do humans share context across adapters? | [human-control-surfaces.md](2a-design/human-control-surfaces.md) |

@@ -158,6 +158,11 @@ and where is capacity released after either success or failure?
 
 ### 5. Follow one agent execution and its context
 
+For the complete path from authored instructions to system text, tool schemas
+and transformed messages, use the [prompt assembly map](../proposals/agent-prompt-assembly-review-20260927.md#how-the-current-prompt-reaches-the-model).
+It also distinguishes the initial request, current Task brief and later
+compaction/recovery input.
+
 Read `runTaskExecutorAttempt()` in
 [attempt-execution.ts](../../../may-agent/src/app/core/tasks/attempt-execution.ts),
 then the managed-agent adapter in

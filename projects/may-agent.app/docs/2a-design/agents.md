@@ -172,6 +172,44 @@ steering to native executors or change workflow result/Task settlement rules.
 - Durable domain context belongs in App/project artifacts and exact bounded
   projections, not in a hidden global agent prompt.
 
+## Model context assembly
+
+The model receives system instructions, tool definitions and messages. An
+agent's `AGENTS.md` and the initial request are only parts of that input.
+The managed preparation boundary is `prepareAgentExecution`; the model/tool
+loop then transforms messages before each provider request.
+
+Keep responsibility and lifetime explicit:
+
+- The Host documents and enforces its execution and tool contracts. Result
+  validation, authority and persistence are code guarantees.
+- Shared and agent instructions define working principles and responsibilities
+  from the selected definition release. Situational methods belong in skills
+  or linked knowledge.
+- The invocation defines the worker's contribution and expected result. Shared
+  Task context does not expand a helper's assignment.
+- Owned resource readers supply current facts, outstanding obligations, input
+  and exact evidence references. History records earlier observations and
+  execution; it is not a competing current-state authority.
+
+These sources coexist. Placement later in a prompt does not make an event,
+document or tool output authoritative over the accepted assignment. A schema
+can enforce an allowed result shape without proving the work is sufficient.
+
+**Current assembly limits:** Task and Conversation entry adapters still mix
+Host instructions with request text that an App preparer or compaction can
+replace. Finish schemas survive separately with tool definitions. Helper scope
+has an existing session-evidence reference, but detailed contribution/skill
+text can be compacted. The compatibility chat and native executors have
+different context paths. Session transcripts alone do not reproduce every
+post-transform provider input.
+
+The [prompt assembly review](../proposals/agent-prompt-assembly-review-20260927.md)
+records source evidence, boundary probes and a proposed cleanup using the
+existing preparation, schema and context mechanisms. Its remaining changes are
+proposals, not deployed guarantees. The [assembly manual](../2b-manual/agent-convention.md#system-prompt-assembly)
+maps what is loaded today and when it changes.
+
 ## Choosing the mechanism
 
 | Situation                                                      | Mechanism                               |

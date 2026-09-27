@@ -159,6 +159,11 @@ needing a May-specific identity filename.
 
 ## System Prompt Assembly
 
+This section describes the current managed execution path. See
+[Model context assembly](../2a-design/agents.md#model-context-assembly) for
+ownership and known gaps. The final provider input has three parts:
+`systemPrompt`, `tools`, and `messages`; inspecting one prompt file is insufficient.
+
 `resolveSystemPrompt()` in `projects/may-agent/src/lib/agent-execution.ts` builds:
 
 1. `shared/common-sense.md`
@@ -168,8 +173,50 @@ needing a May-specific identity filename.
    knowledge path, and available tools
 
 If `systemPrompt` is set directly on `SubagentDefinition`, convention-file
-assembly is bypassed. That escape hatch is for tests and special runtime
-sessions, not normal agent configuration.
+assembly, the skill catalog, and generated environment are bypassed. Host
+execution context and required-completion instructions are still appended.
+That escape hatch is for tests and special runtime sessions, not normal agent
+configuration. Missing/empty convention files are currently skipped by the
+prompt reader; a successful session is not proof that its role file was loaded.
+
+The request and tool paths are separate:
+
+1. A Task adapter supplies assignment/events and Task guidance. A Conversation
+   adapter supplies bounded conversation data and its decision guidance.
+   Workflow/helper calls supply their particular contribution. The manager adds
+   Task discovery references and helper scope when applicable.
+2. For bounded executions, an explicit `contextPreparation` receives the full
+   supplied request. Otherwise preparation uses the optional shorter
+   `contextPrompt`, or the full request. The full and shorter forms are
+   alternatives, not two unconditional copies in the model input.
+3. An explicitly selected skill wraps the prepared request. Ordinary skill
+   discovery contributes metadata, not every skill body. See
+   [skill invocation](../2a-design/skills.md).
+4. Tools are resolved for this execution. A required result schema becomes
+   part of the `finish` tool definition, independently of request prose.
+5. Before each managed model request, the loop compacts older messages when
+   needed, then appends the fresh Task decision brief when Task-bound. The
+   provider receives that view alongside the system prompt and tool schemas.
+   Tool results, steering and recovery messages can change subsequent requests.
+
+`TASK.md` and its neighboring files provide attempt-start discovery. The Task
+decision brief is a refreshed view; the transcript is execution history. A
+generated file or a path in the prompt does not prove the model read its content.
+Inspect omission/freshness markers and follow the exact references.
+
+Compatibility persistent chat bypasses App request preparation and uses chat
+instructions and a refreshed state packet. Native CLI workers and the Codex
+Task executor construct their own packets; they do not automatically inherit
+the managed per-request transform. Their supplied packet and the CLI's own
+instruction discovery must be checked separately.
+
+For source review, follow `managed-agent.ts` or `conversations/turn-agent.ts`
+into `manager.runDefinition`, `prepareAgentExecution`, and the runner's
+`transformContext`/`streamFn` boundary. Inspect the actual system text, message
+view and tool schemas there. Definition/session metadata, transcripts and Task
+detail artifacts provide useful evidence, but are not an exact capture of every
+provider request. The [dated review](../proposals/agent-prompt-assembly-review-20260927.md)
+contains the complete source map, contradictions and proposed simplification.
 
 ## agent.json
 
