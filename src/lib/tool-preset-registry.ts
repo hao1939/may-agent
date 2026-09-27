@@ -4,7 +4,8 @@ import { resolve } from "node:path";
 /**
  * Tool preset registry.
  *
- * Keep the config allowlist and loader wiring conformance in one small place.
+ * The allowlist validates agent definitions. The loader integration test checks
+ * wiring by building these presets through the real loader.
  * A preset in VALID_TOOL_PRESETS must either have a buildTools() case or be
  * removed from agent.json/docs.
  */
@@ -26,28 +27,6 @@ export const VALID_TOOL_PRESETS = new Set([
   "query_db",
   "query-db",
 ]);
-
-export const HANDLED_TOOL_PRESETS = new Set([
-  "coding",
-  "read-only",
-  "agents",
-  "workflow",
-  "background-exec",
-  "cron",
-  "scrape",
-  "finish",
-  "checkpoint",
-  "cli-delegation",
-  "system-status",
-  "system_status",
-  "message",
-  "query_db",
-  "query-db",
-]);
-
-export function findUnhandledToolPresets(): string[] {
-  return [...VALID_TOOL_PRESETS].filter((preset) => !HANDLED_TOOL_PRESETS.has(preset)).sort();
-}
 
 export interface ToolPresetConfigIssue {
   agent: string;
@@ -100,13 +79,6 @@ export function findFleetToolPresetIssues(agentsRoot: string): ToolPresetConfigI
       }
       if (!VALID_TOOL_PRESETS.has(preset)) {
         issues.push({ agent, field: "tools", preset, message: `Unknown tool preset "${preset}"` });
-      } else if (!HANDLED_TOOL_PRESETS.has(preset)) {
-        issues.push({
-          agent,
-          field: "tools",
-          preset,
-          message: `Tool preset "${preset}" is valid but not wired at runtime`,
-        });
       }
     }
   }

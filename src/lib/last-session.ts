@@ -11,7 +11,7 @@
  * inject it, and reported items do not create or complete Tasks/Requests.
  */
 
-import { readFileSync, writeFileSync, mkdirSync, existsSync } from "node:fs";
+import { writeFileSync, mkdirSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { log } from "./log.js";
 
@@ -108,22 +108,5 @@ export function writeLastSession(agentDir: string, data: LastSessionData): void 
     writeFileSync(filePath, content);
   } catch (err) {
     log("warn", `[last-session] failed to write ${filePath}: ${err}`);
-  }
-}
-
-/**
- * Read `agents/<name>/last-session.md` if it exists.
- *
- * @param agentDir - The agent's directory
- * @returns The file contents, or null if not found
- */
-export function readLastSession(agentDir: string): string | null {
-  const filePath = join(agentDir, LAST_SESSION_FILENAME);
-  try {
-    if (!existsSync(filePath)) return null;
-    const content = readFileSync(filePath, "utf-8").trim();
-    return content || null;
-  } catch {
-    return null;
   }
 }

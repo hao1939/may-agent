@@ -210,6 +210,3 @@ export function createWriteTool(cwd: string, options?: WriteToolOptions): AgentT
 		},
 	};
 }
-
-/** Default write tool using process.cwd() - for backwards compatibility */
-export const writeTool = createWriteTool(process.cwd());

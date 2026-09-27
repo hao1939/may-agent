@@ -98,7 +98,6 @@ export function truncateForPrompt(text: string, maxLen: number): string {
 }
 
 export const TOOL_PIVOT_LIMIT = 3;
-export const STUCK_WARNING_THRESHOLD = 3;
 export const STATE_CHANGING_TOOLS = new Set(["bash", "write", "edit", "commit"]);
 
 export function computeToolArgsKey(toolName: string, params: unknown): string {

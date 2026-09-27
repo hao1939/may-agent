@@ -10,7 +10,6 @@ import {
 } from "../../src/app/agent-loader.js";
 import {
   findFleetToolPresetIssues,
-  findUnhandledToolPresets,
   VALID_TOOL_PRESETS,
 } from "../../src/lib/tool-preset-registry.js";
 import { createModelRegistry } from "../../src/app/model-registry.js";
@@ -155,10 +154,6 @@ describe("validateAgentConfig", () => {
     }
   });
 
-  it("has no valid-but-unhandled tool presets", () => {
-    expect(findUnhandledToolPresets()).toEqual([]);
-  });
-
   it.skipIf(!installationRoot)("has no fleet tool preset drift or legacy archetype inheritance", () => {
     expect(findFleetToolPresetIssues(AGENTS_ROOT)).toEqual([]);
   });
@@ -181,9 +176,12 @@ describe("validateAgentConfig", () => {
       );
 
       const messages: string[] = [];
+      const registered: string[] = [];
       const manager = {
         hasAgent: () => false,
-        register: () => undefined,
+        register: (definition: { name: string }) => {
+          registered.push(definition.name);
+        },
         createAgentsTool: () => ({
           name: "agents",
           label: "Agents",
@@ -209,6 +207,7 @@ describe("validateAgentConfig", () => {
         cronEnabled: false,
       });
 
+      expect(registered).toEqual(["all-presets"]);
       expect(messages.filter((message) => message.includes("Unknown tool preset"))).toEqual([]);
     } finally {
       rmSync(root, { recursive: true, force: true });
