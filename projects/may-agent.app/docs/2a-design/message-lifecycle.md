@@ -517,6 +517,25 @@ consume that contract without interpreting context hints as validation policy.
 `humanRequested` describes provenance, including a human parent input; it does
 not turn a later automated observation into a new human ask or grant authority.
 
+Core selects the last considered direct human input as the reply destination,
+or the last considered input when the batch contains no direct human input.
+Context ordering, shortened history and rendered source hints cannot change
+that choice, the reply requirement or control authority. Conversation history
+reads are bound to the admitted App/Conversation even if those fields are absent
+from the prompt.
+
+Task references in context help the agent discover work; they are not an
+allowlist. An exact installed Task can be used outside the bounded context.
+Automated Task cancellation still requires the recorded creator; direct human
+input carries human authority. The agent judges whether the action fits the ask.
+Core rejects missing/mismatched targets, self-cancellation, duplicate controls,
+stale claims and changed target versions. Delegation uses normal Task admission.
+The prepared result is data only. Settlement resolves its exact App identities
+and checks current state; no Task store or callback travels inside the result.
+`decision.followUp` is the single handoff authority. An explicit Task is used
+directly; otherwise the attempt’s captured App declaration maps the input once
+at settlement. A separately supplied attachment cannot redirect the decision.
+
 Duplicate inputs reuse stable admission/result identities. A human Turn may
 already have explained a result before its queued system input runs; reread
 current closure and handled evidence and complete quietly. This guarantees
