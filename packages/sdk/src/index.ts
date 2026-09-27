@@ -83,7 +83,7 @@ export type {
   WorkflowMetricCapability,
   AgentCallOptions,
 } from "./app.js";
-export { conversationTurnResultSchema } from "./app.js";
+export { conversationTurnResultSchema, conversationResultSchema } from "./app.js";
 export type {
   Condition,
   ResourceCreator,

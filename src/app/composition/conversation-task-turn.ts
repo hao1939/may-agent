@@ -42,6 +42,7 @@ export async function prepareConversationTaskTurn(input: {
     input.readDependency,
   );
   inputContext.inputs = items.map(({ id, source, input }) => ({ id, source, input }));
+  if (items.some(({ source }) => source.kind === "human")) inputContext.humanRequested = true;
   if (claim.previousAttempt) inputContext.previousAttempt = structuredClone(claim.previousAttempt);
   // Bring the exact Requests involved in rejected settlement back into bounded
   // context, including closed asks outside the ordinary context window.

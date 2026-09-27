@@ -387,6 +387,7 @@ test("a fresh attempt considers retained and newer input together and publishes 
     signal: new AbortController().signal,
     resolveConversationInput: async ({ inputContext: request }) => {
       expect(request.id).toBe(correction.item.id);
+      expect(request.humanRequested).toBe(true);
       expect(request.inputs?.map(({ id }) => id)).toEqual([system.item.id, first.item.id, correction.item.id]);
       return decision;
     },
@@ -490,12 +491,16 @@ test("a system turn can stay quiet without hiding the accepted Task facts", asyn
     resolveConversationInput: async ({ inputContext: request }) => {
       expect(request.source.kind).toBe("system");
       expect(request.humanRequested).toBeUndefined();
-      return { summary: "No material change", topic: { kind: "none" } };
+      return {
+        summary: "No material change", topic: { kind: "none" },
+        requestUpdates: [{ id: "retained", expectedRevision: 0, scope: "Retain the pending ask", disposition: "open" }],
+      };
     },
   });
   expect(readAppConversationResource(f.db, app.id, "chat").messages).toEqual(before);
   expect(f.store.readAttempt(claim.attemptId)?.acceptedResult?.summary).toBe("No material change");
   expect(getAppInboxItem(f.db, "tick")?.status).toBe("done");
+  expect(readConversationRequest(f.db, app.id, "chat", "retained")?.status).toBe("open");
   expect(f.store.listRecoveryCandidates().items).toEqual([]);
 });
 

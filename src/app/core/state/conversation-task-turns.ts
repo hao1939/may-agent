@@ -3,7 +3,7 @@ import { isDeepStrictEqual } from "node:util";
 import { Check } from "typebox/value";
 import type { SqliteDb } from "../../../lib/db.js";
 import {
-  conversationTurnResultSchema,
+  conversationResultSchema,
   type AppTaskAttachment,
   type AppConversationRequest,
   type ConversationTurnResult,
@@ -334,23 +334,19 @@ export function completeConversationTaskTurn(
   admittedTasks?: Array<{ appId: string; taskId: string }>;
   cancelledTasks?: AppTaskCancellationResult[];
 } {
-  if (!Check(conversationTurnResultSchema, decision)) throw new Error("Invalid Conversation decision");
-  if ((decision.taskControls?.length ?? 0) !== (options.taskControls?.length ?? 0))
-    throw new Error("Conversation Task controls must be prepared");
-  if (Boolean(decision.followUp) !== Boolean(options.followUp))
-    throw new Error("Conversation follow-up must be prepared");
   const db = config.resourceStore.db;
   const now = options.now ?? Date.now();
   return stateTransaction(db, () => {
     const items = readConversationTaskInputs(config, claim);
     const item = items.at(-1)!;
+    if (!Check(conversationResultSchema(items.some(({ source }) => source.kind === "human")), decision))
+      throw new Error("Invalid Conversation decision: human input, Request closure, delegation and Task controls require a nonblank reply");
+    if ((decision.taskControls?.length ?? 0) !== (options.taskControls?.length ?? 0))
+      throw new Error("Conversation Task controls must be prepared");
+    if (Boolean(decision.followUp) !== Boolean(options.followUp))
+      throw new Error("Conversation follow-up must be prepared");
     if (decision.taskControls?.length && decision.followUp)
       throw new Error("Task controls cannot accompany a follow-up handoff");
-    if (
-      !decision.response?.trim() &&
-      (items.some((entry) => entry.source.kind === "human") || decision.followUp || decision.requestUpdates?.length || decision.taskControls?.length)
-    )
-      throw new Error("Conversation decision requires a reply");
     const accepted = completeAppTask(config, claim, {
       summary: decision.summary,
       response: decision.response,

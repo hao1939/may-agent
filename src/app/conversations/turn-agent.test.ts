@@ -4,7 +4,7 @@ import { afterEach, describe, expect, it, setSystemTime } from "bun:test";
 import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { Type, conversationTurnResultSchema, defineApp, type AppInputContext } from "@may-agent/sdk";
+import { Type, conversationTurnResultSchema, conversationResultSchema, defineApp, type AppInputContext } from "@may-agent/sdk";
 import { Check } from "typebox/value";
 import { executePreparedAgent, prepareAgentExecution } from "../../lib/agent-execution.js";
 import { openDatabase, type SqliteDb } from "../../lib/db.js";
@@ -223,6 +223,15 @@ describe("conversational attempt contract", () => {
     expect(writes).toBe(0);
   });
 
+  it("requires a reply for direct human input and mixed batches while allowing quiet system observations", async () => {
+    const quiet = { summary: "No change", topic: { kind: "none" } };
+    const human = await attempt();
+    expect(Check(human.options.outputSchema!, quiet)).toBe(false);
+    const system = { ...request, source: { kind: "system" as const, id: "tick" } };
+    expect(Check((await attempt(system)).options.outputSchema!, quiet)).toBe(true);
+    expect(Check((await attempt({ ...system, humanRequested: true })).options.outputSchema!, quiet)).toBe(false);
+  });
+
   it("offers one handoff schema, using the public Conversation contract", async () => {
     const { options } = await attempt();
     const schema = options.outputSchema!;
@@ -383,6 +392,13 @@ describe("conversational attempt contract", () => {
             } },
           ];
           if (calls > 1) steps.splice(1, 4); // Read and verify retained effects; do not repeat the writes.
+          // The previous settlement bug ended the execution on this invalid
+          // result. The normal finish validator must leave it able to correct.
+          const validFinish = steps.at(-1)!;
+          steps.splice(steps.length - 1, 0, {
+            ...validFinish,
+            arguments: { ...validFinish.arguments, result: { ...decision, response: undefined } },
+          });
           let step = 0;
           let modelSteps = 0;
           const toolOutcomes: Array<{ name: string; failed: boolean }> = [];
@@ -411,7 +427,7 @@ describe("conversational attempt contract", () => {
           expect(execution.structuredResult).toEqual(decision);
           expect(modelSteps).toBe(steps.length);
           expect(toolOutcomes).toEqual(
-            steps.map((call, index) => ({ name: call.name, failed: calls === 1 && index === 3 })),
+            steps.map((call, index) => ({ name: call.name, failed: (calls === 1 && index === 3) || index === steps.length - 2 })),
           );
           expect(readFileSync(join(root, "note.txt"), "utf8")).toBe("A small typo: the.\n");
           expect(Check(options.outputSchema!, decision)).toBe(true);
@@ -496,7 +512,7 @@ describe("conversational attempt contract", () => {
   it("uses the same turn contract for an App without its own Task capability", async () => {
     const frontend = { ...may, conversation: { mode: "agent" as const }, task: undefined, tasks: undefined };
     const { prompt, options } = await attempt(request, frontend);
-    expect(options.outputSchema).toBe(conversationTurnResultSchema);
+    expect(options.outputSchema).toEqual(conversationResultSchema(true));
     expect(options.toolPolicy).toBe("app-agent-full");
     const catalog = JSON.parse(prompt.split("## Installed Apps\n```json\n")[1].split("\n```")[0]);
     expect(catalog.map((entry: { appId: string }) => entry.appId)).toEqual(["owner"]);
