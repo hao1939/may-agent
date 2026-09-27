@@ -62,3 +62,39 @@ the whole unattended improvement loop. Keep independent proof for selection,
 useful diagnosis, isolated comparison, human approval, exact application and
 post-activation behavior. Do not create a live improvement solely to manufacture
 an end-to-end success claim.
+
+## Local activation and second iteration
+
+Host candidate `00e0f73fb4f820abf3b4bc219bab9e5a2257c84a` passed full local CI:
+**3,243 passed, three installation-specific skips, zero failures**. GitHub PR
+[#258](https://github.com/hao1939/may-agent/pull/258) carries the source change.
+May independently reviewed the candidate and ran the four focused suites
+(56 passed). Exact accepted attempt:
+`may/conversation_ec854e2f09f1c38566a25857_successor_2`,
+`r_1_c15db1ee-bf45-49e9-b0aa-914eb35a41af`.
+
+The local candidate activated at `2026-09-27T15:15:24.782Z`. The receipt
+`app-feedback-contracts-00e0f73f-20260927` reports healthy activation, no duplicate,
+and identical built/loaded SHA
+`64087dcb809be0125a59e5cc441b8d1cbea2f97fcf45ac491d9bacfcf92b111d`.
+The running binary identifies as `v5.2.0 (00e0f73f)`; this is a local candidate
+based on the release, not a newly published release. App definitions activated
+from workspace commit `5eeda30eb12729be450a65e50073acc3b8a2363a`, confirmed by
+reload result event `6459758`.
+
+The first explicit review reused an old report, so it is **not new model proof**.
+After Host activation, public reads expose checkpoint `1790560522616`, and
+replaying the earlier report's exact linked Task through the new reader produces
+`before-due` with the same checkpoint. The pinned fresh review was admitted as
+request `app_6bcd0f6a-7b9d-48a5-8472-261953ebb116`, event `6459812`, on evidence hash
+`902ca7445292ca3d276cf857e201d1dae27fd924082a494a20673b4db9a6fea9`.
+Its behavioral outcome is recorded separately after completion.
+
+May's oversight investigation found ordinary retries recovering both a reviewer
+timeout and an ENOSPC failure on their original Tasks. No currently stuck review
+was found. Her proposed reuse of `evaluator-heartbeat` was rejected after source
+review: its restricted no-op/unblock prompt and converged fallback for failed
+execution conflict with the current recovery model. She accepted that correction.
+Keep the remaining fallback proposal focused on existing Task-reconciliation
+events, Evaluation's standing owner Task and May's judgment. Test an owner failure
+and a healthy recovered case before installing any additional route or timer.
