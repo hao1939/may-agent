@@ -250,12 +250,6 @@ export async function applyCanonicalAgentResidueCleanup(
   return restored;
 }
 
-export async function finishCanonicalAgentResidueGuard(
-  guard: CanonicalUntrackedResidueGuard | null,
-): Promise<string[]> {
-  return applyCanonicalAgentResidueCleanup(await planCanonicalAgentResidueCleanup(guard));
-}
-
 export function rejectConvergedDirectAgentResidue(
   result: NormalizedTaskHandlerResult,
   restored: string[],

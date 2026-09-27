@@ -14,7 +14,6 @@ import {
   createCheckpointTool,
   readCheckpoints,
   readLatestCheckpoint,
-  readLatestCheckpointForAgent,
 } from "./checkpoint.js";
 
 let persistDir: string;
@@ -74,7 +73,7 @@ describe("checkpoint tool", () => {
     await createCheckpointTool(options).execute("third", { summary: "Recreated tool" });
     await tool.execute("fourth", { summary: "Original tool sees new evidence" });
     expect(readCheckpoints(persistDir, "resumed").map((entry) => entry.step)).toEqual([1, 2, 3, 4]);
-    expect(readLatestCheckpointForAgent(persistDir, "agent")?.step).toBe(4);
+    expect(JSON.parse(readFileSync(resolve(persistDir, "checkpoints/latest/agent.json"), "utf8")).step).toBe(4);
   });
 
   it("numbers beyond retained history even if an old process reset its counter", async () => {
@@ -164,7 +163,7 @@ describe("checkpoint tool", () => {
     expect(latest!.step).toBe(2);
   });
 
-  it("readLatestCheckpointForAgent returns cross-session latest", async () => {
+  it("writes the per-agent latest pointer across sessions", async () => {
     // First session
     const tool1 = createCheckpointTool({
       sessionId: "sess-A",
@@ -182,7 +181,7 @@ describe("checkpoint tool", () => {
     await tool2.execute("tc1", { summary: "Session B work" });
 
     // Latest for agent should be from session B
-    const latest = readLatestCheckpointForAgent(persistDir, "agent-x");
+    const latest = JSON.parse(readFileSync(resolve(persistDir, "checkpoints/latest/agent-x.json"), "utf8"));
     expect(latest).not.toBeNull();
     expect(latest!.sessionId).toBe("sess-B");
     expect(latest!.summary).toBe("Session B work");
@@ -191,7 +190,6 @@ describe("checkpoint tool", () => {
   it("returns null for non-existent checkpoints", () => {
     expect(readCheckpoints(persistDir, "nonexistent")).toEqual([]);
     expect(readLatestCheckpoint(persistDir, "nonexistent")).toBeNull();
-    expect(readLatestCheckpointForAgent(persistDir, "nonexistent")).toBeNull();
   });
 
   it("rejects empty summary", async () => {
