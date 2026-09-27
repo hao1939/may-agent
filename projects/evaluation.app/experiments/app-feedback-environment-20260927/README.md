@@ -67,7 +67,8 @@ an end-to-end success claim.
 
 Host candidate `00e0f73fb4f820abf3b4bc219bab9e5a2257c84a` passed full local CI:
 **3,243 passed, three installation-specific skips, zero failures**. GitHub PR
-[#258](https://github.com/hao1939/may-agent/pull/258) carries the source change.
+[#258](https://github.com/hao1939/may-agent/pull/258) originally carried the bundled
+change; the focused revisions are recorded below.
 May independently reviewed the candidate and ran the four focused suites
 (56 passed). Exact accepted attempt:
 `may/conversation_ec854e2f09f1c38566a25857_successor_2`,
@@ -140,3 +141,44 @@ from origin and subject correlation, using the existing event store. Do not inve
 a registry, infer a destination from arbitrary payload fields, or rewrite old
 records without evidence of their original target. This requires its own small
 Host contract review; it is not fixed by the checkpoint or reply changes.
+
+## September 28: focused PRs and result-contract ownership
+
+The review found three independent changes in the original PR. They now branch
+separately from Host `d1169785`:
+
+| PR | Revision | Responsibility |
+| --- | --- | --- |
+| [#258](https://github.com/hao1939/may-agent/pull/258) | `4dfaed1f` | Conversation result validation, seven files |
+| [#259](https://github.com/hao1939/may-agent/pull/259) | `4c731972` | Shared Condition checkpoint calculation and public observation, five files |
+| [#260](https://github.com/hao1939/may-agent/pull/260) | `2d32149e` | Session-completion naming in HTTP/UI/status, four files |
+
+The result schema owns requirements attached to proposed actions. The core
+Conversation boundary derives the human reply requirement from exact claimed
+inputs, passes the schema to execution, and recomputes it at settlement. The
+executor no longer derives policy from presentation context. Duplicate predicates
+and the proposed public SDK helper export were removed. Current claim, authority,
+revision and atomic-settlement checks remain. The owning contract is
+[Message Lifecycle](../../../may-agent.app/docs/2a-design/message-lifecycle.md#results-and-human-updates).
+
+Focused verification passed: 68 Conversation tests, 177 Task/read tests, and
+eight HTTP/browser tests. The tests distinguish pending human input from an
+automated observation linked to an already handled human parent. The latter may
+remain quiet. The health regression correlates a completed session with its own
+failed Task settlement rather than unrelated examples.
+
+May independently reviewed `4dfaed1f`, found no blocking defect, and passed 47
+focused tests plus Host/SDK type checks. The accepted review input is
+`app_69a36527-dd99-4fd6-a69b-68d227502390`, event `6460193`. Her optional suggestion
+was another full tool-loop variant for the human-parent case; the existing
+contract/adapter tests cover the changed boundaries, so no extra variant was
+added. This source review used the existing runtime and does not establish
+deployment of the revised source. The earlier live trial remains evidence for
+`00e0f73f`, not these subsequent revisions.
+
+Full `bun run ci` passed independently on all three revisions: 3,244 tests for
+#258 and 3,241 each for #259 and #260, with three installation-specific skips
+and zero failures in each run. Both GitHub checks passed on every PR. The common
+design integrity, checked examples and canonical App checks also passed. These
+are source/build checks; none of the three revised branches was deployed during
+this cleanup.
