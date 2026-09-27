@@ -757,7 +757,10 @@ export class DbWriter {
           if (typeof existing.source === "string") retryEvent.source = existing.source;
           if (typeof existing.owner === "string") retryEvent.owner = existing.owner;
           if (typeof existing.timestamp === "number") retryEvent.timestamp = existing.timestamp;
-          Object.assign(event, readEventTraceMetadata(this.db, existingId));
+          // Authored fields already matched the saved hash. Restore causality
+          // without adding defaults that would change a subsequent retry's input.
+          const { trace } = readEventTraceMetadata(this.db, existingId);
+          if (trace) event.trace = trace;
           Object.defineProperty(event, EVENT_ROW_ID, { value: existingId, configurable: true });
           Object.defineProperty(event, EVENT_DEDUPLICATED, { value: true, configurable: true });
           if (

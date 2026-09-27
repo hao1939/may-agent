@@ -10,6 +10,40 @@ import { loadPersistedEvent } from "./persisted.js";
 import { getEventView } from "./interface.js";
 import { canonicalAppEvent } from "../../canonical-app-event.js";
 
+test.each([undefined, "default", "detail"] as const)(
+  "repeated publication preserves its receipt and authored visibility (%s)",
+  (visibility) => {
+    const root = mkdtempSync(join(tmpdir(), "may-event-retry-"));
+    try {
+      const bus = new EventBus();
+      const writer = new DbWriter(root);
+      bus.setPersistenceSubscriber(writer.handler);
+      bus.setDeliveryRecorder(writer.recordDelivery);
+      let deliveries = 0;
+      bus.subscribeDurableRoute(() => {
+        deliveries++;
+        return { accepted: true, by: "fixture", route: "direct" };
+      });
+      const event = bus.emit({
+        type: "fixture.observed", source: "fixture", owner: "app:producer",
+        ...(visibility ? { visibility } : {}),
+        data: { idempotencyKey: "same-publication", value: "original" },
+      });
+      const id = Number(event[EVENT_ROW_ID]);
+      expect(bus.emit(event)[EVENT_ROW_ID]).toBe(id);
+      expect(bus.emit(event)[EVENT_ROW_ID]).toBe(id);
+      expect(event.visibility).toBe(visibility);
+      expect(event.trace).toMatchObject({ traceId: `event:${id}` });
+      expect(deliveries).toBe(1);
+      expect(getDb(root).prepare("SELECT COUNT(*) AS count FROM events").get()).toEqual({ count: 1 });
+      expect(() => bus.emit({ ...event, data: { ...event.data, value: "changed" } })).toThrow("different event input");
+    } finally {
+      closeDb(root);
+      rmSync(root, { recursive: true, force: true });
+    }
+  },
+);
+
 test("persisted event replay uses verified full facts, never a truncated or corrupt body", () => {
   const root = mkdtempSync(join(tmpdir(), "may-event-replay-"));
   try {
