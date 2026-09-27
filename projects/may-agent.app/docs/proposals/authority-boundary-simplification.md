@@ -727,6 +727,8 @@ Two source candidates address the remaining narrow cleanup findings:
   related lifecycle assertions are grouped. Three unused production helpers are
   deleted; tests inspect the actual workspace cleanup, emitted Codex packet and
   saved checkpoint pointer. Checkpoint storage and recovery readers remain.
+  Final source `36a208db` strengthens the packet assertion to require the complete
+  packet at the end of the instruction text.
 - [Host #251](https://github.com/hao1939/may-agent/pull/251), `65a75ba5`, removes
   ignored agent-definition context metadata. Old JSON remains loadable; the
   loader test includes a missing retired context file and verifies that the
@@ -774,7 +776,10 @@ these measurements establish no speedup. The audit does not support a blanket
 30% deletion. Distinct restart, cancellation, identity and historical-reader
 contracts still need their tests even when they visit the same lines.
 
-Both individual local CI runs passed. The context branch's final fixture-link
-wording passed its owning tests; the combined final source is checked separately.
-Hosted checks and combined validation are pending at this writing. No deployment,
-App activation, record migration or model-backed experiment was performed.
+Both individual local CI runs passed. Combined source `78a2379b` passed full
+local CI: 3,240 passed, three installation-only skips, no failures (230.95s).
+The only later change strengthens two packet assertions. Final combined source
+`6f1e9aa0` passed 35 owning tests with the same three installation-only skips.
+Host #251 passed both GitHub checks on `65a75ba5`; #250's checks are pending on
+its final revision. No deployment, App activation, record migration or model-backed
+experiment was performed.
