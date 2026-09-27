@@ -705,8 +705,8 @@ export class DbWriter {
         envelope.target && typeof envelope.target === "object" && !Array.isArray(envelope.target)
           ? (envelope.target as Record<string, unknown>)
           : {};
-      // The canonical envelope target is routing authority. Persist it in the
-      // indexed correlation columns without copying it into event.data.
+      // Routing and evidence correlation are independent. Retain the authored
+      // target separately; a Task emission indexes its producer, not its destination.
       const emissionFence = (event as AgentEvent & { [EVENT_TASK_EMISSION_FENCE]?: EventTaskEmissionFence })[
         EVENT_TASK_EMISSION_FENCE
       ];
@@ -834,17 +834,18 @@ export class DbWriter {
       const body = prepareEventBody(this.persistDir, persistedPayload);
       const info = this.db.run(
         `INSERT INTO events
-          (event_type, source, owner, data, body_ref, body_sha256, body_bytes,
+          (event_type, source, owner, data, target_json, body_ref, body_sha256, body_bytes,
            session_id, workflow_run_id, project_id, task_id, attempt_id, handler,
            metric_id, alert_id, escalation_id, subject_status, duration_ms,
            timestamp, urgency, ttl_ms, idempotency_key, idempotency_scope,
            idempotency_hash, ingress_source)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           event.type,
           source,
           owner,
           body.data,
+          JSON.stringify(target),
           body.artifact.ref || null,
           body.artifact.sha256,
           body.artifact.bytes,

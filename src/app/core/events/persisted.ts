@@ -12,17 +12,31 @@ function parseStoredEventData(value: unknown): Record<string, unknown> | null {
   }
 }
 
+/** Historical correlation fields cannot establish an event's original destination. */
+export function readPersistedEventTarget(value: unknown): Record<string, unknown> | undefined {
+  if (value == null) return undefined;
+  const target = parseStoredEventData(value);
+  if (!target) throw new Error("Stored event target must be a JSON object");
+  return Object.keys(target).length ? target : undefined;
+}
+
 /** Rebuild the immutable event input needed to finish a plan after restart. */
 export function loadPersistedEvent(db: SqliteDb, eventId: number, persistDir?: string): AgentEvent | null {
   const row = db
     .prepare(
-      `SELECT event_type, source, owner, data, body_ref, body_sha256, body_bytes,
-              session_id, project_id, task_id, timestamp, urgency, ttl_ms
+      `SELECT event_type, source, owner, data, target_json, body_ref, body_sha256, body_bytes,
+              timestamp, urgency, ttl_ms
        FROM events
        WHERE id = ?`,
     )
     .get(eventId);
   if (!row || typeof row.event_type !== "string") return null;
+  let target: Record<string, unknown> | undefined;
+  try {
+    target = readPersistedEventTarget(row.target_json);
+  } catch {
+    return null;
+  }
 
   let data: unknown;
   if (typeof row.body_ref === "string" && row.body_ref.trim()) {
@@ -48,20 +62,11 @@ export function loadPersistedEvent(db: SqliteDb, eventId: number, persistDir?: s
   }
   if (!data || typeof data !== "object" || Array.isArray(data)) return null;
   const payload = data as Record<string, unknown>;
-  const appId =
-    typeof payload.appId === "string" && payload.appId.trim()
-      ? payload.appId.trim()
-      : typeof row.project_id === "string" && row.project_id.trim()
-        ? row.project_id.trim()
-        : undefined;
-  const taskId = typeof row.task_id === "string" && row.task_id.trim() ? row.task_id.trim() : undefined;
-  const sessionId = typeof row.session_id === "string" && row.session_id.trim() ? row.session_id.trim() : undefined;
-  const target = { ...(appId ? { appId } : {}), ...(taskId ? { taskId } : {}), ...(sessionId ? { sessionId } : {}) };
   const event = {
     type: row.event_type,
     ...(typeof row.source === "string" ? { source: row.source } : {}),
     ...(typeof row.owner === "string" ? { owner: row.owner } : {}),
-    ...(Object.keys(target).length > 0 ? { target } : {}),
+    ...(target ? { target } : {}),
     data: payload,
     ...(typeof row.timestamp === "number" ? { timestamp: row.timestamp } : {}),
     ...(row.urgency === "low" || row.urgency === "normal" || row.urgency === "high" || row.urgency === "immediate"

@@ -7,6 +7,7 @@ import { describeText } from "../../../lib/artifacts.js";
 import { closeDb, getDb } from "../../../lib/requests.js";
 import { EVENT_ROW_ID, EventBus } from "./bus.js";
 import { loadPersistedEvent } from "./persisted.js";
+import { getEventView } from "./interface.js";
 
 test("persisted event replay uses verified full facts, never a truncated or corrupt body", () => {
   const root = mkdtempSync(join(tmpdir(), "may-event-replay-"));
@@ -22,7 +23,6 @@ test("persisted event replay uses verified full facts, never a truncated or corr
     expect(loadPersistedEvent(db, eventId, root)).toMatchObject({
       type: "conversation.message.created",
       source: "telegram",
-      target: { appId: "may" },
       data,
     });
     expect(loadPersistedEvent(db, eventId)).toBeNull();
@@ -34,6 +34,37 @@ test("persisted event replay uses verified full facts, never a truncated or corr
     db.prepare("UPDATE events SET body_sha256 = ?, body_bytes = ? WHERE id = ?")
       .run(descriptor.sha256, descriptor.bytes, eventId);
     expect(loadPersistedEvent(db, eventId, root)).toBeNull();
+  } finally {
+    closeDb(root);
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("stored targets retain internal fields; missing history stays unknown and damaged routing is not replayed", () => {
+  const root = mkdtempSync(join(tmpdir(), "may-target-replay-"));
+  try {
+    const bus = new EventBus();
+    bus.setPersistenceSubscriber(new DbWriter(root).handler);
+    const target = { project: "destination.app", taskId: "review", sessionId: "recipient-session", human: true };
+    const event = bus.emit({
+      type: "fixture.observed",
+      source: "fixture",
+      owner: "app:producer",
+      target,
+      data: { appId: "subject", taskId: "subject-task", sessionId: "producer-session" },
+    });
+    const id = Number(event[EVENT_ROW_ID]);
+    closeDb(root);
+    const db = getDb(root);
+    expect(loadPersistedEvent(db, id)).toMatchObject({ target });
+    db.prepare("UPDATE events SET target_json = NULL WHERE id = ?").run(id);
+    expect(loadPersistedEvent(db, id)).not.toHaveProperty("target");
+    expect(getEventView(db, id)?.event).not.toHaveProperty("target");
+    for (const value of ["{broken", "[]", "null"]) {
+      db.prepare("UPDATE events SET target_json = ? WHERE id = ?").run(value, id);
+      expect(loadPersistedEvent(db, id)).toBeNull();
+      expect(() => getEventView(db, id)).toThrow("Stored event target");
+    }
   } finally {
     closeDb(root);
     rmSync(root, { recursive: true, force: true });

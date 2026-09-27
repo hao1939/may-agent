@@ -9,6 +9,7 @@ import type {
 } from "@may-agent/control/events";
 import { findPersistedEventId } from "../../../lib/db-writer.js";
 import { readEventTaskTarget } from "./task-target.js";
+import { readPersistedEventTarget } from "./persisted.js";
 import type { SqliteDb } from "../../../lib/db.js";
 import {
   EVENT_INGRESS_SOURCE,
@@ -438,6 +439,16 @@ export function findEventPublication(db: SqliteDb, input: EventInput, context: E
   return findPersistedEventId(db, canonicalEvent(normalizeInput(input), context));
 }
 
+function publicTarget(rawTarget: Record<string, unknown> | undefined): EventTarget | undefined {
+  return rawTarget
+    ? normalizeTarget({
+        appId: optionalText(rawTarget.appId),
+        taskId: optionalText(rawTarget.taskId),
+        sessionId: optionalText(rawTarget.sessionId),
+      })
+    : undefined;
+}
+
 function publicEvent(event: AgentEvent & { [EVENT_ROW_ID]?: number }): PublicEvent {
   const envelope = event as AgentEvent & Record<string, unknown> & { [EVENT_ROW_ID]?: number };
   const canonicalData = envelope.data;
@@ -453,13 +464,7 @@ function publicEvent(event: AgentEvent & { [EVENT_ROW_ID]?: number }): PublicEve
     envelope.target && typeof envelope.target === "object" && !Array.isArray(envelope.target)
       ? (envelope.target as Record<string, unknown>)
       : undefined;
-  const target = rawTarget
-    ? normalizeTarget({
-        appId: optionalText(rawTarget.appId),
-        taskId: optionalText(rawTarget.taskId),
-        sessionId: optionalText(rawTarget.sessionId),
-      })
-    : undefined;
+  const target = publicTarget(rawTarget);
   const eventId = Number(envelope[EVENT_ROW_ID]);
   return {
     ...(Number.isSafeInteger(eventId) && eventId > 0 ? { id: eventId } : {}),
@@ -630,17 +635,13 @@ export function getEventView(db: SqliteDb, eventId: number): EventView | undefin
   const row = db
     .prepare(
       `SELECT id, event_type, source, owner, data, timestamp, delivery_status,
-                accepted_by, delivery_note, session_id, task_id, project_id
+                accepted_by, delivery_note, target_json
          FROM events WHERE id = ?`,
     )
     .get(eventId) as Record<string, unknown> | undefined;
   if (!row) return undefined;
   const data = parseData(row.data);
-  const target = normalizeTarget({
-    appId: optionalText(data.appId),
-    taskId: optionalText(row.task_id) ?? optionalText(data.taskId),
-    sessionId: optionalText(row.session_id) ?? optionalText(data.sessionId),
-  });
+  const target = publicTarget(readPersistedEventTarget(row.target_json));
   const storedStatus = optionalText(row.delivery_status) ?? "pending";
   const required = eventDeliveryContract(String(row.event_type)) === "required";
   const state =

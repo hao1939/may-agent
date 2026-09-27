@@ -1267,7 +1267,7 @@ describe("App inbox runtime", () => {
     expect(getAppEventAdmissionPlan(db, 1)?.status).toBe("pending");
   });
 
-  it("resumes a frozen plan after restart and does not admit it twice", async () => {
+  it("resumes a legacy frozen plan without inventing an event target or admitting it twice", async () => {
     const eventId = Number(
       db
         .prepare(
@@ -1296,8 +1296,11 @@ describe("App inbox runtime", () => {
     const options = {
       registry,
       db,
-      admitTaskEvent: ({ event }: any) => {
+      admitTaskEvent: ({ appId, conditionTaskIds, event }: any) => {
         admitted += 1;
+        expect(appId).toBe("evaluation");
+        expect(conditionTaskIds).toEqual(["restart-task"]);
+        expect(event.target).toBeUndefined();
         expect(Number(event[EVENT_ROW_ID])).toBe(eventId);
         expect(event.data).toMatchObject({ project: "evaluation", value: "restart" });
         return { accepted: true as const, by: "test-task", route: "direct" as const };

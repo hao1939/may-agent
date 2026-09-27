@@ -164,6 +164,7 @@ describe("canonical database schema", () => {
           data TEXT,
           timestamp INTEGER NOT NULL
         );
+        INSERT INTO events(event_type, data, timestamp) VALUES ('legacy.fact', '{"appId":"subject"}', 1);
       `);
 
       expect(() => applyDbSchema(db)).not.toThrow();
@@ -173,6 +174,10 @@ describe("canonical database schema", () => {
       const indexes = db.prepare("PRAGMA index_list(events)").all() as Array<{ name: string }>;
 
       expect(columns.some(({ name }) => name === "session_id")).toBe(true);
+      expect(db.prepare("SELECT target_json, data FROM events WHERE id = 1").get()).toEqual({
+        target_json: null,
+        data: '{"appId":"subject"}',
+      });
       expect(columns.some(({ name }) => name === "workflow_run_id")).toBe(true);
       expect(columns.some(({ name }) => name === "delivery_status")).toBe(true);
       expect(columns.some(({ name }) => name === "idempotency_scope")).toBe(true);
