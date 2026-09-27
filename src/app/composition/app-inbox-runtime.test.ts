@@ -1267,6 +1267,56 @@ describe("App inbox runtime", () => {
     expect(getAppEventAdmissionPlan(db, 1)?.status).toBe("pending");
   });
 
+  it("keeps a legacy unresolved translation visible when the original target was lost", async () => {
+    const path = join(root, "evaluation.app", "app.js");
+    writeFileSync(
+      path,
+      readFileSync(path, "utf8").replace(
+        "toInput(event) { return",
+        'toInput(event) { if (event.target?.appId !== "evaluation") return null; return',
+      ),
+    );
+    const eventId = Number(
+      db
+        .prepare(
+          "INSERT INTO events(event_type, source, owner, data, timestamp) VALUES ('provider.changed', 'provider', 'app:evaluation', ?, ?)",
+        )
+        .run(JSON.stringify({ project: "evaluation", value: "legacy" }), Date.now()).lastInsertRowid,
+    );
+    const registry = await loadedRegistry(root);
+    const snapshot = registry.snapshot();
+    createAppEventAdmissionPlan(db, {
+      eventId,
+      registrySnapshotId: snapshot.id,
+      registryGeneration: snapshot.generation,
+      routes: [
+        {
+          appId: "evaluation",
+          kind: "unresolved",
+          routeId: "provider-change",
+          subscriptionIds: ["provider-change"],
+          resolveTask: false,
+          conditionTaskIds: [],
+        },
+      ],
+    });
+    runtime = await startAppInboxRuntime({ registry, db, bus: persistentBus(), scanIntervalMs: 10_000 });
+    await waitUntil(() => {
+      const plan = getAppEventAdmissionPlan(db, eventId);
+      return plan?.status === "completed" || Boolean(plan?.commands[0]?.lastError);
+    });
+    expect(getAppEventAdmissionPlan(db, eventId)).toMatchObject({
+      status: "pending",
+      commands: [
+        expect.objectContaining({
+          kind: "unresolved",
+          status: "pending",
+          lastError: expect.stringContaining("original routing target"),
+        }),
+      ],
+    });
+  });
+
   it("resumes a legacy frozen plan without inventing an event target or admitting it twice", async () => {
     const eventId = Number(
       db
