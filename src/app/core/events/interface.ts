@@ -449,16 +449,6 @@ export function findEventPublication(db: SqliteDb, input: EventInput, context: E
   return findPersistedEventId(db, canonicalEvent(normalizeInput(input), context));
 }
 
-function publicTarget(rawTarget: Record<string, unknown> | undefined): EventTarget | undefined {
-  return rawTarget
-    ? normalizeTarget({
-        appId: optionalText(rawTarget.appId),
-        taskId: optionalText(rawTarget.taskId),
-        sessionId: optionalText(rawTarget.sessionId),
-      })
-    : undefined;
-}
-
 function publicEvent(event: AgentEvent & { [EVENT_ROW_ID]?: number }): PublicEvent {
   const envelope = event as AgentEvent & Record<string, unknown> & { [EVENT_ROW_ID]?: number };
   const canonicalData = envelope.data;
@@ -474,7 +464,13 @@ function publicEvent(event: AgentEvent & { [EVENT_ROW_ID]?: number }): PublicEve
     envelope.target && typeof envelope.target === "object" && !Array.isArray(envelope.target)
       ? (envelope.target as Record<string, unknown>)
       : undefined;
-  const target = publicTarget(rawTarget);
+  const target = rawTarget
+    ? normalizeTarget({
+        appId: optionalText(rawTarget.appId),
+        taskId: optionalText(rawTarget.taskId),
+        sessionId: optionalText(rawTarget.sessionId),
+      })
+    : undefined;
   const eventId = Number(envelope[EVENT_ROW_ID]);
   return {
     ...(Number.isSafeInteger(eventId) && eventId > 0 ? { id: eventId } : {}),
