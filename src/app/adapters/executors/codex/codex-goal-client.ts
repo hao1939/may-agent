@@ -474,8 +474,8 @@ export class CodexGoalAppServerClient {
 
     if (id !== null && typeof message.method === "string") {
       this.serverRequestCount += 1;
-      // This executor does not grant approvals or supply interactive input. A
-      // production adapter must implement a small explicit server-request policy.
+      // Return unsupported server requests as explicit protocol errors so the
+      // CLI receives an answer instead of waiting for interactive input.
       this.write({
         id,
         error: {
