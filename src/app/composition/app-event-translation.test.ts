@@ -143,6 +143,11 @@ for (const failure of ["throw", "invalid-input", "resolver", "invalid-intent", "
       });
       const eventId = emitted[EVENT_ROW_ID]!;
       expect(emitted[EVENT_DELIVERY_RESULT]?.accepted).toBe(true);
+      // Replay and reload before dispatch must reuse preparation from this turn.
+      expect(calls).toEqual({ broken: 1, healthy: 1 });
+      first.bus.redeliverPersisted(emitted, eventId);
+      version = "replacement";
+      await runtime!.reload();
       await until(
         () =>
           getAppEventAdmissionPlan(db, eventId)?.commands.find((command) => command.appId === "healthy")?.status ===

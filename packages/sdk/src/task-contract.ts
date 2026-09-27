@@ -57,11 +57,6 @@ export const conditionSchema = Type.Object(
     }),
     subject: typedConditionSubjectSchema,
     expected: Type.Unknown(),
-    notBefore: Type.Optional(Type.Integer({
-      minimum: 0,
-      maximum: Number.MAX_SAFE_INTEGER,
-      description: "Earliest acceptable Event observation time in Unix milliseconds. Omit when exact historical evidence remains valid.",
-    })),
     requestedAction: Type.Optional(nonEmptyStringSchema),
     owner: conditionOwnerSchema,
     reviewAfterMs: Type.Integer({ minimum: MIN_CONDITION_REVIEW_AFTER_MS }),
@@ -271,9 +266,6 @@ function normalizeCondition(value: unknown, index: number): Condition | string {
     return `conditions[${index}].subject must be a typed subject`;
   }
   if (!("expected" in value)) return `conditions[${index}].expected is required`;
-  if (value.notBefore !== undefined && (!Number.isSafeInteger(value.notBefore) || Number(value.notBefore) < 0)) {
-    return `conditions[${index}].notBefore must be a non-negative safe integer when present`;
-  }
   const requestedAction = optionalString(value, "requestedAction");
   if (!requestedAction.ok) {
     return `conditions[${index}].requestedAction must be a non-empty string when present`;
@@ -292,7 +284,6 @@ function normalizeCondition(value: unknown, index: number): Condition | string {
     type,
     subject,
     expected: structuredClone(value.expected),
-    ...(value.notBefore === undefined ? {} : { notBefore: Number(value.notBefore) }),
     ...(requestedAction.value ? { requestedAction: requestedAction.value } : {}),
     owner,
     reviewAfterMs: Number(reviewAfterMs),

@@ -270,7 +270,7 @@ describe("AppTaskResourceStore", () => {
     const store = AppTaskResourceStore.fromDb(db, "example");
     expect(
       db.prepare("SELECT value FROM app_task_store_meta WHERE app_id = ? AND key = 'schema_version'").get("example"),
-    ).toEqual({ value: "4" });
+    ).toEqual({ value: "3" });
     expect(store.readConditionRoutes("legacy.completed")).toEqual([expect.objectContaining({ taskIds: ["legacy"] })]);
     expect(
       db

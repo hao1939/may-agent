@@ -446,8 +446,8 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
     plan: AppEventAdmissionPlan,
     command: AppEventAdmissionCommand,
     event: AgentEvent,
-  ): AppEventAdmissionCommand => {
-    if (command.kind !== "unresolved") return command;
+  ): void => {
+    if (command.kind !== "unresolved") return;
     const entry = loadedById.get(command.appId);
     if (!entry) throw new Error(`App ${command.appId} is unavailable for event:${plan.eventId} translation`);
     const canonical = canonicalAppEvent(event);
@@ -478,34 +478,16 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
       registrySnapshotId: registrySnapshot.id,
       now: now(),
     });
-    return { ...command, ...route, lastError: undefined, resolvedSnapshotId: registrySnapshot.id };
   };
 
   const dispatchAdmissionCommand = async (
     plan: AppEventAdmissionPlan,
     command: AppEventAdmissionCommand,
     event: AgentEvent,
-    retryTranslation: boolean,
   ): Promise<void> => {
     const identity = `event:${plan.eventId}`;
     try {
-      // Exact Condition wakes remain usable even when this App's translator is broken.
-      if (command.kind === "unresolved" && command.conditionTaskIds.length > 0) {
-        const entry = loadedById.get(command.appId);
-        const delivery = entry && options.admitTaskEvent?.({
-          appId: command.appId,
-          appDir: entry.appDir,
-          event,
-          intent: null,
-          conditionTaskIds: command.conditionTaskIds,
-        });
-        if (!delivery) throw new Error(`App ${command.appId} Condition admission is unavailable`);
-      }
-      if (command.kind === "unresolved" && command.lastError && !retryTranslation) {
-        throw new Error(command.lastError);
-      }
-      command = resolveAdmissionCommand(plan, command, event);
-      const entry = loaded.find(({ definition }) => definition.id === command.appId);
+      const entry = loadedById.get(command.appId);
       if (!entry) {
         throw new Error(
           `Frozen ${admissionRouteLabel(command)} for ${identity} names an App unavailable after registry snapshot ${plan.registrySnapshotId} (generation ${plan.registryGeneration})`,
@@ -562,6 +544,8 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
           }
         }
       }
+      // Independent Condition wakes can be admitted while translation still needs repair.
+      if (command.kind === "unresolved") return;
       markAppEventAdmissionCommandAdmitted(options.db, {
         eventId: plan.eventId,
         appId: command.appId,
@@ -578,15 +562,26 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
     }
   };
 
-  const pendingAdmissionEvents = new Map<number, { event: AgentEvent; appIds: string[]; retryTranslation: boolean }>();
+  const pendingAdmissionEvents = new Map<number, { event: AgentEvent; appIds: string[] }>();
   let admissionDispatchHandle: ReturnType<typeof setTimeout> | null = null;
   let admissionDispatching = false;
 
-  const scheduleAdmissionDispatch = (plan: AppEventAdmissionPlan, event: AgentEvent, retryTranslation: boolean): void => {
+  const scheduleAdmissionDispatch = (plan: AppEventAdmissionPlan, event: AgentEvent): void => {
     if (plan.status !== "pending" || pendingAdmissionEvents.has(plan.eventId)) return;
+    // Initial delivery and recovery prepare the same durable commands. Freeze
+    // successful translations before yielding; dispatch only applies saved results.
+    for (const command of plan.commands) {
+      if (command.status !== "pending" || command.kind !== "unresolved") continue;
+      try {
+        resolveAdmissionCommand(plan, command, event);
+      } catch (error) {
+        recordAppEventAdmissionCommandFailure(options.db, {
+          eventId: plan.eventId, appId: command.appId, error, now: now(),
+        });
+      }
+    }
     pendingAdmissionEvents.set(plan.eventId, {
       event,
-      retryTranslation,
       appIds: plan.commands.filter((command) => command.status === "pending").map((command) => command.appId),
     });
     if (!admissionDispatchHandle) {
@@ -607,7 +602,7 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
       const command = plan?.commands.find((candidate) => candidate.appId === appId && candidate.status === "pending");
       if (plan?.status === "pending" && command) {
         try {
-          await dispatchAdmissionCommand(plan, command, pending.event, pending.retryTranslation);
+          await dispatchAdmissionCommand(plan, command, pending.event);
         } catch {
           // Each command gets one attempt per pass. Failure must not starve its peers.
         }
@@ -625,7 +620,7 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
     }
   }
 
-  const admitAdmissionPlan = (plan: AppEventAdmissionPlan, event: AgentEvent, retryTranslation = true): DeliveryResult => {
+  const admitAdmissionPlan = (plan: AppEventAdmissionPlan, event: AgentEvent): DeliveryResult => {
     if (plan.status === "superseded") {
       throw new Error(`Frozen App admission plan for event:${plan.eventId} is superseded`);
     }
@@ -665,9 +660,9 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
       }
       return admissionPlanDelivery(getAppEventAdmissionPlan(options.db, plan.eventId) ?? plan, "admitted durably");
     }
-    scheduleAdmissionDispatch(plan, event, retryTranslation);
+    scheduleAdmissionDispatch(plan, event);
     return admissionPlanDelivery(
-      plan,
+      getAppEventAdmissionPlan(options.db, plan.eventId) ?? plan,
       plan.status === "completed" ? "already admitted durably" : "routing recorded durably",
     );
   };
@@ -1085,17 +1080,7 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
             routes,
             now: now(),
           });
-          // The complete responsibility set is durable before any App callback.
-          // Freeze successful translations in this registry generation; only
-          // unresolved commands can use a repaired definition on recovery.
-          for (const command of plan.commands) {
-            try {
-              resolveAdmissionCommand(plan, command, event);
-            } catch (error) {
-              recordAppEventAdmissionCommandFailure(options.db, { eventId, appId: command.appId, error, now: now() });
-            }
-          }
-          return admitAdmissionPlan(getAppEventAdmissionPlan(options.db, eventId)!, event, false);
+          return admitAdmissionPlan(plan, event);
         }
 
         const observationApps = (observationsByEventType.get(canonical.type) ?? [])

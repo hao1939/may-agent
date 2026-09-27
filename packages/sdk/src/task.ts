@@ -38,8 +38,6 @@ export type Condition = {
   type: string;
   subject: string;
   expected: unknown;
-  /** Optional earliest observation time (Unix milliseconds). Omit for timeless evidence. */
-  notBefore?: number;
   /** Plain-language action shown when this Condition explicitly belongs to a human. */
   requestedAction?: string;
   /** Required on newly admitted waits; optional here so historical Conditions remain readable. */
