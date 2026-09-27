@@ -780,6 +780,6 @@ Both individual local CI runs passed. Combined source `78a2379b` passed full
 local CI: 3,240 passed, three installation-only skips, no failures (230.95s).
 The only later change strengthens two packet assertions. Final combined source
 `6f1e9aa0` passed 35 owning tests with the same three installation-only skips.
-Host #251 passed both GitHub checks on `65a75ba5`; #250's checks are pending on
-its final revision. No deployment, App activation, record migration or model-backed
+Host #251 passed both GitHub checks on `65a75ba5`; #250 passed both checks on
+its final revision `36a208db`. Both PRs are ready for human review. No deployment, App activation, record migration or model-backed
 experiment was performed.
