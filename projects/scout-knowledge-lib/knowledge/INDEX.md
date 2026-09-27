@@ -1,8 +1,8 @@
 <ai_context>
 summary: "Entry point for Scout's project-owned knowledge library. Use this before creating or updating Scout-local knowledge notes."
 triggers: ["scout knowledge", "agent architecture research", "multi-agent trends", "XHS trends", "knowledge library maintenance"]
-last_updated: "2026-09-25"
-source_basis: "Maintained index of Scout canonical notes, companion notes, findings, and durable reports. Current navigation includes source-grounded finding batches through 2026-09-25 and the §37–§40 Agent Evaluation Research: Diagnostic Layers companion without duplicating the full index. Runtime task, credential, backlog, and health status belongs in the project UI or dated reports."
+last_updated: "2026-09-27"
+source_basis: "Maintained index of Scout canonical notes, companion notes, findings, and durable reports. Current navigation includes source-grounded finding batches through 2026-09-26 and the §37–§40 Agent Evaluation Research: Diagnostic Layers companion without duplicating the full index. Runtime task, credential, backlog, and health status belongs in the project UI or dated reports."
 findings_date_convention: "Use the actual observation date in YYYY-MM-DD filenames; never create a future-dated finding."
 </ai_context>
 
@@ -69,6 +69,15 @@ Migration and project-operation artifacts live outside `knowledge/`:
 - [Hermes Agent and OpenClaw comparative investigation (2026-09-02)](../reports/research/hermes-agent-openclaw-comparative-investigation-2026-09-02.md) — UTC-dated pinned-source architecture, memory, skill-learning, authority, recovery, issue, and cost comparison; reconciles all 28 existing matching leads and records bounded reproduction limits.
 
 ## Recent Source-Grounded Findings
+
+### 2026-09-26
+
+- [Agent incident registers need typed environments and explicit denominators](./findings/2026-09-26-agent-incident-register-evidence-typing.md) — the complete 29-row CrawlSpider register distinguishes production incidents, externally acting evaluations, and contained experiments while preserving source type and caveats; it is a curated inventory, not a failure-rate denominator or independent forensic audit.
+- [Agent undo needs a coverage and completion contract](./findings/2026-09-26-agent-undo-coverage-contract.md) — pinned Prometheus source makes checkpoint admission, capture omissions, per-path restore errors, and post-restore equivalence separate claims; Scout inspected project-authored tests but did not run them or inject failures.
+- [Agent-written systems need whole-program cost budgets](./findings/2026-09-26-agent-whole-program-cost-budgets.md) — a first-person production account shows clean diffs and defect-specific tests missing request-level connection and SQL costs; the private system and reported measurements were not independently reproduced.
+- [DNS egress incident separates mediation, detection, and containment](./findings/2026-09-26-dns-egress-detection-containment.md) — OpenAI's primary report distinguishes transitive network mediation, attempt-sensitive detection, alert acknowledgement, stop execution, and verified quiescence; the incident and remediated controls were not independently audited.
+- [ACRYL: persistent agent work needs layered continuity](./findings/2026-09-26-github-acryl-layered-continuity.md) — pinned source separates presentation, artifact, conversation, and execution continuity so restored layout cannot imply restored drafts, processes, or effects; the application and tests were not run.
+- [Office-agent artifacts need model, rendering, and admission checks](./findings/2026-09-26-univer-office-agent-verification-worktrees.md) — Univer's project-authored interfaces separate semantic inspection, rendered verification, and explicit worktree admission against a pinned base; Scout did not install or execute the toolchain.
 
 ### 2026-09-25
 
