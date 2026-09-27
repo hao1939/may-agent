@@ -22,6 +22,7 @@ agents/<name>/
     <name>/references/     # Optional progressive-disclosure detail.
     <name>/scripts/        # Optional; prefer TypeScript/JavaScript + Bun.
 
+  tools/<capability>.ts   # Optional default-exported local tool factory.
   handlers/               # JS cron/event handlers.
   workflows/              # Executable TypeScript orchestration.
     <name>.ts              # Canonical flat workflow entrypoint.
@@ -31,6 +32,7 @@ projects/<id>.app/agents/<name>/
   agent.json              # Same shape; agent is scoped to the App.
   AGENTS.md
   skills/<name>/SKILL.md
+  tools/<capability>.ts   # Same local tool convention.
   workspace/
 
 shared/
@@ -228,18 +230,31 @@ Start with the smallest existing extension point:
 1. **Change judgment:** edit the owning agent's `AGENTS.md` for durable policy,
    or add a skill for a situational method. Link longer knowledge. May's intent
    interpretation and communication style belong here.
-2. **Add an action:** implement an App tool with its parameter schema and a
-   description of effects, authority, errors and returned evidence. Bind it
-   through the App definition. Describe each tool's contract beside that tool.
-3. **Add a procedure:** compose available actions in an App workflow. Give each
-   agent call a specific contribution and result schema. Sharing a Task does
-   not give every helper the whole Task assignment.
+2. **Add an action:** put a default-exported tool factory in the App agent's
+   `tools/<capability>.ts`. The existing loader discovers these modules; the
+   factory returns a named tool with `description`, `parameters` and `execute`.
+   Describe effects, authority, errors and returned evidence beside the tool.
+   `agent.json.tools` selects existing Host presets; local tool names do not
+   need new presets or an `AppDefinition.tools` field. Use Host capabilities
+   for Task state and delivery.
+3. **Add a procedure:** compose available actions in an App workflow using the
+   [workflow authoring contract](workflow-authoring.md). Give each agent call a
+   specific contribution and result schema. Sharing a Task does not give every
+   helper the whole Task assignment.
 4. **Shape a large request:** optionally set `contextPreparation` in `agent.json`
    to a relative module inside that agent directory. Default-export an
    `AgentContextPreparer` from `@may-agent/sdk`: `(input: { task: string }) => string`.
    It receives the full supplied request, returns a nonempty brief synchronously,
    preserves requirements and references, and returns unsupported formats intact.
    Keep it pure and cheap; it is neither retrieval nor transcript management.
+
+For the tool convention, follow Host `src/app/loader/agent-local-tools.ts` and
+`toolset-loader.ts`. Factories receive `projectRoot`, `agentRoot` and `persistDir`;
+these are execution services/locations, not a separate App state lifecycle.
+The loader imports only immediate `.ts`/`.js` modules, skipping test and type
+files. Keep support code in a subdirectory. Inspect activation notices: malformed
+or failed factories are currently reported and skipped. Successful activation
+and the actual prepared toolset, not file presence alone, establish availability.
 
 The Host adds its execution instructions after resolving App system guidance.
 It binds actual tools and the caller's output schema, then prepares the provider
