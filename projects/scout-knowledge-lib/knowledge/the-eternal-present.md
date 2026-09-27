@@ -434,13 +434,13 @@ one problem expressed 23 ways.
 
 Five papers from June 23, 2026 provide EMPIRICAL confirmation of this synthesis's core claim:
 
-- **SelfCompact (2606.23525):** Proves agents literally cannot detect their own context degradation. A lightweight external "rubric" (external temporal governance) yields +18.1pts and -70% cost. This is the Eternal Present's missing `expiry` primitive proven necessary at the session level.
+- **SelfCompact (2606.23525):** Scaffold-supplied, task-specific criteria help the same model judge when to compact on the tested open-weight math and search systems. The authors report a largest no-compaction gain of +18.1 points and 33–67% lower cost on BrowseComp-Plus under their single-rate model; these are not universal results. This is evidence for an explicit session-level lifecycle gate, not proof that agents cannot diagnose degradation or that an independent external verifier is necessary.
 - **AFTER (2606.23127):** 382-task benchmark proving procedural skills need lifecycle governance — the `succession` primitive for learned behaviors.
 - **Kamera (2606.23581):** Multimodal agents re-encode unchanged artifacts repeatedly — a sub-symbolic manifestation of missing `consolidation` (unchanged state should persist, not re-derive).
 - **Expressivity Floor (2606.23668):** Formal PAC-Bayes proof that prompt channels have capacity limits. Context senescence ISN'T just costly — it provably saturates the communication channel, making new information unrecoverable.
 - **EnterpriseClawBench (2606.23654):** Best enterprise agent achieves only 0.663 — configuration-level degradation from accumulated context pollution across turns.
 
-**Status update:** This moves from "active hypothesis" to "empirically confirmed at session level." The five missing primitives (expiry, consolidation, resolution, succession, provenance) now each have at least one paper demonstrating their necessity. The biological analog (cells cannot self-diagnose senescence; an external immune system is required) is validated by SelfCompact's core finding.
+**Status update:** Together, the five papers add session-level evidence for explicit lifecycle mechanisms, but they do not establish that every proposed primitive is necessary. In particular, SelfCompact shows that scaffold-supplied criteria can improve same-model compaction timing on the tested systems; it neither validates the biological claim that self-diagnosis is impossible nor proves external governance necessary. Independent checks remain appropriate for summary fidelity, hard constraints, and authorization.
 
 → Full analysis: `findings/2026-06-23-hn-scan-112.md`
 
