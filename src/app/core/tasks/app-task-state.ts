@@ -1,3 +1,4 @@
+import { MIN_CONDITION_REVIEW_AFTER_MS } from "@may-agent/sdk";
 import type { Condition, ResourceCreator, TaskAcceptanceBasis, TaskAttempt, TaskIntent } from "@may-agent/sdk";
 
 export type AppTaskTriggerEvent = {
@@ -33,6 +34,17 @@ export type AppTaskCondition = {
     facts?: string[];
   };
 };
+
+/** The current observation starts the checkpoint; age alone does not make a wait due. */
+export function conditionReviewAt(condition: AppTaskCondition): number | undefined {
+  if (condition.status.state === "true") return undefined;
+  const delay = condition.spec.reviewAfterMs;
+  const observedAt = Date.parse(condition.status.observedAt ?? "");
+  if (!Number.isInteger(delay) || Number(delay) < MIN_CONDITION_REVIEW_AFTER_MS || !Number.isFinite(observedAt))
+    return undefined;
+  const dueAt = observedAt + Number(delay);
+  return Number.isSafeInteger(dueAt) ? dueAt : undefined;
+}
 
 /** Observed Git workspace lineage for one task attempt; never desired spec. */
 export type AppTaskWorkspace = {
