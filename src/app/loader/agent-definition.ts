@@ -79,7 +79,6 @@ export async function buildAgentDefinition(options: AgentDefinitionOptions): Pro
     compaction: config.compaction,
     contextPreparation,
     contextPreparationSource,
-    contextFiles: config.context_files?.map((file) => resolve(source.dir, file)),
     skillCatalog,
   };
 }
