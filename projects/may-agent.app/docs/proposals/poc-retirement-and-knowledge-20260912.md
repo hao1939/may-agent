@@ -140,8 +140,9 @@ claim. Do not rerun paid trials solely to relocate or delete their harnesses.
 
 ## Disposition of the 21 PoC files
 
-Paths below are relative to Host `scripts/poc/`. Each row states a proposed
-destination and the work needed before removing the old path.
+Paths below are relative to Host `scripts/poc/`. Each row states the September 12
+disposition. The [September 27 follow-up](#september-27-compatibility-and-cleanup-follow-up)
+replaces the four-file protocol check with a production-client behavior check.
 
 | Files | Proposed disposition |
 | --- | --- |
@@ -473,3 +474,58 @@ exactly once; local links and proposal anchors resolve; whitespace checks pass.
 canonical App checks. The earlier review's 55 passing focused tests used a
 temporary frozen dependency install; they are baseline evidence, not validation
 of the proposed deletions.
+
+## September 27 compatibility and cleanup follow-up
+
+The decision to retain compatibility verification stands; whole-schema hashes
+were the wrong check. Codex 0.156.1 changed eleven of 22 tracked schema files,
+but the differences were compatible with May's client. The snapshot was used
+only by CI and duplicated version pins without testing client behavior.
+
+[Host #247](https://github.com/hao1939/may-agent/pull/247), source `dff529f5`,
+replaces the snapshot, hash helpers and their tests with the existing package
+command exercising the production app-server client against the installed CLI.
+It verifies initialization, a paused goal notification, process restart and the
+same saved thread/goal. Disposable state and an unusable local provider endpoint
+keep the trial independent of credentials and model calls. Both 0.154.0 and
+0.156.1 pass; a missing executable and mismatched recovered objective fail.
+Full local CI passes 3,256 tests, with three installation-only skips. Existing
+turn, interruption, error, progress and result-boundary tests remain. This is
+setup/persistence evidence, not live provider or model execution proof.
+
+The image smoke gate runs the same check against the shipped CLI. Generated
+schemas remain available from the vendor when diagnosing compatibility; they
+are no longer another checked-in authority to refresh. The source README and
+contributor guide own the supported command and its limits. The earlier table
+and archived executor experiment retain their historical invocation context.
+
+[Host #248](https://github.com/hao1939/may-agent/pull/248), source `5dcb51cf`,
+removes dead helpers and tests with no production
+or sibling App/Gym callers: a fact-merging algorithm the compactor never used,
+transcript deletion and directory-existence wrappers, an unused last-session
+reader, path matcher and metric alias. Their production consumers do not need
+replacement mechanisms. Writer tests read their actual files, and compaction
+behavior tests remain. A duplicate list of supposedly handled tool presets was
+not runtime evidence; the existing real-loader test owns that check instead.
+The review retains SDK/Gym compatibility, persisted upgrade readers/fences,
+Task condition/result semantics and historical records. No installed data is
+moved or deleted by this source cleanup.
+
+[Host #249](https://github.com/hao1939/may-agent/pull/249), source `978ae0a8`,
+reuses the existing smoke gate before pushing the
+same built image. It also dispatches ordinary CI on Release Please's PR branch,
+which GitHub's built-in token otherwise leaves without checks. The repository's
+active main ruleset now requires Quality and Container from GitHub Actions;
+existing review and administrator bypass settings remain. Repository settings,
+source checks, image publication and deployment are separate facts. This
+follow-up does not authorize release or rollout.
+
+Final combined local CI at Host `3fbab4c6` passes **3,248 tests**, with three
+installation-only skips and zero failures. The only later Host change is the
+two-line comment clarification in #248; both GitHub Quality and Container pass
+on the final heads of all three PRs. The initial independent runs on main
+reproduced its known Codex snapshot/version mismatch; #247 removes that faulty
+check, and the combined run verifies the replacements together. The PRs are
+ready for review. Merge #247 first, then retarget #248/#249 to main; include the
+release gate before publishing the next image. Source promotion and deployment
+remain separate.
