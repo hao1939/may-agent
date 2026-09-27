@@ -519,3 +519,13 @@ active main ruleset now requires Quality and Container from GitHub Actions;
 existing review and administrator bypass settings remain. Repository settings,
 source checks, image publication and deployment are separate facts. This
 follow-up does not authorize release or rollout.
+
+Final combined local CI at Host `3fbab4c6` passes **3,248 tests**, with three
+installation-only skips and zero failures. The only later Host change is the
+two-line comment clarification in #248; both GitHub Quality and Container pass
+on the final heads of all three PRs. The initial independent runs on main
+reproduced its known Codex snapshot/version mismatch; #247 removes that faulty
+check, and the combined run verifies the replacements together. The PRs are
+ready for review. Merge #247 first, then retarget #248/#249 to main; include the
+release gate before publishing the next image. Source promotion and deployment
+remain separate.
