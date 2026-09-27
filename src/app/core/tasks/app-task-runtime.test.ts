@@ -1148,7 +1148,11 @@ it("settles report and useful continuation equivalently for agent and workflow a
     workflows: {
       async inspect() { return { available: true, error: null, workspace: "shared" }; },
       async execute({ attempt }) {
-        return { handlerResult: { ...resultFor(attempt.task.id), actions: [] }, runId: "workflow-run" };
+        // The adapter may retain its proposal as immutable execution evidence.
+        return Object.freeze({
+          handlerResult: Object.freeze({ ...resultFor(attempt.task.id), actions: [] }),
+          runId: "workflow-run",
+        });
       },
     },
     appRegistrySnapshot: { id: "agent-workflow-continuation", generation: 1,
@@ -1273,10 +1277,10 @@ it("does not release an agent handoff until its required workflow verifier is av
     role: (agent) => ({ agent, instructions: "Fixture" }),
     async execute() {
       agentCalls++;
-      return {
-        handlerResult: { state: "converged", summary: "Agent proposes completion", facts: [], actions: [] },
+      return Object.freeze({
+        handlerResult: Object.freeze({ state: "converged", summary: "Agent proposes completion", facts: [], actions: [] }),
         runId: null,
-      };
+      });
     },
   };
   const workflows: TaskWorkflowRunner = {
