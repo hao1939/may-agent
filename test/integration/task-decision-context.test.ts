@@ -222,7 +222,6 @@ test("current Task context reaches a late helper and survives settlement into a 
         descriptor,
         claim: active,
         executionPaths: { appDir, projectDir: root, workspaceDir: root },
-        declaredOutputPaths: [],
         childContext: { live: [], completed: [] },
         taskSnapshot: { live: [], truncated: false },
       });

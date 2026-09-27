@@ -3823,22 +3823,3 @@ export function deferAppTask(
   ];
   return { status: "applied", actionsApplied, reconcileTaskIds };
 }
-
-/** Exceptional workflow handoff and failure diagnostics share the normal retry transition. */
-export function markAppTaskAttention(
-  config: AppTaskContext,
-  claim: AppTaskClaim,
-  input: {
-    summary: string;
-    reason: string;
-    result?: Record<string, unknown>;
-    facts?: string[];
-  },
-): { status: "applied" | "stale"; summary: string; retryAt?: number | null } {
-  const failure = failAppTaskAttempt(config, claim, input.summary, { ...input, facts: input.facts ?? [] });
-  return {
-    status: failure.status === "superseded" ? "stale" : "applied",
-    summary: failure.summary,
-    retryAt: failure.retryAt,
-  };
-}

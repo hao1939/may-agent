@@ -14,7 +14,6 @@ import {
   cancelAppTask,
   completeAppTask,
   failAppTaskAttempt,
-  markAppTaskAttention,
   observeAppTaskIntent,
   readAppTaskAdmissionOutcome,
   recordAppTaskTrigger,
@@ -265,7 +264,7 @@ it.each(["executor failure", "rejected result"])("human input arriving during %s
   const retry =
     kind === "executor failure"
       ? failAppTaskAttempt(f.config, first, "Source unavailable")
-      : markAppTaskAttention(f.config, first, { summary: "Invalid result", reason: "InvalidHandlerResult" });
+      : failAppTaskAttempt(f.config, first, "Invalid result", { facts: [], reason: "InvalidHandlerResult" });
   expect(retry.retryAt).toBeNull();
   f.reopen();
   const report = readAppTaskAdmissionOutcome(f.config, "work", "ask:measure", "report");
@@ -289,8 +288,9 @@ it.each(["executor failure", "rejected result"])("human input arriving during %s
 it("keeps an internal workflow handoff quiet, then returns the agent failure through the shared path", () => {
   const f = fixture();
   const workflow = f.claim("workflow:measure");
-  markAppTaskAttention(f.config, workflow, {
-    summary: "Need agent judgment", reason: "needs-agent", facts: ["workflow:observation"],
+  failAppTaskAttempt(f.config, workflow, "Need agent judgment", {
+    reason: "needs-agent",
+    facts: ["workflow:observation"],
   });
   f.reopen();
   expect(readAppTaskAdmissionOutcome(f.config, "work", "ask:measure", "report")).toBeNull();
@@ -298,8 +298,9 @@ it("keeps an internal workflow handoff quiet, then returns the agent failure thr
   const agent = f.claim();
   expect(agent.handoff?.reason).toBe("needs-agent");
   expect(agent.events).toEqual(workflow.events);
-  markAppTaskAttention(f.config, agent, {
-    summary: "Agent result failed verification", reason: "HandlerResultInvalid", facts: ["verifier:rejected"],
+  failAppTaskAttempt(f.config, agent, "Agent result failed verification", {
+    reason: "HandlerResultInvalid",
+    facts: ["verifier:rejected"],
   });
   f.reopen();
   expect(readAppTaskAdmissionOutcome(f.config, "work", "ask:measure", "report"))
@@ -386,8 +387,8 @@ it.each(["omitted", "explicit", "execution"])(
     const next = f.claim();
     if (kind === "execution") failAppTaskAttempt(f.config, next, "Executor disconnected");
     else
-      markAppTaskAttention(f.config, next, {
-        summary: "Later result was rejected",
+      failAppTaskAttempt(f.config, next, "Later result was rejected", {
+        facts: [],
         reason: "HandlerResultInvalid",
         ...(kind === "explicit" ? { facts: ["result:invalid"] } : {}),
       });
