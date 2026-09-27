@@ -493,11 +493,6 @@ export function projectEventTargetForPath(path: string, fallbackProjectId: strin
   return projectName.endsWith(".app") ? projectName.slice(0, -".app".length) : fallbackProjectId;
 }
 
-export function projectPathsMatch(left: string | null | undefined, right: string | null | undefined): boolean {
-  if (!left || !right) return false;
-  return normalizeProjectPathForCompare(left) === normalizeProjectPathForCompare(right);
-}
-
 export function startWebUI(opts: WebUIOptions): { port: number } {
   const STATE_DIR = opts.stateDir;
   const PORT = opts.port;

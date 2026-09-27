@@ -12,7 +12,6 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
-  GITHUB_COPILOT_IDE_TOKEN_EXPIRED,
   executePreparedAgent,
   prepareAgentExecution,
   withGithubCopilotIdeTokenRecovery,
@@ -100,7 +99,7 @@ describe("GitHub Copilot IDE token recovery", () => {
     const originalMessages = context.messages;
     const options = { apiKey: "opaque-test-key" };
     const calls: Array<{ model: Model<any>; context: Context; options: unknown }> = [];
-    const boundedEnvelope = `OpenAI API error (401): {"message":"litellm.AuthenticationError: AuthenticationError: ${GITHUB_COPILOT_IDE_TOKEN_EXPIRED}\\n. Received Model Group=gpt-5.6-sol\\nAvailable Model Group Fallbacks=None","type":null,"param":null,"code":"401"}`;
+    const boundedEnvelope = `OpenAI API error (401): {"message":"litellm.AuthenticationError: AuthenticationError: Github_copilotException - IDE token expired: unauthorized: token expired\\n. Received Model Group=gpt-5.6-sol\\nAvailable Model Group Fallbacks=None","type":null,"param":null,"code":"401"}`;
     const provider: StreamFunction = (model, receivedContext, receivedOptions) => {
       calls.push({ model, context: receivedContext, options: receivedOptions });
       return model === streamTestModel

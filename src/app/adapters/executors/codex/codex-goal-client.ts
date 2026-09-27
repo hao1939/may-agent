@@ -474,13 +474,13 @@ export class CodexGoalAppServerClient {
 
     if (id !== null && typeof message.method === "string") {
       this.serverRequestCount += 1;
-      // The PoC never grants an approval or supplies interactive input. A
+      // This executor does not grant approvals or supply interactive input. A
       // production adapter must implement a small explicit server-request policy.
       this.write({
         id,
         error: {
           code: -32000,
-          message: `May Codex goal PoC does not handle server request ${message.method}`,
+          message: `May Codex goal executor does not handle server request ${message.method}`,
         },
       });
       return;

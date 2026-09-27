@@ -1,11 +1,12 @@
 import { describe, it, expect, beforeEach, afterEach } from "bun:test";
-import { mkdirSync, rmSync, existsSync } from "node:fs";
+import { mkdtempSync, rmSync, readFileSync } from "node:fs";
+import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { formatLastSession, writeLastSession, readLastSession, LAST_SESSION_FILENAME } from "./last-session.js";
+import { formatLastSession, writeLastSession, LAST_SESSION_FILENAME } from "./last-session.js";
 import type { LastSessionData } from "./last-session.js";
 
-const TEST_DIR = join(import.meta.dirname ?? ".", ".test-last-session");
-const AGENT_DIR = join(TEST_DIR, "agents", "coder");
+let testDir: string;
+let agentDir: string;
 
 function makeData(overrides: Partial<LastSessionData> = {}): LastSessionData {
   return {
@@ -86,38 +87,32 @@ describe("formatLastSession", () => {
   });
 });
 
-describe("writeLastSession / readLastSession", () => {
+describe("writeLastSession", () => {
   beforeEach(() => {
-    mkdirSync(AGENT_DIR, { recursive: true });
+    testDir = mkdtempSync(join(tmpdir(), "may-last-session-"));
+    agentDir = join(testDir, "agents", "coder");
   });
 
   afterEach(() => {
-    rmSync(TEST_DIR, { recursive: true, force: true });
+    rmSync(testDir, { recursive: true, force: true });
   });
 
-  it("writes and reads last-session.md", () => {
+  it("creates the agent directory and writes last-session.md", () => {
     const data = makeData();
-    writeLastSession(AGENT_DIR, data);
+    writeLastSession(agentDir, data);
 
-    const filePath = join(AGENT_DIR, LAST_SESSION_FILENAME);
-    expect(existsSync(filePath)).toBe(true);
-
-    const content = readLastSession(AGENT_DIR);
+    const filePath = join(agentDir, LAST_SESSION_FILENAME);
+    const content = readFileSync(filePath, "utf8");
     expect(content).toContain("# Last Session");
     expect(content).toContain("s_test_123");
     expect(content).toContain("Implemented feature X");
   });
 
-  it("returns null when file does not exist", () => {
-    const content = readLastSession(join(TEST_DIR, "nonexistent"));
-    expect(content).toBeNull();
-  });
-
   it("overwrites previous file", () => {
-    writeLastSession(AGENT_DIR, makeData({ summary: "First session" }));
-    writeLastSession(AGENT_DIR, makeData({ summary: "Second session" }));
+    writeLastSession(agentDir, makeData({ summary: "First session" }));
+    writeLastSession(agentDir, makeData({ summary: "Second session" }));
 
-    const content = readLastSession(AGENT_DIR);
+    const content = readFileSync(join(agentDir, LAST_SESSION_FILENAME), "utf8");
     expect(content).toContain("Second session");
     expect(content).not.toContain("First session");
   });

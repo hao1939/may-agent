@@ -153,7 +153,7 @@ export function stopConversationTaskTurn(config: AppTaskContext, target: AppTurn
   });
 }
 
-/** Source PoC boundary: input and its Task admission become visible in one commit. */
+/** Input and its Task admission become visible in one commit. */
 export function admitConversationTaskInput(
   config: AppTaskContext,
   input: CreateAppInboxItem & {

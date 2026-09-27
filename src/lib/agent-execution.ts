@@ -97,9 +97,6 @@ const SEQUENTIAL_TOOL_NAMES = new Set([
 ]);
 
 export const DEFAULT_MODEL_REQUEST_TIMEOUT_MS = 300_000;
-export const GITHUB_COPILOT_IDE_TOKEN_EXPIRED =
-  "Github_copilotException - IDE token expired: unauthorized: token expired";
-
 const GITHUB_COPILOT_IDE_TOKEN_EXPIRED_PATTERN =
   /Github_copilotException\s*-\s*IDE token expired:\s*unauthorized:\s*token expired/i;
 

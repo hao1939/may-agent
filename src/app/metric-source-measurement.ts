@@ -255,8 +255,6 @@ export async function measureSourceMetrics(options: {
   return { measured, skipped, failures };
 }
 
-export const measureSourceQueryMetrics = measureSourceMetrics;
-
 export type MetricSourceMeasurementRuntime = {
   idle(): Promise<void>;
 };

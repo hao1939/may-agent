@@ -3,7 +3,6 @@ import {
   extractMarkdownSection,
   normalizeProjectPathForCompare,
   projectEventTargetForPath,
-  projectPathsMatch,
 } from "./server.js";
 
 describe("extractMarkdownSection", () => {
@@ -41,19 +40,19 @@ describe("extractMarkdownSection", () => {
   });
 });
 
-describe("project path matching", () => {
-  it("matches Web UI paths against daemon project paths", () => {
-    expect(projectPathsMatch("agents/shared/projects/alpha-project", "projects/alpha-project")).toBe(true);
-    expect(projectPathsMatch("agents/shared/projects/alpha-project/project.md", "projects/alpha-project/")).toBe(true);
+describe("project paths", () => {
+  it("normalizes historical Web UI paths", () => {
+    expect(normalizeProjectPathForCompare("agents/shared/projects/alpha-project")).toBe("projects/alpha-project");
+    expect(normalizeProjectPathForCompare("agents/shared/projects/alpha-project/project.md")).toBe("projects/alpha-project");
     expect(normalizeProjectPathForCompare("./agents/shared/projects/alpha-project/project.md")).toBe(
       "projects/alpha-project",
     );
   });
 
   it("normalizes canonical project-root paths", () => {
+    expect(normalizeProjectPathForCompare("/app/projects/alpha-project")).toBe("projects/alpha-project");
+    expect(normalizeProjectPathForCompare("/app/agents/shared/projects/alpha-project")).toBe("projects/alpha-project");
     expect(normalizeProjectPathForCompare("/app/projects/alpha-project/project.md")).toBe("projects/alpha-project");
-    expect(projectPathsMatch("/app/projects/alpha-project", "projects/alpha-project/project.md")).toBe(true);
-    expect(projectPathsMatch("/app/agents/shared/projects/alpha-project", "projects/alpha-project")).toBe(true);
   });
 
   it("targets a loaded app id instead of its human-facing project identity", () => {

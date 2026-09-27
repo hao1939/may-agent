@@ -168,11 +168,6 @@ export function ensureSessionDir(persistDir: string, sessionId: string): void {
   mkdirSync(sessionDir(persistDir, sessionId), { recursive: true });
 }
 
-/** Check whether a session directory exists on disk. */
-export function sessionExists(persistDir: string, sessionId: string): boolean {
-  return existsSync(sessionDir(persistDir, sessionId));
-}
-
 // ── Transcript secret redaction ─────────────────────────────────────────
 // These patterns match secrets that leak into session transcripts via tool
 // output (e.g. `az account get-access-token`). They are applied at the
@@ -366,14 +361,6 @@ export function readSessionMessagesTail(
     return messages;
   } finally {
     closeSync(descriptor);
-  }
-}
-
-/** Delete the session JSONL file if it exists. */
-export function clearSessionMessages(persistDir: string, sessionId: string): void {
-  const filePath = sessionJsonlPath(persistDir, sessionId);
-  if (existsSync(filePath)) {
-    rmSync(filePath);
   }
 }
 
