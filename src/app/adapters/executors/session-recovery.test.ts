@@ -7,7 +7,7 @@ import { join } from "node:path";
 import { SubagentManager } from "../../../lib/manager.js";
 import { appendSessionMessage, readSessionMeta, writeSessionMeta } from "../../../lib/persistence.js";
 import { closeDb } from "../../../lib/requests.js";
-import { createContextUpdater, createLastSessionWriter } from "../../../lib/session-subscribers.js";
+import { createLastSessionWriter } from "../../../lib/session-subscribers.js";
 import { EventBus, type AgentEvent } from "../../core/events/bus.js";
 import { createTaskSessionRecovery } from "./session-recovery.js";
 
@@ -129,7 +129,6 @@ it.each(["interrupted", "done", "error"] as const)(
     const events: AgentEvent[] = [];
     bus.subscribe((event) => events.push(event));
     bus.subscribe(createLastSessionWriter(root));
-    bus.subscribe(createContextUpdater(root));
     // A fresh manager has no live owner; recovery uses only the durable record.
     const recovery = createTaskSessionRecovery({
       persistDir: root,
@@ -142,8 +141,11 @@ it.each(["interrupted", "done", "error"] as const)(
     ]);
     expect(readSessionMeta(root, sessionId)).toMatchObject({ status, agentRelativeDir: relativeDir });
     expect(readFileSync(join(localDir, "last-session.md"), "utf8")).toContain(sessionId);
-    if (status === "interrupted") expect(existsSync(join(localDir, "context.md"))).toBe(false);
-    else expect(readFileSync(join(localDir, "context.md"), "utf8")).toContain("Retained owner facts");
+    expect(existsSync(join(localDir, "context.md"))).toBe(false);
+    if (status !== "interrupted") {
+      const result = JSON.parse(readFileSync(join(root, "sessions", sessionId, "result.json"), "utf8"));
+      expect(result.finishParams.context_updates).toEqual([{ action: "add", content: "Retained owner facts" }]);
+    }
     for (const file of ["last-session.md", "context.md"])
       expect(readFileSync(join(globalDir, file), "utf8")).toBe("Global history\n");
     recovery.interrupt(sessionId, "Repeated recovery");
