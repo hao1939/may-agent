@@ -102,8 +102,9 @@ commit `e25e8351720c462f81f2ff8fd740728148bd7622`, SHA-256
 May finished the review Task as converged, with no active attempt or pending
 retry. The common design checks passed. Full local CI on unchanged `aab469a2`
 passed: **3,277 tests**, **16,029 assertions**, **0 failures**, and **3 expected
-installation-dependent skips** across 311 files. Hosted PR checks remain a
-separate gate; they are not implied by the local run.
+installation-dependent skips** across 311 files. GitHub Quality and Container
+also passed on that exact revision, run `36353225840`. These hosted checks
+validate source and an isolated image; they do not activate the installation.
 
 ## Reproduce and inspect
 
