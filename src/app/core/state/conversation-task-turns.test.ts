@@ -3,6 +3,7 @@ import { mkdtempSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { Type, defineApp, type ConversationTurnResult } from "@may-agent/sdk";
+import { Check } from "typebox/value";
 import { getDb, closeDb } from "../../../lib/requests.js";
 import { AppTaskResourceStore } from "./app-task-resource-store.js";
 import {
@@ -155,6 +156,10 @@ test("one Task executes real Conversation input and retains replies and Requests
               generation: claim.generation,
               attemptId: claim.attemptId,
             });
+            const quiet = { summary: "Observed", topic: { kind: "none" as const } };
+            expect(Check(execution.outputSchema, quiet)).toBe(false);
+            expect(() => completeConversationTaskTurn(f.context(), claim, quiet)).toThrow("result schema");
+            expect(f.store.readAttempt(claim.attemptId)?.acceptedResult).toBeUndefined();
             judgments++;
             return answer;
           },
@@ -385,9 +390,13 @@ test("a fresh attempt considers retained and newer input together and publishes 
     claim,
     app,
     signal: new AbortController().signal,
-    resolveConversationInput: async ({ inputContext: request }) => {
+    resolveConversationInput: async ({ inputContext: request, execution }) => {
       expect(request.id).toBe(correction.item.id);
+      expect(request.humanRequested).toBe(true);
       expect(request.inputs?.map(({ id }) => id)).toEqual([system.item.id, first.item.id, correction.item.id]);
+      const quiet = { summary: "Observed", topic: { kind: "none" as const } };
+      expect(Check(execution.outputSchema, quiet)).toBe(false);
+      expect(() => completeConversationTaskTurn(f.context(), claim, quiet)).toThrow("result schema");
       return decision;
     },
   });
@@ -471,7 +480,7 @@ test("follow-up admission rolls back with the explanation, Request and Task resu
   });
 });
 
-test("a system turn can stay quiet without hiding the accepted Task facts", async () => {
+test.each([false, true])("a system turn can stay quiet without hiding facts (human parent: %s)", async (humanParent) => {
   const f = fixture();
   const first = f.admit();
   completeConversationTaskTurn(f.context(), f.claim(first.taskId), decision);
@@ -479,6 +488,7 @@ test("a system turn can stay quiet without hiding the accepted Task facts", asyn
   const signal = admitConversationTaskInput(f.context(), {
     ...f.input("tick", 2),
     source: { kind: "system", id: "tick" },
+    ...(humanParent ? { parentId: first.item.id } : {}),
     input: { kind: "review", data: {} },
   });
   const claim = f.claim(signal.taskId);
@@ -487,15 +497,21 @@ test("a system turn can stay quiet without hiding the accepted Task facts", asyn
     claim,
     app,
     signal: new AbortController().signal,
-    resolveConversationInput: async ({ inputContext: request }) => {
+    resolveConversationInput: async ({ inputContext: request, execution }) => {
       expect(request.source.kind).toBe("system");
-      expect(request.humanRequested).toBeUndefined();
-      return { summary: "No material change", topic: { kind: "none" } };
+      expect(request.humanRequested).toBe(humanParent ? true : undefined);
+      const quiet: ConversationTurnResult = {
+        summary: "No material change", topic: { kind: "none" },
+        requestUpdates: [{ id: "retained", expectedRevision: 0, scope: "Retain the pending ask", disposition: "open" }],
+      };
+      expect(Check(execution.outputSchema, quiet)).toBe(true);
+      return quiet;
     },
   });
   expect(readAppConversationResource(f.db, app.id, "chat").messages).toEqual(before);
   expect(f.store.readAttempt(claim.attemptId)?.acceptedResult?.summary).toBe("No material change");
   expect(getAppInboxItem(f.db, "tick")?.status).toBe("done");
+  expect(readConversationRequest(f.db, app.id, "chat", "retained")?.status).toBe("open");
   expect(f.store.listRecoveryCandidates().items).toEqual([]);
 });
 

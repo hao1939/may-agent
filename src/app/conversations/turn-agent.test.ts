@@ -110,7 +110,9 @@ describe("conversational attempt contract", () => {
   async function attempt(
     current = request,
     app = may,
-    execution: Parameters<AppInputResolver>[0]["execution"] = {
+    execution: Omit<Parameters<AppInputResolver>[0]["execution"], "outputSchema"> & {
+      outputSchema?: Parameters<AppInputResolver>[0]["execution"]["outputSchema"];
+    } = {
       signal: new AbortController().signal,
       sessionStarted: () => {},
       taskBinding: { appId: app.id, taskId: "conversation", generation: 1, attemptId: "attempt" },
@@ -133,7 +135,9 @@ describe("conversational attempt contract", () => {
       snapshot: () => ({ entries: [app, owner].map((definition) => ({ appDir: definition.id, definition })) }),
     } as unknown as AppRegistry;
     const resolve = createConversationAgentResolver({ manager, registry, db });
-    expect(await resolve({ app, inputContext: current, execution })).toEqual(answer);
+    expect(await resolve({
+      app, inputContext: current, execution: { outputSchema: conversationTurnResultSchema, ...execution },
+    })).toEqual(answer);
     return { ...captured!, db, resolve, calls };
   }
 
@@ -221,6 +225,18 @@ describe("conversational attempt contract", () => {
       "Execution was stopped",
     );
     expect(writes).toBe(0);
+  });
+
+  it("passes the supplied result contract to execution without deriving policy from context", async () => {
+    const outputSchema = Type.Object({ response: Type.String() });
+    const execution = {
+      outputSchema, signal: new AbortController().signal, sessionStarted() {},
+      taskBinding: { appId: may.id, taskId: "conversation", generation: 1, attemptId: "attempt" },
+    };
+    for (const source of [{ kind: "human" as const, id: "ask" }, { kind: "system" as const, id: "tick" }]) {
+      const { options } = await attempt({ ...request, source, humanRequested: true }, may, execution);
+      expect(options.outputSchema).toBe(outputSchema);
+    }
   });
 
   it("offers one handoff schema, using the public Conversation contract", async () => {
@@ -383,6 +399,13 @@ describe("conversational attempt contract", () => {
             } },
           ];
           if (calls > 1) steps.splice(1, 4); // Read and verify retained effects; do not repeat the writes.
+          // The previous settlement bug ended the execution on this invalid
+          // result. The normal finish validator must leave it able to correct.
+          const validFinish = steps.at(-1)!;
+          steps.splice(steps.length - 1, 0, {
+            ...validFinish,
+            arguments: { ...validFinish.arguments, result: { ...decision, response: undefined } },
+          });
           let step = 0;
           let modelSteps = 0;
           const toolOutcomes: Array<{ name: string; failed: boolean }> = [];
@@ -411,7 +434,7 @@ describe("conversational attempt contract", () => {
           expect(execution.structuredResult).toEqual(decision);
           expect(modelSteps).toBe(steps.length);
           expect(toolOutcomes).toEqual(
-            steps.map((call, index) => ({ name: call.name, failed: calls === 1 && index === 3 })),
+            steps.map((call, index) => ({ name: call.name, failed: (calls === 1 && index === 3) || index === steps.length - 2 })),
           );
           expect(readFileSync(join(root, "note.txt"), "utf8")).toBe("A small typo: the.\n");
           expect(Check(options.outputSchema!, decision)).toBe(true);
