@@ -1,5 +1,21 @@
 # Changelog
 
+## [5.2.0](https://github.com/hao1939/may-agent/compare/v5.1.0...v5.2.0) (2026-09-27)
+
+
+### Features
+
+* **reporting:** expose task attempt populations and execution links ([#257](https://github.com/hao1939/may-agent/issues/257)) ([5474e22](https://github.com/hao1939/may-agent/commit/5474e2209f3fc6638eb4bc71e3e642afe31967d9))
+
+
+### Bug Fixes
+
+* **conversation:** derive active turns from current Task attempts ([#235](https://github.com/hao1939/may-agent/issues/235)) ([6afa50a](https://github.com/hao1939/may-agent/commit/6afa50a9111d7047d9afe90b598c314c2536534c))
+* **events:** recover App routing after translation failures ([#254](https://github.com/hao1939/may-agent/issues/254)) ([ed70d7e](https://github.com/hao1939/may-agent/commit/ed70d7e844690db934aa1a0528d379f2515a37f1))
+* **maintenance:** preserve declared event metadata ([#240](https://github.com/hao1939/may-agent/issues/240)) ([63dc0fe](https://github.com/hao1939/may-agent/commit/63dc0fed60ca30157814546ea7be5a33aec64047))
+* **release:** test the built image before publishing ([#249](https://github.com/hao1939/may-agent/issues/249)) ([671b690](https://github.com/hao1939/may-agent/commit/671b6900932767f639323b8fc701628b27740866))
+* **tools:** remove misleading options and retain exact session IDs ([#237](https://github.com/hao1939/may-agent/issues/237)) ([fc08f9f](https://github.com/hao1939/may-agent/commit/fc08f9fa74bb4c2de2a0636b9c5aa8ac7c6551e2))
+
 ## [5.1.0](https://github.com/hao1939/may-agent/compare/v5.0.1...v5.1.0) (2026-09-22)
 
 
