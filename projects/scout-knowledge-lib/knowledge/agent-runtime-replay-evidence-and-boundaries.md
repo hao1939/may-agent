@@ -1,8 +1,8 @@
 <ai_context>
-summary: "Companion to agent-runtime-unattended-execution-and-replay.md for replay evidence and boundary design: cut-point regression replay, interaction-identity preservation, model-fixture key scope, request-hashed host-call replay, and the separation of model, workspace, tool, effect, and evidence planes."
-triggers: ["agent replay", "cut-point replay", "Chronicle", "interaction replay", "Mutagen", "model fixture", "replay key", "Weft", "host-call replay", "Ovo", "offline replay", "OrcaReplay", "replay evidence", "replay boundary", "effect safety"]
-last_updated: "2026-09-26"
-source_basis: "Extracted intact from agent-runtime-unattended-execution-and-replay.md during its 2026-09-24 oversized-note review, then extended with pinned Weft implementation evidence about model-fixture key scope and ordering. Each section retains stable source links, pinned revisions where applicable, reproduced checks where performed, and explicit evidence limitations."
+summary: "Companion to agent-runtime-unattended-execution-and-replay.md for replay evidence and boundary design: operation-specific replay claims, cut-point regression replay, interaction-identity preservation, model-fixture key scope, request-hashed host-call replay, and the separation of model, workspace, tool, effect, and evidence planes."
+triggers: ["agent replay", "replay taxonomy", "GenOS", "cut-point replay", "Chronicle", "interaction replay", "Mutagen", "model fixture", "replay key", "Weft", "host-call replay", "Ovo", "offline replay", "OrcaReplay", "replay evidence", "replay boundary", "effect safety"]
+last_updated: "2026-09-27"
+source_basis: "Extracted intact from agent-runtime-unattended-execution-and-replay.md during its 2026-09-24 oversized-note review, then extended with pinned Weft and GenOS implementation evidence about replay scope, match keys, and claim vocabulary. Each section retains stable source links, pinned revisions where applicable, reproduced checks where performed, and explicit evidence limitations."
 </ai_context>
 
 # Agent Runtime Replay Evidence and Boundaries
@@ -13,6 +13,46 @@ effect settlement, accountable writes, desktop authorization, and workflow/host
 recovery. This note isolates what replay records must preserve, which boundaries a
 candidate revision should re-execute, and why deterministic replay does not establish
 external-effect safety.
+
+## “Replay” Needs an Operation-Specific Completion Vocabulary — GenOS (GitHub, September 2026)
+
+GenOS exposes several operations under the replay label, and their differences make
+a useful API-design pattern. Its trace endpoint sorts recorded spans, hashes their
+canonical representation, and returns them as `RECONSTRUCTED`; crucially, it also
+sets `replayVerified: false`, `qualityGuarantee: false`, and
+`requiresReexecution: true`. Its agent-state endpoint is a different operation: in
+preview mode it compares a snapshot digest with a projection of the current live
+row, while `apply: true` writes the snapshot fields and then re-reads the row before
+reporting `completed` or `verification_failed`. Neither path re-executes the agent's
+decisions or tools.
+
+A third “causal replay” service does less still. It partitions supplied events at
+checkpoint markers, selects the penultimate segment, and emits a success receipt,
+but the receipt explicitly says `stateRestored: false`; no state is restored and no
+event is re-executed. The run replay manifest likewise captures prompt, model,
+contract version, policies, budget, executable, workspace path, and only the
+**names** of allowed environment variables—not their values or digests. It is useful
+launch metadata, but not a content-complete reproduction capsule.
+
+**Runtime rule:** make replay completion predicates operation-specific and
+machine-readable. Distinguish at least `manifest-captured`, `trace-reconstructed`,
+`state-previewed`, `state-restored-and-read-back`, and `behavior-reexecuted`; attach
+the exact subject digest and explicit omitted inputs to each. A generic success
+receipt must not outrank a negative capability field such as `stateRestored: false`,
+and a deterministic hash over recorded output proves reconstruction identity, not
+behavioral equivalence or external-effect safety.
+
+This assessment is static inspection of one pinned revision. Repository-authored
+tests assert the trace caveats, manifest secret-name filtering, and snapshot/live
+hash comparison, but Scout could not execute them because the downloaded archive
+lacked installed `sqlite3` and `protobufjs` dependencies. The repository had one
+star at discovery; these are inspectable interface semantics, not evidence that the
+large runtime is production-ready or that its replay paths are complete.
+
+- **Repo:** https://github.com/PISSARAW/GenOS
+- **Inspected revision:** [`5b9d296bec36f6928225cdc6281a03eb61dc5fe5`](https://github.com/PISSARAW/GenOS/commit/5b9d296bec36f6928225cdc6281a03eb61dc5fe5)
+- **Primary sources:** [trace reconstruction and explicit non-guarantees](https://github.com/PISSARAW/GenOS/blob/5b9d296bec36f6928225cdc6281a03eb61dc5fe5/backend/src/controllers/traceController.js), [snapshot preview/apply verification](https://github.com/PISSARAW/GenOS/blob/5b9d296bec36f6928225cdc6281a03eb61dc5fe5/backend/src/controllers/lineage/replay.js), [checkpoint selection without restoration](https://github.com/PISSARAW/GenOS/blob/5b9d296bec36f6928225cdc6281a03eb61dc5fe5/backend/src/services/search/causalReplayService.js), [run-manifest field coverage](https://github.com/PISSARAW/GenOS/blob/5b9d296bec36f6928225cdc6281a03eb61dc5fe5/backend/src/services/agentProcessOutcome.js), and [trace semantics test](https://github.com/PISSARAW/GenOS/blob/5b9d296bec36f6928225cdc6281a03eb61dc5fe5/backend/tests/test_trace_replay_semantics.js)
+- **Discovery query:** GitHub Repository Search API `topic:ai-agents pushed:>=2026-09-20`, sorted by updated; `total_count: 19916`, `incomplete_results: false`
 
 ## Cut-Point Replay Turns Incidents Into Boundary-Explicit Regression Tests — Chronicle (arXiv, September 2026)
 
