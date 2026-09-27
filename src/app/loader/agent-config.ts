@@ -17,10 +17,6 @@ export interface AgentConfig {
   contextPreparation?: string;
   /** Block direct delegation to specific agents via agents tool. */
   delegateDeny?: { agents: string[]; hint: string };
-  /** @deprecated Volatile context should be injected at session time, not in system prompt. */
-  context_files?: string[];
-  /** @deprecated Ignored compatibility field from pre-catalog snapshots. */
-  skillActivationRules?: unknown;
 }
 
 export interface ValidationError {

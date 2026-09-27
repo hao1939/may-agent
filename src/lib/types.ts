@@ -64,12 +64,6 @@ export interface SubagentDefinition {
   /** Loader-captured entrypoint identity; not an App-supplied metric label. */
   contextPreparationSource?: { path: string; entryHash: string };
 
-  /**
-   * @deprecated Volatile files should be injected as session context, not system prompt.
-   * Kept while older agent.json files migrate away from context_files.
-   */
-  contextFiles?: string[];
-
   /** Validated skill snapshot retained with this definition by each live session. */
   skillCatalog?: SkillCatalog;
 

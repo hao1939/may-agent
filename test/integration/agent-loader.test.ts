@@ -109,7 +109,7 @@ describe("validateAgentConfig", () => {
     expect(errors.some((e) => e.field === "tools" && e.message.includes("fly-to-moon"))).toBe(true);
   });
 
-  it("ignores retired keyword activation data from an older immutable snapshot", () => {
+  it("accepts retired context and skill fields in older configuration", () => {
     const config = {
       name: "test",
       description: "test",
@@ -117,6 +117,7 @@ describe("validateAgentConfig", () => {
       model: "claude-opus-4-6",
       tools: ["coding"],
       skillActivationRules: [{ skill: "proof-first", pattern: "roll(?:out| out).*(?:all|every) agents" }],
+      context_files: ["missing-retired-context.md"],
     } as AgentConfig;
     const errors = validateAgentConfig(config, fakeModels, AGENTS_ROOT);
     expect(errors).toEqual([]);
@@ -288,7 +289,7 @@ describe("agent loader boundaries", () => {
     }
   });
 
-  it("loads project-local agents with the project directory as projectRoot", async () => {
+  it("loads a legacy project-local configuration without retired execution metadata", async () => {
     const root = mkdtempSync(join(tmpdir(), "agent-loader-project-agent-"));
     try {
       const agentsRoot = join(root, "agents");
@@ -308,6 +309,8 @@ describe("agent loader boundaries", () => {
           domain: "AKS e2e",
           model: "claude-opus-4-6",
           tools: ["query_db"],
+          context_files: ["missing-retired-context.md"],
+          skillActivationRules: [{ skill: "old-skill", pattern: ".*" }],
         }),
       );
 
@@ -333,6 +336,8 @@ describe("agent loader boundaries", () => {
       expect(registered[0].agentDir).toBe(projectAgentDir);
       expect(registered[0].workspace).toBe(join(projectAgentDir, "workspace"));
       expect(registered[0].projectRoot).toBe(projectDir);
+      expect(registered[0]).not.toHaveProperty("contextFiles");
+      expect(registered[0]).not.toHaveProperty("skillActivationRules");
     } finally {
       rmSync(root, { recursive: true, force: true });
     }
