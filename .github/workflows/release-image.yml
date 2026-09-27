@@ -27,8 +27,9 @@ concurrency:
 
 jobs:
   publish:
-    name: Build and publish GHCR image
+    name: Test and publish GHCR image
     runs-on: ubuntu-24.04
+    timeout-minutes: 30
     steps:
       - name: Resolve release tag
         id: release
@@ -62,15 +63,8 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
 
-      - name: Log in to GHCR
-        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Build and push release image
-        id: image
+      - name: Build the release image locally
+        id: build
         uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
         env:
           # Do not publish the raw webhook through provenance or build records.
@@ -80,7 +74,7 @@ jobs:
         with:
           context: .
           file: container/Dockerfile
-          push: true
+          load: true
           provenance: false
           tags: |
             ghcr.io/${{ github.repository }}:${{ steps.release.outputs.tag }}
@@ -88,6 +82,43 @@ jobs:
           build-args: MAY_AGENT_BUILD_COMMIT=${{ steps.source.outputs.commit }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+      - name: Exercise the release image before publication
+        run: bash scripts/ci-container-smoke.sh "ghcr.io/$GITHUB_REPOSITORY:$RELEASE_TAG" "$SOURCE_COMMIT"
+        env:
+          RELEASE_TAG: ${{ steps.release.outputs.tag }}
+          SOURCE_COMMIT: ${{ steps.source.outputs.commit }}
+
+      - name: Log in to GHCR
+        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Push the tested image
+        id: image
+        env:
+          RELEASE_TAG: ${{ steps.release.outputs.tag }}
+        run: |
+          image="ghcr.io/$GITHUB_REPOSITORY"
+          docker push "$image:$RELEASE_TAG"
+          # Docker records the registry digest of the image just pushed. Use it
+          # rather than the pre-export Buildx digest or a later tag lookup.
+          published=$(docker image inspect --format '{{index .RepoDigests 0}}' "$image:$RELEASE_TAG")
+          digest="${published#"$image@"}"
+          [[ "$published" == "$image@"* && "$digest" =~ ^sha256:[a-f0-9]{64}$ ]]
+          docker push "$image:latest"
+          echo "digest=$digest" >> "$GITHUB_OUTPUT"
+
+      - name: Keep release image diagnostics, including failures
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: release-container-results
+          path: test-results/
+          if-no-files-found: warn
+          retention-days: 7
 
       - name: Link published image from the GitHub release
         id: release-notes
