@@ -149,5 +149,3 @@ export function createReadTool(cwd: string, options?: ReadToolOptions): AgentToo
     },
   };
 }
-
-export const readTool = createReadTool(process.cwd());

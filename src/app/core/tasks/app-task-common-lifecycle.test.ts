@@ -85,7 +85,7 @@ function fixture() {
   };
 }
 
-describe("common Task lifecycle source PoC", () => {
+describe("common Task lifecycle", () => {
   it("keeps rejected result evidence when a repair is interrupted and retires it after an accepted answer", () => {
     const f = fixture();
     const first = f.claim();

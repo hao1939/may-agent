@@ -36,8 +36,8 @@ export interface CompactionOptions {
 }
 
 /**
- * Structured key facts extracted from messages. Sets let compaction merge facts
- * across rounds without duplicating "Files read" text.
+ * Structured key facts extracted from one compacted prefix. Sets avoid duplicate
+ * file paths within that prefix; previous rounds remain in the saved summary.
  */
 export interface KeyFacts {
   filesRead: Set<string>;
@@ -215,35 +215,6 @@ export function extractKeyFacts(messages: AgentMessage[]): KeyFacts {
   }
 
   return facts;
-}
-
-export function mergeKeyFacts(a: Partial<KeyFacts>, b: Partial<KeyFacts>): KeyFacts {
-  const merged = emptyFacts();
-
-  for (const value of a.filesRead ?? []) merged.filesRead.add(value);
-  for (const value of b.filesRead ?? []) merged.filesRead.add(value);
-  for (const value of a.filesWritten ?? []) merged.filesWritten.add(value);
-  for (const value of b.filesWritten ?? []) merged.filesWritten.add(value);
-  for (const value of a.filesEdited ?? []) merged.filesEdited.add(value);
-  for (const value of b.filesEdited ?? []) merged.filesEdited.add(value);
-
-  const calls = [...(a.agentCalls ?? []), ...(b.agentCalls ?? [])];
-  const seenCalls = new Set<string>();
-  for (const call of calls) {
-    const key = `${call.agent}\0${call.task}`;
-    if (seenCalls.has(key)) continue;
-    seenCalls.add(key);
-    merged.agentCalls.push(call);
-  }
-
-  const byCommand = new Map<string, { command: string; failed: boolean }>();
-  for (const command of [...(a.execCommands ?? []), ...(b.execCommands ?? [])]) {
-    byCommand.delete(command.command);
-    byCommand.set(command.command, command);
-  }
-  merged.execCommands = [...byCommand.values()].slice(-MAX_EXEC_COMMANDS_IN_FACTS);
-
-  return merged;
 }
 
 export function formatKeyFacts(facts: Partial<KeyFacts>): string[] {

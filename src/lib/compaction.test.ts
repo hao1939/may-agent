@@ -3,7 +3,6 @@ import {
   createCompactionTransform,
   trimAccumulatedSummary,
   extractKeyFacts,
-  mergeKeyFacts,
   formatKeyFacts,
   extractOriginalTask,
 } from "./compaction.js";
@@ -948,73 +947,11 @@ describe("extractKeyFacts", () => {
   });
 });
 
-// ── mergeKeyFacts unit tests ───────────────────────────────────────────
-
-describe("mergeKeyFacts", () => {
-  it("unions file sets from both rounds", () => {
-    const a: KeyFacts = {
-      filesRead: new Set(["a.ts"]),
-      filesWritten: new Set(["b.ts"]),
-      execCommands: [],
-    };
-    const b: KeyFacts = {
-      filesRead: new Set(["c.ts"]),
-      filesWritten: new Set(["d.ts"]),
-      execCommands: [],
-    };
-
-    const merged = mergeKeyFacts(a, b);
-    expect(merged.filesRead).toEqual(new Set(["a.ts", "c.ts"]));
-    expect(merged.filesWritten).toEqual(new Set(["b.ts", "d.ts"]));
-  });
-
-  it("deduplicates exec commands by command string, keeping latest outcome", () => {
-    const a: KeyFacts = {
-      filesRead: new Set(),
-      filesWritten: new Set(),
-      execCommands: [{ command: "npm test", failed: true }],
-    };
-    const b: KeyFacts = {
-      filesRead: new Set(),
-      filesWritten: new Set(),
-      execCommands: [{ command: "npm test", failed: false }],
-    };
-
-    const merged = mergeKeyFacts(a, b);
-    expect(merged.execCommands).toHaveLength(1);
-    expect(merged.execCommands[0]).toEqual({ command: "npm test", failed: false });
-  });
-
-  it("caps exec commands at 15, dropping oldest", () => {
-    const a: KeyFacts = {
-      filesRead: new Set(),
-      filesWritten: new Set(),
-      execCommands: Array.from({ length: 10 }, (_, i) => ({
-        command: `cmd_a_${i}`,
-        failed: false,
-      })),
-    };
-    const b: KeyFacts = {
-      filesRead: new Set(),
-      filesWritten: new Set(),
-      execCommands: Array.from({ length: 10 }, (_, i) => ({
-        command: `cmd_b_${i}`,
-        failed: false,
-      })),
-    };
-
-    const merged = mergeKeyFacts(a, b);
-    expect(merged.execCommands.length).toBeLessThanOrEqual(15);
-    // Should keep the newest commands (from b)
-    expect(merged.execCommands.some((c) => c.command === "cmd_b_9")).toBe(true);
-  });
-});
-
 // ── formatKeyFacts unit tests ──────────────────────────────────────────
 
 describe("formatKeyFacts", () => {
   it("formats files and exec commands", () => {
-    const facts: KeyFacts = {
+    const facts: Partial<KeyFacts> = {
       filesRead: new Set(["a.ts", "b.ts"]),
       filesWritten: new Set(["c.ts"]),
       execCommands: [
@@ -1033,7 +970,7 @@ describe("formatKeyFacts", () => {
 
   it("truncates long commands", () => {
     const longCmd = "A".repeat(200);
-    const facts: KeyFacts = {
+    const facts: Partial<KeyFacts> = {
       filesRead: new Set(),
       filesWritten: new Set(),
       execCommands: [{ command: longCmd, failed: false }],
@@ -1046,7 +983,7 @@ describe("formatKeyFacts", () => {
   });
 
   it("returns empty array for empty facts", () => {
-    const facts: KeyFacts = {
+    const facts: Partial<KeyFacts> = {
       filesRead: new Set(),
       filesWritten: new Set(),
       execCommands: [],

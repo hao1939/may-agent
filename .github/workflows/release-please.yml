@@ -13,6 +13,7 @@ jobs:
       contents: write
       issues: write
       pull-requests: write
+      actions: write
     outputs:
       release_created: ${{ steps.release.outputs.release_created }}
       tag_name: ${{ steps.release.outputs.tag_name }}
@@ -22,6 +23,23 @@ jobs:
         uses: googleapis/release-please-action@45996ed1f6d02564a971a2fa1b5860e934307cf7 # v5
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
+
+      # GITHUB_TOKEN-created PR events do not start CI. Explicit dispatch uses
+      # the existing read-only workflow and checks the release branch itself.
+      - name: Check the release PR
+        if: steps.release.outputs.prs_created == 'true'
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        env:
+          RELEASE_PRS: ${{ steps.release.outputs.prs }}
+        with:
+          script: |
+            for (const pr of JSON.parse(process.env.RELEASE_PRS)) {
+              await github.rest.actions.createWorkflowDispatch({
+                ...context.repo,
+                workflow_id: "ci.yml",
+                ref: pr.headBranchName,
+              });
+            }
 
   publish-image:
     name: Publish release image
