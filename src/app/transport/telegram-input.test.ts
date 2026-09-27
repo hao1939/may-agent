@@ -21,8 +21,14 @@ import type { AppInputContext } from "@may-agent/sdk";
 import type { EventInput } from "@may-agent/control/events";
 import type { HumanTaskView } from "../human-task-service.js";
 import { resolveTaskReference } from "../core/state/task-reference-index.js";
-import { createAppInboxItem, stopAppInboxTurn, getAppInboxItem } from "../core/state/app-inbox-store.js";
-import { claimNextAppInboxItem } from "../../../test/fixtures/legacy-inbox.js";
+import { createAppInboxItem, getAppInboxItem } from "../core/state/app-inbox-store.js";
+import {
+  admitConversationTaskInput,
+  conversationTaskIntent,
+  stopConversationTaskTurn,
+} from "../core/state/conversation-task-turns.js";
+import { claimObservedAppTask } from "../core/tasks/app-task-reconciler.js";
+import { conversationTaskContext } from "../../../test/fixtures/conversation-task.js";
 import { createConversationTopic, linkConversationTopicTask, readAppConversationResource } from "../core/state/conversations.js";
 import { EVENT_ROW_ID, EventBus } from "../core/events/bus.js";
 import {
@@ -100,12 +106,14 @@ function durableTelegramFixture() {
     const data = event.data as Record<string, any>;
     if (event.type === "conversation.message.created" && data.author?.kind === "human") {
       if (admissionBlocked) throw new Error("fixture admission unavailable after event recording");
-      createAppInboxItem(getDb(root), {
+      const config = conversationTaskContext(getDb(root), root);
+      admitConversationTaskInput(config, {
         id: data.author.id, appId: "may", conversationId: data.conversationId,
         conversationSequence: Number(event[EVENT_ROW_ID]), source: { kind: "human", id: data.author.id },
         input: { kind: "message", data: { message: data.text, context: data.context } },
         channel: "telegram", channelTargetId: data.metadata.channelTargetId,
         channelThreadId: data.metadata.channelThreadId, channelMessageId: data.metadata.channelMessageId,
+        intent: conversationTaskIntent(config),
       });
       admitted.push(data.text);
     }
@@ -551,7 +559,11 @@ describe("Telegram durable input and natural follow-up", () => {
         conversationId: "may:primary", author: { kind: "human", id: "active" }, text: "Review changes",
         metadata: { channel: "telegram", channelTargetId: "123", channelThreadId: storedThreadId, channelMessageId: 42 },
       } });
-      claimNextAppInboxItem(f.db, "may", "fixture", 60_000);
+      const config = conversationTaskContext(f.db, f.root);
+      const claim = claimObservedAppTask(config, {
+        taskId: getAppInboxItem(f.db, "active")!.executionTaskId!, appAgent: "may", handler: "executor:conversation",
+      });
+      expect(claim.kind).toBe("claimed");
       f.hold((body) => body.text.startsWith("Task first") ? blocked.promise : Promise.resolve());
       f.message(100, "/task first", { message_thread_id: providerThreadId });
       await waitFor(() => f.sends().some((c) => c.body.text === "May is working on this message."));
@@ -565,7 +577,7 @@ describe("Telegram durable input and natural follow-up", () => {
       await waitFor(() => f.sends().some((c) => c.body.text.includes("hasn't changed running work")));
       f.afterRecord((input) => {
         if (input.type === "conversation.turn.stop.requested") {
-          stopAppInboxTurn(f.db, { appId: "may", ...input.data } as Parameters<typeof stopAppInboxTurn>[1]);
+          stopConversationTaskTurn(config, { appId: "may", ...input.data } as Parameters<typeof stopConversationTaskTurn>[1]);
         }
       });
       f.send([{ update_id: 102, callback_query: { id: "stop", data: control.body.reply_markup.inline_keyboard[0][0].callback_data,

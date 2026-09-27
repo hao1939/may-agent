@@ -8,8 +8,15 @@ import { AppTaskResourceStore } from "./app-task-resource-store.js";
 import { appTaskContext, claimObservedAppTask } from "../tasks/app-task-reconciler.js";
 import { AppInboxHost } from "../inbox/app-inbox-host.js";
 import { prepareConversationTaskTurn } from "../../composition/conversation-task-turn.js";
-import { createAppInboxItem, getAppInboxItem, stopAppInboxTurn } from "./app-inbox-store.js";
-import { assertAppInboxClaim, claimAppInboxItem, claimNextAppInboxItem, completeAppInboxClaim, recordAppInboxHandling } from "../../../../test/fixtures/legacy-inbox.js";
+import { createAppInboxItem, getAppInboxItem } from "./app-inbox-store.js";
+import {
+  stopAppInboxTurn,
+  assertAppInboxClaim,
+  claimAppInboxItem,
+  claimNextAppInboxItem,
+  completeAppInboxClaim,
+  recordAppInboxHandling,
+} from "../../../../test/fixtures/legacy-inbox.js";
 import { createConversationTopic } from "./conversations.js";
 import { applyConversationRequestUpdates, readConversationRequest } from "./conversation-requests.js";
 import {

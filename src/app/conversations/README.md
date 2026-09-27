@@ -90,6 +90,15 @@ state records the stop before local execution is aborted, rejects late output,
 and preserves newer input and the accepted ask. Delegated Tasks continue.
 Closing the stable Task is a separate authorized owner action.
 
+The Conversation read view derives its active Turn and Stop target from the
+current Task attempt, including a successor after an owner closed earlier work.
+The reader follows retained Task links and selects a running current attempt;
+it does not treat the first historical link as the current owner.
+Retained inbox leases remain historical evidence for inspection and offline
+cutover; they cannot advertise an active Turn. HTTP and Telegram reads use that
+same projection, and Telegram control tests exercise Task admission, claims and
+Stop through the shared Task operations.
+
 For delegated requirement changes, the Conversation agent uses the common
 `tasks update` capability described in the [Task contract](../core/tasks/README.md#adopting-creator-revisions).
 It first saves any accepted human correction in the Request, then revises work

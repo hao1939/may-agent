@@ -3,8 +3,13 @@ import { mkdtempSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { getDb, closeDb } from "../../lib/requests.js";
-import { createAppInboxItem, stopAppInboxTurn } from "../core/state/app-inbox-store.js";
-import { claimNextAppInboxItem } from "../../../test/fixtures/legacy-inbox.js";
+import {
+  admitConversationTaskInput,
+  conversationTaskIntent,
+  stopConversationTaskTurn,
+} from "../core/state/conversation-task-turns.js";
+import { claimObservedAppTask } from "../core/tasks/app-task-reconciler.js";
+import { conversationTaskContext } from "../../../test/fixtures/conversation-task.js";
 import { EventBus } from "../core/events/bus.js";
 import { attachTelegramBot } from "./telegram.js";
 
@@ -85,18 +90,24 @@ test("Telegram Stop buttons retain exact turns, reject old/unauthorized controls
   const priorToken = process.env.TELEGRAM_BOT_TOKEN;
   const priorChat = process.env.TELEGRAM_CHAT_ID;
   const db = getDb(root);
+  const config = conversationTaskContext(db, root);
   const startTurn = (id: string, sequence: number) => {
-    createAppInboxItem(db, {
+    const admitted = admitConversationTaskInput(config, {
       id,
       appId: "may",
       conversationId: "may:primary",
       conversationSequence: sequence,
       source: { kind: "human", id },
       input: { kind: "message", data: {} },
+      intent: conversationTaskIntent(config),
     });
-    return claimNextAppInboxItem(db, "may", "fixture", 60_000, Date.now())!;
+    const claim = claimObservedAppTask(config, {
+      taskId: admitted.taskId, appAgent: "may", handler: "executor:conversation",
+    });
+    if (claim.kind !== "claimed") throw new Error(`Expected Task claim, got ${claim.kind}`);
+    return claim;
   };
-  startTurn("first", 1);
+  const firstClaim = startTurn("first", 1);
   let wake: (() => void) | undefined;
   const updates: any[] = [];
   const calls: Array<{ method: string; body: any }> = [];
@@ -129,7 +140,7 @@ test("Telegram Stop buttons retain exact turns, reject old/unauthorized controls
       events.push(input);
       if (input.type === "conversation.turn.stop.requested") {
         if (failPublish) throw new Error("store unavailable");
-        stopAppInboxTurn(db, { appId: "may", ...input.data } as Parameters<typeof stopAppInboxTurn>[1]);
+        stopConversationTaskTurn(config, { appId: "may", ...input.data } as Parameters<typeof stopConversationTaskTurn>[1]);
       }
       return { eventId: events.length, eventType: input.type, delivery: "accepted" };
     },
@@ -163,7 +174,7 @@ test("Telegram Stop buttons retain exact turns, reject old/unauthorized controls
     expect(events.at(-1)).toMatchObject({
       type: "conversation.turn.stop.requested",
       target: { appId: "may" },
-      data: { conversationId: "may:primary", turnId: "first", expectedRevision: 1 },
+      data: { conversationId: "may:primary", turnId: firstClaim.attemptId, expectedRevision: firstClaim.generation },
     });
     expect(
       calls.some(
