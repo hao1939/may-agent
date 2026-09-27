@@ -217,7 +217,7 @@ describe("direct agent tool policy", () => {
       });
 
       expect(parityView(direct.prepared)).toEqual(parityView(hosted));
-      expect(direct.prepared.systemPrompt).toContain(`- Current time: ${timestamp}`);
+      expect(direct.prepared.systemPrompt).toContain(`- Environment captured at: ${timestamp}`);
       expect(direct.prepared.systemPrompt).toContain("[context](context.md)");
       expect(direct.prepared.systemPrompt).not.toContain("Supporting context is read on demand.");
     } finally {

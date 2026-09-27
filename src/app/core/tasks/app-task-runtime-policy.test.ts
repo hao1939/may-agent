@@ -1,17 +1,8 @@
 import { describe, expect, it } from "bun:test";
-import { appTaskAgentProtocol } from "../../adapters/executors/managed-agent.js";
 import { mergeTaskConditions } from "./dependency-admission.js";
 import { normalizeTaskHandlerResult } from "./result.js";
 
-// Pure projection and protocol rules need neither a repository nor a database.
-describe("App Task agent prompt context", () => {
-  it("keeps the schema-enforced bounded-agent protocol below five kilobytes", () => {
-    const protocol = appTaskAgentProtocol("may");
-
-    expect(Buffer.byteLength(protocol, "utf8")).toBeLessThanOrEqual(5 * 1_024);
-    expect(protocol).toContain("agent pursuing one Task goal owned by App may");
-  });
-
+describe("App Task Condition admission", () => {
   it("lets an App reject Conditions it cannot meaningfully observe", () => {
     const normalized = normalizeTaskHandlerResult(
       {

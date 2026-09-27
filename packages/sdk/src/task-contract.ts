@@ -1,5 +1,6 @@
 import { Type, type TSchema } from "typebox";
 import { Check, Errors } from "typebox/value";
+import { appInputSchema } from "./app-input.js";
 import type { Condition, TaskAction, TaskAppDependency, TaskReconcileResult, TaskVerificationResult } from "./task.js";
 
 export const MIN_CONDITION_REVIEW_AFTER_MS = 60_000;
@@ -39,10 +40,13 @@ export const taskActionSchema = Type.Union([
     {
       kind: Type.Literal("retire-condition"),
       conditionId: nonEmptyStringSchema,
-      expectedConditionGeneration: Type.Integer({ minimum: 1 }),
+      expectedConditionGeneration: Type.Integer({ minimum: 1, description: "Observed OpenWait.conditionGeneration." }),
       reason: nonEmptyStringSchema,
     },
-    { additionalProperties: false },
+    {
+      additionalProperties: false,
+      description: "Withdraw only this Task’s wait link; external facts and approvals are unchanged.",
+    },
   ),
 ]);
 
@@ -57,11 +61,19 @@ export const conditionSchema = Type.Object(
     }),
     subject: typedConditionSubjectSchema,
     expected: Type.Unknown(),
-    requestedAction: Type.Optional(nonEmptyStringSchema),
+    requestedAction: Type.Optional(
+      Type.String({ minLength: 1, description: "Needed action; use a delivery capability to contact its owner." }),
+    ),
     owner: conditionOwnerSchema,
-    reviewAfterMs: Type.Integer({ minimum: MIN_CONDITION_REVIEW_AFTER_MS }),
+    reviewAfterMs: Type.Integer({
+      minimum: MIN_CONDITION_REVIEW_AFTER_MS,
+      description: "Reconsider after this interval; no notification or repair is performed.",
+    }),
   },
-  { additionalProperties: false },
+  {
+    additionalProperties: false,
+    description: "Known observable fact. Reuse its ID and compatible specification when revising the interval.",
+  },
 );
 
 const resultFields = {
@@ -79,7 +91,7 @@ const resultFields = {
           id: nonEmptyStringSchema,
           appId: nonEmptyStringSchema,
           taskId: Type.Optional(nonEmptyStringSchema),
-          input: Type.Object({ kind: nonEmptyStringSchema, data: Type.Unknown() }, { additionalProperties: false }),
+          input: appInputSchema,
         },
         { additionalProperties: false },
       ),
@@ -96,7 +108,11 @@ export const taskAgentResultSchema = Type.Union(
   [
     Type.Object(
       { state: Type.Literal("converged"), ...resultFields, response: Type.Optional(nonEmptyStringSchema) },
-      { additionalProperties: false },
+      {
+        additionalProperties: false,
+        description:
+          "Facts support an answer or completed work for the considered input. Include response when owed. Convergence is not closure; unrelated open children need not prevent an answer.",
+      },
     ),
     Type.Object(
       {
@@ -109,13 +125,20 @@ export const taskAgentResultSchema = Type.Union(
           }),
         ),
       },
-      { additionalProperties: false },
+      {
+        additionalProperties: false,
+        description:
+          "Keep input open. Continue useful work or sleep on a saved wait, exact Condition, typed dependency or review time. Omit unchanged waits; existing obligations remain.",
+      },
     ),
     Type.Object(
       {
         state: Type.Literal("waiting"),
         ...resultFields,
-        report: Type.Literal(true),
+        report: Type.Literal(true, {
+          description:
+            "Return new caller-relevant progress or a blocker with facts. Existing independent waits remain; omit for an unchanged quiet wait.",
+        }),
         continue: Type.Optional(
           Type.Literal(true, {
             description:
@@ -129,16 +152,28 @@ export const taskAgentResultSchema = Type.Union(
     Type.Object(
       {
         state: Type.Literal("incomplete"),
-        report: Type.Optional(Type.Literal(true)),
+        report: Type.Optional(
+          Type.Literal(true, {
+            description: "Return a new caller-relevant update after an earlier report; omit for unchanged failure.",
+          }),
+        ),
         summary: nonEmptyStringSchema,
         response: Type.Optional(nonEmptyStringSchema),
-        result: Type.Optional(objectSchema),
+        result: resultFields.result,
         facts: Type.Array(nonEmptyStringSchema, { minItems: 1, maxItems: 32 }),
       },
-      { additionalProperties: false },
+      {
+        additionalProperties: false,
+        description:
+          "An unsuccessful attempt. Include partial work, failure evidence and unresolved effects. The assignment remains pending under paced recovery until its owner revises or closes it. Existing saved obligations are preserved.",
+      },
     ),
   ],
-  { $id: TASK_AGENT_RESULT_SCHEMA_ID },
+  {
+    $id: TASK_AGENT_RESULT_SCHEMA_ID,
+    description:
+      "Report one Task attempt against its goal and acceptance. Put supported progress, limitations and exact evidence links in facts; partial output may be retained in result. Existing independent obligations survive omitted fields. Supported observations settle Conditions; authorized decisions supply approval. Feedback is evidence to assess. The Host persists and delivers results; the App judges outcomes. Waiting may set reviewAt (Unix milliseconds) without changing Condition intervals. Dependencies request independently owned Task results: reuse stable id and exact taskId when applicable. Host publishes and correlates; blocked retains the wait, done returns an answer or owner closure. Parent links organize work; dependsOn gates execution. Use ordinary helper calls for bounded contributions.",
+  },
 );
 
 /** @deprecated Use `taskAgentResultSchema`. */

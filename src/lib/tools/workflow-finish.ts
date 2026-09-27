@@ -22,8 +22,8 @@ function addRequiredResult(base: TSchema, result: TSchema): TSchema {
 }
 
 /**
- * Adapt the existing finish tool into the single terminal tool for a workflow
- * step. When supplied, outputSchema becomes the required finish().result.
+ * Apply the caller's completion contract to the existing terminal tool.
+ * When supplied, outputSchema becomes the required finish().result.
  */
 export function createWorkflowFinishTool(baseFinish: AgentTool, outputSchema?: TSchema): AgentTool {
   const parameters = outputSchema ? addRequiredResult(baseFinish.parameters, outputSchema) : baseFinish.parameters;
@@ -31,8 +31,8 @@ export function createWorkflowFinishTool(baseFinish: AgentTool, outputSchema?: T
   return {
     ...baseFinish,
     description: outputSchema
-      ? `${baseFinish.description} This workflow step requires a caller-defined result payload matching the result schema.`
-      : `${baseFinish.description} This workflow step must terminate through this tool.`,
+      ? `${baseFinish.description} Complete this invocation with a result payload matching the supplied schema. This reports to the caller; the caller judges whether the contribution fulfills its work.`
+      : `${baseFinish.description} Complete this invocation through this tool.`,
     parameters,
     execute: async (toolCallId, params, signal, onUpdate) => {
       const semanticAdmission = admitTaskResultForSchema(outputSchema, (params as { result?: unknown }).result);

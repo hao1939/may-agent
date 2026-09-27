@@ -592,17 +592,16 @@ export class SubagentManager {
     const timeoutMs = executionTimeout(opts?.timeoutMs ?? def.timeoutMs, opts?.deadlineAt);
     const sessionId = opts?.sessionId ?? generateId(def.sessionIdPrefix);
     if (this._sessions.has(sessionId)) throw new Error(`Session "${sessionId}" already active`);
-    const executionContext = opts?.parentSessionId || opts?.workflowRunId ? [
-      "## Assigned contribution",
-      "The call request defines your contribution. Shared Task context provides background and discovery; it does not assign you the entire Task or expand your authority.",
-      "Choose useful methods within this assignment, inspect relevant updates, and return evidence, partial work and any specific blocker to your caller. Your caller judges whether the contribution is sufficient.",
-      `Execution: ${JSON.stringify(sessionId)}. Caller session: ${JSON.stringify(opts.parentSessionId ?? null)}. Workflow: ${JSON.stringify(opts.workflowRunId ?? null)}.`,
-      `Assignment and caller links are retained in ${JSON.stringify(join(this._persistDir, "sessions", sessionId, "meta.json"))}. Use exact linked execution IDs to discover earlier evidence.`,
-    ].join("\n") : undefined;
     const startedAt = opts?.startedAt ?? Date.now();
     const kind = opts?.kind ?? "job";
     const autoClose = opts?.autoClose ?? "immediate";
     const persistentChat = this.isPersistentChatPolicy(kind, autoClose);
+    const executionContext = persistentChat
+      ? undefined
+      : [
+          `Execution: ${JSON.stringify(sessionId)}. Caller session: ${JSON.stringify(opts?.parentSessionId ?? null)}. Workflow: ${JSON.stringify(opts?.workflowRunId ?? null)}.`,
+          `Original assignment and caller links: ${JSON.stringify(join(this._persistDir, "sessions", sessionId, "meta.json"))}. If the assignment was compacted, read its task field before continuing.`,
+        ].join("\n");
     const requestedStructuredCompletion = opts?.requireFinish === true || opts?.outputSchema !== undefined;
     const operationAllowance = validateOperationAllowance(opts?.operationAllowance);
     const toolPolicy = opts?.toolPolicy ?? "full";
@@ -643,7 +642,7 @@ export class SubagentManager {
       promptTimestamp: this._promptTimestamp,
       ...(persistentChat
         ? {
-            chatContext: `${this.chatSessionInstructions()}\n\n${this.buildChatContextPacket(sessionId, def.name, task)}`,
+            chatContext: () => this.buildChatContextPacket(sessionId, def.name),
           }
         : {}),
       createFinish: () =>
@@ -822,7 +821,6 @@ export class SubagentManager {
           }
           await agent.prompt(prepared.prompt);
         },
-        task,
       );
     } else {
       this.startManagedExecution(session);
@@ -891,7 +889,6 @@ export class SubagentManager {
             // nobody starts a run to drain it.
             await session.agent.prompt(msg as any);
           },
-          turnTask,
         );
       } else {
         session.status = "running";
@@ -1742,22 +1739,10 @@ export class SubagentManager {
     };
   }
 
-  private chatSessionInstructions(): string {
-    return [
-      "# Persistent Human Chat",
-      "- This is the human-facing May chat session. Stay responsive and keep the conversation open.",
-      "- Do not call finish(); a chat turn completes by answering the human and going idle.",
-      "- Use read/status/query tools to understand state; delegate concrete project or code work to the right owner/worker agent.",
-      "- Treat the system state packet below as a fresh snapshot. It is context, not a task tree packet.",
-      "- When you take or delegate action for a human request, close the loop with a clear result or a visible follow-up.",
-    ].join("\n");
-  }
-
-  private buildChatContextPacket(sessionId: string, agentName: string, task: string): string {
+  private buildChatContextPacket(sessionId: string, agentName: string): string {
     const lines = ["# Fresh System State", `- Generated: ${new Date().toISOString()}`];
     lines.push(`- Chat session: ${sessionId}`);
     lines.push(`- Agent: ${agentName}`);
-    lines.push(`- Current human message: ${truncateForPrompt(task, 300)}`);
 
     const active = this.status()
       .filter((session) => session.sessionId !== sessionId)
@@ -1975,7 +1960,7 @@ export class SubagentManager {
             await agent.waitForIdle();
           } else if (missingFinish && !terminalError) {
             await agent.prompt(
-              "This workflow step has not returned its structured result. Call finish() now with all required fields" +
+              "This invocation has not returned its structured result. Call finish() now with all required fields" +
                 (session.outputSchema ? ", including the schema-validated result payload." : "."),
             );
             await agent.waitForIdle();
@@ -2143,23 +2128,8 @@ export class SubagentManager {
     session.openTurnTraces = [];
   }
 
-  private startChatTurn(session: ActiveSession, start: () => Promise<void>, turnTask?: string): void {
+  private startChatTurn(session: ActiveSession, start: () => Promise<void>): void {
     const { sessionId } = session;
-    const def = session.definition;
-    session.agent.state.systemPrompt = prepareAgentExecution({
-      definition: def,
-      projectRoot: this._projectRoot,
-      sessionId,
-      task: turnTask ?? session.task,
-      persistentChat: true,
-      promptTimestamp: this._promptTimestamp,
-      chatContext: `${this.chatSessionInstructions()}\n\n${this.buildChatContextPacket(
-        sessionId,
-        def.name,
-        turnTask ?? session.task,
-      )}`,
-      onNotice: (message) => log("warn", message),
-    }).systemPrompt;
     session.status = "running";
     session.lastError = undefined;
     session.interruptionKind = undefined;

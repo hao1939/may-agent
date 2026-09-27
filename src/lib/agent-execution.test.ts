@@ -298,6 +298,9 @@ describe("shared agent execution preparation", () => {
     writeFileSync(join(definitionSharedRoot, "common-sense.md"), "released shared rules\n");
     writeFileSync(join(agentDir, "AGENTS.md"), "sample identity\n");
     writeFileSync(join(agentDir, "context.md"), "reported context is not activated guidance\n");
+    for (const name of ["DOMAIN.md", "TOOLS.md", "LESSONS.md"]) {
+      writeFileSync(join(agentDir, name), `On-demand ${name} content`);
+    }
 
     const prepared = prepareAgentExecution({
       definition: {
@@ -327,7 +330,19 @@ describe("shared agent execution preparation", () => {
     expect(prepared.systemPrompt).not.toContain("mutable rules");
     expect(prepared.systemPrompt).not.toContain("reported context is not activated guidance");
     expect(prepared.systemPrompt).toContain("Available tools: read, finish");
-    expect(prepared.systemPrompt).toContain("Current time: 2026-07-19T00:00:00.000Z");
+    expect(prepared.systemPrompt).toContain("Environment captured at: 2026-07-19T00:00:00.000Z");
+    expect(prepared.systemPrompt).not.toContain("On-demand");
+    const custom = prepareAgentExecution({
+      definition: { ...prepared.definition, systemPrompt: "App override" },
+      projectRoot: root, sessionId: "custom", task: "Assignment",
+      executionContext: "Host execution reference",
+    });
+    expect(custom.systemPrompt).toStartWith("App override");
+    expect(custom.systemPrompt).not.toContain("released shared rules");
+    expect(custom.systemPrompt).not.toContain("sample identity");
+    expect(custom.systemPrompt).not.toContain("Runtime Environment");
+    expect(custom.systemPrompt).toContain("<execution_instructions>");
+    expect(custom.systemPrompt).toContain("Host execution reference");
   });
 
   test("synthesizes exactly one checkpoint for explicit full non-persistent preparation", () => {
@@ -616,7 +631,7 @@ describe("shared agent execution preparation", () => {
     });
 
     expect(prepared.requireFinish).toBe(true);
-    expect(prepared.systemPrompt).toContain("Complete it only by calling finish()");
+    expect(prepared.systemPrompt).toContain("Complete this invocation by calling finish()");
     expect((prepared.tools[0]!.parameters as any).required).toContain("result");
   });
 

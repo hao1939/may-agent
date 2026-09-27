@@ -1,5 +1,4 @@
 import { taskExecutionContext } from "./task-context.js";
-import { assignmentGuidance } from "../../assignment-guidance.js";
 import { existsSync, readFileSync } from "node:fs";
 import { basename, join } from "node:path";
 import { taskAgentResultSchema as appTaskAgentResultSchema } from "@may-agent/sdk";
@@ -67,33 +66,6 @@ function taskAttemptRole(
   return { agent, instructions };
 }
 
-/** Compact agent rules; the finish tool schema enforces field-level detail. */
-export function appTaskAgentProtocol(appId: string): string {
-  return [
-    `You are the agent pursuing one Task goal owned by App ${appId}.`,
-    "Pursue its current input, goal, acceptance and facts. Bring changes beyond your assignment to its creator. Use Task tools and finish() for state changes; the Host owns persistence.",
-    "End this attempt with an accepted finish().result: an answer, meaningful wait or honest failure. Correct rejected input. The Task retains remaining work; follow the schema.",
-    "Use converged only when facts support the answer/completed work for the considered input. Include response when owed; an unrelated open child need not block an answer.",
-    "Recover on this Task: inspect failure evidence, perform useful authorized setup or repair, and verify the effect. Report through finish(); observations settle Conditions and authorized decisions supply approval. Continue useful work alongside independent waits.",
-    "Request human help for an evidenced action or authority they must supply. Retain failed or unavailable observations as uncertainty.",
-    "Use incomplete for an unsuccessful attempt: include facts, partial work and unresolved effects; no actions, Conditions or dependencies. Set report:true for new caller-relevant updates after an earlier report. Omit for unchanged failures. The assignment remains pending under paced recovery until its owner revises or closes it.",
-    "Put machine-readable decisions in result, explanations in summary. Waiting may retain a decision for later review.",
-    "Use waiting to keep input open: either continue useful work or sleep on a saved wait, exact Condition or typed App dependency. Omit unchanged waits and response. Set report:true with summary/facts for a new caller-relevant blocker; omit for quiet waits.",
-    "continue:true plus progress facts queues one bounded pass for useful remaining work without inventing a wait; omit continue when no useful work remains. It may coexist with a saved wait and with report:true for a new caller-relevant update.",
-    "For another Task's work, return stable dependency { id, appId, input }; add taskId for an exact Task. Your App may own it. Runtime owns publication and correlation of that request.",
-    "Installed Apps summarizes appId, input.kind, requiredData, fixedData and dataTypes. For exact constraints, use tasks action contract with target.appId to read the installed input schema. The target App owns execution/scheduling.",
-    assignmentGuidance,
-    "Parent links organize work; typed dependencies return answers; dependsOn gates execution. Delegate independent outcomes with acceptance and review their evidence against your assignment. Keep internal steps as a checklist.",
-    "app.dependency.updated blocked retains the wait and reports failure; done returns an exact answer or owner closure. Open Waits retains the latest report and history retains errors as execution facts.",
-    "Revise work you created with tasks get, then tasks update using observed generation and complete revised App input. Code enforces authority and delivers changes. Return proposed changes to your own assignment as feedback to its creator.",
-    "Include artifact/session paths in concise facts. Code persists, schedules and returns results. Yield through the saved return route when only outstanding results remain.",
-    "A Condition waits for a known fact; requestedAction does not contact its owner or act. reviewAfterMs schedules reconsideration, not notification/repair.",
-    "For a time-only revisit, waiting may set reviewAt (absolute Unix milliseconds). Elapsed time requests another attempt; external facts require observation.",
-    "After verifying this Task no longer needs a wait, use retire-condition with conditionId, expectedConditionGeneration = OpenWait.conditionGeneration, and reason. This withdraws this Task's link only; external facts, approvals and other Tasks retain their own state.",
-    "Feedback is input: verify corrections, preferences and claims against this goal, facts and Open Waits. Preserve existing obligations; different work needs a changed goal. Retain exact App/Task identity.",
-  ].join("\n");
-}
-
 async function executeTaskAgent(
   input: TaskAgentInput,
   manager: SubagentManager,
@@ -105,8 +77,6 @@ async function executeTaskAgent(
   const trace = childEventTrace(event);
   const dependencyCatalog = input.dependencies;
   const prompt = [
-    appTaskAgentProtocol(descriptor.id),
-    "",
     "## Reconciliation Task",
     "```json",
     JSON.stringify(
@@ -148,7 +118,7 @@ async function executeTaskAgent(
   const taskContext = taskExecutionContext(input, definitions);
   const agentOptions = {
     taskContext,
-    contextPrompt: `${appTaskAgentProtocol(descriptor.id)}\n\nThe Task decision brief supplies the current assignment, input, results and obligations. Follow its exact detail references when coverage is incomplete.`,
+    contextPrompt: "Pursue the assignment in the current Task decision brief and return the result required by finish().",
     taskBinding: taskContext.taskBinding,
     signal: attempt.signal,
     sessionStarted: input.sessionStarted,
