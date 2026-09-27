@@ -192,8 +192,8 @@ execution → evaluation → improvement → approval → application loop.
 ## Local deployment and connected trial, September 27
 
 Host candidate `bd80012d29824b6893b26cb3ec2b532407471c0e` is deployed locally.
-[Host PR #257](https://github.com/hao1939/may-agent/pull/257) is open; both hosted
-checks pass. This is an authorized candidate deployment, not a merged-release claim.
+[Host PR #257](https://github.com/hao1939/may-agent/pull/257) was open at deployment;
+both hosted checks passed. The subsequent merge verification is recorded below.
 The deployment receipt is
 `/app/projects/may-agent/.state/deploy-receipts/systemic-evaluation-20260927-bd80012d.json`:
 `succeeded`, `healthy`, matching loaded/artifact SHA-256
@@ -283,3 +283,25 @@ controller or failure-specific Task is warranted by this trial.
 
 Exact local supporting reads and test/deploy logs are retained under
 `/app/.state/review-pilots/evaluation-systemic-20260927/deployment/`.
+
+### Merge and May disposition verified
+
+PR #257 merged as `5474e2209f3fc6638eb4bc71e3e642afe31967d9` on September 27
+at 14:40:42 UTC. The canonical Host checkout was fast-forwarded to that commit.
+Its Git tree is identical to deployed candidate `bd80012d` (both
+`8bec9437c738922783b7bbd94f4067beff5eb389`), so another restart was unnecessary.
+Both running service executables and their process-root executable paths still
+match the deployment receipt's artifact SHA. Socket status and the public
+attempt reader respond; the latter reproduces the pinned 8 → 15 Task failures.
+The active App definition release remains `948e1f9c05e6116332584cb67980071b1c588225-definitions-v4`.
+
+May completed both the report Request and supervisor correction Request.
+Accepted attempt `r_1_2f7e8aaf-044c-48ff-b41f-567568417a5a` settled at
+14:39:40.951 UTC. Her recorded disposition traces the sampled failure to a
+fulfilled Request update without the required `response`, separates subsequent
+recovery from recurrence, and incorporates the corrected approval deadline.
+She reports preserving the human wait and creating no reminder, candidate or
+live change. The Conversation Task is done with no pending events at this read.
+This verifies assisted report-to-investigation and correction handling; it does
+not prove an autonomous improvement decision, a completed fix, or a reduction in
+recurrence. Supplying computed linked-Task deadlines remains a proposed refinement.
