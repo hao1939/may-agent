@@ -475,8 +475,10 @@ export async function runTaskAttempt(input: {
 
     if (!primaryResult) throw new Error(`Task ${primary.taskId} produced no handler result`);
 
+    // Settlement may add diagnostics, but the executor's proposal remains evidence.
+    primaryResult = { ...primaryResult, handlerResult: { ...primaryResult.handlerResult } };
     const primaryHandlerResult = primaryResult.handlerResult;
-    const rejectStaleEffect = (error: unknown) => {
+    const rejectStaleEffect = (error: unknown, facts = primaryHandlerResult.facts) => {
       const stale = recoverStaleTaskActionResult(config, primary, error);
       if (!stale) return null;
       emitTaskReconciliationEvent(opts, descriptor, event, "project.task.reconciled", intent.id, {
@@ -486,7 +488,7 @@ export async function runTaskAttempt(input: {
         disposition: "stale",
         input: intent.input ?? {},
         summary: error instanceof Error ? error.message : String(error),
-        facts: primaryHandlerResult.facts,
+        facts,
         staleRecovery: stale.staleRecovery,
         workflowRunId: primaryResult.runId,
       });
@@ -504,6 +506,87 @@ export async function runTaskAttempt(input: {
         return stale;
       }
     };
+    const finishUnsuccessfulAttempt = async (run: TaskCapabilityRun): Promise<string[]> => {
+      const result = run.handlerResult;
+      await finalizeWorkspace("failed");
+
+      const agentHandoff = Boolean(workflowKey && result.state === "needs-agent");
+      if (
+        !run.unavailable &&
+        !run.handlerBlocked &&
+        !run.workspacePreparationFailed &&
+        !agentHandoff &&
+        !result.resultRejected
+      ) {
+        const retry = persistResult(() =>
+          failAppTaskAttempt(config, primary, result.summary, {
+            ...(unacceptedResult ? { reason: "HandlerResultSettlementFailed", unacceptedResult } : {}),
+          }),
+        );
+        if (retry.status === "superseded") return [];
+        emitTaskReconciliationEvent(opts, descriptor, event, "project.task.reconciled", intent.id, {
+          generation: primary.generation,
+          attemptId: primary.attemptId,
+          handler: primary.handler,
+          disposition: retry.status,
+          retryAt: retry.retryAt,
+          input: intent.input ?? {},
+          summary: retry.summary,
+        });
+        // The persisted deadline and existing recovery scheduler own the retry.
+        return [];
+      }
+      let attention: ReturnType<typeof markAppTaskAttention>;
+      try {
+        attention = persistResult(() =>
+          markAppTaskAttention(config, primary, {
+            summary: result.summary,
+            // A failed workspace/action admission must not report its proposed
+            // Task mutations as accepted through the diagnostic path either.
+            result: result.actions.length ? undefined : result.result,
+            facts: result.facts,
+            reason: result.resultRejected
+              ? "HandlerResultInvalid"
+              : run.unavailable
+                ? "HandlerUnavailable"
+                : run.executionFailed
+                  ? "HandlerExecutionFailed"
+                  : run.workspacePreparationFailed
+                    ? "WorkspacePreparationFailed"
+                    : result.state === "needs-agent"
+                      ? "needs-agent"
+                      : "handler-blocked",
+          }),
+        );
+      } catch (error) {
+        const stale = rejectStaleEffect(error, result.facts);
+        if (!stale) throw error;
+        return stale.reconcileTaskIds;
+      }
+      if (attention.status === "stale") return [];
+      if (!agentHandoff) {
+        emitTaskReconciliationEvent(opts, descriptor, event, "project.task.reconciled", intent.id, {
+          generation: primary.generation,
+          attemptId: primary.attemptId,
+          handler: primary.handler,
+          disposition: "retrying",
+          retryAt: attention.retryAt,
+          input: intent.input ?? {},
+          summary: attention.summary,
+        });
+        return [];
+      }
+      emitTaskReconciliationEvent(opts, descriptor, event, "project.task.reconciled", intent.id, {
+        generation: primary.generation,
+        attemptId: primary.attemptId,
+        handler: primary.handler,
+        disposition: "agent-handoff",
+        input: intent.input ?? {},
+        summary: result.summary,
+      });
+      return [intent.id];
+    };
+
     if (
       primaryHandlerResult.state === "converged" &&
       primary.handoff?.reason === "needs-agent" &&
@@ -698,61 +781,46 @@ export async function runTaskAttempt(input: {
     }
 
     if (primaryHandlerResult.state === "waiting") {
+      const rejectWaitingResult = (
+        summary: string,
+        diagnostics: Pick<TaskCapabilityRun, "handlerBlocked"> = {},
+        facts = primaryHandlerResult.facts,
+      ) =>
+        finishUnsuccessfulAttempt({
+          ...primaryResult,
+          ...diagnostics,
+          handlerResult: { ...primaryHandlerResult, state: "error", summary, facts },
+        });
+
       const stale = await fenceWorkspaceFinalization();
       if (stale) return stale.reconcileTaskIds;
       const finalized = await finalizeWorkspace("waiting");
       if (!finalized.ok) {
-        primaryResult.handlerBlocked = true;
-        primaryHandlerResult.state = "error";
-        primaryHandlerResult.summary = finalized.reason ?? "Task workspace finalization failed";
-        primaryHandlerResult.facts = [
-          ...primaryHandlerResult.facts,
-          taskWorkspace?.metadata.path ?? executionPaths.workspaceDir,
-        ];
+        return await rejectWaitingResult(
+          finalized.reason ?? "Task workspace finalization failed",
+          { handlerBlocked: true },
+          [...primaryHandlerResult.facts, taskWorkspace?.metadata.path ?? executionPaths.workspaceDir],
+        );
       }
-    }
 
-    if (primaryHandlerResult.state === "waiting") {
+      let conditions: ReturnType<typeof admitWaitingConditions>;
       try {
-        // Validate owner declarations as one provenance group before admitting
-        // dependencies. Otherwise conflicting explicit specifications could be
-        // rejected only after publishing or adopting new dependency work.
-        const explicitConditions = mergeTaskConditions(primaryHandlerResult.conditions ?? []);
-        const existingAppDependencyConditions = openTaskAppDependencyConditions(config, primary.taskId);
-        const existingIds = new Set(existingAppDependencyConditions.map((condition) => condition.id));
-        // Also reject an explicit retarget of persisted dependency identity
-        // before dependency admission can publish unrelated new work.
-        mergeTaskConditions([...existingAppDependencyConditions, ...explicitConditions], existingIds);
-        const dependencyConditions = primaryHandlerResult.dependencies?.length
-          ? admitTaskAppDependencies({
-              opts,
-              descriptor,
-              claim: primary,
-              dependencies: primaryHandlerResult.dependencies,
-              existingConditions: existingAppDependencyConditions,
-              acceptedLiveEventIds: primaryResult.acceptedLiveEventIds,
-            })
-          : [];
-        // Generated dependency Conditions establish/reuse the wait, but the
-        // owner's explicit declaration is the final compatible specification.
-        const declaredConditions = [...dependencyConditions, ...explicitConditions];
-        const declaredIds = new Set(declaredConditions.map((condition) => condition.id));
-        const conditions = mergeTaskConditions(
-          [...existingAppDependencyConditions, ...declaredConditions],
-          new Set([...existingAppDependencyConditions, ...dependencyConditions].map((condition) => condition.id)),
-        ).filter((condition) => declaredIds.has(condition.id));
-        primaryHandlerResult.conditions = conditions.length > 0 ? conditions : undefined;
+        conditions = admitWaitingConditions({
+          opts,
+          descriptor,
+          config,
+          claim: primary,
+          result: primaryHandlerResult,
+          acceptedLiveEventIds: primaryResult.acceptedLiveEventIds,
+        });
       } catch (error) {
         const stale = rejectStaleEffect(error);
-        if (stale) {
-          return stale.reconcileTaskIds;
-        }
-        primaryHandlerResult.state = "error";
-        primaryHandlerResult.summary = `App dependency admission failed: ${error instanceof Error ? error.message : String(error)}`;
+        if (stale) return stale.reconcileTaskIds;
+        return await rejectWaitingResult(
+          `App dependency admission failed: ${error instanceof Error ? error.message : String(error)}`,
+        );
       }
-    }
 
-    if (primaryHandlerResult.state === "waiting") {
       try {
         const apply = persistResult(() =>
           deferAppTask(config, primary, {
@@ -765,7 +833,7 @@ export async function runTaskAttempt(input: {
             reviewAt: primaryHandlerResult.reviewAt,
             facts: primaryHandlerResult.facts,
             actions: primaryHandlerResult.actions,
-            conditions: primaryHandlerResult.conditions,
+            conditions,
             acceptedLiveEventIds: primaryResult.acceptedLiveEventIds,
           }),
         );
@@ -774,7 +842,7 @@ export async function runTaskAttempt(input: {
           generation: primary.generation,
           attemptId: primary.attemptId,
           handler: primary.handler,
-          disposition: apply.status === "applied" ? primaryHandlerResult.state : "stale",
+          disposition: apply.status === "applied" ? "waiting" : "stale",
           ...(primary.trigger?.type === "project.task.condition-review.missed"
             ? { reason: "condition-review-checkpoint-missed" }
             : {}),
@@ -790,7 +858,7 @@ export async function runTaskAttempt(input: {
         const recoveredTaskIds =
           apply.status === "applied"
             ? recoverTaskConditions(opts, descriptor, config, {
-                conditionIds: primaryHandlerResult.conditions?.map((condition) => condition.id),
+                conditionIds: conditions?.map((condition) => condition.id),
               })
             : [];
         return [...new Set([...(stale?.reconcileTaskIds ?? apply.reconcileTaskIds), ...recoveredTaskIds])];
@@ -811,88 +879,13 @@ export async function runTaskAttempt(input: {
           });
           return stale.reconcileTaskIds;
         }
-        primaryHandlerResult.state = "error";
-        primaryHandlerResult.summary = `Handler result was rejected: ${error instanceof Error ? error.message : String(error)}`;
+        return await rejectWaitingResult(
+          `Handler result was rejected: ${error instanceof Error ? error.message : String(error)}`,
+        );
       }
     }
 
-    await finalizeWorkspace("failed");
-
-    const agentHandoff = Boolean(workflowKey && primaryHandlerResult.state === "needs-agent");
-    if (
-      !primaryResult.unavailable &&
-      !primaryResult.handlerBlocked &&
-      !primaryResult.workspacePreparationFailed &&
-      !agentHandoff &&
-      !primaryHandlerResult.resultRejected
-    ) {
-      const retry = persistResult(() =>
-        failAppTaskAttempt(config, primary, primaryHandlerResult.summary, {
-          ...(unacceptedResult ? { reason: "HandlerResultSettlementFailed", unacceptedResult } : {}),
-        }),
-      );
-      if (retry.status === "superseded") return [];
-      emitTaskReconciliationEvent(opts, descriptor, event, "project.task.reconciled", intent.id, {
-        generation: primary.generation,
-        attemptId: primary.attemptId,
-        handler: primary.handler,
-        disposition: retry.status,
-        retryAt: retry.retryAt,
-        input: intent.input ?? {},
-        summary: retry.summary,
-      });
-      // The persisted deadline and existing recovery scheduler own the retry.
-      return [];
-    }
-    let attention: ReturnType<typeof markAppTaskAttention>;
-    try {
-      attention = persistResult(() =>
-        markAppTaskAttention(config, primary, {
-          summary: primaryHandlerResult.summary,
-          // A failed workspace/action admission must not report its proposed
-          // Task mutations as accepted through the diagnostic path either.
-          result: primaryHandlerResult.actions.length ? undefined : primaryHandlerResult.result,
-          facts: primaryHandlerResult.facts,
-          reason: primaryHandlerResult.resultRejected
-            ? "HandlerResultInvalid"
-            : primaryResult.unavailable
-              ? "HandlerUnavailable"
-              : primaryResult.executionFailed
-                ? "HandlerExecutionFailed"
-                : primaryResult.workspacePreparationFailed
-                  ? "WorkspacePreparationFailed"
-                  : primaryHandlerResult.state === "needs-agent"
-                    ? "needs-agent"
-                    : "handler-blocked",
-        }),
-      );
-    } catch (error) {
-      const stale = rejectStaleEffect(error);
-      if (!stale) throw error;
-      return stale.reconcileTaskIds;
-    }
-    if (attention.status === "stale") return [];
-    if (!agentHandoff) {
-      emitTaskReconciliationEvent(opts, descriptor, event, "project.task.reconciled", intent.id, {
-        generation: primary.generation,
-        attemptId: primary.attemptId,
-        handler: primary.handler,
-        disposition: "retrying",
-        retryAt: attention.retryAt,
-        input: intent.input ?? {},
-        summary: attention.summary,
-      });
-      return [];
-    }
-    emitTaskReconciliationEvent(opts, descriptor, event, "project.task.reconciled", intent.id, {
-      generation: primary.generation,
-      attemptId: primary.attemptId,
-      handler: primary.handler,
-      disposition: "agent-handoff",
-      input: intent.input ?? {},
-      summary: primaryHandlerResult.summary,
-    });
-    return [intent.id];
+    return await finishUnsuccessfulAttempt(primaryResult);
   } catch (error) {
     if (activeConfig && activeClaim) {
       const stale = recoverStaleTaskActionResult(activeConfig, activeClaim, error);
@@ -957,6 +950,46 @@ export async function runTaskAttempt(input: {
   } finally {
     input.reportTiming(timing);
   }
+}
+
+/** Validate declarations before admitting dependencies; stored peer waits stay with the reconciler. */
+function admitWaitingConditions(input: {
+  opts: AppTaskRuntimeOptions;
+  descriptor: AppTaskRuntimeDescriptor;
+  config: AppTaskContext;
+  claim: AppTaskClaim;
+  result: Pick<TaskCapabilityRun["handlerResult"], "conditions" | "dependencies">;
+  acceptedLiveEventIds?: number[];
+}) {
+  const { opts, descriptor, config, claim, result, acceptedLiveEventIds } = input;
+  // Validate owner declarations as one provenance group before admitting
+  // dependencies. Otherwise conflicting explicit specifications could be
+  // rejected only after publishing or adopting new dependency work.
+  const explicitConditions = mergeTaskConditions(result.conditions ?? []);
+  const existingAppDependencyConditions = openTaskAppDependencyConditions(config, claim.taskId);
+  const existingIds = new Set(existingAppDependencyConditions.map((condition) => condition.id));
+  // Also reject an explicit retarget of persisted dependency identity
+  // before dependency admission can publish unrelated new work.
+  mergeTaskConditions([...existingAppDependencyConditions, ...explicitConditions], existingIds);
+  const dependencyConditions = result.dependencies?.length
+    ? admitTaskAppDependencies({
+        opts,
+        descriptor,
+        claim,
+        dependencies: result.dependencies,
+        existingConditions: existingAppDependencyConditions,
+        acceptedLiveEventIds,
+      })
+    : [];
+  // Generated dependency Conditions establish/reuse the wait, but the
+  // owner's explicit declaration is the final compatible specification.
+  const declaredConditions = [...dependencyConditions, ...explicitConditions];
+  const declaredIds = new Set(declaredConditions.map((condition) => condition.id));
+  const conditions = mergeTaskConditions(
+    [...existingAppDependencyConditions, ...declaredConditions],
+    new Set([...existingAppDependencyConditions, ...dependencyConditions].map((condition) => condition.id)),
+  ).filter((condition) => declaredIds.has(condition.id));
+  return conditions.length > 0 ? conditions : undefined;
 }
 
 function emitTaskReconciliationEvent(

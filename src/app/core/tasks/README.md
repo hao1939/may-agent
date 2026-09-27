@@ -47,6 +47,14 @@ authorized owner -> close Task -> fence running execution and future wakes
 | Close or stop an attempt | `cancelLoadedAppTask()` -> `cancelAppTask()` closes the assignment; `stopLoadedConversationTurn()` stops the observed human Turn | Closure fences future work. Turn Stop preserves newer input. `reportAppTaskFailure()` records a worker failure report and retries; it does not close the Task |
 | Restart | `recoverInstalledAppTasks()` -> `recoverInterruptedAppTasks()`; `app-task-recovery.ts` restores queue hints | Accepted Task results survive. Uncommitted execution retries the same input after ownership/cleanup checks; session output remains facts for normal execution and validation |
 
+Waiting settlement follows one sequence in `runTaskAttempt()`: fence and finalize
+the workspace, validate/merge declared Conditions and admit dependencies, commit
+through `deferAppTask()`, then recover already-saved feedback. Each rejection
+returns through the existing unsuccessful-attempt settlement. The executor's
+proposal is retained unchanged; settlement prepares its own observations.
+Omitted Conditions remain the reconciler's responsibility, and a failed step
+cannot accept proposed actions. Keep this ordering when extracting helpers.
+
 Installation and external controls enter through `app-task-runtime.ts`. The attempt
 sequence and result checks live in `attempt-runner.ts`; only the existing reconciler
 applies canonical transitions. Result rejection retains unfinished work and paces its

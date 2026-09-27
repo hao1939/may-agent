@@ -53,6 +53,22 @@ execution and script consumers are listed in the
 [script guide](../../scripts/README.md#gym-compatibility-boundary); inspect them
 before changing an entry path.
 
+## Context timing
+
+| Source | When read | Purpose |
+| --- | --- | --- |
+| `app/adapters/executors/task-context.ts` | Attempt starts | Bind the exact Task/attempt and its scoped capabilities; keep the supplied assignment, events, waits and related work |
+| `task-workspace-context.ts` | Once per attempt | Write `TASK.md`, the supplied snapshot and capability catalog as discovery links |
+| `agent-execution.ts` | Execution preparation | Combine identity, explicit context preparation, skills and tools; preserve the original assignment for evidence |
+| `task-decision-context.ts` | Before each model call, after compaction | Refresh current Task facts and append a disposable brief with links to larger detail |
+
+A refresh failure keeps the last successful read, or the attempt-start snapshot,
+with its scope and failure visible. A generation mismatch does not substitute new
+requirements into the old attempt. Reading a message does not acknowledge it;
+result admission still checks current authority and accounts for handled input.
+The brief does not accumulate in the saved transcript. The source guide describes
+these existing roles; it does not introduce another context store or controller.
+
 ## Agent cooperation tools
 
 `manager-agents-tool.ts` offers bounded `call` and `fork` using a `task`
