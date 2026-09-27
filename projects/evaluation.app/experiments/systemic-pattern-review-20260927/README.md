@@ -187,3 +187,93 @@ contents and provider tokens are not copied into this source experiment.
 This is a design/evidence trial. It does not establish false-positive/negative
 rates, model superiority, sustained autonomous detection, or live closure of the
 execution → evaluation → improvement → approval → application loop.
+
+
+## Local deployment and connected trial, September 27
+
+Host candidate `bd80012d29824b6893b26cb3ec2b532407471c0e` is deployed locally.
+[Host PR #257](https://github.com/hao1939/may-agent/pull/257) is open; both hosted
+checks pass. This is an authorized candidate deployment, not a merged-release claim.
+The deployment receipt is
+`/app/projects/may-agent/.state/deploy-receipts/systemic-evaluation-20260927-bd80012d.json`:
+`succeeded`, `healthy`, matching loaded/artifact SHA-256
+`75008897131857bec996e60f0584f0fea4365b4d71cf731fab3988b789cb47f5`,
+`duplicateDeploy:false`.
+
+App source `948e1f9c05e6116332584cb67980071b1c588225` is locally integrated,
+preserving Scout's concurrent publication. Reload event `6459410` succeeded via
+operation `6459411`; the active definition release and admission worker both
+report `948e1f9c05e6116332584cb67980071b1c588225-definitions-v4`.
+Later documentation commits do not change those deployed source bytes.
+
+Validation: full Host CI 3,240 pass / 3 installation-dependent skips / 0 fail;
+final type/lint checks and the added public HTTP integration check pass. App suite
+336 pass / 1 explicit skip / 0 fail, plus the new selector-to-May regression and
+selector suite 29 pass. Common design checks pass. Node 24.20.0 / Bun 1.3.14.
+
+The public reader reproduced the historical 271/222 terminal populations,
+10/23 App failures and 1/22 exact-Task failures in about 34 ms. The real process
+read now returned 3 requested / 3 readable projections, versus the earlier
+0 readable. All three were explicitly truncated; this is improved navigation,
+not full transcript or quality coverage.
+
+The production selector chose the existing May conversation at fixed cut
+`2026-09-27T14:00:00.000Z`. The manual trial used the ordinary public
+`review-task-outcome` action: admission event `6459416`, Request
+`app_7836833c-a251-4563-a6dc-f8b21fd4550f`, review Task
+`runtime/task-outcome/v2/may/conversation_ec854e2f09f1c38566a25857_successor_2/ongoing/reviewer-evaluator-deepseek/contract-f382b58558fcceb877cbd3c818a48cda89fb2d2a376d9d7d5e367eabedd28e6d`.
+An attempted direct App-private fact publication was rejected by the operator
+interface; no such event was admitted. Use the public App action for reproduction.
+
+Reviewer session `s_1790519384468_f06fbf7b-80af-43ff-a687-f981d0ae0fa1`
+completed in 187.898 seconds. The configured reviewer/model are
+`evaluator-deepseek` / `deepseek-v4-flash`; actual model identity and price remain
+unexposed. The agent corrected two finish-contract errors (missing verification
+facts, then too many verification items) within that one Task attempt. These are
+real overhead, not clean first-call success.
+
+Publication `6459431` produced the immutable v2 report:
+`/app/.state/evaluation/reports/task-outcomes/evaluator-deepseek/may/task-obligation-v2/conversation_ec854e2f09f1c38566a25857_successor_2-b20933397c049cc1-ef255144f8b6.md`
+(and sibling JSON). The report kept current Task coherence separate from exact
+Task failures rising 8 → 15. App rates were 7.424% → 7.979%, with changed executor
+mix; it did not assert an App-wide regression or a proven cause. It recommended
+reading one failed session before deciding on a fix. The workflow wrote, read
+back and published the report, then converged at event `6459434`.
+
+The **scheduled** selector also ran independently, converging at `6459447` with
+state version 7, Gym no activity, and a May population selection marked
+`report-pending`. This proves the new source is connected to the existing periodic
+selector; it does not certify every App's coverage or remove backlog delays.
+
+May received Request `app_2d75fb1e-b0e3-43d1-aa59-adbfcc250cdb` and executed
+`evaluation-report-intake` as workflow `wr_1790519597725_dpmf` in session
+`s_1790519587466_e41fc715-5519-4798-bb10-86a738e71441`. It verified publication
+identity and returned `stale` for the changed current conversation, preserving
+the historical finding for May's relevance judgment. The long judgment exceeded
+the intake preview bound; the exact report remained linked for read-back.
+May then investigated the reply-settlement source. Investigation and any proposed
+repair are not completed or approved by this deployment record.
+
+### Supervisor review: useful finding, one false alarm
+
+The reviewer incorrectly called the linked approval overdue, calculating from
+`createdAt`. Existing Host `missedTaskConditionCheckpointIds` and Evaluation's
+own assessment helper use `observedAt + reviewAfterMs`. The report's own snapshot
+has `observedAt=2026-09-27T01:55:22.616Z`, interval 86,400,000 ms, so the next
+checkpoint is **September 28 at 01:55:22.616 UTC**, after the assessment. The prior
+checkpoint had already been reconsidered without satisfying the independent
+human wait. This false alarm does not invalidate the observed recurrence.
+
+Supervisor correction event `6459460` addresses the same May Task, preserving
+the valid wait and asking May to judge only supported findings. This is assisted
+review, not proof that May independently caught the mistake. No approval or live
+repair was authorized by the report or this correction.
+
+Next refinement: reuse the existing computed deadline/validity context for linked
+Tasks so the model does not reconstruct it from creation time. Keep reports
+shorter so intake can present the useful conclusions directly. Observe several
+ordinary selector cycles before increasing review frequency. No new recovery
+controller or failure-specific Task is warranted by this trial.
+
+Exact local supporting reads and test/deploy logs are retained under
+`/app/.state/review-pilots/evaluation-systemic-20260927/deployment/`.

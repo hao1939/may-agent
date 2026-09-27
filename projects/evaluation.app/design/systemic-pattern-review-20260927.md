@@ -1,6 +1,6 @@
 # Detecting systemic problems after individual Tasks recover
 
-**Status:** Implemented candidate, September 27, 2026; local rollout/trial is recorded below.
+**Status:** Deployed local candidate, September 27, 2026. The [connected trial](../experiments/systemic-pattern-review-20260927/README.md#local-deployment-and-connected-trial-september-27) found the intended recurrence and one false deadline claim; reports remain advisory.
 Earlier judgment trials are in the [experiment](../experiments/systemic-pattern-review-20260927/README.md).
 This extends the existing selector and immutable Task assessment; it introduces
 no separate monitoring owner or automatic repair authority.
