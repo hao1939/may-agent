@@ -196,14 +196,14 @@ process continues from retained progress in that state directory. Separate
 installations would not share a counter. The per-agent latest file remains a
 convenience pointer.
 
-The [tool cleanup candidate](../proposals/authority-boundary-simplification.md#independent-tool-cleanup)
-implements this by reading the highest saved step before each synchronous
-append. It accepts reading the coarse-progress log instead of maintaining
+The [tool cleanup](../proposals/authority-boundary-simplification.md#independent-tool-cleanup),
+merged in Host #198 as `28670dd2`, implements this by reading the highest saved
+step before each synchronous append. It accepts reading the coarse-progress log instead of maintaining
 another cache/lifecycle. Execution has one writer per session; this does not
 add cross-process writer coordination or transactional checkpoint/pointer/digest
-writes. Existing history is retained. Host source `dd548cab`, reviewed September
-18, still uses the old global counter; the candidate has not landed and no
-deployed-state guarantee is implied.
+writes. Existing history is retained. The September 18 review at `dd548cab`
+predated that merge; it is historical evidence, not current implementation
+status. Source status does not identify the deployed artifact.
 
 ### Retained sessions
 
@@ -274,6 +274,6 @@ subsequent reads or permitted control; only human-readable previews shorten.
 
 Completion suggestions are saved evidence, not activated behavior. The daemon
 registers digest and last-session writers. The unregistered context updater
-and file-read tracker are removed by candidate
+and file-read tracker are removed by merged
 [#238](https://github.com/hao1939/may-agent/pull/238); historical rows and saved
 completion facts remain. See the [reporting/adoption convention](../2b-manual/agent-convention.md#reporting-is-not-adoption).

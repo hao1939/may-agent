@@ -39,11 +39,11 @@ The private adapter is `HostMaintenance`; its conventional file remains
 `cron.json`, and the long-running CLI flag remains `--cron`. Those names do not
 make maintenance handlers the canonical App authoring model.
 
-The [#236 cleanup candidate](https://github.com/hao1939/may-agent/pull/236)
+Merged [#236](https://github.com/hao1939/may-agent/pull/236)
 removes an unused private workflow-launch method and the wrapper that hid it
 from handlers. `MaintenanceAPI` directly describes the capabilities supplied
 to named handlers. This repairs implementation drift without changing the
-accepted scheduling boundary. Candidate
+accepted scheduling boundary. Merged
 [#240](https://github.com/hao1939/may-agent/pull/240) also preserves every
 declared event-envelope field through the existing canonical builder, including
 trace links and visibility; the adapter must not narrow that contract by

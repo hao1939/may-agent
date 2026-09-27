@@ -4,13 +4,14 @@
 **Implementation status:** SQLite holds canonical work and admission state;
 files hold full execution artifacts. Conversation execution uses the shared
 Task claim and settlement lifecycle introduced in #158; Task outcome/closure
-simplification landed in #168. This source review uses Host `0ddad3aa` on
-September 27, 2026. Source status does not establish the deployed artifact.
+simplification landed in #168. The September 27 source review at `0ddad3aa`
+was followed by the cleanup merge at `b79a693f`. Source status does not
+establish the deployed artifact.
 
 The [storage extraction review](../proposals/storage-state-service.md#candidate-review-and-landing-order)
 retains the earlier #129 boundary work. The
 [one-lifecycle baseline](../proposals/conversation-input-unification.md)
-is implemented, rather than a pending inbox-to-Task migration. Candidate
+is implemented, rather than a pending inbox-to-Task migration. Merged
 [#235](https://github.com/hao1939/may-agent/pull/235) completes the active-Turn
 read alignment by removing historical lease fallback and finding running
 successor Tasks.

@@ -2,9 +2,10 @@
 
 **Status:** Task/HTTP, caller-feedback, script-retirement, event-delivery and
 checkpoint/tool-state cleanup are merged. The September 27 repository-wide
-cleanup is a set of review candidates; see its inventory below. Workflow redo
+cleanup is merged through Host `b79a693f`; see its inventory below. Workflow redo
 and provider-facing delivery still need their separate evidence.
-**Reviewed:** September 27, 2026, against Host `0ddad3aa`. Earlier dated findings
+**Reviewed:** September 27, 2026: source review at Host `0ddad3aa`, then merge
+verification at `b79a693f`. Earlier dated findings
 and candidate checks below remain historical evidence, not a fresh backlog or
 proof of the deployed release.
 
@@ -33,7 +34,7 @@ to reduce the line count.
 | Duplicate event delivery | #175 merged as `e38d2861`. Retain exact per-Task delivery identities; [Events](../2a-design/events.md#duplicate-delivery-and-safe-reconsideration) owns the common contract. |
 | Workflow redo, model-quality comparison and App-owned delivery | Deferred experiments with the explicit evidence/authority requirements below. They do not block the independent cleanup or authorize deployment. |
 
-Review the September 27 candidates against current `main`. Preserve the
+Continue from the merged September 27 cleanup. Preserve the
 already merged execution, Task and checkpoint contracts during integration.
 The historical sections below explain prior decisions. The table above and
 [remaining work](#remaining-work) are the current plan.
@@ -517,7 +518,7 @@ Task algorithm rewrites and the remaining feature reductions require separate de
 
 | Work | Boundary and next proof |
 | --- | --- |
-| Complete repository hygiene review | Review the September 27 candidates below and their current checks. Check actual consumers before retiring the retained compatibility boundaries. |
+| Review retained compatibility | The September 27 cleanup is merged. Check actual consumers before retiring the remaining compatibility boundaries listed below. |
 | Further HTTP organization | Directory moves #141/#142 are merged. Extract a retained route family only when its responsibility is clearer; #173's feature removal does not claim the server has been split. |
 | Review workflow redo | Select one real workload and measure discarded effort and effect risk before removing reuse. |
 | Measure the context cleanup's behavioral effect | Compare baseline and candidate on the same small conversation cases. Existing scripted regressions establish supplied context and mechanics, not improved model judgment. |
@@ -660,7 +661,7 @@ dead code. Trace production callers, sibling Apps, persisted data and current
 design before deleting a path. This is a source review; no installed records
 are moved, no deployment is inferred and no new recovery mechanism is added.
 
-| Candidate | Change and value | Compatibility / cost |
+| Merged PR | Change and value | Compatibility / cost |
 | --- | --- | --- |
 | [#233](https://github.com/hao1939/may-agent/pull/233) | Extract existing HTTP read routes into a focused module. | Response contracts stay intact; Task and Conversation remain distinct read views of shared execution. |
 | [#235](https://github.com/hao1939/may-agent/pull/235) | Derive active Turns from linked Tasks' current running attempts, including successors; remove historical inbox-lease authority and the unused production Stop helper. | Preserve historical rows and offline cutover fixtures; verify restart, successor and Telegram Stop behavior. |
@@ -670,11 +671,11 @@ are moved, no deployment is inferred and no new recovery mechanism is added.
 | [#239](https://github.com/hao1939/may-agent/pull/239) | Wait for both Telegram destinations before asserting both received a notification. | Repairs a test race exposed by full CI; no production change, fixed sleep or retry. |
 | [#240](https://github.com/hao1939/may-agent/pull/240) | Preserve the complete declared maintenance event envelope through the existing canonical builder; remove a narrower duplicate method signature. | Trace, visibility, action and routing coexist. The regression checks published metadata and persisted trace links; no new schema or mechanism. |
 
-These are independent main-based PRs. Merge the small test correction first;
-review the source changes separately and refresh any branch that conflicts.
-The source guides travel with their owning changes. Canonical storage,
-scheduling and reporting/adoption notes live here. Candidate status does not
-mean deployed behavior or measured improvement in model judgment.
+All seven PRs merged on September 27, with #239 first and the cleanup batch
+complete at Host `b79a693f`. Its source tree matches the combined verification
+checkout below. The source guides travel with their owning changes. Canonical
+storage, scheduling and reporting/adoption notes live here. Merge status does
+not establish deployed behavior or measured improvement in model judgment.
 
 Retained boundaries and next review targets:
 
@@ -703,9 +704,9 @@ validation defect, not proof that removing the maintenance adapter lost a
 notification. Regression checks exercise production boundaries; tests that
 only instantiate removed functionality are retired with that functionality.
 
-Final combined Host source `557d348c` includes all seven candidate PRs. Full
+Pre-merge combined Host source `557d348c` includes all seven cleanup PRs. Full
 local CI passes with 3,260 tests, three installation-dependent skips and no
-failures. All current GitHub Quality/Container checks pass; #239 correctly
+failures. All seven PRs passed their GitHub Quality/Container checks; #239 correctly
 omits an unnecessary image build. The final branches merge cleanly. These are
 portable source checks, not deployed-runtime or model-quality claims.
 The companion design integrity check passes with zero errors/warnings, and all

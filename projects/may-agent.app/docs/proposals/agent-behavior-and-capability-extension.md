@@ -703,7 +703,7 @@ distinguishes reporting, source edits, activation and later use. These are
 truthful-contract corrections, not production adoption or a new learning policy.
 
 **September 27 source follow-up:** The optional writer described above has no
-current production or sibling App caller. Candidate
+current production or sibling App caller. Merged
 [#238](https://github.com/hao1939/may-agent/pull/238) retires it and its
 writer-only tests. The daemon subscriber regression now checks saved suggestion
 evidence and an unchanged `context.md`; completion-file and recovery tests
