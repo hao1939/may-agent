@@ -1,8 +1,8 @@
 <ai_context>
-summary: "Implementation-evidence companion to agent-security-verified-enforcement.md. Uses pinned repositories, disclosures, and deployed-system reports to separate signed claims from replayable evidence; receipt validity from verifier isolation and claim scope; verifier correctness from adversarial agent resistance; receipt integrity from completeness; configured policy from covered paths; identity enrollment from per-request proof; formal models from unsupported surfaces; observed egress from blocking; static egress policy from irreversible post-sensitive-access session restriction; stable tool digests from equivalent semantics; policy verdicts from effect ownership; counterfactual actions from execution authority and real effect accounting; authorization receipts from effect gates; declared mediation architecture from per-effect path evidence; narrated results from positive execution evidence; sandbox isolation from configuration coherence; stop requests from observed quiescence; frozen eval inputs from stable comparison units; untrusted analysis failure from trusted configuration degradation; human approval records from end-to-end effect binding; effect-owning execution routes from provider-reported hook correlation and ambient process coverage; signed workflow conformance from evidence-grade propagation and independently proved declaration pre-existence; and workflow stage labels from prerequisite and ship-gate enforcement."
-triggers: ["SkillProof", "MCP server verification", "replayable evidence", "action receipt", "signed receipt", "evidence completeness", "MAX Authorization Sandbox", "signed policy", "adversary capability", "rollback state", "Pipelock", "HELM AI Kernel", "offline verifier", "verifier isolation", "claim-typed verification", "PassControl", "sender proof", "bearer visa", "authentication assurance", "default deny", "fail closed", "shell hook", "guardrail regression test", "OpenShell prover", "SMT containment", "path composition", "egress firewall", "uninspected egress", "session-aware egress", "sensitive-source transition", "sticky egress restriction", "tool identity", "tool pin", "schema canonicalization", "shadow mode", "mediation ownership", "counterfactual action", "observed policy action", "real effect accounting", "ctrlrun", "HOL Guard", "Action Evidence Package", "AEP sandbox", "Codex sandbox", "Overpatch", "Heapjack", "authority derivation", "Meta Muse", "local configuration authority", "APEXA", "execution integrity", "tool execution evidence", "BoxLite", "micro-VM", "sandbox configuration coherence", "guest network", "host jailer grants", "Hard Stop", "SIGSTOP", "process group preemption", "quiescence receipt", "run-assert-eval", "ASSERT", "Agent Control Specification", "fixed evaluation", "applicable denominator", "paired comparison", "safety helpfulness split", "CC Safety Net", "analysis budget", "configuration degradation", "typed failure policy", "emisar", "approval binding", "bridge attestation", "pack hash", "Aegis", "exact action policy", "provider hook correlation", "direct child execution", "route coverage", "Treeship", "workflow conformance", "evidence grade", "declaration pre-existence", "CE-AI", "workflow stage evidence", "ship gate", "prerequisite enforcement"]
-last_updated: "2026-09-26"
-source_basis: "Pinned-source implementation studies and disclosures reviewed 2026-09-10 through 2026-09-26: SkillProof f5ddb4b, MAX Authorization Sandbox 380efe6, Pipelock f7d1816, HELM AI Kernel fe122d4, agent-guardrails-kit 18c241e, PassControl f9cb702, OpenShell df0ee1a, k8s-rca-agent 29f5fad, secure-agent 017ec5a, Rul1an/assay 900e536, Soup Wall be8db48, HOL Guard 56faea4 and f5d568f, ctrlrun 8ebc5a8, aep-sandbox 3495e27, BoxLite 9e9436e, Hard Stop 45c31bc, responsibleai/ASSERT 0628e25, CC Safety Net 0439757, AndrewDryga/emisar ac0d942, antropos17/Aegis 6cae92e, zerkerlabs/treeship 7fd3993, HN items 49795755, 49802030, 49830567, 49834450, 49834720, 49840107, 49841469, 49844056, and 49855568 with their linked primary sources, plus arXiv 2609.24165v1 and 2609.29808v1 (abstracts and full HTML). Each section states its own evidence boundary."
+summary: "Implementation-evidence companion to agent-security-verified-enforcement.md. Uses pinned repositories, disclosures, and deployed-system reports to separate signed claims from replayable evidence; receipt validity from verifier isolation and claim scope; verifier correctness from adversarial agent resistance; receipt integrity from completeness; configured policy from covered paths; identity enrollment from per-request proof; formal models from unsupported surfaces; observed egress from blocking; static egress policy from irreversible post-sensitive-access session restriction; stable tool digests from equivalent semantics and complete lifecycle coverage; policy verdicts from effect ownership; counterfactual actions from execution authority and real effect accounting; authorization receipts from effect gates; declared mediation architecture from per-effect path evidence; narrated results from positive execution evidence; sandbox isolation from configuration coherence; stop requests from observed quiescence; frozen eval inputs from stable comparison units; untrusted analysis failure from trusted configuration degradation; human approval records from end-to-end effect binding; effect-owning execution routes from provider-reported hook correlation and ambient process coverage; signed workflow conformance from evidence-grade propagation and independently proved declaration pre-existence; and workflow stage labels from prerequisite and ship-gate enforcement."
+triggers: ["SkillProof", "MCP server verification", "replayable evidence", "action receipt", "signed receipt", "evidence completeness", "MAX Authorization Sandbox", "signed policy", "adversary capability", "rollback state", "Pipelock", "HELM AI Kernel", "offline verifier", "verifier isolation", "claim-typed verification", "PassControl", "sender proof", "bearer visa", "authentication assurance", "default deny", "fail closed", "shell hook", "guardrail regression test", "OpenShell prover", "SMT containment", "path composition", "egress firewall", "uninspected egress", "session-aware egress", "sensitive-source transition", "sticky egress restriction", "tool identity", "tool pin", "schema canonicalization", "MCP Hangar", "cold-start pinning", "tool annotations", "shadow mode", "mediation ownership", "counterfactual action", "observed policy action", "real effect accounting", "ctrlrun", "HOL Guard", "Action Evidence Package", "AEP sandbox", "Codex sandbox", "Overpatch", "Heapjack", "authority derivation", "Meta Muse", "local configuration authority", "APEXA", "execution integrity", "tool execution evidence", "BoxLite", "micro-VM", "sandbox configuration coherence", "guest network", "host jailer grants", "Hard Stop", "SIGSTOP", "process group preemption", "quiescence receipt", "run-assert-eval", "ASSERT", "Agent Control Specification", "fixed evaluation", "applicable denominator", "paired comparison", "safety helpfulness split", "CC Safety Net", "analysis budget", "configuration degradation", "typed failure policy", "emisar", "approval binding", "bridge attestation", "pack hash", "Aegis", "exact action policy", "provider hook correlation", "direct child execution", "route coverage", "Treeship", "workflow conformance", "evidence grade", "declaration pre-existence", "CE-AI", "workflow stage evidence", "ship gate", "prerequisite enforcement"]
+last_updated: "2026-09-27"
+source_basis: "Pinned-source implementation studies and disclosures reviewed 2026-09-10 through 2026-09-27: SkillProof f5ddb4b, MAX Authorization Sandbox 380efe6, Pipelock f7d1816, HELM AI Kernel fe122d4, agent-guardrails-kit 18c241e, PassControl f9cb702, OpenShell df0ee1a, k8s-rca-agent 29f5fad, secure-agent 017ec5a, Rul1an/assay 900e536, MCP Hangar f02651c, Soup Wall be8db48, HOL Guard 56faea4 and f5d568f, ctrlrun 8ebc5a8, aep-sandbox 3495e27, BoxLite 9e9436e, Hard Stop 45c31bc, responsibleai/ASSERT 0628e25, CC Safety Net 0439757, AndrewDryga/emisar ac0d942, antropos17/Aegis 6cae92e, zerkerlabs/treeship 7fd3993, HN items 49795755, 49802030, 49830567, 49834450, 49834720, 49840107, 49841469, 49844056, and 49855568 with their linked primary sources, plus arXiv 2609.24165v1 and 2609.29808v1 (abstracts and full HTML). Each section states its own evidence boundary."
 </ai_context>
 
 # Agent Security: Enforcement Evidence and Runtime Coverage
@@ -692,6 +692,63 @@ proxy against a live MCP server, or test whether other policy rules mask the
 missing-identity path in a particular deployment. The numeric collision and
 validator disagreement are assertions encoded by the repository's tests, not an
 independent reproduction in this run.
+
+### Follow-up: pin coverage has both lifecycle and field-set dimensions (MCP Hangar, September 2026)
+
+**Repo:** https://github.com/mcp-hangar/mcp-hangar
+
+**Pinned observation:** repository commit
+[`f02651ca771b32b620582e8a528b01b9a4fa97f3`](https://github.com/mcp-hangar/mcp-hangar/commit/f02651ca771b32b620582e8a528b01b9a4fa97f3)
+
+MCP Hangar closes one of Assay's lifecycle gaps in a concrete call path. Its
+batch executor starts a cold upstream before the final pin check, resolves the
+actual selected member when a call targets a server group, and refuses the call
+when the post-start projection is absent or its digest cannot be computed under
+`block` mode. Repository tests assert that a stale pin prevents the invocation
+command even on the first call after boot, while a matching member pin succeeds
+through a group. Pins may apply to all callers or to one tenant, and every pin
+in scope must validate; an audit setting on another server cannot downgrade a
+server whose mode remains the default `block`.
+
+This stronger observation lifecycle does not make the digest a complete tool
+identity. `compute_tool_digest` JCS-canonicalizes and hashes exactly `name`,
+`description`, `inputSchema`, and `outputSchema`, omitting empty values. The
+repository's `ToolSchema` deliberately preserves additional MCP fields—most
+notably `annotations` and `execution`—and describes behavioral hints such as
+`readOnlyHint` and `destructiveHint` as governance inputs. Yet the digest test
+explicitly confirms that annotations and other extra fields are ignored.
+Changing a tool description is therefore detected, but changing only whether a
+tool advertises itself as destructive, read-only, idempotent, open-world, or
+task-capable does not invalidate the pin.
+
+The reusable contract has two independent completeness questions:
+
+1. **Lifecycle coverage:** can a call occur before discovery, after a cold start,
+   through group routing, or when identity computation fails without receiving
+   the intended pin verdict?
+2. **Semantic coverage:** does the pinned field set include every property that
+   downstream authorization, approval, UI, or execution policy treats as a
+   governance input?
+
+MCP Hangar is useful positive evidence for the first question and a clear scope
+boundary for the second. A deployment can reasonably call this a schema-and-
+description pin, but should not report it as a pin over the complete advertised
+tool contract unless the digest expands or those unbound fields are excluded
+from security decisions.
+
+**Evidence inspected at the pinned commit:**
+[`digest_computation.py`](https://github.com/mcp-hangar/mcp-hangar/blob/f02651ca771b32b620582e8a528b01b9a4fa97f3/src/mcp_hangar/domain/services/digest_computation.py),
+[`tool_catalog.py`](https://github.com/mcp-hangar/mcp-hangar/blob/f02651ca771b32b620582e8a528b01b9a4fa97f3/src/mcp_hangar/domain/model/tool_catalog.py),
+[`executor.py`](https://github.com/mcp-hangar/mcp-hangar/blob/f02651ca771b32b620582e8a528b01b9a4fa97f3/src/mcp_hangar/server/tools/batch/executor.py),
+[`test_digest_computation.py`](https://github.com/mcp-hangar/mcp-hangar/blob/f02651ca771b32b620582e8a528b01b9a4fa97f3/tests/unit/domain/services/test_digest_computation.py),
+[`test_digest_pinning_executor.py`](https://github.com/mcp-hangar/mcp-hangar/blob/f02651ca771b32b620582e8a528b01b9a4fa97f3/tests/unit/test_digest_pinning_executor.py), and
+[`test_pin_writes_and_detects_drift.py`](https://github.com/mcp-hangar/mcp-hangar/blob/f02651ca771b32b620582e8a528b01b9a4fa97f3/tests/integration/test_pin_writes_and_detects_drift.py).
+
+**Evidence boundary:** Scout inspected source and repository-authored tests at
+one pinned revision. The local environment lacked `pytest`, so the tests were
+not executed; no MCP server was started, and the repository's broader claims
+about authentication, policy enforcement, and production operation were not
+independently validated.
 
 ## A Policy Verdict Is Counterfactual Until the Mediator Owns the Effect (GitHub, September 2026)
 
