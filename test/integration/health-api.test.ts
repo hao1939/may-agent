@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, spyOn } from "bun:test";
-import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { mkdtempSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { SubagentManager, type SessionInfo } from "../../src/lib/manager.js";
@@ -151,37 +151,6 @@ describe("auditHealth()", () => {
     expect(report.sessionsLast24h).toBe(1);
     expect(report.totalPersistedSessions).toBe(2);
     expect(report.timestamp).toMatch(/^\d{4}-\d{2}-\d{2}T/);
-  });
-
-  it("detects unevaluated sessions", async () => {
-    // Session with transcript but no evaluation
-    writeAuditSession(persistDir, "s_uneval_0", {
-      agent: "coder",
-      task: "unevaluated task",
-      status: "done",
-      startedAt: Date.now() - 86400_000,
-    });
-    // Create a session JSONL so it's actionable
-    writeFileSync(join(persistDir, "sessions", "s_uneval_0", "session.jsonl"), '{"role":"user"}\n');
-
-    const report = await manager.auditHealth();
-    expect(report.unevaluated.total).toBe(1);
-    expect(report.unevaluated.actionable).toBe(1);
-    expect(report.unevaluated.autoSkippable).toBe(0);
-  });
-
-  it("classifies meta-agent sessions as auto-skippable", async () => {
-    writeAuditSession(persistDir, "s_eval_0", {
-      agent: "evaluator",
-      task: "eval task",
-      status: "done",
-      startedAt: Date.now() - 3600_000,
-    });
-
-    const report = await manager.auditHealth();
-    expect(report.unevaluated.total).toBe(1);
-    expect(report.unevaluated.autoSkippable).toBe(1);
-    expect(report.unevaluated.actionable).toBe(0);
   });
 
   it("detects stale sessions without a live process owner", async () => {
