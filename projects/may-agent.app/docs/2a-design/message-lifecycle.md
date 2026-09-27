@@ -532,6 +532,9 @@ Core rejects missing/mismatched targets, self-cancellation, duplicate controls,
 stale claims and changed target versions. Delegation uses normal Task admission.
 The prepared result is data only. Settlement resolves its exact App identities
 and checks current state; no Task store or callback travels inside the result.
+`decision.followUp` is the single handoff authority. An explicit Task is used
+directly; otherwise the attempt’s captured App declaration maps the input once
+at settlement. A separately supplied attachment cannot redirect the decision.
 
 Duplicate inputs reuse stable admission/result identities. A human Turn may
 already have explained a result before its queued system input runs; reread

@@ -169,10 +169,12 @@ The execution boundary keeps three responsibilities separate:
 Composition binds its Conversation read capability to admitted identity and
 connects the context builder and adapter. `TaskConversationRunner` is the
 Host composition hook around that adapter; its Host configuration is not passed
-through to model execution. Prepared proposals carry only decisions, App/Task
-identities, attachments and observed versions. At settlement core resolves the
-installed App again and checks current state in the same transaction as the
-reply and Request changes. There is no serialized store handle or new registry.
+through to model execution. Prepared proposals carry only the decision and
+observed versions for exact cancellation targets. A handoff is represented once,
+in the decision; core resolves that target and applies the App’s pure Task mapping
+once at settlement. It uses the attempt’s captured App declaration and current
+stored state in the same transaction as the reply and Request changes. There is
+no second prepared handoff, serialized store handle or new registry.
 
 Changing context selection or replacing the model adapter does not change
 identity, authority, revision checks or settlement. Changing an App's Task
