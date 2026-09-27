@@ -244,6 +244,8 @@ The **scheduled** selector also ran independently, converging at `6459447` with
 state version 7, Gym no activity, and a May population selection marked
 `report-pending`. This proves the new source is connected to the existing periodic
 selector; it does not certify every App's coverage or remove backlog delays.
+The next scheduled turn (`6459477`) selected an ordinary Scout review, confirming
+the alternation in the running system.
 
 May received Request `app_2d75fb1e-b0e3-43d1-aa59-adbfcc250cdb` and executed
 `evaluation-report-intake` as workflow `wr_1790519597725_dpmf` in session
@@ -264,9 +266,13 @@ checkpoint is **September 28 at 01:55:22.616 UTC**, after the assessment. The pr
 checkpoint had already been reconsidered without satisfying the independent
 human wait. This false alarm does not invalidate the observed recurrence.
 
-Supervisor correction event `6459460` addresses the same May Task, preserving
+Supervisor correction event `6459492` was accepted through `may:primary`, addressing
+the same May Conversation Task and preserving
 the valid wait and asking May to judge only supported findings. This is assisted
-review, not proof that May independently caught the mistake. No approval or live
+review, not proof that May independently caught the mistake. An earlier exact-Task
+attempt (`6459460`) was rejected because Conversation input requires its stable
+`conversationId`; its subscriber failure was retained and the corrected admission
+was checked for acceptance. No approval or live
 repair was authorized by the report or this correction.
 
 Next refinement: reuse the existing computed deadline/validity context for linked
