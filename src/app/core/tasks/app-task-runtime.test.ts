@@ -56,7 +56,6 @@ import type { NormalizedTaskHandlerResult } from "./result.js";
 import {
   applyCanonicalAgentResidueCleanup,
   beginCanonicalAgentResidueGuard,
-  finishCanonicalAgentResidueGuard,
   planCanonicalAgentResidueCleanup,
   rejectConvergedDirectAgentResidue,
 } from "../../adapters/executors/agent-workspace.js";
@@ -1532,7 +1531,8 @@ describe("canonical direct-agent residue cleanup", () => {
 
     const worktree = join(projectDirForBypass(), "workflow-output.txt");
     writeFileSync(worktree, "mutation-capable output\n");
-    expect(await finishCanonicalAgentResidueGuard(null)).toEqual([]);
+    expect(await planCanonicalAgentResidueCleanup(null)).toBeNull();
+    expect(await applyCanonicalAgentResidueCleanup(null)).toEqual([]);
     expect(readFileSync(worktree, "utf8")).toBe("mutation-capable output\n");
   });
 });
