@@ -509,7 +509,13 @@ same input-specific schema as settlement, so a missing explanation can be
 corrected inside the current execution. Settlement still checks current identity,
 revisions and authority transactionally; tool validation cannot replace those
 checks. A mixed input batch retains its human reply requirement even when a
-system fact is its most recent input.
+system fact is its most recent input. The public result schema owns requirements
+attached to proposed actions; the core Conversation boundary derives the human
+reply requirement from the exact claimed inputs and supplies the schema to the
+executor. Settlement derives it again from those persisted inputs. Executors
+consume that contract without interpreting context hints as validation policy.
+`humanRequested` describes provenance, including a human parent input; it does
+not turn a later automated observation into a new human ask or grant authority.
 
 Duplicate inputs reuse stable admission/result identities. A human Turn may
 already have explained a result before its queued system input runs; reread
