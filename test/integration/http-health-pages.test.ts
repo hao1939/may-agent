@@ -31,6 +31,21 @@ describe("served workflow and metric health pages", () => {
   let now: number;
   const markup = '<img src=x onerror="window.healthInjected=true">';
 
+  test("public attempt reports count retained failures and follow exact execution identity", async () => {
+    getDb(root).prepare(`INSERT INTO app_task_attempts
+      (app_id, attempt_id, task_id, task_generation, state, started_at, attempt_json)
+      VALUES ('research', 'failed-attempt', 'report', 1, 'failed', ?, ?)`).run(now - 500,
+      JSON.stringify({ handler: "executor:conversation", startedAt: new Date(now - 500).toISOString(),
+        finishedAt: new Date(now - 100).toISOString(), sessionId: "s_failed", failureReason: "SettlementFailed" }));
+    const response = await fetch(`${base}/api/task-attempts?appId=research&end=${now}&windowMs=1000`);
+    expect(response.status).toBe(200);
+    expect(await response.json()).toMatchObject({ available: true, current: { totals: { terminal: 1, failed: 1, failurePercent: 100 } } });
+    const exact = await fetch(`${base}/api/task-attempts?appId=research&taskId=report&attemptId=failed-attempt`);
+    expect(exact.status).toBe(200);
+    expect(await exact.json()).toMatchObject({ available: true, attemptId: "failed-attempt", sessionId: "s_failed" });
+    expect((await fetch(`${base}/api/task-attempts?end=${now}`)).status).toBe(400);
+  });
+
   beforeEach(async () => {
     now = Date.now() - 1000;
     root = mkdtempSync(join(tmpdir(), "may-http-health-"));
