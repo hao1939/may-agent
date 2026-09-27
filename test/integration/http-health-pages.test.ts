@@ -36,13 +36,20 @@ describe("served workflow and metric health pages", () => {
       (app_id, attempt_id, task_id, task_generation, state, started_at, attempt_json)
       VALUES ('research', 'failed-attempt', 'report', 1, 'failed', ?, ?)`).run(now - 500,
       JSON.stringify({ handler: "executor:conversation", startedAt: new Date(now - 500).toISOString(),
-        finishedAt: new Date(now - 100).toISOString(), sessionId: "s_failed", failureReason: "SettlementFailed" }));
+        finishedAt: new Date(now - 100).toISOString(), sessionId: "step-upload", failureReason: "SettlementFailed" }));
+    getDb(root).prepare(`UPDATE sessions SET status = 'done', error = NULL WHERE sessionId = 'step-upload'`).run();
+    const sessionHealth = await (await fetch(`${base}/api/agents/health`)).json() as Record<string, unknown>;
+    expect(sessionHealth.sessionCompletionRate).toBe(100);
+    expect(sessionHealth.successRate).toBeUndefined();
+    const activity = await (await fetch(`${base}/api/agents/activity`)).json() as { agents: Array<Record<string, unknown>> };
+    expect(activity.agents.find((agent) => agent.name === "worker")).toMatchObject({ sessionCompletionRate: 100 });
+    // Model completion can coexist with rejected Task settlement.
     const response = await fetch(`${base}/api/task-attempts?appId=research&end=${now}&windowMs=1000`);
     expect(response.status).toBe(200);
     expect(await response.json()).toMatchObject({ available: true, current: { totals: { terminal: 1, failed: 1, failurePercent: 100 } } });
     const exact = await fetch(`${base}/api/task-attempts?appId=research&taskId=report&attemptId=failed-attempt`);
     expect(exact.status).toBe(200);
-    expect(await exact.json()).toMatchObject({ available: true, attemptId: "failed-attempt", sessionId: "s_failed" });
+    expect(await exact.json()).toMatchObject({ available: true, attemptId: "failed-attempt", sessionId: "step-upload" });
     expect((await fetch(`${base}/api/task-attempts?end=${now}`)).status).toBe(400);
   });
 
