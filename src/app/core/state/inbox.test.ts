@@ -19,7 +19,6 @@ import {
   claimObservedAppTask,
   completeAppTask,
   failAppTaskAttempt,
-  markAppTaskAttention,
   observeAppTaskIntent,
   retryFailedAppTask,
   reportAppTaskFailure,
@@ -477,7 +476,7 @@ describe("request-to-Task state operation", () => {
       handler: "agent:example-owner",
     });
     if (claim.kind !== "claimed") throw new Error("expected claim");
-    markAppTaskAttention(config, claim, { summary: "Old blocker", reason: "fixture" });
+    failAppTaskAttempt(config, claim, "Old blocker", { facts: [], reason: "fixture" });
     admitTaskInput(config, { ...input, attachment: { kind: "existing", taskId: "work/one" } });
     expect(getAppInboxItem(db, input.inputContext.id)?.availableAt).toBeUndefined();
     finishTask(config);

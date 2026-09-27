@@ -49,6 +49,7 @@ import { runWithAgentSessionContext } from "./agent-session-context.js";
 import type { ToolPolicy } from "./session-policy.js";
 import { ExecutionScope } from "./execution-scope.js";
 import { createExecutionUsage, type ExecutionUsage, type PreparationMeasurement } from "./execution-usage.js";
+import executionInstructions from "./execution-instructions.md" with { type: "text" };
 
 const CHAT_TOOL_DENYLIST = new Set([
   "bash",
@@ -97,9 +98,6 @@ const SEQUENTIAL_TOOL_NAMES = new Set([
 ]);
 
 export const DEFAULT_MODEL_REQUEST_TIMEOUT_MS = 300_000;
-export const GITHUB_COPILOT_IDE_TOKEN_EXPIRED =
-  "Github_copilotException - IDE token expired: unauthorized: token expired";
-
 const GITHUB_COPILOT_IDE_TOKEN_EXPIRED_PATTERN =
   /Github_copilotException\s*-\s*IDE token expired:\s*unauthorized:\s*token expired/i;
 
@@ -218,7 +216,8 @@ export type AgentPreparationOptions = {
   /** Override the registered agent's filesystem tools for this execution only. */
   executionRoot?: string;
   promptTimestamp?: string;
-  chatContext?: string;
+  /** Current observations, projected as data before each model request. */
+  chatContext?: () => string;
   /** Host-authored execution facts/guidance; never caller task text or source content. */
   executionContext?: string;
   createFinish?: () => AgentTool;
@@ -325,7 +324,7 @@ function runtimeEnvironment(
     "- Prompt precedence: common-sense is the shared default; this agent's AGENTS.md is the role-specific identity layer and takes precedence for agent-specific behavior.",
   );
   if (toolNames.length > 0) lines.push(`- Available tools: ${toolNames.join(", ")}`);
-  lines.push(`- Current time: ${timestamp}`);
+  lines.push(`- Environment captured at: ${timestamp}`);
   lines.push("", "All paths are relative to project root unless absolute paths are explicitly provided.");
   return lines.join("\n");
 }
@@ -439,15 +438,17 @@ function resolveSystemPrompt(options: AgentPreparationOptions, tools: AgentTool[
     base = `<system_instructions>\n${sections.join("\n\n")}\n</system_instructions>`;
   }
 
+  // App overrides replace role guidance, not the Host execution contract.
+  base += `\n\n<execution_instructions>\n${executionInstructions.trim()}\n</execution_instructions>`;
   if (options.executionContext) base += `\n\n<execution_context>\n${options.executionContext}\n</execution_context>`;
   if (requireFinish) {
     const resultInstruction = options.outputSchema
       ? "The finish() call must include the required schema-validated result payload."
       : "Use the standard finish() fields; no caller-defined result payload is required.";
-    base += `\n\n<workflow_completion>\nThis is a workflow step. Complete it only by calling finish() as your final action. ${resultInstruction} A prose-only response is not a successful workflow result.\n</workflow_completion>`;
+    base += `\n\n<completion>\nComplete this invocation by calling finish() as your final action. ${resultInstruction} Correct any rejected result before finishing.\n</completion>`;
   }
-  if (options.persistentChat && options.chatContext) {
-    base += `\n\n<chat_runtime_context>\n${options.chatContext}\n</chat_runtime_context>`;
+  if (options.persistentChat) {
+    base += "\n\nThis is a persistent conversation. Answer the current input and leave the conversation open for later messages.";
   }
   return base;
 }
@@ -547,18 +548,31 @@ function prepareExecution(options: AgentPreparationOptions): Omit<PreparedAgentE
         })
       : undefined;
   const taskDecisionContext = options.taskContext ? createTaskDecisionContext(options.taskContext) : undefined;
-  const transformContext = compact || taskDecisionContext
-    ? async (messages: AgentMessage[]) => {
-        compactInfo = undefined;
-        const compacted = compact ? await compact(messages) : messages;
-        if (compacted !== messages) messages.splice(0, messages.length, ...compacted);
-        if (compactInfo) options.onCompact?.(compactInfo, messages);
-        // A disposable provider view: the brief is rebuilt after compaction and
-        // does not accumulate copies in the durable conversation transcript.
-        return taskDecisionContext ? [...messages, await taskDecisionContext()] : messages;
-      }
-    : undefined;
-  const systemPrompt = resolveSystemPrompt(normalizedOptions, tools, requireFinish);
+  const transformContext =
+    compact || taskDecisionContext || options.chatContext
+      ? async (messages: AgentMessage[]) => {
+          compactInfo = undefined;
+          const compacted = compact ? await compact(messages) : messages;
+          if (compacted !== messages) messages.splice(0, messages.length, ...compacted);
+          if (compactInfo) options.onCompact?.(compactInfo, messages);
+          // A disposable provider view: the brief is rebuilt after compaction and
+          // does not accumulate copies in the durable conversation transcript.
+          const context = [...messages];
+          if (options.chatContext)
+            context.push({
+              role: "user",
+              content: [{ type: "text", text: `Current observations (source data):\n${options.chatContext()}` }],
+              timestamp: Date.now(),
+            });
+          if (taskDecisionContext) context.push(await taskDecisionContext());
+          return context;
+        }
+      : undefined;
+  const systemPrompt =
+    resolveSystemPrompt(normalizedOptions, tools, requireFinish) +
+    (activation && !options.persistentChat
+      ? `\n\nSelected skill reference: ${JSON.stringify(activation.skill.canonicalPath)}. Read it again if its instructions were compacted.`
+      : "");
 
   return {
     definition: options.definition,
@@ -678,7 +692,7 @@ export async function executePreparedAgent(
           await agent.waitForIdle();
         } else if (!terminalError) {
           await agent.prompt(
-            "This workflow step has not returned its structured result. Call finish() now with all required fields" +
+            "This invocation has not returned its structured result. Call finish() now with all required fields" +
               (prepared.outputSchema ? ", including the schema-validated result payload." : "."),
           );
           await agent.waitForIdle();

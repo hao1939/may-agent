@@ -50,7 +50,7 @@ const checkpointSchema: TSchema = Type.Object({
   data: Type.Optional(
     Type.Record(Type.String(), Type.Unknown(), {
       description:
-        "Structured key-value data to persist. Useful keys: files_modified (list of paths changed), decisions (key choices made), next_steps (what to do if resumed). This data is available to the next session via readCheckpoints.",
+        "Structured key-value data to persist. Useful keys: files_modified (list of paths changed), decisions (key choices made), next_steps (what to do if resumed). Inspect the saved .state/checkpoints/<sessionId>.jsonl with the read tool when needed.",
     }),
   ),
 });
@@ -93,21 +93,6 @@ export function readCheckpoints(persistDir: string, sessionId: string): Checkpoi
 export function readLatestCheckpoint(persistDir: string, sessionId: string): CheckpointEntry | null {
   const entries = readCheckpoints(persistDir, sessionId);
   return entries.length > 0 ? entries[entries.length - 1] : null;
-}
-
-/**
- * Read the latest checkpoint for an agent (across all sessions).
- * Uses the per-agent latest pointer at `.state/checkpoints/latest/<agentName>.json`.
- * Returns null if no checkpoints exist for this agent.
- */
-export function readLatestCheckpointForAgent(persistDir: string, agentName: string): CheckpointEntry | null {
-  const filePath = resolve(persistDir, "checkpoints", "latest", `${agentName}.json`);
-  if (!existsSync(filePath)) return null;
-  try {
-    return JSON.parse(readFileSync(filePath, "utf-8"));
-  } catch {
-    return null;
-  }
 }
 
 // ── Tool factory ───────────────────────────────────────────────────────
@@ -176,7 +161,7 @@ export function createCheckpointTool(options: CheckpointToolOptions): AgentTool<
         };
         mkdirSync(checkpointDir, { recursive: true });
         appendFileSync(resolve(checkpointDir, `${sid}.jsonl`), JSON.stringify(entry) + "\n", "utf-8");
-        // Write per-agent latest pointer for session injection
+        // Keep a per-agent latest pointer for on-demand inspection.
         mkdirSync(latestDir, { recursive: true });
         writeFileSync(resolve(latestDir, `${entry.agentName}.json`), JSON.stringify(entry) + "\n", "utf-8");
       } catch (err) {
@@ -195,7 +180,7 @@ export function createCheckpointTool(options: CheckpointToolOptions): AgentTool<
       const dataKeys = data ? Object.keys(data) : [];
       const dataInfo = dataKeys.length > 0 ? ` Data keys: ${dataKeys.join(", ")}.` : "";
 
-      // ── Trigger checkpoint digest (Phase 1: session digest system) ────
+      // Keep the existing session digest as a best-effort summary.
       try {
         createCheckpointDigest(persistDir, sid, entry.agentName, {
           summary: summary.trim(),

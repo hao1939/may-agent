@@ -11,7 +11,8 @@ Read in this order:
 
 1. `app-task-capability.ts` is the private entry point used by Host composition.
 2. `controller.ts` and `queue.ts` select ready work under shared capacity.
-3. `attempt-runner.ts: runTaskAttempt()` shows claim → execute → settle.
+3. `attempt-runner.ts: runTaskAttempt()` claims work; `runClaimedTask()` prepares
+   its workspace, calls `executeTaskHandler()` and settles the returned report.
    `attempt-execution.ts` builds the shared context and invokes the selected executor.
    `dependency-admission.ts` admits typed delegation and recovers exact waits.
    `app-task-runtime.ts` installs controllers and wires routes; `runtime-definition.ts`
@@ -43,9 +44,30 @@ authorized owner -> close Task -> fence running execution and future wakes
 | Admit | `attachLoadedAppTask()` -> `core/state/inbox.ts: admitTaskInput()`; declared event routes use `admitResolvedAppTaskEvent()` -> `observeAppTaskIntent()` | Atomic inbox attachment or idempotent event admission retains the owning Task |
 | Dispatch | `controller.ts` -> `attempt-runner.ts: runTaskAttempt()` (locally or in the worker) -> `claimObservedAppTask()` | Capacity limits local execution; the SQLite claim decides who owns this Task attempt |
 | Execute | `attempt-execution.ts` -> selected handler via `execution.ts`; human context is prepared by `composition/conversation-task-turn.ts` | Every handler uses the same Task claim. It proposes a result without acquiring closure authority |
-| Settle | `establishTaskAcceptance()` -> `completeAppTask()`, `deferAppTask()` or `markAppTaskAttention()`; human-facing effects use `core/state/conversation-task-turns.ts`; execution failures and the diagnostic wrapper share `failAppTaskAttempt()` | The reconciler fences acceptance. Replies, Request updates and authorized effects commit with the Task result; unfinished input survives failure |
+| Settle | `establishTaskAcceptance()` -> `completeAppTask()`, `deferAppTask()` or `failAppTaskAttempt()`; human-facing effects use `core/state/conversation-task-turns.ts` | The reconciler fences acceptance. Replies, Request updates and authorized effects commit with the Task result; unfinished input survives failure |
 | Close or stop an attempt | `cancelLoadedAppTask()` -> `cancelAppTask()` closes the assignment; `stopLoadedConversationTurn()` stops the observed human Turn | Closure fences future work. Turn Stop preserves newer input. `reportAppTaskFailure()` records a worker failure report and retries; it does not close the Task |
 | Restart | `recoverInstalledAppTasks()` -> `recoverInterruptedAppTasks()`; `app-task-recovery.ts` restores queue hints | Accepted Task results survive. Uncommitted execution retries the same input after ownership/cleanup checks; session output remains facts for normal execution and validation |
+
+Waiting settlement follows one sequence in `runClaimedTask()`: fence and finalize
+the workspace, validate/merge declared Conditions and admit dependencies, commit
+through `deferAppTask()`, then recover already-saved feedback. Each rejection
+returns through the existing unsuccessful-attempt settlement. The executor's
+proposal is retained unchanged; settlement prepares its own observations.
+Omitted Conditions remain the reconciler's responsibility, and a failed step
+cannot accept proposed actions. Keep this ordering when extracting helpers.
+
+Workspace preparation must succeed before any selected handler runs. Preparation
+failure returns directly to unsuccessful-attempt settlement. Each result branch
+then either commits that report or returns a separate rejection; it does not
+rewrite the report's state and fall through to another branch. Failure diagnostics
+and ordinary execution errors use `failAppTaskAttempt()`; its stored disposition
+determines immediate handoff versus paced retry.
+
+Task profiling retains dispatch identity, queue wait and total elapsed time.
+Session timestamps and execution-usage records supply execution duration, prompt
+preparation size and token usage. Task adapters do not duplicate those observations
+with provider callbacks. Lease renewal, execution deadlines and the event-loop
+yield remain execution mechanics, independent of these passive measurements.
 
 Installation and external controls enter through `app-task-runtime.ts`. The attempt
 sequence and result checks live in `attempt-runner.ts`; only the existing reconciler

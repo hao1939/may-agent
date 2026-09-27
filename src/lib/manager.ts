@@ -592,17 +592,16 @@ export class SubagentManager {
     const timeoutMs = executionTimeout(opts?.timeoutMs ?? def.timeoutMs, opts?.deadlineAt);
     const sessionId = opts?.sessionId ?? generateId(def.sessionIdPrefix);
     if (this._sessions.has(sessionId)) throw new Error(`Session "${sessionId}" already active`);
-    const executionContext = opts?.parentSessionId || opts?.workflowRunId ? [
-      "## Assigned contribution",
-      "The call request defines your contribution. Shared Task context provides background and discovery; it does not assign you the entire Task or expand your authority.",
-      "Choose useful methods within this assignment, inspect relevant updates, and return evidence, partial work and any specific blocker to your caller. Your caller judges whether the contribution is sufficient.",
-      `Execution: ${JSON.stringify(sessionId)}. Caller session: ${JSON.stringify(opts.parentSessionId ?? null)}. Workflow: ${JSON.stringify(opts.workflowRunId ?? null)}.`,
-      `Assignment and caller links are retained in ${JSON.stringify(join(this._persistDir, "sessions", sessionId, "meta.json"))}. Use exact linked execution IDs to discover earlier evidence.`,
-    ].join("\n") : undefined;
     const startedAt = opts?.startedAt ?? Date.now();
     const kind = opts?.kind ?? "job";
     const autoClose = opts?.autoClose ?? "immediate";
     const persistentChat = this.isPersistentChatPolicy(kind, autoClose);
+    const executionContext = persistentChat
+      ? undefined
+      : [
+          `Execution: ${JSON.stringify(sessionId)}. Caller session: ${JSON.stringify(opts?.parentSessionId ?? null)}. Workflow: ${JSON.stringify(opts?.workflowRunId ?? null)}.`,
+          `Original assignment and caller links: ${JSON.stringify(join(this._persistDir, "sessions", sessionId, "meta.json"))}. If the assignment was compacted, read its task field before continuing.`,
+        ].join("\n");
     const requestedStructuredCompletion = opts?.requireFinish === true || opts?.outputSchema !== undefined;
     const operationAllowance = validateOperationAllowance(opts?.operationAllowance);
     const toolPolicy = opts?.toolPolicy ?? "full";
@@ -643,7 +642,7 @@ export class SubagentManager {
       promptTimestamp: this._promptTimestamp,
       ...(persistentChat
         ? {
-            chatContext: `${this.chatSessionInstructions()}\n\n${this.buildChatContextPacket(sessionId, def.name, task)}`,
+            chatContext: () => this.buildChatContextPacket(sessionId, def.name),
           }
         : {}),
       createFinish: () =>
@@ -822,7 +821,6 @@ export class SubagentManager {
           }
           await agent.prompt(prepared.prompt);
         },
-        task,
       );
     } else {
       this.startManagedExecution(session);
@@ -891,7 +889,6 @@ export class SubagentManager {
             // nobody starts a run to drain it.
             await session.agent.prompt(msg as any);
           },
-          turnTask,
         );
       } else {
         session.status = "running";
@@ -1366,7 +1363,7 @@ export class SubagentManager {
     return sessionId;
   }
 
-  health(): any {
+  health() {
     const activeSessions = this.status();
     return {
       timestamp: new Date().toISOString(),
@@ -1384,7 +1381,7 @@ export class SubagentManager {
     };
   }
 
-  async auditHealth(): Promise<any> {
+  async auditHealth() {
     const now = Date.now();
     const dayAgo = now - 24 * 60 * 60 * 1000;
     const db = getDb(this._persistDir);
@@ -1395,16 +1392,6 @@ export class SubagentManager {
          FROM sessions`,
       )
       .get(dayAgo) as { total?: number | null; recent?: number | null } | null;
-    const unevaluated = db
-      .prepare(
-        `SELECT COUNT(*) AS total,
-                SUM(CASE WHEN session.agent IN ('evaluator', 'optimizer', 'may') THEN 1 ELSE 0 END) AS autoSkippable
-         FROM sessions session
-         LEFT JOIN evaluations evaluation ON evaluation.sessionId = session.sessionId
-         WHERE session.status IN ('done', 'error', 'interrupted')
-           AND evaluation.sessionId IS NULL`,
-      )
-      .get() as { total?: number | null; autoSkippable?: number | null } | null;
     const liveSessionIds = [...this._sessions.keys()];
     const liveSessionFilter = liveSessionIds.length
       ? ` AND sessionId NOT IN (${liveSessionIds.map(() => "?").join(", ")})`
@@ -1442,18 +1429,11 @@ export class SubagentManager {
       running?: number | null;
       interrupted?: number | null;
     } | null;
-    const unevaluatedTotal = Number(unevaluated?.total ?? 0);
-    const autoSkippable = Number(unevaluated?.autoSkippable ?? 0);
 
     return {
       timestamp: new Date().toISOString(),
       sessionsLast24h: Number(sessionCounts?.recent ?? 0),
       totalPersistedSessions: Number(sessionCounts?.total ?? 0),
-      unevaluated: {
-        total: unevaluatedTotal,
-        actionable: unevaluatedTotal - autoSkippable,
-        autoSkippable,
-      },
       staleSessions,
       staleSessionsTruncated: staleCandidates.length > 1000,
       workflowRuns: {
@@ -1465,10 +1445,10 @@ export class SubagentManager {
     };
   }
 
-  async reconcileHealth(): Promise<any> {
+  async reconcileHealth() {
     const health = this.health();
     const audit = await this.auditHealth();
-    const discrepancies = audit.staleSessions.map((s: any) => `Stale session ${s.sessionId} (${s.agent})`);
+    const discrepancies = audit.staleSessions.map((s) => `Stale session ${s.sessionId} (${s.agent})`);
     if (audit.staleSessionsTruncated) discrepancies.push("Session health scan incomplete; more candidates remain");
     return {
       healthy: discrepancies.length === 0,
@@ -1481,7 +1461,7 @@ export class SubagentManager {
   // ── Tool creation ──
 
   createAgentsTool(opts?: CreateAgentsToolOptions): AgentTool {
-    return createAgentsToolFn(this as any, {
+    return createAgentsToolFn(this, {
       ...opts,
       validateControl: (sessionId, callerSessionId) =>
         validateSessionControl(this, "session.cancel.requested", sessionId, { callerSessionId, remote: true }),
@@ -1759,22 +1739,10 @@ export class SubagentManager {
     };
   }
 
-  private chatSessionInstructions(): string {
-    return [
-      "# Persistent Human Chat",
-      "- This is the human-facing May chat session. Stay responsive and keep the conversation open.",
-      "- Do not call finish(); a chat turn completes by answering the human and going idle.",
-      "- Use read/status/query tools to understand state; delegate concrete project or code work to the right owner/worker agent.",
-      "- Treat the system state packet below as a fresh snapshot. It is context, not a task tree packet.",
-      "- When you take or delegate action for a human request, close the loop with a clear result or a visible follow-up.",
-    ].join("\n");
-  }
-
-  private buildChatContextPacket(sessionId: string, agentName: string, task: string): string {
+  private buildChatContextPacket(sessionId: string, agentName: string): string {
     const lines = ["# Fresh System State", `- Generated: ${new Date().toISOString()}`];
     lines.push(`- Chat session: ${sessionId}`);
     lines.push(`- Agent: ${agentName}`);
-    lines.push(`- Current human message: ${truncateForPrompt(task, 300)}`);
 
     const active = this.status()
       .filter((session) => session.sessionId !== sessionId)
@@ -1992,7 +1960,7 @@ export class SubagentManager {
             await agent.waitForIdle();
           } else if (missingFinish && !terminalError) {
             await agent.prompt(
-              "This workflow step has not returned its structured result. Call finish() now with all required fields" +
+              "This invocation has not returned its structured result. Call finish() now with all required fields" +
                 (session.outputSchema ? ", including the schema-validated result payload." : "."),
             );
             await agent.waitForIdle();
@@ -2160,23 +2128,8 @@ export class SubagentManager {
     session.openTurnTraces = [];
   }
 
-  private startChatTurn(session: ActiveSession, start: () => Promise<void>, turnTask?: string): void {
+  private startChatTurn(session: ActiveSession, start: () => Promise<void>): void {
     const { sessionId } = session;
-    const def = session.definition;
-    session.agent.state.systemPrompt = prepareAgentExecution({
-      definition: def,
-      projectRoot: this._projectRoot,
-      sessionId,
-      task: turnTask ?? session.task,
-      persistentChat: true,
-      promptTimestamp: this._promptTimestamp,
-      chatContext: `${this.chatSessionInstructions()}\n\n${this.buildChatContextPacket(
-        sessionId,
-        def.name,
-        turnTask ?? session.task,
-      )}`,
-      onNotice: (message) => log("warn", message),
-    }).systemPrompt;
     session.status = "running";
     session.lastError = undefined;
     session.interruptionKind = undefined;

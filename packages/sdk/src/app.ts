@@ -1,4 +1,5 @@
 import { Type, type Static, type TSchema } from "typebox";
+import { appInputSchema } from "./app-input.js";
 import type { AppEvent, EventSelector } from "./event.js";
 import type { Condition, TaskAction, TaskIntent } from "./task.js";
 import type { MetricDefinition, ObserverContext, ObserverSnapshot, TaskAttempt, TaskDetail } from "./workflow.js";
@@ -183,8 +184,20 @@ export const conversationRequestUpdatesSchema = Type.Array(
   Type.Object(
     {
       id: Type.String({ minLength: 1, maxLength: 200 }),
-      expectedRevision: Type.Integer({ minimum: 0, maximum: Number.MAX_SAFE_INTEGER - 1 }),
-      scope: Type.Optional(Type.String({ minLength: 1, maxLength: 2000 })),
+      expectedRevision: Type.Integer({
+        minimum: 0,
+        maximum: Number.MAX_SAFE_INTEGER - 1,
+        description:
+          "Observed Request revision, or 0 for a new ask. Use the revision returned by conversation_request; reread after a conflict.",
+      }),
+      scope: Type.Optional(
+        Type.String({
+          minLength: 1,
+          maxLength: 2000,
+          description:
+            "Complete accepted ask for creation or authorized revision. Omit to retain existing scope. Closing cannot change the scope.",
+        }),
+      ),
       disposition: Type.Union([
         Type.Literal("open"),
         Type.Literal("fulfilled"),
@@ -208,7 +221,11 @@ export const conversationRequestUpdatesSchema = Type.Array(
     },
     { additionalProperties: false },
   ),
-  { maxItems: 8 },
+  {
+    maxItems: 8,
+    description:
+      "Accept, revise, link or close asks. A simple ask may be accepted and fulfilled in one answer. After saving a correction with conversation_request, retain its revision and omit unchanged scope. Read omitted/truncated Requests before changing them. Close only with an explained fulfillment, withdrawal or unfulfilled disposition; admitting or completing a Task alone is not Request closure.",
+  },
 );
 
 /** Context for one admitted input, distinct from an accepted conversational Request. */
@@ -299,24 +316,42 @@ export const conversationTurnResultSchema = Type.Object(
   {
     summary: nonEmptyStringSchema,
     requestUpdates: Type.Optional(conversationRequestUpdatesSchema),
-    response: Type.Optional(nonEmptyStringSchema),
+    response: Type.Optional(
+      Type.String({
+        minLength: 1,
+        description:
+          "Human-facing answer or useful update. Required for a human-requested Turn and for followUp; may be omitted for an automated no-op.",
+      }),
+    ),
     facts: Type.Optional(Type.Array(nonEmptyStringSchema, { maxItems: 32 })),
-    topic: Type.Union([
-      Type.Object({ kind: Type.Literal("none") }, { additionalProperties: false }),
-      Type.Object({ kind: Type.Literal("new"), title: nonEmptyStringSchema }, { additionalProperties: false }),
-      Type.Object({ kind: Type.Literal("existing"), id: nonEmptyStringSchema }, { additionalProperties: false }),
-    ]),
+    topic: Type.Union(
+      [
+        Type.Object({ kind: Type.Literal("none") }, { additionalProperties: false }),
+        Type.Object({ kind: Type.Literal("new"), title: nonEmptyStringSchema }, { additionalProperties: false }),
+        Type.Object({ kind: Type.Literal("existing"), id: nonEmptyStringSchema }, { additionalProperties: false }),
+      ],
+      {
+        description:
+          "Related conversation context and exact Task links: use an existing Topic, create a new durable interest, or none for a self-contained answer.",
+      },
+    ),
     followUp: Type.Optional(
       Type.Object(
         {
-          requestId: Type.Optional(nonEmptyStringSchema),
+          requestId: Type.Optional(
+            Type.String({ minLength: 1, description: "The accepted ask served by this handoff, when applicable." }),
+          ),
           appId: nonEmptyStringSchema,
-          input: Type.Object({ kind: nonEmptyStringSchema, data: Type.Unknown() }, { additionalProperties: false }),
+          input: appInputSchema,
           task: Type.Optional(
             Type.Object({ appId: nonEmptyStringSchema, taskId: nonEmptyStringSchema }, { additionalProperties: false }),
           ),
         },
-        { additionalProperties: false },
+        {
+          additionalProperties: false,
+          description:
+            "Admit one responsible Task, possibly in this App, and link it to the Topic. Reuse an exact Task only when outcome, acceptance, input and execution method fit. Supply an immediate response explaining the intended outcome. This Turn ends after admission; the Request remains open until resolved and explained.",
+        },
       ),
     ),
     taskControls: Type.Optional(
@@ -330,11 +365,19 @@ export const conversationTurnResultSchema = Type.Object(
           },
           { additionalProperties: false },
         ),
-        { maxItems: 8 },
+        {
+          maxItems: 8,
+          description:
+            "Cancel exact contextual work within granted authority. Ending this Turn or leaving a view does not cancel background work.",
+        },
       ),
     ),
   },
-  { additionalProperties: false },
+  {
+    additionalProperties: false,
+    description:
+      "Decide one bounded Conversation Turn from its admitted input, current Requests and Task observations. Return through finish().result. previousAttempt.unacceptedResult is unaccepted settlement evidence: inspect current state before repeating tools whose effects may already have completed. A tool's success does not by itself establish fulfillment of the human's ask.",
+  },
 );
 
 export type AppEventSubscription = {

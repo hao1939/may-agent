@@ -3,7 +3,7 @@ import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { openDatabase, type SqliteDb } from "../../../lib/db.js";
-import { applyDbSchema } from "../../../lib/db/schema.js";
+import { applyDbSchema, SCHEMA } from "../../../lib/db/schema.js";
 import {
   completeAppEventAdmissionPlan,
   createAppEventAdmissionPlan,
@@ -269,4 +269,35 @@ describe("App event admission store", () => {
       }),
     ).toThrow("multiple routes for App sample");
   });
+});
+
+it("upgrades the old admission journal without changing frozen commands or their receipts", () => {
+  const database = openDatabase(":memory:");
+  try {
+    database.exec(SCHEMA
+      .replace(", 'unresolved', 'noop'", "")
+      .replace("  resolved_snapshot_id  TEXT,\n", ""));
+    database.prepare("INSERT INTO events (id, event_type, data, timestamp) VALUES (1, 'probe.changed', '{}', 1000)").run();
+    database.prepare(`INSERT INTO app_event_admission_plans
+      (event_id, registry_snapshot_id, registry_generation, status, created_at, updated_at)
+      VALUES (1, 'original:1', 1, 'pending', 1000, 1000)`).run();
+    database.prepare(`INSERT INTO app_event_admission_commands
+      (event_id, app_id, route_kind, route_id, payload_version, payload, status, admitted_at, updated_at)
+      VALUES (1, 'example', 'inbox', 'change', 1, ?, 'admitted', 1001, 1001)`)
+      .run(JSON.stringify({ input: { kind: "message", data: { value: "original" } } }));
+    applyDbSchema(database);
+    const upgraded = getAppEventAdmissionPlan(database, 1);
+    expect(upgraded).toMatchObject({
+      registrySnapshotId: "original:1",
+      commands: [{ kind: "inbox", payloadVersion: 1, status: "admitted", admittedAt: 1001,
+        conditionTaskIds: [], input: { kind: "message", data: { value: "original" } } }],
+    });
+    database.prepare(`INSERT INTO app_event_admission_commands
+      (event_id, app_id, route_kind, route_id, payload, updated_at)
+      VALUES (1, 'other', 'unresolved', 'change', ?, 1002)`)
+      .run(JSON.stringify({ subscriptionIds: ["change"], resolveTask: false, conditionTaskIds: [] }));
+    applyDbSchema(database);
+    expect(getAppEventAdmissionPlan(database, 1)?.commands).toHaveLength(2);
+    expect(database.prepare("PRAGMA foreign_key_check").all()).toEqual([]);
+  } finally { database.close(); }
 });

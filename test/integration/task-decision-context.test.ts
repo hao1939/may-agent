@@ -126,7 +126,7 @@ test("current Task context reaches a late helper and survives settlement into a 
               if (helper) {
                 helperReads++;
                 expect(JSON.stringify(p.events)).toContain("Thursday");
-                expect(input.systemPrompt).toContain("Assigned contribution");
+                expect(input.systemPrompt).toContain("a helper still owes only its assigned contribution");
                 content = [{ type: "text", text: "Review only: Thursday is required; approval remains open for v3." }];
               } else if (round === 1 && step++ === 0) {
                 expect(p.current.result.version).toBe("v3");
@@ -222,7 +222,6 @@ test("current Task context reaches a late helper and survives settlement into a 
         descriptor,
         claim: active,
         executionPaths: { appDir, projectDir: root, workspaceDir: root },
-        declaredOutputPaths: [],
         childContext: { live: [], completed: [] },
         taskSnapshot: { live: [], truncated: false },
       });

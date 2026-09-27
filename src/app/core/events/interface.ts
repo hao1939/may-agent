@@ -601,13 +601,23 @@ function linksForEvent(db: SqliteDb, eventId: number, eventType: string, data: R
           id: item.id,
           ...(typeof item.status === "string" ? { state: item.status } : {}),
         });
+        continue;
       }
-    } else {
+    }
+    if (routeKind === "task" || routeKind === "exact-task") {
       addLink({
         kind: "task",
         id: `${routeAppId}/${routeId}`,
         ...(typeof route.status === "string" ? { state: route.status } : {}),
         ...(optionalText(route.last_error) ? { summary: optionalText(route.last_error) } : {}),
+      });
+    } else {
+      addLink({
+        kind: "delivery",
+        id: `app-event:${eventId}:${routeAppId}`,
+        state: String(route.status),
+        summary: optionalText(route.last_error) ??
+          (routeKind === "noop" ? "App selected no work" : `App ${routeAppId} admission is pending`),
       });
     }
   }

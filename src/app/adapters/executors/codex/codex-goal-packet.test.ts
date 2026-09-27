@@ -2,7 +2,6 @@ import { describe, expect, it } from "bun:test";
 import { taskReconcileResultSchema } from "@may-agent/sdk";
 import {
   MAX_CODEX_GOAL_OBJECTIVE_CHARS,
-  readCodexGoalTaskAttempt,
   renderCodexGoalTaskAttempt,
   type CanonicalTaskAttemptPacket,
 } from "./codex-goal-packet.js";
@@ -77,11 +76,8 @@ function packet(overrides: Partial<CanonicalTaskAttemptPacket> = {}): CanonicalT
 describe("Codex goal Task packet", () => {
   it("renders every Runtime-selected semantic field into Codex transport", () => {
     const canonical = packet();
-    const codexInput = readCodexGoalTaskAttempt(renderCodexGoalTaskAttempt(canonical).developerInstructions);
-    expect(codexInput).toEqual(canonical);
-    expect(Object.keys(codexInput).sort()).toEqual(
-      ["contract", "desired", "events", "identity", "observations", "role", "workspace"].sort(),
-    );
+    const rendered = renderCodexGoalTaskAttempt(canonical);
+    expect(rendered.developerInstructions).toEndWith("## Canonical May Task Attempt\n" + JSON.stringify(canonical));
   });
 
   it("keeps the goal stable across same-generation attempts and event replay", () => {
@@ -105,12 +101,12 @@ describe("Codex goal Task packet", () => {
     const nextRendered = renderCodexGoalTaskAttempt(next);
     expect(nextRendered.goalObjective).toBe(firstRendered.goalObjective);
     expect(nextRendered.developerInstructions).not.toBe(firstRendered.developerInstructions);
-    expect(readCodexGoalTaskAttempt(nextRendered.developerInstructions)).toEqual(next);
+    expect(nextRendered.developerInstructions).toEndWith("## Canonical May Task Attempt\n" + JSON.stringify(next));
   });
 
-  it("changes the goal only with a new generation and respects Codex's objective limit", () => {
+  it("retains generation identity while bounding the objective length", () => {
     const first = packet({ desired: { ...packet().desired, outcome: "x".repeat(8_000) } });
-    const revised = packet({ identity: { ...first.identity, generation: first.identity.generation + 1 } });
+    const revised = { ...first, identity: { ...first.identity, generation: first.identity.generation + 1 } };
     expect(renderCodexGoalTaskAttempt(first).goalObjective.length).toBe(MAX_CODEX_GOAL_OBJECTIVE_CHARS);
     expect(renderCodexGoalTaskAttempt(revised).goalObjective).not.toBe(renderCodexGoalTaskAttempt(first).goalObjective);
   });

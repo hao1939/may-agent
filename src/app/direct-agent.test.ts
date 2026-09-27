@@ -168,8 +168,8 @@ describe("direct agent tool policy", () => {
     await mkdir(join(root, "shared"), { recursive: true });
     await mkdir(agentDir, { recursive: true });
     await writeFile(join(root, "shared", "common-sense.md"), "Shared instruction.");
-    await writeFile(join(agentDir, "AGENTS.md"), "Example agent instruction.");
-    await writeFile(join(agentDir, "context.md"), "Stable context path.");
+    await writeFile(join(agentDir, "AGENTS.md"), "Example agent instruction. See [context](context.md) in your agent directory when relevant.");
+    await writeFile(join(agentDir, "context.md"), "Supporting context is read on demand.");
     await writeFile(
       join(agentDir, "agent.json"),
       JSON.stringify({
@@ -178,7 +178,6 @@ describe("direct agent tool policy", () => {
         domain: "test",
         model: "test",
         tools: ["read-only"],
-        context_files: ["context.md"],
       }),
     );
     const timestamp = "2026-07-20T00:00:00.000Z";
@@ -215,12 +214,12 @@ describe("direct agent tool policy", () => {
         requireFinish: prepared.requireFinish,
         hasGuards: Boolean(prepared.runner.beforeToolCall),
         hasCompaction: Boolean(prepared.runner.transformContext),
-        contextFiles: prepared.definition.contextFiles,
       });
 
       expect(parityView(direct.prepared)).toEqual(parityView(hosted));
-      expect(direct.prepared.systemPrompt).toContain(`- Current time: ${timestamp}`);
-      expect(direct.prepared.definition.contextFiles).toEqual([join(agentDir, "context.md")]);
+      expect(direct.prepared.systemPrompt).toContain(`- Environment captured at: ${timestamp}`);
+      expect(direct.prepared.systemPrompt).toContain("[context](context.md)");
+      expect(direct.prepared.systemPrompt).not.toContain("Supporting context is read on demand.");
     } finally {
       direct?.cleanup();
       await rm(root, { recursive: true, force: true });

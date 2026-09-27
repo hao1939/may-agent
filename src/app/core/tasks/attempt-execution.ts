@@ -30,7 +30,7 @@ import {
   type AppTaskClaim,
 } from "./app-task-reconciler.js";
 import { ResourceTaskMutationStaleError } from "./app-task-store.js";
-import type { AppTaskExecutionObserver, TaskAgentInput, TaskWorkflowInput } from "./execution.js";
+import type { TaskAgentInput, TaskWorkflowInput } from "./execution.js";
 import { normalizeTaskHandlerResult, type TaskCapabilityRun } from "./result.js";
 import { appTaskConfig, configuredRegistryEntries, type AppTaskRuntimeDescriptor } from "./runtime-definition.js";
 import type { AppTaskRuntimeOptions } from "./runtime-options.js";
@@ -62,17 +62,10 @@ export async function runTaskCapability(
     opts: AppTaskRuntimeOptions;
     descriptor: AppTaskRuntimeDescriptor;
     claim: AppTaskClaim;
-    declaredOutputPaths: string[];
   },
 ): Promise<TaskCapabilityRun> {
   return runTaskExecutorAttempt({
-    opts: input.opts,
-    descriptor: input.descriptor,
-    claim: input.claim,
-    executionPaths: input.executionPaths,
-    declaredOutputPaths: input.declaredOutputPaths,
-    childContext: input.childContext,
-    ...(input.event ? { event: input.event } : {}),
+    ...input,
     execute: async (attempt, taskEvents) => {
       if (!input.opts.workflows)
         return {
@@ -85,7 +78,7 @@ export async function runTaskCapability(
           runId: null,
           unavailable: true,
         };
-      const { opts, descriptor, claim, declaredOutputPaths: _outputs, ...execution } = input;
+      const { opts, descriptor, claim, ...execution } = input;
       return opts.workflows!.execute({
         ...execution,
         handler: claim.handler,
@@ -143,7 +136,6 @@ function runtimeTaskAttempt(input: {
   descriptor: AppTaskRuntimeDescriptor;
   claim: AppTaskClaim;
   cwd: string;
-  declaredOutputPaths: string[];
   childContext: AppTaskChildContext;
   event?: EventEnvelope;
 }): RuntimeTaskAttempt {
@@ -211,7 +203,7 @@ function runtimeTaskAttempt(input: {
       task: structuredClone(task),
       ...(claim.previousAttempt ? { previousAttempt: structuredClone(claim.previousAttempt) } : {}),
       cwd: input.cwd,
-      declaredOutputPaths: [...input.declaredOutputPaths],
+      declaredOutputPaths: [...claim.declaredOutputPaths],
       children: {
         ...(input.childContext.cancelled ? { cancelled: structuredClone(input.childContext.cancelled) } : {}),
         live: input.childContext.live.map(({ phase, ...child }) => ({
@@ -310,7 +302,6 @@ export async function runTaskExecutorAttempt(input: {
   descriptor: AppTaskRuntimeDescriptor;
   claim: AppTaskClaim;
   executionPaths: AppTaskExecutionPaths;
-  declaredOutputPaths: string[];
   childContext: AppTaskChildContext;
   event?: EventEnvelope;
   execute: (attempt: TaskAttempt, events: AppTaskEvents) => Promise<TaskCapabilityRun>;
@@ -320,7 +311,6 @@ export async function runTaskExecutorAttempt(input: {
     descriptor: input.descriptor,
     claim: input.claim,
     cwd: input.executionPaths.workspaceDir,
-    declaredOutputPaths: input.declaredOutputPaths,
     childContext: input.childContext,
     ...(input.event ? { event: input.event } : {}),
   });
@@ -353,19 +343,12 @@ export async function runTaskAgent(
     opts: AppTaskRuntimeOptions;
     descriptor: AppTaskRuntimeDescriptor;
     claim: AppTaskClaim;
-    declaredOutputPaths: string[];
   },
 ): Promise<TaskCapabilityRun> {
   return runTaskExecutorAttempt({
-    opts: input.opts,
-    descriptor: input.descriptor,
-    claim: input.claim,
-    executionPaths: input.executionPaths,
-    declaredOutputPaths: input.declaredOutputPaths,
-    childContext: input.childContext,
-    ...(input.event ? { event: input.event } : {}),
+    ...input,
     execute: async (attempt, taskEvents) => {
-      const { opts, descriptor, claim: _claim, declaredOutputPaths: _outputs, ...execution } = input;
+      const { opts, descriptor, claim: _claim, ...execution } = input;
       if (!opts.agents?.available(input.claim.agent))
         return {
           handlerResult: {
@@ -403,25 +386,16 @@ export async function runRegisteredTaskExecutor(input: {
   descriptor: AppTaskRuntimeDescriptor;
   claim: AppTaskClaim;
   executionPaths: AppTaskExecutionPaths;
-  declaredOutputPaths: string[];
   childContext: AppTaskChildContext;
   event?: EventEnvelope;
-  observer?: AppTaskExecutionObserver;
   name: TaskExecutorName;
   execute: TaskExecutor;
 }): Promise<TaskCapabilityRun> {
   return runTaskExecutorAttempt({
-    opts: input.opts,
-    descriptor: input.descriptor,
-    claim: input.claim,
-    executionPaths: input.executionPaths,
-    declaredOutputPaths: input.declaredOutputPaths,
-    childContext: input.childContext,
-    ...(input.event ? { event: input.event } : {}),
+    ...input,
     execute: async (attempt) => {
       const runId = `executor:${input.name}:${input.claim.attemptId}`;
       try {
-        input.observer?.providerStarted(0);
         const result = await input.execute(attempt);
         return {
           handlerResult: normalizeTaskHandlerResult(
@@ -446,8 +420,6 @@ export async function runRegisteredTaskExecutor(input: {
           runId,
           executionFailed: true,
         };
-      } finally {
-        input.observer?.providerFinished();
       }
     },
   });

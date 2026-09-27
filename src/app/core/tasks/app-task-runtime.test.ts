@@ -56,7 +56,6 @@ import type { NormalizedTaskHandlerResult } from "./result.js";
 import {
   applyCanonicalAgentResidueCleanup,
   beginCanonicalAgentResidueGuard,
-  finishCanonicalAgentResidueGuard,
   planCanonicalAgentResidueCleanup,
   rejectConvergedDirectAgentResidue,
 } from "../../adapters/executors/agent-workspace.js";
@@ -81,7 +80,7 @@ import {
   claimObservedAppTask,
   completeAppTask,
   deferAppTask,
-  markAppTaskAttention,
+  failAppTaskAttempt,
   observeAppTaskIntent,
   readAppTaskAdmissionOutcome,
   recordAppTaskTrigger,
@@ -934,9 +933,9 @@ it("recovers legacy attention as the same Tasks without inventing App review inp
     });
     const claim = claimObservedAppTask(config, { taskId: id, appAgent: "sample-owner", handler: "executor:fixture" });
     if (claim.kind !== "claimed") throw new Error("expected fixture claim");
-    markAppTaskAttention(config, claim, {
+    failAppTaskAttempt(config, claim, `Retained facts for ${id}`, {
+      facts: [],
       reason: legacyIds.includes(id) ? "previous-runtime-attempt-not-recoverable" : "DomainDecisionRequired",
-      summary: `Retained facts for ${id}`,
     });
     const resource = config.resourceStore.readTask(id)!;
     const attempt = config.resourceStore.readAttempt(claim.attemptId)!;
@@ -1149,7 +1148,11 @@ it("settles report and useful continuation equivalently for agent and workflow a
     workflows: {
       async inspect() { return { available: true, error: null, workspace: "shared" }; },
       async execute({ attempt }) {
-        return { handlerResult: { ...resultFor(attempt.task.id), actions: [] }, runId: "workflow-run" };
+        // The adapter may retain its proposal as immutable execution evidence.
+        return Object.freeze({
+          handlerResult: Object.freeze({ ...resultFor(attempt.task.id), actions: [] }),
+          runId: "workflow-run",
+        });
       },
     },
     appRegistrySnapshot: { id: "agent-workflow-continuation", generation: 1,
@@ -1274,10 +1277,10 @@ it("does not release an agent handoff until its required workflow verifier is av
     role: (agent) => ({ agent, instructions: "Fixture" }),
     async execute() {
       agentCalls++;
-      return {
-        handlerResult: { state: "converged", summary: "Agent proposes completion", facts: [], actions: [] },
+      return Object.freeze({
+        handlerResult: Object.freeze({ state: "converged", summary: "Agent proposes completion", facts: [], actions: [] }),
         runId: null,
-      };
+      });
     },
   };
   const workflows: TaskWorkflowRunner = {
@@ -1532,7 +1535,8 @@ describe("canonical direct-agent residue cleanup", () => {
 
     const worktree = join(projectDirForBypass(), "workflow-output.txt");
     writeFileSync(worktree, "mutation-capable output\n");
-    expect(await finishCanonicalAgentResidueGuard(null)).toEqual([]);
+    expect(await planCanonicalAgentResidueCleanup(null)).toBeNull();
+    expect(await applyCanonicalAgentResidueCleanup(null)).toEqual([]);
     expect(readFileSync(worktree, "utf8")).toBe("mutation-capable output\n");
   });
 });
@@ -4493,6 +4497,13 @@ describe("canonical App task runtime", () => {
     { name: "local executor needs no worktree", git: false },
     { name: "local executor needs no workspace backend", git: false, withoutBackend: true },
     {
+      name: "agent does not run until its workspace backend is restored",
+      agent: true,
+      git: true,
+      withoutBackend: true,
+      preparationFails: true,
+    },
+    {
       name: "Git executor rejects a missing workspace backend",
       git: true,
       withoutBackend: true,
@@ -4562,6 +4573,28 @@ describe("canonical App task runtime", () => {
       agentsRoot,
       sharedRoot: join(f.root, "shared"),
       installControllers: false,
+      ...(scenario.agent
+        ? {
+            agents: {
+              prepare: async () => true,
+              available: () => true,
+              role: (agent: string) => ({ agent }),
+              snapshot() { return this; },
+              async execute({ attempt }: Parameters<TaskAgentRunner["execute"]>[0]) {
+                executorCwd = attempt.cwd;
+                return {
+                  handlerResult: {
+                    state: "converged" as const,
+                    summary: "Fixture executor ran",
+                    facts: [attempt.cwd],
+                    actions: [],
+                  },
+                  runId: "workspace-agent",
+                };
+              },
+            },
+          }
+        : {}),
       executors: {
         reviewer: async (attempt) => {
           executorCwd = attempt.cwd;
@@ -4595,7 +4628,7 @@ describe("canonical App task runtime", () => {
         outcome: "Execute through the selected workspace",
         acceptance: ["Selected handler ran in the correct workspace"],
         agent: "sample-owner",
-        ...(scenario.workspace ? { workflow: "workspace-check" } : { executor: "reviewer" }),
+        ...(scenario.workspace ? { workflow: "workspace-check" } : scenario.agent ? {} : { executor: "reviewer" }),
       },
     });
     setSystemTime(new Date());
@@ -4891,8 +4924,8 @@ describe("canonical App task runtime", () => {
       reason: "test",
     });
     if (claim.kind !== "claimed") throw new Error("expected workspace claim");
-    markAppTaskAttention(config, claim, {
-      summary: "workspace preparation failed",
+    failAppTaskAttempt(config, claim, "workspace preparation failed", {
+      facts: [],
       reason: "WorkspacePreparationFailed",
     });
     let openControllerGate = () => {};

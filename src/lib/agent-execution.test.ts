@@ -12,7 +12,6 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
-  GITHUB_COPILOT_IDE_TOKEN_EXPIRED,
   executePreparedAgent,
   prepareAgentExecution,
   withGithubCopilotIdeTokenRecovery,
@@ -100,7 +99,7 @@ describe("GitHub Copilot IDE token recovery", () => {
     const originalMessages = context.messages;
     const options = { apiKey: "opaque-test-key" };
     const calls: Array<{ model: Model<any>; context: Context; options: unknown }> = [];
-    const boundedEnvelope = `OpenAI API error (401): {"message":"litellm.AuthenticationError: AuthenticationError: ${GITHUB_COPILOT_IDE_TOKEN_EXPIRED}\\n. Received Model Group=gpt-5.6-sol\\nAvailable Model Group Fallbacks=None","type":null,"param":null,"code":"401"}`;
+    const boundedEnvelope = `OpenAI API error (401): {"message":"litellm.AuthenticationError: AuthenticationError: Github_copilotException - IDE token expired: unauthorized: token expired\\n. Received Model Group=gpt-5.6-sol\\nAvailable Model Group Fallbacks=None","type":null,"param":null,"code":"401"}`;
     const provider: StreamFunction = (model, receivedContext, receivedOptions) => {
       calls.push({ model, context: receivedContext, options: receivedOptions });
       return model === streamTestModel
@@ -299,6 +298,9 @@ describe("shared agent execution preparation", () => {
     writeFileSync(join(definitionSharedRoot, "common-sense.md"), "released shared rules\n");
     writeFileSync(join(agentDir, "AGENTS.md"), "sample identity\n");
     writeFileSync(join(agentDir, "context.md"), "reported context is not activated guidance\n");
+    for (const name of ["DOMAIN.md", "TOOLS.md", "LESSONS.md"]) {
+      writeFileSync(join(agentDir, name), `On-demand ${name} content`);
+    }
 
     const prepared = prepareAgentExecution({
       definition: {
@@ -328,7 +330,19 @@ describe("shared agent execution preparation", () => {
     expect(prepared.systemPrompt).not.toContain("mutable rules");
     expect(prepared.systemPrompt).not.toContain("reported context is not activated guidance");
     expect(prepared.systemPrompt).toContain("Available tools: read, finish");
-    expect(prepared.systemPrompt).toContain("Current time: 2026-07-19T00:00:00.000Z");
+    expect(prepared.systemPrompt).toContain("Environment captured at: 2026-07-19T00:00:00.000Z");
+    expect(prepared.systemPrompt).not.toContain("On-demand");
+    const custom = prepareAgentExecution({
+      definition: { ...prepared.definition, systemPrompt: "App override" },
+      projectRoot: root, sessionId: "custom", task: "Assignment",
+      executionContext: "Host execution reference",
+    });
+    expect(custom.systemPrompt).toStartWith("App override");
+    expect(custom.systemPrompt).not.toContain("released shared rules");
+    expect(custom.systemPrompt).not.toContain("sample identity");
+    expect(custom.systemPrompt).not.toContain("Runtime Environment");
+    expect(custom.systemPrompt).toContain("<execution_instructions>");
+    expect(custom.systemPrompt).toContain("Host execution reference");
   });
 
   test("synthesizes exactly one checkpoint for explicit full non-persistent preparation", () => {
@@ -617,7 +631,7 @@ describe("shared agent execution preparation", () => {
     });
 
     expect(prepared.requireFinish).toBe(true);
-    expect(prepared.systemPrompt).toContain("Complete it only by calling finish()");
+    expect(prepared.systemPrompt).toContain("Complete this invocation by calling finish()");
     expect((prepared.tools[0]!.parameters as any).required).toContain("result");
   });
 

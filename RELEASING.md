@@ -8,7 +8,7 @@ updates the changelog, creates a `vX.Y.Z` tag, and publishes a GitHub Release.
 
 When Release Please creates the `vX.Y.Z` tag and GitHub Release, it directly
 calls the image workflow. Direct pushes of matching version tags also start
-that workflow. It builds the pinned Linux container and publishes:
+that workflow. It builds and smoke-tests the pinned Linux container, then publishes:
 
 - `ghcr.io/hao1939/may-agent:vX.Y.Z`
 - `ghcr.io/hao1939/may-agent:latest`
@@ -32,14 +32,14 @@ exact `refs/tags/...` ref, never a branch with the same name. A tag created by
 `GITHUB_TOKEN` does not start a separate tag-push run; the direct call is needed.
 
 This automation does not publish npm packages or deploy a production
-installation. Production deployment remains an explicitly authorized Host
-Operations task.
+installation. Production deployment remains a separately authorized operator action.
 
 ## Credentials and permissions
 
 No repository secret is required for the default path. GitHub supplies
 `GITHUB_TOKEN`; the workflows grant it only `contents`, `issues`,
-`pull-requests`, and `packages` permissions needed by their job.
+`pull-requests`, `actions`, and `packages` permissions needed by their job.
+The Release Please job uses `actions: write` only to dispatch CI for its PR.
 
 The repository must allow Actions to write releases and packages, and the
 package visibility should be reviewed before the first publication.
@@ -75,3 +75,18 @@ procedure; publishing an image does not deploy it.
 
 This follows GitHub's [container registry guidance](https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-container-registry),
 including using a digest when consumers need the exact published image.
+
+## Validation before publication
+
+The active `main` ruleset requires successful Quality and Container checks.
+Release Please explicitly dispatches the existing CI workflow on its release PR
+branch; this avoids GitHub's suppression of PR events created by `GITHUB_TOKEN`
+without adding a personal token. A failed dispatch is a visible workflow failure.
+
+The release image workflow builds and loads one image, runs the same disposable
+container smoke check as PR CI, then pushes that tested image to GHCR. It records
+the registry digest returned by Docker after the push in the release notes.
+Smoke failures leave diagnostics in the workflow artifacts and prevent both the
+version tag and `latest` from being pushed. This gate does not deploy anything
+or prove live provider/App behavior. A registry failure after one successful push
+can leave a partial publication; rerun the release workflow for the same tag.

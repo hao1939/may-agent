@@ -3,7 +3,7 @@ import type { TaskAttempt, TaskReconciliationEvents } from "@may-agent/sdk/app";
 type JsonRecord = Record<string, unknown>;
 
 export const MAX_CODEX_GOAL_OBJECTIVE_CHARS = 4_000;
-export const CODEX_ATTEMPT_PACKET_MARKER = "## Canonical May Task Attempt\n";
+const CODEX_ATTEMPT_PACKET_MARKER = "## Canonical May Task Attempt\n";
 
 export type CanonicalTaskAttemptPacket = {
   identity: {
@@ -92,10 +92,4 @@ export function renderCodexGoalTaskAttempt(packet: CanonicalTaskAttemptPacket): 
       CODEX_ATTEMPT_PACKET_MARKER + JSON.stringify(packet),
     ].join("\n"),
   };
-}
-
-export function readCodexGoalTaskAttempt(developerInstructions: string): CanonicalTaskAttemptPacket {
-  const markerAt = developerInstructions.indexOf(CODEX_ATTEMPT_PACKET_MARKER);
-  if (markerAt < 0) throw new Error("Codex instructions do not contain the canonical Task attempt packet");
-  return JSON.parse(developerInstructions.slice(markerAt + CODEX_ATTEMPT_PACKET_MARKER.length));
 }

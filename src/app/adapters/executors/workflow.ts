@@ -145,7 +145,6 @@ async function executeTaskCapability(
     ...(trace ? { trace } : {}),
   } as AgentEvent);
 
-  let providerStarted = false;
   try {
     const runtimeCtx = buildRuntimeCtx({
       bus: bus,
@@ -156,8 +155,6 @@ async function executeTaskCapability(
       projectsRoot: opts.projectsRoot,
       agentName,
     });
-    input.observer?.providerStarted(Buffer.byteLength(task));
-    providerStarted = true;
     const taskContext = taskExecutionContext(input, definitions);
     const { result, runId, verifier } = await runWorkflowDirect({
       workflowName: capability.workflow,
@@ -274,7 +271,5 @@ async function executeTaskCapability(
       ...(unavailable ? { unavailable: true } : {}),
       ...(!unavailable ? { executionFailed: true } : {}),
     };
-  } finally {
-    if (providerStarted) input.observer?.providerFinished();
   }
 }

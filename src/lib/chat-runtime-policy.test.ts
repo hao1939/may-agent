@@ -75,9 +75,9 @@ describe("chat runtime policy", () => {
       const prompt = session.agent.state.systemPrompt;
       const toolNames = session.agent.state.tools.map((t: AgentTool) => t.name);
 
-      expect(prompt).toContain("Persistent Human Chat");
-      expect(prompt).toContain("Fresh System State");
-      expect(prompt).toContain("Current human message: what needs attention?");
+      expect(prompt).toContain("This is a persistent conversation.");
+      expect(prompt).not.toContain("Fresh System State");
+      expect(prompt).not.toContain("what needs attention?");
       expect(toolNames).toEqual(["query_db", "system_status", "agents", "message", "read", "run_cli_agent"]);
     } finally {
       manager.cancel(sessionId);
@@ -111,7 +111,7 @@ describe("chat runtime policy", () => {
         sessionId,
         task: "start long chat",
         persistentChat: true,
-        chatContext: "Persistent chat test context",
+        chatContext: () => "Persistent chat test context",
         onCompact: (_info, compactedMessages) => {
           saveCompactedMessages(persistDir, sessionId, compactedMessages);
         },
@@ -122,7 +122,8 @@ describe("chat runtime policy", () => {
 
       const compacted = await transform(originalArray);
 
-      expect(compacted).toBe(originalArray);
+      expect(compacted).toEqual([...originalArray, expect.objectContaining({ role: "user" })]);
+      expect(JSON.stringify(compacted.at(-1))).toContain("Persistent chat test context");
       expect(session.agent.state.messages).toBe(originalArray);
       expect(originalArray.length).toBeLessThan(originalLength);
       expect(JSON.stringify(originalArray[0])).toContain("COMPACTED CONTEXT");
@@ -130,6 +131,7 @@ describe("chat runtime policy", () => {
       const snapshot = readCompactedMessages(persistDir, sessionId);
       expect(snapshot).not.toBeNull();
       expect(snapshot!.length).toBe(originalArray.length);
+      expect(JSON.stringify(snapshot)).not.toContain("Persistent chat test context");
       expect(JSON.stringify(snapshot![0])).toContain("COMPACTED CONTEXT");
     } finally {
       manager.cancel(sessionId);
@@ -149,7 +151,7 @@ describe("chat runtime policy", () => {
       const prompt = session.agent.state.systemPrompt;
       const toolNames = session.agent.state.tools.map((t: AgentTool) => t.name);
 
-      expect(prompt).not.toContain("Persistent Human Chat");
+      expect(prompt).not.toContain("This is a persistent conversation.");
       expect(toolNames).toContain("bash");
       expect(toolNames).toContain("write");
       expect(toolNames).toContain("finish");

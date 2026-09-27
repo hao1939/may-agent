@@ -102,14 +102,7 @@ function publishAppTaskTiming(
         startedAt: timing.dispatch.startedAt,
         finishedAt,
         readyWaitMs: timing.dispatch.readyWaitMs,
-        claimMs: timing.claimMs,
-        contextBuildMs: timing.contextBuildMs,
-        providerStartMs: timing.providerStartMs,
-        providerMs: timing.providerMs,
-        resultPersistenceMs: timing.resultPersistenceMs,
-        promptBytes: timing.promptBytes,
         totalMs: Math.max(0, finishedAt - timing.dispatch.startedAt),
-        outcome: timing.outcome,
       },
     } as unknown as AgentEvent);
   }, 0);

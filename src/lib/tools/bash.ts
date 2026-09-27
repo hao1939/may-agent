@@ -688,6 +688,3 @@ export function createBashTool(cwd: string, options?: BashToolOptions): AgentToo
 		},
 	};
 }
-
-/** Default bash tool using process.cwd() - for backwards compatibility */
-export const bashTool = createBashTool(process.cwd());

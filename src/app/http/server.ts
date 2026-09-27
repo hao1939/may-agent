@@ -1,4 +1,5 @@
 #!/usr/bin/env bun
+import { taskAttemptsQuery, readTaskAttempts } from "../adapters/reporting/task-attempts.js";
 /**
  * may-agent HTTP adapter — API, static WebUI, and dashboard websocket.
  *
@@ -491,11 +492,6 @@ export function projectEventTargetForPath(path: string, fallbackProjectId: strin
   const normalized = normalizeProjectPathForCompare(path);
   const projectName = normalized.split("/").filter(Boolean)[1] ?? "";
   return projectName.endsWith(".app") ? projectName.slice(0, -".app".length) : fallbackProjectId;
-}
-
-export function projectPathsMatch(left: string | null | undefined, right: string | null | undefined): boolean {
-  if (!left || !right) return false;
-  return normalizeProjectPathForCompare(left) === normalizeProjectPathForCompare(right);
 }
 
 export function startWebUI(opts: WebUIOptions): { port: number } {
@@ -3527,6 +3523,13 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
         try { query = contextUsageQuery(url.searchParams); }
         catch (error) { return json({ error: error instanceof Error ? error.message : "Invalid usage filter" }, 400); }
         return json(readContextUsage(_db(), query));
+      }
+      if (url.pathname === "/api/task-attempts") {
+        if (req.method !== "GET") return json({ error: "GET required" }, 405);
+        let query: ReturnType<typeof taskAttemptsQuery>;
+        try { query = taskAttemptsQuery(url.searchParams); }
+        catch (error) { return json({ error: error instanceof Error ? error.message : "Invalid attempt filter" }, 400); }
+        return json(readTaskAttempts(_db(), query));
       }
       if (url.pathname === "/api/workflow-health") {
         let query: ReturnType<typeof workflowHealthQuery>;

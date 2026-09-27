@@ -42,6 +42,12 @@ they do not rewrite guidance or enter future prompts automatically. The retired
 context updater and unregistered file-read tracker are removed. Historical
 `file_reads` rows remain readable by the project history view.
 
+Manager health reads describe sessions, process ownership and workflow runs.
+They do not select work for evaluation. Evaluation eligibility and exclusions
+belong to the Evaluation App; agent names carry no Host health policy.
+The agents tool consumes the existing typed manager interface directly, with
+read-only views of the agent and active-session maps.
+
 `requests.ts` is a compatibility facade for database helpers, not the owner of
 Conversation Requests. New internal callers use the corresponding `db/` module.
 `index.ts` is a broad compatibility export and also re-exports the App loader;
@@ -52,6 +58,22 @@ coverage is described in the [test guide](../../test/README.md). Gym's direct
 execution and script consumers are listed in the
 [script guide](../../scripts/README.md#gym-compatibility-boundary); inspect them
 before changing an entry path.
+
+## Context timing
+
+| Source | When read | Purpose |
+| --- | --- | --- |
+| `app/adapters/executors/task-context.ts` | Attempt starts | Bind the exact Task/attempt and its scoped capabilities; keep the supplied assignment, events, waits and related work |
+| `task-workspace-context.ts` | Once per attempt | Write `TASK.md`, the supplied snapshot and capability catalog as discovery links |
+| `agent-execution.ts` | Execution preparation | Combine identity, explicit context preparation, skills and tools; preserve the original assignment for evidence |
+| `task-decision-context.ts` | Before each model call, after compaction | Refresh current Task facts and append a disposable brief with links to larger detail |
+
+A refresh failure keeps the last successful read, or the attempt-start snapshot,
+with its scope and failure visible. A generation mismatch does not substitute new
+requirements into the old attempt. Reading a message does not acknowledge it;
+result admission still checks current authority and accounts for handled input.
+The brief does not accumulate in the saved transcript. The source guide describes
+these existing roles; it does not introduce another context store or controller.
 
 ## Agent cooperation tools
 

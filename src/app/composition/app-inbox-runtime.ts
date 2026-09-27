@@ -1,3 +1,4 @@
+import { validateIntent } from "../core/tasks/app-task-reconciler.js";
 import { taskControlAction } from "../core/events/interface.js";
 import { readTaskEventTarget, readEventTaskTarget } from "../core/events/task-target.js";
 import { appInputFeedbackEvent } from "../core/inbox/input-result.js";
@@ -47,6 +48,7 @@ import {
   listPendingAppEventAdmissionPlans,
   markAppEventAdmissionCommandAdmitted,
   recordAppEventAdmissionCommandFailure,
+  resolveAppEventAdmissionCommand,
   type AppEventAdmissionCommand,
   type AppEventAdmissionPlan,
   type AppEventAdmissionRoute,
@@ -436,9 +438,47 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
   const admissionPlanDelivery = (plan: AppEventAdmissionPlan, note: string): DeliveryResult => ({
     accepted: true,
     by: `app-runtime:events:${plan.commands.map(admissionRouteLabel).join(",")}`,
-    route: "direct",
-    note: `registry-snapshot:${plan.registrySnapshotId}; generation:${plan.registryGeneration}; ${plan.commands.length} frozen App admission command(s) ${note}`,
+    route: plan.commands.every((command) => command.kind === "noop") ? "noop" : "direct",
+    note: `registry-snapshot:${plan.registrySnapshotId}; generation:${plan.registryGeneration}; ${plan.commands.length} App admission command(s) ${note}`,
   });
+
+  const resolveAdmissionCommand = (
+    plan: AppEventAdmissionPlan,
+    command: AppEventAdmissionCommand,
+    event: AgentEvent,
+  ): void => {
+    if (command.kind !== "unresolved") return;
+    const entry = loadedById.get(command.appId);
+    if (!entry) throw new Error(`App ${command.appId} is unavailable for event:${plan.eventId} translation`);
+    const canonical = canonicalAppEvent(event);
+    const inputs = command.subscriptionIds.flatMap((subscriptionId) => {
+      const input = host.translateSubscription(command.appId, subscriptionId, canonical);
+      return input === null ? [] : [{ subscriptionId, input }];
+    });
+    if (command.resolveTask && !entry.definition.tasks?.resolve) {
+      throw new Error(`App ${command.appId} Task resolver is unavailable`);
+    }
+    const intent = command.resolveTask ? entry.definition.tasks!.resolve!(canonical) : null;
+    if (intent) validateIntent(intent);
+    if (inputs.length > 1 || (inputs.length > 0 && intent)) {
+      throw new Error(
+        `Ambiguous App ${command.appId} routing for event:${plan.eventId}: multiple inbox or inbox/task-intent routes`,
+      );
+    }
+    const common = { appId: command.appId, conditionTaskIds: command.conditionTaskIds };
+    const selected = inputs[0];
+    const route: Exclude<AppEventAdmissionRoute, { kind: "unresolved" }> = selected
+      ? { ...common, kind: "inbox", routeId: selected.subscriptionId, input: selected.input }
+      : intent || command.conditionTaskIds.length > 0
+        ? { ...common, kind: "task", routeId: intent?.id ?? command.routeId, intent: intent ?? null }
+        : { ...common, kind: "noop", routeId: command.routeId };
+    resolveAppEventAdmissionCommand(options.db, {
+      eventId: plan.eventId,
+      route,
+      registrySnapshotId: registrySnapshot.id,
+      now: now(),
+    });
+  };
 
   const dispatchAdmissionCommand = async (
     plan: AppEventAdmissionPlan,
@@ -447,7 +487,7 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
   ): Promise<void> => {
     const identity = `event:${plan.eventId}`;
     try {
-      const entry = loaded.find(({ definition }) => definition.id === command.appId);
+      const entry = loadedById.get(command.appId);
       if (!entry) {
         throw new Error(
           `Frozen ${admissionRouteLabel(command)} for ${identity} names an App unavailable after registry snapshot ${plan.registrySnapshotId} (generation ${plan.registryGeneration})`,
@@ -463,7 +503,7 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
         });
 
       }
-      if (command.kind !== "inbox" || command.conditionTaskIds.length > 0) {
+      if (command.kind === "task" || command.kind === "exact-task" || command.conditionTaskIds.length > 0) {
         if (!entry.definition.tasks) {
           throw new Error(
             `Frozen ${admissionRouteLabel(command)} for ${identity} names an App without its selected task capability`,
@@ -504,6 +544,8 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
           }
         }
       }
+      // Independent Condition wakes can be admitted while translation still needs repair.
+      if (command.kind === "unresolved") return;
       markAppEventAdmissionCommandAdmitted(options.db, {
         eventId: plan.eventId,
         appId: command.appId,
@@ -520,13 +562,28 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
     }
   };
 
-  const pendingAdmissionEvents = new Map<number, AgentEvent>();
+  const pendingAdmissionEvents = new Map<number, { event: AgentEvent; appIds: string[] }>();
   let admissionDispatchHandle: ReturnType<typeof setTimeout> | null = null;
   let admissionDispatching = false;
 
   const scheduleAdmissionDispatch = (plan: AppEventAdmissionPlan, event: AgentEvent): void => {
     if (plan.status !== "pending" || pendingAdmissionEvents.has(plan.eventId)) return;
-    pendingAdmissionEvents.set(plan.eventId, event);
+    // Initial delivery and recovery prepare the same durable commands. Freeze
+    // successful translations before yielding; dispatch only applies saved results.
+    for (const command of plan.commands) {
+      if (command.status !== "pending" || command.kind !== "unresolved") continue;
+      try {
+        resolveAdmissionCommand(plan, command, event);
+      } catch (error) {
+        recordAppEventAdmissionCommandFailure(options.db, {
+          eventId: plan.eventId, appId: command.appId, error, now: now(),
+        });
+      }
+    }
+    pendingAdmissionEvents.set(plan.eventId, {
+      event,
+      appIds: plan.commands.filter((command) => command.status === "pending").map((command) => command.appId),
+    });
     if (!admissionDispatchHandle) {
       admissionDispatchHandle = setTimeout(dispatchNextAdmissionCommand, ADMISSION_COMMAND_TURN_GAP_MS);
     }
@@ -535,44 +592,30 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
   async function dispatchNextAdmissionCommand(): Promise<void> {
     admissionDispatchHandle = null;
     if (closed || admissionDispatching) return;
-    const next = pendingAdmissionEvents.entries().next().value as [number, AgentEvent] | undefined;
+    const next = pendingAdmissionEvents.entries().next().value;
     if (!next) return;
-    const [eventId, event] = next;
+    const [eventId, pending] = next;
     admissionDispatching = true;
-    let reschedule: AppEventAdmissionPlan | null = null;
     try {
       const plan = getAppEventAdmissionPlan(options.db, eventId);
-      if (plan?.status === "pending") {
-        const command = plan.commands.find((candidate) => candidate.status === "pending");
-        if (command) {
-          try {
-            await dispatchAdmissionCommand(plan, command, event);
-          } catch {
-            // The durable command retains the error for bounded recovery. A
-            // failed handler must not prevent unrelated plans from advancing.
-          }
-        }
-        const updated = getAppEventAdmissionPlan(options.db, eventId);
-        if (updated?.status === "pending") {
-          const pendingCommands = updated.commands.filter((candidate) => candidate.status === "pending");
-          if (pendingCommands.length === 0) {
-            completeAppEventAdmissionPlan(options.db, eventId, now());
-          } else if (pendingCommands.some((candidate) => !candidate.lastError)) {
-            reschedule = updated;
-          }
+      const appId = pending.appIds.shift();
+      const command = plan?.commands.find((candidate) => candidate.appId === appId && candidate.status === "pending");
+      if (plan?.status === "pending" && command) {
+        try {
+          await dispatchAdmissionCommand(plan, command, pending.event);
+        } catch {
+          // Each command gets one attempt per pass. Failure must not starve its peers.
         }
       }
+      if (plan?.status === "pending") completeAppEventAdmissionPlan(options.db, eventId, now());
     } catch {
-      // The journal remains authoritative; bounded recovery will retry a
-      // transient coordinator read without blocking other Event plans.
+      // The journal retains responsibility for bounded recovery after coordinator failure.
     } finally {
-      // Keep the Event present while its command runs so nested Event delivery
-      // cannot schedule the same plan twice.
       pendingAdmissionEvents.delete(eventId);
+      if (!closed && pending.appIds.length > 0) pendingAdmissionEvents.set(eventId, pending);
       admissionDispatching = false;
     }
-    if (reschedule) scheduleAdmissionDispatch(reschedule, event);
-    if (pendingAdmissionEvents.size > 0 && !admissionDispatchHandle) {
+    if (!closed && pendingAdmissionEvents.size > 0 && !admissionDispatchHandle) {
       admissionDispatchHandle = setTimeout(dispatchNextAdmissionCommand, ADMISSION_COMMAND_TURN_GAP_MS);
     }
   }
@@ -619,7 +662,7 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
     }
     scheduleAdmissionDispatch(plan, event);
     return admissionPlanDelivery(
-      plan,
+      getAppEventAdmissionPlan(options.db, plan.eventId) ?? plan,
       plan.status === "completed" ? "already admitted durably" : "routing recorded durably",
     );
   };
@@ -990,16 +1033,12 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
           return admitAdmissionPlan(plan, event);
         }
 
-        const inboxMatches = host.subscriptionInputs(canonical);
-        const inboxCountByApp = new Map<string, number>();
-        for (const match of inboxMatches) {
-          inboxCountByApp.set(match.appId, (inboxCountByApp.get(match.appId) ?? 0) + 1);
+        const subscriptionIdsByApp = new Map<string, string[]>();
+        for (const route of host.subscriptionRoutes(canonical)) {
+          const ids = subscriptionIdsByApp.get(route.appId) ?? [];
+          ids.push(route.subscriptionId);
+          subscriptionIdsByApp.set(route.appId, ids);
         }
-        const duplicateInboxApp = [...inboxCountByApp].find(([, count]) => count > 1)?.[0];
-        if (duplicateInboxApp) {
-          throw new Error(`Canonical App ${duplicateInboxApp} has multiple inbox routes for event ${identity}`);
-        }
-
         const conditionTaskIdsByApp = new Map<string, Set<string>>();
         for (const match of options.previewTaskEventRoutes?.({ event }) ?? []) {
           if (!loadedById.get(match.appId)?.definition.tasks) continue;
@@ -1007,64 +1046,32 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
           for (const taskId of match.taskIds) taskIds.add(taskId);
           conditionTaskIdsByApp.set(match.appId, taskIds);
         }
-        const taskCandidates = new Map(
-          (options.previewTaskEventRoutes ? (taskSubscriptionsByEventType.get(canonical.type) ?? []) : loaded).map(
-            (entry) => [entry.definition.id, entry],
-          ),
-        );
-        for (const appId of conditionTaskIdsByApp.keys()) {
-          const entry = loadedById.get(appId);
-          if (entry) taskCandidates.set(appId, entry);
-        }
-        const taskAdmissions = [...taskCandidates.values()].flatMap(({ definition, appDir }) => {
-          const tasks = definition.tasks;
-          if (!tasks) return [];
-          const subscriptionMatched = Boolean(
-            tasks.subscriptions?.some((selector) => matchesEventSelector(selector, canonical)),
-          );
-          let intent: TaskIntent | null = null;
-          if (subscriptionMatched) {
-            try {
-              intent = tasks.resolve?.(canonical) ?? null;
-            } catch (error) {
-              throw new Error(
-                `Canonical App ${definition.id} task resolver failed for event ${identity} in registry generation ${routeGeneration}: ${error instanceof Error ? error.message : String(error)}`,
-                { cause: error },
-              );
-            }
+        const taskCandidates = options.previewTaskEventRoutes
+          ? (taskSubscriptionsByEventType.get(canonical.type) ?? [])
+          : loaded;
+        const resolveTaskApps = new Set<string>();
+        for (const { definition, appDir } of taskCandidates) {
+          if (!definition.tasks) continue;
+          if (
+            definition.tasks.resolve &&
+            definition.tasks.subscriptions?.some((selector) => matchesEventSelector(selector, canonical))
+          ) {
+            resolveTaskApps.add(definition.id);
           }
-          const conditionTaskIds = options.previewTaskEventRoutes
-            ? [...(conditionTaskIdsByApp.get(definition.id) ?? [])].sort()
-            : (options.previewTaskEvent?.({ appId: definition.id, appDir, event }) ?? []);
-          return intent || conditionTaskIds.length > 0
-            ? [{ appId: definition.id, appDir, intent, conditionTaskIds }]
-            : [];
-        });
-        const inboxApps = new Set(inboxMatches.map((match) => match.appId));
-        const overlap = taskAdmissions.find((admission) => admission.intent && inboxApps.has(admission.appId));
-        if (overlap) {
-          throw new Error(`Canonical App ${overlap.appId} has both inbox and task-intent routes for event ${identity}`);
+          if (!options.previewTaskEventRoutes) {
+            const taskIds = options.previewTaskEvent?.({ appId: definition.id, appDir, event }) ?? [];
+            if (taskIds.length) conditionTaskIdsByApp.set(definition.id, new Set(taskIds));
+          }
         }
-        const taskAdmissionByApp = new Map(taskAdmissions.map((admission) => [admission.appId, admission]));
-
-        const routes: AppEventAdmissionRoute[] = [
-          ...inboxMatches.map((match) => ({
-            appId: match.appId,
-            kind: "inbox" as const,
-            routeId: match.subscriptionId,
-            input: match.input,
-            conditionTaskIds: taskAdmissionByApp.get(match.appId)?.conditionTaskIds ?? [],
-          })),
-          ...taskAdmissions
-            .filter((admission) => !inboxApps.has(admission.appId))
-            .map((admission) => ({
-              appId: admission.appId,
-              kind: "task" as const,
-              routeId: admission.intent?.id ?? admission.conditionTaskIds.join("+"),
-              intent: admission.intent,
-              conditionTaskIds: admission.conditionTaskIds,
-            })),
-        ];
+        const appIds = new Set([...subscriptionIdsByApp.keys(), ...resolveTaskApps, ...conditionTaskIdsByApp.keys()]);
+        const routes: AppEventAdmissionRoute[] = [...appIds].map((appId) => ({
+          appId,
+          kind: "unresolved",
+          routeId: canonical.type,
+          subscriptionIds: subscriptionIdsByApp.get(appId) ?? [],
+          resolveTask: resolveTaskApps.has(appId),
+          conditionTaskIds: [...(conditionTaskIdsByApp.get(appId) ?? [])].sort(),
+        }));
         if (routes.length > 0) {
           const plan = createAppEventAdmissionPlan(options.db, {
             eventId,

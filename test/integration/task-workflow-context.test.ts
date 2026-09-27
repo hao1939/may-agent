@@ -210,8 +210,8 @@ export async function execute(ctx) { return ctx.workflows.run("delegate", ctx.in
         const worker = [...manager.activeSessions.values()].find((s) => s.agentName === "worker" && s.taskBinding?.taskId === marker)!;
         expect(worker.taskContext).toBe(owner.taskContext);
         const meta = JSON.parse(readFileSync(join(persistDir, "sessions", worker.sessionId, "meta.json"), "utf8"));
-        expect(helperPrompts.get(marker)).toContain("## Assigned contribution");
-        expect(helperPrompts.get(marker)).toContain("does not assign you the entire Task");
+        expect(helperPrompts.get(marker)).toContain(join(persistDir, "sessions", worker.sessionId, "meta.json"));
+        expect(helperPrompts.get(marker)).toContain("a helper still owes only its assigned contribution");
         expect(meta.parentSessionId).toBe(owner.sessionId);
         expect(meta.task).toContain(taskFiles.get(marker)!);
         expect(meta.task).not.toContain("Delegation Memo");

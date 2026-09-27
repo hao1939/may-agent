@@ -6,6 +6,10 @@ import type { AgentMessage } from "@earendil-works/pi-agent-core";
 import type { TaskDetail } from "@may-agent/sdk";
 import { createTaskDecisionContext } from "./task-decision-context.js";
 import { prepareTaskWorkspaceContext } from "./task-workspace-context.js";
+import { Type, createAssistantMessageEventStream, type Context } from "@earendil-works/pi-ai";
+import { createFinishTool } from "./tools/lifecycle.js";
+import { createAgentRun } from "./agent-runner.js";
+import { usageReply } from "../../test/fixtures/execution-usage.js";
 import { prepareAgentExecution } from "./agent-execution.js";
 import type { TaskExecutionContext } from "./task-execution-context.js";
 import { fakeModel } from "../../test/fixtures/model.js";
@@ -163,13 +167,26 @@ test("the production transform restores current facts after compaction without a
     const f = fixture(root);
     const task = "Original caller request with full data";
     let supplied: string | undefined;
+    const skill = {
+      name: "review",
+      description: "Review the evidence",
+      filePath: join(root, "SKILL.md"),
+      canonicalPath: join(root, "SKILL.md"),
+      content: "Check the cited version before judging.",
+      scope: "agent" as const,
+      contentHash: "fixture-hash",
+    };
+    writeFileSync(skill.canonicalPath, skill.content);
+    const helperSchema = Type.Object({ verdict: Type.String({ description: "App-owned review finding" }) });
     const prepared = prepareAgentExecution({
       definition: {
         name: "helper",
         description: "Review",
+        systemPrompt: "App reviewer: assess evidence quality.",
+        skillCatalog: { skills: new Map([[skill.name, skill]]), diagnostics: [], omittedFromPrompt: [] },
         domain: "test",
         model: fakeModel(),
-        tools: [],
+        tools: [createFinishTool({ agentName: "helper", projectRoot: root })],
         compaction: true,
         contextPreparation: ({ task }) => {
           supplied = task;
@@ -179,25 +196,69 @@ test("the production transform restores current facts after compaction without a
       projectRoot: root,
       sessionId: "helper-1",
       task,
+      skill: "review",
+      outputSchema: helperSchema,
       contextPrompt: "Host default",
       taskContext: f.context,
     });
     expect(supplied).toBe(task);
-    expect(prepared.prompt).toBe("Review contribution only");
+    expect(prepared.prompt).toContain("Review contribution only");
     const messages: AgentMessage[] = Array.from({ length: 30 }, (_, i) => ({
       role: "user",
       timestamp: i,
       content: [{ type: "text", text: "Old unrelated note. ".repeat(100) }],
     }));
-    const transform = prepared.runner.transformContext!;
-    const first = await transform(messages);
-    expect(messages.length).toBeLessThan(30);
-    expect(packet(first.at(-1)!).current.result.version).toBe("v3");
+    const requests: Context[] = [];
+    const agent = createAgentRun({
+      ...prepared.runner,
+      streamFn: (_model, context) => {
+        requests.push(JSON.parse(JSON.stringify(context)));
+        const stream = createAssistantMessageEventStream();
+        const invalidFinish = requests.length === 3;
+        const message = usageReply(
+          invalidFinish
+            ? {
+                stopReason: "toolUse",
+                content: [
+                  {
+                    type: "toolCall",
+                    id: "wrong-result",
+                    name: "finish",
+                    arguments: { summary: "wrong", result: { state: "converged" } },
+                  },
+                ],
+              }
+            : {},
+        );
+        stream.push({ type: "done", reason: invalidFinish ? "toolUse" : "stop", message });
+        return stream;
+      },
+    });
+    agent.state.messages = messages;
+    await agent.prompt(prepared.prompt);
+    expect(requests[0].messages.length).toBeLessThan(30);
+    expect(JSON.stringify(requests[0].messages)).toContain("COMPACTED CONTEXT");
+    expect(packet(requests[0].messages.at(-1)!).current.result.version).toBe("v3");
     f.setCurrent({ ...f.task, resourceVersion: 5, result: { understanding: "Thursday" } });
-    const second = await transform(messages);
-    expect(packet(second.at(-1)!).current.result.understanding).toBe("Thursday");
-    expect(JSON.stringify(messages)).not.toContain("Task decision brief");
-    expect(JSON.stringify(second).split("Task decision brief")).toHaveLength(2);
+    await agent.prompt("Recheck the review");
+    expect(packet(requests[1].messages.at(-1)!).current.result.understanding).toBe("Thursday");
+    for (const request of requests) {
+      expect(request.systemPrompt).toContain("App reviewer: assess evidence quality.");
+      expect(request.systemPrompt).toContain("a helper still owes only its assigned contribution");
+      expect(request.systemPrompt).toContain(skill.canonicalPath);
+      expect(request.systemPrompt).not.toContain("workflow step");
+      const finish = request.tools!.find((tool) => tool.name === "finish")!;
+      expect(finish.parameters.properties.result).toEqual(helperSchema);
+      expect(JSON.stringify(request.messages).split("Task decision brief")).toHaveLength(2);
+    }
+    expect(JSON.stringify(agent.state.messages)).not.toContain("Task decision brief");
+    await agent.prompt("Return the review");
+    expect(requests).toHaveLength(4);
+    const rejected = requests[3].messages.find(
+      (message) => message.role === "toolResult" && message.toolCallId === "wrong-result",
+    );
+    expect(rejected).toMatchObject({ isError: true });
+    expect(JSON.stringify(rejected)).toContain("verdict");
   } finally {
     rmSync(root, { recursive: true, force: true });
   }

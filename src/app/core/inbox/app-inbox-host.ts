@@ -274,29 +274,16 @@ export class AppInboxHost {
           `Cannot remove task capability from App ${appId} while it owns pending event admission commands`,
         );
       }
-      if (routeKind === "inbox") {
-        let input: unknown;
-        let conditionTaskIds: unknown;
-        try {
-          const payload = JSON.parse(String(command.payload)) as {
-            input?: unknown;
-            conditionTaskIds?: unknown;
-          };
-          input = payload.input;
-          conditionTaskIds = payload.conditionTaskIds;
-        } catch {
-          throw new Error(`Pending App event admission for ${appId} has invalid inbox payload JSON`);
-        }
-        if (!Check(app.inputSchema, input)) {
-          throw new Error(
-            `Cannot install an input schema incompatible with pending event admission commands for App ${appId}`,
-          );
-        }
-        if (Array.isArray(conditionTaskIds) && conditionTaskIds.length > 0 && !app.tasks) {
-          throw new Error(
-            `Cannot remove task capability from App ${appId} while its pending inbox admission includes Condition wakes`,
-          );
-        }
+      const payload = JSON.parse(String(command.payload)) as { input?: unknown; conditionTaskIds?: unknown };
+      if (routeKind === "inbox" && !Check(app.inputSchema, payload.input)) {
+        throw new Error(
+          `Cannot install an input schema incompatible with pending event admission commands for App ${appId}`,
+        );
+      }
+      if (Array.isArray(payload.conditionTaskIds) && payload.conditionTaskIds.length > 0 && !app.tasks) {
+        throw new Error(
+          `Cannot remove task capability from App ${appId} while its pending admission includes Condition wakes`,
+        );
       }
     }
     for (const id of this.#apps.keys()) {
@@ -334,20 +321,20 @@ export class AppInboxHost {
       .sort();
   }
 
-  subscriptionInputs(event: AppEvent<Record<string, unknown>>): Array<{
-    appId: string;
-    subscriptionId: string;
-    input: AppInput;
-  }> {
-    const matches: Array<{ appId: string; subscriptionId: string; input: AppInput }> = [];
-    for (const { app, subscription } of this.#subscriptionsByEventType.get(event.type) ?? []) {
-      if (!matchesEventSelector(subscription.event, event)) continue;
-      const input = subscription.toInput(event);
-      if (input === null) continue;
-      assertValidAppInput(app, input);
-      matches.push({ appId: app.id, subscriptionId: subscription.id, input });
-    }
-    return matches;
+  /** Select responsibility without invoking App code. */
+  subscriptionRoutes(event: AppEvent<Record<string, unknown>>): Array<{ appId: string; subscriptionId: string }> {
+    return (this.#subscriptionsByEventType.get(event.type) ?? [])
+      .filter(({ subscription }) => matchesEventSelector(subscription.event, event))
+      .map(({ app, subscription }) => ({ appId: app.id, subscriptionId: subscription.id }));
+  }
+
+  translateSubscription(appId: string, subscriptionId: string, event: AppEvent<Record<string, unknown>>): AppInput | null {
+    const app = this.#requiredApp(appId);
+    const subscription = app.subscriptions?.find((candidate) => candidate.id === subscriptionId);
+    if (!subscription) throw new Error(`App ${appId} subscription ${subscriptionId} is unavailable`);
+    const input = subscription.toInput(event);
+    if (input !== null) assertValidAppInput(app, input);
+    return input;
   }
 
   isOwnedApp(appId: string, owner: string): boolean {
