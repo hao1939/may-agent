@@ -32,8 +32,7 @@ exact `refs/tags/...` ref, never a branch with the same name. A tag created by
 `GITHUB_TOKEN` does not start a separate tag-push run; the direct call is needed.
 
 This automation does not publish npm packages or deploy a production
-installation. Production deployment remains an explicitly authorized Host
-Operations task.
+installation. Production deployment remains a separately authorized operator action.
 
 ## Credentials and permissions
 
