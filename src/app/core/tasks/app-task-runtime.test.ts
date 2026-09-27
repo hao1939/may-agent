@@ -4116,12 +4116,12 @@ describe("canonical App task runtime", () => {
         {
           eventId: 11,
           observedAt: observedAt[0],
-          event: { type: "sample.first", data: { value: "first" } },
+          event: { type: "sample.first", urgency: "normal", data: { value: "first" } },
         },
         {
           eventId: 12,
           observedAt: observedAt[1],
-          event: { type: "sample.second", data: { value: "second" } },
+          event: { type: "sample.second", urgency: "normal", data: { value: "second" } },
         },
       ],
       throughEventId: 12,

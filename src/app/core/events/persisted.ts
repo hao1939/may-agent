@@ -14,15 +14,41 @@ function parseStoredEventData(value: unknown): Record<string, unknown> | null {
 }
 
 /** The document preserves semantic metadata; SQL correlation columns are search projections. */
-export function readPersistedEventEnvelope(value: unknown): Record<string, unknown> | undefined {
+export function readPersistedEventEnvelope(value: unknown, eventType: string): Record<string, unknown> | undefined {
   if (value == null) return undefined;
   const envelope = parseStoredEventData(value);
   if (!envelope || typeof envelope.type !== "string" || !envelope.type.trim()) {
     throw new Error("Stored event envelope must be an object with an event type");
   }
+  // Admission plans and delivery contracts are selected by this indexed identity.
+  if (envelope.type !== eventType) throw new Error("Stored event envelope type disagrees with its record");
+  for (const key of ["source", "owner"]) {
+    if (envelope[key] !== null && typeof envelope[key] !== "string") {
+      throw new Error(`Stored event envelope ${key} must be a string or null`);
+    }
+  }
+  if (typeof envelope.timestamp !== "number" || !Number.isFinite(envelope.timestamp)) {
+    throw new Error("Stored event envelope timestamp must be finite");
+  }
+  if (!["low", "normal", "high", "immediate"].includes(String(envelope.urgency))) {
+    throw new Error("Stored event envelope urgency is invalid");
+  }
+  if (envelope.action !== undefined && typeof envelope.action !== "string") {
+    throw new Error("Stored event envelope action must be a string");
+  }
+  if (envelope.ttl_ms !== undefined && (typeof envelope.ttl_ms !== "number" || !Number.isFinite(envelope.ttl_ms))) {
+    throw new Error("Stored event envelope ttl_ms must be finite");
+  }
   if (envelope.target !== undefined &&
     (!envelope.target || typeof envelope.target !== "object" || Array.isArray(envelope.target))) {
     throw new Error("Stored event envelope target must be an object");
+  }
+  const target = envelope.target as Record<string, unknown> | undefined;
+  for (const key of ["appId", "project", "taskId", "executionId", "sessionId", "metricId", "owner", "human"]) {
+    const field = target?.[key];
+    if (field !== undefined && (key === "human" ? typeof field !== "boolean" : typeof field !== "string")) {
+      throw new Error(`Stored event envelope target.${key} has an invalid type`);
+    }
   }
   return envelope;
 }
@@ -40,7 +66,7 @@ export function loadPersistedEvent(db: SqliteDb, eventId: number, persistDir?: s
   if (!row || typeof row.event_type !== "string") return null;
   let envelope: Record<string, unknown> | undefined;
   try {
-    envelope = readPersistedEventEnvelope(row.envelope_json);
+    envelope = readPersistedEventEnvelope(row.envelope_json, row.event_type);
   } catch {
     return null;
   }

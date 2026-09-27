@@ -318,21 +318,28 @@ describe("EventBus subscriber priority", () => {
   it("emits a durable subscriber.failed signal after subscriber exceptions", async () => {
     const bus = new EventBus();
     const events: any[] = [];
+    let resolveFailure!: () => void;
+    const failed = new Promise<void>((resolve) => { resolveFailure = resolve; });
 
-    bus.subscribe((event) => events.push(event), { priority: "first" });
+    bus.subscribe((event) => {
+      Object.defineProperty(event, EVENT_ROW_ID, { value: 70 + events.length });
+      events.push(event);
+      if (event.type === "subscriber.failed") resolveFailure();
+    }, { priority: "first" });
     bus.subscribe((event) => {
       if (event.type === "info") throw new Error("boom");
     });
 
     bus.emit({ type: "info", message: "z" });
     expect(events.map((event) => event.type)).toEqual(["info"]);
-    await Bun.sleep(1);
+    await failed;
 
     expect(events.map((event) => event.type)).toEqual(["info", "subscriber.failed"]);
     expect(events[1]).toMatchObject({
       type: "subscriber.failed",
       source: "event-bus",
       owner: "agent:may",
+      trace: { traceId: "event:70", parentEventId: 70 },
       data: {
         originalEventType: "info",
         subscriberPriority: "normal",

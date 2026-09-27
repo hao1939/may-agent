@@ -63,7 +63,7 @@ describe("E2: project comment roundtrip", () => {
       expect(store.readReceipt("work/comment")).toBeNull();
       const events = queryEvents(db, { types: ["project.comment.created"] });
       expect(events).toHaveLength(1);
-      expect(JSON.parse(events[0].data!)).toEqual({ ...data, appId: "comment", idempotencyKey: "comment-1" });
+      expect(JSON.parse(events[0].data!)).toEqual({ ...data, idempotencyKey: "comment-1" });
       expect(queryEvents(db, { types: ["e2e.workflow_ran"] })).toHaveLength(1);
       expect(queryEvents(db, { types: ["project.nudge"] })).toEqual([]);
       expect(readFileSync(projectFile, "utf8")).toBe(before);

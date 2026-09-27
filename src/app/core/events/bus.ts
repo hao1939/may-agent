@@ -1438,6 +1438,7 @@ export class EventBus {
       source: "event-bus",
       owner: "agent:may",
       timestamp: Date.now(),
+      trace: childEventTrace(event),
       data: {
         originalEventType: event.type,
         subscriberPriority: priority,

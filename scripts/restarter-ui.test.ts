@@ -253,10 +253,24 @@ describe("supervisor UI release", () => {
           });
         await emit(eventType, payload);
         const settledBeforeRejectedNotification = readFileSync(f.receipt, "utf8");
-        await expect(emit(eventType, {
+        // The fact can describe the original Task and address another one.
+        // Missing delivery is retained as evidence; it cannot change deployment success.
+        await emit(eventType, {
           ...payload,
           target: { appId: f.ownerApp, taskId: "missing-notification-target" },
-        })).rejects.toThrow();
+        });
+        const undelivered = db.prepare(`SELECT id, delivery_status FROM events
+          WHERE event_type = ? AND json_extract(envelope_json, '$.target.taskId') = ?`).get(
+            eventType, "missing-notification-target",
+          );
+        expect(undelivered).toBeDefined();
+        expect(undelivered?.delivery_status).not.toBe("accepted");
+        await pollUntil(() => db.prepare(`SELECT e.id FROM events e
+          JOIN event_traces t ON t.event_id = e.id
+          WHERE e.event_type = 'subscriber.failed' AND t.parent_event_id = ?
+            AND json_extract(e.data, '$.error') LIKE '%missing-notification-target%'`).get(undelivered!.id),
+          { timeoutMs: 5000, description: "retain the failed exact notification" });
+        expect(store.readTask("missing-notification-target")).toBeNull();
         expect(readFileSync(f.receipt, "utf8")).toBe(settledBeforeRejectedNotification);
         for (let i = 0; i < 3; i++)
           await emit("project.task.tick", {

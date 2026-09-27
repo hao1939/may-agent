@@ -651,7 +651,7 @@ export function getEventView(db: SqliteDb, eventId: number): EventView | undefin
     .get(eventId) as Record<string, unknown> | undefined;
   if (!row) return undefined;
   const data = parseData(row.data);
-  const envelope = readPersistedEventEnvelope(row.envelope_json);
+  const envelope = readPersistedEventEnvelope(row.envelope_json, String(row.event_type));
   const metadata = envelope ?? { type: row.event_type, source: row.source, owner: row.owner, timestamp: row.timestamp };
   const storedStatus = optionalText(row.delivery_status) ?? "pending";
   const required = eventDeliveryContract(String(row.event_type)) === "required";

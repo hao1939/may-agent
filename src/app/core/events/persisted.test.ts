@@ -58,11 +58,22 @@ test("stored targets retain internal fields; missing history stays unknown and d
     closeDb(root);
     const db = getDb(root);
     expect(loadPersistedEvent(db, id)).toMatchObject({ target });
+    const metadata = JSON.parse(String(db.prepare("SELECT envelope_json FROM events WHERE id = ?").get(id)!.envelope_json));
     db.prepare("UPDATE events SET envelope_json = NULL WHERE id = ?").run(id);
     expect(loadPersistedEvent(db, id)).not.toHaveProperty("target");
     expect(getEventView(db, id)?.event).not.toHaveProperty("target");
     for (const value of ["{broken", "[]", "null", "{}", JSON.stringify({ type: "fixture.observed", target: [] })]) {
       db.prepare("UPDATE events SET envelope_json = ? WHERE id = ?").run(value, id);
+      expect(loadPersistedEvent(db, id)).toBeNull();
+      expect(() => getEventView(db, id)).toThrow("Stored event envelope");
+    }
+    for (const patch of [
+      { type: "fixture.changed" }, { source: 42 }, { owner: [] }, { timestamp: "bad" },
+      { urgency: "unknown" }, { action: {} }, { ttl_ms: "90" }, { target: { human: "yes" } },
+      ...["appId", "project", "taskId", "executionId", "sessionId", "metricId", "owner"]
+        .map((key) => ({ target: { [key]: 42 } })),
+    ]) {
+      db.prepare("UPDATE events SET envelope_json = ? WHERE id = ?").run(JSON.stringify({ ...metadata, ...patch }), id);
       expect(loadPersistedEvent(db, id)).toBeNull();
       expect(() => getEventView(db, id)).toThrow("Stored event envelope");
     }
