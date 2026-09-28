@@ -593,7 +593,7 @@ describe("codex-goal Task executor", () => {
     expect(result.facts).toContain("codex-progress-events:degraded failed=1 last=event store unavailable");
   });
 
-  it("steers queued events into the authoritative next automatic turn", async () => {
+  it("delivers queued steering without treating transport success as incorporated Task input", async () => {
     const root = fixtureRoot();
     const client = new FakeClient("thread-turn-transition");
     let taskEvent: ((event: AppEvent<Record<string, unknown>>, accept: () => void) => void) | undefined;
@@ -636,8 +636,8 @@ describe("codex-goal Task executor", () => {
                 phase: "final_answer",
                 text: JSON.stringify({
                   state: "converged",
-                  summary: "The live event was considered.",
-                  facts: ["event:LIVE-STEER-TEST"],
+                  summary: "Prepared the original draft.",
+                  facts: ["draft:original"],
                 }),
               },
             ],
@@ -664,6 +664,6 @@ describe("codex-goal Task executor", () => {
     expect(steered).toHaveLength(1);
     expect(steered[0]).toMatchObject({ turnId: "turn-2" });
     expect(steered[0]?.message).toContain("LIVE-STEER-TEST");
-    expect(accepted).toBeTrue();
+    expect(accepted).toBeFalse();
   });
 });
