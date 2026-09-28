@@ -34,8 +34,9 @@ export async function execute(ctx) {
     workflow: "review",
     executionPaths: { appDir: root, projectDir: root, workspaceDir: root },
     childContext: { live: [], completed: [] }, taskSnapshot: { live: [], truncated: false },
-    taskRead: {}, taskEvents: {}, executionTimeoutMs: 1000,
+    taskEvents: {}, executionTimeoutMs: 1000,
     attempt: {
+      read: { tasks: {} },
       task: { id: "review", generation: 1, outcome: "Review", acceptance: [], input: {} },
       attemptId: "attempt", role: { agent: "owner" }, resourceVersion: 1,
       events: { items: [], truncated: false }, waits: [], children: [], declaredOutputPaths: [],

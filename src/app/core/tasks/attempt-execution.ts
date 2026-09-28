@@ -142,7 +142,7 @@ export async function resolveTaskExecutor(
   };
 }
 
-export function taskReads(opts: AppTaskRuntimeOptions, descriptor: AppTaskRuntimeDescriptor): TaskExecutionInput["taskRead"] {
+export function taskReads(opts: AppTaskRuntimeOptions, descriptor: AppTaskRuntimeDescriptor): TaskAttempt["read"]["tasks"] {
   const config = { taskStateConfig: appTaskConfig(descriptor) };
   return {
     list: async (options) => listRuntimeTaskViews(config, options),
@@ -205,6 +205,7 @@ function runtimeTaskAttempt(input: TaskAttemptInput): RuntimeTaskAttempt {
       instructions: `Act as the selected May agent ${claim.agent}.`,
     },
     task: structuredClone(task),
+    read: { tasks: taskReads(opts, descriptor) },
     ...(claim.previousAttempt ? { previousAttempt: structuredClone(claim.previousAttempt) } : {}),
     cwd: input.executionPaths.workspaceDir,
     declaredOutputPaths: [...claim.declaredOutputPaths],
@@ -349,7 +350,7 @@ export async function runTaskExecutorAttempt(
   );
   leaseTimer.unref();
   try {
-    const { opts, descriptor, claim } = input;
+    const { descriptor, claim } = input;
     const result = await input.execute({
       descriptor: {
         id: descriptor.id,
@@ -359,7 +360,6 @@ export async function runTaskExecutorAttempt(
       },
       attempt: taskAttempt.attempt,
       taskEvents: taskAttempt.events,
-      taskRead: taskReads(opts, descriptor),
       executionPaths: input.executionPaths,
       childContext: input.childContext,
       taskSnapshot: input.taskSnapshot,

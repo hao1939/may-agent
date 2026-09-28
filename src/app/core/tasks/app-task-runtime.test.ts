@@ -1107,7 +1107,7 @@ it("keeps omitted workflows visible, continues unrelated work, and recovers with
         calls++;
         expect(input.attempt.task.id).toBe("work/workflow");
         expect(input.attempt.signal.aborted).toBeFalse();
-        expect((await input.taskRead.get("work/workflow"))?.status).toBe("running");
+        expect((await input.attempt.read.tasks.get("work/workflow"))?.status).toBe("running");
         expect("resourceStore" in input.descriptor).toBeFalse();
         expect("manager" in input.source).toBeFalse();
         return {
@@ -1215,7 +1215,16 @@ it.each(["agent", "workflow", "executor"] as const)(
       }
       expect(attempt.events.items.map((item) => item.eventId)).toContain(101);
       attempt.onEvent(() => {}); // Deliberately rely on runtime cleanup.
-      if (seen.length === 1) throw new Error("Fixture failed before returning a report");
+      if (seen.length === 1) {
+        recordAppTaskTrigger(config, attempt.task.id, {
+          type: "sample.feedback", eventId: 102, data: { instruction: "Keep the approval open" },
+        });
+        const current = await attempt.read.tasks.get(attempt.task.id);
+        expect(current?.pendingEvents?.items.map((item) => item.eventId)).toContain(102);
+        expect(attempt.task.pendingEvents?.items.map((item) => item.eventId)).not.toContain(102);
+        throw new Error("Fixture failed before returning a report");
+      }
+      expect(attempt.events.items.map((item) => item.eventId)).toContain(102);
       expect(attempt.previousAttempt).toBeDefined();
       return { state: "converged", summary: "Recovered original work", facts: ["fixture:verified"] };
     };
@@ -1261,7 +1270,7 @@ it.each(["agent", "workflow", "executor"] as const)(
     expect(config.resourceStore.readTask(taskId)?.status).toMatchObject({
       phase: "pending", summary: expect.stringContaining("Fixture failed before returning a report"),
     });
-    expect(config.resourceStore.readTrigger(taskId)?.event.eventId).toBe(101);
+    expect(config.resourceStore.readTrigger(taskId)?.events?.map(({ event }) => event.eventId)).toEqual([101, 102]);
     expect(() => seen[0]!.onEvent(() => {})).toThrow("attempt is closed");
     await expect(seen[0]!.publish("late", { type: "sample.progress", data: {} })).rejects.toThrow("attempt is closed");
     advanceRuntimeTaskRetry(config, taskId);

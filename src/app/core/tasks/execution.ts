@@ -4,7 +4,6 @@ import type {
   ConversationTurnResult,
   TSchema,
   AppDefinition,
-  AppRead,
   TaskAttempt,
   TaskVerifier,
 } from "@may-agent/sdk";
@@ -46,7 +45,7 @@ export type TaskConversationRunner = {
     signal: AbortSignal;
     execution: Pick<
       TaskExecutionInput,
-      "descriptor" | "attempt" | "executionPaths" | "taskEvents" | "taskRead" | "taskSnapshot"
+      "descriptor" | "attempt" | "executionPaths" | "taskEvents" | "taskSnapshot"
     >;
     getTaskApp: ConversationTaskAppResolver;
   }): Promise<ConversationTaskProposal>;
@@ -65,7 +64,6 @@ export type TaskExecutionInput = {
   event?: EventEnvelope;
   fallbackReason?: string;
   taskEvents: AppTaskEvents;
-  taskRead: AppRead["tasks"];
   taskSnapshot: AppTaskLiveSnapshot;
 };
 

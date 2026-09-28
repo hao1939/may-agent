@@ -432,7 +432,13 @@ export type TaskAttempt = {
     agent: string;
     instructions: string;
   };
+  /** Snapshot at attempt start. Use read.tasks.get(task.id) for current facts. */
   task: TaskDetail;
+  /**
+   * The same scoped Task reads available to workflows and agent tools.
+   * Reads neither consume pending input nor change this attempt's binding.
+   */
+  read: Pick<AppRead, "tasks">;
   /** Latest earlier attempt of this Task. Facts to inspect, not authority to repeat its effects. */
   previousAttempt?: {
     attemptId: string;

@@ -5,7 +5,7 @@ import { APP_TASK_RECOVERY_OWNER } from "../../core/tasks/session-binding.js";
 
 /** Both entry points expose the same owning Task and fenced capabilities. */
 export function taskExecutionContext(
-  input: Pick<TaskExecutionInput, "descriptor" | "attempt" | "executionPaths" | "taskEvents" | "taskRead" | "taskSnapshot"> & Partial<Pick<TaskAgentInput, "dependencies">>,
+  input: Pick<TaskExecutionInput, "descriptor" | "attempt" | "executionPaths" | "taskEvents" | "taskSnapshot"> & Partial<Pick<TaskAgentInput, "dependencies">>,
   definitions?: ReadonlyMap<string, SubagentDefinition>,
 ): TaskExecutionContext {
   const { attempt, descriptor } = input;
@@ -18,7 +18,7 @@ export function taskExecutionContext(
     taskEmitter: input.taskEvents,
     observeEvents: attempt.onEvent,
     reviseTask: (change) => attempt.reviseTask(change),
-    taskRead: input.taskRead,
+    taskRead: attempt.read.tasks,
     details: { task, declaredOutputs: attempt.declaredOutputPaths, ...(input.dependencies ? { dependencies: input.dependencies } : {}) },
     reconciliation: {
       appId: descriptor.id,

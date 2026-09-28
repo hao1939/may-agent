@@ -172,6 +172,7 @@ export async function execute(ctx) {
     source: { projectsRoot: f.root, projectRoot: f.root, persistDir: f.root, agentsRoot: f.root, sharedRoot: f.root },
     workflow: "correct",
     attempt: {
+      read: { tasks: { list: async () => ({ items: [] }), get: async () => null } },
       task: { id: "parent", generation: 1, outcome: "Review evidence", acceptance: ["Verified"], input: {} },
       attemptId: f.parent.attemptId,
       resourceVersion: 1,
@@ -189,7 +190,6 @@ export async function execute(ctx) {
     childContext: { live: [], completed: [], truncated: false },
     taskSnapshot: { live: [], truncated: false },
     taskEvents: { read: () => null, publish: () => 1, onEvent: () => () => {} },
-    taskRead: { list: async () => ({ items: [] }), get: async () => null },
     executionTimeoutMs: 30_000,
   } as never);
   expect(received).toEqual(f.change);
