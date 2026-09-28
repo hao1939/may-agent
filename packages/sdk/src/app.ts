@@ -369,7 +369,7 @@ export const conversationTurnResultSchema = Type.Object(
         {
           maxItems: 8,
           description:
-            "Cancel exact contextual work within granted authority. Ending this Turn or leaving a view does not cancel background work.",
+            "Cancel an exact Task within granted authority, after checking its identity and current state. Ending this Turn or leaving a view does not cancel background work.",
         },
       ),
     ),

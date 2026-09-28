@@ -1,3 +1,4 @@
+import { MAX_CODEX_GOAL_OBJECTIVE_CHARS, renderCodexGoalTaskAttempt } from "./codex-goal-packet.js";
 import { afterEach, describe, expect, it } from "bun:test";
 import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -88,8 +89,11 @@ function attempt(overrides: Partial<TaskAttempt> = {}): TaskAttempt {
       executor: "codex-goal",
       input: { targetProject: "may-agent.app", readOnly: true },
       conditions: [],
+      acceptedEvidence: { available: false, maxPageSize: 8 },
     },
-    cwd: "/app/projects/evaluation.app",
+    cwd: "/tmp/evaluation.app",
+    read: { tasks: { get: async () => { throw new Error("Initial context must not depend on optional reads"); }, list: async () => ({ items: [] }) } },
+    reviseTask: async () => { throw new Error("No revisions in this fixture"); },
     declaredOutputPaths: [],
     children: { live: [], completed: [] },
     waits: { open: [], note: "No accepted waits." },
@@ -108,8 +112,61 @@ function attempt(overrides: Partial<TaskAttempt> = {}): TaskAttempt {
   };
 }
 
+function contextAttempt(root: string, version: string): TaskAttempt {
+  const base = attempt({ cwd: root });
+  return {
+    ...base,
+    task: {
+      ...base.task, resourceVersion: 4,
+      summary: `Draft ${version}`, result: { version }, facts: ["Cedar verified"],
+      acceptedAttempt: { id: `accepted-${version}`, generation: 1, startedAt: "2026-08-23T08:00:00.000Z" },
+      input: { background: "old weather report ".repeat(6000), document: "docs/design.md" },
+      conditions: [{ id: "approval", type: "approval.observed", subject: "draft:v3", expected: true,
+        observation: { generation: 1, resourceVersion: 4, observedGeneration: 1, state: "unknown", facts: ["approval-record"] } }],
+      currentObligations: { available: true, inputWaits: { maxItems: 100, truncated: false,
+        items: [{ key: "input:publish", conditionCount: 1,
+          correlation: { input: { available: true, id: "publish", kind: "message", status: "handling" }, admission: { available: false } } }] } },
+      acceptedEvidence: { available: true, maxPageSize: 8 },
+      pendingEvents: { items: [{ eventId: 42, observedAt: "2026-08-23T08:01:00.000Z",
+        event: { type: "task.steering", data: { message: "Thursday replaces Wednesday" } } }], truncated: false, throughEventId: 42 },
+    },
+    events: { items: [{ eventId: 41, observedAt: "2026-08-23T08:00:00.000Z",
+      event: { type: "task.steering", data: { message: "Keep Cedar and the approval" } } }], truncated: false, throughEventId: 41 },
+  };
+}
+
+// Exercise the real Task projection: a hand-reduced packet hid missing fields before.
+describe("Codex goal Task context", () => {
+  it("keeps the goal stable on replay, preserves generation and bounds only the objective", () => {
+    const root = fixtureRoot();
+    const first = contextAttempt(root, "v3");
+    const render = (value: TaskAttempt) => renderCodexGoalTaskAttempt(codexGoalExecutorInternals.packetFor(value), root);
+    const replay = { ...first, attemptId: "retry", resourceVersion: 8, events: first.task.pendingEvents! };
+    expect(render(replay).goalObjective).toBe(render(first).goalObjective);
+    expect(render(replay).developerInstructions).not.toBe(render(first).developerInstructions);
+    const large = { ...first, task: { ...first.task, outcome: "x".repeat(8000) } };
+    expect(render(large).goalObjective.length).toBe(MAX_CODEX_GOAL_OBJECTIVE_CHARS);
+    expect(render({ ...large, task: { ...large.task, generation: 2 } }).goalObjective).not.toBe(render(large).goalObjective);
+  });
+
+  it("starts no provider when omitted detail cannot be saved; small snapshots need no detail file", async () => {
+    const root = fixtureRoot();
+    writeFileSync(join(root, "task-context"), "not a directory");
+    let created = false;
+    const executor = createCodexGoalExecutor({ stateFile: join(root, "bindings.json"),
+      createClient: () => { created = true; return new FakeClient("unexpected"); } });
+    await expect(executor(contextAttempt(root, "v3"))).rejects.toThrow();
+    expect(created).toBe(false);
+    const small = renderCodexGoalTaskAttempt(codexGoalExecutorInternals.packetFor(attempt()), root);
+    const packet = JSON.parse(small.developerInstructions.split("## Canonical May Task Attempt\n")[1]!);
+    expect(packet.coverage.detail).toBeUndefined();
+    expect(packet.assignment.outcome).toBe(attempt().task.outcome);
+  });
+});
+
 class FakeClient implements CodexGoalClient {
   readonly calls: string[] = [];
+  readonly instructions: string[] = [];
   readonly threadId: string;
   private listener?: (notification: AppServerNotification) => void;
 
@@ -122,12 +179,14 @@ class FakeClient implements CodexGoalClient {
   }
   async startThread(input: { cwd: string; developerInstructions?: string }) {
     this.calls.push(`start:${input.cwd}`);
+    this.instructions.push(input.developerInstructions!);
     expect(input.developerInstructions).toContain("## Canonical May Task Attempt");
     expect(input.developerInstructions).toContain("Progress commentary may become a durable Task event");
     return { threadId: this.threadId, cwd: input.cwd };
   }
   async resumeThread(input: { threadId: string; cwd: string; developerInstructions?: string }) {
     this.calls.push(`resume:${input.threadId}`);
+    this.instructions.push(input.developerInstructions!);
     expect(input.developerInstructions).toContain('"resourceVersion":');
     return { threadId: input.threadId, cwd: input.cwd };
   }
@@ -259,19 +318,21 @@ describe("codex-goal Task executor", () => {
     expect(packet.role.instructions).toBe("Use the immutable Runtime role.");
     expect(packet.role.instructions).not.toContain("Conflicting workspace role");
     expect(packet.workspace.declaredOutputPaths).toEqual(["reports/review.md"]);
-    expect(packet.observations.children.completed[0]?.taskId).toBe("collect-facts");
+    expect(packet.related.childrenAtAttemptStart.completed[0]?.taskId).toBe("collect-facts");
   });
 
   it("persists one Task binding, admits exact-turn JSON, and resumes it across generations", async () => {
     const root = fixtureRoot();
     const stateFile = join(root, "bindings.json");
-    const clients = [new FakeClient("thread-1"), new FakeClient("unused")];
+    const firstClient = new FakeClient("thread-1"), resumedClient = new FakeClient("unused");
+    const clients = [firstClient, resumedClient];
+    const initial = contextAttempt(root, "v3");
     const executor = createCodexGoalExecutor({
       stateFile,
       createClient: () => clients.shift()!,
     });
 
-    const first = await executor(attempt());
+    const first = await executor(initial);
     expect(first).toMatchObject({
       state: "converged",
       response: "The review found no material mismatch.",
@@ -290,13 +351,30 @@ describe("codex-goal Task executor", () => {
     });
 
     await executor(
-      attempt({
-        attemptId: "r_2_retry",
-        resourceVersion: 7,
-        task: { ...attempt().task, generation: 2, outcome: "Review the revised Task mental model" },
-      }),
+      { ...contextAttempt(root, "v4"), attemptId: "r_2_retry", resourceVersion: 7,
+        task: { ...contextAttempt(root, "v4").task, generation: 2, resourceVersion: 7 } },
     );
     expect(clients).toHaveLength(0);
+    for (const [client, version] of [[firstClient, "v3"], [resumedClient, "v4"]] as const) {
+      const input = client.instructions[0]!;
+      const context = JSON.parse(input.split("## Canonical May Task Attempt\n")[1]!);
+      expect(context.current).toMatchObject({ summary: `Draft ${version}`, result: { version }, facts: ["Cedar verified"] });
+      expect(context.conditions[0]).toMatchObject({ id: "approval", observation: { state: "unknown", facts: ["approval-record"] } });
+      expect(context.obligations.inputWaits.items[0].key).toBe("input:publish");
+      expect(context.events.attemptInput.items[0].eventId).toBe(41);
+      expect(context.events.pendingInput.items[0].eventId).toBe(42);
+      expect(context.evidence.available).toBe(true);
+      // The fixed output schema is not background context and must remain intact.
+      const { contract, role, ...decision } = context;
+      expect(contract.resultSchema).toEqual(initial.resultSchema);
+      expect(role).toEqual(initial.role);
+      expect(Buffer.byteLength(JSON.stringify(decision))).toBeLessThan(8_000);
+      const detail = JSON.parse(readFileSync(context.coverage.detail, "utf8"));
+      expect(detail.current.result.version).toBe(version);
+      expect(detail.input.background).toBe(initial.task.input.background);
+      expect(detail.input.document).toBe("docs/design.md");
+      expect(context.input.pointer).toBe("/input");
+    }
     expect(
       JSON.parse(readFileSync(stateFile, "utf8")).bindings[codexGoalExecutorInternals.bindingKey(attempt())],
     ).toMatchObject({
@@ -593,7 +671,7 @@ describe("codex-goal Task executor", () => {
     expect(result.facts).toContain("codex-progress-events:degraded failed=1 last=event store unavailable");
   });
 
-  it("steers queued events into the authoritative next automatic turn", async () => {
+  it("delivers queued steering without treating transport success as incorporated Task input", async () => {
     const root = fixtureRoot();
     const client = new FakeClient("thread-turn-transition");
     let taskEvent: ((event: AppEvent<Record<string, unknown>>, accept: () => void) => void) | undefined;
@@ -636,8 +714,8 @@ describe("codex-goal Task executor", () => {
                 phase: "final_answer",
                 text: JSON.stringify({
                   state: "converged",
-                  summary: "The live event was considered.",
-                  facts: ["event:LIVE-STEER-TEST"],
+                  summary: "Prepared the original draft.",
+                  facts: ["draft:original"],
                 }),
               },
             ],
@@ -664,6 +742,6 @@ describe("codex-goal Task executor", () => {
     expect(steered).toHaveLength(1);
     expect(steered[0]).toMatchObject({ turnId: "turn-2" });
     expect(steered[0]?.message).toContain("LIVE-STEER-TEST");
-    expect(accepted).toBeTrue();
+    expect(accepted).toBeFalse();
   });
 });

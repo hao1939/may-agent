@@ -5,7 +5,7 @@ import { tmpdir } from "node:os";
 import { Type, defineApp, type ConversationTurnResult, type AppConversationRequestUpdate } from "@may-agent/sdk";
 import { getDb, closeDb } from "../../../lib/requests.js";
 import { APP_REQUEST_CONVERSATION_MAX_BYTES, boundedAppRequestConversation } from "../../conversations/context.js";
-import type { AppInputResolver } from "../../conversations/turn-agent.js";
+import type { AppInputResolver } from "../tasks/execution.js";
 import { prepareConversationTaskTurn } from "../../composition/conversation-task-turn.js";
 import { AppTaskResourceStore } from "./app-task-resource-store.js";
 import {
@@ -129,18 +129,19 @@ function fixture() {
     }
     const claim = claimObservedAppTask(context(), { taskId, appAgent: app.id, handler: "executor:conversation" });
     if (claim.kind !== "claimed") throw new Error(`Expected Conversation claim, got ${claim.kind}`);
+    const getTaskApp = (appId: string) => ({ app: owner, config: context(appId) });
     const proposal = await prepareConversationTaskTurn({
       config: context(),
       claim,
       app,
       resolveConversationInput: typeof decision === "function" ? decision : async () => decision,
-      getTaskApp: (appId) => ({ app: owner, config: context(appId) }),
+      getTaskApp,
       signal: new AbortController().signal,
     });
     return {
       claim,
       proposal,
-      settle: () => completeConversationTaskTurn(context(), claim, proposal.decision, proposal),
+      settle: () => completeConversationTaskTurn(context(), claim, proposal.decision, { ...proposal, getTaskApp }),
       stop: () =>
         stopConversationTaskTurn(context(), {
           appId: app.id,

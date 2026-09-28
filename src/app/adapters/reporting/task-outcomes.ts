@@ -71,7 +71,7 @@ function aggregateStatus(members: TaskView[]): TaskView["status"] {
   return "done";
 }
 
-/** Pure, additive shadow projection. Every source Task is retained verbatim in exactly one outcome. */
+/** Read-only grouping. Each included Task retains its original view in exactly one outcome. */
 export function projectTaskOutcomes(
   tasks: TaskView[],
   manifest: TaskOutcomeManifest | null,
@@ -114,11 +114,13 @@ export function projectTaskOutcomes(
     });
   }
   outcomes.sort((a, b) => a.id.localeCompare(b.id));
+  const exactTaskId = projection.taskId?.trim();
+  const selected = exactTaskId ? outcomes.filter((outcome) => outcome.memberTaskIds.includes(exactTaskId)) : outcomes;
   return {
     projection: "outcomes",
     manifestVersion: manifest?.version ?? null,
-    sourceCount: source.length,
-    outcomeCount: outcomes.length,
-    outcomes,
+    sourceCount: selected.reduce((count, outcome) => count + outcome.memberCount, 0),
+    outcomeCount: selected.length,
+    outcomes: selected,
   };
 }

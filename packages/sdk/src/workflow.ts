@@ -115,7 +115,7 @@ export type TaskView = {
   facts?: string[];
 };
 
-/** Exact desired Task detail returned only by an explicitly scoped get. */
+/** Task snapshot supplied at attempt start or returned by an explicitly scoped get. */
 export type TaskDetail = TaskView & {
   /** Current resource revision; absent for legacy receipts without a current resource. */
   resourceVersion?: number;
@@ -182,7 +182,7 @@ export type TaskPage = {
 export type TaskOutcomeProjection = {
   /** Include accepted outcomes and closed history. Omitted means active work only. */
   includeDone?: boolean;
-  /** Return only the reviewed outcome containing this exact Task. */
+  /** Return only the outcome containing this exact Task after the active/history filter. */
   taskId?: string;
 };
 
@@ -275,13 +275,13 @@ export type AgentCallOptions = {
   source?: string;
 };
 
-/** Bounded stable projections. It intentionally has no list or SQL escape hatch. */
+/** Shared read contract. Task lists and evidence are paginated; storage stays private. */
 export type AppRead = {
   appResult(itemId: string): Promise<AppResult | null>;
+  /** Missing Task access rejects; empty results mean a scoped read found no matching work. */
   tasks: {
     list(options?: TaskListOptions): Promise<TaskPage>;
-    /** Opt-in shadow view. Omission keeps every existing list/get behavior unchanged. */
-    /** Optional Host reporting capability; rejects when not installed. */
+    /** Opt-in outcome grouping. Optional Host reporting capability; rejects when not installed. */
     outcomes(options?: TaskOutcomeProjection): Promise<TaskOutcomePage>;
     get(taskId: string, options?: TaskReadOptions): Promise<TaskDetail | null>;
   };
@@ -432,7 +432,13 @@ export type TaskAttempt = {
     agent: string;
     instructions: string;
   };
+  /** Snapshot at attempt start. Use read.tasks.get(task.id) for current facts. */
   task: TaskDetail;
+  /**
+   * The same scoped Task reads available to workflows and agent tools.
+   * Reads neither consume pending input nor change this attempt's binding.
+   */
+  read: Pick<AppRead, "tasks">;
   /** Latest earlier attempt of this Task. Facts to inspect, not authority to repeat its effects. */
   previousAttempt?: {
     attemptId: string;
@@ -523,6 +529,8 @@ export type TaskExecutor = (attempt: TaskAttempt) => Promise<TaskReconcileResult
 
 /** Bounded task-attempt facts supplied without exposing task storage or prompt packets. */
 export type TaskReconciliationContext<TInput = unknown> = {
+  /** Host-supplied starting state, including accepted work, Conditions and pending input. */
+  task: TaskDetail;
   appId: string;
   taskId: string;
   generation: number;

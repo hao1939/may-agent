@@ -1267,7 +1267,57 @@ describe("App inbox runtime", () => {
     expect(getAppEventAdmissionPlan(db, 1)?.status).toBe("pending");
   });
 
-  it("resumes a frozen plan after restart and does not admit it twice", async () => {
+  it("keeps a legacy unresolved translation visible when the original target was lost", async () => {
+    const path = join(root, "evaluation.app", "app.js");
+    writeFileSync(
+      path,
+      readFileSync(path, "utf8").replace(
+        "toInput(event) { return",
+        'toInput(event) { if (event.target?.appId !== "evaluation") return null; return',
+      ),
+    );
+    const eventId = Number(
+      db
+        .prepare(
+          "INSERT INTO events(event_type, source, owner, data, timestamp) VALUES ('provider.changed', 'provider', 'app:evaluation', ?, ?)",
+        )
+        .run(JSON.stringify({ project: "evaluation", value: "legacy" }), Date.now()).lastInsertRowid,
+    );
+    const registry = await loadedRegistry(root);
+    const snapshot = registry.snapshot();
+    createAppEventAdmissionPlan(db, {
+      eventId,
+      registrySnapshotId: snapshot.id,
+      registryGeneration: snapshot.generation,
+      routes: [
+        {
+          appId: "evaluation",
+          kind: "unresolved",
+          routeId: "provider-change",
+          subscriptionIds: ["provider-change"],
+          resolveTask: false,
+          conditionTaskIds: [],
+        },
+      ],
+    });
+    runtime = await startAppInboxRuntime({ registry, db, bus: persistentBus(), scanIntervalMs: 10_000 });
+    await waitUntil(() => {
+      const plan = getAppEventAdmissionPlan(db, eventId);
+      return plan?.status === "completed" || Boolean(plan?.commands[0]?.lastError);
+    });
+    expect(getAppEventAdmissionPlan(db, eventId)).toMatchObject({
+      status: "pending",
+      commands: [
+        expect.objectContaining({
+          kind: "unresolved",
+          status: "pending",
+          lastError: expect.stringContaining("original envelope"),
+        }),
+      ],
+    });
+  });
+
+  it("resumes a legacy frozen plan without inventing an event target or admitting it twice", async () => {
     const eventId = Number(
       db
         .prepare(
@@ -1296,8 +1346,11 @@ describe("App inbox runtime", () => {
     const options = {
       registry,
       db,
-      admitTaskEvent: ({ event }: any) => {
+      admitTaskEvent: ({ appId, conditionTaskIds, event }: any) => {
         admitted += 1;
+        expect(appId).toBe("evaluation");
+        expect(conditionTaskIds).toEqual(["restart-task"]);
+        expect(event.target).toBeUndefined();
         expect(Number(event[EVENT_ROW_ID])).toBe(eventId);
         expect(event.data).toMatchObject({ project: "evaluation", value: "restart" });
         return { accepted: true as const, by: "test-task", route: "direct" as const };

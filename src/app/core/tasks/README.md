@@ -12,8 +12,10 @@ Read in this order:
 1. `app-task-capability.ts` is the private entry point used by Host composition.
 2. `controller.ts` and `queue.ts` select ready work under shared capacity.
 3. `attempt-runner.ts: runTaskAttempt()` claims work; `runClaimedTask()` prepares
-   its workspace, calls `executeTaskHandler()` and settles the returned report.
-   `attempt-execution.ts` builds the shared context and invokes the selected executor.
+   its workspace, opens one attempt around `executeTaskHandler()`, then settles
+   the returned report. `attempt-execution.ts: runTaskExecutorAttempt()` owns the
+   shared Task context, lease renewal, event observation and cleanup. Agent,
+   workflow, registered-executor and Conversation handlers use that open attempt.
    `dependency-admission.ts` admits typed delegation and recovers exact waits.
    `app-task-runtime.ts` installs controllers and wires routes; `runtime-definition.ts`
    prepares App descriptors and binds their existing state authority.
@@ -27,7 +29,7 @@ Read in this order:
 snapshot/mutation helpers, not another database authority. Context, Conditions,
 event emission and output-path helpers live beside their lifecycle callers.
 `execution.ts` and `workspace.ts` are private contracts; concrete implementations
-live in `adapters/` and are selected in `composition/task-execution.ts`.
+live in `adapters/` and `conversations/`, selected in `composition/task-execution.ts`.
 
 ## Trace one Task
 
@@ -43,7 +45,7 @@ authorized owner -> close Task -> fence running execution and future wakes
 | --- | --- | --- |
 | Admit | `attachLoadedAppTask()` -> `core/state/inbox.ts: admitTaskInput()`; declared event routes use `admitResolvedAppTaskEvent()` -> `observeAppTaskIntent()` | Atomic inbox attachment or idempotent event admission retains the owning Task |
 | Dispatch | `controller.ts` -> `attempt-runner.ts: runTaskAttempt()` (locally or in the worker) -> `claimObservedAppTask()` | Capacity limits local execution; the SQLite claim decides who owns this Task attempt |
-| Execute | `attempt-execution.ts` -> selected handler via `execution.ts`; human context is prepared by `composition/conversation-task-turn.ts` | Every handler uses the same Task claim. It proposes a result without acquiring closure authority |
+| Execute | `attempt-execution.ts` -> selected handler via `execution.ts`; human context comes from `conversations/context.ts` through composition | Every handler uses the same Task claim. It proposes a result without acquiring closure authority |
 | Settle | `establishTaskAcceptance()` -> `completeAppTask()`, `deferAppTask()` or `failAppTaskAttempt()`; human-facing effects use `core/state/conversation-task-turns.ts` | The reconciler fences acceptance. Replies, Request updates and authorized effects commit with the Task result; unfinished input survives failure |
 | Close or stop an attempt | `cancelLoadedAppTask()` -> `cancelAppTask()` closes the assignment; `stopLoadedConversationTurn()` stops the observed human Turn | Closure fences future work. Turn Stop preserves newer input. `reportAppTaskFailure()` records a worker failure report and retries; it does not close the Task |
 | Restart | `recoverInstalledAppTasks()` -> `recoverInterruptedAppTasks()`; `app-task-recovery.ts` restores queue hints | Accepted Task results survive. Uncommitted execution retries the same input after ownership/cleanup checks; session output remains facts for normal execution and validation |
@@ -62,6 +64,26 @@ then either commits that report or returns a separate rejection; it does not
 rewrite the report's state and fall through to another branch. Failure diagnostics
 and ordinary execution errors use `failAppTaskAttempt()`; its stored disposition
 determines immediate handoff versus paced retry.
+
+Task context reads also finish before attempt subscriptions are acquired. A
+failed role or context read leaves no observer outside the cleanup boundary;
+ordinary unsuccessful-attempt settlement retains the work for retry.
+
+The Host supplies the accepted Task snapshot before executor-selected reads.
+`runtimeTaskAttempt()` attaches `task`, the assigned `events`, and one scoped
+`read.tasks` capability. Workflows receive the snapshot as `reconciliation.task`;
+managed and Codex model adapters share the state projection in
+`task-decision-context.ts`. Model previews link omitted material to saved detail;
+workflow objects remain structured data. Accepted work, Conditions, input
+obligations and pending input coexist. A fresh read supplements the assigned
+batch and never expands its authority. Native transports still determine which
+live capabilities reach their worker; a serialized reader is not a tool bridge.
+
+`createRuntimeTaskRead()` in `reads/app-read.ts` assembles the shared Task reader
+and supplies its reads to optional outcome reporting. `createRuntimeAppRead()`
+adapts those operations to the SDK's Promise interface. Loaded-App access and
+model tools use the same implementation. Adapters preserve options and format
+results; the reporting implementation owns outcome membership and counts.
 
 Task profiling retains dispatch identity, queue wait and total elapsed time.
 Session timestamps and execution-usage records supply execution duration, prompt

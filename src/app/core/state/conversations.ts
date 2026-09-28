@@ -8,7 +8,11 @@ import type {
 import type { SqliteDb } from "../../../lib/db.js";
 import { listAppInboxConversationItems, readActiveAppTurn } from "./app-inbox-store.js";
 import { displayTaskReferences } from "./task-reference-index.js";
-import { listConversationRequests } from "./conversation-requests.js";
+import {
+  listConversationRequests,
+  readConversationRequest,
+  pageOpenConversationRequests,
+} from "./conversation-requests.js";
 
 export type CreateConversationTopic = {
   id: string;
@@ -632,4 +636,21 @@ export function listConversationTopicLinksForTask(
       ? [{ appId: row.app_id, conversationId: row.conversation_id, topicId: row.topic_id }]
       : [],
   );
+}
+
+/** Queries are bound to an admitted Conversation by the Host, not by prompt fields. */
+export type ConversationContextQuery =
+  | { action: "find"; query: string; limit?: number }
+  | { action: "read"; topicId: string }
+  | { action: "request"; id: string }
+  | { action: "requests"; afterId?: string };
+
+export function readConversationContext(db: SqliteDb, appId: string, conversationId: string, query: ConversationContextQuery) {
+  if (query.action === "request") return readConversationRequest(db, appId, conversationId, query.id);
+  if (query.action === "requests") return pageOpenConversationRequests(db, appId, conversationId, query.afterId);
+  if (query.action === "find") return { candidates: findConversationTopics(db, appId, conversationId, query.query, query.limit ?? 8) };
+  const topic = readConversationTopic(db, appId, conversationId, query.topicId);
+  if (!topic) return { topic: null };
+  const exact = readAppConversationResource(db, appId, conversationId, { limit: 40, topicId: topic.id });
+  return { topic, requests: exact.requests, messages: exact.messages.filter((message) => message.metadata?.topicId === topic.id) };
 }

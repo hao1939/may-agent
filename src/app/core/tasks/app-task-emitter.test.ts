@@ -8,6 +8,8 @@ import { AppTaskResourceStore } from "../state/app-task-resource-store.js";
 import { createAppTaskEmitter, createAppTaskEvents, subscribeAppTaskPublications } from "./app-task-emitter.js";
 import { renewAppTaskAttemptLease } from "./app-task-reconciler.js";
 import { EVENT_ROW_ID, EVENT_TASK_EMISSION_FENCE, EventBus } from "../events/bus.js";
+import { loadPersistedEvent } from "../events/persisted.js";
+import { getEventView } from "../events/interface.js";
 import type { AppTaskAttempt, AppTaskResource } from "./app-task-state.js";
 import { cacheTaskSnapshots, readTaskSnapshot, type AppTaskContext, type TaskTree } from "./app-task-store.js";
 
@@ -140,6 +142,47 @@ function harness(
 }
 
 describe("AppTaskEmitter", () => {
+  it.each([false, true])("preserves routing separately from producer and subject after reopen (large=%s)", (large) => {
+    const f = harness(null);
+    const data = { appId: "subject", taskId: "subject-task", text: "Evidence. ".repeat(large ? 1000 : 1) };
+    const targets = [{ appId: "destination", taskId: "destination-task" }, { appId: "destination" }, undefined];
+    const published = targets.map((target, index) => ({
+      target,
+      key: `report-${index}`,
+      id: f.events().publish(`report-${index}`, { type: "sample.observed", ...(target ? { target } : {}), data }),
+    }));
+    expect(f.events().publish("report-0", { type: "sample.observed", target: targets[0], data })).toBe(
+      published[0]!.id,
+    );
+    expect(() =>
+      f.events().publish("report-0", { type: "sample.observed", target: { appId: "elsewhere" }, data }),
+    ).toThrow("different event input");
+    for (const { id } of published) {
+      expect(f.db.prepare("SELECT project_id, task_id, attempt_id FROM events WHERE id = ?").get(id)).toEqual({
+        project_id: "sample",
+        task_id: "task-1",
+        attempt_id: "attempt-1",
+      });
+    }
+    closeDb(f.root);
+    const db = getDb(f.root);
+    const retry = createAppTaskEvents({
+      bus: new EventBus(),
+      db,
+      persistDir: f.root,
+      appId: "sample",
+      claim: { taskId: "task-1", generation: 3, attemptId: "replacement", agent: "may" },
+    });
+    for (const { id, key, target } of published) {
+      const replay = loadPersistedEvent(db, id, f.root)!;
+      expect(replay).not.toBeNull();
+      expect((replay as { target?: unknown }).target).toEqual(target);
+      expect((replay as { data?: unknown }).data).toMatchObject(data);
+      expect(getEventView(db, id)?.event.target).toEqual(target);
+      expect(retry.read("sample.observed", key)?.eventId).toBe(id);
+    }
+  });
+
   it.each([false, true])(
     "keeps delimiter-bearing Task scopes distinct, including legacy publication (%s)",
     (legacy) => {

@@ -1,4 +1,15 @@
-import type { AppDefinition, AppRead, TaskAttempt, TaskVerifier } from "@may-agent/sdk";
+import type {
+  AppInputContext,
+  AppConversationRequest,
+  ConversationTurnResult,
+  TSchema,
+  AppDefinition,
+  TaskAttempt,
+  TaskVerifier,
+} from "@may-agent/sdk";
+import type { TaskBinding } from "../../../lib/persistence.js";
+import type { ConversationContextQuery } from "../state/conversations.js";
+import type { ConversationRequestChange } from "../state/conversation-requests.js";
 import type { EventEnvelope } from "../events/bus.js";
 import type { AppTaskEvents } from "./app-task-emitter.js";
 import type { AppTaskExecutionPaths } from "./app-task-output-paths.js";
@@ -7,10 +18,24 @@ import type { appDependencyCatalog } from "../../app-dependency-catalog.js";
 import type { TaskCapabilityRun } from "./result.js";
 import type { AppTaskAttempt } from "./app-task-state.js";
 import type { AppTaskContext } from "./app-task-store.js";
-import type { ConversationTaskProposal } from "../state/conversation-task-turns.js";
+import type { ConversationTaskAppResolver, ConversationTaskProposal } from "../state/conversation-task-turns.js";
 import type { AppRegistrySnapshot } from "../apps/registry.js";
 
-/** Conversation-specific judgment, using the common Task attempt and settlement. */
+/** Model execution receives data and scoped capabilities, never a Task store or claim. */
+export type AppInputResolver = (input: {
+  app: Readonly<AppDefinition>;
+  inputContext: Readonly<AppInputContext>;
+  execution: {
+    outputSchema: TSchema;
+    readContext: (query: ConversationContextQuery) => unknown;
+    signal: AbortSignal;
+    sessionStarted: (sessionId: string) => void;
+    taskBinding: TaskBinding;
+    updateRequest?: (change: ConversationRequestChange, operationId: string) => AppConversationRequest;
+  };
+}) => Promise<ConversationTurnResult>;
+
+/** Host composition hook: wires context and model capabilities; runtime retains settlement. */
 export type TaskConversationRunner = {
   execute(input: {
     config: AppTaskContext;
@@ -18,8 +43,11 @@ export type TaskConversationRunner = {
     app: Readonly<AppDefinition>;
     registry: AppRegistrySnapshot;
     signal: AbortSignal;
-    execution: Pick<TaskAgentInput, "descriptor" | "attempt" | "executionPaths" | "taskEvents" | "taskRead" | "taskSnapshot">;
-    getTaskApp(appId: string): { app: Readonly<AppDefinition>; config: AppTaskContext };
+    execution: Pick<
+      TaskAgentInput,
+      "descriptor" | "attempt" | "executionPaths" | "taskEvents" | "taskSnapshot"
+    >;
+    getTaskApp: ConversationTaskAppResolver;
   }): Promise<ConversationTaskProposal>;
   snapshot?(): TaskConversationRunner;
 };
@@ -40,7 +68,6 @@ type TaskExecutionInput = {
 
 export type TaskAgentInput = TaskExecutionInput & {
   taskEvents: AppTaskEvents;
-  taskRead: AppRead["tasks"];
   taskSnapshot: AppTaskLiveSnapshot;
   dependencies: ReturnType<typeof appDependencyCatalog>;
   sessionStarted(sessionId: string): void;
@@ -85,7 +112,6 @@ export type TaskWorkflowInput = TaskExecutionInput & {
   /** Actual selected handler, including workflow-to-agent recovery decisions. */
   handler: string;
   taskSnapshot: AppTaskLiveSnapshot;
-  taskRead: AppRead["tasks"];
 };
 
 /** Host-private workflow capability. It proposes results; core owns admission. */

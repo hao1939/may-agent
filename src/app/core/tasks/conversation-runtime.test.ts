@@ -1,3 +1,4 @@
+import { readConversationReplyContext } from "../../../../test/fixtures/conversation-prompt.js";
 import { afterEach, expect, setSystemTime, test } from "bun:test";
 import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -190,7 +191,7 @@ test.each(["throws", "invalid", "missing-topic"] as const)(
       expect(options.taskBinding?.appId).toBe(app.id);
       expect(claimAppInboxItem(f.db, "ask", "old-inbox", 1_000)).toBeNull();
       calls.push(options);
-      contexts.push(JSON.parse(prompt.match(/## Input and context\n```json\n([\s\S]*?)\n```/)![1]!));
+      contexts.push(readConversationReplyContext(prompt));
       if (calls.length === 1) {
         if (failure === "throws") throw new Error("Model temporarily unavailable");
         return {
@@ -262,9 +263,7 @@ test.each(["scope", "storage", "new-correction", "provider-failure", "legacy-han
     const contexts: AppInputContext[] = [];
     const f = await fixture(
       async (definition, prompt) => {
-        const context: AppInputContext = JSON.parse(
-          prompt.match(/## Input and context\n```json\n([\s\S]*?)\n```/)![1]!,
-        );
+        const context: AppInputContext = readConversationReplyContext(prompt);
         contexts.push(context);
         if (contexts.length === 1) {
           if (failure === "storage")
@@ -439,7 +438,7 @@ test.each(["during failure", "during cooldown and reopen"])(
     const capacity = new HostCapacity(1);
     const f = await fixture(
       async (_definition, prompt) => {
-        contexts.push(JSON.parse(prompt.match(/## Input and context\n```json\n([\s\S]*?)\n```/)![1]!));
+        contexts.push(readConversationReplyContext(prompt));
         if (contexts.length === 1) {
           firstStarted.resolve();
           await releaseFailure.promise;
@@ -838,9 +837,7 @@ test("ordinary inbox work and Conversation input share a Conversation without bl
   });
   const f = await fixture(
     async (_definition, prompt) => {
-      const context = JSON.parse(
-        prompt.match(/## Input and context\n```json\n([\s\S]*?)\n```/)![1]!,
-      ) as AppInputContext;
+      const context = readConversationReplyContext(prompt);
       expect(context.input.kind).toBe("message");
       calls.push(context.id);
       return {
@@ -912,9 +909,7 @@ test("a human Conversation decision cancels the exact running Task after its rep
   let humanTurns = 0;
   const f = await fixture(
     async (_definition, prompt) => {
-      const context = JSON.parse(
-        prompt.match(/## Input and context\n```json\n([\s\S]*?)\n```/)![1]!,
-      ) as AppInputContext;
+      const context = readConversationReplyContext(prompt);
       if (context.source.kind !== "human")
         return {
           status: "done",
@@ -1110,9 +1105,7 @@ test.each(["live", "restart", "admission-write-failure"])(
     });
     const f = await fixture(
       async (_definition, prompt) => {
-        const context = JSON.parse(
-          prompt.match(/## Input and context\n```json\n([\s\S]*?)\n```/)![1]!,
-        ) as AppInputContext;
+        const context = readConversationReplyContext(prompt);
         contexts.push(context);
         return {
           status: "done",
@@ -1230,9 +1223,7 @@ test.each([false, true])("a waiting report reaches Conversation, survives reopen
   const seen: AppInputContext[] = [];
   const f = await fixture(
     async (_definition, prompt) => {
-      const context = JSON.parse(
-        prompt.match(/## Input and context\n```json\n([\s\S]*?)\n```/)![1]!,
-      ) as AppInputContext;
+      const context = readConversationReplyContext(prompt);
       seen.push(context);
       return {
         status: "done",
@@ -1334,9 +1325,7 @@ test.each(["incomplete", "execution-error"])(
     const priorAttempts: TaskAttempt["previousAttempt"][] = [];
     const f = await fixture(
       async (_definition, prompt) => {
-        const context = JSON.parse(
-          prompt.match(/## Input and context\n```json\n([\s\S]*?)\n```/)![1]!,
-        ) as AppInputContext;
+        const context = readConversationReplyContext(prompt);
         return {
           status: "done",
           structuredResult:
@@ -1441,9 +1430,7 @@ test.each(["live", "restart", "stop"])("owner closure returns without manufactur
   const seen: AppInputContext[] = [];
   const f = await fixture(
     async (_definition, prompt, options) => {
-      const context = JSON.parse(
-        prompt.match(/## Input and context\n```json\n([\s\S]*?)\n```/)![1]!,
-      ) as AppInputContext;
+      const context = readConversationReplyContext(prompt);
       seen.push(context);
       if (context.source.kind === "human" && context.source.id !== "withdraw")
         return { status: "done", structuredResult: delegated };
@@ -1666,7 +1653,7 @@ test.each([false, true])("normal Stop fences only the observed Turn, preserves n
   const releaseSecond = Promise.withResolvers<void>();
   const batches: string[][] = [];
   const f = await fixture(async (_definition, prompt, options) => {
-    const context = JSON.parse(prompt.match(/## Input and context\n```json\n([\s\S]*?)\n```/)![1]!);
+    const context = readConversationReplyContext(prompt);
     batches.push(context.inputs.map((input: { source: { id: string } }) => input.source.id));
     if (batches.length === 1) {
       firstStarted.resolve(options);
@@ -1789,9 +1776,7 @@ test("public Stop commits before abort and preserves queued input across Task ru
   const f = await fixture(
     async (_definition, prompt, options) => {
       calls++;
-      const context = JSON.parse(
-        prompt.match(/## Input and context\n```json\n([\s\S]*?)\n```/)![1]!,
-      ) as AppInputContext;
+      const context = readConversationReplyContext(prompt);
       if (calls === 1) {
         options.signal!.addEventListener(
           "abort",
@@ -1961,7 +1946,7 @@ test("human Conversation input keeps capacity beside same-App background work; s
   const capacity = new HostCapacity(2);
   const f = await fixture(
     async (_agent, prompt) => {
-      const context = JSON.parse(prompt.match(/## Input and context\n```json\n([\s\S]*?)\n```/)![1]!);
+      const context = readConversationReplyContext(prompt);
       const human = context.inputs.some((input: { source: { kind: string } }) => input.source.kind === "human");
       if (human) {
         humanTurns++;
@@ -2046,7 +2031,7 @@ test("a paused App answers human input through its Task across restart while bac
   const definition = defineApp({ ...app, tasks: { subscriptions: [], resolve: () => null } });
   const f = await fixture(
     async (_agent, prompt) => {
-      const context = JSON.parse(prompt.match(/## Input and context\n```json\n([\s\S]*?)\n```/)![1]!);
+      const context = readConversationReplyContext(prompt);
       const id = context.inputs[0].source.id;
       inputs.push(id);
       return {
@@ -2165,9 +2150,7 @@ test.each([false, true])("the Conversation delegates and steers same-App work th
   });
   const f = await fixture(
     async (_definition, prompt, options) => {
-      const context = JSON.parse(
-        prompt.match(/## Input and context\n```json\n([\s\S]*?)\n```/)![1]!,
-      ) as AppInputContext;
+      const context = readConversationReplyContext(prompt);
       expect(context.source.kind).toBe("human");
       expect(options.toolPolicy).toBe("app-agent-full");
       const catalog = JSON.parse(prompt.split("## Installed Apps\n```json\n")[1]!.split("\n```")[0]!);
@@ -2369,9 +2352,7 @@ test("a subscribed App input executes in the default Conversation without a supe
   let turns = 0;
   const f = await fixture(
     async (_definition, prompt) => {
-      const context = JSON.parse(
-        prompt.match(/## Input and context\n```json\n([\s\S]*?)\n```/)![1]!,
-      ) as AppInputContext;
+      const context = readConversationReplyContext(prompt);
       expect(context.source.kind).toBe("system");
       expect(context.humanRequested).toBeUndefined();
       expect(context.input).toEqual({ kind: "message", data: { text: "Provider changed" } });
@@ -2466,9 +2447,7 @@ test.each(["focus", "command"])(
     let calls = 0;
     const f = await fixture(async (_definition, prompt) => {
       calls++;
-      const context = JSON.parse(
-        prompt.match(/## Input and context\n```json\n([\s\S]*?)\n```/)![1]!,
-      ) as AppInputContext;
+      const context = readConversationReplyContext(prompt);
       const observed = source === "focus" ? context.focusedTask : context.referencedTasks?.[0];
       expect(observed).toMatchObject({ appId: app.id, task: { id: olderReview.id, outcome: olderReview.outcome } });
       if (source === "command") expect(observed?.ref).toMatch(/^[0-9a-f]{8}$/);
@@ -2524,10 +2503,10 @@ test.each(["focus", "command"])(
   },
 );
 
-test("a selected old Topic steers its exact Task even outside the bounded prompt context", async () => {
+test.each([true, false])("an exact Task outside the prompt can receive input (already linked: %s)", async (linked) => {
   const topicId = "topic_00000000abcdef0123456789";
   const f = await fixture(async (_definition, prompt) => {
-    const context = JSON.parse(prompt.match(/## Input and context\n```json\n([\s\S]*?)\n```/)![1]!) as AppInputContext;
+    const context = readConversationReplyContext(prompt);
     expect(context.conversation?.topics?.some((topic) => topic.id === topicId)).toBe(false);
     return {
       status: "done",
@@ -2554,7 +2533,7 @@ test("a selected old Topic steers its exact Task even outside the bounded prompt
       originMessageId: `old-${i}`,
       now: i,
     });
-  linkConversationTopicTask(f.db, topicId, app.id, olderReview.id);
+  if (linked) linkConversationTopicTask(f.db, topicId, app.id, olderReview.id);
   const admitted = f.admit("continue-old", "Continue review 00000000");
   await f.run(admitted.taskId);
   expect(getAppInboxItem(f.db, "continue-old"), f.store.readTask(admitted.taskId)?.status.summary).toMatchObject({
@@ -2572,16 +2551,14 @@ test("a selected old Topic steers its exact Task even outside the bounded prompt
 });
 
 test.each(["handoff", "control"] as const)(
-  "rejected guessed %s retains Task input for a corrected attempt after reopen",
+  "rejected missing %s retains Task input for a corrected attempt after reopen",
   async (effect) => {
     let calls = 0;
     const f = await fixture(async (_definition, prompt) => {
       calls++;
       if (calls > 1) {
-        const context = JSON.parse(
-          prompt.match(/## Input and context\n```json\n([\s\S]*?)\n```/)![1]!,
-        ) as AppInputContext;
-        expect(JSON.stringify(context.previousAttempt)).toContain("absent from Conversation context");
+        const context = readConversationReplyContext(prompt);
+        expect(JSON.stringify(context.previousAttempt)).toContain("requires an exact Task");
         return { status: "done", structuredResult: answer };
       }
       return {
@@ -2593,13 +2570,13 @@ test.each(["handoff", "control"] as const)(
           ...(effect === "control"
             ? {
                 taskControls: [
-                  { kind: "cancel" as const, appId: app.id, taskId: olderReview.id, reason: "Human requested" },
+                  { kind: "cancel" as const, appId: app.id, taskId: "work/missing", reason: "Human requested" },
                 ],
               }
             : {
                 followUp: {
                   appId: app.id,
-                  task: { appId: app.id, taskId: olderReview.id },
+                  task: { appId: app.id, taskId: "work/missing" },
                   input: { kind: "goal", data: {} },
                 },
               }),
@@ -2610,7 +2587,7 @@ test.each(["handoff", "control"] as const)(
     const original = f.store.readTask(olderReview.id);
     const admitted = f.admit("unknown-target", "Continue it");
     await f.run(admitted.taskId);
-    expect(f.store.readTask(admitted.taskId)?.status.summary).toContain("absent from Conversation context");
+    expect(f.store.readTask(admitted.taskId)?.status.summary).toContain("requires an exact Task");
     expect(f.store.readTask(admitted.taskId)?.status.executionRetryAt).toBeGreaterThan(Date.now());
     expect(f.store.readTask(olderReview.id)).toEqual(original);
     expect(getAppInboxItem(f.db, "unknown-target")?.status).not.toBe("done");
@@ -2634,7 +2611,7 @@ test.each(["handoff", "control"] as const)(
 test("closed Task reuse retains the caller input for a corrected attempt after reopen", async () => {
   let calls = 0;
   const f = await fixture(async (_definition, prompt) => {
-    const context = JSON.parse(prompt.match(/## Input and context\n```json\n([\s\S]*?)\n```/)![1]!) as AppInputContext;
+    const context = readConversationReplyContext(prompt);
     calls++;
     expect(context.conversation?.topics?.find((topic) => topic.id === "old-review")?.taskRefs).toContainEqual(
       expect.objectContaining({ appId: app.id, taskId: olderReview.id }),

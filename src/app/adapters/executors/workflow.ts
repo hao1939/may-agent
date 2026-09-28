@@ -34,7 +34,7 @@ export function createTaskWorkflowRunner(
         verifier: inspected.verifier as Awaited<ReturnType<TaskWorkflowRunner["inspect"]>>["verifier"],
       };
     },
-    execute: (attempt) => executeTaskCapability(attempt, input.manager, input.bus, definitions),
+    execute: (attempt) => executeTaskWorkflow(attempt, input.manager, input.bus, definitions),
     snapshot: () => createTaskWorkflowRunner(input, captureAgentDefinitions(input.manager) ?? definitions),
   };
 }
@@ -77,7 +77,7 @@ function appWorkflowRuntimePaths(
   };
 }
 
-async function executeTaskCapability(
+async function executeTaskWorkflow(
   input: TaskWorkflowInput,
   manager: SubagentManager,
   bus: EventBus,
@@ -165,7 +165,7 @@ async function executeTaskCapability(
       read: createRuntimeAppRead({
         getDb: runtimeCtx.getDb,
         readMetric: async (id) => readMetricView(runtimeCtx.metrics, id),
-        taskRead: input.taskRead,
+        taskRead: attempt.read.tasks,
       }),
       agentName,
       persistDir: runtime.persistDir,

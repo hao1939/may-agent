@@ -448,6 +448,14 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
     event: AgentEvent,
   ): void => {
     if (command.kind !== "unresolved") return;
+    // Re-translation needs the original envelope. Already resolved commands
+    // retain their own destinations and do not depend on this historical field.
+    const stored = options.db.prepare("SELECT envelope_json FROM events WHERE id = ?").get(plan.eventId);
+    if (stored?.envelope_json === null) {
+      throw new Error(
+        `Event ${plan.eventId} did not retain its original envelope; unresolved admission needs investigation`,
+      );
+    }
     const entry = loadedById.get(command.appId);
     if (!entry) throw new Error(`App ${command.appId} is unavailable for event:${plan.eventId} translation`);
     const canonical = canonicalAppEvent(event);

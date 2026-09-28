@@ -18,8 +18,8 @@ import { createBashTool } from "../../lib/tools/bash.js";
 import { createFinishTool } from "../../lib/tools/lifecycle.js";
 import type { AppRegistry } from "../core/apps/registry.js";
 import { createConversationAgentResolver } from "./turn-agent.js";
-import type { AppInputResolver } from "./turn-agent.js";
-import { readAppConversationResource } from "../core/state/conversations.js";
+import type { AppInputResolver } from "../core/tasks/execution.js";
+import { readAppConversationResource, readConversationContext } from "../core/state/conversations.js";
 import { applyConversationRequestUpdates, readConversationRequest } from "../core/state/conversation-requests.js";
 import { getDb, closeDb } from "../../lib/requests.js";
 import { EventBus } from "../core/events/bus.js";
@@ -110,7 +110,8 @@ describe("conversational attempt contract", () => {
   async function attempt(
     current = request,
     app = may,
-    execution: Omit<Parameters<AppInputResolver>[0]["execution"], "outputSchema"> & {
+    execution: Omit<Parameters<AppInputResolver>[0]["execution"], "outputSchema" | "readContext"> & {
+      readContext?: Parameters<AppInputResolver>[0]["execution"]["readContext"];
       outputSchema?: Parameters<AppInputResolver>[0]["execution"]["outputSchema"];
     } = {
       signal: new AbortController().signal,
@@ -134,10 +135,18 @@ describe("conversational attempt contract", () => {
     const registry = {
       snapshot: () => ({ entries: [app, owner].map((definition) => ({ appDir: definition.id, definition })) }),
     } as unknown as AppRegistry;
-    const resolve = createConversationAgentResolver({ manager, registry, db });
-    expect(await resolve({
-      app, inputContext: current, execution: { outputSchema: conversationTurnResultSchema, ...execution },
-    })).toEqual(answer);
+    const resolve = createConversationAgentResolver({ manager, registry });
+    expect(
+      await resolve({
+        app,
+        inputContext: current,
+        execution: {
+          outputSchema: conversationTurnResultSchema,
+          readContext: (query) => readConversationContext(db, app.id, "chat", query),
+          ...execution,
+        },
+      }),
+    ).toEqual(answer);
     return { ...captured!, db, resolve, calls };
   }
 
@@ -149,51 +158,77 @@ describe("conversational attempt contract", () => {
     expect(options).toMatchObject({ recoveryOwner: "app-task-reconciler", taskBinding });
   });
 
-  it("retrieves omitted asks by exact identity and pages without crossing Conversations", async () => {
-    const current = { ...request, conversation: { id: "chat", owner: may.id, messages: [] } };
-    const { db, definition, options } = await attempt(current);
-    for (let i = 0; i < 13; i++)
+  it.each([false, true])("presents each admitted input once, independently of reply routing (batch: %s)", async (batch) => {
+    const report = {
+      id: "report-input", source: { kind: "system" as const, id: "report-source" },
+      input: { kind: "message", data: { text: "A separate review report arrived." } },
+    };
+    const inputs = batch ? [report, request] : [request];
+    const conversation = {
+      id: "chat", owner: "may", messages: [],
+      requests: [{ id: "earlier-ask", revision: 1, scope: "Compare the options", status: "open" as const,
+        createdAt: 1, updatedAt: 1 }],
+    };
+    const current = { ...request, conversation, ...(batch ? { inputs } : {}) };
+    const before = structuredClone(current);
+    const { prompt } = await attempt(current);
+    const presented = JSON.parse(prompt.match(/## Input and context\n```json\n([\s\S]*?)\n```/)![1]!);
+    expect(presented.inputs).toEqual(inputs);
+    expect(presented.replyTo).toEqual({ id: request.id, source: request.source });
+    expect(presented.conversation).toEqual(conversation);
+    expect(prompt.split(request.input.data.text)).toHaveLength(2);
+    expect(presented.input).toBeUndefined();
+    expect(current).toEqual(before);
+  });
+
+  it.each([undefined, { id: "other", owner: "foreign", messages: [] }])(
+    "scoped reads work with omitted or misleading presentation (%j)",
+    async (conversation) => {
+      const current = { ...request, conversation };
+      const { db, definition, options } = await attempt(current);
+      for (let i = 0; i < 13; i++)
+        applyConversationRequestUpdates(db, {
+          appId: may.id,
+          conversationId: "chat",
+          updateKey: `accept-${i}`,
+          now: i,
+          updates: [
+            {
+              id: `ask-${String(i).padStart(2, "0")}`,
+              expectedRevision: 0,
+              scope: "s".repeat(2000),
+              disposition: "open",
+            },
+          ],
+        });
       applyConversationRequestUpdates(db, {
         appId: may.id,
-        conversationId: "chat",
-        updateKey: `accept-${i}`,
-        now: i,
-        updates: [
-          {
-            id: `ask-${String(i).padStart(2, "0")}`,
-            expectedRevision: 0,
-            scope: "s".repeat(2000),
-            disposition: "open",
-          },
-        ],
+        conversationId: "other",
+        updateKey: "private",
+        now: 1,
+        updates: [{ id: "private", expectedRevision: 0, scope: "Other Conversation", disposition: "open" }],
       });
-    applyConversationRequestUpdates(db, {
-      appId: may.id,
-      conversationId: "other",
-      updateKey: "private",
-      now: 1,
-      updates: [{ id: "private", expectedRevision: 0, scope: "Other Conversation", disposition: "open" }],
-    });
-    const tool = definition.tools.find((tool) => tool.name === "conversation_context")!;
-    const read = async (input: unknown) => {
-      const output = await tool.execute("lookup", input);
-      const content = output.content[0];
-      if (content.type !== "text") throw new Error("expected text");
-      return JSON.parse(content.text);
-    };
-    const page = await read({ action: "requests" });
-    expect(page).toHaveLength(12);
-    expect(page[0].scopePreview).toHaveLength(160);
-    expect(await read({ action: "requests", afterId: page.at(-1).id })).toHaveLength(1);
-    expect((await read({ action: "request", id: "ask-12" })).scope).toHaveLength(2000);
-    expect(await read({ action: "request", id: "private" })).toBeNull();
-    expect(
-      Check(options.outputSchema!, {
-        ...answer,
-        requestUpdates: [{ id: "ask", expectedRevision: -1, scope: "scope", disposition: "open" }],
-      }),
-    ).toBe(false);
-  });
+      const tool = definition.tools.find((tool) => tool.name === "conversation_context")!;
+      const read = async (input: unknown) => {
+        const output = await tool.execute("lookup", input);
+        const content = output.content[0];
+        if (content.type !== "text") throw new Error("expected text");
+        return JSON.parse(content.text);
+      };
+      const page = await read({ action: "requests" });
+      expect(page).toHaveLength(12);
+      expect(page[0].scopePreview).toHaveLength(160);
+      expect(await read({ action: "requests", afterId: page.at(-1).id })).toHaveLength(1);
+      expect((await read({ action: "request", id: "ask-12" })).scope).toHaveLength(2000);
+      expect(await read({ action: "request", id: "private" })).toBeNull();
+      expect(
+        Check(options.outputSchema!, {
+          ...answer,
+          requestUpdates: [{ id: "ask", expectedRevision: -1, scope: "scope", disposition: "open" }],
+        }),
+      ).toBe(false);
+    },
+  );
 
   it("an aborted Conversation execution cannot use its still-current Request capability", async () => {
     const controller = new AbortController();

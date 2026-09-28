@@ -1,48 +1,16 @@
-import type { TaskAttempt, TaskReconciliationEvents } from "@may-agent/sdk/app";
-
-type JsonRecord = Record<string, unknown>;
+import type { TaskAttempt } from "@may-agent/sdk/app";
+import { join } from "node:path";
+import { writeContentAddressedJson } from "../../../../lib/artifacts.js";
+import { taskDecisionState, previewTaskDecisionSections } from "../../../../lib/task-decision-context.js";
 
 export const MAX_CODEX_GOAL_OBJECTIVE_CHARS = 4_000;
 const CODEX_ATTEMPT_PACKET_MARKER = "## Canonical May Task Attempt\n";
 
-export type CanonicalTaskAttemptPacket = {
-  identity: {
-    appId: string;
-    taskId: string;
-    generation: number;
-    resourceVersion: number;
-    attemptId: string;
-  };
-  desired: {
-    outcome: string;
-    acceptance: string[];
+export type CanonicalTaskAttemptPacket = ReturnType<typeof projectCanonicalTaskAttempt>;
 
-    input: JsonRecord;
-  };
-  role: {
-    agent: string;
-    instructions: string;
-  };
-  events: TaskReconciliationEvents & {
-    checkpoint?: { summary: string; facts: string[] };
-  };
-  observations: {
-    children: TaskAttempt["children"];
-    waits: TaskAttempt["waits"];
-    previousAttempt?: TaskAttempt["previousAttempt"];
-  };
-  workspace: {
-    cwd: string;
-    declaredOutputPaths: string[];
-  };
-  contract: {
-    resultSchema: JsonRecord;
-  };
-};
-
-/** Strip live capabilities from the Runtime-built TaskAttempt for transport. */
-export function projectCanonicalTaskAttempt(attempt: TaskAttempt): CanonicalTaskAttemptPacket {
-  return {
+/** Preserve the same starting facts as managed agents, without serializing capabilities. */
+export function projectCanonicalTaskAttempt(attempt: TaskAttempt) {
+  return structuredClone({
     identity: {
       appId: attempt.appId,
       taskId: attempt.task.id,
@@ -50,46 +18,58 @@ export function projectCanonicalTaskAttempt(attempt: TaskAttempt): CanonicalTask
       resourceVersion: attempt.resourceVersion,
       attemptId: attempt.attemptId,
     },
-    desired: {
-      outcome: attempt.task.outcome,
-      acceptance: structuredClone(attempt.task.acceptance),
-
-      input: structuredClone(attempt.task.input),
-    },
-    role: structuredClone(attempt.role),
-    events: structuredClone(attempt.events),
-    observations: {
-      children: structuredClone(attempt.children),
-      waits: structuredClone(attempt.waits),
-      ...(attempt.previousAttempt ? { previousAttempt: structuredClone(attempt.previousAttempt) } : {}),
-    },
-    workspace: {
-      cwd: attempt.cwd,
-      declaredOutputPaths: structuredClone(attempt.declaredOutputPaths),
-    },
-    contract: { resultSchema: structuredClone(attempt.resultSchema) },
-  };
+    observed: { snapshot: "attempt-start", resourceVersion: attempt.task.resourceVersion },
+    ...taskDecisionState(attempt.task, attempt.events),
+    role: attempt.role,
+    related: { childrenAtAttemptStart: attempt.children },
+    waitsAtAttemptStart: attempt.waits,
+    ...(attempt.previousAttempt ? { previousAttempt: attempt.previousAttempt } : {}),
+    workspace: { cwd: attempt.cwd, declaredOutputPaths: attempt.declaredOutputPaths },
+    contract: { resultSchema: attempt.resultSchema },
+  });
 }
 
-export function renderCodexGoalTaskAttempt(packet: CanonicalTaskAttemptPacket): {
+export function renderCodexGoalTaskAttempt(
+  packet: CanonicalTaskAttemptPacket,
+  detailRoot: string,
+): {
   goalObjective: string;
   developerInstructions: string;
 } {
   const prefix = `Achieve May Task ${packet.identity.appId}/${packet.identity.taskId} generation ${packet.identity.generation}: `;
   const outcomeChars = Math.max(0, MAX_CODEX_GOAL_OBJECTIVE_CHARS - prefix.length);
-  const goalObjective = `${prefix}${packet.desired.outcome.slice(0, outcomeChars)}`;
+  const goalObjective = `${prefix}${packet.assignment.outcome.slice(0, outcomeChars)}`;
+  const { identity, observed, role, contract, ...full } = packet;
+  const sections = previewTaskDecisionSections(full);
+  // Only omitted context needs a file. Fail visibly before starting a provider
+  // if its required detail cannot be saved, rather than sending unusable pointers.
+  const detail =
+    JSON.stringify(sections) === JSON.stringify(full)
+      ? undefined
+      : join(detailRoot, writeContentAddressedJson(detailRoot, "task-context", packet).ref);
+  const context = {
+    identity,
+    observed,
+    role,
+    ...sections,
+    contract,
+    coverage: {
+      ...(detail ? { detail } : {}),
+      note: "Attempt-start snapshot. Assigned input and pending input are separate; observing either is not fulfillment. Omitted values have JSON pointers into detail. Read that file before a decision needing omitted evidence. Live steering carries new input; the next reconciliation supplies the refreshed Task snapshot.",
+    },
+  };
   return {
     goalObjective,
     developerInstructions: [
       "You are the replaceable executor pursuing one fenced May Task goal.",
-      "Use every field in the canonical packet. The May Task and its App remain the completion authority.",
+      "Use the supplied Task context alongside your role. The May Task and its App remain the completion authority.",
       "Keep the goal active across automatic continuation turns. Do not mark it complete or return merely because one useful step or turn ended.",
       "Return only after acceptance is supported or an exact external wait is identified.",
       "Return only a result accepted by the supplied resultSchema.",
       "The workspace is read-only; cite exact facts and do not mutate files or external systems.",
       "Progress commentary may become a durable Task event, so omit secret values, raw command output, tool payloads, and diffs.",
       "",
-      CODEX_ATTEMPT_PACKET_MARKER + JSON.stringify(packet),
+      CODEX_ATTEMPT_PACKET_MARKER + JSON.stringify(context),
     ].join("\n"),
   };
 }

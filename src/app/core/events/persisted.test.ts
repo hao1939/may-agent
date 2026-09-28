@@ -7,6 +7,42 @@ import { describeText } from "../../../lib/artifacts.js";
 import { closeDb, getDb } from "../../../lib/requests.js";
 import { EVENT_ROW_ID, EventBus } from "./bus.js";
 import { loadPersistedEvent } from "./persisted.js";
+import { getEventView } from "./interface.js";
+import { canonicalAppEvent } from "../../canonical-app-event.js";
+
+test.each([undefined, "default", "detail"] as const)(
+  "repeated publication preserves its receipt and authored visibility (%s)",
+  (visibility) => {
+    const root = mkdtempSync(join(tmpdir(), "may-event-retry-"));
+    try {
+      const bus = new EventBus();
+      const writer = new DbWriter(root);
+      bus.setPersistenceSubscriber(writer.handler);
+      bus.setDeliveryRecorder(writer.recordDelivery);
+      let deliveries = 0;
+      bus.subscribeDurableRoute(() => {
+        deliveries++;
+        return { accepted: true, by: "fixture", route: "direct" };
+      });
+      const event = bus.emit({
+        type: "fixture.observed", source: "fixture", owner: "app:producer",
+        ...(visibility ? { visibility } : {}),
+        data: { idempotencyKey: "same-publication", value: "original" },
+      });
+      const id = Number(event[EVENT_ROW_ID]);
+      expect(bus.emit(event)[EVENT_ROW_ID]).toBe(id);
+      expect(bus.emit(event)[EVENT_ROW_ID]).toBe(id);
+      expect(event.visibility).toBe(visibility);
+      expect(event.trace).toMatchObject({ traceId: `event:${id}` });
+      expect(deliveries).toBe(1);
+      expect(getDb(root).prepare("SELECT COUNT(*) AS count FROM events").get()).toEqual({ count: 1 });
+      expect(() => bus.emit({ ...event, data: { ...event.data, value: "changed" } })).toThrow("different event input");
+    } finally {
+      closeDb(root);
+      rmSync(root, { recursive: true, force: true });
+    }
+  },
+);
 
 test("persisted event replay uses verified full facts, never a truncated or corrupt body", () => {
   const root = mkdtempSync(join(tmpdir(), "may-event-replay-"));
@@ -22,7 +58,6 @@ test("persisted event replay uses verified full facts, never a truncated or corr
     expect(loadPersistedEvent(db, eventId, root)).toMatchObject({
       type: "conversation.message.created",
       source: "telegram",
-      target: { appId: "may" },
       data,
     });
     expect(loadPersistedEvent(db, eventId)).toBeNull();
@@ -34,6 +69,48 @@ test("persisted event replay uses verified full facts, never a truncated or corr
     db.prepare("UPDATE events SET body_sha256 = ?, body_bytes = ? WHERE id = ?")
       .run(descriptor.sha256, descriptor.bytes, eventId);
     expect(loadPersistedEvent(db, eventId, root)).toBeNull();
+  } finally {
+    closeDb(root);
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("stored targets retain internal fields; missing history stays unknown and damaged routing is not replayed", () => {
+  const root = mkdtempSync(join(tmpdir(), "may-target-replay-"));
+  try {
+    const bus = new EventBus();
+    bus.setPersistenceSubscriber(new DbWriter(root).handler);
+    const target = { project: "destination.app", taskId: "review", sessionId: "recipient-session", human: true };
+    const event = bus.emit({
+      type: "fixture.observed",
+      source: "fixture",
+      owner: "app:producer",
+      target,
+      data: { appId: "subject", taskId: "subject-task", sessionId: "producer-session" },
+    });
+    const id = Number(event[EVENT_ROW_ID]);
+    closeDb(root);
+    const db = getDb(root);
+    expect(loadPersistedEvent(db, id)).toMatchObject({ target });
+    const metadata = JSON.parse(String(db.prepare("SELECT envelope_json FROM events WHERE id = ?").get(id)!.envelope_json));
+    db.prepare("UPDATE events SET envelope_json = NULL WHERE id = ?").run(id);
+    expect(loadPersistedEvent(db, id)).not.toHaveProperty("target");
+    expect(getEventView(db, id)?.event).not.toHaveProperty("target");
+    for (const value of ["{broken", "[]", "null", "{}", JSON.stringify({ type: "fixture.observed", target: [] })]) {
+      db.prepare("UPDATE events SET envelope_json = ? WHERE id = ?").run(value, id);
+      expect(loadPersistedEvent(db, id)).toBeNull();
+      expect(() => getEventView(db, id)).toThrow("Stored event envelope");
+    }
+    for (const patch of [
+      { type: "fixture.changed" }, { source: 42 }, { owner: [] }, { timestamp: "bad" },
+      { urgency: "unknown" }, { urgency: ["normal"] }, { action: {} }, { ttl_ms: "90" }, { target: { human: "yes" } },
+      ...["appId", "project", "taskId", "executionId", "sessionId", "metricId", "owner"]
+        .map((key) => ({ target: { [key]: 42 } })),
+    ]) {
+      db.prepare("UPDATE events SET envelope_json = ? WHERE id = ?").run(JSON.stringify({ ...metadata, ...patch }), id);
+      expect(loadPersistedEvent(db, id)).toBeNull();
+      expect(() => getEventView(db, id)).toThrow("Stored event envelope");
+    }
   } finally {
     closeDb(root);
     rmSync(root, { recursive: true, force: true });
@@ -70,6 +147,49 @@ test("inline replay verifies stored bytes and hash and requires an object, inclu
     }
     update.run(original.data, null, null, id);
     expect(loadPersistedEvent(db, id, root)?.data).toEqual(data);
+  } finally {
+    closeDb(root);
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("reopening preserves the complete App event and causal context for recovered children", () => {
+  const root = mkdtempSync(join(tmpdir(), "may-event-contract-"));
+  try {
+    const bus = new EventBus();
+    bus.setPersistenceSubscriber(new DbWriter(root).handler);
+    const reference = bus.emit({ type: "fixture.reference", source: "fixture", owner: "app:producer", data: {} });
+    const referenceId = Number(reference[EVENT_ROW_ID]);
+    bus.subscribeDurableRoute((event) => {
+      if (event.type !== "fixture.observed") return;
+      bus.emit({ type: "fixture.child", source: "fixture", owner: "app:consumer", data: {} });
+      return { accepted: true, by: "fixture", route: "direct" };
+    });
+    const trace = { traceId: "original-chain", parentEventId: referenceId,
+      links: [{ eventId: referenceId, type: "reference" as const, label: "support" }] };
+    const original = bus.emit({
+      type: "fixture.observed", source: "fixture", owner: "app:producer",
+      target: { appId: "recipient", taskId: "recipient-task" }, action: "review",
+      trace, visibility: "detail", ttl_ms: 90_000,
+      data: { appId: "subject", taskId: "subject-task", text: "evidence ".repeat(1_000) },
+      extension: { label: "future-envelope-field", value: 1 },
+    });
+    const id = Number(original[EVENT_ROW_ID]);
+    closeDb(root);
+    const db = getDb(root);
+    bus.setPersistenceSubscriber(new DbWriter(root).handler);
+    const restored = loadPersistedEvent(db, id, root)!;
+    expect(canonicalAppEvent(original)).toMatchObject({ action: "review", urgency: "normal" });
+    expect(canonicalAppEvent(restored)).toEqual(canonicalAppEvent(original));
+    expect(restored).toMatchObject({ trace, visibility: "detail", ttl_ms: 90_000,
+      extension: { label: "future-envelope-field", value: 1 } });
+    bus.redeliverPersisted(restored, id);
+    const children = db.prepare(`SELECT t.trace_id, t.parent_event_id FROM events e
+      JOIN event_traces t ON t.event_id = e.id WHERE e.event_type = 'fixture.child' ORDER BY e.id`).all();
+    expect(children).toEqual([
+      { trace_id: "original-chain", parent_event_id: id },
+      { trace_id: "original-chain", parent_event_id: id },
+    ]);
   } finally {
     closeDb(root);
     rmSync(root, { recursive: true, force: true });

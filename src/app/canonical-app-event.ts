@@ -18,6 +18,6 @@ export function canonicalAppEvent(event: AgentEvent): AppEvent<Record<string, un
     ...(typeof envelope.owner === "string" ? { owner: envelope.owner } : {}),
     ...(Object.keys(target).length ? { target: Object.freeze({ ...target }) } : {}),
     ...(action ? { action } : {}),
-    ...(urgency === "low" || urgency === "normal" || urgency === "high" || urgency === "immediate" ? { urgency } : {}),
+    urgency: urgency === "low" || urgency === "high" || urgency === "immediate" ? urgency : "normal",
   });
 }

@@ -12,6 +12,29 @@ export type EventTraceInput = {
   }>;
 };
 
+/** Restore causal context from its existing authority before continuing an event. */
+export function readEventTraceMetadata(db: SqliteDb, eventId: number): {
+  trace?: EventTraceInput;
+  visibility?: "default" | "detail";
+} {
+  const row = db.prepare("SELECT trace_id, parent_event_id, visibility FROM event_traces WHERE event_id = ?").get(eventId);
+  if (!row || typeof row.trace_id !== "string") return {};
+  const links = db.prepare(`SELECT to_event_id, type, label FROM event_trace_links
+    WHERE from_event_id = ? ORDER BY id`).all(eventId).map((link) => ({
+    eventId: Number(link.to_event_id),
+    type: linkType(link.type),
+    ...(typeof link.label === "string" && link.label ? { label: link.label } : {}),
+  }));
+  return {
+    trace: {
+      traceId: row.trace_id,
+      ...(typeof row.parent_event_id === "number" ? { parentEventId: row.parent_event_id } : {}),
+      ...(links.length ? { links } : {}),
+    },
+    visibility: row.visibility === "detail" ? "detail" : "default",
+  };
+}
+
 export type EventTraceIntegrity = {
   eventCount: number;
   traceCount: number;

@@ -1,12 +1,14 @@
 import { expect, test } from "bun:test";
 import { Type, createAssistantMessageEventStream, type AssistantMessage } from "@earendil-works/pi-ai";
-import { mkdirSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { SubagentManager } from "../../src/lib/manager.js";
 import { createAgentRun } from "../../src/lib/agent-runner.js";
 import { createTaskAgentRunner } from "../../src/app/adapters/executors/managed-agent.js";
-import { EventBus } from "../../src/app/core/events/bus.js";
+import { createTaskWorkflowRunner } from "../../src/app/adapters/executors/workflow.js";
+import { EVENT_ROW_ID, EventBus, type AgentEvent } from "../../src/app/core/events/bus.js";
+import { DbWriter } from "../../src/lib/db-writer.js";
 import { getDb, closeDb } from "../../src/lib/db/connection.js";
 import { AppTaskResourceStore } from "../../src/app/core/state/app-task-resource-store.js";
 import { appTaskTestContext } from "../../src/app/core/tasks/app-task-test-support.js";
@@ -16,7 +18,8 @@ import {
   deferAppTask,
   recordAppTaskTrigger,
 } from "../../src/app/core/tasks/app-task-reconciler.js";
-import { runTaskAgent, taskReads } from "../../src/app/core/tasks/attempt-execution.js";
+import { runTaskAgent, runTaskWorkflow, runRegisteredTaskExecutor, runTaskExecutorAttempt } from "../../src/app/core/tasks/attempt-execution.js";
+import { createRuntimeAppRead } from "../../src/app/core/reads/app-read.js";
 import type { AppTaskRuntimeDescriptor } from "../../src/app/core/tasks/runtime-definition.js";
 import type { AppTaskRuntimeOptions } from "../../src/app/core/tasks/runtime-options.js";
 import { currentAgentSessionId } from "../../src/lib/agent-session-context.js";
@@ -52,7 +55,7 @@ test("current Task context reaches a late helper and survives settlement into a 
     app: { id: "sample", version: 1, agent: "owner", tasks: { maxConcurrent: 1 } },
   } as AppTaskRuntimeDescriptor;
   const opts = { bus: new EventBus(), projectRoot: root, projectsRoot: root, persistDir } as AppTaskRuntimeOptions;
-  const read = taskReads(opts, descriptor);
+  const read = createRuntimeAppRead({ getDb: () => store.db, taskStateConfig: config }).tasks;
   const claim = () => {
     const next = claimObservedAppTask(config, { taskId, appAgent: "owner", handler: "agent:owner" });
     if (next.kind !== "claimed") throw new Error(`Claim failed: ${next.kind}`);
@@ -217,13 +220,17 @@ test("current Task context reaches a late helper and survives settlement into a 
       });
       manager.register({ name: "reviewer", description: "Reviewer", domain: "test", model: fakeModel(), tools: [] });
       opts.agents = createTaskAgentRunner({ manager });
-      const run = await runTaskAgent({
+      const execution = {
         opts,
         descriptor,
         claim: active,
         executionPaths: { appDir, projectDir: root, workspaceDir: root },
         childContext: { live: [], completed: [] },
         taskSnapshot: { live: [], truncated: false },
+      };
+      const run = await runTaskExecutorAttempt({
+        ...execution,
+        execute: (attempt, taskEvents) => runTaskAgent({ ...execution, attempt, taskEvents }),
       });
       expect(run.handlerResult.state).toBe("waiting");
       deferAppTask(config, active, {
@@ -247,6 +254,122 @@ test("current Task context reaches a late helper and survives settlement into a 
     const evidence = await read.get(taskId, { acceptedEvidence: { limit: 8 } });
     expect(evidence?.acceptedEvidence.page?.items.length).toBeGreaterThanOrEqual(3);
   } finally {
+    closeDb(persistDir);
+    rmSync(root, { recursive: true, force: true });
+  }
+}, 15_000);
+
+test.each(["workflow", "executor"] as const)("%s reads corrections and reports progress while retaining approval", async (method) => {
+  const root = mkdtempSync(join(tmpdir(), "task-interaction-"));
+  const appDir = join(root, "sample.app"), persistDir = join(root, "state");
+  const workflowDir = join(root, "owner", "workflows");
+  mkdirSync(appDir);
+  mkdirSync(workflowDir, { recursive: true });
+  // One authored procedure, invoked through the real workflow adapter or the SDK executor.
+  const source = join(workflowDir, "review.ts");
+  writeFileSync(source, `
+export const name = "review";
+export const description = "Apply a correction without losing publication approval";
+export async function reconcile(initial, read, taskId, assignedEvents, observe, publish) {
+  if (!initial?.result?.version || !initial.summary || initial.conditions[0]?.observation?.state !== "unknown"
+    || !initial.currentObligations?.available || !initial.acceptedEvidence?.available)
+    throw new Error("The Host must supply accepted work and Conditions before optional reads");
+  let notified = false;
+  const correction = Promise.withResolvers();
+  const stop = observe(event => {
+    if (event.type === "sample.correction") { notified = true; correction.resolve(); }
+  });
+  try {
+    if (initial.result.version === "v3") {
+      await publish("checkpoint", { type: "sample.checkpoint", data: {} });
+      await correction.promise;
+    }
+    if (initial.result.version === "v4" && !JSON.stringify(assignedEvents).includes("Thursday"))
+      throw new Error("Assigned correction is missing from the next attempt");
+    const current = await read.tasks.get(taskId);
+    if (!JSON.stringify({ assignedEvents, pending: current.pendingEvents }).includes("Thursday"))
+      throw new Error("Current correction is missing");
+    await publish("draft-v4", { type: "sample.progress", data: { version: "v4", day: "Thursday" } });
+    return { state: "waiting", report: true, continue: true,
+      summary: "Draft v4 prepared; approval remains open", facts: ["Thursday; Cedar"],
+      result: { version: "v4", day: "Thursday", notified, initialVersion: initial.result.version } };
+  } finally { stop(); }
+}
+export async function execute(ctx) {
+  const report = await reconcile(ctx.reconciliation.task, ctx.read, ctx.reconciliation.taskId, ctx.reconciliation.events, ctx.events.onEvent,
+    (localKey, event) => ctx.events.emit({ ...event, localKey }));
+  return ctx.done(report.summary, report);
+}
+`);
+  const bus = new EventBus();
+  const db = getDb(persistDir);
+  const writer = new DbWriter(persistDir);
+  bus.setPersistenceSubscriber(writer.handler);
+  const store = AppTaskResourceStore.fromDb(db, "sample");
+  const config = appTaskTestContext({ appDir, agent: "owner", maxConcurrent: 1, resourceStore: store,
+    tree: { project: "sample", project_lifecycle: "active", root_task_id: "root",
+      groups: { root: { id: "root", parent_id: null } }, tasks: {} } });
+  const taskId = "work/review";
+  const descriptor = { id: "sample", appDir, projectDir: root, agent: "owner", resourceStore: store,
+    app: { id: "sample", version: 1, agent: "owner", tasks: { maxConcurrent: 1 } } } as AppTaskRuntimeDescriptor;
+  const correctionIds: number[] = [];
+  // Fixture routing explicitly persists and links feedback before attempt notification.
+  const unsubscribe = bus.subscribe((event) => {
+    if (event.type === "sample.checkpoint") bus.emit({ type: "sample.correction", source: "human",
+      target: { appId: "sample", taskId }, data: { content: "Thursday replaces Wednesday; retain approval" } } as AgentEvent);
+    if (event.type === "sample.correction") {
+      const eventId = event[EVENT_ROW_ID]!;
+      correctionIds.push(eventId);
+      recordAppTaskTrigger(config, taskId, { type: event.type, eventId, data: event.data });
+    }
+  });
+  try {
+    const program = await import(source);
+    const opts: AppTaskRuntimeOptions = { bus, projectRoot: root, projectsRoot: root, persistDir,
+      agentsRoot: root, sharedRoot: join(root, "shared"),
+      workflows: createTaskWorkflowRunner({ manager: {} as never, bus }),
+      executors: { review: (attempt) => program.reconcile(attempt.task, attempt.read, attempt.task.id, attempt.events,
+        // Observing feedback alone deliberately does not accept it.
+        (listener) => attempt.onEvent((event) => listener(event)), attempt.publish) } };
+    observeAppTaskIntent(config, { appAgent: "owner", intent: { id: taskId, parentId: "root", agent: "owner",
+      outcome: "Prepare draft and retain approval", acceptance: ["Thursday; Cedar", "Human approval"],
+      ...(method === "workflow" ? { workflow: "review" } : { executor: "review" }) } });
+    const claim = () => {
+      const next = claimObservedAppTask(config, { taskId, appAgent: "owner", handler: `${method}:review` });
+      if (next.kind !== "claimed") throw new Error(`Claim failed: ${next.kind}`);
+      return next;
+    };
+    deferAppTask(config, claim(), { disposition: "waiting", continue: true, summary: "Draft v3",
+      result: { version: "v3", day: "Wednesday" },
+      conditions: [{ id: "approval", type: "approval.observed", subject: "publication:draft",
+        expected: true, owner: "human:reviewer", reviewAfterMs: 3600000 }] });
+    const read = createRuntimeAppRead({ getDb: () => store.db, taskStateConfig: config }).tasks;
+    const attempts: string[] = [];
+    for (const round of [1, 2]) {
+      const active = claim();
+      attempts.push(active.attemptId);
+      const execution = { opts, descriptor, claim: active,
+        executionPaths: { appDir, projectDir: root, workspaceDir: root },
+        childContext: { live: [], completed: [] }, taskSnapshot: { live: [], truncated: false } };
+      const run = await runTaskExecutorAttempt({ ...execution,
+        execute: (attempt, taskEvents) => method === "workflow"
+          ? runTaskWorkflow({ ...execution, attempt, taskEvents, capability: { workflow: "review", task: "Reconcile review" } })
+          : runRegisteredTaskExecutor({ ...execution, attempt, taskEvents, name: "review", execute: opts.executors!.review! }) });
+      expect(run.handlerResult).toMatchObject({ state: "waiting", report: true, continue: true,
+        result: { version: "v4", day: "Thursday", notified: round === 1, initialVersion: round === 1 ? "v3" : "v4" } });
+      deferAppTask(config, active, { ...run.handlerResult, disposition: "waiting", acceptedLiveEventIds: run.acceptedLiveEventIds });
+      const current = await read.get(taskId, { acceptedEvidence: { limit: 8 } });
+      expect(current?.status).toBe("pending");
+      expect(current?.conditions[0]).toMatchObject({ id: "approval", observation: { state: "unknown" } });
+      expect(current?.result?.day).toBe("Thursday");
+      expect(current?.pendingEvents?.items.map((item) => item.eventId)).toEqual(round === 1 ? correctionIds : []);
+      expect(current?.acceptedEvidence.page?.items.length).toBe(round + 1);
+    }
+    expect(attempts[0]).not.toBe(attempts[1]);
+    expect(correctionIds).toHaveLength(1);
+    expect(db.prepare("SELECT id FROM events WHERE event_type = 'sample.progress'").all()).toHaveLength(1);
+  } finally {
+    unsubscribe();
     closeDb(persistDir);
     rmSync(root, { recursive: true, force: true });
   }

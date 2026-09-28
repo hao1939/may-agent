@@ -1,43 +1,20 @@
 import type { TaskExecutionContext } from "../../lib/task-execution-context.js";
 import {
   Type,
-  type TSchema,
   type ConversationTurnResult,
   type AppDefinition,
   type AppInputContext,
-  type AppConversationRequest,
 } from "@may-agent/sdk";
 import type { AgentTool, AgentToolResult } from "@earendil-works/pi-agent-core";
 import type { SubagentManager } from "../../lib/index.js";
 import type { SubagentDefinition } from "../../lib/types.js";
-import type { SqliteDb } from "../../lib/db.js";
 import type { AppRegistry } from "../core/apps/registry.js";
 import { appDependencyCatalog } from "../app-dependency-catalog.js";
-import {
-  findConversationTopics,
-  readAppConversationResource,
-  readConversationTopic,
-} from "../core/state/conversations.js";
-import {
-  pageOpenConversationRequests,
-  readConversationRequest,
-  type ConversationRequestChange,
-} from "../core/state/conversation-requests.js";
+import type { ConversationRequestChange } from "../core/state/conversation-requests.js";
 import { APP_TASK_RECOVERY_OWNER } from "../core/tasks/session-binding.js";
 
-import type { TaskBinding } from "../../lib/persistence.js";
-
-export type AppInputResolver = (input: {
-  app: Readonly<AppDefinition>;
-  inputContext: Readonly<AppInputContext>;
-  execution: {
-    outputSchema: TSchema;
-    signal: AbortSignal;
-    sessionStarted: (sessionId: string) => void;
-    taskBinding: TaskBinding;
-    updateRequest?: (change: ConversationRequestChange, operationId: string) => AppConversationRequest;
-  };
-}) => Promise<ConversationTurnResult>;
+import type { AppInputResolver } from "../core/tasks/execution.js";
+import type { ConversationContextQuery } from "../core/state/conversations.js";
 
 const APP_REQUEST_AGENT_TIMEOUT_MS = 10 * 60_000;
 
@@ -65,9 +42,7 @@ function conversationRequestTool(execution: Parameters<AppInputResolver>[0]["exe
   };
 }
 
-function conversationContextTool(db: SqliteDb, inputContext: Readonly<AppInputContext>): AgentTool | null {
-  const conversation = inputContext.conversation;
-  if (!conversation) return null;
+function conversationContextTool(execution: Parameters<AppInputResolver>[0]["execution"]): AgentTool {
   const result = (value: unknown): AgentToolResult<unknown> => ({
     content: [{ type: "text", text: JSON.stringify(value, null, 2) }],
     details: undefined,
@@ -100,31 +75,8 @@ function conversationContextTool(db: SqliteDb, inputContext: Readonly<AppInputCo
       ),
     ]),
     execute: async (_toolCallId, raw) => {
-      const input = raw as
-        | { action: "find"; query: string; limit?: number }
-        | { action: "read"; topicId: string }
-        | { action: "request"; id: string }
-        | { action: "requests"; afterId?: string };
-      if (input.action === "request")
-        return result(readConversationRequest(db, conversation.owner, conversation.id, input.id));
-      if (input.action === "requests")
-        return result(pageOpenConversationRequests(db, conversation.owner, conversation.id, input.afterId));
-      if (input.action === "find") {
-        return result({
-          candidates: findConversationTopics(db, conversation.owner, conversation.id, input.query, input.limit ?? 8),
-        });
-      }
-      const topic = readConversationTopic(db, conversation.owner, conversation.id, input.topicId);
-      if (!topic) return result({ topic: null });
-      const exact = readAppConversationResource(db, conversation.owner, conversation.id, {
-        limit: 40,
-        topicId: topic.id,
-      });
-      return result({
-        topic,
-        requests: exact.requests,
-        messages: exact.messages.filter((message) => message.metadata?.topicId === topic.id),
-      });
+      execution.signal.throwIfAborted();
+      return result(execution.readContext(raw as ConversationContextQuery));
     },
   };
 }
@@ -135,11 +87,14 @@ function conversationInputPrompt(
   registry: Pick<AppRegistry, "snapshot">,
 ): string {
   const apps = appDependencyCatalog(registry.snapshot().entries, app.id);
+  const { id, source, input, inputs, ...context } = inputContext;
   return [
-    `Respond to the admitted input for App ${app.id}, using its Conversation result contract.`,
+    `Consider the admitted inputs for App ${app.id} together, in order, using its Conversation result contract.`,
+    "The inputs are the whole current batch. replyTo identifies the response destination; every input still needs consideration.",
+    "Preserve independent asks while applying corrections to the same ask. Save accepted unfinished asks with conversation_request before work; use requestUpdates for their final disposition. Context-only updates can be considered without creating a Request.",
     "## Input and context",
     "```json",
-    JSON.stringify(inputContext, null, 2),
+    JSON.stringify({ inputs: inputs ?? [{ id, source, input }], replyTo: { id, source }, ...context }, null, 2),
     "```",
     "",
     "## Installed Apps",
@@ -152,7 +107,6 @@ function conversationInputPrompt(
 export function createConversationAgentResolver(options: {
   manager: SubagentManager;
   registry: Pick<AppRegistry, "snapshot">;
-  db: SqliteDb;
   definitions?: ReadonlyMap<string, SubagentDefinition>;
   taskContext?: TaskExecutionContext;
 }): AppInputResolver {
@@ -161,7 +115,7 @@ export function createConversationAgentResolver(options: {
     if (!agent) throw new Error(`App ${app.id} has no conversational agent`);
     const registered = options.definitions ? options.definitions.get(agent) : options.manager.getAgentDefinition(agent);
     if (!registered) throw new Error(`Agent ${agent} is not registered`);
-    const contextTool = conversationContextTool(options.db, inputContext);
+    const contextTool = conversationContextTool(binding);
     const requestTool = conversationRequestTool(binding);
     const tools = [contextTool, requestTool].filter((tool): tool is AgentTool => tool !== null);
     const definition = { ...registered, tools: [...registered.tools, ...tools] };

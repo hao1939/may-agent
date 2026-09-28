@@ -57,6 +57,7 @@ const agentNames = activationFailure ? ["may", "aux"] : ["may"];
 const order: string[] = [];
 let runtime: inbox.AppInboxRuntime | undefined;
 let registry: Parameters<typeof inbox.startAppInboxRuntime>[0]["registry"] | undefined;
+let observerContext: Parameters<typeof inbox.startAppInboxRuntime>[0]["observerContext"];
 let socket: interfaces.InterfaceRuntime | undefined;
 let lifecycle: ReturnType<typeof daemon.createDaemonLifecycle> | undefined;
 let stopTasks: (() => void) | undefined;
@@ -207,6 +208,7 @@ mock.module("../../src/app/composition/app-inbox-runtime.js", () => ({
   ...actualInbox,
   startAppInboxRuntime: async (options: Parameters<typeof inbox.startAppInboxRuntime>[0]) => {
     registry = options.registry;
+    observerContext = options.observerContext;
     assert.equal(options.deferStart, true);
     assert.equal(options.schedulesEnabled, schedulesEnabled);
     assert.equal("hostCapacity" in options, false);
@@ -533,6 +535,10 @@ export async function execute(ctx) {
       return task;
     };
     const previousTask = await runTask("work/before");
+    const observerRead = observerContext!("fixture", join(root, "projects/fixture.app")).read.tasks;
+    const observed = await observerRead.get(previousTask.taskId, { acceptedEvidence: { limit: 1 } });
+    assert.equal(observed?.acceptedEvidence.page?.items.length, 1, "observer reads must preserve evidence options");
+    await assert.rejects(observerRead.get(previousTask.taskId, { acceptedEvidence: { limit: 9 } }), /limit/);
     if (!activationFailure) {
       const before = reportingCalls;
       writeFileSync(appPath, appSource("reporting failure cannot reject this"));

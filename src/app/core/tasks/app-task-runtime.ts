@@ -21,7 +21,7 @@ import { readSessionMeta } from "../../../lib/persistence.js";
 import { stateTransaction } from "../../../lib/db/transaction.js";
 import { canonicalAppEvent } from "../../canonical-app-event.js";
 import { EVENT_ROW_ID, eventData, type AgentEvent, type DeliveryResult, type EventBus } from "../events/bus.js";
-import { listRuntimeTaskViews, readRuntimeTaskView } from "../reads/app-read.js";
+import { createRuntimeTaskRead, readRuntimeTaskView } from "../reads/app-read.js";
 import type { AppTurnTarget, CreateAppInboxItem } from "../state/app-inbox-store.js";
 import { getAppInboxItem } from "../state/app-inbox-store.js";
 import { AppTaskResourceStore } from "../state/app-task-resource-store.js";
@@ -934,16 +934,9 @@ export function getLoadedAppInputContract(input: { bus: EventBus; appId: string 
 }
 
 export function listLoadedAppTaskViews(input: { bus: EventBus; appId: string; options?: TaskListOptions }): TaskPage {
-  const descriptor = (appRouterDescriptorsByBus.get(input.bus) ?? []).find(
-    (candidate) => candidate.id === input.appId.trim().replace(/\.app$/, ""),
-  );
+  const descriptor = loadedAppTaskRuntimeDescriptor(input.bus, input.appId);
   if (!descriptor) throw new Error(`App ${input.appId} has no loaded Task runtime`);
-  return listRuntimeTaskViews(
-    {
-      taskStateConfig: appTaskConfig(descriptor),
-    },
-    input.options,
-  );
+  return createRuntimeTaskRead({ taskStateConfig: appTaskConfig(descriptor) }).list(input.options);
 }
 
 export function listLoadedAppTaskOutcomeViews(input: {
@@ -951,21 +944,12 @@ export function listLoadedAppTaskOutcomeViews(input: {
   appId: string;
   projection?: TaskOutcomeProjection;
 }): TaskOutcomePage {
-  const descriptor = (appRouterDescriptorsByBus.get(input.bus) ?? []).find(
-    (candidate) => candidate.id === input.appId.trim().replace(/\.app$/, ""),
-  );
+  const descriptor = loadedAppTaskRuntimeDescriptor(input.bus, input.appId);
   if (!descriptor) throw new Error(`App ${input.appId} has no loaded Task runtime`);
-  const report = appRouterOptionsByBus.get(input.bus)?.readOutcomes;
-  if (!report) throw new Error("Task outcome reporting is unavailable");
-  const config = { taskStateConfig: appTaskConfig(descriptor) };
-  return report({
-    appDir: descriptor.appDir,
-    projection: input.projection,
-    tasks: {
-      list: (options) => listRuntimeTaskViews(config, options),
-      get: (id) => readRuntimeTaskView(config, id),
-    },
-  });
+  return createRuntimeTaskRead({
+    taskStateConfig: appTaskConfig(descriptor),
+    readOutcomes: appRouterOptionsByBus.get(input.bus)?.readOutcomes,
+  }).outcomes(input.projection);
 }
 
 export function getLoadedAppTaskView(input: {
@@ -976,7 +960,7 @@ export function getLoadedAppTaskView(input: {
 }): TaskDetail | null {
   const config = readableAppTaskContextById(input.bus, input.appId);
   if (!config) throw new Error(`App ${input.appId} has no loaded Task runtime`);
-  return readRuntimeTaskView({ taskStateConfig: config }, input.taskId, input.options);
+  return createRuntimeTaskRead({ taskStateConfig: config }).get(input.taskId, input.options);
 }
 
 /** Common creator capability; App selection and delivery are ordinary runtime wiring. */

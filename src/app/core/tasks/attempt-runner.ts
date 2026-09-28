@@ -36,9 +36,9 @@ import {
   interruptSupersededAgentSession,
   runRegisteredTaskExecutor,
   runTaskAgent,
-  taskReads,
-  runTaskCapability,
+  runTaskWorkflow,
   runTaskExecutorAttempt,
+  type TaskHandlerInput,
 } from "./attempt-execution.js";
 import { type AppTaskDispatch } from "./controller.js";
 import {
@@ -246,16 +246,11 @@ async function runClaimedTask(
         });
       }
     }
-    // Execute once. The remaining branches settle this report without rewriting it.
-    const report = await executeTaskHandler({
-      opts,
-      descriptor,
-      claim,
-      executionPaths,
-      childContext,
-      taskSnapshot,
-      event,
-      conversation,
+    // One attempt lifetime surrounds dispatch; settlement follows after it closes.
+    const execution = { opts, descriptor, claim, executionPaths, childContext, taskSnapshot, event };
+    const report = await runTaskExecutorAttempt({
+      ...execution,
+      execute: (attempt, taskEvents) => executeTaskHandler({ ...execution, attempt, taskEvents, conversation }),
     });
 
     const result = report.handlerResult;
@@ -357,9 +352,9 @@ async function runClaimedTask(
         const apply: ReturnType<typeof completeConversationTaskTurn> = persistResult(() =>
           report.conversation
             ? completeConversationTaskTurn(config, claim, report.conversation.decision, {
-                followUp: report.conversation.followUp,
                 taskControls: report.conversation.taskControls,
                 acceptanceBasis,
+                getTaskApp: (appId) => conversationTaskApp(opts, descriptor, appId),
               })
             : completeAppTask(config, claim, {
                 summary: result.summary,
@@ -667,16 +662,32 @@ async function runClaimedTask(
   }
 }
 
+/** Resolve targets from the same pinned installation for preparation and settlement. */
+function conversationTaskApp(opts: AppTaskRuntimeOptions, descriptor: AppTaskRuntimeDescriptor, appId: string) {
+  const registry = opts.appRegistrySnapshot ?? opts.appRegistry?.snapshot();
+  if (!registry) throw new Error("Conversation execution requires an installed App registry");
+  const entry = registry.entries.find(({ definition }) => definition.id === appId);
+  if (!entry?.definition.tasks || !opts.persistDir)
+    throw new Error(`App ${appId} has no installed Task capability`);
+  const target =
+    appId === descriptor.id
+      ? descriptor
+      : standaloneAppTaskAdmissionDescriptors({
+          persistDir: opts.persistDir,
+          projectsRoot: opts.projectsRoot,
+          entries: [entry],
+        }).get(appId)!;
+  return { app: target.app, config: appTaskConfig(target) };
+}
+
 /** Select the recorded handler. All paths share Task lifetime and result settlement. */
 async function executeTaskHandler(
-  input: Parameters<typeof runTaskAgent>[0] & { conversation: boolean },
+  input: TaskHandlerInput & { conversation: boolean },
 ): Promise<TaskCapabilityRun> {
-  const { opts, descriptor, claim, conversation, ...context } = input;
+  const { conversation, ...context } = input;
+  const { opts, descriptor, claim, attempt, taskEvents } = context;
   const execution = {
     ...context,
-    opts,
-    descriptor,
-    claim,
     ...(claim.handoff
       ? {
           fallbackReason: `${claim.handoff.reason}: ${claim.handoff.summary}${
@@ -688,60 +699,41 @@ async function executeTaskHandler(
       : {}),
   };
   if (conversation) {
-    return runTaskExecutorAttempt({
-      ...execution,
-      execute: async (attempt, taskEvents) => {
-        if (!descriptor.app.conversation || !opts.conversations)
-          throw new Error(`App ${descriptor.id} Conversation executor is unavailable`);
-        const registry = opts.appRegistrySnapshot ?? opts.appRegistry?.snapshot();
-        if (!registry) throw new Error("Conversation execution requires an installed App registry");
-        const proposal = await opts.conversations.execute({
-          config: appTaskConfig(descriptor),
-          claim,
-          app: descriptor.app,
-          registry,
-          signal: attempt.signal,
-          execution: {
-            descriptor,
-            attempt,
-            taskEvents,
-            taskRead: taskReads(opts, descriptor),
-            taskSnapshot: input.taskSnapshot,
-            executionPaths: input.executionPaths,
-          },
-          getTaskApp(appId) {
-            const entry = registry.entries.find(({ definition }) => definition.id === appId);
-            if (!entry?.definition.tasks || !opts.persistDir)
-              throw new Error(`App ${appId} has no installed Task capability`);
-            const target =
-              appId === descriptor.id
-                ? descriptor
-                : standaloneAppTaskAdmissionDescriptors({
-                    persistDir: opts.persistDir,
-                    projectsRoot: opts.projectsRoot,
-                    entries: [entry],
-                  }).get(appId)!;
-            return { app: target.app, config: appTaskConfig(target) };
-          },
-        });
-        return {
-          handlerResult: {
-            state: "converged",
-            summary: proposal.decision.summary,
-            response: proposal.decision.response,
-            result: { conversation: proposal.decision },
-            facts: proposal.decision.facts ?? [],
-            actions: [],
-          },
-          runId: claim.attemptId,
-          conversation: proposal,
-        };
+    if (!descriptor.app.conversation || !opts.conversations)
+      throw new Error(`App ${descriptor.id} Conversation executor is unavailable`);
+    const registry = opts.appRegistrySnapshot ?? opts.appRegistry?.snapshot();
+    if (!registry) throw new Error("Conversation execution requires an installed App registry");
+    const proposal = await opts.conversations.execute({
+      config: appTaskConfig(descriptor),
+      claim,
+      app: descriptor.app,
+      registry,
+      signal: attempt.signal,
+      execution: {
+        descriptor,
+        attempt,
+        taskEvents,
+        taskSnapshot: input.taskSnapshot,
+        executionPaths: input.executionPaths,
       },
+      getTaskApp: (appId) => conversationTaskApp(opts, descriptor, appId),
     });
+    return {
+      handlerResult: {
+        state: "converged",
+        summary: proposal.decision.summary,
+        response: proposal.decision.response,
+        result: { conversation: proposal.decision },
+        facts: proposal.decision.facts ?? [],
+        actions: [],
+      },
+      runId: claim.attemptId,
+      conversation: proposal,
+    };
   }
   const workflowKey = claim.handler.startsWith("workflow:") ? claim.handler.slice("workflow:".length) : "";
   if (workflowKey) {
-    return runTaskCapability({
+    return runTaskWorkflow({
       ...execution,
       capability: { workflow: workflowKey, agent: claim.agent, task: `Reconcile task through workflow ${workflowKey}` },
     });

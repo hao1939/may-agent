@@ -444,6 +444,7 @@ it("accepts failure facts without resolving the ask, then succeeds on the same a
 });
 
 it("rolls failure, input restoration and deadline back together, and guards indexed hint updates", () => {
+  setSystemTime(new Date("2026-09-11T00:00:00Z"));
   const f = fixture();
   const claim = f.claim();
   f.config.resourceStore.db.exec(`CREATE TRIGGER reject_retry BEFORE UPDATE ON app_tasks
@@ -458,7 +459,7 @@ it("rolls failure, input restoration and deadline back together, and guards inde
   expect(readAppTaskAdmissionOutcome(f.config, "work", "ask:measure", "report"))
     .toMatchObject({ attemptId: claim.attemptId, state: "error", reportRevision: 1 });
   const due = f.config.resourceStore.nextDueAt();
-  expect(due).toBeGreaterThan(Date.now());
+  expect(due).toBe(Date.now() + 250);
   f.config.resourceStore.setRecoveryState("work", { ready: true, changed: true, nextCheckAt: null });
   expect(f.config.resourceStore.nextDueAt()).toBe(due);
   expect(f.config.resourceStore.listRecoveryCandidates().items).toEqual([]);

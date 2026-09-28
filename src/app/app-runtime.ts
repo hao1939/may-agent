@@ -344,7 +344,7 @@ export async function runAppRuntime(opts: {
           taskRead: {
             list: async (options) => appTasks.list({ appId, ...(options ? { options } : {}) }),
             outcomes: async (projection) => appTasks.outcomes({ appId, ...(projection ? { projection } : {}) }),
-            get: async (taskId) => appTasks.get({ appId, taskId }),
+            get: async (taskId, options) => appTasks.get({ appId, taskId, options }),
           },
         }),
         workspace: { appRoot: appDir, projectRoot: projectDir },
