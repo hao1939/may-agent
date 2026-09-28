@@ -1,8 +1,60 @@
 # Reddit Source Contract Review — 2026-09-24
 
-## Decision
+## 2026-09-28 reassessment: fallback omitted, one current success
 
-**Recommendation to the App owner:** temporarily pause the automatic four-hour
+The three accepted scans at `12:06`, `16:04`, and `20:06` UTC did **not**
+invoke the already-established post-specific RSS/Atom fallback. Their execution
+traces show exactly two Reddit requests each: one successful search Atom request
+and then either the selected post's JSON endpoint or ordinary public post URL.
+No selected-post `.rss` URL appears in any of the three traces. All three runs
+were nevertheless correct evidence-backed no-ops under the workflow text they
+received, because that text required RSS-first discovery but did not tell the
+agent to try post-specific RSS before stopping at a detail-retrieval boundary.
+
+A bounded read-only check at `2026-09-28T21:09:53Z` requested the three selected
+posts' public `.rss` representations in chronological order, with a descriptive
+User-Agent, 10-second connection timeout, and 30-second total timeout. The first
+request, for `t3_1wscfpx`, returned HTTP 200 in 0.475 seconds with one attributable
+Atom entry, 5,039 bytes, and 2,592 characters of normalized content. Its SHA-256
+was `8e8a1468d8c23b14b9c8850164e461e1fd4b5b076f15969bd0382a0a48ee38f4`.
+The response also reported `x-ratelimit-remaining: 0.0` and a six-second reset.
+The immediately following requests for `t3_1wsi4g7` and `t3_1wsp16r` returned
+HTTP 429 with empty bodies in 0.376 and 0.384 seconds. Those two outcomes measure
+the bounded sequence's rate-limit boundary; they do not show that either post's
+RSS representation is intrinsically unreadable.
+
+This confirms the narrow result anticipated below: post-specific RSS is still a
+working permitted body path for at least one of the three current posts, but the
+current workflow omitted it. The smallest justified correction is to clarify the
+existing Reddit execution contract: after selecting a post, try its public
+post-specific RSS/Atom representation before JSON or the ordinary page, count
+that request within the same bounded request budget, and stop on a rate-limit or
+other access boundary. Preserve stable `t3_...` identity and keep post/comment
+content distinct from search-feed metadata. This report does not apply that
+workflow change.
+
+In the inspected three-scan window, selected-post body evidence was lost in
+`3/3` accepted scans even though the first current fallback check recovered the
+body for `1/1` post attempted before the rate limit. Each accepted scan took
+approximately 79–109 seconds end to end and made two Reddit requests; the
+fallback clarification need not increase the normal request count if it replaces
+rather than follows the currently blocked detail request. This diagnosis added
+three public requests totaling 1.235 seconds and 5,039 downloaded bytes.
+Provider/token cost remains unknown because it was not measured.
+
+**Updated option judgment:** no change would knowingly preserve the omission;
+cadence reduction would lower repetition but not repair per-scan coverage; the
+previous pause recommendation is no longer the smallest response because a
+current permitted path succeeded; authentication and a new retrieval service
+remain unsupported. Clarifying/restoring the existing post-RSS fallback is the
+smallest isolated candidate, subject to a separately authorized workflow edit,
+focused tests, and one production-independent validation. Until such a change is
+approved and verified, the standing scan and its independent obligations remain
+unchanged.
+
+## Original 2026-09-24 decision (superseded by the reassessment above)
+
+**Recommendation to the App owner at that time:** temporarily pause the automatic four-hour
 Reddit cadence, while preserving the standing `explore-reddit` responsibility,
 and authorize a bounded source-contract change that tries Reddit's public,
 post-specific RSS/Atom representation before declaring body verification
