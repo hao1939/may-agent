@@ -9,7 +9,7 @@ import { getDb } from "../../../lib/db/connection.js";
 import { appDependencyCatalog } from "../../app-dependency-catalog.js";
 import type { EventEnvelope } from "../events/bus.js";
 import { EVENT_ROW_ID, eventData, type AgentEvent } from "../events/bus.js";
-import { listRuntimeTaskViews, readRuntimeTaskView } from "../reads/app-read.js";
+import { createRuntimeAppRead, readRuntimeTaskView } from "../reads/app-read.js";
 import {
   readAppTaskLiveEvent,
   readAppTaskReconciliationEvents,
@@ -31,7 +31,7 @@ import {
   type AppTaskLiveSnapshot,
 } from "./app-task-reconciler.js";
 import { ResourceTaskMutationStaleError } from "./app-task-store.js";
-import type { TaskAgentInput, WorkflowCapability } from "./execution.js";
+import type { WorkflowCapability } from "./execution.js";
 import { normalizeTaskHandlerResult, type TaskCapabilityRun } from "./result.js";
 import { appTaskConfig, configuredRegistryEntries, type AppTaskRuntimeDescriptor } from "./runtime-definition.js";
 import type { AppTaskRuntimeOptions } from "./runtime-options.js";
@@ -105,27 +105,7 @@ export async function runTaskWorkflow(
       app: descriptor.app,
     },
     executionTimeoutMs: APP_TASK_WORKFLOW_TIMEOUT_MS,
-    taskRead: taskReads(opts, descriptor),
   });
-}
-
-export function taskReads(opts: AppTaskRuntimeOptions, descriptor: AppTaskRuntimeDescriptor): TaskAgentInput["taskRead"] {
-  const config = { taskStateConfig: appTaskConfig(descriptor) };
-  return {
-    list: async (options) => listRuntimeTaskViews(config, options),
-    outcomes: async (projection) => {
-      if (!opts.readOutcomes) throw new Error("Task outcome reporting is unavailable");
-      return opts.readOutcomes({
-        appDir: descriptor.appDir,
-        projection,
-        tasks: {
-          list: (options) => listRuntimeTaskViews(config, options),
-          get: (id) => readRuntimeTaskView(config, id),
-        },
-      });
-    },
-    get: async (id, options) => readRuntimeTaskView(config, id, options),
-  };
 }
 
 type RuntimeTaskAttempt = {
@@ -172,6 +152,13 @@ function runtimeTaskAttempt(input: TaskAttemptInput): RuntimeTaskAttempt {
       instructions: `Act as the selected May agent ${claim.agent}.`,
     },
     task: structuredClone(task),
+    read: {
+      tasks: createRuntimeAppRead({
+        getDb: () => descriptor.resourceStore.db,
+        taskStateConfig: appTaskConfig(descriptor),
+        readOutcomes: opts.readOutcomes,
+      }).tasks,
+    },
     ...(claim.previousAttempt ? { previousAttempt: structuredClone(claim.previousAttempt) } : {}),
     cwd: input.executionPaths.workspaceDir,
     declaredOutputPaths: [...claim.declaredOutputPaths],
@@ -339,7 +326,6 @@ export async function runTaskAgent(input: TaskHandlerInput): Promise<TaskCapabil
   return opts.agents.execute({
     ...execution,
     executionTimeoutMs: APP_TASK_AGENT_TIMEOUT_MS,
-    taskRead: taskReads(opts, descriptor),
     descriptor: {
       id: descriptor.id,
       appDir: descriptor.appDir,

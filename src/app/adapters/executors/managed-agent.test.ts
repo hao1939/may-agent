@@ -44,6 +44,7 @@ test.each(["event", "continued-input"])("generic agent execution carries %s fact
     const input = {
       descriptor: { id: "example", app: {} },
       attempt: {
+        read: { tasks: {} },
         task: { id: "work", generation: 1, outcome: "Inspect evidence", acceptance: [] },
         role: { agent: "worker", instructions: "Inspect ordinary facts" },
         events: {

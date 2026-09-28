@@ -4,7 +4,6 @@ import type {
   ConversationTurnResult,
   TSchema,
   AppDefinition,
-  AppRead,
   TaskAttempt,
   TaskVerifier,
 } from "@may-agent/sdk";
@@ -46,7 +45,7 @@ export type TaskConversationRunner = {
     signal: AbortSignal;
     execution: Pick<
       TaskAgentInput,
-      "descriptor" | "attempt" | "executionPaths" | "taskEvents" | "taskRead" | "taskSnapshot"
+      "descriptor" | "attempt" | "executionPaths" | "taskEvents" | "taskSnapshot"
     >;
     getTaskApp: ConversationTaskAppResolver;
   }): Promise<ConversationTaskProposal>;
@@ -69,7 +68,6 @@ type TaskExecutionInput = {
 
 export type TaskAgentInput = TaskExecutionInput & {
   taskEvents: AppTaskEvents;
-  taskRead: AppRead["tasks"];
   taskSnapshot: AppTaskLiveSnapshot;
   dependencies: ReturnType<typeof appDependencyCatalog>;
   sessionStarted(sessionId: string): void;
@@ -114,7 +112,6 @@ export type TaskWorkflowInput = TaskExecutionInput & {
   /** Actual selected handler, including workflow-to-agent recovery decisions. */
   handler: string;
   taskSnapshot: AppTaskLiveSnapshot;
-  taskRead: AppRead["tasks"];
 };
 
 /** Host-private workflow capability. It proposes results; core owns admission. */

@@ -52,6 +52,7 @@ import { createTaskExecutionBackends } from "../../composition/task-execution.js
 import { createTaskSessionRecovery } from "../../adapters/executors/session-recovery.js";
 import { createTaskAgentRunner } from "../../adapters/executors/managed-agent.js";
 import { createAppTaskReadTool } from "../../app-task-read-tool.js";
+import { readTaskOutcomes } from "../../adapters/reporting/task-outcomes.js";
 import type { TaskAgentRunner, TaskWorkflowRunner, TaskSessionRecovery } from "./execution.js";
 import type { NormalizedTaskHandlerResult } from "./result.js";
 import {
@@ -107,6 +108,7 @@ import {
 const roots: string[] = [];
 const buses: EventBus[] = [];
 const stores: AppTaskResourceStore[] = [];
+
 
 function appTaskTestContext(input: Parameters<typeof createTaskContext>[0]) {
   const config = createTaskContext({ databasePath: ":memory:", ...input });
@@ -192,6 +194,87 @@ function options(f: ReturnType<typeof fixture>, bus: EventBus) {
     hostCapacity: new HostCapacity(2),
   };
 }
+
+it("shares Task detail, evidence and exact outcome reads between tools and executor capabilities", async () => {
+  const f = fixture();
+  const bus = eventBus();
+  const tool = createAppTaskReadTool({ bus, appId: () => "sample" });
+  const toolRead = async (params: Record<string, unknown>) => {
+    const result = await tool.execute("read", params);
+    const content = result.content[0];
+    if (content?.type !== "text") throw new Error("Expected Task tool text");
+    return JSON.parse(content.text);
+  };
+  let executed = false;
+  await installCoreTaskRuntimes({
+    ...options(f, bus),
+    installControllers: false,
+    appRegistrySnapshot: {
+      id: "shared-task-reads",
+      generation: 1,
+      entries: [{ appDir: f.appDir, definition: definition() }],
+    },
+    readOutcomes: readTaskOutcomes,
+    executors: {
+      inspect: async ({ read }) => {
+        const detail = await read.tasks.get("work/accepted", { acceptedEvidence: { limit: 1 } });
+        expect(detail?.acceptedEvidence.page?.items).toHaveLength(1);
+        expect(await toolRead({ action: "get", taskId: "work/accepted", acceptedEvidence: { limit: 1 } })).toEqual(
+          JSON.parse(JSON.stringify(detail)),
+        );
+        const page = await read.tasks.list({ limit: 1 });
+        expect(page.nextCursor).toBeString();
+        expect(await toolRead({ action: "list", limit: 1 })).toEqual(JSON.parse(JSON.stringify(page)));
+        expect(await toolRead({ action: "list", limit: 1, cursor: page.nextCursor })).toEqual(
+          JSON.parse(JSON.stringify(await read.tasks.list({ limit: 1, cursor: page.nextCursor }))),
+        );
+        for (const includeDone of [false, true]) {
+          const projection = { taskId: "work/accepted", includeDone };
+          const outcome = await read.tasks.outcomes(projection);
+          expect(outcome.sourceCount).toBe(includeDone ? 2 : 0);
+          expect(await toolRead({ action: "outcomes", ...projection })).toEqual(JSON.parse(JSON.stringify(outcome)));
+        }
+        await expect(read.tasks.list({ limit: 101 })).rejects.toThrow("between 1 and 100");
+        expect(await toolRead({ action: "list", limit: 101 })).toEqual({
+          error: "Task list limit must be an integer between 1 and 100",
+        });
+        executed = true;
+        return { state: "converged", summary: "Read interfaces agree", facts: [] };
+      },
+    },
+  });
+  const config = loadedTaskConfig(f);
+  for (const id of ["work/accepted", "work/active", "work/inspect"]) {
+    observeAppTaskIntent(config, {
+      appAgent: "sample-owner",
+      intent: {
+        id,
+        parentId: "operations",
+        outcome: `Complete ${id}`,
+        acceptance: ["Verified"],
+        executor: "inspect",
+      },
+    });
+  }
+  const claim = claimObservedAppTask(config, { taskId: "work/accepted", appAgent: "sample-owner", handler: "auto" });
+  if (claim.kind !== "claimed") throw new Error("Expected claim");
+  completeAppTask(config, claim, { summary: "Accepted report", result: { revision: 1 } });
+  mkdirSync(join(f.appDir, "tasks"), { recursive: true });
+  writeFileSync(
+    join(f.appDir, "tasks", "outcome-projection.json"),
+    JSON.stringify({
+      version: 1,
+      groups: [{ id: "pair", outcome: "Review pair", taskIds: ["work/accepted", "work/active"] }],
+    }),
+  );
+  await reconcileLoadedAppTaskOnce({
+    bus,
+    appId: "sample",
+    taskId: "work/inspect",
+    dispatch: { enqueuedAt: 1, startedAt: 2, readyWaitMs: 1, lane: "normal" },
+  });
+  expect(executed).toBeTrue();
+});
 
 describe("caller feedback PoC", () => {
   it("reads the full installed input contract through tasks without starting target work", async () => {
@@ -1106,7 +1189,7 @@ it("keeps omitted workflows visible, continues unrelated work, and recovers with
         calls++;
         expect(input.attempt.task.id).toBe("work/workflow");
         expect(input.attempt.signal.aborted).toBeFalse();
-        expect((await input.taskRead.get("work/workflow"))?.status).toBe("running");
+        expect((await input.attempt.read.tasks.get("work/workflow"))?.status).toBe("running");
         expect("resourceStore" in input.descriptor).toBeFalse();
         expect("manager" in input.source).toBeFalse();
         return {

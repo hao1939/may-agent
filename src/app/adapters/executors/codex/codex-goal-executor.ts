@@ -203,7 +203,7 @@ export function createCodexGoalExecutor(options: CodexGoalExecutorOptions): Task
   return async (attempt) => {
     const key = bindingKey(attempt);
     const existing = readBindings(options.stateFile).bindings[key];
-    const rendered = renderCodexGoalTaskAttempt(packetFor(attempt));
+    const rendered = renderCodexGoalTaskAttempt(packetFor(attempt), dirname(options.stateFile));
     const client =
       options.createClient?.(attempt.cwd) ??
       CodexGoalAppServerClient.spawn({ cwd: attempt.cwd, command: options.command });
@@ -216,8 +216,7 @@ export function createCodexGoalExecutor(options: CodexGoalExecutorOptions): Task
     let stopped = false;
     let liveInputOpen = true;
     let aborting: Promise<void> | null = null;
-    const pendingEvents: Array<{ event: AppEvent<Record<string, unknown>>; accept: () => void }> = [];
-    const incorporatedLiveEvents = new Set<() => void>();
+    const pendingEvents: Array<AppEvent<Record<string, unknown>>> = [];
     const steering = new Set<Promise<unknown>>();
     const progress = new CodexGoalProgressPublisher({
       publish: attempt.publish,
@@ -233,20 +232,18 @@ export function createCodexGoalExecutor(options: CodexGoalExecutorOptions): Task
       steering.add(promise);
       void promise.finally(() => steering.delete(promise));
     };
-    const queueEvent = (event: AppEvent<Record<string, unknown>>, accept: () => void) => {
+    const queueEvent = (event: AppEvent<Record<string, unknown>>) => {
       if (pendingEvents.length >= MAX_PENDING_STEERING_EVENTS) pendingEvents.shift();
-      pendingEvents.push({ event, accept });
+      pendingEvents.push(event);
     };
     const deliverPendingEvents = async (activeTurnId: string) => {
       const queued = pendingEvents.splice(0);
       for (let index = 0; index < queued.length; index += 1) {
         try {
-          const queuedEvent = queued[index]!;
-          await client.steer({ threadId, turnId: activeTurnId, message: eventMessage(queuedEvent.event) });
-          incorporatedLiveEvents.add(queuedEvent.accept);
+          await client.steer({ threadId, turnId: activeTurnId, message: eventMessage(queued[index]!) });
         } catch {
           if (!stopped) {
-            for (const queuedEvent of queued.slice(index)) queueEvent(queuedEvent.event, queuedEvent.accept);
+            for (const queuedEvent of queued.slice(index)) queueEvent(queuedEvent);
           }
           return;
         }
@@ -279,14 +276,12 @@ export function createCodexGoalExecutor(options: CodexGoalExecutorOptions): Task
         }
       }
     });
-    const unsubscribeEvent = attempt.onEvent((event, accept = () => undefined) => {
+    // Steering acknowledges delivery, not incorporation into the Task result.
+    // Leave live input for normal reconciliation, as managed-agent hints do.
+    const unsubscribeEvent = attempt.onEvent((event) => {
       if (stopped || !liveInputOpen) return;
-      if (!threadId || !turnId) {
-        queueEvent(event, accept);
-        return;
-      }
-      queueEvent(event, accept);
-      track(deliverPendingEvents(turnId));
+      queueEvent(event);
+      if (threadId && turnId) track(deliverPendingEvents(turnId));
     });
     const stopForAbort = () => {
       if (aborting) return;
@@ -379,7 +374,6 @@ export function createCodexGoalExecutor(options: CodexGoalExecutorOptions): Task
         unsubscribeEvent();
         await Promise.allSettled([...steering]);
         pendingEvents.length = 0;
-        for (const accept of incorporatedLiveEvents) accept();
         return finish(appendFacts(admitted.result, `codex-thread:${threadId}`));
       }
     } catch (error) {

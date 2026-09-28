@@ -103,6 +103,28 @@ export async function execute(ctx) {
     await expect(runner.run("read", "test")).resolves.toMatchObject({ type: "done", summary: "resource task" });
   });
 
+  it("reports unavailable Task reads instead of claiming an unscoped workflow found no work", async () => {
+    const workflowDir = workflowRoot("workflow-unscoped-read-");
+    writeFileSync(join(workflowDir, "inspect.ts"), `
+export const name = "inspect";
+export const description = "Check work through the supplied capability";
+export async function execute(ctx) {
+  const failures = [];
+  for (const read of [() => ctx.read.tasks.get("current"), () => ctx.read.tasks.list()]) {
+    try { await read(); } catch (error) { failures.push(error.message); }
+  }
+  return failures.length === 2
+    ? ctx.blocked("Task source unavailable", { failures })
+    : ctx.done("No work found");
+}
+`);
+    const runner = createWorkflowRunner({ manager: {} as never, workflowDir });
+    await expect(runner.run("inspect", "Check current work")).resolves.toMatchObject({
+      type: "blocked",
+      reason: "Task source unavailable",
+    });
+  });
+
   it("cancels the active step when its owning Task attempt is aborted", async () => {
     const root = workflowRoot("workflow-cancel-");
     const workflowDir = join(root, "workflows");

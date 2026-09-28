@@ -49,6 +49,7 @@ function fixture(root: string) {
     recoveryOwner: "app-task",
     executionPaths: { appDir: root, projectDir: root, workspaceDir: root },
     reconciliation: {
+      task: structuredClone(task),
       appId: "sample",
       taskId: task.id,
       generation: 1,
