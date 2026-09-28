@@ -1,7 +1,8 @@
 <ai_context>
 summary: "Canonical reference for agent evaluation patterns and testing tooling: live benchmarks, execution-trace verification, task-grounded memory evaluation, diversity-seeking adversarial scenario archives, categorical observer-based progress forecasting, conversation-level certification, reviewer agents, operational metrics (MTBF, CPT, context efficiency), repeated A/B tests of agent-tooling configurations, artifact-grounded reproduction, induced-objective red-team interpretation, XHS community trends, June 2026 testing tooling landscape (promptfoo, RagaAI, Layer-Isolated methodology, CI containment tools), benchmark-saturation responses from HN practitioners, benchmark-family/data-engine patterns, trace-to-eval asset compilation, the Diagnostic Refinement wave (typed failure characterization via LegalHalluLens, EARS, Thermodynamic Signatures, Rift), Deployment Unit Turn (configuration-level evaluation), and the Observability Inversion (process discipline evaluation via RigorBench, small critics, structural code quality). Research-frontier patterns (§12–§35) extracted to companion note agent-evaluation-research.md."
 triggers: ["evaluation", "benchmark", "reviewer agent", "feedback", "Agent-Eval-Agent", "evaluator agent", "gym", "MTBF", "context efficiency", "trajectory", "testing tooling", "promptfoo", "agent testing", "CI agent", "layer-isolated", "A/B test", "agent tooling experiment", "skill selection reliability", "request exposure", "conditional quality", "diagnostic refinement", "typed hallucination", "LegalHalluLens", "EARS abstention", "Rift deception", "thermodynamic signatures", "process discipline", "process observability", "RigorBench", "small critic", "structural code quality", "Topos", "benchmark family", "data engine", "harness variance", "anytime-valid", "confidence sequence", "optional stopping", "pseudoreplication", "cluster bootstrap", "holdout leakage", "SkillTV-Bench", "JudgeSkill", "skill-aware verification", "rollout selection", "EvoTrace", "trace mining", "executable eval assets", "verifier provenance", "environment reconstruction", "claim verification", "negative memory", "evidence ledger", "information-weighted verification", "reproducibility bundle", "replay coverage", "claim-artifact matrix", "evaluation fingerprint", "source closure", "verifiable credential", "self-reported transcript", "Agents School", "evaluation evidence class", "causal witness", "matched null", "behavior-first evaluation", "reconstruction test", "artifact-grounded reproduction", "agent-generated evidence", "outside feedback", "insurance benchmark", "document routing", "system reliability", "abstention", "induced objective", "red-team interpretation", "effect-state classification", "conversation-level evaluation", "compositional certification", "evidence-cited diagnosis", "declared observed delegation", "prompt treatment", "measurement ownership", "paired prompt evaluation", "production feedback loop", "progress forecasting", "Jev sentinel", "AgentJev", "local decision model", "categorical progress rubric", "remaining time prediction", "DolphinBench", "agent memory evaluation", "memory Pareto frontier", "OSWorld-Pro", "process-based evaluation", "subgoal feasibility", "failure persistence", "infeasible persistence", "process judge calibration", "PhysAudit", "scientific validation", "domain invariant", "claim-specific check", "deterministic numerical verdict", "measurement state", "not measured", "Vigiles", "Life Forge", "MAP-Elites", "quality-diversity", "adversarial scenario archive"]
-last_updated: "2026-09-26"
+last_updated: "2026-09-28"
+source_update_2026_09_28_hippo_memory: "kitfunso/hippo-memory rechecked at commit 67d8cf94885a438248084097fd742abbbca8bde7; Scout inspected the complete tree, the newly published real-data decay preregistration and result, the earlier decay-default result, decay implementation, and focused wrong-memory tests. No benchmark or test suite was run, and private home-box artifacts were unavailable."
 source_update_2026_09_26_reddit_harness_confounding: "Complete public Atom body for Reddit post t3_1wqk9di was read. Its 19-task scores, harness tuning, and cost figures are first-party self-reports; Scout did not inspect tasks, code, traces, experiment records, provider bills, or repeated runs."
 source_update_2026_09_26_xhs_production_probe: "A current XHS post and visible comments were read as secondary practitioner evidence for converting production-agent interview questions into executable failure probes. The author's six-interview account and market claims were not independently verified, and course-promotion replies materially limit its evidential weight."
 source_update_2026_09_26_deepswe_reward_hacking: "HN item 49851266, Handshake's full research article, and Handshake-AI-Research/deepswe-samples at commit d0994043fc6570a3c87165aadbae2aaf60f0ed63 were inspected. The repository tree exposes 30 sampled task directories with instructions, patches, and trajectories, not the full thousands-of-rollouts audit corpus; no trajectories were replayed and the reported prevalence rates were not independently reproduced."
@@ -262,15 +263,32 @@ that can invalidate the claim without silently rewriting the locked run. If the
 correction changes the rule after outcomes were seen, freeze that run as
 diagnostic and use a fresh population for the new confirmatory claim.
 
+A subsequent real-data replay adds a fifth requirement: validate the **label
+population and its effective unit count before interpreting an arm**. The locked
+protocol required at least 30 distinct bad memories in play; only nine were
+available, so the result correctly remained “no verdict” despite reporting arm
+statistics. Even that nine-cluster count was optimistic: the 21 candidate
+`CORRECTS` labels represented about 13 facts because copies across stores were
+not independent, and the author's audit agreed with only 17 of 21 labels after
+an agent check had reported 21 of 21. This is not merely label noise. Duplicate
+facts reduce effective sample size, direction errors change which memory is
+“bad,” and commit subjects may not represent facts users would retrieve.
+Therefore a preregistered sample floor should be applied after deduplication and
+independent human label audit, not just to the raw row count or an agent's own
+self-check. A below-floor run remains useful for mechanism debugging and a
+census, but it cannot be promoted to treatment evidence.
+
 **Evidence boundary:** this is static inspection of repository-authored plans,
-result reports, raw-result references, and the critique folded into the result
-at commit `d4e163339d1e0a842caa759eadda6cce5161771b`. I did not run the benchmark,
-recompute its intervals, or independently inspect the home-box artifacts that
-the result says were not committed.
+result reports, raw-result references, implementation, focused tests, and
+critiques folded into the results at commit
+`67d8cf94885a438248084097fd742abbbca8bde7`. I did not run the benchmark or test
+suite, recompute its intervals, or independently inspect the private home-box
+artifacts. The real-data replay used BM25 rather than Hippo's full scorer and
+explicitly did not measure per-prompt hook exposure.
 
 - **Repo:** https://github.com/kitfunso/hippo-memory
-- **Inspected revision:** [`d4e163339d1e0a842caa759eadda6cce5161771b`](https://github.com/kitfunso/hippo-memory/commit/d4e163339d1e0a842caa759eadda6cce5161771b)
-- **Primary sources:** [first decay result and guard diagnosis](https://github.com/kitfunso/hippo-memory/blob/d4e163339d1e0a842caa759eadda6cce5161771b/docs/evals/2026-09-24-decay-default-result.md), [fresh-seed registration](https://github.com/kitfunso/hippo-memory/blob/d4e163339d1e0a842caa759eadda6cce5161771b/docs/evals/2026-09-24-decay-default-prereg-2.md), and [mechanism audit with validity gates, self-audit, and folded critique](https://github.com/kitfunso/hippo-memory/blob/d4e163339d1e0a842caa759eadda6cce5161771b/docs/evals/2026-09-23-mechanism-audit-round2-result.md)
+- **Inspected revision:** [`67d8cf94885a438248084097fd742abbbca8bde7`](https://github.com/kitfunso/hippo-memory/commit/67d8cf94885a438248084097fd742abbbca8bde7)
+- **Primary sources:** [first decay result and guard diagnosis](https://github.com/kitfunso/hippo-memory/blob/67d8cf94885a438248084097fd742abbbca8bde7/docs/evals/2026-09-24-decay-default-result.md), [fresh-seed registration](https://github.com/kitfunso/hippo-memory/blob/67d8cf94885a438248084097fd742abbbca8bde7/docs/evals/2026-09-24-decay-default-prereg-2.md), [real-data replay registration](https://github.com/kitfunso/hippo-memory/blob/67d8cf94885a438248084097fd742abbbca8bde7/docs/evals/2026-09-24-real-data-decay-prereg.md), [real-data replay result and author label audit](https://github.com/kitfunso/hippo-memory/blob/67d8cf94885a438248084097fd742abbbca8bde7/docs/evals/2026-09-24-real-data-decay-result.md), and [wrong-memory penalty tests](https://github.com/kitfunso/hippo-memory/blob/67d8cf94885a438248084097fd742abbbca8bde7/tests/wrong-memories-fade.test.ts)
 
 ### Counterfactual replay needs a fidelity gate and a sealed effect boundary — Kitaru (GitHub, Sep 2026)
 
