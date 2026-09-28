@@ -806,6 +806,133 @@ export async function execute(ctx) {
     expect(logged).toEqual([expect.stringMatching(/^\[workflow:wr_[^\]]+\] \[info\] bounded move complete$/)]);
   });
 
+  it("passes the owning Task context through an authored workflow to its managed helper", async () => {
+    const root = workflowRoot("app-workflow-task-context-");
+    const workflowDir = join(root, "workflows");
+    mkdirSync(workflowDir);
+    writeFileSync(join(workflowDir, "task-context.ts"), `
+export const name = "task-context";
+export const description = "Inherited Task context boundary test";
+export async function execute(ctx) {
+  return ctx.agents.call("worker", "Use the Host-supplied Task entry; do not copy reconciliation into this prompt.");
+}
+`);
+    const correction = "Supervisor correction: retain the accepted result and continue the bounded proof.";
+    const pendingInformation = "Pending information: latency measurement is not available yet.";
+    const task = {
+      id: "context-transfer",
+      status: "running",
+      generation: 2,
+      resourceVersion: 7,
+      outcome: "Consider the correction without dropping independent waits",
+      acceptance: ["Preserve prior result, new input, and approval"],
+      input: { kind: "message", data: { message: correction } },
+      summary: "Earlier work was accepted",
+      result: { decision: "retain" },
+      facts: ["accepted-result:revision-1"],
+      pendingEvents: {
+        items: [{
+          eventId: 78,
+          observedAt: "2026-09-29T00:01:00.000Z",
+          event: {
+            type: "app.input.requested",
+            data: { taskId: "context-transfer", input: { kind: "message", data: { message: pendingInformation } } },
+          },
+        }],
+        truncated: false,
+      },
+      conditions: [{
+        id: "approval-independent",
+        type: "approval.observed",
+        subject: "candidate:revision-2",
+        expected: true,
+        owner: "human:reviewer",
+        reviewAfterMs: 3600000,
+      }],
+    };
+    const taskContext = {
+      taskBinding: { appId: "sample", taskId: "context-transfer", generation: 2, attemptId: "attempt-context-transfer" },
+      recoveryOwner: "app-task",
+      executionPaths: { appDir: root, projectDir: root, workspaceDir: root },
+      reconciliation: {
+        task,
+        appId: "sample",
+        taskId: "context-transfer",
+        generation: 2,
+        resourceVersion: 7,
+        agent: "owner",
+        outcome: "Consider the correction without dropping independent waits",
+        acceptance: ["Preserve prior result, new input, and approval"],
+        input: { kind: "message", data: { message: correction } },
+        events: {
+          items: [{
+            eventId: 77,
+            observedAt: "2026-09-29T00:00:00.000Z",
+            event: { type: "app.input.requested", data: { input: { kind: "message", data: { message: correction } } } },
+          }],
+          truncated: false,
+        },
+        waits: {
+          open: [{
+            conditionId: "approval-independent",
+            conditionGeneration: 1,
+            type: "approval.observed",
+            subject: "candidate:revision-2",
+            state: "unknown",
+          }],
+          note: "Independent wait remains open",
+        },
+        children: { live: [], completed: [] },
+      },
+      details: { task, declaredOutputs: [] },
+      taskRead: { get: async () => structuredClone(task) },
+    } as any;
+    let inherited: unknown;
+    let helperPrompt = "";
+    const runner = createWorkflowRunner({
+      manager: {
+        callAgent: async (_agent: string, task: string, options: { taskContext?: unknown }) => {
+          helperPrompt = task;
+          inherited = options.taskContext;
+          return {
+            sessionId: "s_context_helper",
+            status: "done",
+            lastAssistantText: "Context considered",
+            messages: [],
+            duration: "0s",
+            outputDir: "",
+            finishResult: { status: "success", summary: "Context considered" },
+          };
+        },
+      } as any,
+      workflowDir,
+      agentName: "owner",
+      persistDir: root,
+      taskContext,
+    });
+
+    const result = await runner.run("task-context", "fixture");
+
+    expect(result).toMatchObject({ type: "done", summary: "Context considered" });
+    expect(helperPrompt).not.toContain(correction);
+    expect(helperPrompt).not.toContain(pendingInformation);
+    expect(helperPrompt).not.toContain("accepted-result:revision-1");
+    expect(helperPrompt).not.toContain("approval-independent");
+    expect(inherited).toBe(taskContext);
+    expect(inherited).toMatchObject({
+      taskBinding: { taskId: "context-transfer", generation: 2 },
+      reconciliation: {
+        task: {
+          result: { decision: "retain" },
+          pendingEvents: { items: [{ eventId: 78 }] },
+          conditions: [{ id: "approval-independent" }],
+        },
+        events: { items: [{ event: { data: { input: { data: { message: correction } } } } }] },
+        waits: { open: [{ conditionId: "approval-independent" }] },
+      },
+    });
+  });
+
   it("rejects invalid operation allowances before provider execution", async () => {
     const root = workflowRoot("app-workflow-invalid-allowance-");
     const workflowDir = join(root, "workflows");
