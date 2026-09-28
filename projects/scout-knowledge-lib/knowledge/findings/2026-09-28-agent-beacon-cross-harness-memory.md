@@ -1,8 +1,8 @@
 <ai_context>
-summary: "At pinned commit 24ec69a, Agent Beacon implements a cross-harness memory pipeline that separates raw traces, scored candidates, human-approved project memory, and explicitly promoted Agent Skills; the useful control is staged admission rather than automatic transcript reuse."
-triggers: "agent memory, cross-harness memory, trace archive, memory admission, skill promotion, provenance, Agent Beacon"
+summary: "Agent Beacon separates raw traces, scored candidates, approved memory, and promoted skills; a same-day follow-up also shows commit attribution marked as inferred and explicit, reversible setup for cross-harness hosted retrieval."
+triggers: "agent memory, cross-harness memory, trace archive, memory admission, skill promotion, provenance, commit attribution, MCP configuration, Agent Beacon"
 last_updated: "2026-09-28"
-source_basis: "Static inspection of Asymptote-Labs/agent-beacon at commit 24ec69adf6b5d6f8f80b90b23177c66fcf8df441"
+source_basis: "Static inspection of Asymptote-Labs/agent-beacon at commits 24ec69adf6b5d6f8f80b90b23177c66fcf8df441 and 91e92216b79108475ba9b587d49c5ff3f7356fd8"
 </ai_context>
 
 # Agent Beacon: cross-harness memory needs two admission boundaries
@@ -26,6 +26,15 @@ Beacon describes itself as a local-first capture and memory layer across Claude 
 5. **Broad distribution is separate from approval.** Approved memory can be rendered as a repository Agent Skill, but the promotion skill requires preview and user confirmation. The generated skill carries memory and candidate IDs plus trace references, and installation refuses to overwrite an existing skill unless forced.
 
 The repository also models source quality rather than flattening all captured events. [`provenance.go`](https://github.com/Asymptote-Labs/agent-beacon/blob/24ec69adf6b5d6f8f80b90b23177c66fcf8df441/pkg/asymptoteobserve/provenance.go) separates collection method (`hook`, `otlp`, `plugin`, or `poll`) from event fidelity (`observed` or `inferred`). Its comments warn that a typed hook event and a keyword guess can otherwise appear as the same action. This is important because a memory pipeline can preserve trace IDs yet still overstate what the underlying trace actually proves.
+
+## Current-source follow-up: attribution and retrieval setup are separate controls
+
+A same-day recheck found `main` at [`91e92216b79108475ba9b587d49c5ff3f7356fd8`](https://github.com/Asymptote-Labs/agent-beacon/tree/91e92216b79108475ba9b587d49c5ff3f7356fd8), 47 commits ahead of the originally inspected revision. Static inspection of the changed implementation adds two useful boundaries:
+
+- **Commit linkage is recorded as an inference, not authorship proof.** The new git integration links a session to a commit using changed-file overlap and emits `session.commit_linked` into that session's timeline. Both the [implementation](https://github.com/Asymptote-Labs/agent-beacon/blob/91e92216b79108475ba9b587d49c5ff3f7356fd8/cli/beacon/internal/gitlink/events.go) and [documentation](https://github.com/Asymptote-Labs/agent-beacon/blob/91e92216b79108475ba9b587d49c5ff3f7356fd8/docs/cli/git.mdx) label the event `fidelity: inferred`. Automatic linking skips replay operations such as rebase and cherry-pick. Sharing links through Git notes is opt-in; its pre-push hook has a ten-second budget and does not fail the user's code push if sharing fails.
+- **Cross-harness retrieval setup is explicit and owner-scoped.** `beacon mcp connect` plans changes, requires confirmation unless explicitly run with `--yes`, backs up edited harness configs, and records its own entries in a private manifest so disconnect can remove only Beacon-managed configuration. The [connection engine](https://github.com/Asymptote-Labs/agent-beacon/blob/91e92216b79108475ba9b587d49c5ff3f7356fd8/cli/beacon/internal/mcpconnect/engine.go) preserves unrelated configuration and records progress after each successful write. OAuth is the default; token mode writes an environment-variable reference rather than the token value. The separate [token-minting client](https://github.com/Asymptote-Labs/agent-beacon/blob/91e92216b79108475ba9b587d49c5ff3f7356fd8/cli/beacon/internal/account/mcp_token.go) refuses redirects before sending the account credential and returns the newly minted token without storing it.
+
+Together these changes extend the admission model into operational provenance: a retained trace may support a memory candidate, a file-overlap heuristic may connect that trace to a commit, and an explicit configuration change may expose hosted history to another harness. Those are three different authority claims and should remain distinguishable in audit output.
 
 ## Why it matters
 
@@ -61,3 +70,8 @@ This was static source inspection, not a product evaluation. The repository’s 
 - [candidate admission implementation](https://github.com/Asymptote-Labs/agent-beacon/blob/24ec69adf6b5d6f8f80b90b23177c66fcf8df441/cli/beacon/internal/learning/candidate.go)
 - [skill rendering and installation](https://github.com/Asymptote-Labs/agent-beacon/blob/24ec69adf6b5d6f8f80b90b23177c66fcf8df441/cli/beacon/internal/learning/skills.go)
 - [event provenance model](https://github.com/Asymptote-Labs/agent-beacon/blob/24ec69adf6b5d6f8f80b90b23177c66fcf8df441/pkg/asymptoteobserve/provenance.go)
+- [current git-link documentation](https://github.com/Asymptote-Labs/agent-beacon/blob/91e92216b79108475ba9b587d49c5ff3f7356fd8/docs/cli/git.mdx)
+- [current commit-link event implementation](https://github.com/Asymptote-Labs/agent-beacon/blob/91e92216b79108475ba9b587d49c5ff3f7356fd8/cli/beacon/internal/gitlink/events.go)
+- [current MCP connection documentation](https://github.com/Asymptote-Labs/agent-beacon/blob/91e92216b79108475ba9b587d49c5ff3f7356fd8/docs/cli/mcp-connect.mdx)
+- [current MCP configuration engine](https://github.com/Asymptote-Labs/agent-beacon/blob/91e92216b79108475ba9b587d49c5ff3f7356fd8/cli/beacon/internal/mcpconnect/engine.go)
+- [current MCP token client](https://github.com/Asymptote-Labs/agent-beacon/blob/91e92216b79108475ba9b587d49c5ff3f7356fd8/cli/beacon/internal/account/mcp_token.go)
