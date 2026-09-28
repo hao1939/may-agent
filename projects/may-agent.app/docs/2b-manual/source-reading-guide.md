@@ -1,8 +1,10 @@
 # Reading the May source
 
 Start with one Task, follow its agent execution, then choose the part you want
-to review. This guide was checked against Host `7f349322` (2026-09-27, through
-#256). It describes source; the running binary and activated App definitions
+to review. The broader source map was checked against Host `7f349322`
+(2026-09-27, through #256). The execution section follows the candidate in the
+[September 28 review](../archive/reviews/task-execution-readability-20260928.md).
+It describes source; the running binary and activated App definitions
 have separate release identities.
 
 Read the [System Model](../2a-design/system-model.md) for the concepts. Keep the
@@ -141,7 +143,9 @@ runTaskAttempt()
   claimObservedAppTask()          acquire authority or explain why not ready
   runClaimedTask()
     prepare workspace/context
-    executeTaskHandler()         invoke the selected handler once
+    runTaskExecutorAttempt()     open context, event observation and lease renewal
+      executeTaskHandler()       invoke the selected handler once
+                                 close attempt subscriptions/timer on every exit
     examine its report
     validate, finalize and commit the appropriate outcome
 ```
@@ -153,11 +157,28 @@ Preparation failure returns through `finishUnsuccessfulAttempt()` before the
 handler runs. Each result branch settles its report or returns a rejection.
 
 In [attempt-execution.ts](../../../may-agent/src/app/core/tasks/attempt-execution.ts),
-`runTaskExecutorAttempt()` wraps the selected execution with a shared
-`TaskAttempt`, event access and lease renewal. `runTaskAgent()`,
-`runTaskCapability()` and `runRegisteredTaskExecutor()` connect the concrete
-backends. Read the bounded-execution contract in
+`runTaskExecutorAttempt()` surrounds dispatch once. `runTaskAgent()`,
+`runTaskWorkflow()` and `runRegisteredTaskExecutor()` connect the concrete
+backends using that open `TaskAttempt`. Conversation uses it too. Core-private
+`TaskHandlerInput` still includes the claim and runtime options; adapter-facing
+`TaskAgentInput` and `TaskWorkflowInput` in `execution.ts` receive scoped
+capabilities and read-only App declarations. Read the bounded-execution contract in
 [SDK workflow.ts](../../../may-agent/packages/sdk/src/workflow.ts) alongside them.
+
+The execution choices differ in method, not Task ownership:
+
+| Selected handler | What runs | Source to follow |
+| --- | --- | --- |
+| Managed agent | A model/tool loop with the selected agent's instructions and current Task brief | `runTaskAgent()` → `adapters/executors/managed-agent.ts` → `manager.ts` |
+| Workflow | An authored bounded procedure, which can call agents and tools | `runTaskWorkflow()` → `adapters/executors/workflow.ts` → `workflow-tool.ts` |
+| Registered executor | An installed function accepting `TaskAttempt`, including native CLI adapters | `runRegisteredTaskExecutor()` → the entry in `opts.executors`; `daemon-agents.ts` installs `codex-goal` |
+| Conversation | Human context and a decision proposal for the same Task settlement | `opts.conversations.execute()` → `composition/task-execution.ts` → `conversations/turn-agent.ts` |
+
+These are alternatives for an attempt. A workflow calling an agent as a helper
+retains its enclosing execution scope; it does not claim another Task merely
+to run a step. Follow a new Task only when work is explicitly delegated through
+App input. Workspace preparation precedes the shared dispatch scope; result
+validation and durable settlement follow it.
 
 The surrounding time code has distinct purposes:
 

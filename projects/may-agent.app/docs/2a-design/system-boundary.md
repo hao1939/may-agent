@@ -396,6 +396,10 @@ All supported Host executions share rules for limits, cancellation, cleanup and
 results. Entry points and provider adapters may differ; they do not select a
 second work lifecycle. Core owns durable Task admission and result fences;
 execution helpers/adapters run the work, and composition supplies trusted scope.
+For a claimed Task, core opens one attempt scope around handler selection and
+execution, then closes its event subscriptions and lease renewal before settling
+the report. Each selected handler uses that scope; adding a backend does not
+add another Task execution lifetime.
 The [implementation and evidence](../archive/reviews/execution-consolidation-poc-20260914.md)
 record consolidation of these entry points; this is not a deployment claim.
 
