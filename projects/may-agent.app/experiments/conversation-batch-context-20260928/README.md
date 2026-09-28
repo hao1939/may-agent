@@ -23,8 +23,12 @@ selects and orders the batch, validates authority, and settles the whole turn.
 No SDK schema, acknowledgment list, scheduler, or Request executor is added.
 
 The [Message Lifecycle](../../docs/2a-design/message-lifecycle.md) owns the
-contract. Source integration and activation remain separate; this candidate has
-not been merged or deployed.
+contract. PR #264 merged on September 28 as
+`edc43e16b481e88ef1cca67dffb68dd1e4dd76f7`; its tree matches the reviewed
+`aab469a2` candidate. Local Host source and the companion design/evidence were
+integrated while preserving concurrent Scout commits. This source integration
+does not restart the Host or activate a new definition release; deployment
+remains separate.
 
 ## Controlled model comparison
 
