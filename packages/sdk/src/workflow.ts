@@ -278,6 +278,7 @@ export type AgentCallOptions = {
 /** Shared read contract. Task lists and evidence are paginated; storage stays private. */
 export type AppRead = {
   appResult(itemId: string): Promise<AppResult | null>;
+  /** Missing Task access rejects; empty results mean a scoped read found no matching work. */
   tasks: {
     list(options?: TaskListOptions): Promise<TaskPage>;
     /** Opt-in outcome grouping. Optional Host reporting capability; rejects when not installed. */

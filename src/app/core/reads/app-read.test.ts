@@ -123,6 +123,8 @@ describe("App read projections", () => {
       facts: ["canary"],
     });
     await expect(read.appResult("missing")).resolves.toBeNull();
+    await expect(read.tasks.get("current")).rejects.toThrow("Task reads require an App scope");
+    await expect(read.tasks.list()).rejects.toThrow("Task reads require an App scope");
     await expect(read.metric("missing")).rejects.toThrow("Metric reporting is unavailable");
     await expect(read.tasks.outcomes()).rejects.toThrow("Task outcome reporting is unavailable");
   });

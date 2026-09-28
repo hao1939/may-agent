@@ -105,7 +105,7 @@ export function readRuntimeTaskView(
   options?: TaskReadOptions,
 ): TaskDetail | null {
   const store = opts.taskStateConfig?.resourceStore;
-  if (!store) return null;
+  if (!store) throw new Error("Task reads require an App scope");
   // One synchronous read snapshot, including Condition observations and input.
   // SAVEPOINT also joins a caller's transaction without taking a writer lock.
   store.db.exec("SAVEPOINT task_detail_read");
@@ -289,7 +289,7 @@ export function listRuntimeTaskViews(
   const statuses = options.status ? new Set(options.status) : null;
   const after = options.cursor === undefined ? null : decodeTaskCursor(options.cursor);
   const store = opts.taskStateConfig?.resourceStore;
-  if (!store) return { items: [] };
+  if (!store) throw new Error("Task reads require an App scope");
   const ids = store.listTaskIds({ after, statuses, limit: limit + 1 });
   const pageIds = ids.slice(0, limit);
   return {
