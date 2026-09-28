@@ -3,7 +3,6 @@ import {
   taskAgentResultSchema as appTaskAgentResultSchema,
   type TaskAttempt,
   type TaskExecutor,
-  type TaskExecutorName,
 } from "@may-agent/sdk";
 import { getDb } from "../../../lib/db/connection.js";
 import { appDependencyCatalog } from "../../app-dependency-catalog.js";
@@ -31,7 +30,7 @@ import {
   type AppTaskLiveSnapshot,
 } from "./app-task-reconciler.js";
 import { ResourceTaskMutationStaleError } from "./app-task-store.js";
-import type { TaskAgentInput, WorkflowCapability } from "./execution.js";
+import type { PreparedTaskExecutor, TaskExecutionInput } from "./execution.js";
 import { normalizeTaskHandlerResult, type TaskCapabilityRun } from "./result.js";
 import { appTaskConfig, configuredRegistryEntries, type AppTaskRuntimeDescriptor } from "./runtime-definition.js";
 import type { AppTaskRuntimeOptions } from "./runtime-options.js";
@@ -51,13 +50,6 @@ export type TaskAttemptInput = {
   event?: EventEnvelope;
 };
 
-/** The selected adapter uses the already-open attempt; it does not own its lifetime. */
-export type TaskHandlerInput = TaskAttemptInput & {
-  attempt: TaskAttempt;
-  taskEvents: AppTaskEvents;
-  fallbackReason?: string;
-};
-
 export function hasLiveAppTaskSession(opts: AppTaskRuntimeOptions, sessionId: string): boolean {
   return opts.sessions?.isLive(sessionId) ?? true;
 }
@@ -73,43 +65,84 @@ export function interruptSupersededAgentSession(
   return opts.sessions.interrupt(sessionId, reason, taskId);
 }
 
-export async function runTaskWorkflow(
-  input: TaskHandlerInput & { capability: WorkflowCapability },
-): Promise<TaskCapabilityRun> {
-  const { opts, descriptor, claim, ...execution } = input;
-  if (!opts.workflows)
-    return {
-      handlerResult: {
-        state: "error",
-        summary: "Task workflow runner is not installed",
-        facts: [],
-        actions: [],
-      },
-      runId: null,
-      unavailable: true,
-    };
-  return opts.workflows.execute({
-    ...execution,
-    handler: claim.handler,
-    source: {
-      projectRoot: opts.projectRoot,
-      projectsRoot: opts.projectsRoot,
-      persistDir: opts.persistDir,
-      agentsRoot: opts.agentsRoot,
-      sharedRoot: opts.sharedRoot,
-    },
-    descriptor: {
-      id: descriptor.id,
-      appDir: descriptor.appDir,
-      projectDir: descriptor.projectDir,
-      app: descriptor.app,
-    },
-    executionTimeoutMs: APP_TASK_WORKFLOW_TIMEOUT_MS,
-    taskRead: taskReads(opts, descriptor),
+/** Bind backend configuration once. Every selected method receives the same Task surface. */
+export async function resolveTaskExecutor(
+  opts: AppTaskRuntimeOptions,
+  descriptor: AppTaskRuntimeDescriptor,
+  claim: AppTaskClaim,
+): Promise<PreparedTaskExecutor> {
+  const workflow = claim.handler.startsWith("workflow:") ? claim.handler.slice("workflow:".length) : "";
+  const source = {
+    projectRoot: opts.projectRoot,
+    projectsRoot: opts.projectsRoot,
+    persistDir: opts.persistDir,
+    agentsRoot: opts.agentsRoot,
+    sharedRoot: opts.sharedRoot,
+  };
+  const workspace = descriptor.app.workspace?.kind === "git" ? "task" : "shared";
+  const unavailable = (summary: string): TaskCapabilityRun => ({
+    handlerResult: { state: "error", summary, facts: [], actions: [] },
+    runId: null,
+    unavailable: true,
   });
+  if (workflow) {
+    const runner = opts.workflows;
+    const inspection = await runner?.inspect({ source, appDir: descriptor.appDir, agent: claim.agent, workflow });
+    return {
+      workspace: inspection?.workspace ?? "shared",
+      async execute(input) {
+        if (!runner) return unavailable("Task workflow runner is not installed");
+        return runner.execute({ ...input, source, workflow, executionTimeoutMs: APP_TASK_WORKFLOW_TIMEOUT_MS });
+      },
+    };
+  }
+  const name = claim.handler.startsWith("executor:")
+    ? claim.handler.slice("executor:".length)
+    : claim.handler.startsWith("cli:")
+      ? claim.handler.slice("cli:".length)
+      : "";
+  if (name) {
+    const execute = opts.executors?.[name];
+    return {
+      workspace,
+      async execute(input) {
+        if (!execute) return unavailable(`Task executor ${name} is not registered`);
+        return runRegisteredTaskExecutor(input, name, execute);
+      },
+    };
+  }
+  const runner = opts.agents;
+  return {
+    workspace,
+    async execute(input) {
+      // Inspect takeover acceptance inside the active attempt, so cancellation
+      // during this asynchronous read still reaches the selected agent.
+      const handoffWorkflow =
+        claim.handoff && claim.intent.workflow
+          ? await opts.workflows?.inspect({
+              source,
+              appDir: descriptor.appDir,
+              agent: claim.agent,
+              workflow: claim.intent.workflow,
+            })
+          : undefined;
+      if (claim.handoff && claim.intent.workflow && !handoffWorkflow?.available)
+        return unavailable(handoffWorkflow?.error ?? "Task workflow runner is not installed");
+      if (!runner?.available(claim.agent)) return unavailable(`Task agent ${claim.agent} is not available`);
+      const report = await runner.execute({
+        ...input,
+        executionTimeoutMs: APP_TASK_AGENT_TIMEOUT_MS,
+        dependencies: appDependencyCatalog(configuredRegistryEntries(opts), descriptor.id),
+        sessionStarted: (id) => {
+          recordAppTaskAttemptSession(appTaskConfig(descriptor), claim, id);
+        },
+      });
+      return handoffWorkflow?.verifier ? { ...report, verifier: handoffWorkflow.verifier } : report;
+    },
+  };
 }
 
-export function taskReads(opts: AppTaskRuntimeOptions, descriptor: AppTaskRuntimeDescriptor): TaskAgentInput["taskRead"] {
+export function taskReads(opts: AppTaskRuntimeOptions, descriptor: AppTaskRuntimeDescriptor): TaskExecutionInput["taskRead"] {
   const config = { taskStateConfig: appTaskConfig(descriptor) };
   return {
     list: async (options) => listRuntimeTaskViews(config, options),
@@ -294,13 +327,15 @@ function runtimeTaskAttempt(input: TaskAttemptInput): RuntimeTaskAttempt {
 }
 
 /**
- * Open one fenced Task surface around handler selection and execution.
+ * Open one fenced Task surface for the already-selected executor.
  * Core owns lease renewal, live-event observation and cleanup on every exit;
  * the handler returns a proposal for the caller to settle after this closes.
  */
-export async function runTaskExecutorAttempt(input: TaskAttemptInput & {
-  execute: (attempt: TaskAttempt, events: AppTaskEvents) => Promise<TaskCapabilityRun>;
-}): Promise<TaskCapabilityRun> {
+export async function runTaskExecutorAttempt(
+  input: TaskAttemptInput & {
+    execute: PreparedTaskExecutor["execute"];
+  },
+): Promise<TaskCapabilityRun> {
   const taskAttempt = runtimeTaskAttempt(input);
   const leaseTimer = setInterval(
     () => {
@@ -314,7 +349,31 @@ export async function runTaskExecutorAttempt(input: TaskAttemptInput & {
   );
   leaseTimer.unref();
   try {
-    const result = await input.execute(taskAttempt.attempt, taskAttempt.events);
+    const { opts, descriptor, claim } = input;
+    const result = await input.execute({
+      descriptor: {
+        id: descriptor.id,
+        appDir: descriptor.appDir,
+        projectDir: descriptor.projectDir,
+        app: descriptor.app,
+      },
+      attempt: taskAttempt.attempt,
+      taskEvents: taskAttempt.events,
+      taskRead: taskReads(opts, descriptor),
+      executionPaths: input.executionPaths,
+      childContext: input.childContext,
+      taskSnapshot: input.taskSnapshot,
+      event: input.event,
+      ...(claim.handoff
+        ? {
+            fallbackReason: `${claim.handoff.reason}: ${claim.handoff.summary}${
+              claim.handoff.facts.length
+                ? `\nHandoff facts:\n${claim.handoff.facts.map((fact) => `- ${fact}`).join("\n")}`
+                : ""
+            }`,
+          }
+        : {}),
+    });
     const acceptedLiveEventIds = taskAttempt.acceptedLiveEventIds();
     return acceptedLiveEventIds.length > 0 ? { ...result, acceptedLiveEventIds } : result;
   } finally {
@@ -323,47 +382,18 @@ export async function runTaskExecutorAttempt(input: TaskAttemptInput & {
   }
 }
 
-export async function runTaskAgent(input: TaskHandlerInput): Promise<TaskCapabilityRun> {
-  const { opts, descriptor, claim, ...execution } = input;
-  if (!opts.agents?.available(claim.agent))
-    return {
-      handlerResult: {
-        state: "error",
-        summary: `Task agent ${claim.agent} is not available`,
-        facts: [],
-        actions: [],
-      },
-      runId: null,
-      unavailable: true,
-    };
-  return opts.agents.execute({
-    ...execution,
-    executionTimeoutMs: APP_TASK_AGENT_TIMEOUT_MS,
-    taskRead: taskReads(opts, descriptor),
-    descriptor: {
-      id: descriptor.id,
-      appDir: descriptor.appDir,
-      projectDir: descriptor.projectDir,
-      app: descriptor.app,
-    },
-    dependencies: appDependencyCatalog(configuredRegistryEntries(opts), descriptor.id),
-    sessionStarted: (id) => {
-      recordAppTaskAttemptSession(appTaskConfig(descriptor), claim, id);
-    },
-  });
-}
-
-export async function runRegisteredTaskExecutor(input: TaskHandlerInput & {
-  name: TaskExecutorName;
-  execute: TaskExecutor;
-}): Promise<TaskCapabilityRun> {
-  const runId = `executor:${input.name}:${input.claim.attemptId}`;
+async function runRegisteredTaskExecutor(
+  input: TaskExecutionInput,
+  name: string,
+  execute: TaskExecutor,
+): Promise<TaskCapabilityRun> {
+  const runId = `executor:${name}:${input.attempt.attemptId}`;
   try {
-    const result = await input.execute(input.attempt);
+    const result = await execute(input.attempt);
     return {
       handlerResult: normalizeTaskHandlerResult(
         result,
-        { type: "done", summary: `${input.name} executor completed`, runId },
+        { type: "done", summary: `${name} executor completed`, runId },
         {
           allowNeedsAgent: true,
           validateAction: input.descriptor.app.tasks?.validateAction,
@@ -376,7 +406,7 @@ export async function runRegisteredTaskExecutor(input: TaskHandlerInput & {
     return {
       handlerResult: {
         state: "error",
-        summary: `${input.name} executor failed: ${error instanceof Error ? error.message : String(error)}`,
+        summary: `${name} executor failed: ${error instanceof Error ? error.message : String(error)}`,
         facts: [],
         actions: [],
       },

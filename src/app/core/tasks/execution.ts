@@ -45,7 +45,7 @@ export type TaskConversationRunner = {
     registry: AppRegistrySnapshot;
     signal: AbortSignal;
     execution: Pick<
-      TaskAgentInput,
+      TaskExecutionInput,
       "descriptor" | "attempt" | "executionPaths" | "taskEvents" | "taskRead" | "taskSnapshot"
     >;
     getTaskApp: ConversationTaskAppResolver;
@@ -57,20 +57,26 @@ export type TaskConversationRunner = {
 export type TaskExecutionApp = { id: string; appDir: string; projectDir: string; app: AppDefinition };
 
 /** Attempt owns identity, desired work and outputs; the rest is Host-only execution context. */
-type TaskExecutionInput = {
+export type TaskExecutionInput = {
   descriptor: TaskExecutionApp;
   attempt: TaskAttempt;
   executionPaths: AppTaskExecutionPaths;
   childContext: AppTaskChildContext;
   event?: EventEnvelope;
   fallbackReason?: string;
-  executionTimeoutMs: number;
-};
-
-export type TaskAgentInput = TaskExecutionInput & {
   taskEvents: AppTaskEvents;
   taskRead: AppRead["tasks"];
   taskSnapshot: AppTaskLiveSnapshot;
+};
+
+/** Resolved for one claim; workspace selection precedes the shared invocation. */
+export type PreparedTaskExecutor = {
+  workspace: "shared" | "task" | { kind: "task"; baseBranch: string };
+  execute(input: TaskExecutionInput): Promise<TaskCapabilityRun>;
+};
+
+export type TaskAgentInput = TaskExecutionInput & {
+  executionTimeoutMs: number;
   dependencies: ReturnType<typeof appDependencyCatalog>;
   sessionStarted(sessionId: string): void;
 };
@@ -85,12 +91,6 @@ export type TaskAgentRunner = {
   snapshot(): TaskAgentRunner;
 };
 
-export type WorkflowCapability = {
-  workflow: string;
-  agent?: string;
-  task: string;
-};
-
 /** Immutable definition roots selected by composition, not the mutable checkout. */
 export type TaskDefinitionSource = {
   projectsRoot: string;
@@ -103,18 +103,14 @@ export type TaskDefinitionSource = {
 export type TaskWorkflowInspection = {
   available: boolean;
   error: string | null;
-  workspace: "shared" | "task" | { kind: "task"; baseBranch: string };
+  workspace: PreparedTaskExecutor["workspace"];
   verifier?: { name: string; sourcePath: string; verify: TaskVerifier };
 };
 
 export type TaskWorkflowInput = TaskExecutionInput & {
   source: TaskDefinitionSource;
-  taskEvents: AppTaskEvents;
-  capability: WorkflowCapability;
-  /** Actual selected handler, including workflow-to-agent recovery decisions. */
-  handler: string;
-  taskSnapshot: AppTaskLiveSnapshot;
-  taskRead: AppRead["tasks"];
+  workflow: string;
+  executionTimeoutMs: number;
 };
 
 /** Host-private workflow capability. It proposes results; core owns admission. */

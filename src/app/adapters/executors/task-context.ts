@@ -1,11 +1,11 @@
-import type { TaskAgentInput } from "../../core/tasks/execution.js";
+import type { TaskExecutionInput, TaskAgentInput } from "../../core/tasks/execution.js";
 import type { TaskExecutionContext } from "../../../lib/task-execution-context.js";
 import type { SubagentDefinition } from "../../../lib/types.js";
 import { APP_TASK_RECOVERY_OWNER } from "../../core/tasks/session-binding.js";
 
 /** Both entry points expose the same owning Task and fenced capabilities. */
 export function taskExecutionContext(
-  input: Pick<TaskAgentInput, "descriptor" | "attempt" | "executionPaths" | "taskEvents" | "taskRead" | "taskSnapshot"> & Partial<Pick<TaskAgentInput, "dependencies">>,
+  input: Pick<TaskExecutionInput, "descriptor" | "attempt" | "executionPaths" | "taskEvents" | "taskRead" | "taskSnapshot"> & Partial<Pick<TaskAgentInput, "dependencies">>,
   definitions?: ReadonlyMap<string, SubagentDefinition>,
 ): TaskExecutionContext {
   const { attempt, descriptor } = input;

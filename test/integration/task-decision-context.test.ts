@@ -16,7 +16,7 @@ import {
   deferAppTask,
   recordAppTaskTrigger,
 } from "../../src/app/core/tasks/app-task-reconciler.js";
-import { runTaskAgent, runTaskExecutorAttempt, taskReads } from "../../src/app/core/tasks/attempt-execution.js";
+import { resolveTaskExecutor, runTaskExecutorAttempt, taskReads } from "../../src/app/core/tasks/attempt-execution.js";
 import type { AppTaskRuntimeDescriptor } from "../../src/app/core/tasks/runtime-definition.js";
 import type { AppTaskRuntimeOptions } from "../../src/app/core/tasks/runtime-options.js";
 import { currentAgentSessionId } from "../../src/lib/agent-session-context.js";
@@ -227,7 +227,7 @@ test("current Task context reaches a late helper and survives settlement into a 
       };
       const run = await runTaskExecutorAttempt({
         ...execution,
-        execute: (attempt, taskEvents) => runTaskAgent({ ...execution, attempt, taskEvents }),
+        execute: (await resolveTaskExecutor(opts, descriptor, active)).execute,
       });
       expect(run.handlerResult.state).toBe("waiting");
       deferAppTask(config, active, {

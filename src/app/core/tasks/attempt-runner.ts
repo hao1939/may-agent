@@ -34,12 +34,8 @@ import { ResourceTaskMutationStaleError, type AppTaskContext } from "./app-task-
 import {
   hasLiveAppTaskSession,
   interruptSupersededAgentSession,
-  runRegisteredTaskExecutor,
-  runTaskAgent,
-  taskReads,
-  runTaskWorkflow,
+  resolveTaskExecutor,
   runTaskExecutorAttempt,
-  type TaskHandlerInput,
 } from "./attempt-execution.js";
 import { type AppTaskDispatch } from "./controller.js";
 import {
@@ -56,6 +52,7 @@ import {
 } from "./runtime-definition.js";
 import type { AppTaskRuntimeOptions } from "./runtime-options.js";
 import type { PreparedTaskWorkspace } from "./workspace.js";
+import type { PreparedTaskExecutor } from "./execution.js";
 
 export type AppTaskTiming = {
   dispatch: AppTaskDispatch;
@@ -159,7 +156,6 @@ async function runClaimedTask(
 ): Promise<string[]> {
   const intent = claim.intent;
   const event = claim.trigger as EventEnvelope | undefined;
-  const workflowKey = claim.handler.startsWith("workflow:") ? claim.handler.slice("workflow:".length) : "";
   let executionPaths: AppTaskExecutionPaths;
   let taskWorkspace: PreparedTaskWorkspace | undefined;
   let workspaceFinalized = false;
@@ -190,25 +186,12 @@ async function runClaimedTask(
     // between separate claims).
     await new Promise<void>((resolve) => setTimeout(resolve, 0));
 
-    const workflowWorkspace =
-      workflowKey && opts.workflows
-        ? (
-            await opts.workflows.inspect({
-              source: opts,
-              appDir: descriptor.appDir,
-              agent: claim.agent,
-              workflow: workflowKey,
-            })
-          ).workspace
-        : undefined;
-    const workflowNeedsWorktree =
-      workflowWorkspace === "task" || (typeof workflowWorkspace === "object" && workflowWorkspace.kind === "task");
-    // Both execution paths share workspace lineage, admission fencing, and
-    // failure handling. Only the workflow may override the App's base branch.
-    if (!conversation && (workflowNeedsWorktree || (!workflowKey && descriptor.app.workspace?.kind === "git"))) {
+    const executor = await resolveTaskHandler(opts, descriptor, claim, conversation);
+    const workspace = executor.workspace;
+    if (workspace !== "shared") {
       try {
         if (descriptor.app.workspace?.kind !== "git") {
-          throw new Error(`Workflow ${workflowKey} requires a task worktree but app workspace is not Git`);
+          throw new Error(`Task handler ${claim.handler} requires a task worktree but app workspace is not Git`);
         }
         if (!opts.workspaces) throw new Error("Task workspace backend is not installed");
         const previous = Object.values(config.resourceStore.readTaskContext({ taskIds: [claim.taskId] }).attempts ?? {})
@@ -225,8 +208,8 @@ async function runClaimedTask(
           taskId: claim.taskId,
           generation: claim.generation,
           baseBranch:
-            typeof workflowWorkspace === "object"
-              ? workflowWorkspace.baseBranch
+            typeof workspace === "object"
+              ? workspace.baseBranch
               : (descriptor.app.workspace.branch ?? "dev"),
           previous,
         });
@@ -248,10 +231,15 @@ async function runClaimedTask(
       }
     }
     // One attempt lifetime surrounds dispatch; settlement follows after it closes.
-    const execution = { opts, descriptor, claim, executionPaths, childContext, taskSnapshot, event };
     const report = await runTaskExecutorAttempt({
-      ...execution,
-      execute: (attempt, taskEvents) => executeTaskHandler({ ...execution, attempt, taskEvents, conversation }),
+      opts,
+      descriptor,
+      claim,
+      executionPaths,
+      childContext,
+      taskSnapshot,
+      event,
+      execute: executor.execute,
     });
 
     const result = report.handlerResult;
@@ -611,7 +599,7 @@ async function runClaimedTask(
       run.unavailable ||
       run.handlerBlocked ||
       run.workspacePreparationFailed ||
-      (workflowKey && result.state === "needs-agent") ||
+      (claim.handler.startsWith("workflow:") && result.state === "needs-agent") ||
       result.resultRejected;
     const details = diagnostic
       ? {
@@ -681,107 +669,44 @@ function conversationTaskApp(opts: AppTaskRuntimeOptions, descriptor: AppTaskRun
   return { app: target.app, config: appTaskConfig(target) };
 }
 
-/** Select the recorded handler. All paths share Task lifetime and result settlement. */
-async function executeTaskHandler(
-  input: TaskHandlerInput & { conversation: boolean },
-): Promise<TaskCapabilityRun> {
-  const { conversation, ...context } = input;
-  const { opts, descriptor, claim, attempt, taskEvents } = context;
-  const execution = {
-    ...context,
-    ...(claim.handoff
-      ? {
-          fallbackReason: `${claim.handoff.reason}: ${claim.handoff.summary}${
-            claim.handoff.facts.length
-              ? `\nHandoff facts:\n${claim.handoff.facts.map((fact) => `- ${fact}`).join("\n")}`
-              : ""
-          }`,
-        }
-      : {}),
+/** Conversation composes trusted state reads; its model still receives only scoped capabilities. */
+async function resolveTaskHandler(
+  opts: AppTaskRuntimeOptions,
+  descriptor: AppTaskRuntimeDescriptor,
+  claim: AppTaskClaim,
+  conversation: boolean,
+): Promise<PreparedTaskExecutor> {
+  if (!conversation) return resolveTaskExecutor(opts, descriptor, claim);
+  return {
+    workspace: "shared",
+    async execute(input) {
+      if (!descriptor.app.conversation || !opts.conversations)
+        throw new Error(`App ${descriptor.id} Conversation executor is unavailable`);
+      const registry = opts.appRegistrySnapshot ?? opts.appRegistry?.snapshot();
+      if (!registry) throw new Error("Conversation execution requires an installed App registry");
+      const proposal = await opts.conversations.execute({
+        config: appTaskConfig(descriptor),
+        claim,
+        app: descriptor.app,
+        registry,
+        signal: input.attempt.signal,
+        execution: input,
+        getTaskApp: (appId) => conversationTaskApp(opts, descriptor, appId),
+      });
+      return {
+        handlerResult: {
+          state: "converged",
+          summary: proposal.decision.summary,
+          response: proposal.decision.response,
+          result: { conversation: proposal.decision },
+          facts: proposal.decision.facts ?? [],
+          actions: [],
+        },
+        runId: claim.attemptId,
+        conversation: proposal,
+      };
+    },
   };
-  if (conversation) {
-    if (!descriptor.app.conversation || !opts.conversations)
-      throw new Error(`App ${descriptor.id} Conversation executor is unavailable`);
-    const registry = opts.appRegistrySnapshot ?? opts.appRegistry?.snapshot();
-    if (!registry) throw new Error("Conversation execution requires an installed App registry");
-    const proposal = await opts.conversations.execute({
-      config: appTaskConfig(descriptor),
-      claim,
-      app: descriptor.app,
-      registry,
-      signal: attempt.signal,
-      execution: {
-        descriptor,
-        attempt,
-        taskEvents,
-        taskRead: taskReads(opts, descriptor),
-        taskSnapshot: input.taskSnapshot,
-        executionPaths: input.executionPaths,
-      },
-      getTaskApp: (appId) => conversationTaskApp(opts, descriptor, appId),
-    });
-    return {
-      handlerResult: {
-        state: "converged",
-        summary: proposal.decision.summary,
-        response: proposal.decision.response,
-        result: { conversation: proposal.decision },
-        facts: proposal.decision.facts ?? [],
-        actions: [],
-      },
-      runId: claim.attemptId,
-      conversation: proposal,
-    };
-  }
-  const workflowKey = claim.handler.startsWith("workflow:") ? claim.handler.slice("workflow:".length) : "";
-  if (workflowKey) {
-    return runTaskWorkflow({
-      ...execution,
-      capability: { workflow: workflowKey, agent: claim.agent, task: `Reconcile task through workflow ${workflowKey}` },
-    });
-  }
-  const executorKey = claim.handler.startsWith("executor:")
-    ? claim.handler.slice("executor:".length)
-    : claim.handler.startsWith("cli:")
-      ? claim.handler.slice("cli:".length)
-      : "";
-  if (executorKey) {
-    const registered = opts.executors?.[executorKey];
-    if (registered) return runRegisteredTaskExecutor({ ...execution, name: executorKey, execute: registered });
-    return {
-      handlerResult: {
-        state: "error",
-        summary: `Task executor ${executorKey} is not registered`,
-        facts: [],
-        actions: [],
-      },
-      runId: null,
-      unavailable: true,
-    };
-  }
-  const handoffWorkflow =
-    claim.handoff && claim.intent.workflow
-      ? await opts.workflows?.inspect({
-          source: opts,
-          appDir: descriptor.appDir,
-          agent: claim.agent,
-          workflow: claim.intent.workflow,
-        })
-      : undefined;
-  if (claim.handoff && claim.intent.workflow && !handoffWorkflow?.available) {
-    return {
-      handlerResult: {
-        state: "error",
-        summary: handoffWorkflow?.error ?? "Task workflow runner is not installed",
-        facts: [],
-        actions: [],
-      },
-      runId: null,
-      unavailable: true,
-    };
-  }
-  const report = await runTaskAgent(execution);
-  return handoffWorkflow?.verifier ? { ...report, verifier: handoffWorkflow.verifier } : report;
 }
 
 /** Validate declarations before admitting dependencies; stored peer waits stay with the reconciler. */

@@ -84,15 +84,16 @@ async function executeTaskWorkflow(
   definitions: ReadonlyMap<string, SubagentDefinition> | undefined,
 ): Promise<TaskCapabilityRun> {
   const opts = input.source;
-  const { descriptor, capability, attempt, event } = input;
+  const { descriptor, workflow, attempt, event } = input;
   const taskDetail = attempt.task;
   const reconciliationEvents = attempt.events;
   const runtime = requireWorkflowRuntimeOptions(opts);
-  const agentName = capability.agent ?? attempt.role.agent;
+  const agentName = attempt.role.agent;
+  const handler = `workflow:${workflow}`;
   const trace = childEventTrace(event);
   const paths = appWorkflowRuntimePaths(opts, descriptor, agentName);
   const task = [
-    capability.task,
+    `Reconcile task through workflow ${workflow}`,
     `app: ${descriptor.appDir}`,
     `project: ${descriptor.projectDir}`,
     "",
@@ -105,7 +106,7 @@ async function executeTaskWorkflow(
         generation: taskDetail.generation,
         resourceVersion: attempt.resourceVersion,
         agent: attempt.role.agent,
-        handler: input.handler,
+        handler,
 
         outcome: taskDetail.outcome,
         acceptance: taskDetail.acceptance,
@@ -132,8 +133,8 @@ async function executeTaskWorkflow(
     owner: `agent:${attempt.role.agent}`,
     target: { appId: descriptor.id },
     data: {
-      handler: input.handler,
-      workflow: capability.workflow,
+      handler,
+      workflow,
       source: agentName,
       projectId: descriptor.id,
       recoveryOwner: APP_TASK_RECOVERY_OWNER,
@@ -157,7 +158,7 @@ async function executeTaskWorkflow(
     });
     const taskContext = taskExecutionContext(input, definitions);
     const { result, runId, verifier } = await runWorkflowDirect({
-      workflowName: capability.workflow,
+      workflowName: workflow,
       task,
       manager,
       agentDefinitions: definitions,
@@ -212,8 +213,8 @@ async function executeTaskWorkflow(
       owner: `agent:${attempt.role.agent}`,
       target: { appId: descriptor.id },
       data: {
-        handler: input.handler,
-        workflow: capability.workflow,
+        handler,
+        workflow,
         source: agentName,
         projectId: descriptor.id,
         taskId: taskDetail.id,
@@ -248,8 +249,8 @@ async function executeTaskWorkflow(
       owner: `agent:${attempt.role.agent}`,
       target: { appId: descriptor.id },
       data: {
-        handler: input.handler,
-        workflow: capability.workflow,
+        handler,
+        workflow,
         source: agentName,
         projectId: descriptor.id,
         taskId: taskDetail.id,

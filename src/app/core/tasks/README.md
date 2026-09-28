@@ -12,8 +12,10 @@ Read in this order:
 1. `app-task-capability.ts` is the private entry point used by Host composition.
 2. `controller.ts` and `queue.ts` select ready work under shared capacity.
 3. `attempt-runner.ts: runTaskAttempt()` claims work; `runClaimedTask()` prepares
-   its workspace, opens one attempt around `executeTaskHandler()`, then settles
-   the returned report. `attempt-execution.ts: runTaskExecutorAttempt()` owns the
+   the selected executor and workspace, opens one attempt around its `execute()`
+   function, then settles the returned report. `attempt-execution.ts:
+   resolveTaskExecutor()` binds provider configuration and workspace requirements;
+   `runTaskExecutorAttempt()` owns the
    shared Task context, lease renewal, event observation and cleanup. Agent,
    workflow, registered-executor and Conversation handlers use that open attempt.
    `dependency-admission.ts` admits typed delegation and recovers exact waits.
