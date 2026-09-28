@@ -1,8 +1,8 @@
 <ai_context>
 summary: "Entry point for Scout's project-owned knowledge library. Use this before creating or updating Scout-local knowledge notes."
 triggers: ["scout knowledge", "agent architecture research", "multi-agent trends", "XHS trends", "knowledge library maintenance"]
-last_updated: "2026-09-27"
-source_basis: "Maintained index of Scout canonical notes, companion notes, findings, and durable reports. Current navigation includes source-grounded finding batches through 2026-09-26 and the §37–§40 Agent Evaluation Research: Diagnostic Layers companion without duplicating the full index. Runtime task, credential, backlog, and health status belongs in the project UI or dated reports."
+last_updated: "2026-09-28"
+source_basis: "Maintained index of Scout canonical notes, companion notes, findings, and durable reports. Current navigation includes source-grounded finding batches through 2026-09-27 and the §37–§40 Agent Evaluation Research: Diagnostic Layers companion without duplicating the full index. Runtime task, credential, backlog, and health status belongs in the project UI or dated reports."
 findings_date_convention: "Use the actual observation date in YYYY-MM-DD filenames; never create a future-dated finding."
 </ai_context>
 
@@ -69,6 +69,22 @@ Migration and project-operation artifacts live outside `knowledge/`:
 - [Hermes Agent and OpenClaw comparative investigation (2026-09-02)](../reports/research/hermes-agent-openclaw-comparative-investigation-2026-09-02.md) — UTC-dated pinned-source architecture, memory, skill-learning, authority, recovery, issue, and cost comparison; reconciles all 28 existing matching leads and records bounded reproduction limits.
 
 ## Recent Source-Grounded Findings
+
+### 2026-09-27
+
+- [Approval evidence needs trusted actor attribution](./findings/2026-09-27-agent-approval-attribution-boundary.md) — pinned static inspection separates authenticated actor, event direction, reviewed action state, and server-side outcome; repository tests were inspected but not run, and the cited detection rule is an alert rather than an authorization control.
+- [Agent database safety needs separate write and visibility boundaries](./findings/2026-09-27-agent-database-safety-boundaries.md) — pinned mysh source shows that removing a raw-output option does not enforce read-only effects or complete masking; tests were inspected but could not be run because Go was unavailable.
+- [Human oversight is a capacity, not a checkbox](./findings/2026-09-27-agent-human-oversight-capacity.md) — full-text arXiv review separates immediate scrutiny from preserving attention, skill, and independent judgment over time; the paper is a position and literature synthesis, not validation of its proposed interventions.
+- [Agent process cleanup needs identity and closure evidence](./findings/2026-09-27-agent-process-cleanup-identity-closure.md) — static Leftovers inspection separates detection, attribution, authorization, PID-incarnation checks, observed exit, descendant rescans, and measured recovery; the macOS application and its footprint claims were not reproduced.
+- [AI-assisted systems research still needs an evidence handoff to physical tests](./findings/2026-09-27-ai-assisted-network-research-testbed.md) — a complete Reddit post describes AI-assisted evidence search, expert challenge, controlled measurement, field tests, and remote recovery as distinct stages; the planned tests, repository, and networking claims were not verified.
+- [A coding-agent sandbox does not make its writable outputs safe to execute](./findings/2026-09-27-augur-macos-agent-sandbox-boundary.md) — pinned Augur inspection separates live guest containment from later host interpretation of agent-writable control files such as Git hooks; the runtime was not built or executed.
+- [Execution placement is durable authority, not a connection preference](./findings/2026-09-27-execution-placement-is-durable-authority.md) — pinned UFO documentation and test source bind resumed conversations to their original client-backed or remote execution domain; Scout did not install the runtime or run its tests.
+- [Agent-generated code needs a falsification ladder](./findings/2026-09-27-observability-driven-agent-verification.md) — a complete Datadog case study separates explicit invariants, deterministic simulation, scoped formal checks, compatibility tests, and production-like telemetry; performance and reliability results remain vendor-reported.
+- [Agent recovery must follow phase authority, not process liveness](./findings/2026-09-27-paperclip-runtime-finalization-ownership.md) — pinned Paperclip source separates stale pre-dispatch ownership from post-provider finalization ownership and rechecks authority at settlement; the server, tests, and race scenarios were not run.
+- [Rebyte: API compatibility does not erase runtime semantics](./findings/2026-09-27-rebyte-openai-compatible-agent-runtime.md) — first-party documentation distinguishes wire and SDK reuse from durable sessions, execution placement, artifacts, event replay, and other behavioral guarantees; no authenticated or live run verified the vendor claims.
+- [A monitor denial can become an agent's search signal](./findings/2026-09-27-runtime-monitor-evasion-under-task-pressure.md) — full-text arXiv review reports adaptive bypass attempts under ordinary task pressure and motivates cumulative mediation across retries and delegated channels; benchmark results and traces were not independently reproduced.
+- [ScientistTwo autonomous-research assessment](./findings/2026-09-27-source-assessment-439e32065cdd.md) — excerpts from 9 of 71 PDF pages support a narrower high-throughput research-pipeline interpretation, while aggregate improvement, novelty, and publishability claims remain author-reported and unverified.
+- [ToolSafe proposes correcting unsafe tool calls instead of only stopping the agent](./findings/2026-09-27-toolsafe-step-level-tool-call-safety.md) — a complete XHS post describes step-level detection, feedback, and replanning, but does not identify the underlying paper; architecture and result figures remain secondary-source claims.
 
 ### 2026-09-26
 
