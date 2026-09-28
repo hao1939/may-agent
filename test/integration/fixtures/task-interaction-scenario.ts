@@ -1,3 +1,4 @@
+import { readConversationReplyContext } from "../../fixtures/conversation-prompt.js";
 import assert from "node:assert/strict";
 import { createServer } from "node:http";
 import type { AddressInfo } from "node:net";
@@ -55,7 +56,7 @@ async function withProvider(
       );
       const prompt = texts.find((text: string) => text.includes("## Input and context"));
       assert(prompt, "Worker must send the normal Conversation context to the provider");
-      const context = JSON.parse(prompt.match(/## Input and context\n```json\n([\s\S]*?)\n```/)![1]!);
+      const context = readConversationReplyContext(prompt);
       contexts.push(context);
       const toolError = payload.messages.find((message: { role: string; content: unknown }) => message.role === "tool");
       assert.equal(toolError, undefined, JSON.stringify(toolError));

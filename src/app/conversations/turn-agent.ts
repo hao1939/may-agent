@@ -87,11 +87,14 @@ function conversationInputPrompt(
   registry: Pick<AppRegistry, "snapshot">,
 ): string {
   const apps = appDependencyCatalog(registry.snapshot().entries, app.id);
+  const { id, source, input, inputs, ...context } = inputContext;
   return [
-    `Respond to the admitted input for App ${app.id}, using its Conversation result contract.`,
+    `Consider the admitted inputs for App ${app.id} together, in order, using its Conversation result contract.`,
+    "The inputs are the whole current batch. replyTo identifies the response destination; every input still needs consideration.",
+    "Preserve independent asks while applying corrections to the same ask. Save accepted unfinished asks with conversation_request before work; use requestUpdates for their final disposition. Context-only updates can be considered without creating a Request.",
     "## Input and context",
     "```json",
-    JSON.stringify(inputContext, null, 2),
+    JSON.stringify({ inputs: inputs ?? [{ id, source, input }], replyTo: { id, source }, ...context }, null, 2),
     "```",
     "",
     "## Installed Apps",

@@ -5,7 +5,7 @@ Topics and accepted Requests; the Task owns execution, waits, retry and closure.
 This directory supplies context and agent judgment for that role. It has no
 controller or independent execution claim.
 
-## Follow one input
+## Follow one turn
 
 ```text
 human input / linked Task outcome / relevant timer-discovered change
@@ -17,7 +17,10 @@ human input / linked Task outcome / relevant timer-discovered change
 ```
 
 [`context.ts`](context.ts) selects bounded messages, Topics, Requests and canonical
-Task observations. [`turn-agent.ts`](turn-agent.ts) invokes the model/tool runner
+Task observations. [`turn-agent.ts`](turn-agent.ts) presents the whole claimed
+input batch and labels the reply destination separately. Independent asks remain
+visible together; the App judges corrections, accepted Requests and fulfillment.
+It then invokes the model/tool runner
 and supplies the core-selected result schema to the finish tool. The agent can answer, request a handoff,
 or apply an authorized control; it does not manage admission receipts or retry.
 The `conversation_context` tool uses a read capability bound to the admitted

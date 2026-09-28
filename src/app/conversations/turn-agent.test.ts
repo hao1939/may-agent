@@ -158,6 +158,29 @@ describe("conversational attempt contract", () => {
     expect(options).toMatchObject({ recoveryOwner: "app-task-reconciler", taskBinding });
   });
 
+  it.each([false, true])("presents each admitted input once, independently of reply routing (batch: %s)", async (batch) => {
+    const report = {
+      id: "report-input", source: { kind: "system" as const, id: "report-source" },
+      input: { kind: "message", data: { text: "A separate review report arrived." } },
+    };
+    const inputs = batch ? [report, request] : [request];
+    const conversation = {
+      id: "chat", owner: "may", messages: [],
+      requests: [{ id: "earlier-ask", revision: 1, scope: "Compare the options", status: "open" as const,
+        createdAt: 1, updatedAt: 1 }],
+    };
+    const current = { ...request, conversation, ...(batch ? { inputs } : {}) };
+    const before = structuredClone(current);
+    const { prompt } = await attempt(current);
+    const presented = JSON.parse(prompt.match(/## Input and context\n```json\n([\s\S]*?)\n```/)![1]!);
+    expect(presented.inputs).toEqual(inputs);
+    expect(presented.replyTo).toEqual({ id: request.id, source: request.source });
+    expect(presented.conversation).toEqual(conversation);
+    expect(prompt.split(request.input.data.text)).toHaveLength(2);
+    expect(presented.input).toBeUndefined();
+    expect(current).toEqual(before);
+  });
+
   it.each([undefined, { id: "other", owner: "foreign", messages: [] }])(
     "scoped reads work with omitted or misleading presentation (%j)",
     async (conversation) => {
