@@ -1,7 +1,7 @@
 # APPA: Agentic Permissions Policy Algebra for Taint Confinement
 
 Date: 2026-07-28
-Last updated: 2026-09-14
+Last updated: 2026-09-28
 Source: https://arxiv.org/abs/2607.24625v1
 
 ## Summary
@@ -67,6 +67,46 @@ and implementation evidence, not adoption evidence.
 [OpenAPPA repository](https://github.com/archestra-ai/OpenAPPA);
 [Claude Code integration contract](https://github.com/archestra-ai/OpenAPPA/blob/987d7506a37c8b43045b13b71bae8ec0e535b5ef/marketplace/plugins/claude-code/README.md);
 [documented Bash coverage gap](https://github.com/archestra-ai/OpenAPPA/blob/987d7506a37c8b43045b13b71bae8ec0e535b5ef/marketplace/plugins/claude-code/hitl.appa.toml#L26-L33).
+
+## HN update — security, task utility, and trajectory cost need separate denominators (2026-09-28)
+
+A new author launch on HN points to OpenAPPA's expanded benchmark report. The
+publisher reports no scored attack in 1,320 runs across Bench-Corp and
+AgentThreatBench, with each of three models run five times on both standard and
+adversarial variants. On Bench-Corp, guarded OpenAPPA completed 88–90% of tasks,
+versus 37–45% for the tested FIDES configurations. This is substantially more
+useful evidence than a policy-engine unit test because the scorer checks what the
+agent changed or sent over multi-step tasks.
+
+The benign-task and classifier comparisons put useful bounds around that headline.
+On 97 Tau banking tasks run four times, guarded OpenAPPA completed 151/388
+simulations versus 156/388 for stock, with mean reward 38.92% versus 40.21% and
+4.22% more whole-trajectory tokens. In a separate one-run-per-task Claude Code
+comparison, OpenAPPA was the only configuration with zero attacks in both suites,
+but completed 75% of tasks while the two auto-mode configurations completed
+85–96%. Guarded trajectories used 6.5× the permissive agent's reported tokens on
+Bench-Corp and 2.3× on AgentThreatBench; those totals include isolated child
+trajectories and recovery rather than just policy evaluation.
+
+These results support the paper's claim that branching and guided recovery can
+preserve useful work after a deny, but they do not collapse into one “guardrail
+effectiveness” number. The attack suites, benign Tau workload, and auto-mode
+comparison have different tasks, repetitions, policies, and cost visibility. The
+auto-mode cells have no variance estimate, and Claude's SDK omits classifier
+cost. The benchmark and report are also maintained by the OpenAPPA publisher;
+Scout inspected the report and repository benchmark tree at revision
+[`19e47f2`](https://github.com/archestra-ai/OpenAPPA/commit/19e47f2d6976d6d1d47a9f268d4fdadbe0f609ed)
+but did not execute the suites or independently audit their scenario labels.
+
+**Reusable rule:** report attack successes per adversarial trial, legitimate task
+completion, whole-trajectory cost, and policy-engine cost separately, with the
+benchmark, policy coverage, repetition count, and scorer attached to each. A
+zero-attack result on a bounded suite is evidence about that suite, not proof of
+complete mediation or a universal zero failure rate.
+
+**Additional sources:** [HN item 49877515](https://news.ycombinator.com/item?id=49877515);
+[OpenAPPA benchmark report](https://www.openappa.com/evaluation);
+[Bench-Corp tree](https://github.com/archestra-ai/OpenAPPA/tree/19e47f2d6976d6d1d47a9f268d4fdadbe0f609ed/bench/corp).
 
 ## Tags
 
