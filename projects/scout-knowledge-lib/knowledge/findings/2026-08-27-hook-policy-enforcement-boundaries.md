@@ -1,8 +1,8 @@
 <ai_context>
-summary: "Gryph's cross-harness policy layer makes two security boundaries explicit: a block only prevents an action when it comes from a pre-execution hook, and signed receipts only attest to what the same-user mediation path observed. A new Gryph/Jev prototype adds a third boundary: catching small author-written attack sets does not calibrate operational review load or establish sensitivity to natural compromise. Agent Hooks adds that multiple controls do not compose safely by default: approval can skip later controls, sequential transforms can change what later controls inspect, and streamed output requires segment-level release and persistence gates. Package Doctor demonstrates why dependency admission needs both a preventive check of the requested artifact and a post-execution audit of resolved transitive artifacts. Stop That Shit adds that task authority, host permission, and lifecycle evidence must remain separate. Policy evidence therefore needs phase, coverage, composition, calibration, authority, lifecycle, and exposure metadata."
-triggers: ["agent hooks", "coding-agent policy", "pre-execution enforcement", "post-execution detection", "signed receipts", "same-user bypass", "anomaly detection", "review calibration", "Jev", "composition profile", "approval resume", "streaming mediation", "dependency admission", "transitive dependencies", "task authority", "delegation lifecycle", "Stop That Shit", "Gryph", "AARM", "Agent Hooks", "Package Doctor"]
+summary: "Gryph's cross-harness policy layer makes two security boundaries explicit: a block only prevents an action when it comes from a pre-execution hook, and signed receipts only attest to what the same-user mediation path observed. A Gryph/Jev prototype adds a third boundary: catching small author-written attack sets does not calibrate operational review load or establish sensitivity to natural compromise. Onesie contributes an executable calibration pattern—labelled examples, an abstention band, uncertainty intervals, and CI requirements—while also showing why same-sample threshold selection remains development evidence rather than prospective validation. Agent Hooks adds that multiple controls do not compose safely by default: approval can skip later controls, sequential transforms can change what later controls inspect, and streamed output requires segment-level release and persistence gates. Package Doctor demonstrates why dependency admission needs both a preventive check of the requested artifact and a post-execution audit of resolved transitive artifacts. Stop That Shit adds that task authority, host permission, and lifecycle evidence must remain separate. Policy evidence therefore needs phase, coverage, composition, calibration, authority, lifecycle, and exposure metadata."
+triggers: ["agent hooks", "coding-agent policy", "pre-execution enforcement", "post-execution detection", "signed receipts", "same-user bypass", "anomaly detection", "review calibration", "Jev", "Onesie", "abstention band", "calibration requirement", "composition profile", "approval resume", "streaming mediation", "dependency admission", "transitive dependencies", "task authority", "delegation lifecycle", "Stop That Shit", "Gryph", "AARM", "Agent Hooks", "Package Doctor"]
 last_updated: "2026-09-28"
-source_basis: "GitHub repository metadata plus Gryph documentation, implementation, and tests at revision 44e63b09957c4ab841a5aafe19604c769f3f848f; SafeDep's 2026-09-25 Gryph/Jev prototype report surfaced by HN 49875060; the draft Agent Hooks specification, production guidance, threat model, Python reference SDK, and conformance vectors at revision 1fa77847c600b3582e73e0d20db9c625bf7f52b2; Package Doctor documentation, implementation, and tests at revision 5c14dfef0d80b7425ea1388ffea74d38b18d6d00; and Stop That Shit documentation, host-adapter contract, evaluation design, implementation tree, and repository-authored evidence at revision 18310454cf10c7a219a8bbdbab2760624a183c75."
+source_basis: "GitHub repository metadata plus Gryph documentation, implementation, and tests at revision 44e63b09957c4ab841a5aafe19604c769f3f848f; SafeDep's 2026-09-25 Gryph/Jev prototype report surfaced by HN 49875060; Onesie documentation, labelled shell-safety examples, and calibration implementation at revision 96ed118e6cf3ee3e934b08bc931fe198208cb00f surfaced by HN 49876472; the draft Agent Hooks specification, production guidance, threat model, Python reference SDK, and conformance vectors at revision 1fa77847c600b3582e73e0d20db9c625bf7f52b2; Package Doctor documentation, implementation, and tests at revision 5c14dfef0d80b7425ea1388ffea74d38b18d6d00; and Stop That Shit documentation, host-adapter contract, evaluation design, implementation tree, and repository-authored evidence at revision 18310454cf10c7a219a8bbdbab2760624a183c75."
 </ai_context>
 
 # An Agent-Policy Decision Needs an Execution Phase
@@ -260,6 +260,51 @@ alone is not evidence that detection improved.
 - **Coverage:** Full SafeDep article and HN item; Gryph repository head and tree
   metadata at `760dd93492653f1fe8e2e5e5adad486ff8fadb78`. Scout did not receive the
   private event corpus, rerun Jev, or independently validate the labels.
+
+### Follow-up: calibration becomes a control when its acceptance rule is executable
+
+HN item [49876472](https://news.ycombinator.com/item?id=49876472) surfaced
+[Onesie](https://github.com/frodi-karlsson/onesie), a CLI for Jev and other
+System One classifiers. Its useful contribution is not another safety prompt;
+it turns a labelled calibration set into a three-way execution rule and a CI
+check. For the destruction question in the shipped shell example, scores below
+`0.25` pass, scores from `0.25` to below `0.5` abstain to a person, and scores at
+or above `0.5` block. The included 40-command dataset labels 16 destructive,
+five secret-bearing, and
+15 network-reaching examples. The repository's report shows catches, false
+alarms, precision, AUC, and 95% Wilson intervals at candidate cuts, while
+`--require` can make a lower or upper confidence bound—not only a point
+estimate—a build condition.
+
+This closes two gaps left open by a guessed threshold. First, review is a named
+outcome rather than an accidental side effect of picking one cutoff. Second,
+the committed answers can be replayed offline, and CI fails if a declared
+metric no longer holds or if the questions changed and answers must be
+regenerated. The mock-answer path also lets downstream scripts exercise pass,
+block, and abstain branches without spending model calls.
+
+The evidence boundary matters. The README's reported shell table is computed on
+the same 40 examples used to present the cut; the repository does not identify a
+prospective holdout, independent labellers, production base rates, or naturally
+occurring compromises. Offline replay freezes prior model answers, so it detects
+question, policy, or integration regressions but does not detect provider-model
+drift until answers are refreshed. A high AUC or a passing same-sample CI rule
+therefore establishes internal consistency of one labelled fixture, not field
+performance.
+
+**Reusable rule:** version the questions, labelled corpus, model/provider,
+answers, thresholds, abstention policy, and metric requirements together. Select
+cuts on development data, then require the same executable acceptance rule on a
+prospective holdout and report the human-review queue separately. Re-run the
+online scorer on a declared cadence to detect model drift; keep offline replay
+for deterministic integration checks.
+
+- **Repo:** https://github.com/frodi-karlsson/onesie
+- **Inspected revision:** https://github.com/frodi-karlsson/onesie/commit/96ed118e6cf3ee3e934b08bc931fe198208cb00f
+- **Primary sources:** [README](https://github.com/frodi-karlsson/onesie/blob/96ed118e6cf3ee3e934b08bc931fe198208cb00f/README.md), [shell-safety questions](https://github.com/frodi-karlsson/onesie/blob/96ed118e6cf3ee3e934b08bc931fe198208cb00f/examples/questions/shell-safety.yaml), [labelled examples](https://github.com/frodi-karlsson/onesie/blob/96ed118e6cf3ee3e934b08bc931fe198208cb00f/examples/data/shell-safety.jsonl), [requirement parser](https://github.com/frodi-karlsson/onesie/blob/96ed118e6cf3ee3e934b08bc931fe198208cb00f/internal/calibrate/require.go), and [Wilson interval implementation](https://github.com/frodi-karlsson/onesie/blob/96ed118e6cf3ee3e934b08bc931fe198208cb00f/internal/calibrate/wilson.go)
+- **Evidence boundary:** Scout inspected the pinned documentation, fixture, and
+  calibration implementation. It did not install Onesie, rerun its Go tests,
+  call Jev, reproduce the reported scores, or validate the fixture labels.
 
 ## Why it matters
 
