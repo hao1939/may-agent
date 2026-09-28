@@ -1,8 +1,8 @@
 <ai_context>
-summary: "Gryph's cross-harness policy layer makes two security boundaries explicit: a block only prevents an action when it comes from a pre-execution hook, and signed receipts only attest to what the same-user mediation path observed. Agent Hooks adds that multiple controls do not compose safely by default: approval can skip later controls, sequential transforms can change what later controls inspect, and streamed output requires segment-level release and persistence gates. Package Doctor demonstrates why dependency admission needs both a preventive check of the requested artifact and a post-execution audit of resolved transitive artifacts. Stop That Shit adds that task authority, host permission, and lifecycle evidence must remain separate: an allow cannot grant host authority, and uncertain delegated work must continue to consume capacity. Policy evidence therefore needs phase, coverage, composition, authority, lifecycle, and exposure metadata."
-triggers: ["agent hooks", "coding-agent policy", "pre-execution enforcement", "post-execution detection", "signed receipts", "same-user bypass", "composition profile", "approval resume", "streaming mediation", "dependency admission", "transitive dependencies", "task authority", "delegation lifecycle", "Stop That Shit", "Gryph", "AARM", "Agent Hooks", "Package Doctor"]
-last_updated: "2026-09-24"
-source_basis: "GitHub repository metadata plus Gryph documentation, implementation, and tests at revision 44e63b09957c4ab841a5aafe19604c769f3f848f; the draft Agent Hooks specification, production guidance, threat model, Python reference SDK, and conformance vectors at revision 1fa77847c600b3582e73e0d20db9c625bf7f52b2; Package Doctor documentation, implementation, and tests at revision 5c14dfef0d80b7425ea1388ffea74d38b18d6d00; and Stop That Shit documentation, host-adapter contract, evaluation design, implementation tree, and repository-authored evidence at revision 18310454cf10c7a219a8bbdbab2760624a183c75."
+summary: "Gryph's cross-harness policy layer makes two security boundaries explicit: a block only prevents an action when it comes from a pre-execution hook, and signed receipts only attest to what the same-user mediation path observed. A new Gryph/Jev prototype adds a third boundary: catching small author-written attack sets does not calibrate operational review load or establish sensitivity to natural compromise. Agent Hooks adds that multiple controls do not compose safely by default: approval can skip later controls, sequential transforms can change what later controls inspect, and streamed output requires segment-level release and persistence gates. Package Doctor demonstrates why dependency admission needs both a preventive check of the requested artifact and a post-execution audit of resolved transitive artifacts. Stop That Shit adds that task authority, host permission, and lifecycle evidence must remain separate. Policy evidence therefore needs phase, coverage, composition, calibration, authority, lifecycle, and exposure metadata."
+triggers: ["agent hooks", "coding-agent policy", "pre-execution enforcement", "post-execution detection", "signed receipts", "same-user bypass", "anomaly detection", "review calibration", "Jev", "composition profile", "approval resume", "streaming mediation", "dependency admission", "transitive dependencies", "task authority", "delegation lifecycle", "Stop That Shit", "Gryph", "AARM", "Agent Hooks", "Package Doctor"]
+last_updated: "2026-09-28"
+source_basis: "GitHub repository metadata plus Gryph documentation, implementation, and tests at revision 44e63b09957c4ab841a5aafe19604c769f3f848f; SafeDep's 2026-09-25 Gryph/Jev prototype report surfaced by HN 49875060; the draft Agent Hooks specification, production guidance, threat model, Python reference SDK, and conformance vectors at revision 1fa77847c600b3582e73e0d20db9c625bf7f52b2; Package Doctor documentation, implementation, and tests at revision 5c14dfef0d80b7425ea1388ffea74d38b18d6d00; and Stop That Shit documentation, host-adapter contract, evaluation design, implementation tree, and repository-authored evidence at revision 18310454cf10c7a219a8bbdbab2760624a183c75."
 </ai_context>
 
 # An Agent-Policy Decision Needs an Execution Phase
@@ -211,6 +211,55 @@ model never reaches the gate.
   `topic:ai-agents pushed:>2026-09-23 stars:>50`, sorted by recent update,
   returned 590 repositories with `incomplete_results: false`.
 - **Primary sources:** [README](https://github.com/lennney/stop-that-shit/blob/18310454cf10c7a219a8bbdbab2760624a183c75/README.md), [host-adapter contract](https://github.com/lennney/stop-that-shit/blob/18310454cf10c7a219a8bbdbab2760624a183c75/HOST-ADAPTER-CONTRACT.md), [paired-evaluation design](https://github.com/lennney/stop-that-shit/blob/18310454cf10c7a219a8bbdbab2760624a183c75/evals/codex-paired/README.md), and [repository-authored evidence](https://github.com/lennney/stop-that-shit/blob/18310454cf10c7a219a8bbdbab2760624a183c75/EVIDENCE.md)
+
+## Detection Quality Needs Operational Calibration
+
+HN item [49875060](https://news.ycombinator.com/item?id=49875060) surfaced a
+SafeDep-authored Gryph/Jev prototype that scores each captured coding-agent event
+against a short developer profile, six organization policies, the preceding 15
+session events, and 14 atomic questions. Separate binary questions are useful
+here: unlike a single mutually exclusive choice, they can flag secret access,
+data egress, persistence, and several policy violations on the same action.
+
+The reported result is promising but narrower than “compromise detection.” All
+14 author-written synthetic attacks reached the prototype's alert threshold, and
+five of six synthetic safe events passed. On 5,398 deduplicated events from two
+developers, 5,225 passed, 146 went to review, and 27 became alerts: a 3.2% total
+flag rate. The author reports that package installs, API-using evaluation scripts,
+external pull requests, and agent-settings edits explain most flags. This is an
+operational workload result, not a false-positive rate: those real events were
+not independently labelled, and the study includes no naturally occurring
+compromise or matched baseline detector.
+
+At 500 events per developer-day, the author projects roughly 14 reviews and two
+or three alerts per developer each day and explicitly says that load would become
+ignorable. The `0.5` review and `0.8` alert thresholds were guesses, and
+`outside_profile` alone used a different `0.9` review threshold. Profiles were
+built from ten days of each developer's activity and tested on older unseen
+events; this holds out event identity but does not simulate prospective profile
+construction from past-only data. New projects were flagged at 4.5% versus 2.5%
+for known projects, showing how workload shift can resemble anomaly.
+
+The implementation also inherits the earlier phase and coverage boundaries.
+This experiment scores one event at a time after Gryph records it; an alert does
+not establish that an effect was prevented. Fifteen prior events cannot expose a
+slow multi-step attack, and attacker-controlled event text can target the judge.
+The author reports 19.4 million input tokens, `$0.81`, and 12.7 minutes with eight
+parallel requests for the 5,398-event run, but no raw event corpus, per-event
+verdict bundle, or independent replay was inspected by Scout.
+
+**Reusable rule:** evaluate an anomaly layer with a prospective chronological
+split, reviewed real-event labels, realistic multi-step attacks, and a declared
+baseline. Report synthetic attack recall, real-event review burden, alert burden,
+and prevention coverage separately. Profile updates should admit only reviewed
+benign events and retain rejected cases as regression tests; lower alert volume
+alone is not evidence that detection improved.
+
+- **Source:** https://safedep.io/ai-agent-security-jev-gryph/
+- **HN:** https://news.ycombinator.com/item?id=49875060
+- **Coverage:** Full SafeDep article and HN item; Gryph repository head and tree
+  metadata at `760dd93492653f1fe8e2e5e5adad486ff8fadb78`. Scout did not receive the
+  private event corpus, rerun Jev, or independently validate the labels.
 
 ## Why it matters
 
