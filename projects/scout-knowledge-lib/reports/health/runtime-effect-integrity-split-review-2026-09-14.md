@@ -1,6 +1,6 @@
 <ai_context>
-summary: "Completed oversized-note review for agent-runtime-effect-integrity.md. Records the verified extraction of a cohesive verification/verdict-integrity companion while preserving old anchors and active source additions."
-last_updated: "2026-09-16"
+summary: "Rolling oversized-note review for agent-runtime-effect-integrity.md. Records verified extraction of cohesive verdict-integrity and operation-admission companions while preserving published anchors and source evidence."
+last_updated: "2026-09-28"
 </ai_context>
 
 # Runtime Effect Integrity Split Review — 2026-09-14
@@ -95,3 +95,28 @@ for only about 100 lines and overlap the current intake. Re-review after the
 active change set is integrated or when a stable, coherent extraction block is
 large enough to reduce the parent materially; do not create a child assignment
 from this unchanged size signal alone.
+
+## Operation-Admission Extraction — 2026-09-28
+
+The observer reported 1,063 physical lines; direct read-back measured 1,062
+newline-counted lines. Unlike the September 16 recurrence, a stable cohesive
+block had emerged and intake had paused for two days. The first eight headings,
+from `Separate Conversation From Business Operations Before Production`
+through `A Receipt Must Join by Durable Identity, Not Resemblance`, occupied
+339 lines and formed one reusable operation-admission sequence: separate
+conversation from deterministic operations, make approval answerable, claim
+ownership safely, review the concrete mutation, derive effect modes once,
+journal irreversible attempts before waiting, bind feedback to the decision-time
+choice set, and join receipts by durable identity.
+
+That block was moved intact to
+[`Agent Runtime Operation Admission and Identity`](../../knowledge/agent-runtime-operation-admission-and-identity.md).
+The parent keeps all eight old headings—including both revision-follow-up
+subheadings—as exact forwarding anchors, and now measures 756 lines. The new
+companion measures 355 lines, carries its own source-basis metadata, links back
+to the parent, and is listed once in the exhaustive index. Retained digest
+snapshots continue to resolve through the forwarding anchors, so immutable
+history did not need rewriting.
+
+This closes the current size signal with a material thematic split rather than
+a threshold-only cut. No child task or dependency is needed.
