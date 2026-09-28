@@ -30,6 +30,94 @@ integrated while preserving concurrent Scout commits. This source integration
 does not restart the Host or activate a new definition release; deployment
 remains separate.
 
+## Authorized local rollout
+
+After the user authorized continuation, the standalone deployment script built
+merged Host `edc43e16b481e88ef1cca67dffb68dd1e4dd76f7` from its immutable
+archive. Its 64 deployment-boundary tests passed. The exact receipt is
+`/app/projects/may-agent/.state/deploy-receipts/conversation-batch-edc43e16-20260928.json`;
+it settled at `2026-09-28T03:27:12.302Z` with `phase: succeeded`,
+`health: healthy`, and `duplicateDeploy: false`. Expected and loaded artifact
+SHA-256 both equal
+`872c97c2f93e7ae9fe682c0f4e0c1e8253f6bf7520edf35474bd17a8bf3c6b3d`.
+
+The running container independently reported `may-agent v5.2.0 (edc43e16)`
+and the matching binary hash. Runtime, Web and maintenance services were
+running; HTTP readiness returned true. SDK and UI links both select releases
+named for the full merged Host commit, and installed Console bytes match the
+staged Console. The operator shell is outside that container; its older local
+binary and absence of `supervisorctl` are not evidence about live service health.
+
+App activation was separate. Ordinary `runtime.reload.requested` event
+`6465890` pinned workspace commit
+`ced848549f3fd5131bbb12f0e1c8dd5b0bef3be6`; correlated completion `6465891`
+reported success, eight updated agents and four App addresses. The active
+immutable release is `ced848549f3fd5131bbb12f0e1c8dd5b0bef3be6-definitions-v4`.
+This includes the reviewed Evaluation owner-feedback change. See its
+[activation evidence](../../../evaluation.app/experiments/owner-feedback-20260928/README.md#local-activation)
+for the narrower claim about that connection.
+
+Local rollout preparation and build output are retained in
+`/tmp/conversation-batch-rollout-edc43e16-20260928.json` and
+`/tmp/conversation-batch-deploy-20260928.log` in the operator environment.
+
+## Installed Conversation trial
+
+May performed the live trial under ordinary Task
+`may/goal/app_96c9cd44-114c-4083-b987-a9ab2a8c2171`. Inputs used normal socket
+admission and dedicated `may-console` Conversations, without Telegram delivery,
+direct database writes, or a runtime pause to force batching. Actual session
+prompts establish that each initial pair was claimed together with both
+`inputs` before `replyTo`. The installed manager, worker processes, full tool
+catalog and `gpt-5.6-sol` ran these turns.
+
+The first two Conversations (`trial-conversation-batch-20260928-a` and `-b`)
+passed available-file review plus calculation, and missing-file review plus
+calculation followed by file supply. However, their human text explicitly
+reminded May not to skip an ask or to retain the Request. They are assisted
+smoke checks, not evidence of unprompted recognition. Supervisor feedback
+through the same May Task requested ordinary wording; May incorporated it
+during her ongoing attempt.
+
+The neutral Conversation `trial-conversation-batch-20260928-c` asked only
+“Please review [absolute file path] for correctness risks” and “What is
+91 * 13?” The file did not exist yet. May answered **1,183**, checked the
+missing path, and saved the review as an open Request without being told to
+retain it. The arithmetic answer needed no extra durable Request. A later
+ordinary message said the file was available and asked for review. May read it,
+identified the synthetic export design's missing account-authorization check,
+and closed the original Request, revision 2 to 3. No replacement goal or
+handover was created.
+
+Exact neutral-trial identity:
+
+- Conversation Task: `may/conversation_cc05bdae06b7876908553264`.
+- Review Request: `app_7af93c52-4b01-4189-b947-4236fa3d94cd`.
+- Initial session: `s_1790566262478_ea472f4d-67ca-4639-8b6b-c864056f3db5`.
+- Continuation: `s_1790566303770_203a8324-989e-4b30-97b4-280fc26116b6`.
+- Before/after snapshots: `/tmp/trial-batch3-neutral-before-supply.json` and
+  `/tmp/trial-batch3-neutral-after-supply.json` **inside the runtime container**.
+
+Independent operator inspection checked visible replies, actual prompt batches,
+the same Task and Request identities, and stored completion. These are small
+synthetic live checks. They establish the intended path worked here, not a
+production omission rate or autonomous polling of missing material. The earlier
+controlled baseline comparison remains the evidence for before/after behavior;
+the old binary was not re-deployed for this trial.
+
+May committed the [full live report](../../../may.app/docs/reviews/conversation-batch-live-trial-edc43e16-20260928.md)
+and refined its interpretation after supervisor review, final commit
+`71e9d9140365a19221ce8ed9f6dd4e4e9de8274d`, report SHA-256
+`b8bf5ddf4ae3f3d2a0d070612e692360181a47c5682e17aac4fdd8702d5cb886`.
+The review corrected an initial claim that the direct arithmetic answer needed
+a closed Request row. That is permitted by the existing capability contract;
+admission IDs, accepted Requests and visible answers are different evidence.
+No additional lifecycle or source fix was justified by these observations.
+May's supervising Task subsequently converged with `ready: 0`, no active
+attempt and no open input waits. A final reconciliation checked the existing
+report rather than repeating the model trials. The updated common design,
+example and canonical-App checks passed with zero errors or warnings.
+
 ## Controlled model comparison
 
 Both variants used `gpt-5.6-sol`, with fallback disabled, and the same installed

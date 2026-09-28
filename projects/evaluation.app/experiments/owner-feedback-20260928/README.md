@@ -70,6 +70,25 @@ content was integrated into local `main` as `2201986b20` and `eb574803a9`.
 Host PR #263 merged as `6c856911`; the local Host source now includes it.
 Neither source integration activated new definitions or restarted the Host.
 
+## Local activation
+
+The subsequent authorized rollout installed Host `edc43e16` and activated
+workspace commit `ced848549f3fd5131bbb12f0e1c8dd5b0bef3be6` through the normal
+reload route on September 28. Request event `6465890` and completion event
+`6465891` retain the exact correlation and successful source identity. The
+active release is `ced848549f3fd5131bbb12f0e1c8dd5b0bef3be6-definitions-v4`;
+its Evaluation `app.ts` matches reviewed workspace bytes, SHA-256
+`56415cc4769d3a162eb819d8c179c3b2b9e2ea207a8629d65e5e82812ebe6bc9`.
+
+A pure probe imported that installed definition and called its real
+`task-incomplete-review` subscription: an Evaluation reviewer failure produces
+the existing `owner-review` input; owner self-failure and a converged reviewer
+produce no new input. It published no synthetic failure into live history.
+Evidence: `/tmp/evaluation-activated-route-probe-20260928.json` in the operator
+environment. This verifies activated routing, not a naturally occurring
+post-deployment failure and completed owner response. Automatic fallback when
+the owner is unavailable remains outside this change.
+
 ## Remaining independent gaps
 
 Automatic fallback when the owner/App is unavailable remains a disclosed
