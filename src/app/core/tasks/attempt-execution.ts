@@ -28,9 +28,10 @@ import {
   renewAppTaskAttemptLease,
   type AppTaskChildContext,
   type AppTaskClaim,
+  type AppTaskLiveSnapshot,
 } from "./app-task-reconciler.js";
 import { ResourceTaskMutationStaleError } from "./app-task-store.js";
-import type { TaskAgentInput, TaskWorkflowInput } from "./execution.js";
+import type { TaskAgentInput, WorkflowCapability } from "./execution.js";
 import { normalizeTaskHandlerResult, type TaskCapabilityRun } from "./result.js";
 import { appTaskConfig, configuredRegistryEntries, type AppTaskRuntimeDescriptor } from "./runtime-definition.js";
 import type { AppTaskRuntimeOptions } from "./runtime-options.js";
@@ -38,6 +39,24 @@ import type { AppTaskRuntimeOptions } from "./runtime-options.js";
 const APP_TASK_AGENT_TIMEOUT_MS = 15 * 60_000;
 
 const APP_TASK_WORKFLOW_TIMEOUT_MS = 30 * 60_000;
+
+/** Core-owned input for one claimed execution, before choosing its adapter. */
+export type TaskAttemptInput = {
+  opts: AppTaskRuntimeOptions;
+  descriptor: AppTaskRuntimeDescriptor;
+  claim: AppTaskClaim;
+  executionPaths: AppTaskExecutionPaths;
+  childContext: AppTaskChildContext;
+  taskSnapshot: AppTaskLiveSnapshot;
+  event?: EventEnvelope;
+};
+
+/** The selected adapter uses the already-open attempt; it does not own its lifetime. */
+export type TaskHandlerInput = TaskAttemptInput & {
+  attempt: TaskAttempt;
+  taskEvents: AppTaskEvents;
+  fallbackReason?: string;
+};
 
 export function hasLiveAppTaskSession(opts: AppTaskRuntimeOptions, sessionId: string): boolean {
   return opts.sessions?.isLive(sessionId) ?? true;
@@ -54,53 +73,39 @@ export function interruptSupersededAgentSession(
   return opts.sessions.interrupt(sessionId, reason, taskId);
 }
 
-export async function runTaskCapability(
-  input: Omit<
-    TaskWorkflowInput,
-    "source" | "taskRead" | "attempt" | "taskEvents" | "executionTimeoutMs" | "handler"
-  > & {
-    opts: AppTaskRuntimeOptions;
-    descriptor: AppTaskRuntimeDescriptor;
-    claim: AppTaskClaim;
-  },
+export async function runTaskWorkflow(
+  input: TaskHandlerInput & { capability: WorkflowCapability },
 ): Promise<TaskCapabilityRun> {
-  return runTaskExecutorAttempt({
-    ...input,
-    execute: async (attempt, taskEvents) => {
-      if (!input.opts.workflows)
-        return {
-          handlerResult: {
-            state: "error",
-            summary: "Task workflow runner is not installed",
-            facts: [],
-            actions: [],
-          },
-          runId: null,
-          unavailable: true,
-        };
-      const { opts, descriptor, claim, ...execution } = input;
-      return opts.workflows!.execute({
-        ...execution,
-        handler: claim.handler,
-        source: {
-          projectRoot: opts.projectRoot,
-          projectsRoot: opts.projectsRoot,
-          persistDir: opts.persistDir,
-          agentsRoot: opts.agentsRoot,
-          sharedRoot: opts.sharedRoot,
-        },
-        descriptor: {
-          id: descriptor.id,
-          appDir: descriptor.appDir,
-          projectDir: descriptor.projectDir,
-          app: descriptor.app,
-        },
-        attempt,
-        taskEvents,
-        executionTimeoutMs: APP_TASK_WORKFLOW_TIMEOUT_MS,
-        taskRead: taskReads(opts, descriptor),
-      });
+  const { opts, descriptor, claim, ...execution } = input;
+  if (!opts.workflows)
+    return {
+      handlerResult: {
+        state: "error",
+        summary: "Task workflow runner is not installed",
+        facts: [],
+        actions: [],
+      },
+      runId: null,
+      unavailable: true,
+    };
+  return opts.workflows.execute({
+    ...execution,
+    handler: claim.handler,
+    source: {
+      projectRoot: opts.projectRoot,
+      projectsRoot: opts.projectsRoot,
+      persistDir: opts.persistDir,
+      agentsRoot: opts.agentsRoot,
+      sharedRoot: opts.sharedRoot,
     },
+    descriptor: {
+      id: descriptor.id,
+      appDir: descriptor.appDir,
+      projectDir: descriptor.projectDir,
+      app: descriptor.app,
+    },
+    executionTimeoutMs: APP_TASK_WORKFLOW_TIMEOUT_MS,
+    taskRead: taskReads(opts, descriptor),
   });
 }
 
@@ -131,14 +136,7 @@ type RuntimeTaskAttempt = {
 };
 
 /** Build the one fenced Task interface shared by every executor adapter. */
-function runtimeTaskAttempt(input: {
-  opts: AppTaskRuntimeOptions;
-  descriptor: AppTaskRuntimeDescriptor;
-  claim: AppTaskClaim;
-  cwd: string;
-  childContext: AppTaskChildContext;
-  event?: EventEnvelope;
-}): RuntimeTaskAttempt {
+function runtimeTaskAttempt(input: TaskAttemptInput): RuntimeTaskAttempt {
   const { opts, descriptor, claim } = input;
   const task = readRuntimeTaskView(
     {
@@ -162,6 +160,97 @@ function runtimeTaskAttempt(input: {
   const selfPublishedEventIds = new Set<number>();
   const controller = new AbortController();
   let closed = false;
+  // Finish fallible context reads before acquiring subscriptions. If preparation
+  // fails, no abandoned observer remains outside the attempt cleanup boundary.
+  const attempt: TaskAttempt = {
+    appId: descriptor.id,
+    attemptId: claim.attemptId,
+    signal: controller.signal,
+    resourceVersion: claim.resourceVersion,
+    role: opts.agents?.role(claim.agent) ?? {
+      agent: claim.agent,
+      instructions: `Act as the selected May agent ${claim.agent}.`,
+    },
+    task: structuredClone(task),
+    ...(claim.previousAttempt ? { previousAttempt: structuredClone(claim.previousAttempt) } : {}),
+    cwd: input.executionPaths.workspaceDir,
+    declaredOutputPaths: [...claim.declaredOutputPaths],
+    children: {
+      ...(input.childContext.cancelled ? { cancelled: structuredClone(input.childContext.cancelled) } : {}),
+      live: input.childContext.live.map(({ phase, ...child }) => ({
+        ...structuredClone(child),
+        status: phase === "converged" ? "done" : phase,
+      })),
+      completed: input.childContext.completed.map((child) => ({
+        ...structuredClone(child),
+        status: "done" as const,
+      })),
+    },
+    waits: structuredClone(
+      readAppTaskWaitPromptContext(
+        descriptor.resourceStore,
+        opts.persistDir ? getDb(opts.persistDir) : null,
+        claim.taskId,
+      ),
+    ),
+    events: readAppTaskReconciliationEvents(descriptor.resourceStore, claim),
+    resultSchema: structuredClone(appTaskAgentResultSchema) as unknown as Record<string, unknown>,
+    async publish(localKey, event) {
+      if (closed) throw new Error(`Task ${descriptor.id}/${claim.taskId} attempt is closed`);
+      const { localKey: _embeddedLocalKey, source: _source, ...emitted } = event;
+      return { eventId: events.publish(localKey, emitted as AppTaskEmission) };
+    },
+    async reviseTask(change) {
+      if (closed) throw new Error("Task attempt is closed");
+      return (await import("./app-task-runtime.js")).reviseLoadedAppTask({
+        bus: opts.bus,
+        binding: {
+          appId: descriptor.id,
+          taskId: claim.taskId,
+          generation: claim.generation,
+          attemptId: claim.attemptId,
+        },
+        change,
+      });
+    },
+    onEvent(listener) {
+      if (closed) throw new Error(`Task ${descriptor.id}/${claim.taskId} attempt is closed`);
+      // Each listener receives new input once; registering two listeners
+      // must not let one listener's acknowledgment hide it from the other.
+      const seenEventIds = new Set(
+        claim.events.map(({ event }) => Number(event.eventId)).filter((id) => Number.isSafeInteger(id) && id > 0),
+      );
+      const unsubscribe = events.onEvent((incoming) => {
+        const eventId = Number((incoming as AgentEvent & { [EVENT_ROW_ID]?: number })[EVENT_ROW_ID]);
+        if (closed || selfPublishedEventIds.has(eventId) || seenEventIds.has(eventId)) return;
+        if (Number.isSafeInteger(eventId) && eventId > 0) {
+          if (descriptor.resourceStore.hasTaskEvent(claim.taskId, { eventId })) {
+            const pending = descriptor.resourceStore.readTrigger(claim.taskId);
+            if (
+              !(pending?.events ?? (pending ? [{ event: pending.event }] : [])).some(
+                ({ event }) => Number(event.eventId) === eventId,
+              )
+            )
+              return;
+          }
+          seenEventIds.add(eventId);
+        }
+        listener(readAppTaskLiveEvent(appTaskConfig(descriptor), claim.taskId, incoming), () => {
+          if (closed || !Number.isSafeInteger(eventId) || eventId <= 0) return;
+          acceptedLiveEventIds.add(eventId);
+        });
+      });
+      let subscribed = true;
+      const stop = () => {
+        if (!subscribed) return;
+        subscribed = false;
+        subscriptions.delete(stop);
+        unsubscribe();
+      };
+      subscriptions.add(stop);
+      return stop;
+    },
+  };
   // The exact publication receipt is already known to this attempt, including
   // retry-safe returns that skip EventBus fan-out. Only valid settlement may
   // consume it. Tools and executors share the same fenced emitter boundary.
@@ -191,95 +280,7 @@ function runtimeTaskAttempt(input: {
   });
   return {
     events,
-    attempt: {
-      appId: descriptor.id,
-      attemptId: claim.attemptId,
-      signal: controller.signal,
-      resourceVersion: claim.resourceVersion,
-      role: opts.agents?.role(claim.agent) ?? {
-        agent: claim.agent,
-        instructions: `Act as the selected May agent ${claim.agent}.`,
-      },
-      task: structuredClone(task),
-      ...(claim.previousAttempt ? { previousAttempt: structuredClone(claim.previousAttempt) } : {}),
-      cwd: input.cwd,
-      declaredOutputPaths: [...claim.declaredOutputPaths],
-      children: {
-        ...(input.childContext.cancelled ? { cancelled: structuredClone(input.childContext.cancelled) } : {}),
-        live: input.childContext.live.map(({ phase, ...child }) => ({
-          ...structuredClone(child),
-          status: phase === "converged" ? "done" : phase,
-        })),
-        completed: input.childContext.completed.map((child) => ({
-          ...structuredClone(child),
-          status: "done" as const,
-        })),
-      },
-      waits: structuredClone(
-        readAppTaskWaitPromptContext(
-          descriptor.resourceStore,
-          opts.persistDir ? getDb(opts.persistDir) : null,
-          claim.taskId,
-        ),
-      ),
-      events: readAppTaskReconciliationEvents(descriptor.resourceStore, claim),
-      resultSchema: structuredClone(appTaskAgentResultSchema) as unknown as Record<string, unknown>,
-      async publish(localKey, event) {
-        if (closed) throw new Error(`Task ${descriptor.id}/${claim.taskId} attempt is closed`);
-        const { localKey: _embeddedLocalKey, source: _source, ...emitted } = event;
-        return { eventId: events.publish(localKey, emitted as AppTaskEmission) };
-      },
-      async reviseTask(change) {
-        if (closed) throw new Error("Task attempt is closed");
-        return (await import("./app-task-runtime.js")).reviseLoadedAppTask({
-          bus: opts.bus,
-          binding: {
-            appId: descriptor.id,
-            taskId: claim.taskId,
-            generation: claim.generation,
-            attemptId: claim.attemptId,
-          },
-          change,
-        });
-      },
-      onEvent(listener) {
-        if (closed) throw new Error(`Task ${descriptor.id}/${claim.taskId} attempt is closed`);
-        // Each listener receives new input once; registering two listeners
-        // must not let one listener's acknowledgment hide it from the other.
-        const seenEventIds = new Set(
-          claim.events.map(({ event }) => Number(event.eventId)).filter((id) => Number.isSafeInteger(id) && id > 0),
-        );
-        const unsubscribe = events.onEvent((incoming) => {
-          const eventId = Number((incoming as AgentEvent & { [EVENT_ROW_ID]?: number })[EVENT_ROW_ID]);
-          if (closed || selfPublishedEventIds.has(eventId) || seenEventIds.has(eventId)) return;
-          if (Number.isSafeInteger(eventId) && eventId > 0) {
-            if (descriptor.resourceStore.hasTaskEvent(claim.taskId, { eventId })) {
-              const pending = descriptor.resourceStore.readTrigger(claim.taskId);
-              if (
-                !(pending?.events ?? (pending ? [{ event: pending.event }] : [])).some(
-                  ({ event }) => Number(event.eventId) === eventId,
-                )
-              )
-                return;
-            }
-            seenEventIds.add(eventId);
-          }
-          listener(readAppTaskLiveEvent(appTaskConfig(descriptor), claim.taskId, incoming), () => {
-            if (closed || !Number.isSafeInteger(eventId) || eventId <= 0) return;
-            acceptedLiveEventIds.add(eventId);
-          });
-        });
-        let subscribed = true;
-        const stop = () => {
-          if (!subscribed) return;
-          subscribed = false;
-          subscriptions.delete(stop);
-          unsubscribe();
-        };
-        subscriptions.add(stop);
-        return stop;
-      },
-    },
+    attempt,
     acceptedLiveEventIds: () =>
       [...new Set([...acceptedLiveEventIds, ...selfPublishedEventIds])].sort((left, right) => left - right),
     close() {
@@ -293,27 +294,14 @@ function runtimeTaskAttempt(input: {
 }
 
 /**
- * Give every agent/CLI executor the same fenced Task surface. Runtime owns
- * attempt lifetime and lease renewal; adapters only translate TaskAttempt to
- * their execution mechanism and return one Task result.
+ * Open one fenced Task surface around handler selection and execution.
+ * Core owns lease renewal, live-event observation and cleanup on every exit;
+ * the handler returns a proposal for the caller to settle after this closes.
  */
-export async function runTaskExecutorAttempt(input: {
-  opts: AppTaskRuntimeOptions;
-  descriptor: AppTaskRuntimeDescriptor;
-  claim: AppTaskClaim;
-  executionPaths: AppTaskExecutionPaths;
-  childContext: AppTaskChildContext;
-  event?: EventEnvelope;
+export async function runTaskExecutorAttempt(input: TaskAttemptInput & {
   execute: (attempt: TaskAttempt, events: AppTaskEvents) => Promise<TaskCapabilityRun>;
 }): Promise<TaskCapabilityRun> {
-  const taskAttempt = runtimeTaskAttempt({
-    opts: input.opts,
-    descriptor: input.descriptor,
-    claim: input.claim,
-    cwd: input.executionPaths.workspaceDir,
-    childContext: input.childContext,
-    ...(input.event ? { event: input.event } : {}),
-  });
+  const taskAttempt = runtimeTaskAttempt(input);
   const leaseTimer = setInterval(
     () => {
       try {
@@ -335,92 +323,65 @@ export async function runTaskExecutorAttempt(input: {
   }
 }
 
-export async function runTaskAgent(
-  input: Omit<
-    TaskAgentInput,
-    "attempt" | "sessionStarted" | "dependencies" | "executionTimeoutMs" | "taskEvents" | "taskRead"
-  > & {
-    opts: AppTaskRuntimeOptions;
-    descriptor: AppTaskRuntimeDescriptor;
-    claim: AppTaskClaim;
-  },
-): Promise<TaskCapabilityRun> {
-  return runTaskExecutorAttempt({
-    ...input,
-    execute: async (attempt, taskEvents) => {
-      const { opts, descriptor, claim: _claim, ...execution } = input;
-      if (!opts.agents?.available(input.claim.agent))
-        return {
-          handlerResult: {
-            state: "error",
-            summary: `Task agent ${input.claim.agent} is not available`,
-            facts: [],
-            actions: [],
-          },
-          runId: null,
-          unavailable: true,
-        };
-      return opts.agents.execute({
-        ...execution,
-        attempt,
-        executionTimeoutMs: APP_TASK_AGENT_TIMEOUT_MS,
-        taskEvents,
-        taskRead: taskReads(opts, descriptor),
-        descriptor: {
-          id: descriptor.id,
-          appDir: descriptor.appDir,
-          projectDir: descriptor.projectDir,
-          app: descriptor.app,
-        },
-        dependencies: appDependencyCatalog(configuredRegistryEntries(opts), descriptor.id),
-        sessionStarted: (id) => {
-          recordAppTaskAttemptSession(appTaskConfig(descriptor), input.claim, id);
-        },
-      });
+export async function runTaskAgent(input: TaskHandlerInput): Promise<TaskCapabilityRun> {
+  const { opts, descriptor, claim, ...execution } = input;
+  if (!opts.agents?.available(claim.agent))
+    return {
+      handlerResult: {
+        state: "error",
+        summary: `Task agent ${claim.agent} is not available`,
+        facts: [],
+        actions: [],
+      },
+      runId: null,
+      unavailable: true,
+    };
+  return opts.agents.execute({
+    ...execution,
+    executionTimeoutMs: APP_TASK_AGENT_TIMEOUT_MS,
+    taskRead: taskReads(opts, descriptor),
+    descriptor: {
+      id: descriptor.id,
+      appDir: descriptor.appDir,
+      projectDir: descriptor.projectDir,
+      app: descriptor.app,
+    },
+    dependencies: appDependencyCatalog(configuredRegistryEntries(opts), descriptor.id),
+    sessionStarted: (id) => {
+      recordAppTaskAttemptSession(appTaskConfig(descriptor), claim, id);
     },
   });
 }
 
-export async function runRegisteredTaskExecutor(input: {
-  opts: AppTaskRuntimeOptions;
-  descriptor: AppTaskRuntimeDescriptor;
-  claim: AppTaskClaim;
-  executionPaths: AppTaskExecutionPaths;
-  childContext: AppTaskChildContext;
-  event?: EventEnvelope;
+export async function runRegisteredTaskExecutor(input: TaskHandlerInput & {
   name: TaskExecutorName;
   execute: TaskExecutor;
 }): Promise<TaskCapabilityRun> {
-  return runTaskExecutorAttempt({
-    ...input,
-    execute: async (attempt) => {
-      const runId = `executor:${input.name}:${input.claim.attemptId}`;
-      try {
-        const result = await input.execute(attempt);
-        return {
-          handlerResult: normalizeTaskHandlerResult(
-            result,
-            { type: "done", summary: `${input.name} executor completed`, runId },
-            {
-              allowNeedsAgent: true,
-              validateAction: input.descriptor.app.tasks?.validateAction,
-              validateCondition: input.descriptor.app.tasks?.validateCondition,
-            },
-          ),
-          runId,
-        };
-      } catch (error) {
-        return {
-          handlerResult: {
-            state: "error",
-            summary: `${input.name} executor failed: ${error instanceof Error ? error.message : String(error)}`,
-            facts: [],
-            actions: [],
-          },
-          runId,
-          executionFailed: true,
-        };
-      }
-    },
-  });
+  const runId = `executor:${input.name}:${input.claim.attemptId}`;
+  try {
+    const result = await input.execute(input.attempt);
+    return {
+      handlerResult: normalizeTaskHandlerResult(
+        result,
+        { type: "done", summary: `${input.name} executor completed`, runId },
+        {
+          allowNeedsAgent: true,
+          validateAction: input.descriptor.app.tasks?.validateAction,
+          validateCondition: input.descriptor.app.tasks?.validateCondition,
+        },
+      ),
+      runId,
+    };
+  } catch (error) {
+    return {
+      handlerResult: {
+        state: "error",
+        summary: `${input.name} executor failed: ${error instanceof Error ? error.message : String(error)}`,
+        facts: [],
+        actions: [],
+      },
+      runId,
+      executionFailed: true,
+    };
+  }
 }

@@ -12,8 +12,10 @@ Read in this order:
 1. `app-task-capability.ts` is the private entry point used by Host composition.
 2. `controller.ts` and `queue.ts` select ready work under shared capacity.
 3. `attempt-runner.ts: runTaskAttempt()` claims work; `runClaimedTask()` prepares
-   its workspace, calls `executeTaskHandler()` and settles the returned report.
-   `attempt-execution.ts` builds the shared context and invokes the selected executor.
+   its workspace, opens one attempt around `executeTaskHandler()`, then settles
+   the returned report. `attempt-execution.ts: runTaskExecutorAttempt()` owns the
+   shared Task context, lease renewal, event observation and cleanup. Agent,
+   workflow, registered-executor and Conversation handlers use that open attempt.
    `dependency-admission.ts` admits typed delegation and recovers exact waits.
    `app-task-runtime.ts` installs controllers and wires routes; `runtime-definition.ts`
    prepares App descriptors and binds their existing state authority.
@@ -62,6 +64,10 @@ then either commits that report or returns a separate rejection; it does not
 rewrite the report's state and fall through to another branch. Failure diagnostics
 and ordinary execution errors use `failAppTaskAttempt()`; its stored disposition
 determines immediate handoff versus paced retry.
+
+Task context reads also finish before attempt subscriptions are acquired. A
+failed role or context read leaves no observer outside the cleanup boundary;
+ordinary unsuccessful-attempt settlement retains the work for retry.
 
 Task profiling retains dispatch identity, queue wait and total elapsed time.
 Session timestamps and execution-usage records supply execution duration, prompt

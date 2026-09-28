@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it, setSystemTime } from "bun:test";
+import { afterEach, describe, expect, it, setSystemTime, spyOn } from "bun:test";
 import { execFile, execFileSync, spawn } from "node:child_process";
 import { existsSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -27,6 +27,7 @@ import { claimAppInboxItem, waitAppInboxClaim } from "../../../../test/fixtures/
 import { AppRegistry } from "../apps/registry.js";
 import { discoverAppDefinitions } from "../../adapters/discovery/app-definitions.js";
 import { createAppTaskCapability } from "./app-task-capability.js";
+import { createAppTaskEvents } from "./app-task-emitter.js";
 import { projectAppTaskReconciliationEvents, readAppTaskWaitPromptContext } from "./app-task-context.js";
 import { trackAppTaskConditionEventForTasks } from "./app-task-condition-tracker.js";
 import {
@@ -1263,6 +1264,73 @@ it("retains an App and exact agent work when its agent capability is removed, th
     acceptedResult: { summary: "Current goal verified" },
   });
   expect(calls).toBe(1);
+});
+
+it("releases failed context preparation before later Task events and recovers after repair", async () => {
+  const f = fixture();
+  const bus = eventBus();
+  let roleAvailable = false;
+  let calls = 0;
+  const agents: TaskAgentRunner = {
+    available: () => true,
+    prepare: async () => true,
+    snapshot: () => agents,
+    role(agent) {
+      if (!roleAvailable) throw new Error("Role source unavailable");
+      return { agent, instructions: "Fixture role" };
+    },
+    async execute() {
+      calls++;
+      return {
+        handlerResult: { state: "converged", summary: "Recovered after role repair", facts: [], actions: [] },
+        runId: null,
+      };
+    },
+  };
+  await installCoreTaskRuntimes({
+    ...options(f, bus),
+    agents,
+    installControllers: false,
+    appRegistrySnapshot: {
+      id: "context-preparation-failure", generation: 1,
+      entries: [{ appDir: f.appDir, definition: definition() }],
+    },
+  });
+  const config = loadedTaskConfig(f);
+  const taskId = "work/context-recovery";
+  observeAppTaskIntent(config, { appAgent: "sample-owner", intent: {
+    id: taskId, parentId: "operations", outcome: "Retain work through context failure", acceptance: ["Verified"],
+  } });
+  const run = () => reconcileLoadedAppTaskOnce({ bus, appId: "sample", taskId,
+    dispatch: { enqueuedAt: 1, startedAt: 2, readyWaitMs: 1, lane: "normal" } });
+  await run();
+  expect(calls).toBe(0);
+  expect(config.resourceStore.readTask(taskId)?.status).toMatchObject({
+    phase: "pending", summary: expect.stringContaining("Role source unavailable"),
+  });
+
+  // Once preparation failed, later events must not reach its abandoned observer.
+  const cancellationReads = spyOn(AppTaskResourceStore.prototype, "readCancellation");
+  const observed = Promise.withResolvers<void>();
+  const stop = createAppTaskEvents({
+    bus, db: config.resourceStore.db, appId: "sample",
+    claim: { taskId, generation: 1, attemptId: "later-observer", agent: "sample-owner" },
+  }).onEvent((event) => {
+    if (event.type === "app.task.cancelled") observed.resolve();
+  });
+  try {
+    bus.emit({ type: "app.task.cancelled", source: "test", target: { appId: "sample", taskId }, data: {} });
+    await observed.promise;
+    expect(cancellationReads).not.toHaveBeenCalledWith(taskId);
+  } finally {
+    stop();
+    cancellationReads.mockRestore();
+  }
+  roleAvailable = true;
+  advanceRuntimeTaskRetry(config, taskId);
+  await run();
+  expect(calls).toBe(1);
+  expect(readAcceptedRuntimeAttempt(config, taskId)?.acceptedResult?.summary).toBe("Recovered after role repair");
 });
 
 it("does not release an agent handoff until its required workflow verifier is available", async () => {
