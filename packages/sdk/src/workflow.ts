@@ -182,7 +182,7 @@ export type TaskPage = {
 export type TaskOutcomeProjection = {
   /** Include accepted outcomes and closed history. Omitted means active work only. */
   includeDone?: boolean;
-  /** Return only the reviewed outcome containing this exact Task. */
+  /** Return only the outcome containing this exact Task after the active/history filter. */
   taskId?: string;
 };
 
@@ -275,13 +275,12 @@ export type AgentCallOptions = {
   source?: string;
 };
 
-/** Bounded stable projections. It intentionally has no list or SQL escape hatch. */
+/** Shared read contract. Task lists and evidence are paginated; storage stays private. */
 export type AppRead = {
   appResult(itemId: string): Promise<AppResult | null>;
   tasks: {
     list(options?: TaskListOptions): Promise<TaskPage>;
-    /** Opt-in shadow view. Omission keeps every existing list/get behavior unchanged. */
-    /** Optional Host reporting capability; rejects when not installed. */
+    /** Opt-in outcome grouping. Optional Host reporting capability; rejects when not installed. */
     outcomes(options?: TaskOutcomeProjection): Promise<TaskOutcomePage>;
     get(taskId: string, options?: TaskReadOptions): Promise<TaskDetail | null>;
   };

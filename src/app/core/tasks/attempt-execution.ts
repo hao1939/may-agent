@@ -9,7 +9,7 @@ import { getDb } from "../../../lib/db/connection.js";
 import { appDependencyCatalog } from "../../app-dependency-catalog.js";
 import type { EventEnvelope } from "../events/bus.js";
 import { EVENT_ROW_ID, eventData, type AgentEvent } from "../events/bus.js";
-import { listRuntimeTaskViews, readRuntimeTaskView } from "../reads/app-read.js";
+import { createRuntimeAppRead, readRuntimeTaskView } from "../reads/app-read.js";
 import {
   readAppTaskLiveEvent,
   readAppTaskReconciliationEvents,
@@ -108,25 +108,6 @@ export async function runTaskWorkflow(
   });
 }
 
-export function taskReads(opts: AppTaskRuntimeOptions, descriptor: AppTaskRuntimeDescriptor): TaskAttempt["read"]["tasks"] {
-  const config = { taskStateConfig: appTaskConfig(descriptor) };
-  return {
-    list: async (options) => listRuntimeTaskViews(config, options),
-    outcomes: async (projection) => {
-      if (!opts.readOutcomes) throw new Error("Task outcome reporting is unavailable");
-      return opts.readOutcomes({
-        appDir: descriptor.appDir,
-        projection,
-        tasks: {
-          list: (options) => listRuntimeTaskViews(config, options),
-          get: (id) => readRuntimeTaskView(config, id),
-        },
-      });
-    },
-    get: async (id, options) => readRuntimeTaskView(config, id, options),
-  };
-}
-
 type RuntimeTaskAttempt = {
   attempt: TaskAttempt;
   events: AppTaskEvents;
@@ -171,7 +152,13 @@ function runtimeTaskAttempt(input: TaskAttemptInput): RuntimeTaskAttempt {
       instructions: `Act as the selected May agent ${claim.agent}.`,
     },
     task: structuredClone(task),
-    read: { tasks: taskReads(opts, descriptor) },
+    read: {
+      tasks: createRuntimeAppRead({
+        getDb: () => descriptor.resourceStore.db,
+        taskStateConfig: appTaskConfig(descriptor),
+        readOutcomes: opts.readOutcomes,
+      }).tasks,
+    },
     ...(claim.previousAttempt ? { previousAttempt: structuredClone(claim.previousAttempt) } : {}),
     cwd: input.executionPaths.workspaceDir,
     declaredOutputPaths: [...claim.declaredOutputPaths],

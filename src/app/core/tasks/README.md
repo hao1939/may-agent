@@ -79,6 +79,12 @@ obligations and pending input coexist. A fresh read supplements the assigned
 batch and never expands its authority. Native transports still determine which
 live capabilities reach their worker; a serialized reader is not a tool bridge.
 
+`createRuntimeTaskRead()` in `reads/app-read.ts` assembles the shared Task reader
+and supplies its reads to optional outcome reporting. `createRuntimeAppRead()`
+adapts those operations to the SDK's Promise interface. Loaded-App access and
+model tools use the same implementation. Adapters preserve options and format
+results; the reporting implementation owns outcome membership and counts.
+
 Task profiling retains dispatch identity, queue wait and total elapsed time.
 Session timestamps and execution-usage records supply execution duration, prompt
 preparation size and token usage. Task adapters do not duplicate those observations

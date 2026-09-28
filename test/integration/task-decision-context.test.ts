@@ -18,7 +18,8 @@ import {
   deferAppTask,
   recordAppTaskTrigger,
 } from "../../src/app/core/tasks/app-task-reconciler.js";
-import { runTaskAgent, runTaskWorkflow, runRegisteredTaskExecutor, runTaskExecutorAttempt, taskReads } from "../../src/app/core/tasks/attempt-execution.js";
+import { runTaskAgent, runTaskWorkflow, runRegisteredTaskExecutor, runTaskExecutorAttempt } from "../../src/app/core/tasks/attempt-execution.js";
+import { createRuntimeAppRead } from "../../src/app/core/reads/app-read.js";
 import type { AppTaskRuntimeDescriptor } from "../../src/app/core/tasks/runtime-definition.js";
 import type { AppTaskRuntimeOptions } from "../../src/app/core/tasks/runtime-options.js";
 import { currentAgentSessionId } from "../../src/lib/agent-session-context.js";
@@ -54,7 +55,7 @@ test("current Task context reaches a late helper and survives settlement into a 
     app: { id: "sample", version: 1, agent: "owner", tasks: { maxConcurrent: 1 } },
   } as AppTaskRuntimeDescriptor;
   const opts = { bus: new EventBus(), projectRoot: root, projectsRoot: root, persistDir } as AppTaskRuntimeOptions;
-  const read = taskReads(opts, descriptor);
+  const read = createRuntimeAppRead({ getDb: () => store.db, taskStateConfig: config }).tasks;
   const claim = () => {
     const next = claimObservedAppTask(config, { taskId, appAgent: "owner", handler: "agent:owner" });
     if (next.kind !== "claimed") throw new Error(`Claim failed: ${next.kind}`);
@@ -342,7 +343,7 @@ export async function execute(ctx) {
       result: { version: "v3", day: "Wednesday" },
       conditions: [{ id: "approval", type: "approval.observed", subject: "publication:draft",
         expected: true, owner: "human:reviewer", reviewAfterMs: 3600000 }] });
-    const read = taskReads(opts, descriptor);
+    const read = createRuntimeAppRead({ getDb: () => store.db, taskStateConfig: config }).tasks;
     const attempts: string[] = [];
     for (const round of [1, 2]) {
       const active = claim();

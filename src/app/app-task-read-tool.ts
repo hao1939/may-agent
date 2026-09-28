@@ -204,13 +204,7 @@ export function createAppTaskReadTool(options: {
                 appId,
                 projection,
               });
-          const outcomes = value.outcomes.filter((outcome) => outcome.memberTaskIds.includes(taskId));
-          return result({
-            ...value,
-            sourceCount: outcomes.reduce((count, outcome) => count + outcome.memberCount, 0),
-            outcomeCount: outcomes.length,
-            outcomes,
-          });
+          return result(value);
         }
         if (params.action === "get") {
           const taskId = params.taskId?.trim();

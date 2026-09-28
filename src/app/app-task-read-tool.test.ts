@@ -55,7 +55,7 @@ describe("App Task read tool", () => {
     ]);
   });
 
-  it("requires an exact task for outcome reads and returns only its containing outcome", async () => {
+  it("requires an exact task for outcome reads and preserves the reader's report", async () => {
     let requestedProjection: TaskOutcomeProjection | undefined;
     const tool = createAppTaskReadTool({
       bus: new EventBus(),
@@ -68,8 +68,8 @@ describe("App Task read tool", () => {
           return {
             projection: "outcomes",
             manifestVersion: 1,
-            sourceCount: 775,
-            outcomeCount: 2,
+            sourceCount: 1,
+            outcomeCount: 1,
             outcomes: [
               {
                 id: "target-outcome",
@@ -83,21 +83,6 @@ describe("App Task read tool", () => {
                     status: "waiting",
                     generation: 2,
                     outcome: "Wait for the exact dependency",
-                  },
-                ],
-              },
-              {
-                id: "unrelated-outcome",
-                outcome: "Unrelated work",
-                status: "waiting",
-                memberCount: 774,
-                memberTaskIds: ["unrelated-task"],
-                members: [
-                  {
-                    id: "unrelated-task",
-                    status: "waiting",
-                    generation: 1,
-                    outcome: "Unrelated work",
                   },
                 ],
               },

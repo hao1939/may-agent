@@ -6,7 +6,7 @@ import { openDatabase, type SqliteDb } from "../../../lib/db.js";
 import { applyDbSchema } from "../../../lib/db/schema.js";
 import { createAppInboxItem } from "../state/app-inbox-store.js";
 import { claimAppInboxItem, completeAppInboxClaim } from "../../../../test/fixtures/legacy-inbox.js";
-import { createRuntimeAppRead, listRuntimeTaskViews, readRuntimeTaskView } from "./app-read.js";
+import { createRuntimeAppRead, createRuntimeTaskRead, listRuntimeTaskViews, readRuntimeTaskView } from "./app-read.js";
 import { readTaskOutcomes } from "../../adapters/reporting/task-outcomes.js";
 import { AppTaskResourceStore } from "../state/app-task-resource-store.js";
 import {
@@ -379,7 +379,7 @@ describe("App read projections", () => {
       readMetric: async () => {
         throw new Error("report failed");
       },
-      readOutcomes: async () => {
+      readOutcomes: () => {
         throw new Error("report failed");
       },
     });
@@ -525,19 +525,9 @@ describe("App read projections", () => {
         groups: [{ id: "review-pair", outcome: "Complete the pair", taskIds: ["review/a", "review/b"] }],
       }),
     );
-    const read = createRuntimeAppRead({
-      getDb: () => db,
-      taskStateConfig: config,
-      readOutcomes: async (projection) =>
-        readTaskOutcomes({
-          appDir: config.appDir,
-          projection,
-          tasks: {
-            get: (id) => readRuntimeTaskView({ taskStateConfig: config }, id),
-            list: (options) => listRuntimeTaskViews({ taskStateConfig: config }, options),
-          },
-        }),
-    });
+    const options = { getDb: () => db, taskStateConfig: config, readOutcomes: readTaskOutcomes };
+    const read = createRuntimeAppRead(options);
+    const host = createRuntimeTaskRead(options);
 
     await expect(read.tasks.outcomes({ taskId: "review/a" })).resolves.toMatchObject({
       sourceCount: 2,
@@ -549,5 +539,20 @@ describe("App read projections", () => {
       outcomeCount: 0,
       outcomes: [],
     });
+    const claim = claimObservedAppTask(config, { taskId: "review/a", appAgent: "evaluation", handler: "auto" });
+    if (claim.kind !== "claimed") throw new Error("Expected claim");
+    completeAppTask(config, claim, { summary: "Reviewed a", result: { checked: true } });
+
+    // An exact request for an excluded member must not silently return its active sibling.
+    expect(host.outcomes({ taskId: "review/a" })).toMatchObject({ sourceCount: 0, outcomeCount: 0, outcomes: [] });
+    for (const includeDone of [false, true]) {
+      const projection = { taskId: "review/a", includeDone };
+      expect(await read.tasks.outcomes(projection)).toEqual(host.outcomes(projection));
+    }
+    expect(host.outcomes({ taskId: "review/a", includeDone: true })).toMatchObject({ sourceCount: 2, outcomeCount: 1 });
+    const detailOptions = { acceptedEvidence: { limit: 1 } };
+    expect(await read.tasks.get("review/a", detailOptions)).toEqual(host.get("review/a", detailOptions));
+    expect(host.get("review/a", detailOptions)?.acceptedEvidence.page?.items).toHaveLength(1);
+    expect(await read.tasks.list({ limit: 1 })).toEqual(host.list({ limit: 1 }));
   });
 });
