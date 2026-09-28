@@ -12,10 +12,8 @@ Read in this order:
 1. `app-task-capability.ts` is the private entry point used by Host composition.
 2. `controller.ts` and `queue.ts` select ready work under shared capacity.
 3. `attempt-runner.ts: runTaskAttempt()` claims work; `runClaimedTask()` prepares
-   the selected executor and workspace, opens one attempt around its `execute()`
-   function, then settles the returned report. `attempt-execution.ts:
-   resolveTaskExecutor()` binds provider configuration and workspace requirements;
-   `runTaskExecutorAttempt()` owns the
+   its workspace, opens one attempt around `executeTaskHandler()`, then settles
+   the returned report. `attempt-execution.ts: runTaskExecutorAttempt()` owns the
    shared Task context, lease renewal, event observation and cleanup. Agent,
    workflow, registered-executor and Conversation handlers use that open attempt.
    `dependency-admission.ts` admits typed delegation and recovers exact waits.
@@ -70,6 +68,16 @@ determines immediate handoff versus paced retry.
 Task context reads also finish before attempt subscriptions are acquired. A
 failed role or context read leaves no observer outside the cleanup boundary;
 ordinary unsuccessful-attempt settlement retains the work for retry.
+
+The Host supplies the accepted Task snapshot before executor-selected reads.
+`runtimeTaskAttempt()` attaches `task`, the assigned `events`, and one scoped
+`read.tasks` capability. Workflows receive the snapshot as `reconciliation.task`;
+managed and Codex model adapters share the state projection in
+`task-decision-context.ts`. Model previews link omitted material to saved detail;
+workflow objects remain structured data. Accepted work, Conditions, input
+obligations and pending input coexist. A fresh read supplements the assigned
+batch and never expands its authority. Native transports still determine which
+live capabilities reach their worker; a serialized reader is not a tool bridge.
 
 Task profiling retains dispatch identity, queue wait and total elapsed time.
 Session timestamps and execution-usage records supply execution duration, prompt

@@ -10,7 +10,7 @@ import { buildTools } from "../../src/app/loader/toolset-loader.js";
 import { EventBus } from "../../src/app/core/events/bus.js";
 import { closeDb } from "../../src/lib/requests.js";
 import type { TaskExecutionContext } from "../../src/lib/task-execution-context.js";
-import type { AppEvent } from "@may-agent/sdk";
+import type { AppEvent, TaskDetail } from "@may-agent/sdk";
 import { fakeModel } from "../fixtures/model.js";
 import { createFinishTool } from "../../src/lib/tools/lifecycle.js";
 
@@ -170,12 +170,20 @@ export async function execute(ctx) { return ctx.workflows.run("delegate", ctx.in
     });
     const controller = new AbortController();
     const running = ["alpha", "beta"].map((marker) => {
+      const task: TaskDetail = {
+        id: marker, parentId: "root", generation: 1, resourceVersion: 1, status: "running",
+        outcome: `Inspect ${marker}`, acceptance: [], input: { omitted: `only-${marker}` },
+        conditions: [], acceptedEvidence: { available: false, maxPageSize: 8 },
+      };
       const context = {
         taskBinding: { appId: "fixture", taskId: marker, generation: 1, attemptId: `attempt-${marker}` },
         recoveryOwner: "app-task",
         executionPaths: { appDir: root, projectDir: root, workspaceDir: root },
-        reconciliation: { taskId: marker, input: { omitted: `only-${marker}` }, events: { items: [], truncated: false } },
-        taskRead: { get: async (id: string) => ({ id }) },
+        reconciliation: { task, appId: "fixture", taskId: marker, generation: 1, resourceVersion: 1,
+          agent: "owner", owner: "owner", outcome: task.outcome, acceptance: task.acceptance, input: task.input,
+          children: { live: [], completed: [] }, waits: { open: [], note: "No waits" },
+          taskSnapshot: { live: [], truncated: false }, events: { items: [], truncated: false } },
+        taskRead: { get: async () => structuredClone(task) },
         taskEmitter: { read: () => null, publish: () => 1, onEvent: () => () => {} },
         async reviseTask(change) {
           expect(change.taskId).toBe(`child-${marker}`);

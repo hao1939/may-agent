@@ -170,10 +170,11 @@ export async function execute(ctx) {
   const result = await runner.execute({
     descriptor: { id: "creator", appDir: join(f.root, "creator.app"), projectDir: f.root, app: worker },
     source: { projectsRoot: f.root, projectRoot: f.root, persistDir: f.root, agentsRoot: f.root, sharedRoot: f.root },
-    workflow: "correct",
+    capability: { agent: "creator", workflow: "correct", task: "Correct child requirements" },
+    handler: "workflow:correct",
     attempt: {
-      read: { tasks: { list: async () => ({ items: [] }), get: async () => null } },
       task: { id: "parent", generation: 1, outcome: "Review evidence", acceptance: ["Verified"], input: {} },
+      read: { tasks: { list: async () => ({ items: [] }), get: async () => null } },
       attemptId: f.parent.attemptId,
       resourceVersion: 1,
       role: { agent: "creator" },

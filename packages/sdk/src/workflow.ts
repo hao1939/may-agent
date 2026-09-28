@@ -115,7 +115,7 @@ export type TaskView = {
   facts?: string[];
 };
 
-/** Exact desired Task detail returned only by an explicitly scoped get. */
+/** Task snapshot supplied at attempt start or returned by an explicitly scoped get. */
 export type TaskDetail = TaskView & {
   /** Current resource revision; absent for legacy receipts without a current resource. */
   resourceVersion?: number;
@@ -529,6 +529,8 @@ export type TaskExecutor = (attempt: TaskAttempt) => Promise<TaskReconcileResult
 
 /** Bounded task-attempt facts supplied without exposing task storage or prompt packets. */
 export type TaskReconciliationContext<TInput = unknown> = {
+  /** Host-supplied starting state, including accepted work, Conditions and pending input. */
+  task: TaskDetail;
   appId: string;
   taskId: string;
   generation: number;

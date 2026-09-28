@@ -18,7 +18,7 @@ import {
   deferAppTask,
   recordAppTaskTrigger,
 } from "../../src/app/core/tasks/app-task-reconciler.js";
-import { resolveTaskExecutor, runTaskExecutorAttempt, taskReads } from "../../src/app/core/tasks/attempt-execution.js";
+import { runTaskAgent, runTaskWorkflow, runRegisteredTaskExecutor, runTaskExecutorAttempt, taskReads } from "../../src/app/core/tasks/attempt-execution.js";
 import type { AppTaskRuntimeDescriptor } from "../../src/app/core/tasks/runtime-definition.js";
 import type { AppTaskRuntimeOptions } from "../../src/app/core/tasks/runtime-options.js";
 import { currentAgentSessionId } from "../../src/lib/agent-session-context.js";
@@ -229,7 +229,7 @@ test("current Task context reaches a late helper and survives settlement into a 
       };
       const run = await runTaskExecutorAttempt({
         ...execution,
-        execute: (await resolveTaskExecutor(opts, descriptor, active)).execute,
+        execute: (attempt, taskEvents) => runTaskAgent({ ...execution, attempt, taskEvents }),
       });
       expect(run.handlerResult.state).toBe("waiting");
       deferAppTask(config, active, {
@@ -269,8 +269,10 @@ test.each(["workflow", "executor"] as const)("%s reads corrections and reports p
   writeFileSync(source, `
 export const name = "review";
 export const description = "Apply a correction without losing publication approval";
-export async function reconcile(read, taskId, assignedEvents, observe, publish) {
-  const initial = await read.tasks.get(taskId);
+export async function reconcile(initial, read, taskId, assignedEvents, observe, publish) {
+  if (!initial?.result?.version || !initial.summary || initial.conditions[0]?.observation?.state !== "unknown"
+    || !initial.currentObligations?.available || !initial.acceptedEvidence?.available)
+    throw new Error("The Host must supply accepted work and Conditions before optional reads");
   let notified = false;
   const correction = Promise.withResolvers();
   const stop = observe(event => {
@@ -281,6 +283,8 @@ export async function reconcile(read, taskId, assignedEvents, observe, publish) 
       await publish("checkpoint", { type: "sample.checkpoint", data: {} });
       await correction.promise;
     }
+    if (initial.result.version === "v4" && !JSON.stringify(assignedEvents).includes("Thursday"))
+      throw new Error("Assigned correction is missing from the next attempt");
     const current = await read.tasks.get(taskId);
     if (!JSON.stringify({ assignedEvents, pending: current.pendingEvents }).includes("Thursday"))
       throw new Error("Current correction is missing");
@@ -291,7 +295,7 @@ export async function reconcile(read, taskId, assignedEvents, observe, publish) 
   } finally { stop(); }
 }
 export async function execute(ctx) {
-  const report = await reconcile(ctx.read, ctx.reconciliation.taskId, ctx.reconciliation.events, ctx.events.onEvent,
+  const report = await reconcile(ctx.reconciliation.task, ctx.read, ctx.reconciliation.taskId, ctx.reconciliation.events, ctx.events.onEvent,
     (localKey, event) => ctx.events.emit({ ...event, localKey }));
   return ctx.done(report.summary, report);
 }
@@ -323,7 +327,7 @@ export async function execute(ctx) {
     const opts: AppTaskRuntimeOptions = { bus, projectRoot: root, projectsRoot: root, persistDir,
       agentsRoot: root, sharedRoot: join(root, "shared"),
       workflows: createTaskWorkflowRunner({ manager: {} as never, bus }),
-      executors: { review: (attempt) => program.reconcile(attempt.read, attempt.task.id, attempt.events,
+      executors: { review: (attempt) => program.reconcile(attempt.task, attempt.read, attempt.task.id, attempt.events,
         // Observing feedback alone deliberately does not accept it.
         (listener) => attempt.onEvent((event) => listener(event)), attempt.publish) } };
     observeAppTaskIntent(config, { appAgent: "owner", intent: { id: taskId, parentId: "root", agent: "owner",
@@ -343,10 +347,13 @@ export async function execute(ctx) {
     for (const round of [1, 2]) {
       const active = claim();
       attempts.push(active.attemptId);
-      const run = await runTaskExecutorAttempt({ opts, descriptor, claim: active,
+      const execution = { opts, descriptor, claim: active,
         executionPaths: { appDir, projectDir: root, workspaceDir: root },
-        childContext: { live: [], completed: [] }, taskSnapshot: { live: [], truncated: false },
-        execute: (await resolveTaskExecutor(opts, descriptor, active)).execute });
+        childContext: { live: [], completed: [] }, taskSnapshot: { live: [], truncated: false } };
+      const run = await runTaskExecutorAttempt({ ...execution,
+        execute: (attempt, taskEvents) => method === "workflow"
+          ? runTaskWorkflow({ ...execution, attempt, taskEvents, capability: { workflow: "review", task: "Reconcile review" } })
+          : runRegisteredTaskExecutor({ ...execution, attempt, taskEvents, name: "review", execute: opts.executors!.review! }) });
       expect(run.handlerResult).toMatchObject({ state: "waiting", report: true, continue: true,
         result: { version: "v4", day: "Thursday", notified: round === 1, initialVersion: round === 1 ? "v3" : "v4" } });
       deferAppTask(config, active, { ...run.handlerResult, disposition: "waiting", acceptedLiveEventIds: run.acceptedLiveEventIds });

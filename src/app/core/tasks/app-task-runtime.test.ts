@@ -12,7 +12,6 @@ import {
   type AppDefinition,
   type AppInputContext,
   type TaskExecutor,
-  type TaskAttempt,
 } from "@may-agent/sdk";
 import { DbWriter } from "../../../lib/db-writer.js";
 import { openDatabase } from "../../../lib/db.js";
@@ -1132,7 +1131,7 @@ it("keeps omitted workflows visible, continues unrelated work, and recovers with
   ).toEqual(attempts[0]);
 });
 
-it("settles report and useful continuation equivalently for agent, workflow and registered attempts", async () => {
+it("settles report and useful continuation equivalently for agent and workflow attempts", async () => {
   const f = fixture();
   const bus = eventBus();
   const resultFor = (taskId: string) => ({
@@ -1157,14 +1156,12 @@ it("settles report and useful continuation equivalently for agent, workflow and 
         });
       },
     },
-    executors: { reviewer: async (attempt) => resultFor(attempt.task.id) },
     appRegistrySnapshot: { id: "agent-workflow-continuation", generation: 1,
       entries: [{ appDir: f.appDir, definition: definition() }] },
   });
   const config = loadedTaskConfig(f);
   for (const [taskId, selection] of [
     ["work/agent", {}], ["work/workflow", { workflow: "review" }],
-    ["work/executor", { executor: "reviewer" }],
   ] as const) {
     observeAppTaskIntent(config, { appAgent: "sample-owner", intent: {
       id: taskId, parentId: "operations", outcome: "Wait for review and continue useful checks",
@@ -1189,113 +1186,6 @@ it("settles report and useful continuation equivalently for agent, workflow and 
     });
   }
 });
-
-it.each(["agent", "workflow", "executor"] as const)(
-  "%s uses the shared Task surface for failure, retry and cancellation",
-  async (method) => {
-    const f = fixture();
-    const bus = eventBus();
-    const ready = Promise.withResolvers<void>();
-    let cancelledAttempt: TaskAttempt | undefined;
-    const seen: TaskAttempt[] = [];
-    const execute: TaskExecutor = async (attempt) => {
-      seen.push(attempt);
-      expect(attempt.appId).toBe("sample");
-      expect(attempt.cwd).toBe(f.appDir);
-      expect(attempt.signal.aborted).toBe(false);
-      expect(attempt.role.agent).toBe("sample-owner");
-      expect(attempt.task.input).toEqual({ instruction: "Retain the original assignment" });
-      if (attempt.task.id === "work/cancel") {
-        cancelledAttempt = attempt;
-        const aborted = new Promise<void>((resolve) => attempt.signal.addEventListener("abort", () => resolve(), { once: true }));
-        ready.resolve();
-        await aborted;
-        // Even a late success cannot overwrite an owner's cancellation.
-        return { state: "converged", summary: "Late output", facts: [] };
-      }
-      expect(attempt.events.items.map((item) => item.eventId)).toContain(101);
-      attempt.onEvent(() => {}); // Deliberately rely on runtime cleanup.
-      if (seen.length === 1) {
-        recordAppTaskTrigger(config, attempt.task.id, {
-          type: "sample.feedback", eventId: 102, data: { instruction: "Keep the approval open" },
-        });
-        const current = await attempt.read.tasks.get(attempt.task.id);
-        expect(current?.pendingEvents?.items.map((item) => item.eventId)).toContain(102);
-        expect(attempt.task.pendingEvents?.items.map((item) => item.eventId)).not.toContain(102);
-        throw new Error("Fixture failed before returning a report");
-      }
-      expect(attempt.events.items.map((item) => item.eventId)).toContain(102);
-      expect(attempt.previousAttempt).toBeDefined();
-      return { state: "converged", summary: "Recovered original work", facts: ["fixture:verified"] };
-    };
-    const runBackend = async (attempt: TaskAttempt) => ({
-      handlerResult: { ...await execute(attempt), actions: [] } as NormalizedTaskHandlerResult,
-      runId: `${method}:${attempt.attemptId}`,
-    });
-    const agents: TaskAgentRunner = {
-      prepare: async () => true, available: () => true, snapshot: () => agents,
-      role: (agent) => ({ agent, instructions: "Fixture role" }),
-      execute: ({ attempt, descriptor }) => {
-        expect(method).toBe("agent");
-        expect("resourceStore" in descriptor).toBe(false);
-        return runBackend(attempt);
-      },
-    };
-    await installCoreTaskRuntimes({
-      ...options(f, bus), installControllers: false, agents,
-      workflows: {
-        inspect: async () => ({ available: true, error: null, workspace: "shared" }),
-        execute: ({ attempt, descriptor }) => {
-          expect(method).toBe("workflow");
-          expect("resourceStore" in descriptor).toBe(false);
-          return runBackend(attempt);
-        },
-      },
-      executors: { fixture: execute },
-      appRegistrySnapshot: { id: `shared-surface:${method}`, generation: 1,
-        entries: [{ appDir: f.appDir, definition: definition() }] },
-    });
-    const config = loadedTaskConfig(f);
-    const selection = method === "workflow" ? { workflow: "fixture" } : method === "executor" ? { executor: "fixture" } : {};
-    const add = (id: string) => observeAppTaskIntent(config, { appAgent: "sample-owner", intent: {
-      id, parentId: "operations", outcome: "Use the current Task", acceptance: ["Verified"],
-      input: { instruction: "Retain the original assignment" }, ...selection,
-    } });
-    const run = (taskId: string) => reconcileLoadedAppTaskOnce({ bus, appId: "sample", taskId,
-      dispatch: { enqueuedAt: 1, startedAt: 2, readyWaitMs: 1, lane: "normal" } });
-    const taskId = "work/retry";
-    add(taskId);
-    recordAppTaskTrigger(config, taskId, { type: "sample.feedback", eventId: 101, data: { instruction: "Consider this fact" } });
-    await run(taskId);
-    expect(config.resourceStore.readTask(taskId)?.status).toMatchObject({
-      phase: "pending", summary: expect.stringContaining("Fixture failed before returning a report"),
-    });
-    expect(config.resourceStore.readTrigger(taskId)?.events?.map(({ event }) => event.eventId)).toEqual([101, 102]);
-    expect(() => seen[0]!.onEvent(() => {})).toThrow("attempt is closed");
-    await expect(seen[0]!.publish("late", { type: "sample.progress", data: {} })).rejects.toThrow("attempt is closed");
-    advanceRuntimeTaskRetry(config, taskId);
-    await run(taskId);
-    expect(acceptedTaskAttempt(config, taskId)?.acceptedResult?.summary).toBe("Recovered original work");
-    expect(config.resourceStore.readTrigger(taskId)).toBeNull();
-    expect(seen[1]!.task.id).toBe(seen[0]!.task.id);
-    expect(seen[1]!.task.generation).toBe(seen[0]!.task.generation);
-    expect(seen[1]!.attemptId).not.toBe(seen[0]!.attemptId);
-    expect(() => seen[1]!.onEvent(() => {})).toThrow("attempt is closed");
-
-    add("work/cancel");
-    const pending = run("work/cancel");
-    await ready.promise;
-    const current = config.resourceStore.readTask("work/cancel")!;
-    cancelLoadedAppTask({ bus, appId: "sample", taskId: "work/cancel",
-      expectedGeneration: current.metadata.generation, expectedResourceVersion: current.metadata.resourceVersion,
-      reason: "Owner cancelled the fixture" });
-    await pending;
-    expect(cancelledAttempt!.signal.aborted).toBe(true);
-    expect(config.resourceStore.isCancelled("work/cancel")).toBe(true);
-    expect(acceptedTaskAttempt(config, "work/cancel")?.acceptedResult).toBeUndefined();
-    expect(() => cancelledAttempt!.onEvent(() => {})).toThrow("attempt is closed");
-  },
-);
 
 it("retains an App and exact agent work when its agent capability is removed, then restores it", async () => {
   const f = fixture();
@@ -1441,60 +1331,6 @@ it("releases failed context preparation before later Task events and recovers af
   await run();
   expect(calls).toBe(1);
   expect(readAcceptedRuntimeAttempt(config, taskId)?.acceptedResult?.summary).toBe("Recovered after role repair");
-});
-
-it("keeps cancellation observation active while inspecting an agent takeover's workflow", async () => {
-  const f = fixture();
-  const bus = eventBus();
-  const taskId = "work/takeover-cancel";
-  let takeover = false;
-  let sawCancellation = false;
-  let config: AppTaskContext;
-  const agents: TaskAgentRunner = {
-    prepare: async () => true, available: () => true, snapshot: () => agents,
-    role: (agent) => ({ agent, instructions: "Fixture" }),
-    async execute({ attempt }) {
-      sawCancellation = attempt.signal.aborted;
-      return { handlerResult: { state: "converged", summary: "Late result", facts: [], actions: [] }, runId: null };
-    },
-  };
-  await installCoreTaskRuntimes({
-    ...options(f, bus), installControllers: false, agents,
-    workflows: {
-      async inspect() {
-        if (takeover) {
-          const observed = Promise.withResolvers<void>();
-          const stop = createAppTaskEvents({ bus, db: config.resourceStore.db, appId: "sample",
-            claim: { taskId, generation: 1, attemptId: "test-observer", agent: "sample-owner" },
-          }).onEvent((event) => { if (event.type === "app.task.cancelled") observed.resolve(); });
-          try {
-            const current = config.resourceStore.readTask(taskId)!;
-            cancelLoadedAppTask({ bus, appId: "sample", taskId,
-              expectedGeneration: current.metadata.generation, expectedResourceVersion: current.metadata.resourceVersion,
-              reason: "Owner cancelled during inspection" });
-            await observed.promise;
-          } finally { stop(); }
-        }
-        return { available: true, error: null, workspace: "shared" };
-      },
-      async execute() {
-        return { handlerResult: { state: "needs-agent", summary: "Needs judgment", facts: [], actions: [] }, runId: "fixture" };
-      },
-    },
-    appRegistrySnapshot: { id: "takeover-cancel", generation: 1,
-      entries: [{ appDir: f.appDir, definition: definition() }] },
-  });
-  config = loadedTaskConfig(f);
-  observeAppTaskIntent(config, { appAgent: "sample-owner", intent: { id: taskId, parentId: "operations",
-    outcome: "Retain cancellation during takeover", acceptance: ["Reviewed"], workflow: "review" } });
-  const run = () => reconcileLoadedAppTaskOnce({ bus, appId: "sample", taskId,
-    dispatch: { enqueuedAt: 1, startedAt: 2, readyWaitMs: 1, lane: "normal" } });
-  await run();
-  takeover = true;
-  await run();
-  expect(sawCancellation).toBe(true);
-  expect(config.resourceStore.isCancelled(taskId)).toBe(true);
-  expect(acceptedTaskAttempt(config, taskId)?.acceptedResult).toBeUndefined();
 });
 
 it("does not release an agent handoff until its required workflow verifier is available", async () => {

@@ -1,5 +1,5 @@
 import type { AgentMessage } from "@earendil-works/pi-agent-core";
-import type { TaskDetail } from "@may-agent/sdk";
+import type { TaskDetail, TaskReconciliationEvents } from "@may-agent/sdk/app";
 import { dirname, join } from "node:path";
 import { writeContentAddressedJson } from "./artifacts.js";
 import type { TaskExecutionContext } from "./task-execution-context.js";
@@ -38,9 +38,44 @@ function preview(value: unknown, budget: number, pointer: string, depth = 0): un
   };
 }
 
+/** Shared facts for model presentation; the Task remains the only state authority. */
+export function taskDecisionState(task: TaskDetail, events: TaskReconciliationEvents) {
+  return {
+    assignment: { outcome: task.outcome, acceptance: task.acceptance },
+    current: {
+      summary: task.summary,
+      result: task.result,
+      facts: task.facts,
+      response: task.response,
+      acceptedAttempt: task.acceptedAttempt,
+    },
+    conditions: task.conditions,
+    obligations: task.currentObligations,
+    evidence: task.acceptedEvidence,
+    events: { attemptInput: events, pendingInput: task.pendingEvents },
+    input: task.input,
+  };
+}
+
+/** Keep sections independently visible; omitted material keeps its JSON pointer. */
+export function previewTaskDecisionSections(full: Record<string, unknown>): Record<string, unknown> {
+  return Object.fromEntries(
+    Object.entries(full).map(([key, value]) => [
+      key,
+      preview(
+        value,
+        key === "input" || key === "related" || key === "previousAttempt" || key === "waitsAtAttemptStart"
+          ? 800
+          : SECTION_BYTES,
+        `/${key}`,
+      ),
+    ]),
+  );
+}
+
 /** One worker's disposable model view. Task records and result accounting remain authoritative. */
 export function createTaskDecisionContext(context: TaskExecutionContext): () => Promise<AgentMessage> {
-  let known: TaskDetail | undefined = context.details?.task;
+  let known = context.details?.task ?? context.reconciliation.task;
   let knownAt: string | undefined;
   return async () => {
     let refresh: Record<string, unknown> = { available: true };
@@ -62,18 +97,7 @@ export function createTaskDecisionContext(context: TaskExecutionContext): () => 
     }
     const rec = context.reconciliation;
     const full = {
-      assignment: { outcome: known?.outcome ?? rec.outcome, acceptance: known?.acceptance ?? rec.acceptance },
-      current: {
-        summary: known?.summary,
-        result: known?.result,
-        facts: known?.facts,
-        response: known?.response,
-        acceptedAttempt: known?.acceptedAttempt,
-      },
-      conditions: known?.conditions,
-      obligations: known?.currentObligations,
-      events: { attemptInput: rec.events, pendingInput: known?.pendingEvents },
-      input: known?.input ?? rec.input,
+      ...taskDecisionState(known, rec.events),
       environment: { paths: context.executionPaths, declaredOutputs: context.details?.declaredOutputs },
       related: { childrenAtAttemptStart: rec.children, installedAppsAtAttemptStart: context.details?.dependencies },
       previousAttempt: rec.previousAttempt,
@@ -95,18 +119,7 @@ export function createTaskDecisionContext(context: TaskExecutionContext): () => 
         detailError = "Detail snapshot could not be saved; use the scoped Task read and attempt-start context.";
       }
     } else detailError = "Detail snapshot unavailable; use the scoped Task read and supplied attempt context.";
-    const sections = Object.fromEntries(
-      Object.entries(full).map(([key, value]) => [
-        key,
-        preview(
-          value,
-          key === "input" || key === "related" || key === "previousAttempt" || key === "waitsAtAttemptStart"
-            ? 800
-            : SECTION_BYTES,
-          `/${key}`,
-        ),
-      ]),
-    );
+    const sections = previewTaskDecisionSections(full);
     const packet = {
       binding: context.taskBinding,
       observed: {

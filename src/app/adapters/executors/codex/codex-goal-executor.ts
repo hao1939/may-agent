@@ -203,7 +203,7 @@ export function createCodexGoalExecutor(options: CodexGoalExecutorOptions): Task
   return async (attempt) => {
     const key = bindingKey(attempt);
     const existing = readBindings(options.stateFile).bindings[key];
-    const rendered = renderCodexGoalTaskAttempt(packetFor(attempt));
+    const rendered = renderCodexGoalTaskAttempt(packetFor(attempt), dirname(options.stateFile));
     const client =
       options.createClient?.(attempt.cwd) ??
       CodexGoalAppServerClient.spawn({ cwd: attempt.cwd, command: options.command });

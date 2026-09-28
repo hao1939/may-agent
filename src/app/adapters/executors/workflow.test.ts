@@ -31,7 +31,7 @@ export async function execute(ctx) {
   const result = await runner.execute({
     source: { projectsRoot: root, projectRoot: root, persistDir: root, agentsRoot: root, sharedRoot: join(root, "shared") },
     descriptor: { id: "fixture", appDir: join(root, "sample.app"), projectDir: root, app: {} },
-    workflow: "review",
+    capability: { workflow: "review", task: "Review the candidate" }, handler: "workflow:review",
     executionPaths: { appDir: root, projectDir: root, workspaceDir: root },
     childContext: { live: [], completed: [] }, taskSnapshot: { live: [], truncated: false },
     taskEvents: {}, executionTimeoutMs: 1000,
