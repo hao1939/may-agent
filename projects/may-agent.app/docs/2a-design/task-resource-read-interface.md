@@ -85,7 +85,8 @@ outside this Task fail the read explicitly. Answered input remains readable.
 The existing default obligation list is capped at 100 with `truncated`; it is
 not an unlimited inventory, and an exact read does not require a key to appear
 in that first page. The [result contract](task-resource-engine.md) controls
-settlement through `consideredInputKeys`. See the
+settlement through `consideredInputKeys`. Selected unfinished input returns in
+the next attempt context on continuation or retry, including after restart. See the
 [prototype record](../proposals/explicit-task-input-consideration-20260930.md)
 for implementation and deployment status.
 

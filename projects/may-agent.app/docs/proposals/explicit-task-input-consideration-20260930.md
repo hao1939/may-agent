@@ -41,8 +41,8 @@ record migration.
 ## Comparison and trial
 
 Baseline Host source: `c9fec72407f07ab795e307873d2200fbd9373eca`.
-Candidate source: `8d77ea5686ef826459f283e1936191f9e9971086`
-(branch `fix/explicit-task-inputs`).
+Candidate source: `f47bcd7e5314ed4738fb3bf09f8195bbd565b7fc`
+(branch `fix/explicit-task-inputs`, [Host PR #269](https://github.com/hao1939/may-agent/pull/269)).
 
 The portable lifecycle trial reproduces three related timed requests, an
 independent timed request, a human approval, and a later correction. It uses
@@ -53,7 +53,7 @@ real admission, Task state, accepted-result reads and SQLite close/reopen.
 | Omit explicit selection | New correction answered; all three earlier timed requests remain waiting |
 | Select those three requests | Same accepted answer reaches all three before their deadlines |
 | Independent timer and approval | Retained unchanged in both cases, including after restart |
-| Waiting or incomplete selected result | Progress report available; original input remains unanswered |
+| Waiting or incomplete selected result | Progress report available; original input remains unanswered and returns on continuation/retry |
 | Missing, foreign or already answered key | Rejected; no partial completion or overwritten answer |
 | Newer input or stale attempt | Existing fences prevent premature settlement |
 | Independent timer expires during execution | Input remains unanswered and returns at the next claim; accepted live context can include it in the current result |
@@ -74,8 +74,26 @@ selector still applies explicit keys and correlated Condition changes. Both
 the unseen-input and accepted-live-input variants now pass; the remaining due
 input is selected normally on the next claim, without a new recovery path.
 
-Final candidate validation: `bun run ci` passed with **3,298 tests passed,
-0 failed and 3 installation-only checks skipped**. The design integrity, SDK
+A continuation trial then exposed an omitted connection in the candidate:
+selected input stayed durable but was absent from the next attempt's original
+input context. The existing claim now resumes the prior input scope when an
+attempt is unfinished, explicitly continues, or reports incomplete work. It
+includes the saved explicit selection, filtered through the Task’s current
+outstanding input records. The trial covers another execution
+failure and SQLite restart before the final answer; independent waits remain
+outside that resumed scope. No separate handoff record is introduced.
+
+The wider suite rejected the first resume implementation: absence of an
+accepted result did not prove that all its historical input was still open.
+Human Stop had already consumed some of it. Eight existing Stop/Conversation
+checks exposed that mistake. Resumption now intersects the prior input scope
+with the current retained waits instead of inferring liveness from history.
+The affected 121-test suite passes, including the continuation/retry trials.
+This is a correction to the candidate, not a new Stop-specific rule.
+
+Final candidate `bun run ci` passed with **3,298 tests passed, 0 failed and 3
+installation-only checks skipped** (16,343 assertions). This includes the
+continuation, retry and previously failing Stop/Conversation checks. The design integrity, SDK
 example and canonical App-boundary checks also passed. No live restart or
 Task-state mutation was used for the trial.
 
