@@ -1178,6 +1178,32 @@ describe("scout-explore workflow prompt", () => {
     expect(nextRunCalls).toBe(1);
   });
 
+  it("does not execute a handoff found only in unaccepted evidence", async () => {
+    let emissions = 0;
+    const ctx = workflowContext(async () => {
+      throw new Error("No source assignment was supplied");
+    }, "hn");
+    ctx.reconciliation.input = undefined;
+    ctx.reconciliation.previousAttempt = {
+      attemptId: "rejected-attempt",
+      generation: 1,
+      state: "failed",
+      unacceptedResult: {
+        facts: [
+          'research-handoff:pending:{"artifact":"/unaccepted.md","artifactHash":"untrusted"}',
+        ],
+      },
+    };
+    ctx.events.emit = async () => {
+      emissions += 1;
+    };
+
+    const result = await executeScoutExplore(ctx);
+
+    expect(emissions).toBe(0);
+    expect(result.status).toBe("blocked");
+  });
+
   it("rejects relative output paths even when they resolve under an allowed root", async () => {
     const result = await executeScoutExplore(
       workflowContext(async () => ({
