@@ -237,6 +237,13 @@ Task admission remains valid without conversation links. App mapping, model/tool
 execution and judgment run outside short transactions; state rechecks their
 authority and expected versions at commit.
 
+Request reference storage accepts Task identities independently of Topic
+membership or current Task availability. Schema, revision and owner checks
+still apply; storage does not turn reference metadata into a work admission or
+subscription. Handoff admission supplies its actual Task reference and return
+links atomically. The semantic contract is in
+[Message Lifecycle](message-lifecycle.md#requests-acceptance-and-closure).
+
 Request closure requires a durable explanation with stable message identity.
 In current source, a direct Turn's inbox result can supply that evidence and its
 Conversation projection; a separately published message uses the same identity. This does

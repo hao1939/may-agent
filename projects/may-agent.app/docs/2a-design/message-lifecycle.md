@@ -139,6 +139,19 @@ Do not copy Task state or add a Request executor, retry policy, or per-Request
 supervision Task. [Storage](storage.md#conversation-state-api) owns persistence
 and atomic operations; May owns the meaning of the accepted ask.
 
+Request `taskRefs` record relevant Task identities, including work discovered
+through a report or another Conversation. They are metadata: saving a reference
+does not assign work, create a result subscription or grant control authority.
+They require no prior Topic attachment. A retained reference may point to
+unavailable work; its presence is not proof that the Task exists or succeeded.
+Read current Task evidence when that matters to the answer. Omitted or empty
+reference updates retain earlier references.
+
+For actual work, ordinary handoff admission saves the input, the admitted Task
+reference and its return association together. The agent chooses the work;
+the Host maintains correlation. The existing Topic-to-Task return links remain
+the result subscription described in [Routing and authority](#routing-and-authority).
+
 Closure must match the latest accepted scope and explain the outcome in
 Conversation. Persist its message and closure decision consistently, so retry
 cannot lose the explanation or produce duplicate closure. Adapter delivery
@@ -729,6 +742,11 @@ The Host stores one `conversation_requests` row per
 accepted ask, keyed by App, Conversation and App-chosen ID. It holds current
 scope/revision, optional Topic, exact Task links, and open/closed with a closure
 reason and message identity. It owns no execution state.
+
+Host [PR #267](https://github.com/hao1939/may-agent/pull/267) removes the former
+requirement that every Request reference already have a Conversation Topic
+link. That source change implements the reference contract above; installations
+without it can still reject such references. Merge and deployment are separate.
 
 May returns `requestUpdates` in its bounded decision. `expectedRevision: 0`
 accepts a new ask; a correction uses the same ID and observed revision. A

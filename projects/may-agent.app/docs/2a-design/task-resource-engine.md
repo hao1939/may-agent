@@ -98,10 +98,10 @@ answer, while replaying the same admission must not run another cycle. Closed
 Tasks and historical immutable receipts are not reopened by this rule.
 
 For a conversational handoff, the App names the accepted ask in
-`followUp.requestId`. Omit `requestUpdates[].taskRefs` for that handoff: the
-Host adds the actual Task link atomically during admission. Explicit Request
-link additions refer only to Tasks already linked to the Conversation, not
-merely focused or proposed work. Omitting links preserves earlier links.
+`followUp.requestId`. The Host records the admitted Task reference and its
+return links together. Request references require no prior Topic attachment.
+[Message Lifecycle](message-lifecycle.md#requests-acceptance-and-closure)
+owns this distinction between reference metadata and work admission.
 
 ## Mental model
 
