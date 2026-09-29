@@ -2759,6 +2759,8 @@ export function claimObservedAppTask(
     return { kind: "waiting", taskId: input.taskId, conditionIds: openConditionIds };
   }
 
+  // Prior execution supplies context, but only the Task's current outstanding
+  // waits authorize resuming it; answered or stopped input stays consumed.
   const continuedInputKeys = [
     ...new Set([
       ...(latestAttempt && (!latestAttempt.acceptedResult || latestAttempt.acceptedResult.continue ||
@@ -2766,7 +2768,7 @@ export function claimObservedAppTask(
         ? taskInputAdmissionKeys(latestAttempt.events ?? [], [
             ...(latestAttempt.continuedInputKeys ?? []),
             ...(latestAttempt.acceptedResult?.consideredInputKeys ?? []),
-          ])
+          ]).filter((key) => resource.status.inputWaits?.[key])
         : []),
       ...continuedTaskInputKeys(tree, input.taskId, claimedEvents, [
         ...missedCheckpointConditionIds,
