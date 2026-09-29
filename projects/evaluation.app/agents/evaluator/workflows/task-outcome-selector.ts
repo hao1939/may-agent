@@ -1,4 +1,7 @@
-import { readPopulation, populationCut } from "./lib/task-population-evidence.js";
+import {
+  readPopulation,
+  populationCut,
+} from "./lib/task-population-evidence.js";
 import { createHash } from "node:crypto";
 import type { ExecutionResult, WorkflowContext } from "@may-agent/sdk";
 import {
@@ -20,7 +23,7 @@ export const name = "task-outcome-selector";
 export const description =
   "Select at most one recent external Task candidate through bounded public App reads.";
 
-const STATE_VERSION = 7;
+const STATE_VERSION = 8;
 const MAX_STATE_APPS = 20;
 const MAX_STATE_HISTORY_BYTES = 6_000;
 const MAX_NAVIGATION_FACT_BYTES = 3_000;
@@ -123,6 +126,50 @@ function taskId(task: Record<string, unknown>): string {
 }
 function identityDigest(value: string): string {
   return createHash("sha256").update(value).digest("hex");
+}
+function stableJson(value: unknown): string {
+  if (Array.isArray(value)) return `[${value.map(stableJson).join(",")}]`;
+  if (value && typeof value === "object") {
+    return `{${Object.entries(value as Record<string, unknown>)
+      .sort(([left], [right]) => left.localeCompare(right))
+      .map(([key, item]) => `${JSON.stringify(key)}:${stableJson(item)}`)
+      .join(",")}}`;
+  }
+  return JSON.stringify(value) ?? "null";
+}
+
+/**
+ * Bind all supplied population evidence except the requested rolling-window
+ * coordinates. Attempt identities, outcomes, failure detail, grouping,
+ * truncation, examples, coverage limits, and unknowns remain significant.
+ */
+export function populationEvidenceDigest(population: unknown): string {
+  const report = { ...object(population) };
+  delete report.end;
+  for (const cohortName of ["previous", "current"] as const) {
+    const cohort = { ...object(report[cohortName]) };
+    delete cohort.start;
+    delete cohort.end;
+    report[cohortName] = cohort;
+  }
+  return identityDigest(stableJson(report));
+}
+function populationCheckpoint(value: unknown): {
+  end: number;
+  evidenceDigest: string;
+} {
+  const [rawEnd = "", rawDigest = ""] = text(value).split(".", 2);
+  const end = Number(rawEnd);
+  return {
+    end: Number.isSafeInteger(end) && end > 0 ? end : 0,
+    evidenceDigest: /^[a-f0-9]{64}$/.test(rawDigest) ? rawDigest : "",
+  };
+}
+function populationCheckpointValue(
+  end: number,
+  evidenceDigest: string,
+): string {
+  return `${end}.${evidenceDigest}`;
 }
 function appKey(value: string): string {
   return identityDigest(canonical(value));
@@ -227,16 +274,12 @@ function boundedTaskCursors(value: unknown): Record<string, string> {
 function cleanState(value: unknown): SelectorState {
   const item = object(value);
   const version = Number(item.version);
-  if (![STATE_VERSION, 6, 5].includes(version)) return emptyState();
+  if (![STATE_VERSION, 7, 6, 5].includes(version)) return emptyState();
   const taskCursorByApp = boundedTaskCursors(item.taskCursorByApp);
   const unresolvedCursorByApp =
-    version >= 6
-      ? boundedTaskCursors(item.unresolvedCursorByApp)
-      : {};
+    version >= 6 ? boundedTaskCursors(item.unresolvedCursorByApp) : {};
   const unresolvedExhaustedByApp =
-    version >= 6
-      ? boundedTaskCursors(item.unresolvedExhaustedByApp)
-      : {};
+    version >= 6 ? boundedTaskCursors(item.unresolvedExhaustedByApp) : {};
   const history = {
     populationEndByApp: boundedTaskCursors(item.populationEndByApp),
     taskCursorByApp,
@@ -335,30 +378,78 @@ export async function selectFairCandidate(
     const key = appKey(appId);
     const reportKey = canonical(appId);
     const end = populationCut(nowMs);
-    if (state.populationTurn && Number(state.populationEndByApp[key] ?? 0) < end) {
+    const priorPopulation = populationCheckpoint(state.populationEndByApp[key]);
+    if (state.populationTurn && priorPopulation.end < end) {
       try {
-        const population = await readPopulation(command ?? sendPublicReadCommand, appId, end);
+        const population = await readPopulation(
+          command ?? sendPublicReadCommand,
+          appId,
+          end,
+        );
         const current = object(population.current);
         const previous = object(population.previous);
-        const representatives = [...(Array.isArray(current.examples) ? current.examples : []),
-          ...(Array.isArray(previous.examples) ? previous.examples : [])].map(object);
-        nextState = cleanState({ ...nextState,
-          populationEndByApp: { ...nextState.populationEndByApp, [key]: String(end) } });
-        const distinct = [...new Map(representatives.map(sample => [taskId(sample), sample])).values()];
-        for (const sample of distinct.slice(0, 3)) {
-          const exactTaskId = taskId(sample);
-          if (!exactTaskId) continue;
-          const subject = await readSubjectTask({ appId, taskId: exactTaskId }, command);
-          if (subject.disposition !== "eligible") continue;
-          nextState = cleanState({ ...nextState, appId: appKey(apps[(appIndex + 1) % apps.length]!),
-            appIndex: (appIndex + 1) % apps.length, populationTurn: false });
-          appendNavigationFact(navigationFacts, `selector:population-selected:${appId}:cut=${end}:lag-ms=${nowMs-end}:report-pending`);
-          return { candidate: { appId, taskId: exactTaskId, assessmentPurpose: "ongoing", populationEnd: end },
-            state: nextState, navigationFacts };
+        const representatives = [
+          ...(Array.isArray(current.examples) ? current.examples : []),
+          ...(Array.isArray(previous.examples) ? previous.examples : []),
+        ].map(object);
+        const evidenceDigest = populationEvidenceDigest(population);
+        nextState = cleanState({
+          ...nextState,
+          populationEndByApp: {
+            ...nextState.populationEndByApp,
+            [key]: populationCheckpointValue(end, evidenceDigest),
+          },
+        });
+        if (priorPopulation.evidenceDigest === evidenceDigest) {
+          appendNavigationFact(
+            navigationFacts,
+            `selector:population-unchanged:${appId}:cut=${end}`,
+          );
+        } else {
+          const distinct = [
+            ...new Map(
+              representatives.map((sample) => [taskId(sample), sample]),
+            ).values(),
+          ];
+          for (const sample of distinct.slice(0, 3)) {
+            const exactTaskId = taskId(sample);
+            if (!exactTaskId) continue;
+            const subject = await readSubjectTask(
+              { appId, taskId: exactTaskId },
+              command,
+            );
+            if (subject.disposition !== "eligible") continue;
+            nextState = cleanState({
+              ...nextState,
+              appId: appKey(apps[(appIndex + 1) % apps.length]!),
+              appIndex: (appIndex + 1) % apps.length,
+              populationTurn: false,
+            });
+            appendNavigationFact(
+              navigationFacts,
+              `selector:population-selected:${appId}:cut=${end}:lag-ms=${nowMs - end}:report-pending`,
+            );
+            return {
+              candidate: {
+                appId,
+                taskId: exactTaskId,
+                assessmentPurpose: "ongoing",
+                populationEnd: end,
+              },
+              state: nextState,
+              navigationFacts,
+            };
+          }
+          appendNavigationFact(
+            navigationFacts,
+            `selector:population-observed:${appId}:cut=${end}:${representatives.length ? "representative-unavailable" : "no-activity"}`,
+          );
         }
-        appendNavigationFact(navigationFacts, `selector:population-observed:${appId}:cut=${end}:${representatives.length ? "representative-unavailable" : "no-activity"}`);
       } catch (error) {
-        appendNavigationFact(navigationFacts, `selector:population-unavailable:${appId}:${String(error).slice(0, 160)}`);
+        appendNavigationFact(
+          navigationFacts,
+          `selector:population-unavailable:${appId}:${String(error).slice(0, 160)}`,
+        );
       }
     }
     let cursor = state.taskCursorByApp[key] ?? "";

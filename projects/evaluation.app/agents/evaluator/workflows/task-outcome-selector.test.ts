@@ -6,6 +6,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
   automaticReviewConfig,
+  populationEvidenceDigest,
   runTaskOutcomeSelector,
   selectFairCandidate,
   selectorStateFact,
@@ -102,6 +103,76 @@ function publishReport(
     jsonSha256: hashReport(join(root, paths.jsonPath)),
     markdownSha256: hashReport(join(root, paths.markdownPath)),
   });
+}
+
+function populationReport(
+  end: number,
+  examples: Record<string, unknown>[],
+  overrides: Record<string, unknown> = {},
+): Record<string, unknown> {
+  const totals = {
+    started: examples.length,
+    terminal: examples.length,
+    completed: examples.filter((item) => item.state === "completed").length,
+    failed: examples.filter((item) => item.state === "failed").length,
+    interrupted: examples.filter((item) => item.state === "interrupted").length,
+    nonterminalAtCut: 0,
+    undatedTerminal: 0,
+    failedTaskCount: new Set(
+      examples
+        .filter((item) => item.state === "failed")
+        .map((item) => item.taskId),
+    ).size,
+    failurePercent: examples.length
+      ? (examples.filter((item) => item.state === "failed").length * 100) /
+        examples.length
+      : null,
+    failedWallMs: 0,
+    failedDurationMeasured: 0,
+    failedDurationUnknown: 0,
+  };
+  return {
+    version: 1,
+    available: true,
+    appId: "gym",
+    taskId: null,
+    end,
+    windowMs: DAY,
+    population: "attempt cohort",
+    denominator: "terminal attempts",
+    previous: {
+      start: end - 2 * DAY,
+      end: end - DAY,
+      totals: { ...totals, started: 0, terminal: 0, completed: 0 },
+      byHandler: [],
+      byFailureReason: [],
+      groupsTruncated: false,
+      examples: [],
+    },
+    current: {
+      start: end - DAY,
+      end,
+      totals,
+      byHandler: [{ handler: "goal", ...totals }],
+      byFailureReason: [],
+      groupsTruncated: false,
+      examples,
+    },
+    limits: { groups: 20, examples: 12, summaryChars: 800 },
+    unknowns: ["bounded retained history"],
+    ...overrides,
+  };
+}
+
+function populationCommand(
+  population: () => Record<string, unknown>,
+  tasks: Record<string, Record<string, unknown>[]>,
+): PublicCommand {
+  const fallback = catalogCommand(tasks);
+  return async (request) => {
+    if (request.type === "task.attempts.read") return population();
+    return fallback(request);
+  };
 }
 
 function catalogCommand(
@@ -321,7 +392,7 @@ describe("automatic task outcome selector", () => {
       ).toString("utf8"),
     );
     expect(decoded).toMatchObject({
-      version: 7,
+      version: 8,
       taskCursorByApp: { ["b".repeat(64)]: "historical-cursor" },
       unresolvedCursorByApp: {},
       unresolvedExhaustedByApp: {},
@@ -902,7 +973,8 @@ describe("automatic task outcome selector", () => {
     let exactReads = 0;
     const base = catalogCommand({ may: tasks });
     const command: PublicCommand = async (request) => {
-      if (request.type === "apps.list" || request.type === "task.attempts.read") return base(request);
+      if (request.type === "apps.list" || request.type === "task.attempts.read")
+        return base(request);
       if (request.type !== "tasks.list") {
         exactReads += 1;
         return base(request);
@@ -975,6 +1047,146 @@ describe("automatic task outcome selector", () => {
     expect(state).not.toHaveProperty("lastTaskByApp");
   });
 
+  test("population evidence identity ignores only rolling-window coordinates", () => {
+    const first = populationReport(NOW, [
+      {
+        appId: "gym",
+        taskId: "goal/population",
+        attemptId: "attempt-one",
+        state: "failed",
+        failureReason: "provider timeout",
+        startedAt: new Date(NOW - 1_000).toISOString(),
+        finishedAt: new Date(NOW - 500).toISOString(),
+      },
+    ]);
+    const shifted = structuredClone(first);
+    shifted.end = NOW + 60 * 60_000;
+    Object.assign(shifted.previous as Record<string, unknown>, {
+      start: NOW - 2 * DAY + 60 * 60_000,
+      end: NOW - DAY + 60 * 60_000,
+    });
+    Object.assign(shifted.current as Record<string, unknown>, {
+      start: NOW - DAY + 60 * 60_000,
+      end: NOW + 60 * 60_000,
+    });
+    expect(populationEvidenceDigest(shifted)).toBe(
+      populationEvidenceDigest(first),
+    );
+
+    const differentAttempt = structuredClone(shifted);
+    (
+      (differentAttempt.current as Record<string, unknown>).examples as Record<
+        string,
+        unknown
+      >[]
+    )[0]!.attemptId = "attempt-two";
+    expect(populationEvidenceDigest(differentAttempt)).not.toBe(
+      populationEvidenceDigest(first),
+    );
+
+    const differentFailure = structuredClone(shifted);
+    (
+      (differentFailure.current as Record<string, unknown>).examples as Record<
+        string,
+        unknown
+      >[]
+    )[0]!.failureReason = "schema rejection";
+    expect(populationEvidenceDigest(differentFailure)).not.toBe(
+      populationEvidenceDigest(first),
+    );
+  });
+
+  test("skips a clock-only population repeat without suppressing ordinary or changed evidence", async () => {
+    const root = mkdtempSync(join(tmpdir(), "selector-population-evidence-"));
+    const populationTask = task("gym", "goal/population", 0, "done");
+    const dueTask = task("gym", "goal/due", 0, "waiting");
+    const example = {
+      appId: "gym",
+      taskId: "goal/population",
+      attemptId: "attempt-one",
+      generation: 1,
+      handler: "goal",
+      state: "completed",
+      startedAt: new Date(NOW - 1_000).toISOString(),
+      finishedAt: new Date(NOW - 500).toISOString(),
+      failureReason: null,
+      summary: "complete",
+      sessionId: "session-one",
+    };
+    let currentPopulation = populationReport(NOW, [example]);
+    const command = populationCommand(() => currentPopulation, {
+      gym: [dueTask, populationTask],
+    });
+
+    const first = await selectFairCandidate(
+      command,
+      config,
+      root,
+      undefined,
+      NOW,
+    );
+    expect(first.candidate).toEqual({
+      appId: "gym",
+      taskId: "goal/population",
+      assessmentPurpose: "ongoing",
+      populationEnd: NOW,
+    });
+
+    currentPopulation = populationReport(NOW + 60 * 60_000, [example]);
+    const clockOnly = await selectFairCandidate(
+      command,
+      config,
+      root,
+      { ...first.state, populationTurn: true },
+      NOW + 60 * 60_000,
+    );
+    expect(clockOnly.navigationFacts).toContain(
+      `selector:population-unchanged:gym:cut=${NOW + 60 * 60_000}`,
+    );
+    expect(clockOnly.candidate).toEqual({
+      appId: "gym",
+      taskId: "goal/due",
+      assessmentPurpose: "ongoing",
+    });
+
+    currentPopulation = populationReport(NOW + 2 * 60 * 60_000, [
+      { ...example, attemptId: "attempt-two", sessionId: "session-two" },
+    ]);
+    const newAttempt = await selectFairCandidate(
+      command,
+      config,
+      root,
+      clockOnly.state,
+      NOW + 2 * 60 * 60_000,
+    );
+    expect(newAttempt.candidate).toEqual({
+      appId: "gym",
+      taskId: "goal/population",
+      assessmentPurpose: "ongoing",
+      populationEnd: NOW + 2 * 60 * 60_000,
+    });
+
+    currentPopulation = populationReport(NOW + 3 * 60 * 60_000, [
+      { ...example, attemptId: "attempt-two", sessionId: "session-two" },
+    ]);
+    (currentPopulation.current as Record<string, unknown>).groupsTruncated =
+      true;
+    const changedCoverage = await selectFairCandidate(
+      command,
+      config,
+      root,
+      { ...newAttempt.state, populationTurn: true },
+      NOW + 3 * 60 * 60_000,
+    );
+    expect(changedCoverage.candidate).toEqual({
+      appId: "gym",
+      taskId: "goal/population",
+      assessmentPurpose: "ongoing",
+      populationEnd: NOW + 3 * 60 * 60_000,
+    });
+    expect(selectorStateFact(changedCoverage.state).length).toBeLessThan(8_000);
+  });
+
   test("keeps resolved and unresolved historical outcomes reviewable", async () => {
     const root = mkdtempSync(join(tmpdir(), "selector-status-"));
     const command = catalogCommand({
@@ -1042,12 +1254,16 @@ describe("automatic task outcome selector", () => {
       NOW,
     );
     expect(result.candidate).toEqual({ appId: "scout", taskId: "goal/good" });
-    expect(result.navigationFacts.filter(f => !f.startsWith("selector:population-"))).toEqual([
+    expect(
+      result.navigationFacts.filter(
+        (f) => !f.startsWith("selector:population-"),
+      ),
+    ).toEqual([
       "selector-navigation-failed:may:pages-read=1:tasks.list item has no usable updatedAt",
       "selector-navigation-failed:may:pages-read=2:tasks.list item has no usable updatedAt",
     ]);
     expect(result.state).not.toHaveProperty("taskCursor");
-    expect(result.state.version).toBe(7);
+    expect(result.state.version).toBe(8);
   });
 
   test("advances past malformed and non-reviewable items within a page", async () => {
@@ -1079,7 +1295,11 @@ describe("automatic task outcome selector", () => {
       taskId: "goal/running",
       assessmentPurpose: "ongoing",
     });
-    expect(result.navigationFacts.filter(f => !f.startsWith("selector:population-"))).toEqual([
+    expect(
+      result.navigationFacts.filter(
+        (f) => !f.startsWith("selector:population-"),
+      ),
+    ).toEqual([
       "selector-navigation-failed:may:pages-read=1:tasks.list item has no usable updatedAt",
     ]);
   });
@@ -1149,7 +1369,11 @@ describe("automatic task outcome selector", () => {
     );
     expect(result.candidate).toEqual({ appId: "may", taskId: "goal/later" });
     expect(cursors).toEqual([undefined, "later"]);
-    expect(result.navigationFacts.filter(f => !f.startsWith("selector:population-"))).toEqual([
+    expect(
+      result.navigationFacts.filter(
+        (f) => !f.startsWith("selector:population-"),
+      ),
+    ).toEqual([
       "selector-navigation-failed:may:pages-read=2:tasks.list response has no items array",
     ]);
   });
