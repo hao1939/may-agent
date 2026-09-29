@@ -1,7 +1,7 @@
 # Task resource read interface
 
 **Design status:** Accepted.
-**Implementation status:** Implemented as part of the Task resource engine; source status is not deployment evidence.
+**Implementation status:** The shared reader is implemented. Explicit `inputKeys` reads are a [source prototype](../proposals/explicit-task-input-consideration-20260930.md), not deployed.
 
 This reference is part of the [Task resource engine](task-resource-engine.md) contract.
 
@@ -69,6 +69,25 @@ identities and explicit truncation. The active attempt's input remains separatel
 available in its supplied context. This is a bounded current-input window, not a
 complete history or a fulfillment flag. Remaining input keeps its existing later
 reconciliation opportunity. Reading the window does not consume it.
+
+`currentObligations.inputWaits.items` gives exact retained admission keys, timing
+and input/result correlations. An active worker can inspect an earlier request
+before its timer is due using `read.tasks.get(taskId, { inputKeys: [key] })`.
+The same option is available on the agent's `tasks.get`, socket `app.task.get`,
+and App HTTP detail route (repeated `inputKey` query parameters). Human board
+`task.get` remains a separate presentation and does not provide this option.
+
+An explicit read returns `inputEvents: [{ key, observedAt, event }]` from those
+exact admissions, including the original request and its source. At most eight
+keys may be requested. Bodies are absent from ordinary reads; neither reading
+nor listing keys consumes an input or changes its timer. Missing bodies or keys
+outside this Task fail the read explicitly. Answered input remains readable.
+The existing default obligation list is capped at 100 with `truncated`; it is
+not an unlimited inventory, and an exact read does not require a key to appear
+in that first page. The [result contract](task-resource-engine.md) controls
+settlement through `consideredInputKeys`. See the
+[prototype record](../proposals/explicit-task-input-consideration-20260930.md)
+for implementation and deployment status.
 
 The exact read uses one synchronous SQLite read snapshot for the resource,
 Conditions and input. It also forwards explicit `acceptedEvidence` options

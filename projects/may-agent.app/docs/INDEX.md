@@ -146,6 +146,7 @@ current owning contract together; use Git for current PR/source status.
 - [Task context discovery](proposals/task-context-discovery-20260917.md)
 - [Design documentation live-truth review](proposals/design-doc-live-truth-review-20260920.md)
 - [Ordinary commands from Task workers](proposals/task-worker-command-context-20260919.md)
+- [Explicit consideration of earlier Task input](proposals/explicit-task-input-consideration-20260930.md)
 - [Wait corrections and unanswered input recovery](proposals/task-wait-recovery-20260918.md)
 - [Reduce context cost through App knowledge and agent methods](proposals/focused-session-continuation.md)
 - [Keep domain policy in Apps, keep the Host generic](proposals/app-policy-and-host-boundary-cleanup.md)

@@ -5,7 +5,7 @@
 exact input dependencies, accepted outcomes and indexed recovery are implemented.
 Task activation is independent of optional schedules. Attempts are bounded;
 unfinished work retries with backoff until progress or authorized owner closure.
-Source checks and App behavior/deployment evidence remain separate.
+Explicit input selection is a [source prototype](../proposals/explicit-task-input-consideration-20260930.md), not deployed.
 
 This page owns the durable Task contract. Historical `achieve`/`maintain` mode
 data does not select a lifecycle; result labels describe attempts, not lifetime.
@@ -357,17 +357,17 @@ must cite that Condition's observed generation plus non-empty result facts. This
 removes the Task's obsolete link; it does not assert that the external event
 occurred, mutate a shared Condition for another Task, or clear unrelated waits.
 Omission preserves waits, and stale generation or newer-input fences reject the
-whole result. A waiting result may instead carry one absolute `reviewAt` when
-reconsideration itself is due but no external fact is awaited. Runtime persists
-that deadline with the accepted result and exact outstanding input, schedules it
-through the ordinary recovery index across restart, and permits an earlier event
-to wake the Task without consuming the deadline. Reaching `reviewAt` only makes
-a new attempt eligible; it never satisfies a Condition, bypasses normal failure
-backoff, or answers the caller. An early sleeping re-wait that omits `reviewAt` retains a
-future deadline; after it is due, sleeping again requires another Condition or a
-new future deadline. `continue: true` instead requests immediate bounded work and
-requires no invented wait. A failed verifier cannot establish completion. Result settlement,
-including newer input, uses the fences described below; this table does not override them. The [wait-recovery implementation record](../proposals/task-wait-recovery-20260918.md) returns inputs with obsolete waits for reconsideration without satisfying replacement or unrelated waits.
+whole result. A waiting result's absolute `reviewAt` is saved with the exact input
+and scheduled across restart. Early input does not consume it; an omitted future
+deadline survives re-wait. Due timers permit reconsideration, not satisfaction,
+answers, or bypassing failure backoff. Sleeping again needs a Condition or new
+future deadline; `continue: true` requests useful work. Failed verification cannot establish completion.
+
+A result may add up to eight exact outstanding `consideredInputKeys` after the
+worker [reads original input](task-resource-read-interface.md). Keys add to assigned
+input: `converged` answers it; `waiting`/`incomplete` retain it and may report. The Host validates
+same-Task unanswered admissions, existing waits or assigned input, and result fences.
+Unselected waits and Conditions survive; distinct answers need separate attempts.
 
 `incomplete` requires a summary and non-empty facts; it cannot include actions, Conditions
 or child App requests. The Host checks eligibility inside the fenced transaction.
