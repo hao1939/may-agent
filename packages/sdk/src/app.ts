@@ -215,7 +215,7 @@ export const conversationRequestUpdatesSchema = Type.Array(
           {
             maxItems: 32,
             description:
-              "Record relevant Task references without assigning work or subscribing to results. Handoffs add their Task references automatically. Empty or omitted lists retain existing references; at most 32 distinct references in total.",
+              "Record relevant Task references without assigning work or subscribing to results. A handoff naming this Request in followUp.requestId adds its Task automatically. Empty or omitted lists retain existing references; at most 32 distinct references in total.",
           },
         ),
       ),
