@@ -70,6 +70,12 @@ judges human intent and fulfillment; code checks the stable Conversation creator
 and revision. The bounded Request list prefers
 open asks, then includes recent closed asks so a human can naturally correct one.
 
+Request `taskRefs` retain relevant Task identities independently of Topic links
+or current Task availability. A reference is metadata, not proof of existence,
+an assignment, a result subscription or control authority. Ordinary handoff
+admission records the actual Task and its return links together; referencing
+research from another Task does not subscribe to that Task's later outcomes.
+
 When final result settlement fails, the attempt retains `unacceptedResult`
 separately from accepted state, including its originating attempt/session and
 the returned facts. Each repair claim saves that evidence before execution, so

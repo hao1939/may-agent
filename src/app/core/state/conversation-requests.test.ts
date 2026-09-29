@@ -14,11 +14,12 @@ import {
   claimObservedAppTask,
   completeAppTask,
   failAppTaskAttempt,
+  observeAppTaskIntent,
   reportAppTaskFailure,
 } from "../tasks/app-task-reconciler.js";
 import {
   createConversationTopic,
-  linkConversationTopicTask,
+  listConversationTopicLinksForTask,
   readAppConversationResource,
   readConversationTopic,
 } from "./conversations.js";
@@ -534,23 +535,56 @@ test("the immediate update is scoped to the claimed Conversation and a failed wr
   expect(readConversationRequest(f.db, app.id, "other", ask.id)).toEqual(foreign);
 });
 
-test("Task links accumulate without duplicates; overflow and unknown links roll back the update batch", () => {
+test.each([["none"], ["new"]] as const)(
+  "Request references preserve unrelated work without subscribing (Topic: %s)",
+  async (topicKind) => {
+    const f = fixture();
+    const worker = f.context(owner.id);
+    const ref = { appId: owner.id, taskId: "independent-research" };
+    observeAppTaskIntent(worker, {
+      appAgent: owner.id,
+      intent: { id: ref.taskId, parentId: "project", outcome: "Compare options", acceptance: ["Verified comparison"] },
+    });
+    const claim = claimObservedAppTask(worker, { taskId: ref.taskId, appAgent: owner.id, handler: "agent:owner" });
+    if (claim.kind !== "claimed") throw new Error("Expected independent worker claim");
+    completeAppTask(worker, claim, { summary: "Independent comparison available" });
+    const before = worker.resourceStore.readTaskContext({ taskIds: [ref.taskId] });
+    const topic: ConversationTurnResult["topic"] =
+      topicKind === "new" ? { kind: "new", title: "Comparison" } : { kind: "none" };
+
+    const result = await f.turn({ ...answer, topic, requestUpdates: [{ ...ask, taskRefs: [ref] }] });
+    expect(result.status).toBe("applied");
+    expect(result.admittedTasks).toEqual([]);
+    expect(readConversationRequest(f.db, app.id, "chat", ask.id)?.taskRefs).toEqual([ref]);
+    expect(listConversationTopicLinksForTask(f.db, ref.appId, ref.taskId)).toEqual([]);
+    expect(listPendingConversationTaskChanges(f.db, app.id)).toEqual([]);
+    expect(worker.resourceStore.readTaskContext({ taskIds: [ref.taskId] })).toEqual(before);
+
+    f.reopen();
+    await f.turn({
+      ...answer,
+      requestUpdates: [{ id: ask.id, expectedRevision: 1, disposition: "fulfilled", reason: "Comparison explained" }],
+    });
+    const closed = readConversationRequest(f.db, app.id, "chat", ask.id)!;
+    expect(closed).toMatchObject({ status: "closed", taskRefs: [ref] });
+    expect(
+      readAppConversationResource(f.db, app.id, "chat").messages.some(
+        (message) => message.id === closed.closure?.messageId && message.text === answer.response,
+      ),
+    ).toBe(true);
+    expect(listPendingConversationTaskChanges(f.db, app.id)).toEqual([]);
+    expect(f.context(owner.id).resourceStore.readTaskContext({ taskIds: [ref.taskId] })).toEqual(before);
+  },
+);
+
+test("Task references accumulate without duplicates; overflow rolls back the update batch", () => {
   const { db } = fixture();
-  createConversationTopic(db, {
-    id: "topic",
-    appId: app.id,
-    conversationId: "chat",
-    title: "Work",
-    openedBy: "human",
-    originMessageId: "first",
-  });
+  // References remain useful metadata even when the named work is unavailable.
   const refs = Array.from({ length: 33 }, (_, i) => ({ appId: owner.id, taskId: `work-${i}` }));
-  for (const ref of refs) linkConversationTopicTask(db, "topic", ref.appId, ref.taskId);
   const update = (updates: AppConversationRequestUpdate[], updateKey: string) =>
     applyConversationRequestUpdates(db, {
       appId: app.id,
       conversationId: "chat",
-      topicId: "topic",
       updates,
       updateKey,
       now: 1,
@@ -574,17 +608,19 @@ test("Task links accumulate without duplicates; overflow and unknown links roll 
   ).toThrow("Task link limit reached");
   expect(readConversationRequest(db, app.id, "chat", "rollback")).toBeNull();
   expect(readConversationRequest(db, app.id, "chat", ask.id)?.revision).toBe(2);
-  expect(() =>
-    update(
-      [
-        { ...ask, id: "rollback" },
-        { ...ask, id: "unknown", taskRefs: [{ appId: "elsewhere", taskId: "private" }] },
-      ],
-      "unknown",
-    ),
-  ).toThrow("outside this Conversation");
-  expect(readConversationRequest(db, app.id, "chat", "rollback")).toBeNull();
-  expect(readConversationRequest(db, app.id, "chat", "unknown")).toBeNull();
+});
+
+test("a reference can accompany the handoff that creates its Task", async () => {
+  const f = fixture();
+  const ref = { appId: owner.id, taskId: "work" };
+  expect(f.context(owner.id).resourceStore.readTask(ref.taskId)).toBeNull();
+  const result = await f.turn({ ...handoff, requestUpdates: [{ ...ask, taskRefs: [ref] }] });
+  expect(result.admittedTasks).toEqual([ref]);
+  const request = readConversationRequest(f.db, app.id, "chat", ask.id)!;
+  expect(request.taskRefs).toEqual([ref]);
+  expect(listConversationTopicLinksForTask(f.db, ref.appId, ref.taskId)).toEqual([
+    { appId: app.id, conversationId: "chat", topicId: request.topicId! },
+  ]);
 });
 
 test.each([
@@ -655,7 +691,6 @@ test.each([
     expect(readConversationRequest(f.db, app.id, "chat", ask.id)).toEqual(accepted);
   }
   const extraRef = { appId: owner.id, taskId: "additional-facts" };
-  if (links === "add") linkConversationTopicTask(f.db, accepted.topicId!, extraRef.appId, extraRef.taskId);
   const addedRefs = links === "add" ? [extraRef] : [];
   const resultRefs = [...accepted.taskRefs, ...addedRefs];
   const closureText =
@@ -703,9 +738,7 @@ test.each([
       .messages.filter((message) => message.id === closed.closure?.messageId)
       .map((message) => message.text),
   ).toEqual([closureText]);
-  expect(readConversationTopic(f.db, app.id, "chat", accepted.topicId!)?.taskRefs).toEqual(
-    expect.arrayContaining(addedRefs.map((ref) => expect.objectContaining(ref))),
-  );
+  expect(readConversationTopic(f.db, app.id, "chat", accepted.topicId!)?.taskRefs).toEqual([]);
   expect(config.resourceStore.readTaskContext({ taskIds: ["work"] })).toEqual(settledTask);
 });
 
