@@ -146,15 +146,6 @@ export function applyConversationRequestUpdates(
         throw new ConversationRequestConflict(
           `Request ${update.id} closure changes scope; save the authorized correction as open first, then close the returned revision without changing scope`,
         );
-      for (const ref of refs) {
-        const known = db
-          .prepare(
-            `SELECT 1 FROM conversation_topic_tasks link JOIN conversation_topics topic ON topic.id = link.topic_id
-          WHERE topic.app_id = ? AND topic.conversation_id = ? AND link.app_id = ? AND link.task_id = ? LIMIT 1`,
-          )
-          .get(input.appId, input.conversationId, ref.appId, ref.taskId);
-        if (!known) throw new Error(`Request ${update.id} names a Task outside this Conversation`);
-      }
       db.run(
         `INSERT INTO conversation_requests (app_id, conversation_id, id, revision, scope, status, topic_id, task_refs, closure, update_key, updated_at)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)

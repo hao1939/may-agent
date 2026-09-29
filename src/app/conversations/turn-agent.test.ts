@@ -284,8 +284,6 @@ describe("conversational attempt contract", () => {
     expect(Check(schema, { ...answer, dependencies: [] })).toBe(false);
     expect(JSON.stringify(schema)).toContain("This Turn ends after admission");
     expect(JSON.stringify(schema)).toContain("the Request remains open until resolved and explained");
-    expect(JSON.stringify(schema)).toContain("only for Tasks already linked to this Conversation");
-    expect(JSON.stringify(schema)).toContain("For a new handoff, omit taskRefs because Host admission links it atomically");
     expect(options).toMatchObject({
       requireFinish: true,
       toolPolicy: "app-agent-full",

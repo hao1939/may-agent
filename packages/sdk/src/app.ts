@@ -164,6 +164,7 @@ export type AppConversationRequest = {
   scope: string;
   status: "open" | "closed";
   topicId?: string;
+  /** Relevant Task identities; references alone do not assign work or subscribe to results. */
   taskRefs: Array<{ appId: string; taskId: string }>;
   closure?: { disposition: "fulfilled" | "withdrawn" | "unfulfilled"; reason: string; messageId: string };
 };
@@ -176,7 +177,7 @@ export type AppConversationRequestUpdate = {
   scope?: string;
   disposition: "open" | "fulfilled" | "withdrawn" | "unfulfilled";
   reason?: string;
-  /** Add exact links; omitted/empty lists retain admitted work. At most 32 distinct links in total. */
+  /** Add relevant Task references; omitted/empty lists retain earlier references. At most 32 distinct references. */
   taskRefs?: Array<{ appId: string; taskId: string }>;
 };
 
@@ -214,7 +215,7 @@ export const conversationRequestUpdatesSchema = Type.Array(
           {
             maxItems: 32,
             description:
-              "Add exact Task links only for Tasks already linked to this Conversation. For a new handoff, omit taskRefs because Host admission links it atomically. Empty or omitted lists retain existing links; at most 32 distinct links in total.",
+              "Record relevant Task references without assigning work or subscribing to results. Handoffs add their Task references automatically. Empty or omitted lists retain existing references; at most 32 distinct references in total.",
           },
         ),
       ),
