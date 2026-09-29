@@ -1,5 +1,106 @@
 # Reddit Source Contract Review — 2026-09-24
 
+## 2026-09-29 reassessment: one feed-resident alternate after a 403
+
+**Decision:** clarify the candidate-selection policy; do not change the standing
+`explore-reddit` Task, cadence, credentials, or access boundary in this
+investigation. The smallest justified rule is:
+
+> Select one promising candidate as today. If its body retrieval reaches an HTTP
+> 403 or another authoritative access boundary, do not retry or bypass it. From
+> the already-fetched search Atom response, assess at most one different entry
+> only when that response itself contains attributable post-body content for the
+> entry. Feed title, timestamp, and snippet-only metadata remain insufficient.
+> Make no additional Reddit request for this alternate, and otherwise finish an
+> evidence-backed no-op.
+
+This is a documentation-level clarification of the bounded research policy, not
+an implementation or production change. It complements rather than replaces the
+post-specific RSS recommendation below: a separately authorized workflow change
+could choose RSS as the selected candidate's detail representation, while the
+one-alternate rule prevents a single blocked candidate from discarding already
+retrieved, body-level evidence elsewhere in the feed.
+
+### Current canonical evidence
+
+The current `explore-reddit` Task remains the healthy generation-2 standing
+identity. Its latest accepted result is a valid no-op: the search Atom feed
+returned HTTP 200 with 25 entries at `2026-09-29T00:06:41.771Z`, selected post
+`t3_1wsupff` returned HTTP 403 at its public URL, feed metadata was not promoted
+to body evidence, and no publication was made. Evaluation publication
+`325d4973e1f5d6997a344b95ed33953d4f7ba0dc4c415d7edf71b511195bb292`
+and intake run `wr_1790646131752_xxxv` judged that latest attempt healthy and
+raised the recurrence only for owner investigation.
+
+The canonical eight-attempt page supports this bounded count, not the
+evaluator's broader `6 of 8` wording:
+
+| Newest-to-oldest position | Outcome |
+|---|---|
+| 1–4 | Four consecutive selected-post body HTTP 403 no-ops |
+| 5 | Readable candidate; one qualified finding published |
+| 6–8 | Readable candidates; evidence-backed no-ops after comparison with stronger existing coverage |
+
+Thus the observed page contains **4/8 selected-candidate 403 outcomes**, all four
+consecutive and newest. It also contains four readable candidates, one of which
+produced a qualified finding. That is evidence that readable Reddit bodies can
+still yield useful work, but it is not evidence that any particular alternate
+in the four blocked feeds would have been useful.
+
+The four blocked attempts lasted approximately 109.3, 79.0, 89.3, and 71.7
+seconds from accepted-attempt start to finish: about **349.3 seconds total**.
+That operational cost is noticeable but modest in isolation and does not alone
+justify code or a cadence change. The more material concern is avoidable
+coverage loss: each run stopped after one selected candidate even though its
+already-fetched 25-entry feed could potentially contain another entry with a
+full attributable body.
+
+### Why the present rule loses avoidable coverage
+
+The active workflow contract says to start with the public Atom feed, preserve
+stable IDs, reject metadata as body evidence, and return a no-op on an access
+boundary. Its general result guidance also says to “pick one promising candidate
+early.” It neither authorizes nor requires an alternate after that candidate is
+blocked. The recent agents therefore correctly stopped; the no-bypass behavior
+is an intentional source-safety boundary. The single-candidate stopping rule is
+not itself a safety requirement and can discard body text already obtained in
+the feed.
+
+The proposed clarification preserves every safety property: one initial feed,
+one selected-candidate retrieval attempt, no retry, no source substitution, no
+credential use, no inference from titles, and immediate no-op when no alternate
+has feed-resident body content. It changes only which already-retrieved evidence
+may be assessed.
+
+### Benefit, cost, and uncertainty
+
+- **Coverage benefit:** potentially recovers one body-level assessment in a run
+  that would otherwise stop at the first 403. The observed page's `1/4` useful
+  result among readable selected candidates is a rough opportunity indicator,
+  not a forecast for alternates; alternate-body availability and usefulness
+  were not measured.
+- **Extra source requests and rate-limit risk:** zero under the exact rule above,
+  because the alternate must be readable from the existing Atom response. This
+  is safer than requesting a second post URL after a 403 and avoids the HTTP 429
+  sequence observed in the 2026-09-28 post-RSS diagnostic.
+- **Runtime:** one additional library comparison and body assessment only when a
+  qualifying alternate exists. No direct timing for that incremental branch is
+  available. It is bounded to one entry and should be measured if implemented;
+  the current four blocked runs' 349.3 seconds are baseline context, not an
+  estimate of incremental cost.
+- **Maintenance:** small but nonzero—clarify the Reddit contract and add focused
+  tests for one alternate maximum, feed-body qualification, zero extra request,
+  and stop-on-boundary behavior. No parser or new service is justified by this
+  recommendation.
+- **Provider tokens and monetary cost:** unknown and unmeasured.
+
+**Rejected alternatives:** no change preserves a demonstrated single-candidate
+coverage loss; trying a second post URL adds a request and rate-limit exposure;
+a broad multi-candidate loop risks runtime and selection drift; authentication,
+source substitution, bypass, and treating feed metadata as body evidence remain
+unsupported. The clarification should be separately reviewed and tested before
+any application; this report does not apply or activate it.
+
 ## 2026-09-28 reassessment: fallback omitted, one current success
 
 The three accepted scans at `12:06`, `16:04`, and `20:06` UTC did **not**
