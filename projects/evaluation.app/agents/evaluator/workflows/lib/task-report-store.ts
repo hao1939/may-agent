@@ -91,7 +91,10 @@ function purposeMatchesRubric(
 ): purpose is AssessmentPurpose {
   return (
     (purpose === "outcome" && rubricVersion === TASK_OUTCOME_RUBRIC_VERSION) ||
-    (purpose === "ongoing" && [ONGOING_TASK_RUBRIC_VERSION, SYSTEMIC_TASK_RUBRIC_VERSION].includes(rubricVersion))
+    (purpose === "ongoing" &&
+      [ONGOING_TASK_RUBRIC_VERSION, SYSTEMIC_TASK_RUBRIC_VERSION].includes(
+        rubricVersion,
+      ))
   );
 }
 
@@ -234,7 +237,9 @@ export function renderTaskReportMarkdown(payload: unknown): string | null {
     !Object.keys(freshness).length
   )
     return `# Evaluation report\n\n- Subject: \`${appId}/${taskId}\`\n- Evidence: \`${evidenceHash}\`\n- Rubric: \`${rubricVersion}\`\n- Source revision: \`${sourceRevision}\`\n${reviewerLines}- Disposition: \`${disposition}\`\n- Created: \`${new Date(createdAt).toISOString()}\`\n- Evaluator execution: \`${executionId}\`\n- Cost: unknown\n\n## Summary\n\n${summary}\n\n## Responsibility\n\n${responsibility}\n\n## Findings\n\n${findings.map((item) => `- ${item}`).join("\n") || "- None."}\n\n## Verification and delivery\n\n${verification.map((item) => `- ${item}`).join("\n") || "- No verification cited."}\n- Delivery: ${delivery}\n`;
-  const populationMarkdown = renderPopulation(object(object(report.evidence).population));
+  const populationMarkdown = renderPopulation(
+    object(object(report.evidence).population),
+  );
   const validityLines =
     purpose === "ongoing"
       ? `- Validity phase: \`${text(validity.phase) || "unknown"}\`\n- Due boundary: \`${representableTimestamp(validity.dueAt) ? new Date(validity.dueAt).toISOString() : "unavailable"}\`\n`
@@ -371,14 +376,20 @@ function publishedEntry(
   }
 }
 
+function compareRecentReports(a: TaskReportEntry, b: TaskReportEntry): number {
+  return b.createdAt - a.createdAt || a.jsonPath.localeCompare(b.jsonPath);
+}
+
 export function listTaskReports(root: string, limit = 50): TaskReportEntry[] {
   const base = join(root, "task-outcomes");
   if (!existsSync(base)) return [];
   const bounded = Math.max(1, Math.min(100, Math.trunc(limit)));
+  // Publication markers do not carry report time and there is no complete,
+  // paginated report index. Traverse the existing store completely, while
+  // retaining only the requested top K validated publications in memory.
   const entries: TaskReportEntry[] = [];
   const pending = [base];
-  let scanned = 0;
-  while (pending.length && scanned < 500) {
+  while (pending.length) {
     const directory = pending.shift()!;
     for (const file of readdirSync(directory).sort()) {
       const absolute = join(directory, file);
@@ -386,12 +397,15 @@ export function listTaskReports(root: string, limit = 50): TaskReportEntry[] {
         pending.push(absolute);
         continue;
       }
-      if (!file.endsWith(".published.json") || scanned++ >= 500) continue;
+      if (!file.endsWith(".published.json")) continue;
       const entry = publishedEntry(root, absolute);
-      if (entry) entries.push(entry);
+      if (!entry) continue;
+      entries.push(entry);
+      entries.sort(compareRecentReports);
+      if (entries.length > bounded) entries.pop();
     }
   }
-  return entries.sort((a, b) => b.createdAt - a.createdAt).slice(0, bounded);
+  return entries;
 }
 
 export function isPublishedTaskReportPath(root: string, path: string): boolean {

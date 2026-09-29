@@ -733,6 +733,7 @@ describe("scout-explore workflow prompt", () => {
     let prompt = "";
     let runOptions: unknown;
     let agentCalls = 0;
+    const emitted: Record<string, unknown>[] = [];
     const ctx = workflowContext(async (_agent, task, options) => {
       agentCalls += 1;
       prompt = task;
@@ -754,9 +755,21 @@ describe("scout-explore workflow prompt", () => {
             itemIdsOrUrls: [],
           },
           outputs: [candidateFinding, output],
+          researchRecommendation: {
+            sourceUrl: "https://www.xiaohongshu.com/explore/note-1",
+            sourceRevision: "note-1@observed",
+            artifact: candidateFinding,
+            claim: "The pattern may improve local agent maintenance.",
+            limits: "One observational source; not locally reproduced.",
+            possibleApplication: "Compare in May's existing research task.",
+          },
         },
       };
     });
+    ctx.events.emit = (async (event: Record<string, unknown>) => {
+      emitted.push(event);
+      return { accepted: true };
+    }) as WorkflowContext["events"]["emit"];
     ctx.workspace!.appRoot = appDir;
     ctx.workspace!.projectRoot = projectDir;
     const result = await executeScoutExplore(ctx, {
@@ -795,6 +808,13 @@ describe("scout-explore workflow prompt", () => {
     const facts = (result.output as { facts: string[] }).facts;
     expect(facts).toContain(`publication:commit:${revision}`);
     expect(facts).toContain(`published-output:${finding}`);
+    expect(facts).toContain("research-handoff:may");
+    expect(emitted).toHaveLength(1);
+    expect(emitted[0]).toMatchObject({
+      type: "scout.research.qualified",
+      localKey: expect.stringMatching(/^research-[a-f0-9]{64}$/),
+      data: { artifact: finding, producerAppId: "scout-knowledge-lib" },
+    });
     expect(
       execFileSync("git", ["show", `${revision}:scout/knowledge/finding.md`], {
         cwd: root,

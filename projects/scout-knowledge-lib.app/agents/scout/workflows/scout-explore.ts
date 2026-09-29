@@ -30,6 +30,11 @@ import {
 } from "../tools/lib/xhs-source.js";
 import { retainAcceptedPublication } from "./lib/accepted-publication.js";
 import {
+  emitResearchHandoff,
+  qualifiedResearchHandoff,
+  type QualifiedResearchHandoff,
+} from "./lib/research-adoption-handoff.js";
+import {
   changedKnowledgePaths,
   publicationFacts,
   publishKnowledgeChanges,
@@ -71,12 +76,28 @@ const ExploreAgentResultSchema = Type.Object({
     }),
   }),
   outputs: Type.Array(Type.String({ maxLength: 1000 }), { maxItems: 20 }),
+  researchRecommendation: Type.Optional(
+    Type.Object({
+      sourceUrl: Type.String({ minLength: 1, maxLength: 1000 }),
+      sourceRevision: Type.String({ minLength: 1, maxLength: 300 }),
+      artifact: Type.String({ minLength: 1, maxLength: 1000 }),
+      claim: Type.String({ minLength: 1, maxLength: 2000 }),
+      limits: Type.String({ minLength: 1, maxLength: 2000 }),
+      possibleApplication: Type.String({ minLength: 1, maxLength: 2000 }),
+      relatedWork: Type.Optional(
+        Type.Array(Type.String({ minLength: 1, maxLength: 500 }), {
+          maxItems: 20,
+        }),
+      ),
+    }),
+  ),
 });
 
 type ExploreAgentResult = {
   summary: string;
   source: AgentSourceObservation;
   outputs: string[];
+  researchRecommendation?: Record<string, unknown>;
 };
 
 export type ScoutExploreDependencies = {
@@ -150,6 +171,12 @@ Result contract:
 - Pick one promising candidate early; reserve time for integration and read-back.
   Running out of operations before completing useful work is partial progress,
   not an evidence-backed decision that no library change is worthwhile.
+- When one published source record is specifically relevant to this May
+  installation, you may return one optional researchRecommendation with
+  sourceUrl, pinned sourceRevision, artifact, claim, limits,
+  possibleApplication, and optional relatedWork. artifact must be one exact
+  path in outputs. Qualification asks May to investigate; it is not an
+  implementation request. Omit it for ordinary notes or uncertain relevance.
 `;
 
   return `${task}${sourceContract}
@@ -187,6 +214,32 @@ function sourceName(input: unknown): SourceName | null {
   return sourceNames.includes(source as SourceName)
     ? (source as SourceName)
     : null;
+}
+
+const pendingHandoffPrefix = "research-handoff:pending:";
+
+function pendingResearchHandoff(
+  value: unknown,
+): QualifiedResearchHandoff | null {
+  if (typeof value === "string" && value.startsWith(pendingHandoffPrefix)) {
+    try {
+      return JSON.parse(value.slice(pendingHandoffPrefix.length));
+    } catch {
+      return null;
+    }
+  }
+  if (Array.isArray(value)) {
+    for (const item of value) {
+      const found = pendingResearchHandoff(item);
+      if (found) return found;
+    }
+  } else if (value && typeof value === "object") {
+    for (const item of Object.values(value as Record<string, unknown>)) {
+      const found = pendingResearchHandoff(item);
+      if (found) return found;
+    }
+  }
+  return null;
 }
 
 export function xhsWaitResult(
@@ -647,6 +700,40 @@ export async function executeScoutExplore(
   }
   const appDir = ctx.workspace.appRoot;
   const projectDir = ctx.workspace.projectRoot;
+  const pendingHandoff = pendingResearchHandoff(
+    ctx.reconciliation.previousAttempt,
+  );
+  if (pendingHandoff) {
+    try {
+      await emitResearchHandoff(
+        ctx.events.emit.bind(ctx.events),
+        pendingHandoff,
+      );
+      const summary =
+        "Recovered the accepted Scout research handoff without rerunning research or publication.";
+      return ctx.done(summary, {
+        state: "converged",
+        summary,
+        facts: [
+          `research-handoff:recovered:${pendingHandoff.artifactHash}`,
+          "research-handoff:may",
+        ],
+        actions: [],
+      });
+    } catch (error) {
+      const summary =
+        "Accepted Scout publication remains complete; its qualified research handoff is pending retry.";
+      return ctx.done(summary, {
+        state: "incomplete",
+        summary,
+        facts: [
+          `${pendingHandoffPrefix}${JSON.stringify(pendingHandoff)}`,
+          `research-handoff:deferred:${error instanceof Error ? error.message : String(error)}`,
+        ],
+        actions: [],
+      });
+    }
+  }
   const source = sourceName(ctx.reconciliation.input);
   if (!source)
     return ctx.blocked("Scout exploration source is missing or unsupported");
@@ -921,24 +1008,74 @@ run Git publication or edit the canonical library in this call.`;
     `${candidateProjectDir}${sep}`,
     `${beforePublication.canonicalProjectRoot}${sep}`,
   );
+  const facts = [
+    ...new Set([
+      ...sourceEvidence,
+      ...sourceResultEvidence(
+        observation,
+        source === "xhs" ? "workflow" : "agent-result+workflow-time",
+      ),
+      ...[...publication.outputs, ...scratchOutputs].map(
+        (output) => `output:${output}`,
+      ),
+      ...publicationFacts(publication),
+      ...(outputs.length === 0 ? ["result:evidence-backed-no-op"] : []),
+      `execution:${result.id}`,
+    ]),
+  ];
+  try {
+    let handoffResult: Record<string, unknown> | undefined;
+    if (structured.researchRecommendation) {
+      const candidateArtifact = String(
+        structured.researchRecommendation.artifact ?? "",
+      );
+      if (
+        !outputs.includes(candidateArtifact) ||
+        !candidateArtifact.startsWith(`${candidateProjectDir}${sep}`)
+      )
+        throw new Error(
+          "Qualified research artifact must be an admitted durable output",
+        );
+      const canonicalArtifact = resolve(
+        beforePublication.canonicalProjectRoot,
+        candidateArtifact.slice(candidateProjectDir.length + 1),
+      );
+      handoffResult = {
+        researchRecommendation: {
+          ...structured.researchRecommendation,
+          artifact: canonicalArtifact,
+        },
+      };
+    }
+    const handoff = qualifiedResearchHandoff(
+      handoffResult,
+      publication.outputs,
+    );
+    if (handoff) {
+      try {
+        await emitResearchHandoff(ctx.events.emit.bind(ctx.events), handoff);
+        facts.push("research-handoff:may");
+      } catch (error) {
+        facts.push(
+          `${pendingHandoffPrefix}${JSON.stringify(handoff)}`,
+          `research-handoff:deferred:${error instanceof Error ? error.message : String(error)}`,
+        );
+        return ctx.done(summary, {
+          state: "incomplete",
+          summary,
+          facts: facts as [string, ...string[]],
+        } satisfies TaskHandlerResult);
+      }
+    }
+  } catch (error) {
+    facts.push(
+      `research-handoff:invalid:${error instanceof Error ? error.message : String(error)}`,
+    );
+  }
   return ctx.done(summary, {
     state: "converged",
     summary,
-    facts: [
-      ...new Set([
-        ...sourceEvidence,
-        ...sourceResultEvidence(
-          observation,
-          source === "xhs" ? "workflow" : "agent-result+workflow-time",
-        ),
-        ...[...publication.outputs, ...scratchOutputs].map(
-          (output) => `output:${output}`,
-        ),
-        ...publicationFacts(publication),
-        ...(outputs.length === 0 ? ["result:evidence-backed-no-op"] : []),
-        `execution:${result.id}`,
-      ]),
-    ],
+    facts,
     actions: [],
   } satisfies TaskHandlerResult);
 }

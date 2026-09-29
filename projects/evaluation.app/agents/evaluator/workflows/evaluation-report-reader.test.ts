@@ -22,9 +22,10 @@ function publishFixture(
   taskId = "goal/one",
   createdAt = 1,
   reviewer: "evaluator" | "evaluator-deepseek" = "evaluator",
+  appId = "may",
 ): ReturnType<typeof taskReportPaths> {
   const paths = taskReportPaths(
-    "may",
+    appId,
     taskId,
     "abc",
     "task-outcome-v2",
@@ -37,7 +38,7 @@ function publishFixture(
     sourceRevision: "test",
     disposition: "assessed",
     createdAt,
-    subject: { appId: "may", taskId, evidenceHash: "abc" },
+    subject: { appId, taskId, evidenceHash: "abc" },
     evidence: {},
     evaluator: {
       executionId: "s_1",
@@ -64,7 +65,7 @@ function publishFixture(
   writeImmutable(json, `${JSON.stringify(payload, null, 2)}\n`);
   writeImmutable(markdown, renderTaskReportMarkdown(payload)!);
   markTaskReportPublished(root, {
-    appId: "may",
+    appId,
     taskId,
     evidenceHash: "abc",
     executionId: "s_1",
@@ -273,6 +274,64 @@ describe("evaluation report reader", () => {
         root,
       ).status,
     ).toBe("invalid");
+  });
+
+  test("finds the genuinely newest valid reports beyond 500 interleaved publications", async () => {
+    const root = mkdtempSync(join(tmpdir(), "report-reader-many-"));
+    for (let index = 0; index < 520; index++)
+      publishFixture(
+        root,
+        `older-${index}`,
+        `goal/a-${String(index).padStart(4, "0")}`,
+        index + 1,
+        index % 2 ? "evaluator" : "evaluator-deepseek",
+        index % 3 ? "may" : "gym",
+      );
+    const newest = publishFixture(
+      root,
+      "newest valid",
+      "goal/z-newest",
+      10_000,
+      "evaluator-deepseek",
+      "scout-knowledge-lib",
+    );
+    const corrupt = publishFixture(
+      root,
+      "newest corrupt",
+      "goal/zz-corrupt",
+      20_000,
+      "evaluator",
+      "gym",
+    );
+    appendFileSync(
+      resolveTaskReportPath(root, corrupt.markdownPath),
+      "tampered",
+    );
+    const unpublished = taskReportPaths("may", "goal/zzz-unpublished", "abc");
+    writeImmutable(
+      resolveTaskReportPath(root, unpublished.markdownPath),
+      "not published",
+    );
+
+    const listed = await readEvaluationReports(
+      createTestAppWorkflowContext({ input: { operation: "list", limit: 3 } }),
+      root,
+    );
+    const reports = (
+      listed.output as { result: { reports: Record<string, unknown>[] } }
+    ).result.reports;
+    expect(reports[0]).toMatchObject({
+      appId: "scout-knowledge-lib",
+      taskId: "goal/z-newest",
+      markdownPath: newest.markdownPath,
+    });
+    expect(reports).toHaveLength(3);
+    expect(
+      reports.some((report) => report.taskId === "goal/zz-corrupt"),
+    ).toBeFalse();
+    expect(
+      reports.some((report) => report.taskId === "goal/zzz-unpublished"),
+    ).toBeFalse();
   });
 
   test("lists and reads accepted immutable report pairs without an evaluator call", async () => {

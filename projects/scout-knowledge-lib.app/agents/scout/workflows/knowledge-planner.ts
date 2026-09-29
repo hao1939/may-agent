@@ -13,10 +13,7 @@ import {
   retainAcceptedPublication,
   type AcceptedPublicationRecovery,
 } from "./lib/accepted-publication.js";
-import {
-  qualifiedResearchHandoff,
-  researchHandoffKey,
-} from "./lib/research-adoption-handoff.js";
+import { emitQualifiedResearchHandoff } from "./lib/research-adoption-handoff.js";
 import {
   changedKnowledgePaths,
   KnowledgePublicationError,
@@ -562,20 +559,12 @@ ${JSON.stringify(ctx.reconciliation, null, 2)}`.trim();
   }
 
   try {
-    const researchHandoff = qualifiedResearchHandoff(
+    const emitted = await emitQualifiedResearchHandoff(
+      ctx.events.emit.bind(ctx.events),
       agentResult.result,
       publication.outputs,
     );
-    if (researchHandoff) {
-      await ctx.events.emit({
-        type: "scout.research.qualified",
-        localKey: `research-${researchHandoffKey(researchHandoff)}`,
-        target: { appId: "may", project: "may" },
-        data: {
-          producerAppId: "scout-knowledge-lib",
-          ...researchHandoff,
-        },
-      });
+    if (emitted) {
       agentResult = {
         ...agentResult,
         facts: [...agentResult.facts, "research-handoff:may"],

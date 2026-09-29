@@ -73,6 +73,36 @@ export function qualifiedResearchHandoff(
   };
 }
 
+type ResearchEventEmitter = (event: {
+  type: string;
+  localKey: string;
+  target: { appId: string; project: string };
+  data: Record<string, unknown>;
+}) => Promise<unknown>;
+
+export async function emitResearchHandoff(
+  emit: ResearchEventEmitter,
+  handoff: QualifiedResearchHandoff,
+): Promise<void> {
+  await emit({
+    type: "scout.research.qualified",
+    localKey: `research-${researchHandoffKey(handoff)}`,
+    target: { appId: "may", project: "may" },
+    data: { producerAppId: "scout-knowledge-lib", ...handoff },
+  });
+}
+
+export async function emitQualifiedResearchHandoff(
+  emit: ResearchEventEmitter,
+  result: Record<string, unknown> | undefined,
+  publishedOutputs: readonly string[],
+): Promise<boolean> {
+  const handoff = qualifiedResearchHandoff(result, publishedOutputs);
+  if (!handoff) return false;
+  await emitResearchHandoff(emit, handoff);
+  return true;
+}
+
 export function researchHandoffKey(handoff: QualifiedResearchHandoff): string {
   return createHash("sha256")
     .update(
