@@ -2761,8 +2761,12 @@ export function claimObservedAppTask(
 
   const continuedInputKeys = [
     ...new Set([
-      ...(latestAttempt?.acceptedResult?.continue
-        ? taskInputAdmissionKeys(latestAttempt.events ?? [], latestAttempt.continuedInputKeys)
+      ...(latestAttempt && (!latestAttempt.acceptedResult || latestAttempt.acceptedResult.continue ||
+        latestAttempt.acceptedResult.state === "incomplete")
+        ? taskInputAdmissionKeys(latestAttempt.events ?? [], [
+            ...(latestAttempt.continuedInputKeys ?? []),
+            ...(latestAttempt.acceptedResult?.consideredInputKeys ?? []),
+          ])
         : []),
       ...continuedTaskInputKeys(tree, input.taskId, claimedEvents, [
         ...missedCheckpointConditionIds,

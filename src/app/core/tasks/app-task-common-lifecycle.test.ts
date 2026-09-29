@@ -186,7 +186,7 @@ describe("explicit earlier input consideration", () => {
     const claim = f.claim();
     const result = { summary: "Investigated the old request", facts: ["request:reviewed"],
       report: true as const, consideredInputKeys: ["refresh"] };
-    if (state === "waiting") deferAppTask(f.config, claim, { ...result, disposition: "waiting" });
+    if (state === "waiting") deferAppTask(f.config, claim, { ...result, disposition: "waiting", continue: true });
     else reportAppTaskFailure(f.config, claim, result);
     f.reopen();
     expect(readAppTaskAdmissionOutcome(f.config, "conversation", "refresh")).toBeNull();
@@ -194,6 +194,24 @@ describe("explicit earlier input consideration", () => {
       .toMatchObject({ state, attemptId: claim.attemptId, consideredInputKeys: ["refresh"] });
     expect(readAppTaskAdmissionOutcome(f.config, "conversation", "independent", "report")).toBeNull();
     expect(f.config.resourceStore.readTask("conversation")?.status.inputWaits?.refresh).toBeDefined();
+    if (state === "incomplete") f.advanceRetry();
+    let next = f.claim();
+    expect(next.continuedInputKeys).toContain("refresh");
+    expect(next.continuedInputKeys).not.toContain("independent");
+    failAppTaskAttempt(f.config, next, "Transient executor failure");
+    f.reopen();
+    f.advanceRetry();
+    next = f.claim();
+    expect(next.continuedInputKeys).toContain("refresh");
+    expect(next.continuedInputKeys).not.toContain("independent");
+    expect(readAppTaskReconciliationEvents(f.config.resourceStore, next).continuedInputs).toEqual(expect.arrayContaining([
+      expect.objectContaining({ event: expect.objectContaining({ data: expect.objectContaining({
+        request: expect.objectContaining({ id: "refresh" }),
+      }) }) }),
+    ]));
+    completeAppTask(f.config, next, { summary: "Finished reviewing the selected request" });
+    expect(readAppTaskAdmissionOutcome(f.config, "conversation", "refresh")?.attemptId).toBe(next.attemptId);
+    expect(readAppTaskAdmissionOutcome(f.config, "conversation", "independent")).toBeNull();
   });
 
   it.each([false, true])("settles a newly due input only with accepted live context (live=%s)", (live) => {
