@@ -28,6 +28,20 @@ function fixture(root: string) {
     result: { understanding: "Wednesday", version: "v3" },
     facts: ["Venue: Cedar"],
     acceptedEvidence: { available: true, maxPageSize: 20 },
+    currentObligations: {
+      available: true,
+      inputWaits: {
+        maxItems: 100,
+        truncated: false,
+        items: [
+          {
+            key: "task:publish",
+            conditionCount: 1,
+            correlation: { input: { available: true, id: "publish", kind: "message", status: "handling" } },
+          },
+        ],
+      },
+    },
     conditions: [
       {
         id: "approval",
@@ -91,6 +105,46 @@ function packet(message: AgentMessage) {
   return JSON.parse(text.text.slice(text.text.indexOf("\n{")));
 }
 
+function inputEvent(id: string, message: string, eventId: number) {
+  return {
+    eventId,
+    observedAt: "2026-09-28T14:30:17.911Z",
+    event: {
+      type: "app.task.requested",
+      data: {
+        appId: "sample",
+        idempotencyKey: `task:${id}`,
+        request: {
+          id,
+          input: {
+            kind: "message",
+            data: { context: { reviewer: "supervisor", evidencePath: "/evidence/review.md" }, message },
+          },
+        },
+      },
+    },
+  };
+}
+
+function pendingInputEvent(id: string, message: string, eventId: number) {
+  return {
+    eventId,
+    observedAt: "2026-09-28T20:50:36.643Z",
+    event: {
+      type: "app.input.requested",
+      data: {
+        appId: "sample",
+        taskId: "review",
+        idempotencyKey: id,
+        input: {
+          kind: "message",
+          data: { context: { authority: "clarification only" }, message },
+        },
+      },
+    },
+  };
+}
+
 test("refresh keeps current evidence, independent approval and a scoped last-known fallback", async () => {
   const root = mkdtempSync(join(tmpdir(), "decision-context-"));
   try {
@@ -130,6 +184,74 @@ test("initial failure and a changed generation preserve known scope without clai
     const missing = packet(await read());
     expect(missing.observed.snapshot).toBe("attempt-start");
     expect(missing.current.result.version).toBe("v3");
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("long assigned and pending messages keep actionable identity beside independent state", async () => {
+  const root = mkdtempSync(join(tmpdir(), "decision-inputs-"));
+  try {
+    const f = fixture(root);
+    const assignedMessage = `Supervisor correction: continue the existing review. ${"assigned detail ".repeat(500)}`;
+    const pendingMessage = `New clarification: compare the smallest candidate. ${"pending detail ".repeat(500)}`;
+    f.context.reconciliation.events.items = [inputEvent("assigned-review", assignedMessage, 71)];
+    f.setCurrent({
+      ...f.task,
+      pendingEvents: { items: [pendingInputEvent("pending-clarification", pendingMessage, 72)], truncated: false },
+    });
+
+    const message = await createTaskDecisionContext(f.context)();
+    expect(Buffer.byteLength(JSON.stringify(message))).toBeLessThan(16 * 1024);
+    const p = packet(message);
+    expect(p.coverage.note).toContain("attemptInput is assigned to this attempt");
+    expect(p.coverage.note).toContain("pendingInput is not yet claimed");
+    const assigned = p.events.attemptInput.preview.items.preview[0];
+    expect(assigned.pointer).toBe("/events/attemptInput/items/0");
+    expect(assigned.preview.event.type).toBe("app.task.requested");
+    expect(assigned.preview.event.data.request.id).toBe("assigned-review");
+    expect(assigned.preview.event.data.request.input.kind).toBe("message");
+    expect(assigned.preview.event.data.request.input.data.pointer).toBe(
+      "/events/attemptInput/items/0/event/data/request/input/data",
+    );
+    expect(assigned.preview.event.data.request.input.data.preview.message.preview).toStartWith("Supervisor correction");
+
+    const pending = p.events.pendingInput.preview.items.preview[0];
+    expect(pending.pointer).toBe("/events/pendingInput/items/0");
+    expect(pending.preview.event.type).toBe("app.input.requested");
+    expect(pending.preview.event.data.idempotencyKey).toBe("pending-clarification");
+    expect(pending.preview.event.data.taskId).toBe("review");
+    expect(pending.preview.event.data.input.kind).toBe("message");
+    expect(pending.preview.event.data.input.data.pointer).toBe("/events/pendingInput/items/0/event/data/input/data");
+    expect(pending.preview.event.data.input.data.preview.message.preview).toStartWith("New clarification");
+    expect(p.current.result).toEqual({ understanding: "Wednesday", version: "v3" });
+    expect(p.conditions[0]).toMatchObject({ id: "approval", observation: { state: "unknown" } });
+    expect(p.obligations.inputWaits.items[0].key).toBe("task:publish");
+
+    const detail = JSON.parse(readFileSync(p.coverage.detail, "utf8"));
+    expect(detail.events.attemptInput.items[0].event.data.request.input.data.message).toBe(assignedMessage);
+    expect(detail.events.pendingInput.items[0].event.data.input.data.message).toBe(pendingMessage);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("continued transfer input keeps its original request identity and content pointer", async () => {
+  const root = mkdtempSync(join(tmpdir(), "decision-transfer-"));
+  try {
+    const f = fixture(root);
+    const message = `Transferred caller request must remain attributable. ${"transfer detail ".repeat(500)}`;
+    f.context.reconciliation.events.continuedInputs = [inputEvent("transferred-request", message, 44)];
+
+    const p = packet(await createTaskDecisionContext(f.context)());
+    const transferred = p.events.attemptInput.preview.continuedInputs.preview[0];
+    expect(transferred.pointer).toBe("/events/attemptInput/continuedInputs/0");
+    expect(transferred.preview.event.type).toBe("app.task.requested");
+    expect(transferred.preview.event.data.idempotencyKey).toBe("task:transferred-request");
+    expect(transferred.preview.event.data.request.id).toBe("transferred-request");
+    expect(transferred.preview.event.data.request.input.data.preview.message.preview).toStartWith(
+      "Transferred caller request",
+    );
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
