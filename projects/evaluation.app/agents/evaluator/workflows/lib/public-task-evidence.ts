@@ -1,4 +1,7 @@
-import { readPublicAttempts, readPopulation } from "./task-population-evidence.js";
+import {
+  readPublicAttempts,
+  readPopulation,
+} from "./task-population-evidence.js";
 import { createHash } from "node:crypto";
 import { Socket } from "node:net";
 import { resolve } from "node:path";
@@ -58,7 +61,9 @@ export type PublicTaskEvidenceProvider = {
     taskId: string,
     acceptedEvidence?: { limit?: number; cursor?: string },
   ): Promise<Record<string, unknown>>;
-  readAttempts(input: Record<string, unknown>): Promise<Record<string, unknown>>;
+  readAttempts(
+    input: Record<string, unknown>,
+  ): Promise<Record<string, unknown>>;
   getEvent(eventId: string | number): Promise<Record<string, unknown>>;
 };
 export type SubjectDisposition =
@@ -584,11 +589,28 @@ export async function readSubjectTask(
       );
     let population: Record<string, unknown> | undefined;
     if (subject.populationEnd !== undefined) {
-      try { population = await readPopulation(command, appId, subject.populationEnd, taskId); }
-      catch (error) { population = { available: false, appId, taskId, end: subject.populationEnd,
-        reason: error instanceof Error ? error.message : String(error) }; }
+      try {
+        population = await readPopulation(
+          command,
+          appId,
+          subject.populationEnd,
+          taskId,
+        );
+      } catch (error) {
+        population = {
+          available: false,
+          appId,
+          taskId,
+          end: subject.populationEnd,
+          reason: error instanceof Error ? error.message : String(error),
+        };
+      }
     }
-    const snapshot = { ...task, readBack, ...(population ? { population } : {}) };
+    const snapshot = {
+      ...task,
+      readBack,
+      ...(population ? { population } : {}),
+    };
     const evidenceHash = taskEvidenceHash(appId, taskId, snapshot);
     return {
       disposition: "eligible",

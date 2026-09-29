@@ -120,17 +120,38 @@ export async function readTaskProcessEvidence(
         data.attemptId !== ref.attemptId
       )
         throw new Error("reconciled event correlation mismatch");
-      const attempt = await provider.readAttempts({ appId, taskId, attemptId: ref.attemptId });
-      if (attempt.available !== true || attempt.appId !== appId || attempt.taskId !== taskId ||
-          attempt.attemptId !== ref.attemptId || attempt.generation !== ref.generation)
+      const attempt = await provider.readAttempts({
+        appId,
+        taskId,
+        attemptId: ref.attemptId,
+      });
+      if (
+        attempt.available !== true ||
+        attempt.appId !== appId ||
+        attempt.taskId !== taskId ||
+        attempt.attemptId !== ref.attemptId ||
+        attempt.generation !== ref.generation
+      )
         throw new Error("canonical attempt correlation mismatch");
-      const linkedSessions = Array.isArray(attempt.sessions) ? attempt.sessions.map(object) : [];
-      const sessionId = typeof attempt.sessionId === "string" && /^s_[a-zA-Z0-9_-]+$/.test(attempt.sessionId)
-        ? attempt.sessionId : linkedSessions[0]?.sessionId;
-      if (typeof sessionId !== "string" || !/^s_[a-zA-Z0-9_-]+$/.test(sessionId))
-        throw new Error("No readable session linked by canonical attempt; workflow-only process unassessed");
+      const linkedSessions = Array.isArray(attempt.sessions)
+        ? attempt.sessions.map(object)
+        : [];
+      const sessionId =
+        typeof attempt.sessionId === "string" &&
+        /^s_[a-zA-Z0-9_-]+$/.test(attempt.sessionId)
+          ? attempt.sessionId
+          : linkedSessions[0]?.sessionId;
+      if (
+        typeof sessionId !== "string" ||
+        !/^s_[a-zA-Z0-9_-]+$/.test(sessionId)
+      )
+        throw new Error(
+          "No readable session linked by canonical attempt; workflow-only process unassessed",
+        );
       if (linkedSessions.length > 1 || attempt.executionsTruncated)
-        gaps.push(`Only one linked session read for ${ref.attemptId}; other workflow/helper execution unassessed`);
+        gaps.push(
+          `Only one linked session read for ${ref.attemptId}; other workflow/helper execution unassessed`,
+        );
       function binding(response: Record<string, unknown>) {
         const session = object(response.session);
         if (
@@ -258,6 +279,9 @@ export async function readTaskProcessEvidence(
     limits,
     attempts: JSON.parse(JSON.stringify(attempts)) as typeof attempts,
     gaps,
-    coverage: { requested: Math.min(references.length, limits.attempts), readable: attempts.filter((a) => a.status !== "unavailable").length },
+    coverage: {
+      requested: Math.min(references.length, limits.attempts),
+      readable: attempts.filter((a) => a.status !== "unavailable").length,
+    },
   };
 }

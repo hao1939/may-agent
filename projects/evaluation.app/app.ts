@@ -652,7 +652,10 @@ export function taskIntentForInput(input: AppInput): TaskIntent | null {
           : {}),
         ...(evidenceHash ? { evidenceHash } : {}),
         assessmentPurpose,
-        ...(Number.isSafeInteger(data.populationEnd) && Number(data.populationEnd) > 0 ? { populationEnd: Number(data.populationEnd) } : {}),
+        ...(Number.isSafeInteger(data.populationEnd) &&
+        Number(data.populationEnd) > 0
+          ? { populationEnd: Number(data.populationEnd) }
+          : {}),
         ...(reviewer === "evaluator-deepseek" ? { reviewer } : {}),
         ...(automatic ? { automatic: true } : {}),
       };
@@ -965,7 +968,10 @@ export function taskInputForEvent(
               ...(evidenceHash ? { evidenceHash } : {}),
               ...(reviewer ? { reviewer } : {}),
               automatic: true,
-              ...(Number.isSafeInteger(data.populationEnd) && Number(data.populationEnd) > 0 ? { populationEnd: Number(data.populationEnd) } : {}),
+              ...(Number.isSafeInteger(data.populationEnd) &&
+              Number(data.populationEnd) > 0
+                ? { populationEnd: Number(data.populationEnd) }
+                : {}),
               ...(assessmentPurpose === "ongoing" ||
               assessmentPurpose === "outcome"
                 ? { assessmentPurpose }

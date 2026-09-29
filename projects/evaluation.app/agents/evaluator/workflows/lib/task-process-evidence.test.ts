@@ -65,10 +65,18 @@ function fixture(summaries = ["direct success"]) {
     const index = Number(id.slice(2));
     return transcript ? transcripts[index] : { session: sessions[index] };
   };
-  const attempts = summaries.map((_, index) => ({ version: 1, available: true, appId: "may", taskId: "goal/one",
-    attemptId: `attempt-${index}`, generation: 2, sessionId: `s_${index}` }));
+  const attempts = summaries.map((_, index) => ({
+    version: 1,
+    available: true,
+    appId: "may",
+    taskId: "goal/one",
+    attemptId: `attempt-${index}`,
+    generation: 2,
+    sessionId: `s_${index}`,
+  }));
   const provider = {
-    readAttempts: async (input: Record<string, unknown>) => attempts.find(a => a.attemptId === input.attemptId)! ,
+    readAttempts: async (input: Record<string, unknown>) =>
+      attempts.find((a) => a.attemptId === input.attemptId)!,
     getEvent: async (id: string | number) => events.find((e) => e.id === id)!,
   };
   const detail = { status: "waiting", generation: 2, history };
@@ -233,7 +241,8 @@ describe("Task-bound process evidence", () => {
   test("subject snapshot binds process and preserves unavailable relative artifacts", async () => {
     const f = fixture();
     const command: PublicCommand = async (cmd) => {
-      if (cmd.type === "task.attempts.read") return f.provider.readAttempts(cmd);
+      if (cmd.type === "task.attempts.read")
+        return f.provider.readAttempts(cmd);
       if (cmd.type === "apps.list")
         return { command: cmd.type, apps: [{ id: "may" }] };
       if (cmd.type === "event.get")
