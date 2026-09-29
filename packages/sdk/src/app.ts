@@ -214,7 +214,7 @@ export const conversationRequestUpdatesSchema = Type.Array(
           {
             maxItems: 32,
             description:
-              "Add exact Task links. Empty or omitted lists retain existing links; at most 32 distinct links in total.",
+              "Add exact Task links only for Tasks already linked to this Conversation. For a new handoff, omit taskRefs because Host admission links it atomically. Empty or omitted lists retain existing links; at most 32 distinct links in total.",
           },
         ),
       ),
