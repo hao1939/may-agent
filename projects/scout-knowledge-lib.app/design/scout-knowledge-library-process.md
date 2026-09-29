@@ -423,7 +423,6 @@ visible. Preamble coverage records no numeric sample for an unavailable scan or
 zero readable files, instead of reporting perfect coverage. These are App-local
 observation rules, not a new common health or recovery controller.
 
-
 `agents/scout/workflows/library-health.ts` is code-only observation. It
 collects bounded domain facts and emits signals. It does not decide content
 quality or task progress.
@@ -636,11 +635,23 @@ The JSON-based output count and textual downstream reference count are retired.
 The daily digest remains a presentation handoff and never creates work. A
 separate qualified handoff is optional after Scout publishes and verifies one
 source record that is plausibly relevant to the local May installation. The
-planner accepts at most one structured `result.researchRecommendation` per
-pass, verifies its HTTPS source identity, reviewed revision and canonical
-artifact, computes the published bytes' SHA-256, retains the claim,
-evidence/reading limits, possible application, and related work, then
-emits `scout.research.qualified` with content-addressed transport identity.
+planner or routine explore pass accepts at most one optional
+`result.researchRecommendation`, after the required finding publication has
+succeeded. The workflow verifies its HTTPS source identity, reviewed revision,
+canonical published output and current bytes; computes and retains the bytes'
+SHA-256 with the claim, evidence/reading limits, possible application, and
+related work; then emits `scout.research.qualified` with content-addressed
+transport identity. A missing recommendation is an ordinary publication-only
+success, while malformed advisory data is retained as an explicit invalid
+handoff outcome without rejecting the publication.
+
+If event emission fails after publication, the accepted incomplete Task result
+retains the exact publication identity and qualified handoff. Same-Task recovery
+revalidates its structure and pinned artifact hash, retries only the idempotent
+emission, and never reruns source research or publication. A changed artifact or
+malformed retained recommendation is diagnosed rather than replayed. Thus
+publication success and an unfinished optional handoff can coexist without a
+new queue or facts-string protocol.
 
 The event asks May's standing Bob-owned research Task to judge applicability. It
 is not an Evaluation report, candidate, approval, or instruction to implement.

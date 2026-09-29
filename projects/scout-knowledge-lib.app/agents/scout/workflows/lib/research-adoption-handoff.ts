@@ -15,17 +15,16 @@ export type QualifiedResearchHandoff = {
 const sha256 = (value: Buffer) =>
   createHash("sha256").update(value).digest("hex");
 
-/**
- * Admit an optional structured Scout recommendation after its durable artifact
- * was published. Code binds the artifact bytes; Scout judges relevance and
- * states source coverage. Source claims remain evidence, not instructions.
- */
-export function qualifiedResearchHandoff(
-  result: Record<string, unknown> | undefined,
+function object(value: unknown): Record<string, unknown> {
+  return value && typeof value === "object" && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : {};
+}
+
+function checkedRecommendation(
+  value: unknown,
   publishedOutputs: readonly string[],
-): QualifiedResearchHandoff | null {
-  const value = result?.researchRecommendation;
-  if (value === undefined) return null;
+): Omit<QualifiedResearchHandoff, "artifactHash"> {
   if (!value || typeof value !== "object" || Array.isArray(value))
     throw new Error("researchRecommendation must be an object");
   const recommendation = value as Record<string, unknown>;
@@ -63,7 +62,6 @@ export function qualifiedResearchHandoff(
     sourceUrl: String(recommendation.sourceUrl),
     sourceRevision: String(recommendation.sourceRevision),
     artifact: String(recommendation.artifact),
-    artifactHash: sha256(readFileSync(String(recommendation.artifact))),
     claim: String(recommendation.claim),
     limits: String(recommendation.limits),
     possibleApplication: String(recommendation.possibleApplication),
@@ -71,6 +69,42 @@ export function qualifiedResearchHandoff(
       ? { relatedWork: structuredClone(recommendation.relatedWork as string[]) }
       : {}),
   };
+}
+
+/**
+ * Admit an optional structured Scout recommendation after its durable artifact
+ * was published. Code binds the artifact bytes; Scout judges relevance and
+ * states source coverage. Source claims remain evidence, not instructions.
+ */
+export function qualifiedResearchHandoff(
+  result: Record<string, unknown> | undefined,
+  publishedOutputs: readonly string[],
+): QualifiedResearchHandoff | null {
+  const value = result?.researchRecommendation;
+  if (value === undefined) return null;
+  const recommendation = checkedRecommendation(value, publishedOutputs);
+  return {
+    ...recommendation,
+    artifactHash: sha256(readFileSync(String(recommendation.artifact))),
+  };
+}
+
+/** Revalidate accepted retry evidence against its canonical published bytes. */
+export function validatedResearchHandoff(
+  value: unknown,
+  publishedOutputs: readonly string[],
+): QualifiedResearchHandoff {
+  const candidate = object(value);
+  const recommendation = checkedRecommendation(candidate, publishedOutputs);
+  const artifactHash = String(candidate.artifactHash ?? "");
+  if (!/^[a-f0-9]{64}$/.test(artifactHash))
+    throw new Error("Qualified research handoff requires artifactHash");
+  const currentHash = sha256(readFileSync(recommendation.artifact));
+  if (currentHash !== artifactHash)
+    throw new Error(
+      "Qualified research artifact no longer matches its pinned hash",
+    );
+  return { ...recommendation, artifactHash };
 }
 
 type ResearchEventEmitter = (event: {

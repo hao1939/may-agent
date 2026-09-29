@@ -32,6 +32,7 @@ import { retainAcceptedPublication } from "./lib/accepted-publication.js";
 import {
   emitResearchHandoff,
   qualifiedResearchHandoff,
+  validatedResearchHandoff,
   type QualifiedResearchHandoff,
 } from "./lib/research-adoption-handoff.js";
 import {
@@ -65,7 +66,7 @@ type SourceObservation = {
 
 type AgentSourceObservation = Omit<SourceObservation, "checkedAt">;
 
-const ExploreAgentResultSchema = Type.Object({
+export const ExploreAgentResultSchema = Type.Object({
   summary: Type.String({ minLength: 1, maxLength: 1000 }),
   source: Type.Object({
     name: Type.Union(sourceNames.map((source) => Type.Literal(source))),
@@ -76,28 +77,17 @@ const ExploreAgentResultSchema = Type.Object({
     }),
   }),
   outputs: Type.Array(Type.String({ maxLength: 1000 }), { maxItems: 20 }),
-  researchRecommendation: Type.Optional(
-    Type.Object({
-      sourceUrl: Type.String({ minLength: 1, maxLength: 1000 }),
-      sourceRevision: Type.String({ minLength: 1, maxLength: 300 }),
-      artifact: Type.String({ minLength: 1, maxLength: 1000 }),
-      claim: Type.String({ minLength: 1, maxLength: 2000 }),
-      limits: Type.String({ minLength: 1, maxLength: 2000 }),
-      possibleApplication: Type.String({ minLength: 1, maxLength: 2000 }),
-      relatedWork: Type.Optional(
-        Type.Array(Type.String({ minLength: 1, maxLength: 500 }), {
-          maxItems: 20,
-        }),
-      ),
-    }),
-  ),
+  // Recommendation is optional advisory data. Admit it loosely here so a
+  // malformed recommendation cannot reject the required publication result;
+  // the post-publication handoff boundary validates every field and byte.
+  researchRecommendation: Type.Optional(Type.Unknown()),
 });
 
 type ExploreAgentResult = {
   summary: string;
   source: AgentSourceObservation;
   outputs: string[];
-  researchRecommendation?: Record<string, unknown>;
+  researchRecommendation?: unknown;
 };
 
 export type ScoutExploreDependencies = {
@@ -216,30 +206,19 @@ function sourceName(input: unknown): SourceName | null {
     : null;
 }
 
-const pendingHandoffPrefix = "research-handoff:pending:";
+function object(value: unknown): Record<string, unknown> {
+  return value && typeof value === "object" && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : {};
+}
 
-function pendingResearchHandoff(
-  value: unknown,
-): QualifiedResearchHandoff | null {
-  if (typeof value === "string" && value.startsWith(pendingHandoffPrefix)) {
-    try {
-      return JSON.parse(value.slice(pendingHandoffPrefix.length));
-    } catch {
-      return null;
-    }
-  }
-  if (Array.isArray(value)) {
-    for (const item of value) {
-      const found = pendingResearchHandoff(item);
-      if (found) return found;
-    }
-  } else if (value && typeof value === "object") {
-    for (const item of Object.values(value as Record<string, unknown>)) {
-      const found = pendingResearchHandoff(item);
-      if (found) return found;
-    }
-  }
-  return null;
+function publicationOutputs(value: unknown): string[] | null {
+  const outputs = object(value).outputs;
+  return Array.isArray(outputs) &&
+    outputs.length > 0 &&
+    outputs.every((item) => typeof item === "string" && item.length > 0)
+    ? outputs
+    : null;
 }
 
 export function xhsWaitResult(
@@ -700,10 +679,44 @@ export async function executeScoutExplore(
   }
   const appDir = ctx.workspace.appRoot;
   const projectDir = ctx.workspace.projectRoot;
-  const pendingHandoff = pendingResearchHandoff(
-    ctx.reconciliation.previousAttempt,
+  const acceptedResult = object(
+    ctx.reconciliation.previousAttempt?.acceptedResult?.result,
   );
-  if (pendingHandoff) {
+  const acceptedHandoffOutcome = object(acceptedResult.researchHandoffOutcome);
+  if (
+    "researchHandoff" in acceptedResult &&
+    acceptedHandoffOutcome.status === "pending"
+  ) {
+    const priorFacts =
+      ctx.reconciliation.previousAttempt?.acceptedResult?.facts ?? [];
+    const outputs = publicationOutputs(acceptedResult.publication);
+    let pendingHandoff: QualifiedResearchHandoff;
+    try {
+      if (!outputs)
+        throw new Error(
+          "Accepted research handoff requires retained publication outputs",
+        );
+      pendingHandoff = validatedResearchHandoff(
+        acceptedResult.researchHandoff,
+        outputs,
+      );
+    } catch (error) {
+      const reason = error instanceof Error ? error.message : String(error);
+      const summary =
+        "The accepted Scout publication remains complete, but its retained research recommendation is invalid and was not emitted.";
+      return ctx.done(summary, {
+        state: "converged",
+        summary,
+        result: {
+          ...acceptedResult,
+          researchHandoffOutcome: { status: "invalid", reason },
+        },
+        facts: [
+          ...new Set([...priorFacts, `research-handoff:invalid:${reason}`]),
+        ],
+        actions: [],
+      });
+    }
     try {
       await emitResearchHandoff(
         ctx.events.emit.bind(ctx.events),
@@ -714,9 +727,16 @@ export async function executeScoutExplore(
       return ctx.done(summary, {
         state: "converged",
         summary,
+        result: {
+          ...acceptedResult,
+          researchHandoffOutcome: { status: "emitted" },
+        },
         facts: [
-          `research-handoff:recovered:${pendingHandoff.artifactHash}`,
-          "research-handoff:may",
+          ...new Set([
+            ...priorFacts,
+            `research-handoff:recovered:${pendingHandoff.artifactHash}`,
+            "research-handoff:may",
+          ]),
         ],
         actions: [],
       });
@@ -726,11 +746,16 @@ export async function executeScoutExplore(
       return ctx.done(summary, {
         state: "incomplete",
         summary,
+        result: {
+          ...acceptedResult,
+          researchHandoffOutcome: { status: "pending" },
+        },
         facts: [
-          `${pendingHandoffPrefix}${JSON.stringify(pendingHandoff)}`,
-          `research-handoff:deferred:${error instanceof Error ? error.message : String(error)}`,
+          ...new Set([
+            ...priorFacts,
+            `research-handoff:deferred:${error instanceof Error ? error.message : String(error)}`,
+          ]),
         ],
-        actions: [],
       });
     }
   }
@@ -1025,10 +1050,9 @@ run Git publication or edit the canonical library in this call.`;
   ];
   try {
     let handoffResult: Record<string, unknown> | undefined;
-    if (structured.researchRecommendation) {
-      const candidateArtifact = String(
-        structured.researchRecommendation.artifact ?? "",
-      );
+    if (structured.researchRecommendation !== undefined) {
+      const recommendation = object(structured.researchRecommendation);
+      const candidateArtifact = String(recommendation.artifact ?? "");
       if (
         !outputs.includes(candidateArtifact) ||
         !candidateArtifact.startsWith(`${candidateProjectDir}${sep}`)
@@ -1042,7 +1066,7 @@ run Git publication or edit the canonical library in this call.`;
       );
       handoffResult = {
         researchRecommendation: {
-          ...structured.researchRecommendation,
+          ...recommendation,
           artifact: canonicalArtifact,
         },
       };
@@ -1056,21 +1080,36 @@ run Git publication or edit the canonical library in this call.`;
         await emitResearchHandoff(ctx.events.emit.bind(ctx.events), handoff);
         facts.push("research-handoff:may");
       } catch (error) {
+        const retained = {
+          publication,
+          researchHandoff: handoff,
+          researchHandoffOutcome: { status: "pending" },
+        };
         facts.push(
-          `${pendingHandoffPrefix}${JSON.stringify(handoff)}`,
           `research-handoff:deferred:${error instanceof Error ? error.message : String(error)}`,
         );
         return ctx.done(summary, {
           state: "incomplete",
           summary,
           facts: facts as [string, ...string[]],
+          result: retained,
         } satisfies TaskHandlerResult);
       }
     }
   } catch (error) {
-    facts.push(
-      `research-handoff:invalid:${error instanceof Error ? error.message : String(error)}`,
-    );
+    const reason = error instanceof Error ? error.message : String(error);
+    facts.push(`research-handoff:invalid:${reason}`);
+    return ctx.done(summary, {
+      state: "converged",
+      summary,
+      facts,
+      result: {
+        publication,
+        researchRecommendation: structured.researchRecommendation,
+        researchHandoffOutcome: { status: "invalid", reason },
+      },
+      actions: [],
+    } satisfies TaskHandlerResult);
   }
   return ctx.done(summary, {
     state: "converged",

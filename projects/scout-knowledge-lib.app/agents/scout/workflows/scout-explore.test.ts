@@ -1,5 +1,6 @@
 import { afterAll, afterEach, describe, expect, it } from "bun:test";
 import { execFileSync } from "node:child_process";
+import { createHash } from "node:crypto";
 import {
   existsSync,
   mkdirSync,
@@ -16,11 +17,13 @@ import { parseXhsCredentialOutput } from "../tools/lib/xhs-credential";
 import { parseXhsSearchOutput } from "../tools/lib/xhs-source";
 import { publicationTestFixture } from "./lib/publication-test-fixture";
 import { admitTaskReconcileResult, type WorkflowContext } from "@may-agent/sdk";
+import { Check } from "typebox/value";
 import {
   admittedOutputPaths,
   buildExploreTask,
   duplicateSourceReferences,
   executeScoutExplore,
+  ExploreAgentResultSchema,
   replacedExistingOutputs,
   xhsWaitResult,
 } from "./scout-explore";
@@ -863,6 +866,316 @@ describe("scout-explore workflow prompt", () => {
         actions: [],
       },
     });
+  });
+
+  it("publishes before diagnosing a malformed optional recommendation", async () => {
+    const fixture = publicationTestFixture();
+    temporaryRoots.push(fixture.repositoryRoot);
+    const canonical = join(
+      fixture.workspace.projectRoot,
+      "knowledge/findings/malformed-recommendation.md",
+    );
+    const malformed = { sourceUrl: "https://example.test/incomplete" };
+    const emitted: Record<string, unknown>[] = [];
+    const ctx = workflowContext(async (_agent, task) => {
+      const candidate = join(
+        candidateProjectFromPrompt(task),
+        "knowledge/findings/malformed-recommendation.md",
+      );
+      mkdirSync(join(candidateProjectFromPrompt(task), "knowledge/findings"), {
+        recursive: true,
+      });
+      writeFileSync(candidate, "# Published despite malformed advice\n");
+      return {
+        status: "done",
+        sessionId: "s_malformed_recommendation",
+        structuredResult: {
+          summary: "Published a source-grounded finding.",
+          source: {
+            name: "hn",
+            queryOrFeed: "https://news.ycombinator.com/newest",
+            itemIdsOrUrls: ["https://news.ycombinator.com/item?id=321"],
+          },
+          outputs: [candidate],
+          researchRecommendation: malformed,
+        },
+      };
+    }, "hn");
+    ctx.workspace = { ...fixture.workspace };
+    ctx.events.emit = (async (event: Record<string, unknown>) => {
+      emitted.push(event);
+      return { accepted: true };
+    }) as WorkflowContext["events"]["emit"];
+
+    expect(
+      Check(ExploreAgentResultSchema, {
+        summary: "Valid publication result",
+        source: { name: "hn", queryOrFeed: "feed", itemIdsOrUrls: [] },
+        outputs: ["/candidate/finding.md"],
+        researchRecommendation: malformed,
+      }),
+    ).toBeTrue();
+    const result = await executeScoutExplore(ctx);
+
+    expect(result).toMatchObject({
+      status: "done",
+      output: {
+        state: "converged",
+        result: {
+          researchRecommendation: malformed,
+          researchHandoffOutcome: {
+            status: "invalid",
+            reason: expect.stringContaining("admitted durable output"),
+          },
+        },
+        facts: expect.arrayContaining([
+          expect.stringContaining(
+            "research-handoff:invalid:Qualified research artifact must be an admitted durable output",
+          ),
+        ]),
+      },
+    });
+    expect(readFileSync(canonical, "utf8")).toBe(
+      "# Published despite malformed advice\n",
+    );
+    expect(fixture.git("rev-list", "--count", "HEAD")).toBe("2");
+    expect(emitted).toEqual([]);
+  });
+
+  it("retries an accepted handoff without rerunning its one publication", async () => {
+    const fixture = publicationTestFixture();
+    temporaryRoots.push(fixture.repositoryRoot);
+    const canonical = join(
+      fixture.workspace.projectRoot,
+      "knowledge/findings/recovered-handoff.md",
+    );
+    let writerCalls = 0;
+    let emitAttempts = 0;
+    const emitted: Record<string, unknown>[] = [];
+    const attemptedEventKeys: string[] = [];
+    const writer = async (_agent: string, task: string) => {
+      writerCalls += 1;
+      const candidate = join(
+        candidateProjectFromPrompt(task),
+        "knowledge/findings/recovered-handoff.md",
+      );
+      mkdirSync(join(candidateProjectFromPrompt(task), "knowledge/findings"), {
+        recursive: true,
+      });
+      writeFileSync(candidate, "# Retry-stable research handoff\n");
+      return {
+        status: "done",
+        sessionId: "s_handoff_publication",
+        structuredResult: {
+          summary: "Published a locally relevant finding.",
+          source: {
+            name: "hn",
+            queryOrFeed: "https://news.ycombinator.com/newest",
+            itemIdsOrUrls: ["https://news.ycombinator.com/item?id=654"],
+          },
+          outputs: [candidate],
+          researchRecommendation: {
+            sourceUrl: "https://news.ycombinator.com/item?id=654",
+            sourceRevision: "item-654@observed",
+            artifact: candidate,
+            claim: "The technique may reduce repeated local work.",
+            limits: "One source; not locally reproduced.",
+            possibleApplication: "Compare in the existing May research task.",
+          },
+        },
+      };
+    };
+    const emit = async (event: Record<string, unknown>) => {
+      emitAttempts += 1;
+      attemptedEventKeys.push(String(event.localKey));
+      if (emitAttempts < 3) throw new Error("controlled transient failure");
+      emitted.push(event);
+      return { accepted: true };
+    };
+    const firstContext = workflowContext(writer, "hn");
+    firstContext.workspace = { ...fixture.workspace };
+    firstContext.events.emit = emit as WorkflowContext["events"]["emit"];
+    const first = await executeScoutExplore(firstContext);
+    expect(structuredClone(first)).toMatchObject({
+      status: "done",
+      output: {
+        state: "incomplete",
+        result: {
+          publication: { outputs: [canonical] },
+          researchHandoff: { artifact: canonical },
+        },
+      },
+    });
+    expect(
+      admitTaskReconcileResult(first.output, { allowNeedsAgent: false }),
+    ).toMatchObject({ ok: true });
+
+    const retry = async (acceptedResult: unknown) => {
+      const ctx = workflowContext(async () => {
+        throw new Error("recovery must not rerun the writer");
+      }, "hn");
+      ctx.workspace = { ...fixture.workspace };
+      ctx.events.emit = emit as WorkflowContext["events"]["emit"];
+      ctx.reconciliation!.previousAttempt = {
+        attemptId: `attempt-${emitAttempts}`,
+        generation: 1,
+        state: "completed",
+        acceptedResult: acceptedResult as never,
+      };
+      return executeScoutExplore(ctx);
+    };
+
+    const second = await retry(first.output);
+    expect(structuredClone(second)).toMatchObject({
+      status: "done",
+      output: { state: "incomplete", result: first.output!.result },
+    });
+    expect(
+      admitTaskReconcileResult(second.output, { allowNeedsAgent: false }),
+    ).toMatchObject({ ok: true });
+    const third = await retry(second.output);
+
+    expect(structuredClone(third)).toMatchObject({
+      status: "done",
+      output: {
+        state: "converged",
+        result: {
+          publication: { outputs: [canonical] },
+          researchHandoffOutcome: { status: "emitted" },
+        },
+        facts: expect.arrayContaining([
+          expect.stringMatching(/^publication:commit:/),
+          "research-handoff:may",
+        ]),
+      },
+    });
+    expect(
+      admitTaskReconcileResult(third.output, { allowNeedsAgent: false }),
+    ).toMatchObject({ ok: true });
+    expect(writerCalls).toBe(1);
+    expect(emitAttempts).toBe(3);
+    expect(emitted).toHaveLength(1);
+    expect(emitted[0]).toMatchObject({
+      type: "scout.research.qualified",
+      localKey: expect.stringMatching(/^research-[a-f0-9]{64}$/),
+      data: { artifact: canonical },
+    });
+    expect(new Set(attemptedEventKeys).size).toBe(1);
+    expect(fixture.git("rev-list", "--count", "HEAD")).toBe("2");
+
+    let nextRunCalls = 0;
+    const next = workflowContext(async () => {
+      nextRunCalls += 1;
+      return { status: "blocked", sessionId: "s_next_routine" };
+    }, "hn");
+    next.workspace = { ...fixture.workspace };
+    next.reconciliation!.previousAttempt = {
+      attemptId: "attempt-after-emission",
+      generation: 1,
+      state: "completed",
+      acceptedResult: third.output as never,
+    };
+    await executeScoutExplore(next);
+    expect(nextRunCalls).toBe(1);
+  });
+
+  it.each([
+    {
+      name: "malformed retained data",
+      mutate: (value: Record<string, unknown>) => {
+        value.researchHandoff = { sourceUrl: "https://example.test/missing" };
+      },
+      reason: "requires sourceRevision",
+    },
+    {
+      name: "changed canonical bytes",
+      mutate: (value: Record<string, unknown>) => {
+        writeFileSync(
+          (value.researchHandoff as { artifact: string }).artifact,
+          "changed after publication\n",
+        );
+      },
+      reason: "no longer matches its pinned hash",
+    },
+  ])("does not replay $name", async ({ mutate, reason }) => {
+    const fixture = publicationTestFixture();
+    temporaryRoots.push(fixture.repositoryRoot);
+    const artifact = join(fixture.workspace.projectRoot, "knowledge/README.md");
+    const artifactHash = createHash("sha256")
+      .update(readFileSync(artifact))
+      .digest("hex");
+    const retained: Record<string, unknown> = {
+      publication: {
+        state: "unchanged",
+        commit: fixture.git("rev-parse", "HEAD"),
+        files: [],
+        outputs: [artifact],
+      },
+      researchHandoffOutcome: { status: "pending" },
+      researchHandoff: {
+        sourceUrl: "https://example.test/paper",
+        sourceRevision: "v1",
+        artifact,
+        artifactHash,
+        claim: "A useful claim.",
+        limits: "A bounded source.",
+        possibleApplication: "Investigate locally.",
+      },
+    };
+    mutate(retained);
+    let emitted = 0;
+    const ctx = workflowContext(async () => {
+      throw new Error("invalid recovery must not rerun the writer");
+    }, "hn");
+    ctx.workspace = { ...fixture.workspace };
+    ctx.events.emit = (async () => {
+      emitted += 1;
+      return { accepted: true };
+    }) as WorkflowContext["events"]["emit"];
+    ctx.reconciliation!.previousAttempt = {
+      attemptId: "attempt-invalid",
+      generation: 1,
+      state: "completed",
+      acceptedResult: {
+        state: "incomplete",
+        summary: "Publication complete; handoff pending.",
+        facts: ["publication:no-change"],
+        result: retained,
+      },
+    };
+
+    const result = await executeScoutExplore(ctx);
+    expect(result).toMatchObject({
+      status: "done",
+      output: {
+        state: "converged",
+        result: {
+          researchHandoffOutcome: {
+            status: "invalid",
+            reason: expect.stringContaining(reason),
+          },
+        },
+        facts: expect.arrayContaining([
+          expect.stringContaining(`research-handoff:invalid:`),
+        ]),
+      },
+    });
+    expect(emitted).toBe(0);
+
+    let nextRunCalls = 0;
+    const next = workflowContext(async () => {
+      nextRunCalls += 1;
+      return { status: "blocked", sessionId: "s_after_invalid" };
+    }, "hn");
+    next.workspace = { ...fixture.workspace };
+    next.reconciliation!.previousAttempt = {
+      attemptId: "attempt-after-invalid",
+      generation: 1,
+      state: "completed",
+      acceptedResult: result.output as never,
+    };
+    await executeScoutExplore(next);
+    expect(nextRunCalls).toBe(1);
   });
 
   it("rejects relative output paths even when they resolve under an allowed root", async () => {
