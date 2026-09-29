@@ -15,6 +15,8 @@ import { projectAppTaskReconciliationEvents } from "../tasks/app-task-context.js
 import { getExecutionResultFromDb } from "../../../lib/execution-result.js";
 import type { SqliteDb } from "../../../lib/db.js";
 import { getAppInboxItem } from "../state/app-inbox-store.js";
+import { canonicalAppEvent } from "../../canonical-app-event.js";
+import type { AgentEvent } from "../events/bus.js";
 import {
   hasTaskAcceptedEvidence,
   readTaskAcceptedEvidence,
@@ -111,6 +113,24 @@ export function readRuntimeTaskView(
   store.db.exec("SAVEPOINT task_detail_read");
   try {
     const result = readTaskDetail(store, taskId, options);
+    if (options?.inputKeys !== undefined) {
+      const keys = options.inputKeys;
+      if (!Array.isArray(keys) || keys.length > 8 || keys.some((key) => typeof key !== "string" || !key.trim()))
+        throw new Error("inputKeys must contain at most 8 non-empty exact keys");
+      if (result) {
+        const admissions = store.readTaskContext({ taskIds: [], admissionIds: keys }).appTaskAdmissions;
+        result.inputEvents = [...new Set(keys)].map((key) => {
+          const admission = admissions?.[key];
+          if (admission?.taskId !== taskId || admission.taskGeneration > result.generation || !admission.inputEvent)
+            throw new Error(`Original input unavailable on this Task: ${key}`);
+          return {
+            key,
+            observedAt: admission.admittedAt,
+            event: canonicalAppEvent(admission.inputEvent as AgentEvent),
+          };
+        });
+      }
+    }
     store.db.exec("RELEASE task_detail_read");
     return result;
   } catch (error) {

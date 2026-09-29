@@ -78,6 +78,14 @@ export const conditionSchema = Type.Object(
 
 const resultFields = {
   summary: nonEmptyStringSchema,
+  consideredInputKeys: Type.Optional(
+    Type.Array(Type.String({ minLength: 1, pattern: "\\S" }), {
+      maxItems: 8,
+      uniqueItems: true,
+      description:
+        "Exact additional outstanding keys from Task.currentObligations.inputWaits. Read originals with tasks.get({inputKeys}) first. This result also covers those inputs before their review time. Converged answers them; waiting/incomplete keep them open. Other waits and Conditions remain.",
+    }),
+  ),
   result: Type.Optional(objectSchema),
   reviewAt: Type.Optional(Type.Integer({ minimum: 1 })),
 
@@ -152,6 +160,7 @@ export const taskAgentResultSchema = Type.Union(
     Type.Object(
       {
         state: Type.Literal("incomplete"),
+        consideredInputKeys: resultFields.consideredInputKeys,
         report: Type.Optional(
           Type.Literal(true, {
             description: "Return a new caller-relevant update after an earlier report; omit for unchanged failure.",
@@ -463,6 +472,9 @@ export function admitTaskReconcileResult(
 
   const report = {
     summary: output.summary.trim(),
+    ...("consideredInputKeys" in output && output.consideredInputKeys
+      ? { consideredInputKeys: [...output.consideredInputKeys] }
+      : {}),
     ...(result ? { result: structuredClone(result) } : {}),
     facts,
   };

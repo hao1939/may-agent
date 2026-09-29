@@ -626,6 +626,7 @@ function acceptedAttemptResult(
     reviewAt?: number;
     facts?: string[];
     acceptedLiveEventIds?: number[];
+    consideredInputKeys?: string[];
   },
   acceptanceBasis: AppTaskAcceptanceBasis,
 ): NonNullable<AppTaskAttempt["acceptedResult"]> {
@@ -648,6 +649,7 @@ function acceptedAttemptResult(
     facts: input.facts ?? [],
     acceptanceBasis,
     ...(acceptedLiveEventIds.length ? { acceptedLiveEventIds } : {}),
+    ...(input.consideredInputKeys?.length ? { consideredInputKeys: input.consideredInputKeys } : {}),
   });
 }
 
@@ -655,20 +657,37 @@ function consideredInputKeys(
   config: AppTaskContext,
   tree: TaskTree,
   claim: AppTaskClaim,
-  acceptedLiveEventIds: number[] = [],
+  input: { acceptedLiveEventIds?: number[]; consideredInputKeys?: string[] } = {},
 ) {
-  const liveIds = new Set(acceptedLiveEventIds);
+  const liveIds = new Set(input.acceptedLiveEventIds ?? []);
+  const explicitKeys = input.consideredInputKeys ?? [];
   const attempt = tree.attempts?.[claim.attemptId];
-  const events = [
-    ...(attempt?.events ?? []),
-    ...(tree.taskTriggers?.[claim.taskId] ? taskTriggerEvents(tree.taskTriggers[claim.taskId]) : []).filter(
-      ({ event }) => liveIds.has(Number(event.eventId)),
-    ),
-  ];
-  return taskInputAdmissionKeys(events, [
+  const liveEvents = (tree.taskTriggers?.[claim.taskId] ? taskTriggerEvents(tree.taskTriggers[claim.taskId]) : []).filter(
+    ({ event }) => liveIds.has(Number(event.eventId)),
+  );
+  const events = [...(attempt?.events ?? []), ...liveEvents];
+  // Time passing during execution cannot add an unseen request to its answer.
+  // The claim already saved initial selection. Only accepted live input can
+  // extend its timer window; explicit keys and Condition changes remain valid.
+  const consideredAt = Math.max(0, ...liveEvents.map(({ observedAt }) => Date.parse(observedAt)));
+  const keys = taskInputAdmissionKeys(events, [
     ...(attempt?.continuedInputKeys ?? []),
-    ...continuedTaskInputKeys(tree, claim.taskId, events),
+    ...continuedTaskInputKeys(tree, claim.taskId, events, [], consideredAt),
   ]);
+  if (!Array.isArray(explicitKeys) || explicitKeys.length > 8 ||
+    explicitKeys.some((key) => typeof key !== "string" || !key.trim())) {
+    throw new Error("consideredInputKeys must contain at most 8 non-empty exact keys");
+  }
+  if (!explicitKeys.length) return keys;
+  const admissions = config.resourceStore.readTaskContext({ taskIds: [], admissionIds: explicitKeys }).appTaskAdmissions;
+  for (const key of explicitKeys) {
+    const admission = admissions?.[key];
+    if (!admission || admission.taskId !== claim.taskId || admission.taskGeneration > claim.generation ||
+      admission.resultAttemptId || (!keys.includes(key) && !tree.resources?.[claim.taskId]?.status.inputWaits?.[key])) {
+      throw new Error(`consideredInputKeys contains input not outstanding on this Task: ${key}`);
+    }
+  }
+  return [...new Set([...keys, ...explicitKeys])];
 }
 
 /** Bind only exact admitted input considered by this attempt; reports are not answers. */
@@ -676,11 +695,10 @@ function inputOutcomeAdmissions(
   config: AppTaskContext,
   tree: TaskTree,
   claim: AppTaskClaim,
-  acceptedLiveEventIds: number[] = [],
+  input: { acceptedLiveEventIds?: number[]; consideredInputKeys?: string[]; report?: true } = {},
   kind: "answer" | "report" = "answer",
-  explicitReport = false,
 ) {
-  const keys = consideredInputKeys(config, tree, claim, acceptedLiveEventIds);
+  const keys = consideredInputKeys(config, tree, claim, input);
   if (!keys.length) return [];
   const admissions = config.resourceStore.readTaskContext({ taskIds: [], admissionIds: keys }).appTaskAdmissions;
   const writes = keys.flatMap<{ taskId: string; value: AppTaskAdmission }>((key) => {
@@ -688,7 +706,7 @@ function inputOutcomeAdmissions(
     if (!admission || admission.taskId !== claim.taskId || admission.taskGeneration > claim.generation ||
       admission.resultAttemptId) return [];
     if (kind === "report")
-      return admission.reportAttemptId && !explicitReport
+      return admission.reportAttemptId && !input.report
         ? []
         : [
             {
@@ -2369,6 +2387,7 @@ export function reportAppTaskFailure(
     result?: Record<string, unknown>;
     facts: string[];
     acceptedLiveEventIds?: number[];
+    consideredInputKeys?: string[];
   },
 ): { status: "applied" | "stale"; summary?: string } {
   const tree = config.resourceStore.readTaskContext({ taskIds: [claim.taskId] });
@@ -2395,14 +2414,7 @@ export function reportAppTaskFailure(
     input,
     defaultTaskAcceptance(claim, input.facts),
   );
-  const admissions = inputOutcomeAdmissions(
-    config,
-    tree,
-    claim,
-    input.acceptedLiveEventIds,
-    "report",
-    input.report === true,
-  );
+  const admissions = inputOutcomeAdmissions(config, tree, claim, input, "report");
   const failures = (resource.status.executionFailures ?? 0) + 1;
   // Accepted facts are not a final answer to the original assignment.
   // Preserve input, including accepted live feedback and earlier linked waits.
@@ -2949,7 +2961,7 @@ export function failAppTaskAttempt(
   const { resource, attempt } = match;
   const mutationScope = beginResourceMutationScope(tree, claim, []);
   const handoff = isAgentHandoffReason(details.reason);
-  const admissions = handoff ? [] : inputOutcomeAdmissions(config, tree, claim, [], "report");
+  const admissions = handoff ? [] : inputOutcomeAdmissions(config, tree, claim, {}, "report");
   const failures = (resource.status.executionFailures ?? 0) + 1;
   const summary = failure;
   const now = new Date().toISOString();
@@ -3531,7 +3543,7 @@ function recordPendingAppTaskResult(
   const mutationScope = beginResourceMutationScope(tree, claim, []);
   // Keep unresolved asks as context for the newer facts. Replaying the
   // consumed event prefix would starve later input in a bounded batch.
-  retainTaskInputWait(config, resource, consideredInputKeys(config, tree, claim, input.acceptedLiveEventIds), {
+  retainTaskInputWait(config, resource, consideredInputKeys(config, tree, claim, { acceptedLiveEventIds: input.acceptedLiveEventIds }), {
     taskGeneration: claim.generation, conditions: [],
   });
   consumeAcceptedLiveTaskEvents(tree, claim.taskId, claim.agent, input.acceptedLiveEventIds);
@@ -3561,6 +3573,7 @@ export function completeAppTask(
     actions?: AppTaskAction[];
     acceptanceBasis?: AppTaskAcceptanceBasis;
     acceptedLiveEventIds?: number[];
+    consideredInputKeys?: string[];
   },
 ): {
   status: "applied" | "stale";
@@ -3605,7 +3618,7 @@ export function completeAppTask(
   const actionsApplied = applyTaskActions(tree, claim, actions, config);
   const now = new Date().toISOString();
   match.attempt.acceptedResult = acceptedAttemptResult(tree, claim.taskId, "converged", input, acceptanceBasis);
-  const admissions = inputOutcomeAdmissions(config, tree, claim, input.acceptedLiveEventIds);
+  const admissions = inputOutcomeAdmissions(config, tree, claim, input);
   consumeAcceptedLiveTaskEvents(tree, claim.taskId, claim.agent, input.acceptedLiveEventIds);
   renewDueTaskConditionCheckpoints(tree, claim.taskId, now);
   unlinkSatisfiedTaskConditions(tree, claim.taskId);
@@ -3672,6 +3685,7 @@ export function deferAppTask(
     actions?: AppTaskAction[];
     conditions?: AppTaskConditionSpec[];
     acceptedLiveEventIds?: number[];
+    consideredInputKeys?: string[];
   },
 ): {
   status: "applied" | "stale";
@@ -3702,7 +3716,7 @@ export function deferAppTask(
       reason: "newer Task facts are pending",
     });
   }
-  const inputKeys = consideredInputKeys(config, tree, claim, input.acceptedLiveEventIds);
+  const inputKeys = consideredInputKeys(config, tree, claim, input);
   const retainedReviewAt = [
     resource.status.reviewAt,
     ...inputKeys.map((key) => resource.status.inputWaits?.[key]?.reviewAt),
@@ -3721,7 +3735,7 @@ export function deferAppTask(
     defaultTaskAcceptance(claim, input.facts ?? []),
   );
   const admissions = input.report
-    ? inputOutcomeAdmissions(config, tree, claim, input.acceptedLiveEventIds, "report", true)
+    ? inputOutcomeAdmissions(config, tree, claim, input, "report")
     : [];
   if (input.report) acceptedResult.report = true;
   if (input.continue) acceptedResult.continue = true;

@@ -147,6 +147,7 @@ export type AppTaskAttempt = {
     acceptanceBasis?: TaskAcceptanceBasis;
     /** Additional durable input actually incorporated after the initial batch. */
     acceptedLiveEventIds?: number[];
+    consideredInputKeys?: string[];
   };
   /** Legacy/synthetic trigger retained only when no durable event batch exists. */
   trigger?: Record<string, unknown>;

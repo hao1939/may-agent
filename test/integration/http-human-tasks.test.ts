@@ -79,7 +79,10 @@ describe("HTTP human Task reads and board", () => {
       getTask: (input) => service.getTask(input),
       // SDK routes remain separate and keep their existing response shape.
       listAppTasks: () => ({ items: [{ id: "sdk-task", status: "done" }] }),
-      getAppTask: () => ({ id: "sdk-task", status: "done" }),
+      getAppTask: (_appId, _taskId, options) => ({
+        id: "sdk-task", status: "done",
+        ...(options?.inputKeys ? { inputEvents: options.inputKeys.map((key) => ({ key })) } : {}),
+      }),
     });
     child = spawn(
       "bun",
@@ -174,6 +177,9 @@ describe("HTTP human Task reads and board", () => {
       .toEqual(service.listTasks({ status: ["running", "waiting"], limit: 8 }));
     expect(await read("/api/apps/alpha/tasks")).toEqual({ items: [{ id: "sdk-task", status: "done" }] });
     expect(await read("/api/apps/alpha/tasks/sdk-task")).toEqual({ id: "sdk-task", status: "done" });
+    expect(await read("/api/apps/alpha/tasks/sdk-task?inputKey=request%3Aearlier&inputKey=request%3Asecond")).toEqual({
+      id: "sdk-task", status: "done", inputEvents: [{ key: "request:earlier" }, { key: "request:second" }],
+    });
   });
 
   test("reports invalid, missing, and unavailable reads without fabricating empty or completed Tasks", async () => {

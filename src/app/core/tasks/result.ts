@@ -26,6 +26,7 @@ export type NormalizedTaskHandlerResult = {
   state: "converged" | "waiting" | "needs-agent" | "incomplete" | "error";
   /** A rejected contract needs correction, not a transport retry. Host-only. */
   resultRejected?: true;
+  consideredInputKeys?: string[];
   summary: string;
   response?: string;
   report?: true;

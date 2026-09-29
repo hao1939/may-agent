@@ -85,6 +85,145 @@ function fixture() {
   };
 }
 
+function earlyInputFixture() {
+  const f = fixture();
+  setSystemTime(new Date(1_800_000_000_000));
+  completeAppTask(f.config, f.claim(), { summary: "Initial request handled" });
+  const admit = (key: string, taskId = "conversation") => admitTaskInput(f.config, {
+    appId: "sample", attachment: { kind: "existing", taskId }, idempotencyKey: key,
+    inputContext: { id: key, source: { kind: "human", id: "requester" },
+      input: { kind: "message", data: { text: `Original ${key}` } } },
+  });
+  const due = Date.now() + 60_000;
+  const selected = ["refresh", "repeat-refresh", "withdraw-refresh"];
+  for (const key of [...selected, "independent"]) {
+    admit(key);
+    deferAppTask(f.config, f.claim(), {
+      disposition: "waiting", summary: "Review later", reviewAt: key === "independent" ? due + 60_000 : due,
+    });
+  }
+  admit("approval");
+  deferAppTask(f.config, f.claim(), {
+    disposition: "waiting", summary: "Await approval", conditions: [{ id: "approval", type: "review.completed",
+      subject: "candidate:independent", expected: true, owner: "human", reviewAfterMs: 300_000 }],
+  });
+  f.reopen();
+  admit("correction");
+  return { f, admit, due, selected };
+}
+
+describe("explicit earlier input consideration", () => {
+  it.each([false, true])("preserves independent waits and exact answer identity with explicit scope=%s", (explicit) => {
+    const { f, due, selected } = earlyInputFixture();
+    const claim = f.claim();
+    expect(claim.continuedInputKeys ?? []).toEqual([]);
+    const read = (inputKeys?: string[]) => readRuntimeTaskView({ taskStateConfig: f.config }, "conversation", { inputKeys });
+    expect(read()?.inputEvents).toBeUndefined();
+    expect(read(selected)?.inputEvents?.map(({ key, event }) => ({ key, request: event.data.request }))).toEqual(
+      selected.map((key) => ({ key, request: { id: key, source: { kind: "human", id: "requester" }, input: { kind: "message", data: { text: `Original ${key}` } } } })),
+    );
+    expect(read()?.currentObligations).toMatchObject({ inputWaits: { items: expect.arrayContaining([
+      expect.objectContaining({ key: "refresh", reviewAt: due }),
+    ]) } });
+    const before = f.config.resourceStore.readTask("conversation")!.status.inputWaits!;
+    completeAppTask(f.config, claim, {
+      summary: "The refresh was withdrawn", response: "No refresh needed", facts: ["correction:reviewed"],
+      ...(explicit ? { consideredInputKeys: selected } : {}),
+    });
+    f.reopen();
+    const remaining = f.config.resourceStore.readTask("conversation")!.status.inputWaits!;
+    for (const key of selected) {
+      expect(readAppTaskAdmissionOutcome(f.config, "conversation", key)?.response ?? null)
+        .toBe(explicit ? "No refresh needed" : null);
+      expect(remaining[key]).toEqual(explicit ? undefined : before[key]);
+    }
+    expect(remaining.independent).toEqual(before.independent);
+    expect(remaining.approval).toEqual(before.approval);
+    expect(f.config.resourceStore.readTask("conversation")?.status.conditionIds).toEqual(["approval"]);
+    expect(f.config.resourceStore.readTask("conversation")?.status.phase).toBe("waiting");
+    expect(readAppTaskAdmissionOutcome(f.config, "conversation", "correction")?.attemptId).toBe(claim.attemptId);
+    expect(f.config.resourceStore.readAttempt(claim.attemptId)?.acceptedResult?.consideredInputKeys)
+      .toEqual(explicit ? selected : undefined);
+    if (explicit) {
+      expect(read(selected)?.inputEvents).toHaveLength(3); // Answered input remains readable.
+      const evidence = readRuntimeTaskView({ taskStateConfig: f.config }, "conversation", { acceptedEvidence: { limit: 8 } });
+      expect(evidence?.acceptedEvidence.page?.items.find((item) => item.attemptId === claim.attemptId)
+        ?.acceptedResult.consideredInputKeys).toEqual(selected);
+    }
+  });
+
+  it("rejects foreign, missing and answered selections atomically; newer input and stale attempts retain their fences", () => {
+    const { f, admit } = earlyInputFixture();
+    observeAppTaskIntent(f.config, { intent: { ...f.intent, id: "foreign" }, appAgent: "owner" });
+    admit("foreign-input", "foreign");
+    const claim = f.claim();
+    const before = f.config.resourceStore.readTask("conversation");
+    for (const key of ["foreign-input", "missing"]) {
+      expect(() => readRuntimeTaskView({ taskStateConfig: f.config }, "conversation", { inputKeys: [key] })).toThrow("unavailable");
+      expect(() => completeAppTask(f.config, claim, {
+        summary: "Invalid scope", consideredInputKeys: ["refresh", key], facts: ["request:reviewed"],
+        actions: [{ kind: "retire-condition", conditionId: "approval", expectedConditionGeneration: 1, reason: "withdrawn" }],
+      }))
+        .toThrow("not outstanding");
+      expect(f.config.resourceStore.readTask("conversation")).toEqual(before);
+      expect(readAppTaskAdmissionOutcome(f.config, "conversation", "refresh")).toBeNull();
+    }
+    expect(() => readRuntimeTaskView({ taskStateConfig: f.config }, "conversation", { inputKeys: Array(9).fill("refresh") }))
+      .toThrow("at most 8");
+    admit("newer");
+    expect(completeAppTask(f.config, claim, { summary: "Old view", consideredInputKeys: ["refresh"] }).taskContinues).toBe(true);
+    expect(readAppTaskAdmissionOutcome(f.config, "conversation", "refresh")).toBeNull();
+    const current = f.claim();
+    expect(completeAppTask(f.config, claim, { summary: "Late result", consideredInputKeys: ["refresh"] }).status).toBe("stale");
+    completeAppTask(f.config, current, { summary: "Current answer", consideredInputKeys: ["refresh"] });
+    admit("later");
+    expect(() => completeAppTask(f.config, f.claim(), { summary: "Overwrite", consideredInputKeys: ["refresh"] })).toThrow("not outstanding");
+    expect(readAppTaskAdmissionOutcome(f.config, "conversation", "refresh")?.attemptId).toBe(current.attemptId);
+  });
+
+  it.each(["waiting", "incomplete"] as const)("%s applies only a report to selected earlier input", (state) => {
+    const { f } = earlyInputFixture();
+    const claim = f.claim();
+    const result = { summary: "Investigated the old request", facts: ["request:reviewed"],
+      report: true as const, consideredInputKeys: ["refresh"] };
+    if (state === "waiting") deferAppTask(f.config, claim, { ...result, disposition: "waiting" });
+    else reportAppTaskFailure(f.config, claim, result);
+    f.reopen();
+    expect(readAppTaskAdmissionOutcome(f.config, "conversation", "refresh")).toBeNull();
+    expect(readAppTaskAdmissionOutcome(f.config, "conversation", "refresh", "report"))
+      .toMatchObject({ state, attemptId: claim.attemptId, consideredInputKeys: ["refresh"] });
+    expect(readAppTaskAdmissionOutcome(f.config, "conversation", "independent", "report")).toBeNull();
+    expect(f.config.resourceStore.readTask("conversation")?.status.inputWaits?.refresh).toBeDefined();
+  });
+
+  it.each([false, true])("settles a newly due input only with accepted live context (live=%s)", (live) => {
+    const { f, due, selected } = earlyInputFixture();
+    const claim = f.claim();
+    expect(claim.continuedInputKeys ?? []).toEqual([]);
+    setSystemTime(new Date(due + 60_001));
+    if (live) {
+      const event = { type: "review.updated", eventId: 9001, data: { summary: "Review the due requests" } };
+      recordAppTaskTrigger(f.config, "conversation", event);
+      expect(readAppTaskLiveEvent(f.config, "conversation", event).data.continuedInputs).toEqual(expect.arrayContaining([
+        expect.objectContaining({ event: expect.objectContaining({ data: expect.objectContaining({
+          request: expect.objectContaining({ id: "independent" }),
+        }) }) }),
+      ]));
+    }
+    completeAppTask(f.config, claim, {
+      summary: "Reviewed requests", consideredInputKeys: selected,
+      ...(live ? { acceptedLiveEventIds: [9001] } : {}),
+    });
+    if (live) {
+      expect(readAppTaskAdmissionOutcome(f.config, "conversation", "independent")?.attemptId).toBe(claim.attemptId);
+    } else {
+      expect(readAppTaskAdmissionOutcome(f.config, "conversation", "independent")).toBeNull();
+      expect(f.config.resourceStore.readTask("conversation")?.status.inputWaits?.independent).toBeDefined();
+      expect(f.claim().continuedInputKeys).toContain("independent");
+    }
+  });
+});
+
 describe("common Task lifecycle", () => {
   it("keeps rejected result evidence when a repair is interrupted and retires it after an accepted answer", () => {
     const f = fixture();

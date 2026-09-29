@@ -36,7 +36,7 @@ export type TaskAcceptedEvidence = {
   finishedAt?: string;
   /** Explicit when legacy content was reduced to keep the public page bounded. */
   truncated?: {
-    fields: Array<"summary" | "response" | "result" | "facts" | "acceptanceBasis" | "acceptedLiveEventIds">;
+    fields: Array<"summary" | "response" | "result" | "facts" | "acceptanceBasis" | "acceptedLiveEventIds" | "consideredInputKeys">;
   };
   acceptedResult: {
     state: "converged" | "waiting" | "incomplete";
@@ -49,6 +49,7 @@ export type TaskAcceptedEvidence = {
     facts: string[];
     acceptanceBasis?: TaskAcceptanceBasis;
     acceptedLiveEventIds?: number[];
+    consideredInputKeys?: string[];
   };
 };
 
@@ -65,6 +66,8 @@ export type TaskAcceptedEvidenceNavigation = {
 };
 
 export type TaskReadOptions = {
+  /** Load original admitted input events by exact key (at most 8). Reading does not settle them. */
+  inputKeys?: string[];
   /** Opt in to one bounded page of immutable accepted-attempt history. */
   acceptedEvidence?: TaskAcceptedEvidenceOptions;
 };
@@ -117,6 +120,8 @@ export type TaskView = {
 
 /** Task snapshot supplied at attempt start or returned by an explicitly scoped get. */
 export type TaskDetail = TaskView & {
+  /** Original input bodies loaded only by an explicit inputKeys read. */
+  inputEvents?: Array<{ key: string; observedAt: string; event: AppEvent }>;
   /** Current resource revision; absent for legacy receipts without a current resource. */
   resourceVersion?: number;
   /** Input still awaiting a claim. Reading it does not account for it. */

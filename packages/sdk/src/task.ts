@@ -82,6 +82,9 @@ export type TaskAction =
 export type TaskReconcileResult = {
   summary: string;
   facts: string[];
+  /** Additional outstanding input keys read from this Task and covered by this result.
+   * Additive to assigned input; converged answers them, waiting/incomplete keep them open. */
+  consideredInputKeys?: string[];
 } & (
   | {
       state: "converged";
@@ -126,6 +129,7 @@ export type TaskReconcileResult = {
     }
   | {
       state: "needs-agent";
+      consideredInputKeys?: never;
       response?: never;
       result?: never;
       actions?: never;

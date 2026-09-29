@@ -47,6 +47,7 @@ export function continuedTaskInputKeys(
   taskId: string,
   events: readonly AppTaskTriggerEvent[],
   readyConditionIds: readonly string[] = [],
+  now = Date.now(),
 ): string[] {
   const task = tree.resources?.[taskId];
   if (!task?.status.inputWaits) return [];
@@ -62,7 +63,7 @@ export function continuedTaskInputKeys(
   );
   return Object.entries(task.status.inputWaits).flatMap(([key, wait]) =>
     wait.taskGeneration < task.metadata.generation ||
-    (wait.reviewAt !== undefined && wait.reviewAt <= Date.now()) ||
+    (wait.reviewAt !== undefined && wait.reviewAt <= now) ||
     (wait.conditions.length === 0 && wait.reviewAt === undefined && events.length > 0) ||
     wait.conditions.some(
       ({ id, generation }) => !linkedConditionIds.has(id) || tree.conditions?.[id]?.metadata.generation !== generation,

@@ -126,6 +126,15 @@ and Condition counts. `maxItems` and `truncated` disclose the bound: omitted
 items remain obligations and callers must not infer fulfillment from absence.
 App-specific policy may interpret this evidence, but does not redefine it.
 
+To inspect an older request before its timer is due, use `tasks.get` with exact
+`inputKeys` (up to eight). The canonical reader returns original `inputEvents`;
+reading changes no state. An ordinary result's `consideredInputKeys` adds those
+outstanding inputs to the attempt's scope. `consideredInputKeys()` validates
+them in the reconciler, and `inputOutcomeAdmissions()` retains the usual exact
+answer/report links. Convergence answers the selected inputs; waiting and
+incomplete results do not. Unselected waits survive. Agent, workflow and
+executor use the same result contract; timers still govern automatic selection.
+
 Adapters translate source-specific information at the boundary. For example,
 `lib/escalation-feedback.ts` resolves saved provenance to an exact Task address;
 the existing event transaction saves its wake and ordinary Task recovery handles

@@ -514,7 +514,7 @@ describe("control socket protocol", () => {
       getAppTask: (appId, taskId, options) => {
         expect({ appId, taskId }).toEqual({ appId: "evaluation", taskId: "review/docs" });
         if (options?.acceptedEvidence) {
-          expect(options).toEqual({ acceptedEvidence: { limit: 3, cursor: "older-evidence" } });
+          expect(options).toEqual({ acceptedEvidence: { limit: 3, cursor: "older-evidence" }, inputKeys: ["request:earlier"] });
         }
         return task;
       },
@@ -544,6 +544,7 @@ describe("control socket protocol", () => {
         acceptedEvidence: true,
         evidenceLimit: 3,
         evidenceCursor: "older-evidence",
+        inputKeys: ["request:earlier"],
       }),
     ).resolves.toMatchObject({ type: "ok", command: "app.task.get", task });
     await expect(

@@ -41,6 +41,7 @@ describe("App Task read tool", () => {
           taskId: "benchmark",
           target: { appId: "gym" },
           acceptedEvidence: { limit: 4, cursor: "older" },
+          inputKeys: ["request:earlier"],
         }),
       ),
     ).toMatchObject({ id: "benchmark", status: "done" });
@@ -50,7 +51,7 @@ describe("App Task read tool", () => {
       expect.objectContaining({
         appId: "gym",
         taskId: "benchmark",
-        options: { acceptedEvidence: { limit: 4, cursor: "older" } },
+        options: { acceptedEvidence: { limit: 4, cursor: "older" }, inputKeys: ["request:earlier"] },
       }),
     ]);
   });
