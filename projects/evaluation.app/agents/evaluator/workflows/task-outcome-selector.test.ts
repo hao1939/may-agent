@@ -1187,6 +1187,55 @@ describe("automatic task outcome selector", () => {
     expect(selectorStateFact(changedCoverage.state).length).toBeLessThan(8_000);
   });
 
+  test("retries unchanged population evidence after its subject becomes readable", async () => {
+    const root = mkdtempSync(
+      join(tmpdir(), "selector-population-unavailable-"),
+    );
+    const populationTask = task("gym", "goal/population", 0, "done");
+    const example = {
+      taskId: "goal/population",
+      attemptId: "same-attempt",
+      state: "completed",
+    };
+    let end = NOW;
+    let readable = false;
+    const base = populationCommand(() => populationReport(end, [example]), {
+      gym: [populationTask],
+    });
+    const command: PublicCommand = async (request) => {
+      if (
+        !readable &&
+        (request.type === "app.task.get" || request.type === "task.get")
+      )
+        throw new Error("temporary subject read failure");
+      return base(request);
+    };
+    const first = await selectFairCandidate(
+      command,
+      config,
+      root,
+      undefined,
+      end,
+    );
+    expect(first.candidate).toBeNull();
+
+    readable = true;
+    end += 60 * 60_000;
+    const retried = await selectFairCandidate(
+      command,
+      config,
+      root,
+      { ...first.state, populationTurn: true },
+      end,
+    );
+    expect(retried.candidate).toEqual({
+      appId: "gym",
+      taskId: "goal/population",
+      assessmentPurpose: "ongoing",
+      populationEnd: end,
+    });
+  });
+
   test("keeps resolved and unresolved historical outcomes reviewable", async () => {
     const root = mkdtempSync(join(tmpdir(), "selector-status-"));
     const command = catalogCommand({

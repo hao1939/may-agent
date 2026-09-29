@@ -397,7 +397,10 @@ export async function selectFairCandidate(
           ...nextState,
           populationEndByApp: {
             ...nextState.populationEndByApp,
-            [key]: populationCheckpointValue(end, evidenceDigest),
+            [key]: populationCheckpointValue(
+              end,
+              priorPopulation.evidenceDigest,
+            ),
           },
         });
         if (priorPopulation.evidenceDigest === evidenceDigest) {
@@ -424,6 +427,10 @@ export async function selectFairCandidate(
               appId: appKey(apps[(appIndex + 1) % apps.length]!),
               appIndex: (appIndex + 1) % apps.length,
               populationTurn: false,
+              populationEndByApp: {
+                ...nextState.populationEndByApp,
+                [key]: populationCheckpointValue(end, evidenceDigest),
+              },
             });
             appendNavigationFact(
               navigationFacts,
