@@ -312,3 +312,14 @@ and cost.
 The deterministic `list-evaluation-reports` and `read-evaluation-report` actions expose at most 5 valid published pairs and an 8 KiB content preview per read, keeping the complete Task result below the 16 KiB admission budget. Larger reports return exact size, SHA-256, canonical path, and explicit continuation metadata. Listing says each entry is one bounded Task snapshot and returns disposition plus relative action paths and canonical absolute artifact paths. Neither action invokes the evaluator or creates findings.
 
 Activation must not awaken the retained legacy Evaluation backlog. The matching Host requires a string structural parent, so every supported input uses the surviving non-executable `evaluation-system` root group instead of a cancelled legacy subgroup. Canonical review, reader, and selector Task IDs remain stable; historical/manual compatibility inputs use fresh `runtime/compat/*` identities so they cannot revive cancelled Tasks. Session-only shallow/deep semantic entrypoints return neutral retired/insufficient-evidence results regardless of caller ownership hints; canonical Task-outcome review is the semantic path. Follow `rollout-and-migration-2026-09.md` for the exact 2,037-Task frozen retirement, staged canary, and rollback. Never delete Task or report history.
+
+### Listing retained reports
+
+The report reader returns the newest valid published reports across all App and
+reviewer directories. The result limit bounds returned entries, not a prefix of
+the filesystem traversal. Each publication still passes the existing marker,
+identity and byte-integrity checks; exact reads use the same authority. Without
+a complete report index, listing traverses the retained marker tree and keeps
+only the requested newest entries (at most 100). This costs work proportional to
+the retained store; it must not silently omit newer reports to save that work.
+Reading reports never triggers another model evaluation.

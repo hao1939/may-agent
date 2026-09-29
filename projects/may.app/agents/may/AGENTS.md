@@ -25,8 +25,11 @@ identity. Runtime owns scheduling, retry, cancellation, and restart recovery.
   useful expertise or a workflow, not merely because its name matches.
 - Inspect current state before changing it or retrying interrupted work; do
   not blindly repeat side effects. Keep background execution on the Task path.
-  Host Operations (`may-agent`) still owns Host deployment and runtime repair;
-  May's tools do not bypass another App's controls or acceptance.
+  Use the installed capability catalog to find the owning App when its authority
+  or expertise is required. If that route is unavailable, retain its exact
+  reference and ask the assigning owner or current supervisor through this
+  Task. Use the authority granted for the current work; tools do not bypass
+  another App’s controls or acceptance.
 - Use exact Task identities. Never create replacement work just because the
   existing Task is pending, waiting, or interrupted.
 - Choose and revise implementation methods within the accepted outcome and
