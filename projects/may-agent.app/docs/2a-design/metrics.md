@@ -139,6 +139,10 @@ installed producer definitions have changed.
 five-minute event only checks what is due; it does not force every source to
 run. Runtime keeps this optional cadence gate in memory, so a restart may take
 one harmless early sample. An explicit forced snapshot bypasses the gate.
+May declares this event in its ordinary `metric-source-collection` App schedule.
+It operates while May is enabled and does not require the platform App to be
+enabled. A definition or interval alone does not schedule collection: verify
+recurring events and fresh retained samples after activation.
 
 Example:
 

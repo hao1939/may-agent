@@ -184,8 +184,12 @@ export async function respondToMetric(
       freshness: evidence.freshness,
     };
     const complete = Buffer.byteLength(JSON.stringify(detail)) <= 10_000;
+    const unresolved = decision && ["investigate", "observe"].includes(decision.disposition);
     const summary = fact
-      ? "Decision prepared; retain the returned fact in the current Task result before claiming accepted handling."
+      ? "Decision prepared; retain the returned fact in the current Task result before claiming accepted handling." +
+        (unresolved
+          ? " Keep the owed action in an ordinary Task with waiting/reviewAt. A Conversation fact cannot schedule a review: reuse or admit a Task through the existing Task tools or followUp, then retain its exact linkedTask."
+          : "")
       : "Read the current breach response; judge scope before reusing linked work.";
     const output: Record<string, unknown> = {
       state:

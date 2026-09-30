@@ -439,6 +439,16 @@ export default defineApp({
   },
   schedules: [
     {
+      id: "metric-source-collection",
+      intervalMs: 300_000,
+      event: {
+        type: "trigger.metrics-snapshot",
+        source: "app:may:schedule:metric-source-collection",
+        owner: "app:may",
+        data: {},
+      },
+    },
+    {
       id: "research-adoption-archive-review",
       enabled: true,
       intervalMs: 7 * 24 * 60 * 60 * 1000,

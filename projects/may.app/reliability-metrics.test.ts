@@ -8,6 +8,7 @@ import { closeDb, getDb } from "../may-agent/src/lib/db/connection.js";
 import { EventBus } from "../may-agent/src/app/core/events/bus.js";
 import { createAppReporting } from "../may-agent/src/app/composition/reporting.js";
 import { measureSourceMetrics } from "../may-agent/src/app/metric-source-measurement.js";
+import { createAppScheduleProducer } from "../may-agent/src/app/adapters/producers/app-schedules.js";
 import {
   createAppInboxItem,
   recordAppInboxRecoveryFailure,
@@ -32,6 +33,35 @@ function sample(id: string) {
     )
     .get() as any;
 }
+
+test("May schedules one normal collection opportunity every five minutes without a Task input", () => {
+  let now = 0;
+  const bus = new EventBus();
+  const observed: unknown[] = [];
+  bus.subscribe((event) => {
+    if (event.type === "trigger.metrics-snapshot") observed.push(event);
+  });
+  const producer = createAppScheduleProducer({ bus, now: () => now });
+  try {
+    producer.replace([{ appDir: "/fixture/may.app", definition: app }]);
+    producer.scanNow();
+    expect(observed).toEqual([]);
+    now = 300_000;
+    producer.scanNow();
+    producer.scanNow();
+    expect(observed).toHaveLength(1);
+    expect(observed[0]).toMatchObject({
+      type: "trigger.metrics-snapshot",
+      source: "app:may:schedule:metric-source-collection",
+      data: { idempotencyKey: "schedule:may:metric-source-collection:1" },
+    });
+    now = 600_000;
+    producer.scanNow();
+    expect(observed).toHaveLength(2);
+  } finally {
+    producer.close();
+  }
+});
 
 test("declared reliability metrics collect through the Host and retain a real breach and recovery", async () => {
   const root = mkdtempSync(join(tmpdir(), "may-reliability-collection-"));

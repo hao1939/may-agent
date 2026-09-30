@@ -230,6 +230,13 @@ and nextAction/nextReviewAt for unresolved concerns. Preserve its returned
 `metric-disposition:` fact in the current Task or Conversation result's `facts`.
 Only the accepted parent result records the decision; a workflow return is
 preparation. Keep any owed action and review deadline in the ordinary Task too.
+Conversation results have no timer: a `nextReviewAt` inside a fact does not
+schedule a review. For unresolved work, reuse or admit an ordinary Task through
+the existing Task controls or supported handoff, retain its real `waiting`/`reviewAt`, and
+save that exact `linkedTask` in the decision. A completed report review does not
+discharge the continuing investigation. If the declared owner is unavailable,
+May retains the coordination task or requests the specific human decision;
+do not leave the only next action assigned to an unavailable owner.
 Missing/truncated history is not proof that no investigation exists. Ownership
 that cannot be resolved through the installed App catalog remains unknown.
 When another App owns the metric, return evidence through its existing owner
