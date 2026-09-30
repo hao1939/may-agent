@@ -12,7 +12,7 @@ import { DbWriter } from "../../src/lib/db-writer.js";
 import { getDb, closeDb } from "../../src/lib/requests.js";
 import { until } from "../fixtures/resource-observer.js";
 
-test("ordinary Task saves an interest, receives a prompt fact and resumes its owner without manual wakes", async () => {
+async function observationSmoke(mode: "prompt" | "periodic") {
   const root = mkdtempSync(join(tmpdir(), "may-observation-smoke-"));
   const appDir = join(root, "sample.app");
   mkdirSync(join(appDir, "tasks"), { recursive: true });
@@ -27,18 +27,19 @@ test("ordinary Task saves an interest, receives a prompt fact and resumes its ow
   bus.setPersistenceSubscriber(writer.handler);
   bus.setDeliveryRecorder(writer.recordDelivery);
   let reads = 0;
+  let passed = mode === "prompt";
   const attempts: string[] = [];
   const observedAt = "2026-01-01T00:00:00.000Z";
   const detector = defineObserver({
     id: "build",
     type: "build.state",
     description: "Read a known harmless completed build",
-    intervalMs: 3_600_000,
+    intervalMs: mode === "periodic" ? 50 : 3_600_000,
     timeoutMs: 1_000,
     async inspect(resource) {
       expect(resource).toBe("known-build");
       reads++;
-      return { state: "passed", observedAt };
+      return { state: passed ? "passed" : "running", observedAt };
     },
   });
   const registry = new AppRegistry(async () => [
@@ -147,13 +148,26 @@ test("ordinary Task saves an interest, receives a prompt fact and resumes its ow
       },
       inputContext: { id: "smoke", source: { kind: "human", id: "tester" }, input: { kind: "smoke", data: {} } },
     });
+    if (mode === "periodic") {
+      await until(
+        () => reads > 0 && !runtime!.observerHealth("sample")[0]?.running,
+        "first unfinished source observation",
+      );
+      expect(attempts).toHaveLength(1);
+      // Only the provider changes. No Task update, manual scan or wake can
+      // conceal coupling to the Host's hour-long recovery interval.
+      passed = true;
+    }
     await until(
       () => tasks.get({ appId: "sample", taskId: "smoke" })?.status === "done",
       "automatic owner continuation",
     );
     expect(attempts).toHaveLength(2);
-    expect(reads).toBe(1);
-    const event = db.prepare("SELECT id FROM events WHERE event_type='build.state'").get() as { id: number };
+    if (mode === "prompt") expect(reads).toBe(1);
+    else expect(reads).toBeGreaterThanOrEqual(2);
+    const event = db.prepare(
+      "SELECT id FROM events WHERE event_type='build.state' AND json_extract(data, '$.state')='passed'",
+    ).get() as { id: number };
     expect(tasks.get({ appId: "sample", taskId: "smoke" })?.result).toEqual({
       eventId: event.id,
       observedAt,
@@ -167,4 +181,10 @@ test("ordinary Task saves an interest, receives a prompt fact and resumes its ow
     closeDb(persistDir);
     rmSync(root, { recursive: true, force: true });
   }
-}, 10_000);
+}
+
+test.each(["prompt", "periodic"] as const)(
+  "ordinary Task receives a %s observation and resumes its owner without manual wakes",
+  observationSmoke,
+  10_000,
+);
