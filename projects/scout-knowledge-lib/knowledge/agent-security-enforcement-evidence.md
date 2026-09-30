@@ -1,8 +1,8 @@
 <ai_context>
 summary: "Implementation-evidence companion to agent-security-verified-enforcement.md. Uses pinned repositories, disclosures, and deployed-system reports to separate signed claims from replayable evidence; receipt validity from verifier isolation and claim scope; verifier correctness from adversarial agent resistance; receipt integrity from completeness; configured policy from covered paths; identity enrollment from per-request proof; formal models from unsupported surfaces; observed egress from blocking; static egress policy from irreversible post-sensitive-access session restriction; stable tool digests from equivalent semantics and complete lifecycle coverage; policy verdicts from effect ownership; counterfactual actions from execution authority and real effect accounting; authorization receipts from effect gates; declared mediation architecture from per-effect path evidence; narrated results from positive execution evidence; sandbox isolation from configuration coherence; stop requests from observed quiescence; frozen eval inputs from stable comparison units; untrusted analysis failure from trusted configuration degradation; human approval records from end-to-end effect binding; effect-owning execution routes from provider-reported hook correlation and ambient process coverage; signed workflow conformance from evidence-grade propagation and independently proved declaration pre-existence; and workflow stage labels from prerequisite and ship-gate enforcement."
 triggers: ["SkillProof", "MCP server verification", "replayable evidence", "action receipt", "signed receipt", "evidence completeness", "MAX Authorization Sandbox", "signed policy", "adversary capability", "rollback state", "Pipelock", "HELM AI Kernel", "offline verifier", "verifier isolation", "claim-typed verification", "PassControl", "sender proof", "bearer visa", "authentication assurance", "default deny", "fail closed", "shell hook", "guardrail regression test", "OpenShell prover", "SMT containment", "path composition", "egress firewall", "uninspected egress", "session-aware egress", "sensitive-source transition", "sticky egress restriction", "tool identity", "tool pin", "schema canonicalization", "MCP Hangar", "cold-start pinning", "tool annotations", "shadow mode", "mediation ownership", "counterfactual action", "observed policy action", "real effect accounting", "ctrlrun", "HOL Guard", "Action Evidence Package", "AEP sandbox", "Codex sandbox", "Overpatch", "Heapjack", "authority derivation", "Meta Muse", "local configuration authority", "APEXA", "execution integrity", "tool execution evidence", "BoxLite", "micro-VM", "sandbox configuration coherence", "guest network", "host jailer grants", "Hard Stop", "SIGSTOP", "process group preemption", "quiescence receipt", "run-assert-eval", "ASSERT", "Agent Control Specification", "fixed evaluation", "applicable denominator", "paired comparison", "safety helpfulness split", "CC Safety Net", "analysis budget", "configuration degradation", "typed failure policy", "emisar", "approval binding", "bridge attestation", "pack hash", "Aegis", "exact action policy", "provider hook correlation", "direct child execution", "route coverage", "Treeship", "workflow conformance", "evidence grade", "declaration pre-existence", "CE-AI", "workflow stage evidence", "ship gate", "prerequisite enforcement"]
-last_updated: "2026-09-27"
-source_basis: "Pinned-source implementation studies and disclosures reviewed 2026-09-10 through 2026-09-27: SkillProof f5ddb4b, MAX Authorization Sandbox 380efe6, Pipelock f7d1816, HELM AI Kernel fe122d4, agent-guardrails-kit 18c241e, PassControl f9cb702, OpenShell df0ee1a, k8s-rca-agent 29f5fad, secure-agent 017ec5a, Rul1an/assay 900e536, MCP Hangar f02651c, Soup Wall be8db48, HOL Guard 56faea4 and f5d568f, ctrlrun 8ebc5a8, aep-sandbox 3495e27, BoxLite 9e9436e, Hard Stop 45c31bc, responsibleai/ASSERT 0628e25, CC Safety Net 0439757, AndrewDryga/emisar ac0d942, antropos17/Aegis 6cae92e, zerkerlabs/treeship 7fd3993, HN items 49795755, 49802030, 49830567, 49834450, 49834720, 49840107, 49841469, 49844056, and 49855568 with their linked primary sources, plus arXiv 2609.24165v1 and 2609.29808v1 (abstracts and full HTML). Each section states its own evidence boundary."
+last_updated: "2026-09-30"
+source_basis: "Pinned-source implementation studies and disclosures reviewed 2026-09-10 through 2026-09-30: SkillProof f5ddb4b, MAX Authorization Sandbox 380efe6, Pipelock f7d1816, HELM AI Kernel fe122d4 and 44d4622, agent-guardrails-kit 18c241e, PassControl f9cb702, OpenShell df0ee1a, k8s-rca-agent 29f5fad, secure-agent 017ec5a, Rul1an/assay 900e536, MCP Hangar f02651c, Soup Wall be8db48, HOL Guard 56faea4 and f5d568f, ctrlrun 8ebc5a8, aep-sandbox 3495e27, BoxLite 9e9436e, Hard Stop 45c31bc, responsibleai/ASSERT 0628e25, CC Safety Net 0439757, AndrewDryga/emisar ac0d942, antropos17/Aegis 6cae92e, zerkerlabs/treeship 7fd3993, HN items 49795755, 49802030, 49830567, 49834450, 49834720, 49840107, 49841469, 49844056, and 49855568 with their linked primary sources, plus arXiv 2609.24165v1 and 2609.29808v1 (abstracts and full HTML). Each section states its own evidence boundary."
 </ai_context>
 
 # Agent Security: Enforcement Evidence and Runtime Coverage
@@ -256,6 +256,80 @@ repository-authored tests at one revision. It did not run the Go tests or verifi
 validate a real receipt, audit every receipt family, or establish that a deployed
 agent's effects all traverse HELM. The source supports verifier semantics and
 build-time assertions, not the repository's broader enforcement or product claims.
+
+### Follow-up: effect recovery must preserve uncertainty instead of retrying it (HELM AI Kernel, September 2026)
+
+**Repo:** https://github.com/Mindburn-Labs/helm-ai-kernel
+
+**Pinned observation:** repository commit
+[`44d462261efe95dfb0448098304b4dc82d754613`](https://github.com/Mindburn-Labs/helm-ai-kernel/commit/44d462261efe95dfb0448098304b4dc82d754613)
+
+HELM's newer gateway code adds an effect-lifecycle contract that is distinct
+from the receipt verifier above. Before provider I/O, one database transaction
+locks the admitted attempt and unused permit, rechecks stops, authority-row
+versions, permit expiry, and mandate validity, consumes the permit once, moves
+the attempt to `DISPATCHING`, sets a dispatch fence, and enqueues reconciliation.
+A client disconnect cannot roll this transition back, and a repeated dispatch
+on `DISPATCHING` or any later state returns the existing attempt without calling
+the adapter again.
+
+The adapter result deliberately has three values rather than a success boolean:
+
+- `SENT` means the provider accepted or already contains the requested object;
+  the gateway reads it back immediately.
+- `NOT_SENT` means the adapter knows no effect occurred, so the attempt becomes
+  failed and its reservation is released.
+- `INDEFINITE` means the write may have happened despite a lost or ambiguous
+  response. The attempt becomes `UNKNOWN`, retains its reservation, and is
+  never dispatched again.
+
+Read-back then treats time and contradiction asymmetrically. Absence inside the
+dispatch fence is not failure because an in-flight write may still appear.
+Absence after the fence establishes failure and releases the reservation. An
+object that exists but contradicts the requested effect establishes
+`READBACK_MISMATCH` even inside the fence—and consumes rather than releases the
+reservation, because this attempt may have created the conflicting object.
+Worker death after the pre-I/O commit similarly becomes an unknown state for
+observation, not evidence that retrying is safe.
+
+This yields a reusable recovery rule for external effects:
+
+1. **Commit attempt ownership before I/O.** Bind one permit, claim ID, caller,
+   timeout fence, and reconciliation job before contacting the provider.
+2. **Require the adapter to report epistemic status.** “Not sent” and “answer
+   lost” have different retry safety and must not share one error branch.
+3. **Let time qualify negative evidence.** Provider absence is conclusive only
+   after the declared in-flight window closes.
+4. **Account for contradictory positive evidence conservatively.** A mismatched
+   object can prove the desired result failed without proving that no billable,
+   quota-consuming, or irreversible action occurred.
+5. **Make conformance scenarios portable.** HELM's versioned pack hashes each
+   scenario and includes double dispatch, indefinite outcome, in-fence absence,
+   contradictory read-back, and certain not-sent cases, so another gateway or
+   fake can pin the contract rather than imitate prose selectively.
+
+The distinction complements the receipt-validity vector: a signed record may
+faithfully say `UNKNOWN`; cryptographic integrity must not pressure recovery
+code into inventing a terminal outcome. It also sharpens “exactly once” claims.
+The inspected source prevents the gateway from knowingly invoking its adapter
+twice for one claimed attempt, but it cannot make a remote provider transaction
+atomic with the local database. Safety comes from retained ambiguity,
+provider-specific read-back, and refusal to redispatch—not from distributed
+exactly-once execution.
+
+**Evidence inspected at the pinned commit:**
+[`gateway-effect-api.md`](https://github.com/Mindburn-Labs/helm-ai-kernel/blob/44d462261efe95dfb0448098304b4dc82d754613/docs/architecture/gateway-effect-api.md),
+[`dispatch.go`](https://github.com/Mindburn-Labs/helm-ai-kernel/blob/44d462261efe95dfb0448098304b4dc82d754613/core/pkg/gateway/admission/dispatch.go),
+[`dispatch_test.go`](https://github.com/Mindburn-Labs/helm-ai-kernel/blob/44d462261efe95dfb0448098304b4dc82d754613/core/pkg/gateway/admission/dispatch_test.go), and the
+[`gateway v1 conformance table`](https://github.com/Mindburn-Labs/helm-ai-kernel/blob/44d462261efe95dfb0448098304b4dc82d754613/protocols/conformance/gateway/v1/README.md).
+
+**Evidence boundary:** Scout statically inspected the pinned design, Go
+implementation, repository-authored unit tests, and conformance scenarios. It
+did not run the PostgreSQL conformance runner, call GitHub through this gateway,
+independently reproduce a crash window, or establish that the design covers
+every provider's consistency behavior. The source supports the stated state
+transitions and test intent, not production reliability or true distributed
+exactly-once semantics.
 
 ### Follow-up: workflow conformance needs an evidence algebra (Treeship, September 2026)
 
