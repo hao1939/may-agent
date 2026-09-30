@@ -178,9 +178,11 @@ Recovery restores useful progress toward the current assignment. Preventing a
 recurrence is later improvement work; neither requires a second Task lifecycle.
 The original Task keeps its independent obligations, accepted work and waits.
 A safely recovered attempt can coexist with an unresolved implementation defect.
-When input is rejected before destination admission, the caller still owns
-correction; there is no destination Task to recover or notify. Keep the failure
-in the caller's execution evidence instead of creating work from invalid input.
+Validation rejected before App input persistence remains the caller's correction;
+there is no accepted destination obligation. If the inbox already accepted input
+but Task attachment fails, preserve that input and return the blocker through its
+caller or the App's declared review route. This is failure feedback, not admission
+of the rejected Task work; see the [Task engine](task-resource-engine.md#one-app-work-path).
 
 Use current structured facts first. When they do not explain the failure,
 follow the exact attempt, operation, workflow step, command receipt and source
