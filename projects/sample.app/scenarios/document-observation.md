@@ -16,6 +16,13 @@ leave a wait on its ordinary Task and resume useful work when the source changes
    for a known-ready resource if deterministic transport verification is needed;
    the agent may correctly read an already-present document without waiting.
 
+For a stronger second trial, start with an existing older document and request a
+specific future SHA-256. Verify that presence alone does not satisfy the wait.
+Check that the reviewer retains any cited old bytes before the source changes,
+then replace the document through its normal source and verify both historical
+and final evidence. The [live trial](../reviews/document-observation-2026-09-30.md)
+records the observed behavior and the evidence-retention refinement it prompted.
+
 The observer reads provider data; the Host owns scheduling, persistence and
 routing; the reviewer owns waiting strategy and content judgment. Read failures
 and absent facts retain the existing Condition review opportunity. Deliberate

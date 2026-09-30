@@ -47,7 +47,8 @@ observation Condition for availability or a required hash. Discover the capabili
 through `tasks.contract`; the Host performs the checks and delivers matching
 facts. The reviewer still reads the document and judges its content. A successful
 inspection alone does not complete a review. No new review input type is needed.
-See the [document-wait scenario](scenarios/document-observation.md).
+See the [document-wait scenario](scenarios/document-observation.md) and
+[live trial results](reviews/document-observation-2026-09-30.md).
 
 ## Activate and run
 
