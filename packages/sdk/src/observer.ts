@@ -7,6 +7,7 @@ export type ResourceObserver = {
   description: string;
   intervalMs: number;
   timeoutMs: number;
+  /** Return provider fields unchanged in meaning; `resource` is reserved for Host correlation. */
   inspect(resource: string, context: { signal: AbortSignal }): Promise<Record<string, unknown>>;
 };
 

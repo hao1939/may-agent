@@ -54,7 +54,7 @@ import {
   type AppEventAdmissionRoute,
 } from "../core/state/app-event-admission-store.js";
 import { createAppObserverRuntime } from "../adapters/producers/app-observer-runtime.js";
-import { observationDemandReader } from "../core/state/observation-demand.js";
+import { observationDemandReader, readTaskObservationInterests } from "../core/state/observation-demand.js";
 import { appObservationSelectors } from "../core/reads/app-contract.js";
 import { canonicalAppEvent } from "../canonical-app-event.js";
 
@@ -362,6 +362,15 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
   const observerRuntime = createAppObserverRuntime({
     bus: options.bus,
     readDemand: observationDemandReader(options.db),
+    needsFact: (fact) => {
+      if (options.previewTaskEventRoutes)
+        return options.previewTaskEventRoutes({ event: fact as AgentEvent }).some((route) => route.taskIds.length > 0);
+      if (!options.previewTaskEvent) throw new Error("Observation Condition matching unavailable");
+      return loaded.some(
+        ({ definition, appDir }) =>
+          options.previewTaskEvent!({ appId: definition.id, appDir, event: fact as AgentEvent }).length > 0,
+      );
+    },
     now,
     context: (appId, appDir) => {
       if (!options.observerContext) throw new Error(`App ${appId} observer context is unavailable`);
@@ -956,6 +965,7 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
         const appId = typeof sourceAppId === "string" ? sourceAppId.trim() : "";
         const taskId = typeof data.taskId === "string" ? data.taskId.trim() : "";
         if (appId && taskId) {
+          if (!closed) observerRuntime.requestCheck(readTaskObservationInterests(options.db, appId, taskId));
           // One committed Task fact refreshes both exact caller answers and
           // linked Conversation observations. A wait or retry is not an answer.
           void host

@@ -1,6 +1,6 @@
 import { copyObserverSnapshot } from "./observer-snapshot.js";
 import { bindResourceObserver } from "./resource-observer.js";
-import type { ReadObservationDemand } from "../../core/state/observation-demand.js";
+import type { ReadObservationDemand, ObservationInterestRoute } from "../../core/state/observation-demand.js";
 import {
   type AppEvent,
   type AppObserver,
@@ -25,13 +25,16 @@ type ObserverState = {
   lastStartedAt?: number;
   lastCompletedAt?: number;
   lastError?: string;
-  resources?: () => NonNullable<ObserverHealth["resources"]>;
+  resource?: ReturnType<typeof bindResourceObserver>;
+  source: string;
+  factType?: string;
 };
 
 export type AppObserverRuntime = {
   start(intervalMs: number): void;
   replace(entries: readonly Readonly<LoadedAppDefinition>[]): void;
   scanNow(): void;
+  requestCheck(interests: readonly ObservationInterestRoute[]): void;
   close(): void;
   health(appId: string): ObserverHealth[];
 };
@@ -59,12 +62,13 @@ export function createAppObserverRuntime(options: {
   context(appId: string, appDir: string): ObserverContext;
   now?: () => number;
   readDemand?: ReadObservationDemand;
+  needsFact?: (fact: AppEvent) => boolean;
 }): AppObserverRuntime {
   const now = options.now ?? Date.now;
   let closed = false;
   let started = false;
   const cadence = new OwnedTimer("app-observers");
-  const initial = new OwnedTimer("app-observers:initial");
+  const wake = new OwnedTimer("app-observers:wake");
   let states = new Map<string, ObserverState>();
   // Only unsettled I/O survives replacement; demand and snapshots are recollected.
   const occupiedBySource = new Map<string, Set<string>>();
@@ -94,6 +98,10 @@ export function createAppObserverRuntime(options: {
                   if (!options.readDemand) throw new Error("Observation demand reader unavailable");
                   return options.readDemand(...args);
                 },
+                needsFact: (fact) => {
+                  if (!options.needsFact) throw new Error("Observation Condition matching unavailable");
+                  return options.needsFact(fact);
+                },
               })
             : undefined;
         next.set(key, {
@@ -101,7 +109,9 @@ export function createAppObserverRuntime(options: {
           appDir: entry.appDir,
           observer: bound?.observer ?? (observer as AppObserver),
           controller,
-          resources: bound?.resources,
+          resource: bound,
+          source: `app:${entry.definition.id}:observer:${observer.id}`,
+          factType: "inspect" in observer ? observer.type : undefined,
           fingerprint,
           lastSlot:
             previous?.fingerprint === fingerprint
@@ -117,9 +127,13 @@ export function createAppObserverRuntime(options: {
     states = next;
   };
 
-  const run = async (key: string, state: ObserverState, slot: number): Promise<void> => {
+  const scheduleCheck = () => {
+    if (!closed && started && !wake.armed) wake.after(0, () => runtime.scanNow());
+  };
+  const run = async (key: string, state: ObserverState, slot: number, requested: boolean): Promise<void> => {
     try {
-      const result = await state.observer.run({
+      const inspect = requested ? state.resource!.takePending() : state.observer.run;
+      const result = await inspect.call(state.observer, {
         ...options.context(state.appId, state.appDir),
         previousObservation: structuredClone(state.observation),
       });
@@ -175,9 +189,10 @@ export function createAppObserverRuntime(options: {
       }
     } finally {
       if (states.get(key) === state) {
-        state.lastSlot = slot;
+        if (!requested) state.lastSlot = slot;
         state.running = false;
         state.lastCompletedAt = now();
+        if (state.resource?.hasPending()) scheduleCheck();
       }
     }
   };
@@ -194,31 +209,42 @@ export function createAppObserverRuntime(options: {
           lastStartedAt: state.lastStartedAt,
           lastCompletedAt: state.lastCompletedAt,
           lastError: state.lastError,
-          ...(state.resources ? { resources: state.resources() } : {}),
+          ...(state.resource ? { resources: state.resource.resources() } : {}),
         }));
     },
     start(intervalMs) {
       if (closed || started) return;
       started = true;
       cadence.every(intervalMs, () => runtime.scanNow());
-      initial.after(0, () => runtime.scanNow());
+      scheduleCheck();
     },
     replace,
+    requestCheck(interests) {
+      if (closed) return;
+      for (const state of states.values()) {
+        for (const interest of interests) {
+          if (state.source === interest.source && state.factType === interest.type)
+            state.resource?.request(interest.subject);
+        }
+      }
+      if ([...states.values()].some((state) => state.resource?.hasPending())) scheduleCheck();
+    },
     scanNow() {
       if (closed) return;
       const currentTime = now();
       for (const [key, state] of states) {
         const slot = Math.floor(currentTime / state.observer.intervalMs);
-        if (state.running || state.lastSlot >= slot) continue;
+        const periodicDue = state.lastSlot < slot;
+        if (state.running || (!periodicDue && !state.resource?.hasPending())) continue;
         state.running = true;
         state.lastStartedAt = currentTime;
-        void run(key, state, slot);
+        void run(key, state, slot, !periodicDue);
       }
     },
     close() {
       closed = true;
       cadence.close();
-      initial.close();
+      wake.close();
       for (const state of states.values()) state.controller.abort(new Error("Observer runtime closed"));
       states.clear();
     },

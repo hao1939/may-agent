@@ -291,3 +291,73 @@ test("bounded subject paging is fair, and generated waits reject a different sou
   expect(f.runnable()).toEqual([]);
   expect(f.view("a").conditions[0]?.observation?.state).toBe("unknown");
 });
+
+test("recreating an identical wait receives unchanged data and preserves the provider timestamp", async () => {
+  const observedAt = "2026-01-01T00:00:00.000Z";
+  const f = await setup(async () => ({ state: "passed", revision: 1, observedAt }));
+  const wait = f.capability.waitFor("build", "42", { field: "observedAt", equals: observedAt });
+  f.add("a", [wait]);
+  await f.scan();
+  expect(f.runnable()).toEqual(["a"]);
+  f.defer(f.claim("a"), undefined, true);
+  expect(f.view("a").conditions).toEqual([]);
+  f.defer(f.claim("a"), [wait]);
+  await f.scan();
+  expect(f.runnable()).toEqual(["a"]);
+  expect(f.events()).toHaveLength(2);
+  const delivered = f.claim("a").events.at(-1)!;
+  expect(delivered.event.eventId).toBe(f.events().at(-1)!.id);
+  expect(delivered.event.data).toEqual({ state: "passed", revision: 1, observedAt, resource: "42" });
+});
+
+test("committed interests request a coalesced prompt read without polling unrelated or cancelled waits", async () => {
+  const reads: string[] = [];
+  const f = await setup(async (resource) => {
+    reads.push(resource);
+    return { state: resource === "quiet" ? "running" : "passed", revision: 1 };
+  });
+  f.add("quiet", [f.capability.waitFor("quiet-build", "quiet", terminal)]);
+  await f.useHostObserver(); // Exhaust the current periodic slot before saving new interests.
+  f.add("new", [f.capability.waitFor("ready-build", "ready", terminal)]);
+  f.add("cancelled", [f.capability.waitFor("cancelled-build", "cancelled", terminal)]);
+  f.notifyTask("new");
+  f.notifyTask("new");
+  f.notifyTask("cancelled");
+  f.cancel("cancelled");
+  await until(() => f.runnable().includes("new"), "prompt observation delivery");
+  expect(reads).toEqual(["quiet", "ready"]);
+  expect(f.view("quiet").conditions[0]?.observation?.state).toBe("unknown");
+  expect(f.events()).toHaveLength(2);
+});
+
+test.each(["provider", "context"])(
+  "a request arriving during a read survives; %s failure waits for periodic retry",
+  async (failure) => {
+    let reads = 0;
+    const held = Promise.withResolvers<{ state: string; revision: number }>();
+    const f = await setup(async () => {
+      reads++;
+      if (reads === 1) return held.promise;
+      if (reads === 2 && failure === "provider") throw new Error("temporary source failure");
+      return { state: "passed", revision: 2 };
+    });
+    await f.useHostObserver();
+    f.add("a", [f.capability.waitFor("build", "42", terminal)]);
+    f.notifyTask("a");
+    await until(() => reads === 1, "first prompt read");
+    f.notifyTask("a");
+    f.observerContextFails = failure === "context";
+    held.resolve({ state: "running", revision: 1 });
+    await until(() => f.events("app.observer.failed").length === 1, "queued read failure");
+    // Drain the scheduling turn: failure alone must not requeue the same request.
+    await new Promise<void>((resolve) => setTimeout(resolve, 0));
+    const failedReads = failure === "provider" ? 2 : 1;
+    expect(reads).toBe(failedReads);
+    expect(f.events("app.observer.failed")).toHaveLength(1);
+    expect(f.view("a").conditions[0]?.observation?.state).toBe("unknown");
+    f.observerContextFails = false;
+    await f.scanHost();
+    await until(() => f.runnable().includes("a"), "periodic retry delivery");
+    expect(reads).toBe(failedReads + 1);
+  },
+);

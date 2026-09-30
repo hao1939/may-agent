@@ -48,6 +48,7 @@ export async function fixture(detector: ResourceObserver) {
   let clock = Date.now();
   let failPublication = false;
   let failAdmission = false;
+  let failObserverContext = false;
   const configs = new Map<string, ReturnType<typeof appTaskContext>>();
 
   async function open() {
@@ -97,7 +98,10 @@ export async function fixture(detector: ResourceObserver) {
       now: () => clock,
       schedulesEnabled: false,
       scanIntervalMs: 60_000,
-      observerContext: () => ({ read: {} as never, log: {} as never, workspace: { appRoot: root, projectRoot: root } }),
+      observerContext: () => {
+        if (failObserverContext) throw new Error("observer context unavailable");
+        return { read: {} as never, log: {} as never, workspace: { appRoot: root, projectRoot: root } };
+      },
       previewTaskEventRoutes({ event }) {
         const grouped = new Map<string, Set<string>>();
         for (const route of configs.get("sample")!.resourceStore.readConditionRoutesForAllApps(event.type)) {
@@ -122,6 +126,11 @@ export async function fixture(detector: ResourceObserver) {
       bus,
       now: () => clock,
       readDemand: observationDemandReader(db),
+      needsFact: (fact) =>
+        configs
+          .get("sample")!
+          .resourceStore.readConditionRoutesForAllApps(fact.type)
+          .some((route) => matchesAppTaskCondition(route.condition, fact as never)),
       context: () => ({
         read: {} as never,
         log: { info() {}, warn() {}, error() {}, debug() {} },
@@ -176,6 +185,15 @@ export async function fixture(detector: ResourceObserver) {
       runtime.scanNow();
       await until(() => runtime.observerHealth("builds")[0]?.lastCompletedAt === clock, "installed detector scan");
     },
+    notifyTask(taskId: string, appId = "sample") {
+      // The real attempt runner emits this only after committing its result.
+      bus.emit({
+        type: "project.task.reconciled",
+        source: "fixture",
+        owner: `app:${appId}`,
+        data: { project: appId, taskId, generation: 1 },
+      } as never);
+    },
     appHealth() {
       return new HumanTaskService(db, registry, runtime.observerHealth).listApps("builds")[0]!;
     },
@@ -198,6 +216,9 @@ export async function fixture(detector: ResourceObserver) {
     },
     set publicationFails(value: boolean) {
       failPublication = value;
+    },
+    set observerContextFails(value: boolean) {
+      failObserverContext = value;
     },
     set admissionFails(value: boolean) {
       failAdmission = value;
