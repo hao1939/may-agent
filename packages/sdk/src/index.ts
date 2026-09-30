@@ -123,3 +123,6 @@ export type {
   WorkflowGuardStepResult,
 } from "./workflow-guard.js";
 export type { AgentContextPreparer } from "./agent-context.js";
+
+export { readVerifiedApprovalDecision } from "./approval.js";
+export type { ApprovalProposal, HostApprovalStamp, VerifiedApprovalDecision } from "./approval.js";

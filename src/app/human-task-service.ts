@@ -1,3 +1,5 @@
+import { isHumanActionOwner } from "./core/tasks/human-condition.js";
+import type { ApprovalProposal } from "@may-agent/control/events";
 import type { AppRegistry } from "./core/apps/registry.js";
 import type {
   TaskAcceptedEvidenceNavigation,
@@ -34,17 +36,7 @@ import {
 export type HumanTaskStatus =
   "pending" | "running" | "waiting" | "attention" | "up-to-date" | "done" | "closed" | "cancelled";
 
-const LEGACY_HAO_HUMAN_OWNER = "Hao";
-
-/** True for a canonical human owner, plus the retained legacy Hao read projection. */
-export function isHumanActionOwner(owner: string | undefined): boolean {
-  const normalized = owner?.trim();
-  if (normalized === "human" || (normalized?.startsWith("human:") === true && normalized.length > "human:".length)) {
-    return true;
-  }
-  // Read compatibility only. Newly admitted Conditions use human or human:<role>.
-  return normalized === LEGACY_HAO_HUMAN_OWNER;
-}
+export { isHumanActionOwner } from "./core/tasks/human-condition.js";
 
 export type HumanTaskProgress = {
   stage: string;
@@ -105,6 +97,8 @@ export type HumanTaskView = {
   waitingOn?: HumanTaskWait[];
   requestedBy?: HumanTaskLink;
   humanAction?: HumanTaskAction;
+  /** Exact proposal included only in a full Task read. */
+  approvalProposal?: ApprovalProposal;
   /** Exact, bounded diagnostics; never included in compact list cards. */
   diagnostics?: HumanTaskDiagnostics;
   history?: HumanTaskHistory[];
@@ -314,6 +308,12 @@ function listCard(view: HumanTaskView): HumanTaskView {
     ...card,
     outcome: boundedUtf8Text(view.outcome, HUMAN_TASK_LIST_TEXT_MAX_BYTES),
     ...(view.summary ? { summary: boundedUtf8Text(view.summary, HUMAN_TASK_LIST_TEXT_MAX_BYTES) } : {}),
+    ...(view.humanAction
+      ? { humanAction: {
+          ...view.humanAction,
+          requestedAction: boundedUtf8Text(view.humanAction.requestedAction, 240),
+        } }
+      : {}),
   };
 }
 
@@ -477,10 +477,7 @@ function withHumanAction(view: HumanTaskView, conditions: AppTaskCondition[]): H
   return {
     ...view,
     humanAction: {
-      requestedAction: boundedUtf8Text(
-        actions.length > 0 ? actions.join(" ") : view.summary?.trim() || view.outcome,
-        240,
-      ),
+      requestedAction: actions.length > 0 ? actions.join("\n\n") : view.summary?.trim() || view.outcome,
       ...(timestamps.length > 0 ? { since: Math.min(...timestamps) } : {}),
     },
   };
@@ -1208,10 +1205,10 @@ export class HumanTaskService {
       if (!identity) return [];
       const ref = refs.get(`${identity.appId}\0${identity.taskId}`);
       const recurrence = configuredTaskRecurrence(this.registry, row);
-      const view = ref ? projectTask(row, ref, false, recurrence) : null;
+      const view = ref ? projectTask(row, ref, true, recurrence) : null;
       if (!view) return [];
       const conditions = row.terminal === 0 ? humanConditions(row) : [];
-      return [conditions.length > 0 ? withHumanAction(view, conditions) : view];
+      return [listCard(conditions.length > 0 ? withHumanAction(view, conditions) : view)];
     });
     let total = humanActionOnly ? Number(rows[0]?.total_count ?? 0) : undefined;
     if (humanActionOnly && cursor && rows.length === 0) {
@@ -1289,9 +1286,42 @@ export class HumanTaskService {
       ...(progress ? { progress } : {}),
       ...(waitingOn.length > 0 ? { waitingOn } : {}),
     };
+    const proposal = approvalProposalForTask(detail);
+    const approvalDetail = proposal ? { ...detail, approvalProposal: proposal } : detail;
     const conditions = humanConditions(row);
-    if (conditions.length > 0) return withHumanAction(detail, conditions);
+    if (conditions.length > 0) return withHumanAction(approvalDetail, conditions);
     const inheritedAction = descendantHumanAction(this.db, detail);
-    return inheritedAction ? { ...detail, humanAction: inheritedAction } : detail;
+    return inheritedAction ? { ...approvalDetail, humanAction: inheritedAction } : approvalDetail;
   }
+}
+
+function pendingHumanApprovalCondition(task: HumanTaskView | null) {
+  if (!task || task.terminal || !["pending", "waiting", "running", "attention"].includes(task.status)) return null;
+  const matches = (task.diagnostics?.conditions ?? []).filter((item) => {
+    const condition = item.condition;
+    return (
+      condition?.spec.type === "project.approval.submitted" &&
+      condition.status?.state !== "true" &&
+      isHumanActionOwner(condition.spec.owner) &&
+      condition.metadata?.id === item.id &&
+      Number.isSafeInteger(condition.metadata.generation) &&
+      condition.metadata.generation > 0
+    );
+  });
+  return matches.length === 1 ? matches[0]!.condition : null;
+}
+
+export function approvalProposalForTask(task: HumanTaskView | null): ApprovalProposal | null {
+  const condition = pendingHumanApprovalCondition(task);
+  if (!condition) return null;
+  const displayedAction = condition.spec.requestedAction?.trim();
+  if (!displayedAction) return null;
+  return {
+    taskGeneration: task!.generation,
+    conditionId: condition.metadata.id,
+    conditionGeneration: condition.metadata.generation,
+    subject: condition.spec.subject,
+    expected: structuredClone(condition.spec.expected),
+    requestedAction: displayedAction,
+  };
 }

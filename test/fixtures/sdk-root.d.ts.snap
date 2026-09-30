@@ -11,3 +11,5 @@ export { workflowResult, workflowResultVersion } from "./workflow-result.js";
 export type { StructuredWorkflowResult, WorkflowCheckResult, WorkflowIoContract, WorkflowProblem, WorkflowResultStatus, WorkflowSubject, } from "./workflow-result.js";
 export type { Demand, GuardModule, WorkflowGuard, WorkflowGuardCompletedStep, WorkflowGuardEvent, WorkflowGuardStepResult, } from "./workflow-guard.js";
 export type { AgentContextPreparer } from "./agent-context.js";
+export { readVerifiedApprovalDecision } from "./approval.js";
+export type { ApprovalProposal, HostApprovalStamp, VerifiedApprovalDecision } from "./approval.js";

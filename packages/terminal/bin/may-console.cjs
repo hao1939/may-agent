@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 const net = require("node:net");
+const { userInfo } = require("node:os");
 const { randomUUID } = require("node:crypto");
 const path = require("node:path");
 const readline = require("node:readline");
@@ -29,7 +30,7 @@ let watchedTaskReadInFlight = false;
 let watchedTaskDirty = false;
 let desiredAutoFollow = null;
 let lastDisconnectedMessage = "";
-let lastRenderedMayMessageId = null;
+const displayedTaskReplies = new Map();
 let appSelectionVersion = 0;
 let todoCount = 0;
 let todoReadInFlight = false;
@@ -80,6 +81,7 @@ const ordinaryCommands = [
   "/tasks",
   "/todo",
   "/task",
+  "/reply",
   "/watch",
   "/unwatch",
   "/cancel",
@@ -326,7 +328,7 @@ function sendFrame(frame, opts = {}) {
   }
 }
 
-function mayInputFrame(message) {
+function mayInputFrame(message, reply) {
   const sequence = Math.max(Date.now(), lastConversationSequence + 1);
   lastConversationSequence = sequence;
   const messageId = `${source}:${adapterInstanceId}:${sequence}`;
@@ -336,6 +338,13 @@ function mayInputFrame(message) {
   rememberRenderedConversationMessage(messageId);
   return {
     type: "publish",
+    ...(reply
+      ? {
+          operatorId: userInfo().username,
+          authorizationReference: messageId,
+          authorizationEvidence: { channel: source, replyTo: reply.messageId, decisionText: message },
+        }
+      : {}),
     event: {
       type: "conversation.message.created",
       target: { appId: "may" },
@@ -343,10 +352,19 @@ function mayInputFrame(message) {
         conversationId,
         author: { kind: "human", id: messageId },
         text: message,
-        ...(lastRenderedMayMessageId ? { replyTo: lastRenderedMayMessageId } : {}),
+        ...(reply
+          ? {
+              replyTo: reply.messageId,
+              ...(reply.proposal ? { approvalReply: { target: reply.target, proposal: reply.proposal } } : {}),
+            }
+          : {}),
         context: {
           focusedApp: selectedApp,
-          ...(watchedTask ? { focusedTask: { appId: watchedTask.appId, taskId: watchedTask.taskId } } : {}),
+          ...(reply
+            ? { focusedTask: reply.target }
+            : watchedTask
+              ? { focusedTask: { appId: watchedTask.appId, taskId: watchedTask.taskId } }
+              : {}),
         },
         metadata: {
           channel: source,
@@ -500,6 +518,7 @@ function appendConversationMessage({ author, text, transient = false, metadata =
         data: {
           conversationId,
           author,
+          ...(idempotencyKey ? { messageId: idempotencyKey } : {}),
           text,
           ...(transient ? { transient: true } : {}),
           metadata: { channel: source, ...metadata },
@@ -853,7 +872,7 @@ function applyTodoRefresh(page) {
     const first = unwatched[0];
     const text =
       todoCount === 1 && unwatched.length === 1
-        ? `[todo] ${first.ref} · ${first.appId} needs you: ${humanActionText(first)}\nUse /watch ${first.ref} to respond.`
+        ? `[todo] ${first.ref} · ${first.appId} needs you: ${humanActionText(first)}\nUse /task ${first.ref} to read and reply.`
         : `[todo] ${todoCount} Tasks need you in ${selectedApp}. Run /todo.`;
     presentView("/todo notification", text, {
       transient: true,
@@ -902,7 +921,14 @@ function renderTask(task, command, options = {}) {
     : [];
   if (acceptance.length > 0) lines.push(...acceptance.map((item) => `    - ${item.trim()}`));
   else lines.push("    No separate completion criteria were recorded.");
-  lines.push("", "  You", `    ${task.humanAction ? humanActionLine(task) : "Nothing needed right now."}`);
+  lines.push(
+    "",
+    "  You",
+    ...indentedLines(
+      task.humanAction ? humanActionLine(task) : "Nothing needed right now.",
+      4,
+    ),
+  );
   if (task.requestedBy) {
     lines.push(
       "",
@@ -915,7 +941,17 @@ function renderTask(task, command, options = {}) {
   lines.push("");
   const text = renderedLines(lines);
   if (options.transient) printLine(text);
-  else presentView(command, text, { taskRefs: representedTaskIdentities(task) });
+  else {
+    const messageId = `${source}:task:${randomUUID()}`;
+    presentView(command, text, { taskRefs: representedTaskIdentities(task), idempotencyKey: messageId });
+    displayedTaskReplies.set(task.ref, {
+      messageId,
+      target: { appId: task.appId, taskId: task.taskId },
+      proposal: task.approvalProposal,
+    });
+    while (displayedTaskReplies.size > 100) displayedTaskReplies.delete(displayedTaskReplies.keys().next().value);
+    printNotice(`[reply] /reply ${task.ref} <text>`);
+  }
 }
 
 function renderTaskSummary(task) {
@@ -1089,7 +1125,6 @@ function renderConversation(messages, options = {}) {
     if (taskActivity) printActivityText("task", renderedText);
     else printConversationText(speaker, renderedText);
     rememberRenderedConversationMessage(id);
-    if (kind === "agent") lastRenderedMayMessageId = id;
     if (kind === "agent" && id.startsWith("result:")) {
       for (const task of metadataTaskRefs) rememberConversationResultTask(task, id);
     }
@@ -1237,6 +1272,10 @@ function handleEvent(event) {
       return;
     case "ok":
       const receiptKind = event.command === "publish" ? pendingPublishReceipts.shift() : null;
+      if (receiptKind === "human-turn" && event.approval) {
+        printNotice("reason" in event.approval ? event.approval.reason
+          : `${event.approval.decision} recorded for the exact proposal.`);
+      }
       if (event.command === "publish" && Number.isSafeInteger(event.eventId) && event.eventId > 0) {
         // Non-human Conversation events are projected by durable event row ID.
         // Marking every local publish receipt is harmless for other event kinds.
@@ -1528,6 +1567,7 @@ function printHelp() {
       "  /tasks [all] [history], /tasks more",
       "  /todo [all], /todo more     Show Tasks that need your action",
       "  /task <ref>",
+      "  /reply <ref> <text>     Reply to a Task you opened with /task",
       "  /watch [ref], /unwatch",
       "  /cancel [ref]",
       "",
@@ -1665,6 +1705,20 @@ function handleCommand(input) {
       }
       requestTask({ ref: rest, command: input });
       return;
+    case "reply": {
+      const [ref, ...words] = restParts;
+      const reply = displayedTaskReplies.get(ref);
+      if (!ref || !words.length) {
+        printLine("Usage: /reply <task-ref> <text>");
+        return;
+      }
+      if (!reply) {
+        printLine(`Read /task ${ref} first, then reply to that displayed proposal.`);
+        return;
+      }
+      submitHumanInput(mayInputFrame(input.replace(/^\/reply\s+\S+\s+/i, ""), reply));
+      return;
+    }
     case "watch": {
       if (!rest) {
         if (!watchedTask) {
@@ -1795,7 +1849,10 @@ function handleInput(line) {
   // Conversation history is presentation context, not an admission gate.
   // The daemon owns authoritative context and orders message handling within
   // the Conversation after this Event has been durably accepted.
-  const frame = mayInputFrame(input);
+  submitHumanInput(mayInputFrame(input));
+}
+
+function submitHumanInput(frame) {
   if (!connected) {
     if (pendingInputFrames.length >= maxPendingInputFrames) {
       printLine(`[offline] Message not saved; this Console already holds ${maxPendingInputFrames} unsent messages.`);

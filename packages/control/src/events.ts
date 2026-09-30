@@ -5,6 +5,9 @@ export type EventTarget = {
   sessionId?: string;
 };
 
+export { readVerifiedApprovalDecision } from "@may-agent/sdk";
+export type { ApprovalProposal, HostApprovalStamp, VerifiedApprovalDecision } from "@may-agent/sdk";
+
 /** Caller input. The Host supplies event identity, time, and trusted provenance. */
 export type EventInput = {
   type: string;
@@ -26,6 +29,8 @@ export type EventReceipt = {
   eventType: string;
   delivery: "recorded" | "accepted";
   links?: EventLink[];
+  /** A decision receipt is distinct from Conversation admission and Task completion. */
+  approval?: { decision: string; eventId: number } | { reason: string };
 };
 
 /** Transport shape, not a stability guarantee for every diagnostic payload.

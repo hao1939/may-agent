@@ -24,6 +24,47 @@ observe the work's result. Reuse an idempotency key only for the same input.
 Reads of unknown event IDs fail. `waitForSocketEvent()` subscribes and waits
 for one matching notification; after reconnecting, read durable state again.
 
+Formal `project.approval.submitted` publication is a privileged Host operation,
+not an ordinary self-asserted fact. Telegram and the local operator socket both
+submit the exact current Task, generation, Condition generation, displayed
+action, expected proposal, decision, actor, and authorization evidence. The
+Host validates that anchor against current Task state, stamps `hostApproval`,
+and journals the event; App emitters cannot manufacture the stamp. Exact replay
+is idempotent, while stale, changed, or differently scoped proposals are
+rejected. The operator socket is an installation trust boundary, not an OS
+sandbox against code that already has arbitrary shell access.
+
+Human channels submit one ordinary `conversation.message.created` input. For an
+explicit proposal reply, `data.replyTo` names the displayed message and
+`data.approvalReply` contains `{ target: { appId, taskId }, proposal }` from that
+same Task detail. Telegram resolves its native reply; Console uses
+`/task <ref>` followed by `/reply <ref> <text>`. Bare text and automatic watch
+updates never select an approval. Socket submissions supply frame-level
+`operatorId`, `authorizationReference`, and `authorizationEvidence`; the operator
+name is attribution, not authenticated human identity.
+
+`/todo` lists requests for attention. Open `/task <ref>` to read the full
+proposal and any other pending human actions, then reply to that detail.
+An incomplete proposal binding leaves the message as conversation and records
+no approval. For feedback, use the same reply gesture with ordinary text, for example
+`/reply <ref> Please simplify this before I approve.` Feedback remains
+conversation for the App to interpret.
+
+The Host recognizes exact decisions, preserves the input and proposal, then
+publishes the existing decision event from its durable Conversation route. Its
+`inputEventId` links to the original text. A receipt's optional `approval` reports
+the decision event ID or why none was recorded. Conditional text remains App
+conversation. Interrupted publication resumes from the saved input through the
+existing recovery scan, without another channel delivery or a replacement
+proposal. Direct privileged decision publication remains available and retries
+through the same event delivery path. Publication and Task wake use one
+Condition matcher so a recorded decision agrees with its declared constraints.
+
+Apps can import `readVerifiedApprovalDecision` from `@may-agent/sdk` to read the
+common stamp without maintaining a Telegram/operator source allowlist. The App
+still owns domain checks such as packet hashes and approved application scope.
+Rejection and deferral are durable decisions but do not authorize application.
+
 The project comment box uses this ordinary App-input route with `kind: "message"`.
 The selected App must accept that input and declare a Task or Conversation
 handler. A matching schema or comment-event subscription alone is insufficient.

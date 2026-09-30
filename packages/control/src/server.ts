@@ -15,6 +15,11 @@ import { isTaskDerivedViewWake, taskUpdateIdentity } from "./task-wake.js";
 
 export type ControlEvent = Record<string, unknown> & { type: string };
 export type ControlEmitResult = { eventId?: number };
+export type ApprovalIngressAuthorization = {
+  actor: { kind: "operator"; id: string };
+  reference: string;
+  evidence: Record<string, unknown>;
+};
 
 export interface ControlStatusItem {
   agent: string;
@@ -32,7 +37,7 @@ export interface AttachControlSocketOptions {
   getSessionId: () => string;
   getStatus: () => ControlStatus;
   emitEvent: (event: ControlEvent) => ControlEmitResult | void;
-  publishEvent?: (event: EventInput) => EventReceipt;
+  publishEvent?: (event: EventInput, approvalAuthorization?: ApprovalIngressAuthorization) => EventReceipt;
   getEvent?: (eventId: number) => EventView | undefined;
   describeProjectActions?: (projectId: string) => unknown[];
   admitAppInput?: (input: {
@@ -607,14 +612,35 @@ export function createControlSocketCore(opts: ControlSocketCoreOptions): {
               (author as Record<string, unknown>).kind === "human"
                 ? exactRuntimeControl(eventData.text)
                 : null;
-            const receipt = publishEvent({
-              type: runtimeControl ?? eventType,
-              ...(runtimeControl ? {} : eventTarget ? { target: eventTarget } : {}),
-              data: runtimeControl ? { reason: "human control command" } : eventData,
-              ...(typeof event.idempotencyKey === "string" && event.idempotencyKey.trim()
-                ? { idempotencyKey: event.idempotencyKey.trim() }
-                : {}),
-            });
+            const approvalAuthorization =
+              (eventType === "project.approval.submitted" ||
+                (eventType === "conversation.message.created" && frame.operatorId && eventData.approvalReply))
+                ? {
+                    actor: {
+                      kind: "operator" as const,
+                      id: typeof frame.operatorId === "string" ? frame.operatorId.trim() : "",
+                    },
+                    reference:
+                      typeof frame.authorizationReference === "string" ? frame.authorizationReference.trim() : "",
+                    evidence:
+                      frame.authorizationEvidence &&
+                      typeof frame.authorizationEvidence === "object" &&
+                      !Array.isArray(frame.authorizationEvidence)
+                        ? (frame.authorizationEvidence as Record<string, unknown>)
+                        : {},
+                  }
+                : undefined;
+            const receipt = publishEvent(
+              {
+                type: runtimeControl ?? eventType,
+                ...(runtimeControl ? {} : eventTarget ? { target: eventTarget } : {}),
+                data: runtimeControl ? { reason: "human control command" } : eventData,
+                ...(typeof event.idempotencyKey === "string" && event.idempotencyKey.trim()
+                  ? { idempotencyKey: event.idempotencyKey.trim() }
+                  : {}),
+              },
+              approvalAuthorization,
+            );
             writeFrame(socket, { type: "ok", command: normalized.command, ...receipt });
           } catch (error) {
             writeFrame(socket, {

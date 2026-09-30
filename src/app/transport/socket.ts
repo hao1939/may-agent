@@ -17,7 +17,7 @@ export type { SocketFrame } from "@may-agent/control/protocol";
 export interface SocketUIOptions {
   socketPath: string;
   events: Pick<EventInterface, "get" | "subscribe">;
-  publishEvent: (input: EventInput) => EventReceipt;
+  publishEvent: AttachControlSocketOptions["publishEvent"];
   /** Bounded operator fact ingress used by direct event frames and --emit. */
   publishOperatorEvent: (input: EventInput) => EventReceipt;
   getStatus: AttachControlSocketOptions["getStatus"];

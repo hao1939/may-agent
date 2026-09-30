@@ -16,11 +16,11 @@
  *   - Authentication: only accepts messages from allowed chat IDs
  */
 
-import { createHash, randomUUID } from "node:crypto";
+import { randomUUID } from "node:crypto";
 import { log } from "../../lib/log.js";
 import { setDefaultAutoSelectFamily } from "node:net";
 import type { AppConversationMessage, AppConversationTopic, AppConversationResource } from "@may-agent/sdk";
-import type { EventInput, EventReceipt } from "@may-agent/control/events";
+import type { ApprovalProposal, EventInput, EventReceipt } from "@may-agent/control/events";
 import { EVENT_DELIVERY_RESULT, eventData, type EventBus } from "../core/events/bus.js";
 import { loadPersistedEvent } from "../core/events/persisted.js";
 import { getDb } from "../../lib/db/connection.js";
@@ -31,7 +31,6 @@ import {
 } from "../../lib/db/notifications.js";
 import { readAppConversationResource, readConversationTopic } from "../core/state/conversations.js";
 import { TaskReferenceError } from "../core/state/task-reference-index.js";
-import type { AppTaskCondition } from "../core/tasks/app-task-state.js";
 import { createTelegramClient } from "./telegram-client.js";
 import {
   isTaskDerivedViewWake,
@@ -40,6 +39,7 @@ import {
 } from "../../../packages/control/src/task-wake.js";
 import {
   isHumanActionOwner,
+  approvalProposalForTask,
   type HumanAppView,
   type HumanTaskService,
   type HumanTaskView,
@@ -107,7 +107,14 @@ export interface TelegramBotOptions {
   bus: EventBus;
   interfaceAgent: string;
   humanTasks: Pick<HumanTaskService, "getTask" | "listApps" | "listTasks">;
-  publishEvent: (input: EventInput) => EventReceipt;
+  publishEvent: (
+    input: EventInput,
+    approvalAuthorization?: {
+      actor: { kind: "human"; id: string };
+      reference: string;
+      evidence: Record<string, unknown>;
+    },
+  ) => EventReceipt;
 }
 
 export interface TelegramBot {
@@ -304,8 +311,8 @@ function humanActionText(task: HumanTaskView): string {
 
 function humanActionLine(task: HumanTaskView): string {
   const owner = task.humanAction?.task;
-  const decisionAction = approvalDecisionAction(task);
-  const otherActions = decisionAction ? humanConditionActions(task, pendingHumanApprovalCondition(task)) : [];
+  const decisionAction = (approvalProposalForTask(task)?.requestedAction ?? null);
+  const otherActions = decisionAction ? humanConditionActions(task, approvalProposalForTask(task)?.conditionId) : [];
   const text = decisionAction
     ? [
         `Needs your decision: ${decisionAction}`,
@@ -410,7 +417,7 @@ function renderedWaits(task: HumanTaskView): string[] {
 }
 
 function taskPresentationRevision(task: HumanTaskView): string {
-  const decision = approvalDecisionAction(task);
+  const decision = (approvalProposalForTask(task)?.requestedAction ?? null);
   return JSON.stringify({
     outcome: task.outcome,
     status: taskStatusLabel(task),
@@ -418,8 +425,8 @@ function taskPresentationRevision(task: HumanTaskView): string {
     waits: renderedWaits(task),
     decision,
     action: task.humanAction ? fullHumanActionText(task) : null,
-    otherActions: decision ? humanConditionActions(task, pendingHumanApprovalCondition(task)) : [],
-    approvalAnchor: approvalAnchor(task),
+    otherActions: decision ? humanConditionActions(task, approvalProposalForTask(task)?.conditionId) : [],
+    approvalAnchor: approvalProposalForTask(task),
     humanCondition: humanConditionAnchor(task),
   });
 }
@@ -442,8 +449,8 @@ function formatWorkTime(value: number): string {
 }
 
 function renderTelegramTaskUpdate(task: HumanTaskView): string {
-  const decisionAction = approvalDecisionAction(task);
-  const otherActions = decisionAction ? humanConditionActions(task, pendingHumanApprovalCondition(task)) : [];
+  const decisionAction = (approvalProposalForTask(task)?.requestedAction ?? null);
+  const otherActions = decisionAction ? humanConditionActions(task, approvalProposalForTask(task)?.conditionId) : [];
   return [
     task.outcome,
     taskStatusLabel(task),
@@ -513,21 +520,7 @@ function renderTelegramConversationMessage(message: AppConversationMessage): str
   return `${surface} · ${speaker}\n${text}`;
 }
 
-export type TelegramApprovalAnchor = {
-  approvalId: string;
-  /** Fingerprint of the exact Condition proposal bytes shown to the human. */
-  displayedActionHash: string;
-  packetHash?: string;
-  proposalHash?: string;
-  proposalRevision?: number;
-  taskGeneration: number;
-  conditionId: string;
-};
-
-export type TelegramApprovalReply = TelegramApprovalAnchor & {
-  decision: "approve" | "reject" | "defer";
-  task: { appId: string; taskId: string };
-};
+export type TelegramApprovalAnchor = ApprovalProposal;
 
 type TelegramHumanConditionAnchor = {
   taskGeneration: number;
@@ -552,32 +545,13 @@ function humanConditionAnchor(task: HumanTaskView | null): TelegramHumanConditio
   };
 }
 
-function pendingHumanApprovalCondition(task: HumanTaskView | null) {
-  if (!task || task.terminal || !["pending", "waiting", "running", "attention"].includes(task.status)) return null;
-  const matches = (task.diagnostics?.conditions ?? []).filter((item) => {
-    const condition = item.condition;
-    const expected =
-      condition?.spec.expected && typeof condition.spec.expected === "object" && !Array.isArray(condition.spec.expected)
-        ? (condition.spec.expected as Record<string, unknown>)
-        : {};
-    return (
-      condition?.spec.type === "project.approval.submitted" &&
-      condition.status?.state !== "true" &&
-      isHumanActionOwner(condition.spec.owner) &&
-      expected.taskGeneration === task.generation &&
-      expected.conditionId === item.id
-    );
-  });
-  return matches.length === 1 ? matches[0]!.condition : null;
-}
-
-function humanConditionActions(task: HumanTaskView | null, exclude?: AppTaskCondition | null): string[] {
+function humanConditionActions(task: HumanTaskView | null, exclude?: string): string[] {
   if (!task || task.terminal) return [];
   return (task.diagnostics?.conditions ?? [])
     .map((item) => item.condition)
     .filter(
       (condition) =>
-        condition !== exclude && condition?.status?.state !== "true" && isHumanActionOwner(condition?.spec.owner),
+        condition?.metadata.id !== exclude && condition?.status?.state !== "true" && isHumanActionOwner(condition?.spec.owner),
     )
     .map((condition) => condition!.spec.requestedAction?.trim())
     .filter((action): action is string => Boolean(action));
@@ -586,78 +560,6 @@ function humanConditionActions(task: HumanTaskView | null, exclude?: AppTaskCond
 function fullHumanActionText(task: HumanTaskView): string {
   const actions = humanConditionActions(task);
   return actions.length > 0 ? actions.join("\n\n") : humanActionText(task);
-}
-
-function approvalDecisionAction(task: HumanTaskView | null): string | null {
-  return pendingHumanApprovalCondition(task)?.spec.requestedAction?.trim() || null;
-}
-
-function approvalAnchor(task: HumanTaskView | null): TelegramApprovalAnchor | null {
-  const condition = pendingHumanApprovalCondition(task);
-  if (!condition) return null;
-  const displayedAction = condition.spec.requestedAction?.trim();
-  if (!displayedAction) return null;
-  const expected =
-    condition.spec.expected && typeof condition.spec.expected === "object" && !Array.isArray(condition.spec.expected)
-      ? (condition.spec.expected as Record<string, unknown>)
-      : {};
-  const approvalId =
-    typeof expected.approvalId === "string" && expected.approvalId.trim()
-      ? expected.approvalId.trim()
-      : condition.spec.subject.replace(/^[^:]+:/, "");
-  if (!approvalId) return null;
-  return {
-    approvalId,
-    displayedActionHash: createHash("sha256").update(displayedAction).digest("hex"),
-    taskGeneration: task!.generation,
-    conditionId: String(expected.conditionId),
-    ...(typeof expected.packetHash === "string" ? { packetHash: expected.packetHash } : {}),
-    ...(typeof expected.proposalHash === "string" ? { proposalHash: expected.proposalHash } : {}),
-    ...(Number.isSafeInteger(expected.proposalRevision) ? { proposalRevision: Number(expected.proposalRevision) } : {}),
-  };
-}
-
-/** Mechanical parser only: edits, conditions and unbound affirmations remain conversation. */
-export function telegramApprovalReply(
-  text: string,
-  task: HumanTaskView | null,
-  displayed: TelegramApprovalAnchor | null,
-): TelegramApprovalReply | null {
-  const normalized = text.trim().toLowerCase();
-  const decision =
-    normalized === "approve" || normalized === "approved"
-      ? "approve"
-      : normalized === "reject" || normalized === "rejected"
-        ? "reject"
-        : normalized === "defer" || normalized === "deferred"
-          ? "defer"
-          : null;
-  const current = approvalAnchor(task);
-  if (
-    !decision ||
-    !task ||
-    !displayed ||
-    !current ||
-    Object.keys(current).some(
-      (key) => displayed[key as keyof TelegramApprovalAnchor] !== current[key as keyof TelegramApprovalAnchor],
-    ) ||
-    Object.keys(displayed).some(
-      (key) => displayed[key as keyof TelegramApprovalAnchor] !== current[key as keyof TelegramApprovalAnchor],
-    )
-  )
-    return null;
-  const condition = pendingHumanApprovalCondition(task)!;
-  const expected =
-    condition.spec.expected && typeof condition.spec.expected === "object" && !Array.isArray(condition.spec.expected)
-      ? (condition.spec.expected as Record<string, unknown>)
-      : {};
-  const allowed = Array.isArray(expected.anyOf)
-    ? expected.anyOf
-    : Array.isArray(expected.allowedDecisions)
-      ? expected.allowedDecisions
-      : [];
-  if (!allowed.includes(decision)) return null;
-  return { decision, task: { appId: task.appId, taskId: task.taskId }, ...current };
 }
 
 export function telegramMayInputEvent(input: {
@@ -1076,7 +978,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
       }
     }
     const rendered = renderTelegramTaskUpdate(task);
-    const displayedApproval = approvalAnchor(task);
+    const displayedApproval = approvalProposalForTask(task);
     const displayedHumanCondition = !displayedApproval ? humanConditionAnchor(task) : null;
     // Keep the card's context consistent even if selection changes during I/O.
     const conversationTopicId = selectedTaskTopicId(surface, task);
@@ -1181,11 +1083,11 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
     // anchor share the same snapshot without a list/detail race.
     const proposal = single ? first.detail : first.task;
     const taskRefs = (single ? [proposal] : page.items).map((task) => ({ appId: task.appId, taskId: task.taskId }));
-    const displayedApproval = single ? approvalAnchor(proposal) : null;
+    const displayedApproval = single ? approvalProposalForTask(proposal) : null;
     const displayedHumanCondition = single && !displayedApproval ? humanConditionAnchor(proposal) : null;
-    const decisionAction = displayedApproval ? approvalDecisionAction(proposal) : null;
+    const decisionAction = displayedApproval ? displayedApproval.requestedAction : null;
     const otherActions = displayedApproval
-      ? humanConditionActions(proposal, pendingHumanApprovalCondition(proposal))
+      ? humanConditionActions(proposal, approvalProposalForTask(proposal)?.conditionId)
       : [];
     const text = single
       ? decisionAction
@@ -1355,25 +1257,36 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
     replyToMsgId?: number,
     replyToSourceId?: string,
     conversationTopicId?: string,
+    approvalReply?: { target: { appId: string; taskId: string }; proposal: ApprovalProposal },
+    approvalAuthorization?: Parameters<TelegramBotOptions["publishEvent"]>[1],
   ): void {
     if (!channelMessageId || !chatId || !conversationId) return;
-    const received = opts.publishEvent(
-      telegramMayInputEvent({
-        message,
-        chatId,
-        messageId: channelMessageId,
-        conversationId,
-        topicId,
-        conversationTopicId,
-        replyToMessageId: replyToMsgId,
-        replyToSourceId,
-        context: {
-          ...(context ?? {}),
-        },
-      }),
-    );
+    const input = telegramMayInputEvent({
+      message,
+      chatId,
+      messageId: channelMessageId,
+      conversationId,
+      topicId,
+      conversationTopicId,
+      replyToMessageId: replyToMsgId,
+      replyToSourceId,
+      context: context ?? {},
+    });
+    if (approvalReply) input.data.approvalReply = approvalReply;
+    const received = opts.publishEvent(input, approvalAuthorization);
 
     requireAdmission(received);
+    if (received.approval) {
+      const result = received.approval;
+      queueCommandDelivery(surfaceKey(chatId, topicId === undefined ? undefined : Number(topicId)), () =>
+        sendMessage(
+          chatId,
+          "reason" in result ? result.reason : `${result.decision} recorded for the exact proposal.`,
+          undefined,
+          { replyToMessageId: channelMessageId, messageThreadId: topicId === undefined ? undefined : Number(topicId) },
+        ),
+      );
+    }
     const rowId = received.eventId;
     try {
       storeNotificationMessage(persistDir, {
@@ -1514,10 +1427,6 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
     }
 
     const approverId = String(msg.from?.id ?? "");
-    const approval =
-      replyToMsgId && replyTask && replyApprovalAnchor && allowedApproverIds.includes(approverId)
-        ? telegramApprovalReply(text, opts.humanTasks.getTask(replyTask), replyApprovalAnchor)
-        : null;
 
     try {
       if (handleTelegramCommand(text, chatIdStr, msg, conversationId, topicId)) return;
@@ -1567,42 +1476,12 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
         replyToMsgId,
         replyToSourceId,
         replyTopicId ?? conversationTopic?.id,
-      );
-    }
-    if (approval) {
-      // This generic control is journaled, not admitted as App work. Consumers
-      // must reread this trusted Telegram source and the exact proposal anchor.
-      // If Conversation admission succeeded before this second publication
-      // failed, provider replay resumes here and records only the missing event.
-      const approvalKey = `telegram-approval:${chatIdStr}:${msg.message_id}`;
-      if (!resumeRecordedInput("project.approval.submitted", approvalKey, false)) {
-        opts.publishEvent({
-          type: "project.approval.submitted",
-          target: { appId: approval.task.appId, taskId: approval.task.taskId },
-          data: {
-            approvalId: approval.approvalId,
-            decision: approval.decision,
-            ...(approval.packetHash ? { packetHash: approval.packetHash } : {}),
-            ...(approval.proposalHash ? { proposalHash: approval.proposalHash } : {}),
-            ...(approval.proposalRevision ? { proposalRevision: approval.proposalRevision } : {}),
-            taskGeneration: approval.taskGeneration,
-            conditionId: approval.conditionId,
-            provenance: {
-              provider: "telegram",
-              authenticatedSenderId: approverId,
-              chatId: chatIdStr,
-              sourceMessageId: msg.message_id,
-              replyToMessageId: replyToMsgId,
-            },
-          },
-          idempotencyKey: approvalKey,
-        });
-      }
-      queueCommandDelivery(surface, () =>
-        sendMessage(chatIdStr, `${approval.decision} recorded for the exact proposal.`, undefined, {
-          replyToMessageId: msg.message_id,
-          messageThreadId: topicId,
-        }),
+        replyTask && replyApprovalAnchor ? { target: replyTask, proposal: replyApprovalAnchor } : undefined,
+        allowedApproverIds.includes(approverId) ? {
+          actor: { kind: "human", id: approverId },
+          reference: `telegram:${chatIdStr}:${msg.message_id}`,
+          evidence: { chatId: chatIdStr, sourceMessageId: msg.message_id, replyToMessageId: replyToMsgId },
+        } : undefined,
       );
     }
     // Presentation after durable recording cannot turn a saved input into a retry.
@@ -1659,7 +1538,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
       parseMode?: string,
     ): void => {
       const conversationTopicId = followTask ? taskTopicId(followTask) : selectedTopics.get(surface)?.id;
-      const displayedApproval = approvalAnchor(approvalTask ?? null);
+      const displayedApproval = approvalProposalForTask(approvalTask ?? null);
       queueCommandDelivery(surface, async () => {
         const deliveredMessageId = await sendMessage(chatIdStr, rendered, parseMode, {
           eventType: displayedApproval ? "task.human-action" : "telegram.reply",

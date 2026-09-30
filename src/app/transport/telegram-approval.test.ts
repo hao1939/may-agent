@@ -1,5 +1,4 @@
 import { describe, expect, it } from "bun:test";
-import { createHash } from "node:crypto";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -7,13 +6,11 @@ import { openDatabase } from "../../lib/db.js";
 import { applyDbSchema } from "../../lib/db/schema.js";
 import { closeDb, getDb } from "../../lib/requests.js";
 import { EventBus } from "../core/events/bus.js";
-import { HumanTaskService, type HumanTaskView } from "../human-task-service.js";
+import { approvalProposalForTask, HumanTaskService, type HumanTaskView } from "../human-task-service.js";
 import {
   attachTelegramBot,
   renderTelegramTask,
   renderTelegramTodos,
-  telegramApprovalReply,
-  type TelegramApprovalAnchor,
 } from "./telegram.js";
 
 function proposal(letter: string, revision: number): HumanTaskView {
@@ -33,6 +30,7 @@ function proposal(letter: string, revision: number): HumanTaskView {
         {
           id: `approval-${letter}`,
           condition: {
+            metadata: { id: `approval-${letter}`, generation: 1, resourceVersion: 1 },
             spec: {
               type: "project.approval.submitted",
               subject: `id:proposal-${letter}`,
@@ -64,50 +62,7 @@ function action(task: HumanTaskView): string {
 }
 
 const proposalA = proposal("a", 1);
-const anchorA: TelegramApprovalAnchor = {
-  approvalId: "proposal-a",
-  displayedActionHash: createHash("sha256").update(action(proposalA)).digest("hex"),
-  packetHash: "a".repeat(64),
-  proposalRevision: 1,
-  taskGeneration: 1,
-  conditionId: "approval-a",
-};
-
-describe("Telegram exact approval reply", () => {
-  it("accepts only a literal allowed decision for the displayed current proposal", () => {
-    expect(telegramApprovalReply("approve", proposal("a", 1), anchorA)).toMatchObject({
-      decision: "approve",
-      approvalId: "proposal-a",
-      packetHash: "a".repeat(64),
-    });
-    expect(telegramApprovalReply("yes", proposal("a", 1), anchorA)).toBeNull();
-    expect(telegramApprovalReply("approve if checks pass", proposal("a", 1), anchorA)).toBeNull();
-  });
-
-  it("keeps a stale displayed A from deciding replacement B", () => {
-    expect(telegramApprovalReply("approve", proposal("b", 2), anchorA)).toBeNull();
-    expect(telegramApprovalReply("reject", proposal("b", 2), anchorA)).toBeNull();
-    expect(telegramApprovalReply("defer", proposal("b", 2), anchorA)).toBeNull();
-  });
-
-  it("rejects terminal tasks and retained conditions from a newer generation", () => {
-    const terminal = proposal("a", 1);
-    terminal.status = "cancelled";
-    terminal.terminal = true;
-    expect(telegramApprovalReply("approve", terminal, anchorA)).toBeNull();
-
-    const regenerated = proposal("a", 1);
-    regenerated.generation = 2;
-    expect(telegramApprovalReply("approve", regenerated, anchorA)).toBeNull();
-  });
-
-  it("binds the exact displayed bytes even when producer hashes and revision stay stale", () => {
-    const changed = proposal("a", 1);
-    changed.diagnostics!.conditions[0]!.condition!.spec.requestedAction =
-      "The candidate now adds a recurring paid service and has a newly discovered data-loss risk.";
-    expect(telegramApprovalReply("approve", changed, anchorA)).toBeNull();
-  });
-
+describe("Telegram exact approval presentation", () => {
   it("renders the full Condition proposal in an exact Task card", () => {
     const exact = proposal("a", 1);
     exact.humanAction = { requestedAction: "Problem: stale approval…" };
@@ -243,9 +198,9 @@ describe("Telegram exact approval reply", () => {
           }),
         } as any);
         const serviceDetail = service.getTask({ appId: "may", taskId: "goal/proposal" })!;
-        if (!scenario.approval) {
-          expect(serviceDetail.humanAction?.requestedAction).not.toContain("IMPORTANT:");
-        }
+        for (const action of scenario.actions) expect(serviceDetail.humanAction?.requestedAction).toContain(action);
+        const listed = service.listTasks({ appId: "may", humanActionOnly: true }).items[0]!;
+        expect(Buffer.byteLength(listed.humanAction!.requestedAction)).toBeLessThanOrEqual(240);
         const watchCard = renderTelegramTask(serviceDetail);
         for (const requestedAction of scenario.actions) expect(watchCard).toContain(requestedAction);
         if (scenario.approval) {
@@ -293,9 +248,7 @@ describe("Telegram exact approval reply", () => {
           const notification = db
             .prepare("SELECT data FROM notification_messages WHERE event_type = 'task.human-action'")
             .get() as { data: string };
-          expect(JSON.parse(notification.data).approvalAnchor.displayedActionHash).toBe(
-            createHash("sha256").update(decisionAction).digest("hex"),
-          );
+          expect(JSON.parse(notification.data).approvalAnchor.requestedAction).toBe(decisionAction);
         }
       } finally {
         bot?.close();
@@ -365,20 +318,19 @@ describe("Telegram exact approval reply", () => {
     expect(rendered).toContain("Clarify the preferred rollback observation window.");
     expect(rendered).toContain("Run checks, obtain review, and merge the May-owned change.");
     expect(rendered).toContain("Approve the legacy Hao-owned rollout wait.");
-    expect(telegramApprovalReply("approve", withClarification, anchorA)).not.toBeNull();
 
     const roleOwnedApproval = proposal("a", 1);
     roleOwnedApproval.diagnostics!.conditions[0]!.condition!.spec.owner = "human:github-maintainer";
-    expect(telegramApprovalReply("approve", roleOwnedApproval, anchorA)).not.toBeNull();
+    expect(approvalProposalForTask(roleOwnedApproval)?.conditionId).toBe("approval-a");
 
     const legacyHaoApproval = proposal("a", 1);
     legacyHaoApproval.diagnostics!.conditions[0]!.condition!.spec.owner = "Hao";
-    expect(telegramApprovalReply("approve", legacyHaoApproval, anchorA)).not.toBeNull();
+    expect(approvalProposalForTask(legacyHaoApproval)?.conditionId).toBe("approval-a");
 
     const ambiguous = proposal("a", 1);
     ambiguous.humanAction = { requestedAction: "Choose one proposal." };
     ambiguous.diagnostics!.conditions.push(proposal("b", 2).diagnostics!.conditions[0]!);
-    expect(telegramApprovalReply("approve", ambiguous, anchorA)).toBeNull();
+    expect(approvalProposalForTask(ambiguous)).toBeNull();
     expect(renderTelegramTask(ambiguous)).toContain("artifact:full-diff-a.patch");
     expect(renderTelegramTask(ambiguous)).toContain("artifact:full-diff-b.patch");
   });

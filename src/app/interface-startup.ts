@@ -50,10 +50,11 @@ export async function startInterfaceRuntime(options: InterfaceStartupOptions): P
     ? await attachSocketUI({
         socketPath,
         events: options.events,
-        publishEvent: (input) =>
+        publishEvent: (input, approvalAuthorization) =>
           options.events.publish(input, {
             source: "control-socket",
             inputSource: { kind: "human", id: "control-socket" },
+            ...(approvalAuthorization ? { approvalAuthorization } : {}),
           }),
         publishOperatorEvent: (input) =>
           options.events.publish(input, {
