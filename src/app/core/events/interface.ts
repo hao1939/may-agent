@@ -726,7 +726,7 @@ export function deliverConversationApproval(
   if (!data.approvalReply || !approvalDecision(data.text)) return undefined;
   const reply = data.approvalReply as Record<string, unknown>;
   if (!reply.hostApproval)
-    return { reason: "No authorized, explicit proposal reply was supplied. Your text remains conversation." };
+    return { reason: "No valid, authorized proposal reply was supplied. Your text remains conversation." };
   const { target, ...decision } = reply;
   const input: EventInput = { type: "project.approval.submitted", target: target as EventTarget, data: decision };
   const source = requiredText((event as { source?: string }).source, "Saved input source");
@@ -765,7 +765,7 @@ function conversationApprovalReceipt(
 ): EventReceipt["approval"] {
   if (!data.approvalReply || !approvalDecision(data.text)) return undefined;
   if (!(data.approvalReply as Record<string, unknown>).hostApproval)
-    return { reason: "No authorized, explicit proposal reply was supplied. Your text remains conversation." };
+    return { reason: "No valid, authorized proposal reply was supplied. Your text remains conversation." };
   const row = db
     .prepare(
       "SELECT id, data FROM events WHERE event_type = 'project.approval.submitted' AND source = ? AND idempotency_key = ? LIMIT 1",

@@ -115,7 +115,7 @@ export function stampApproval(
     authorization: { reference, evidence: structuredClone(evidence) },
   };
   if (!readVerifiedApprovalDecision({ type: input.type, source, data })) {
-    throw new Error("Formal approval requires a valid proposal and ingress attribution");
+    throw new ApprovalValidationError("Formal approval requires a valid proposal and ingress attribution");
   }
   return { ...input, data };
 }
@@ -153,15 +153,21 @@ export function stampConversationApproval(
   const decision = approvalDecision(data.text);
   if (author?.kind !== "human" || !data.replyTo || !decision || !authorization) return { ...input, data };
   const target = record(reply.target, "approvalReply.target");
-  const stamped = stampApproval(
-    {
-      type: "project.approval.submitted",
-      target: { appId: text(target.appId, "approvalReply App"), taskId: text(target.taskId, "approvalReply Task") },
-      data: { decision, proposal: reply.proposal },
-    },
-    source,
-    authorization,
-  );
-  data.approvalReply = { target: stamped.target, ...stamped.data };
+  try {
+    const stamped = stampApproval(
+      {
+        type: "project.approval.submitted",
+        target: { appId: text(target.appId, "approvalReply App"), taskId: text(target.taskId, "approvalReply Task") },
+        data: { decision, proposal: reply.proposal },
+      },
+      source,
+      authorization,
+    );
+    data.approvalReply = { target: stamped.target, ...stamped.data };
+  } catch (error) {
+    // An unusable proposal binding cannot discard an otherwise valid message.
+    // Keep the text and unstamped reply for ordinary Conversation admission.
+    if (!(error instanceof ApprovalValidationError)) throw error;
+  }
   return { ...input, data };
 }

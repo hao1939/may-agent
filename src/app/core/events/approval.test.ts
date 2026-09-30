@@ -419,10 +419,18 @@ it("preserves stale, unauthorized and unbound input without approving a replacem
   const unbound = humanReply(f, "approve", "unbound");
   delete unbound.data.replyTo;
   expect(f.events.publish(unbound, context).approval).toHaveProperty("reason");
+  const incomplete = humanReply(f, "approve", "incomplete-proposal");
+  incomplete.data.approvalReply = {
+    target: { appId: "sample", taskId: "work" },
+    proposal: { conditionId: "release" },
+  };
+  const receipt = f.events.publish(incomplete, context);
+  expect(receipt).toMatchObject({ delivery: "accepted", approval: { reason: expect.any(String) } });
+  expect(f.events.get(receipt.eventId)?.event.data.text).toBe("approve");
   expect(
     f.db.prepare("SELECT COUNT(*) AS n FROM events WHERE event_type = 'project.approval.submitted'").get()?.n,
   ).toBe(0);
-  expect(f.db.prepare("SELECT COUNT(*) AS n FROM app_inbox_items").get()?.n).toBe(3);
+  expect(f.db.prepare("SELECT COUNT(*) AS n FROM app_inbox_items").get()?.n).toBe(4);
 });
 
 for (const crash of [

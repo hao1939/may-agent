@@ -45,7 +45,8 @@ name is attribution, not authenticated human identity.
 
 `/todo` lists requests for attention. Open `/task <ref>` to read the full
 proposal and any other pending human actions, then reply to that detail.
-For feedback, use the same reply gesture with ordinary text, for example
+An incomplete proposal binding leaves the message as conversation and records
+no approval. For feedback, use the same reply gesture with ordinary text, for example
 `/reply <ref> Please simplify this before I approve.` Feedback remains
 conversation for the App to interpret.
 
