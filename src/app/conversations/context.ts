@@ -1,6 +1,6 @@
 import { Check } from "typebox/value";
 import type { AppTaskClaim } from "../core/tasks/app-task-reconciler.js";
-import { readConversationRequest } from "../core/state/conversation-requests.js";
+import { readConversationRequest, listConversationInputRequests } from "../core/state/conversation-requests.js";
 import {
   conversationRequestUpdatesSchema,
   type ConversationTurnResult,
@@ -206,6 +206,9 @@ export async function prepareConversationTaskContext(
   const { items, replyInput: item } = turn;
   const inputContext = await prepareConversationInput(db, item, readInputContext(db, item), readDependency);
   inputContext.inputs = items.map(({ id, source, input }) => ({ id, source, input }));
+  inputContext.assignedRequests = listConversationInputRequests(
+    db, item.appId, item.conversationId!, items.map(({ id }) => id),
+  ).map(({ id, revision, scope, status, inputIds }) => ({ id, revision, scope, status, inputIds }));
   if (previousAttempt) inputContext.previousAttempt = structuredClone(previousAttempt);
   // Bring the exact Requests involved in rejected settlement back into bounded
   // context, including closed asks outside the ordinary context window.

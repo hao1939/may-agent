@@ -249,6 +249,7 @@ describe("conversational attempt contract", () => {
       },
     });
     const tool = definition.tools.find((tool) => tool.name === "conversation_request")!;
+    expect(Check(tool.parameters, { id: "ask", expectedRevision: 1, inputIds: ["current-input"] })).toBe(true);
     expect(Check(tool.parameters, { id: "ask", expectedRevision: 0, scope: "Compare", disposition: "fulfilled" })).toBe(
       false,
     );
