@@ -26,6 +26,7 @@ export class AppTaskRecoveryScheduler {
   private readonly safetyTimer = new OwnedTimer("task-recovery:safety");
   private readonly dueTimer = new OwnedTimer("task-recovery:due");
   private dueAt?: number;
+  private lastRecoveryAt?: number;
   private recoveryCursor?: IndexedTaskRecoveryCursor;
   private closed = false;
 
@@ -60,7 +61,9 @@ export class AppTaskRecoveryScheduler {
 
   recover(): number {
     if (this.closed) return 0;
-    const page = this.options.source.listRecoveryCandidates(this.now(), this.pageSize, this.recoveryCursor);
+    const recoveryAt = this.now();
+    const page = this.options.source.listRecoveryCandidates(recoveryAt, this.pageSize, this.recoveryCursor);
+    this.lastRecoveryAt = recoveryAt;
     this.recoveryCursor = page.nextCursor ?? undefined;
     for (const candidate of page.items) {
       this.options.enqueue(candidate.taskId, {
@@ -79,15 +82,19 @@ export class AppTaskRecoveryScheduler {
     }
     // A synchronous transition may finish after another Task's deadline.
     // Query that overdue work once; do not defer it to the long safety scan.
-    // The callback does not re-arm itself against unchanged due rows.
-    if (next <= this.now() && !force) return;
+    // Suppress only rows that were already due for the last recovery query.
+    // If the clock crossed the deadline after that query, re-arm immediately.
+    const now = this.now();
+    if (next <= now && !force && this.lastRecoveryAt !== undefined && next <= this.lastRecoveryAt) return;
     if (!force && this.dueTimer.armed && this.dueAt === next) return;
     this.dueAt = next;
-    this.dueTimer.after(Math.max(1, next - this.now()), () => {
+    this.dueTimer.after(Math.max(1, next - now), () => {
       this.dueAt = undefined;
       this.recover();
-      // Re-arming waits for the task transition or the safety query. A still-
-      // due row must not create a zero-delay timer loop.
+      // Timers may fire just before the persisted millisecond deadline. Re-arm
+      // only when the row is still in the future; armNearestDue deliberately
+      // leaves an unchanged due row for the task transition or safety query.
+      this.armNearestDue();
     });
   }
 }
