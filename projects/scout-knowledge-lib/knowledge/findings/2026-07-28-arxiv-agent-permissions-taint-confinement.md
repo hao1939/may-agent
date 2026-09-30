@@ -1,7 +1,7 @@
 # APPA: Agentic Permissions Policy Algebra for Taint Confinement
 
 Date: 2026-07-28
-Last updated: 2026-09-28
+Last updated: 2026-09-30
 Source: https://arxiv.org/abs/2607.24625v1
 
 ## Summary
@@ -107,6 +107,57 @@ complete mediation or a universal zero failure rate.
 **Additional sources:** [HN item 49877515](https://news.ycombinator.com/item?id=49877515);
 [OpenAPPA benchmark report](https://www.openappa.com/evaluation);
 [Bench-Corp tree](https://github.com/archestra-ai/OpenAPPA/tree/19e47f2d6976d6d1d47a9f268d4fdadbe0f609ed/bench/corp).
+
+## HN update — a policy pin, state partition, and retry receipt prove different things (2026-09-30)
+
+A new HN submission points to OpenAPPA's current repository rather than a new
+paper or benchmark. The useful change since Scout's 2026-09-28 inspection is a
+more explicit embedding contract. A host can prepare several policy deployments
+and pin each dispatch to one, while a trajectory opened under an older policy
+continues under the exact policy file stored with its log. Reloading policy is
+therefore a choice for new trajectories, not a retroactive relabeling of old
+work. Root forks likewise inherit the source family's opening policy and a
+frozen security/effect state, then evolve independently.
+
+That policy continuity does **not** establish tenant isolation. The integration
+guide says a pin selects policy but does not constrain which trajectories the
+runtime can reach. A multi-tenant host must still give each dispatch a
+partitioned event-log store and globally unique root identifiers. It also must
+supply an authenticated session principal: OpenAPPA accepts that principal from
+the host and does not authenticate it. The reusable deployment claim is thus a
+triple—policy identity, state-store scope, and principal proof—not a single
+“guarded by OpenAPPA” flag.
+
+The repository's event-log layer adds a complementary retry boundary. An
+operation receipt is keyed by organization, session, binding, operation ID,
+root, and stable semantic input. A completed receipt can replay its recorded
+decision; reuse with another input or scope is refused; and a still-pending
+receipt is returned as `Pending`, not retried as though no work occurred. Tool
+result processing has its own receipt keyed by session and tool-call ID. These
+receipts prevent an ambiguous retry from becoming an automatic duplicate, but
+they intentionally leave pending work unresolved: a receipt says the runtime
+claimed processing, not whether an external tool effect happened. Reconciliation
+still needs effect-specific evidence.
+
+**Reusable rule:** preserve policy version, state partition, authenticated
+principal, operation identity, and effect outcome as separate evidence. Policy
+pinning gives decision continuity; partitioning gives state isolation; an
+idempotency receipt gives retry ownership. None substitutes for the others or
+proves an external effect's final state.
+
+**Evidence inspected:** HN item
+[49913499](https://news.ycombinator.com/item?id=49913499) and OpenAPPA revision
+[`b6e7e98285eebbd8bd9afbc4e03022a56a13493c`](https://github.com/archestra-ai/OpenAPPA/commit/b6e7e98285eebbd8bd9afbc4e03022a56a13493c), including the root README,
+`website/content/docs/add-to-agent.md`, `website/content/docs/how-it-works.md`,
+`website/content/docs/contracts.md`, `appa-runtime/README.md`, and
+`appa-eventlog/src/receipts.rs` with its repository-authored receipt tests.
+
+**Evidence boundary:** Scout inspected source and tests statically. It did not
+build the Rust workspace, run the tests, deploy a shared runtime, simulate a
+cross-tenant access attempt, authenticate a real principal, or reconcile a
+pending receipt against an external effect. OpenAPPA remains labeled preview and
+RFC; its configuration and wire surfaces may change without compatibility
+shims.
 
 ## Tags
 
