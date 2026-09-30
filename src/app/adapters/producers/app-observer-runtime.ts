@@ -31,7 +31,7 @@ type ObserverState = {
 };
 
 export type AppObserverRuntime = {
-  start(intervalMs: number): void;
+  start(): void;
   replace(entries: readonly Readonly<LoadedAppDefinition>[]): void;
   scanNow(): void;
   requestCheck(interests: readonly ObservationInterestRoute[]): void;
@@ -72,6 +72,15 @@ export function createAppObserverRuntime(options: {
   let states = new Map<string, ObserverState>();
   // Only unsettled I/O survives replacement; demand and snapshots are recollected.
   const occupiedBySource = new Map<string, Set<string>>();
+
+  const refreshCadence = () => {
+    cadence.cancel();
+    if (closed || !started || !states.size) return;
+    // Preserve minute-level scans for slow sources; shorten the timer for
+    // faster observers. Each observer still owns its declared due slots.
+    const intervalMs = Math.min(60_000, ...Array.from(states.values(), (state) => state.observer.intervalMs));
+    cadence.every(intervalMs, () => runtime.scanNow());
+  };
 
   const replace = (entries: readonly Readonly<LoadedAppDefinition>[]): void => {
     for (const state of states.values()) state.controller.abort(new Error("Observer replaced"));
@@ -125,6 +134,7 @@ export function createAppObserverRuntime(options: {
       }
     }
     states = next;
+    refreshCadence();
   };
 
   const scheduleCheck = () => {
@@ -212,10 +222,10 @@ export function createAppObserverRuntime(options: {
           ...(state.resource ? { resources: state.resource.resources() } : {}),
         }));
     },
-    start(intervalMs) {
+    start() {
       if (closed || started) return;
       started = true;
-      cadence.every(intervalMs, () => runtime.scanNow());
+      refreshCadence();
       scheduleCheck();
     },
     replace,
