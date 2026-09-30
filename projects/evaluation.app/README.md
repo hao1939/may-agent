@@ -66,6 +66,14 @@ Treat every DeepSeek report as a lead. May must use the existing publication-int
 
 ## Public actions
 
+When evaluating another local installation, configure both `MAY_CONTROL_SOCKET`
+and `MAY_REPORT_BASE_URL` to address that same Host. Task and event reads use
+the socket; session, transcript and attempt reports use the HTTP base URL
+(default `http://localhost:8080`). Set `EVALUATION_REPORT_ROOT` for that
+installation's generated reports too. An unavailable endpoint remains a coverage
+gap; Evaluation does not fall back to another installation. Source configuration
+changes require ordinary App activation.
+
 - `review-task-outcome` — review one exact external App Task.
 - `list-evaluation-reports` — list accepted, integrity-checked reports.
 - `read-evaluation-report` — read a bounded preview of one listed report.

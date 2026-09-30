@@ -20,7 +20,9 @@ daily cadence was a bounded pilot and has been superseded for this installation.
 
 ## Boundary
 
-**Observer evidence (September 30 candidate, not activated):** Once a review
+**Observer evidence (activated September 30):** See the
+[deployment and trial record](../../sample.app/reviews/document-observation-2026-09-30.md).
+Once a review
 is selected and admitted within its existing allowance, its workflow reads
 exact source Apps through public `apps.list {appId}` for unresolved observer
 Conditions. Up to 16 interests and four source Apps are inspected. Current
@@ -38,6 +40,13 @@ delivery and Task handling as different facts. Repeated ineffective owner
 reviews or shared detector errors can justify a finding; the owner/May decides
 the repair. A saved failure or report does not prove that May acted on it.
 Evaluation remains independently supervised; it does not score itself.
+
+Task control and HTTP reports must address the same Host installation. Set
+`MAY_CONTROL_SOCKET` and `MAY_REPORT_BASE_URL` together when using a separate
+instance, and keep its generated reports under its own `EVALUATION_REPORT_ROOT`.
+These are Evaluation connection settings; the Host's public contracts and the
+reader's identity checks are unchanged. A failed read remains a coverage gap,
+with no fallback to a different installation.
 
 **Population extension (September 27 candidate):** [Systemic pattern review](systemic-pattern-review-20260927.md)
 adds bounded App-attempt aggregates and exact examples to this assessment path.
@@ -90,7 +99,7 @@ mismatched, active or workflow-shaped execution is explicitly unassessed; no
 session directory scan or guesses from result strings. A later no-op does not
 hide earlier work inside this window; work outside the window remains unassessed.
 
-Each HTTP read uses the existing local UI endpoint at `localhost:8080`, a five-second
+Each HTTP read uses `MAY_REPORT_BASE_URL` (default `http://localhost:8080`), a five-second
 timeout and one-megabyte response cap. Installations without that endpoint report
 unavailable coverage, not a failed wait. **The Host still parses the whole raw file
 server-side**, and its public projection omits some message kinds and caps tool

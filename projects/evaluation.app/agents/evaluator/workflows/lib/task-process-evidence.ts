@@ -1,4 +1,5 @@
 import { createHash } from "node:crypto";
+import { hostReportUrl } from "./host-reporting.js";
 import type { PublicTaskEvidenceProvider } from "./public-task-evidence.js";
 
 function object(value: unknown): Record<string, any> {
@@ -24,7 +25,9 @@ export const readPublicSession: SessionRead = async (sessionId, transcript) => {
   const timer = setTimeout(() => controller.abort(), 5_000);
   try {
     const response = await fetch(
-      `http://localhost:8080/api/sessions/${sessionId}${transcript ? "/transcript" : ""}`,
+      hostReportUrl(
+        `/api/sessions/${sessionId}${transcript ? "/transcript" : ""}`,
+      ),
       { signal: controller.signal, redirect: "error" },
     );
     if (!response.ok || !response.body)

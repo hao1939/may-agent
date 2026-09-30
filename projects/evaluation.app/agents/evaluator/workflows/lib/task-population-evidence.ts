@@ -1,4 +1,5 @@
 import type { PublicCommand, SubjectEvidence } from "./public-task-evidence.js";
+import { hostReportUrl } from "./host-reporting.js";
 
 export const POPULATION_WINDOW_MS = 86_400_000;
 export const populationCut = (now = Date.now()) =>
@@ -11,13 +12,10 @@ export async function readPublicAttempts(
   const params = new URLSearchParams();
   for (const key of ["appId", "taskId", "attemptId", "end", "windowMs"])
     if (input[key] !== undefined) params.set(key, String(input[key]));
-  const response = await fetch(
-    `http://localhost:8080/api/task-attempts?${params}`,
-    {
-      signal: AbortSignal.timeout(5_000),
-      redirect: "error",
-    },
-  );
+  const response = await fetch(hostReportUrl(`/api/task-attempts?${params}`), {
+    signal: AbortSignal.timeout(5_000),
+    redirect: "error",
+  });
   if (!response.ok)
     throw new Error(`Task attempt report unavailable (${response.status})`);
   const body = await response.text();
