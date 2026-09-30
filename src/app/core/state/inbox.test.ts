@@ -849,6 +849,9 @@ it("keeps conflicting alias generations, specifications, accepted results and fe
 
 it("rejects closed-target input once, retries only feedback across restart, and explicitly reopens the same Task", async () => {
   const { db, path, config, input } = fixture();
+  db.prepare("INSERT INTO events(event_type, timestamp, data) VALUES (?, ?, ?)").run("sample.original", Date.now(), "{}");
+  const originalEventId = Number(db.prepare("SELECT MAX(id) AS id FROM events").get()!.id);
+  db.prepare("UPDATE app_inbox_items SET origin_event_id = ? WHERE id = ?").run(originalEventId, input.inputContext.id);
   admitTaskInput(config, input);
   finishTask(config);
   const acceptedTask = config.resourceStore.readTask("work/one")!;
@@ -905,6 +908,13 @@ it("rejects closed-target input once, retries only feedback across restart, and 
   expect(config.resourceStore.readTask("work/one")?.status.observedAttemptId).toBeUndefined();
   expect(readAppTaskAdmissionOutcome(config, "work/one", input.idempotencyKey)?.attemptId).toBe(accepted.metadata.id);
   expect(host.get("late")?.status).toBe("done");
+  // A released Host could lose the inbox link after accepting work. Reopening
+  // fences unadmitted old events, but must preserve this exact accepted admission.
+  db.prepare("UPDATE app_inbox_items SET status = 'pending', waiting_on_kind = NULL, waiting_on_id = NULL, task_admission_key = NULL WHERE id = ?")
+    .run(input.inputContext.id);
+  await host.recoverAdmissions();
+  expect(host.get(input.inputContext.id)?.waitingOn).toEqual({ kind: "task", id: "work/one" });
+  expect(host.get(input.inputContext.id)?.handling?.phase).not.toBe("failed");
   const fresh = host.admit({ id: "fresh", appId: "example", targetTaskId: "work/one",
     source: { kind: "human", id: "user" }, input: { kind: "example", data: {} } }).item;
   expect(fresh.waitingOn).toEqual({ kind: "task", id: "work/one" });

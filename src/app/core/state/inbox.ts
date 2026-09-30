@@ -73,10 +73,6 @@ export function admitTaskInput(config: AppTaskContext, input: TaskInputAdmission
         throw new Error("Input is already owned or completed");
       const taskId = input.attachment.kind === "existing" ? input.attachment.taskId : input.attachment.intent.id;
       if (item.targetTaskId && item.targetTaskId !== taskId) throw new Error("Cannot replace an exact Task target");
-      const target = config.resourceStore.readTask(taskId);
-      if (item.originEventId && item.originEventId <= (target?.metadata.reopenedAfterEventId ?? 0)) {
-        throw new AppTaskAdmissionError("This input predates Task reopening; submit fresh input for the new generation");
-      }
     }
     // A released Host could commit the Task before saving its input link.
     // Reuse that exact admission during the offline upgrade/restart boundary.
@@ -85,6 +81,11 @@ export function admitTaskInput(config: AppTaskContext, input: TaskInputAdmission
       const keys = [input.idempotencyKey, `task:${item.id}:desired:${taskId}`, `task:${item.id}:existing:${taskId}`];
       const admissions = config.resourceStore.readTaskContext({ taskIds: [], admissionIds: keys }).appTaskAdmissions;
       input = { ...input, idempotencyKey: keys.find((key) => admissions?.[key]) ?? input.idempotencyKey };
+      const target = config.resourceStore.readTask(taskId);
+      if (!admissions?.[input.idempotencyKey] && item.originEventId &&
+        item.originEventId <= (target?.metadata.reopenedAfterEventId ?? 0)) {
+        throw new AppTaskAdmissionError("This input predates Task reopening; submit fresh input for the new generation");
+      }
     }
     const observation = admitAuthorizedTaskInput(config, input);
     if (item) linkTaskInput(db, item.id, observation.taskId, input.idempotencyKey, input.now);
