@@ -1,8 +1,8 @@
 <ai_context>
-summary: "Companion to agent-runtime-unattended-execution-and-replay.md for replay evidence and boundary design: operation-specific replay claims, cut-point regression replay, interaction-identity preservation, model-fixture key scope, request-hashed host-call replay, and the separation of model, workspace, tool, effect, and evidence planes."
-triggers: ["agent replay", "replay taxonomy", "GenOS", "cut-point replay", "Chronicle", "interaction replay", "Mutagen", "model fixture", "replay key", "Weft", "host-call replay", "Ovo", "offline replay", "OrcaReplay", "replay evidence", "replay boundary", "effect safety"]
-last_updated: "2026-09-27"
-source_basis: "Extracted intact from agent-runtime-unattended-execution-and-replay.md during its 2026-09-24 oversized-note review, then extended with pinned Weft and GenOS implementation evidence about replay scope, match keys, and claim vocabulary. Each section retains stable source links, pinned revisions where applicable, reproduced checks where performed, and explicit evidence limitations."
+summary: "Companion to agent-runtime-unattended-execution-and-replay.md for replay evidence and boundary design: operation-specific replay claims, cut-point regression replay, interaction-identity preservation, model-fixture key scope, request-hashed host-call replay, effect-lifecycle identities, and the separation of model, workspace, tool, effect, and evidence planes."
+triggers: ["agent replay", "replay taxonomy", "GenOS", "cut-point replay", "Chronicle", "interaction replay", "Mutagen", "model fixture", "replay key", "Weft", "host-call replay", "Ovo", "offline replay", "OrcaReplay", "effect lifecycle", "uncertain effect", "replay evidence", "replay boundary", "effect safety"]
+last_updated: "2026-09-30"
+source_basis: "Extracted intact from agent-runtime-unattended-execution-and-replay.md during its 2026-09-24 oversized-note review, then extended with pinned implementation evidence about replay scope, match keys, claim vocabulary, and effect-lifecycle identity. Each section retains stable source links, pinned revisions where applicable, reproduced checks where performed, and explicit evidence limitations."
 </ai_context>
 
 # Agent Runtime Replay Evidence and Boundaries
@@ -13,6 +13,52 @@ effect settlement, accountable writes, desktop authorization, and workflow/host
 recovery. This note isolates what replay records must preserve, which boundaries a
 candidate revision should re-execute, and why deterministic replay does not establish
 external-effect safety.
+
+## One Effect Needs Several Identities, Not One Idempotency Key — Cross-Source (September 2026)
+
+Three current systems expose adjacent parts of one effect lifecycle:
+
+- [GoLive](./findings/2026-09-29-golive-agent-deployment-approval-boundary.md)
+  binds a reviewed deployment plan to its effect classes, checks target state
+  before applying it, and retains provider read-back evidence afterward.
+- [fab](./findings/2026-09-29-durable-browser-agent-effect-reconciliation.md)
+  journals an attempt before dispatch, commits output before delivery, gives
+  emitted records replay identities, and blocks resume when a browser effect may
+  have happened but has not been reconciled.
+- [Worlds](./findings/2026-09-29-worlds-stateful-agent-test-environments.md)
+  gives a modeled external system a pinned seed and runtime, then grades the
+  resulting state diff while keeping unsupported or missing evidence
+  inconclusive rather than successful.
+
+**Combined implication:** a single idempotency key cannot safely stand for the
+whole lifecycle. The approved proposal, dispatched attempt, external effect,
+observed post-state, and delivered output answer different questions and need
+separately durable identities. Reusing a request may prevent a second dispatch;
+it does not prove that the first dispatch matched the approved revision, that the
+provider committed it, that the observed state came from that attempt, or that a
+consumer saw the output exactly once.
+
+A replay-safe effect record should therefore join at least:
+
+1. an immutable proposal or plan revision and its authorization evidence;
+2. an attempt identity written before the effect boundary;
+3. a provider idempotency key or receipt when the provider supports one;
+4. a post-state observation with source and freshness;
+5. a reconciliation decision for any interval left uncertain; and
+6. an output sequence identity for at-least-once delivery to consumers.
+
+These links should be explicit rather than inferred from timestamps or similar
+payloads. On recovery, the runtime can then replay committed output, resume
+confirmed computation, or inspect provider state without converting process
+failure into a duplicate effect. A deterministic state twin is useful for testing
+this protocol, but it cannot replace live-provider settlement; likewise, a
+content-addressed plan narrows intent but does not authenticate the approver.
+
+This synthesis combines static repository inspection of GoLive and fab with
+public first-party Worlds documentation. Scout did not execute any of the three
+systems, reproduce a crash, or validate a live provider effect, so it is a design
+rule supported by complementary mechanisms and disclosed boundaries—not a
+cross-system reliability result.
 
 ## “Replay” Needs an Operation-Specific Completion Vocabulary — GenOS (GitHub, September 2026)
 
