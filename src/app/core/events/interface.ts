@@ -19,6 +19,7 @@ import {
 } from "./approval.js";
 import { readEventTaskTarget } from "./task-target.js";
 import { readPersistedEventEnvelope } from "./persisted.js";
+import { getAppEventAdmissionPlan } from "../state/app-event-admission-store.js";
 import type { SqliteDb } from "../../../lib/db.js";
 import {
   EVENT_INGRESS_SOURCE,
@@ -623,20 +624,22 @@ function linksForEvent(db: SqliteDb, eventId: number, eventType: string, data: R
     });
   }
 
-  const routes = db
-    .prepare(
-      `SELECT app_id, route_kind, route_id, status, last_error
-       FROM app_event_admission_commands
-       WHERE event_id = ?
-       ORDER BY app_id`,
-    )
-    .all(eventId) as Array<Record<string, unknown>>;
-  for (const route of routes) {
-    const routeAppId = optionalText(route.app_id);
-    const routeId = optionalText(route.route_id);
-    const routeKind = optionalText(route.route_kind);
-    if (!routeAppId || !routeId || !routeKind) continue;
-    if (routeKind === "inbox") {
+  for (const route of getAppEventAdmissionPlan(db, eventId)?.commands ?? []) {
+    const { appId: routeAppId, routeId } = route;
+    // A route label is not a Task identity. Saved Condition destinations
+    // coexist with new work, exact targeting and inbox delivery.
+    const taskIds = new Set(route.conditionTaskIds);
+    if (route.kind === "task" && route.intent) taskIds.add(route.intent.id);
+    if (route.kind === "exact-task") taskIds.add(route.targetedTaskId);
+    for (const taskId of taskIds) {
+      addLink({
+        kind: "task",
+        id: `${routeAppId}/${taskId}`,
+        state: route.status,
+        ...(route.lastError ? { summary: route.lastError } : {}),
+      });
+    }
+    if (route.kind === "inbox") {
       const key = `subscription:${routeAppId}:${routeId}:event:${eventId}`;
       const item = db
         .prepare(
@@ -655,20 +658,13 @@ function linksForEvent(db: SqliteDb, eventId: number, eventType: string, data: R
         continue;
       }
     }
-    if (routeKind === "task" || routeKind === "exact-task") {
-      addLink({
-        kind: "task",
-        id: `${routeAppId}/${routeId}`,
-        ...(typeof route.status === "string" ? { state: route.status } : {}),
-        ...(optionalText(route.last_error) ? { summary: optionalText(route.last_error) } : {}),
-      });
-    } else {
+    if (route.kind !== "task" && route.kind !== "exact-task") {
       addLink({
         kind: "delivery",
         id: `app-event:${eventId}:${routeAppId}`,
         state: String(route.status),
-        summary: optionalText(route.last_error) ??
-          (routeKind === "noop" ? "App selected no work" : `App ${routeAppId} admission is pending`),
+        summary: route.lastError ??
+          (route.kind === "noop" ? "App selected no work" : `App ${routeAppId} admission is pending`),
       });
     }
   }

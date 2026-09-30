@@ -1180,7 +1180,7 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
       timer.every(scanIntervalMs, scanFromTimer);
       initialRecovery.after(0, scanFromTimer);
       scheduleProducer.start(scanIntervalMs);
-      observerRuntime.start(scanIntervalMs);
+      observerRuntime.start();
       startPromise = Promise.resolve();
       return startPromise;
     },
