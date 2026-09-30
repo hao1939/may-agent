@@ -7,12 +7,14 @@ test("session, transcript and attempt evidence use the configured Host without f
   const previous = process.env.MAY_REPORT_BASE_URL;
   const requests: string[] = [];
   let unavailable = false;
+  let slow = false;
   const host = Bun.serve({
     hostname: "127.0.0.1",
     port: 0,
-    fetch(request) {
+    async fetch(request) {
       const url = new URL(request.url);
       requests.push(url.pathname + url.search);
+      if (slow) await new Promise((resolve) => setTimeout(resolve, 100));
       return unavailable
         ? new Response("unavailable", { status: 503 })
         : Response.json({ installation: "isolated", path: url.pathname });
@@ -55,6 +57,9 @@ test("session, transcript and attempt evidence use the configured Host without f
       "503",
     );
     expect(requests).toHaveLength(6);
+    unavailable = false;
+    slow = true;
+    await expect(readPublicSession("s_trial", 14, 10)).rejects.toThrow();
   } finally {
     if (previous === undefined) delete process.env.MAY_REPORT_BASE_URL;
     else process.env.MAY_REPORT_BASE_URL = previous;

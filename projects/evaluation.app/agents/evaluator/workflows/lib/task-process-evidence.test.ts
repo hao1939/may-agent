@@ -1,4 +1,4 @@
-import { describe, expect, test } from "bun:test";
+import { describe, expect, spyOn, test } from "bun:test";
 import {
   readTaskProcessEvidence,
   type SessionRead,
@@ -97,6 +97,15 @@ function fixture(summaries = ["direct success"]) {
 }
 
 describe("Task-bound process evidence", () => {
+  test("unchanged subjects retain the parent revision's evidence hash", async () => {
+    const f = fixture();
+    expect(
+      taskEvidenceHash("may", "goal/one", {
+        readBack: { process: await f.run() },
+      }),
+    ).toBe("7c76952a826c554dbcea8e503f04a0c5257d8c2582496a42eecde3975ae9b672");
+    expect(f.reads).toEqual(["s_0:false", "s_0:true", "s_0:false"]);
+  });
   test("retains partial error output and the clipped diagnostic through an exact raw read", async () => {
     const f = fixture();
     let full =
@@ -222,10 +231,68 @@ describe("Task-bound process evidence", () => {
       f.provider,
       read,
     );
-    expect(reads).toBe(8);
+    expect(reads).toBe(3);
     expect(result.attempts[0].messages as any[]).toHaveLength(12);
     expect((result.attempts[0].messages as any[])[11].isError).toBe(true);
     expect(result.gaps.join()).toContain("raw error read limit reached");
+  });
+  test("raw reads share their count and remaining timeout across attempts", async () => {
+    const f = fixture(["long error".repeat(100), "long error".repeat(100)]);
+    f.transcripts.forEach((t) => {
+      t.messages[1].isError = true;
+      t.messages.push({ ...t.messages[1], rawLine: 3 });
+      t.messageCount = 3;
+    });
+    const timeouts: number[] = [];
+    const read: SessionRead = async (id, part, timeoutMs) => {
+      if (typeof part !== "number") return f.read(id, part);
+      timeouts.push(timeoutMs!);
+      await new Promise((resolve) => setTimeout(resolve, 20));
+      throw new Error("raw unavailable");
+    };
+    const result = await readTaskProcessEvidence(
+      "may",
+      "goal/one",
+      f.detail,
+      f.provider,
+      read,
+    );
+    expect(timeouts).toHaveLength(3);
+    expect(timeouts[0]).toBeLessThanOrEqual(5000);
+    expect(timeouts[1]).toBeLessThan(timeouts[0]);
+    expect(result.coverage?.readable).toBe(2);
+    expect(result.gaps.join()).toContain("raw error read limit reached");
+  });
+  test("an exhausted shared deadline leaves later evidence readable without another raw request", async () => {
+    const f = fixture(["long error".repeat(100), "long error".repeat(100)]);
+    f.transcripts.forEach((t) => {
+      t.messages[1].isError = true;
+    });
+    let now = 0;
+    let rawReads = 0;
+    const clock = spyOn(performance, "now").mockImplementation(() => now);
+    try {
+      const read: SessionRead = async (id, part) => {
+        if (typeof part !== "number") return f.read(id, part);
+        rawReads++;
+        now += 5_001;
+        throw new Error("timed out");
+      };
+      const result = await readTaskProcessEvidence(
+        "may",
+        "goal/one",
+        f.detail,
+        f.provider,
+        read,
+      );
+      expect(rawReads).toBe(1);
+      expect(result.coverage?.readable).toBe(2);
+      expect(result.gaps.join()).toContain(
+        "raw error read time budget exhausted",
+      );
+    } finally {
+      clock.mockRestore();
+    }
   });
   test("waiting plus completed waste remains visible behind a later no-op, without a coded verdict", async () => {
     const f = fixture([

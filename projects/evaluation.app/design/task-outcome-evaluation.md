@@ -104,8 +104,11 @@ timeout and one-megabyte response cap. Installations without that endpoint repor
 unavailable coverage, not a failed wait. **The Host still parses the whole raw file
 server-side**, and its public projection omits some message kinds and caps tool
 results at 2,000 characters. Client bounds do not fix or conceal that Host cost.
-For up to eight error results per attempt whose projected text exceeds 800
+For up to three error results across the process window whose projected text exceeds 800
 characters, Evaluation reads `GET /api/sessions/<id>/raw-log?line=<rawLine>`.
+The extra reads share a five-second client deadline, passed as the remaining
+timeout to each request. Their count bounds extra Host full-file reads to three;
+client cancellation does not stop an already running Host file parse.
 Session, source, line, tool-call identity, tool name, error flag and the projected
 prefix must match. The snapshot retains the result's beginning and end within
 800 characters, marks the omitted middle, and hashes the complete raw result.
@@ -118,7 +121,8 @@ hashed tool-call IDs preserve call/result correlation without copying long
 provider tokens. The public response hash detects drift even outside a clipped
 field; it is not a hash of the original raw transcript. Exact expanded errors
 also retain their raw-result hash, including bytes omitted from both excerpts.
-Truncation is explicit.
+Truncation is explicit. Acquisition budgets are kept outside the hashed snapshot;
+subjects without long errors retain their prior evidence identity and cache reuse.
 No child execution is inferred. Relative artifact references remain unavailable.
 
 The existing review snapshot hash, freshness reread, immutable publication and
@@ -138,8 +142,8 @@ correction. The experiment retains negative results, fixture limitations and
 independent May/Gym review; passing source checks alone is not evidence for
 promoting new judgment guidance.
 
-This adds at most three event and 33 HTTP reads per subject snapshot: nine
-metadata/transcript reads and up to 24 exact error reads (the review rereads
+This adds at most three event and 12 HTTP reads per subject snapshot: nine
+metadata/transcript reads and up to three exact error reads (the review rereads
 freshness), plus bounded prompt bytes; no new controller or
 scoring scheme. Prompt-only and latest-session-only changes cannot address the
 observed missing-process/no-op gap. A Host accepted-attempt execution link and

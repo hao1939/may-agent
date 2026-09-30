@@ -49,7 +49,7 @@ does not isolate the benefit of either change. Its expanded snapshot also kept
 the old subject hash; it was an exploratory model input, not a publishable report.
 
 The implemented reader candidate does **not** change property order or criteria.
-It follows up to eight long error results per attempt through the public exact
+It follows up to three long error results across the process window through the public exact
 raw-line read, validates correlation and the transcript prefix, retains an
 800-character head/tail excerpt and hashes the complete raw result. Failed or
 mismatched reads retain the existing projection with a coverage gap. No Host
@@ -71,7 +71,8 @@ that every failed search is wasteful. The final source check passed 234 tests
 with 1,244 assertions, plus syntax, typecheck and formatting checks.
 
 This correction trades middle text for a visible diagnostic in the same field
-budget, and adds up to eight bounded HTTP reads per attempt (typically none).
+budget, and adds up to three HTTP reads per snapshot (typically none) within a shared
+five-second client deadline.
 The exact source coordinate and raw-result hash remain available. It does not
 make an evaluator's attribution, chronology or judgment automatically correct.
 
@@ -181,3 +182,21 @@ It rejected v1/v2/v3, independently identified the malformed controls, and
 required a corrected benchmark before promoting a judgment change. That
 verdict does not cover the later reader candidate. May retained the return
 through the ordinary dependency; no fake approval was created to complete a loop.
+
+## Source-review revisions
+
+May's tech-lead found two material issues in the first reader commit: adding a
+limit and replacing coverage text on every snapshot would invalidate unrelated
+cached reviews, and 24 separate five-second raw reads could add 120 seconds.
+The revision retains unchanged hashes for unaffected subjects and limits the
+whole process window to three extra reads under one five-second client deadline.
+Tests compare the no-error hash with the parent implementation, check the shared
+count/deadline across attempts, and exercise an aborted HTTP read.
+
+The source-review helper also called its acknowledged `finish()` repeatedly
+before returning a plain final answer (52 calls in the retained session). The
+ordinary `agents.call` path omits `requireFinish`; execution wraps a terminal
+finish only when that flag or an output schema is supplied. Direct session
+steering was rejected because this execution belongs to a Task. A supervisor
+follow-up used the ordinary May Task input instead. This separate Host
+completion gap is retained for follow-up; it is not fixed by the reader change.

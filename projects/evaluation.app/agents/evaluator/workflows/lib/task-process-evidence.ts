@@ -15,17 +15,25 @@ function hash(value: unknown): string {
 export type SessionRead = (
   sessionId: string,
   part: boolean | number,
+  timeoutMs?: number,
 ) => Promise<Record<string, unknown>>;
 
 /** Existing public HTTP reads only. The Host currently parses the entire
  * transcript server-side; this bounds client consumption, not Host parsing. */
-export const readPublicSession: SessionRead = async (sessionId, part) => {
+export const readPublicSession: SessionRead = async (
+  sessionId,
+  part,
+  timeoutMs = 5_000,
+) => {
   if (!/^s_[a-zA-Z0-9_-]+$/.test(sessionId))
     throw new Error("unsupported session identity");
   if (typeof part === "number" && (!Number.isSafeInteger(part) || part < 1))
     throw new Error("unsupported raw line");
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), 5_000);
+  const timer = setTimeout(
+    () => controller.abort(),
+    Math.min(5_000, timeoutMs),
+  );
   try {
     const response = await fetch(
       hostReportUrl(
@@ -75,8 +83,11 @@ export async function readTaskProcessEvidence(
     fieldChars: 800,
     projectionBytes: 65536,
     responseBytes: 1_000_000,
-    rawErrorReads: 8,
   };
+  // Extra reads share one small budget across the whole snapshot. Keep these
+  // acquisition settings out of evidence identity for unaffected subjects.
+  let rawErrorReads = 0;
+  let rawReadDeadline: number | undefined;
   if (appId.toLowerCase().replace(/\.app$/, "") === "evaluation")
     return {
       version: 1,
@@ -202,7 +213,6 @@ export async function readTaskProcessEvidence(
         throw new Error("transcript identity/count mismatch");
       const messages: Array<Record<string, unknown>> = [];
       let bytes = 0;
-      let rawErrorReads = 0;
       let clipped = transcript.messages.length > limits.messages;
       function clip(value: unknown, keepTail = false): string {
         const str =
@@ -239,10 +249,14 @@ export async function readTaskProcessEvidence(
           resultText.length > limits.fieldChars
         ) {
           try {
-            if (rawErrorReads >= limits.rawErrorReads)
+            if (rawErrorReads >= 3)
               throw new Error("raw error read limit reached");
+            rawReadDeadline ??= performance.now() + 5_000;
+            const remainingMs = Math.floor(rawReadDeadline - performance.now());
+            if (remainingMs <= 0)
+              throw new Error("raw error read time budget exhausted");
             rawErrorReads++;
-            const raw = await readSession(sessionId, msg.rawLine);
+            const raw = await readSession(sessionId, msg.rawLine, remainingMs);
             const entry = object(raw.parsed);
             if (
               raw.sessionId !== sessionId ||
@@ -322,7 +336,10 @@ export async function readTaskProcessEvidence(
         messageCount: transcript.messageCount,
         messages,
         coverage:
-          "Public transcript projection, not complete raw execution: Host omits some message kinds and caps tool results at 2000 characters. Up to eight long error results per attempt are read from their exact raw lines and retain head/tail excerpts with a raw-result hash; other fields retain their prefix. Client field/message/byte limits apply. No child execution is included.",
+          "Public transcript projection, not complete raw execution: Host omits some message kinds and caps tool results at 2000 characters; client field/message/byte limits also apply. No child execution is included." +
+          (messages.some((message) => message.rawResultSha256)
+            ? " Results with rawResultSha256 retain head/tail excerpts from exact raw lines; their middle is omitted."
+            : ""),
       });
       if (clipped)
         gaps.push(
