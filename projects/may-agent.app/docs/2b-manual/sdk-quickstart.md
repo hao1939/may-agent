@@ -26,9 +26,14 @@ control socket and definition source checkout from your installation operator.
 The sample configures `gpt-5.6-sol`; select an available model in its `agent.json`
 if your installation differs, then activate that source change as in step 5.
 
-Run commands from the workspace root containing `projects/` and `scripts/`.
-The sample worker's App root is `projects/sample.app`; that is a different
-working directory. Source references below are workspace-root-relative.
+Run commands from the installation's source workspace, which must contain
+`projects/may-agent/packages/control/src/client.ts` as well as the App files.
+The example client imports that Host source; a Task worktree containing only
+Apps is insufficient. In this installation, use `cd /app`. An installed client
+can instead import the equivalent `@may-agent/control/client` package when the
+installation supplies it. The sample worker's App root is `projects/sample.app`;
+that is a different working directory. Source references below are relative to
+the source workspace root.
 
 ```sh
 sample_socket=/absolute/path/to/may.sock
