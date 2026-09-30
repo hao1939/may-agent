@@ -520,6 +520,69 @@ describe("App inbox host", () => {
     expect(host.get("unrelated-during-admission-retry")?.status).toBe("handling");
   });
 
+  it("keeps admission retrying beyond the backoff cap after feedback and Host reconstruction", async () => {
+    let now = 1_000;
+    let repaired = false;
+    let attempts = 0;
+    let notifications = 0;
+    const failures: number[] = [];
+    const start = () => new AppInboxHost({
+      db,
+      now: () => now,
+      apps: [app()],
+      attachTask: fakeTaskAttacher(db, () => {
+        attempts++;
+        if (!repaired) throw new Error("mapping service unavailable");
+        return { taskId: "probe/continuing-recovery" };
+      }),
+      onFailure: (failure) => { failures.push(failure.failures!); },
+      onRequestUpdated: () => { notifications++; return true; },
+    });
+    let host = start();
+    try {
+      admit(host, "continuing-recovery");
+      for (let count = 1; count <= 40; count++) {
+        const item = host.get("continuing-recovery")!;
+        expect(item).toMatchObject({
+          status: "pending",
+          recovery: { "input-admission": {
+            failures: count,
+            firstFailedAt: 1_000,
+            lastFailedAt: now,
+            reportedAt: 1_000,
+          } },
+        });
+        expect(item.recovery!["input-admission"]!.recoveredAt).toBeUndefined();
+        expect(item.result).toBeUndefined();
+        expect(attempts).toBe(count);
+        expect(failures.at(-1)).toBe(count);
+        expect(notifications).toBe(1);
+        if (count >= 16) expect(item.availableAt! - now).toBe(3_600_000);
+        if (count === 20) {
+          host.close();
+          host = start();
+        }
+        now = item.availableAt! - 1;
+        await host.recoverAdmissions();
+        expect(attempts).toBe(count);
+        now = item.availableAt!;
+        if (count === 40) repaired = true;
+        await host.recoverAdmissions();
+      }
+      expect(attempts).toBe(41);
+      expect(failures).toHaveLength(40);
+      expect(notifications).toBe(1);
+      expect(host.get("continuing-recovery")).toMatchObject({
+        status: "handling",
+        waitingOn: { kind: "task", id: "probe/continuing-recovery" },
+        taskAdmissionKey: "task:continuing-recovery",
+        recovery: { "input-admission": { failures: 40, recoveredAt: now } },
+      });
+    } finally {
+      host.close();
+    }
+  });
+
   it("paces failed exact-result projection without replacing the saved link or unrelated results", async () => {
     let now = 2_000;
     let reads = 0;
