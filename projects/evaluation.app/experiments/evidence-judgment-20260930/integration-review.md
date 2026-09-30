@@ -2,7 +2,7 @@
 
 ## Decision requested
 
-Approve one scope: fast-forward `/app` main from `706a1a134ee44790fa0299900ff29eb0799c8f87` to the final commit on `fix/evaluator-evidence-judgment`, reload the committed App definitions onto the local May-agent, and obtain one ordinary post-rollout Evaluation report. Do not approve any remote merge, Host-binary deploy, benchmark change, chronology fix, or helper-finish fix.
+Approve one scope: fast-forward `/app` main from `706a1a134ee44790fa0299900ff29eb0799c8f87` to the final commit on `fix/evaluator-evidence-judgment`, reload the committed App definitions onto the local May-agent, and run one ordinary review of the original Sample Task `review/appdep_24762fbf9e0f5d75ab312f54` using its current generation and evidence hash read after reload. Do not approve any remote merge, Host-binary deploy, replacement Task, broad model benchmark, chronology fix, or helper-finish fix.
 
 ## Pinned candidate and evidence
 
