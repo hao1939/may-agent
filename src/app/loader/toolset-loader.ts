@@ -1,4 +1,5 @@
 import { createRuntimeAppRead } from "../core/reads/app-read.js";
+import { getLoadedAppInputContract } from "../core/tasks/app-task-runtime.js";
 import { readMetricView } from "../adapters/reporting/metric-read.js";
 import type { WorkflowEvent } from "../../lib/workflow.js";
 import { resolve } from "node:path";
@@ -168,6 +169,7 @@ export async function buildTools(config: AgentConfig, opts: ToolsetLoaderOptions
               ...context,
               taskContext: context,
               read: createRuntimeAppRead({
+                readContract: async (appId) => getLoadedAppInputContract({ bus, appId }),
                 getDb: workflowOptions.runtimeCtx.getDb,
                 taskRead: context?.taskRead,
                 readMetric: async (id) => readMetricView(workflowOptions.runtimeCtx.metrics, id),

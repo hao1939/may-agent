@@ -146,7 +146,14 @@ export function validateAppDefinition(definition: unknown): string[] {
         if (!positiveFinite(observer.intervalMs)) {
           errors.push(`App ${appId} observer ${String(observer.id)} intervalMs must be positive`);
         }
-        if (typeof observer.run !== "function") {
+        if ("inspect" in observer) {
+          if (typeof observer.inspect !== "function" || observer.run !== undefined)
+            errors.push(`App ${appId} observer ${String(observer.id)} requires inspect instead of run`);
+          if (!nonEmpty(observer.type) || !String(observer.type).includes(".") || !nonEmpty(observer.description))
+            errors.push(`App ${appId} observer ${String(observer.id)} requires a fact type and description`);
+          if (!positiveInteger(observer.timeoutMs) || Number(observer.timeoutMs) > 300_000)
+            errors.push(`App ${appId} observer ${String(observer.id)} timeoutMs must be an integer from 1 to 300000`);
+        } else if (typeof observer.run !== "function") {
           errors.push(`App ${appId} observer ${String(observer.id)} requires run`);
         }
       }

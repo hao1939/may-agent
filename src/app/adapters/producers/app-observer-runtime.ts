@@ -1,9 +1,13 @@
+import { copyObserverSnapshot } from "./observer-snapshot.js";
+import { bindResourceObserver } from "./resource-observer.js";
+import type { ReadObservationDemand } from "../../core/state/observation-demand.js";
 import {
-  MAX_OBSERVER_SNAPSHOT_BYTES,
   type AppEvent,
   type AppObserver,
   type ObserverContext,
   type ObserverSnapshot,
+  type ObserverHealth,
+  type ResourceObserver,
 } from "@may-agent/sdk";
 import type { LoadedAppDefinition } from "../../core/apps/registry.js";
 import { EVENT_ROW_ID, type EventBus } from "../../core/events/bus.js";
@@ -17,6 +21,11 @@ type ObserverState = {
   lastSlot: number;
   running: boolean;
   observation?: ObserverSnapshot;
+  controller: AbortController;
+  lastStartedAt?: number;
+  lastCompletedAt?: number;
+  lastError?: string;
+  resources?: () => NonNullable<ObserverHealth["resources"]>;
 };
 
 export type AppObserverRuntime = {
@@ -24,10 +33,13 @@ export type AppObserverRuntime = {
   replace(entries: readonly Readonly<LoadedAppDefinition>[]): void;
   scanNow(): void;
   close(): void;
+  health(appId: string): ObserverHealth[];
 };
 
-function observerFingerprint(observer: AppObserver): string {
-  return `${observer.intervalMs}:${observer.run.toString()}`;
+function observerFingerprint(observer: AppObserver | ResourceObserver): string {
+  return "inspect" in observer
+    ? `${observer.intervalMs}:${observer.timeoutMs}:${observer.type}:${observer.inspect.toString()}`
+    : `${observer.intervalMs}:${observer.run.toString()}`;
 }
 
 function validFact(value: unknown): value is AppEvent {
@@ -38,62 +50,6 @@ function validFact(value: unknown): value is AppEvent {
   );
 }
 
-function copySnapshot(value: unknown): ObserverSnapshot {
-  let remaining = MAX_OBSERVER_SNAPSHOT_BYTES;
-  const charge = (bytes: number): void => {
-    if (bytes > remaining) throw new Error(`observer snapshot exceeds ${MAX_OBSERVER_SNAPSHOT_BYTES} bytes`);
-    remaining -= bytes;
-  };
-  const chargeString = (item: string): void => {
-    // UTF-16 length is a lower bound on JSON UTF-8 size. Reject huge strings
-    // before encoding; only input bounded by the budget reaches this encoder.
-    charge(item.length);
-    charge(Buffer.byteLength(JSON.stringify(item), "utf8") - item.length);
-  };
-  const copyProperty = (item: object, key: string, depth: number): ObserverSnapshot => {
-    const property = Object.getOwnPropertyDescriptor(item, key);
-    if (!property || !("value" in property))
-      throw new Error("observer snapshot must contain only JSON data properties");
-    return copy(property.value, depth);
-  };
-  const copy = (item: unknown, depth: number): ObserverSnapshot => {
-    if (depth > 32) throw new Error("observer snapshot is too complex");
-    if (typeof item === "string") {
-      chargeString(item);
-      return item;
-    }
-    if (item === null || typeof item === "boolean" || (typeof item === "number" && Number.isFinite(item))) {
-      charge(JSON.stringify(item).length);
-      return item;
-    }
-    if (typeof item !== "object" || item === null) throw new Error("observer snapshot must contain only JSON values");
-    charge(2); // Brackets/braces; every child and separator also consumes budget.
-    if (Array.isArray(item)) {
-      const result: ObserverSnapshot[] = [];
-      for (let i = 0; i < item.length; i++) {
-        if (i > 0) charge(1);
-        result.push(copyProperty(item, String(i), depth + 1));
-      }
-      return result;
-    }
-    if (Object.getPrototypeOf(item) !== Object.prototype && Object.getPrototypeOf(item) !== null) {
-      throw new Error("observer snapshot must contain only plain JSON objects");
-    }
-    const result: Record<string, ObserverSnapshot> = Object.create(null);
-    let first = true;
-    // Do not materialize all values or invoke getters/toJSON on App objects.
-    for (const key in item) {
-      if (!Object.hasOwn(item, key)) continue;
-      charge(first ? 1 : 2); // Colon and, after the first member, comma.
-      first = false;
-      chargeString(key);
-      result[key] = copyProperty(item, key, depth + 1);
-    }
-    return result;
-  };
-  return copy(value, 0);
-}
-
 /**
  * Runs deterministic App observers without giving them an event emitter.
  * Results are published only when the exact observer generation is still live.
@@ -102,6 +58,7 @@ export function createAppObserverRuntime(options: {
   bus: EventBus;
   context(appId: string, appDir: string): ObserverContext;
   now?: () => number;
+  readDemand?: ReadObservationDemand;
 }): AppObserverRuntime {
   const now = options.now ?? Date.now;
   let closed = false;
@@ -109,8 +66,12 @@ export function createAppObserverRuntime(options: {
   const cadence = new OwnedTimer("app-observers");
   const initial = new OwnedTimer("app-observers:initial");
   let states = new Map<string, ObserverState>();
+  // Only unsettled I/O survives replacement; demand and snapshots are recollected.
+  const occupiedBySource = new Map<string, Set<string>>();
 
   const replace = (entries: readonly Readonly<LoadedAppDefinition>[]): void => {
+    for (const state of states.values()) state.controller.abort(new Error("Observer replaced"));
+    for (const [key, occupied] of occupiedBySource) if (!occupied.size) occupiedBySource.delete(key);
     const next = new Map<string, ObserverState>();
     const currentTime = now();
     for (const entry of entries) {
@@ -118,10 +79,29 @@ export function createAppObserverRuntime(options: {
         const key = `${entry.definition.id}/${observer.id}`;
         const fingerprint = observerFingerprint(observer);
         const previous = states.get(key);
+        const controller = new AbortController();
+        const occupied = occupiedBySource.get(key) ?? new Set<string>();
+        occupiedBySource.set(key, occupied);
+        const bound =
+          "inspect" in observer
+            ? bindResourceObserver({
+                appId: entry.definition.id,
+                definition: observer,
+                signal: controller.signal,
+                occupied,
+                now,
+                readDemand: (...args) => {
+                  if (!options.readDemand) throw new Error("Observation demand reader unavailable");
+                  return options.readDemand(...args);
+                },
+              })
+            : undefined;
         next.set(key, {
           appId: entry.definition.id,
           appDir: entry.appDir,
-          observer,
+          observer: bound?.observer ?? (observer as AppObserver),
+          controller,
+          resources: bound?.resources,
           fingerprint,
           lastSlot:
             previous?.fingerprint === fingerprint
@@ -152,7 +132,7 @@ export function createAppObserverRuntime(options: {
       }
       // Validate and detach before publishing any fact. Never retain an
       // App-owned mutable object as the last successfully published state.
-      const observation = Array.isArray(result) ? undefined : copySnapshot(result.nextObservation);
+      const observation = Array.isArray(result) ? undefined : copyObserverSnapshot(result.nextObservation);
       for (const fact of facts) {
         if (closed || states.get(key) !== state) return;
         const published = options.bus.emit({
@@ -167,9 +147,13 @@ export function createAppObserverRuntime(options: {
           throw new Error("stateful observer fact has no durable event receipt");
         }
       }
-      if (!closed && states.get(key) === state) state.observation = observation;
+      if (!closed && states.get(key) === state) {
+        state.observation = observation;
+        state.lastError = undefined;
+      }
     } catch (error) {
       if (closed || states.get(key) !== state) return;
+      state.lastError = String(error instanceof Error ? error.message : error).slice(0, 2000);
       try {
         options.bus.emit({
           type: "app.observer.failed",
@@ -193,11 +177,26 @@ export function createAppObserverRuntime(options: {
       if (states.get(key) === state) {
         state.lastSlot = slot;
         state.running = false;
+        state.lastCompletedAt = now();
       }
     }
   };
 
   const runtime: AppObserverRuntime = {
+    health(appId) {
+      return [...states.values()]
+        .filter((state) => state.appId === appId)
+        .map((state) => ({
+          id: state.observer.id,
+          intervalMs: state.observer.intervalMs,
+          available: !closed,
+          running: state.running,
+          lastStartedAt: state.lastStartedAt,
+          lastCompletedAt: state.lastCompletedAt,
+          lastError: state.lastError,
+          ...(state.resources ? { resources: state.resources() } : {}),
+        }));
+    },
     start(intervalMs) {
       if (closed || started) return;
       started = true;
@@ -212,6 +211,7 @@ export function createAppObserverRuntime(options: {
         const slot = Math.floor(currentTime / state.observer.intervalMs);
         if (state.running || state.lastSlot >= slot) continue;
         state.running = true;
+        state.lastStartedAt = currentTime;
         void run(key, state, slot);
       }
     },
@@ -219,6 +219,7 @@ export function createAppObserverRuntime(options: {
       closed = true;
       cadence.close();
       initial.close();
+      for (const state of states.values()) state.controller.abort(new Error("Observer runtime closed"));
       states.clear();
     },
   };

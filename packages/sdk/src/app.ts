@@ -1,5 +1,8 @@
 import { Type, type Static, type TSchema } from "typebox";
 import { appInputSchema } from "./app-input.js";
+import type { ResourceObserver, ObservationContract } from "./observer.js";
+export { defineObserver, observationCondition } from "./observer.js";
+export type { ResourceObserver, ObservationContract, ObservationInterest, ObserverHealth } from "./observer.js";
 import type { AppEvent, EventSelector } from "./event.js";
 import type { Condition, TaskAction, TaskIntent } from "./task.js";
 import type { MetricDefinition, ObserverContext, ObserverSnapshot, TaskAttempt, TaskDetail } from "./workflow.js";
@@ -449,6 +452,12 @@ export type AppObserver = {
   run(context: ObserverContext): Promise<AppEvent[] | AppObserverResult>;
 };
 
+export type AppContract = {
+  appId: string;
+  inputSchema: TSchema;
+  observations: ObservationContract[];
+};
+
 export type AppAction<TInputSchema extends TSchema = TSchema> = {
   description: string;
   inputSchema: TInputSchema;
@@ -497,7 +506,7 @@ type AppDefinitionBase<TInputSchema extends TSchema> = {
    */
   observations?: EventSelector[];
   schedules?: AppSchedule[];
-  observers?: AppObserver[];
+  observers?: Array<AppObserver | ResourceObserver>;
   /**
    * App-owned metric definitions. Runtime measures declared sources on the
    * shared Host cadence.

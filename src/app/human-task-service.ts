@@ -1,5 +1,11 @@
 import type { AppRegistry } from "./core/apps/registry.js";
-import type { TaskAcceptedEvidenceNavigation, TaskReadOptions } from "@may-agent/sdk/app";
+import type {
+  TaskAcceptedEvidenceNavigation,
+  TaskReadOptions,
+  ObserverHealth,
+  ObservationContract,
+} from "@may-agent/sdk/app";
+import { readAppContract } from "./core/reads/app-contract.js";
 import type {
   AppTaskAttempt,
   AppTaskCancellation,
@@ -169,6 +175,9 @@ export type HumanTaskPage = { items: HumanTaskView[]; nextCursor?: string; total
 export const HUMAN_TASK_LIST_TEXT_MAX_BYTES = 96;
 
 export type HumanAppView = {
+  observations?: ObservationContract[];
+  /** Exact App reads only; current parent runtime evidence, not worker state. */
+  observerHealth?: ObserverHealth[];
   id: string;
   owner: string;
   description?: string;
@@ -963,6 +972,7 @@ export class HumanTaskService {
   constructor(
     private readonly db: SqliteDb,
     private readonly registry: Pick<AppRegistry, "snapshot">,
+    private readonly readObserverHealth?: (appId: string) => ObserverHealth[],
   ) {
     ensureTaskReferenceIndex(db);
   }
@@ -995,9 +1005,25 @@ export class HumanTaskService {
       const definition = entry.definition;
       if (selected && definition.id !== selected) return [];
       const count = byApp.get(definition.id);
+      const observations = readAppContract(definition).observations;
+      const health = selected ? (this.readObserverHealth?.(definition.id) ?? []) : [];
       return [
         {
           id: definition.id,
+          ...(observations.length ? { observations } : {}),
+          ...(selected && definition.observers?.length
+            ? {
+                observerHealth: definition.observers.map(
+                  (observer) =>
+                    health.find((item) => item.id === observer.id) ?? {
+                      id: observer.id,
+                      intervalMs: observer.intervalMs,
+                      available: false,
+                      running: false,
+                    },
+                ),
+              }
+            : {}),
           owner: definition.owner,
           ...(definition.description ? { description: definition.description } : {}),
           activeTasks: Number(count?.active_tasks ?? 0),

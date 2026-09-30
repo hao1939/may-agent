@@ -24,6 +24,7 @@ import {
 } from "./app-task-evidence.js";
 
 export type RuntimeAppReadOptions = {
+  readContract?: AppRead["contract"];
   getDb(): SqliteDb;
   /** Optional reporting; absence is explicit, not an empty or zero-valued report. */
   readMetric?: AppRead["metric"];
@@ -356,6 +357,10 @@ export function createRuntimeTaskRead(opts: Pick<RuntimeAppReadOptions, "taskSta
 export function createRuntimeAppRead(opts: RuntimeAppReadOptions): AppRead {
   const tasks = createRuntimeTaskRead(opts);
   return {
+    async contract(appId) {
+      if (!opts.readContract) throw new Error("Installed App contract read unavailable");
+      return opts.readContract(appId);
+    },
     async appResult(itemId) {
       return getAppInboxItem(opts.getDb(), itemId)?.result ?? null;
     },

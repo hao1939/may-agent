@@ -1,4 +1,4 @@
-import type { AppResult } from "./app.js";
+import type { AppResult, AppContract } from "./app.js";
 import type { AppEvent } from "./event.js";
 import type {
   Condition,
@@ -284,6 +284,8 @@ export type AgentCallOptions = {
 
 /** Shared read contract. Task lists and evidence are paginated; storage stays private. */
 export type AppRead = {
+  /** Installed input and observation capabilities. Does not register a wait. */
+  contract(appId: string): Promise<AppContract>;
   appResult(itemId: string): Promise<AppResult | null>;
   /** Missing Task access rejects; empty results mean a scoped read found no matching work. */
   tasks: {
@@ -445,7 +447,7 @@ export type TaskAttempt = {
    * The same scoped Task reads available to workflows and agent tools.
    * Reads neither consume pending input nor change this attempt's binding.
    */
-  read: Pick<AppRead, "tasks">;
+  read: Pick<AppRead, "tasks" | "contract">;
   /** Latest earlier attempt of this Task. Facts to inspect, not authority to repeat its effects. */
   previousAttempt?: {
     attemptId: string;

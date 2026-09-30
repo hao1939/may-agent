@@ -163,6 +163,7 @@ async function executeTaskWorkflow(
       agentDefinitions: definitions,
       runtimeCtx,
       read: createRuntimeAppRead({
+        readContract: attempt.read.contract,
         getDb: runtimeCtx.getDb,
         readMetric: async (id) => readMetricView(runtimeCtx.metrics, id),
         taskRead: attempt.read.tasks,
