@@ -285,6 +285,16 @@ The upgrade deliberately handles retained pending inputs visible to bounded
 inbox recovery; it does not scan or rewrite completed historical inputs or the
 Task archive.
 
+## Choosing verification evidence
+
+A deterministic reader repair is established primarily with focused source,
+compatibility, budget and production-path checks. A frozen Gym/model comparison
+is useful when the proposed benefit depends on uncertain reviewer behavior; it
+is evidence for that uncertainty, not a mandatory extra gate for every
+mechanical correction. Keep the two claims separate: deterministic checks prove
+the reader contract, while model trials can only sample what richer evidence
+changes in judgments.
+
 ## Reports and use
 
 Each successful review stages an immutable Markdown report and JSON facts sidecar under the configured durable `${EVALUATION_REPORT_ROOT:-${MAY_PERSIST_DIR:-/app/.state}/evaluation/reports}/task-outcomes/<app>/<rubric-version>/<task>-<evidence-hash>.*`, then emits `evaluation.task_report_published` with a stable Task-owned `localKey` and both content hashes. The reviewer returns only its schema-valid judgment; it does not write report files. `assessed` and `insufficient-evidence` are successful judgments, including when they contain adverse findings. Reviewer execution is partial or failed only when the reviewer itself cannot complete. The workflow exclusively validates, writes, reads back, and publishes canonical reports. Only after the emit succeeds does it write an immutable `.published.json` marker. Listing and reading require the marker and revalidate the JSON identity, recorded JSON/Markdown hashes, and deterministically rendered Markdown bytes. A failed publish therefore leaves staged files undiscoverable, while a retry republishes the same validated bytes without another model call. A rubric change creates a new directory and deliberate assessment rather than overwriting history.

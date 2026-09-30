@@ -1,11 +1,20 @@
 # Evidence judgment comparison — September 30
 
-Status: isolated experiment; no candidate has been applied. Two criteria
-revisions and a presentation-only trial did not demonstrate an adequate fix.
-Their negative results are retained. The active evaluator continues to use the
-existing criteria; the unsuccessful criteria additions were removed from the
-working source and retained here as explicitly rejected patches. A narrower
-reader correction is now isolated for review; it changes evidence capture only.
+Status: the bounded evaluator-reader correction is ready for one combined
+integration-and-local-rollout review. Its focused source check passed **237 tests
+and 1,255 assertions**, plus syntax, typecheck and formatting. The predecessor
+model comparison showed that two candidate repeats saw the retained 120-second
+timeout that both baselines missed; it did not prove a general judgment fix. The
+final unchanged-message live probe was different evidence: revised source read
+the same historical sessions in 36 ms with one extra raw read, while all message
+text, IDs and hashes used by the comparison stayed byte-identical. No candidate
+has been merged into main or activated.
+
+Two earlier criteria revisions and a presentation-only trial did not demonstrate
+an adequate fix. Their negative results are retained. The active evaluator
+continues to use the existing criteria; the unsuccessful criteria additions were
+removed from working source and retained here as explicitly rejected patches.
+The current candidate changes evidence capture only.
 
 ## Observed problem
 
