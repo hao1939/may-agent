@@ -1336,7 +1336,6 @@ test("Conversation ingress rejects direct executor targets and preserves untarge
 test("recovery cannot attach an earlier exact target after it becomes a Conversation executor", async () => {
   const f = fixture();
   const executionTaskId = conversationTaskId(app.id, "chat");
-  const failures: string[] = [];
   let now = 1_000;
   const ingressApp = defineApp({
     ...app,
@@ -1351,36 +1350,34 @@ test("recovery cannot attach an earlier exact target after it becomes a Conversa
     apps: [ingressApp],
     attachTask: (input) => admitTaskInput(f.context(), input),
     admitConversation: (input) => admitConversationTaskInput(f.context(), { ...f.input(input.id), ...input }),
-    onFailure: (failure) => failures.push(failure.error),
     now: () => now,
   });
 
-  // The target is not a Task yet, so ordinary admission retains the input for
-  // retry rather than attaching it.
-  expect(
-    host.admit({
-      id: "early-feedback",
-      appId: app.id,
-      targetTaskId: executionTaskId,
-      source: { kind: "system", id: "reviewer" },
-      input: { kind: "message", data: { text: "Review this feedback" } },
-    }).item,
-  ).toMatchObject({ status: "pending", targetTaskId: executionTaskId });
-  expect(failures).toEqual([`Task ${executionTaskId} does not exist in App ${app.id}`]);
-
+  const input = {
+    appId: app.id, targetTaskId: executionTaskId,
+    source: { kind: "system" as const, id: "reviewer" },
+    input: { kind: "message", data: { text: "Review this feedback" } },
+  };
+  // New missing targets are final rejections, even if that identity later exists.
+  expect(host.admit({ ...input, id: "missing-target" }).item).toMatchObject({
+    status: "done", handling: { phase: "failed", reason: expect.stringContaining("does not exist") },
+  });
+  // A released Host may have retained a missing-target input for retry.
+  createAppInboxItem(f.db, { ...input, id: "early-feedback", now });
   const conversation = f.admit();
   expect(conversation.taskId).toBe(executionTaskId);
-  now = host.get("early-feedback")!.availableAt!;
+  now += 1_000;
   await host.recoverAdmissions();
 
   expect(getAppInboxItem(f.db, "early-feedback")).toMatchObject({
-    status: "pending",
+    status: "done",
     targetTaskId: executionTaskId,
+    handling: { phase: "failed", reason: "Conversation Task input must use conversationId without targetTaskId" },
   });
   expect(getAppInboxItem(f.db, "early-feedback")?.waitingOn).toBeUndefined();
   expect(getAppInboxItem(f.db, "early-feedback")?.taskAdmissionKey).toBeUndefined();
   expect(readAppTaskAdmissionOutcome(f.context(), executionTaskId, "task:early-feedback")).toBeNull();
-  expect(failures.at(-1)).toBe("Conversation Task input must use conversationId without targetTaskId");
+  expect(host.get("missing-target")?.status).toBe("done");
 
   const claim = f.claim(executionTaskId);
   expect(readConversationTaskInputs(f.context(), claim).map((item) => item.id)).toEqual([conversation.item.id]);

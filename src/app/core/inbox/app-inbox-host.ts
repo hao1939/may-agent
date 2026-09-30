@@ -1,10 +1,11 @@
+import { AppTaskAdmissionError } from "../state/task-admission-error.js";
+import { stateTransaction } from "../../../lib/db/transaction.js";
 import { createHash } from "node:crypto";
 import { readInputContext, observeTaskDependency, type AppDependencyReader, type TaskInputObservation } from "./input-context.js";
 import {
   completeTaskInput,
-  isAppTaskRevisionAdmissionError,
   recoverTaskInputAdmissionKey,
-  rejectTaskInputRevision,
+  rejectTaskInput,
 } from "../state/inbox.js";
 import {
   matchesEventSelector,
@@ -449,7 +450,6 @@ export class AppInboxHost {
       evidence &&
       stage === "input-admission" &&
       evidence.reportedAt === undefined &&
-      item.source.kind === "app" &&
       this.#onRequestUpdated
     ) {
       const result: AppResult = {
@@ -490,7 +490,7 @@ export class AppInboxHost {
       // not exist during initial admission may become a Conversation executor
       // before recovery; it must never acquire ordinary Task authority.
       if (item.targetTaskId && hasConversationExecutionTask(this.#db, app.id, item.targetTaskId)) {
-        throw new Error("Conversation Task input must use conversationId without targetTaskId");
+        throw new AppTaskAdmissionError("Conversation Task input must use conversationId without targetTaskId");
       }
       if (
         !item.targetTaskId &&
@@ -540,19 +540,33 @@ export class AppInboxHost {
         // failure cannot relabel the successfully attached input.
       }
     } catch (error) {
-      if (isAppTaskRevisionAdmissionError(error)) {
-        const result = rejectTaskInputRevision(this.#db, item, error, this.#now());
-        if (result) {
-          try {
-            this.#onRequestUpdated?.(item, result, "done");
-            if (item.conversationId) this.#onConversationChanged?.(item.appId, item.conversationId);
-          } catch {
-            // The terminal correction remains readable if notification fails.
-          }
-        }
+      if (error instanceof AppTaskAdmissionError) {
+        const result = stateTransaction(this.#db, () => {
+          recordAppInboxRecoveryFailure(this.#db, item.id, "input-admission", error.message, this.#now());
+          return rejectTaskInput(this.#db, item, error, this.#now());
+        });
+        if (result) this.#reportRejection(this.get(item.id)!);
         return;
       }
       this.#failure(item, "input-admission", error);
+    }
+  }
+
+  #reportRejection(item: AppInboxItem): void {
+    const evidence = item.recovery?.["input-admission"];
+    if (!item.result || !evidence || evidence.reportedAt !== undefined) return;
+    try {
+      const result = { ...item.result, facts: [
+        ...(item.result.facts ?? []), `recovery-fingerprint:${evidence.fingerprint}`,
+      ] };
+      if (this.#onRequestUpdated?.(item, result, "done") !== true)
+        throw new Error("No responsible route accepted the rejected input feedback");
+      markAppInboxRecoveryReported(this.#db, item.id, "input-admission", evidence.fingerprint, this.#now());
+      resolveAppInboxRecovery(this.#db, item.id, "input-feedback", this.#now());
+      if (item.conversationId) this.#onConversationChanged?.(item.appId, item.conversationId);
+    } catch (error) {
+      // Retry only the notification, never the permanently rejected attachment.
+      recordAppInboxRecoveryFailure(this.#db, item.id, "input-feedback", errorMessage(error), this.#now());
     }
   }
 
@@ -563,14 +577,19 @@ export class AppInboxHost {
       this.#db
         .prepare(
           `SELECT id FROM app_inbox_items
-      WHERE status != 'done' AND execution_task_id IS NULL
+      WHERE execution_task_id IS NULL AND (
+        (status != 'done'
         AND (waiting_on_kind IS NULL OR waiting_on_kind != 'task' OR lease_owner IS NOT NULL)
         AND (lease_expires_at IS NULL OR lease_expires_at <= ?)
-        AND (available_at IS NULL OR available_at <= ?)
+        AND (available_at IS NULL OR available_at <= ?))
+        OR (status = 'done' AND waiting_on_kind IS NULL AND json_extract(handling, '$.phase') = 'failed'
+          AND json_extract(recovery_json, '$."input-admission".fingerprint') IS NOT NULL
+          AND json_extract(recovery_json, '$."input-admission".reportedAt') IS NULL
+          AND (review_at IS NULL OR review_at <= ?)))
         ${this.#admissionCursor ? "AND id > ?" : ""}
       ORDER BY id LIMIT 64`,
         )
-        .all(this.#now(), this.#now(), ...(this.#admissionCursor ? [this.#admissionCursor] : []));
+        .all(this.#now(), this.#now(), this.#now(), ...(this.#admissionCursor ? [this.#admissionCursor] : []));
     let rows = readPage();
     if (!rows.length && this.#admissionCursor) {
       this.#admissionCursor = undefined;
@@ -580,7 +599,10 @@ export class AppInboxHost {
     for (const row of rows) {
       if (this.#closed) return;
       const item = this.get(String(row.id));
-      if (item && this.#apps.has(item.appId)) this.#admitTask(item);
+      if (item && this.#apps.has(item.appId)) {
+        if (item.status === "done") this.#reportRejection(item);
+        else this.#admitTask(item);
+      }
       await new Promise<void>((resolve) => setTimeout(resolve, 0));
     }
   }

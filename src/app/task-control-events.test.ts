@@ -47,6 +47,7 @@ describe("Task control Event boundary", () => {
     const bus = new EventBus();
     const calls: unknown[] = [];
     attachTaskControlEventRoute(bus, {
+      reopenTask: () => undefined,
       retryTask: (input) => calls.push({ action: "retry", ...input }),
       cancelTask: (input) => calls.push({ action: "cancel", ...input }),
       closeTask: (input) => calls.push({ action: "close", ...input }),
@@ -118,6 +119,7 @@ describe("Task control Event boundary", () => {
     const bus = new EventBus();
     const calls: string[] = [];
     attachTaskControlEventRoute(bus, {
+      reopenTask: () => undefined,
       retryTask: ({ controlKey }) => calls.push(controlKey),
       cancelTask: () => undefined,
       closeTask: () => undefined,
@@ -141,6 +143,7 @@ describe("Task control Event boundary", () => {
   it("does not mask a writer's stale or mismatched control rejection", () => {
     const bus = new EventBus();
     attachTaskControlEventRoute(bus, {
+      reopenTask: () => undefined,
       retryTask: () => {
         throw new Error("control receipt belongs to another operation");
       },

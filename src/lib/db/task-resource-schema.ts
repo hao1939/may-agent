@@ -111,7 +111,7 @@ CREATE INDEX IF NOT EXISTS idx_app_task_cancellations_time
 CREATE TABLE IF NOT EXISTS app_task_control_receipts (
   control_key TEXT PRIMARY KEY,
   app_id TEXT NOT NULL, task_id TEXT NOT NULL,
-  action TEXT NOT NULL CHECK (action IN ('retry', 'cancel')),
+  action TEXT NOT NULL CHECK (action IN ('retry', 'cancel', 'reopen')),
   expected_generation INTEGER NOT NULL,
   expected_resource_version INTEGER NOT NULL,
   applied_resource_version INTEGER NOT NULL,
@@ -186,6 +186,23 @@ function migrateTaskEventReceipts(db: SqliteDb): void {
 
 /** Create the resource tables and migrate legacy JSON links once. */
 export function ensureTaskResourceSchema(db: SqliteDb): void {
+  const controls = db.prepare("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'app_task_control_receipts'")
+    .get() as { sql?: string } | null;
+  if (controls?.sql && !controls.sql.includes("'reopen'")) {
+    db.exec("SAVEPOINT task_control_reopen");
+    try {
+      db.exec("ALTER TABLE app_task_control_receipts RENAME TO app_task_control_receipts_old");
+      db.exec("DROP INDEX IF EXISTS idx_app_task_control_receipts_task");
+      db.exec(TASK_RESOURCE_SCHEMA);
+      db.exec("INSERT INTO app_task_control_receipts SELECT * FROM app_task_control_receipts_old");
+      db.exec("DROP TABLE app_task_control_receipts_old");
+      db.exec("RELEASE SAVEPOINT task_control_reopen");
+    } catch (error) {
+      db.exec("ROLLBACK TO SAVEPOINT task_control_reopen");
+      db.exec("RELEASE SAVEPOINT task_control_reopen");
+      throw error;
+    }
+  }
   db.exec(APP_INBOX_SCHEMA);
   const inboxColumns = new Set(
     db

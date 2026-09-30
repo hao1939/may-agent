@@ -5,6 +5,7 @@ import type { Duplex } from "node:stream";
 import { normalizeSocketFrame } from "./protocol.js";
 import {
   taskCloseRequestedEvent,
+  taskReopenRequestedEvent,
   taskCancelRequestedEvent,
   type EventInput,
   type EventReceipt,
@@ -1027,7 +1028,7 @@ export function createControlSocketCore(opts: ControlSocketCoreOptions): {
           continue;
         }
 
-        if (normalized.kind === "control" && normalized.command === "task.close") {
+        if (normalized.kind === "control" && (normalized.command === "task.close" || normalized.command === "task.reopen")) {
           const appId = typeof frame.appId === "string" ? frame.appId.trim().replace(/\.app$/, "") : "";
           const taskId = typeof frame.taskId === "string" ? frame.taskId.trim() : "";
           const expectedGeneration = frame.expectedGeneration;
@@ -1035,14 +1036,16 @@ export function createControlSocketCore(opts: ControlSocketCoreOptions): {
           const afterResult = typeof frame.afterResult === "string" ? frame.afterResult.trim() : "";
           const reason = typeof frame.reason === "string" ? frame.reason.trim() : "";
           try {
-            if (!publishEvent) throw new Error("guarded Task completion is unavailable");
-            const receipt = publishEvent(taskCloseRequestedEvent(
+            if (!publishEvent) throw new Error("guarded Task control is unavailable");
+            const receipt = publishEvent(normalized.command === "task.reopen" ? taskReopenRequestedEvent(
+              { appId, taskId, generation: expectedGeneration as number, resourceVersion: expectedResourceVersion as number }, reason,
+            ) : taskCloseRequestedEvent(
               { appId, taskId, generation: expectedGeneration as number, resourceVersion: expectedResourceVersion as number },
               afterResult,
               reason,
             ));
             if (receipt.delivery !== "accepted") {
-              throw new Error(`Task ${appId}/${taskId} completion was recorded but not accepted; read the Task and retry`);
+              throw new Error(`Task ${appId}/${taskId} control was recorded but not accepted; read the Task and retry`);
             }
             writeFrame(socket, {
               type: "ok",

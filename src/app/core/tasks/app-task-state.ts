@@ -66,6 +66,8 @@ export type AppTaskResource = {
     creator?: ResourceCreator;
     generation: number;
     resourceVersion: number;
+    /** Durable pre-reopen events cannot become fresh work in the new generation. */
+    reopenedAfterEventId?: number;
   };
   spec: Omit<TaskIntent, "id">;
   status: {

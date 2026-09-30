@@ -1,7 +1,7 @@
 import { validateIntent } from "../core/tasks/app-task-reconciler.js";
 import { taskControlAction } from "../core/events/interface.js";
 import { readTaskEventTarget, readEventTaskTarget } from "../core/events/task-target.js";
-import { appInputFeedbackEvent } from "../core/inbox/input-result.js";
+import { appInputFeedbackEvent, appInputAdmissionFailureEvent } from "../core/inbox/input-result.js";
 import { conversationTaskId, listPendingConversationTaskChanges } from "../core/state/conversation-task-turns.js";
 import type { AppTaskCapability } from "../core/tasks/app-task-capability.js";
 import { createAppScheduleProducer } from "../adapters/producers/app-schedules.js";
@@ -347,9 +347,14 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
     onConversationChanged: notifyConversationUpdated,
     onRequestUpdated(item, result, status) {
       const event = appInputFeedbackEvent(item, result, status);
-      if (!event) return false;
-      const delivered = options.bus.emit(event)[EVENT_DELIVERY_RESULT];
-      return delivered?.accepted === true && delivered.route !== "noop";
+      if (event) {
+        const delivered = options.bus.emit(event)[EVENT_DELIVERY_RESULT];
+        if (delivered?.accepted === true && delivered.route !== "noop") return true;
+      }
+      const review = appInputAdmissionFailureEvent(item, result, status);
+      if (!review) return false;
+      const delivered = options.bus.emit(review)[EVENT_DELIVERY_RESULT];
+      return delivered?.accepted === true && delivered.route === "direct" && delivered.by.startsWith("app-runtime:events:");
     },
   });
   let closed = false;
@@ -729,7 +734,7 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
       const data = eventData(event);
       // These facts signal state already committed by the Task runtime. They
       // must not become new input through generic exact-target admission.
-      if (event.type === "app.task.ready" || event.type === "app.task.attempt.stopped")
+      if (event.type === "app.task.ready" || event.type === "app.task.attempt.stopped" || event.type === "app.task.reopened")
         return { accepted: true, by: "task-runtime-notification", route: "direct" };
       if (String(event.type) === "project.task.reconcile.started" || String(event.type) === "project.task.reconciled") {
         const rows = options.db.prepare(`SELECT DISTINCT conversation_id FROM app_inbox_items

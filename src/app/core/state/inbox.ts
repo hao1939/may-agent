@@ -12,8 +12,9 @@ import type { AppTaskContext } from "../tasks/app-task-store.js";
 import { linkConversationTopicTask } from "./conversations.js";
 import { linkConversationRequestTask } from "./conversation-requests.js";
 import { assertResourceCreator } from "./resource-creator.js";
+import { AppTaskAdmissionError } from "./task-admission-error.js";
 
-export class AppTaskRevisionAdmissionError extends Error {
+export class AppTaskRevisionAdmissionError extends AppTaskAdmissionError {
   readonly name = "AppTaskRevisionAdmissionError";
 }
 
@@ -72,6 +73,10 @@ export function admitTaskInput(config: AppTaskContext, input: TaskInputAdmission
         throw new Error("Input is already owned or completed");
       const taskId = input.attachment.kind === "existing" ? input.attachment.taskId : input.attachment.intent.id;
       if (item.targetTaskId && item.targetTaskId !== taskId) throw new Error("Cannot replace an exact Task target");
+      const target = config.resourceStore.readTask(taskId);
+      if (item.originEventId && item.originEventId <= (target?.metadata.reopenedAfterEventId ?? 0)) {
+        throw new AppTaskAdmissionError("This input predates Task reopening; submit fresh input for the new generation");
+      }
     }
     // A released Host could commit the Task before saving its input link.
     // Reuse that exact admission during the offline upgrade/restart boundary.
@@ -112,7 +117,7 @@ function admitAuthorizedTaskInput(config: AppTaskContext, input: TaskInputAdmiss
       return { kind: "observed", taskId, generation: admission.taskGeneration, changed: false };
     }
     intent = readAppTaskIntent(config, taskId);
-    if (!intent) throw new Error(`Task ${taskId} does not exist in App ${input.appId}`);
+    if (!intent) throw new AppTaskAdmissionError(`Task ${taskId} does not exist in App ${input.appId}`);
   } else {
     intent = input.attachment.intent;
     const expectedGeneration = input.attachment.expectedGeneration;
@@ -225,17 +230,21 @@ export function linkTaskInput(
   if (updated.changes !== 1) throw new Error("Task input is unavailable");
 }
 
-/** Finish a deterministic revision rejection so recovery does not retry stale authority forever. */
-export function rejectTaskInputRevision(
+/** Finish a deterministic rejection without claiming that the requested work was fulfilled. */
+export function rejectTaskInput(
   db: SqliteDb,
   item: AppInboxItem,
   error: Error,
   now: number,
 ): AppResult | null {
-  const summary = `Task revision was not applied: ${error.message}`;
+  const revision = isAppTaskRevisionAdmissionError(error);
+  const summary = `${revision ? "Task revision was not applied" : "Task input was not admitted"}: ${error.message}`;
   const result: AppResult = {
     summary,
-    response: `${summary}. Read the current Task and submit a new revision with its current expectedGeneration.`,
+    response: revision
+      ? `${summary}. Read the current Task and submit a new revision with its current expectedGeneration.`
+      : `${summary}. Read the current Task and correct the target. If the user explicitly requested reopening, use task.reopen with the current generation and resource version, then submit fresh input.`,
+    result: { disposition: "admission-rejected", appId: item.appId, requestId: item.id },
   };
   const changed = db
     .prepare(

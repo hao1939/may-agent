@@ -16,6 +16,9 @@ import { claimAppInboxItem, waitAppInboxClaim } from "../../../../test/fixtures/
 import { createConversationTopic, listConversationTopicLinksForTask } from "./conversations.js";
 import {
   cancelAppTask,
+  closeAppTask,
+  reopenAppTask,
+  recordAppTaskTrigger,
   claimObservedAppTask,
   completeAppTask,
   failAppTaskAttempt,
@@ -602,7 +605,7 @@ it("routes an exact App-only revision through the installed mapper and gives sta
     db,
     apps: [app],
     attachTask: (input) => admitTaskInput(config, input),
-    onRequestUpdated: (item, result, status) => notifications.push({ id: item.id, status, summary: result.summary }),
+    onRequestUpdated: (item, result, status) => { if (item.id !== "request-one") notifications.push({ id: item.id, status, summary: result.summary }); return true; },
     onConversationChanged: (_, conversationId) => conversationUpdates.push(conversationId),
   });
   const revisionInput = {
@@ -842,4 +845,107 @@ it("keeps conflicting alias generations, specifications, accepted results and fe
     expect(recoverTaskInputAdmissionKey(db, getAppInboxItem(db, input.inputContext.id)!)).toBeUndefined();
     expect(getAppInboxItem(db, input.inputContext.id)?.taskAdmissionKey).toBeUndefined();
   }
+});
+
+it("rejects closed-target input once, retries only feedback across restart, and explicitly reopens the same Task", async () => {
+  const { db, path, config, input } = fixture();
+  admitTaskInput(config, input);
+  finishTask(config);
+  const acceptedTask = config.resourceStore.readTask("work/one")!;
+  const accepted = config.resourceStore.readAttempt(acceptedTask.status.observedAttemptId!)!;
+  const close = { appId: "example", taskId: "work/one", expectedGeneration: acceptedTask.metadata.generation,
+    expectedResourceVersion: acceptedTask.metadata.resourceVersion, afterResult: accepted.metadata.id,
+    reason: "Finite work complete", controlKey: "close-one" };
+  const { closure } = closeAppTask(config, close);
+  let now = Date.now();
+  let attachmentCalls = 0;
+  let feedbackCalls = 0;
+  let deliver = false;
+  const apps = [defineApp({ id: "example", version: 1, agent: "example-owner", inputSchema: Type.Unknown(),
+    tasks: {}, task: () => testAttachment() })];
+  const makeHost = (state = config) => new AppInboxHost({ db, apps, now: () => now,
+    attachTask: (request) => { attachmentCalls++; return admitTaskInput(state, request); },
+    onRequestUpdated: () => { feedbackCalls++; return deliver; },
+  });
+  let host = makeHost();
+  const rejected = host.admit({ id: "late", appId: "example", targetTaskId: "work/one",
+    source: { kind: "system", id: "operator" }, input: { kind: "example", data: { message: "Continue this work" } } }).item;
+  expect(rejected).toMatchObject({ status: "done", handling: { phase: "failed" },
+    result: { result: { disposition: "admission-rejected" }, response: expect.stringContaining("task.reopen") } });
+  expect(rejected.waitingOn).toBeUndefined();
+  await host.recoverAdmissions();
+  expect(attachmentCalls).toBe(1);
+  expect(feedbackCalls).toBe(1);
+  host.close();
+  const reopenedState = openState(path);
+  connections.push(reopenedState.resourceStore.db);
+  host = makeHost(reopenedState);
+  now = rejected.reviewAt!;
+  deliver = true;
+  await host.recoverAdmissions();
+  expect(feedbackCalls).toBe(2);
+  expect(attachmentCalls).toBe(1);
+  expect(host.get("late")?.recovery?.["input-admission"].reportedAt).toBe(now);
+  now += 7_200_000;
+  await host.recoverAdmissions();
+  expect(feedbackCalls).toBe(2);
+  expect(config.resourceStore.readCancellation("work/one")).toEqual(closure);
+
+  const control = { appId: "example", taskId: "work/one", expectedGeneration: closure.generation,
+    expectedResourceVersion: closure.resourceVersion, reason: "User requested a revised measurement", controlKey: "reopen-one" };
+  expect(() => reopenAppTask(reopenedState, { ...control, expectedResourceVersion: closure.resourceVersion - 1 })).toThrow("version changed");
+  const result = reopenAppTask(reopenedState, control);
+  expect(result.generation).toBe(closure.generation + 1);
+  expect(reopenAppTask(config, control)).toEqual(result);
+  expect(config.resourceStore.isCancelled("work/one")).toBe(false);
+  expect(config.resourceStore.readPastCancellation("work/one", closure.generation, closure.resourceVersion)).toEqual(closure);
+  expect(closeAppTask(config, close)).toEqual({ closure, applied: false });
+  expect(config.resourceStore.isCancelled("work/one")).toBe(false);
+  expect(config.resourceStore.readAttempt(accepted.metadata.id)).toEqual(accepted);
+  expect(config.resourceStore.readTask("work/one")?.status.observedAttemptId).toBeUndefined();
+  expect(readAppTaskAdmissionOutcome(config, "work/one", input.idempotencyKey)?.attemptId).toBe(accepted.metadata.id);
+  expect(host.get("late")?.status).toBe("done");
+  const fresh = host.admit({ id: "fresh", appId: "example", targetTaskId: "work/one",
+    source: { kind: "human", id: "user" }, input: { kind: "example", data: {} } }).item;
+  expect(fresh.waitingOn).toEqual({ kind: "task", id: "work/one" });
+  expect(readAppTaskAdmissionOutcome(config, "work/one", "task:fresh")).toBeNull();
+  finishTask(reopenedState);
+  expect(readAppTaskAdmissionOutcome(config, "work/one", "task:fresh")?.generation).toBe(result.generation);
+  const latest = config.resourceStore.readTask("work/one")!;
+  const secondClose = closeAppTask(config, { ...close, controlKey: "close-two", expectedGeneration: latest.metadata.generation,
+    expectedResourceVersion: latest.metadata.resourceVersion, afterResult: latest.status.observedAttemptId! });
+  const second = reopenAppTask(config, { ...control, controlKey: "reopen-two", expectedGeneration: secondClose.closure.generation,
+    expectedResourceVersion: secondClose.closure.resourceVersion });
+  expect(reopenAppTask(config, control)).toEqual(result);
+  expect(config.resourceStore.readTask("work/one")?.metadata.generation).toBe(second.generation);
+  expect(config.resourceStore.readPastCancellation("work/one", closure.generation, closure.resourceVersion)).toEqual(closure);
+  expect(closeAppTask(config, close)).toEqual({ closure, applied: false });
+  expect(config.resourceStore.isCancelled("work/one")).toBe(false);
+});
+
+it("reopening fences interrupted attempts and pre-reopen events while preserving historical cancellation", () => {
+  const { db, config, input } = fixture();
+  admitTaskInput(config, input);
+  const claim = claimObservedAppTask(config, { taskId: "work/one", appAgent: "example-owner", handler: "agent" });
+  if (claim.kind !== "claimed") throw new Error("Expected claim");
+  const current = config.resourceStore.readTask(claim.taskId)!;
+  const { cancellation } = cancelAppTask(config, { appId: "example", taskId: claim.taskId,
+    expectedGeneration: current.metadata.generation, expectedResourceVersion: current.metadata.resourceVersion, reason: "Stop" });
+  db.prepare("INSERT INTO events(event_type, timestamp, data) VALUES (?, ?, ?)").run("sample.late", Date.now(), "{}");
+  const eventId = Number(db.prepare("SELECT MAX(id) AS id FROM events").get()!.id);
+  reopenAppTask(config, { appId: "example", taskId: claim.taskId, expectedGeneration: cancellation.generation,
+    expectedResourceVersion: cancellation.resourceVersion, reason: "User resumed", controlKey: "resume" });
+  expect(config.resourceStore.readAdmissionCancellation(claim.taskId, input.idempotencyKey)).toEqual(cancellation);
+  expect(completeAppTask(config, claim, { summary: "Obsolete result", facts: [] }).status).toBe("stale");
+  expect(recordAppTaskTrigger(config, claim.taskId, { type: "sample.late", eventId }).kind).toBe("duplicate");
+  const before = config.resourceStore.readTask(claim.taskId)!;
+  expect(observeAppTaskIntent(config, { appAgent: "example-owner", intent: { id: claim.taskId, ...before.spec, outcome: "Obsolete desired work" },
+    trigger: { type: "sample.late", eventId } })).toMatchObject({ changed: false });
+  expect(config.resourceStore.readTask(claim.taskId)).toEqual(before);
+  expect(recordAppTaskTrigger(config, claim.taskId, { type: "sample.fresh", eventId: eventId + 1 }).kind).toBe("recorded");
+  const late = createAppInboxItem(db, { id: "old-input", appId: "example", targetTaskId: claim.taskId,
+    source: { kind: "system", id: "observer" }, originEventId: eventId, input: { kind: "example", data: {} } }).item;
+  expect(() => admitTaskInput(config, { appId: "example", attachment: { kind: "existing", taskId: claim.taskId },
+    idempotencyKey: `task:${late.id}`, inboxInputId: late.id, inputContext: { id: late.id, input: late.input, source: late.source } }))
+    .toThrow("predates Task reopening");
 });

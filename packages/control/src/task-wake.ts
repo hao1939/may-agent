@@ -9,10 +9,11 @@ export const TASK_UPDATE_EVENT_TYPES = [
   "project.task.recovery.repaired",
   "project.task.executor.progress",
   "app.task.cancelled",
+  "app.task.reopened",
 ] as const;
 
 /** Events after which a Task-derived list may have changed membership. */
-export const TASK_DERIVED_VIEW_EVENT_TYPES = ["project.task.reconciled", "app.task.cancelled"] as const;
+export const TASK_DERIVED_VIEW_EVENT_TYPES = ["project.task.reconciled", "app.task.cancelled", "app.task.reopened"] as const;
 const TASK_DERIVED_VIEW_EVENTS = new Set<string>(TASK_DERIVED_VIEW_EVENT_TYPES);
 
 export function isTaskDerivedViewWake(event: unknown): boolean {

@@ -28,7 +28,7 @@ export type AppTurnTarget = { appId: string; conversationId: string; turnId: str
 
 export type AppInboxTaskDependencyKey = { appId: string; taskId: string; inputId: string; admissionKey?: string };
 
-export type AppInboxRecoveryStage = "input-admission" | "input-result";
+export type AppInboxRecoveryStage = "input-admission" | "input-result" | "input-feedback";
 export type AppInboxRecoveryFailure = {
   failures: number;
   fingerprint: string;
@@ -292,9 +292,9 @@ export function recordAppInboxRecoveryFailure(
     const changed = db
       .prepare(
         `UPDATE app_inbox_items SET recovery_json = ?, ${dueColumn} = ?, changed_at = ?, updated_at = ?
-         WHERE id = ? AND status != 'done'`,
+         WHERE id = ? AND (status != 'done' OR ? = 'input-feedback')`,
       )
-      .run(JSON.stringify(recovery), retryAt, now, now, inputId).changes;
+      .run(JSON.stringify(recovery), retryAt, now, now, inputId, stage).changes;
     if (changed !== 1) throw new Error(`App inbox item ${inputId} is no longer recoverable`);
     return failure;
   });
@@ -320,7 +320,7 @@ export function markAppInboxRecoveryReported(
     return db
       .prepare(
         `UPDATE app_inbox_items SET recovery_json = ?, changed_at = ?, updated_at = ?
-         WHERE id = ? AND status != 'done'`,
+         WHERE id = ?`,
       )
       .run(JSON.stringify(recovery), now, now, inputId).changes === 1;
   });

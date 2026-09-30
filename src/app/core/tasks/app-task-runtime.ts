@@ -46,6 +46,7 @@ import {
   associateAppTaskSession,
   cancelAppTask,
   closeAppTask,
+  reopenAppTask,
   observeAppTaskIntent,
   readAppTaskAdmissionOutcome,
   recordAppTaskTrigger,
@@ -736,6 +737,31 @@ export function retryLoadedFailedAppTask(input: {
   return { ...receipt, queued };
 }
 
+export function reopenLoadedAppTask(
+  input: Parameters<typeof reopenAppTask>[1] & { bus: EventBus },
+): ReturnType<typeof reopenAppTask> {
+  const descriptor = loadedAppTaskRuntimeDescriptor(input.bus, input.appId);
+  if (!descriptor) throw new Error(`App ${input.appId} has no loaded task runtime`);
+  const config = appTaskConfig(descriptor);
+  const receipt = reopenAppTask(config, input);
+  const controller = appTaskControllersByBus.get(input.bus)?.get(input.appId);
+  if (controller && !descriptor.reconciliationPaused)
+    enqueueAppTask(controller, config, input.taskId, { promote: true });
+  input.bus.emit({
+    type: "app.task.reopened",
+    source: "app-task-reconciler",
+    owner: `app:${input.appId}`,
+    target: { appId: input.appId, taskId: input.taskId },
+    data: {
+      appId: input.appId,
+      taskId: input.taskId,
+      generation: receipt.generation,
+      resourceVersion: receipt.resourceVersion,
+    },
+  } as AgentEvent);
+  return receipt;
+}
+
 export function closeLoadedAppTask(input: {
   bus: EventBus;
   appId: string;
@@ -916,6 +942,11 @@ export function readLoadedAppTaskInputResult(input: {
 }) {
   const config = readableAppTaskContext(input.bus, input.appDir);
   return config ? readAppTaskAdmissionOutcome(config, input.taskId, input.admissionKey, input.kind) : null;
+}
+
+/** Read the closure that ended this input, independently of later reopening. */
+export function readLoadedAppTaskInputClosure(input: { bus: EventBus; appDir: string; taskId: string; admissionKey: string }) {
+  return readableAppTaskContext(input.bus, input.appDir)?.resourceStore.readAdmissionCancellation(input.taskId, input.admissionKey) ?? null;
 }
 
 /** Read the stable task projection for an inbox dependency after any restart. */
