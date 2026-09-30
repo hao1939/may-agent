@@ -590,6 +590,25 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
     db: SqliteDb,
     alert: { alertId?: number; metricId?: string; createdAt?: number },
   ): Record<string, unknown> | null {
+    const accepted = db
+      .prepare(
+        `SELECT app_id, task_id, attempt_id, timestamp, data
+      FROM metric_dispositions WHERE metric_id = ? AND alert_id = ?
+      ORDER BY timestamp DESC, attempt_id DESC LIMIT 1`,
+      )
+      .get(alert.metricId ?? null, alert.alertId ?? null);
+    if (accepted)
+      return {
+        ...parseEventData(String(accepted.data)),
+        owner: accepted.app_id,
+        timestamp: accepted.timestamp,
+        source: {
+          kind: "accepted-task-result",
+          appId: accepted.app_id,
+          taskId: accepted.task_id,
+          attemptId: accepted.attempt_id,
+        },
+      };
     const row = db
       .prepare(
         `SELECT id, owner, timestamp, data
