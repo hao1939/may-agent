@@ -3626,13 +3626,14 @@ export function completeAppTask(
   unlinkSatisfiedTaskConditions(tree, claim.taskId);
   finishAttempt(tree, resource, "completed", input.summary, now);
   const reconcileActionTaskIds = actions.flatMap((action) => (action.kind === "unblock-task" ? [action.taskId] : []));
-  const pendingSelfTrigger = Boolean(tree.taskTriggers?.[claim.taskId]?.event) ||
-    Object.values(resource.status.inputWaits ?? {}).some((wait) => wait.pending);
-  const satisfiedTaskIds = [...(!pendingSelfTrigger ? [claim.taskId] : [])];
+  // Eligibility schedules the next assignment; it never expands this answer.
+  const pendingWork = Boolean(tree.taskTriggers?.[claim.taskId]?.event) ||
+    continuedTaskInputKeys(tree, claim.taskId, []).length > 0;
+  const satisfiedTaskIds = [...(!pendingWork ? [claim.taskId] : [])];
   const dependentTaskIds = [
     ...new Set([
       ...reconcileActionTaskIds,
-      ...(pendingSelfTrigger ? [claim.taskId] : []),
+      ...(pendingWork ? [claim.taskId] : []),
       ...Object.values(tree.resources ?? {})
         .filter((candidate) => candidate.spec.dependsOn?.some((id) => satisfiedTaskIds.includes(id)))
         .map((candidate) => candidate.metadata.id),
@@ -3649,7 +3650,7 @@ export function completeAppTask(
     )
     .sort((left, right) => left - right)[0];
   touchResource(resource, {
-    phase: pendingSelfTrigger
+    phase: pendingWork
       ? "pending"
       : resource.status.conditionIds?.length || remainingReviewAt !== undefined
         ? "waiting"
@@ -3669,7 +3670,7 @@ export function completeAppTask(
     status: "applied",
     actionsApplied,
     dependentTaskIds,
-    ...(pendingSelfTrigger ? { taskContinues: true as const } : {}),
+    ...(pendingWork ? { taskContinues: true as const } : {}),
   };
 }
 
@@ -3800,7 +3801,7 @@ export function deferAppTask(
     });
   }
   touchResource(resource, {
-    phase: Object.values(resource.status.inputWaits ?? {}).some((wait) => wait.pending) || input.continue
+    phase: continuedTaskInputKeys(tree, claim.taskId, []).length > 0 || input.continue
       ? "pending" : input.disposition,
     observedGeneration: claim.generation,
     observedAttemptId: claim.attemptId,

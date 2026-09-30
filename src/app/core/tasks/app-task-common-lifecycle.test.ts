@@ -258,6 +258,26 @@ describe("explicit result scope", () => {
     expect(readAppTaskAdmissionOutcome(f.config, "conversation", "independent")).toBeNull();
   });
 
+  it.each(["converged", "waiting"] as const)("%s schedules newly ready input without expanding its result scope", (state) => {
+    const { f } = earlyInputFixture();
+    const claim = f.claim();
+    const result = {
+      summary: "Correction acknowledged; the old approval is obsolete", facts: ["approval:withdrawn"],
+      actions: [{ kind: "retire-condition" as const, conditionId: "approval", expectedConditionGeneration: 1, reason: "withdrawn" }],
+    };
+    if (state === "converged") completeAppTask(f.config, claim, result);
+    else deferAppTask(f.config, claim, { ...result, disposition: "waiting", reviewAt: Date.now() + 300_000 });
+    f.reopen();
+    expect(readAppTaskAdmissionOutcome(f.config, "conversation", "approval")).toBeNull();
+    expect(f.config.resourceStore.readAttempt(claim.attemptId)?.acceptedResult?.inputKeys).toEqual(["correction"]);
+    expect(f.config.resourceStore.listRecoveryCandidates().items.map((item) => item.taskId)).toContain("conversation");
+    const next = f.claim();
+    expect(next.continuedInputKeys).toContain("approval");
+    completeAppTask(f.config, next, { summary: "Approval request withdrawn" });
+    expect(readAppTaskAdmissionOutcome(f.config, "conversation", "approval")?.attemptId).toBe(next.attemptId);
+    expect(readAppTaskAdmissionOutcome(f.config, "conversation", "independent")).toBeNull();
+  });
+
   it("observing live feedback cannot expand the default saved assignment when a timer expires", () => {
     const { f, due } = earlyInputFixture();
     const claim = f.claim();
