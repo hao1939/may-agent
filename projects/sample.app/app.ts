@@ -1,4 +1,5 @@
 import { Type, defineApp, type Static } from "@may-agent/sdk";
+import { documentObserver } from "./observers.js";
 
 export const reviewInputSchema = Type.Object({
   kind: Type.Literal("review"),
@@ -24,6 +25,7 @@ export default defineApp({
     }, { additionalProperties: false }),
   ]),
   tasks: {},
+  observers: [documentObserver],
   task(request) {
     if (request.input.kind !== "review") {
       throw new Error("Address a message to an existing sample Task; use review to start new work.");

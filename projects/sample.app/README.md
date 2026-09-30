@@ -34,12 +34,27 @@ Untargeted messages do not create reviews. Read the same Task to follow progress
 and accepted results; a Task can retain independent waits and useful work together.
 The Host routes a delegated result back through the saved caller relationship.
 
+## Wait for a document
+
+The installed `sample` contract describes the `document` observation capability.
+It inspects an absolute local file path and returns `available`, plus `sha256`
+and `bytes` when readable. Missing files report `available: false`; other read
+errors remain failures for diagnosis. It uses this installation's file access
+and is intended for ordinary small review documents.
+
+A reviewer can prepare while a document is unavailable, then save an ordinary
+observation Condition for availability or a required hash. Discover the capability
+through `tasks.contract`; the Host performs the checks and delivers matching
+facts. The reviewer still reads the document and judges its content. A successful
+inspection alone does not complete a review. No new review input type is needed.
+See the [document-wait scenario](scenarios/document-observation.md).
+
 ## Activate and run
 
 This App uses the installed SDK and a configured `gpt-5.6-sol` model. Commit its
 definition, then use the normal `/reload` operation and verify the accepted
-installed App contract. Host and SDK must include PR #269 before exercising
-explicit result scope. Source presence alone does not prove activation.
+installed App contract. Host and SDK must include PR #270 for document observation (and PR #269 for
+explicit result scope). Source presence alone does not prove activation.
 
 The [SDK quickstart](../may-agent.app/docs/2b-manual/sdk-quickstart.md) provides
 the ordinary submission/read client; it targets this App. The first live exercise
