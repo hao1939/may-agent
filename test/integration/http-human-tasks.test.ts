@@ -8,6 +8,7 @@ import { attachControlSocket, type ControlSocket, type ControlEvent } from "../.
 import { daemonSocketPath } from "../../packages/control/src/client.js";
 import { HumanTaskService, type HumanTaskStatus } from "../../src/app/human-task-service.js";
 import { openStateDb, type SqliteDb } from "../../src/app/http/read-model/state-db.js";
+import { AppRegistry } from "../../src/app/core/apps/registry.js";
 
 const chrome = [
   process.env.CHROME_PATH,
@@ -27,10 +28,12 @@ describe("HTTP human Task reads and board", () => {
   let stopped: Promise<void>;
   let base: string;
   let service: HumanTaskService;
+  let registry: AppRegistry;
   let conversation: { messages: any[]; activeTurn?: { id: string; revision: number } };
   let published: any[];
   let rejectPublish: boolean;
   let rejectConversationRead: boolean;
+  let rejectAppRead: boolean;
   let listeners: Set<(event: ControlEvent) => void>;
 
   beforeEach(async () => {
@@ -38,6 +41,7 @@ describe("HTTP human Task reads and board", () => {
     published = [];
     rejectPublish = false;
     rejectConversationRead = false;
+    rejectAppRead = false;
     listeners = new Set();
     root = mkdtempSync(join(tmpdir(), "may-http-tasks-"));
     db = openStateDb(join(root, "may.db"));
@@ -50,7 +54,8 @@ describe("HTTP human Task reads and board", () => {
     cpSync(resolve(import.meta.dir, "../../packages/webui/static"), join(projects, "platform", "ui"), {
       recursive: true,
     });
-    service = new HumanTaskService(db, { snapshot: () => ({ entries: [] }) } as never);
+    registry = new AppRegistry(async () => []);
+    service = new HumanTaskService(db, registry);
     control = await attachControlSocket({
       socketPath: daemonSocketPath(root, { instance: "task-test", interfaceAgent: "may" }),
       getSessionId: () => "fixture",
@@ -74,6 +79,10 @@ describe("HTTP human Task reads and board", () => {
       },
       agentName: "may",
       instance: "task-test",
+      listApps: (appId) => {
+        if (rejectAppRead) throw new Error("fixture App reads unavailable");
+        return service.listApps(appId);
+      },
       listTasks: (options) =>
         service.listTasks({ ...options, status: options?.status as HumanTaskStatus[] | undefined }),
       getTask: (input) => service.getTask(input),
@@ -153,6 +162,92 @@ describe("HTTP human Task reads and board", () => {
     expect(res.status).toBe(status);
     return res.json();
   }
+
+  async function installApps(...ids: string[]) {
+    await registry.reload(undefined, async () => ids.map((id) => ({
+      appDir: join(root, "projects", `${id}.app`),
+      definition: {
+        id, version: 1, agent: "worker", inputSchema: { type: "object" },
+        description: `Reviews <${id}> evidence`,
+      },
+    })));
+  }
+
+  test("App catalog reuses installed registry and Task counts independently of saved project files", async () => {
+    writeFileSync(join(root, "projects", "sample.app", ".disabled"), "");
+    const outside = join(root, "projects", "outside");
+    mkdirSync(outside);
+    writeFileSync(join(outside, "project.json"), JSON.stringify({ id: "outside", status: "active" }));
+    await installApps("bare", "idle");
+    task("running", 10, "running", "bare");
+    task("waiting", 11, "waiting", "bare");
+    task("review", 12, "attention", "bare");
+    expect(await read("/api/apps")).toEqual(service.listApps());
+    expect(await read("/api/apps")).toEqual([
+      expect.objectContaining({ id: "bare", runningTasks: 1, waitingTasks: 1, attentionTasks: 1 }),
+      expect.objectContaining({ id: "idle", runningTasks: 0, waitingTasks: 0, attentionTasks: 0 }),
+    ]);
+    expect((await read("/api/projects")).map((project: { name: string }) => project.name).sort())
+      .toEqual(["alpha.app", "outside"]);
+    // Removing an App from the registry takes effect even while its Task rows remain.
+    await installApps("idle");
+    expect((await read("/api/apps")).map((app: { id: string }) => app.id)).toEqual(["idle"]);
+    await installApps();
+    expect(await read("/api/apps")).toEqual([]);
+    rejectAppRead = true;
+    expect(await read("/api/apps", 503)).toEqual({ error: "fixture App reads unavailable" });
+    rejectAppRead = false;
+    await installApps("restored");
+    expect(await read("/api/apps")).toEqual(service.listApps());
+    expect((await fetch(base + "/api/apps", { method: "POST" })).status).toBe(405);
+    expect(published).toEqual([]);
+    control.close();
+    expect(await read("/api/apps", 503)).toHaveProperty("error");
+  });
+
+  test.skipIf(skipBrowser)("browser separates loaded Apps from saved projects and distinguishes empty from unavailable", async () => {
+    await installApps("bare", "idle");
+    task("running", 10, "running", "bare");
+    const browser = await puppeteer.launch({ executablePath: chrome!, headless: true, args: ["--no-sandbox", "--disable-dev-shm-usage"] });
+    try {
+      const page = await browser.newPage();
+      page.setDefaultTimeout(5000);
+      await page.goto(`${base}/projects`, { waitUntil: "domcontentloaded" });
+      await page.waitForSelector('#installed-apps [data-app-id="bare"]');
+      expect(await page.$$eval("#installed-apps tbody tr", (rows) => rows.map((row) => row.textContent)))
+        .toEqual(["bareReviews <bare> evidenceworker100", "idleReviews <idle> evidenceworker000"]);
+      expect(await page.$eval("#saved-projects", (el) => el.textContent)).toContain("Saved project status");
+      expect(await page.$eval("#saved-projects", (el) => el.textContent)).toContain("alpha.app");
+      expect(await page.$eval("#installed-apps", (el) => el.textContent)).not.toContain("alpha.app");
+      expect(await page.$$("#installed-apps bare")).toHaveLength(0); // Descriptions are escaped text.
+      await installApps("idle");
+      await page.evaluate("loadProjects()");
+      expect(await page.$$eval("#installed-apps [data-app-id]", (rows) => rows.map((row) => row.getAttribute("data-app-id"))))
+        .toEqual(["idle"]);
+      rejectAppRead = true;
+      await page.evaluate("loadProjects()");
+      expect(await page.$eval("#installed-apps", (el) => el.textContent)).toContain("Loaded Apps unavailable");
+      expect(await page.$eval("#installed-apps", (el) => el.textContent)).not.toContain("No Apps loaded");
+      expect(await page.$eval("#saved-projects", (el) => el.textContent)).toContain("alpha.app");
+      rejectAppRead = false;
+      await installApps();
+      await page.evaluate("loadProjects()");
+      expect(await page.$eval("#installed-apps", (el) => el.textContent)).toContain("No Apps loaded");
+      // A metadata endpoint failure cannot hide the installed catalog.
+      await installApps("bare");
+      await page.setRequestInterception(true);
+      page.on("request", (request) => {
+        if (new URL(request.url()).pathname === "/api/projects") {
+          void request.respond({ status: 503, contentType: "application/json", body: JSON.stringify({ error: "metadata unavailable" }) });
+        } else void request.continue();
+      });
+      await page.evaluate("loadProjects()");
+      expect(await page.$('#installed-apps [data-app-id="bare"]')).not.toBeNull();
+      expect(await page.$eval("#projects-content", (el) => el.textContent)).toContain("Saved projects unavailable: metadata unavailable");
+    } finally {
+      await browser.close();
+    }
+  });
 
   test("HTTP forwards bounded human reads to the real control socket, without changing SDK reads", async () => {
     task("work/a ?&", 10, "converged");
