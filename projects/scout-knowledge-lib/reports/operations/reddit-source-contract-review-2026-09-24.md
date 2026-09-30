@@ -1,5 +1,80 @@
 # Reddit Source Contract Review — 2026-09-24
 
+## 2026-09-30 cadence decision: reduce to daily until body access is validated
+
+**Recommendation:** the Scout App owner should reduce the automatic Reddit
+schedule from every four hours to once daily, while preserving the standing
+`explore-reddit` responsibility and its current unauthenticated, read-only access
+boundary. This is the smallest proportionate adjustment: it retains a regular
+recovery check but stops paying six times per day for a body-retrieval path that
+has now failed across the complete newest accepted-attempt page. This report does
+not change the schedule or prepare a workflow candidate.
+
+The latest accepted attempt remains a correct immediate no-op. Evaluation
+publication evidence hash
+`45488ede388d7ed9646a2466a5a697fad8f7ffed73bebb7583eb2e820f0077ac`
+(intake `wr_1790783257367_pnt4`) assessed attempt
+`r_2_66b7b4e9-ebc9-4a35-a17e-149a308ff326` as truthful and
+acceptance-conformant: the current search Atom feed returned HTTP 200, candidate
+`t3_1wu3488` was stable, its exact public permalink returned HTTP 403, feed
+metadata was not promoted to a body claim, no files changed, and no independent
+obligation was discarded. The evaluator's later live probe corroborated the
+same access pattern, while correctly limiting the exact 12:11 feed state to the
+workflow's recorded evidence.
+
+Owner-level cadence judgment requires the population, not just that valid
+no-op. The eight newest accepted attempts cover eight distinct candidates and
+about 28 hours of four-hourly starts:
+
+| Candidate | Accepted-attempt duration | Search feed | Selected body | Publication |
+|---|---:|---|---|---|
+| `t3_1wu3488` | 75.178 s | HTTP 200 | HTTP 403 | no change |
+| `t3_1wtyqub` | 76.283 s | HTTP 200 | HTTP 403 | no change |
+| `t3_1wtuysu` | 62.469 s | HTTP 200 | HTTP 403 | no change |
+| `t3_1wtq7ck` | 62.730 s | HTTP 200 | HTTP 403 | no change |
+| `t3_1wtkiky` | 86.312 s | HTTP 200 | HTTP 403 | no change |
+| `t3_1wtdkte` | 70.056 s | HTTP 200 | HTTP 403 | no change |
+| `t3_1wt871l` | 108.943 s | HTTP 200 | HTTP 403 | no change |
+| `t3_1wt4015` | 84.415 s | HTTP 200 | HTTP 403 | no change |
+
+Together these accepted attempts consumed about **626.386 seconds** of owner
+attempt runtime (about 10 minutes 26 seconds; mean 78.298 seconds, range
+62.469–108.943) and yielded **zero publications**. This is not a monetary-cost
+estimate: provider tokens, money, nested-workflow billing, and the yield of
+history older than this eight-attempt page remain unknown. The page also cannot
+show that every Reddit post representation is blocked or that any inaccessible
+candidate would have been useful. It does show that the current selected-body
+path has no practical research yield at the present cadence.
+
+### Option judgment, ownership, and triggers
+
+- **Keep four-hour cadence:** rejected for now. It maximizes recovery-detection
+  frequency but repeats a demonstrated zero-yield body path six times per day.
+- **Daily cadence:** recommended to the **Scout App owner**. It reduces recurring
+  attempt work by roughly five scheduled opportunities per day while retaining
+  one lawful recovery observation. Exact savings are not forecast because
+  per-run provider usage and future runtime are unmeasured.
+- **Readable public path:** still the preferred recovery direction, but requires
+  a later authorized change. The bounded 2026-09-28 diagnostic below showed one
+  selected post's public RSS representation returning attributable body content
+  before two subsequent requests hit HTTP 429. That supports post-specific
+  RSS/Atom as a lawful validation target, not as universally available body
+  access and not as authority to implement it now.
+- **Authentication, bypass, unauthorized scraping, source substitution, or
+  metadata-as-body:** rejected. They add unsupported authority or weaken the
+  evidence boundary.
+
+Revisit the daily limit early if a separately authorized validation demonstrates
+that selected-post RSS/Atom returns attributable body content under the bounded
+request budget, with stable post identity, metadata/body separation, and honest
+stop-on-403/429 behavior. Otherwise review after seven daily accepted attempts.
+Restore a faster cadence only if that review shows repeatable readable bodies or
+material publication yield; pause or retire the lane only through a separate
+owner decision if daily checks remain body-blocked. Risks of the daily cadence
+are later detection of a recovered body path and missed short-lived posts; its
+benefit is a sixfold reduction in scheduled opportunities while the current
+path is predictably metadata-only.
+
 ## 2026-09-29 reassessment: one feed-resident alternate after a 403
 
 **Decision:** clarify the candidate-selection policy; do not change the standing
