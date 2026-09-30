@@ -7,7 +7,7 @@ import { join } from "node:path";
 import {
   automaticReviewConfig,
   populationEvidenceDigest,
-  runTaskOutcomeSelector,
+  runTaskOutcomeSelector as runSelector,
   selectFairCandidate,
   selectorStateFact,
 } from "./task-outcome-selector.ts";
@@ -24,6 +24,16 @@ import {
 } from "./lib/task-report-store.ts";
 
 const NOW = Date.UTC(2026, 8, 17);
+// These fixtures exercise Task selection; metric integration has its own evidence fixtures.
+function runTaskOutcomeSelector(...args: Parameters<typeof runSelector>) {
+  return runSelector(
+    args[0],
+    args[1],
+    args[2],
+    args[3],
+    async (_ctx, cursor) => ({ candidate: null, cursor, facts: [] }),
+  );
+}
 const DAY = 86_400_000;
 const config = {
   enabled: true,
@@ -518,6 +528,43 @@ describe("automatic task outcome selector", () => {
     );
     expect(String(emitted?.localKey).length).toBeLessThan(100);
     expect(Buffer.byteLength(JSON.stringify(result))).toBeLessThan(16 * 1_024);
+  });
+
+  test("reports unavailable metric coverage while still selecting ordinary Task work", async () => {
+    const root = mkdtempSync(join(tmpdir(), "selector-metric-coverage-"));
+    let emitted: Record<string, unknown> | undefined;
+    const result = await runSelector(
+      {
+        reconciliation: {
+          taskId: "runtime/task-outcome-selector",
+          resourceVersion: 1,
+          taskSnapshot: { live: [], truncated: false },
+        },
+        read: { tasks: { get: async () => ({ facts: [] }) } },
+        events: {
+          emit: async (event: Record<string, unknown>) => {
+            emitted = event;
+          },
+        },
+        done: (_summary: string, result: Record<string, unknown>) => result,
+      } as never,
+      catalogCommand({
+        may: [{ ...task("may", "goal/routine"), updatedAt: Date.now() }],
+      }),
+      config,
+      root,
+      async (_ctx, cursor) => ({
+        candidate: null,
+        cursor,
+        facts: ["selector:metric-read-deferred:cut=1:HTTP 503"],
+      }),
+    );
+    expect(emitted?.type).toBe("evaluation.task.review.requested");
+    expect(result).toMatchObject({
+      state: "incomplete",
+      report: true,
+      summary: expect.stringContaining("metric coverage remains unknown"),
+    });
   });
 
   test("gives retained requested reviews priority over routine sampling", async () => {

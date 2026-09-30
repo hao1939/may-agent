@@ -11,6 +11,24 @@ is retained for historical interpretation only. The old automatic aftermath
 0–1 scoring contract must not trigger new session scoring or override the
 Task's historical assignment.
 
+## Metric-observation contract
+
+For `metric-observation-v1`, the subject is the supplied external App metric and
+its pinned windows. Apply the same evidence priorities below without requiring
+a Task to exist. Judge persistence, recurrence after individual recovery,
+changes relative to workload, and measurement/review coverage. Use the
+code-calculated comparisons and stated denominators; do not add rolling counts
+or infer counter rates from gauges. Read notes and exact references, distinguishing
+unread links from inspected evidence. Missing/stale samples are unknown.
+
+A threshold requests inspection, not cancellation, reopening or a retry cap.
+Name the accountable owner and smallest supported next step. For unresolved
+concerns, state why and when to revisit; inspect linked investigation before
+recommending new work. One metric can contain different causes. Metric recovery,
+an acknowledgment and a candidate patch do not prove fulfillment of the original
+input. May owns intervention and judges value. Evaluation's own overdue review
+signal returns to May rather than becoming a semantic self-assessment.
+
 ## Plain Rule
 
 Judge whether the accountable App achieved the outcome that was actually

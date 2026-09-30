@@ -13,18 +13,20 @@ import { dirname, isAbsolute, join, resolve, sep } from "node:path";
 export const TASK_OUTCOME_RUBRIC_VERSION = "task-outcome-v2";
 export const SYSTEMIC_TASK_RUBRIC_VERSION = "task-obligation-v2";
 export const ONGOING_TASK_RUBRIC_VERSION = "task-obligation-v1";
+export const METRIC_RUBRIC_VERSION = "metric-observation-v1";
 export const SUPPORTED_TASK_RUBRIC_VERSIONS = new Set([
   TASK_OUTCOME_RUBRIC_VERSION,
   ONGOING_TASK_RUBRIC_VERSION,
   SYSTEMIC_TASK_RUBRIC_VERSION,
 ]);
 
-export type AssessmentPurpose = "outcome" | "ongoing";
+export type AssessmentPurpose = "outcome" | "ongoing" | "metric";
 
 export type TaskReportEntry = {
   appId: string;
   reviewer: string;
-  taskId: string;
+  taskId?: string;
+  metricId?: string;
   evidenceHash: string;
   executionId: string;
   disposition: string;
@@ -36,7 +38,7 @@ export type TaskReportEntry = {
   validity: Record<string, unknown> | null;
   snapshot: Record<string, unknown> | null;
   freshness: Record<string, unknown> | null;
-  coverage: "bounded-single-task-snapshot";
+  coverage: "bounded-single-task-snapshot" | "bounded-metric-observation";
   jsonPath: string;
   markdownPath: string;
   absoluteJsonPath: string;
@@ -51,7 +53,8 @@ type PublicationMarker = {
   version: 1;
   accepted: true;
   appId: string;
-  taskId: string;
+  taskId?: string;
+  metricId?: string;
   evidenceHash: string;
   executionId: string;
   reviewer?: string;
@@ -90,6 +93,7 @@ function purposeMatchesRubric(
   rubricVersion: string,
 ): purpose is AssessmentPurpose {
   return (
+    (purpose === "metric" && rubricVersion === METRIC_RUBRIC_VERSION) ||
     (purpose === "outcome" && rubricVersion === TASK_OUTCOME_RUBRIC_VERSION) ||
     (purpose === "ongoing" &&
       [ONGOING_TASK_RUBRIC_VERSION, SYSTEMIC_TASK_RUBRIC_VERSION].includes(
@@ -140,6 +144,73 @@ export function taskReportPaths(
   };
 }
 
+export function metricEvidenceHash(evidence: unknown): string {
+  return createHash("sha256").update(JSON.stringify(evidence)).digest("hex");
+}
+
+export function metricReportPaths(
+  appId: string,
+  metricId: string,
+  evidenceHash: string,
+  reviewer = "evaluator",
+) {
+  const identity = createHash("sha256")
+    .update(`${appId}\0${metricId}`)
+    .digest("hex")
+    .slice(0, 16);
+  const base = join(
+    "metric-observations",
+    safe(reviewer),
+    safe(appId),
+    METRIC_RUBRIC_VERSION,
+    `${safe(metricId)}-${identity}-${evidenceHash}`,
+  );
+  return {
+    jsonPath: `${base}.json`,
+    markdownPath: `${base}.md`,
+    publicationPath: `${base}.published.json`,
+  };
+}
+
+function publicationPaths(
+  marker: Pick<
+    PublicationMarker,
+    | "appId"
+    | "taskId"
+    | "metricId"
+    | "evidenceHash"
+    | "rubricVersion"
+    | "validityIdentity"
+    | "reviewer"
+  >,
+) {
+  if (marker.metricId) {
+    if (
+      marker.taskId ||
+      marker.rubricVersion !== METRIC_RUBRIC_VERSION ||
+      marker.validityIdentity
+    )
+      throw new Error(
+        "Metric publication requires an exact metric subject and rubric",
+      );
+    return metricReportPaths(
+      marker.appId,
+      marker.metricId,
+      marker.evidenceHash,
+      marker.reviewer,
+    );
+  }
+  if (!marker.taskId) throw new Error("Publication subject is missing");
+  return taskReportPaths(
+    marker.appId,
+    marker.taskId,
+    marker.evidenceHash,
+    marker.rubricVersion,
+    marker.validityIdentity,
+    marker.reviewer,
+  );
+}
+
 export function resolveTaskReportPath(
   root: string,
   relativePath: string,
@@ -174,6 +245,7 @@ export function renderTaskReportMarkdown(payload: unknown): string | null {
   const judgment = object(report.judgment);
   const appId = text(subject.appId);
   const taskId = text(subject.taskId);
+  const metricId = text(subject.metricId);
   const evidenceHash = text(subject.evidenceHash);
   const rubricVersion = text(report.rubricVersion);
   const sourceRevision = text(report.sourceRevision);
@@ -188,8 +260,9 @@ export function renderTaskReportMarkdown(payload: unknown): string | null {
   if (
     Object.keys(snapshot).length &&
     (text(snapshot.evidenceHash) !== evidenceHash ||
-      !Number.isSafeInteger(Number(snapshot.generation)) ||
-      Number(snapshot.generation) < 1 ||
+      (!metricId &&
+        (!Number.isSafeInteger(Number(snapshot.generation)) ||
+          Number(snapshot.generation) < 1)) ||
       (assessment.validityIdentity !== undefined &&
         text(snapshot.validityIdentity) !== text(assessment.validityIdentity)))
   )
@@ -215,9 +288,12 @@ export function renderTaskReportMarkdown(payload: unknown): string | null {
   const createdAt = Number(report.createdAt);
   if (
     !appId ||
-    !taskId ||
+    (!taskId && !metricId) ||
+    (Boolean(taskId) && Boolean(metricId)) ||
     !evidenceHash ||
-    !SUPPORTED_TASK_RUBRIC_VERSIONS.has(rubricVersion) ||
+    !(metricId
+      ? rubricVersion === METRIC_RUBRIC_VERSION
+      : SUPPORTED_TASK_RUBRIC_VERSIONS.has(rubricVersion)) ||
     !purposeMatchesRubric(purpose, rubricVersion) ||
     !sourceRevision ||
     !["assessed", "insufficient-evidence"].includes(disposition) ||
@@ -230,6 +306,17 @@ export function renderTaskReportMarkdown(payload: unknown): string | null {
     return null;
   const findings = strings(judgment.findings).slice(0, 12);
   const verification = strings(judgment.verification).slice(0, 12);
+  if (metricId) {
+    const evidence = object(report.evidence);
+    if (
+      purpose !== "metric" ||
+      metricEvidenceHash(evidence) !== evidenceHash ||
+      text(evidence.metricId) !== metricId ||
+      text(object(evidence.metric).project) !== appId
+    )
+      return null;
+    return `# Evaluation report\n\n- Metric: \`${appId}/${metricId}\`\n- Evidence: \`${evidenceHash}\`\n- Purpose: metric\n- Rubric: \`${rubricVersion}\`\n- Source revision: \`${sourceRevision}\`\n${reviewerLines}- Disposition: \`${disposition}\`\n- Created: \`${new Date(createdAt).toISOString()}\`\n- Evaluator execution: \`${executionId}\`\n\n## Summary\n\n${summary}\n\n## Recorded comparison\n\n\`\`\`json\n${JSON.stringify({ end: evidence.end, freshness: evidence.freshness, latest: evidence.latest, comparison: evidence.comparison }, null, 2)}\n\`\`\`\n\nMetric changes do not establish cause or fulfillment of individual requests.\n\n## Responsibility\n\n${responsibility}\n\n## Findings\n\n${findings.map((item) => `- ${item}`).join("\n") || "- None."}\n\n## Verification and delivery\n\n${verification.map((item) => `- ${item}`).join("\n") || "- No verification cited."}\n- Delivery: ${delivery}\n`;
+  }
   if (
     rubricVersion === TASK_OUTCOME_RUBRIC_VERSION &&
     !Object.keys(assessment).length &&
@@ -254,14 +341,7 @@ export function markTaskReportPublished(
   root: string,
   marker: Omit<PublicationMarker, "version" | "accepted">,
 ): void {
-  const expected = taskReportPaths(
-    marker.appId,
-    marker.taskId,
-    marker.evidenceHash,
-    marker.rubricVersion,
-    marker.validityIdentity,
-    marker.reviewer,
-  );
+  const expected = publicationPaths(marker);
   if (
     marker.jsonPath !== expected.jsonPath ||
     marker.markdownPath !== expected.markdownPath
@@ -282,20 +362,22 @@ function publishedEntry(
     if (marker.version !== 1 || marker.accepted !== true) return null;
     const appId = text(marker.appId);
     const taskId = text(marker.taskId);
+    const metricId = text(marker.metricId);
     const evidenceHash = text(marker.evidenceHash);
     const executionId = text(marker.executionId);
     const reviewer = text(marker.reviewer) || "evaluator";
     const markerRubric =
       text(marker.rubricVersion) || TASK_OUTCOME_RUBRIC_VERSION;
     const markerValidityIdentity = text(marker.validityIdentity);
-    const expected = taskReportPaths(
+    const expected = publicationPaths({
       appId,
       taskId,
+      metricId,
       evidenceHash,
-      markerRubric,
-      markerValidityIdentity,
+      rubricVersion: markerRubric,
+      validityIdentity: markerValidityIdentity,
       reviewer,
-    );
+    });
     if (
       text(marker.jsonPath) !== expected.jsonPath ||
       text(marker.markdownPath) !== expected.markdownPath ||
@@ -328,6 +410,7 @@ function publishedEntry(
     if (
       text(subject.appId) !== appId ||
       text(subject.taskId) !== taskId ||
+      text(subject.metricId) !== metricId ||
       text(subject.evidenceHash) !== evidenceHash ||
       rubricVersion !== markerRubric ||
       text(assessment.validityIdentity) !== markerValidityIdentity ||
@@ -343,7 +426,7 @@ function publishedEntry(
     return {
       appId,
       reviewer,
-      taskId,
+      ...(metricId ? { metricId } : { taskId }),
       evidenceHash,
       executionId,
       disposition,
@@ -361,7 +444,9 @@ function publishedEntry(
       freshness: Object.keys(object(payload.freshness)).length
         ? object(payload.freshness)
         : null,
-      coverage: "bounded-single-task-snapshot",
+      coverage: metricId
+        ? "bounded-metric-observation"
+        : "bounded-single-task-snapshot",
       jsonPath: expected.jsonPath,
       markdownPath: expected.markdownPath,
       absoluteJsonPath,
@@ -381,14 +466,17 @@ function compareRecentReports(a: TaskReportEntry, b: TaskReportEntry): number {
 }
 
 export function listTaskReports(root: string, limit = 50): TaskReportEntry[] {
-  const base = join(root, "task-outcomes");
-  if (!existsSync(base)) return [];
+  const bases = [
+    join(root, "task-outcomes"),
+    join(root, "metric-observations"),
+  ].filter(existsSync);
+  if (!bases.length) return [];
   const bounded = Math.max(1, Math.min(100, Math.trunc(limit)));
   // Publication markers do not carry report time and there is no complete,
   // paginated report index. Traverse the existing store completely, while
   // retaining only the requested top K validated publications in memory.
   const entries: TaskReportEntry[] = [];
-  const pending = [base];
+  const pending = [...bases];
   while (pending.length) {
     const directory = pending.shift()!;
     for (const file of readdirSync(directory).sort()) {

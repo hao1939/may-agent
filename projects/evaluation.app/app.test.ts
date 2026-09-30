@@ -96,6 +96,10 @@ describe("canonical evaluation App", () => {
     expect(app.tasks?.resolve).toBe(taskIntentForEvent);
     expect(app.tasks?.subscriptions).not.toBeEmpty();
     expect(app.subscriptions?.map(({ id }) => id)).toEqual([
+      "metric.breach",
+      "metric.recovered",
+      "metric.stalled",
+      "metric.measurement.failed",
       "project-comment",
       "project-owner-request",
       "telegram-owner-reply",

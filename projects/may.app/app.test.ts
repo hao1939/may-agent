@@ -48,6 +48,8 @@ describe("canonical May conversation App", () => {
     expect(app.observers?.map(({ id }) => id)).toEqual(["github-pull-request"]);
     expect(app.description).toContain("may.github.pull-request.state");
     expect(app.subscriptions?.map(({ id }) => id)).toEqual([
+      "evaluation-metric-report",
+      "evaluation-review-lag",
       "input-admission-failure-review",
       "observer-failure-review",
       "scout-research-qualified",

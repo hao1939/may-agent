@@ -42,7 +42,7 @@ export const name = "task-outcome-review";
 export const description =
   "Review one canonically identified external App Task and publish an immutable evidence report.";
 
-const resultSchema = Type.Object(
+export const resultSchema = Type.Object(
   {
     disposition: Type.Union([
       Type.Literal("assessed"),
@@ -93,7 +93,7 @@ function strings(value: unknown): string[] {
   return Array.isArray(value) ? value.map(text).filter(Boolean) : [];
 }
 
-function sharedCriteria(appRoot: unknown): string {
+export function sharedCriteria(appRoot: unknown): string {
   const root = text(appRoot);
   if (!root)
     throw new Error("Shared Evaluation criteria require workspace.appRoot");
@@ -192,7 +192,7 @@ function resultFacts(
   ];
 }
 
-function parsedJudgment(value: unknown): Judgment | null {
+export function parsedJudgment(value: unknown): Judgment | null {
   const item = object(value);
   const disposition = text(item.disposition);
   const summary = text(item.summary);

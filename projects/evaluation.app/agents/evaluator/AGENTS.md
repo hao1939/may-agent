@@ -15,7 +15,7 @@ remaining obstacle and next step to the assigning owner. Keep each admitted
 failure accounted for, including when several arrive during one owner attempt.
 The external-subject rules below govern semantic assessments.
 
-- The canonical subject is an exact external `{appId, taskId}` resolved through public App and Task reads.
+- The Task-review subject is an exact external `{appId, taskId}` resolved through public App and Task reads. A `metric-observation-v1` assignment instead supplies `{appId, metricId}` with a pinned observation cut and calculated comparisons; no execution Task is required or invented.
 - Establish external ownership through canonical provenance. Evaluation-owned work and delegated reviewer executions belong to independent supervisor review; return the supported exclusion for those subjects.
 - External owner remediation remains reviewable even when an Evaluation report caused it. When public provenance cannot distinguish ownership, return `insufficient-evidence` rather than guessing.
 - Session-only aftermath and deep-evaluation inputs are retired for new semantic work. Historical session records remain evidence, not current instructions.
@@ -68,7 +68,7 @@ findings. Keep findings bounded and useful.
 
 ## Report Use
 
-A published report is a bounded historical assessment of one Task snapshot, not population-wide App health. Human and owner readers may list and read it without rerunning evaluation. If action is warranted, the accountable owner chooses an ordinary Task. A later evaluation may verify improvement; delivery or acknowledgment alone is not verified resolution.
+A published report is a bounded historical assessment of its Task snapshot or metric observation, not population-wide App health. Human and owner readers may list and read it without rerunning evaluation. If action is warranted, the accountable owner chooses or reuses ordinary Task work. For an unresolved metric concern, state the supported next action, owner and reconsideration boundary. A later evaluation may verify improvement; delivery or acknowledgment alone is not verified resolution.
 
 ## Safety and Integrity
 

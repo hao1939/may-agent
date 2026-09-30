@@ -11,6 +11,8 @@ import {
   resolveTaskReportPath,
   TASK_OUTCOME_RUBRIC_VERSION,
   taskReportPaths,
+  metricReportPaths,
+  METRIC_RUBRIC_VERSION,
   type AssessmentPurpose,
 } from "./lib/task-report-store.js";
 
@@ -30,7 +32,8 @@ function text(value: unknown): string {
 
 export type PublishedReportRequest = {
   appId: string;
-  taskId: string;
+  taskId?: string;
+  metricId?: string;
   evidenceHash: string;
   executionId: string;
   reviewer?: "evaluator" | "evaluator-deepseek";
@@ -61,23 +64,38 @@ export function readPublishedEvaluationReport(
   const rubricVersion = request.rubricVersion ?? TASK_OUTCOME_RUBRIC_VERSION;
   const validityIdentity = request.validityIdentity ?? "";
   if (
+    (!request.taskId && !request.metricId) ||
+    (Boolean(request.taskId) && Boolean(request.metricId)) ||
+    Boolean(request.metricId) !== (assessmentPurpose === "metric") ||
+    (assessmentPurpose === "metric" &&
+      (rubricVersion !== METRIC_RUBRIC_VERSION || validityIdentity)) ||
     (assessmentPurpose === "outcome" &&
       (rubricVersion !== TASK_OUTCOME_RUBRIC_VERSION || validityIdentity)) ||
     (assessmentPurpose === "ongoing" &&
-      (![ONGOING_TASK_RUBRIC_VERSION, SYSTEMIC_TASK_RUBRIC_VERSION].includes(rubricVersion) || !validityIdentity))
+      (![ONGOING_TASK_RUBRIC_VERSION, SYSTEMIC_TASK_RUBRIC_VERSION].includes(
+        rubricVersion,
+      ) ||
+        !validityIdentity))
   )
     return {
       status: "invalid",
       reason: "publication purpose, rubric, and validity identity do not match",
     };
-  const expected = taskReportPaths(
-    request.appId,
-    request.taskId,
-    request.evidenceHash,
-    rubricVersion,
-    validityIdentity,
-    request.reviewer,
-  );
+  const expected = request.metricId
+    ? metricReportPaths(
+        request.appId,
+        request.metricId,
+        request.evidenceHash,
+        request.reviewer,
+      )
+    : taskReportPaths(
+        request.appId,
+        request.taskId!,
+        request.evidenceHash,
+        rubricVersion,
+        validityIdentity,
+        request.reviewer,
+      );
   if (
     request.facts !== expected.jsonPath ||
     request.report !== expected.markdownPath
@@ -93,6 +111,7 @@ export function readPublishedEvaluationReport(
     !entry ||
     entry.appId !== request.appId ||
     entry.taskId !== request.taskId ||
+    entry.metricId !== request.metricId ||
     entry.evidenceHash !== request.evidenceHash ||
     entry.executionId !== request.executionId ||
     entry.reviewer !== (request.reviewer ?? "evaluator") ||
@@ -174,7 +193,7 @@ export async function readEvaluationReports(
       result: { reports },
       facts: reports.map(
         (item) =>
-          `report:${item.appId}/${item.taskId}:${item.evidenceHash}:${item.markdownPath}`,
+          `report:${item.appId}/${item.metricId ?? item.taskId}:${item.evidenceHash}:${item.markdownPath}`,
       ),
       actions: [],
     });

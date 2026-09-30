@@ -11,6 +11,11 @@ import {
   validateGitHubPullRequestCondition,
 } from "./watchers/github-pull-request.js";
 
+import {
+  reliabilityMetrics,
+  REVIEW_LAG_METRIC,
+} from "./reliability-metrics.js";
+
 const githubPullRequestObserver = createGitHubPullRequestObserver({
   repository: "hao1939/may-agent",
   author: "hao1939",
@@ -363,7 +368,13 @@ export function evaluationTaskReportInput(
   const data = record(event.data);
   const appId = requiredText(data, "appId", event.type);
   if (appId === "evaluation" || appId === "evaluation.app") return null;
-  const taskId = requiredText(data, "taskId", event.type);
+  const metricId =
+    event.type === "evaluation.metric_report_published"
+      ? requiredText(data, "metricId", event.type)
+      : undefined;
+  const taskId = metricId
+    ? undefined
+    : requiredText(data, "taskId", event.type);
   const evidenceHash = reportHash(data, "evidenceHash");
   const executionId = requiredText(data, "executionId", event.type);
   const report = requiredText(data, "report", event.type);
@@ -376,7 +387,7 @@ export function evaluationTaskReportInput(
   const validityIdentity = optionalText(data.validityIdentity);
   const publication = {
     appId,
-    taskId,
+    ...(metricId ? { metricId } : { taskId }),
     evidenceHash,
     executionId,
     report,
@@ -391,7 +402,7 @@ export function evaluationTaskReportInput(
   return {
     kind: "message",
     data: {
-      message: `Review the published Evaluation report for ${appId}/${taskId}. Run evaluation-report-intake with this exact context.publication before any duplicate or reuse conclusion; the intake checks exact publication identity before reusing a prior intake, and an unrelated prior disposition is not this report. Then verify material concerns against current evidence and record an ordinary Task disposition. Reuse linked work. Settle the immediate incident separately from the population finding: current recovery does not erase recurring failures, cost or uncertainty. A duplicate or harmless one-off can need no change; a supported recurring pattern can justify the smallest investigation even after recovery. Before proposing a candidate, judge practical value versus cost and whether a simpler solution would suffice.`,
+      message: `Review the published Evaluation report for ${appId}/${metricId ?? taskId}. Run evaluation-report-intake with this exact context.publication before any duplicate or reuse conclusion; the intake checks exact publication identity before reusing a prior intake, and an unrelated prior disposition is not this report. Then verify material concerns against current evidence and record an ordinary Task disposition. Reuse linked work. Settle the immediate incident separately from the population finding: current recovery does not erase recurring failures, cost or uncertainty. A duplicate or harmless one-off can need no change; a supported recurring pattern can justify the smallest investigation even after recovery. Before proposing a candidate, judge practical value versus cost and whether a simpler solution would suffice. For an unresolved concern retain its owner, next action or justified wait, and next review boundary in the existing Task. Notification, acknowledgment and a patch are not verified recovery; metrics do not authorize stopping retries or reopening work.`,
       context: {
         publication,
         caller: {
@@ -408,6 +419,7 @@ export function evaluationTaskReportInput(
 
 export default defineApp({
   id: "may",
+  metrics: reliabilityMetrics,
   version: 1,
   agent: "may",
   workspace: { kind: "git", localPath: ".", branch: "main" },
@@ -476,6 +488,30 @@ export default defineApp({
   },
   observers: [githubPullRequestObserver],
   subscriptions: [
+    {
+      id: "evaluation-metric-report",
+      event: { type: "evaluation.metric_report_published" },
+      toInput: evaluationTaskReportInput,
+    },
+    {
+      id: "evaluation-review-lag",
+      event: { type: "metric.breach" },
+      toInput(event) {
+        if (
+          record(event.data).metricId !== REVIEW_LAG_METRIC ||
+          record(event.data).repeat === true
+        )
+          return null;
+        return {
+          kind: "message",
+          data: {
+            message:
+              "Review the unfinished Evaluation work identified by this metric. Read current review Tasks, allowance and return paths. Preserve retries and reuse linked owner work. If review remains overdue, retain the responsible owner, next action and next review point. This age threshold requests inspection; it is not a promised deadline or authority to stop work.",
+            context: { event: structuredClone(event) },
+          },
+        };
+      },
+    },
     {
       id: "input-admission-failure-review",
       event: { type: "app.input.admission.failed", target: { appId: "may" } },

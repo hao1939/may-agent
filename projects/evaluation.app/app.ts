@@ -1,5 +1,6 @@
 import { createHash } from "node:crypto";
 import { automaticReviewConfig } from "./agents/evaluator/workflows/task-outcome-selector.js";
+import { metricReviewTaskId } from "./agents/evaluator/workflows/lib/metric-selection.js";
 import {
   Type,
   defineApp,
@@ -300,6 +301,20 @@ SELECT CASE
 FROM counts
 CROSS JOIN bounds`;
 const detailsSchema = Type.Record(Type.String(), Type.Unknown());
+const metricReviewDataSchema = Type.Object(
+  {
+    metricId: Type.String({ minLength: 1, maxLength: 512 }),
+    end: Type.Integer({ minimum: 1 }),
+    reviewer: Type.Optional(
+      Type.Union([
+        Type.Literal("evaluator"),
+        Type.Literal("evaluator-deepseek"),
+      ]),
+    ),
+    automatic: Type.Optional(Type.Boolean()),
+  },
+  { additionalProperties: false },
+);
 const sessionSchema = Type.Object(
   {
     sessionId: Type.String({ minLength: 1 }),
@@ -436,6 +451,10 @@ const evaluationInputSchema = Type.Union([
         { additionalProperties: false },
       ),
     },
+    { additionalProperties: false },
+  ),
+  Type.Object(
+    { kind: Type.Literal("review-metric"), data: metricReviewDataSchema },
     { additionalProperties: false },
   ),
   Type.Object(
@@ -619,6 +638,33 @@ function ownerMessageInput(
 export function taskIntentForInput(input: AppInput): TaskIntent | null {
   const data = record(input.data);
   switch (input.kind) {
+    case "review-metric": {
+      const metricId = stringValue(data.metricId);
+      const end = Number(data.end);
+      const reviewer = stringValue(data.reviewer) || "evaluator";
+      if (
+        !metricId ||
+        !Number.isSafeInteger(end) ||
+        end <= 0 ||
+        !["evaluator", "evaluator-deepseek"].includes(reviewer)
+      )
+        return null;
+      return {
+        id: metricReviewTaskId(
+          metricId,
+          reviewer as "evaluator" | "evaluator-deepseek",
+        ),
+        parentId: "evaluation-system",
+        outcome: `Review observations of metric ${metricId} and return an evidence-backed recommendation.`,
+        acceptance: [
+          "Preserve the exact metric evidence and review cutoff.",
+          "Publish a bounded assessment to the accountable owner without changing original work or retry policy.",
+        ],
+        workflow: "metric-review",
+        input: { metricId, end, reviewer, automatic: data.automatic === true },
+        priority: "P2",
+      };
+    }
     case "review-task-outcome": {
       const appId = stringValue(data.appId);
       const taskId = stringValue(data.taskId);
@@ -709,10 +755,11 @@ export function taskIntentForInput(input: AppInput): TaskIntent | null {
       return {
         id: "runtime/task-outcome-selector",
         parentId: "evaluation-system",
-        outcome: "Select at most one fair external Task outcome for review.",
+        outcome:
+          "Select at most one external Task or metric observation for review.",
         acceptance: [
           "Selection uses bounded public App and Task lists and excludes Evaluation.",
-          "At most one canonical task-outcome review request is published.",
+          "At most one canonical Task or metric review request is published using the shared allowance.",
         ],
         workflow: "task-outcome-selector",
         input: { reason: stringValue(data.reason) || "scheduled" },
@@ -937,6 +984,18 @@ export function taskInputForEvent(
   event: AppEvent<Record<string, unknown>>,
 ): AppInput | null {
   switch (event.type) {
+    case "evaluation.metric.review.requested":
+      return {
+        kind: "review-metric",
+        data: { ...eventData(event), automatic: true },
+      };
+    case "metric.breach":
+    case "metric.recovered":
+    case "metric.stalled":
+    case "metric.measurement.failed":
+      return automaticReviewConfig().enabled
+        ? { kind: "automatic-review", data: { reason: event.type } }
+        : null;
     case "session.end":
       // Session identity and metadata cannot establish canonical work ownership.
       // New semantic evaluation is selected from public external App Tasks.
@@ -1298,6 +1357,16 @@ const baseApp = defineApp({
   task: taskForEvaluationInput,
   workspace: { kind: "local", localPath: "." },
   subscriptions: [
+    ...[
+      "metric.breach",
+      "metric.recovered",
+      "metric.stalled",
+      "metric.measurement.failed",
+    ].map((event) => ({
+      id: event,
+      event,
+      toInput: taskInputForEvent,
+    })),
     {
       id: "project-comment",
       event: { type: "project.comment.created", project: projectId },
@@ -1346,6 +1415,12 @@ const baseApp = defineApp({
       : []),
   ],
   actions: {
+    "review-metric": {
+      description:
+        "Review one metric observation at a fixed cut and return an evidence-backed recommendation.",
+      inputSchema: metricReviewDataSchema,
+      toInput: (data) => ({ kind: "review-metric", data }),
+    },
     "review-task-outcome": {
       description:
         "Evaluate one exact external App Task outcome using bounded public evidence.",
@@ -1485,6 +1560,7 @@ const baseApp = defineApp({
   tasks: {
     subscriptions: [
       { type: "evaluation.task.review.requested", project: projectId },
+      { type: "evaluation.metric.review.requested", project: projectId },
       { type: "evaluation.task.select", project: projectId },
       { type: "evaluation.session.requested", project: projectId },
       { type: "evaluation.deep.requested", project: projectId },

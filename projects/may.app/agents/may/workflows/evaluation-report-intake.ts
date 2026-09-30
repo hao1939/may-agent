@@ -9,13 +9,18 @@ import {
 } from "../../../../evaluation.app/agents/evaluator/workflows/lib/public-task-evidence.js";
 import { assessmentContext } from "../../../../evaluation.app/agents/evaluator/workflows/lib/task-assessment-context.js";
 import { planReportIntake } from "../../../evaluation-report-intake.js";
+import { createHash } from "node:crypto";
+import {
+  readMetricEvidence,
+  type MetricReader,
+} from "../../../../evaluation.app/agents/evaluator/workflows/lib/metric-evidence.js";
 
 export const name = "evaluation-report-intake";
 export const description =
-  'Run workflow({action:"run",name:"evaluation-report-intake",input:message.context.publication}); preserve the complete publication object, with appId/taskId at the top level, not { publication: ... }. Integrity-check that report and reread its canonical current subject.';
+  'Run workflow({action:"run",name:"evaluation-report-intake",input:message.context.publication}); preserve the complete publication object, with appId and taskId or metricId at the top level, not { publication: ... }. Integrity-check that report and reread its canonical current subject.';
 
 const missingPublicationIdentity =
-  'Evaluation report intake requires the complete flat publication object. Run workflow({action:"run",name:"evaluation-report-intake",input:message.context.publication}); appId and taskId must be top-level input fields, all publication fields must be preserved, and input.publication is not accepted.';
+  'Evaluation report intake requires the complete flat publication object. Run workflow({action:"run",name:"evaluation-report-intake",input:message.context.publication}); appId and taskId or metricId must be top-level input fields, all publication fields must be preserved, and input.publication is not accepted.';
 
 type Input = PublishedReportRequest;
 type SubjectReader = (subject: {
@@ -95,7 +100,7 @@ function finish(
     facts: [
       `evaluation-intake:${disposition}`,
       `evaluation-report:${ctx.input.facts}`,
-      `evaluation-subject:${ctx.input.appId}/${ctx.input.taskId}`,
+      `evaluation-subject:${ctx.input.appId}/${ctx.input.metricId ?? ctx.input.taskId}`,
     ],
     actions: [],
   });
@@ -105,9 +110,10 @@ export async function intakeEvaluationReport(
   ctx: WorkflowContext<Input>,
   reportRoot?: string,
   subjectReader: SubjectReader = readSubjectTask,
+  metricReader: MetricReader = readMetricEvidence,
 ): Promise<ExecutionResult> {
   const publication = ctx.input;
-  if (!publication?.appId || !publication.taskId)
+  if (!publication?.appId || (!publication.taskId && !publication.metricId))
     return ctx.blocked(missingPublicationIdentity);
   const read = readPublishedEvaluationReport(publication, reportRoot);
   if (read.status === "publication-pending")
@@ -123,15 +129,75 @@ export async function intakeEvaluationReport(
       handoffKey: null,
     });
   const checkedReport = checkedReportSummary(read.facts);
+  if (publication.metricId) {
+    let current;
+    try {
+      current = await metricReader(publication.metricId, Date.now());
+    } catch (error) {
+      return finish(ctx, "current-evidence-unavailable", String(error), {
+        checkedReport,
+        currentEvidence: null,
+        handoffKey: null,
+      });
+    }
+    if (current.metric.project !== publication.appId)
+      return finish(
+        ctx,
+        "invalid",
+        "The metric's current App attribution differs from the publication.",
+        { checkedReport },
+      );
+    const currentEvidence = {
+      metricId: current.metricId,
+      end: current.end,
+      metric: current.metric,
+      latest: current.latest,
+      freshness: current.freshness,
+      comparison: current.comparison,
+    };
+    const complete =
+      Buffer.byteLength(JSON.stringify(currentEvidence)) <= 3_500;
+    return finish(
+      ctx,
+      "investigate",
+      "The report assesses its pinned metric window. Judge its current relevance and reuse linked work when appropriate; neither an improved metric nor a delivered report proves original input recovery.",
+      {
+        checkedReport,
+        currentEvidence: complete
+          ? { ...currentEvidence, complete: true }
+          : {
+              metricId: current.metricId,
+              end: current.end,
+              complete: false,
+              omission:
+                "Current metric evidence exceeds the intake result bound; reread this metric at the returned cut before any no-action or repair decision.",
+            },
+        handoffKey: createHash("sha256")
+          .update(
+            `metric\0${publication.appId}\0${publication.metricId}\0${publication.evidenceHash}`,
+          )
+          .digest("hex"),
+        followUpKey: `metric:${publication.appId}/${publication.metricId}`,
+        nextOwner: "app:may",
+        nextAction:
+          "Record a supported disposition. If unresolved, retain the accountable owner, next action or wait, next review boundary and linked investigation in ordinary Task state. A metric can contain multiple causes; reuse work only when its scope fits.",
+      },
+    );
+  }
 
   // This is Evaluation's allowlisted public control-plane reader. It verifies
   // App/Task identities and computes the same canonical evidence hash used by
   // task-outcome publication; it is not private or invented cross-App access.
   const subject = await subjectReader({
     appId: publication.appId,
-    taskId: publication.taskId,
+    taskId: publication.taskId!,
     ...(Number.isSafeInteger(object(object(read.facts.evidence).population).end)
-      ? { populationEnd: Number(object(object(read.facts.evidence).population).end) } : {}),
+      ? {
+          populationEnd: Number(
+            object(object(read.facts.evidence).population).end,
+          ),
+        }
+      : {}),
   });
   if (
     subject.disposition !== "eligible" ||
@@ -255,7 +321,7 @@ export async function intakeEvaluationReport(
   const recovered = false;
   const plan = planReportIntake({
     appId: publication.appId,
-    taskId: publication.taskId,
+    taskId: publication.taskId!,
     evidenceHash: publication.evidenceHash,
     jsonHash: publication.jsonHash,
     markdownHash: publication.markdownHash,

@@ -5,6 +5,14 @@ controller. Evaluation findings and observed execution failures share owner
 judgment and the later improvement stages; they keep different evidence readers.
 Normal execution recovery remains in the original work.
 
+The [metric-review source candidate](../../evaluation.app/design/metric-pattern-review.md)
+uses the same judgment and improvement boundary for `{appId, metricId}` reports.
+May's intake verifies immutable publication and rereads the current metric. May
+then records an owner, next action or justified wait and review boundary for unresolved
+concerns, reusing linked work when its scope fits. Neither a delivered alert nor
+an improved aggregate proves the original input recovered. The general observation
+loop leaves Host retries independent; source verification is not live adoption.
+
 The [systemic pattern-review proposal](../../evaluation.app/design/systemic-pattern-review-20260927.md)
 refines recovered-finding disposition: May may settle an individual incident and
 still investigate a repeated cause, material cost or coverage gap. A systemic

@@ -71,6 +71,13 @@ The [connected trial](../../../evaluation.app/experiments/systemic-pattern-revie
 records local deployment and the first recurrence finding. Default workflow-run
 measurements alone still do not cover every native agent or Conversation attempt.
 
+The separate [metric-review source candidate](../../../evaluation.app/design/metric-pattern-review.md)
+extends the same review loop to metric subjects without requiring a Task. Its
+optional Host evidence read calculates fixed-window comparisons and preserves
+old/missing observations; App declarations own attention thresholds, Evaluation
+owns interpretation, and May owns follow-through. It does not add a retry-count
+limit. This is a paired source change, not a claim of installed review coverage.
+
 Session completion is a separate observation from accepted Task settlement.
 Dashboard session percentages describe model sessions only; use Task-attempt
 reports for failed settlement and recurring Task cost. Neither percentage proves

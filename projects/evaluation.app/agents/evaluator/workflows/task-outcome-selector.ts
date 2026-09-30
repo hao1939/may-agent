@@ -18,6 +18,10 @@ import {
 import { assessmentContext } from "./lib/task-assessment-context.js";
 import { reviewerProfile, type Reviewer } from "./lib/reviewer-profile.js";
 import { memberEmissionKey, taskEmissionKey } from "./lib/task-emission.js";
+import {
+  selectMetricCandidate,
+  type MetricSelector,
+} from "./lib/metric-selection.js";
 
 export const name = "task-outcome-selector";
 export const description =
@@ -60,6 +64,8 @@ type SelectorState = {
   unresolvedExhaustedByApp: Record<string, string>;
   populationEndByApp: Record<string, string>;
   populationTurn: boolean;
+  metricTurn?: boolean;
+  metricCursor?: string;
 };
 type Selection = {
   candidate: Candidate | null;
@@ -302,6 +308,8 @@ function cleanState(value: unknown): SelectorState {
     appIndex: Math.max(0, Math.trunc(Number(item.appIndex) || 0)),
     ...history,
     populationTurn: item.populationTurn !== false,
+    metricTurn: item.metricTurn !== false,
+    metricCursor: text(item.metricCursor).slice(0, 512),
   };
 }
 export function selectorStateFact(state: SelectorState): string {
@@ -657,10 +665,12 @@ export function retainedRequestedReviewTaskIds(
   return (ctx.reconciliation?.taskSnapshot?.live ?? [])
     .filter((task) =>
       reviewer === "evaluator"
-        ? task.taskId.startsWith("runtime/task-outcome/") &&
+        ? (task.taskId.startsWith("runtime/task-outcome/") ||
+            task.taskId.startsWith("runtime/metric-review/evaluator/")) &&
           !task.taskId.includes("/reviewer-") &&
           task.taskId !== "runtime/task-outcome-selector"
-        : task.taskId.includes(`/reviewer-${reviewer}/`),
+        : task.taskId.includes(`/reviewer-${reviewer}/`) ||
+          task.taskId.startsWith(`runtime/metric-review/${reviewer}/`),
     )
     .map((task) => task.taskId)
     .sort();
@@ -671,6 +681,7 @@ export async function runTaskOutcomeSelector(
   command?: PublicCommand,
   config = automaticReviewConfig(),
   reportRoot = configuredTaskReportRoot(),
+  metricSelector: MetricSelector = selectMetricCandidate,
 ): Promise<ExecutionResult> {
   if (!config.enabled) {
     const summary = "Automatic task-outcome selection is disabled.";
@@ -711,6 +722,37 @@ export async function runTaskOutcomeSelector(
       actions: [],
     });
   }
+  const metricFacts: string[] = [];
+  if (priorState.metricTurn !== false) {
+    const metric = await metricSelector(
+      ctx,
+      priorState.metricCursor ?? "",
+      reviewer,
+    );
+    priorState.metricCursor = metric.cursor;
+    priorState.metricTurn = false;
+    metricFacts.push(...metric.facts);
+    if (metric.candidate) {
+      await ctx.events.emit({
+        type: "evaluation.metric.review.requested",
+        localKey: taskEmissionKey(
+          ctx,
+          memberEmissionKey("metric-selected", metric.candidate),
+        ),
+        data: metric.candidate,
+        target: { appId: "evaluation", project: "evaluation" },
+      });
+      const summary = `Selected metric ${metric.candidate.metricId} for review; retries remain independent.`;
+      return ctx.done(summary, {
+        state: "converged",
+        summary,
+        response: summary,
+        facts: [selectorStateFact(priorState), ...metricFacts],
+        actions: [],
+      });
+    }
+  }
+  priorState.metricTurn = true;
   const selection = await selectFairCandidate(
     command,
     config,
@@ -718,11 +760,20 @@ export async function runTaskOutcomeSelector(
     priorState,
   );
   const cursorFact = selectorStateFact(selection.state);
+  selection.navigationFacts.push(...metricFacts);
+  const coverageUnavailable = metricFacts.some((fact) =>
+    fact.startsWith("selector:metric-read-deferred:"),
+  );
+  const coverageSummary = coverageUnavailable
+    ? " Metric evidence could not be read; metric coverage remains unknown and needs owner follow-up."
+    : "";
   if (!selection.candidate) {
     const summary =
-      "No eligible recent external Task candidate was found within selector bounds; ordinary Task navigation advanced.";
+      "No eligible recent external Task candidate was found within selector bounds; ordinary Task navigation advanced." +
+      coverageSummary;
     return ctx.done(summary, {
-      state: "converged",
+      state: coverageUnavailable ? "incomplete" : "converged",
+      ...(coverageUnavailable ? { report: true } : {}),
       summary,
       response: summary,
       facts: [
@@ -750,9 +801,10 @@ export async function runTaskOutcomeSelector(
     },
     target: { appId: "evaluation", project: "evaluation" },
   });
-  const summary = `Selected ${selectedIdentity} for bounded outcome review; the emitted request retains the exact Task identity.`;
+  const summary = `Selected ${selectedIdentity} for bounded outcome review; the emitted request retains the exact Task identity.${coverageSummary}`;
   return ctx.done(summary, {
-    state: "converged",
+    state: coverageUnavailable ? "incomplete" : "converged",
+    ...(coverageUnavailable ? { report: true } : {}),
     summary,
     response: summary,
     facts: [
