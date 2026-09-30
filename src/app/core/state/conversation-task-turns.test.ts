@@ -312,7 +312,7 @@ test("fresh human input creates a linked successor without rebinding replay or s
         ...decision,
         response: "The linked successor handled this turn.",
         requestUpdates: [
-          { id: "successor", expectedRevision: 0, scope: "Continue the discussion", disposition: "open" },
+          { id: "successor", expectedRevision: 0, scope: "Continue the discussion", disposition: "open", reason: "Waiting for the next discussion point" },
         ],
       };
     },
@@ -450,7 +450,7 @@ test("follow-up admission rolls back with the explanation, Request and Task resu
   const claim = f.claim(first.taskId);
   const handoff: ConversationTurnResult = {
     ...decision,
-    requestUpdates: [{ id: "comparison", scope: "Compare A and B", expectedRevision: 0, disposition: "open" }],
+    requestUpdates: [{ id: "comparison", scope: "Compare A and B", expectedRevision: 0, disposition: "open", reason: "Delegating collection of the comparison facts" }],
     followUp: {
       requestId: "comparison",
       appId: app.id,
@@ -517,7 +517,7 @@ test.each([false, true])("a system turn can stay quiet without hiding facts (hum
       expect(request.humanRequested).toBe(humanParent ? true : undefined);
       const quiet: ConversationTurnResult = {
         summary: "No material change", topic: { kind: "none" },
-        requestUpdates: [{ id: "retained", expectedRevision: 0, scope: "Retain the pending ask", disposition: "open" }],
+        requestUpdates: [{ id: "retained", expectedRevision: 0, scope: "Retain the pending ask", disposition: "open", reason: "The requested evidence has not arrived" }],
       };
       expect(Check(execution.outputSchema, quiet)).toBe(true);
       return quiet;
@@ -908,6 +908,7 @@ test("the common controller returns a delegated answer to the real Conversation 
                       expectedRevision: 0,
                       scope: "Obtain the sample measurement",
                       disposition: "open",
+                      reason: "Delegating the sample measurement",
                     },
                   ],
                   followUp: {
@@ -1076,7 +1077,7 @@ test.each(["answer", "waiting-report", "execution-error"] as const)(
       f.claim(first.taskId),
       {
         ...decision,
-        requestUpdates: [{ id: "comparison", scope: "Compare A and B", expectedRevision: 0, disposition: "open" }],
+        requestUpdates: [{ id: "comparison", scope: "Compare A and B", expectedRevision: 0, disposition: "open", reason: "Delegating collection of the comparison facts" }],
         followUp: {
           appId: "worker",
           requestId: "comparison",

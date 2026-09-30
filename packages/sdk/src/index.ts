@@ -1,7 +1,7 @@
 /** Stable authoring contract for App declarations and bounded App-owned work. */
 
 export { Type, defineApp, matchesEventSelector, conversationRequestUpdatesSchema } from "./app.js";
-export { MAX_OBSERVER_SNAPSHOT_BYTES } from "./app.js";
+export { MAX_OBSERVER_SNAPSHOT_BYTES, MAX_CONVERSATION_REQUESTS_PER_TURN } from "./app.js";
 export { defineObserver, observationCondition } from "./observer.js";
 export type { ResourceObserver, ObservationContract, ObservationInterest, ObserverHealth } from "./observer.js";
 export {

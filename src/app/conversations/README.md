@@ -76,12 +76,18 @@ update. Single-input turns can omit it; mixed turns must identify inputs for a
 Request not already associated with that turn. Only inputs in the live claim
 may be linked. The links persist in `conversation_request_inputs`, alongside the
 Request save, and remain after input completion. They do not create work.
+Use the same tool to associate new input before continuing an existing Request.
+Omitted scope retains its exact requirements; creation still needs a scope.
+The returned revision fences final updates. An unaccepted final proposal is not
+a substitute for saving the intention and its associations before work.
 
 Current input links supply `assignedRequests` with full scope and revision,
 independently of the recent Topic/context window. Settlement requires an
 explicit `requestUpdates` entry for each assigned Request, including those saved
 during execution. An open outcome explains remaining work or a wait; a final
-outcome uses the current accepted scope. Omission rejects the whole decision and
+outcome uses the current accepted scope. Each final update requires its own
+nonblank reason in the result schema, allowing the agent to correct a missing
+explanation before finishing. Omission rejects the whole decision and
 keeps the inputs pending through ordinary Task recovery. Related inputs may be
 fulfilled together, and independent Requests may share a turn. No per-message
 execution or automatic conversion of messages into Requests is introduced.

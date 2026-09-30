@@ -181,10 +181,13 @@ export type AppConversationRequestUpdate = {
   /** Required for a new ask. Omit to retain an existing Request's exact scope. */
   scope?: string;
   disposition: "open" | "fulfilled" | "withdrawn" | "unfulfilled";
+  /** Required in a final turn decision; an open disposition explains continuing work or the remaining gap and wait. */
   reason?: string;
   /** Add relevant Task references; omitted/empty lists retain earlier references. At most 32 distinct references. */
   taskRefs?: Array<{ appId: string; taskId: string }>;
 };
+
+export const MAX_CONVERSATION_REQUESTS_PER_TURN = 8;
 
 export const conversationRequestUpdatesSchema = Type.Array(
   Type.Object(
@@ -219,7 +222,15 @@ export const conversationRequestUpdatesSchema = Type.Array(
         Type.Literal("withdrawn"),
         Type.Literal("unfulfilled"),
       ]),
-      reason: Type.Optional(Type.String({ minLength: 1, maxLength: 2000 })),
+      reason: Type.Optional(
+        Type.String({
+          minLength: 1,
+          maxLength: 2000,
+          pattern: "\\S",
+          description:
+            "Required for each final requestUpdates entry. Explain fulfillment, withdrawal, an unfulfilled outcome, or the continuing work or remaining gap and wait that keeps this Request open. A reply about another Request is not its explanation.",
+        }),
+      ),
       taskRefs: Type.Optional(
         Type.Array(
           Type.Object(
@@ -237,7 +248,7 @@ export const conversationRequestUpdatesSchema = Type.Array(
     { additionalProperties: false },
   ),
   {
-    maxItems: 8,
+    maxItems: MAX_CONVERSATION_REQUESTS_PER_TURN,
     description:
       "Accept, revise, link or close asks. A simple ask may be accepted and fulfilled in one answer. After saving a correction with conversation_request, retain its revision and omit unchanged scope. Read omitted/truncated Requests before changing them. Close only with an explained fulfillment, withdrawal or unfulfilled disposition; admitting or completing a Task alone is not Request closure.",
   },
@@ -334,7 +345,13 @@ const nonEmptyStringSchema = Type.String({ minLength: 1 });
 export const conversationTurnResultSchema = Type.Object(
   {
     summary: nonEmptyStringSchema,
-    requestUpdates: Type.Optional(conversationRequestUpdatesSchema),
+    requestUpdates: Type.Optional({
+      ...conversationRequestUpdatesSchema,
+      items: {
+        ...conversationRequestUpdatesSchema.items,
+        required: [...conversationRequestUpdatesSchema.items.required!, "reason"],
+      },
+    }),
     response: Type.Optional(
       Type.String({
         minLength: 1,

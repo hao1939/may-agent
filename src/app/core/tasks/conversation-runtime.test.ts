@@ -637,7 +637,7 @@ const delegated: ConversationTurnResult = {
   summary: "Delegated measurement",
   response: "I will get the measurement and report it here.",
   topic: { kind: "new", title: "Measurement" },
-  requestUpdates: [{ id: "measurement", expectedRevision: 0, scope: "Get the measurement", disposition: "open" }],
+  requestUpdates: [{ id: "measurement", expectedRevision: 0, scope: "Get the measurement", disposition: "open", reason: "Delegating the measurement and waiting for its result" }],
   followUp: {
     appId: background.id,
     input: { kind: "measure", data: {} },
@@ -1800,7 +1800,7 @@ test("public Stop commits before abort and preserves queued input across Task ru
           summary: "Scope corrected",
           response: "Let's discuss the costs first.",
           topic: { kind: "none" },
-          requestUpdates: [{ id: "compare", expectedRevision: 1, scope: correction, disposition: "open" }],
+          requestUpdates: [{ id: "compare", expectedRevision: 1, scope: correction, disposition: "open", reason: "Discuss the corrected requirements before proceeding" }],
         },
       };
     },

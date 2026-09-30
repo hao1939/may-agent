@@ -5,6 +5,7 @@ import { isDeepStrictEqual } from "node:util";
 import { Check } from "typebox/value";
 import type { SqliteDb } from "../../../lib/db.js";
 import {
+  MAX_CONVERSATION_REQUESTS_PER_TURN,
   conversationTurnResultSchema,
   type AppDefinition,
   type AppTaskInput,
@@ -398,8 +399,6 @@ function assertConversationRequestsAddressed(
       throw new ConversationRequestConflict(
         `Request ${request.id} was not addressed. Review its latest requirements and return requestUpdates with fulfillment, continuing work, or an explained wait.`,
       );
-    if (update.disposition === "open" && !update.reason?.trim() && !decision.response?.trim())
-      throw new ConversationRequestConflict(`Open Request ${request.id} requires an explanation of what remains`);
   }
 }
 
@@ -427,8 +426,10 @@ export function updateConversationTaskRequest(
     const assigned = listConversationInputRequests(
       config.resourceStore.db, item.appId, item.conversationId!, items.map(({ id }) => id),
     );
-    if (assigned.length > 8)
-      throw new ConversationRequestConflict("A turn can address at most eight accepted Requests");
+    if (assigned.length > MAX_CONVERSATION_REQUESTS_PER_TURN)
+      throw new ConversationRequestConflict(
+        `A turn can address at most ${MAX_CONVERSATION_REQUESTS_PER_TURN} accepted Requests`,
+      );
     return readConversationRequest(config.resourceStore.db, item.appId, item.conversationId!, change.id)!;
   });
 }
