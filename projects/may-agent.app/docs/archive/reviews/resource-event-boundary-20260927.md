@@ -4,6 +4,13 @@ Host baseline: `1ff18acc`. Workspace baseline: `28580398c6`. This review changes
 common design and guidance; it does not change Host code or deploy anything.
 The current contract is [Events](../../2a-design/events.md#resource-responsibility-and-reconciliation).
 
+**September 30 recheck:** On Host `de59c8dae9`, the failed-translation case in
+Finding 1 is repaired: the healthy route proceeds, unresolved translation stays
+in the admission plan, and a later due scan retries only the failed work. The
+original probe's failure assertions no longer hold. Finding 2 still reproduces.
+See the [observation proposal](../../proposals/task-observation-contract-20260930.md#evidence-gathered-for-this-proposal)
+for current results and limits; the evidence below describes the original baseline.
+
 ## Decision and scope
 
 Routing identifies responsibility and retains relevant input/observations.

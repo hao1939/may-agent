@@ -6,6 +6,10 @@ The [documentation review](../archive/reviews/design-doc-hygiene-20260927.md)
 records checks and corrections. The [resource/Event review](../archive/reviews/resource-event-boundary-20260927.md)
 adds a reproduced admission-recovery failure and verified freshness-policy
 coupling against the same Host and workspace `28580398c6`.
+The September 30 [observation review](task-observation-contract-20260930.md#evidence-gathered-for-this-proposal)
+rechecked those two findings on `de59c8dae9`: translation recovery is repaired;
+the freshness-policy coupling remains. Other rows below retain their original
+review baseline.
 Current contracts live in
 [System Model](../2a-design/system-model.md), [Architecture](../2a-design/architecture.md)
 and their linked owners.
@@ -14,7 +18,6 @@ and their linked owners.
 
 | Gap | Evidence and contract owner | Smallest next proof |
 | --- | --- | --- |
-| A failing Event translator prevents all matching Apps from reaching durable admission; no plan means no automatic retry | `AppInboxHost.subscriptionInputs`, `app-inbox-runtime.ts` route construction/recovery; [resource/Event boundary](../2a-design/events.md#resource-responsibility-and-reconciliation) | Retain exact failed routing responsibility through existing admission state, isolate other consumers, then prove recovery without re-publication and without replaying already accepted work |
 | Condition freshness depends on event spelling and one named domain event | `app-task-condition-tracker.ts`, `isFreshLevelObservation`; [observation validity](../2a-design/events.md#changes-that-already-happened) | Move consumer freshness needs to explicit existing expectations; compare equivalent observations under different names, preserving historical result proofs and current wait protections |
 | HTTP embeds session-evaluation policy and directly writes human annotation | `src/app/http/server.ts`; [HTTP boundary](../2a-design/http-boundary.md), [Session trail](../2a-design/session-eval-trail.md) | Preserve the current API while routing the requested judgment/write to its owner; prove exact session/line/input correlation |
 | Requested session line/instructions are lost at the Evaluation mapping | `evaluation.app/app.ts`, `evaluate-session` mapping and `evaluator-aftermath`; [Session trail](../2a-design/session-eval-trail.md) | Either implement the accepted annotation capability end to end or explicitly revise/remove that advertised capability; do not claim a whole-session assessment answered the line request |
@@ -36,6 +39,11 @@ here. Apply the value/cost review before extending the contract.
 | Skill-level regression comparison | Catalog pinning is intentional. The [skill contract](../2a-design/skills.md#current-implementation-and-remaining-work) records identity, but hash-to-outcome comparison needs distinct evaluation evidence. |
 
 ## Resolved source drift
+
+App translation now persists unresolved routing before invocation. A failing
+translator leaves other App routes usable and is retried through the same
+admission plan. The September 30 isolated probe recovered without producer
+re-publication and retained one original event and one input per App.
 
 The following are implemented, not open migrations: one Task lifecycle,
 direct input attachment, accepted Request storage, Turn Stop/Esc/button bindings,
