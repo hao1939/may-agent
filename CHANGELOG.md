@@ -1,5 +1,31 @@
 # Changelog
 
+## [5.3.0](https://github.com/hao1939/may-agent/compare/v5.2.0...v5.3.0) (2026-09-30)
+
+
+### Features
+
+* **metrics:** expose trend evidence and retained breach decisions ([#274](https://github.com/hao1939/may-agent/issues/274)) ([e8b56e1](https://github.com/hao1939/may-agent/commit/e8b56e17e7f7dc3c5575b8df3861a1dfc69948fa))
+* **observers:** connect Task waits to App resource detectors ([#270](https://github.com/hao1939/may-agent/issues/270)) ([dc6395d](https://github.com/hao1939/may-agent/commit/dc6395dbccd0c1d7d2e95356859d9a9aec952734))
+
+
+### Bug Fixes
+
+* **conversation:** allow Task references without prior attachment ([#267](https://github.com/hao1939/may-agent/issues/267)) ([91328f7](https://github.com/hao1939/may-agent/commit/91328f7a62b8ad01bfc069a1d943b679e7a85a75))
+* **conversation:** present the whole input batch before reply routing ([#264](https://github.com/hao1939/may-agent/issues/264)) ([edc43e1](https://github.com/hao1939/may-agent/commit/edc43e16b481e88ef1cca67dffb68dd1e4dd76f7))
+* **conversation:** share reply validation between execution and settlement ([#258](https://github.com/hao1939/may-agent/issues/258)) ([e3dd4a5](https://github.com/hao1939/may-agent/commit/e3dd4a59de20b89b57473b6f128f2828f9655f8c))
+* **conversations:** preserve accepted Requests across input batches ([#272](https://github.com/hao1939/may-agent/issues/272)) ([0c9c29b](https://github.com/hao1939/may-agent/commit/0c9c29b066935207819b4d5e042793cded1f4c1b))
+* **events:** preserve event metadata across storage and retries ([#263](https://github.com/hao1939/may-agent/issues/263)) ([6c85691](https://github.com/hao1939/may-agent/commit/6c856911211031d291d94e552c4069bfa03a30eb))
+* **health:** label session completion separately from task success ([#260](https://github.com/hao1939/may-agent/issues/260)) ([ca2253b](https://github.com/hao1939/may-agent/commit/ca2253b7521bb0699b48f0342292443b53a74d94))
+* **inputs:** share approval handling across Telegram and Console ([#275](https://github.com/hao1939/may-agent/issues/275)) ([3bda262](https://github.com/hao1939/may-agent/commit/3bda26289b91fe8407933998d5c938acac5e3c19))
+* **tasks:** centralize attempt setup and cleanup ([#265](https://github.com/hao1939/may-agent/issues/265)) ([96ce2f8](https://github.com/hao1939/may-agent/commit/96ce2f8d05dea874caf17584a9ddb3b193de0080))
+* **tasks:** expose the scheduler condition review deadline ([#259](https://github.com/hao1939/may-agent/issues/259)) ([74f12b9](https://github.com/hao1939/may-agent/commit/74f12b9c057e4f6b00bc7e46bb62888b8d222f95))
+* **tasks:** keep assigned input visible in context previews ([#268](https://github.com/hao1939/may-agent/issues/268)) ([c9fec72](https://github.com/hao1939/may-agent/commit/c9fec72407f07ab795e307873d2200fbd9373eca))
+* **tasks:** reopen with new input and retain late observations ([#271](https://github.com/hao1939/may-agent/issues/271)) ([a5df00b](https://github.com/hao1939/may-agent/commit/a5df00ba628f16848d15118cc073c1db49f51bc4))
+* **tasks:** settle only the requests a worker answers ([#269](https://github.com/hao1939/may-agent/issues/269)) ([de59c8d](https://github.com/hao1939/may-agent/commit/de59c8dae911c8a4e39c925d619164128610301a))
+* **tasks:** share execution context and Task reads ([#266](https://github.com/hao1939/may-agent/issues/266)) ([65741c7](https://github.com/hao1939/may-agent/commit/65741c756a05f3896c988e94005e2f6cd2ad59dd))
+* **web:** read loaded Apps from the existing runtime catalog ([#273](https://github.com/hao1939/may-agent/issues/273)) ([c5529b3](https://github.com/hao1939/may-agent/commit/c5529b38fcca9471534be0f5b62f310130580c91))
+
 ## [5.2.0](https://github.com/hao1939/may-agent/compare/v5.1.0...v5.2.0) (2026-09-27)
 
 
