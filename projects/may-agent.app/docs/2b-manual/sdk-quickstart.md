@@ -13,6 +13,10 @@ The responsibility split is small:
 | App and worker | Define the outcome, find relevant information, perform the work, and judge what remains. |
 | Control client | Submit and inspect work from outside the App. App code uses the SDK's scoped capabilities during execution. |
 
+The [App capability map](../2a-design/sdk.md#the-host-as-an-apps-environment)
+explains what the Host provides for execution, cooperation, context, recovery
+and improvement, and which decisions remain with the App.
+
 ## 1. Check the installed sample
 
 This walkthrough uses this source workspace, Bun, and an already running Host

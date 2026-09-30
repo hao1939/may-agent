@@ -16,6 +16,58 @@ See [App Contract](agent-app.md) for declaration and mapping,
 [Task Resource Engine](task-resource-engine.md) for result admission, and the
 [SDK Quickstart](../2b-manual/sdk-quickstart.md) for checked source.
 
+## The Host as an App's environment
+
+An App uses the Host as the environment for its work. It declares responsibility
+and supplies workers; the Host keeps that work identifiable, executable,
+observable and recoverable across attempts. The App keeps the decisions about
+meaning and quality. The [common boundary](system-boundary.md) owns the detailed
+guarantees; this map explains how an App uses them.
+
+| App need | Available Host surface | What the App decides |
+| --- | --- | --- |
+| Receive work | Validated App input, pure Task attachment, declared fact routes and schedules. | Which outcome the input concerns, and whether it creates or updates work. |
+| Understand the current situation | Starting Task context, pending updates, accepted results, exact links and scoped Task reads. | Which evidence to read, what it means, and what remains necessary. |
+| Execute | Configured agents, Task-bound workflows and registered executors share the Task attempt/result boundary. The Host supplies execution identity, capacity and cancellation controls. | Strategy, domain effects and whether another bounded attempt is useful. |
+| Cooperate | Bounded calls return contributions directly; typed Task dependencies retain independent work and its caller return. | Who can help, what answer is needed, and whether the returned contribution is sufficient. |
+| Wait and react | Retained Conditions and dependencies, addressed updates, supported live feedback and later reconciliation, with recovery review deadlines. | Whether new facts satisfy a wait, change the plan or leave useful independent work. |
+| Use capabilities | Configured models and tools, App-local tool conventions, and scoped SDK reads, events and metrics. Availability and authority depend on the installation. | Which tools fit the assignment and whether another domain capability is needed. |
+| Keep results and evidence | Accepted structured results, Task history, context references and execution evidence. | Claims, result scope, limitations, and preservation of any external/file bytes needed to support them. |
+| Diagnose and improve | Public Task/attempt evidence, observations, metrics and normal inputs to other installed Apps. | Expected behavior, useful measurements, diagnosis, candidate changes and acceptance. |
+
+The practical benefit is continuity: an App can yield while waiting, accept new
+steering, or recover from interrupted execution without implementing its own
+work ledger, scheduler or return registry. A wait, a partial result and useful
+remaining work may coexist on one Task. The worker rereads current facts and
+decides its next action through the same result contract.
+
+Use the simplest execution that fits the work. Start with an agent for a bounded
+judgment task; preserve a repeatable procedure in a workflow when that adds value.
+Put reusable domain operations in tools. All use the Task's existing identity,
+reads and result admission rather than a new lifecycle. Interfaces remain natural
+to each worker: agent tools, workflow capabilities and executor callbacks are
+not identical APIs or unrestricted access to Host internals.
+
+Recovery preserves the opportunity to continue; it does not guarantee a correct
+diagnosis or domain outcome. The App investigates unknown failures with retained
+evidence. Cancellation cannot undo an external side effect, and an arbitrary
+shell command does not automatically acquire result tracking or a callback.
+Use a capability's declared feedback contract. Similarly, saving a file path
+does not preserve its bytes; retain evidence in immutable sources or Task-scoped
+copies and check it through the intended consumer.
+
+Evaluation and Gym are cooperating Apps, not implicit Host services. An App can
+ask an installed evaluator for an independent assessment, investigate the
+findings, and use Gym for a bounded comparison. The assigning owner judges value,
+scope and any required human approval. Apply an authorized change through normal
+definition activation, then inspect a fresh execution. Host persistence makes
+that loop possible; a saved report alone does not trigger or prove learning.
+
+Discover available capabilities from the installed App contracts, configured
+agent tools, and the SDK types linked below. A source declaration is not proof
+that a capability is installed. Retain exact references in Tasks so the next
+worker can continue, rather than relying on an oversized initial prompt.
+
 The accepted [one-lifecycle contract](task-resource-engine.md#one-lifecycle-baseline)
 uses Task attempts for Conversation execution. Explicit accepted outcomes and
 owner closure replace mode-dependent lifetime rules and coupling between result
