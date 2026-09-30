@@ -320,7 +320,7 @@ export function admissionFailureInput(
   return {
     kind: "message",
     data: {
-      message: `Review input ${requestId}, which could not reach its Task: ${summary}. Read the saved input and current Task, then close the loop with the requester. Transient recovery retains its backoff; permanent rejection needs corrected fresh input. Reopen the same Task only when the user explicitly requested continuation, using the version-fenced operator control. If authority or information is missing, explain the blocker and ask the human for the specific decision needed. A failure notification itself grants no reopening or deployment authority.`,
+      message: `Review input ${requestId}, which could not reach its Task: ${summary}. Read the saved input and current Task, then close the loop with the requester. Transient recovery retains its backoff; permanent rejection needs a reviewed correction. Distinguish observations from new requirements using the request and current scope. Reopen the same Task only when the user explicitly requested continuation, carrying the new normal App input in the version-fenced task.reopen control so reopening and requirements are applied together. An authorized continuation does not need a reject-and-resubmit cycle; previously rejected input remains history. If authority or information is missing, explain the blocker and ask the human for the specific decision needed. A failure notification itself grants no reopening or deployment authority.`,
       context: {
         admissionFailure: structuredClone(data),
         event: structuredClone(event),

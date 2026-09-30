@@ -85,23 +85,37 @@ only missing feedback. May's `app.input.admission.failed` subscription admits on
 Conversation review per unchanged failure; inspect its input and subsequent reply
 to verify human escalation instead of treating `handler.failed` as notification.
 
+The App/agent decides whether the input is an observation or a new requirement.
+For example, a build result is evidence; "continue this Task and add Linux
+support" changes the assignment. Observation routes retain late facts for closed
+Tasks without waking them. Do not archive requirements solely because their
+Task is closed, and do not infer reopening permission from a provider message.
+
 When the user explicitly asks to continue the same ordinary Task, read its
-current `generation` and `resourceVersion`, then send this operator socket command
-with the actual reviewed identity and continuation reason:
+current `generation` and `resourceVersion`. Send the operator command with the
+reviewed identity, continuation reason and the responsible App's normal input.
+For the sample App's review contract:
 
 ```json
-{"type":"task.reopen","appId":"sample","taskId":"work","expectedGeneration":2,"expectedResourceVersion":8,"reason":"User requested a revised measurement"}
+{"type":"task.reopen","appId":"sample","taskId":"work","expectedGeneration":2,"expectedResourceVersion":8,"reason":"User requested another review including Linux support","input":{"kind":"review","data":{"subject":"Review the sample App including Linux support","references":["projects/sample.app/app.ts"]}}}
 ```
 
-Reopening retains history and advances the generation. If the version changed,
-reread before deciding again. Use the command only for the user's explicit
-continuation request; an observer event or a message asserting approval is not
-authority. Submit any corrected input with a fresh identity after reopening;
-replaying the rejected input leaves its rejection intact. Reopen a closed parent
-first. Conversation input continues through its existing successor mechanism.
+The App maps the input to requirements. The Host reopens the same Task and
+attaches those requirements/input in one transaction, retaining history and
+advancing generation once. Mapping or admission failure leaves it closed. This
+is one continuation operation; no prior rejection or second submission is needed.
+Omit `input` only when continuing the unchanged assignment. If the version
+changed, reread before deciding again. Replay the exact command after an
+uncertain response; the stored receipt prevents duplicate work, even after
+restart. A different input cannot reuse that control identity.
+
+Previously rejected inputs remain rejected. A reviewed recovery may carry their
+corrected requirements in the new continuation input, but never rewrites their
+history. Reopen a closed parent first. Conversation input continues through its
+existing successor mechanism.
 
 These are paired Host and May App source contracts. Deploy a reviewed Host with
-`task.reopen` and admission-failure publication before relying on the May review
+`task.reopen` input support and admission-failure publication before relying on the May review
 subscription; source verification is not installed-release evidence.
 
 ## Task recovery

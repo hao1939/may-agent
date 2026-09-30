@@ -41,11 +41,12 @@ requires the exact accepted attempt and current generation/resource-version fenc
 no current attempt and no pending trigger. Rejection preserves every Task fact and link; exact replay returns the existing receipt without
 another write. These mechanical checks do not decide responsibility lifetime, and independent structural children can continue. Intentional withdrawal remains a separate cancellation control that may stop active work under existing authority.
 
-Explicit `task.reopen` requires current generation/resource-version fences and trusted operator verification of the user's continuation request.
-It advances generation, keeps the ID/specification/attempts/accepted answers, and archives the closure in its control receipt. Old attempt results
-and pre-reopen durable events cannot settle or wake the new generation. Old unanswered inputs retain their closure; fresh execution clears old waits.
-Exact replay returns the receipt; another cycle needs current versions. Reopen a closed parent first. Rejected inputs stay rejected: submit fresh input.
-This control is for ordinary Tasks; Conversation retains its successor convention. See [the operator procedure](../2b-manual/app-operations-recovery.md#rejected-input-and-explicit-task-reopening).
+Explicit `task.reopen` requires current versions and trusted operator verification of the user's continuation request.
+The App maps its optional `input`; Host atomically installs requirements, advances generation once, admits input and archives closure, preserving Task identity.
+The App/agent distinguishes observations from requirements. Closed-Task observation routes retain history without waking or retrying;
+requirement inputs are never silently archived. Authorized continuation needs no prior rejection. Old accepted answers and input closures remain history.
+Pre-reopen events cannot wake the new generation or satisfy its Conditions; unrelated Tasks may still observe them.
+See [the operator procedure](../2b-manual/app-operations-recovery.md#rejected-input-and-explicit-task-reopening) for replay, unchanged assignments and Conversation's successor convention.
 
 The [proposal](../proposals/conversation-input-unification.md) owns prerequisite handling, control scopes, code deletion and migration. Source verification does
 not certify App judgment or an installed release.
@@ -62,7 +63,7 @@ Admission and projection failures retain consecutive failure count, first-failur
 new exact evidence permits reconsideration and the due scan repairs lost wakes. Projection failure cannot replace accepted Task outcomes
 or consume unrelated waits, inputs or work.
 
-A closed/missing exact target or invalid revision is a deterministic rejection: `handling.phase=failed` and a readable correction result.
+A requirement input naming a closed/missing exact target, or an invalid revision, is a deterministic rejection: `handling.phase=failed` and a readable correction result.
 Its `status=done` means input processing ended, not that a human Request was fulfilled; it is not retried as Task work. Unknown storage/mapper
 failures keep exponential backoff (250 ms to one hour, subject to scan cadence). Backoff paces recovery; it does not repair deterministic errors.
 Runtime returns blockers through the typed App caller link. Without an accountable route, `app.input.admission.failed` addresses the owning App

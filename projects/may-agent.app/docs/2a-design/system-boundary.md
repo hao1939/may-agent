@@ -139,7 +139,7 @@ current facts and act through the existing owner. It is not another lifecycle.
 | Owner is busy | Preserve pending feedback; keep one executing attempt for the Task. |
 | Execution disappeared | Fence it and recover the same Task under existing policy. |
 | Worker cannot progress within scope | Report the blocker, attempted alternatives and useful remaining work to its assigning owner. |
-| Task was closed or cancelled | Retain late evidence; reopen the same Task only through explicit user-authorized, version-fenced operator control. Notifications do not authorize it. |
+| Task was closed or cancelled | The App/agent distinguishes observations from new requirements. Observation routes retain late evidence. Explicit user-authorized operator control reopens the same Task with its new App input atomically; notifications do not authorize it. |
 | Task is unexpectedly missing | Report to its owning App; do not guess a replacement Task. |
 | Owning App cannot accept feedback | Preserve the delivery problem; use one explicit supervisor route if installed. |
 | Supervisor is unavailable | Expose the unresolved problem for human attention; stop fallback traversal. |
@@ -381,6 +381,12 @@ fact -> observation only
 ```
 
 If no route matches, the fact remains a fact. The Host does not guess an owner.
+The App/agent also decides whether information updates evidence or changes the
+assignment. Source and arrival time do not establish that meaning. An exact Task
+observation route can retain history after closure; a new requirement needs
+explicit authorized continuation, carrying ordinary App input in `task.reopen`.
+The Host owns the atomic state change and replay fences, not this judgment.
+
 
 A schedule has one destination: create an App input or publish a fact. An
 observer reads external state and returns facts. A metric records what

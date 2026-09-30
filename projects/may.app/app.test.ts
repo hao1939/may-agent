@@ -677,6 +677,10 @@ test("admission failures reach May with exact identity and bounded human escalat
   expect(String(input.data.message)).toContain(
     "ask the human for the specific decision",
   );
+  expect(String(input.data.message)).toContain("new normal App input");
+  expect(String(input.data.message)).toContain(
+    "reopening and requirements are applied together",
+  );
   expect(input.data.context).toMatchObject({ admissionFailure: event.data });
   expect(
     admissionFailureInput({ ...event, source: "app-task:may" }),

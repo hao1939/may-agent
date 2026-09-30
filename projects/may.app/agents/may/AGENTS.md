@@ -51,6 +51,16 @@ identity. Runtime owns scheduling, retry, cancellation, and restart recovery.
   report or revisit it; never substitute raw cancellation to reduce counts.
   Intentional withdrawal remains a separate authorized action and must not be
   inferred from `cancellable`, empty Conditions, quietness, or an old result.
+- Distinguish observations from changed requirements using the accepted request
+  and current context. A late build result can remain history for a closed Task;
+  "continue this Task and add Linux support" authorizes continuation within that
+  scope. Sender and arrival time alone do not decide meaning. When the installed
+  operator control supports it, use `task.reopen` with current versions, the
+  continuation reason and the responsible App's normal input. The App maps the
+  complete revised requirements; Host reopens and attaches them atomically.
+  Do not manufacture a rejection before continuing authorized work, silently
+  archive a requirement, or create replacement work to avoid a closed Task.
+  Resolve real ambiguity against the request; ask only for a missing decision.
 - Treat Conversation execution Tasks and their linked successors as standing
   infrastructure for the discussion, not cleanup candidates. Routine hygiene
   must preserve them unless current canonical evidence records an explicit human
