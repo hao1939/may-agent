@@ -654,15 +654,40 @@ describe("control socket protocol", () => {
   it("requires the caller's current version and continuation reason for explicit reopening", async () => {
     const published: unknown[] = [];
     const core = createCore({
-      publishEvent: (input) => { published.push(input); return { eventId: 77, eventType: input.type, delivery: "accepted" }; },
+      publishEvent: (input) => {
+        published.push(input);
+        return { eventId: 77, eventType: input.type, delivery: "accepted" };
+      },
     });
-    const command = { type: "task.reopen", appId: "sample", taskId: "work", expectedGeneration: 2,
-      expectedResourceVersion: 8, reason: "User requested continuation" };
-    await expect(sendSocketCommand(core.endpoint, command)).resolves.toMatchObject({ type: "ok", command: "task.reopen" });
-    expect(published).toEqual([{ type: "app.task.reopen.requested", target: { appId: "sample", taskId: "work" },
-      data: { expectedGeneration: 2, expectedResourceVersion: 8, reason: "User requested continuation" },
-      idempotencyKey: "app-task-reopen:sample:work:2:8" }]);
-    await expect(sendSocketCommand(core.endpoint, { ...command, expectedResourceVersion: undefined })).rejects.toThrow("current generation and resourceVersion");
+    const command = {
+      type: "task.reopen",
+      appId: "sample",
+      taskId: "work",
+      expectedGeneration: 2,
+      expectedResourceVersion: 8,
+      reason: "User requested continuation",
+      input: { kind: "continue", data: { platform: "Linux" } },
+    };
+    await expect(sendSocketCommand(core.endpoint, command)).resolves.toMatchObject({
+      type: "ok",
+      command: "task.reopen",
+    });
+    expect(published).toEqual([
+      {
+        type: "app.task.reopen.requested",
+        target: { appId: "sample", taskId: "work" },
+        data: {
+          expectedGeneration: 2,
+          expectedResourceVersion: 8,
+          reason: "User requested continuation",
+          input: command.input,
+        },
+        idempotencyKey: "app-task-reopen:sample:work:2:8",
+      },
+    ]);
+    await expect(sendSocketCommand(core.endpoint, { ...command, expectedResourceVersion: undefined })).rejects.toThrow(
+      "current generation and resourceVersion",
+    );
     await expect(sendSocketCommand(core.endpoint, { ...command, reason: "" })).rejects.toThrow("continuation request");
     expect(published).toHaveLength(1);
   });

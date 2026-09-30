@@ -1,3 +1,4 @@
+import { taskEventPredatesReopening } from "./app-task-state.js";
 import {
   type AppInputContext,
   type AppTaskAttachment,
@@ -14,6 +15,7 @@ import type {
   TaskReadOptions,
 } from "@may-agent/sdk/app";
 import { resolve } from "node:path";
+import { freezeInputContext } from "../inbox/input-context.js";
 import { assertValidAppInput } from "../apps/definition-validation.js";
 import { getDb } from "../../../lib/db/connection.js";
 import { listTerminalTaskSessionBindings } from "../../../lib/db/sessions.js";
@@ -305,6 +307,12 @@ function applyResolvedAppTaskEvent(input: {
         taskIds: [...wokenTaskIds],
       };
     }
+    if (triggerResult.kind === "closed") {
+      return {
+        delivery: appTaskDelivery(descriptor, targetedTaskId, "closed task observation retained as history"),
+        taskIds: [...wokenTaskIds],
+      };
+    }
     if (triggerResult.kind === "duplicate") {
       return {
         delivery: appTaskDelivery(descriptor, targetedTaskId, "targeted task event already received"),
@@ -316,6 +324,12 @@ function applyResolvedAppTaskEvent(input: {
     return { delivery: conditionDelivery, taskIds: [...wokenTaskIds] };
   }
   if (!intent) return { delivery: conditionDelivery, taskIds: [...wokenTaskIds] };
+  if (taskEventPredatesReopening(config.resourceStore.readTask(intent.id) ?? undefined, event)) {
+    return {
+      delivery: appTaskDelivery(descriptor, intent.id, "pre-reopen event retained as history"),
+      taskIds: [...wokenTaskIds],
+    };
+  }
   if (duplicateIntent) {
     return {
       delivery: appTaskDelivery(descriptor, intent.id, "resolved task event already received"),
@@ -739,12 +753,42 @@ export function retryLoadedFailedAppTask(input: {
 }
 
 export function reopenLoadedAppTask(
-  input: Parameters<typeof reopenAppTask>[1] & { bus: EventBus },
+  input: Omit<Parameters<typeof reopenAppTask>[1], "intent"> & { bus: EventBus },
 ): ReturnType<typeof reopenAppTask> {
   const descriptor = loadedAppTaskRuntimeDescriptor(input.bus, input.appId);
   if (!descriptor) throw new Error(`App ${input.appId} has no loaded task runtime`);
   const config = appTaskConfig(descriptor);
-  const receipt = reopenAppTask(config, input);
+  // A committed control replays without calling a possibly changed App mapper.
+  // Fresh mapping is pure App policy; the transaction rechecks the exact Task version.
+  const prior = config.resourceStore.readControlReceipt(input.controlKey);
+  const context =
+    input.input !== undefined
+      ? freezeInputContext({
+          id: `task-reopen:${input.controlKey}`,
+          source: { kind: "human" as const, id: "operator" },
+          humanRequested: true as const,
+          input: structuredClone(input.input),
+        })
+      : undefined;
+  let intent: AppTaskIntent | undefined;
+  if (!prior && context) {
+    assertValidAppInput(descriptor.app, context.input);
+    const attachment = descriptor.app.task?.(context);
+    if (attachment?.kind !== "desired")
+      throw new Error("The App must resolve continuation input to desired requirements");
+    intent = attachment.intent;
+  }
+  const receipt = stateTransaction(config.resourceStore.db, () => {
+    const reopened = reopenAppTask(config, { ...input, intent });
+    if (!prior && context)
+      admitTaskInput(config, {
+        appId: input.appId,
+        attachment: { kind: "existing", taskId: input.taskId },
+        idempotencyKey: reopened.admissionKey!,
+        inputContext: context,
+      });
+    return reopened;
+  });
   const controller = appTaskControllersByBus.get(input.bus)?.get(input.appId);
   if (controller && !descriptor.reconciliationPaused)
     enqueueAppTask(controller, config, input.taskId, { promote: true });

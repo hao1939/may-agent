@@ -1,3 +1,4 @@
+import type { AppInput } from "@may-agent/sdk";
 import type { ExactTask } from "@may-agent/control/events";
 export { taskRetryRequestedEvent, taskCloseRequestedEvent, taskCancelRequestedEvent, taskReopenRequestedEvent } from "@may-agent/control/events";
 import { taskControlAction } from "./core/events/interface.js";
@@ -15,7 +16,7 @@ export function attachTaskControlEventRoute(
     retryTask(input: ExactTask & { controlKey: string }): unknown;
     cancelTask(input: ExactTask & { reason: string; controlKey: string; decision: "human" | "app-policy" }): unknown;
     closeTask(input: ExactTask & { afterResult: string; reason: string; controlKey: string }): unknown;
-    reopenTask(input: ExactTask & { reason: string; controlKey: string }): unknown;
+    reopenTask(input: ExactTask & { reason: string; controlKey: string; input?: AppInput }): unknown;
   },
 ): () => void {
   return bus.subscribeDurableRoute(
@@ -43,7 +44,12 @@ export function attachTaskControlEventRoute(
             throw new Error("Task reopening requires explicit operator control");
           const reason = typeof data.reason === "string" ? data.reason.trim() : "";
           if (!reason) throw new Error("Task reopening requires a reason");
-          access.reopenTask({ ...exact, reason, controlKey });
+          access.reopenTask({
+            ...exact,
+            reason,
+            controlKey,
+            ...(data.input !== undefined ? { input: data.input as AppInput } : {}),
+          });
           break;
         }
         case "retry":

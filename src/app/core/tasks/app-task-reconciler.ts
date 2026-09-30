@@ -1,5 +1,6 @@
+import { isDeepStrictEqual } from "node:util";
 import { stateTransaction } from "../../../lib/db/transaction.js";
-import { conditionReviewAt } from "./app-task-state.js";
+import { conditionReviewAt, taskEventPredatesReopening } from "./app-task-state.js";
 import { createHash, randomUUID } from "node:crypto";
 import { basename } from "node:path";
 import {
@@ -12,6 +13,7 @@ import {
   type TaskIntent as AppTaskIntent,
   type TaskAttempt,
   type ResourceCreator,
+  type AppInput,
 } from "@may-agent/sdk";
 import {
   appTaskReadinessById,
@@ -1405,7 +1407,7 @@ export function observeAppTaskIntent(
     ...(admissionKey ? { admissionIds: [admissionKey] } : {}),
   });
   const reopened = tree.resources?.[input.intent.id];
-  if (reopened?.metadata.reopenedAfterEventId !== undefined && typeof input.trigger?.eventId === "number" && input.trigger.eventId <= reopened.metadata.reopenedAfterEventId) {
+  if (taskEventPredatesReopening(reopened, input.trigger)) {
     return { kind: "observed", taskId: input.intent.id, generation: reopened!.metadata.generation, changed: false };
   }
   validateParentReference(tree, input.intent.id, input.intent.parentId);
@@ -1923,7 +1925,7 @@ export function recordAppTaskTrigger(
   const resource = tree.resources?.[taskId];
   if (!resource) return { kind: "missing" };
   if (config.resourceStore.isCancelled(taskId)) return { kind: "closed" };
-  if (resource.metadata.reopenedAfterEventId !== undefined && typeof event.eventId === "number" && event.eventId <= resource.metadata.reopenedAfterEventId)
+  if (taskEventPredatesReopening(resource, event))
     return { kind: "duplicate" };
   const previous = tree.taskTriggers?.[taskId];
   if (config.resourceStore.hasTaskEvent(taskId, event)) {
@@ -2272,6 +2274,9 @@ export function reopenAppTask(
     expectedResourceVersion: number;
     reason: string;
     controlKey: string;
+    input?: AppInput;
+    /** Host-private mapping from the responsible App; callers supply ordinary input. */
+    intent?: AppTaskIntent;
   },
 ): {
   taskId: string;
@@ -2279,6 +2284,8 @@ export function reopenAppTask(
   resourceVersion: number;
   closure: AppTaskCancellation;
   reason: string;
+  input?: AppInput;
+  admissionKey?: string;
 } {
   return stateTransaction(config.resourceStore.db, () => {
     requireNonEmptyString(input.reason, "Task reopening reason");
@@ -2292,7 +2299,8 @@ export function reopenAppTask(
         prior.taskId !== input.taskId ||
         prior.expectedGeneration !== input.expectedGeneration ||
         prior.expectedResourceVersion !== input.expectedResourceVersion ||
-        result?.reason !== input.reason.trim()
+        result?.reason !== input.reason.trim() ||
+        !isDeepStrictEqual(result.input, input.input)
       )
         throw new Error("Task control key was already used for a different operation");
       return result;
@@ -2308,9 +2316,16 @@ export function reopenAppTask(
       throw new Error("Task version changed; read the current Task before reopening");
     if (config.resourceStore.isCancelled(resource.spec.parentId))
       throw new Error("Reopen the closed parent before its child");
-    if (resource.spec.executor === "conversation")
-      throw new Error("Conversation input must use its linked successor");
+    if (resource.spec.executor === "conversation") throw new Error("Conversation input must use its linked successor");
+    if (input.input !== undefined && !input.intent)
+      throw new Error("Task continuation requires the responsible App's mapped requirements");
     const scope = beginResourceMutationScopeForTasks(tree, [input.taskId]);
+    if (input.intent) {
+      const intent = normalizeTaskAgent({ ...input.intent, id: input.taskId, parentId: resource.spec.parentId });
+      validateIntent(intent);
+      if (intent.executor === "conversation") throw new Error("Conversation input must use its linked successor");
+      resource.spec = resourceSpec(intent);
+    }
     const now = new Date().toISOString();
     const eventRow = config.resourceStore.db.prepare("SELECT MAX(id) AS id FROM events").get() as {
       id?: number;
@@ -2332,23 +2347,30 @@ export function reopenAppTask(
       source: "human",
       data: { reason: input.reason.trim() },
     };
-    tree.taskTriggers = {
-      ...tree.taskTriggers,
-      [input.taskId]: {
-        taskId: input.taskId,
-        taskGeneration: resource.metadata.generation,
-        resourceVersion: 1,
-        event,
-        events: [{ event, observedAt: now }],
-        observedAt: now,
-      },
-    };
+    if (input.input === undefined)
+      tree.taskTriggers = {
+        ...tree.taskTriggers,
+        [input.taskId]: {
+          taskId: input.taskId,
+          taskGeneration: resource.metadata.generation,
+          resourceVersion: 1,
+          event,
+          events: [{ event, observedAt: now }],
+          observedAt: now,
+        },
+      };
     const result = {
       taskId: input.taskId,
       generation: resource.metadata.generation,
       resourceVersion: resource.metadata.resourceVersion,
       closure,
       reason: input.reason.trim(),
+      ...(input.input !== undefined
+        ? {
+            input: structuredClone(input.input),
+            admissionKey: `task-reopen:${input.controlKey}`,
+          }
+        : {}),
     };
     commitTaskMutation(config, tree, {
       resourceMutation: {

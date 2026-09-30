@@ -113,7 +113,11 @@ export function taskCancelRequestedEvent(task: ExactTask, reason: string): Event
 }
 
 /** Operator control for an explicit user request to continue this same Task. */
-export function taskReopenRequestedEvent(task: ExactTask, reason: string): EventInput {
+export function taskReopenRequestedEvent(
+  task: ExactTask,
+  reason: string,
+  input?: { kind: string; data: unknown },
+): EventInput {
   if (!task.appId.trim() || !task.taskId.trim()) throw new Error("Task reopening requires an exact target");
   if (
     !Number.isSafeInteger(task.generation) ||
@@ -130,6 +134,7 @@ export function taskReopenRequestedEvent(task: ExactTask, reason: string): Event
       expectedGeneration: task.generation,
       expectedResourceVersion: task.resourceVersion,
       reason: reason.trim(),
+      ...(input !== undefined ? { input } : {}),
     },
     idempotencyKey: `app-task-reopen:${task.appId}:${task.taskId}:${task.generation}:${task.resourceVersion}`,
   };

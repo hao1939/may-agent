@@ -15,7 +15,7 @@ import {
 } from "@may-agent/sdk";
 import { DbWriter } from "../../../lib/db-writer.js";
 import { openDatabase } from "../../../lib/db.js";
-import { EVENT_ROW_ID, EventBus, type AgentEvent } from "../events/bus.js";
+import { EVENT_DELIVERY_RESULT, EVENT_ROW_ID, EventBus, type AgentEvent } from "../events/bus.js";
 import { loadPersistedEvent } from "../events/persisted.js";
 import { createEventInterface } from "../events/interface.js";
 import { startAppInboxRuntime } from "../../composition/app-inbox-runtime.js";
@@ -253,6 +253,254 @@ it("publishes one reopening fact despite a lost publication and operator replay 
   expect(notifications).toBe(1);
   expect(loadedTaskConfig(f).resourceStore.readTask(taskId)).toEqual(current);
   expect(getDb(persistDir).prepare("SELECT COUNT(*) AS count FROM events WHERE event_type = 'app.task.reopened'").get()!.count).toBe(1);
+});
+
+it("reopens with mapped requirements and one durable input, rolling back failed admission and replaying after restart", async () => {
+  const f = fixture();
+  const persistDir = join(f.root, "state");
+  let bus = eventBus();
+  let mappings = 0;
+  const app = defineApp({
+    ...definition(),
+    inputSchema: Type.Object({ kind: Type.Literal("continue"), data: Type.Object({ outcome: Type.String() }) }),
+    task(ctx) {
+      mappings++;
+      const { outcome } = ctx.input.data as { outcome: string };
+      return {
+        kind: "desired",
+        intent: {
+          id: "mapper-selected-id",
+          parentId: "mapper-selected-parent",
+          outcome,
+          acceptance: ["Linux and existing platforms pass"],
+          executor: "verify",
+        },
+      };
+    },
+  });
+  const install = async () => {
+    const writer = new DbWriter(persistDir);
+    bus.setPersistenceSubscriber(writer.handler);
+    bus.setDeliveryRecorder(writer.recordDelivery);
+    await installCoreTaskRuntimes({
+      ...options(f, bus),
+      installControllers: false,
+      appRegistrySnapshot: { id: "continuation", generation: 1, entries: [{ appDir: f.appDir, definition: app }] },
+      executors: {
+        verify: async (attempt) => {
+          expect(attempt.task.outcome).toBe("Support Linux too");
+          return { state: "converged", summary: "All platforms pass", facts: ["test:platforms"] };
+        },
+      },
+    });
+  };
+  await install();
+  let config = loadedTaskConfig(f);
+  const taskId = "work/platforms";
+  admitTaskInput(config, {
+    appId: "sample",
+    idempotencyKey: "original",
+    inputContext: { id: "original", source: { kind: "human", id: "operator" }, input: { kind: "continue", data: {} } },
+    attachment: {
+      kind: "desired",
+      intent: { id: taskId, parentId: "operations", outcome: "Support existing platforms", acceptance: ["Tests pass"] },
+    },
+  });
+  const original = claimObservedAppTask(config, { taskId, appAgent: "sample-owner", handler: "agent:sample-owner" });
+  if (original.kind !== "claimed") throw new Error(original.kind);
+  completeAppTask(config, original, { summary: "Existing platforms pass" });
+  const before = config.resourceStore.readTask(taskId)!;
+  const { cancellation } = cancelLoadedAppTask({
+    bus,
+    appId: "sample",
+    taskId,
+    expectedGeneration: before.metadata.generation,
+    expectedResourceVersion: before.metadata.resourceVersion,
+    reason: "Owner ended work",
+  });
+  const closed = config.resourceStore.readTask(taskId);
+  const control = {
+    appId: "sample",
+    taskId,
+    expectedGeneration: cancellation.generation,
+    expectedResourceVersion: cancellation.resourceVersion,
+    reason: "User requested Linux support",
+    controlKey: "continue-platforms",
+    input: { kind: "continue", data: { outcome: "Support Linux too" } },
+  };
+  expect(() => reopenLoadedAppTask({ ...control, bus, input: { kind: "invalid", data: {} } })).toThrow();
+  expect(mappings).toBe(0);
+  expect(() => reopenLoadedAppTask({ ...control, bus, input: { kind: "continue", data: { outcome: "" } } })).toThrow(
+    "requires an outcome",
+  );
+  expect(config.resourceStore.readTask(taskId)).toEqual(closed);
+  const db = getDb(persistDir);
+  db.exec(
+    "CREATE TEMP TRIGGER fail_continuation BEFORE INSERT ON app_task_admissions BEGIN SELECT RAISE(ABORT, 'Admission unavailable'); END",
+  );
+  expect(() => reopenLoadedAppTask({ ...control, bus })).toThrow("Admission unavailable");
+  expect(config.resourceStore.readTask(taskId)).toEqual(closed);
+  expect(config.resourceStore.readCancellation(taskId)).toEqual(cancellation);
+  expect(config.resourceStore.readControlReceipt(control.controlKey)).toBeNull();
+  db.exec("DROP TRIGGER fail_continuation");
+  const receipt = reopenLoadedAppTask({ ...control, bus });
+  expect(receipt.generation).toBe(cancellation.generation + 1);
+  expect(receipt.admissionKey).toBeString();
+  expect(config.resourceStore.readTask(taskId)?.spec).toMatchObject({
+    parentId: "operations",
+    outcome: "Support Linux too",
+    executor: "verify",
+  });
+  expect(config.resourceStore.readTask("mapper-selected-id")).toBeNull();
+  const trigger = config.resourceStore.readTrigger(taskId)!;
+  expect(trigger.events).toHaveLength(1);
+  expect(trigger.event).toMatchObject({ data: { request: { input: control.input } } });
+  const mapped = mappings;
+  await closeInstalledAppTaskRuntimes(bus);
+  closeDb(persistDir);
+  bus = eventBus();
+  await install();
+  config = loadedTaskConfig(f);
+  expect(reopenLoadedAppTask({ ...control, bus })).toEqual(receipt);
+  expect(mappings).toBe(mapped);
+  expect(() =>
+    reopenLoadedAppTask({ ...control, bus, input: { kind: "continue", data: { outcome: "Different work" } } }),
+  ).toThrow("different operation");
+  await reconcileLoadedAppTaskOnce({
+    bus,
+    appId: "sample",
+    taskId,
+    dispatch: { enqueuedAt: 1, startedAt: 2, readyWaitMs: 1, lane: "human" },
+  });
+  expect(readAppTaskAdmissionOutcome(config, taskId, receipt.admissionKey!)?.summary).toBe("All platforms pass");
+  expect(readAppTaskAdmissionOutcome(config, taskId, "original")?.summary).toBe("Existing platforms pass");
+  expect(reopenLoadedAppTask({ ...control, bus })).toEqual(receipt);
+  expect(config.resourceStore.readTrigger(taskId)).toBeNull();
+});
+
+it("retains closed-Task observations as history without treating desired work as an observation", async () => {
+  const f = fixture();
+  const bus = eventBus();
+  const writer = new DbWriter(join(f.root, "state"));
+  bus.setPersistenceSubscriber(writer.handler);
+  bus.setDeliveryRecorder(writer.recordDelivery);
+  const { installed } = await installCoreTaskRuntimes({
+    ...options(f, bus),
+    installControllers: false,
+    appRegistrySnapshot: {
+      id: "late-observation",
+      generation: 1,
+      entries: [{ appDir: f.appDir, definition: definition() }],
+    },
+  });
+  const config = loadedTaskConfig(f);
+  const intent = { id: "work/closed", parentId: "operations", outcome: "Build", acceptance: ["Build passes"] };
+  observeAppTaskIntent(config, { appAgent: "sample-owner", intent });
+  const before = config.resourceStore.readTask(intent.id)!;
+  const { cancellation } = cancelLoadedAppTask({
+    bus,
+    appId: "sample",
+    taskId: intent.id,
+    expectedGeneration: before.metadata.generation,
+    expectedResourceVersion: before.metadata.resourceVersion,
+    reason: "Owner ended work",
+  });
+  const closed = config.resourceStore.readTask(intent.id);
+  bus.subscribeDurableRoute((event) => {
+    if (event.type !== "sample.observed") return;
+    const admitted = admitStandaloneCanonicalAppTaskEvent({
+      descriptor: installed[0]!,
+      event,
+      intent: null,
+      targetedTaskId: intent.id,
+    });
+    expect(admitted.taskIds).toEqual([]);
+    expect(admitted.delivery).toMatchObject({ accepted: true });
+    return admitted.delivery;
+  });
+  const event = bus.emit({
+    type: "sample.observed",
+    source: "fixture",
+    owner: "app:sample",
+    data: { build: "current", status: "build finished" },
+  } as AgentEvent);
+  expect(event[EVENT_ROW_ID]).toBeGreaterThan(0);
+  expect(event[EVENT_DELIVERY_RESULT]?.accepted).toBe(true);
+  bus.redeliverPersisted(event, event[EVENT_ROW_ID]!);
+  expect(config.resourceStore.readTask(intent.id)).toEqual(closed);
+  expect(config.resourceStore.readTrigger(intent.id)).toBeNull();
+  expect(() =>
+    admitStandaloneCanonicalAppTaskEvent({
+      descriptor: installed[0]!,
+      event,
+      intent: { ...intent, outcome: "Build with Linux support" },
+    }),
+  ).toThrow("explicit reopening is required");
+  reopenLoadedAppTask({
+    bus,
+    appId: "sample",
+    taskId: intent.id,
+    reason: "User requested another build",
+    expectedGeneration: cancellation.generation,
+    expectedResourceVersion: cancellation.resourceVersion,
+    controlKey: "another-build",
+  });
+  const claim = claimObservedAppTask(config, {
+    taskId: intent.id,
+    appAgent: "sample-owner",
+    handler: "agent:sample-owner",
+  });
+  if (claim.kind !== "claimed") throw new Error(claim.kind);
+  deferAppTask(config, claim, {
+    disposition: "waiting",
+    summary: "Wait for this build",
+    conditions: [
+      {
+        id: "build",
+        type: "sample.observed",
+        subject: "build:current",
+        expected: { field: "status", equals: "build finished" },
+        owner: "app:sample",
+        reviewAfterMs: 60_000,
+      },
+    ],
+  });
+  const peerId = "work/peer";
+  observeAppTaskIntent(config, { appAgent: "sample-owner", intent: { ...intent, id: peerId } });
+  const peerClaim = claimObservedAppTask(config, {
+    taskId: peerId,
+    appAgent: "sample-owner",
+    handler: "agent:sample-owner",
+  });
+  if (peerClaim.kind !== "claimed") throw new Error(peerClaim.kind);
+  deferAppTask(config, peerClaim, {
+    disposition: "waiting",
+    summary: "Wait for the observed build",
+    conditions: [
+      {
+        id: "peer-build",
+        type: "sample.observed",
+        subject: "build:current",
+        expected: { field: "status", equals: "build finished" },
+        owner: "app:sample",
+        reviewAfterMs: 60_000,
+      },
+    ],
+  });
+  const waiting = config.resourceStore.readTask(intent.id);
+  const conditions = config.resourceStore.readTaskConditions(intent.id);
+  const stale = admitStandaloneCanonicalAppTaskEvent({
+    descriptor: installed[0]!,
+    event,
+    intent,
+    conditionTaskIds: [intent.id, peerId],
+  });
+  expect(stale.delivery?.accepted).toBe(true);
+  expect(stale.taskIds).toEqual([peerId]);
+  expect(config.resourceStore.readTaskConditions(peerId)[0]?.status.state).toBe("true");
+  expect(config.resourceStore.readTask(intent.id)).toEqual(waiting);
+  expect(config.resourceStore.readTaskConditions(intent.id)).toEqual(conditions);
+  expect(config.resourceStore.readTrigger(intent.id)).toBeNull();
 });
 
 it("shares Task detail, evidence and exact outcome reads between tools and executor capabilities", async () => {

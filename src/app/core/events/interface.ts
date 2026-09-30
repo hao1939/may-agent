@@ -161,7 +161,13 @@ const EVENT_DEFINITIONS: Readonly<Record<string, EventDefinition>> = {
     addressFields: ["appId", "taskId"],
     taskControl: "reopen",
     delivery: "required",
-    validate: (input, options) => validateTaskControl(input, options, true),
+    validate: (input, options) => {
+      validateTaskControl(input, options, true);
+      if (input.data.input !== undefined) {
+        const appInput = record(input.data.input, "app.task.reopen.requested data.input") as unknown as AppInput;
+        options.validateAppInput(requiredTarget(input, "appId"), appInput);
+      }
+    },
   },
   "app.task.close.requested": {
     addressFields: ["appId", "taskId"],
