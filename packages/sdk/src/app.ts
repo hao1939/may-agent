@@ -176,6 +176,8 @@ export type AppConversationRequest = {
 export type AppConversationRequestUpdate = {
   id: string;
   expectedRevision: number;
+  /** Inputs establishing or refining this intention. Required for an unlinked Request in a mixed batch. */
+  inputIds?: string[];
   /** Required for a new ask. Omit to retain an existing Request's exact scope. */
   scope?: string;
   disposition: "open" | "fulfilled" | "withdrawn" | "unfulfilled";
@@ -188,6 +190,15 @@ export const conversationRequestUpdatesSchema = Type.Array(
   Type.Object(
     {
       id: Type.String({ minLength: 1, maxLength: 200 }),
+      inputIds: Type.Optional(
+        Type.Array(Type.String({ minLength: 1 }), {
+          minItems: 1,
+          maxItems: 96,
+          uniqueItems: true,
+          description:
+            "Current input IDs establishing or refining this same intention. Several inputs may belong to one Request. Omit for a single input or to retain this turn's existing Request associations; choose explicitly for a new Request in a mixed batch.",
+        }),
+      ),
       expectedRevision: Type.Integer({
         minimum: 0,
         maximum: Number.MAX_SAFE_INTEGER - 1,
@@ -243,6 +254,10 @@ export type AppInputContext<TData = unknown> = {
   input: AppInput<TData>;
   /** Ordered inputs considered together in this Turn; Request updates decide which asks are resolved. */
   inputs?: ReadonlyArray<AppTaskInput>;
+  /** Accepted intentions assigned through the current inputs; each needs an explicit final requestUpdate. */
+  assignedRequests?: Array<
+    Pick<AppConversationRequest, "id" | "revision" | "scope" | "status"> & { inputIds: string[] }
+  >;
   /** Facts from this Conversation Task's earlier attempt, including an interrupted or failed Turn. */
   previousAttempt?: TaskAttempt["previousAttempt"];
   dependency?: AppDependencyObservation;

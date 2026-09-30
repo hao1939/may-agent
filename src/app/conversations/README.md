@@ -70,13 +70,29 @@ judges human intent and fulfillment; code checks the stable Conversation creator
 and revision. The bounded Request list prefers
 open asks, then includes recent closed asks so a human can naturally correct one.
 
+A Request represents one accepted intention across multiple inputs. May chooses
+the association through `inputIds` when saving requirements or returning an
+update. Single-input turns can omit it; mixed turns must identify inputs for a
+Request not already associated with that turn. Only inputs in the live claim
+may be linked. The links persist in `conversation_request_inputs`, alongside the
+Request save, and remain after input completion. They do not create work.
+
+Current input links supply `assignedRequests` with full scope and revision,
+independently of the recent Topic/context window. Settlement requires an
+explicit `requestUpdates` entry for each assigned Request, including those saved
+during execution. An open outcome explains remaining work or a wait; a final
+outcome uses the current accepted scope. Omission rejects the whole decision and
+keeps the inputs pending through ordinary Task recovery. Related inputs may be
+fulfilled together, and independent Requests may share a turn. No per-message
+execution or automatic conversion of messages into Requests is introduced.
+
 Request `taskRefs` retain relevant Task identities independently of Topic links
 or current Task availability. A reference is metadata, not proof of existence,
 an assignment, a result subscription or control authority. Ordinary handoff
 admission records the actual Task and its return links together; referencing
 research from another Task does not subscribe to that Task's later outcomes.
 
-When final result settlement fails, the attempt retains `unacceptedResult`
+When newer input defers acceptance or final result settlement fails, the attempt retains `unacceptedResult`
 separately from accepted state, including its originating attempt/session and
 the returned facts. Each repair claim saves that evidence before execution, so
 ordinary failure, interruption and restart retain it. An accepted result retires
@@ -86,6 +102,10 @@ current Requests named by the rejected decision, including closed asks. The
 agent judges whether to repair its decision or perform more work; failed
 settlement never automatically replays the proposed effects or establishes
 fulfillment. This is evidence for review, not an exactly-once tool guarantee.
+
+Existing Request rows and input outcomes are preserved when the link table is
+created. Historical associations are not guessed from matching IDs or prose;
+an agent can explicitly associate a current input with an existing Request.
 
 A handoff links the responsible Task to the caller's Topic and, when declared,
 accepted Request. Linked answers, honest failure reports and owner closures

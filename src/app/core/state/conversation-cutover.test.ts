@@ -218,6 +218,7 @@ test("offline cutover retains history, fences old claims, and redoes only unfini
           {
             id: "sample",
             expectedRevision: ask!.revision,
+            inputIds: request.inputs!.map(({ id }) => id),
             scope: ask!.scope,
             disposition: "fulfilled",
             reason: "Verified current measurement",

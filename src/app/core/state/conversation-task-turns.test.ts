@@ -400,7 +400,9 @@ test("a fresh attempt considers retained and newer input together and publishes 
       const quiet = { summary: "Observed", topic: { kind: "none" as const } };
       expect(Check(execution.outputSchema, quiet)).toBe(false);
       expect(() => completeConversationTaskTurn(f.context(), claim, quiet)).toThrow("result schema");
-      return decision;
+      return { ...decision, requestUpdates: decision.requestUpdates!.map((update) => ({
+        ...update, inputIds: [first.item.id, correction.item.id],
+      })) };
     },
   });
   for (const admitted of [first, correction, system]) {

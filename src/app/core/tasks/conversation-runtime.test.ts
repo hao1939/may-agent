@@ -337,6 +337,7 @@ test.each(["scope", "storage", "new-correction", "provider-failure", "legacy-han
               {
                 id: "probe",
                 expectedRevision: revision,
+                inputIds: context.inputs!.map(({ id }) => id),
                 disposition: failure === "new-correction" ? "open" : "fulfilled",
                 reason: "Reviewed existing execution evidence",
               },
@@ -2780,4 +2781,55 @@ test("invalid handoff is repairable after reopen and only complete referenced in
   });
   expect(JSON.stringify(saved.spec.input).length).toBeLessThan(1_000);
   expect(readFileSync(documentPath, "utf8")).toContain("Required: preserve source identity.");
+});
+
+test("an omitted accepted Request fails settlement and recovers in the same Conversation after restart", async () => {
+  const contexts: AppInputContext[] = [];
+  let verificationCalls = 0;
+  const complete: ConversationTurnResult = {
+    summary: "Report reviewed", response: "The report checks out; no change is needed.", topic: { kind: "none" },
+    requestUpdates: [{ id: "review", expectedRevision: 1, disposition: "fulfilled", reason: "Verified the exact report" }],
+  };
+  const f = await fixture(async (definition, prompt) => {
+    const context = readConversationReplyContext(prompt);
+    contexts.push(context);
+    if (contexts.length === 1) {
+      await definition.tools.find(({ name }) => name === "conversation_request")!.execute("accept", {
+        id: "review", expectedRevision: 0, scope: "Verify the report and explain the disposition",
+      });
+      verificationCalls++;
+      f.admit("news", "An unrelated announcement arrived", 2);
+      return { status: "done", structuredResult: complete };
+    }
+    expect(context.assignedRequests).toEqual([{
+      id: "review", revision: 1, scope: "Verify the report and explain the disposition", status: "open", inputIds: ["report"],
+    }]);
+    if (contexts.length === 2) {
+      expect(context.previousAttempt?.unacceptedResult?.result?.conversation).toEqual(complete);
+      // Reproduce the actual failure: the agent addresses only the newer input.
+      return { status: "done", structuredResult: { summary: "Announcement noted", response: "Noted.", topic: { kind: "none" } } };
+    }
+    expect(context.previousAttempt?.unacceptedResult?.settlementError).toContain("Request review was not addressed");
+    return { status: "done", structuredResult: { ...complete, response: `${complete.response} The announcement is also noted.` } };
+  }, { installControllers: false });
+  const admitted = f.admit("report", "Please verify the report");
+  await f.run(admitted.taskId);
+  expect(contexts).toHaveLength(1);
+  expect(readConversationRequest(f.db, app.id, "primary", "review")?.status).toBe("open");
+  await f.reopen();
+  await f.run(admitted.taskId);
+  expect(contexts).toHaveLength(2);
+  for (const id of ["report", "news"]) expect(getAppInboxItem(f.db, id)?.status).not.toBe("done");
+  expect(readAppConversationResource(f.db, app.id, "primary").messages.filter(({ author }) => author.kind === "agent")).toEqual([]);
+  const due = f.store.readTask(admitted.taskId)!.status.executionRetryAt!;
+  expect(due).toBeGreaterThan(Date.now());
+  await f.reopen();
+  setSystemTime(new Date(due + 1));
+  await f.run(admitted.taskId);
+  expect(contexts).toHaveLength(3);
+  expect(verificationCalls).toBe(1);
+  expect(new Set(["report", "news"].map((id) => getAppInboxItem(f.db, id)?.executionTaskId))).toEqual(new Set([admitted.taskId]));
+  expect(readConversationRequest(f.db, app.id, "primary", "review")).toMatchObject({ revision: 2, status: "closed" });
+  for (const id of ["report", "news"]) expect(getAppInboxItem(f.db, id)?.status).toBe("done");
+  expect(readAppConversationResource(f.db, app.id, "primary").messages.filter(({ author }) => author.kind === "agent")).toHaveLength(1);
 });

@@ -23,7 +23,7 @@ import {
   readAppConversationResource,
   readConversationTopic,
 } from "./conversations.js";
-import { readConversationRequest, applyConversationRequestUpdates } from "./conversation-requests.js";
+import { readConversationRequest, applyConversationRequestUpdates, listConversationInputRequests } from "./conversation-requests.js";
 import { reviseAppTask } from "../tasks/task-revision.js";
 import {
   admitConversationTaskInput,
@@ -33,6 +33,8 @@ import {
   conversationTaskIntent,
   listPendingConversationTaskChanges,
   stopConversationTaskTurn,
+  updateConversationTaskRequest,
+  readConversationTaskInputs,
 } from "./conversation-task-turns.js";
 import { getAppInboxItem } from "./app-inbox-store.js";
 
@@ -462,7 +464,8 @@ test.each(["stop", "failure", "completion"] as const)(
     const turn = await f.prepare(async ({ execution }) => {
       update = execution.updateRequest!;
       update({ id: ask.id, expectedRevision: 0, scope: ask.scope! }, "accept");
-      return answer;
+      return { ...answer, requestUpdates: [{ id: ask.id, expectedRevision: 1, disposition: "open",
+        reason: "Waiting for the requested measurements" }] };
     });
     if (end === "stop") turn.stop();
     else if (end === "failure") failAppTaskAttempt(f.context(), turn.claim, "Helper failed");
@@ -470,7 +473,7 @@ test.each(["stop", "failure", "completion"] as const)(
     expect(() => update({ id: ask.id, expectedRevision: 1, scope: "Late change" }, "late")).toThrow();
     f.reopen();
     expect(readConversationRequest(f.db, app.id, "chat", ask.id)).toMatchObject({
-      revision: 1,
+      revision: end === "completion" ? 2 : 1,
       scope: ask.scope,
       status: "open",
     });
@@ -499,9 +502,10 @@ test("new input fences an old requirement save until the same Conversation revie
   f.reopen();
   const next = await f.prepare(async ({ inputContext, execution }) => {
     expect(inputContext.inputs?.some(({ id }) => id === "newer-correction")).toBe(true);
-    expect(execution.updateRequest!({ id: ask.id, expectedRevision: 1, scope: "Compare both options including costs" }, "reviewed"))
+    expect(execution.updateRequest!({ id: ask.id, expectedRevision: 1, scope: "Compare both options including costs",
+      inputIds: inputContext.inputs!.map(({ id }) => id) }, "reviewed"))
       .toMatchObject({ revision: 2, scope: "Compare both options including costs" });
-    return answer;
+    return { ...answer, requestUpdates: [{ id: ask.id, expectedRevision: 2, disposition: "fulfilled", reason: "Compared both including costs" }] };
   }, false);
   expect(next.claim.taskId).toBe(turn.claim.taskId);
   expect(next.settle().status).toBe("applied");
@@ -529,7 +533,7 @@ test("the immediate update is scoped to the claimed Conversation and a failed wr
     expect(readConversationRequest(f.db, app.id, "chat", ask.id)).toBeNull();
     f.db.exec("DROP TRIGGER reject_request");
     expect(execution.updateRequest!({ id: ask.id, expectedRevision: 0, scope: ask.scope! }, "accept").revision).toBe(1);
-    return answer;
+    return { ...answer, requestUpdates: [{ id: ask.id, expectedRevision: 1, disposition: "open", reason: "Measurements are still needed" }] };
   });
   turn.settle();
   expect(readConversationRequest(f.db, app.id, "other", ask.id)).toEqual(foreign);
@@ -705,7 +709,10 @@ test.each([
     taskRefs: addedRefs,
   };
   const turn = await f.prepare(
-    { ...answer, response: closureText, topic: { kind: "existing", id: accepted.topicId! }, requestUpdates: [update] },
+    async ({ inputContext }) => {
+      update.inputIds = inputContext.inputs!.map(({ id }) => id);
+      return { ...answer, response: closureText, topic: { kind: "existing", id: accepted.topicId! }, requestUpdates: [update] };
+    },
     taskOutcome === "retrying",
   );
   const before = readConversationRequest(f.db, app.id, "chat", ask.id);
@@ -801,4 +808,146 @@ test.each(["closed", "foreign"])("a %s ask cannot be handed off through the scop
   expect(f.context(owner.id).resourceStore.readTask("work")).toBeNull();
   expect(getAppInboxItem(f.db, "turn-1")?.result).toBeUndefined();
   expect(f.db.prepare("SELECT count(*) AS count FROM conversation_topics").get()!.count).toBe(0);
+});
+
+test.each(["closure", "handoff"] as const)("a deferred Request %s remains assigned beside unrelated input across reopen", async (outcome) => {
+  const f = fixture();
+  const initial = await f.prepare(async ({ execution }) => {
+    execution.updateRequest!({ id: ask.id, expectedRevision: 0, scope: ask.scope! }, "accept");
+    return outcome === "handoff"
+      ? { ...handoff, requestUpdates: [{ id: ask.id, expectedRevision: 1, disposition: "open", reason: "Admit the measurement work" }] }
+      : { ...answer, requestUpdates: [{ id: ask.id, expectedRevision: 1, disposition: "fulfilled", reason: "Both options compared" }] };
+  });
+  const [original] = readConversationTaskInputs(f.context(), initial.claim);
+  admitConversationTaskInput(f.context(), {
+    id: "news", appId: app.id, conversationId: "chat", conversationSequence: 2,
+    source: { kind: "system", id: "news" }, input: { kind: "message", data: { text: "An unrelated finding arrived" } },
+    intent: conversationTaskIntent(f.context()),
+  });
+  expect(initial.settle().taskContinues).toBe(true);
+  expect(f.context().resourceStore.readAttempt(initial.claim.attemptId)?.acceptedResult).toBeUndefined();
+  expect(f.context(owner.id).resourceStore.readTask("work")).toBeNull();
+  f.reopen();
+  const next = await f.prepare(async ({ inputContext }) => {
+    expect(inputContext.assignedRequests).toEqual([{
+      id: ask.id, revision: 1, scope: ask.scope, status: "open", inputIds: [original!.id],
+    }]);
+    expect(inputContext.previousAttempt?.unacceptedResult?.result?.conversation).toEqual(initial.proposal.decision);
+    expect(inputContext.previousAttempt?.unacceptedResult?.settlementError).toContain("not accepted");
+    return { summary: "News handled", response: "Here is the new finding.", topic: { kind: "none" } };
+  }, false);
+  expect(next.settle).toThrow(`Request ${ask.id} was not addressed`);
+  for (const id of [original!.id, "news"]) expect(getAppInboxItem(f.db, id)?.status).not.toBe("done");
+  expect(f.context().resourceStore.readAttempt(next.claim.attemptId)?.acceptedResult).toBeUndefined();
+  expect(readConversationRequest(f.db, app.id, "chat", ask.id)?.revision).toBe(1);
+  const applied = completeConversationTaskTurn(f.context(), next.claim, {
+    ...initial.proposal.decision, response: `${initial.proposal.decision.response} The unrelated finding is also noted.`,
+  }, {
+    getTaskApp: (appId) => ({ app: owner, config: f.context(appId) }),
+  });
+  for (const id of [original!.id, "news"]) expect(getAppInboxItem(f.db, id)?.status).toBe("done");
+  const request = readConversationRequest(f.db, app.id, "chat", ask.id)!;
+  expect(request).toMatchObject({ revision: 2, scope: ask.scope, status: outcome === "closure" ? "closed" : "open" });
+  if (outcome === "handoff") {
+    expect(applied.admittedTasks).toEqual([{ appId: owner.id, taskId: "work" }]);
+    expect(request.taskRefs).toEqual([{ appId: owner.id, taskId: "work" }]);
+    expect(f.context(owner.id).resourceStore.readTask("work")).not.toBeNull();
+  } else {
+    expect(request.closure?.messageId).toBe(`result:${original!.id}`);
+  }
+  expect(listConversationInputRequests(f.db, app.id, "chat", ["news"])).toEqual([]);
+});
+
+test("related inputs refine one Request and one answer must use its latest requirements", async () => {
+  const f = fixture();
+  const initial = await f.prepare(async ({ execution }) => {
+    execution.updateRequest!({ id: "laptops", expectedRevision: 0, scope: "Compare two laptops" }, "accept");
+    return { ...answer, requestUpdates: [{ id: "laptops", expectedRevision: 1, disposition: "fulfilled", reason: "Compared" }] };
+  });
+  const [original] = readConversationTaskInputs(f.context(), initial.claim);
+  admitConversationTaskInput(f.context(), {
+    id: "budget", appId: app.id, conversationId: "chat", conversationSequence: 2,
+    source: { kind: "human", id: "budget" }, input: { kind: "message", data: { text: "Battery life matters most; stay below 1500" } },
+    intent: conversationTaskIntent(f.context()),
+  });
+  initial.settle();
+  f.reopen();
+  const scope = "Compare two laptops below 1500, prioritizing battery life";
+  const revised = await f.prepare(async ({ inputContext, execution }) => {
+    expect(inputContext.assignedRequests?.map(({ id }) => id)).toEqual(["laptops"]);
+    const inputIds = inputContext.inputs!.map(({ id }) => id);
+    execution.updateRequest!({ id: "laptops", expectedRevision: 1, scope, inputIds }, "refine");
+    return { ...answer, response: "Both are below 1500; A has the longer verified battery life.",
+      requestUpdates: [{ id: "laptops", expectedRevision: 2, disposition: "fulfilled", reason: "Compared budget and battery life together" }] };
+  }, false);
+  // A proposal about the older requirements cannot close the corrected intention.
+  expect(() => completeConversationTaskTurn(f.context(), revised.claim, initial.proposal.decision)).toThrow("revision changed");
+  f.db.exec(`CREATE TRIGGER reject_reply BEFORE UPDATE ON app_inbox_items WHEN NEW.result IS NOT NULL
+    BEGIN SELECT RAISE(ABORT, 'fixture reply failure'); END;`);
+  expect(revised.settle).toThrow("fixture reply failure");
+  expect(readConversationRequest(f.db, app.id, "chat", "laptops")).toMatchObject({ revision: 2, scope, status: "open" });
+  f.db.exec("DROP TRIGGER reject_reply");
+  revised.settle();
+  f.reopen();
+  expect(listConversationInputRequests(f.db, app.id, "chat", [original!.id, "budget"])).toEqual([
+    expect.objectContaining({ id: "laptops", revision: 3, scope, status: "closed", inputIds: ["budget", original!.id].sort() }),
+  ]);
+  expect(readAppConversationResource(f.db, app.id, "chat").messages.filter(({ author }) => author.kind === "agent")).toHaveLength(1);
+});
+
+test("Request input associations reject foreign input and survive Stop without waking work", async () => {
+  const f = fixture();
+  const first = await f.prepare(answer);
+  const [original] = readConversationTaskInputs(f.context(), first.claim);
+  const other = admitConversationTaskInput(f.context(), {
+    id: "other-chat-input", appId: app.id, conversationId: "other", conversationSequence: 1,
+    source: { kind: "human", id: "other" }, input: { kind: "message", data: { text: "Foreign ask" } },
+    intent: conversationTaskIntent(f.context()),
+  });
+  expect(() => updateConversationTaskRequest(f.context(), first.claim, {
+    id: ask.id, expectedRevision: 0, scope: ask.scope!, inputIds: [other.item.id],
+  }, "foreign")).toThrow("inputs in this turn");
+  updateConversationTaskRequest(f.context(), first.claim, { id: ask.id, expectedRevision: 0, scope: ask.scope! }, "accept");
+  first.stop();
+  f.reopen();
+  expect(listConversationInputRequests(f.db, app.id, "chat", [original!.id])).toHaveLength(1);
+  expect(listPendingConversationTaskChanges(f.db, app.id)).toEqual([]);
+  const next = await f.prepare(async ({ inputContext }) => {
+    expect(inputContext.assignedRequests).toEqual([]); // Stopped input is not assigned to unrelated new work.
+    return answer;
+  });
+  next.settle();
+  expect(readConversationRequest(f.db, app.id, "chat", ask.id)?.status).toBe("open");
+});
+
+test("several intentions can share a turn while input association remains an explicit agent judgment", async () => {
+  const f = fixture();
+  const first = await f.prepare(answer);
+  const [original] = readConversationTaskInputs(f.context(), first.claim);
+  admitConversationTaskInput(f.context(), {
+    id: "contract", appId: app.id, conversationId: "chat", conversationSequence: 2,
+    source: { kind: "human", id: "contract" }, input: { kind: "message", data: { text: "Also review this contract" } },
+    intent: conversationTaskIntent(f.context()),
+  });
+  first.settle();
+  const next = await f.prepare(async ({ execution }) => {
+    const compare = { id: "compare", expectedRevision: 0, scope: "Compare two laptops" };
+    expect(() => execution.updateRequest!(compare, "ambiguous")).toThrow("requires inputIds");
+    expect(() => execution.updateRequest!({ ...compare, inputIds: ["not-in-claim"] }, "unclaimed")).toThrow("inputs in this turn");
+    expect(readConversationRequest(f.db, app.id, "chat", compare.id)).toBeNull();
+    execution.updateRequest!({ ...compare, inputIds: [original!.id] }, "compare");
+    execution.updateRequest!({ id: "contract-review", expectedRevision: 0, scope: "Review the contract", inputIds: ["contract"] }, "review");
+    return { ...answer, response: "Here is the laptop comparison and the contract review.", requestUpdates: [
+      { id: "compare", expectedRevision: 1, disposition: "fulfilled", reason: "Compared both laptops" },
+      { id: "contract-review", expectedRevision: 1, disposition: "fulfilled", reason: "Reviewed the contract" },
+    ] };
+  }, false);
+  const partial = { ...next.proposal.decision, requestUpdates: next.proposal.decision.requestUpdates!.slice(0, 1) };
+  expect(() => completeConversationTaskTurn(f.context(), next.claim, partial)).toThrow("Request contract-review was not addressed");
+  next.settle();
+  const requests = listConversationInputRequests(f.db, app.id, "chat", [original!.id, "contract"]);
+  expect(requests.map(({ id, status, inputIds }) => ({ id, status, inputIds }))).toEqual([
+    { id: "compare", status: "closed", inputIds: [original!.id] },
+    { id: "contract-review", status: "closed", inputIds: ["contract"] },
+  ]);
 });

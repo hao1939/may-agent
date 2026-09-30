@@ -40,6 +40,9 @@ function stableTopicId(appId: string, conversationId: string, originMessageId: s
 }
 import {
   applyConversationRequestUpdates,
+  listConversationInputRequests,
+  linkConversationRequestInputs,
+  ConversationRequestConflict,
   readConversationRequest,
   type ConversationRequestChange,
 } from "./conversation-requests.js";
@@ -361,6 +364,45 @@ export function readConversationTaskTurn(config: AppTaskContext, claim: AppTaskC
   };
 }
 
+function requestInputIds(
+  config: AppTaskContext,
+  items: readonly ReturnType<typeof readConversationTaskInputs>[number][],
+  update: { id: string; inputIds?: string[] },
+): string[] {
+  const first = items[0]!;
+  const assigned = listConversationInputRequests(
+    config.resourceStore.db, first.appId, first.conversationId!, items.map(({ id }) => id),
+  ).find(({ id }) => id === update.id);
+  const ids = update.inputIds ?? (items.length === 1 ? [first.id] : assigned?.inputIds);
+  if (!ids?.length)
+    throw new ConversationRequestConflict(`Request ${update.id} requires inputIds from this mixed input batch`);
+  if (
+    ids.length > 96 || new Set(ids).size !== ids.length || ids.some((id) => !items.some((item) => item.id === id))
+  )
+    throw new ConversationRequestConflict(`Request ${update.id} inputIds must name distinct inputs in this turn`);
+  return ids;
+}
+
+function assertConversationRequestsAddressed(
+  config: AppTaskContext,
+  items: ReturnType<typeof readConversationTaskInputs>,
+  decision: ConversationTurnResult,
+): void {
+  const first = items[0]!;
+  const requests = listConversationInputRequests(
+    config.resourceStore.db, first.appId, first.conversationId!, items.map(({ id }) => id),
+  );
+  for (const request of requests) {
+    const update = decision.requestUpdates?.find(({ id }) => id === request.id);
+    if (!update)
+      throw new ConversationRequestConflict(
+        `Request ${request.id} was not addressed. Review its latest requirements and return requestUpdates with fulfillment, continuing work, or an explained wait.`,
+      );
+    if (update.disposition === "open" && !update.reason?.trim() && !decision.response?.trim())
+      throw new ConversationRequestConflict(`Open Request ${request.id} requires an explanation of what remains`);
+  }
+}
+
 /** Save the owner's accepted requirements under the same live claim as its other effects. */
 export function updateConversationTaskRequest(
   config: AppTaskContext,
@@ -370,7 +412,8 @@ export function updateConversationTaskRequest(
 ): AppConversationRequest {
   return stateTransaction(config.resourceStore.db, () => {
     assertAppTaskEffectFresh(config, claim);
-    const { replyInput: item } = readConversationTaskTurn(config, claim);
+    const { items, replyInput: item } = readConversationTaskTurn(config, claim);
+    const inputIds = requestInputIds(config, items, change);
     applyConversationRequestUpdates(config.resourceStore.db, {
       actor: { appId: item.appId, taskId: claim.taskId },
       appId: item.appId,
@@ -380,6 +423,12 @@ export function updateConversationTaskRequest(
       updateKey: `request:${claim.attemptId}:${operationId}`,
       now: Date.now(),
     });
+    linkConversationRequestInputs(config.resourceStore.db, item.appId, item.conversationId!, change.id, inputIds);
+    const assigned = listConversationInputRequests(
+      config.resourceStore.db, item.appId, item.conversationId!, items.map(({ id }) => id),
+    );
+    if (assigned.length > 8)
+      throw new ConversationRequestConflict("A turn can address at most eight accepted Requests");
     return readConversationRequest(config.resourceStore.db, item.appId, item.conversationId!, change.id)!;
   });
 }
@@ -407,6 +456,7 @@ export function completeConversationTaskTurn(
       throw new Error("Invalid Conversation decision: result must satisfy the claimed input's result schema");
     if ((decision.taskControls?.length ?? 0) !== (options.taskControls?.length ?? 0))
       throw new Error("Conversation Task controls must be prepared");
+    assertConversationRequestsAddressed(config, items, decision);
     const accepted = completeAppTask(config, claim, {
       summary: decision.summary,
       response: decision.response,
@@ -454,6 +504,9 @@ export function completeConversationTaskTurn(
       messageId: `result:${item.id}`,
       now,
     });
+    for (const update of decision.requestUpdates ?? []) {
+      linkConversationRequestInputs(db, item.appId, conversationId, update.id, requestInputIds(config, items, update));
+    }
     const admittedTasks: Array<{ appId: string; taskId: string }> = [];
     const cancelledTasks: AppTaskCancellationResult[] = [];
     for (const [index, control] of (decision.taskControls ?? []).entries()) {
