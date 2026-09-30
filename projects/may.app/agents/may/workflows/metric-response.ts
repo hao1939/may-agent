@@ -16,7 +16,7 @@ import {
 
 export const name = "metric-response";
 export const description =
-  "Read exact metric handling and live Task waits. Supply review:{task: ordinary Task result, decisions:[{metricId,alertId,disposition,reason,evidence,nextAction?}]} to bind a complete Task result, or also conversation:{topic,requestUpdates,requestId?,task?} to prepare an ordinary followUp. Return the complete output through finish().result. Conditions come from tasks contract; dependencies commission work. Preparation alone accepts nothing.";
+  'Read exact metric handling and live Task waits with input:{metricId,alertId} (null without a breach). Compose with input:{review:{task,decisions},conversation?}. A minimal observation task is {state:"waiting",summary:"...",facts:[],conditions:[CONDITION_FROM_TASKS_CONTRACT]}; decisions is [{metricId,alertId,disposition:"observe",reason:"...",evidence:["..."],nextAction:"..."}]. Other dispositions are investigate, no-change and recovered. In Conversation include conversation:{topic,requestUpdates,requestId,task?} using current context; task is only an existing exact May Task target. Return the complete output unchanged through finish().result. Code binds new Task identity. Conditions come from tasks contract; dependencies commission work. Preparation alone accepts nothing.';
 
 type Link = { appId: string; taskId: string };
 type Decision = {

@@ -23,6 +23,11 @@ samples and exposes value, measuredAt, sampleId and freshness. It does not
 collect samples, judge health, calculate another trend or register another watch.
 For metrics where zero means recovery, an example predicate is
 `{field:"value",equals:0,freshness:"fresh"}`. Stale zero is not fresh recovery.
+For a strictly newer fresh sample, use
+`{field:"measuredAt",gt:baselineMeasuredAt,freshness:"fresh"}`. The installed
+Condition operators are `gt`, `gte`, `lt` and `lte`; `greaterThan` is not an
+operator. The observer resource is the bare metric ID, without a `metric:`
+prefix. The live observation contract supplies these examples to the agent.
 
 An `observe` disposition requires the metric's returned or retained Condition.
 An `investigate` disposition needs actual work or a wait: ordinary dependencies

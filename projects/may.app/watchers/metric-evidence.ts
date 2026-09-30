@@ -12,7 +12,7 @@ export function createMetricEvidenceObserver(
     id: "metric-evidence",
     type: "may.metric.state",
     description:
-      "Read retained value, measuredAt, sampleId and freshness for an exact metric. Choose the expected predicate and review interval. A match invites judgment; it does not accept recovery.",
+      'Read retained value, measuredAt, sampleId and freshness for an exact metric. resource is the bare metric ID, without a metric: prefix. For a newer fresh sample use expected:{field:"measuredAt",gt:BASELINE_MEASURED_AT,freshness:"fresh"}; for fresh zero use expected:{field:"value",equals:0,freshness:"fresh"}. Condition comparators are gt/gte/lt/lte, not greaterThan. Choose reviewAfterMs in milliseconds (minimum 60000). A match invites judgment; it does not accept recovery.',
     intervalMs: 60_000,
     timeoutMs: 15_000,
     async inspect(resource, { signal }) {
