@@ -61,8 +61,14 @@ original process snapshot showed changes only to that error's text/hash and
 the declared coverage/read limit. `reader-live-probe.json` records the calls;
 `reader-projection-diff.json` records those exact changed paths. The reader's
 complete probe took tens of milliseconds locally; this is one observation, not
-a latency guarantee. A new four-call comparison uses the actual captured reader
-output, original property order and criteria, and a recomputed subject hash.
+a latency guarantee. The four-call implementation comparison completed using
+the actual captured reader output, original property order and criteria, and a
+recomputed subject hash. Both candidate reports identified the retained
+120-second timeout and preserved the useful delivered review. The second still
+reversed the helper-read/search order. This is evidence of improved diagnostic
+visibility, not a complete attribution or chronology fix. It also does not prove
+that every failed search is wasteful. The final source check passed 234 tests
+with 1,244 assertions, plus syntax, typecheck and formatting checks.
 
 This correction trades middle text for a visible diagnostic in the same field
 budget, and adds up to eight bounded HTTP reads per attempt (typically none).
