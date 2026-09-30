@@ -140,13 +140,32 @@ test.each(["waiting", "running"] as const)(
           expect(attempts.length).toBeGreaterThanOrEqual(2);
           expect(attempts.some((attempt: { state: string }) => attempt.state === "running")).toBe(false);
         }
-        expect(
-          await publish({
+        const store = AppTaskResourceStore.activeFromDb(db, "sample")!;
+        const condition = store.readTaskContext({ taskIds: ["work/main"] }, { includeHistory: false, childLimit: 0 })
+          .conditions!.release!;
+        const approval = {
+          operatorId: "fixture-operator",
+          authorizationReference: "fixture:restart-review",
+          authorizationEvidence: { decisionText: "approve" },
+          event: {
             type: "project.approval.submitted",
-            target: { appId: "sample" },
-            data: { artifact: "fixture", status: "ready", decision: "approved" },
-          }),
-        ).toMatchObject({ type: "ok" });
+            target: { appId: "sample", taskId: "work/main" },
+            idempotencyKey: "fixture-approval-after-restart",
+            data: {
+              decision: "approve",
+              proposal: {
+                taskGeneration: waiting.generation,
+                conditionId: condition.metadata.id,
+                conditionGeneration: condition.metadata.generation,
+                subject: condition.spec.subject,
+                expected: condition.spec.expected,
+                requestedAction: condition.spec.requestedAction,
+              },
+            },
+          },
+        };
+        const approved = await socketEmit(sb.socketPath, "publish", approval);
+        expect(approved).toMatchObject({ type: "ok", eventType: "project.approval.submitted" });
         const completed = await pollUntil(
           async () => {
             const result = (await socketEmit(sb.socketPath, "app.task.get", {
@@ -163,7 +182,6 @@ test.each(["waiting", "running"] as const)(
           },
         );
         expect(completed).toMatchObject({ id: "work/main", summary: "Exact fact observed" });
-        const store = AppTaskResourceStore.activeFromDb(db, "sample")!;
         const retained = store.readTask("work/main")!;
         expect(retained.metadata).toMatchObject({
           id: "work/main",
@@ -182,6 +200,9 @@ test.each(["waiting", "running"] as const)(
         expect(retained.status.currentAttemptId).toBeUndefined();
         expect(store.isCancelled("work/main")).toBe(false);
         expect(store.readReceipt("work/main")).toBeNull();
+        // A retry reads back the same durable decision even after its wait has
+        // retired and the Task has converged; it does not start another attempt.
+        expect(await socketEmit(sb.socketPath, "publish", approval)).toEqual(approved);
         expect(db.prepare("SELECT COUNT(*) AS count FROM app_tasks WHERE app_id = 'sample'").get()).toEqual({
           count: 1,
         });
