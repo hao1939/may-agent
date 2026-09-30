@@ -210,8 +210,13 @@ function reportFor(ctx: HandlerContext): {
        FROM events
       WHERE timestamp >= ?
         AND event_type = 'metric.alert_judged'
+      UNION ALL
+      SELECT app_id || ':' || attempt_id AS id, 'task.metric_disposition' AS event_type,
+        app_id AS owner, timestamp,
+        json_set(data, '$.ownerTask', json_object('appId', app_id, 'taskId', task_id, 'attemptId', attempt_id)) AS data
+      FROM metric_dispositions WHERE timestamp >= ?
       ORDER BY timestamp DESC, id DESC`,
-    [since],
+    [since, since],
   );
   const latestJudgments = latestJudgmentsByMetric(judgmentRows);
 
@@ -266,7 +271,7 @@ function reportFor(ctx: HandlerContext): {
             ? "noisy"
             : "normal";
       const judgment = latest
-        ? `latest judgment: ${stringValue(latest.operation) || stringValue(latest.verdict) || "recorded"}`
+        ? `latest judgment: ${stringValue(latest.disposition) || stringValue(latest.operation) || stringValue(latest.verdict) || "recorded"}${latest.linkedTask ? `; investigation: ${stringValue(parseJson(latest.linkedTask).appId)}/${stringValue(parseJson(latest.linkedTask).taskId)}` : ""}`
         : "no judgment in window";
       return [
         group.metricId,

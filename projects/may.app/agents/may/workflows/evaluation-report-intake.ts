@@ -9,6 +9,11 @@ import {
 } from "../../../../evaluation.app/agents/evaluator/workflows/lib/public-task-evidence.js";
 import { assessmentContext } from "../../../../evaluation.app/agents/evaluator/workflows/lib/task-assessment-context.js";
 import { planReportIntake } from "../../../evaluation-report-intake.js";
+import {
+  inspectMetricResponse,
+  metricResponseKey,
+  readMetricLinkedTask,
+} from "./metric-response.js";
 import { createHash } from "node:crypto";
 import {
   readMetricEvidence,
@@ -20,7 +25,7 @@ export const description =
   'Run workflow({action:"run",name:"evaluation-report-intake",input:message.context.publication}); preserve the complete publication object, with appId and taskId or metricId at the top level, not { publication: ... }. Integrity-check that report and reread its canonical current subject.';
 
 const missingPublicationIdentity =
-  'Evaluation report intake requires the complete flat publication object. Run workflow({action:"run",name:"evaluation-report-intake",input:message.context.publication}); appId and taskId or metricId must be top-level input fields, all publication fields must be preserved, and input.publication is not accepted.';
+  'Evaluation report intake requires the complete flat publication object. Run workflow({action:"run",name:"evaluation-report-intake",input:message.context.publication}); appId and taskId (or metricId and optional alertId) must be top-level input fields, all publication fields must be preserved, and input.publication is not accepted.';
 
 type Input = PublishedReportRequest;
 type SubjectReader = (subject: {
@@ -100,10 +105,93 @@ function finish(
     facts: [
       `evaluation-intake:${disposition}`,
       `evaluation-report:${ctx.input.facts}`,
-      `evaluation-subject:${ctx.input.appId}/${ctx.input.metricId ?? ctx.input.taskId}`,
+      `evaluation-subject:${ctx.input.metricId ?? `${ctx.input.appId}/${ctx.input.taskId}`}`,
     ],
     actions: [],
   });
+}
+
+async function readPriorIntake(
+  ctx: WorkflowContext<Input>,
+  readLinked = readMetricLinkedTask,
+) {
+  const publication = ctx.input;
+  // Reuse this owner's accepted intake before preparing another handoff. No
+  // registry or list scan: the ordinary Task result is the recovery boundary.
+  let prior:
+    | { evidenceHash: string; disposition: string; linkedTaskId?: string }
+    | undefined;
+  let priorResult: Record<string, unknown> = {};
+  if (ctx.reconciliation?.taskId) {
+    try {
+      const current = object(
+        await ctx.read.tasks.get(ctx.reconciliation.taskId),
+      );
+      if (current.id !== ctx.reconciliation.taskId)
+        throw new Error("Current owner Task unavailable");
+      const accepted = object(current.result);
+      const candidate =
+        accepted.stage === "evaluation-report-intake"
+          ? accepted
+          : object(accepted.result);
+      const previous = object(candidate.publication);
+      if (
+        candidate.stage === "evaluation-report-intake" &&
+        ["investigate", "reuse", "recovered", "no-change"].includes(
+          String(candidate.disposition),
+        ) &&
+        [
+          "appId",
+          "taskId",
+          "metricId",
+          "alertId",
+          "executionId",
+          "evidenceHash",
+          "jsonHash",
+          "markdownHash",
+          "facts",
+          "report",
+          "reviewer",
+          "assessmentPurpose",
+          "rubricVersion",
+          "validityIdentity",
+        ].every((key) => previous[key] === publication[key as keyof Input])
+      ) {
+        const linkedTaskId =
+          typeof candidate.linkedTaskId === "string"
+            ? candidate.linkedTaskId
+            : undefined;
+        if (linkedTaskId) {
+          const appId =
+            typeof candidate.linkedAppId === "string"
+              ? candidate.linkedAppId
+              : null;
+          const linked = object(
+            appId
+              ? await readLinked(appId, linkedTaskId)
+              : await ctx.read.tasks.get(linkedTaskId),
+          );
+          if (
+            !linked ||
+            (linked.taskId ?? linked.id) !== linkedTaskId ||
+            (appId && linked.appId !== appId)
+          )
+            throw new Error("Linked owner Task unavailable");
+        }
+        priorResult = candidate;
+        prior = {
+          evidenceHash: publication.evidenceHash,
+          disposition: String(candidate.disposition),
+          ...(linkedTaskId ? { linkedTaskId } : {}),
+        };
+      }
+    } catch {
+      throw new Error(
+        "Accepted prior intake or its linked owner could not be read; do not create replacement work.",
+      );
+    }
+  }
+  return { prior, priorResult };
 }
 
 export async function intakeEvaluationReport(
@@ -111,9 +199,13 @@ export async function intakeEvaluationReport(
   reportRoot?: string,
   subjectReader: SubjectReader = readSubjectTask,
   metricReader: MetricReader = readMetricEvidence,
+  linkedTaskReader = readMetricLinkedTask,
 ): Promise<ExecutionResult> {
   const publication = ctx.input;
-  if (!publication?.appId || (!publication.taskId && !publication.metricId))
+  if (
+    (!publication?.appId && !publication?.metricId) ||
+    (!publication.taskId && !publication.metricId)
+  )
     return ctx.blocked(missingPublicationIdentity);
   const read = readPublishedEvaluationReport(publication, reportRoot);
   if (read.status === "publication-pending")
@@ -130,9 +222,19 @@ export async function intakeEvaluationReport(
     });
   const checkedReport = checkedReportSummary(read.facts);
   if (publication.metricId) {
-    let current;
+    let current, handling, retained;
     try {
-      current = await metricReader(publication.metricId, Date.now());
+      current = await metricReader(
+        publication.metricId,
+        Date.now(),
+        publication.alertId,
+      );
+      handling = await inspectMetricResponse(
+        current,
+        publication.alertId ?? null,
+        linkedTaskReader,
+      );
+      retained = await readPriorIntake(ctx, linkedTaskReader);
     } catch (error) {
       return finish(ctx, "current-evidence-unavailable", String(error), {
         checkedReport,
@@ -140,17 +242,12 @@ export async function intakeEvaluationReport(
         handoffKey: null,
       });
     }
-    if (current.metric.project !== publication.appId)
-      return finish(
-        ctx,
-        "invalid",
-        "The metric's current App attribution differs from the publication.",
-        { checkedReport },
-      );
     const currentEvidence = {
       metricId: current.metricId,
       end: current.end,
       metric: current.metric,
+      responsibility: current.responsibility,
+      alerts: current.alerts,
       latest: current.latest,
       freshness: current.freshness,
       comparison: current.comparison,
@@ -159,10 +256,27 @@ export async function intakeEvaluationReport(
       Buffer.byteLength(JSON.stringify(currentEvidence)) <= 3_500;
     return finish(
       ctx,
-      "investigate",
+      retained.prior ? "reuse" : "investigate",
       "The report assesses its pinned metric window. Judge its current relevance and reuse linked work when appropriate; neither an improved metric nor a delivered report proves original input recovery.",
       {
         checkedReport,
+        priorRead: retained.prior ? "read" : "absent",
+        priorDisposition: retained.prior?.disposition ?? null,
+        linkedTaskId: handling.prior
+          ? (handling.prior.decision?.linkedTask?.taskId ?? null)
+          : (retained.prior?.linkedTaskId ?? null),
+        linkedAppId: handling.prior
+          ? (handling.prior.decision?.linkedTask?.appId ?? null)
+          : (retained.priorResult.linkedAppId ?? null),
+        handling:
+          Buffer.byteLength(JSON.stringify(handling)) <= 3000
+            ? { ...handling, complete: true }
+            : {
+                key: handling.key,
+                complete: false,
+                omission:
+                  "Read metric-response for exact retained handling before a decision",
+              },
         currentEvidence: complete
           ? { ...currentEvidence, complete: true }
           : {
@@ -173,14 +287,15 @@ export async function intakeEvaluationReport(
                 "Current metric evidence exceeds the intake result bound; reread this metric at the returned cut before any no-action or repair decision.",
             },
         handoffKey: createHash("sha256")
-          .update(
-            `metric\0${publication.appId}\0${publication.metricId}\0${publication.evidenceHash}`,
-          )
+          .update(metricResponseKey(publication.metricId, publication.alertId))
           .digest("hex"),
-        followUpKey: `metric:${publication.appId}/${publication.metricId}`,
+        followUpKey: metricResponseKey(
+          publication.metricId,
+          publication.alertId,
+        ),
         nextOwner: "app:may",
         nextAction:
-          "Record a supported disposition. If unresolved, retain the accountable owner, next action or wait, next review boundary and linked investigation in ordinary Task state. A metric can contain multiple causes; reuse work only when its scope fits.",
+          "Review this report even when the breach already has linked work. Use metric-response to prepare the supported decision and retain its metric-disposition fact in the current Task result. Reuse an investigation only when its scope fits; a recovered metric does not settle its requests. Missing or truncated history does not prove no investigation exists.",
       },
     );
   }
@@ -189,7 +304,7 @@ export async function intakeEvaluationReport(
   // App/Task identities and computes the same canonical evidence hash used by
   // task-outcome publication; it is not private or invented cross-App access.
   const subject = await subjectReader({
-    appId: publication.appId,
+    appId: publication.appId!,
     taskId: publication.taskId!,
     ...(Number.isSafeInteger(object(object(read.facts.evidence).population).end)
       ? {
@@ -252,75 +367,22 @@ export async function intakeEvaluationReport(
       },
     );
 
-  // Reuse this owner's accepted intake before preparing another handoff. No
-  // registry or list scan: the ordinary Task result is the recovery boundary.
-  let prior:
-    | { evidenceHash: string; disposition: string; linkedTaskId?: string }
-    | undefined;
-  let priorResult: Record<string, unknown> = {};
-  if (ctx.reconciliation?.taskId) {
-    try {
-      const current = object(
-        await ctx.read.tasks.get(ctx.reconciliation.taskId),
-      );
-      if (current.id !== ctx.reconciliation.taskId)
-        throw new Error("Current owner Task unavailable");
-      const accepted = object(current.result);
-      const candidate =
-        accepted.stage === "evaluation-report-intake"
-          ? accepted
-          : object(accepted.result);
-      const previous = object(candidate.publication);
-      if (
-        candidate.stage === "evaluation-report-intake" &&
-        ["investigate", "reuse", "recovered", "no-change"].includes(
-          String(candidate.disposition),
-        ) &&
-        [
-          "appId",
-          "taskId",
-          "evidenceHash",
-          "jsonHash",
-          "markdownHash",
-          "facts",
-          "report",
-          "reviewer",
-          "assessmentPurpose",
-          "rubricVersion",
-          "validityIdentity",
-        ].every((key) => previous[key] === publication[key as keyof Input])
-      ) {
-        const linkedTaskId =
-          typeof candidate.linkedTaskId === "string"
-            ? candidate.linkedTaskId
-            : undefined;
-        if (linkedTaskId) {
-          const linked = await ctx.read.tasks.get(linkedTaskId);
-          if (!linked || linked.id !== linkedTaskId)
-            throw new Error("Linked owner Task unavailable");
-        }
-        priorResult = candidate;
-        prior = {
-          evidenceHash: publication.evidenceHash,
-          disposition: String(candidate.disposition),
-          ...(linkedTaskId ? { linkedTaskId } : {}),
-        };
-      }
-    } catch {
-      return finish(
-        ctx,
-        "current-evidence-unavailable",
-        "Accepted prior intake or its linked owner could not be read; do not create replacement work.",
-        { handoffKey: null, priorRead: "unavailable" },
-      );
-    }
+  let retained;
+  try {
+    retained = await readPriorIntake(ctx, linkedTaskReader);
+  } catch (error) {
+    return finish(ctx, "current-evidence-unavailable", String(error), {
+      handoffKey: null,
+      priorRead: "unavailable",
+    });
   }
+  const { prior, priorResult } = retained;
   // A terminal status is a lifecycle receipt, not proof that the evaluated
   // finding was recovered. Recovery remains an evidence-backed May judgment.
   // This intake only verifies report bytes and current subject identity.
   const recovered = false;
   const plan = planReportIntake({
-    appId: publication.appId,
+    appId: publication.appId!,
     taskId: publication.taskId!,
     evidenceHash: publication.evidenceHash,
     jsonHash: publication.jsonHash,

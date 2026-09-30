@@ -1,9 +1,8 @@
 # Metric observations in the existing review loop
 
 **Design status:** Accepted for the first implementation.
-**Implementation status:** Source candidate; isolated App tests, source-SDK type
-checks, syntax build and design checks pass. The paired Host endpoint is reviewed
-and validated through its separate PR.
+**Implementation status:** Paired Host/App source candidate. Validation and exact
+revisions are recorded with the Host PR; activation remains separate.
 No installation activation or model-backed judgment trial is implied.
 
 Persistent failures should receive investigation and an accountable response while
@@ -23,7 +22,10 @@ old observations remain visible even outside both windows. Sample counts/minima/
 maxima cover the whole retained window while examples are explicitly bounded.
 Changes compare values, not sums of rolling counts or inferred counter rates.
 Current definitions are not historical definition snapshots. Retention and missing
-intervals remain evidence limits.
+intervals remain evidence limits. Recorded alert episodes and accepted owner
+decisions are returned with their exact identities and bounded-history limits.
+An optional `alertId` read finds that exact episode and its decisions even outside
+the recent list, with earlier decisions supplied separately as possible related work.
 
 May declares the initial sources and attention thresholds: current unresolved
 input recovery count, oldest unresolved recovery age, rolling failed Task attempts
@@ -37,36 +39,86 @@ Evaluation explicitly subscribes to metric breach, recovery, stall and collectio
 failure events. They wake its existing selector when automatic review is enabled;
 the existing periodic schedule supplies another opportunity to notice persistent
 concerns. The selector alternates metric and Task opportunities, visits a bounded
-number of declared external App metrics, and retains its cursor in its ordinary
+number of active metrics, and retains its cursor in its ordinary
 Task result. It can select open alerts, changed observations, missing/stale samples
 or collection failures. An event is a prompt to reread current evidence, not a
-request for a new model call for every retry.
+request for a new model call for every retry. Metrics with only an owner, or with
+unresolved attribution, remain visible. Declared owners resolve against the
+installed App catalog (an exact App identity, or an unambiguous worker owner).
+A project label is a fallback only when no owner was declared and it resolves to
+an installed App. Unknown/ambiguous/unavailable responsibility remains explicit;
+Evaluation-owned observations are excluded from semantic self-review.
 
 One stable Evaluation Task per metric/reviewer retains the requested cut, shared
 review allowance and next review point. Pending review work takes precedence over
 routine sampling. Budget exhaustion retains a timed wait; failed reads/reviewer
 execution remain incomplete and report through the existing owner path. Ordinary
-Task sampling can continue when metric evidence acquisition fails. Fixed evidence
-and staged report bytes let publication retry without repeating the model call.
+Task sampling can continue when metric evidence acquisition fails. The report store
+retains the first source bytes under the exact metric/cut/reviewer request before
+assessment. Retries read those bytes before consulting mutable sources, then reuse
+the immutable assessment. Task and metric reports share publication/marker handling.
+Definition edits, later ownership changes and source-read failures cannot redirect
+publication recovery to a second judgment of the same requested observation.
 Completed reports suppress duplicate publication; later due observations can
 reconsider an unchanged concern.
 
 Metric reports use the existing judgment schema, immutable report storage,
 publication marker, bounded reader and May intake. Their subject is
-`{appId, metricId}` under `metric-observation-v1`; Task subjects and old paths
-remain unchanged. No placeholder Task is used as evidence. The metric report hash
+`{metricId, alertId?}` under `metric-observation-v1`; responsibility is separate
+evidence, not part of metric identity. The optional alert ID identifies the latest
+recorded episode in the inspected snapshot; other episodes remain evidence, not
+an assertion of shared cause. Existing Task subjects and historical report paths
+remain readable. No placeholder Task is used as evidence. The metric report hash
 binds its captured observations; altered report bytes or mixed subject/rubric
 identities are rejected. May reads the publication and fresh metric evidence before
 judging present relevance. Historical findings are not silently treated as current.
 Oversized judgments or current metric evidence are explicitly omitted from the
 bounded intake result and require reading the exact source before a decision.
 
-May owns disposition and intervention. It reuses linked work when the scope fits;
+May coordinates disposition and intervention with the accountable App. It reuses linked work when the scope fits;
 otherwise an independently owned outcome uses an ordinary Task. Unresolved concerns
 retain an owner, next action or justified wait, next review boundary and evidence.
 One metric can contain several causes: a correlation key is not a claim that all
 findings have the same cause. Acknowledgment, a proposed patch and improvement in
 an aggregate do not prove fulfillment of the original input.
+
+## Breach identity and retained response
+
+One ongoing breach has one existing `alertId`. Changed values update that alert;
+recovery closes it, and a later breach gets a new identity. Manual resolution or
+configuration changes can also close an alert, so closure is not recovery proof.
+
+Direct operational handling and May's report intake use the same `metric-response`
+workflow. It reads accepted decisions by metric/alert, checks the exact linked App
+and Task, and returns their current contents for scope judgment. A missing linked
+Task leaves evidence unavailable; it does not authorize replacement work. Later
+reports still require review even when they join the same investigation. A new
+episode can point to the same investigation after owner judgment; no automatic
+reopening or one-Task-per-sample behavior is introduced.
+
+The owner records a compact `metric-disposition:` JSON fact in its ordinary Task
+or Conversation result. It contains version 1, metricId, alertId (null for a
+finding without a breach), disposition, reason, evidence references, optional
+linkedTask {appId, taskId}, and nextAction/nextReviewAt while unresolved. The
+workflow prepares and validates that fact, returning a normal waiting result and
+reviewAt where needed. The caller retains it and the owed review boundary in its
+parent result. Only accepted Task results supply the `metric_dispositions` read
+projection; a report, unaccepted execution result or workflow return is not an
+accepted owner decision. No incident registry or additional decision store exists.
+
+The evidence endpoint, dashboard and daily digest read that projection. They
+retain the source App, Task and accepted attempt, plus the linked investigation.
+Historical `metric.alert_judged` observations remain readable for old consumers;
+new Evaluation publications are never relabeled as owner judgment. Task-report
+and metric-report intake share exact-publication reuse, while breach decisions
+also connect different reports and entry paths.
+
+The latest accepted decision is discoverable even after its owner handles other
+work. Read history is bounded and is not universal discovery or a global lock.
+When another App owns the concern, May returns evidence through its existing
+owner path instead of commissioning a competing repair. Agents still judge
+scope, changed responsibility, the significance of a new observation, and whether
+the original requirement is fulfilled.
 
 The unfinished Evaluation review metric routes its initial alert directly to May,
 not to Evaluation for semantic self-assessment. Changed-value repeats do not create

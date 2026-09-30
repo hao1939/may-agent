@@ -31,9 +31,10 @@ function text(value: unknown): string {
 }
 
 export type PublishedReportRequest = {
-  appId: string;
+  appId?: string;
   taskId?: string;
   metricId?: string;
+  alertId?: number;
   evidenceHash: string;
   executionId: string;
   reviewer?: "evaluator" | "evaluator-deepseek";
@@ -64,6 +65,11 @@ export function readPublishedEvaluationReport(
   const rubricVersion = request.rubricVersion ?? TASK_OUTCOME_RUBRIC_VERSION;
   const validityIdentity = request.validityIdentity ?? "";
   if (
+    (request.alertId !== undefined &&
+      (!request.metricId ||
+        !Number.isSafeInteger(request.alertId) ||
+        request.alertId <= 0)) ||
+    (!request.appId && !request.metricId) ||
     (!request.taskId && !request.metricId) ||
     (Boolean(request.taskId) && Boolean(request.metricId)) ||
     Boolean(request.metricId) !== (assessmentPurpose === "metric") ||
@@ -89,7 +95,7 @@ export function readPublishedEvaluationReport(
         request.reviewer,
       )
     : taskReportPaths(
-        request.appId,
+        request.appId!,
         request.taskId!,
         request.evidenceHash,
         rubricVersion,
@@ -132,14 +138,17 @@ export function readPublishedEvaluationReport(
       reason: "publication hashes do not match accepted bytes",
     };
   try {
+    const facts = JSON.parse(readFileSync(entry.absoluteJsonPath, "utf8"));
+    if (request.alertId !== facts.subject?.alertId)
+      return {
+        status: "invalid",
+        reason: "Publication breach identity differs from retained evidence",
+      };
     return {
       status: "valid",
       jsonHash: entry.jsonSha256,
       markdownHash: entry.markdownSha256,
-      facts: JSON.parse(readFileSync(entry.absoluteJsonPath, "utf8")) as Record<
-        string,
-        unknown
-      >,
+      facts,
     };
   } catch {
     return {

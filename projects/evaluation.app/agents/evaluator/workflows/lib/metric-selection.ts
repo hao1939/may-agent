@@ -59,9 +59,6 @@ export async function selectMetricCandidate(
         (metric: any) =>
           typeof metric.id === "string" &&
           metric.id.length <= 512 &&
-          typeof metric.project === "string" &&
-          metric.project &&
-          metric.project.replace(/\.app$/, "") !== "evaluation" &&
           metric.status === "active",
       )
       .sort((a: any, b: any) => a.id.localeCompare(b.id));
@@ -82,6 +79,16 @@ export async function selectMetricCandidate(
         Math.min(now, Number(metric.measured_at ?? 0) + 1),
       );
       const evidence = await reader(metric.id, cut);
+      if (evidence.metricId !== metric.id || evidence.end !== cut)
+        throw new Error(
+          "Metric selection evidence identity differs from the request",
+        );
+      if (evidence.responsibility?.appId === "evaluation") {
+        facts.push(`selector:metric-excluded:${metric.id}:evaluation-owned`);
+        continue;
+      }
+      if (evidence.responsibility?.status !== "resolved")
+        facts.push(`selector:metric-owner-unknown:${metric.id}`);
       const latest = evidence.latest as any;
       const comparison = evidence.comparison as any;
       const collectionFailures = evidence.collectionFailures as any[];

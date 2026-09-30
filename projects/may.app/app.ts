@@ -366,7 +366,10 @@ export function evaluationTaskReportInput(
   event: AppEvent<Record<string, unknown>>,
 ): AppInput | null {
   const data = record(event.data);
-  const appId = requiredText(data, "appId", event.type);
+  const appId =
+    event.type === "evaluation.metric_report_published"
+      ? optionalText(data.appId)
+      : requiredText(data, "appId", event.type);
   if (appId === "evaluation" || appId === "evaluation.app") return null;
   const metricId =
     event.type === "evaluation.metric_report_published"
@@ -386,8 +389,11 @@ export function evaluationTaskReportInput(
   const rubricVersion = optionalText(data.rubricVersion);
   const validityIdentity = optionalText(data.validityIdentity);
   const publication = {
-    appId,
+    ...(appId ? { appId } : {}),
     ...(metricId ? { metricId } : { taskId }),
+    ...(metricId && data.alertId !== undefined
+      ? { alertId: data.alertId }
+      : {}),
     evidenceHash,
     executionId,
     report,
@@ -402,7 +408,7 @@ export function evaluationTaskReportInput(
   return {
     kind: "message",
     data: {
-      message: `Review the published Evaluation report for ${appId}/${metricId ?? taskId}. Run evaluation-report-intake with this exact context.publication before any duplicate or reuse conclusion; the intake checks exact publication identity before reusing a prior intake, and an unrelated prior disposition is not this report. Then verify material concerns against current evidence and record an ordinary Task disposition. Reuse linked work. Settle the immediate incident separately from the population finding: current recovery does not erase recurring failures, cost or uncertainty. A duplicate or harmless one-off can need no change; a supported recurring pattern can justify the smallest investigation even after recovery. Before proposing a candidate, judge practical value versus cost and whether a simpler solution would suffice. For an unresolved concern retain its owner, next action or justified wait, and next review boundary in the existing Task. Notification, acknowledgment and a patch are not verified recovery; metrics do not authorize stopping retries or reopening work.`,
+      message: `Review the published Evaluation report for ${metricId ?? `${appId}/${taskId}`}. Run evaluation-report-intake with this exact context.publication before any duplicate or reuse conclusion; the intake checks exact publication identity before reusing a prior intake, and an unrelated prior disposition is not this report. Then verify material concerns against current evidence and record an ordinary Task disposition. Reuse linked work. Settle the immediate incident separately from the population finding: current recovery does not erase recurring failures, cost or uncertainty. A duplicate or harmless one-off can need no change; a supported recurring pattern can justify the smallest investigation even after recovery. Before proposing a candidate, judge practical value versus cost and whether a simpler solution would suffice. For an unresolved concern retain its owner, next action or justified wait, and next review boundary in the existing Task. Notification, acknowledgment and a patch are not verified recovery; metrics do not authorize stopping retries or reopening work.`,
       context: {
         publication,
         caller: {

@@ -23,7 +23,7 @@ export const SUPPORTED_TASK_RUBRIC_VERSIONS = new Set([
 export type AssessmentPurpose = "outcome" | "ongoing" | "metric";
 
 export type TaskReportEntry = {
-  appId: string;
+  appId?: string;
   reviewer: string;
   taskId?: string;
   metricId?: string;
@@ -52,7 +52,7 @@ export type TaskReportEntry = {
 type PublicationMarker = {
   version: 1;
   accepted: true;
-  appId: string;
+  appId?: string;
   taskId?: string;
   metricId?: string;
   evidenceHash: string;
@@ -149,19 +149,19 @@ export function metricEvidenceHash(evidence: unknown): string {
 }
 
 export function metricReportPaths(
-  appId: string,
+  appId: string | undefined,
   metricId: string,
   evidenceHash: string,
   reviewer = "evaluator",
 ) {
   const identity = createHash("sha256")
-    .update(`${appId}\0${metricId}`)
+    .update(`${appId ?? ""}\0${metricId}`)
     .digest("hex")
     .slice(0, 16);
   const base = join(
     "metric-observations",
     safe(reviewer),
-    safe(appId),
+    appId ? safe(appId) : "by-metric",
     METRIC_RUBRIC_VERSION,
     `${safe(metricId)}-${identity}-${evidenceHash}`,
   );
@@ -202,7 +202,7 @@ function publicationPaths(
   }
   if (!marker.taskId) throw new Error("Publication subject is missing");
   return taskReportPaths(
-    marker.appId,
+    marker.appId!,
     marker.taskId,
     marker.evidenceHash,
     marker.rubricVersion,
@@ -287,7 +287,7 @@ export function renderTaskReportMarkdown(payload: unknown): string | null {
     : "";
   const createdAt = Number(report.createdAt);
   if (
-    !appId ||
+    (!appId && !metricId) ||
     (!taskId && !metricId) ||
     (Boolean(taskId) && Boolean(metricId)) ||
     !evidenceHash ||
@@ -310,12 +310,19 @@ export function renderTaskReportMarkdown(payload: unknown): string | null {
     const evidence = object(report.evidence);
     if (
       purpose !== "metric" ||
+      (subject.alertId !== undefined &&
+        (!Number.isSafeInteger(subject.alertId) ||
+          Number(subject.alertId) <= 0 ||
+          !Array.isArray(evidence.alerts) ||
+          !evidence.alerts.some(
+            (alert) => object(alert).alertId === subject.alertId,
+          ))) ||
       metricEvidenceHash(evidence) !== evidenceHash ||
       text(evidence.metricId) !== metricId ||
-      text(object(evidence.metric).project) !== appId
+      (appId && text(object(evidence.metric).project) !== appId)
     )
       return null;
-    return `# Evaluation report\n\n- Metric: \`${appId}/${metricId}\`\n- Evidence: \`${evidenceHash}\`\n- Purpose: metric\n- Rubric: \`${rubricVersion}\`\n- Source revision: \`${sourceRevision}\`\n${reviewerLines}- Disposition: \`${disposition}\`\n- Created: \`${new Date(createdAt).toISOString()}\`\n- Evaluator execution: \`${executionId}\`\n\n## Summary\n\n${summary}\n\n## Recorded comparison\n\n\`\`\`json\n${JSON.stringify({ end: evidence.end, freshness: evidence.freshness, latest: evidence.latest, comparison: evidence.comparison }, null, 2)}\n\`\`\`\n\nMetric changes do not establish cause or fulfillment of individual requests.\n\n## Responsibility\n\n${responsibility}\n\n## Findings\n\n${findings.map((item) => `- ${item}`).join("\n") || "- None."}\n\n## Verification and delivery\n\n${verification.map((item) => `- ${item}`).join("\n") || "- No verification cited."}\n- Delivery: ${delivery}\n`;
+    return `# Evaluation report\n\n- Metric: \`${appId ? `${appId}/` : ""}${metricId}\`\n- Evidence: \`${evidenceHash}\`\n- Purpose: metric\n- Rubric: \`${rubricVersion}\`\n- Source revision: \`${sourceRevision}\`\n${reviewerLines}- Disposition: \`${disposition}\`\n- Created: \`${new Date(createdAt).toISOString()}\`\n- Evaluator execution: \`${executionId}\`\n\n## Summary\n\n${summary}\n\n## Recorded comparison\n\n\`\`\`json\n${JSON.stringify({ end: evidence.end, responsibility: evidence.responsibility, alerts: evidence.alerts, freshness: evidence.freshness, latest: evidence.latest, comparison: evidence.comparison }, null, 2)}\n\`\`\`\n\nMetric changes do not establish cause or fulfillment of individual requests.\n\n## Responsibility\n\n${responsibility}\n\n## Findings\n\n${findings.map((item) => `- ${item}`).join("\n") || "- None."}\n\n## Verification and delivery\n\n${verification.map((item) => `- ${item}`).join("\n") || "- No verification cited."}\n- Delivery: ${delivery}\n`;
   }
   if (
     rubricVersion === TASK_OUTCOME_RUBRIC_VERSION &&
@@ -424,7 +431,7 @@ function publishedEntry(
     )
       return null;
     return {
-      appId,
+      ...(appId ? { appId } : {}),
       reviewer,
       ...(metricId ? { metricId } : { taskId }),
       evidenceHash,

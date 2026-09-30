@@ -13,7 +13,10 @@ import {
   selectMetricCandidate,
   metricReviewTaskId,
 } from "./lib/metric-selection.js";
-import { type MetricEvidence } from "./lib/metric-evidence.js";
+import {
+  resolveMetricResponsibility,
+  type MetricEvidence,
+} from "./lib/metric-evidence.js";
 import { taskInputForEvent, taskIntentForInput } from "../../../app.js";
 import { evaluationTaskReportInput } from "../../../../may.app/app.js";
 import { intakeEvaluationReport } from "../../../../may.app/agents/may/workflows/evaluation-report-intake.js";
@@ -46,6 +49,12 @@ function evidence(metricId = "sample.failures", cut = end): MetricEvidence {
       note: "Failure percentage remains 20%; no Task started for the unresolved input.",
     },
     comparison: { previousLast: 5, currentLast: 10, change: 5 },
+    responsibility: {
+      appId: metricId === "own.review" ? "evaluation" : "sample",
+      status: "resolved",
+      declaredOwner: "sample",
+      project: "sample",
+    },
     collectionFailures: [],
   };
 }
@@ -125,7 +134,7 @@ test("pre-Task evidence uses the existing report, publication reader and May int
   expect(taskReads).toBe(0);
   expect((intake.output as any).result).toMatchObject({
     disposition: "investigate",
-    followUpKey: "metric:sample/sample.failures",
+    followUpKey: JSON.stringify(["metric", "sample.failures", null]),
     checkedReport: { complete: true },
     currentEvidence: { complete: true },
   });
@@ -236,7 +245,7 @@ test("periodic selection revisits persistent metrics, honors the prior review bo
         ctx,
         "",
         "evaluator",
-        async () => evidence(),
+        async (id, cut) => evidence(id, cut),
         list,
         end,
       )
@@ -247,7 +256,7 @@ test("periodic selection revisits persistent metrics, honors the prior review bo
     ctx,
     "",
     "evaluator",
-    async () => evidence(),
+    async (id, cut) => evidence(id, cut),
     list,
     end,
   );
@@ -296,4 +305,248 @@ test("periodic selection revisits persistent metrics, honors the prior review bo
     end,
   );
   expect(stale.candidate?.metricId).toBe("sample.failures");
+});
+
+test("owner-only and unattributed metrics remain reviewable without treating project labels as App identity", async () => {
+  const apps = [
+    { id: "platform", owner: "operator" },
+    { id: "evaluation", owner: "evaluator" },
+  ];
+  expect(
+    resolveMetricResponsibility({ owner: "operator" }, apps),
+  ).toMatchObject({ appId: "platform", status: "resolved" });
+  expect(
+    resolveMetricResponsibility({ project: "project-with-no-app" }, apps),
+  ).toMatchObject({ appId: null, status: "unknown" });
+  expect(
+    resolveMetricResponsibility({ owner: "shared" }, [
+      { id: "a", owner: "shared" },
+      { id: "b", owner: "shared" },
+    ]),
+  ).toMatchObject({ appId: null, status: "ambiguous" });
+  const selected = await selectMetricCandidate(
+    context(),
+    "",
+    "evaluator",
+    async (id, cut) => ({
+      ...evidence(id, cut),
+      metric: { id, owner: "operator", status: "active" },
+    }),
+    async () => ({
+      metrics: [
+        {
+          id: "owner.only",
+          owner: "operator",
+          status: "active",
+          alertOpen: true,
+        },
+      ],
+    }),
+    end,
+  );
+  expect(selected.candidate?.metricId).toBe("owner.only");
+  const root = mkdtempSync(join(tmpdir(), "metric-owner-"));
+  roots.push(root);
+  const ctx = context({
+    callAgent: async () => ({
+      id: "review",
+      kind: "agent",
+      status: "done",
+      output: judgment,
+    }),
+  });
+  const reviewed = await reviewMetric(
+    ctx,
+    async () => ({
+      ...evidence(),
+      metric: { ...evidence().metric, project: "project-with-no-app" },
+      responsibility: resolveMetricResponsibility(
+        { project: "project-with-no-app" },
+        apps,
+      ),
+    }),
+    root,
+  );
+  const publication = (reviewed.output as any).result.publication;
+  expect(publication).not.toHaveProperty("appId");
+  expect(readPublishedEvaluationReport(publication, root).status).toBe("valid");
+});
+
+test("publication retry uses the retained assessment even when metric source reads would now differ or fail", async () => {
+  const root = mkdtempSync(join(tmpdir(), "metric-replay-"));
+  roots.push(root);
+  let calls = 0,
+    reads = 0,
+    fail = true;
+  const ctx = context({
+    callAgent: async () => {
+      calls++;
+      return {
+        id: "first-assessment",
+        kind: "agent",
+        status: "done",
+        output: judgment,
+      };
+    },
+    emit: async () => {
+      if (fail) throw new Error("publication unavailable");
+    },
+  });
+  const reader = async () => {
+    reads++;
+    return {
+      ...evidence(),
+      alerts: [{ alertId: 42, createdAt: end - 10, resolvedAt: null }],
+    };
+  };
+  await expect(reviewMetric(ctx, reader, root)).rejects.toThrow(
+    "publication unavailable",
+  );
+  fail = false;
+  const replay = await reviewMetric(
+    ctx,
+    async () => {
+      reads++;
+      throw new Error("definition was changed and source is now unavailable");
+    },
+    root,
+  );
+  const publication = (replay.output as any).result.publication;
+  expect(calls).toBe(1);
+  expect(reads).toBe(1);
+  expect(publication).toMatchObject({
+    executionId: "first-assessment",
+    alertId: 42,
+  });
+  expect(readPublishedEvaluationReport(publication, root).status).toBe("valid");
+  expect(
+    readPublishedEvaluationReport({ ...publication, alertId: 43 }, root).status,
+  ).toBe("invalid");
+});
+
+test("new reports for a breach retain the direct owner's investigation and duplicate intake reads its accepted link", async () => {
+  const root = mkdtempSync(join(tmpdir(), "metric-intake-"));
+  roots.push(root);
+  const reader = async (id: string, cut: number) => ({
+    ...evidence(id, cut),
+    alerts: [{ alertId: 42, createdAt: end - 10, resolvedAt: null }],
+  });
+  const review = await reviewMetric(
+    context({
+      callAgent: async () => ({
+        id: "review",
+        kind: "agent",
+        status: "done",
+        output: judgment,
+      }),
+    }),
+    reader,
+    root,
+  );
+  const publication = (review.output as any).result.publication;
+  const reads: string[] = [];
+  const link = { appId: "sample", taskId: "repair/existing" };
+  const current = async (id: string, cut: number) => ({
+    ...(await reader(id, cut)),
+    dispositions: [
+      {
+        appId: "sample",
+        taskId: "owner-review",
+        attemptId: "accepted",
+        decision: {
+          version: 1,
+          metricId: id,
+          alertId: 42,
+          disposition: "investigate",
+          linkedTask: link,
+        },
+      },
+    ],
+  });
+  const linkedRead = async (appId: string, taskId: string) => {
+    reads.push(`${appId}/${taskId}`);
+    return { appId, taskId, status: "waiting" };
+  };
+  const first = await intakeEvaluationReport(
+    context({ input: publication }),
+    root,
+    undefined,
+    current,
+    linkedRead,
+  );
+  const saved = (first.output as any).result;
+  expect(saved).toMatchObject({
+    disposition: "investigate",
+    linkedTaskId: link.taskId,
+    linkedAppId: link.appId,
+  });
+  let ownerReads = 0;
+  const replay = await intakeEvaluationReport(
+    context({
+      input: publication,
+      reconciliation: { taskId: "may-owner" },
+      read: createTestAppRead({
+        tasks: {
+          get: async () => {
+            ownerReads++;
+            return { id: "may-owner", result: saved } as any;
+          },
+        },
+      }),
+    }),
+    root,
+    undefined,
+    current,
+    linkedRead,
+  );
+  expect(ownerReads).toBe(1);
+  expect((replay.output as any).result).toMatchObject({
+    disposition: "reuse",
+    linkedTaskId: link.taskId,
+  });
+  expect(reads.every((id) => id === "sample/repair/existing")).toBe(true);
+  const laterRoot = mkdtempSync(join(tmpdir(), "metric-later-"));
+  roots.push(laterRoot);
+  const laterReview = await reviewMetric(
+    context({
+      input: { metricId: "sample.failures", end: end + 1 },
+      callAgent: async () => ({
+        id: "later-review",
+        kind: "agent",
+        status: "done",
+        output: judgment,
+      }),
+    }),
+    reader,
+    laterRoot,
+  );
+  const later = await intakeEvaluationReport(
+    context({
+      input: (laterReview.output as any).result.publication,
+      reconciliation: { taskId: "may-owner" },
+      read: createTestAppRead({
+        tasks: { get: async () => ({ id: "may-owner", result: saved }) as any },
+      }),
+    }),
+    laterRoot,
+    undefined,
+    current,
+    linkedRead,
+  );
+  expect((later.output as any).result).toMatchObject({
+    disposition: "investigate",
+    priorRead: "absent",
+    linkedTaskId: link.taskId,
+  });
+  expect((later.output as any).result.handoffKey).toBe(saved.handoffKey);
+  const missing = await intakeEvaluationReport(
+    context({ input: publication }),
+    root,
+    undefined,
+    current,
+    async () => {
+      throw new Error("missing linked owner");
+    },
+  );
+  expect(missing.output).toMatchObject({ state: "incomplete" });
 });

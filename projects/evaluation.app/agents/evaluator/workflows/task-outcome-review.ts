@@ -1,3 +1,4 @@
+import { publishRetainedReport } from "./lib/report-publication.js";
 import {
   renderPopulation,
   populationEvidence,
@@ -18,7 +19,6 @@ import { taskEmissionKey } from "./lib/task-emission.js";
 import {
   configuredTaskReportRoot,
   hashReport,
-  markTaskReportPublished,
   renderTaskReportMarkdown,
   type AssessmentPurpose,
   resolveTaskReportPath,
@@ -387,71 +387,55 @@ async function publish(
   const markdownHash = hashReport(
     resolveTaskReportPath(reportRoot, report.markdownPath),
   );
-  await ctx.events.emit({
-    type: "evaluation.task_report_published",
-    localKey: taskEmissionKey(
-      ctx,
-      assessment.purpose === "ongoing"
-        ? `task-report-${subject.evidenceHash!.slice(0, 16)}-${createHash(
-            "sha256",
-          )
-            .update(assessment.validityIdentity)
-            .digest("hex")
-            .slice(
-              0,
-              12,
-            )}${report.attribution.reviewer === "evaluator" ? "" : `-${report.attribution.reviewer}`}`
-        : `task-report-${subject.evidenceHash!.slice(0, 16)}${report.attribution.reviewer === "evaluator" ? "" : `-${report.attribution.reviewer}`}`,
-    ),
-    data: {
-      appId: subject.appId,
-      taskId: subject.taskId,
-      evidenceHash: subject.evidenceHash,
-      executionId: report.executionId,
-      ...(report.attribution.reviewer === "evaluator-deepseek"
-        ? {
-            reviewer: report.attribution.reviewer,
-            configuredModel:
-              report.attribution.configuredModel || "unknown:not-recorded",
-            observedModel:
-              report.attribution.observedModel || "unknown:not-recorded",
-          }
-        : {}),
-      report: report.markdownPath,
-      facts: report.jsonPath,
-      jsonHash,
-      markdownHash,
-      ...(assessment.purpose === "ongoing"
-        ? {
-            assessmentPurpose: assessment.purpose,
-            rubricVersion: assessment.rubricVersion,
-            validityIdentity: assessment.validityIdentity,
-          }
-        : {}),
+  await publishRetainedReport(
+    ctx,
+    {
+      type: "evaluation.task_report_published",
+      localKey: taskEmissionKey(
+        ctx,
+        assessment.purpose === "ongoing"
+          ? `task-report-${subject.evidenceHash!.slice(0, 16)}-${createHash(
+              "sha256",
+            )
+              .update(assessment.validityIdentity)
+              .digest("hex")
+              .slice(
+                0,
+                12,
+              )}${report.attribution.reviewer === "evaluator" ? "" : `-${report.attribution.reviewer}`}`
+          : `task-report-${subject.evidenceHash!.slice(0, 16)}${report.attribution.reviewer === "evaluator" ? "" : `-${report.attribution.reviewer}`}`,
+      ),
+      data: {
+        appId: subject.appId,
+        taskId: subject.taskId,
+        evidenceHash: subject.evidenceHash,
+        executionId: report.executionId,
+        ...(report.attribution.reviewer === "evaluator-deepseek"
+          ? {
+              reviewer: report.attribution.reviewer,
+              configuredModel:
+                report.attribution.configuredModel || "unknown:not-recorded",
+              observedModel:
+                report.attribution.observedModel || "unknown:not-recorded",
+            }
+          : {}),
+        report: report.markdownPath,
+        facts: report.jsonPath,
+        jsonHash,
+        markdownHash,
+        ...(assessment.purpose === "ongoing"
+          ? {
+              assessmentPurpose: assessment.purpose,
+              rubricVersion: assessment.rubricVersion,
+              validityIdentity: assessment.validityIdentity,
+            }
+          : {}),
+      },
+      target: { appId: "evaluation" },
     },
-    target: { appId: "evaluation" },
-  });
-  // The marker is the durable discoverability boundary. Staged files remain
-  // invisible until the publication event has been accepted.
-  markTaskReportPublished(reportRoot, {
-    appId: subject.appId,
-    taskId: subject.taskId,
-    evidenceHash: subject.evidenceHash!,
-    executionId: report.executionId,
-    ...(report.attribution.reviewer === "evaluator-deepseek"
-      ? { reviewer: report.attribution.reviewer }
-      : {}),
-    ...(assessment.purpose === "ongoing"
-      ? {
-          rubricVersion: assessment.rubricVersion,
-          validityIdentity: assessment.validityIdentity,
-        }
-      : {}),
-    jsonPath: report.jsonPath,
-    markdownPath: report.markdownPath,
-    jsonSha256: jsonHash,
-    markdownSha256: markdownHash,
-  });
+    reportRoot,
+    true,
+  );
 }
 
 function done(

@@ -52,6 +52,18 @@ result as any claim that App-local changes were submitted or applied.
 
 ## Boundaries
 
+For a metric breach, call `metric-response` with the exact `metricId` and
+`alertId` from the input. The same alert can produce repeated updates. Read its
+accepted decision and linked Task before commissioning work; May's Evaluation
+intake consults the same evidence. After judging the finding, call the workflow
+with `decision` (disposition, reason, evidence, optional linkedTask, and for an
+unresolved concern nextAction and nextReviewAt). Retain its returned
+`metric-disposition:` fact in this Task's final `facts`. The workflow prepares
+the fact; only normal Task result acceptance makes it discoverable. Retain the
+corresponding Task wait/review boundary when further work remains. A new breach
+may link to the same investigation; a metric recovery or closed alert neither
+finishes that investigation nor authorizes reopening a closed Task.
+
 Deployment is an operation owned by this App, not a special Task mode. Before
 deploying, retrying, or deciding a deployment result after restart, inspect the
 exact correlated receipt. An exact `deployment.settled` Task event may

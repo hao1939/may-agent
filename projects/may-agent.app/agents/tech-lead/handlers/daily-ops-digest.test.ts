@@ -124,6 +124,30 @@ describe("daily-ops-digest", () => {
       ],
     );
 
+    db.prepare(
+      `INSERT INTO app_task_attempts(app_id, attempt_id, task_id, task_generation, state, started_at, attempt_json)
+      VALUES ('may-agent', 'accepted-metric-decision', 'owner-review', 1, 'completed', ?, ?)`,
+    ).run(
+      now - 500,
+      JSON.stringify({
+        finishedAt: new Date(now - 100).toISOString(),
+        acceptedResult: {
+          state: "waiting",
+          facts: [
+            `metric-disposition:${JSON.stringify({
+              version: 1,
+              metricId: "runtime.daemon-heartbeat-stale",
+              alertId: 1,
+              disposition: "investigate",
+              reason: "Check missed heartbeats",
+              evidence: ["event:fixture"],
+              linkedTask: { appId: "may-agent", taskId: "repair/heartbeat" },
+            })}`,
+          ],
+        },
+      }),
+    );
+
     const result = await execute(ctx);
     close();
 
@@ -154,6 +178,7 @@ describe("daily-ops-digest", () => {
     expect(existsSync(reportPath)).toBe(true);
     const report = readFileSync(reportPath, "utf8");
     expect(report).toContain("# Daily Ops Digest");
+    expect(report).toContain("investigation: may-agent/repair/heartbeat");
     expect(report).toContain("runtime.daemon-heartbeat-stale");
     expect(report).toContain("runtime.stale-running-session-count");
     expect(report).toContain("latest judgment: calibrate_metric");

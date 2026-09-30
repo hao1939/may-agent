@@ -386,6 +386,21 @@ the sequence simple:
 
 Metrics provide observation. Apps retain judgment and ownership.
 
+An existing `alertId` groups an ongoing breach across repeated measurements.
+Resolution ends that recorded episode; a later breach has a new ID. Resolution
+may be manual or configuration-driven, and neither it nor a lower aggregate
+proves an affected request was fulfilled. Apps may connect multiple episodes to
+one investigation after judging its scope.
+
+Accepted Task facts retain the owner's metric disposition and exact linked work.
+The `metric_dispositions` view projects those facts without a new decision store;
+the metric evidence endpoint, dashboard and daily digest use it. A published
+Evaluation report and an unaccepted execution result are not owner decisions.
+The App workflow prepares a disposition for ordinary Task result acceptance and
+uses the same linked-work reader for direct alerts and Evaluation intake. See
+[metric pattern review](../../../evaluation.app/design/metric-pattern-review.md#breach-identity-and-retained-response)
+for the fact contract, bounded history and responsibility rules.
+
 ### Task-attempt public reporting
 
 `GET /api/task-attempts?appId=example&end=<epoch-ms>` reads two adjacent

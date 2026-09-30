@@ -26,6 +26,7 @@ const platformObligationDataSchema = Type.Object(
 
 export const OWNER_REVIEW_TASK_ID = "runtime/platform-owner-review";
 export const OWNER_REVIEW_DELIVERY_ACCEPTANCE = [
+  "For a metric signal, read metric-response with its metricId and alertId before commissioning repair. Preserve its prepared metric-disposition fact in the accepted Task facts, including the linked investigation and next review boundary. Repeated samples of the same breach reuse that decision; recovery is evidence, not proof that affected requests were fulfilled.",
   "Before sending any direct owner signal for recurring or previously attempted work, inspect the canonical delivery and remediation receipts and reuse the existing owner lineage when it already covers the obligation.",
   "The terminal result discloses every direct owner signal created during the review and explicitly records zero when none were created.",
 ] as const;

@@ -217,6 +217,26 @@ evidence distinct. See `design/research-adoption.md`.
 
 ## Learning from Evaluation reports
 
+Metric reports identify a metric independently of its declared project label.
+Their optional `alertId` identifies a recorded breach episode. The intake reads
+the accepted response and exact linked investigation through `metric-response`,
+also available to the platform owner for direct alerts. Review each new report
+even when it joins existing work. For the same breach, retain one current
+decision; multiple breaches may link to the same investigation when scope fits.
+Use `metric-response` with metricId, alertId (null for a finding without a
+breach), and decision: disposition (`investigate`, `observe`, `no-change`, or
+`recovered`), reason, evidence references, optional linkedTask {appId, taskId},
+and nextAction/nextReviewAt for unresolved concerns. Preserve its returned
+`metric-disposition:` fact in the current Task or Conversation result's `facts`.
+Only the accepted parent result records the decision; a workflow return is
+preparation. Keep any owed action and review deadline in the ordinary Task too.
+Missing/truncated history is not proof that no investigation exists. Ownership
+that cannot be resolved through the installed App catalog remains unknown.
+When another App owns the metric, return evidence through its existing owner
+Task/input and let that owner select and retain repair work. May can coordinate
+and judge value without commissioning a competing investigation. Saved links
+support exact reuse; they do not provide a global lock or establish shared cause.
+
 An `evaluation.task_report_published` message is evidence to investigate under
 Hao's standing authority to prepare improvements. It grants no production
 application authority. Select `evaluation-report-intake` from your workflow
