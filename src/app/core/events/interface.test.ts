@@ -409,6 +409,37 @@ describe("simple event interface", () => {
     });
   });
 
+  it("reads all saved Task destinations independently of route labels and inbox delivery", () => {
+    const { db, events } = fixture();
+    const receipt = events.publish(
+      { type: "sample.document.observed", data: { resource: "draft.md" } },
+      { source: "fixture", allowUnregisteredFact: true },
+    );
+    createAppEventAdmissionPlan(db, {
+      eventId: receipt.eventId,
+      registrySnapshotId: "test",
+      registryGeneration: 1,
+      routes: [
+        { appId: "sample", kind: "task", routeId: "document.changed", intent: null,
+          conditionTaskIds: ["review/one", "review/two"] },
+        { appId: "producer", kind: "task", routeId: "route-label",
+          intent: { id: "new-review", parentId: "root", outcome: "Review", acceptance: ["Evidence"] },
+          conditionTaskIds: ["other-review"] },
+        { appId: "exact", kind: "exact-task", routeId: "input-route", targetedTaskId: "target",
+          conditionTaskIds: ["target", "another-wait"] },
+        { appId: "inbox", kind: "inbox", routeId: "document-input",
+          input: { kind: "message", data: { text: "Review" } }, conditionTaskIds: ["waiting-review"] },
+      ],
+    });
+    const links = events.get(receipt.eventId)!.links;
+    expect(links.filter((link) => link.kind === "task").map((link) => link.id).sort()).toEqual([
+      "exact/another-wait", "exact/target", "inbox/waiting-review", "producer/new-review",
+      "producer/other-review", "sample/review/one", "sample/review/two",
+    ]);
+    expect(links).toContainEqual({ kind: "delivery", id: `app-event:${receipt.eventId}:inbox`,
+      state: "pending", summary: "App inbox admission is pending" });
+  });
+
   it("admits only exact fenced Task control Events", () => {
     const { bus, events } = fixture();
     bus.subscribeDurableRoute((event) =>
