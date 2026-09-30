@@ -34,6 +34,23 @@ is idempotent, while stale, changed, or differently scoped proposals are
 rejected. The operator socket is an installation trust boundary, not an OS
 sandbox against code that already has arbitrary shell access.
 
+Human channels submit one ordinary `conversation.message.created` input. For an
+explicit proposal reply, `data.replyTo` names the displayed message and
+`data.approvalReply` contains `{ target: { appId, taskId }, proposal }` from that
+same Task detail. Telegram resolves its native reply; Console uses
+`/task <ref>` followed by `/reply <ref> <text>`. Bare text and automatic watch
+updates never select an approval. Socket submissions supply frame-level
+`operatorId`, `authorizationReference`, and `authorizationEvidence`; the operator
+name is attribution, not authenticated human identity.
+
+The Host recognizes exact decisions, preserves the input and proposal, then
+publishes the existing decision event from its durable Conversation route. Its
+`inputEventId` links to the original text. A receipt's optional `approval` reports
+the decision event ID or why none was recorded. Conditional text remains App
+conversation. Interrupted publication resumes from the saved input through the
+existing recovery scan, without another channel delivery or a replacement
+proposal. Direct privileged decision publication remains available.
+
 Apps can import `readVerifiedApprovalDecision` from `@may-agent/sdk` to read the
 common stamp without maintaining a Telegram/operator source allowlist. The App
 still owns domain checks such as packet hashes and approved application scope.
