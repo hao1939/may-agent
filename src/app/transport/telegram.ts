@@ -107,7 +107,14 @@ export interface TelegramBotOptions {
   bus: EventBus;
   interfaceAgent: string;
   humanTasks: Pick<HumanTaskService, "getTask" | "listApps" | "listTasks">;
-  publishEvent: (input: EventInput) => EventReceipt;
+  publishEvent: (
+    input: EventInput,
+    approvalAuthorization?: {
+      actor: { kind: "human"; id: string };
+      reference: string;
+      evidence: Record<string, unknown>;
+    },
+  ) => EventReceipt;
 }
 
 export interface TelegramBot {
@@ -522,6 +529,10 @@ export type TelegramApprovalAnchor = {
   proposalRevision?: number;
   taskGeneration: number;
   conditionId: string;
+  conditionGeneration: number;
+  subject: string;
+  expected: unknown;
+  requestedAction: string;
 };
 
 export type TelegramApprovalReply = TelegramApprovalAnchor & {
@@ -610,7 +621,11 @@ function approvalAnchor(task: HumanTaskView | null): TelegramApprovalAnchor | nu
     approvalId,
     displayedActionHash: createHash("sha256").update(displayedAction).digest("hex"),
     taskGeneration: task!.generation,
-    conditionId: String(expected.conditionId),
+    conditionId: condition.metadata?.id ?? String(expected.conditionId),
+    conditionGeneration: condition.metadata?.generation ?? Number(expected.conditionGeneration ?? 1),
+    subject: condition.spec.subject,
+    expected: structuredClone(condition.spec.expected),
+    requestedAction: displayedAction,
     ...(typeof expected.packetHash === "string" ? { packetHash: expected.packetHash } : {}),
     ...(typeof expected.proposalHash === "string" ? { proposalHash: expected.proposalHash } : {}),
     ...(Number.isSafeInteger(expected.proposalRevision) ? { proposalRevision: Number(expected.proposalRevision) } : {}),
@@ -639,10 +654,10 @@ export function telegramApprovalReply(
     !displayed ||
     !current ||
     Object.keys(current).some(
-      (key) => displayed[key as keyof TelegramApprovalAnchor] !== current[key as keyof TelegramApprovalAnchor],
+      (key) => JSON.stringify(displayed[key as keyof TelegramApprovalAnchor]) !== JSON.stringify(current[key as keyof TelegramApprovalAnchor]),
     ) ||
     Object.keys(displayed).some(
-      (key) => displayed[key as keyof TelegramApprovalAnchor] !== current[key as keyof TelegramApprovalAnchor],
+      (key) => JSON.stringify(displayed[key as keyof TelegramApprovalAnchor]) !== JSON.stringify(current[key as keyof TelegramApprovalAnchor]),
     )
   )
     return null;
@@ -1576,27 +1591,35 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
       // failed, provider replay resumes here and records only the missing event.
       const approvalKey = `telegram-approval:${chatIdStr}:${msg.message_id}`;
       if (!resumeRecordedInput("project.approval.submitted", approvalKey, false)) {
-        opts.publishEvent({
-          type: "project.approval.submitted",
-          target: { appId: approval.task.appId, taskId: approval.task.taskId },
-          data: {
-            approvalId: approval.approvalId,
-            decision: approval.decision,
-            ...(approval.packetHash ? { packetHash: approval.packetHash } : {}),
-            ...(approval.proposalHash ? { proposalHash: approval.proposalHash } : {}),
-            ...(approval.proposalRevision ? { proposalRevision: approval.proposalRevision } : {}),
-            taskGeneration: approval.taskGeneration,
-            conditionId: approval.conditionId,
-            provenance: {
-              provider: "telegram",
-              authenticatedSenderId: approverId,
-              chatId: chatIdStr,
-              sourceMessageId: msg.message_id,
-              replyToMessageId: replyToMsgId,
+        opts.publishEvent(
+          {
+            type: "project.approval.submitted",
+            target: { appId: approval.task.appId, taskId: approval.task.taskId },
+            data: {
+              approvalId: approval.approvalId,
+              decision: approval.decision,
+              ...(approval.packetHash ? { packetHash: approval.packetHash } : {}),
+              ...(approval.proposalHash ? { proposalHash: approval.proposalHash } : {}),
+              ...(approval.proposalRevision ? { proposalRevision: approval.proposalRevision } : {}),
+              taskGeneration: approval.taskGeneration,
+              conditionId: approval.conditionId,
+              proposal: {
+                taskGeneration: approval.taskGeneration,
+                conditionId: approval.conditionId,
+                conditionGeneration: approval.conditionGeneration,
+                subject: approval.subject,
+                expected: approval.expected,
+                requestedAction: approval.requestedAction,
+              },
             },
+            idempotencyKey: approvalKey,
           },
-          idempotencyKey: approvalKey,
-        });
+          {
+            actor: { kind: "human", id: approverId },
+            reference: `telegram:${chatIdStr}:${msg.message_id}`,
+            evidence: { chatId: chatIdStr, sourceMessageId: msg.message_id, replyToMessageId: replyToMsgId },
+          },
+        );
       }
       queueCommandDelivery(surface, () =>
         sendMessage(chatIdStr, `${approval.decision} recorded for the exact proposal.`, undefined, {

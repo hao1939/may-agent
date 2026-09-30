@@ -1,5 +1,7 @@
+import { matchesVerifiedApprovalCondition } from "../events/approval.js";
 import { commitTaskMutation, type AppTaskContext, type TaskTree } from "./app-task-store.js";
 import { taskEventPredatesReopening, type AppTaskCondition } from "./app-task-state.js";
+import { isHumanActionOwner } from "./human-condition.js";
 
 export type AppTaskConditionWake = {
   conditionId: string;
@@ -56,6 +58,22 @@ function eventField(event: Record<string, unknown>, ...names: string[]): unknown
     if (data[name] !== undefined) return data[name];
   }
   return undefined;
+}
+
+function approvalTargetsTask(
+  appId: string,
+  taskId: string,
+  taskGeneration: number,
+  condition: AppTaskCondition,
+  event: Record<string, unknown>,
+): boolean {
+  if (condition.spec.type !== "project.approval.submitted" || !isHumanActionOwner(condition.spec.owner)) return true;
+  const proposal = isRecord(event.data) && isRecord(event.data.proposal) ? event.data.proposal : {};
+  return (
+    eventField(event, "appId") === appId &&
+    eventField(event, "taskId") === taskId &&
+    proposal.taskGeneration === taskGeneration
+  );
 }
 
 function normalizedState(value: unknown): string {
@@ -202,6 +220,12 @@ function matchesExpectedRecord(expected: Record<string, unknown>, event: Record<
 
 function matches(condition: AppTaskCondition, event: Record<string, unknown>): boolean {
   if (condition.spec.type !== event.type) return false;
+  if (
+    condition.spec.type === "project.approval.submitted" &&
+    isHumanActionOwner(condition.spec.owner) &&
+    !matchesVerifiedApprovalCondition(condition, event)
+  )
+    return false;
   // Level observations are not immutable historical facts. A newly declared
   // wait must not be satisfied by an older state, check, or pulse replayed from
   // the event journal. Only an observation made at or after the Condition was
@@ -224,37 +248,53 @@ function matches(condition: AppTaskCondition, event: Record<string, unknown>): b
 
 /** Shared matcher for per-App and global indexed Condition routes. */
 function isAppInputReport(condition: AppTaskCondition, event: Record<string, unknown>): boolean {
-  return condition.spec.type === "app.dependency.updated" && event.type === condition.spec.type &&
+  return (
+    condition.spec.type === "app.dependency.updated" &&
+    event.type === condition.spec.type &&
     condition.metadata.id.startsWith("app-request:") &&
     condition.spec.subject === `id:${String(eventField(event, "id") ?? "")}` &&
-    eventField(event, "kind") === "app" && eventField(event, "status") === "blocked" &&
-    stableEquals(condition.spec.expected, { field: "status", equals: "done" });
+    eventField(event, "kind") === "app" &&
+    eventField(event, "status") === "blocked" &&
+    stableEquals(condition.spec.expected, { field: "status", equals: "done" })
+  );
 }
 
 export function matchesAppTaskCondition(
   condition: unknown,
   event: Record<string, unknown>,
 ): condition is AppTaskCondition {
-  return isCondition(condition) && condition.status.state !== "true" &&
-    (matches(condition, event) || (isAppInputReport(condition, event) &&
-      (!isRecord(condition.status.observed) || condition.status.observed.state !== "blocked" ||
-        (Number.isSafeInteger(eventField(event, "reportRevision")) &&
-          // Reports observed before revisions existed already represent revision 1.
-          Number(eventField(event, "reportRevision")) > Number(condition.status.observed.reportRevision ?? 1)))));
+  return (
+    isCondition(condition) &&
+    condition.status.state !== "true" &&
+    (matches(condition, event) ||
+      (isAppInputReport(condition, event) &&
+        (!isRecord(condition.status.observed) ||
+          condition.status.observed.state !== "blocked" ||
+          (Number.isSafeInteger(eventField(event, "reportRevision")) &&
+            // Reports observed before revisions existed already represent revision 1.
+            Number(eventField(event, "reportRevision")) > Number(condition.status.observed.reportRevision ?? 1)))))
+  );
 }
 
 /** Recognize the facts that belong to a wait, including an already observed fact. */
-export function matchesAppTaskConditionFacts(condition: unknown, event: Record<string, unknown>): condition is AppTaskCondition {
+export function matchesAppTaskConditionFacts(
+  condition: unknown,
+  event: Record<string, unknown>,
+): condition is AppTaskCondition {
   return isCondition(condition) && (matches(condition, event) || isAppInputReport(condition, event));
 }
 
 function observation(event: Record<string, unknown>): Record<string, unknown> {
   return {
     ...(event.type === "app.dependency.updated" && eventField(event, "status") === "blocked"
-      ? { summary: eventField(event, "summary"), response: eventField(event, "response"),
+      ? {
+          summary: eventField(event, "summary"),
+          response: eventField(event, "response"),
           reportAttemptId: eventField(event, "reportAttemptId"),
           reportRevision: eventField(event, "reportRevision"),
-          result: eventField(event, "result"), facts: eventField(event, "facts") }
+          result: eventField(event, "result"),
+          facts: eventField(event, "facts"),
+        }
       : {}),
     eventType: event.type,
     source: event.source,
@@ -289,7 +329,8 @@ function applyConditionEvent(
         ["waiting", "running", "pending"].includes(resource.status.phase) &&
         resource.status.conditionIds?.includes(id) &&
         !taskEventPredatesReopening(resource, event) &&
-        (!allowedTaskIds || allowedTaskIds.has(resource.metadata.id)),
+        (!allowedTaskIds || allowedTaskIds.has(resource.metadata.id)) &&
+        approvalTargetsTask(tree.project ?? "", resource.metadata.id, resource.metadata.generation, condition, event),
     );
     // Conditions are task-local wait state, not a second event journal. Once
     // no live waiting/running task owns one, replaying facts into it has no
@@ -422,6 +463,13 @@ export function matchingAppTaskConditionTaskIds(
     if (!matchesAppTaskCondition(condition, event)) continue;
     for (const taskId of taskIds) {
       if (allowed && !allowed.has(taskId)) continue;
+      const resource = config.resourceStore.readTask(taskId);
+      if (
+        !resource ||
+        !approvalTargetsTask(config.resourceStore.appId, taskId, resource.metadata.generation, condition, event)
+      ) {
+        continue;
+      }
       matched.add(taskId);
     }
   }

@@ -141,6 +141,9 @@ export function createAppTaskEmitter(input: {
       const key = localKey.trim();
       if (!key || key.length > 256) throw new Error("Task emit localKey must contain 1-256 characters");
       if (!emitted.type.includes(".")) throw new Error("Task emit requires a canonical dot-separated event type");
+      if (emitted.type === "project.approval.submitted") {
+        throw new Error("Formal human approval must use a Host-verified human ingress");
+      }
       if (emitted.type === "app.input.requested") {
         throw new Error("Cross-App result work must use a typed Task dependency, not events.emit");
       }

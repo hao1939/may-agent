@@ -71,6 +71,10 @@ const anchorA: TelegramApprovalAnchor = {
   proposalRevision: 1,
   taskGeneration: 1,
   conditionId: "approval-a",
+  conditionGeneration: 1,
+  subject: "id:proposal-a",
+  expected: proposalA.diagnostics!.conditions[0]!.condition!.spec.expected,
+  requestedAction: action(proposalA),
 };
 
 describe("Telegram exact approval reply", () => {

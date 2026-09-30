@@ -508,10 +508,11 @@ export async function runAppRuntime(opts: {
           listApps: (appId) => humanTasks.listApps(appId),
           listTasks: (options) => humanTasks.listTasks(options),
         },
-        publishEvent: (input) =>
+        publishEvent: (input, approvalAuthorization) =>
           events.publish(input, {
             source: "telegram",
             inputSource: { kind: "human", id: "telegram" },
+            ...(approvalAuthorization ? { approvalAuthorization } : {}),
           }),
       })
     : { close: () => {} };

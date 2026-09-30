@@ -8,6 +8,7 @@ import type {
   PublicEvent,
 } from "@may-agent/control/events";
 import { findPersistedEventId } from "../../../lib/db-writer.js";
+import { stampApproval, validateCurrentApproval, type ApprovalIngressAuthorization } from "./approval.js";
 import { readEventTaskTarget } from "./task-target.js";
 import { readPersistedEventEnvelope } from "./persisted.js";
 import type { SqliteDb } from "../../../lib/db.js";
@@ -33,6 +34,8 @@ export type EventPublisherContext = {
   inputSource?: AppInputSource;
   /** Operator/in-process fact ingress may publish domain types not owned by Host routing. */
   allowUnregisteredFact?: boolean;
+  /** Trusted adapter evidence for the formal approval boundary; payload provenance is ignored. */
+  approvalAuthorization?: ApprovalIngressAuthorization;
 };
 
 export type EventInterface = {
@@ -289,9 +292,11 @@ const EVENT_DEFINITIONS: Readonly<Record<string, EventDefinition>> = {
     },
   },
   "project.approval.submitted": {
+    addressFields: ["appId", "taskId"],
     delivery: "record",
-    validate: (input) => {
+    validate: (input, options) => {
       requiredText(input.data.decision, "project.approval.submitted data.decision");
+      validateCurrentApproval(input, options.db);
     },
   },
   "project.comment.created": {
@@ -427,10 +432,12 @@ function eventOwner(input: EventInput): string {
 
 function canonicalEvent(input: EventInput, context: EventPublisherContext): AgentEvent {
   const source = requiredText(context.source, "Event source");
-  const address = Object.fromEntries((EVENT_DEFINITIONS[input.type]?.addressFields ?? []).flatMap((field) => {
-    const value = targetValue(input, field);
-    return value ? [[field, value]] : [];
-  }));
+  const address = Object.fromEntries(
+    (EVENT_DEFINITIONS[input.type]?.addressFields ?? []).flatMap((field) => {
+      const value = targetValue(input, field);
+      return value ? [[field, value]] : [];
+    }),
+  );
   const data: Record<string, unknown> = {
     ...input.data,
     ...address,
@@ -457,7 +464,11 @@ function canonicalEvent(input: EventInput, context: EventPublisherContext): Agen
 }
 
 /** Confirm a publication without rerunning App routing or accepting a key-only receipt. */
-export function findEventPublication(db: SqliteDb, input: EventInput, context: EventPublisherContext): number | undefined {
+export function findEventPublication(
+  db: SqliteDb,
+  input: EventInput,
+  context: EventPublisherContext,
+): number | undefined {
   return findPersistedEventId(db, canonicalEvent(normalizeInput(input), context));
 }
 
@@ -639,7 +650,8 @@ function linksForEvent(db: SqliteDb, eventId: number, eventType: string, data: R
         kind: "delivery",
         id: `app-event:${eventId}:${routeAppId}`,
         state: String(route.status),
-        summary: optionalText(route.last_error) ??
+        summary:
+          optionalText(route.last_error) ??
           (routeKind === "noop" ? "App selected no work" : `App ${routeAppId} admission is pending`),
       });
     }
@@ -693,8 +705,24 @@ export function createEventInterface(options: CreateEventInterfaceOptions): Even
 
   return {
     publish(rawInput, context) {
-      const input = normalizeInput(rawInput);
+      let input = normalizeInput(rawInput);
       const definition = EVENT_DEFINITIONS[input.type];
+      if (input.type === "project.approval.submitted") {
+        requiredText(input.data.decision, "project.approval.submitted data.decision");
+        if (!context.approvalAuthorization) throw new Error("Formal approval requires trusted ingress authorization");
+        input = stampApproval(input, requiredText(context.source, "Event source"), context.approvalAuthorization);
+        const replay = findPersistedEventId(options.db, canonicalEvent(input, context));
+        if (replay) {
+          const view = get(replay);
+          if (!view) throw new Error(`Persisted event ${replay} is unavailable`);
+          return {
+            eventId: replay,
+            eventType: input.type,
+            delivery: view.delivery.state === "accepted" ? "accepted" : "recorded",
+            ...(view.links.length ? { links: view.links } : {}),
+          };
+        }
+      }
       if (!definition && !context.allowUnregisteredFact) {
         throw new Error(`Event type '${input.type}' is not admitted by this interface`);
       }
