@@ -426,6 +426,30 @@ CREATE TABLE IF NOT EXISTS metric_alerts (
 CREATE INDEX IF NOT EXISTS idx_ma_open_created ON metric_alerts(created_at DESC, id DESC) WHERE resolved_at IS NULL;
 CREATE INDEX IF NOT EXISTS idx_ma_open_metric_created ON metric_alerts(metric_id, created_at DESC, id DESC) WHERE resolved_at IS NULL;
 
+-- A read projection, not another decision store. Apps retain metric decisions
+-- in ordinary accepted Task facts (including Conversation Tasks). Unaccepted
+-- execution output and Evaluation publication are never owner dispositions.
+CREATE VIEW IF NOT EXISTS metric_dispositions AS
+WITH facts AS (
+  SELECT a.app_id, a.task_id, a.attempt_id,
+    CAST(unixepoch(json_extract(a.attempt_json, '$.finishedAt'), 'subsec') * 1000 AS INTEGER) AS timestamp,
+    CASE WHEN f.type = 'text' AND substr(f.value, 1, 19) = 'metric-disposition:'
+      AND length(f.value) <= 4000 AND json_valid(substr(f.value, 20))
+      THEN substr(f.value, 20) ELSE '{}' END AS data
+  FROM app_task_attempts a, json_each(a.attempt_json, '$.acceptedResult.facts') f
+)
+SELECT app_id, task_id, attempt_id, timestamp, data,
+  json_extract(data, '$.metricId') AS metric_id,
+  json_extract(data, '$.alertId') AS alert_id
+FROM facts
+WHERE json_extract(data, '$.version') = 1
+  AND json_type(data, '$.metricId') = 'text'
+  AND length(json_extract(data, '$.metricId')) > 0
+  AND json_extract(data, '$.disposition') IN ('investigate', 'observe', 'no-change', 'recovered')
+  AND (json_type(data, '$.alertId') = 'null'
+    OR (json_type(data, '$.alertId') = 'integer' AND json_extract(data, '$.alertId') > 0))
+  AND timestamp IS NOT NULL;
+
 ${NOTIFICATION_SCHEMA}
 
 CREATE TABLE IF NOT EXISTS projects (

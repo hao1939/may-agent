@@ -1,5 +1,6 @@
 #!/usr/bin/env bun
 import { taskAttemptsQuery, readTaskAttempts } from "../adapters/reporting/task-attempts.js";
+import { metricEvidenceQuery, readMetricEvidence } from "../adapters/reporting/metric-evidence.js";
 /**
  * may-agent HTTP adapter — API, static WebUI, and dashboard websocket.
  *
@@ -589,6 +590,25 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
     db: SqliteDb,
     alert: { alertId?: number; metricId?: string; createdAt?: number },
   ): Record<string, unknown> | null {
+    const accepted = db
+      .prepare(
+        `SELECT app_id, task_id, attempt_id, timestamp, data
+      FROM metric_dispositions WHERE metric_id = ? AND alert_id = ?
+      ORDER BY timestamp DESC, attempt_id DESC LIMIT 1`,
+      )
+      .get(alert.metricId ?? null, alert.alertId ?? null);
+    if (accepted)
+      return {
+        ...parseEventData(String(accepted.data)),
+        owner: accepted.app_id,
+        timestamp: accepted.timestamp,
+        source: {
+          kind: "accepted-task-result",
+          appId: accepted.app_id,
+          taskId: accepted.task_id,
+          attemptId: accepted.attempt_id,
+        },
+      };
     const row = db
       .prepare(
         `SELECT id, owner, timestamp, data
@@ -3584,6 +3604,17 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
       if (url.pathname === "/api/events") return handleEvents(url);
       if (url.pathname === "/api/learning") return handleLearning(url);
       if (url.pathname === "/api/loop-trace") return handleLoopTrace(url);
+      const metricEvidenceMatch = url.pathname.match(/^\/api\/metrics\/([^/]+)\/evidence$/);
+      if (metricEvidenceMatch) {
+        if (req.method !== "GET") return json({ error: "GET required" }, 405);
+        let query: ReturnType<typeof metricEvidenceQuery>;
+        try {
+          query = metricEvidenceQuery(url.searchParams);
+        } catch (error) {
+          return json({ error: error instanceof Error ? error.message : "Invalid metric evidence window" }, 400);
+        }
+        return json(readMetricEvidence(_db(), decodeURIComponent(metricEvidenceMatch[1]), query));
+      }
       const metricHistoryMatch = url.pathname.match(/^\/api\/metrics\/([^/]+)\/history$/);
       if (metricHistoryMatch) {
         const metricId = decodeURIComponent(metricHistoryMatch[1]);
