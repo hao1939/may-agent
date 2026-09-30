@@ -6,6 +6,8 @@ import { closeDb, getDb } from "../../../lib/requests.js";
 import { DbWriter } from "../../../lib/db-writer.js";
 import { AppTaskResourceStore } from "../state/app-task-resource-store.js";
 import { applyAppTaskConditionEvent } from "../tasks/app-task-condition-tracker.js";
+import { appTaskContext, cancelAppTask } from "../tasks/app-task-reconciler.js";
+import { readVerifiedApprovalDecision } from "@may-agent/sdk";
 import { EventBus } from "./bus.js";
 import { createEventInterface } from "./interface.js";
 
@@ -17,7 +19,7 @@ afterEach(() => {
   }
 });
 
-function fixture() {
+function fixture(additionalExpected: Record<string, unknown> = {}) {
   const root = mkdtempSync(join(tmpdir(), "approval-contract-"));
   roots.push(root);
   const db = getDb(root);
@@ -29,11 +31,11 @@ function fixture() {
     metadata: { id: "release", generation: 1, resourceVersion: 1 },
     spec: {
       type: "project.approval.submitted",
-      subject: "approvalId:release",
+      subject: "candidate:release",
       owner: "human",
       requestedAction: "Apply reviewed candidate",
       reviewAfterMs: 60_000,
-      expected: { approvalId: "release", allowedDecisions: ["approve", "reject", "defer"] },
+      expected: { allowedDecisions: ["approve", "reject", "defer"], ...additionalExpected },
     },
     status: { state: "unknown", observedGeneration: 0 },
   };
@@ -50,14 +52,29 @@ function fixture() {
         status: {
           phase: "waiting",
           observedGeneration: 0,
-          conditionIds: ["release"],
+          conditionIds: ["release", "tests"],
+          result: { retained: "previous accepted result" },
           updatedAt: new Date().toISOString(),
         },
       },
     },
-    conditions: { release: condition },
+    conditions: {
+      release: condition,
+      tests: {
+        metadata: { id: "tests", generation: 1, resourceVersion: 1 },
+        spec: {
+          type: "fixture.tests",
+          subject: "suite:all",
+          expected: "passed",
+          owner: "app:tester",
+          reviewAfterMs: 60_000,
+        },
+        status: { state: "unknown", observedGeneration: 0 },
+      },
+    },
   };
-  AppTaskResourceStore.fromDb(db, "sample").bootstrapSnapshot(tree, "fixture");
+  const store = AppTaskResourceStore.fromDb(db, "sample");
+  store.bootstrapSnapshot(tree, "fixture");
   const events = createEventInterface({
     bus,
     db,
@@ -74,7 +91,7 @@ function fixture() {
     expected: condition.spec.expected,
     requestedAction: condition.spec.requestedAction,
   };
-  return { tree, events, proposal };
+  return { tree, events, proposal, db, store, root };
 }
 
 function authorization(kind: "human" | "operator") {
@@ -105,6 +122,8 @@ describe("Host verified approval contract", () => {
       expect(event.data).toMatchObject({ decision: "approve", proposal });
       expect(event.data.hostApproval).toMatchObject({ ingressSource: source, actor: { kind } });
       expect(applyAppTaskConditionEvent(tree, event)).toEqual([{ taskId: "work", conditionId: "release" }]);
+      expect(tree.conditions.tests.status.state).toBe("unknown");
+      expect(tree.resources.work.status.result).toEqual({ retained: "previous accepted result" });
     }
   });
 
@@ -158,11 +177,89 @@ describe("Host verified approval contract", () => {
     changedGeneration.resources.work.metadata.generation = 2;
     expect(applyAppTaskConditionEvent(changedGeneration, event)).toEqual([]);
     const changedTask = structuredClone(tree);
-    changedTask.resources.other = { ...changedTask.resources.work, metadata: { id: "other", generation: 1, resourceVersion: 1 } };
+    changedTask.resources.other = {
+      ...changedTask.resources.work,
+      metadata: { id: "other", generation: 1, resourceVersion: 1 },
+    };
     delete changedTask.resources.work;
     expect(applyAppTaskConditionEvent(changedTask, event)).toEqual([]);
     const changedApp = structuredClone(tree);
     changedApp.project = "other";
     expect(applyAppTaskConditionEvent(changedApp, event)).toEqual([]);
+    const changedCondition = structuredClone(tree);
+    changedCondition.conditions.release.metadata.generation++;
+    expect(applyAppTaskConditionEvent(changedCondition, event)).toEqual([]);
+  });
+
+  it("uses current cancellation state without initializing unknown Apps", () => {
+    const { events, proposal, db, store, root } = fixture();
+    const input = {
+      type: "project.approval.submitted",
+      target: { appId: "sample", taskId: "work" },
+      data: { decision: "approve", proposal },
+      idempotencyKey: "cancelled",
+    };
+    const context = { source: "control-socket", approvalAuthorization: authorization("operator") };
+    expect(() => events.publish({ ...input, target: { appId: "missing", taskId: "work" } }, context)).toThrow(
+      "not found",
+    );
+    expect(db.prepare("SELECT COUNT(*) AS n FROM app_task_store_meta WHERE app_id = 'missing'").get()?.n).toBe(0);
+    cancelAppTask(
+      appTaskContext({ appDir: root, projectDir: root, agent: "owner", maxConcurrent: 1, resourceStore: store }),
+      {
+        appId: "sample",
+        taskId: "work",
+        expectedGeneration: 1,
+        expectedResourceVersion: 1,
+        reason: "Human withdrew the request",
+      },
+    );
+    expect(() => events.publish(input, context)).toThrow("not awaiting approval");
+    expect(
+      db.prepare("SELECT COUNT(*) AS n FROM events WHERE event_type = 'project.approval.submitted'").get()?.n,
+    ).toBe(0);
+  });
+
+  it("requires coexisting decision constraints to agree before journaling", () => {
+    const { events, proposal, db } = fixture({ acceptedDecisions: ["reject"] });
+    expect(() =>
+      events.publish(
+        {
+          type: "project.approval.submitted",
+          target: { appId: "sample", taskId: "work" },
+          data: { decision: "approve", proposal },
+          idempotencyKey: "constraints",
+        },
+        { source: "control-socket", approvalAuthorization: authorization("operator") },
+      ),
+    ).toThrow("not allowed");
+    expect(db.prepare("SELECT COUNT(*) AS n FROM events").get()?.n).toBe(0);
+  });
+
+  it("rejects inconsistent ingress attribution and safely reads malformed journal data", () => {
+    const { events, proposal } = fixture();
+    const input = {
+      type: "project.approval.submitted",
+      target: { appId: "sample", taskId: "work" },
+      data: { decision: "approve", proposal },
+      idempotencyKey: "attribution",
+    };
+    expect(() =>
+      events.publish(input, { source: "app-task:sample", approvalAuthorization: authorization("human") }),
+    ).toThrow();
+    expect(() =>
+      events.publish(input, { source: "control-socket", approvalAuthorization: authorization("human") }),
+    ).toThrow();
+    const receipt = events.publish(input, {
+      source: "control-socket",
+      approvalAuthorization: authorization("operator"),
+    });
+    const event = events.get(receipt.eventId)!.event;
+    expect(readVerifiedApprovalDecision(event)?.hostApproval.actor.kind).toBe("operator");
+    const malformed = structuredClone(event);
+    (malformed.data.hostApproval as any).actor.id = 123;
+    expect(readVerifiedApprovalDecision(malformed)).toBeNull();
+    delete malformed.data.hostApproval;
+    expect(readVerifiedApprovalDecision(malformed)).toBeNull();
   });
 });

@@ -15,12 +15,22 @@ export type HostApprovalStamp = {
 };
 
 export type VerifiedApprovalDecision = {
-  decision: unknown;
+  decision: string;
   proposal: ApprovalProposal;
   hostApproval: HostApprovalStamp;
 };
 
-/** Read the Host authority contract without duplicating ingress source policy in an App. */
+function record(value: unknown): value is Record<string, unknown> {
+  return value !== null && typeof value === "object" && !Array.isArray(value);
+}
+
+function nonempty(value: unknown): value is string {
+  return typeof value === "string" && value.trim().length > 0;
+}
+
+/** Parse a trusted Host journal read. Caller/model JSON is not authorization.
+ * The App still checks the exact current Task, candidate, evidence and scope.
+ */
 export function readVerifiedApprovalDecision(event: {
   type: string;
   source?: string;
@@ -28,41 +38,33 @@ export function readVerifiedApprovalDecision(event: {
 }): VerifiedApprovalDecision | null {
   if (event.type !== "project.approval.submitted" || (event.source !== "telegram" && event.source !== "control-socket"))
     return null;
+  if (!record(event.data)) return null;
   const stamp = event.data.hostApproval;
   const proposal = event.data.proposal;
+  if (!record(stamp) || !record(proposal)) return null;
   if (
-    !stamp ||
-    typeof stamp !== "object" ||
-    Array.isArray(stamp) ||
-    !proposal ||
-    typeof proposal !== "object" ||
-    Array.isArray(proposal)
-  )
-    return null;
-  const hostApproval = stamp as Partial<HostApprovalStamp>;
-  const anchor = proposal as Partial<ApprovalProposal>;
-  if (
-    hostApproval.version !== 1 ||
-    hostApproval.ingressSource !== event.source ||
-    !hostApproval.actor ||
-    !hostApproval.actor.id?.trim() ||
-    !hostApproval.authorization ||
-    !hostApproval.authorization.reference?.trim() ||
-    !hostApproval.authorization.evidence ||
-    typeof hostApproval.authorization.evidence !== "object" ||
-    !Number.isSafeInteger(anchor.taskGeneration) ||
-    Number(anchor.taskGeneration) < 1 ||
-    !anchor.conditionId?.trim() ||
-    !Number.isSafeInteger(anchor.conditionGeneration) ||
-    Number(anchor.conditionGeneration) < 1 ||
-    !anchor.subject?.trim() ||
-    !anchor.requestedAction?.trim() ||
-    !("expected" in anchor)
+    stamp.version !== 1 ||
+    stamp.ingressSource !== event.source ||
+    !record(stamp.actor) ||
+    !nonempty(stamp.actor.id) ||
+    stamp.actor.kind !== (event.source === "telegram" ? "human" : "operator") ||
+    !record(stamp.authorization) ||
+    !nonempty(stamp.authorization.reference) ||
+    !record(stamp.authorization.evidence) ||
+    !nonempty(event.data.decision) ||
+    !Number.isSafeInteger(proposal.taskGeneration) ||
+    Number(proposal.taskGeneration) < 1 ||
+    !nonempty(proposal.conditionId) ||
+    !Number.isSafeInteger(proposal.conditionGeneration) ||
+    Number(proposal.conditionGeneration) < 1 ||
+    !nonempty(proposal.subject) ||
+    !nonempty(proposal.requestedAction) ||
+    !("expected" in proposal)
   )
     return null;
   return {
     decision: event.data.decision,
-    proposal: anchor as ApprovalProposal,
-    hostApproval: hostApproval as HostApprovalStamp,
+    proposal: proposal as ApprovalProposal,
+    hostApproval: stamp as HostApprovalStamp,
   };
 }

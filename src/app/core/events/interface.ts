@@ -650,8 +650,7 @@ function linksForEvent(db: SqliteDb, eventId: number, eventType: string, data: R
         kind: "delivery",
         id: `app-event:${eventId}:${routeAppId}`,
         state: String(route.status),
-        summary:
-          optionalText(route.last_error) ??
+        summary: optionalText(route.last_error) ??
           (routeKind === "noop" ? "App selected no work" : `App ${routeAppId} admission is pending`),
       });
     }

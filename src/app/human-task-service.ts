@@ -388,8 +388,10 @@ function configuredTaskRecurrence(
       if (schedule.enabled === false || !Number.isFinite(schedule.intervalMs) || schedule.intervalMs <= 0) continue;
       const linkedInput =
         entry.definition.id === row.app_id && Boolean(schedule.input) && linkedInputScheduleIds.has(schedule.id);
-      const eventTarget = schedule.event?.type === "project.task.tick" ? readEventTaskTarget(schedule.event) : null;
-      const exactTaskTick = eventTarget?.appId === row.app_id && eventTarget.taskId === row.task_id;
+      const eventTarget =
+        schedule.event?.type === "project.task.tick" ? readEventTaskTarget(schedule.event) : null;
+      const exactTaskTick =
+        eventTarget?.appId === row.app_id && eventTarget.taskId === row.task_id;
       if (linkedInput || exactTaskTick) cadences.add(schedule.intervalMs);
     }
   }
@@ -1072,21 +1074,20 @@ export class HumanTaskService {
     // selective open-human Condition index and follow its exact owner routes;
     // recursive dependency discovery remains only for scoped reads.
     const directGlobalHumanOwners = humanActionOnly && !appId;
-    const scopedHumanOwners =
-      humanActionOnly && appId ? reachableHumanConditionOwners(this.db, { activeAppId: appId }) : [];
+    const scopedHumanOwners = humanActionOnly && appId
+      ? reachableHumanConditionOwners(this.db, { activeAppId: appId })
+      : [];
     const scopedHumanOwnerKeys = new Set(scopedHumanOwners.map((owner) => `${owner.appId}\0${owner.taskId}`));
     if (humanActionOnly && appId && scopedHumanOwnerKeys.size === 0) return { items: [], total: 0 };
-    const scopedHumanOwnerClause =
-      humanActionOnly && appId
-        ? ` AND (${[...scopedHumanOwnerKeys].map(() => "(t.app_id = ? AND t.task_id = ?)").join(" OR ")})`
-        : "";
-    const scopedHumanOwnerValues =
-      humanActionOnly && appId
-        ? [...scopedHumanOwnerKeys].flatMap((key) => {
-            const [ownerAppId, ownerTaskId] = key.split("\0");
-            return [ownerAppId, ownerTaskId];
-          })
-        : [];
+    const scopedHumanOwnerClause = humanActionOnly && appId
+      ? ` AND (${[...scopedHumanOwnerKeys].map(() => "(t.app_id = ? AND t.task_id = ?)").join(" OR ")})`
+      : "";
+    const scopedHumanOwnerValues = humanActionOnly && appId
+      ? [...scopedHumanOwnerKeys].flatMap((key) => {
+          const [ownerAppId, ownerTaskId] = key.split("\0");
+          return [ownerAppId, ownerTaskId];
+        })
+      : [];
     const liveTaskSource = directGlobalHumanOwners
       ? `FROM app_task_conditions human_condition INDEXED BY idx_app_task_conditions_open_human_owner
          CROSS JOIN app_task_condition_routes human_route

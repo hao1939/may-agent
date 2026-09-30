@@ -1581,6 +1581,7 @@ describe("Telegram May input", () => {
                 {
                   id: "approval-docs",
                   condition: {
+                    metadata: { id: "approval-docs", generation: 1, resourceVersion: 1 },
                     spec: {
                       type: "project.approval.submitted",
                       subject: "id:approval-docs",

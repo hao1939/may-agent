@@ -42,7 +42,8 @@ export function validateCurrentApproval(input: EventInput, db: SqliteDb): void {
   const subject = text(proposal.subject, "project.approval.submitted data.proposal.subject");
   if (!("expected" in proposal)) throw new Error("project.approval.submitted data.proposal.expected is required");
 
-  const taskView = AppTaskResourceStore.fromDb(db, appId).readTaskForView(taskId);
+  const store = AppTaskResourceStore.activeFromDb(db, appId);
+  const taskView = store?.readTaskForView(taskId);
   if (!taskView) throw new Error(`Task ${appId}/${taskId} was not found`);
   const task = taskView.resource;
   if (task.metadata.generation !== taskGeneration) {
@@ -55,17 +56,9 @@ export function validateCurrentApproval(input: EventInput, db: SqliteDb): void {
     throw new Error(`Condition ${conditionId} is not current for Task ${appId}/${taskId}`);
   }
 
-  const conditionRow = db
-    .prepare(
-      `SELECT c.condition_json
-         FROM app_task_conditions c
-         JOIN app_task_condition_routes r
-           ON r.app_id = c.app_id AND r.condition_id = c.condition_id
-        WHERE c.app_id = ? AND c.condition_id = ? AND r.task_id = ?`,
-    )
-    .get(appId, conditionId, taskId) as { condition_json?: unknown } | undefined;
-  if (typeof conditionRow?.condition_json !== "string") throw new Error(`Condition ${conditionId} was not found`);
-  const condition = JSON.parse(conditionRow.condition_json) as AppTaskCondition;
+  const condition = store!.readTaskContext({ taskIds: [taskId] }, { includeHistory: false, childLimit: 0 })
+    .conditions?.[conditionId];
+  if (!condition) throw new Error(`Condition ${conditionId} was not found`);
   if (
     condition.metadata.generation !== conditionGeneration ||
     condition.status.state === "true" ||
@@ -98,10 +91,13 @@ export function validateCurrentApproval(input: EventInput, db: SqliteDb): void {
     throw new Error(`Condition ${conditionId} expected contract must be an object`);
   }
   const expectedRecord = expected as Record<string, unknown>;
-  const allowed = [expectedRecord.anyOf, expectedRecord.allowedDecisions, expectedRecord.acceptedDecisions].find(
+  const allowed = [expectedRecord.anyOf, expectedRecord.allowedDecisions, expectedRecord.acceptedDecisions].filter(
     Array.isArray,
-  ) as unknown[] | undefined;
-  if (!allowed?.some((candidate) => isDeepStrictEqual(candidate, input.data.decision))) {
+  ) as unknown[][];
+  if (
+    !allowed.length ||
+    !allowed.every((choices) => choices.some((candidate) => isDeepStrictEqual(candidate, input.data.decision)))
+  ) {
     throw new Error(`Decision is not allowed by Condition ${conditionId}`);
   }
 }
@@ -126,6 +122,9 @@ export function stampApproval(
     actor,
     authorization: { reference, evidence: structuredClone(evidence) },
   };
+  if (!readVerifiedApprovalDecision({ type: input.type, source, data })) {
+    throw new Error("Formal approval requires a valid proposal and ingress attribution");
+  }
   return { ...input, data };
 }
 
