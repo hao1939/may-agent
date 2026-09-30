@@ -775,8 +775,9 @@ The handler receives current Request records and returns `requestUpdates` throug
 `ConversationTurnResult`. Accepted updates and the reply settle together; stale
 revisions reject. There is no separate supervisor result protocol.
 
-The `conversation_request` tool can save a new ask or accepted scope correction
-before work starts. Its write is fenced by the current claim and Request revision.
+The `conversation_request` tool can save a new ask, accepted scope correction,
+or association with current input before work starts. An existing ask can omit
+unchanged scope. Its write is fenced by the current claim and Request revision.
 That saved correction survives a later failed or stopped attempt. Final closure
 still requires a current decision and explanation; it cannot silently revise scope.
 
@@ -785,7 +786,8 @@ adds agent-chosen `inputIds` and presents their Requests as `assignedRequests`.
 Each assigned Request, including one saved during execution, needs an explicit
 final disposition. Omission rejects settlement and retains the input for ordinary
 Task recovery. An open outcome explains continuing work or the remaining gap and
-actual wait. New input defers a proposal as `unacceptedResult` for reconsideration;
+actual wait in that Request's own nonblank reason, as required by the result schema.
+New input defers a proposal as `unacceptedResult` for reconsideration;
 its effects are never automatically replayed. These additions require the matching
 Host change; source changes alone do not establish installed behavior.
 

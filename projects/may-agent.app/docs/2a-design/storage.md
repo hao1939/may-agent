@@ -192,14 +192,21 @@ associations or require explicit IDs. The Host verifies that the IDs belong to
 the current claim and stores them in `conversation_request_inputs` atomically
 with the Request update. Several inputs can share one Request, and one input
 can establish distinct Requests. The links retain history without execution state.
+The same requirement-save tool can associate a new input with an existing Request
+without copying its scope. Omitted scope retains the saved requirements; a new
+Request still requires its complete scope. Use the returned revision for settlement.
 
 Current input links supply `assignedRequests` with full accepted scope and
 revision, independent of the recent-Topic context window. Every assigned Request,
 including one saved during execution, needs an explicit final `requestUpdates`
-entry. Omission rejects the whole settlement; reply, Request changes, handoff and
-input completion stay atomic. The agent owns semantic completeness; the Host
+entry with its own nonblank reason, including for an open disposition. The result
+schema checks the reason before the agent finishes; an unrelated reply cannot
+stand in for it. Omission rejects the whole settlement; reply, Request changes,
+handoff and input completion stay atomic. The agent owns semantic completeness; the Host
 detects missing dispositions, not incorrect explanations. A turn admits at most
 eight assigned Requests, matching the existing final-update bound.
+Recognition and association must happen before work on an accepted intention;
+the Host cannot enforce obligations the agent has not saved or associated.
 
 New input defers a proposed result as `unacceptedResult` for reconsideration
 against current requirements. No automatic replay, Request executor, sweep or

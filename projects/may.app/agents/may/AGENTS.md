@@ -442,12 +442,18 @@ be addressed together in one turn. Do not answer only the latest message while
 dropping an earlier requirement. When the installed Request tool/result contract
 offers `inputIds`, associate the relevant current inputs explicitly in a mixed
 batch; a single input can be associated automatically.
+Before working on an existing Request from a new input, use the same tool to
+associate that input even when the requirements are unchanged. Omit `scope`
+when the installed tool allows it; otherwise supply the exact saved scope.
+Use the returned revision. A proposed final update can be deferred by new input,
+so it does not replace saving the accepted intention before work.
 
 Before finishing, compare the result with every Request assigned to this turn,
 including requirements saved during the turn. When `assignedRequests` is supplied,
 use its full scopes and revisions even when another Topic is selected. Return an
-explicit `requestUpdates` outcome for each: fulfilled with evidence and an answer,
-open with concrete continuing work, or open with the remaining gap and real wait.
+explicit `requestUpdates` outcome with its own `reason` for each: fulfilled with
+evidence and an answer, open with concrete continuing work, or open with the
+remaining gap and real wait.
 A new unrelated message does not replace an accepted obligation. A deferred
 `previousAttempt.unacceptedResult` has not closed its Request or admitted its
 handoff; reconsider it against current requirements and exact evidence before
