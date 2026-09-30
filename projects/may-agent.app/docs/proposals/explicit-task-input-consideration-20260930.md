@@ -1,131 +1,176 @@
-# Explicit consideration of earlier Task input
+# Explicit Task result scope
 
-**Status:** Source prototype and deterministic trials; not deployed. The owning
-contracts are the [Task engine](../2a-design/task-resource-engine.md) and
-[Task reader](../2a-design/task-resource-read-interface.md).
+**Status:** Source prototype and isolated trials; not merged or deployed.
+[Host PR #269](https://github.com/hao1939/may-agent/pull/269) now contains the
+simpler process at `ef017d1700f1daba7d31b87960df93a4f6104399`. The earlier additive
+baseline is `f47bcd7e5314ed4738fb3bf09f8195bbd565b7fc`.
+The owning contracts are the [Task engine](../2a-design/task-resource-engine.md)
+and [Task reader](../2a-design/task-resource-read-interface.md).
 
-## Problem and evidence
+## Problem
 
-A worker deferred several related requests to a future review time. After a
-later correction, it correctly answered the new input and retired the obsolete
-approval. Older requests without a Condition link remained waiting until their
-timers were due. A different, legitimate timed request has the same storage
-shape; the Host cannot infer which ones the correction withdraws.
+After a correction, May answered the newest withdrawal and retired an obsolete
+approval, but three related older requests remained waiting for future timers.
+Recovery retained their deadlines correctly. The missing capability was resolving
+particular earlier requests before the timer woke them again.
 
-The existing recovery index retained the deadline across restart. A production
-function trial confirmed that due recovery returns those inputs and can settle
-them. Recovery scheduling was working. The gap was that the same automatic
-selection controlled both context retrieval and which older input an active
-worker could answer. There was no exact read/result option for acting earlier.
+The original prototype added exact reads and `consideredInputKeys`, an extra set
+added to the assignment. It still inferred additional answer scope from Condition
+changes and accepted live feedback, and inferred continuation from prior attempts.
+Those inferences mixed scheduling, context selection and fulfillment. A mixed
+assignment could not answer just one request without answering its peers.
 
-## Small contract extension
+## Refined process
 
-1. Discover outstanding admission keys in `currentObligations.inputWaits`.
-2. Read original requests with `read.tasks.get(taskId, { inputKeys: [key] })`.
-   Agent tools and App socket/HTTP reads use the same canonical reader.
-3. Return ordinary Task output with `consideredInputKeys: [key]` to include an
-   older request in the result, even before its review timer is due.
+1. Events update the existing Task. Current records retain requests, useful work,
+   waits, deadlines and result links; history explains them.
+2. Scheduling decides when to run. The claim saves the bounded assignment.
+   Context supplies that assignment and a compact current-state overview; tools
+   expose original input bodies when the worker needs them.
+3. The worker returns a normal result with its complete `inputKeys` scope.
+   Omission is shorthand for the saved assignment plus accepted live requests.
+   An explicit list replaces this default; `[]` covers no requests.
+4. The Host checks identity and acceptance fences, saves the result and exact
+   request/result links atomically, and schedules remaining work.
 
-The selected keys add to the input already assigned to the attempt. Convergence
-answers that combined set. Waiting and incomplete outcomes can report on it,
-but do not answer it. Unselected obligations and independent Conditions remain.
-Reading never consumes input. Both options accept at most eight keys per call.
+`converged` answers only that scope. Waiting/incomplete outcomes can report on it
+without answering it. Unselected assigned input remains outstanding for another
+pass. Independent Conditions and deadlines survive. One result still has one
+common disposition; differently answered groups need separate results/attempts.
 
-The App judges whether the same answer applies to the older requests. The Host
-validates exact Task ownership, unanswered admissions and existing outstanding
-work, preserves the ordinary attempt/new-input fences, and atomically saves the
-accepted result and input-to-result links. The additional selection is retained
-in accepted evidence. It needs no new SQL column, service, timer, action, or
-record migration.
+The default is deliberate: ordinary workers can answer their assignment without
+copying identifiers. It is a fixed assignment shorthand, not semantic inference.
+The accepted result saves its actual keys for review. A worker handling only part
+of its assignment must choose the exact list. Model judgment remains necessary.
 
-## Comparison and trial
+## Current state instead of historical inference
 
-Baseline Host source: `c9fec72407f07ab795e307873d2200fbd9373eca`.
-Candidate source: `f47bcd7e5314ed4738fb3bf09f8195bbd565b7fc`
-(branch `fix/explicit-task-inputs`, [Host PR #269](https://github.com/hao1939/may-agent/pull/269)).
+`inputWaits[key].pending` means useful work remains on that request. It can
+coexist with a Condition and future review deadline. Waiting with `continue`
+and incomplete results save this flag. An accepted deferral clears the flag only
+for its selected scope while retaining the declared wait. Answering removes only
+that exact unanswered obligation. Stop removes the stopped input through its
+existing control. A retry reads this current state; it does not infer liveness
+from a missing historical result or the previous attempt's disposition.
 
-The portable lifecycle trial reproduces three related timed requests, an
-independent timed request, a human approval, and a later correction. It uses
-real admission, Task state, accepted-result reads and SQLite close/reopen.
+This is one field on the existing record, not another queue or lifecycle. Its
+cost is explicit durable state; its benefit is deleting the previous-attempt
+reconstruction and making continuing work visible to both readers and scheduling.
 
-| Trial | Observed outcome |
-| --- | --- |
-| Omit explicit selection | New correction answered; all three earlier timed requests remain waiting |
-| Select those three requests | Same accepted answer reaches all three before their deadlines |
-| Independent timer and approval | Retained unchanged in both cases, including after restart |
-| Waiting or incomplete selected result | Progress report available; original input remains unanswered and returns on continuation/retry |
-| Missing, foreign or already answered key | Rejected; no partial completion or overwritten answer |
-| Newer input or stale attempt | Existing fences prevent premature settlement |
-| Independent timer expires during execution | Input remains unanswered and returns at the next claim; accepted live context can include it in the current result |
-| Tool versus executor reads | Same original request and source returned through both interfaces |
+## Responsibility and implementation boundary
 
-The registered-executor trial passes through real result normalization and
-attempt settlement for converged, waiting and incomplete results. This checks
-the connections, not only the lower-level reconciler. SDK tests cover the same
-field through agent and workflow finish schemas. These are deterministic
-worker trials, not claims about model judgment or live recovery.
+- The existing eligibility selector remains for choosing useful startup context
+  and exposing relevant live facts. After a result it schedules any still-open
+  ready request for another pass. Timers and Conditions never expand the saved
+  answer. Waiting and converged results use this same readiness rule.
+- The canonical result resolver chooses one complete scope. Exact admissions
+  validate same-Task identity, generation and outstanding status. Existing SQL
+  transactions and stale/new-input fences remain authoritative.
+- The original-input reader is shared by tools, SDK, socket and HTTP. Reading
+  bodies or marking live information observed does not itself fulfill requests.
+- Agents, workflows and executors use the same result schema. App policy judges
+  whether a correction withdraws work; the Host records that decision.
 
-A further timing trial failed on the first candidate: settlement recomputed
-timer eligibility using the finish time, so an unrelated input becoming due
-during execution received an answer without being presented. The correction
-keeps the claim's saved selection and extends the timer window only through
-accepted live input. Merely finishing later cannot add requests. The same
-selector still applies explicit keys and correlated Condition changes. Both
-the unseen-input and accepted-live-input variants now pass; the remaining due
-input is selected normally on the next claim, without a new recovery path.
+The original `consideredInputKeys` contract was not released. Replace it in this
+prototype rather than accepting both spellings. No storage migration, new event
+registry, recovery service or App-specific exception is proposed.
 
-A continuation trial then exposed an omitted connection in the candidate:
-selected input stayed durable but was absent from the next attempt's original
-input context. The existing claim now resumes the prior input scope when an
-attempt is unfinished, explicitly continues, or reports incomplete work. It
-includes the saved explicit selection, filtered through the Task’s current
-outstanding input records. The trial covers another execution
-failure and SQLite restart before the final answer; independent waits remain
-outside that resumed scope. No separate handoff record is introduced.
+## Trials and acceptance
 
-The wider suite rejected the first resume implementation: absence of an
-accepted result did not prove that all its historical input was still open.
-Human Stop had already consumed some of it. Eight existing Stop/Conversation
-checks exposed that mistake. Resumption now intersects the prior input scope
-with the current retained waits instead of inferring liveness from history.
-The affected 121-test suite passes, including the continuation/retry trials.
-This is a correction to the candidate, not a new Stop-specific rule.
+Compare the published PR baseline with this candidate, not merely with the older
+live version. Keep these questions separate: exact mechanical settlement,
+continuation durability, and whether a model actually chooses the right scope.
 
-Final candidate `bun run ci` passed with **3,298 tests passed, 0 failed and 3
-installation-only checks skipped** (16,343 assertions). This includes the
-continuation, retry and previously failing Stop/Conversation checks. The design integrity, SDK
-example and canonical App-boundary checks also passed. No live restart or
-Task-state mutation was used for the trial.
+Required mechanical trials cover correction before timers; timer or Condition
+changes during execution; explicit subset and empty scope; unrelated timed work
+and approval; continuation, failure and SQLite reopen; stale results, Stop and
+invalid references; and registered-executor normalization through settlement.
 
-Reproduce from the candidate Host checkout:
+The first candidate removed settlement inference and historical continuation.
+The initial regression trial then exposed why useful work needs current identity:
+continuing an older request with an independent wait still requires a next-pass
+assignment. Saving `pending` on that existing input restored continuation without
+reconstructing the previous attempt. A live-Condition test previously relied on
+implicit settlement; it now explicitly identifies the original request reviewed.
+
+Model trials run May's installed identity and configured model through the real
+Task reader, managed-agent execution, finish contract and settlement, using a
+synthetic App and temporary SQLite database. They do not modify live Tasks or
+prove production rollout. Inputs use opaque keys so original reads matter.
+Evidence is retained at `/app/.state/review-pilots/task-result-scope-20260930`.
+
+A second review found a missing connection: after a Condition was retired, its
+unanswered input could remain behind an unrelated future timer. The new regression
+failed with an empty recovery candidate list. Both converged and waiting settlement
+now reuse the current eligibility check to schedule the next pass, without adding
+the request to the current answer. Both regression variants pass. This corrects the
+prototype's scheduling connection rather than reinstating inferred completion.
+
+| Isolated May trial | Published additive PR | Complete-scope candidate |
+| --- | --- | --- |
+| Earlier Alpha refresh requests, then withdrawal | Not repeated in this comparison | Related requests answered; Beta and Gamma approval retained (two trials) |
+| Withdrawal and independent Delta request assigned together | May said Delta remained open, but Host marked it answered | Related requests answered; Delta remained open (repeated trials) |
+
+The original bodies were retrieved through the production Task tool in these
+trials. Baseline and candidate used the installed May role and its configured
+`gpt-5.6-sol` model. Candidate evidence came from successive isolated iterations;
+the `candidate-correction-race` receipts name the final source. This is a small
+behavioral sample, not an estimate of model reliability.
+
+A final race regression also failed: rejection for newer input replaced a retained
+input record, dropping its deadline and useful-work flag. That path now reuses the
+same retain operation with an empty answer scope, preserving existing attributes.
+The changed-Condition test now exercises immediate reconsideration and an explicit
+accepted re-wait; an unrelated external event is no longer needed to notice the
+changed requirement.
+
+The real-model correction-race trial on the final source injected a clarification
+during the first Task read. Its first result was not accepted. On the second pass,
+May answered only the clarification while saying the whole chain was closed. The
+Host retained and scheduled the omitted input. Reopening the same temporary Task
+and following the returned continuation produced a third ordinary pass that read
+the originals and answered the full related chain. No extra human input, repair
+message or direct Task-state change was used. This demonstrates recovery in the
+isolated harness, not fully autonomous production scheduling or perfect judgment.
+The extra pass and premature wording remain behavioral improvement opportunities;
+the prototype does not certify semantic claims from the worker's prose.
+
+Final source `ef017d1700f1daba7d31b87960df93a4f6104399` passed `bun run ci`:
+**3,305 passed, 0 failed, three installation-only checks skipped**, with 16,405
+assertions. GitHub **Quality** and **Container** both passed on this revision.
+Common design integrity, examples and App-boundary checks passed. Nothing was
+merged to Host main, deployed or written to live Tasks during these trials.
+
+Reproduce the mechanical contract from the candidate source:
 
 ```sh
 bun install --frozen-lockfile
-bun test packages/sdk/src/task-contract.test.ts \
-  src/app/core/tasks/app-task-common-lifecycle.test.ts \
-  src/app/core/tasks/app-task-runtime.test.ts \
-  src/app/core/reads/app-read.test.ts \
-  src/app/app-task-read-tool.test.ts packages/control/src/control-socket.test.ts
+bun test src/app/core/tasks/app-task-common-lifecycle.test.ts \
+  src/app/core/tasks/task-continuation.test.ts \
+  src/app/core/state/conversation-task-turns.test.ts \
+  packages/sdk/src/task-contract.test.ts
 bun run ci
 ```
 
-## Value, cost and limits
+The isolated model harness and per-trial source revisions, input/output traces,
+read calls and outcomes are retained beside `comparison.json` in the evidence
+directory above. The race continuation reopens its recorded temporary database;
+it does not seed another Task or send a repair instruction.
 
-This removes the need to wait for a timer after an agent has enough evidence to
-answer an older request. Host code does not guess semantic relationships from
-text or clear every wait after apparent success. The implementation adds one
-read option and one result field, their transport wiring and validation; the
-existing admission and accepted-result records remain authoritative.
+## Value, cost and rollout limits
 
-One attempt still has one common disposition. Different answers or completion
-versus deferral for separately assigned inputs require separate passes; this
-prototype does not add a per-input result language. Default discovery remains
-capped at 100 outstanding inputs with explicit truncation. Exact reads can load
-known keys beyond that window, but this is not new inventory pagination.
+The simpler rule handles old and new requests uniformly and supports a selected
+subset of one assignment. The accepted answer has inspectable scope; the clock
+cannot silently change it. Current continuation can coexist with waits.
 
-The worker must actually inspect the original requests and judge relevance.
-The Host checks identity and settlement, not whether the judgment is correct.
-After review and a separately authorized rollout, try the same scenario with a
-real worker: verify that it reads the originals, chooses only relevant keys,
-and leaves the independent approval visible. Existing historical records can
-continue through their normal scheduled recovery meanwhile.
+The cost is a complete-scope option, one useful-work flag, and updating consumers
+that relied on automatic settlement after live Condition changes. Ordinary replies
+keep their fixed-assignment default. The change does not remove all branching:
+scheduling, ownership and concurrency still require explicit checks. The deleted
+complexity is inference about which requests an answer covers and whether past
+attempts imply current work.
+
+Default obligation discovery remains capped at 100 with explicit truncation;
+original-body reads take up to eight exact keys. No new inventory pagination is
+included. The Host validates references, not semantic understanding. Large-task
+coverage and real App adoption remain separate from these bounded trials.

@@ -363,11 +363,11 @@ deadline survives re-wait. Due timers permit reconsideration, not satisfaction,
 answers, or bypassing failure backoff. Sleeping again needs a Condition or new
 future deadline; `continue: true` requests useful work. Failed verification cannot establish completion.
 
-A result may add up to eight exact outstanding `consideredInputKeys` after the
-worker [reads original input](task-resource-read-interface.md). Keys add to assigned
-input: `converged` answers it; `waiting`/`incomplete` retain it and may report. The Host validates
-same-Task unanswered admissions, existing waits or assigned input, and result fences.
-Unselected waits and Conditions survive; distinct answers need separate attempts.
+**Candidate:** result `inputKeys` names its complete scope (up to 64 exact keys).
+Omission uses the saved assignment and accepted live requests; `[]` covers none. Scheduling never expands that result.
+`converged` answers this set; waiting/incomplete retain it; unselected inputs survive.
+Continuation lives on `inputWaits[key].pending` alongside waits/deadlines; restart
+reads current work instead of inferring it from the previous attempt.
 
 `incomplete` requires a summary and non-empty facts; it cannot include actions, Conditions
 or child App requests. The Host checks eligibility inside the fenced transaction.

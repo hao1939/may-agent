@@ -70,8 +70,8 @@ available in its supplied context. This is a bounded current-input window, not a
 complete history or a fulfillment flag. Remaining input keeps its existing later
 reconciliation opportunity. Reading the window does not consume it.
 
-`currentObligations.inputWaits.items` gives exact retained admission keys, timing
-and input/result correlations. An active worker can inspect an earlier request
+`currentObligations.inputWaits.items` gives exact retained admission keys, timing,
+useful-work flag `pending`, and input/result correlations. An active worker can inspect an earlier request
 before its timer is due using `read.tasks.get(taskId, { inputKeys: [key] })`.
 The same option is available on the agent's `tasks.get`, socket `app.task.get`,
 and App HTTP detail route (repeated `inputKey` query parameters). Human board
@@ -85,8 +85,9 @@ outside this Task fail the read explicitly. Answered input remains readable.
 The existing default obligation list is capped at 100 with `truncated`; it is
 not an unlimited inventory, and an exact read does not require a key to appear
 in that first page. The [result contract](task-resource-engine.md) controls
-settlement through `consideredInputKeys`. Selected unfinished input returns in
-the next attempt context on continuation or retry, including after restart. See the
+settlement through the complete `inputKeys` scope. The candidate saves useful
+continuation in current input records, independently of waits, and supplies that
+work on the next attempt after continuation or retry. See the
 [prototype record](../proposals/explicit-task-input-consideration-20260930.md)
 for implementation and deployment status.
 
