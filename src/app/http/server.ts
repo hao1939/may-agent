@@ -2990,7 +2990,7 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
     }
   }
 
-  const { handleConversationRead, handleHumanTaskRead, handleAppTasks, handleAppTask } =
+  const { handleApps, handleConversationRead, handleHumanTaskRead, handleAppTasks, handleAppTask } =
     createTaskReadHandlers({ daemonRead, json });
 
   async function handleSessionCancel(sessionId: string): Promise<Response> {
@@ -3538,6 +3538,8 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
         return json(readWorkflowHealth(_db(), query));
       }
       if (url.pathname === "/api/projects") return handleProjects();
+      if (url.pathname === "/api/apps")
+        return req.method === "GET" ? handleApps() : json({ error: "GET required" }, 405);
       const appTaskMatch = url.pathname.match(/^\/api\/apps\/([^/]+)\/tasks\/(.+)$/);
       if (appTaskMatch && req.method === "GET") {
         return handleAppTask(url, decodeURIComponent(appTaskMatch[1]), decodeURIComponent(appTaskMatch[2]));
