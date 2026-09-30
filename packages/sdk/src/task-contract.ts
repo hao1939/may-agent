@@ -78,12 +78,12 @@ export const conditionSchema = Type.Object(
 
 const resultFields = {
   summary: nonEmptyStringSchema,
-  consideredInputKeys: Type.Optional(
+  inputKeys: Type.Optional(
     Type.Array(Type.String({ minLength: 1, pattern: "\\S" }), {
-      maxItems: 8,
+      maxItems: 64,
       uniqueItems: true,
       description:
-        "Exact additional outstanding keys from Task.currentObligations.inputWaits. Read originals with tasks.get({inputKeys}) first. This result also covers those inputs before their review time. Converged answers them; waiting/incomplete keep them open. Other waits and Conditions remain.",
+        "Exact requests covered by this result, from assigned input or currentObligations.inputWaits. Read originals with tasks.get({inputKeys}) as needed. Omit to use the saved assignment; [] covers none. Converged answers only this set; waiting/incomplete keep it open. Other requests and Conditions remain.",
     }),
   ),
   result: Type.Optional(objectSchema),
@@ -160,7 +160,7 @@ export const taskAgentResultSchema = Type.Union(
     Type.Object(
       {
         state: Type.Literal("incomplete"),
-        consideredInputKeys: resultFields.consideredInputKeys,
+        inputKeys: resultFields.inputKeys,
         report: Type.Optional(
           Type.Literal(true, {
             description: "Return a new caller-relevant update after an earlier report; omit for unchanged failure.",
@@ -472,8 +472,8 @@ export function admitTaskReconcileResult(
 
   const report = {
     summary: output.summary.trim(),
-    ...("consideredInputKeys" in output && output.consideredInputKeys
-      ? { consideredInputKeys: [...output.consideredInputKeys] }
+    ...("inputKeys" in output && output.inputKeys
+      ? { inputKeys: [...output.inputKeys] }
       : {}),
     ...(result ? { result: structuredClone(result) } : {}),
     facts,

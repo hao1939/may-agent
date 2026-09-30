@@ -80,6 +80,7 @@ function currentTaskObligations(
         const admission = admissions[key];
         return {
           key,
+          ...(wait.pending ? { pending: true as const } : {}),
           ...(wait.reviewAt !== undefined ? { reviewAt: wait.reviewAt } : {}),
           conditionCount: wait.conditions.length,
           correlation: {

@@ -36,7 +36,7 @@ export type TaskAcceptedEvidence = {
   finishedAt?: string;
   /** Explicit when legacy content was reduced to keep the public page bounded. */
   truncated?: {
-    fields: Array<"summary" | "response" | "result" | "facts" | "acceptanceBasis" | "acceptedLiveEventIds" | "consideredInputKeys">;
+    fields: Array<"summary" | "response" | "result" | "facts" | "acceptanceBasis" | "acceptedLiveEventIds" | "inputKeys">;
   };
   acceptedResult: {
     state: "converged" | "waiting" | "incomplete";
@@ -49,7 +49,7 @@ export type TaskAcceptedEvidence = {
     facts: string[];
     acceptanceBasis?: TaskAcceptanceBasis;
     acceptedLiveEventIds?: number[];
-    consideredInputKeys?: string[];
+    inputKeys?: string[];
   };
 };
 
@@ -75,6 +75,8 @@ export type TaskReadOptions = {
 export type TaskInputObligation = {
   /** Exact retained admission key; no input or attempt state is inferred from it. */
   key: string;
+  /** Useful work remains, independently of retained waits. */
+  pending?: true;
   reviewAt?: number;
   conditionCount: number;
   correlation: {
@@ -409,7 +411,7 @@ export type TaskReconciliationEvent = {
 /** Ordered, bounded work input that this reconciliation result will observe. */
 export type TaskReconciliationEvents = {
   items: TaskReconciliationEvent[];
-  /** Earlier asks whose awaited facts are being considered now; not new input or new authority. */
+  /** Earlier outstanding requests included in this saved assignment; not new input or new authority. */
   continuedInputs?: TaskReconciliationEvent[];
   /** Highest durable event identity in items, when every item has one. */
   throughEventId?: number;

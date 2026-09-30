@@ -110,6 +110,7 @@ describe("accepted Task outcome facts", () => {
     expect(completeAppTask(config, current, measured).status).toBe("applied");
     expect(config.resourceStore.readAttempt(current.attemptId)).toHaveProperty("acceptedResult", {
       state: "converged",
+      inputKeys: [],
       ...measured,
     });
   });
@@ -192,6 +193,7 @@ describe("accepted Task outcome facts", () => {
     expect(config.resourceStore.readAttempt(second.attemptId)).not.toHaveProperty("acceptedResult");
     expect(config.resourceStore.readAttempt(first.attemptId)).toHaveProperty("acceptedResult", {
       state: "converged",
+      inputKeys: [],
       ...measured,
     });
   });
@@ -241,6 +243,7 @@ describe("accepted Task outcome facts", () => {
     expect(restored.resourceStore.readAttempt(current.attemptId)?.acceptedResult).toEqual(accepted);
     expect(restored.resourceStore.readAttempt(current.attemptId)).toHaveProperty("acceptedResult", {
       state: "converged",
+      inputKeys: [],
       ...measured,
     });
   });

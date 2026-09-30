@@ -128,12 +128,14 @@ App-specific policy may interpret this evidence, but does not redefine it.
 
 To inspect an older request before its timer is due, use `tasks.get` with exact
 `inputKeys` (up to eight). The canonical reader returns original `inputEvents`;
-reading changes no state. An ordinary result's `consideredInputKeys` adds those
-outstanding inputs to the attempt's scope. `consideredInputKeys()` validates
-them in the reconciler, and `inputOutcomeAdmissions()` retains the usual exact
-answer/report links. Convergence answers the selected inputs; waiting and
-incomplete results do not. Unselected waits survive. Agent, workflow and
-executor use the same result contract; timers still govern automatic selection.
+reading changes no state. An ordinary result's `inputKeys` names its complete
+scope (up to 64); omission uses the saved assignment and accepted live requests,
+and `[]` covers none. `resultInputKeys()` validates that scope once; the ordinary
+input/result links record its answer or report. Time and Condition changes do
+not expand an answer. Unselected assigned inputs remain pending. Continuation
+is saved as `inputWaits[key].pending`, alongside independent waits/deadlines;
+claiming reads current work instead of inferring it from previous attempts.
+Agent, workflow and executor use the same result contract.
 
 Adapters translate source-specific information at the boundary. For example,
 `lib/escalation-feedback.ts` resolves saved provenance to an exact Task address;

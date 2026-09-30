@@ -294,7 +294,7 @@ it.each(["converged", "waiting", "incomplete"] as const)("carries explicit earli
       if (content?.type !== "text") throw new Error("Expected Task tool text");
       expect(JSON.parse(content.text)).toEqual(JSON.parse(JSON.stringify(detail)));
       executed = true;
-      const common = { summary: "Reviewed earlier input", facts: ["request:read"] as [string], consideredInputKeys: ["earlier"] };
+      const common = { summary: "Reviewed earlier input", facts: ["request:read"] as [string], inputKeys: ["earlier"] };
       return state === "converged" ? { ...common, state } : { ...common, state, report: true };
     } },
   });
@@ -315,7 +315,7 @@ it.each(["converged", "waiting", "incomplete"] as const)("carries explicit earli
     dispatch: { enqueuedAt: 1, startedAt: 2, readyWaitMs: 1, lane: "normal" } });
   expect(executed).toBe(true);
   const accepted = acceptedTaskAttempt(config, taskId);
-  expect(accepted?.acceptedResult).toMatchObject({ state, consideredInputKeys: ["earlier"] });
+  expect(accepted?.acceptedResult).toMatchObject({ state, inputKeys: ["earlier"] });
   expect(readAppTaskAdmissionOutcome(config, taskId, "earlier", state === "converged" ? "answer" : "report"))
     .toMatchObject({ state, attemptId: accepted!.metadata.id });
   if (state !== "converged") expect(readAppTaskAdmissionOutcome(config, taskId, "earlier")).toBeNull();
