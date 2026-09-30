@@ -1,6 +1,6 @@
 import { createAppInboxItem } from "../state/app-inbox-store.js";
 import { fakeTaskAttacher } from "../../../../test/fixtures/task-attachment.js";
-import { afterEach, beforeEach, describe, expect, it } from "bun:test";
+import { afterEach, beforeEach, describe, expect, it, spyOn } from "bun:test";
 import { Type, defineApp, type AppDefinition, type AppInputContext, type AppTaskAttachment } from "@may-agent/sdk";
 import { openDatabase, type SqliteDb } from "../../../lib/db.js";
 import { applyDbSchema } from "../../../lib/db/schema.js";
@@ -811,4 +811,24 @@ it("recovery advances past a page of disabled Apps without claiming input", asyn
   } finally {
     db.close();
   }
+});
+
+it("recovers admission and rejection feedback through indexes on outstanding input", async () => {
+  const db = openDatabase(":memory:");
+  applyDbSchema(db);
+  const host = new AppInboxHost({ db, apps: [app()] });
+  const prepare = db.prepare.bind(db);
+  let query = "";
+  const reads = spyOn(db, "prepare").mockImplementation((sql) => {
+    if (sql.includes("UNION ALL") && sql.includes("idx_app_inbox_unadmitted")) query = sql;
+    return prepare(sql);
+  });
+  try {
+    await host.recoverAdmissions();
+    expect(query).not.toBe("");
+    const plan = prepare(`EXPLAIN QUERY PLAN ${query}`).all(1, 1, 1).map((row) => row.detail).join("\n");
+    expect(plan).toContain("idx_app_inbox_unadmitted");
+    expect(plan).toContain("idx_app_inbox_rejected_feedback");
+    expect(plan).not.toContain("sqlite_autoindex_app_inbox_items");
+  } finally { reads.mockRestore(); host.close(); db.close(); }
 });

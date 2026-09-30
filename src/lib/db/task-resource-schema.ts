@@ -212,6 +212,12 @@ export function ensureTaskResourceSchema(db: SqliteDb): void {
   );
   if (!inboxColumns.has("creator_json")) db.exec("ALTER TABLE app_inbox_items ADD COLUMN creator_json TEXT");
   if (!inboxColumns.has("recovery_json")) db.exec("ALTER TABLE app_inbox_items ADD COLUMN recovery_json TEXT");
+  // Create after the legacy recovery column migration, not in the initial DDL.
+  db.exec(`CREATE INDEX IF NOT EXISTS idx_app_inbox_rejected_feedback ON app_inbox_items(id)
+    WHERE execution_task_id IS NULL AND status = 'done' AND waiting_on_kind IS NULL
+      AND json_extract(handling, '$.phase') = 'failed'
+      AND json_extract(recovery_json, '$."input-admission".fingerprint') IS NOT NULL
+      AND json_extract(recovery_json, '$."input-admission".reportedAt') IS NULL`);
   const needsConditionRouteBackfill = !db
     .prepare("SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'app_task_condition_routes'")
     .get();

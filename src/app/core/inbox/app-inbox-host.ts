@@ -576,16 +576,20 @@ export class AppInboxHost {
     const readPage = () =>
       this.#db
         .prepare(
-          `SELECT id FROM app_inbox_items
-      WHERE execution_task_id IS NULL AND (
-        (status != 'done'
+          `SELECT id FROM (
+        SELECT id FROM app_inbox_items INDEXED BY idx_app_inbox_unadmitted
+        WHERE status != 'done' AND execution_task_id IS NULL
         AND (waiting_on_kind IS NULL OR waiting_on_kind != 'task' OR lease_owner IS NOT NULL)
         AND (lease_expires_at IS NULL OR lease_expires_at <= ?)
-        AND (available_at IS NULL OR available_at <= ?))
-        OR (status = 'done' AND waiting_on_kind IS NULL AND json_extract(handling, '$.phase') = 'failed'
+        AND (available_at IS NULL OR available_at <= ?)
+        UNION ALL
+        SELECT id FROM app_inbox_items INDEXED BY idx_app_inbox_rejected_feedback
+        WHERE execution_task_id IS NULL AND status = 'done' AND waiting_on_kind IS NULL
+          AND json_extract(handling, '$.phase') = 'failed'
           AND json_extract(recovery_json, '$."input-admission".fingerprint') IS NOT NULL
           AND json_extract(recovery_json, '$."input-admission".reportedAt') IS NULL
-          AND (review_at IS NULL OR review_at <= ?)))
+          AND (review_at IS NULL OR review_at <= ?))
+        WHERE 1 = 1
         ${this.#admissionCursor ? "AND id > ?" : ""}
       ORDER BY id LIMIT 64`,
         )
