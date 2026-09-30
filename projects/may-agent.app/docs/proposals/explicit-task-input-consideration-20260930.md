@@ -59,6 +59,16 @@ reconstruction and making continuing work visible to both readers and scheduling
 
 ## Responsibility and implementation boundary
 
+The worker owns understanding: what the request means, which requests its result
+covers, whether the outcome is complete, and what further work or evidence is
+needed. `inputKeys` expresses that judgment using Host-provided identities.
+The Host owns bookkeeping: assigning identities, saving the assignment, checking
+references and acceptance fences, linking results, preserving omitted requests
+and independent waits, and scheduling continuation through failure and restart.
+Workers do not maintain `inputWaits`, copy retained deadlines into each result,
+or reconstruct the outstanding-work ledger. Structural acceptance records the
+worker's judgment; it does not certify that the judgment is correct.
+
 - The existing eligibility selector remains for choosing useful startup context
   and exposing relevant live facts. After a result it schedules any still-open
   ready request for another pass. Timers and Conditions never expand the saved
