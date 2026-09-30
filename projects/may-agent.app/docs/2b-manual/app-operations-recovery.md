@@ -80,10 +80,18 @@ session, insert another request row, or mark the original complete by hand.
 Read the input's result, `handling` and recovery evidence before retrying. A
 closed or missing target is a final admission rejection, not task completion.
 The Host keeps transient admission failures on exponential backoff (250 ms up to
-one hour; dispatch also depends on the recovery scan). A rejected input retries
-only missing feedback. May's `app.input.admission.failed` subscription admits one
-Conversation review per unchanged failure; inspect its input and subsequent reply
-to verify human escalation instead of treating `handler.failed` as notification.
+one hour; dispatch also depends on the recovery scan), without a retry-count
+limit. The cap limits the delay, not the number of attempts. A rejected input
+retries only missing feedback, also without a retry-count limit. Delivering
+feedback does not resolve the failed operation or stop its recovery.
+
+May's `app.input.admission.failed` subscription admits one Conversation review
+per unchanged failure. Inspect its input and subsequent reply to verify human
+escalation instead of treating `handler.failed` as notification. This initial
+feedback route does not establish ongoing pattern review or intervention;
+general supervision through [metrics](../2a-design/metrics.md) and Evaluation
+remains separate work. It must observe continuing failures without imposing a
+Host retry limit.
 
 The App/agent decides whether the input is an observation or a new requirement.
 For example, a build result is evidence; "continue this Task and add Linux
