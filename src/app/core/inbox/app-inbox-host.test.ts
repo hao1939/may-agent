@@ -6,6 +6,7 @@ import { openDatabase, type SqliteDb } from "../../../lib/db.js";
 import { applyDbSchema } from "../../../lib/db/schema.js";
 import { conversationTaskSuccessorId } from "../state/conversation-identity.js";
 import { AppInboxHost } from "./app-inbox-host.js";
+import { AppTaskAdmissionError } from "../state/task-admission-error.js";
 
 const probeInput = Type.Object({
   kind: Type.Literal("probe"),
@@ -234,6 +235,32 @@ describe("App inbox host", () => {
     expect(host.get("feedback")?.waitingOn).toEqual({ kind: "task", id: "existing" });
     expect(received).toMatchObject({ id: "feedback", humanRequested: true });
     expect(Object.isFrozen(received?.input.data)).toBe(true);
+  });
+
+  it("reports final rejection even when a pending failure with the same message was already delivered", async () => {
+    let now = 1_000;
+    let permanent = false;
+    const updates: string[] = [];
+    const host = new AppInboxHost({
+      db,
+      apps: [app()],
+      now: () => now,
+      attachTask: () => {
+        throw permanent ? new AppTaskAdmissionError("Target unavailable") : new Error("Target unavailable");
+      },
+      onRequestUpdated: (_item, _result, status) => { updates.push(status); return true; },
+    });
+    const pending = admit(host, "changing-failure");
+    expect(updates).toEqual(["blocked"]);
+    now = pending.availableAt!;
+    permanent = true;
+    await host.recoverAdmissions();
+    expect(host.get(pending.id)).toMatchObject({ status: "done", handling: { phase: "failed" } });
+    expect(updates).toEqual(["blocked", "done"]);
+    now += 60_000;
+    await host.recoverAdmissions();
+    expect(updates).toEqual(["blocked", "done"]);
+    host.close();
   });
 
   it("does not admit a Conversation executor target without Conversation identity", () => {

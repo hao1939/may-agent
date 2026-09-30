@@ -45,6 +45,7 @@ import {
   reconcileLoadedAppTaskOnce,
   recoverInstalledAppTasks,
   retryLoadedFailedAppTask,
+  reopenLoadedAppTask,
 } from "./app-task-runtime.js";
 import { createTaskAttemptProcessExecutor } from "../../composition/workers/task-attempt-process.js";
 import { admitTaskAppDependencies } from "./dependency-admission.js";
@@ -194,6 +195,65 @@ function options(f: ReturnType<typeof fixture>, bus: EventBus) {
     hostCapacity: new HostCapacity(2),
   };
 }
+
+it("publishes one reopening fact despite a lost publication and operator replay across restart", async () => {
+  const f = fixture();
+  const persistDir = join(f.root, "state");
+  let bus = eventBus();
+  let notifications = 0;
+  const install = async () => {
+    const writer = new DbWriter(persistDir);
+    bus.setPersistenceSubscriber(writer.handler);
+    bus.setDeliveryRecorder(writer.recordDelivery);
+    bus.subscribeDurableRoute((event) => {
+      if (event.type !== "app.task.reopened") return;
+      notifications++;
+      return { accepted: true, by: "fixture:reopening", route: "direct" };
+    });
+    await installCoreTaskRuntimes({
+      ...options(f, bus),
+      installControllers: false,
+      appRegistrySnapshot: {
+        id: "reopen-replay", generation: 1,
+        entries: [{ appDir: f.appDir, definition: definition() }],
+      },
+    });
+  };
+  await install();
+  const config = loadedTaskConfig(f);
+  const taskId = "work/reopen";
+  observeAppTaskIntent(config, {
+    appAgent: "sample-owner",
+    intent: { id: taskId, parentId: "operations", outcome: "Measure", acceptance: ["Value recorded"] },
+  });
+  const task = config.resourceStore.readTask(taskId)!;
+  const { cancellation } = cancelLoadedAppTask({
+    bus, appId: "sample", taskId, expectedGeneration: task.metadata.generation,
+    expectedResourceVersion: task.metadata.resourceVersion, reason: "Owner stopped work",
+  });
+  const control = {
+    appId: "sample", taskId, expectedGeneration: cancellation.generation,
+    expectedResourceVersion: cancellation.resourceVersion,
+    reason: "User explicitly requested continuation", controlKey: "reopen-measurement",
+  };
+  const failedPublication = spyOn(bus, "emit").mockImplementationOnce(() => { throw new Error("Publication unavailable"); });
+  expect(() => reopenLoadedAppTask({ ...control, bus })).toThrow("Publication unavailable");
+  failedPublication.mockRestore();
+  expect(config.resourceStore.isCancelled(taskId)).toBe(false);
+  const receipt = reopenLoadedAppTask({ ...control, bus });
+  expect(notifications).toBe(1);
+  expect(reopenLoadedAppTask({ ...control, bus })).toEqual(receipt);
+  expect(notifications).toBe(1);
+  const current = config.resourceStore.readTask(taskId);
+  await closeInstalledAppTaskRuntimes(bus);
+  closeDb(persistDir);
+  bus = eventBus();
+  await install();
+  expect(reopenLoadedAppTask({ ...control, bus })).toEqual(receipt);
+  expect(notifications).toBe(1);
+  expect(loadedTaskConfig(f).resourceStore.readTask(taskId)).toEqual(current);
+  expect(getDb(persistDir).prepare("SELECT COUNT(*) AS count FROM events WHERE event_type = 'app.task.reopened'").get()!.count).toBe(1);
+});
 
 it("shares Task detail, evidence and exact outcome reads between tools and executor capabilities", async () => {
   const f = fixture();

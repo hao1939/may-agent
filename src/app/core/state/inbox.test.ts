@@ -953,6 +953,20 @@ it("reopening fences interrupted attempts and pre-reopen events while preserving
     trigger: { type: "sample.late", eventId } })).toMatchObject({ changed: false });
   expect(config.resourceStore.readTask(claim.taskId)).toEqual(before);
   expect(recordAppTaskTrigger(config, claim.taskId, { type: "sample.fresh", eventId: eventId + 1 }).kind).toBe("recorded");
+  // Revising the reopened Task must not erase the fence against older facts.
+  observeAppTaskIntent(config, {
+    appAgent: "example-owner",
+    intent: { id: claim.taskId, ...before.spec, outcome: "Measure the revised requirement" },
+    trigger: { type: "sample.revised", eventId: eventId + 2 },
+  });
+  const revised = config.resourceStore.readTask(claim.taskId)!;
+  expect(recordAppTaskTrigger(config, claim.taskId, { type: "sample.delayed", eventId }).kind).toBe("duplicate");
+  expect(observeAppTaskIntent(config, {
+    appAgent: "example-owner",
+    intent: { id: claim.taskId, ...before.spec, outcome: "Obsolete desired work" },
+    trigger: { type: "sample.delayed", eventId },
+  })).toMatchObject({ changed: false });
+  expect(config.resourceStore.readTask(claim.taskId)).toEqual(revised);
   const late = createAppInboxItem(db, { id: "old-input", appId: "example", targetTaskId: claim.taskId,
     source: { kind: "system", id: "observer" }, originEventId: eventId, input: { kind: "example", data: {} } }).item;
   expect(() => admitTaskInput(config, { appId: "example", attachment: { kind: "existing", taskId: claim.taskId },

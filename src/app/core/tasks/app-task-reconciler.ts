@@ -1497,6 +1497,7 @@ export function observeAppTaskIntent(
   } else {
     resource = {
       metadata: {
+        ...existingResource?.metadata,
         id: input.intent.id,
         creator: structuredClone(creator),
         generation,

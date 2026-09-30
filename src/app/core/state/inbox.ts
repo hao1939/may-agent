@@ -247,9 +247,12 @@ export function rejectTaskInput(
       : `${summary}. Read the current Task and correct the target. If the user explicitly requested reopening, use task.reopen with the current generation and resource version, then submit fresh input.`,
     result: { disposition: "admission-rejected", appId: item.appId, requestId: item.id },
   };
+  // A final rejection is new feedback even if a retryable failure with the same
+  // text was reported earlier. Clear its marker in the terminal transition.
   const changed = db
     .prepare(
       `UPDATE app_inbox_items SET status = 'done', handling = ?, result = ?, completed_at = ?,
+      recovery_json = json_remove(recovery_json, '$."input-admission".reportedAt'),
       available_at = NULL, review_at = NULL, lease_owner = NULL, lease_expires_at = NULL,
       changed_at = ?, updated_at = ?
     WHERE id = ? AND status = 'pending' AND execution_task_id IS NULL AND waiting_on_kind IS NULL`,

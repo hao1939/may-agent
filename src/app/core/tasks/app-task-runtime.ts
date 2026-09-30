@@ -754,6 +754,7 @@ export function reopenLoadedAppTask(
     owner: `app:${input.appId}`,
     target: { appId: input.appId, taskId: input.taskId },
     data: {
+      idempotencyKey: `app-task-reopened:${input.controlKey}`,
       appId: input.appId,
       taskId: input.taskId,
       generation: receipt.generation,

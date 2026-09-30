@@ -675,7 +675,7 @@ export type SystemEvent =
       source: "app-task-reconciler";
       owner: string;
       target: { appId: string; taskId: string };
-      data: { appId: string; taskId: string; generation: number; resourceVersion: number };
+      data: { appId: string; taskId: string; generation: number; resourceVersion: number; idempotencyKey: string };
     }
   | {
       type: "app.task.close.requested";
