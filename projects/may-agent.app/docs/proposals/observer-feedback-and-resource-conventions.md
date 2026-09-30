@@ -1,5 +1,12 @@
 # Reliable observer feedback without a subscription system
 
+**September 30 follow-up:** [Task observation contract](task-observation-contract-20260930.md)
+proposes an agent-facing contract that derives observation needs from existing
+Conditions. It records a fresh source review and probes; read it for current
+capabilities and remaining gaps. The September 11/13 material below is historical.
+
+## Original proposal and historical implementation notes
+
 **Design status:** Proposed implementation for review, September 11, 2026.
 The [feedback contract](../2a-design/events.md#execution-feedback-and-agent-wakes)
 and [contract-and-convention principle](../1-principles/core-principles.md#convention-over-configuration)

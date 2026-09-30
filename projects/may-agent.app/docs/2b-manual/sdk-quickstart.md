@@ -26,9 +26,14 @@ control socket and definition source checkout from your installation operator.
 The sample configures `gpt-5.6-sol`; select an available model in its `agent.json`
 if your installation differs, then activate that source change as in step 5.
 
-Run commands from the workspace root containing `projects/` and `scripts/`.
-The sample worker's App root is `projects/sample.app`; that is a different
-working directory. Source references below are workspace-root-relative.
+Run commands from the installation's source workspace, which must contain
+`projects/may-agent/packages/control/src/client.ts` as well as the App files.
+The example client imports that Host source; a Task worktree containing only
+Apps is insufficient. In this installation, use `cd /app`. An installed client
+can instead import the equivalent `@may-agent/control/client` package when the
+installation supplies it. The sample worker's App root is `projects/sample.app`;
+that is a different working directory. Source references below are relative to
+the source workspace root.
 
 ```sh
 sample_socket=/absolute/path/to/may.sock
@@ -80,8 +85,9 @@ Use subsequent exact Task reads to follow execution; the Host schedules work.
 
 A completed read includes `status: "done"`, a summary and `acceptedAttempt`.
 The client's `acceptedEvidence.page.items` contains up to four accepted results,
-newest first. Inspect each entry's `acceptedResult`: the sample returns findings,
-coverage, limitations and `result.artifacts`. `done` means the Host accepted an
+newest first. Inspect each entry's `acceptedResult`: the sample's structured
+`result` contains findings, coverage, limitations and file evidence. Its free-form
+layout may vary; artifacts may appear under coverage. `done` means the Host accepted an
 outcome; read the answer and evidence to decide whether it satisfies the request.
 A Task can accept later corrections until it is closed by its owner.
 
@@ -142,10 +148,38 @@ agent files; a one-off correction belongs on the Task.
 
 ## 5. Change guidance and verify adoption
 
+Before changing a cited file, preserve the original reviewed bytes if the result
+points to mutable source. Saving its path and hash alone cannot recover old
+content. For each such reference, copy its actual `path` and `sha256` from the
+accepted result into this example, run it from the source workspace, and retain
+the returned reference alongside the original accepted attempt ID:
+
+```ts
+import { EvidenceStore, readPinnedArtifact } from "./shared/tools/task-evidence.ts";
+
+const reference = { path: "/absolute/cited/file.md", sha256: "HASH_FROM_RESULT" };
+const read = await readPinnedArtifact(reference);
+if (read.status !== "read" || read.content === undefined) {
+  throw new Error(`Original evidence is ${read.status}; resolve this before editing`);
+}
+const retained = await new EvidenceStore(
+  "/absolute/task-notes/reviewed-bytes",
+).put(read.content, "md");
+console.log(JSON.stringify({ original: reference, retained }));
+```
+
+Substitute an actual Task evidence directory too. This example preserves the
+sample's UTF-8 text evidence using the existing shared helper. Already immutable,
+readable snapshot references need no extra copy.
+
 In your definition source checkout, make one small change to
 `projects/sample.app/agents/reviewer/AGENTS.md`, for example: "End each review
 with one sentence identifying the most important untested assumption."
 Choose an observable behavior so the next result can confirm or contradict it.
+An agent carrying out this exercise also needs the installed file-edit authority.
+If its tool denies the edit, request the change from an authorized owner through
+ordinary cooperation and record that assistance. A Task assignment alone does
+not change the tool's permissions.
 
 Run the existing checks, inspect the diff, and commit only your intended change:
 
@@ -177,6 +211,8 @@ comparison, and record assistance and limitations. The source checks validate
 SDK/control types, seeded Task replay and result admission; only the live trial
 checks model behavior. The [reusable review method](workflow-authoring.md#reusing-an-app-review)
 explains how to retain lessons for another App.
+The [quickstart trial](../../../sample.app/reviews/sdk-quickstart-2026-09-30.md)
+records the observed adoption, documentation corrections and assistance.
 
 ## Extend when the work needs it
 
@@ -187,3 +223,6 @@ The [result recipes](../examples/app.ts) are illustrative: their pipeline and
 governance Apps are not installed by this sample. The
 [adoption checklist](agent-app-adoption-playbook.md) helps apply these choices to
 your own App. Keep the Host's bookkeeping and recovery in the existing Task path.
+For long waits, use [fact-driven wake-up](../2a-design/sdk.md#wake-on-new-facts-and-offload-polling)
+so dependencies and observers carry status checking while the worker yields or
+continues useful independent work.

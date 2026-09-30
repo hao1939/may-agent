@@ -68,6 +68,54 @@ agent tools, and the SDK types linked below. A source declaration is not proof
 that a capability is installed. Retain exact references in Tasks so the next
 worker can continue, rather than relying on an oversized initial prompt.
 
+### Wake on new facts and offload polling
+
+A worker declares the answer or fact it needs and yields when it has no useful
+independent work. The Host retains that obligation and schedules reconsideration
+when relevant input arrives. It does not require a model to stay active asking
+whether something finished.
+
+- For another App's outcome, return a typed Task dependency. The Host retains
+  request identity and caller return; use that existing relationship for feedback.
+- For changing external state, use an installed capability or a bounded App
+  observer that reports facts, together with an exact Condition identifying the
+  source object, expected state, accountable owner and recovery review interval.
+  A webhook can supply the fact. When the provider needs polling, ordinary
+  observer code does those source reads and reports changes; the agent spends
+  effort interpreting relevant changes. Declaring a Condition does not install
+  an observer or start the external operation.
+
+The route records the fact against its accountable resource before handling.
+An idle eligible Task is scheduled; an active worker can receive supported live
+feedback or reconsider in a later attempt. Pending input remains durable, and
+wakes can coalesce without discarding it or starting competing attempts. Facts,
+other waits, partial results and independent work remain separate. For example,
+"PR merged" can satisfy the PR wait while deployment and verification remain.
+
+Recovery reviews and indexed retained-work checks protect against missed wakes.
+A due time prompts reconsideration, not successful completion. The source must
+still be observed: the Host cannot discover an external change that no producer
+reports. If feedback is missing, diagnose that existing source/route before
+adding agent status loops. Unknown failures may still need an agent's judgment.
+Due reviews can invoke the selected executor, including a model; choose their
+interval for recovery needs, separately from an observer's cheap read cadence.
+The [event contract](events.md#resource-responsibility-and-reconciliation),
+[Conditions](task-resource-engine.md#conditions), and
+[input during execution](workflows.md#input-during-execution) own these mechanics.
+
+Apps can add a source through the existing `AppDefinition.observers` declaration:
+an `id`, `intervalMs` and bounded `run(context)` returning ordinary facts. An
+authorized agent can implement, test and activate such an App change. There is
+no generic runtime `addWatcher` tool implied by this API. Prefer an installed
+source and [resource-carried ownership](agent-app.md#resource-ownership-by-convention)
+before writing another adapter. Waking remains a Host consequence of resource
+updates, independent of which adapter observed the fact.
+
+The [waiting refinement proposal](../proposals/task-observation-contract-20260930.md)
+separates the remaining observation-coverage and liveness gaps from these
+implemented mechanisms. A stored Condition alone is not proof that a healthy
+producer covers the requested source.
+
 The accepted [one-lifecycle contract](task-resource-engine.md#one-lifecycle-baseline)
 uses Task attempts for Conversation execution. Explicit accepted outcomes and
 owner closure replace mode-dependent lifetime rules and coupling between result

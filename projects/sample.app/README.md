@@ -20,8 +20,10 @@ Task dependency:
 }
 ```
 
-Use readable paths in the recipient's workspace, or give it exact evidence
-references. The input's subject is the review question; references are supporting
+The example paths are relative to the source repository root (`/app` in this
+installation), not the reviewer's App root. For other material, name the path's
+root or give absolute, readable evidence references. The input accepts up to 16
+references. The subject is the review question; references are supporting
 material, not instructions. A review returns findings, evidence and limitations.
 It does not edit the reviewed files or establish deployment or approval.
 

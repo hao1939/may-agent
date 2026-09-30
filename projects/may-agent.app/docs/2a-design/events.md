@@ -7,9 +7,10 @@ ordered per-attempt Event batches are implemented. App admission uses that
 single path; request dispositions have been removed. May's Conversation Task
 handles linked Task facts through the same input path as human discussion;
 there is no separate current supervision Task or proxy for destination work.
-Failures before a route plan exists still have a recovery gap, and Condition
-freshness partly depends on event names. The [boundary review](../archive/reviews/resource-event-boundary-20260927.md)
-records the reproductions; the contract below does not claim those gaps are fixed.
+Unresolved App translation is retained before invocation and retried through
+admission recovery. Condition freshness still partly depends on event names.
+The [boundary review](../archive/reviews/resource-event-boundary-20260927.md)
+records the original reproductions and links the September 30 source recheck.
 
 ## Purpose
 
@@ -79,7 +80,9 @@ if translation failed before a Task could be created. Recover through existing
 admission state; unrelated routes must remain usable. Invalid input can be
 rejected explicitly. An intentional no-work decision is different from a broken
 translator or an absent owner. A durable event alone does not prove that its
-work reached an owner. Current pre-plan failures do not yet meet this contract.
+work reached an owner. App translation now follows a saved unresolved admission
+command; failure before any accountable route can be recorded still requires
+explicit diagnostic handling.
 
 ### Immediate reactions
 
@@ -287,7 +290,9 @@ Ordinary reported facts are record-only. An event may remain `recorded` after
 persistence when its route fails. Existing input/plan recovery retries retained
 App admission with the same identity. A failure before those records exist is
 currently diagnostic evidence without automatic admission recovery; control
-commands also retain their own recovery contract.
+commands also retain their own recovery contract. App subscription translation
+now runs after unresolved routing responsibility is saved, so a thrown translator
+uses the existing plan recovery; this is not a failure before plan creation.
 
 ## Routing outcomes
 
