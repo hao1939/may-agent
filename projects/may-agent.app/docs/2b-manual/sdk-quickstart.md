@@ -226,3 +226,63 @@ your own App. Keep the Host's bookkeeping and recovery in the existing Task path
 For long waits, use [fact-driven wake-up](../2a-design/sdk.md#wake-on-new-facts-and-offload-polling)
 so dependencies and observers carry status checking while the worker yields or
 continues useful independent work.
+
+For a new resource detector, start with the [checked observer example](../examples/observers.ts).
+The App implements `inspect(resource, {signal})`; the Host supplies the rest.
+An agent can discover the installed capability with `tasks.contract`, then
+build a Condition without knowing event fields:
+
+```json
+{
+  "action": "contract",
+  "target": { "appId": "builds" },
+  "observation": {
+    "observerId": "status",
+    "id": "build-result",
+    "resource": "acme/widget/42",
+    "expected": { "field": "state", "anyOf": ["passed", "failed", "cancelled"] }
+  }
+}
+```
+
+Return the reply's `condition` in the Task result's `conditions`. The contract
+read alone starts no wait. Workflow/executor code uses `read.contract(appId)`
+and SDK `observationCondition` for the same result. The `builds` App here is an
+example, not an installed provider. Install the matching Host/SDK before using
+the new declaration. For diagnosis, exact `apps.list {appId}` reads show recent
+resource inspection health; the Task's saved review deadline still provides a
+review opportunity if detection stops entirely.
+
+
+### Smoke-test the installed observation path
+
+Use an ordinary Task with a safe, known resource that already satisfies the
+expected state. Saving its observation Condition requests a prompt check through
+the installed observer; it need not wait for the next normal polling interval.
+There is no separate smoke mode, watcher registration or synthetic success event.
+The [checked workflow example](../examples/observation-smoke.ts) uses a known
+finished build and the [build observer example](../examples/observers.ts).
+Install the workflow in the owning agent's normal workflow directory, then
+assign a Task selecting `workflow: "observation-smoke"` with
+`input: { resource: "acme/widget/123" }`. Replace that reference with an allowed
+known resource of the installed provider; these examples do not install one.
+An agent can carry out the same steps using `tasks.contract` and Task results.
+
+1. Discover the installed descriptor and save the Condition in a waiting result.
+2. Let the Host read the source, persist and deliver a matching fact, and schedule
+   the Task's next owner attempt. Let that attempt inspect the evidence.
+3. Accept the smoke outcome only after receiving the exact source/resource fact.
+   Retain its event ID and observed data; read the Task with
+   `acceptedEvidence: { limit: 2 }` to inspect the waiting and receiving attempts.
+   The example result also records delivery time and the provider's observation
+   time when supplied. A failed build can pass this transport smoke test: the
+   test verifies observation and continuation, not whether the build passed.
+
+If the result is still unverified, inspect the Task's current Conditions and
+pending input, exact source App `observerHealth`, event receipt, and accepted
+attempts. These distinguish source failure, unmatched evidence, delivery failure
+and an owner that did not continue. Keep the Task unresolved for diagnosis using
+its existing review deadline. Periodic observation retries failed reads and
+covers missed prompt notifications. Host capacity and provider latency still
+apply; a successful smoke run is evidence for that resource and moment, not a
+promise that every future check succeeds.

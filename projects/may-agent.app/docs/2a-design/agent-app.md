@@ -416,11 +416,80 @@ An observer is a bounded deterministic adapter for external state:
 provider state -> observer -> semantic fact -> input, exact wake, or projection
 ```
 
-It receives capability-scoped read and logging ports and returns facts for the
-host to publish after successful observation. It does not launch an agent,
-know inbox or task storage, or mutate runtime state. Legacy watchers migrate to
+The raw `AppObserver.run(ObserverContext)` form receives capability-scoped read
+and logging ports and returns facts for the Host to publish. The resource form
+below receives just a resource and abort signal and returns observed data.
+Neither launches agents, accesses inbox or task storage, or mutates runtime state. Legacy watchers migrate to
 observers, workflow inputs, or explicit offline maintenance according to their
 actual responsibility.
+
+### Task-driven resource observation
+
+Declare a `defineObserver({ id, type, description, intervalMs, timeoutMs,
+inspect(resource, { signal }) })` in `AppDefinition.observers`. `inspect` reads
+current provider state and returns a plain JSON object. The App owns permitted
+resource scope, credentials, validation and field meaning. The Host owns demand
+selection, paging, read sharing, source identity, publication and Task wakes.
+The returned fields retain their App meaning, including `observedAt` when
+present. Only `resource` is reserved: the Host sets it to the requested
+reference for Condition correlation. Host timing stays in the event envelope
+and inspection health.
+The [checked example](../examples/observers.ts) uses a submitted build.
+
+A worker discovers the installed capability through `tasks.contract` or
+`read.contract(appId)`. SDK `observationCondition(capability, interest)` builds
+an ordinary Condition. Agents can supply `observation` to `tasks.contract` to
+get the same ready-to-use Condition. Return it through the existing Task result;
+building it alone saves nothing. The helper supplies exact source identity,
+generic resource encoding and a one-hour diagnostic review default. It does
+not start the provider operation or register a separate watch.
+
+The Host queries existing Condition routes, shares each source/resource read,
+and visits four subjects per observer slot. After a committed Task result, it
+requests a prompt check of that Task's open interests, including retained ones.
+This uses the same read/publication path within the current polling interval;
+it adds no public check command. Requests coalesce by source/resource, up to
+64 pending subjects per observer, processed four at a time without overlapping
+runs. Each batch rechecks current Conditions, so cancelled or satisfied waits
+are ignored. A missed notification, overflow or failed read falls back to normal
+periodic observation; the queue is disposable, not another authority.
+
+Publication suppression yields to the existing Condition matcher: unchanged
+data is published when a current open wait needs it. This covers both new Tasks
+and a removed/recreated Condition on the same Task without storing another wait
+identity. Removing, satisfying or cancelling demand stops its reads. Closed
+Tasks stay closed. Raw observers remain available for unsolicited discovery.
+
+Each read has a cooperative abort/deadline (at most five minutes). Replacement
+and shutdown abort in-flight reads and fence late results. Noncooperative I/O
+retains its occupied slot across reload, with at most eight unsettled reads per
+observer. The Host reports capacity exhaustion rather than multiplying hung
+requests. Arbitrary CPU loops cannot be stopped in process. Poll cadence,
+paging and provider delays are not a delivery deadline or complete history.
+
+Unchanged observations are suppressed for the most recent 64 resources in each
+observer generation. Eviction or reload can republish unchanged data; it does
+not by itself resolve an unsatisfied Condition or request a model attempt.
+Exact `apps.list {appId}` reads expose the parent runtime's `observerHealth`:
+last run start/completion/error and up to 64 recent resource checks, including
+last successful check and error. This is disposable runtime evidence; absence
+after restart, eviction or unavailable runtime means unknown. Completion of a
+batch does not prove that every resource read or downstream delivery succeeded.
+Existing failure events retain failures in the journal; no watch-status table
+or heartbeat per resource poll is added.
+
+A broken or missing detector leaves the saved wait and its review deadline.
+The existing indexed recovery scheduler can make that same Task eligible for
+diagnosis without a detector event. The Task owner investigates; Evaluation
+can independently review repeated ineffective attempts; an installation's
+supervisor coordinates shared repairs. Their judgments are App behavior, not
+Host routing policy. Host/process outage needs an external supervisor/operator.
+See [recovery responsibilities](system-boundary.md#recovery-uses-evidence-before-repetition).
+
+An App can verify the installed path using an ordinary smoke Task against a
+safe known resource. Success requires a saved wait, a durable matching event
+and an accepted result from a later owner attempt. A direct detector call or
+healthy inspection alone proves less. See the [smoke recipe](../2b-manual/sdk-quickstart.md#smoke-test-the-installed-observation-path).
 
 ### Resource ownership by convention
 
