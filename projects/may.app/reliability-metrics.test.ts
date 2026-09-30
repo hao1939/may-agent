@@ -1,6 +1,13 @@
 import { afterEach, beforeEach, expect, test } from "bun:test";
+import { mkdtempSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { openDatabase, type SqliteDb } from "../may-agent/src/lib/db.js";
 import { applyDbSchema } from "../may-agent/src/lib/db/schema.js";
+import { closeDb, getDb } from "../may-agent/src/lib/db/connection.js";
+import { EventBus } from "../may-agent/src/app/core/events/bus.js";
+import { createAppReporting } from "../may-agent/src/app/composition/reporting.js";
+import { measureSourceMetrics } from "../may-agent/src/app/metric-source-measurement.js";
 import {
   createAppInboxItem,
   recordAppInboxRecoveryFailure,
@@ -25,6 +32,43 @@ function sample(id: string) {
     )
     .get() as any;
 }
+
+test("declared reliability metrics collect through the Host and retain a real breach and recovery", async () => {
+  const root = mkdtempSync(join(tmpdir(), "may-reliability-collection-"));
+  try {
+    const store = getDb(root);
+    const reporting = createAppReporting(() => store);
+    reporting.syncDefinitions([{ definition: app }]);
+    const old = Date.now() - 2 * 86400000;
+    createAppInboxItem(store, {
+      id: "unadmitted",
+      appId: "sample",
+      source: { kind: "system", id: "fixture" },
+      input: { kind: "request", data: {} },
+      now: old,
+    });
+    recordAppInboxRecoveryFailure(store, "unadmitted", "input-admission", "mapping unavailable", old);
+    const bus = new EventBus();
+    const collected = await measureSourceMetrics({ bus, persistDir: root });
+    expect(collected.failures).toEqual([]);
+    expect(collected.skipped).toEqual([]);
+    expect(collected.measured.sort()).toEqual(reliabilityMetrics.map((metric) => metric.id).sort());
+    expect(await reporting.readMetric("may.unresolved-input-recovery-count")).toMatchObject({ value: 1, sampleSize: 1 });
+    const alert = store.prepare("SELECT id, resolved_at FROM metric_alerts WHERE metric_id = ?")
+      .get("may.oldest-input-recovery-age-seconds") as { id: number; resolved_at: number | null };
+    const alertId = alert.id;
+    expect(alertId).toBeGreaterThan(0);
+    expect(alert.resolved_at).toBeNull();
+    resolveAppInboxRecovery(store, "unadmitted", "input-admission", Date.now());
+    expect((await measureSourceMetrics({ bus, persistDir: root })).failures).toEqual([]);
+    expect(await reporting.readMetric("may.unresolved-input-recovery-count")).toMatchObject({ value: 0, sampleSize: 0 });
+    expect(store.prepare("SELECT resolved_at FROM metric_alerts WHERE id = ?").get(alertId))
+      .toMatchObject({ resolved_at: expect.any(Number) });
+  } finally {
+    closeDb(root);
+    rmSync(root, { recursive: true, force: true });
+  }
+});
 
 test("input metrics include old unadmitted work after feedback and exclude recovered operations", () => {
   const old = Date.now() - 5 * 86400000;

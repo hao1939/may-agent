@@ -15,7 +15,7 @@ const recoveries = `WITH clock AS (SELECT ${clock} AS cut), recoveries AS (
       OR (r.key = 'input-feedback' AND json_extract(i.recovery_json, '$."input-admission".reportedAt') IS NULL))
 )
 SELECT VALUE AS value, COUNT(*) AS sampleSize, (SELECT cut FROM clock) AS measuredAt,
-  json_object('scope', 'Current unresolved input recovery boundaries; includes old unfinished work; excludes Evaluation itself',
+  json_object('scope', 'Current unresolved input recovery boundaries, including old unfinished work and excluding Evaluation itself',
     'examples', json((SELECT json_group_array(json_object('appId', app_id, 'inputId', id, 'stage', stage,
       'firstFailedAt', firstFailedAt, 'lastFailedAt', lastFailedAt, 'failures', failures, 'error', error))
       FROM (SELECT * FROM recoveries ORDER BY firstFailedAt, id LIMIT 3)))) AS note
@@ -80,7 +80,7 @@ export const reliabilityMetrics: NonNullable<AppDefinition["metrics"]> = [
         'failurePercent', CASE WHEN COUNT(*) > 0 THEN ROUND(100.0 * SUM(state = 'failed') / COUNT(*), 3) ELSE NULL END,
         'examples', json((SELECT json_group_array(json_object('appId', app_id, 'taskId', task_id, 'attemptId', attempt_id))
           FROM (SELECT * FROM cohort WHERE state = 'failed' ORDER BY started_at DESC, attempt_id LIMIT 3))),
-        'limits', 'Retained history only; later success does not prove recovery of the same input; cause and quality unassessed') AS note
+        'limits', 'Retained history only. Later success does not prove recovery of the same input. Cause and quality unassessed.') AS note
     FROM cohort`,
   },
   {
@@ -99,7 +99,7 @@ export const reliabilityMetrics: NonNullable<AppDefinition["metrics"]> = [
       WHERE app_id = 'evaluation' AND status != 'done' AND input_kind IN ('review-metric', 'review-task-outcome', 'automatic-review'))
       SELECT COALESCE(MAX(MAX(0, (${clock} - created_at) / 1000.0)), 0) AS value, COUNT(*) AS sampleSize,
       ${clock} AS measuredAt,
-      json_object('scope', 'Current unfinished review inputs, including budget waits; admission age is not a promised deadline',
+      json_object('scope', 'Current unfinished review inputs, including budget waits. Admission age is not a promised deadline.',
         'examples', json((SELECT json_group_array(json_object('appId', 'evaluation', 'inputId', id, 'taskId', execution_task_id, 'createdAt', created_at))
           FROM (SELECT * FROM pending ORDER BY created_at, id LIMIT 3)))) AS note FROM pending`,
   },
