@@ -139,7 +139,7 @@ current facts and act through the existing owner. It is not another lifecycle.
 | Owner is busy | Preserve pending feedback; keep one executing attempt for the Task. |
 | Execution disappeared | Fence it and recover the same Task under existing policy. |
 | Worker cannot progress within scope | Report the blocker, attempted alternatives and useful remaining work to its assigning owner. |
-| Task was closed or cancelled | Retain late evidence; do not reopen it because a notification arrived. |
+| Task was closed or cancelled | Retain late evidence; reopen the same Task only through explicit user-authorized, version-fenced operator control. Notifications do not authorize it. |
 | Task is unexpectedly missing | Report to its owning App; do not guess a replacement Task. |
 | Owning App cannot accept feedback | Preserve the delivery problem; use one explicit supervisor route if installed. |
 | Supervisor is unavailable | Expose the unresolved problem for human attention; stop fallback traversal. |
@@ -159,7 +159,7 @@ unless a demonstrated need justifies review while a helper is still running.
 **Implementation limit:** Task ownership, exact caller feedback and mechanical
 recovery are implemented. Hosted helpers inherit scope and cleanup; startup
 avoids heuristic standalone revival. The [consolidation record](../archive/reviews/execution-consolidation-poc-20260914.md)
-retains the evidence. Automatic supervisor fallback and semantic review during
+retains the evidence. May admission failures have an explicit App-owned Conversation review route as described in the [Task engine](task-resource-engine.md#one-app-work-path). Automatic supervisor fallback and semantic review during
 an awaited helper remain deferred. The [ownership review](../archive/reviews/ownership-boundary-review-20260913.md)
 records their rationale; this contract does not promise universal recovery or
 that a human has been notified merely because a failure was saved.

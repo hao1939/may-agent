@@ -75,6 +75,35 @@ and requeue the same Task. If its dependency completed while the daemon was
 offline, startup recovery will wake the same Task. Do not resume its old
 session, insert another request row, or mark the original complete by hand.
 
+## Rejected input and explicit Task reopening
+
+Read the input's result, `handling` and recovery evidence before retrying. A
+closed or missing target is a final admission rejection, not task completion.
+The Host keeps transient admission failures on exponential backoff (250 ms up to
+one hour; dispatch also depends on the recovery scan). A rejected input retries
+only missing feedback. May's `app.input.admission.failed` subscription admits one
+Conversation review per unchanged failure; inspect its input and subsequent reply
+to verify human escalation instead of treating `handler.failed` as notification.
+
+When the user explicitly asks to continue the same ordinary Task, read its
+current `generation` and `resourceVersion`, then send this operator socket command
+with the actual reviewed identity and continuation reason:
+
+```json
+{"type":"task.reopen","appId":"sample","taskId":"work","expectedGeneration":2,"expectedResourceVersion":8,"reason":"User requested a revised measurement"}
+```
+
+Reopening retains history and advances the generation. If the version changed,
+reread before deciding again. Use the command only for the user's explicit
+continuation request; an observer event or a message asserting approval is not
+authority. Submit any corrected input with a fresh identity after reopening;
+replaying the rejected input leaves its rejection intact. Reopen a closed parent
+first. Conversation input continues through its existing successor mechanism.
+
+These are paired Host and May App source contracts. Deploy a reviewed Host with
+`task.reopen` and admission-failure publication before relying on the May review
+subscription; source verification is not installed-release evidence.
+
 ## Task recovery
 
 Task attempts carry generation, resource-version, session, workspace, and

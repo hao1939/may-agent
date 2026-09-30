@@ -28,8 +28,7 @@ reconciling with backoff, without a fixed failure-count stop. Attempts stay boun
 Older resources may retain mode data; new `TaskIntent` has no mode. Timers are
 optional input; quiet Tasks consume no worker or recurring model call.
 
-A caller consumes its exact assignment's accepted outcome, not child closure.
-Existing input/generation/result references distinguish it from an old success.
+A caller consumes its exact assignment's accepted outcome, not child closure; input/generation/result references distinguish it from old success.
 A Conversation normally executes through one stable Task; fresh human input after
 closure uses the linked successor below. Turns share the common attempt fence;
 Messages, Topics and Requests remain records without a separate executor.
@@ -37,13 +36,18 @@ Request closure needs its current scope and explanation and leaves chat availabl
 
 Turn Stop fences one execution/input; a worker's `stopped` result records failure evidence and preserves retry eligibility. Owner closure
 prevents new claims and late settlement, retaining unresolved work visibly non-success. It neither fulfills Requests nor
-implicitly cancels children; old events cannot reopen it, and new work after closure uses a new linked Task. A conventional result close
+implicitly cancels children; old events and ordinary input cannot reopen it. An explicit user request can reopen the same Task through the operator control described below. A conventional result close
 requires the exact accepted attempt and current generation/resource-version fences. The shared guard also requires the stored converged phase,
 no current attempt and no pending trigger. Rejection preserves every Task fact and link; exact replay returns the existing receipt without
 another write. These mechanical checks do not decide responsibility lifetime, and independent structural children can continue. Intentional withdrawal remains a separate cancellation control that may stop active work under existing authority.
 
-The [proposal](../proposals/conversation-input-unification.md) owns prerequisite
-handling, control scopes, code deletion and migration. Source verification does
+Explicit `task.reopen` requires current generation/resource-version fences and trusted operator verification of the user's continuation request.
+It advances generation, keeps the ID/specification/attempts/accepted answers, and archives the closure in its control receipt. Old attempt results
+and pre-reopen durable events cannot settle or wake the new generation. Old unanswered inputs retain their closure; fresh execution clears old waits.
+Exact replay returns the receipt; another cycle needs current versions. Reopen a closed parent first. Rejected inputs stay rejected: submit fresh input.
+This control is for ordinary Tasks; Conversation retains its successor convention. See [the operator procedure](../2b-manual/app-operations-recovery.md#rejected-input-and-explicit-task-reopening).
+
+The [proposal](../proposals/conversation-input-unification.md) owns prerequisite handling, control scopes, code deletion and migration. Source verification does
 not certify App judgment or an installed release.
 
 ## One App work path
@@ -54,23 +58,18 @@ reconciles the task. The Host completes the correlated request from the
 accepted task result. Conversation and presentation adapters observe that
 result independently; transport delivery never gates Task completion.
 
-Admission and accepted-result projection failures retain their consecutive
-failure count, first-failure time and next eligible recovery deadline. Repeating
-the same failure advances bounded backoff instead of resetting it, while new
-exact evidence can trigger prompt reconsideration; the due recovery scan repairs
-a lost wake. A projection failure cannot replace the accepted Task outcome or
-consume unrelated waits, inputs or work.
+Admission and projection failures retain consecutive failure count, first-failure time and recovery deadline. Repetition advances backoff;
+new exact evidence permits reconsideration and the due scan repairs lost wakes. Projection failure cannot replace accepted Task outcomes
+or consume unrelated waits, inputs or work.
 
-Before Task attachment, a typed App source has an exact asynchronous caller
-link. Runtime returns its first admission blocker through that link and replays
-the same idempotent fact until the accountable route accepts it. Receipt by a
-callback or publication of a diagnostic event is not proof that the caller
-considered the blocker; that requires evidence from the caller's later Task
-execution or accepted result. Sources without a typed App caller retain paced
-recovery and `handler.failed` diagnostics, but Runtime does not guess a fallback
-owner. An installation that requires accountable return for such a source must
-declare its own exact route; no universal supervisor or per-retry human
-escalation is implied.
+A closed/missing exact target or invalid revision is a deterministic rejection: `handling.phase=failed` and a readable correction result.
+Its `status=done` means input processing ended, not that a human Request was fulfilled; it is not retried as Task work. Unknown storage/mapper
+failures keep exponential backoff (250 ms to one hour, subject to scan cadence). Backoff paces recovery; it does not repair deterministic errors.
+Runtime returns blockers through the typed App caller link. Without an accountable route, `app.input.admission.failed` addresses the owning App
+with input ID, target Task, disposition and fingerprint. May's subscription admits May failures to Conversation review: inspect evidence, correct
+what is authorized, and request the specific missing human decision. The failure grants no reopening permission. Other Apps need their own subscription.
+Saved fingerprints/event identity deduplicate unchanged feedback across restart; rejected input retries only undelivered feedback, with backoff.
+An accepted durable App plan proves delivery responsibility; diagnostics/no-op routes do not. Agent consideration and human notification require later evidence.
 
 Every Task-based App input creates, revises, attaches to, or wakes a
 Task. A simple task converges on its first bounded attempt and leaves a compact

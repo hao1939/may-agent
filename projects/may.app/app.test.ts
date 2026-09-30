@@ -6,6 +6,7 @@ import app, {
   evaluationHumanDecisionInput,
   evaluationTaskReportInput,
   observerFailureInput,
+  admissionFailureInput,
   scoutResearchHandoffInput,
   taskForMayInput,
 } from "./app.ts";
@@ -47,6 +48,7 @@ describe("canonical May conversation App", () => {
     expect(app.observers?.map(({ id }) => id)).toEqual(["github-pull-request"]);
     expect(app.description).toContain("may.github.pull-request.state");
     expect(app.subscriptions?.map(({ id }) => id)).toEqual([
+      "input-admission-failure-review",
       "observer-failure-review",
       "scout-research-qualified",
       "evaluation-human-decision",
@@ -646,4 +648,43 @@ describe("canonical May conversation App", () => {
       ),
     ).toThrow("requires non-empty dedupeKey");
   });
+});
+
+test("admission failures reach May with exact identity and bounded human escalation guidance", () => {
+  const event: AppEvent<Record<string, unknown>> = {
+    type: "app.input.admission.failed",
+    source: "app-inbox",
+    target: { appId: "may", project: "may" },
+    data: {
+      appId: "may",
+      requestId: "input-one",
+      targetTaskId: "closed-work",
+      fingerprint: "failure-one",
+      summary: "Task is closed",
+      disposition: "admission-rejected",
+    },
+  };
+  const subscription = app.subscriptions!.find(
+    ({ id }) => id === "input-admission-failure-review",
+  )!;
+  expect(matchesEventSelector(subscription.event, event)).toBe(true);
+  const input = admissionFailureInput(event)!;
+  expect(Check(app.inputSchema, input)).toBe(true);
+  expect(input.kind).toBe("message");
+  expect(String(input.data.message)).toContain(
+    "user explicitly requested continuation",
+  );
+  expect(String(input.data.message)).toContain(
+    "ask the human for the specific decision",
+  );
+  expect(input.data.context).toMatchObject({ admissionFailure: event.data });
+  expect(
+    admissionFailureInput({ ...event, source: "app-task:may" }),
+  ).toBeNull();
+  expect(
+    admissionFailureInput({
+      ...event,
+      data: { ...event.data, appId: "another" },
+    }),
+  ).toBeNull();
 });

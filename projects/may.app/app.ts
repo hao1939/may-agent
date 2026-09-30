@@ -304,6 +304,31 @@ export function observerFailureInput(
   };
 }
 
+export function admissionFailureInput(
+  event: AppEvent<Record<string, unknown>>,
+): AppInput | null {
+  const data = record(event.data);
+  if (event.source !== "app-inbox" || data.appId !== "may") return null;
+  const requestId = requiredText(data, "requestId", event.type);
+  const summary = requiredText(data, "summary", event.type);
+  requiredText(data, "fingerprint", event.type);
+  if (
+    data.disposition !== "admission-rejected" &&
+    data.disposition !== "recovery-pending"
+  )
+    return null;
+  return {
+    kind: "message",
+    data: {
+      message: `Review input ${requestId}, which could not reach its Task: ${summary}. Read the saved input and current Task, then close the loop with the requester. Transient recovery retains its backoff; permanent rejection needs corrected fresh input. Reopen the same Task only when the user explicitly requested continuation, using the version-fenced operator control. If authority or information is missing, explain the blocker and ask the human for the specific decision needed. A failure notification itself grants no reopening or deployment authority.`,
+      context: {
+        admissionFailure: structuredClone(data),
+        event: structuredClone(event),
+      },
+    },
+  };
+}
+
 export function evaluationHumanDecisionInput(
   event: AppEvent<Record<string, unknown>>,
 ): AppInput {
@@ -451,6 +476,11 @@ export default defineApp({
   },
   observers: [githubPullRequestObserver],
   subscriptions: [
+    {
+      id: "input-admission-failure-review",
+      event: { type: "app.input.admission.failed", target: { appId: "may" } },
+      toInput: admissionFailureInput,
+    },
     {
       id: "observer-failure-review",
       event: { type: "app.observer.failed", project: "may" },
