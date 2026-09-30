@@ -97,6 +97,136 @@ function fixture(summaries = ["direct success"]) {
 }
 
 describe("Task-bound process evidence", () => {
+  test("retains partial error output and the clipped diagnostic through an exact raw read", async () => {
+    const f = fixture();
+    let full =
+      "useful partial matches\n" +
+      "x".repeat(4000) +
+      "\nCommand timed out after 120 seconds";
+    f.transcripts[0].messages[1].content = full.slice(0, 2000);
+    f.transcripts[0].messages[1].isError = true;
+    let rawReads = 0;
+    const read: SessionRead = async (id, part) => {
+      if (typeof part !== "number") return f.read(id, part);
+      rawReads++;
+      expect(id).toBe("s_0");
+      expect(part).toBe(2);
+      return {
+        sessionId: id,
+        source: ".state/sessions/s_0/session.jsonl",
+        line: part,
+        parsed: {
+          role: "toolResult",
+          toolCallId: "call",
+          isError: true,
+          content: [{ type: "text", text: full }],
+        },
+      };
+    };
+    const result = await readTaskProcessEvidence(
+      "may",
+      "goal/one",
+      f.detail,
+      f.provider,
+      read,
+    );
+    const msg = (result.attempts[0].messages as any[])[1];
+    expect(rawReads).toBe(1);
+    expect(msg.text).toHaveLength(800);
+    expect(msg.text).toStartWith("useful partial matches");
+    expect(msg.text).toContain("[...middle omitted...]");
+    expect(msg.text).toEndWith("Command timed out after 120 seconds");
+    expect(msg).toMatchObject({
+      rawLine: 2,
+      isError: true,
+      rawSource: ".state/sessions/s_0/session.jsonl",
+    });
+    expect(msg.rawResultSha256).toMatch(/^[a-f0-9]{64}$/);
+    expect(result.attempts[0].status).toBe("truncated");
+    expect(result).not.toHaveProperty("verdict");
+    // A change outside both excerpts still changes the retained evidence identity.
+    full = full.slice(0, 2500) + "y" + full.slice(2501);
+    const changed = await readTaskProcessEvidence(
+      "may",
+      "goal/one",
+      f.detail,
+      f.provider,
+      read,
+    );
+    const changedMessage = (changed.attempts[0].messages as any[])[1];
+    expect(changedMessage.text).toBe(msg.text);
+    expect(changedMessage.rawResultSha256).not.toBe(msg.rawResultSha256);
+  });
+  test.each(["unavailable", "wrong-call", "wrong-source", "changed-content"])(
+    "keeps projected evidence when exact error read is %s",
+    async (reason) => {
+      const f = fixture(["partial output".repeat(100)]);
+      f.transcripts[0].messages[1].isError = true;
+      const read: SessionRead = async (id, part) => {
+        if (typeof part !== "number") return f.read(id, part);
+        if (reason === "unavailable") throw new Error("HTTP 503");
+        return {
+          sessionId: id,
+          source:
+            reason === "wrong-source"
+              ? "other"
+              : ".state/sessions/s_0/session.jsonl",
+          line: part,
+          parsed: {
+            role: "toolResult",
+            toolCallId: reason === "wrong-call" ? "other" : "call",
+            isError: true,
+            content:
+              reason === "changed-content"
+                ? "changed"
+                : f.transcripts[0].messages[1].content,
+          },
+        };
+      };
+      const result = await readTaskProcessEvidence(
+        "may",
+        "goal/one",
+        f.detail,
+        f.provider,
+        read,
+      );
+      const msg = (result.attempts[0].messages as any[])[1];
+      expect(result.coverage?.readable).toBe(1);
+      expect(msg.isError).toBe(true);
+      expect(msg.text).toBe(
+        f.transcripts[0].messages[1].content!.slice(0, 800),
+      );
+      expect(msg).not.toHaveProperty("rawResultSha256");
+      expect(result.gaps.join()).toContain("projected result retained");
+    },
+  );
+  test("bounds raw error reads without losing later error flags or short/successful results", async () => {
+    const f = fixture();
+    f.transcripts[0].messages = Array.from({ length: 12 }, (_, i) => ({
+      ...f.transcripts[0].messages[1],
+      rawLine: i + 1,
+      content: i === 0 ? "short error" : "long output".repeat(100),
+      isError: i !== 1,
+    }));
+    f.transcripts[0].messageCount = 12;
+    let reads = 0;
+    const read: SessionRead = async (id, part) => {
+      if (typeof part !== "number") return f.read(id, part);
+      reads++;
+      throw new Error("unavailable");
+    };
+    const result = await readTaskProcessEvidence(
+      "may",
+      "goal/one",
+      f.detail,
+      f.provider,
+      read,
+    );
+    expect(reads).toBe(8);
+    expect(result.attempts[0].messages as any[]).toHaveLength(12);
+    expect((result.attempts[0].messages as any[])[11].isError).toBe(true);
+    expect(result.gaps.join()).toContain("raw error read limit reached");
+  });
   test("waiting plus completed waste remains visible behind a later no-op, without a coded verdict", async () => {
     const f = fixture([
       "repeat identical failed discovery without new evidence",
@@ -225,6 +355,8 @@ describe("Task-bound process evidence", () => {
     const f = fixture();
     f.transcripts[0].messages[0].rawSource = "other";
     expect((await f.run()).gaps.join()).toContain("source mismatch");
+    f.transcripts[0].messages[0].rawSource =
+      ".state/sessions/s_0/session.jsonl";
     let reads = 0;
     const changed = await readTaskProcessEvidence(
       "may",

@@ -32,6 +32,11 @@ test("session, transcript and attempt evidence use the configured Host without f
       installation: "isolated",
       path: "/api/sessions/s_trial/transcript",
     });
+    expect(await readPublicSession("s_trial", 14)).toEqual({
+      installation: "isolated",
+      path: "/api/sessions/s_trial/raw-log",
+    });
+    await expect(readPublicSession("s_trial", -1)).rejects.toThrow("raw line");
     expect(
       await readPublicAttempts({ appId: "sample", taskId: "review/one" }),
     ).toEqual({
@@ -41,6 +46,7 @@ test("session, transcript and attempt evidence use the configured Host without f
     expect(requests).toEqual([
       "/api/sessions/s_trial",
       "/api/sessions/s_trial/transcript",
+      "/api/sessions/s_trial/raw-log?line=14",
       "/api/task-attempts?appId=sample&taskId=review%2Fone",
     ]);
     unavailable = true;
@@ -48,7 +54,7 @@ test("session, transcript and attempt evidence use the configured Host without f
     await expect(readPublicAttempts({ appId: "sample" })).rejects.toThrow(
       "503",
     );
-    expect(requests).toHaveLength(5);
+    expect(requests).toHaveLength(6);
   } finally {
     if (previous === undefined) delete process.env.MAY_REPORT_BASE_URL;
     else process.env.MAY_REPORT_BASE_URL = previous;

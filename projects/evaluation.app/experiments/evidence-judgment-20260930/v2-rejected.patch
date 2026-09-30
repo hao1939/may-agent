@@ -1,0 +1,43 @@
+--- a/projects/evaluation.app/criteria/criteria.md
++++ b/projects/evaluation.app/criteria/criteria.md
+@@ -32,6 +32,12 @@
+ outcome. A later relevant failing check can overturn an earlier success claim;
+ an unrelated check leaves independently verified work intact. Publication,
+ owner acknowledgment, a fix claim, and independent recheck remain distinct facts.
++For each contribution, identify the actor, action, object and supporting record.
++An availability event proves an observation; a write receipt can prove who
++produced the material. The same actor may do both when both actions are recorded.
++Keep these verbs precise throughout the report, including the summary and
++delivery: reporting availability does not establish supplying the file. Leave
++an unsupported producer unknown.
+ 
+ ## Ongoing-obligation contract
+ 
+@@ -203,14 +209,19 @@
+ 
+ ## Efficiency
+ 
+-Count calls as productive when they materially discover, implement, verify, or
+-recover the requested result. Count calls as wasted when they repeat known work,
+-read unrelated bulk data, retry the same failure without a changed approach, or
+-continue after the answer is established.
+-
+-Do not penalize a short session merely for being short. One well-grounded call
+-can be efficient and high quality. Do not penalize necessary recovery caused by
+-an external provider or environment failure as if it were agent waste.
++Before judging efficiency, reconstruct the material call/result sequence using
++session and raw-line order. For each visible failed call or bulk search, check
++what the worker already knew, what the matching result actually returned, and
++what later work used it. Cite this sequence in the finding. A source read before
++a broad search cannot be treated as a discovery made by that search.
++
++Read error flags with returned text: partial output and failure can coexist.
++When a cause or duration is clipped, state that it is unknown; descriptions such
++as cheap, quick, or harmless also need evidence. A useful final result establishes
++delivery, not the productivity of every preceding call. Keep avoidable work
++visible alongside successful delivery, with its simpler available alternative.
++Necessary exploration and proportionate recovery can be useful even when a call
++fails. Call count, a failure, or a short session alone does not establish waste.
+ 
+ ## Tool And Environment Evidence
+ 

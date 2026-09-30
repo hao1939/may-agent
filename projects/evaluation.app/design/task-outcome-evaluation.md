@@ -94,7 +94,7 @@ or summary. Exact `event.get` verifies the historical reference. Public
 `GET /api/task-attempts?appId=...&taskId=...&attemptId=...` supplies canonical
 session/workflow links; the event's `workflowRunId` is not a session identity. Public GET `/api/sessions/<id>` must match App,
 Task, generation and attempt, identify a non-Evaluation worker, and be terminal.
-Its binding is checked again after GET `/api/sessions/<id>/transcript`. Missing,
+Its binding is checked again after the transcript and any exact raw-result reads. Missing,
 mismatched, active or workflow-shaped execution is explicitly unassessed; no
 session directory scan or guesses from result strings. A later no-op does not
 hide earlier work inside this window; work outside the window remains unassessed.
@@ -104,11 +104,21 @@ timeout and one-megabyte response cap. Installations without that endpoint repor
 unavailable coverage, not a failed wait. **The Host still parses the whole raw file
 server-side**, and its public projection omits some message kinds and caps tool
 results at 2,000 characters. Client bounds do not fix or conceal that Host cost.
+For up to eight error results per attempt whose projected text exceeds 800
+characters, Evaluation reads `GET /api/sessions/<id>/raw-log?line=<rawLine>`.
+Session, source, line, tool-call identity, tool name, error flag and the projected
+prefix must match. The snapshot retains the result's beginning and end within
+800 characters, marks the omitted middle, and hashes the complete raw result.
+This preserves partial output alongside a terminal diagnostic. A missing,
+mismatched or over-limit raw read leaves the original projection and error flag
+available, with an explicit evidence gap. It does not suppress the attempt.
 Each attempt retains at most 96 messages, 800 characters per field, eight calls
 per message and 64 KiB of projection. Raw line/source/block coordinates and
 hashed tool-call IDs preserve call/result correlation without copying long
 provider tokens. The public response hash detects drift even outside a clipped
-field; it is not a hash of the original raw transcript. Truncation is explicit.
+field; it is not a hash of the original raw transcript. Exact expanded errors
+also retain their raw-result hash, including bytes omitted from both excerpts.
+Truncation is explicit.
 No child execution is inferred. Relative artifact references remain unavailable.
 
 The existing review snapshot hash, freshness reread, immutable publication and
@@ -120,8 +130,17 @@ errors, successful output, necessary exploration, recovery and valid no-ops are
 not automatic efficiency findings. The evaluator judges waste against practical
 value/cost and cites exact attempt/session/line evidence, or states its limits.
 
-This adds at most three event and nine HTTP reads per subject snapshot (the
-review rereads freshness), plus bounded prompt bytes; no new controller or
+The [September 30 comparison](../experiments/evidence-judgment-20260930/README.md)
+found a remaining judgment limit: an error flag and call ordering can reach the
+evaluator while its report still overlooks or misstates them. Two isolated
+criteria revisions and a presentation-order trial did not establish a reliable
+correction. The experiment retains negative results, fixture limitations and
+independent May/Gym review; passing source checks alone is not evidence for
+promoting new judgment guidance.
+
+This adds at most three event and 33 HTTP reads per subject snapshot: nine
+metadata/transcript reads and up to 24 exact error reads (the review rereads
+freshness), plus bounded prompt bytes; no new controller or
 scoring scheme. Prompt-only and latest-session-only changes cannot address the
 observed missing-process/no-op gap. A Host accepted-attempt execution link and
 server-bounded transcript endpoint may simplify this later; they are not needed

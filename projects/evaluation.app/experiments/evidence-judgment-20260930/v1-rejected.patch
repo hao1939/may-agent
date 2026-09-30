@@ -1,0 +1,40 @@
+--- a/projects/evaluation.app/criteria/criteria.md
++++ b/projects/evaluation.app/criteria/criteria.md
+@@ -32,6 +32,10 @@
+ outcome. A later relevant failing check can overturn an earlier success claim;
+ an unrelated check leaves independently verified work intact. Publication,
+ owner acknowledgment, a fix claim, and independent recheck remain distinct facts.
++Attribute each contribution to its recorded action. Producing material, observing
++its availability, transporting it and accepting it are separate contributions.
++Credit only the action the evidence establishes; leave an unidentified producer
++unknown rather than assigning production to the observer or messenger.
+ 
+ ## Ongoing-obligation contract
+ 
+@@ -203,14 +207,18 @@
+ 
+ ## Efficiency
+ 
+-Count calls as productive when they materially discover, implement, verify, or
+-recover the requested result. Count calls as wasted when they repeat known work,
+-read unrelated bulk data, retry the same failure without a changed approach, or
+-continue after the answer is established.
+-
+-Do not penalize a short session merely for being short. One well-grounded call
+-can be efficient and high quality. Do not penalize necessary recovery caused by
+-an external provider or environment failure as if it were agent waste.
++Trace material calls through their matching results and subsequent use. Read
++error flags together with returned text: useful partial output and a failed call
++can coexist. A clipped result leaves its missing cause or duration unknown;
++retain the visible failure instead of classifying every call as productive from
++the final success. Cite the specific call/result coordinates for the judgment.
++
++Judge avoidability against what the worker already knew. A direct known source
++can make an unrelated bulk search wasteful; a necessary discovery or recovery
++can be useful even when it fails. Explain the consequence and simpler available
++alternative, with cost limited to what was observed. Successful delivery and
++avoidable work can coexist, as can a failed call and efficient recovery. One
++well-grounded call can be enough; neither call count nor failure alone proves waste.
+ 
+ ## Tool And Environment Evidence
+ 
