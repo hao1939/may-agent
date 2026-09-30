@@ -1,7 +1,7 @@
 import { isDeepStrictEqual } from "node:util";
 import { readVerifiedApprovalDecision, type EventInput } from "@may-agent/control/events";
 import type { SqliteDb } from "../../../lib/db.js";
-import type { AppTaskCondition } from "../tasks/app-task-state.js";
+import { matchesAppTaskCondition } from "../tasks/app-task-condition-tracker.js";
 import { AppTaskResourceStore } from "../state/app-task-resource-store.js";
 import { isHumanActionOwner } from "../tasks/human-condition.js";
 
@@ -88,18 +88,8 @@ export function validateCurrentApproval(input: EventInput, db: SqliteDb): void {
       }
     }
   }
-  const expected = proposal.expected;
-  if (!expected || typeof expected !== "object" || Array.isArray(expected)) {
-    throw new ApprovalValidationError(`Condition ${conditionId} expected contract must be an object`);
-  }
-  const expectedRecord = expected as Record<string, unknown>;
-  const allowed = [expectedRecord.anyOf, expectedRecord.allowedDecisions, expectedRecord.acceptedDecisions].filter(
-    Array.isArray,
-  ) as unknown[][];
-  if (
-    !allowed.length ||
-    !allowed.every((choices) => choices.some((candidate) => isDeepStrictEqual(candidate, input.data.decision)))
-  ) {
+  const stamp = record(input.data.hostApproval, "project.approval.submitted data.hostApproval");
+  if (!matchesAppTaskCondition(condition, { ...input, source: stamp.ingressSource })) {
     throw new ApprovalValidationError(`Decision is not allowed by Condition ${conditionId}`);
   }
 }
@@ -128,38 +118,6 @@ export function stampApproval(
     throw new Error("Formal approval requires a valid proposal and ingress attribution");
   }
   return { ...input, data };
-}
-
-export function matchesVerifiedApprovalCondition(condition: AppTaskCondition, event: Record<string, unknown>): boolean {
-  if (!isHostVerifiedApproval(event)) return false;
-  const data =
-    event.data && typeof event.data === "object" && !Array.isArray(event.data)
-      ? (event.data as Record<string, unknown>)
-      : event;
-  const proposal = data.proposal;
-  if (!proposal || typeof proposal !== "object" || Array.isArray(proposal)) return false;
-  const anchor = proposal as Record<string, unknown>;
-  return (
-    anchor.conditionId === condition.metadata.id &&
-    anchor.conditionGeneration === condition.metadata.generation &&
-    anchor.subject === condition.spec.subject &&
-    anchor.requestedAction === condition.spec.requestedAction?.trim() &&
-    isDeepStrictEqual(anchor.expected, condition.spec.expected)
-  );
-}
-
-export function isHostVerifiedApproval(event: Record<string, unknown>): boolean {
-  const data =
-    event.data && typeof event.data === "object" && !Array.isArray(event.data)
-      ? (event.data as Record<string, unknown>)
-      : event;
-  return (
-    readVerifiedApprovalDecision({
-      type: String(event.type ?? ""),
-      source: typeof event.source === "string" ? event.source : undefined,
-      data,
-    }) !== null
-  );
 }
 
 /** Exact controls only. Understanding conditional or conversational text belongs to the App. */

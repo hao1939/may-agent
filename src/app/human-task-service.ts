@@ -308,6 +308,12 @@ function listCard(view: HumanTaskView): HumanTaskView {
     ...card,
     outcome: boundedUtf8Text(view.outcome, HUMAN_TASK_LIST_TEXT_MAX_BYTES),
     ...(view.summary ? { summary: boundedUtf8Text(view.summary, HUMAN_TASK_LIST_TEXT_MAX_BYTES) } : {}),
+    ...(view.humanAction
+      ? { humanAction: {
+          ...view.humanAction,
+          requestedAction: boundedUtf8Text(view.humanAction.requestedAction, 240),
+        } }
+      : {}),
   };
 }
 
@@ -471,10 +477,7 @@ function withHumanAction(view: HumanTaskView, conditions: AppTaskCondition[]): H
   return {
     ...view,
     humanAction: {
-      requestedAction: boundedUtf8Text(
-        actions.length > 0 ? actions.join(" ") : view.summary?.trim() || view.outcome,
-        240,
-      ),
+      requestedAction: actions.length > 0 ? actions.join("\n\n") : view.summary?.trim() || view.outcome,
       ...(timestamps.length > 0 ? { since: Math.min(...timestamps) } : {}),
     },
   };
@@ -1202,10 +1205,10 @@ export class HumanTaskService {
       if (!identity) return [];
       const ref = refs.get(`${identity.appId}\0${identity.taskId}`);
       const recurrence = configuredTaskRecurrence(this.registry, row);
-      const view = ref ? projectTask(row, ref, false, recurrence) : null;
+      const view = ref ? projectTask(row, ref, true, recurrence) : null;
       if (!view) return [];
       const conditions = row.terminal === 0 ? humanConditions(row) : [];
-      return [conditions.length > 0 ? withHumanAction(view, conditions) : view];
+      return [listCard(conditions.length > 0 ? withHumanAction(view, conditions) : view)];
     });
     let total = humanActionOnly ? Number(rows[0]?.total_count ?? 0) : undefined;
     if (humanActionOnly && cursor && rows.length === 0) {

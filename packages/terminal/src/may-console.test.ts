@@ -1337,7 +1337,7 @@ test("Console replies bind a displayed proposal explicitly and keep it through l
             resourceVersion: 1,
             terminal: false,
             updatedAt: 1,
-            humanAction: { requestedAction: "Compact action" },
+            humanAction: { requestedAction: `${action}\n\nChoose the rollback observation window.` },
             approvalProposal: proposal(),
           };
         if (frame.type === "publish")
@@ -1372,6 +1372,7 @@ test("Console replies bind a displayed proposal explicitly and keep it through l
   expect(frames.filter((f) => f.event?.data?.author?.kind === "human")).toHaveLength(0);
   child.stdin.write("/task abcdef12\n");
   await waitFor(() => output.includes(action));
+  expect(output).toContain("Choose the rollback observation window.");
   const shown = proposal();
   const command = frames.find((f) => f.event?.data?.metadata?.command === "/task abcdef12");
   action = "Replacement candidate B";

@@ -246,6 +246,55 @@ describe("Host verified approval contract", () => {
     expect(db.prepare("SELECT COUNT(*) AS n FROM events").get()?.n).toBe(0);
   });
 
+  it("uses the Condition matcher for decision constraints at publication and wake", () => {
+    const { events, proposal, db, tree } = fixture({ field: "decision", equals: "reject" });
+    const input = {
+      type: "project.approval.submitted",
+      target: { appId: "sample", taskId: "work" },
+      data: { decision: "approve", proposal },
+      idempotencyKey: "constrained-decision",
+    };
+    const context = { source: "control-socket", approvalAuthorization: authorization("operator") };
+    expect(() => events.publish(input, context)).toThrow("not allowed");
+    expect(db.prepare("SELECT COUNT(*) AS n FROM events").get()?.n).toBe(0);
+    const receipt = events.publish({ ...input, data: { ...input.data, decision: "reject" } }, context);
+    expect(applyAppTaskConditionEvent(tree, events.get(receipt.eventId)!.event)).toEqual([
+      { taskId: "work", conditionId: "release" },
+    ]);
+    expect(tree.conditions.tests.status.state).toBe("unknown");
+  });
+
+  it("retries unfinished operator decision routing through the ordinary event path", () => {
+    const { bus, events, proposal, db } = fixture();
+    const input = {
+      type: "project.approval.submitted",
+      target: { appId: "sample", taskId: "work" },
+      data: { decision: "approve", proposal },
+      idempotencyKey: "interrupted-operator-decision",
+    };
+    const context = { source: "control-socket", approvalAuthorization: authorization("operator") };
+    let interrupted = true;
+    let delivered = 0;
+    bus.subscribeDurableRoute((event) => {
+      if (event.type !== input.type) return;
+      if (interrupted) throw new Error("fixture decision route interrupted");
+      delivered++;
+      return { accepted: true, by: "fixture-decision-route", route: "direct" };
+    });
+    const first = events.publish(input, context);
+    expect(first.delivery).toBe("recorded");
+    interrupted = false;
+    const retry = events.publish(input, context);
+    expect(delivered).toBe(1);
+    expect(retry).toMatchObject({ eventId: first.eventId, delivery: "recorded" });
+    expect(db.prepare("SELECT delivery_status, accepted_by FROM events WHERE id = ?").get(first.eventId)).toEqual({
+      delivery_status: "accepted", accepted_by: "fixture-decision-route",
+    });
+    expect(events.publish(input, context)).toEqual(retry);
+    expect(delivered).toBe(1);
+    expect(db.prepare("SELECT COUNT(*) AS n FROM events WHERE event_type = ?").get(input.type)?.n).toBe(1);
+  });
+
   it("rejects inconsistent ingress attribution and safely reads malformed journal data", () => {
     const { events, proposal } = fixture();
     const input = {

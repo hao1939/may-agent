@@ -198,9 +198,9 @@ describe("Telegram exact approval presentation", () => {
           }),
         } as any);
         const serviceDetail = service.getTask({ appId: "may", taskId: "goal/proposal" })!;
-        if (!scenario.approval) {
-          expect(serviceDetail.humanAction?.requestedAction).not.toContain("IMPORTANT:");
-        }
+        for (const action of scenario.actions) expect(serviceDetail.humanAction?.requestedAction).toContain(action);
+        const listed = service.listTasks({ appId: "may", humanActionOnly: true }).items[0]!;
+        expect(Buffer.byteLength(listed.humanAction!.requestedAction)).toBeLessThanOrEqual(240);
         const watchCard = renderTelegramTask(serviceDetail);
         for (const requestedAction of scenario.actions) expect(watchCard).toContain(requestedAction);
         if (scenario.approval) {

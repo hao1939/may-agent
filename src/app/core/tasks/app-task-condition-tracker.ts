@@ -1,4 +1,5 @@
-import { matchesVerifiedApprovalCondition } from "../events/approval.js";
+import { readVerifiedApprovalDecision } from "@may-agent/sdk";
+import { isDeepStrictEqual } from "node:util";
 import { commitTaskMutation, type AppTaskContext, type TaskTree } from "./app-task-store.js";
 import { taskEventPredatesReopening, type AppTaskCondition } from "./app-task-state.js";
 import { isHumanActionOwner } from "./human-condition.js";
@@ -221,13 +222,31 @@ function matchesExpectedRecord(expected: Record<string, unknown>, event: Record<
 function matches(condition: AppTaskCondition, event: Record<string, unknown>): boolean {
   if (condition.spec.type !== event.type) return false;
   if (condition.spec.type === "project.approval.submitted" && isHumanActionOwner(condition.spec.owner)) {
-    if (!matchesVerifiedApprovalCondition(condition, event)) return false;
-    // The verified proposal already names this exact Condition. Match its
-    // decision constraints directly, without fabricating duplicate identity fields.
-    const data = isRecord(event.data) ? event.data : {};
-    return isRecord(condition.spec.expected) && matchesExpectedRecord(condition.spec.expected, {
-      data: { ...condition.spec.expected, decision: data.decision },
+    const approval = readVerifiedApprovalDecision({
+      type: condition.spec.type,
+      source: typeof event.source === "string" ? event.source : undefined,
+      data: isRecord(event.data) ? event.data : event,
     });
+    if (!approval) return false;
+    const { proposal, decision } = approval;
+    const expected = condition.spec.expected;
+    if (
+      proposal.conditionId !== condition.metadata.id ||
+      proposal.conditionGeneration !== condition.metadata.generation ||
+      proposal.subject !== condition.spec.subject ||
+      proposal.requestedAction !== condition.spec.requestedAction?.trim() ||
+      !isDeepStrictEqual(proposal.expected, expected) ||
+      !isRecord(expected)
+    )
+      return false;
+    const allowed = [expected.anyOf, expected.allowedDecisions, expected.acceptedDecisions].filter(Array.isArray);
+    // The exact proposal supplies the reviewed scope. The human supplies only
+    // the decision; check all constraints here at both ingress and Task wake.
+    return (
+      allowed.length > 0 &&
+      allowed.every((choices) => choices.some((choice: unknown) => isDeepStrictEqual(choice, decision))) &&
+      matchesExpectedRecord(expected, { data: { ...expected, decision } })
+    );
   }
   // Level observations are not immutable historical facts. A newly declared
   // wait must not be satisfied by an older state, check, or pulse replayed from

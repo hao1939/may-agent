@@ -783,26 +783,16 @@ export function createEventInterface(options: CreateEventInterfaceOptions): Even
     publish(rawInput, context) {
       const input = publicationInput(rawInput, context);
       const definition = EVENT_DEFINITIONS[input.type];
-      if (input.type === "project.approval.submitted") {
-        const replay = findPersistedEventId(options.db, canonicalEvent(input, context));
-        if (replay) {
-          const view = get(replay);
-          if (!view) throw new Error(`Persisted event ${replay} is unavailable`);
-          return {
-            eventId: replay,
-            eventType: input.type,
-            delivery: view.delivery.state === "accepted" ? "accepted" : "recorded",
-            ...(view.links.length ? { links: view.links } : {}),
-          };
-        }
-      }
       if (!definition && !context.allowUnregisteredFact) {
         throw new Error(`Event type '${input.type}' is not admitted by this interface`);
       }
       if (input.type === "app.task.reopen.requested" && context.source !== "control-socket")
         throw new Error("Task reopening requires explicit operator control");
-      definition?.validate(input, options);
       const event = canonicalEvent(input, context);
+      // A recorded decision keeps its receipt after the Condition changes.
+      // Still use normal publication so the bus can finish interrupted routing.
+      const savedApproval = input.type === "project.approval.submitted" && findPersistedEventId(options.db, event);
+      if (!savedApproval) definition?.validate(input, options);
       if (definition?.delivery !== "required") {
         Object.defineProperty(event, EVENT_RECORD_ONLY, { value: true, configurable: true });
       }

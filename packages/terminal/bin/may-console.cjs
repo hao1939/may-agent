@@ -872,7 +872,7 @@ function applyTodoRefresh(page) {
     const first = unwatched[0];
     const text =
       todoCount === 1 && unwatched.length === 1
-        ? `[todo] ${first.ref} · ${first.appId} needs you: ${humanActionText(first)}\nUse /watch ${first.ref} to respond.`
+        ? `[todo] ${first.ref} · ${first.appId} needs you: ${humanActionText(first)}\nUse /task ${first.ref} to read and reply.`
         : `[todo] ${todoCount} Tasks need you in ${selectedApp}. Run /todo.`;
     presentView("/todo notification", text, {
       transient: true,
@@ -925,8 +925,7 @@ function renderTask(task, command, options = {}) {
     "",
     "  You",
     ...indentedLines(
-      task.approvalProposal?.requestedAction ||
-        (task.humanAction ? humanActionLine(task) : "Nothing needed right now."),
+      task.humanAction ? humanActionLine(task) : "Nothing needed right now.",
       4,
     ),
   );
