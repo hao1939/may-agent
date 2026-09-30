@@ -1,137 +1,185 @@
-# App SDK Quickstart
+# App SDK quickstart
 
-Create a small Task-based App, submit one review, and read its progress. This
-walkthrough assumes a working Host installation and a configured model. Run the
-commands from the workspace root. The [App/results](../examples/app.ts) and
-[control client](../examples/client.ts) are checked by `bun run check:may-design`.
+Run a real document review, inspect its evidence, and send a correction to the
+same Task. Then change the reviewer guidance and check a fresh execution.
+The [sample App](../../../sample.app/README.md) is the runnable source for this
+walkthrough; the examples import it rather than maintain a second App.
 
-## 1. Inspect the runnable App
+The responsibility split is small:
 
-The canonical [sample App](../../../sample.app/README.md) is included in this
-workspace. Read its [definition](../../../sample.app/app.ts),
-[reviewer instructions](../../../sample.app/agents/reviewer/AGENTS.md) and
-[seed](../../../sample.app/tasks/seed.json). The documentation imports that same
-App so the example cannot silently drift into a second implementation.
+| Part | Responsibility |
+| --- | --- |
+| Host | Preserve input and context, schedule attempts, retain results and waits, and return delegated results to their caller. |
+| App and worker | Define the outcome, find relevant information, perform the work, and judge what remains. |
+| Control client | Submit and inspect work from outside the App. App code uses the SDK's scoped capabilities during execution. |
 
-Its `sample-reviewer` uses the configured `gpt-5.6-sol` model. Select another
-installed model in its `agent.json` when necessary. The seed establishes the
-structural `root` referenced by the Task; an empty store does not invent it.
+## 1. Check the installed sample
 
-The App accepts a `review` input with a subject and optional source references.
-An ordinary `message` addresses an existing Task. The pure `task(request)` mapper
-creates a review with a concrete outcome and acceptance criteria. Importing the
-definition has no effects. The Host validates and activates a complete registry
-generation before admitting work. [Agent Convention](agent-convention.md) explains
-agent tools and prompt files.
+This walkthrough uses this source workspace, Bun, and an already running Host
+with its paired SDK and a configured model. It does not install the Host. The
+[operator guide](user-guide.md#starting-and-development-modes) covers installation usage; obtain the
+control socket and definition source checkout from your installation operator.
+The sample configures `gpt-5.6-sol`; select an available model in its `agent.json`
+if your installation differs, then activate that source change as in step 5.
 
-The separate [result examples](../examples/app.ts) illustrate waits and typed
-dependencies; their external pipeline/governance counterparts are illustrative
-and are not installed by the sample. The [basic cooperation scenario](../../../sample.app/scenarios/basic-cooperation.md)
-uses installed Apps and preserves its real execution evidence.
-
-## 2. Check and activate
-
-Run your App's checks before activation. The workspace's `bun run check:may-design`
-checks these source examples: SDK/control types, seeded Task admission and replay,
-and Condition/dependency result admission. It does not run the reviewer model.
-
-Commit the new App and agent definitions in the installation's definition source
-checkout, then use Console's `/reload` through the normal App activation
-procedure. Reload rejects uncommitted executable definitions. Wait for its
-completion result; a reload receipt alone is not successful activation. See
-[Operations and Recovery](app-operations-recovery.md#failed-app-reload).
-
-A daemon runs Tasks without
-`--cron`; that flag enables optional schedules. Check your installed Host
-revision: this startup separation merged in PR #96 and does not change an older
-running binary. Validation is recorded in the
-[core proposal](../archive/implementation/core-separation-review-20260910.md#step-1-implementation).
-
-## 3. Submit and read the review
-
-Use your installation's actual control socket. The conventional path is
-`.state/instances/<instance>/<agent>.sock`; the client has no default endpoint.
+Run commands from the workspace root containing `projects/` and `scripts/`.
+The sample worker's App root is `projects/sample.app`; that is a different
+working directory. Source references below are workspace-root-relative.
 
 ```sh
 sample_socket=/absolute/path/to/may.sock
-bun projects/may-agent.app/docs/examples/client.ts submit "$sample_socket"
+bun projects/may-agent.app/docs/examples/client.ts apps "$sample_socket"
 ```
 
-The client publishes `app.input.requested` for `sample`, with input
-`{ kind: "review", data: { subject: "the release notes" } }` and a stable
-idempotency key. Repeating this command requests the same review. For a new
-subject or a distinct review, change both input and key in the client.
+For this workspace's local background instance the socket is
+`/app/.state/instances/background/may.sock`. Use your installation's actual
+endpoint. The response must contain App `sample` with owner `sample-reviewer`.
+If it is absent, activate the committed sample using step 5, then check again.
+A connection error calls for checking the endpoint and Host readiness.
 
-Save the returned `eventId` and read it, replacing `123` below:
+## 2. Submit one review and inspect the result
+
+Choose one request key and keep it for retries of this submission:
+
+```sh
+review_key="quickstart-$(date -u +%Y%m%dT%H%M%SZ)"
+bun projects/may-agent.app/docs/examples/client.ts submit "$sample_socket" "$review_key"
+```
+
+The [client](../examples/client.ts) asks the sample to compare its README with
+`app.ts` and reviewer instructions. Repeating `submit` with the same key and
+input refers to the same admitted work. Keep the variable's value for retries;
+a distinct review uses a new key. Changing the question requires changing the
+client's `reviewInput` and choosing a new key.
+
+The receipt includes an `eventId` and normally a request link. For example,
+`{"eventId":123,"delivery":"accepted","links":[{"kind":"request","id":"app_…"}]}`
+is an input acknowledgment, not a completed review. Read that exact event:
 
 ```sh
 bun projects/may-agent.app/docs/examples/client.ts event "$sample_socket" 123
 ```
 
-The receipt reports `recorded` or `accepted`. Admission normally attaches the
-Task immediately; if mapping or storage fails, the durable input remains for
-recovery. The event view's request link gives the Host input ID. In this sample,
-the mapping below makes the Task ID `review/<request-id>`. Read that exact Task
-after attachment:
+Replace `123` with your receipt's event ID. Use the request link's `id` below.
+This sample's [mapper](../../../sample.app/app.ts) defines its Task ID as
+`review/<request-id>`; this is an App choice, not a universal naming rule.
 
 ```sh
-bun projects/may-agent.app/docs/examples/client.ts task "$sample_socket" 'review/REQUEST_ID'
+sample_task='review/REQUEST_ID'
+bun projects/may-agent.app/docs/examples/client.ts task "$sample_socket" "$sample_task"
 ```
 
-A `null` Task read can mean attachment is still pending; reread the event for
-the request's state. Once attached, inspect the Task's status, summary and
-evidence. `pending`/`running` mean work remains, `waiting` names a dependency,
-`attention` needs correction or judgment, and `done` means an accepted outcome.
-Inspect `closed` separately to tell whether the owner ended the Task. Later reads
-use the same IDs. Neither publication nor a process exit proves success.
+Replace `REQUEST_ID` with the exact linked request ID. If the Task is `null`,
+read the event's delivery state and request link again: attachment may still be
+pending, or admission may have failed. Preserve those identifiers for diagnosis.
+Use subsequent exact Task reads to follow execution; the Host schedules work.
 
-New accepted work awaiting execution reads as `pending`, even when retained
-results describe a successful earlier attempt. Exact reads and status-filtered
-lists agree. Human views label open convergence `up to date`; there is no
-separate maintained-Task lifecycle.
+A completed read includes `status: "done"`, a summary and `acceptedAttempt`.
+The client's `acceptedEvidence.page.items` contains up to four accepted results,
+newest first. Inspect each entry's `acceptedResult`: the sample returns findings,
+coverage, limitations and `result.artifacts`. `done` means the Host accepted an
+outcome; read the answer and evidence to decide whether it satisfies the request.
+A Task can accept later corrections until it is closed by its owner.
 
-## 4. Understand the two mappings
+`pending` and `running` indicate outstanding execution. For `waiting` or
+`attention`, inspect the retained Conditions, input waits, summary and events;
+those states can coexist with useful results. Diagnose the named issue through
+[ordinary recovery](app-operations-recovery.md#unfinished-request).
 
-| Callback | Receives | Returns |
-| --- | --- | --- |
-| `task(request)` | `AppTaskInput`: Host `id`, trusted `source`, and validated domain `input` | `{ kind: "existing", taskId }` or `{ kind: "desired", intent }` |
-| `tasks.resolve(event)` | A fact matching a declared Task subscription | `TaskIntent` or `null` when no desired work follows |
+For file evidence, the current shared consumer expects an absolute path and a
+SHA-256 hash of the reviewed bytes. Prefer immutable definition sources or
+Task-scoped retained copies: working files can change after the review. The
+existing [artifact reader](../../../../shared/tools/task-evidence.ts)
+`readPinnedArtifact` verifies accessibility and identity; it does not judge the
+claim. Missing, mismatched or truncated evidence remains a review limitation.
 
-Read domain fields from `request.input`. The SDK callback uses a generic input
-type; the example narrows it to the schema the Host already validated.
-`task` cannot return `null`. Use an observation route, or the fact resolver's
-`null`, for facts that create no work.
+## 3. Send a correction to the same Task
 
-The example uses the Host request ID for Task identity, so repeating the same
-admitted input resolves to the same Task. When your domain has a stable outcome
-key, use it to attach related inputs to the same unfinished work. Never use
-list position or a session ID as Task identity.
+After the first result, ask for a specific additional check:
 
-## 5. Extend the bounded attempt
+```sh
+bun projects/may-agent.app/docs/examples/client.ts message "$sample_socket" \
+  "$sample_task" "$review_key-correction-1" \
+  "Also check the reference-count limit in app.ts. Explain whether the README needs to mention it, with evidence."
+bun projects/may-agent.app/docs/examples/client.ts task "$sample_socket" "$sample_task"
+```
 
-With no workflow or named executor, the selected agent performs the Task.
-Add a workflow only when there is a repeatable procedure worth preserving.
-[Workflow Authoring](workflow-authoring.md) explains the module convention and
-[Task Reconciler Authoring](handler-authoring.md) explains accepted results.
+The message targets `{ appId: "sample", taskId: sample_task }`. It keeps the
+same Task and adds new input; it does not start another review Task. Retain this
+message's receipt too. Reuse its key and identical text if submission is uncertain.
 
-Task-bound workflows receive `ctx.reconciliation` with exact identity, current
-input, unaccepted events and bounded child views. Return Task changes in the
-result; do not open Task storage or implement a recovery loop.
+The immediate read may still show the earlier result while new work is pending.
+Read again after execution. Success means a new accepted attempt answers this
+correction and the earlier accepted evidence remains accessible. Check the
+attempt identity and response, not just the word `done`. A supported conclusion
+that no README change is needed is valid. Our [first live review](../../../sample.app/reviews/2026-09-30.md)
+shows why delivery, evidence accessibility and review quality need separate checks.
 
-The App example also exports `waitingResult` and `dependencyResult`. The first
-names pipeline run 123, its expected state, accountable `app:pipeline`, and a
-five-minute recovery review. The second requests an outcome from another App.
-Both include the Task result's own `summary` and `facts`.
+## 4. Understand the App you ran
 
-Use these results after replacing their example identities with your actual
-producer and App contracts. A review deadline is recovery insurance; time passing does
-not prove that a pipeline completed. See the
-[Condition contract](../2a-design/task-resource-engine.md#conditions) and
-[cross-App dependencies](../2a-design/escalation.md#app-to-app-escalation).
+| File | What it contributes |
+| --- | --- |
+| [app.ts](../../../sample.app/app.ts) | App address, validated input schema, default agent, and a pure input-to-Task mapping with outcome and acceptance criteria. |
+| [agent.json](../../../sample.app/agents/reviewer/agent.json) | Configured model and tools. |
+| [AGENTS.md](../../../sample.app/agents/reviewer/AGENTS.md) | Reviewer's stable responsibility, evidence requirements and pointers to additional guidance. |
+| [tasks/seed.json](../../../sample.app/tasks/seed.json) | Structural root referenced by new Task intents. |
 
-Use `createTestAppWorkflowContext` from `@may-agent/sdk/testing` for bounded
-workflow checks with explicit fake reads and execution results. Cover repeated
-input identity, accepted results, waits and dependencies as you add them.
+This App needs no workflow: its selected agent performs the review. Importing
+`app.ts` declares policy; execution starts when the Host admits and schedules
+work. The App owns the Task; selecting an agent chooses its worker.
 
-See [App Contract](../2a-design/agent-app.md), [SDK](../2a-design/sdk.md), and
-[Adoption Checklist](agent-app-adoption-playbook.md) for further detail.
+At an attempt's start, the Host supplies current Task identity, outcome, input,
+acceptance, pending updates and links to retained context. The worker follows
+relevant links and uses available reads to gather more information. A file's
+presence in the repository does not put its contents in the prompt. Link useful
+material from the Task or `AGENTS.md`; the [agent convention](agent-convention.md#prompt-files)
+explains what is loaded and what is read on demand. Stable guidance belongs in
+agent files; a one-off correction belongs on the Task.
+
+## 5. Change guidance and verify adoption
+
+In your definition source checkout, make one small change to
+`projects/sample.app/agents/reviewer/AGENTS.md`, for example: "End each review
+with one sentence identifying the most important untested assumption."
+Choose an observable behavior so the next result can confirm or contradict it.
+
+Run the existing checks, inspect the diff, and commit only your intended change:
+
+```sh
+bun run check:may-design
+git diff -- projects/sample.app/agents/reviewer/AGENTS.md
+git add projects/sample.app/agents/reviewer/AGENTS.md
+git commit -m "docs(sample): clarify the review's untested assumptions"
+sample_commit=$(git rev-parse HEAD)
+bun projects/may-agent.app/docs/examples/client.ts reload "$sample_socket" "$sample_commit"
+```
+
+Reload activates App/agent definitions from the installation's configured source
+checkout; an arbitrary worktree commit is not automatically selected. It rejects
+uncommitted executable definitions. This operation affects the installed registry,
+so perform it within your installation's normal operator authority.
+
+Read the reload receipt's `eventId` using the client's `event` command. Once
+finished, its `operation` link names `event:COMPLETION_ID` and says `succeeded` or
+`failed`. Read that completion event and verify `event.data.ok: true` and
+`event.data.sourceCommit` equal to `sample_commit`. An input acknowledgment alone does
+not confirm activation. Console's `/reload` is the interactive alternative;
+[reload recovery](app-operations-recovery.md#failed-app-reload) covers rejection.
+Reload changes definitions; it does not update the Host binary or SDK.
+
+Submit a fresh review with a new request key using step 2. Inspect the new result
+for the changed behavior and usable evidence. Keep the original result for
+comparison, and record assistance and limitations. The source checks validate
+SDK/control types, seeded Task replay and result admission; only the live trial
+checks model behavior. The [reusable review method](workflow-authoring.md#reusing-an-app-review)
+explains how to retain lessons for another App.
+
+## Extend when the work needs it
+
+Use [Task authoring](handler-authoring.md) for result scope, waits and typed App
+dependencies; [workflow authoring](workflow-authoring.md) for repeatable procedures;
+and the [App contract](../2a-design/agent-app.md) for fact routing and observations.
+The [result recipes](../examples/app.ts) are illustrative: their pipeline and
+governance Apps are not installed by this sample. The
+[adoption checklist](agent-app-adoption-playbook.md) helps apply these choices to
+your own App. Keep the Host's bookkeeping and recovery in the existing Task path.
