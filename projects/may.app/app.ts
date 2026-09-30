@@ -16,6 +16,12 @@ import {
   REVIEW_LAG_METRIC,
 } from "./reliability-metrics.js";
 
+import { createMetricEvidenceObserver } from "./watchers/metric-evidence.js";
+import {
+  metricReviewInput,
+  readMetricReview,
+} from "./metric-follow-through.js";
+
 const githubPullRequestObserver = createGitHubPullRequestObserver({
   repository: "hao1939/may-agent",
   author: "hao1939",
@@ -160,6 +166,12 @@ export function taskForMayInput(
   const data = record(admitted.input.data);
   const agent = selectedAgent(data);
   const mode = researchMode(data, agent);
+  const metricReview = metricReviewInput(admitted.input);
+  if (metricReview !== undefined) {
+    readMetricReview(metricReview);
+    if (agent !== "may" || mode)
+      throw new Error("Metric follow-through requires May");
+  }
   const outcome = String(data.outcome ?? "").trim();
   const acceptance = Array.isArray(data.acceptance)
     ? data.acceptance.filter(
@@ -202,6 +214,9 @@ export function taskForMayInput(
       outcome: mode === "standing" ? standingResearchOutcome : outcome,
       acceptance: mode === "standing" ? standingResearchAcceptance : acceptance,
       agent,
+      ...(metricReview !== undefined
+        ? { workflow: "metric-follow-through" }
+        : {}),
       input:
         mode === "standing"
           ? {
@@ -408,7 +423,7 @@ export function evaluationTaskReportInput(
   return {
     kind: "message",
     data: {
-      message: `Review the published Evaluation report for ${metricId ?? `${appId}/${taskId}`}. Run evaluation-report-intake with this exact context.publication before any duplicate or reuse conclusion; the intake checks exact publication identity before reusing a prior intake, and an unrelated prior disposition is not this report. Then verify material concerns against current evidence and record an ordinary Task disposition. Reuse linked work. Settle the immediate incident separately from the population finding: current recovery does not erase recurring failures, cost or uncertainty. A duplicate or harmless one-off can need no change; a supported recurring pattern can justify the smallest investigation even after recovery. Before proposing a candidate, judge practical value versus cost and whether a simpler solution would suffice. For an unresolved concern retain its owner, next action or justified wait, and next review boundary in the existing Task. Notification, acknowledgment and a patch are not verified recovery; metrics do not authorize stopping retries or reopening work.`,
+      message: `Review the published Evaluation report for ${metricId ?? `${appId}/${taskId}`}. Run evaluation-report-intake with this exact context.publication before any duplicate or reuse conclusion; the intake checks exact publication identity before reusing a prior intake, and an unrelated prior disposition is not this report. Then verify material concerns against current evidence and record an ordinary Task disposition. Reuse linked work. Settle the immediate incident separately from the population finding: current recovery does not erase recurring failures, cost or uncertainty. A duplicate or harmless one-off can need no change; a supported recurring pattern can justify the smallest investigation even after recovery. Before proposing a candidate, judge practical value versus cost and whether a simpler solution would suffice. For an unresolved metric concern use metric-response with review:{task,decisions} and the current conversation context to prepare one complete followUp; choose a Condition through the installed metric-evidence contract or commission work through a dependency. Return its complete result, not just a fact. Reuse the exact existing Task when scope fits. Notification, acknowledgment and a patch are not verified recovery; metrics do not authorize stopping retries or reopening work.`,
       context: {
         publication,
         caller: {
@@ -502,7 +517,7 @@ export default defineApp({
     maxConcurrent: 4,
     validateCondition: validateGitHubPullRequestCondition,
   },
-  observers: [githubPullRequestObserver],
+  observers: [githubPullRequestObserver, createMetricEvidenceObserver()],
   subscriptions: [
     {
       id: "evaluation-metric-report",
@@ -522,7 +537,7 @@ export default defineApp({
           kind: "message",
           data: {
             message:
-              "Review the unfinished Evaluation work identified by this metric. Read current review Tasks, allowance and return paths. Preserve retries and reuse linked owner work. If review remains overdue, retain the responsible owner, next action and next review point. This age threshold requests inspection; it is not a promised deadline or authority to stop work.",
+              "Review the unfinished Evaluation work identified by this metric. Read current review Tasks, allowance and return paths. Preserve retries and reuse linked owner work. If review remains overdue, use metric-response with a complete review and the current conversation context; choose an observable Condition or commission work, then return the prepared handoff. This age threshold requests inspection; it is not a promised deadline or authority to stop work.",
             context: { event: structuredClone(event) },
           },
         };

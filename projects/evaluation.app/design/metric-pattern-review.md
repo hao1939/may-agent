@@ -96,15 +96,24 @@ reports still require review even when they join the same investigation. A new
 episode can point to the same investigation after owner judgment; no automatic
 reopening or one-Task-per-sample behavior is introduced.
 
-The owner records a compact `metric-disposition:` JSON fact in its ordinary Task
-or Conversation result. It contains version 1, metricId, alertId (null for a
-finding without a breach), disposition, reason, evidence references, optional
-linkedTask {appId, taskId}, and nextAction/nextReviewAt while unresolved. The
-workflow prepares and validates that fact, returning a normal waiting result and
-reviewAt where needed. The caller retains it and the owed review boundary in its
-parent result. Only accepted Task results supply the `metric_dispositions` read
-projection; a report, unaccepted execution result or workflow return is not an
-accepted owner decision. No incident registry or additional decision store exists.
+The owner chooses an ordinary Task result and its metric judgments together.
+May's `metric-response` composes `review: {task, decisions}` into that complete
+result, filling `linkedTask` from the owning attempt. An unresolved observation
+requires a metric Condition; investigation requires submitted work, useful
+continuation, or an actual wait. From Conversation the same review travels in
+an ordinary `followUp`; a new goal selects `metric-follow-through`. Its initial
+attempt saves the selected result, and later evidence asks May for judgment.
+Existing Tasks retain their executor and use the same complete-result helper.
+See [May's composition](../../may.app/design/metric-condition-follow-through.md).
+
+Only accepted Task results supply the `metric_dispositions` projection. The
+compact version 1 fact retains metricId, alertId (null without a breach),
+disposition, reason, evidence, and the exact owning Task. Unresolved facts also
+retain nextAction and `followThrough:"task"`. New facts omit duplicate deadlines:
+current Task obligations and Conditions' `observation.reviewAt` own them. Legacy
+nextReviewAt remains historical, even if no Task wait exists. A report, prepared
+handoff or workflow return alone is not accepted handling. No incident registry
+or additional decision store exists.
 
 The evidence endpoint, dashboard and daily digest read that projection. They
 retain the source App, Task and accepted attempt, plus the linked investigation.

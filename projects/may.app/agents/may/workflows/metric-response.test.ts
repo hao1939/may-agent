@@ -69,6 +69,11 @@ test("a direct owner's accepted decision is discovered by exact breach and its i
     attemptId: "accepted-review",
     decision: { linkedTask: link },
   });
+  expect(handling.followThrough).toMatchObject({
+    reviewAt: null,
+    conditions: [],
+  });
+  expect(handling.prior.decision.nextReviewAt).toBe(decision.nextReviewAt);
   expect(handling.linkedTask).toMatchObject({
     outcome: "Repair input admission",
   });
@@ -117,7 +122,7 @@ test("unavailable linked work leaves handling incomplete and emits no replacemen
   expect(emitted).toEqual([]);
 });
 
-test("decision preparation returns a fact for parent acceptance and preserves the next review obligation", async () => {
+test("fact-only unresolved decisions are rejected with the complete follow-through path", async () => {
   const ctx = createTestAppWorkflowContext({
     input: { metricId: "admission.failures", alertId: 42, decision },
   });
@@ -127,17 +132,11 @@ test("decision preparation returns a fact for parent acceptance and preserves th
     async () => ({ ...link, status: "waiting" }),
   );
   const output = result.output as any;
-  expect(output.state).toBe("waiting");
-  expect(output.reviewAt).toBe(decision.nextReviewAt);
+  expect(output.state).toBe("incomplete");
+  expect(output.summary).toContain("complete waiting Task result");
   expect(
-    JSON.parse(output.facts[0].slice("metric-disposition:".length)),
-  ).toEqual({
-    version: 1,
-    metricId: "admission.failures",
-    alertId: 42,
-    ...decision,
-  });
-  expect(output.summary).toContain("before claiming accepted handling");
+    output.facts.some((fact: string) => fact.startsWith("metric-disposition:")),
+  ).toBe(false);
   expect(() =>
     metricDecisionFact("admission.failures", 42, {
       ...decision,
@@ -156,6 +155,7 @@ test("decision preparation returns a fact for parent acceptance and preserves th
 test("large evidence and a supported decision stay within the accepted result bound without clipping the decision", async () => {
   const largeDecision = {
     ...decision,
+    disposition: "recovered" as const,
     reason: "Repeated failures: " + '"'.repeat(1300),
   };
   const ctx = createTestAppWorkflowContext({

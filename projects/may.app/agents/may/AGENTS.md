@@ -223,20 +223,39 @@ the accepted response and exact linked investigation through `metric-response`,
 also available to the platform owner for direct alerts. Review each new report
 even when it joins existing work. For the same breach, retain one current
 decision; multiple breaches may link to the same investigation when scope fits.
-Use `metric-response` with metricId, alertId (null for a finding without a
-breach), and decision: disposition (`investigate`, `observe`, `no-change`, or
-`recovered`), reason, evidence references, optional linkedTask {appId, taskId},
-and nextAction/nextReviewAt for unresolved concerns. Preserve its returned
-`metric-disposition:` fact in the current Task or Conversation result's `facts`.
-Only the accepted parent result records the decision; a workflow return is
-preparation. Keep any owed action and review deadline in the ordinary Task too.
-Conversation results have no timer: a `nextReviewAt` inside a fact does not
-schedule a review. For unresolved work, reuse or admit an ordinary Task through
-the existing Task controls or supported handoff, retain its real `waiting`/`reviewAt`, and
-save that exact `linkedTask` in the decision. A completed report review does not
-discharge the continuing investigation. If the declared owner is unavailable,
-May retains the coordination task or requests the specific human decision;
-do not leave the only next action assigned to an unavailable owner.
+Read `metric-response` with `metricId` and `alertId` (null without a breach).
+Decide the response, then supply `review: { task, decisions }` to the same helper.
+`task` is the ordinary complete Task result; `decisions` contains metricId,
+alertId, disposition (`investigate`, `observe`, `no-change`, `recovered`), reason,
+evidence references, and nextAction for unresolved concerns. Return the complete
+output through `finish().result`; do not extract only its facts. App code binds
+the actual owning Task and keeps the decision with its follow-through.
+
+For observation, discover May's `metric-evidence` capability with the `tasks`
+contract tool. Choose its predicate and review interval, and put the returned
+Condition in `review.task.conditions`. For example a fresh zero value can use
+`{field:"value",equals:0,freshness:"fresh"}` when that means recovery for this
+metric. A Condition observes evidence; it does not submit a repair. Commission
+independent work with ordinary `dependencies`, or use `continue:true` for useful
+work in this Task. Omit unchanged waits on later results; Runtime retains them.
+
+From Conversation, also supply `conversation: { topic, requestUpdates,
+requestId?, task? }` with your current Topic/Request decisions and the exact
+existing May Task when its scope fits. Return the helper's complete Conversation
+result. Its ordinary handoff carries the selected review. A new goal selects
+`metric-follow-through`; its first attempt saves that decision without another
+model turn. Later evidence invokes May for judgment. Existing Tasks keep their
+own executor: use the complete-result helper there as part of their current work.
+Another App's investigation uses that App's existing input contract.
+No disposition is accepted merely by preparing a handoff. Do not reconstruct
+Task IDs, register another watch, or maintain a duplicate review date.
+
+Current deadlines come from the linked Task's `currentObligations` and each
+Condition's `observation.reviewAt`, exposed by metric-response as `followThrough`.
+Historical `nextReviewAt` in an old fact never proves a live timer exists. Metric
+recovery does not discharge the original requirement or independent approval.
+If the declared owner is unavailable, May retains coordination or requests the
+specific human decision; do not assign the only next action to an unavailable owner.
 Missing/truncated history is not proof that no investigation exists. Ownership
 that cannot be resolved through the installed App catalog remains unknown.
 When another App owns the metric, return evidence through its existing owner

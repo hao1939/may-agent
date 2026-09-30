@@ -6,9 +6,17 @@ import {
 } from "../../../../evaluation.app/agents/evaluator/workflows/lib/metric-evidence.js";
 import { createPublicTaskEvidenceProvider } from "../../../../evaluation.app/agents/evaluator/workflows/lib/public-task-evidence.js";
 
+import {
+  metricReviewResult,
+  metricReviewHandoff,
+  readMetricReview,
+  type MetricReview,
+  type MetricConversation,
+} from "../../../metric-follow-through.js";
+
 export const name = "metric-response";
 export const description =
-  "Read the accepted response to an exact metric breach, or prepare a decision fact to retain in the current Task's finish().facts. This workflow does not accept a decision or create repair work.";
+  "Read exact metric handling and live Task waits. Supply review:{task: ordinary Task result, decisions:[{metricId,alertId,disposition,reason,evidence,nextAction?}]} to bind a complete Task result, or also conversation:{topic,requestUpdates,requestId?,task?} to prepare an ordinary followUp. Return the complete output through finish().result. Conditions come from tasks contract; dependencies commission work. Preparation alone accepts nothing.";
 
 type Link = { appId: string; taskId: string };
 type Decision = {
@@ -23,9 +31,11 @@ type Decision = {
   nextReviewAt?: number;
 };
 type Input = {
-  metricId: string;
+  metricId?: string;
   alertId?: number | null;
   decision?: Omit<Decision, "version" | "metricId" | "alertId">;
+  review?: MetricReview;
+  conversation?: MetricConversation;
 };
 type TaskReader = (
   appId: string,
@@ -85,6 +95,33 @@ export async function inspectMetricResponse(
     key: metricResponseKey(evidence.metricId, alertId),
     prior: prior ?? null,
     linkedTask,
+    followThrough: linkedTask
+      ? {
+          source: "linked-task",
+          status: linkedTask.status ?? null,
+          closed: linkedTask.closed === true,
+          // A v1 fact's nextReviewAt is historical, including when no wait exists.
+          reviewAt: linkedTask.closed
+            ? null
+            : ((
+                linkedTask.currentObligations as
+                  | { reviewAt?: number }
+                  | undefined
+              )?.reviewAt ?? null),
+          conditions: Array.isArray(linkedTask.conditions)
+            ? linkedTask.conditions.map((condition) => ({
+                id: condition.id,
+                type: condition.type,
+                subject: condition.subject,
+                state: condition.observation?.state ?? "unknown",
+                reviewAt:
+                  linkedTask.closed || condition.observation?.state === "true"
+                    ? null
+                    : (condition.observation?.reviewAt ?? null),
+              }))
+            : [],
+        }
+      : null,
     historyTruncated: evidence.dispositionsTruncated === true,
     attributionUnresolved: decisions
       .filter((row) => !accountable.has(row.appId))
@@ -150,7 +187,35 @@ export async function respondToMetric(
   readTask: TaskReader = readMetricLinkedTask,
 ): Promise<ExecutionResult> {
   try {
+    if (ctx.input.review) {
+      const review = readMetricReview(ctx.input.review);
+      for (const decision of review.decisions) {
+        const evidence = await reader(
+          decision.metricId,
+          Date.now(),
+          decision.alertId ?? undefined,
+        );
+        await inspectMetricResponse(evidence, decision.alertId, readTask);
+      }
+      if (ctx.input.conversation) {
+        const result = metricReviewHandoff(review, ctx.input.conversation);
+        return ctx.done(result.summary, result);
+      }
+      if (
+        !ctx.reconciliation ||
+        ctx.reconciliation.task.executor === "conversation"
+      )
+        throw new Error(
+          "Supply conversation context for handoff or run inside the owning Task",
+        );
+      const result = metricReviewResult(ctx.reconciliation, review);
+      return ctx.done(result.summary, result);
+    }
     const { metricId, decision } = ctx.input;
+    if (decision && ["investigate", "observe"].includes(decision.disposition))
+      throw new Error(
+        "A fact alone cannot retain follow-through. Supply review with the complete waiting Task result and its Condition, dependency, or useful continuation; use conversation for a handoff.",
+      );
     const alertId = ctx.input.alertId ?? null;
     if (
       !metricId ||
@@ -184,22 +249,12 @@ export async function respondToMetric(
       freshness: evidence.freshness,
     };
     const complete = Buffer.byteLength(JSON.stringify(detail)) <= 10_000;
-    const unresolved = decision && ["investigate", "observe"].includes(decision.disposition);
     const summary = fact
-      ? "Decision prepared; retain the returned fact in the current Task result before claiming accepted handling." +
-        (unresolved
-          ? " Keep the owed action in an ordinary Task with waiting/reviewAt. A Conversation fact cannot schedule a review: reuse or admit a Task through the existing Task tools or followUp, then retain its exact linkedTask."
-          : "")
-      : "Read the current breach response; judge scope before reusing linked work.";
+      ? "Decision prepared; retain the returned fact in the current Task result before claiming accepted handling."
+      : "Read the current breach response and linked Task waits; judge scope before reusing work. Historical nextReviewAt is not a live deadline.";
     const output: Record<string, unknown> = {
-      state:
-        decision && ["investigate", "observe"].includes(decision.disposition)
-          ? "waiting"
-          : "converged",
+      state: "converged",
       summary,
-      ...(decision && ["investigate", "observe"].includes(decision.disposition)
-        ? { reviewAt: decision.nextReviewAt }
-        : {}),
       result: {
         complete,
         ...(complete
@@ -228,7 +283,7 @@ export async function respondToMetric(
     return ctx.done(summary, {
       state: "incomplete",
       summary,
-      facts: [],
+      facts: [`Metric evidence or decision unavailable: ${summary}`],
       result: { disposition: "evidence-unavailable" },
     });
   }

@@ -78,6 +78,14 @@ old/missing observations; App declarations own attention thresholds, Evaluation
 owns interpretation, and May owns follow-through. It does not add a retry-count
 limit. This is a paired source change, not a claim of installed review coverage.
 
+May's [metric follow-through](../../../may.app/design/metric-condition-follow-through.md)
+uses the existing Task/Condition contract. The agent chooses the predicate or
+independent work; App code binds the disposition to the actual owning Task and
+returns it with the Condition or dependency. Host storage and scheduling retain
+the wait and deliver evidence. A matching sample or elapsed checkpoint invites
+judgment and does not accept recovery. Current deadlines come from the linked
+Task and its saved Conditions, not a historical date in a disposition fact.
+
 Session completion is a separate observation from accepted Task settlement.
 Dashboard session percentages describe model sessions only; use Task-attempt
 reports for failed settlement and recurring Task cost. Neither percentage proves
