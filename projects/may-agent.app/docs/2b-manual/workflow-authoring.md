@@ -498,6 +498,38 @@ Expand coverage after relevant changes or observed failures. This is a review
 practice using existing CI, Evaluation, May and optional Gym trials; the record
 does not create another registry, score, queue or runtime admission gate.
 
+#### Reusing an App review
+
+Use the [runnable sample App](../../../sample.app/README.md) as a small example,
+then apply this method to the owning App's actual work. The investigator operates
+the App, diagnoses gaps and prepares improvements. Evaluation independently
+assesses the exact external Task; the investigator's own verification is part
+of delivery, not a second Evaluation service.
+
+Before a bounded trial, state the intended outcome, the owning design contract,
+the public operations the worker can discover, and the observations that would
+support or contradict success. Identify the Host, SDK, App and agent versions
+actually used. Drive work through ordinary inputs, dependencies, corrections
+and results. A harness may observe or inject a declared fault; manual retries,
+state repair and coached steps remain visible assistance.
+
+Retain a compact review in the existing Task result or linked evidence:
+
+| Record | Purpose |
+| --- | --- |
+| Scope and versions | Explain what was assessed, the intended contract and what remains untested. |
+| Expected and observed behavior | Trace input, owner, action and caller result with exact Task/attempt/evidence links. |
+| Assistance and cost | Record interventions, repeated effects, tool/model use and elapsed time when measured. |
+| Finding and ownership | Distinguish discovery or documentation gaps, implementation defects, uncertain design and agent judgment. |
+| Smallest next step | Name the owning repair, a simpler alternative and the evidence needed to accept it. |
+| Follow-up evidence | Recheck the original outcome and a contrasting case, preserving the first failure. |
+
+Keep the general method here, App-specific recipes in the App, and dated results
+with the reviewed Task. Link a useful lesson from the relevant agent guidance so
+it can be discovered again. A saved report alone does not demonstrate adoption:
+check a later fresh execution. Expand this guidance from observed experience;
+it is not a new mandatory workflow, score, periodic job or acceptance gate.
+
 #### When to deepen a review
 
 Use this review again when evidence suggests a shared wrong assumption: repeated
