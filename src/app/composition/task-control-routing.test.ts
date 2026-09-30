@@ -15,6 +15,7 @@ import {
   cancelAppTask,
   claimObservedAppTask,
   closeAppTask,
+  reopenAppTask,
   completeAppTask,
   failAppTaskAttempt,
   observeAppTaskIntent,
@@ -27,6 +28,7 @@ import {
   attachTaskControlEventRoute,
   taskCancelRequestedEvent,
   taskCloseRequestedEvent,
+  taskReopenRequestedEvent,
   taskRetryRequestedEvent,
 } from "../task-control-events.js";
 import { startAppInboxRuntime, type AppInboxRuntime } from "./app-inbox-runtime.js";
@@ -85,6 +87,9 @@ async function fixture(controlFirst?: boolean) {
     bus.setDeliveryRecorder(writer.recordDelivery);
     const controls = () =>
       attachTaskControlEventRoute(bus, {
+        reopenTask: ({ generation, resourceVersion, ...input }) => reopenAppTask(config, {
+          ...input, expectedGeneration: generation, expectedResourceVersion: resourceVersion,
+        }),
         retryTask: ({ generation, resourceVersion, ...input }) =>
           retryFailedAppTask(config, {
             ...input,
@@ -363,3 +368,28 @@ it("still admits ordinary exact Task facts through the inbox route", async () =>
   expect(f.wakeAttempts).toBe(1);
   expect(getAppEventAdmissionPlan(f.db, emitted[EVENT_ROW_ID]!)?.status).toBe("completed");
 });
+
+for (const controlFirst of [true, false]) {
+  it(`reopens only through explicit operator control, replaying once across restart (control first: ${controlFirst})`, async () => {
+    const f = await fixture(controlFirst);
+    f.bus.emit(f.control("cancel"));
+    const closed = f.store.readTask("work")!;
+    const input = taskReopenRequestedEvent({ appId: "sample", taskId: "work", generation: closed.metadata.generation,
+      resourceVersion: closed.metadata.resourceVersion }, "User explicitly requested continuation");
+    const event = { ...input, source: "control-socket", owner: "app:sample",
+      data: { ...input.data, appId: "sample", taskId: "work", idempotencyKey: input.idempotencyKey } } as AgentEvent;
+    expect(f.bus.emit({ ...event, source: "app-task:sample" } as AgentEvent)[EVENT_DELIVERY_RESULT]).toBeUndefined();
+    expect(f.store.isCancelled("work")).toBe(true);
+    const emitted = f.bus.emit(event);
+    expect(emitted[EVENT_DELIVERY_RESULT]?.by).toBe("task-control");
+    expect(f.store.isCancelled("work")).toBe(false);
+    expect(f.store.readTask("work")?.metadata.generation).toBe(closed.metadata.generation + 1);
+    const after = f.store.readTaskContext({ taskIds: ["work"] });
+    const eventId = emitted[EVENT_ROW_ID]!;
+    await f.reopen();
+    f.bus.redeliverPersisted(loadPersistedEvent(f.db, eventId)!, eventId);
+    expect(f.store.readTaskContext({ taskIds: ["work"] })).toEqual(after);
+    expect(f.wakeAttempts).toBe(0);
+    expect(getAppEventAdmissionPlan(f.db, eventId)).toBeNull();
+  });
+}

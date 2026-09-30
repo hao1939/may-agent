@@ -271,6 +271,9 @@ export async function runAppRuntime(opts: {
         expectedResourceVersion: resourceVersion,
         controlKey,
       }),
+    reopenTask: ({ generation, resourceVersion, ...input }) => appTasks.reopen({
+      ...input, expectedGeneration: generation, expectedResourceVersion: resourceVersion,
+    }),
     closeTask: ({ appId, taskId, generation, resourceVersion, afterResult, reason, controlKey }) =>
       appTasks.closeAfterResult({
         appId,

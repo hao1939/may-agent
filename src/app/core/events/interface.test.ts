@@ -1,3 +1,4 @@
+import { attachTaskControlEventRoute, taskReopenRequestedEvent } from "../../task-control-events.js";
 import { Type, defineApp } from "@may-agent/sdk";
 import { afterEach, describe, expect, it } from "bun:test";
 import { mkdtempSync, rmSync } from "node:fs";
@@ -45,6 +46,33 @@ function fixture(conversationAppId?: string) {
 }
 
 describe("simple event interface", () => {
+  it("validates continuation input before publication and forwards it only through trusted Task control", () => {
+    const { bus, db, events } = fixture();
+    const received: unknown[] = [];
+    attachTaskControlEventRoute(bus, {
+      reopenTask: (input) => {
+        received.push(input);
+      },
+      retryTask: () => {},
+      cancelTask: () => {},
+      closeTask: () => {},
+    });
+    const target = { appId: "sample", taskId: "work", generation: 2, resourceVersion: 8 };
+    const input = { kind: "message", data: { message: "Continue with Linux support" } };
+    const command = taskReopenRequestedEvent(target, "User requested continuation", input);
+    expect(() => events.publish(command, { source: "app-task:sample" })).toThrow("explicit operator control");
+    expect(() =>
+      events.publish(taskReopenRequestedEvent(target, "Continue", { kind: "invalid", data: {} }), {
+        source: "control-socket",
+      }),
+    ).toThrow("invalid App input");
+    expect(db.prepare("SELECT COUNT(*) AS n FROM events").get()?.n).toBe(0);
+    expect(events.publish(command, { source: "control-socket" }).delivery).toBe("accepted");
+    expect(received).toEqual([
+      { ...target, reason: "User requested continuation", input, controlKey: command.idempotencyKey },
+    ]);
+  });
+
   it("preserves independent fact subjects and addresses without adding subject fields", () => {
     const { events } = fixture();
     for (const data of [{ appId: "subject", taskId: "subject-task", sessionId: "subject-session" }, { summary: "Observed" }]) {

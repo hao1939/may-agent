@@ -1,5 +1,6 @@
 import { describe, expect, it } from "bun:test";
 import { openDatabase } from "../db.js";
+import { TASK_RESOURCE_SCHEMA, ensureTaskResourceSchema } from "./task-resource-schema.js";
 import { applyDbSchema } from "./schema.js";
 
 describe("canonical database schema", () => {
@@ -340,4 +341,20 @@ describe("canonical database schema", () => {
       db.close();
     }
   });
+});
+
+it("upgrades control receipts for reopening without losing existing replay identity", () => {
+  const db = openDatabase(":memory:");
+  try {
+    db.exec(TASK_RESOURCE_SCHEMA.replace("'retry', 'cancel', 'reopen'", "'retry', 'cancel'"));
+    db.prepare(`INSERT INTO app_task_control_receipts VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`)
+      .run("prior", "sample", "work", "cancel", 1, 2, 3, 1000, '{"controlKey":"prior"}');
+    ensureTaskResourceSchema(db);
+    ensureTaskResourceSchema(db);
+    expect(db.prepare("SELECT receipt_json FROM app_task_control_receipts WHERE control_key = 'prior'").get())
+      .toEqual({ receipt_json: '{"controlKey":"prior"}' });
+    expect(() => db.prepare(`INSERT INTO app_task_control_receipts VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`)
+      .run("reopen", "sample", "work", "reopen", 1, 3, 4, 2000, "{}")).not.toThrow();
+    expect(db.prepare("PRAGMA index_list(app_task_control_receipts)").all().some((row) => row.name === "idx_app_task_control_receipts_task")).toBe(true);
+  } finally { db.close(); }
 });

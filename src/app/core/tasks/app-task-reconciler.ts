@@ -1,4 +1,6 @@
-import { conditionReviewAt } from "./app-task-state.js";
+import { isDeepStrictEqual } from "node:util";
+import { stateTransaction } from "../../../lib/db/transaction.js";
+import { conditionReviewAt, taskEventPredatesReopening } from "./app-task-state.js";
 import { createHash, randomUUID } from "node:crypto";
 import { basename } from "node:path";
 import {
@@ -11,6 +13,7 @@ import {
   type TaskIntent as AppTaskIntent,
   type TaskAttempt,
   type ResourceCreator,
+  type AppInput,
 } from "@may-agent/sdk";
 import {
   appTaskReadinessById,
@@ -37,6 +40,7 @@ import { normalizeTaskAgent } from "../../app-agent-selection.js";
 import type { AppTaskResourceStore } from "../state/app-task-resource-store.js";
 import { continuedTaskInputKeys, retainTaskInputWait, taskInputAdmissionKeys } from "./app-task-inputs.js";
 import { assertResourceCreator } from "../state/resource-creator.js";
+import { AppTaskAdmissionError } from "../state/task-admission-error.js";
 
 const MAX_TASK_EVENTS_PER_ATTEMPT = 32;
 
@@ -1392,7 +1396,7 @@ export function observeAppTaskIntent(
   input = { ...input, intent: normalizeTaskAgent(input.intent) };
   validateIntent(input.intent);
   if (config.resourceStore.isCancelled(input.intent.id)) {
-    throw new Error(`Cannot admit intent for cancelled task ${input.intent.id}; create a new linked task`);
+    throw new AppTaskAdmissionError(`Cannot admit input for closed or cancelled task ${input.intent.id}; explicit reopening is required`);
   }
   const admissionKey = input.admissionKey?.trim();
   if (input.admissionKey !== undefined && !admissionKey) {
@@ -1402,6 +1406,10 @@ export function observeAppTaskIntent(
     taskIds: [input.intent.id, input.intent.parentId, ...(input.intent.dependsOn ?? [])],
     ...(admissionKey ? { admissionIds: [admissionKey] } : {}),
   });
+  const reopened = tree.resources?.[input.intent.id];
+  if (taskEventPredatesReopening(reopened, input.trigger)) {
+    return { kind: "observed", taskId: input.intent.id, generation: reopened!.metadata.generation, changed: false };
+  }
   validateParentReference(tree, input.intent.id, input.intent.parentId);
   const agent = resolvedAgent(tree, input.intent, input.appAgent);
   const specHash = appTaskSpecHash(input.intent, agent);
@@ -1491,6 +1499,7 @@ export function observeAppTaskIntent(
   } else {
     resource = {
       metadata: {
+        ...existingResource?.metadata,
         id: input.intent.id,
         creator: structuredClone(creator),
         generation,
@@ -1916,6 +1925,8 @@ export function recordAppTaskTrigger(
   const resource = tree.resources?.[taskId];
   if (!resource) return { kind: "missing" };
   if (config.resourceStore.isCancelled(taskId)) return { kind: "closed" };
+  if (taskEventPredatesReopening(resource, event))
+    return { kind: "duplicate" };
   const previous = tree.taskTriggers?.[taskId];
   if (config.resourceStore.hasTaskEvent(taskId, event)) {
     // A worker may have persisted this wake before its first parent relay.
@@ -2253,6 +2264,137 @@ export type AppTaskCancellationResult = {
   applied: boolean;
 };
 
+/** Explicit trusted operator control, never inferred from Task input or late observations. */
+export function reopenAppTask(
+  config: AppTaskContext,
+  input: {
+    appId: string;
+    taskId: string;
+    expectedGeneration: number;
+    expectedResourceVersion: number;
+    reason: string;
+    controlKey: string;
+    input?: AppInput;
+    /** Host-private mapping from the responsible App; callers supply ordinary input. */
+    intent?: AppTaskIntent;
+  },
+): {
+  taskId: string;
+  generation: number;
+  resourceVersion: number;
+  closure: AppTaskCancellation;
+  reason: string;
+  input?: AppInput;
+  admissionKey?: string;
+} {
+  return stateTransaction(config.resourceStore.db, () => {
+    requireNonEmptyString(input.reason, "Task reopening reason");
+    requireNonEmptyString(input.controlKey, "Task reopening control key");
+    if (input.appId !== config.resourceStore.appId) throw new Error("Task reopening belongs to another App");
+    const prior = config.resourceStore.readControlReceipt(input.controlKey);
+    if (prior) {
+      const result = prior.result as ReturnType<typeof reopenAppTask>;
+      if (
+        prior.action !== "reopen" ||
+        prior.taskId !== input.taskId ||
+        prior.expectedGeneration !== input.expectedGeneration ||
+        prior.expectedResourceVersion !== input.expectedResourceVersion ||
+        result?.reason !== input.reason.trim() ||
+        !isDeepStrictEqual(result.input, input.input)
+      )
+        throw new Error("Task control key was already used for a different operation");
+      return result;
+    }
+    const tree = config.resourceStore.readTaskContext({ taskIds: [input.taskId] });
+    const resource = tree.resources?.[input.taskId];
+    const closure = tree.cancellations?.[input.taskId];
+    if (!resource || !closure) throw new Error("Only a closed or cancelled Task can be reopened");
+    if (
+      resource.metadata.generation !== input.expectedGeneration ||
+      resource.metadata.resourceVersion !== input.expectedResourceVersion
+    )
+      throw new Error("Task version changed; read the current Task before reopening");
+    if (config.resourceStore.isCancelled(resource.spec.parentId))
+      throw new Error("Reopen the closed parent before its child");
+    if (resource.spec.executor === "conversation") throw new Error("Conversation input must use its linked successor");
+    if (input.input !== undefined && !input.intent)
+      throw new Error("Task continuation requires the responsible App's mapped requirements");
+    const scope = beginResourceMutationScopeForTasks(tree, [input.taskId]);
+    if (input.intent) {
+      const intent = normalizeTaskAgent({ ...input.intent, id: input.taskId, parentId: resource.spec.parentId });
+      validateIntent(intent);
+      if (intent.executor === "conversation") throw new Error("Conversation input must use its linked successor");
+      resource.spec = resourceSpec(intent);
+    }
+    const now = new Date().toISOString();
+    const eventRow = config.resourceStore.db.prepare("SELECT MAX(id) AS id FROM events").get() as {
+      id?: number;
+    };
+    resource.metadata.generation += 1;
+    resource.metadata.resourceVersion += 1;
+    resource.metadata.reopenedAfterEventId = eventRow.id ?? 0;
+    resource.status = {
+      phase: "pending",
+      observedGeneration: input.expectedGeneration,
+      lane: "human",
+      summary: `Reopened at the user's request: ${input.reason.trim()}`,
+      updatedAt: now,
+    };
+    delete tree.cancellations![input.taskId];
+    // A fresh control carries the continuation reason, never restores a cancelled input batch.
+    const event = {
+      type: "app.task.reopen.requested",
+      source: "human",
+      data: { reason: input.reason.trim() },
+    };
+    if (input.input === undefined)
+      tree.taskTriggers = {
+        ...tree.taskTriggers,
+        [input.taskId]: {
+          taskId: input.taskId,
+          taskGeneration: resource.metadata.generation,
+          resourceVersion: 1,
+          event,
+          events: [{ event, observedAt: now }],
+          observedAt: now,
+        },
+      };
+    const result = {
+      taskId: input.taskId,
+      generation: resource.metadata.generation,
+      resourceVersion: resource.metadata.resourceVersion,
+      closure,
+      reason: input.reason.trim(),
+      ...(input.input !== undefined
+        ? {
+            input: structuredClone(input.input),
+            admissionKey: `task-reopen:${input.controlKey}`,
+          }
+        : {}),
+    };
+    commitTaskMutation(config, tree, {
+      resourceMutation: {
+        ...finishResourceMutationScope(scope, tree),
+        reopenTaskIds: [input.taskId],
+        controlReceipts: [
+          {
+            controlKey: input.controlKey,
+            appId: input.appId,
+            taskId: input.taskId,
+            expectedGeneration: input.expectedGeneration,
+            expectedResourceVersion: input.expectedResourceVersion,
+            action: "reopen",
+            appliedResourceVersion: resource.metadata.resourceVersion,
+            appliedAt: Date.parse(now),
+            result,
+          },
+        ],
+      },
+    });
+    return result;
+  });
+}
+
 type AppTaskCloseInput = {
   appId: string;
   taskId: string;
@@ -2313,7 +2455,8 @@ function closeTask(
     ) {
       throw new Error(`Task control key ${input.controlKey} was already used for a different operation`);
     }
-    const cancellation = config.resourceStore.readCancellation(input.taskId);
+    const cancellation = config.resourceStore.readPastCancellation(input.taskId, input.expectedGeneration, input.expectedResourceVersion + 1)
+      ?? config.resourceStore.readCancellation(input.taskId);
     if (!cancellation) throw new Error(`Task cancellation receipt ${input.controlKey} has no terminal facts`);
     if ((cancellation.kind ?? "cancelled") !== kind) throw new Error("The Task was ended by a different control");
     if (kind === "closed" && cancellation.acceptedResultAttemptId !== input.afterResult) {

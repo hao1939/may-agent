@@ -651,6 +651,47 @@ describe("control socket protocol", () => {
     ).rejects.toThrow("afterResult must be a non-empty accepted attempt ID");
   });
 
+  it("requires the caller's current version and continuation reason for explicit reopening", async () => {
+    const published: unknown[] = [];
+    const core = createCore({
+      publishEvent: (input) => {
+        published.push(input);
+        return { eventId: 77, eventType: input.type, delivery: "accepted" };
+      },
+    });
+    const command = {
+      type: "task.reopen",
+      appId: "sample",
+      taskId: "work",
+      expectedGeneration: 2,
+      expectedResourceVersion: 8,
+      reason: "User requested continuation",
+      input: { kind: "continue", data: { platform: "Linux" } },
+    };
+    await expect(sendSocketCommand(core.endpoint, command)).resolves.toMatchObject({
+      type: "ok",
+      command: "task.reopen",
+    });
+    expect(published).toEqual([
+      {
+        type: "app.task.reopen.requested",
+        target: { appId: "sample", taskId: "work" },
+        data: {
+          expectedGeneration: 2,
+          expectedResourceVersion: 8,
+          reason: "User requested continuation",
+          input: command.input,
+        },
+        idempotencyKey: "app-task-reopen:sample:work:2:8",
+      },
+    ]);
+    await expect(sendSocketCommand(core.endpoint, { ...command, expectedResourceVersion: undefined })).rejects.toThrow(
+      "current generation and resourceVersion",
+    );
+    await expect(sendSocketCommand(core.endpoint, { ...command, reason: "" })).rejects.toThrow("continuation request");
+    expect(published).toHaveLength(1);
+  });
+
   it("does not report a recorded but unaccepted Task control as success", async () => {
     const core = createCore({
       getTask: () => ({ appId: "evaluation", taskId: "review/docs", generation: 2, resourceVersion: 7 }),

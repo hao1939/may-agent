@@ -155,7 +155,7 @@ export type AppTaskControlReceipt = {
   controlKey: string;
   appId: string;
   taskId: string;
-  action: "retry" | "cancel";
+  action: "retry" | "cancel" | "reopen";
   expectedGeneration: number;
   expectedResourceVersion: number;
   appliedResourceVersion: number;
@@ -180,6 +180,8 @@ export type AppTaskResourceMutation = {
   admissions?: Array<{ taskId: string; value: AppTaskAdmission }>;
   deleteAdmissionIds?: string[];
   cancellations?: AppTaskCancellation[];
+  /** Remove the active fence only while archiving it in a fenced reopen receipt. */
+  reopenTaskIds?: string[];
   controlReceipts?: AppTaskControlReceipt[];
 };
 
@@ -658,6 +660,25 @@ export class AppTaskResourceStore {
       .prepare("SELECT cancellation_json FROM app_task_cancellations WHERE app_id = ? AND task_id = ?")
       .get(this.appId, taskId) as { cancellation_json?: string } | null;
     return row?.cancellation_json ? parseTaskCancellation(row.cancellation_json) : null;
+  }
+
+  readPastCancellation(taskId: string, generation: number, resourceVersion: number): AppTaskCancellation | null {
+    const row = this.db.prepare(`SELECT json_extract(receipt_json, '$.result.closure') AS cancellation_json
+      FROM app_task_control_receipts WHERE app_id = ? AND task_id = ? AND action = 'reopen'
+        AND expected_generation = ? AND expected_resource_version = ? LIMIT 1`)
+      .get(this.appId, taskId, generation, resourceVersion) as { cancellation_json?: string } | null;
+    return row?.cancellation_json ? parseTaskCancellation(row.cancellation_json) : null;
+  }
+
+  /** An old unanswered input retains its closure even when the Task has reopened. */
+  readAdmissionCancellation(taskId: string, admissionKey: string): AppTaskCancellation | null {
+    const admission = this.readTaskContext({ taskIds: [], admissionIds: [admissionKey] }).appTaskAdmissions?.[admissionKey];
+    if (admission?.taskId !== taskId) return null;
+    const row = this.db.prepare(`SELECT json_extract(receipt_json, '$.result.closure') AS cancellation_json
+      FROM app_task_control_receipts WHERE app_id = ? AND task_id = ? AND action = 'reopen'
+        AND expected_generation >= ? ORDER BY expected_generation LIMIT 1`)
+      .get(this.appId, taskId, admission.taskGeneration) as { cancellation_json?: string } | null;
+    return row?.cancellation_json ? parseTaskCancellation(row.cancellation_json) : this.readCancellation(taskId);
   }
 
   /** Bounded terminal child facts, separate from live children and success receipts. */
@@ -1358,6 +1379,19 @@ export class AppTaskResourceStore {
         }
       }
 
+      for (const taskId of new Set(mutation.reopenTaskIds ?? [])) {
+        const closure = this.readCancellation(taskId);
+        const receipt = mutation.controlReceipts?.find((entry) => entry.taskId === taskId && entry.action === "reopen");
+        const result = receipt?.result as { closure?: AppTaskCancellation } | undefined;
+        const next = mutation.tasks?.find((entry) => entry.resource.metadata.id === taskId)?.resource;
+        if (!closure || !receipt || !isDeepStrictEqual(result?.closure, closure) ||
+          receipt.expectedGeneration !== closure.generation || receipt.expectedResourceVersion !== closure.resourceVersion ||
+          next?.metadata.generation !== closure.generation + 1 ||
+          !mutation.fences.some((fence) => fence.taskId === taskId && fence.resourceVersion === closure.resourceVersion)) {
+          throw new Error("Task reopening requires its exact closure, next generation and durable control receipt");
+        }
+        this.db.prepare("DELETE FROM app_task_cancellations WHERE app_id = ? AND task_id = ?").run(this.appId, taskId);
+      }
       for (const taskId of new Set(mutation.deleteTaskIds ?? [])) {
         this.db
           .prepare("DELETE FROM app_task_condition_routes WHERE app_id = ? AND task_id = ?")

@@ -66,6 +66,8 @@ export type AppTaskResource = {
     creator?: ResourceCreator;
     generation: number;
     resourceVersion: number;
+    /** Durable pre-reopen events cannot become fresh work in the new generation. */
+    reopenedAfterEventId?: number;
   };
   spec: Omit<TaskIntent, "id">;
   status: {
@@ -201,3 +203,12 @@ export type AppTaskTrigger = {
 };
 
 export type AppTaskAcceptanceBasis = TaskAcceptanceBasis;
+
+/** The reopen transaction fences durable facts already present before the new generation. */
+export function taskEventPredatesReopening(
+  resource: AppTaskResource | undefined,
+  event: Record<string, unknown> | undefined,
+): boolean {
+  const fence = resource?.metadata.reopenedAfterEventId;
+  return fence !== undefined && typeof event?.eventId === "number" && event.eventId <= fence;
+}

@@ -647,7 +647,7 @@ export type SystemEvent =
       };
     }
   | {
-      type: "app.task.cancel.requested";
+      type: "app.task.cancel.requested" | "app.task.reopen.requested";
       source: string;
       owner: string;
       target: { appId: string; taskId: string };
@@ -658,6 +658,24 @@ export type SystemEvent =
         expectedResourceVersion: number;
         reason: string;
       };
+    }
+  | {
+      type: "app.input.admission.failed";
+      source: "app-inbox";
+      owner: string;
+      target: { appId: string };
+      data: {
+        appId: string; requestId: string; targetTaskId?: string; conversationId?: string;
+        summary: string; response?: string; disposition: "admission-rejected" | "recovery-pending";
+        fingerprint: string; idempotencyKey: string;
+      };
+    }
+  | {
+      type: "app.task.reopened";
+      source: "app-task-reconciler";
+      owner: string;
+      target: { appId: string; taskId: string };
+      data: { appId: string; taskId: string; generation: number; resourceVersion: number; idempotencyKey: string };
     }
   | {
       type: "app.task.close.requested";

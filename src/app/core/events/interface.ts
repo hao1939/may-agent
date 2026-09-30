@@ -44,7 +44,7 @@ export type EventInterface = {
 };
 
 type EventDefinition = {
-  taskControl?: "retry" | "close" | "cancel";
+  taskControl?: "retry" | "close" | "cancel" | "reopen";
   /** Payload aliases that this contract defines as the addressed resource. */
   addressFields?: readonly (keyof EventTarget)[];
   delivery: "record" | "required";
@@ -156,6 +156,18 @@ const EVENT_DEFINITIONS: Readonly<Record<string, EventDefinition>> = {
     taskControl: "cancel",
     delivery: "required",
     validate: (input, options) => validateTaskControl(input, options, true),
+  },
+  "app.task.reopen.requested": {
+    addressFields: ["appId", "taskId"],
+    taskControl: "reopen",
+    delivery: "required",
+    validate: (input, options) => {
+      validateTaskControl(input, options, true);
+      if (input.data.input !== undefined) {
+        const appInput = record(input.data.input, "app.task.reopen.requested data.input") as unknown as AppInput;
+        options.validateAppInput(requiredTarget(input, "appId"), appInput);
+      }
+    },
   },
   "app.task.close.requested": {
     addressFields: ["appId", "taskId"],
@@ -686,6 +698,8 @@ export function createEventInterface(options: CreateEventInterfaceOptions): Even
       if (!definition && !context.allowUnregisteredFact) {
         throw new Error(`Event type '${input.type}' is not admitted by this interface`);
       }
+      if (input.type === "app.task.reopen.requested" && context.source !== "control-socket")
+        throw new Error("Task reopening requires explicit operator control");
       definition?.validate(input, options);
       const event = canonicalEvent(input, context);
       if (definition?.delivery !== "required") {

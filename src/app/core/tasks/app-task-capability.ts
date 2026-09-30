@@ -21,6 +21,7 @@ import {
   cancelLoadedAppTask,
   closeInstalledAppTaskRuntimes,
   closeLoadedAppTask,
+  reopenLoadedAppTask,
   installAppTaskRuntimes,
   getLoadedAppTaskView,
   hasLoadedAppTask,
@@ -30,6 +31,7 @@ import {
   previewLoadedCanonicalAppTaskEventRoutes,
   readLoadedAppTaskView,
   readLoadedAppTaskInputResult,
+  readLoadedAppTaskInputClosure,
   retryLoadedFailedAppTask,
   stopLoadedConversationTurn,
   wakeLoadedAppTasks,
@@ -90,6 +92,7 @@ export type AppTaskCapability = {
     decision?: "human" | "app-policy";
     controlKey?: string;
   }): ReturnType<typeof cancelLoadedAppTask>;
+  reopen(input: Omit<Parameters<typeof reopenLoadedAppTask>[0], "bus">): ReturnType<typeof reopenLoadedAppTask>;
   closeAfterResult(input: {
     appId: string;
     taskId: string;
@@ -161,6 +164,11 @@ export function createAppTaskCapability(options: {
             result: accepted.result,
             facts: accepted.facts,
           };
+        const closure = readLoadedAppTaskInputClosure({ bus: options.bus, appDir, taskId: dependency.id, admissionKey });
+        if (closure) return {
+          kind: "task", id: dependency.id, status: "attention", closed: true,
+          summary: "The Task closed without an accepted outcome for this input", facts: closure.facts,
+        };
         // A later cycle or an unrelated retained wait cannot answer this input.
         const report = readLoadedAppTaskInputResult({
           bus: options.bus,
@@ -231,6 +239,7 @@ export function createAppTaskCapability(options: {
         ...(decision ? { decision } : {}),
         ...(controlKey ? { controlKey } : {}),
       }),
+    reopen: (input) => reopenLoadedAppTask({ ...input, bus: options.bus }),
     closeAfterResult: ({ appId, taskId, expectedGeneration, expectedResourceVersion, afterResult, reason, controlKey }) =>
       closeLoadedAppTask({
         bus: options.bus,

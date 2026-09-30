@@ -111,3 +111,31 @@ export function taskCancelRequestedEvent(task: ExactTask, reason: string): Event
     idempotencyKey: `app-task-cancel:${task.appId}:${task.taskId}:${task.generation}:${task.resourceVersion}`,
   };
 }
+
+/** Operator control for an explicit user request to continue this same Task. */
+export function taskReopenRequestedEvent(
+  task: ExactTask,
+  reason: string,
+  input?: { kind: string; data: unknown },
+): EventInput {
+  if (!task.appId.trim() || !task.taskId.trim()) throw new Error("Task reopening requires an exact target");
+  if (
+    !Number.isSafeInteger(task.generation) ||
+    task.generation < 1 ||
+    !Number.isSafeInteger(task.resourceVersion) ||
+    task.resourceVersion < 1
+  )
+    throw new Error("Task reopening requires current generation and resourceVersion");
+  if (!reason.trim()) throw new Error("Task reopening requires the user's continuation request as reason");
+  return {
+    type: "app.task.reopen.requested",
+    target: { appId: task.appId, taskId: task.taskId },
+    data: {
+      expectedGeneration: task.generation,
+      expectedResourceVersion: task.resourceVersion,
+      reason: reason.trim(),
+      ...(input !== undefined ? { input } : {}),
+    },
+    idempotencyKey: `app-task-reopen:${task.appId}:${task.taskId}:${task.generation}:${task.resourceVersion}`,
+  };
+}

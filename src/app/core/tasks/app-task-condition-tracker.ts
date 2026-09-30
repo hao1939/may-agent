@@ -1,5 +1,5 @@
 import { commitTaskMutation, type AppTaskContext, type TaskTree } from "./app-task-store.js";
-import type { AppTaskCondition as AppTaskCondition } from "./app-task-state.js";
+import { taskEventPredatesReopening, type AppTaskCondition } from "./app-task-state.js";
 
 export type AppTaskConditionWake = {
   conditionId: string;
@@ -288,6 +288,7 @@ function applyConditionEvent(
       (resource) =>
         ["waiting", "running", "pending"].includes(resource.status.phase) &&
         resource.status.conditionIds?.includes(id) &&
+        !taskEventPredatesReopening(resource, event) &&
         (!allowedTaskIds || allowedTaskIds.has(resource.metadata.id)),
     );
     // Conditions are task-local wait state, not a second event journal. Once
