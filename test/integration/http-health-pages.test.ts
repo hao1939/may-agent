@@ -203,6 +203,49 @@ describe("served workflow and metric health pages", () => {
     const history = await read("/api/metrics/workflow.error-count-24h/history?days=14");
     expect(history.snapshots).toHaveLength(4);
     expect(history.failures).toHaveLength(1);
+    const metricEvidence = await read("/api/metrics/workflow.error-count-24h/evidence");
+    expect(metricEvidence).toMatchObject({ available: true, metricId: "workflow.error-count-24h", freshness: "stale", latest: { value: 3 } });
+    expect(metricEvidence.collectionFailures).toHaveLength(1);
+    const db = getDb(root);
+    db.prepare(
+      "INSERT INTO metric_alerts(id, metric_id, alert_type, message, created_at) VALUES (42, 'workflow.error-count-24h', 'threshold', 'Repeated failures', ?)",
+    ).run(now - 100);
+    const decision = {
+      version: 1,
+      metricId: "workflow.error-count-24h",
+      alertId: 42,
+      disposition: "investigate",
+      reason: "Repeated admission failure",
+      evidence: ["input:example"],
+      linkedTask: { appId: "platform", taskId: "repair/admission" },
+    };
+    db.prepare(
+      `INSERT INTO app_task_attempts(app_id, attempt_id, task_id, task_generation, state, started_at, attempt_json)
+      VALUES ('platform', 'accepted-decision', 'owner-review', 1, 'completed', ?, ?)`,
+    ).run(
+      now - 90,
+      JSON.stringify({
+        finishedAt: new Date(now - 80).toISOString(),
+        acceptedResult: { state: "waiting", facts: [`metric-disposition:${JSON.stringify(decision)}`] },
+      }),
+    );
+    const breach = await read("/api/metrics/workflow.error-count-24h/evidence?alertId=42");
+    expect(breach.dispositions[0]).toMatchObject({ appId: "platform", taskId: "owner-review", decision });
+    const alerts = await read("/api/metrics");
+    expect(alerts.alerts.find((alert: { alertId: number }) => alert.alertId === 42)?.latestJudgment).toMatchObject({
+      disposition: "investigate",
+      linkedTask: decision.linkedTask,
+      source: {
+        kind: "accepted-task-result",
+        appId: "platform",
+        taskId: "owner-review",
+        attemptId: "accepted-decision",
+      },
+    });
+    expect((await read("/api/metrics/missing/evidence")).available).toBe(false);
+    await read("/api/metrics/example/evidence?windowMs=0", 400);
+    const mutation = await fetch(base + "/api/metrics/example/evidence", { method: "POST", signal: AbortSignal.timeout(5000) });
+    expect(mutation.status).toBe(405);
     const facts = (await read("/api/loop-trace?workflowRunId=wr_7")).workflowFacts;
     expect(facts.childRunIds).toEqual(["wr_10"]);
     expect(facts.steps[0]).toMatchObject({ sessionId: "step-upload", status: "error" });
