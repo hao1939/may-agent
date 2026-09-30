@@ -530,6 +530,14 @@ it can be discovered again. A saved report alone does not demonstrate adoption:
 check a later fresh execution. Expand this guidance from observed experience;
 it is not a new mandatory workflow, score, periodic job or acceptance gate.
 
+For the current shared artifact reader (`shared/tools/task-evidence.ts`), file
+references need an absolute path and a SHA-256 hash of the exact bytes. Prefer
+immutable definition sources or Task-scoped evidence preserved for later reads.
+Use `EvidenceStore` for new reports and `readPinnedArtifact` to check references
+through the same consumer contract. Keep earlier artifacts intact when publishing
+revisions. A producer's successful local read does not establish that a different
+App can resolve its reference; verify that handoff and retain any failed assessment.
+
 #### When to deepen a review
 
 Use this review again when evidence suggests a shared wrong assumption: repeated
