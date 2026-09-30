@@ -1,7 +1,7 @@
 # Task resource read interface
 
 **Design status:** Accepted.
-**Implementation status:** The shared reader is implemented. Explicit `inputKeys` reads are a [source prototype](../proposals/explicit-task-input-consideration-20260930.md), not deployed.
+**Implementation status:** The shared reader and explicit `inputKeys` reads are implemented; [Host #269 is merged](../proposals/explicit-task-input-consideration-20260930.md). Source status is not deployment evidence.
 
 This reference is part of the [Task resource engine](task-resource-engine.md) contract.
 
@@ -85,10 +85,10 @@ outside this Task fail the read explicitly. Answered input remains readable.
 The existing default obligation list is capped at 100 with `truncated`; it is
 not an unlimited inventory, and an exact read does not require a key to appear
 in that first page. The [result contract](task-resource-engine.md) controls
-settlement through the complete `inputKeys` scope. The candidate saves useful
+settlement through the complete `inputKeys` scope. The Host saves useful
 continuation in current input records, independently of waits, and supplies that
 work on the next attempt after continuation or retry. See the
-[prototype record](../proposals/explicit-task-input-consideration-20260930.md)
+[implementation and trial record](../proposals/explicit-task-input-consideration-20260930.md)
 for implementation and deployment status.
 
 The exact read uses one synchronous SQLite read snapshot for the resource,

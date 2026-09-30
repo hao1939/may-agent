@@ -5,7 +5,7 @@
 exact input dependencies, accepted outcomes and indexed recovery are implemented.
 Task activation is independent of optional schedules. Attempts are bounded;
 unfinished work retries with backoff until progress or authorized owner closure.
-Explicit input selection is a [source prototype](../proposals/explicit-task-input-consideration-20260930.md), not deployed.
+Explicit result scope is [merged in Host #269](../proposals/explicit-task-input-consideration-20260930.md); source and deployment evidence remain separate.
 
 This page owns the durable Task contract. Historical `achieve`/`maintain` mode
 data does not select a lifecycle; result labels describe attempts, not lifetime.
@@ -363,7 +363,7 @@ deadline survives re-wait. Due timers permit reconsideration, not satisfaction,
 answers, or bypassing failure backoff. Sleeping again needs a Condition or new
 future deadline; `continue: true` requests useful work. Failed verification cannot establish completion.
 
-**Candidate:** the worker judges which requests its result covers; `inputKeys` names that complete set (up to 64).
+The worker judges which requests its result covers; `inputKeys` names that complete set (up to 64).
 Omission uses the saved assignment and accepted live requests; `[]` covers none. Scheduling never expands that result.
 The Host validates references and saves result links; structural acceptance does not certify the worker's judgment.
 `converged` answers this set; waiting/incomplete retain it; unselected inputs survive.

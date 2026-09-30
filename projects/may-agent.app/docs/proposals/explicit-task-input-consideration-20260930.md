@@ -1,8 +1,8 @@
 # Explicit Task result scope
 
-**Status:** Source prototype and isolated trials; not merged or deployed.
-[Host PR #269](https://github.com/hao1939/may-agent/pull/269) now contains the
-simpler process at `ef017d1700f1daba7d31b87960df93a4f6104399`. The earlier additive
+**Status:** Merged in [Host PR #269](https://github.com/hao1939/may-agent/pull/269)
+on 2026-09-30 as `de59c8dae911c8a4e39c925d619164128610301a`; deployment remains separate.
+The simpler process was tested at `ef017d1700f1daba7d31b87960df93a4f6104399`. The earlier additive
 baseline is `f47bcd7e5314ed4738fb3bf09f8195bbd565b7fc`.
 The owning contracts are the [Task engine](../2a-design/task-resource-engine.md)
 and [Task reader](../2a-design/task-resource-read-interface.md).
