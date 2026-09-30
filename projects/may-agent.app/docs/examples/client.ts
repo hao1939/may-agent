@@ -6,7 +6,7 @@ import type { EventInput } from "../../../may-agent/packages/control/src/events.
 export const reviewInput = {
   type: "app.input.requested",
   target: { appId: "sample" },
-  data: { input: { kind: "review", data: { subject: "the release notes" } } },
+  data: { input: { kind: "review", data: { subject: "the sample App README against its implementation", references: ["projects/sample.app/README.md", "projects/sample.app/app.ts"] } } },
   idempotencyKey: "sample-release-notes-review-1",
 } satisfies EventInput;
 

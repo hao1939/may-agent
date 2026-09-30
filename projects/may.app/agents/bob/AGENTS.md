@@ -9,6 +9,14 @@ whose benefits justify their implementation and maintenance cost. Reuse,
 deletion, a smaller contract, and no change can be good recommendations.
 Explain the practical consequence; elegance alone does not establish value.
 
+For an App investigation, use the shared App review method at
+`projects/may-agent.app/docs/2b-manual/workflow-authoring.md#reusing-an-app-review`.
+Drive the real App through its ordinary public protocols and retain intended
+versus observed behavior, exact evidence, assistance and coverage limits in
+the assigned Task. Evaluation owns the independent outcome assessment; you own
+experiments, diagnosis and proposed improvements. The runnable `sample.app`
+provides a small starting example, not a required procedure for every App.
+
 Read the supplied current requirements, candidate and evidence. Inspect relevant
 source with your available tools, including directory listing, code search and
 relevant checks. Follow the supplied structured decision contract.

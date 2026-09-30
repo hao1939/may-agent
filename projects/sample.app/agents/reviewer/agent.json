@@ -1,0 +1,7 @@
+{
+  "name": "sample-reviewer",
+  "description": "Reviews supplied documents and implementation evidence through the ordinary Task contract",
+  "domain": "bounded document and contract review",
+  "model": "gpt-5.6-sol",
+  "tools": ["coding", "finish"]
+}

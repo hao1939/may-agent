@@ -5,56 +5,29 @@ walkthrough assumes a working Host installation and a configured model. Run the
 commands from the workspace root. The [App/results](../examples/app.ts) and
 [control client](../examples/client.ts) are checked by `bun run check:may-design`.
 
-## 1. Create the App
+## 1. Inspect the runnable App
 
-```sh
-mkdir -p projects/sample.app/agents/sample-agent projects/sample.app/tasks
-cp projects/may-agent.app/docs/examples/app.ts projects/sample.app/app.ts
-cp projects/may-agent.app/docs/examples/seed.json projects/sample.app/tasks/seed.json
-```
+The canonical [sample App](../../../sample.app/README.md) is included in this
+workspace. Read its [definition](../../../sample.app/app.ts),
+[reviewer instructions](../../../sample.app/agents/reviewer/AGENTS.md) and
+[seed](../../../sample.app/tasks/seed.json). The documentation imports that same
+App so the example cannot silently drift into a second implementation.
 
-The seed establishes the structural `root` referenced by the Task; an empty
-store does not invent that parent. The extra result exports in `app.ts` are
-examples for later customization and have no startup effects.
+Its `sample-reviewer` uses the configured `gpt-5.6-sol` model. Select another
+installed model in its `agent.json` when necessary. The seed establishes the
+structural `root` referenced by the Task; an empty store does not invent it.
 
-Create `projects/sample.app/agents/sample-agent/agent.json`, replacing
-`YOUR_CONFIGURED_MODEL` with a model key already working in your installation:
+The App accepts a `review` input with a subject and optional source references.
+An ordinary `message` addresses an existing Task. The pure `task(request)` mapper
+creates a review with a concrete outcome and acceptance criteria. Importing the
+definition has no effects. The Host validates and activates a complete registry
+generation before admitting work. [Agent Convention](agent-convention.md) explains
+agent tools and prompt files.
 
-```json
-{
-  "name": "sample-agent",
-  "description": "Reviews supplied material and records supported findings",
-  "domain": "sample reviews",
-  "model": "YOUR_CONFIGURED_MODEL",
-  "tools": ["coding", "finish"],
-  "heartbeat": false
-}
-```
-
-Create `projects/sample.app/agents/sample-agent/AGENTS.md`:
-
-```markdown
-# Sample reviewer
-
-Review the subject in the Task input. Inspect the relevant material and cite
-specific evidence for each finding. Do not change the reviewed material.
-Return the structured Task result requested by the Host. If required material
-is unavailable, report the missing evidence rather than claiming completion.
-```
-
-[Agent Convention](agent-convention.md) explains the available tools and prompt
-files. The selected model and readable review material are installation inputs;
-the documentation check does not verify them.
-
-The example declares:
-
-- a `review` input with a nonempty `data.subject`;
-- `tasks: {}` to enable ordinary Task policy with default execution;
-- a pure `task(request)` mapping that returns a desired Task attachment; and
-- a concrete outcome and acceptance criterion for the selected agent.
-
-Importing the definition has no effects. The Host validates and activates a
-complete registry generation before admitting work.
+The separate [result examples](../examples/app.ts) illustrate waits and typed
+dependencies; their external pipeline/governance counterparts are illustrative
+and are not installed by the sample. The [basic cooperation scenario](../../../sample.app/scenarios/basic-cooperation.md)
+uses installed Apps and preserves its real execution evidence.
 
 ## 2. Check and activate
 

@@ -1,33 +1,7 @@
-import { Type, defineApp, type Static, type TaskReconcileResult } from "@may-agent/sdk";
+import type { TaskReconcileResult } from "@may-agent/sdk";
 
-const inputSchema = Type.Object({
-  kind: Type.Literal("review"),
-  data: Type.Object({ subject: Type.String({ minLength: 1 }) }),
-});
-
-export default defineApp({
-  id: "sample",
-  version: 1,
-  agent: "sample-agent",
-  description: "Review a supplied subject and record supported findings.",
-  inputSchema,
-  tasks: {},
-  task(request) {
-    // The Host validates this schema before calling task(). The SDK callback
-    // accepts generic App input, so narrow to this declaration's validated type.
-    const input = request.input as Static<typeof inputSchema>;
-    return {
-      kind: "desired",
-      intent: {
-        id: `review/${request.id}`,
-        parentId: "root",
-        outcome: `Review ${input.data.subject}`,
-        acceptance: ["A supported review with evidence is recorded"],
-        input,
-      },
-    };
-  },
-});
+// The runnable App is canonical; these exports demonstrate additional results.
+export { default } from "../../../sample.app/app.js";
 
 // An attempt that needs an external fact can return this exact wait. The
 // pipeline observer must publish the declared fact when run 123 changes.

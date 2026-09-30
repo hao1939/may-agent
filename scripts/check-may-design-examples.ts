@@ -5,7 +5,7 @@ import { appTaskContext, observeAppTaskIntent } from "../projects/may-agent/src/
 import { AppTaskResourceStore } from "../projects/may-agent/src/app/core/state/app-task-resource-store.ts";
 import app, { dependencyResult, waitingResult } from "../projects/may-agent.app/docs/examples/app.ts";
 import { reviewInput } from "../projects/may-agent.app/docs/examples/client.ts";
-import seed from "../projects/may-agent.app/docs/examples/seed.json";
+import seed from "../projects/sample.app/tasks/seed.json";
 
 // Check the linked documentation example against source SDK types, independently
 // of whichever SDK bundle an installation currently has activated.
@@ -26,7 +26,7 @@ const first = app.task!(request);
 const repeated = app.task!(request);
 if (first.kind !== "desired" || repeated.kind !== "desired" ||
     first.intent.id !== repeated.intent.id ||
-    first.intent.outcome !== "Review the release notes") {
+    first.intent.outcome !== "Review the sample App README against its implementation") {
   throw new Error("The App example must map repeated input to the same desired Task");
 }
 for (const [name, result] of Object.entries({ waitingResult, dependencyResult })) {
