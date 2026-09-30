@@ -9,7 +9,9 @@ export type AppTaskTriggerEvent = {
 /** Return correlation for admitted input; eligibility stays with existing waits and Events. */
 export type AppTaskInputWait = {
   taskGeneration: number;
-  /** Empty means continue with already pending Task input, without replaying an old event batch. */
+  /** Useful work remains on this input, independently of its waits and deadlines. */
+  pending?: true;
+  /** Exact associated waits, independent of useful work and review timing. */
   conditions: Array<{ id: string; generation: number }>;
   /** Exact input reconsideration deadline; elapsed time does not answer the input. */
   reviewAt?: number;
@@ -130,7 +132,7 @@ export type AppTaskAttempt = {
   events?: AppTaskTriggerEvent[];
   /** More linked events remained pending when this attempt was claimed. */
   eventsTruncated?: boolean;
-  /** Earlier admitted inputs brought back by this attempt's exact Condition facts. */
+  /** Earlier outstanding input selected for this assignment from current work, wait and timer facts. */
   continuedInputKeys?: string[];
   /** Accepted facts from this exact attempt; later cycles do not replace it. */
   acceptedResult?: {
@@ -147,6 +149,7 @@ export type AppTaskAttempt = {
     acceptanceBasis?: TaskAcceptanceBasis;
     /** Additional durable input actually incorporated after the initial batch. */
     acceptedLiveEventIds?: number[];
+    inputKeys?: string[];
   };
   /** Legacy/synthetic trigger retained only when no durable event batch exists. */
   trigger?: Record<string, unknown>;

@@ -82,6 +82,9 @@ export type TaskAction =
 export type TaskReconcileResult = {
   summary: string;
   facts: string[];
+  /** Exact requests covered by this result. Omit to use the saved assignment, or use [] for none.
+   * Converged answers this set; waiting/incomplete report on it and keep it open. */
+  inputKeys?: string[];
 } & (
   | {
       state: "converged";
@@ -126,6 +129,7 @@ export type TaskReconcileResult = {
     }
   | {
       state: "needs-agent";
+      inputKeys?: never;
       response?: never;
       result?: never;
       actions?: never;

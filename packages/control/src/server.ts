@@ -60,7 +60,7 @@ export interface AttachControlSocketOptions {
   getAppTask?: (
     appId: string,
     taskId: string,
-    options?: { acceptedEvidence?: { limit?: number; cursor?: string } },
+    options?: { acceptedEvidence?: { limit?: number; cursor?: string }; inputKeys?: string[] },
   ) => unknown;
   resolveAppTask?: (appId: string, event: Record<string, unknown>) => unknown;
   listApps?: (appId?: string) => unknown;
@@ -830,7 +830,10 @@ export function createControlSocketCore(opts: ControlSocketCoreOptions): {
               command: normalized.command,
               appId,
               taskId,
-              task: getAppTask(appId, taskId, acceptedEvidenceOptions(frame)),
+              task: getAppTask(appId, taskId, {
+                ...acceptedEvidenceOptions(frame),
+                ...(frame.inputKeys === undefined ? {} : { inputKeys: frame.inputKeys as string[] }),
+              }),
             });
           } catch (error) {
             writeFrame(socket, {

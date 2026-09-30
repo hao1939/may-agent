@@ -61,7 +61,7 @@ export function continuedTaskInputKeys(
     }),
   );
   return Object.entries(task.status.inputWaits).flatMap(([key, wait]) =>
-    wait.taskGeneration < task.metadata.generation ||
+    wait.pending || wait.taskGeneration < task.metadata.generation ||
     (wait.reviewAt !== undefined && wait.reviewAt <= Date.now()) ||
     (wait.conditions.length === 0 && wait.reviewAt === undefined && events.length > 0) ||
     wait.conditions.some(

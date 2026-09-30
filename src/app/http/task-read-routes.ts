@@ -111,7 +111,13 @@ export function createTaskReadHandlers(options: {
       return json({ error: error instanceof Error ? error.message : String(error) }, 400);
     }
     try {
-      const response = await daemonRead({ type: "app.task.get", appId, taskId, ...evidenceOptions });
+      const response = await daemonRead({
+        type: "app.task.get",
+        appId,
+        taskId,
+        ...evidenceOptions,
+        ...(url.searchParams.has("inputKey") ? { inputKeys: url.searchParams.getAll("inputKey") } : {}),
+      });
       if (response.type === "error") return json({ error: response.message ?? "Task read failed" }, 400);
       return response.task ? json(response.task) : json({ error: "Task not found" }, 404);
     } catch (error) {

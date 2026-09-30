@@ -50,6 +50,13 @@ const parameters = Type.Object(
     limit: Type.Optional(Type.Integer({ minimum: 1, maximum: 100 })),
     cursor: Type.Optional(Type.String({ minLength: 1 })),
     includeDone: Type.Optional(Type.Boolean()),
+    inputKeys: Type.Optional(
+      Type.Array(Type.String({ minLength: 1 }), {
+        maxItems: 8,
+        description:
+          "For get: original input events by exact keys from currentObligations.inputWaits. Reading does not settle input.",
+      }),
+    ),
     acceptedEvidence: Type.Optional(
       Type.Object(
         {
@@ -81,6 +88,7 @@ type Params = {
   cursor?: string;
   includeDone?: boolean;
   acceptedEvidence?: TaskReadOptions["acceptedEvidence"];
+  inputKeys?: string[];
 };
 
 function result(value: unknown): AgentToolResult<undefined> {
@@ -210,6 +218,10 @@ export function createAppTaskReadTool(options: {
           const taskId = params.taskId?.trim();
           if (!taskId) return result({ error: "taskId is required for get" });
           const readAppId = params.target?.appId?.trim() || appId;
+          const readOptions = {
+            ...(params.acceptedEvidence ? { acceptedEvidence: params.acceptedEvidence } : {}),
+            ...(params.inputKeys ? { inputKeys: params.inputKeys } : {}),
+          };
           const reader = options.reader ?? (await import("./core/tasks/app-task-runtime.js"));
           const value =
             "get" in reader
@@ -217,13 +229,13 @@ export function createAppTaskReadTool(options: {
                   bus: options.bus,
                   appId: readAppId,
                   taskId,
-                  ...(params.acceptedEvidence ? { options: { acceptedEvidence: params.acceptedEvidence } } : {}),
+                  ...(Object.keys(readOptions).length ? { options: readOptions } : {}),
                 })
               : await reader.getLoadedAppTaskView({
                   bus: options.bus,
                   appId: readAppId,
                   taskId,
-                  ...(params.acceptedEvidence ? { options: { acceptedEvidence: params.acceptedEvidence } } : {}),
+                  ...(Object.keys(readOptions).length ? { options: readOptions } : {}),
                 });
           return result(value);
         }

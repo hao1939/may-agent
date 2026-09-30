@@ -276,6 +276,51 @@ it("shares Task detail, evidence and exact outcome reads between tools and execu
   expect(executed).toBeTrue();
 });
 
+it.each(["converged", "waiting", "incomplete"] as const)("carries explicit earlier input through executor reads and %s settlement", async (state) => {
+  const f = fixture();
+  const bus = eventBus();
+  const taskId = "work/early-input";
+  let executed = false;
+  await installCoreTaskRuntimes({
+    ...options(f, bus), installControllers: false,
+    appRegistrySnapshot: { id: "explicit-input", generation: 1,
+      entries: [{ appDir: f.appDir, definition: definition() }] },
+    executors: { inspect: async ({ read }) => {
+      const detail = await read.tasks.get(taskId, { inputKeys: ["earlier"] });
+      expect(detail?.inputEvents).toHaveLength(1);
+      expect(detail?.inputEvents?.[0]?.event.data.request).toMatchObject({ input: { data: { text: "earlier" } } });
+      const tool = createAppTaskReadTool({ bus, appId: () => "sample" });
+      const content = (await tool.execute("read", { action: "get", taskId, inputKeys: ["earlier"] })).content[0];
+      if (content?.type !== "text") throw new Error("Expected Task tool text");
+      expect(JSON.parse(content.text)).toEqual(JSON.parse(JSON.stringify(detail)));
+      executed = true;
+      const common = { summary: "Reviewed earlier input", facts: ["request:read"] as [string], inputKeys: ["earlier"] };
+      return state === "converged" ? { ...common, state } : { ...common, state, report: true };
+    } },
+  });
+  const config = loadedTaskConfig(f);
+  observeAppTaskIntent(config, { appAgent: "sample-owner", intent: {
+    id: taskId, parentId: "operations", outcome: "Review original input", acceptance: ["Evidence retained"], executor: "inspect",
+  } });
+  const admit = (key: string) => admitTaskInput(config, {
+    appId: "sample", attachment: { kind: "existing", taskId }, idempotencyKey: key,
+    inputContext: { id: key, source: { kind: "human", id: "requester" }, input: { kind: "message", data: { text: key } } },
+  });
+  admit("earlier");
+  const first = claimObservedAppTask(config, { taskId, appAgent: "sample-owner", handler: "executor:inspect" });
+  if (first.kind !== "claimed") throw new Error(first.kind);
+  deferAppTask(config, first, { disposition: "waiting", summary: "Review later", reviewAt: Date.now() + 3_600_000 });
+  admit("correction");
+  await reconcileLoadedAppTaskOnce({ bus, appId: "sample", taskId,
+    dispatch: { enqueuedAt: 1, startedAt: 2, readyWaitMs: 1, lane: "normal" } });
+  expect(executed).toBe(true);
+  const accepted = acceptedTaskAttempt(config, taskId);
+  expect(accepted?.acceptedResult).toMatchObject({ state, inputKeys: ["earlier"] });
+  expect(readAppTaskAdmissionOutcome(config, taskId, "earlier", state === "converged" ? "answer" : "report"))
+    .toMatchObject({ state, attemptId: accepted!.metadata.id });
+  if (state !== "converged") expect(readAppTaskAdmissionOutcome(config, taskId, "earlier")).toBeNull();
+});
+
 describe("caller feedback PoC", () => {
   it("reads the full installed input contract through tasks without starting target work", async () => {
     const f = fixture();

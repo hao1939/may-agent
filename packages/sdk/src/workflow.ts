@@ -36,7 +36,7 @@ export type TaskAcceptedEvidence = {
   finishedAt?: string;
   /** Explicit when legacy content was reduced to keep the public page bounded. */
   truncated?: {
-    fields: Array<"summary" | "response" | "result" | "facts" | "acceptanceBasis" | "acceptedLiveEventIds">;
+    fields: Array<"summary" | "response" | "result" | "facts" | "acceptanceBasis" | "acceptedLiveEventIds" | "inputKeys">;
   };
   acceptedResult: {
     state: "converged" | "waiting" | "incomplete";
@@ -49,6 +49,7 @@ export type TaskAcceptedEvidence = {
     facts: string[];
     acceptanceBasis?: TaskAcceptanceBasis;
     acceptedLiveEventIds?: number[];
+    inputKeys?: string[];
   };
 };
 
@@ -65,6 +66,8 @@ export type TaskAcceptedEvidenceNavigation = {
 };
 
 export type TaskReadOptions = {
+  /** Load original admitted input events by exact key (at most 8). Reading does not settle them. */
+  inputKeys?: string[];
   /** Opt in to one bounded page of immutable accepted-attempt history. */
   acceptedEvidence?: TaskAcceptedEvidenceOptions;
 };
@@ -72,6 +75,8 @@ export type TaskReadOptions = {
 export type TaskInputObligation = {
   /** Exact retained admission key; no input or attempt state is inferred from it. */
   key: string;
+  /** Useful work remains, independently of retained waits. */
+  pending?: true;
   reviewAt?: number;
   conditionCount: number;
   correlation: {
@@ -117,6 +122,8 @@ export type TaskView = {
 
 /** Task snapshot supplied at attempt start or returned by an explicitly scoped get. */
 export type TaskDetail = TaskView & {
+  /** Original input bodies loaded only by an explicit inputKeys read. */
+  inputEvents?: Array<{ key: string; observedAt: string; event: AppEvent }>;
   /** Current resource revision; absent for legacy receipts without a current resource. */
   resourceVersion?: number;
   /** Input still awaiting a claim. Reading it does not account for it. */
@@ -404,7 +411,7 @@ export type TaskReconciliationEvent = {
 /** Ordered, bounded work input that this reconciliation result will observe. */
 export type TaskReconciliationEvents = {
   items: TaskReconciliationEvent[];
-  /** Earlier asks whose awaited facts are being considered now; not new input or new authority. */
+  /** Earlier outstanding requests included in this saved assignment; not new input or new authority. */
   continuedInputs?: TaskReconciliationEvent[];
   /** Highest durable event identity in items, when every item has one. */
   throughEventId?: number;

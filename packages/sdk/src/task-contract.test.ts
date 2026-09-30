@@ -11,6 +11,23 @@ import {
 
 const workflowOptions = { allowNeedsAgent: true };
 
+it("admits exact result scope consistently for agent and workflow results", () => {
+  for (const state of ["converged", "waiting", "incomplete"] as const) {
+    expect(admitTaskReconcileResult({ state, summary: "Progress only", facts: ["inspected"], inputKeys: [] }, workflowOptions))
+      .toMatchObject({ ok: true, result: { inputKeys: [] } });
+    const output = { state, summary: "Reviewed the earlier request", facts: ["request:read"], inputKeys: ["earlier"] };
+    for (const schema of [taskAgentResultSchema, taskReconcileResultSchema]) {
+      const admitted = admitTaskResultForSchema(schema, output);
+      expect(admitted).toMatchObject({ ok: true, result: output });
+      if (admitted?.ok) expect(admitTaskResultForSchema(schema, admitted.result)).toEqual(admitted);
+    }
+  }
+  for (const inputKeys of [null, "earlier", [""], [" "], ["earlier", "earlier"], Array.from({ length: 65 }, (_, i) => `${i}`)]) {
+    expect(admitTaskReconcileResult({ state: "converged", summary: "Done", facts: [], inputKeys }, workflowOptions).ok).toBe(false);
+  }
+  expect(admitTaskReconcileResult({ state: "needs-agent", summary: "Delegate", facts: [], inputKeys: ["earlier"] }, workflowOptions).ok).toBe(false);
+});
+
 it("routes persisted Task result schemas through the same semantic admission", () => {
   const convergedReview = {
     state: "converged",
