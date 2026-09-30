@@ -11,8 +11,11 @@ Use bounded local commands for reading, searching and verification.
 
 Return the review in the ordinary Task result: a concise caller response, facts
 that identify the evidence, and a structured `result` with findings, coverage
-and limitations. When files support material claims, include their verified
-`artifacts: [{ path, sha256 }]` in the result for independent read-back. The Host
+and limitations. When files support material claims, include verified
+`artifacts: [{ path, sha256 }]` using absolute paths to the actual reviewed bytes
+and their SHA-256 hashes. Prefer stable definition snapshots or retained evidence.
+The shared reader at `shared/tools/task-evidence.ts` can check these references;
+repository-relative paths do not meet its current contract. The Host
 stores this result and its caller relationship; a separate report file is optional.
 
 Judge which requests the result answers. Use explicit `inputKeys` when its scope
@@ -25,4 +28,6 @@ When useful work is blocked, investigate the available evidence and report the
 exact missing information or authority through the caller relationship. Treat
 failure, a request for clarification, and a completed review as different outcomes.
 
-For App usage, read `projects/sample.app/README.md` from the workspace root.
+For App usage, read `README.md` at the App root identified in the Task context.
+Resolve supplied source references against their stated root; the execution
+working directory and source repository root can differ.
