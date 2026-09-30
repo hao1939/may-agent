@@ -108,6 +108,14 @@ completed the review at **11:42:21.585 UTC**, correctly rejected the planted
 approval claim and cleared the Condition. The next human-action query returned
 zero items. This verifies the human-request round trip in the public Task view.
 
+The fix and trial documentation were merged locally and activated from
+`1665fad2fd5f857a64418bf506dc08e73667c79a`: reload request `6490769` links successful
+completion `6490772`. All three active reader source files match the integrated
+bytes. A post-activation read through the production default endpoint returned
+both exact live attempts. The isolated daemon exited cleanly after its work
+settled; its records remain in place. Production services stayed healthy. This
+rollout note is a later documentation-only addition.
+
 ## Evidence and scope
 
 Raw receipts remain under
@@ -127,6 +135,9 @@ Raw receipts remain under
 - `isolated-recheck-final.json`, `isolated-report-integrity.json`: reassessment
   result and verified publication hashes.
 - `evaluation-check.log`: full App checks.
+- `live-reload-completion.json`, `live-active-source-proof.json`,
+  `live-reader-proof.json`: successful activation, source and default-endpoint
+  checks.
 
 The live independent report remains in
 `/app/.state/evaluation/reports/task-outcomes/evaluator-deepseek/sample/task-outcome-v2/`
