@@ -11,7 +11,7 @@ export type AppTaskInputWait = {
   taskGeneration: number;
   /** Useful work remains on this input, independently of its waits and deadlines. */
   pending?: true;
-  /** Empty means continue with already pending Task input, without replaying an old event batch. */
+  /** Exact associated waits, independent of useful work and review timing. */
   conditions: Array<{ id: string; generation: number }>;
   /** Exact input reconsideration deadline; elapsed time does not answer the input. */
   reviewAt?: number;

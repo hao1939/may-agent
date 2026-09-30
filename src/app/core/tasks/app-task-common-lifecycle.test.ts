@@ -258,6 +258,21 @@ describe("explicit result scope", () => {
     expect(readAppTaskAdmissionOutcome(f.config, "conversation", "independent")).toBeNull();
   });
 
+  it("new input retains the current wait and useful work when an earlier result cannot be accepted", () => {
+    const { f, admit } = earlyInputFixture();
+    deferAppTask(f.config, f.claim(), { disposition: "waiting", continue: true, summary: "Investigating refresh", inputKeys: ["refresh", "correction"] });
+    const claim = f.claim();
+    const before = f.config.resourceStore.readTask("conversation")!.status.inputWaits!.refresh;
+    expect(before.reviewAt).toBeGreaterThan(Date.now());
+    expect(before.pending).toBe(true);
+    admit("newer");
+    expect(completeAppTask(f.config, claim, { summary: "Older view", inputKeys: ["refresh"] }).taskContinues).toBe(true);
+    f.reopen();
+    expect(f.config.resourceStore.readTask("conversation")!.status.inputWaits!.refresh).toEqual(before);
+    expect(readAppTaskAdmissionOutcome(f.config, "conversation", "refresh")).toBeNull();
+    expect(f.claim().continuedInputKeys).toContain("refresh");
+  });
+
   it.each(["converged", "waiting"] as const)("%s schedules newly ready input without expanding its result scope", (state) => {
     const { f } = earlyInputFixture();
     const claim = f.claim();

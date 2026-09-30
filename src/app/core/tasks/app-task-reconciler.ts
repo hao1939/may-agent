@@ -3545,9 +3545,9 @@ function recordPendingAppTaskResult(
   const mutationScope = beginResourceMutationScope(tree, claim, []);
   // Keep unresolved asks as context for the newer facts. Replaying the
   // consumed event prefix would starve later input in a bounded batch.
-  retainTaskInputWait(config, resource, resultInputKeys(config, tree, claim, { acceptedLiveEventIds: input.acceptedLiveEventIds }), {
-    taskGeneration: claim.generation, conditions: [],
-  });
+  inputOutcomeAdmissions(config, tree, claim, {
+    acceptedLiveEventIds: input.acceptedLiveEventIds, inputKeys: [],
+  }, "retain");
   consumeAcceptedLiveTaskEvents(tree, claim.taskId, claim.agent, input.acceptedLiveEventIds);
   finishAttempt(tree, resource, input.reason ? "failed" : "completed", input.summary, new Date().toISOString());
   if (input.reason) attempt.failureReason = input.reason;

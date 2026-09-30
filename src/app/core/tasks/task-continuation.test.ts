@@ -446,7 +446,15 @@ test.each(["changed-spec", "replaced-id"])("reconsiders inputs with %s waits aft
     config.resourceStore.close();
     config = appTaskContext({ appDir: root, projectDir: root, agent: "owner", maxConcurrent: 1,
       resourceStore: AppTaskResourceStore.openStandalone(databasePath, "sample") });
-    expect(claimObservedAppTask(config, { taskId: "work", appAgent: "owner", handler: "agent" }).kind).toBe("waiting");
+    const reconsideration = claimObservedAppTask(config, { taskId: "work", appAgent: "owner", handler: "agent" });
+    if (change === "changed-spec") {
+      // A changed wait is current work now, not only after another external event.
+      expect(reconsideration.kind).toBe("claimed");
+      if (reconsideration.kind !== "claimed") throw new Error(reconsideration.kind);
+      expect(reconsideration.continuedInputKeys).toEqual(["original"]);
+      deferAppTask(config, reconsideration, { disposition: "waiting", summary: "Reviewed the revised requirement", conditions: [replacement] });
+      expect(readAppTaskAdmissionOutcome(config, "work", "original")).toBeNull();
+    } else expect(reconsideration.kind).toBe("waiting");
     trackAppTaskConditionEventForTasks(config, { type: "review.completed", data: { id: replacement.id, state: "accepted" } }, ["work"]);
     const final = claim();
     const expectedContinued = change === "changed-spec" ? ["correction", "original"] : ["correction"];
