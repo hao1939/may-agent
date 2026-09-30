@@ -430,6 +430,10 @@ inspect(resource, { signal }) })` in `AppDefinition.observers`. `inspect` reads
 current provider state and returns a plain JSON object. The App owns permitted
 resource scope, credentials, validation and field meaning. The Host owns demand
 selection, paging, read sharing, source identity, publication and Task wakes.
+The returned fields retain their App meaning, including `observedAt` when
+present. Only `resource` is reserved: the Host sets it to the requested
+reference for Condition correlation. Host timing stays in the event envelope
+and inspection health.
 The [checked example](../examples/observers.ts) uses a submitted build.
 
 A worker discovers the installed capability through `tasks.contract` or
@@ -441,9 +445,19 @@ generic resource encoding and a one-hour diagnostic review default. It does
 not start the provider operation or register a separate watch.
 
 The Host queries existing Condition routes, shares each source/resource read,
-and visits four subjects per observer slot. Publication suppression includes
-the current Conditions' identities so newly interested Tasks receive unchanged
-ready data. Removing, satisfying or cancelling demand stops its reads. Closed
+and visits four subjects per observer slot. After a committed Task result, it
+requests a prompt check of that Task's open interests, including retained ones.
+This uses the same read/publication path within the current polling interval;
+it adds no public check command. Requests coalesce by source/resource, up to
+64 pending subjects per observer, processed four at a time without overlapping
+runs. Each batch rechecks current Conditions, so cancelled or satisfied waits
+are ignored. A missed notification, overflow or failed read falls back to normal
+periodic observation; the queue is disposable, not another authority.
+
+Publication suppression yields to the existing Condition matcher: unchanged
+data is published when a current open wait needs it. This covers both new Tasks
+and a removed/recreated Condition on the same Task without storing another wait
+identity. Removing, satisfying or cancelling demand stops its reads. Closed
 Tasks stay closed. Raw observers remain available for unsolicited discovery.
 
 Each read has a cooperative abort/deadline (at most five minutes). Replacement
@@ -471,6 +485,11 @@ can independently review repeated ineffective attempts; an installation's
 supervisor coordinates shared repairs. Their judgments are App behavior, not
 Host routing policy. Host/process outage needs an external supervisor/operator.
 See [recovery responsibilities](system-boundary.md#recovery-uses-evidence-before-repetition).
+
+An App can verify the installed path using an ordinary smoke Task against a
+safe known resource. Success requires a saved wait, a durable matching event
+and an accepted result from a later owner attempt. A direct detector call or
+healthy inspection alone proves less. See the [smoke recipe](../2b-manual/sdk-quickstart.md#smoke-test-the-installed-observation-path).
 
 ### Resource ownership by convention
 

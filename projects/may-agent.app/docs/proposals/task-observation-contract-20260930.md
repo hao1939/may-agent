@@ -121,13 +121,16 @@ workers should not need that lower-level contract.
    source/resource reads across interested Tasks. Do not scan every Task or
    give a detector another App's full Task context.
 3. **Read current source state in code.** A newly admitted interest needs an
-   initial observation even when no provider transition occurs. A first version
-   may use the next normal observer slot; document that latency. Thereafter,
+   initial observation even when no provider transition occurs. The implementation
+   requests a prompt check after a committed Task result, using the same observer
+   path; periodic slots cover missed notifications or failed checks. Thereafter,
    bound reads, page work fairly and respect provider limits. Task records stay
    authoritative; any derived work list is disposable.
 4. **Publish through the existing durable boundary.** Infrastructure supplies
-   source identity, exact subject correlation and observation time, then sends
-   ordinary facts through existing publication/admission. The detector returns
+   source identity and exact subject correlation, then sends
+   ordinary facts through existing publication/admission. Host timing remains in
+   the envelope/health; provider fields such as `observedAt` retain their meaning.
+   Only `resource` is reserved for the requested reference. The detector returns
    observed values, never a destination agent or fabricated Host provenance.
    Match exact resource identity, not event type alone. A single read can serve
    several Conditions while each Task retains its own handling responsibility.

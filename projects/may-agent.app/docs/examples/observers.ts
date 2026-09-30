@@ -13,12 +13,12 @@ export function buildsApp(readBuild: (resource: string, signal: AbortSignal) => 
 }
 
 // The worker uses installed capabilities; it does not construct or publish events.
-export async function buildResultWait(read: Pick<AppRead, "contract">, resource: string) {
+export async function buildResultWait(read: Pick<AppRead, "contract">, resource: string, id = "build-result") {
   const contract = await read.contract("builds");
   const capability = contract.observations.find(item => item.id === "status");
   if (!capability) throw new Error("Build observation is unavailable; inspect the installed builds App");
   return observationCondition(capability, {
-    observerId: "status", id: "build-result", resource,
+    observerId: "status", id, resource,
     expected: { field: "state", anyOf: ["passed", "failed", "cancelled"] },
   });
 }

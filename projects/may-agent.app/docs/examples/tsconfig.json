@@ -2,8 +2,11 @@
   "extends": "../../../may-agent/tsconfig.json",
   "compilerOptions": {
     "rootDir": "../../..",
-    "types": ["bun", "node"],
+    "types": [
+      "bun",
+      "node"
+    ],
     "noEmit": true
   },
-  "include": ["app.ts", "client.ts", "review-change.ts", "observers.ts"]
+  "include": ["app.ts", "client.ts", "review-change.ts", "observers.ts", "observation-smoke.ts"]
 }
