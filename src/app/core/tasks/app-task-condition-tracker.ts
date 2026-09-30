@@ -218,53 +218,31 @@ function matchesExpectedRecord(expected: Record<string, unknown>, event: Record<
   });
 }
 
-function canonicalApprovalEvent(event: Record<string, unknown>): Record<string, unknown> {
-  const data = isRecord(event.data) ? event.data : {};
-  const proposal = isRecord(data.proposal) ? data.proposal : {};
-  const expected = isRecord(proposal.expected) ? proposal.expected : {};
-  const subject = typeof proposal.subject === "string" ? typedSubject(proposal.subject) : null;
-  return {
-    ...event,
-    data: {
-      ...expected,
-      ...(subject ? { [subject.field]: subject.value } : {}),
-      taskGeneration: proposal.taskGeneration,
-      conditionId: proposal.conditionId,
-      conditionGeneration: proposal.conditionGeneration,
-      subject: proposal.subject,
-      requestedAction: proposal.requestedAction,
-      decision: data.decision,
-      proposal,
-      hostApproval: data.hostApproval,
-    },
-  };
-}
-
 function matches(condition: AppTaskCondition, event: Record<string, unknown>): boolean {
   if (condition.spec.type !== event.type) return false;
-  const comparableEvent =
-    condition.spec.type === "project.approval.submitted" && isHumanActionOwner(condition.spec.owner)
-      ? canonicalApprovalEvent(event)
-      : event;
-  if (
-    comparableEvent !== event &&
-    !matchesVerifiedApprovalCondition(condition, event)
-  )
-    return false;
+  if (condition.spec.type === "project.approval.submitted" && isHumanActionOwner(condition.spec.owner)) {
+    if (!matchesVerifiedApprovalCondition(condition, event)) return false;
+    // The verified proposal already names this exact Condition. Match its
+    // decision constraints directly, without fabricating duplicate identity fields.
+    const data = isRecord(event.data) ? event.data : {};
+    return isRecord(condition.spec.expected) && matchesExpectedRecord(condition.spec.expected, {
+      data: { ...condition.spec.expected, decision: data.decision },
+    });
+  }
   // Level observations are not immutable historical facts. A newly declared
   // wait must not be satisfied by an older state, check, or pulse replayed from
   // the event journal. Only an observation made at or after the Condition was
   // established can prove that the external level subsequently changed.
-  if (!isFreshLevelObservation(condition, comparableEvent)) return false;
+  if (!isFreshLevelObservation(condition, event)) return false;
   const subject = typedSubject(condition.spec.subject);
   if (!subject) return false;
-  if (String(eventField(comparableEvent, ...fieldAliases(subject.field)) ?? "") !== subject.value) return false;
+  if (String(eventField(event, ...fieldAliases(subject.field)) ?? "") !== subject.value) return false;
 
   if (isRecord(condition.spec.expected)) {
-    return matchesExpectedRecord(condition.spec.expected, comparableEvent);
+    return matchesExpectedRecord(condition.spec.expected, event);
   }
 
-  const actual = eventField(comparableEvent, "state", "status", "disposition", "result", "outcome");
+  const actual = eventField(event, "state", "status", "disposition", "result", "outcome");
   if (typeof condition.spec.expected === "string") {
     return normalizedState(actual) === normalizedState(condition.spec.expected);
   }

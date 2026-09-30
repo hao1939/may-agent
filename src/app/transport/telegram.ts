@@ -17,11 +17,11 @@
  */
 
 import { isDeepStrictEqual } from "node:util";
-import { createHash, randomUUID } from "node:crypto";
+import { randomUUID } from "node:crypto";
 import { log } from "../../lib/log.js";
 import { setDefaultAutoSelectFamily } from "node:net";
 import type { AppConversationMessage, AppConversationTopic, AppConversationResource } from "@may-agent/sdk";
-import type { EventInput, EventReceipt } from "@may-agent/control/events";
+import type { ApprovalProposal, EventInput, EventReceipt } from "@may-agent/control/events";
 import { EVENT_DELIVERY_RESULT, eventData, type EventBus } from "../core/events/bus.js";
 import { loadPersistedEvent } from "../core/events/persisted.js";
 import { getDb } from "../../lib/db/connection.js";
@@ -521,20 +521,7 @@ function renderTelegramConversationMessage(message: AppConversationMessage): str
   return `${surface} · ${speaker}\n${text}`;
 }
 
-export type TelegramApprovalAnchor = {
-  approvalId: string;
-  /** Fingerprint of the exact Condition proposal bytes shown to the human. */
-  displayedActionHash: string;
-  packetHash?: string;
-  proposalHash?: string;
-  proposalRevision?: number;
-  taskGeneration: number;
-  conditionId: string;
-  conditionGeneration: number;
-  subject: string;
-  expected: unknown;
-  requestedAction: string;
-};
+export type TelegramApprovalAnchor = ApprovalProposal;
 
 export type TelegramApprovalReply = TelegramApprovalAnchor & {
   decision: "approve" | "reject" | "defer";
@@ -606,27 +593,13 @@ function approvalAnchor(task: HumanTaskView | null): TelegramApprovalAnchor | nu
   if (!condition) return null;
   const displayedAction = condition.spec.requestedAction?.trim();
   if (!displayedAction) return null;
-  const expected =
-    condition.spec.expected && typeof condition.spec.expected === "object" && !Array.isArray(condition.spec.expected)
-      ? (condition.spec.expected as Record<string, unknown>)
-      : {};
-  const approvalId =
-    typeof expected.approvalId === "string" && expected.approvalId.trim()
-      ? expected.approvalId.trim()
-      : condition.spec.subject.replace(/^[^:]+:/, "");
-  if (!approvalId) return null;
   return {
-    approvalId,
-    displayedActionHash: createHash("sha256").update(displayedAction).digest("hex"),
     taskGeneration: task!.generation,
     conditionId: condition.metadata.id,
     conditionGeneration: condition.metadata.generation,
     subject: condition.spec.subject,
     expected: structuredClone(condition.spec.expected),
     requestedAction: displayedAction,
-    ...(typeof expected.packetHash === "string" ? { packetHash: expected.packetHash } : {}),
-    ...(typeof expected.proposalHash === "string" ? { proposalHash: expected.proposalHash } : {}),
-    ...(Number.isSafeInteger(expected.proposalRevision) ? { proposalRevision: Number(expected.proposalRevision) } : {}),
   };
 }
 
@@ -1579,7 +1552,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
     }
     if (approval) {
       // This generic control is journaled, not admitted as App work. Consumers
-      // must reread this trusted Telegram source and the exact proposal anchor.
+      // read the Host-validated journal decision and exact proposal anchor.
       // If Conversation admission succeeded before this second publication
       // failed, provider replay resumes here and records only the missing event.
       const approvalKey = `telegram-approval:${chatIdStr}:${msg.message_id}`;
@@ -1589,13 +1562,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
             type: "project.approval.submitted",
             target: { appId: approval.task.appId, taskId: approval.task.taskId },
             data: {
-              approvalId: approval.approvalId,
               decision: approval.decision,
-              ...(approval.packetHash ? { packetHash: approval.packetHash } : {}),
-              ...(approval.proposalHash ? { proposalHash: approval.proposalHash } : {}),
-              ...(approval.proposalRevision ? { proposalRevision: approval.proposalRevision } : {}),
-              taskGeneration: approval.taskGeneration,
-              conditionId: approval.conditionId,
               proposal: {
                 taskGeneration: approval.taskGeneration,
                 conditionId: approval.conditionId,

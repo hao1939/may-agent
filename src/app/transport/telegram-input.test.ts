@@ -1668,7 +1668,7 @@ describe("Telegram May input", () => {
         .prepare("SELECT data FROM notification_messages WHERE event_type = 'task.human-action'")
         .all() as Array<{ data: string }>;
       expect(
-        boundCards.filter((row) => JSON.parse(row.data).approvalAnchor?.approvalId === "approval-docs"),
+        boundCards.filter((row) => JSON.parse(row.data).approvalAnchor?.conditionId === "approval-docs"),
       ).toHaveLength(2);
 
       const unchangedCards = sent.filter((text) => text.startsWith("Task 8f12ac90")).length;

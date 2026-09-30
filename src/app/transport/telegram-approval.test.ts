@@ -1,5 +1,4 @@
 import { describe, expect, it } from "bun:test";
-import { createHash } from "node:crypto";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -66,10 +65,6 @@ function action(task: HumanTaskView): string {
 
 const proposalA = proposal("a", 1);
 const anchorA: TelegramApprovalAnchor = {
-  approvalId: "proposal-a",
-  displayedActionHash: createHash("sha256").update(action(proposalA)).digest("hex"),
-  packetHash: "a".repeat(64),
-  proposalRevision: 1,
   taskGeneration: 1,
   conditionId: "approval-a",
   conditionGeneration: 1,
@@ -82,8 +77,8 @@ describe("Telegram exact approval reply", () => {
   it("accepts only a literal allowed decision for the displayed current proposal", () => {
     expect(telegramApprovalReply("approve", proposal("a", 1), anchorA)).toMatchObject({
       decision: "approve",
-      approvalId: "proposal-a",
-      packetHash: "a".repeat(64),
+      conditionId: "approval-a",
+      expected: { approvalId: "proposal-a", packetHash: "a".repeat(64) },
     });
     expect(telegramApprovalReply("yes", proposal("a", 1), anchorA)).toBeNull();
     expect(telegramApprovalReply("approve if checks pass", proposal("a", 1), anchorA)).toBeNull();
@@ -298,9 +293,7 @@ describe("Telegram exact approval reply", () => {
           const notification = db
             .prepare("SELECT data FROM notification_messages WHERE event_type = 'task.human-action'")
             .get() as { data: string };
-          expect(JSON.parse(notification.data).approvalAnchor.displayedActionHash).toBe(
-            createHash("sha256").update(decisionAction).digest("hex"),
-          );
+          expect(JSON.parse(notification.data).approvalAnchor.requestedAction).toBe(decisionAction);
         }
       } finally {
         bot?.close();
