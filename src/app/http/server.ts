@@ -1,5 +1,6 @@
 #!/usr/bin/env bun
 import { taskAttemptsQuery, readTaskAttempts } from "../adapters/reporting/task-attempts.js";
+import { metricEvidenceQuery, readMetricEvidence } from "../adapters/reporting/metric-evidence.js";
 /**
  * may-agent HTTP adapter — API, static WebUI, and dashboard websocket.
  *
@@ -3584,6 +3585,17 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
       if (url.pathname === "/api/events") return handleEvents(url);
       if (url.pathname === "/api/learning") return handleLearning(url);
       if (url.pathname === "/api/loop-trace") return handleLoopTrace(url);
+      const metricEvidenceMatch = url.pathname.match(/^\/api\/metrics\/([^/]+)\/evidence$/);
+      if (metricEvidenceMatch) {
+        if (req.method !== "GET") return json({ error: "GET required" }, 405);
+        let query: ReturnType<typeof metricEvidenceQuery>;
+        try {
+          query = metricEvidenceQuery(url.searchParams);
+        } catch (error) {
+          return json({ error: error instanceof Error ? error.message : "Invalid metric evidence window" }, 400);
+        }
+        return json(readMetricEvidence(_db(), decodeURIComponent(metricEvidenceMatch[1]), query));
+      }
       const metricHistoryMatch = url.pathname.match(/^\/api\/metrics\/([^/]+)\/history$/);
       if (metricHistoryMatch) {
         const metricId = decodeURIComponent(metricHistoryMatch[1]);

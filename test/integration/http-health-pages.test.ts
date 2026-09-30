@@ -203,6 +203,13 @@ describe("served workflow and metric health pages", () => {
     const history = await read("/api/metrics/workflow.error-count-24h/history?days=14");
     expect(history.snapshots).toHaveLength(4);
     expect(history.failures).toHaveLength(1);
+    const metricEvidence = await read("/api/metrics/workflow.error-count-24h/evidence");
+    expect(metricEvidence).toMatchObject({ available: true, metricId: "workflow.error-count-24h", freshness: "stale", latest: { value: 3 } });
+    expect(metricEvidence.collectionFailures).toHaveLength(1);
+    expect((await read("/api/metrics/missing/evidence")).available).toBe(false);
+    await read("/api/metrics/example/evidence?windowMs=0", 400);
+    const mutation = await fetch(base + "/api/metrics/example/evidence", { method: "POST", signal: AbortSignal.timeout(5000) });
+    expect(mutation.status).toBe(405);
     const facts = (await read("/api/loop-trace?workflowRunId=wr_7")).workflowFacts;
     expect(facts.childRunIds).toEqual(["wr_10"]);
     expect(facts.steps[0]).toMatchObject({ sessionId: "step-upload", status: "error" });
