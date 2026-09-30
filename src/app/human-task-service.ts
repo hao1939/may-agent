@@ -1,3 +1,5 @@
+import { isHumanActionOwner } from "./core/tasks/human-condition.js";
+import type { ApprovalProposal } from "@may-agent/control/events";
 import type { AppRegistry } from "./core/apps/registry.js";
 import type {
   TaskAcceptedEvidenceNavigation,
@@ -95,6 +97,8 @@ export type HumanTaskView = {
   waitingOn?: HumanTaskWait[];
   requestedBy?: HumanTaskLink;
   humanAction?: HumanTaskAction;
+  /** Exact proposal included only in a full Task read. */
+  approvalProposal?: ApprovalProposal;
   /** Exact, bounded diagnostics; never included in compact list cards. */
   diagnostics?: HumanTaskDiagnostics;
   history?: HumanTaskHistory[];
@@ -1279,9 +1283,42 @@ export class HumanTaskService {
       ...(progress ? { progress } : {}),
       ...(waitingOn.length > 0 ? { waitingOn } : {}),
     };
+    const proposal = approvalProposalForTask(detail);
+    const approvalDetail = proposal ? { ...detail, approvalProposal: proposal } : detail;
     const conditions = humanConditions(row);
-    if (conditions.length > 0) return withHumanAction(detail, conditions);
+    if (conditions.length > 0) return withHumanAction(approvalDetail, conditions);
     const inheritedAction = descendantHumanAction(this.db, detail);
-    return inheritedAction ? { ...detail, humanAction: inheritedAction } : detail;
+    return inheritedAction ? { ...approvalDetail, humanAction: inheritedAction } : approvalDetail;
   }
+}
+
+function pendingHumanApprovalCondition(task: HumanTaskView | null) {
+  if (!task || task.terminal || !["pending", "waiting", "running", "attention"].includes(task.status)) return null;
+  const matches = (task.diagnostics?.conditions ?? []).filter((item) => {
+    const condition = item.condition;
+    return (
+      condition?.spec.type === "project.approval.submitted" &&
+      condition.status?.state !== "true" &&
+      isHumanActionOwner(condition.spec.owner) &&
+      condition.metadata?.id === item.id &&
+      Number.isSafeInteger(condition.metadata.generation) &&
+      condition.metadata.generation > 0
+    );
+  });
+  return matches.length === 1 ? matches[0]!.condition : null;
+}
+
+export function approvalProposalForTask(task: HumanTaskView | null): ApprovalProposal | null {
+  const condition = pendingHumanApprovalCondition(task);
+  if (!condition) return null;
+  const displayedAction = condition.spec.requestedAction?.trim();
+  if (!displayedAction) return null;
+  return {
+    taskGeneration: task!.generation,
+    conditionId: condition.metadata.id,
+    conditionGeneration: condition.metadata.generation,
+    subject: condition.spec.subject,
+    expected: structuredClone(condition.spec.expected),
+    requestedAction: displayedAction,
+  };
 }

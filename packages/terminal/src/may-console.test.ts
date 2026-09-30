@@ -552,13 +552,13 @@ describe("May Console", () => {
     await waitFor(() => humanFrames().length === 1);
     await waitFor(() => output.includes("[may] Working on your request…"));
     const input = humanFrames()[0];
+    expect(input.event.data.replyTo).toBeUndefined();
     expect(input).toMatchObject({
       event: {
         target: { appId: "may" },
         data: {
           text: "please keep the compatibility alias",
           conversationId: "may:primary",
-          replyTo: "assignment-1",
           context: {
             focusedApp: "evaluation",
             focusedTask: { appId: "evaluation", taskId: "review/docs" },
@@ -1292,4 +1292,107 @@ test("TTY Esc preserves editing, dismisses completion and stops only the observe
   expect(stops()).toHaveLength(2);
   child.stdin.write("/exit\n");
   expect((await once(child, "exit"))[0]).toBe(0);
+});
+
+
+test("Console replies bind a displayed proposal explicitly and keep it through later updates", async () => {
+  const root = mkdtempSync(join(tmpdir(), "console-proposal-"));
+  const socketDir = join(root, "instances", "test");
+  mkdirSync(socketDir, { recursive: true });
+  const frames: any[] = [];
+  let client: Socket | undefined;
+  let output = "";
+  let action = "Apply candidate A. Full scope and verification are shown here.";
+  const proposal = () => ({
+    taskGeneration: 1,
+    conditionId: "review",
+    conditionGeneration: 1,
+    subject: "candidate:a",
+    expected: { allowedDecisions: ["approve", "reject", "defer"] },
+    requestedAction: action,
+  });
+  const server = createServer((socket) => {
+    client = socket;
+    let buffer = "";
+    socket.write(JSON.stringify({ type: "connected", agent: "may", instance: "test" }) + "\n");
+    socket.on("data", (chunk) => {
+      buffer += chunk.toString();
+      const lines = buffer.split("\n");
+      buffer = lines.pop()!;
+      for (const line of lines) {
+        const frame = JSON.parse(line);
+        frames.push(frame);
+        const result: any = { type: "ok", command: frame.type };
+        if (frame.type === "app.conversation.get")
+          result.conversation = { id: "may:primary", messages: [], topics: [] };
+        if (frame.type === "tasks.list") result.tasks = { items: [] };
+        if (frame.type === "task.get")
+          result.task = {
+            appId: "sample",
+            taskId: "release",
+            ref: "abcdef12",
+            outcome: "Review release",
+            status: "waiting",
+            generation: 1,
+            resourceVersion: 1,
+            terminal: false,
+            updatedAt: 1,
+            humanAction: { requestedAction: "Compact action" },
+            approvalProposal: proposal(),
+          };
+        if (frame.type === "publish")
+          Object.assign(result, {
+            eventId: frames.length,
+            delivery: "accepted",
+            ...(frame.event.data.approvalReply ? { approval: { decision: "approve", eventId: 99 } } : {}),
+          });
+        socket.write(JSON.stringify(result) + "\n");
+      }
+    });
+  });
+  server.listen(join(socketDir, "may.sock"));
+  await once(server, "listening");
+  const child = spawn(process.execPath, [resolve(import.meta.dir, "../bin/may-console.cjs")], {
+    env: { ...process.env, STATE_DIR: root, DAEMON_INSTANCE: "test", DAEMON_AGENT: "may" },
+    stdio: "pipe",
+  });
+  child.stdout.on("data", (chunk) => {
+    output += chunk.toString();
+  });
+  child.stderr.on("data", (chunk) => {
+    output += chunk.toString();
+  });
+  cleanups.push(() => rmSync(root, { recursive: true, force: true }));
+  cleanups.push(() => server.close());
+  cleanups.push(() => client?.destroy());
+  cleanups.push(() => child.kill("SIGKILL"));
+  await waitFor(() => frames.some((f) => f.type === "app.conversation.get"));
+  child.stdin.write("/reply abcdef12 approve\n");
+  await waitFor(() => output.includes("Read /task abcdef12 first"));
+  expect(frames.filter((f) => f.event?.data?.author?.kind === "human")).toHaveLength(0);
+  child.stdin.write("/task abcdef12\n");
+  await waitFor(() => output.includes(action));
+  const shown = proposal();
+  const command = frames.find((f) => f.event?.data?.metadata?.command === "/task abcdef12");
+  action = "Replacement candidate B";
+  child.stdin.write("approve\n/watch abcdef12\n");
+  await waitFor(() => frames.filter((f) => f.type === "task.get").length === 2);
+  child.stdin.write("/reply abcdef12 approve\n");
+  await waitFor(() => output.includes("approve recorded for the exact proposal."));
+  const human = frames.filter((f) => f.event?.data?.author?.kind === "human");
+  expect(human).toHaveLength(2);
+  expect(human[0].event.data.replyTo).toBeUndefined();
+  expect(human[0].event.data.approvalReply).toBeUndefined();
+  expect(human[1].event.data).toMatchObject({
+    text: "approve",
+    replyTo: command.event.data.messageId,
+    approvalReply: { target: { appId: "sample", taskId: "release" }, proposal: shown },
+  });
+  expect(human[1].operatorId).toBeTruthy();
+  expect(human[1].authorizationEvidence).toMatchObject({
+    decisionText: "approve",
+    replyTo: command.event.data.messageId,
+  });
+  child.stdin.write("/exit\n");
+  await once(child, "exit");
 });

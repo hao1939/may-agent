@@ -48,8 +48,8 @@ function attachTelegramBot(
 ): ReturnType<typeof attachTelegramBotRuntime> {
   return attachTelegramBotRuntime({
     ...options,
-    publishEvent(input) {
-      if (options.publishEvent) return options.publishEvent(input);
+    publishEvent(input, authorization) {
+      if (options.publishEvent) return options.publishEvent(input, authorization);
       const data = {
         ...input.data,
         ...(input.target ?? {}),
@@ -139,14 +139,14 @@ function durableTelegramFixture() {
   }) as typeof fetch;
   process.env.TELEGRAM_BOT_TOKEN = "fixture-token";
   process.env.TELEGRAM_CHAT_ID = "123,456";
-  let publish: (input: EventInput) => ReturnType<ReturnType<typeof createEventInterface>["publish"]>;
+  let publish: Parameters<typeof attachTelegramBotRuntime>[0]["publishEvent"];
   const start = () => {
     const writer = new DbWriter(root);
     bus.setPersistenceSubscriber(writer.handler);
     bus.setDeliveryRecorder(writer.recordDelivery);
     const events = createEventInterface({ bus, db: getDb(root), validateAppInput: () => {},
       hasApp: () => true, hasAgent: () => true, hasSession: () => false });
-    publish = (input) => events.publish(input, { source: "telegram" });
+    publish = (input, approvalAuthorization) => events.publish(input, { source: "telegram", approvalAuthorization });
     return attachTelegramBotRuntime({
       persistDir: root, bus, interfaceAgent: "may",
       humanTasks: {
@@ -159,12 +159,12 @@ function durableTelegramFixture() {
           return tasks.get(id) ?? null;
         },
       },
-      publishEvent(input) {
+      publishEvent(input, authorization) {
         if (rejectInput && input.data.author?.kind === "human") {
           rejectedRecordings++;
           throw new Error("fixture input storage unavailable");
         }
-        const receipt = publish(input);
+        const receipt = publish(input, authorization);
         published.push(input);
         afterRecord?.(input);
         return receipt;
@@ -639,6 +639,32 @@ describe("Telegram durable input and natural follow-up", () => {
       expect(f.sends().find((call) => call.body.chat_id === "999")?.body.text).toContain("Unauthorized");
       expect(f.sends().at(-1)!.body.text).toContain("Reply to an update to follow up");
     } finally { await f.close(); }
+  });
+
+  it("submits a proposal reply once with sender authority and leaves decisions to the Host", async () => {
+    const previous = process.env.TELEGRAM_APPROVER_ID;
+    process.env.TELEGRAM_APPROVER_ID = "7";
+    const f = durableTelegramFixture();
+    try {
+      const proposal = { taskGeneration: 1, conditionId: "review", conditionGeneration: 1,
+        subject: "candidate:a", expected: { allowedDecisions: ["approve", "reject", "defer"] },
+        requestedAction: "Apply candidate A" };
+      storeNotificationMessage(f.root, { chat_id: "123", telegram_msg_id: 55, event_type: "task.human-action",
+        agent: "may", session_id: null, project_id: null, data: JSON.stringify({
+          taskRefs: [{ appId: "sample", taskId: "release" }], approvalAnchor: proposal,
+        }) });
+      f.message(100, "approve", { from: { id: 7 }, reply_to_message: { message_id: 55, text: proposal.requestedAction } });
+      await waitFor(() => f.inputs().length === 1);
+      expect(f.inputs()[0]!.data.approvalReply).toEqual({ target: { appId: "sample", taskId: "release" }, proposal });
+      expect(f.published.filter((event) => event.type === "project.approval.submitted")).toHaveLength(0);
+      const row = f.db.prepare("SELECT data FROM events WHERE event_type = 'conversation.message.created' AND idempotency_key = 'telegram:123:100'").get()!;
+      expect(JSON.parse(String(row.data)).approvalReply).toMatchObject({ proposal, decision: "approve",
+        hostApproval: { ingressSource: "telegram", actor: { kind: "human", id: "7" } } });
+    } finally {
+      await f.close();
+      if (previous === undefined) delete process.env.TELEGRAM_APPROVER_ID;
+      else process.env.TELEGRAM_APPROVER_ID = previous;
+    }
   });
 
   it("keeps the clicked task and Topic through Details, Follow, and replies despite an unrelated selection", async () => {

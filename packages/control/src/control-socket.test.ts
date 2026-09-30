@@ -186,6 +186,24 @@ describe("control socket protocol", () => {
     });
   });
 
+  it("passes an explicit Console reply and operator attribution to shared input handling", async () => {
+    const published: unknown[] = [];
+    const core = createCore({ publishEvent: (input, authorization) => {
+      published.push({ input, authorization });
+      return { eventId: 75, eventType: input.type, delivery: "accepted", approval: { decision: "approve", eventId: 76 } };
+    } });
+    const event = { type: "conversation.message.created", target: { appId: "may" }, data: {
+      conversationId: "may:primary", author: { kind: "human", id: "console:1" }, text: "approve",
+      replyTo: "displayed:1", approvalReply: { target: { appId: "sample", taskId: "release" }, proposal: { fixture: true } },
+    }, idempotencyKey: "console:1" };
+    const receipt = await sendSocketCommand(core.endpoint, { type: "publish", event,
+      operatorId: "fixture-operator", authorizationReference: "console:1", authorizationEvidence: { replyTo: "displayed:1" } });
+    expect(receipt).toMatchObject({ eventId: 75, approval: { decision: "approve", eventId: 76 } });
+    expect(published).toEqual([{ input: event, authorization: {
+      actor: { kind: "operator", id: "fixture-operator" }, reference: "console:1", evidence: { replyTo: "displayed:1" },
+    } }]);
+  });
+
   it("returns the persisted semantic event receipt", async () => {
     const core = createCore({
       emitEvent: (event) => {

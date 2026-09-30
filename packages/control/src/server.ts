@@ -613,7 +613,8 @@ export function createControlSocketCore(opts: ControlSocketCoreOptions): {
                 ? exactRuntimeControl(eventData.text)
                 : null;
             const approvalAuthorization =
-              eventType === "project.approval.submitted"
+              (eventType === "project.approval.submitted" ||
+                (eventType === "conversation.message.created" && frame.operatorId && eventData.approvalReply))
                 ? {
                     actor: {
                       kind: "operator" as const,

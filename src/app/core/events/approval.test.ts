@@ -7,12 +7,19 @@ import { DbWriter } from "../../../lib/db-writer.js";
 import { AppTaskResourceStore } from "../state/app-task-resource-store.js";
 import { applyAppTaskConditionEvent } from "../tasks/app-task-condition-tracker.js";
 import { appTaskContext, cancelAppTask } from "../tasks/app-task-reconciler.js";
-import { readVerifiedApprovalDecision } from "@may-agent/sdk";
+import { readVerifiedApprovalDecision, defineApp, Type } from "@may-agent/sdk";
+import { AppRegistry } from "../apps/registry.js";
+import { startAppInboxRuntime, type AppInboxRuntime } from "../../composition/app-inbox-runtime.js";
+import { admitTaskInput } from "../state/inbox.js";
+import { EVENT_ROW_ID } from "./bus.js";
+import { loadPersistedEvent } from "./persisted.js";
 import { EventBus } from "./bus.js";
 import { createEventInterface, findEventPublication } from "./interface.js";
 
 const roots: string[] = [];
+const runtimes: AppInboxRuntime[] = [];
 afterEach(() => {
+  for (const runtime of runtimes.splice(0)) runtime.close();
   for (const root of roots.splice(0)) {
     closeDb(root);
     rmSync(root, { recursive: true, force: true });
@@ -91,7 +98,7 @@ function fixture(additionalExpected: Record<string, unknown> = {}) {
     expected: condition.spec.expected,
     requestedAction: condition.spec.requestedAction,
   };
-  return { tree, events, proposal, db, store, root };
+  return { tree, events, proposal, db, store, root, bus, writer };
 }
 
 function authorization(kind: "human" | "operator") {
@@ -266,3 +273,173 @@ describe("Host verified approval contract", () => {
     expect(readVerifiedApprovalDecision(malformed)).toBeNull();
   });
 });
+
+async function inputRuntime(f: ReturnType<typeof fixture>) {
+  const registry = new AppRegistry(async () => [
+    {
+      appDir: f.root,
+      definition: defineApp({
+        id: "sample",
+        version: 1,
+        agent: "sample",
+        inputSchema: Type.Object({
+          kind: Type.Literal("message"),
+          data: Type.Object({ message: Type.String(), context: Type.Optional(Type.Unknown()) }),
+        }),
+        task: () => ({ kind: "existing", taskId: "work" }),
+        tasks: {},
+      }),
+    },
+  ]);
+  await registry.reload();
+  const ctx = appTaskContext({ appDir: f.root, projectDir: f.root, agent: "sample", resourceStore: f.store });
+  const runtime = await startAppInboxRuntime({
+    registry,
+    db: f.db,
+    bus: f.bus,
+    persistDir: f.root,
+    schedulesEnabled: false,
+    attachTask: (input) => admitTaskInput(ctx, input),
+    admitTaskEvent: ({ event }) => {
+      applyAppTaskConditionEvent(f.tree, event);
+      return { accepted: true, by: "fixture-condition-route", route: "direct" };
+    },
+  });
+  runtimes.push(runtime);
+  return runtime;
+}
+
+function humanReply(f: ReturnType<typeof fixture>, text = "approve", id = "reply-1") {
+  return {
+    type: "conversation.message.created",
+    target: { appId: "sample" },
+    idempotencyKey: id,
+    data: {
+      conversationId: "sample:primary",
+      author: { kind: "human", id },
+      text,
+      replyTo: "displayed-proposal-1",
+      approvalReply: { target: { appId: "sample", taskId: "work" }, proposal: f.proposal },
+    } as Record<string, unknown>,
+  };
+}
+
+for (const [source, kind] of [
+  ["telegram", "human"],
+  ["control-socket", "operator"],
+] as const) {
+  it(`handles ordinary ${source} replies through shared Conversation admission`, async () => {
+    const f = fixture();
+    await inputRuntime(f);
+    const context = { source, approvalAuthorization: authorization(kind) };
+    for (const [index, text] of ["approve if checks pass", "yes", "approve"].entries()) {
+      const receipt = f.events.publish(humanReply(f, text, `reply-${index}`), context);
+      expect(receipt.delivery).toBe("accepted");
+      if (text !== "approve") expect(receipt.approval).toBeUndefined();
+      else {
+        expect(receipt.approval).toMatchObject({ decision: "approve" });
+        const eventId = (receipt.approval as { eventId: number }).eventId;
+        const event = f.events.get(eventId)!.event;
+        expect(readVerifiedApprovalDecision(event)?.decision).toBe("approve");
+        expect(event.data.inputEventId).toBe(receipt.eventId);
+        expect(event.data.proposal).toEqual(f.proposal);
+        expect(event.data.hostApproval).toMatchObject({ actor: { kind }, ingressSource: source });
+        expect(f.events.get(receipt.eventId)!.event.data.text).toBe("approve");
+        expect(f.events.publish(humanReply(f, text, `reply-${index}`), context)).toEqual(receipt);
+      }
+    }
+    expect(
+      f.db.prepare("SELECT COUNT(*) AS n FROM events WHERE event_type = 'project.approval.submitted'").get()?.n,
+    ).toBe(1);
+  });
+}
+
+it("preserves stale, unauthorized and unbound input without approving a replacement", async () => {
+  const f = fixture();
+  await inputRuntime(f);
+  const context = { source: "control-socket", approvalAuthorization: authorization("operator") };
+  const stale = humanReply(f, "approve", "stale");
+  stale.data.approvalReply = {
+    target: { appId: "sample", taskId: "work" },
+    proposal: { ...f.proposal, requestedAction: "Different proposal" },
+  };
+  expect(f.events.publish(stale, context).approval).toHaveProperty("reason");
+  const unauthorized = humanReply(f, "approve", "unauthorized");
+  (unauthorized.data.approvalReply as Record<string, unknown>).hostApproval = { forged: true };
+  expect(f.events.publish(unauthorized, { source: "control-socket" }).approval).toHaveProperty("reason");
+  const unbound = humanReply(f, "approve", "unbound");
+  delete unbound.data.replyTo;
+  expect(f.events.publish(unbound, context).approval).toHaveProperty("reason");
+  expect(
+    f.db.prepare("SELECT COUNT(*) AS n FROM events WHERE event_type = 'project.approval.submitted'").get()?.n,
+  ).toBe(0);
+  expect(f.db.prepare("SELECT COUNT(*) AS n FROM app_inbox_items").get()?.n).toBe(3);
+});
+
+for (const crash of [
+  "before-decision",
+  "after-decision",
+  "replaced-proposal",
+  "decision-storage-failure",
+  "large-input",
+] as const) {
+  it(`recovers the original saved reply after restart: ${crash}`, async () => {
+    let f = fixture(crash === "large-input" ? { evidence: "detailed evidence ".repeat(8000) } : {});
+    const context = { source: "control-socket", approvalAuthorization: authorization("operator") };
+    let runtime: AppInboxRuntime | undefined;
+    if (crash === "decision-storage-failure") {
+      runtime = await inputRuntime(f);
+      f.bus.setPersistenceSubscriber((event) => {
+        if (event.type === "project.approval.submitted") throw new Error("fixture decision write interrupted");
+        f.writer.handler(event);
+      });
+    }
+    if (crash === "after-decision") {
+      runtime = await inputRuntime(f);
+      // Lose the final input acknowledgement after its decision was saved.
+      f.bus.setDeliveryRecorder((event, result) => {
+        if (event.type !== "conversation.message.created") f.writer.recordDelivery(event, result);
+      });
+    }
+    const original = f.events.publish(humanReply(f), context);
+    expect(f.events.get(original.eventId)?.delivery.state).not.toBe("accepted");
+    runtime?.close();
+    await new Promise<void>((resolve) => setImmediate(resolve));
+    closeDb(f.root);
+    const db = getDb(f.root);
+    const bus = new EventBus();
+    const writer = new DbWriter(f.root);
+    bus.setPersistenceSubscriber(writer.handler);
+    bus.setDeliveryRecorder(writer.recordDelivery);
+    const store = AppTaskResourceStore.fromDb(db, "sample");
+    f = { ...f, db, bus, writer, store };
+    if (crash === "replaced-proposal" || crash === "after-decision") {
+      const condition = db
+        .prepare("SELECT condition_json FROM app_task_conditions WHERE app_id = 'sample' AND condition_id = 'release'")
+        .get()!;
+      const updated = JSON.parse(String(condition.condition_json));
+      updated.spec.requestedAction = "Replacement proposal must not be approved";
+      db.prepare(
+        "UPDATE app_task_conditions SET condition_json = ? WHERE app_id = 'sample' AND condition_id = 'release'",
+      ).run(JSON.stringify(updated));
+    }
+    await inputRuntime(f); // Existing startup recovery, without channel redelivery.
+    const deadline = Date.now() + 3_000;
+    while (
+      db.prepare("SELECT delivery_status FROM events WHERE id = ?").get(original.eventId)?.delivery_status !==
+      "accepted"
+    ) {
+      if (Date.now() >= deadline) throw new Error("Saved approval input did not recover");
+      await Bun.sleep(5);
+    }
+    const decisions = db.prepare("SELECT id FROM events WHERE event_type = 'project.approval.submitted'").all();
+    expect(decisions).toHaveLength(crash === "replaced-proposal" ? 0 : 1);
+    if (decisions.length)
+      expect(loadPersistedEvent(db, Number(decisions[0]!.id), f.root)?.data?.proposal).toEqual(f.proposal);
+    expect(db.prepare("SELECT COUNT(*) AS n FROM app_inbox_items").get()?.n).toBe(1);
+    const originalEvent = loadPersistedEvent(db, original.eventId, f.root)!;
+    bus.redeliverPersisted(originalEvent, original.eventId);
+    expect(originalEvent[EVENT_ROW_ID]).toBe(original.eventId);
+    expect(db.prepare("SELECT COUNT(*) AS n FROM app_inbox_items").get()?.n).toBe(1);
+  });
+}

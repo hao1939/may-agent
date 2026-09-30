@@ -1,3 +1,4 @@
+import { readVerifiedApprovalDecision } from "@may-agent/control/events";
 import type { AppInput, AppInputSource } from "@may-agent/sdk";
 import type {
   EventInput,
@@ -8,7 +9,14 @@ import type {
   PublicEvent,
 } from "@may-agent/control/events";
 import { findPersistedEventId } from "../../../lib/db-writer.js";
-import { stampApproval, validateCurrentApproval, type ApprovalIngressAuthorization } from "./approval.js";
+import {
+  ApprovalValidationError,
+  approvalDecision,
+  stampApproval,
+  stampConversationApproval,
+  validateCurrentApproval,
+  type ApprovalIngressAuthorization,
+} from "./approval.js";
 import { readEventTaskTarget } from "./task-target.js";
 import { readPersistedEventEnvelope } from "./persisted.js";
 import type { SqliteDb } from "../../../lib/db.js";
@@ -464,6 +472,8 @@ function canonicalEvent(input: EventInput, context: EventPublisherContext): Agen
 /** Canonical caller input, including adapter-owned approval attribution. */
 function publicationInput(rawInput: EventInput, context: EventPublisherContext): EventInput {
   const input = normalizeInput(rawInput);
+  if (input.type === "conversation.message.created")
+    return stampConversationApproval(input, context.source, context.approvalAuthorization);
   if (input.type !== "project.approval.submitted") return input;
   requiredText(input.data.decision, "project.approval.submitted data.decision");
   if (!context.approvalAuthorization) throw new Error("Formal approval requires trusted ingress authorization");
@@ -706,6 +716,66 @@ export function getEventView(db: SqliteDb, eventId: number): EventView | undefin
   };
 }
 
+/** Called by the existing durable Conversation route before acknowledging human input. */
+export function deliverConversationApproval(
+  event: AgentEvent & { [EVENT_ROW_ID]?: number },
+  db: SqliteDb,
+  bus: EventBus,
+): EventReceipt["approval"] {
+  const data = eventData(event);
+  if (!data.approvalReply || !approvalDecision(data.text)) return undefined;
+  const reply = data.approvalReply as Record<string, unknown>;
+  if (!reply.hostApproval)
+    return { reason: "No authorized, explicit proposal reply was supplied. Your text remains conversation." };
+  const { target, ...decision } = reply;
+  const input: EventInput = { type: "project.approval.submitted", target: target as EventTarget, data: decision };
+  const source = requiredText((event as { source?: string }).source, "Saved input source");
+  if (!readVerifiedApprovalDecision({ ...input, source }))
+    throw new Error("Saved input has invalid approval attribution");
+  const originalEventId = event[EVENT_ROW_ID];
+  if (!originalEventId) throw new Error("Approval reply must be saved before delivery");
+  const bound: EventInput = {
+    ...input,
+    data: { ...input.data, inputEventId: originalEventId },
+    idempotencyKey: `input-approval:${originalEventId}`,
+  };
+  const canonical = canonicalEvent(bound, { source });
+  // A saved decision remains the receipt even after its Condition has resolved.
+  const prior = findPersistedEventId(db, canonical);
+  if (!prior) {
+    try {
+      validateCurrentApproval(bound, db);
+    } catch (error) {
+      if (!(error instanceof ApprovalValidationError)) throw error;
+      return { reason: `${error.message}. No approval was recorded; your text remains conversation.` };
+    }
+  }
+  Object.defineProperty(canonical, EVENT_RECORD_ONLY, { value: true, configurable: true });
+  const emitted = bus.emit(canonical);
+  const eventId = emitted[EVENT_ROW_ID];
+  if (!eventId) throw new Error("Approval decision was not durably saved");
+  return { decision: String(input.data.decision), eventId };
+}
+
+function conversationApprovalReceipt(
+  db: SqliteDb,
+  eventId: number,
+  source: string,
+  data: Record<string, unknown>,
+): EventReceipt["approval"] {
+  if (!data.approvalReply || !approvalDecision(data.text)) return undefined;
+  if (!(data.approvalReply as Record<string, unknown>).hostApproval)
+    return { reason: "No authorized, explicit proposal reply was supplied. Your text remains conversation." };
+  const row = db
+    .prepare(
+      "SELECT id, data FROM events WHERE event_type = 'project.approval.submitted' AND source = ? AND idempotency_key = ? LIMIT 1",
+    )
+    .get(source, `input-approval:${eventId}`) as { id: number; data: string } | undefined;
+  return row
+    ? { eventId: row.id, decision: String(parseData(row.data).decision) }
+    : { reason: "No approval recorded. Read the current proposal or discuss it with May." };
+}
+
 export function createEventInterface(options: CreateEventInterfaceOptions): EventInterface {
   const get = (eventId: number): EventView | undefined => getEventView(options.db, eventId);
 
@@ -748,6 +818,8 @@ export function createEventInterface(options: CreateEventInterfaceOptions): Even
         eventType: input.type,
         delivery: view.delivery.state === "accepted" ? "accepted" : "recorded",
         ...(view.links.length ? { links: view.links } : {}),
+        ...(input.type === "conversation.message.created" && view.delivery.state === "accepted"
+          ? { approval: conversationApprovalReceipt(options.db, eventId, context.source, input.data) } : {}),
       };
     },
     get,

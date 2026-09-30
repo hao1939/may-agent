@@ -1,5 +1,5 @@
 import { validateIntent } from "../core/tasks/app-task-reconciler.js";
-import { taskControlAction } from "../core/events/interface.js";
+import { deliverConversationApproval, taskControlAction } from "../core/events/interface.js";
 import { readTaskEventTarget, readEventTaskTarget } from "../core/events/task-target.js";
 import { appInputFeedbackEvent, appInputAdmissionFailureEvent } from "../core/inbox/input-result.js";
 import { conversationTaskId, listPendingConversationTaskChanges } from "../core/state/conversation-task-turns.js";
@@ -419,12 +419,26 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
   let inputRecovery: Promise<void> | null = null;
   const inputRecoveryIntervalMs = Math.max(60_000, options.scanIntervalMs ?? 5_000);
   let nextInputRecoveryAt = 0;
+  let inputRecoveryCursor = 0;
   const recoverInputs = (): Promise<void> => {
     if (inputRecovery) return inputRecovery;
     nextInputRecoveryAt = now() + inputRecoveryIntervalMs;
     const current = new Promise<void>((resolve) => setTimeout(resolve, 0))
       .then(async () => {
         if (closed) return;
+        // Resume saved human inputs through the same durable route. This also
+        // closes a crash between Conversation persistence and decision publication.
+        const inputs = options.db.prepare(`SELECT id FROM events
+          WHERE event_type = 'conversation.message.created' AND id > ?
+            AND delivery_status IN ('pending', 'unhandled')
+            AND (json_type(data, '$.approvalReply.hostApproval') = 'object' OR body_ref IS NOT NULL)
+          ORDER BY id LIMIT 16`).all(inputRecoveryCursor);
+        if (!inputs.length) inputRecoveryCursor = 0;
+        for (const row of inputs) {
+          inputRecoveryCursor = Number(row.id);
+          const event = loadPersistedEvent(options.db, Number(row.id), options.persistDir);
+          if (event) options.bus.redeliverPersisted(event, Number(row.id));
+        }
         await host.recoverAdmissions();
         if (!closed) await host.recoverTaskResults();
       })
@@ -812,6 +826,7 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
             data.metadata && typeof data.metadata === "object" && !Array.isArray(data.metadata)
               ? (data.metadata as Record<string, unknown>)
               : {};
+          const approval = deliverConversationApproval(event, options.db, options.bus);
           const persistedEventId = eventRowId(event);
           const fallbackSequence =
             typeof metadata.channelMessageId === "number" && Number.isSafeInteger(metadata.channelMessageId)
@@ -820,6 +835,7 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
           // Preserve the surface's Topic as input context, not a committed turn decision.
           const context: Record<string, unknown> = {
             ...record(data.context),
+            ...(approval ? { approval } : {}),
             ...(typeof metadata.topicId === "string" && metadata.topicId.trim()
               ? { conversationTopicId: metadata.topicId.trim() }
               : {}),

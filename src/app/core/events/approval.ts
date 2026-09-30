@@ -7,6 +7,8 @@ import { isHumanActionOwner } from "../tasks/human-condition.js";
 
 export const HOST_APPROVAL_VERSION = 1;
 
+export class ApprovalValidationError extends Error {}
+
 export type ApprovalIngressAuthorization = {
   actor: { kind: "human" | "operator"; id: string };
   reference: string;
@@ -40,55 +42,55 @@ export function validateCurrentApproval(input: EventInput, db: SqliteDb): void {
   );
   const requestedAction = text(proposal.requestedAction, "project.approval.submitted data.proposal.requestedAction");
   const subject = text(proposal.subject, "project.approval.submitted data.proposal.subject");
-  if (!("expected" in proposal)) throw new Error("project.approval.submitted data.proposal.expected is required");
+  if (!("expected" in proposal)) throw new ApprovalValidationError("project.approval.submitted data.proposal.expected is required");
 
   const store = AppTaskResourceStore.activeFromDb(db, appId);
   const taskView = store?.readTaskForView(taskId);
-  if (!taskView) throw new Error(`Task ${appId}/${taskId} was not found`);
+  if (!taskView) throw new ApprovalValidationError(`Task ${appId}/${taskId} was not found`);
   const task = taskView.resource;
   if (task.metadata.generation !== taskGeneration) {
-    throw new Error(`Task ${appId}/${taskId} generation changed`);
+    throw new ApprovalValidationError(`Task ${appId}/${taskId} generation changed`);
   }
   if (taskView.closed || !["pending", "running", "waiting", "attention"].includes(taskView.phase)) {
-    throw new Error(`Task ${appId}/${taskId} is not awaiting approval`);
+    throw new ApprovalValidationError(`Task ${appId}/${taskId} is not awaiting approval`);
   }
   if (!task.status.conditionIds?.includes(conditionId)) {
-    throw new Error(`Condition ${conditionId} is not current for Task ${appId}/${taskId}`);
+    throw new ApprovalValidationError(`Condition ${conditionId} is not current for Task ${appId}/${taskId}`);
   }
 
   const condition = store!.readTaskContext({ taskIds: [taskId] }, { includeHistory: false, childLimit: 0 })
     .conditions?.[conditionId];
-  if (!condition) throw new Error(`Condition ${conditionId} was not found`);
+  if (!condition) throw new ApprovalValidationError(`Condition ${conditionId} was not found`);
   if (
     condition.metadata.generation !== conditionGeneration ||
     condition.status.state === "true" ||
     condition.spec.type !== "project.approval.submitted" ||
     !isHumanActionOwner(condition.spec.owner)
   ) {
-    throw new Error(`Condition ${conditionId} is not the current human approval`);
+    throw new ApprovalValidationError(`Condition ${conditionId} is not the current human approval`);
   }
-  if (condition.spec.subject !== subject) throw new Error(`Condition ${conditionId} subject changed`);
+  if (condition.spec.subject !== subject) throw new ApprovalValidationError(`Condition ${conditionId} subject changed`);
   if (condition.spec.requestedAction?.trim() !== requestedAction) {
-    throw new Error(`Condition ${conditionId} requested action changed`);
+    throw new ApprovalValidationError(`Condition ${conditionId} requested action changed`);
   }
   if (!isDeepStrictEqual(condition.spec.expected, proposal.expected)) {
-    throw new Error(`Condition ${conditionId} expected contract changed`);
+    throw new ApprovalValidationError(`Condition ${conditionId} expected contract changed`);
   }
   for (const [field, value] of Object.entries(proposal)) {
     if (field in input.data && field !== "expected" && !isDeepStrictEqual(input.data[field], value)) {
-      throw new Error(`project.approval.submitted data.${field} conflicts with the proposal anchor`);
+      throw new ApprovalValidationError(`project.approval.submitted data.${field} conflicts with the proposal anchor`);
     }
   }
   if (proposal.expected && typeof proposal.expected === "object" && !Array.isArray(proposal.expected)) {
     for (const [field, value] of Object.entries(proposal.expected as Record<string, unknown>)) {
       if (field in input.data && !isDeepStrictEqual(input.data[field], value)) {
-        throw new Error(`project.approval.submitted data.${field} conflicts with the proposal anchor`);
+        throw new ApprovalValidationError(`project.approval.submitted data.${field} conflicts with the proposal anchor`);
       }
     }
   }
   const expected = proposal.expected;
   if (!expected || typeof expected !== "object" || Array.isArray(expected)) {
-    throw new Error(`Condition ${conditionId} expected contract must be an object`);
+    throw new ApprovalValidationError(`Condition ${conditionId} expected contract must be an object`);
   }
   const expectedRecord = expected as Record<string, unknown>;
   const allowed = [expectedRecord.anyOf, expectedRecord.allowedDecisions, expectedRecord.acceptedDecisions].filter(
@@ -98,7 +100,7 @@ export function validateCurrentApproval(input: EventInput, db: SqliteDb): void {
     !allowed.length ||
     !allowed.every((choices) => choices.some((candidate) => isDeepStrictEqual(candidate, input.data.decision)))
   ) {
-    throw new Error(`Decision is not allowed by Condition ${conditionId}`);
+    throw new ApprovalValidationError(`Decision is not allowed by Condition ${conditionId}`);
   }
 }
 
@@ -158,4 +160,50 @@ export function isHostVerifiedApproval(event: Record<string, unknown>): boolean 
       data,
     }) !== null
   );
+}
+
+/** Exact controls only. Understanding conditional or conversational text belongs to the App. */
+export function approvalDecision(text: unknown): "approve" | "reject" | "defer" | null {
+  if (typeof text !== "string") return null;
+  switch (text.trim().toLowerCase()) {
+    case "approve":
+    case "approved":
+      return "approve";
+    case "reject":
+    case "rejected":
+      return "reject";
+    case "defer":
+    case "deferred":
+      return "defer";
+    default:
+      return null;
+  }
+}
+
+/** Freeze the channel's explicit reply and authority, never a freshly fetched proposal. */
+export function stampConversationApproval(
+  input: EventInput,
+  source: string,
+  authorization?: ApprovalIngressAuthorization,
+): EventInput {
+  const data = { ...input.data };
+  if (!data.approvalReply) return { ...input, data };
+  const supplied = record(data.approvalReply, "approvalReply");
+  const reply = { target: supplied.target, proposal: supplied.proposal };
+  data.approvalReply = reply;
+  const author = data.author as Record<string, unknown> | undefined;
+  const decision = approvalDecision(data.text);
+  if (author?.kind !== "human" || !data.replyTo || !decision || !authorization) return { ...input, data };
+  const target = record(reply.target, "approvalReply.target");
+  const stamped = stampApproval(
+    {
+      type: "project.approval.submitted",
+      target: { appId: text(target.appId, "approvalReply App"), taskId: text(target.taskId, "approvalReply Task") },
+      data: { decision, proposal: reply.proposal },
+    },
+    source,
+    authorization,
+  );
+  data.approvalReply = { target: stamped.target, ...stamped.data };
+  return { ...input, data };
 }

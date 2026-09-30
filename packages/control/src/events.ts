@@ -29,6 +29,8 @@ export type EventReceipt = {
   eventType: string;
   delivery: "recorded" | "accepted";
   links?: EventLink[];
+  /** A decision receipt is distinct from Conversation admission and Task completion. */
+  approval?: { decision: string; eventId: number } | { reason: string };
 };
 
 /** Transport shape, not a stability guarantee for every diagnostic payload.
