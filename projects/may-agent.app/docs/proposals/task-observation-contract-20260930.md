@@ -1,7 +1,10 @@
 # Task observation: declare the interest, supply the detector
 
-**Status:** Proposal for review, September 30, 2026. No new Host or SDK API is
-implemented by this document. Source baseline: Host `de59c8dae9`; App workspace
+**Status:** Original proposal, followed by a nine-scenario POC and the
+[implementation candidate](task-observation-implementation-20260930.md).
+Use that record and the current App/SDK contracts for the implemented API and
+recovery limits; the sketches below preserve the earlier discussion.
+Source baseline: Host `de59c8dae9`; App workspace
 `2822eacf9d`. The proposed convenience API below is deliberately distinguished
 from the current SDK. The existing [App observer contract](../2a-design/agent-app.md#request-entrypoints-schedules-and-observers)
 and [Task Conditions](../2a-design/task-resource-engine.md#conditions) remain authoritative.

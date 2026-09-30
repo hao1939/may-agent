@@ -20,6 +20,25 @@ daily cadence was a bounded pilot and has been superseded for this installation.
 
 ## Boundary
 
+**Observer evidence (September 30 candidate, not activated):** Once a review
+is selected and admitted within its existing allowance, its workflow reads
+exact source Apps through public `apps.list {appId}` for unresolved observer
+Conditions. Up to 16 interests and four source Apps are inspected. Current
+observer run evidence and only the relevant resource checks accompany the
+review; missing capabilities, failed reads and incomplete coverage remain
+explicit. No private Host store access, new periodic task or repair lifecycle
+is added. An old Host lacking this readout leaves coverage unknown.
+
+These runtime samples are saved as `observerEvidence` in the immutable report,
+separately from the canonical Task snapshot/hash. Every quiet provider poll
+must not create a new Task evidence identity or consume another model review.
+The captured runtime sample has its own timestamp and is not certified by the
+Task freshness check. The evaluator checks run completion, resource success,
+delivery and Task handling as different facts. Repeated ineffective owner
+reviews or shared detector errors can justify a finding; the owner/May decides
+the repair. A saved failure or report does not prove that May acted on it.
+Evaluation remains independently supervised; it does not score itself.
+
 **Population extension (September 27 candidate):** [Systemic pattern review](systemic-pattern-review-20260927.md)
 adds bounded App-attempt aggregates and exact examples to this assessment path.
 Current recovery and a remaining systemic concern are independent findings. The

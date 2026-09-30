@@ -7,6 +7,9 @@ Task reconciliation. The shared bounded Task collection is exposed as
 agent. `TaskIntent.mode` is retired for new intent; the reconciler rejects it.
 The Host accepts the old `owner` spelling and retained mode data only at explicit
 compatibility boundaries.
+The resource-observer facade and installed contract/health reads are implemented
+in the [September 30 candidate](../proposals/task-observation-implementation-20260930.md);
+source checks do not establish deployment.
 
 `@may-agent/sdk` is the narrow boundary between an App and the Host. It
 describes meaning, inputs, results, facts, and desired work; it does not expose
@@ -103,18 +106,18 @@ The [event contract](events.md#resource-responsibility-and-reconciliation),
 [Conditions](task-resource-engine.md#conditions), and
 [input during execution](workflows.md#input-during-execution) own these mechanics.
 
-Apps can add a source through the existing `AppDefinition.observers` declaration:
-an `id`, `intervalMs` and bounded `run(context)` returning ordinary facts. An
+Apps can add a source through `AppDefinition.observers`: a resource detector
+from `defineObserver` returns data for existing Condition demand; the raw
+`run(context)` form returns facts for unsolicited source discovery. An
 authorized agent can implement, test and activate such an App change. There is
 no generic runtime `addWatcher` tool implied by this API. Prefer an installed
 source and [resource-carried ownership](agent-app.md#resource-ownership-by-convention)
 before writing another adapter. Waking remains a Host consequence of resource
 updates, independent of which adapter observed the fact.
 
-The [waiting refinement proposal](../proposals/task-observation-contract-20260930.md)
-separates the remaining observation-coverage and liveness gaps from these
-implemented mechanisms. A stored Condition alone is not proof that a healthy
-producer covers the requested source.
+The [implementation record](../proposals/task-observation-implementation-20260930.md)
+separates tested mechanics from remaining behavioral and deployment checks.
+A stored Condition alone is not proof that a healthy producer covers the source.
 
 The accepted [one-lifecycle contract](task-resource-engine.md#one-lifecycle-baseline)
 uses Task attempts for Conversation execution. Explicit accepted outcomes and
@@ -235,9 +238,16 @@ An App schedule contains exactly one of:
   optional catch-up; or
 - `event`, for a fact published by the Host scheduler.
 
-An observer receives only `ObserverContext` and returns facts for the Host to
-publish after a successful run. An action validates parameters and translates
-them to App input. Neither can run App work directly.
+Raw observers receive `ObserverContext` and return facts. Resource observers
+declared with `defineObserver` receive a resource and abort signal and return
+plain JSON data; the Host derives demand from existing Conditions and supplies
+delivery. `read.contract(appId)` exposes installed observation descriptors;
+`observationCondition(capability, interest)` constructs a Condition for normal
+result admission. Agent `tasks.contract` accepts the same interest under
+`observation` and returns the constructed `condition`. Neither read registers a
+wait. The [App contract](agent-app.md#task-driven-resource-observation) owns
+deadlines, health, failure handling and limits. An action validates parameters
+and translates them to App input. Neither observer form runs App work directly.
 
 ## Workflow contract
 

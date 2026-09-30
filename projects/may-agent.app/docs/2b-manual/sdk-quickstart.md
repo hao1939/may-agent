@@ -226,3 +226,29 @@ your own App. Keep the Host's bookkeeping and recovery in the existing Task path
 For long waits, use [fact-driven wake-up](../2a-design/sdk.md#wake-on-new-facts-and-offload-polling)
 so dependencies and observers carry status checking while the worker yields or
 continues useful independent work.
+
+For a new resource detector, start with the [checked observer example](../examples/observers.ts).
+The App implements `inspect(resource, {signal})`; the Host supplies the rest.
+An agent can discover the installed capability with `tasks.contract`, then
+build a Condition without knowing event fields:
+
+```json
+{
+  "action": "contract",
+  "target": { "appId": "builds" },
+  "observation": {
+    "observerId": "status",
+    "id": "build-result",
+    "resource": "acme/widget/42",
+    "expected": { "field": "state", "anyOf": ["passed", "failed", "cancelled"] }
+  }
+}
+```
+
+Return the reply's `condition` in the Task result's `conditions`. The contract
+read alone starts no wait. Workflow/executor code uses `read.contract(appId)`
+and SDK `observationCondition` for the same result. The `builds` App here is an
+example, not an installed provider. Install the matching Host/SDK before using
+the new declaration. For diagnosis, exact `apps.list {appId}` reads show recent
+resource inspection health; the Task's saved review deadline still provides a
+review opportunity if detection stops entirely.

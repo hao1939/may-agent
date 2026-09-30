@@ -9,6 +9,7 @@ import {
   mkdirSync,
   mkdtempSync,
   readFileSync,
+  rmSync,
   writeFileSync,
 } from "node:fs";
 import { EvidenceStore } from "../../../../../shared/tools/task-evidence.js";
@@ -211,6 +212,93 @@ function factsOf(
 }
 
 describe("Task outcome review", () => {
+  test("retains detector evidence in the report without making quiet polling stale Task evidence", async () => {
+    const root = mkdtempSync(join(tmpdir(), "task-review-observer-"));
+    let prompt = "";
+    let checkedAt = 100;
+    let observerReads = 0;
+    const base = reader(
+      () => ({ ...detail, status: "waiting" }),
+      () => ({
+        ...appTask,
+        conditions: [
+          {
+            id: "build",
+            type: "build.state",
+            subject: "resource:42",
+            expected: {
+              source: "app:builds:observer:status",
+              field: "state",
+              equals: "passed",
+            },
+            reviewAfterMs: 3_600_000,
+            observation: { state: "unknown" },
+          },
+        ],
+      }),
+    );
+    const command: PublicCommand = async (cmd) => {
+      if (cmd.type !== "apps.list" || cmd.appId !== "builds") return base(cmd);
+      observerReads++;
+      return {
+        command: "apps.list",
+        apps: [
+          {
+            id: "builds",
+            observations: [{ id: "status", type: "build.state" }],
+            observerHealth: [
+              {
+                id: "status",
+                available: true,
+                running: false,
+                lastCompletedAt: checkedAt,
+                resources: [
+                  { resource: "42", checkedAt, lastSuccessAt: checkedAt },
+                ],
+              },
+            ],
+          },
+        ],
+      };
+    };
+    const ctx = createTestAppWorkflowContext({
+      input: { appId, taskId, assessmentPurpose: "ongoing" },
+      callAgent: async (_agent, value) => {
+        prompt = String(value);
+        checkedAt = 200; // A healthy check while the reviewer works is not a Task change.
+        return {
+          id: "s_judge",
+          kind: "agent",
+          status: "done",
+          summary: "fixture",
+          output: judgment,
+        };
+      },
+    });
+    try {
+      const result = await reviewTaskOutcome(ctx, command, root);
+      const path = factsOf(result)
+        .find((fact) => fact.startsWith("report-facts:"))!
+        .slice(13);
+      const payload = JSON.parse(readFileSync(join(root, path), "utf8"));
+      expect(prompt).toContain("Supplementary observer evidence");
+      expect(prompt).toContain('"lastSuccessAt":100');
+      expect(payload.observerEvidence.items[0]).toMatchObject({
+        conditionId: "build",
+        available: true,
+        resource: { resource: "42", lastSuccessAt: 100 },
+      });
+      expect(payload.evidence).not.toHaveProperty("observerEvidence");
+      expect(payload.freshness.status).toBe("current");
+      const repeated = await reviewTaskOutcome(ctx, command, root);
+      expect(
+        factsOf(repeated).find((fact) => fact.startsWith("report-facts:")),
+      ).toBe(`report-facts:${path}`);
+      expect(observerReads).toBe(1); // Reuse the staged report; no new polling or assessment.
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
   test("publishes process separately from a valid wait and freshness binds inspected tool bytes", async () => {
     const root = mkdtempSync(join(tmpdir(), "task-review-process-"));
     let toolOutput =
