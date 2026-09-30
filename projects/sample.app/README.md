@@ -57,6 +57,8 @@ The [common boundary](../may-agent.app/docs/2a-design/system-boundary.md) owns
 those guarantees; this example demonstrates them without redefining them.
 Use the [reusable App review method](../may-agent.app/docs/2b-manual/workflow-authoring.md#reusing-an-app-review)
 to retain findings that can guide later reviews of this or another App.
+The [first live review](reviews/2026-09-30.md) records what worked, the evidence
+handoff failure, its correction, and the limits of that trial.
 
 Preserve failed trials and assisted steps. Compare the intended contract with
 public Task reads and execution evidence. Fix the owning implementation or
