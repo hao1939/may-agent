@@ -1,7 +1,8 @@
 import { isDeepStrictEqual } from "node:util";
 import { readVerifiedApprovalDecision, type EventInput } from "@may-agent/control/events";
 import type { SqliteDb } from "../../../lib/db.js";
-import type { AppTaskCondition, AppTaskResource } from "../tasks/app-task-state.js";
+import type { AppTaskCondition } from "../tasks/app-task-state.js";
+import { AppTaskResourceStore } from "../state/app-task-resource-store.js";
 import { isHumanActionOwner } from "../tasks/human-condition.js";
 
 export const HOST_APPROVAL_VERSION = 1;
@@ -41,15 +42,13 @@ export function validateCurrentApproval(input: EventInput, db: SqliteDb): void {
   const subject = text(proposal.subject, "project.approval.submitted data.proposal.subject");
   if (!("expected" in proposal)) throw new Error("project.approval.submitted data.proposal.expected is required");
 
-  const taskRow = db
-    .prepare("SELECT resource_json FROM app_tasks WHERE app_id = ? AND task_id = ?")
-    .get(appId, taskId) as { resource_json?: unknown } | undefined;
-  if (typeof taskRow?.resource_json !== "string") throw new Error(`Task ${appId}/${taskId} was not found`);
-  const task = JSON.parse(taskRow.resource_json) as AppTaskResource;
+  const taskView = AppTaskResourceStore.fromDb(db, appId).readTaskForView(taskId);
+  if (!taskView) throw new Error(`Task ${appId}/${taskId} was not found`);
+  const task = taskView.resource;
   if (task.metadata.generation !== taskGeneration) {
     throw new Error(`Task ${appId}/${taskId} generation changed`);
   }
-  if (!["pending", "running", "waiting", "attention"].includes(task.status.phase)) {
+  if (taskView.closed || !["pending", "running", "waiting", "attention"].includes(taskView.phase)) {
     throw new Error(`Task ${appId}/${taskId} is not awaiting approval`);
   }
   if (!task.status.conditionIds?.includes(conditionId)) {

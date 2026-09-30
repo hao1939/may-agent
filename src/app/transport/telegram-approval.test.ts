@@ -33,6 +33,7 @@ function proposal(letter: string, revision: number): HumanTaskView {
         {
           id: `approval-${letter}`,
           condition: {
+            metadata: { id: `approval-${letter}`, generation: 1, resourceVersion: 1 },
             spec: {
               type: "project.approval.submitted",
               subject: `id:proposal-${letter}`,

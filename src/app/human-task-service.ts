@@ -35,7 +35,6 @@ export type HumanTaskStatus =
   "pending" | "running" | "waiting" | "attention" | "up-to-date" | "done" | "closed" | "cancelled";
 
 export { isHumanActionOwner } from "./core/tasks/human-condition.js";
-import { isHumanActionOwner } from "./core/tasks/human-condition.js";
 
 export type HumanTaskProgress = {
   stage: string;

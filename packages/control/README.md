@@ -24,6 +24,21 @@ observe the work's result. Reuse an idempotency key only for the same input.
 Reads of unknown event IDs fail. `waitForSocketEvent()` subscribes and waits
 for one matching notification; after reconnecting, read durable state again.
 
+Formal `project.approval.submitted` publication is a privileged Host operation,
+not an ordinary self-asserted fact. Telegram and the local operator socket both
+submit the exact current Task, generation, Condition generation, displayed
+action, expected proposal, decision, actor, and authorization evidence. The
+Host validates that anchor against current Task state, stamps `hostApproval`,
+and journals the event; App emitters cannot manufacture the stamp. Exact replay
+is idempotent, while stale, changed, or differently scoped proposals are
+rejected. The operator socket is an installation trust boundary, not an OS
+sandbox against code that already has arbitrary shell access.
+
+Apps can import `readVerifiedApprovalDecision` from `@may-agent/sdk` to read the
+common stamp without maintaining a Telegram/operator source allowlist. The App
+still owns domain checks such as packet hashes and approved application scope.
+Rejection and deferral are durable decisions but do not authorize application.
+
 The project comment box uses this ordinary App-input route with `kind: "message"`.
 The selected App must accept that input and declare a Task or Conversation
 handler. A matching schema or comment-event subscription alone is insufficient.
