@@ -106,6 +106,7 @@ test("offline cutover drains frozen supervisor admission, closes its owner, and 
                 {
                   id: "measurement",
                   expectedRevision: 1,
+                  inputIds: outcomes.map(({ id }) => id),
                   scope: "Measure the sample",
                   disposition: "fulfilled",
                   reason: "The measured value is 17",

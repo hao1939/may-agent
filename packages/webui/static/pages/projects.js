@@ -60,12 +60,37 @@ async function loadAgentsTab() {
   }
 }
 
+function renderInstalledApps(result) {
+  let html = '<section id="installed-apps" class="health-section"><h2>Loaded Apps</h2><p class="health-note">Apps loaded in this Host. A loaded App can be idle; Task counts show current activity.</p>';
+  if (result.status === 'rejected') {
+    return html + `<p role="alert">Loaded Apps unavailable: ${esc(result.reason.message)}</p></section>`;
+  }
+  const apps = result.value;
+  if (!apps.length) return html + '<p>No Apps loaded.</p></section>';
+  html += '<div class="health-scroll"><table class="health-table"><thead><tr><th>App</th><th>Owner</th><th>Running Tasks</th><th>Waiting Tasks</th><th>Needs review</th></tr></thead><tbody>';
+  for (const app of apps) {
+    html += `<tr data-app-id="${attrEsc(app.id)}">` +
+      `<td><strong>${esc(app.id)}</strong>${app.description ? `<div class="health-note">${esc(app.description)}</div>` : ''}</td>` +
+      `<td>${esc(app.owner)}</td><td>${esc(app.runningTasks)}</td><td>${esc(app.waitingTasks)}</td><td>${esc(app.attentionTasks)}</td></tr>`;
+  }
+  return html + '</tbody></table></div></section>';
+}
+
 async function loadProjects() {
   const loadVersion = ++projectLoadVersion;
   try {
-    const res = await fetch('/api/projects');
-    const projects = await res.json();
+    const readCatalog = async (path) => {
+      const res = await fetch(path);
+      const body = await res.json();
+      if (!res.ok) throw new Error(body.error || `HTTP ${res.status}`);
+      if (!Array.isArray(body)) throw new Error('Invalid catalog response');
+      return body;
+    };
+    const [projectResult, appResult] = await Promise.allSettled([
+      readCatalog('/api/projects'), readCatalog('/api/apps'),
+    ]);
     if (loadVersion !== projectLoadVersion) return;
+    const projects = projectResult.status === 'fulfilled' ? projectResult.value : [];
     const el = document.getElementById('projects-content');
 
     // Sort: active first, then by updatedAt desc
@@ -79,10 +104,13 @@ async function loadProjects() {
     const showHidden = document.getElementById('show-hidden-toggle')?.checked ?? false;
     const visible = showHidden ? projects : projects.filter(p => !HIDDEN_STATUSES.has(p.status));
 
-    let html = `<div style="margin-bottom:12px;display:flex;align-items:center;gap:8px"><label style="font-size:12px;color:var(--fg2);cursor:pointer"><input type="checkbox" id="show-hidden-toggle" onchange="loadProjects()" ${showHidden ? 'checked' : ''}> Show closed (${hiddenCount} done / complete / closed)</label></div>`;
-    html += `<table style="width:100%;border-collapse:collapse;font-size:13px">`;
+    let html = '<div class="health-actions"><button onclick="loadProjects()">Refresh</button></div>' + renderInstalledApps(appResult);
+    html += '<h2>Saved projects</h2><p class="health-note">Saved project status describes project intent. It does not indicate whether an App is loaded or running.</p>';
+    if (projectResult.status === 'rejected') html += `<p role="alert">Saved projects unavailable: ${esc(projectResult.reason.message)}</p>`;
+    html += `<div style="margin-bottom:12px;display:flex;align-items:center;gap:8px"><label style="font-size:12px;color:var(--fg2);cursor:pointer"><input type="checkbox" id="show-hidden-toggle" onchange="loadProjects()" ${showHidden ? 'checked' : ''}> Show closed (${hiddenCount} done / complete / closed)</label></div>`;
+    html += `<table id="saved-projects" style="width:100%;border-collapse:collapse;font-size:13px">`;
     html += `<tr style="border-bottom:2px solid var(--border);text-align:left">`;
-    html += `<th style="padding:8px">Project</th><th>Owner</th><th>Status</th><th>Health</th><th>Milestones</th><th>Metrics</th><th>Iter</th><th>Updated</th>`;
+    html += `<th style="padding:8px">Project</th><th>Owner</th><th>Saved project status</th><th>Health</th><th>Milestones</th><th>Metrics</th><th>Iter</th><th>Updated</th>`;
     html += `</tr>`;
 
     for (const p of visible) {
@@ -168,7 +196,7 @@ async function showProjectDetail(path, initialTab) {
   // Title row.
   html += `<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">`;
   html += `<h2 style="margin:0;font-size:18px">${esc(detail.name)}</h2>`;
-  html += `<span style="color:${statusColor};font-size:11px;text-transform:uppercase;font-weight:600;letter-spacing:0.05em;background:var(--bg);padding:2px 8px;border:1px solid ${statusColor};border-radius:10px">${esc(detail.status || 'unknown')}</span>`;
+  html += `<span style="color:${statusColor};font-size:11px;text-transform:uppercase;font-weight:600;letter-spacing:0.05em;background:var(--bg);padding:2px 8px;border:1px solid ${statusColor};border-radius:10px">Saved project status: ${esc(detail.status || 'unknown')}</span>`;
   if (detail.priority) html += `<span style="color:var(--fg2);font-size:11px;background:var(--bg);padding:2px 7px;border-radius:10px">${esc(detail.priority)}</span>`;
   if (detail.workflow) html += `<span style="color:var(--fg2);font-size:11px;background:var(--bg);padding:2px 7px;border-radius:10px">workflow: ${esc(detail.workflow)}</span>`;
   html += `</div>`;

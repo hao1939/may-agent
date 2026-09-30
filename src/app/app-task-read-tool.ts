@@ -10,6 +10,7 @@ import type {
   TaskView,
 } from "@may-agent/sdk";
 import type { EventBus } from "./core/events/bus.js";
+import { observationCondition, type ObservationInterest } from "@may-agent/sdk";
 
 const parameters = Type.Object(
   {
@@ -57,6 +58,21 @@ const parameters = Type.Object(
           "For get: original input events by exact keys from currentObligations.inputWaits. Reading does not settle input.",
       }),
     ),
+    observation: Type.Optional(
+      Type.Object(
+        {
+          observerId: Type.String({ minLength: 1 }),
+          id: Type.String({ minLength: 1 }),
+          resource: Type.String({ minLength: 1 }),
+          expected: Type.Record(Type.String(), Type.Unknown()),
+          reviewAfterMs: Type.Optional(Type.Integer({ minimum: 60_000 })),
+        },
+        {
+          additionalProperties: false,
+          description: "With contract: build a Condition to return in your Task result. Does not start a wait.",
+        },
+      ),
+    ),
     acceptedEvidence: Type.Optional(
       Type.Object(
         {
@@ -75,6 +91,7 @@ const parameters = Type.Object(
 );
 
 type Params = {
+  observation?: ObservationInterest;
   action: "list" | "outcomes" | "get" | "contract" | "publish" | "update";
   expectedGeneration?: number;
   input?: AppInput;
@@ -131,7 +148,7 @@ export function createAppTaskReadTool(options: {
     name: "tasks",
     label: "Tasks",
     description:
-      "List or get Tasks, read an App input contract, publish facts, or update an assignment you created. contract returns the full installed input schema for target.appId (default: current App), including constraints omitted by the compact Installed Apps catalog; no taskId is needed. Before reusing or revising work, read the exact Task and compare outcome, acceptance, input and execution method; a matching topic alone is insufficient. For update, supply the observed expectedGeneration and complete revised input, preserving required references. Code checks creator authority, saves requirements and wakes the worker. Return proposed changes to your own assignment to its creator. target.appId selects another responsible App; the operation is the same.",
+      "List or get Tasks, read an App input contract, publish facts, or update an assignment you created. contract returns the full installed input schema and observation capabilities for target.appId (default: current App). Supply observation {observerId,id,resource,expected,reviewAfterMs?} to build a Condition; return it in your Task result to retain the interest. No registration or taskId is needed. Exact apps.list reads expose live observer health; last changed fact is not a heartbeat. Before reusing or revising work, read the exact Task and compare outcome, acceptance, input and execution method; a matching topic alone is insufficient. For update, supply the observed expectedGeneration and complete revised input, preserving required references. Code checks creator authority, saves requirements and wakes the worker. Return proposed changes to your own assignment to its creator. target.appId selects another responsible App; the operation is the same.",
     parameters,
     execute: async (_toolCallId: string, raw: unknown): Promise<AgentToolResult<undefined>> => {
       const params = raw as Params;
@@ -140,12 +157,15 @@ export function createAppTaskReadTool(options: {
       if (!appId) return result({ error: "No current App Task scope" });
       try {
         if (params.action === "contract") {
-          return result(
-            (await import("./core/tasks/app-task-runtime.js")).getLoadedAppInputContract({
-              bus: options.bus,
-              appId: params.target?.appId?.trim() || appId,
-            }),
-          );
+          const contract = (await import("./core/tasks/app-task-runtime.js")).getLoadedAppInputContract({
+            bus: options.bus,
+            appId: params.target?.appId?.trim() || appId,
+          });
+          if (!params.observation) return result(contract);
+          const capability = contract.observations.find((item) => item.id === params.observation!.observerId);
+          if (!capability)
+            throw new Error(`App ${contract.appId} has no installed observer ${params.observation.observerId}`);
+          return result({ ...contract, condition: observationCondition(capability, params.observation) });
         }
         if (params.action === "update") {
           if (!scope?.taskId || !scope.generation || !scope.attemptId)

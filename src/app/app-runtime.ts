@@ -211,7 +211,11 @@ export async function runAppRuntime(opts: {
     type: "info",
     message: `[apps] Active source ${activeAppSource.sourceCommit ?? activeAppSource.id}`,
   });
-  const humanTasks = new HumanTaskService(getDb(opts.persistDir), appRegistry);
+  const humanTasks = new HumanTaskService(
+    getDb(opts.persistDir),
+    appRegistry,
+    (appId) => appInboxRuntime?.observerHealth(appId) ?? [],
+  );
 
   attachDaemonEventSubscribers({
     bus,
@@ -342,6 +346,7 @@ export async function runAppRuntime(opts: {
         bus.emit({ type: "info", message: `[app:${appId}:observer:${level}] ${message}` });
       return {
         read: createRuntimeAppRead({
+          readContract: async (targetAppId) => appTasks.contract(targetAppId),
           getDb: () => getDb(opts.persistDir),
           readMetric: opts.reporting?.readMetric,
           taskRead: {

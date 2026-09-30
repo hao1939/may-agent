@@ -248,6 +248,18 @@ CREATE TABLE IF NOT EXISTS conversation_requests (
 CREATE INDEX IF NOT EXISTS idx_conversation_requests_open
   ON conversation_requests(app_id, conversation_id, status, updated_at);
 
+CREATE TABLE IF NOT EXISTS conversation_request_inputs (
+  app_id TEXT NOT NULL,
+  conversation_id TEXT NOT NULL,
+  input_id TEXT NOT NULL,
+  request_id TEXT NOT NULL,
+  PRIMARY KEY(app_id, conversation_id, input_id, request_id),
+  FOREIGN KEY(app_id, conversation_id, request_id)
+    REFERENCES conversation_requests(app_id, conversation_id, id) ON DELETE CASCADE
+);
+CREATE INDEX IF NOT EXISTS idx_conversation_request_inputs_request
+  ON conversation_request_inputs(app_id, conversation_id, request_id, input_id);
+
 CREATE TABLE IF NOT EXISTS conversation_topics (
   id                TEXT PRIMARY KEY,
   app_id            TEXT NOT NULL,

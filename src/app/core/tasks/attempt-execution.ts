@@ -10,6 +10,7 @@ import { appDependencyCatalog } from "../../app-dependency-catalog.js";
 import type { EventEnvelope } from "../events/bus.js";
 import { EVENT_ROW_ID, eventData, type AgentEvent } from "../events/bus.js";
 import { createRuntimeAppRead, readRuntimeTaskView } from "../reads/app-read.js";
+import { readInstalledAppContract } from "../reads/app-contract.js";
 import {
   readAppTaskLiveEvent,
   readAppTaskReconciliationEvents,
@@ -153,6 +154,7 @@ function runtimeTaskAttempt(input: TaskAttemptInput): RuntimeTaskAttempt {
     },
     task: structuredClone(task),
     read: {
+      contract: async (appId) => readInstalledAppContract(configuredRegistryEntries(opts), appId),
       tasks: createRuntimeAppRead({
         getDb: () => descriptor.resourceStore.db,
         taskStateConfig: appTaskConfig(descriptor),

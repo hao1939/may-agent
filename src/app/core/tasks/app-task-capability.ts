@@ -17,6 +17,7 @@ import {
   admitLoadedConversationInput,
   admitLoadedConversationChange,
   attachLoadedAppTask,
+  getLoadedAppInputContract,
   cancelLoadedAppTask,
   closeInstalledAppTaskRuntimes,
   closeLoadedAppTask,
@@ -40,6 +41,7 @@ import type { AppTaskRuntimeOptions } from "./runtime-options.js";
 export type AppTaskGenerationResult = { apps: number };
 
 export type AppTaskCapability = {
+  contract(appId: string): ReturnType<typeof getLoadedAppInputContract>;
   close(): Promise<void>;
   admitConversation(
     item: Parameters<typeof admitLoadedConversationInput>[0]["item"],
@@ -118,6 +120,7 @@ export function createAppTaskCapability(options: {
   runtime?: AppTaskRuntimeOptions;
 }): AppTaskCapability {
   return {
+    contract: (appId) => getLoadedAppInputContract({ bus: options.bus, appId }),
     close: async () => {
       await closeInstalledAppTaskRuntimes(options.bus);
     },

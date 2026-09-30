@@ -1,6 +1,7 @@
 import type { TaskExecutionContext } from "../../lib/task-execution-context.js";
 import {
   Type,
+  conversationRequestUpdatesSchema,
   type ConversationTurnResult,
   type AppDefinition,
   type AppInputContext,
@@ -25,13 +26,10 @@ function conversationRequestTool(execution: Parameters<AppInputResolver>[0]["exe
     name: "conversation_request",
     label: "Update Request",
     description:
-      "Save an accepted ask or authorized correction before work. Use the same id and observed revision, or revision 0 for a new ask. Returns the saved open Request and new revision; use that revision in final requestUpdates and omit unchanged scope. Reopens a closed ask. Skip when saved requirements already fit or a simple ask can be answered directly. Saved corrections survive failure or Stop. Scoped to this Conversation; does not start, cancel or close work.",
-    parameters: Type.Object(
-      {
-        id: Type.String({ minLength: 1, maxLength: 200 }),
-        expectedRevision: Type.Integer({ minimum: 0, maximum: Number.MAX_SAFE_INTEGER - 1 }),
-        scope: Type.String({ minLength: 1, maxLength: 2000 }),
-      },
+      "Save an accepted Request or associate current inputs before working on it. Use the existing id and observed revision; omit scope when its requirements are unchanged. A new Request needs revision 0 and its complete scope. Include inputIds in a mixed batch. Returns the saved open Request and new revision for final requestUpdates. Reopens a closed Request. Requirements and associations survive failure or Stop; final result effects may be deferred by new input. Scoped to this Conversation; does not start, cancel or close work.",
+    parameters: Type.Pick(
+      conversationRequestUpdatesSchema.items,
+      ["id", "expectedRevision", "scope", "inputIds"],
       { additionalProperties: false },
     ),
     execute: async (operationId, raw) => {
@@ -91,7 +89,9 @@ function conversationInputPrompt(
   return [
     `Consider the admitted inputs for App ${app.id} together, in order, using its Conversation result contract.`,
     "The inputs are the whole current batch. replyTo identifies the response destination; every input still needs consideration.",
-    "Preserve independent asks while applying corrections to the same ask. Save accepted unfinished asks with conversation_request before work; use requestUpdates for their final disposition. Context-only updates can be considered without creating a Request.",
+    "The App owns Request recognition, input grouping, scope and fulfillment. Several inputs can belong to one Request; several Requests can share this turn.",
+    "Use conversation_request before working on an accepted Request to preserve its requirements and current input associations, even when scope is unchanged. assignedRequests contains full current requirements for this turn. Every assigned Request and every Request saved during the turn needs a final requestUpdates entry with its own reason. An open disposition must explain what remains; a reply about another Request does not supply that explanation.",
+    "previousAttempt.unacceptedResult is a proposal that was not applied. Reconsider it against current requirements and evidence; do not assume its closure or handoff happened and do not blindly replay effects.",
     "## Input and context",
     "```json",
     JSON.stringify({ inputs: inputs ?? [{ id, source, input }], replyTo: { id, source }, ...context }, null, 2),

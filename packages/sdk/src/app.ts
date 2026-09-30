@@ -1,5 +1,8 @@
 import { Type, type Static, type TSchema } from "typebox";
 import { appInputSchema } from "./app-input.js";
+import type { ResourceObserver, ObservationContract } from "./observer.js";
+export { defineObserver, observationCondition } from "./observer.js";
+export type { ResourceObserver, ObservationContract, ObservationInterest, ObserverHealth } from "./observer.js";
 import type { AppEvent, EventSelector } from "./event.js";
 import type { Condition, TaskAction, TaskIntent } from "./task.js";
 import type { MetricDefinition, ObserverContext, ObserverSnapshot, TaskAttempt, TaskDetail } from "./workflow.js";
@@ -173,18 +176,32 @@ export type AppConversationRequest = {
 export type AppConversationRequestUpdate = {
   id: string;
   expectedRevision: number;
+  /** Inputs establishing or refining this intention. Required for an unlinked Request in a mixed batch. */
+  inputIds?: string[];
   /** Required for a new ask. Omit to retain an existing Request's exact scope. */
   scope?: string;
   disposition: "open" | "fulfilled" | "withdrawn" | "unfulfilled";
+  /** Required in a final turn decision; an open disposition explains continuing work or the remaining gap and wait. */
   reason?: string;
   /** Add relevant Task references; omitted/empty lists retain earlier references. At most 32 distinct references. */
   taskRefs?: Array<{ appId: string; taskId: string }>;
 };
 
+export const MAX_CONVERSATION_REQUESTS_PER_TURN = 8;
+
 export const conversationRequestUpdatesSchema = Type.Array(
   Type.Object(
     {
       id: Type.String({ minLength: 1, maxLength: 200 }),
+      inputIds: Type.Optional(
+        Type.Array(Type.String({ minLength: 1 }), {
+          minItems: 1,
+          maxItems: 96,
+          uniqueItems: true,
+          description:
+            "Current input IDs establishing or refining this same intention. Several inputs may belong to one Request. Omit for a single input or to retain this turn's existing Request associations; choose explicitly for a new Request in a mixed batch.",
+        }),
+      ),
       expectedRevision: Type.Integer({
         minimum: 0,
         maximum: Number.MAX_SAFE_INTEGER - 1,
@@ -205,7 +222,15 @@ export const conversationRequestUpdatesSchema = Type.Array(
         Type.Literal("withdrawn"),
         Type.Literal("unfulfilled"),
       ]),
-      reason: Type.Optional(Type.String({ minLength: 1, maxLength: 2000 })),
+      reason: Type.Optional(
+        Type.String({
+          minLength: 1,
+          maxLength: 2000,
+          pattern: "\\S",
+          description:
+            "Required for each final requestUpdates entry. Explain fulfillment, withdrawal, an unfulfilled outcome, or the continuing work or remaining gap and wait that keeps this Request open. A reply about another Request is not its explanation.",
+        }),
+      ),
       taskRefs: Type.Optional(
         Type.Array(
           Type.Object(
@@ -223,7 +248,7 @@ export const conversationRequestUpdatesSchema = Type.Array(
     { additionalProperties: false },
   ),
   {
-    maxItems: 8,
+    maxItems: MAX_CONVERSATION_REQUESTS_PER_TURN,
     description:
       "Accept, revise, link or close asks. A simple ask may be accepted and fulfilled in one answer. After saving a correction with conversation_request, retain its revision and omit unchanged scope. Read omitted/truncated Requests before changing them. Close only with an explained fulfillment, withdrawal or unfulfilled disposition; admitting or completing a Task alone is not Request closure.",
   },
@@ -240,6 +265,10 @@ export type AppInputContext<TData = unknown> = {
   input: AppInput<TData>;
   /** Ordered inputs considered together in this Turn; Request updates decide which asks are resolved. */
   inputs?: ReadonlyArray<AppTaskInput>;
+  /** Accepted intentions assigned through the current inputs; each needs an explicit final requestUpdate. */
+  assignedRequests?: Array<
+    Pick<AppConversationRequest, "id" | "revision" | "scope" | "status"> & { inputIds: string[] }
+  >;
   /** Facts from this Conversation Task's earlier attempt, including an interrupted or failed Turn. */
   previousAttempt?: TaskAttempt["previousAttempt"];
   dependency?: AppDependencyObservation;
@@ -316,7 +345,13 @@ const nonEmptyStringSchema = Type.String({ minLength: 1 });
 export const conversationTurnResultSchema = Type.Object(
   {
     summary: nonEmptyStringSchema,
-    requestUpdates: Type.Optional(conversationRequestUpdatesSchema),
+    requestUpdates: Type.Optional({
+      ...conversationRequestUpdatesSchema,
+      items: {
+        ...conversationRequestUpdatesSchema.items,
+        required: [...conversationRequestUpdatesSchema.items.required!, "reason"],
+      },
+    }),
     response: Type.Optional(
       Type.String({
         minLength: 1,
@@ -449,6 +484,12 @@ export type AppObserver = {
   run(context: ObserverContext): Promise<AppEvent[] | AppObserverResult>;
 };
 
+export type AppContract = {
+  appId: string;
+  inputSchema: TSchema;
+  observations: ObservationContract[];
+};
+
 export type AppAction<TInputSchema extends TSchema = TSchema> = {
   description: string;
   inputSchema: TInputSchema;
@@ -497,7 +538,7 @@ type AppDefinitionBase<TInputSchema extends TSchema> = {
    */
   observations?: EventSelector[];
   schedules?: AppSchedule[];
-  observers?: AppObserver[];
+  observers?: Array<AppObserver | ResourceObserver>;
   /**
    * App-owned metric definitions. Runtime measures declared sources on the
    * shared Host cadence.

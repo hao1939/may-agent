@@ -9,7 +9,7 @@ import type { SqliteDb } from "../../../lib/db.js";
 import { stateTransaction } from "../../../lib/db/transaction.js";
 
 export class ConversationRequestConflict extends Error {}
-export type ConversationRequestChange = { id: string; expectedRevision: number; scope: string };
+export type ConversationRequestChange = Pick<AppConversationRequestUpdate, "id" | "expectedRevision" | "scope" | "inputIds">;
 type Row = {
   id: string;
   revision: number;
@@ -42,6 +42,48 @@ export function readConversationRequest(
     .get(appId, conversationId, id) as Row | undefined;
   return row ? view(row) : null;
 }
+
+/** Exact associations, independent of Topic selection or the recent-context window. */
+export function listConversationInputRequests(
+  db: SqliteDb,
+  appId: string,
+  conversationId: string,
+  inputIds: readonly string[],
+): Array<AppConversationRequest & { inputIds: string[] }> {
+  if (!inputIds.length) return [];
+  const rows = db.prepare(`SELECT request.*, linked.input_id
+    FROM conversation_request_inputs linked
+    JOIN conversation_requests request ON request.app_id = linked.app_id
+      AND request.conversation_id = linked.conversation_id AND request.id = linked.request_id
+    WHERE linked.app_id = ? AND linked.conversation_id = ?
+      AND linked.input_id IN (${inputIds.map(() => "?").join(",")})
+    ORDER BY request.id, linked.input_id`).all(appId, conversationId, ...inputIds) as Array<Row & { input_id: string }>;
+  const requests = new Map<string, AppConversationRequest & { inputIds: string[] }>();
+  for (const row of rows) {
+    const request = requests.get(row.id) ?? { ...view(row), inputIds: [] };
+    request.inputIds.push(row.input_id);
+    requests.set(row.id, request);
+  }
+  return [...requests.values()];
+}
+
+/** The caller supplies only inputs in its current, fenced Conversation claim. */
+export function linkConversationRequestInputs(
+  db: SqliteDb,
+  appId: string,
+  conversationId: string,
+  requestId: string,
+  inputIds: readonly string[],
+): void {
+  for (const inputId of inputIds) {
+    db.run(
+      `INSERT OR IGNORE INTO conversation_request_inputs (app_id, conversation_id, input_id, request_id)
+       VALUES (?, ?, ?, ?)`,
+      [appId, conversationId, inputId, requestId],
+    );
+  }
+}
+
 export function listConversationRequests(
   db: SqliteDb,
   appId: string,

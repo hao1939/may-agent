@@ -5,6 +5,27 @@ import { assertValidAppInput, validateAppDefinition } from "./definition-validat
 const inputSchema = Type.Object({ kind: Type.String(), data: Type.Unknown() });
 
 describe("App input validation", () => {
+  it("validates resource detectors at the installed App boundary", () => {
+    const detector = {
+      id: "build",
+      type: "build.state",
+      description: "Read builds",
+      intervalMs: 60_000,
+      timeoutMs: 1000,
+      inspect: async () => ({ state: "running" }),
+    };
+    const app = defineApp({ id: "builds", version: 1, agent: "worker", inputSchema, observers: [detector] });
+    expect(validateAppDefinition(app)).toEqual([]);
+    for (const change of [
+      { timeoutMs: Infinity },
+      { timeoutMs: 0 },
+      { type: "" },
+      { description: "" },
+      { run: async () => [] },
+    ]) {
+      expect(validateAppDefinition({ ...app, observers: [{ ...detector, ...change }] }).length).toBeGreaterThan(0);
+    }
+  });
   const definition = defineApp({
     id: "research",
     version: 1,

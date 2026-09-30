@@ -3671,6 +3671,15 @@ function recordPendingAppTaskResult(
   consumeAcceptedLiveTaskEvents(tree, claim.taskId, claim.agent, input.acceptedLiveEventIds);
   finishAttempt(tree, resource, input.reason ? "failed" : "completed", input.summary, new Date().toISOString());
   if (input.reason) attempt.failureReason = input.reason;
+  attempt.unacceptedResult = {
+    attemptId: claim.attemptId,
+    sessionId: attempt.sessionId,
+    settlementError: "Newer Task input must be considered; this proposed result and its effects were not accepted",
+    summary: input.summary,
+    response: input.response,
+    result: input.result ? structuredClone(input.result) : undefined,
+    facts: [...(input.facts ?? [])],
+  };
   touchResource(resource, {
     phase: "pending",
     observedGeneration: claim.generation,

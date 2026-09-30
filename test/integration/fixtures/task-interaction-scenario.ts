@@ -425,7 +425,8 @@ async function delegation(nested = false, contendAdmission = false) {
               response: "I will measure it and bring back the result.",
               topic: { kind: "new", title: "Measurement" },
               requestUpdates: [
-                { id: "measurement", expectedRevision: 0, scope: "Get the sample measurement", disposition: "open" },
+                { id: "measurement", expectedRevision: 0, scope: "Get the sample measurement", disposition: "open",
+                  reason: "Delegating the measurement and waiting for its result" },
               ],
               followUp: {
                 appId: "sample",
