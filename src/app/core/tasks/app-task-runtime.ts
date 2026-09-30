@@ -22,6 +22,7 @@ import { stateTransaction } from "../../../lib/db/transaction.js";
 import { canonicalAppEvent } from "../../canonical-app-event.js";
 import { EVENT_ROW_ID, eventData, type AgentEvent, type DeliveryResult, type EventBus } from "../events/bus.js";
 import { createRuntimeTaskRead, readRuntimeTaskView } from "../reads/app-read.js";
+import { readInstalledAppContract } from "../reads/app-contract.js";
 import type { AppTurnTarget, CreateAppInboxItem } from "../state/app-inbox-store.js";
 import { getAppInboxItem } from "../state/app-inbox-store.js";
 import { AppTaskResourceStore } from "../state/app-task-resource-store.js";
@@ -926,11 +927,8 @@ export function readLoadedAppTaskView(input: { bus: EventBus; appDir: string; ta
 
 /** Read the same installed contract used by dependency admission, without projecting away constraints. */
 export function getLoadedAppInputContract(input: { bus: EventBus; appId: string }) {
-  const appId = input.appId.trim().replace(/\.app$/, "");
   const opts = appRouterOptionsByBus.get(input.bus);
-  const app = opts && configuredRegistryEntries(opts).find(({ definition }) => definition.id === appId)?.definition;
-  if (!app?.task || !app.tasks) throw new Error(`App ${appId} has no installed Task input contract`);
-  return { appId, inputSchema: structuredClone(app.inputSchema) };
+  return readInstalledAppContract(opts ? configuredRegistryEntries(opts) : [], input.appId);
 }
 
 export function listLoadedAppTaskViews(input: { bus: EventBus; appId: string; options?: TaskListOptions }): TaskPage {

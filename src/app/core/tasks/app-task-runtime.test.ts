@@ -367,13 +367,48 @@ describe("caller feedback PoC", () => {
     const result = await tool.execute("contract", { action: "contract", target: { appId: "reviewer.app" } });
     const content = result.content[0];
     if (content?.type !== "text") throw new Error("Expected contract text");
-    expect(JSON.parse(content.text)).toEqual({ appId: "reviewer", inputSchema });
+    expect(JSON.parse(content.text)).toEqual({ appId: "reviewer", inputSchema, observations: [] });
     const clone = getLoadedAppInputContract({ bus, appId: "reviewer" });
     clone.inputSchema.properties = {};
     expect(getLoadedAppInputContract({ bus, appId: "reviewer" }).inputSchema).toEqual(inputSchema);
     await install({ ...target, inputSchema: Type.Object({ kind: Type.Literal("new-review") }) });
     expect(getLoadedAppInputContract({ bus, appId: "reviewer" }).inputSchema).not.toEqual(inputSchema);
     expect(() => getLoadedAppInputContract({ bus, appId: "absent" })).toThrow("no installed Task input contract");
+
+    await install({
+      ...target,
+      observers: [
+        {
+          id: "build",
+          type: "build.state",
+          description: "Read build state",
+          intervalMs: 60_000,
+          timeoutMs: 1000,
+          inspect: async () => ({ state: "passed" }),
+        },
+      ],
+    });
+    const conditionReply = await tool.execute("condition", {
+      action: "contract",
+      target: { appId: "reviewer" },
+      observation: { observerId: "build", id: "result", resource: "repo/42", expected: { state: "passed" } },
+    });
+    const conditionText = conditionReply.content[0];
+    if (conditionText?.type !== "text") throw new Error("Expected condition text");
+    expect(JSON.parse(conditionText.text).condition).toEqual({
+      id: "result",
+      type: "build.state",
+      subject: "resource:repo/42",
+      expected: { state: "passed", source: "app:reviewer:observer:build" },
+      owner: "app:reviewer",
+      reviewAfterMs: 3_600_000,
+    });
+    const missing = await tool.execute("condition-missing", {
+      action: "contract",
+      target: { appId: "reviewer" },
+      observation: { observerId: "missing", id: "result", resource: "repo/42", expected: { state: "passed" } },
+    });
+    expect(missing.content[0]).toMatchObject({ type: "text", text: expect.stringContaining("no installed observer") });
   });
 
   it("reads an exact accepted admission from a caller-only registry without starting target execution", async () => {

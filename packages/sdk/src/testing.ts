@@ -35,6 +35,11 @@ export function createTestAppRead(overrides: Partial<AppRead> = {}): AppRead {
   const fn = mockFn();
   const getTask = overrides.tasks?.get ?? fn(async () => null);
   return {
+    contract:
+      overrides.contract ??
+      fn(async () => {
+        throw new Error("App contract read unavailable in this fixture");
+      }),
     appResult: overrides.appResult ?? fn(async () => null),
     tasks: {
       list: overrides.tasks?.list ?? fn(async () => ({ items: [] })),

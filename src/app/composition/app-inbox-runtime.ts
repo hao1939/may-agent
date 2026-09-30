@@ -54,6 +54,8 @@ import {
   type AppEventAdmissionRoute,
 } from "../core/state/app-event-admission-store.js";
 import { createAppObserverRuntime } from "../adapters/producers/app-observer-runtime.js";
+import { observationDemandReader, readTaskObservationInterests } from "../core/state/observation-demand.js";
+import { appObservationSelectors } from "../core/reads/app-contract.js";
 import { canonicalAppEvent } from "../canonical-app-event.js";
 
 export type AppRegistryReloadPreparation = (input: {
@@ -63,6 +65,7 @@ export type AppRegistryReloadPreparation = (input: {
 }) => Promise<void>;
 
 export type AppInboxRuntime = {
+  observerHealth: ReturnType<typeof createAppObserverRuntime>["health"];
   host: AppInboxHost;
   /** Begin recovery, schedules, and input coordination after interfaces are ready. */
   start(): Promise<void>;
@@ -249,11 +252,11 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
   let appDirById = new Map(loaded.map((entry) => [entry.definition.id, entry.appDir]));
   let loadedById = new Map(loaded.map((entry) => [entry.definition.id, entry]));
   let taskSubscriptionsByEventType = indexAppEventSelectors(loaded, (definition) => definition.tasks?.subscriptions);
-  let observationsByEventType = indexAppEventSelectors(loaded, (definition) => definition.observations);
+  let observationsByEventType = indexAppEventSelectors(loaded, appObservationSelectors);
   const replaceRouteIndexes = (entries: LoadedAppDefinition[]): void => {
     loadedById = new Map(entries.map((entry) => [entry.definition.id, entry]));
     taskSubscriptionsByEventType = indexAppEventSelectors(entries, (definition) => definition.tasks?.subscriptions);
-    observationsByEventType = indexAppEventSelectors(entries, (definition) => definition.observations);
+    observationsByEventType = indexAppEventSelectors(entries, appObservationSelectors);
   };
   const attachTask: AppTaskAttacher | undefined = options.attachTask
     ? (input) => {
@@ -358,6 +361,16 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
   const now = options.now ?? Date.now;
   const observerRuntime = createAppObserverRuntime({
     bus: options.bus,
+    readDemand: observationDemandReader(options.db),
+    needsFact: (fact) => {
+      if (options.previewTaskEventRoutes)
+        return options.previewTaskEventRoutes({ event: fact as AgentEvent }).some((route) => route.taskIds.length > 0);
+      if (!options.previewTaskEvent) throw new Error("Observation Condition matching unavailable");
+      return loaded.some(
+        ({ definition, appDir }) =>
+          options.previewTaskEvent!({ appId: definition.id, appDir, event: fact as AgentEvent }).length > 0,
+      );
+    },
     now,
     context: (appId, appDir) => {
       if (!options.observerContext) throw new Error(`App ${appId} observer context is unavailable`);
@@ -952,6 +965,7 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
         const appId = typeof sourceAppId === "string" ? sourceAppId.trim() : "";
         const taskId = typeof data.taskId === "string" ? data.taskId.trim() : "";
         if (appId && taskId) {
+          if (!closed) observerRuntime.requestCheck(readTaskObservationInterests(options.db, appId, taskId));
           // One committed Task fact refreshes both exact caller answers and
           // linked Conversation observations. A wait or retry is not an answer.
           void host
@@ -1093,7 +1107,7 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
 
         const observationApps = (observationsByEventType.get(canonical.type) ?? [])
           .filter(({ definition }) =>
-            definition.observations?.some((selector) => matchesEventSelector(selector, canonical)),
+            appObservationSelectors(definition).some((selector) => matchesEventSelector(selector, canonical)),
           )
           .map(({ definition }) => definition.id);
         if (observationApps.length > 0) {
@@ -1132,6 +1146,7 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
     }
   };
   const runtime: AppInboxRuntime = {
+    observerHealth: (appId) => observerRuntime.health(appId),
     host,
     start() {
       if (closed) return Promise.resolve();
