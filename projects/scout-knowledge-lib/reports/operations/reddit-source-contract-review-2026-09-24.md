@@ -1,5 +1,77 @@
 # Reddit Source Contract Review — 2026-09-24
 
+## 2026-09-30 post-RSS validation: one body, then rate limit; retain daily recommendation
+
+**Disposition:** do not prepare a source-contract candidate. Recommend that the
+**Scout App owner** retain the decision to reduce the standing Reddit schedule
+from approximately every four hours to daily. The current validation recovered
+one attributable post body, but the next distinct post-specific RSS request
+immediately returned HTTP 429. That is useful evidence that the public endpoint
+can work for an individual post, not evidence of repeatable availability or
+practical population-level yield. This review did not change the workflow,
+schedule, standing Task, credentials, or source behavior.
+
+This validation reused Evaluation intake `wr_1790790124398_xhtz` and evidence
+hash `3d5decfc7ff0305b385a0f1d05a8b95b64504495db504539856c9c1cd693bd34`,
+the accepted omission diagnosis in Task
+`goal/app_49a1c76a-1fef-4be8-8068-3c6923de423f`, the population/cadence
+assessment in Task `goal/app_84bf94da-99c0-49c5-9d01-8f423cb19e6c`, and the
+latest accepted standing candidate `t3_1wu8mxq` from `explore-reddit`. It did
+not repeat the completed JSON-versus-RSS or cadence diagnoses.
+
+### Exact bounded requests
+
+The planned maximum was three distinct current post identities. Two requests
+were issued, without retries, using `GET`, redirects enabled, a descriptive
+read-only User-Agent, and a ten-second connection and total timeout. The
+sequence stopped immediately on the second request's HTTP 429; therefore
+`t3_1wtyqub` was not requested.
+
+| Post | Request timestamp (UTC) | Exact URL | Status | Final URL | Content type | Bytes | Latency | Body SHA-256 |
+|---|---|---|---:|---|---|---:|---:|---|
+| `t3_1wu8mxq` | `2026-09-30T17:47:09.560208Z` | `https://www.reddit.com/r/alphaandbetausers/comments/1wu8mxq/were_building_a_command_center_for_ai_agents/.rss` | 200 | same as request | `application/atom+xml; charset=UTF-8` | 3,318 | 0.428026 s | `7c290f8055532b7246160ed669cf0446330fec2dc74c441d21a23dd13d309bda` |
+| `t3_1wu3488` | `2026-09-30T17:47:10.008566Z` | `https://www.reddit.com/r/SecOpsDaily/comments/1wu3488/ai_coding_agents_exposed_13000_internal_images/.rss` | 429 | same as request | none reported | 0 | 0.390438 s | `e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855` |
+
+The HTTP 200 feed contained an entry whose Atom identity was exactly
+`t3_1wu8mxq` and whose canonical link contained the requested stable post ID.
+After isolating the entry's post-body `div.md`, stripping markup, and normalizing
+whitespace, the post contained **895 body characters**; submitted-by and
+link/comment boilerplate were excluded. A short body-only excerpt is: “Hi
+everyone — we are the team behind MasterMNG. We’re building a command center
+for managing a company of AI
+agents: organizing their work into projects, tracking progress, and keeping
+humans in charge …”. Feed title, timestamps, and link metadata were kept
+separate and were not included in the body count. The product self-description
+may be assessable, but one readable promotional post did not establish recurring
+research yield and did not justify a publication in this validation.
+
+The sample denominator is **2 issued requests out of a planned maximum of 3**:
+one identity-matched HTTP 200 body and one HTTP 429; one request was unissued
+because of the mandatory stop. This sample covers only two current stable posts
+from one client, network path, and short sequence. It does not establish
+universal availability, intrinsic unreadability of the rate-limited post,
+longer-term recovery, or expected publication yield.
+
+### Population comparison and four choices
+
+The retained population baseline remains eight distinct accepted attempts,
+**8/8 selected ordinary permalinks HTTP 403**, **0/8 publications**, and
+**626.386 seconds** of accepted owner-attempt runtime. The new result improves
+immediate scan correctness for the first sampled post—RSS exposed attributable
+body text where the ordinary page path had been blocked—but the following HTTP
+429 prevents a repeatability claim. Monetary cost, billing, and provider-token
+cost remain unknown because they were not measured.
+
+| Choice | Owner and disposition | Risk and practical yield limit | Trigger and review boundary |
+|---|---|---|---|
+| RSS-first selected-post retrieval within the existing request budget | Scout App owner; **do not prepare or apply a candidate yet** | Can recover an individual body without adding a normal request if it replaces the blocked page request, but this sequence yielded only 1 readable body before rate limiting and no publication | Reconsider only after a separately authorized bounded validation demonstrates more than one distinct attributable body without a 403/429 stop and shows plausible library value; human review remains required before application |
+| Daily cadence | Scout App owner; **recommended** | Detects recovery later and may miss short-lived posts, but avoids six daily runs against a zero-publication population while retaining one lawful observation | Review after seven daily accepted attempts, or earlier on repeatable readable-body evidence or material publication yield |
+| Current approximately four-hour cadence | Scout App owner; **not supported now** | Maximizes recovery detection but repeats the measured low-yield population and its operational runtime | Restore only after repeatable attributable body retrieval or material yield is observed and the owner approves |
+| No change | Scout App owner; **weaker than daily** | Avoids schedule work but preserves the same high-frequency, zero-publication population; the single RSS success does not offset the immediate 429 | Reconsider only if schedule-change cost is shown to exceed the measured recurring work or new yield evidence appears |
+
+Authentication, credentials, proxying, bypass, source substitution, metadata as
+body evidence, and broad redesign remain outside the supported choices.
+
 ## 2026-09-30 cadence decision: reduce to daily until body access is validated
 
 **Recommendation:** the Scout App owner should reduce the automatic Reddit
