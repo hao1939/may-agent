@@ -60,7 +60,7 @@ reference/hash/size metadata.
 | --- | --- | --- |
 | Tasks, attempts, accepted results/receipts, Conditions and links | Canonical SQLite Task resource rows and fenced transactions | Not reconstructible from session artifacts; preserve the database |
 | Host input handling and cross-App caller correlation | SQLite inbox rows, exact Task/dependency links and accepted results | Not disposable; preserve identity and accepted state |
-| Accepted conversational Requests | SQLite `conversation_requests`: scope, revision, exact Task links and closure | Not reconstructible from input completion; preserve accepted obligations |
+| Accepted conversational Requests | SQLite `conversation_requests`: scope, revision, exact Task links and closure; `conversation_request_inputs`: inputs associated by the agent | Not reconstructible from input completion; preserve accepted obligations and their input associations |
 | Pending admission and ordered Task input | SQLite admission journal and Task-event links | Required to recover unaccepted input; an in-memory queue is only a hint |
 | Event and causal links | SQLite identity, envelope and trace; large bodies in content-addressed files | Requires retained rows and referenced bodies; transcripts are not substitutes |
 | Conversation messages, Topics and Task links | Durable message evidence and canonical SQLite Topic/correlation records | Read views derive from retained evidence; exact links are authoritative |
@@ -182,6 +182,33 @@ Queries use typed columns. Full-content inspection resolves the artifact
 reference.
 
 ## Conversation state API
+
+### Request input associations
+
+Requirement saves and final updates accept `inputIds` identifying the current
+inputs that establish or refine an intention. May chooses those associations.
+Single-input turns infer that sole input; mixed turns retain existing
+associations or require explicit IDs. The Host verifies that the IDs belong to
+the current claim and stores them in `conversation_request_inputs` atomically
+with the Request update. Several inputs can share one Request, and one input
+can establish distinct Requests. The links retain history without execution state.
+
+Current input links supply `assignedRequests` with full accepted scope and
+revision, independent of the recent-Topic context window. Every assigned Request,
+including one saved during execution, needs an explicit final `requestUpdates`
+entry. Omission rejects the whole settlement; reply, Request changes, handoff and
+input completion stay atomic. The agent owns semantic completeness; the Host
+detects missing dispositions, not incorrect explanations. A turn admits at most
+eight assigned Requests, matching the existing final-update bound.
+
+New input defers a proposed result as `unacceptedResult` for reconsideration
+against current requirements. No automatic replay, Request executor, sweep or
+retry loop is added. Stopped input remains stopped. Schema creation preserves
+historical Requests without inventing associations from message IDs or prose;
+previously stranded obligations need an explicit current review. The matching
+Host change must be installed before these fields and checks are available.
+
+### Operations
 
 Conversation, accepted Request and Topic data belong behind the Host's State
 and storage boundary. Use a small set of typed local functions backed by the

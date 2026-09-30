@@ -130,6 +130,13 @@ with a useful answer and no delegated Task; the Conversation remains available.
 If the ask was only to start a benchmark, confirmed admission may itself fulfill
 it; closure follows the accepted ask.
 
+One Request represents one intention across inputs. Clarifications and changed
+constraints refine the same accepted scope; independent intentions remain
+distinct even when one Turn addresses them together. May chooses those
+associations and judges fulfillment. The Host preserves the associations and
+requires a disposition for the Requests assigned to a Turn; completing a batch
+must not silently discard an accepted obligation that its answer omitted.
+
 An open Request carries the current accepted ask, relevant Conversation/Topic
 references, exact Task references when present, and an eventual closure message
 and reason. Start with open or closed; derive progress, blockers, and execution
@@ -772,6 +779,15 @@ The `conversation_request` tool can save a new ask or accepted scope correction
 before work starts. Its write is fenced by the current claim and Request revision.
 That saved correction survives a later failed or stopped attempt. Final closure
 still requires a current decision and explanation; it cannot silently revise scope.
+
+The [Request input associations](storage.md#request-input-associations) change
+adds agent-chosen `inputIds` and presents their Requests as `assignedRequests`.
+Each assigned Request, including one saved during execution, needs an explicit
+final disposition. Omission rejects settlement and retains the input for ordinary
+Task recovery. An open outcome explains continuing work or the remaining gap and
+actual wait. New input defers a proposal as `unacceptedResult` for reconsideration;
+its effects are never automatically replayed. These additions require the matching
+Host change; source changes alone do not establish installed behavior.
 
 Core tests prove storage, fencing and context availability. They do not prove
 that a model recognizes every ask or closes it truthfully. Historical messages
