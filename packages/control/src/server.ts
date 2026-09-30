@@ -1135,9 +1135,7 @@ export function createControlSocketCore(opts: ControlSocketCoreOptions): {
               typeof frame.reason === "string" && frame.reason.trim()
                 ? frame.reason.trim()
                 : "human requested cancellation";
-            const receipt = publishEvent(
-              taskCancelRequestedEvent({ appId, taskId, generation, resourceVersion }, reason),
-            );
+            const receipt = publishEvent(taskCancelRequestedEvent({ appId, taskId, generation, resourceVersion }, reason));
             if (receipt.delivery !== "accepted") {
               throw new Error(
                 `Task ${appId}/${taskId} cancellation was recorded but not accepted; read the Task and retry`,

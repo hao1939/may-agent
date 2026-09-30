@@ -432,12 +432,10 @@ function eventOwner(input: EventInput): string {
 
 function canonicalEvent(input: EventInput, context: EventPublisherContext): AgentEvent {
   const source = requiredText(context.source, "Event source");
-  const address = Object.fromEntries(
-    (EVENT_DEFINITIONS[input.type]?.addressFields ?? []).flatMap((field) => {
-      const value = targetValue(input, field);
-      return value ? [[field, value]] : [];
-    }),
-  );
+  const address = Object.fromEntries((EVENT_DEFINITIONS[input.type]?.addressFields ?? []).flatMap((field) => {
+    const value = targetValue(input, field);
+    return value ? [[field, value]] : [];
+  }));
   const data: Record<string, unknown> = {
     ...input.data,
     ...address,
@@ -463,13 +461,22 @@ function canonicalEvent(input: EventInput, context: EventPublisherContext): Agen
   return event;
 }
 
+/** Canonical caller input, including adapter-owned approval attribution. */
+function publicationInput(rawInput: EventInput, context: EventPublisherContext): EventInput {
+  const input = normalizeInput(rawInput);
+  if (input.type !== "project.approval.submitted") return input;
+  requiredText(input.data.decision, "project.approval.submitted data.decision");
+  if (!context.approvalAuthorization) throw new Error("Formal approval requires trusted ingress authorization");
+  return stampApproval(input, requiredText(context.source, "Event source"), context.approvalAuthorization);
+}
+
 /** Confirm a publication without rerunning App routing or accepting a key-only receipt. */
 export function findEventPublication(
   db: SqliteDb,
   input: EventInput,
   context: EventPublisherContext,
 ): number | undefined {
-  return findPersistedEventId(db, canonicalEvent(normalizeInput(input), context));
+  return findPersistedEventId(db, canonicalEvent(publicationInput(input, context), context));
 }
 
 function publicEvent(event: AgentEvent & { [EVENT_ROW_ID]?: number }): PublicEvent {
@@ -704,12 +711,9 @@ export function createEventInterface(options: CreateEventInterfaceOptions): Even
 
   return {
     publish(rawInput, context) {
-      let input = normalizeInput(rawInput);
+      const input = publicationInput(rawInput, context);
       const definition = EVENT_DEFINITIONS[input.type];
       if (input.type === "project.approval.submitted") {
-        requiredText(input.data.decision, "project.approval.submitted data.decision");
-        if (!context.approvalAuthorization) throw new Error("Formal approval requires trusted ingress authorization");
-        input = stampApproval(input, requiredText(context.source, "Event source"), context.approvalAuthorization);
         const replay = findPersistedEventId(options.db, canonicalEvent(input, context));
         if (replay) {
           const view = get(replay);

@@ -7,7 +7,11 @@
 
 import type { EventInterface } from "../core/events/interface.js";
 import type { EventInput, EventReceipt } from "@may-agent/control/events";
-import { attachControlSocket, type AttachControlSocketOptions, type ControlSocket } from "@may-agent/control/server";
+import {
+  attachControlSocket,
+  type AttachControlSocketOptions,
+  type ControlSocket,
+} from "@may-agent/control/server";
 export type { SocketFrame } from "@may-agent/control/protocol";
 
 export interface SocketUIOptions {

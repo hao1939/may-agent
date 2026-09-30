@@ -16,6 +16,7 @@
  *   - Authentication: only accepts messages from allowed chat IDs
  */
 
+import { isDeepStrictEqual } from "node:util";
 import { createHash, randomUUID } from "node:crypto";
 import { log } from "../../lib/log.js";
 import { setDefaultAutoSelectFamily } from "node:net";
@@ -650,12 +651,7 @@ export function telegramApprovalReply(
     !task ||
     !displayed ||
     !current ||
-    Object.keys(current).some(
-      (key) => JSON.stringify(displayed[key as keyof TelegramApprovalAnchor]) !== JSON.stringify(current[key as keyof TelegramApprovalAnchor]),
-    ) ||
-    Object.keys(displayed).some(
-      (key) => JSON.stringify(displayed[key as keyof TelegramApprovalAnchor]) !== JSON.stringify(current[key as keyof TelegramApprovalAnchor]),
-    )
+    !isDeepStrictEqual(displayed, current)
   )
     return null;
   const condition = pendingHumanApprovalCondition(task)!;

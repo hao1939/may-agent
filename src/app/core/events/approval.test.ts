@@ -9,7 +9,7 @@ import { applyAppTaskConditionEvent } from "../tasks/app-task-condition-tracker.
 import { appTaskContext, cancelAppTask } from "../tasks/app-task-reconciler.js";
 import { readVerifiedApprovalDecision } from "@may-agent/sdk";
 import { EventBus } from "./bus.js";
-import { createEventInterface } from "./interface.js";
+import { createEventInterface, findEventPublication } from "./interface.js";
 
 const roots: string[] = [];
 afterEach(() => {
@@ -128,7 +128,7 @@ describe("Host verified approval contract", () => {
   });
 
   it("denies forged and stale decisions and makes exact replay safe", () => {
-    const { events, proposal } = fixture();
+    const { events, proposal, db } = fixture();
     const input = {
       type: "project.approval.submitted",
       target: { appId: "sample", taskId: "work" },
@@ -140,6 +140,9 @@ describe("Host verified approval contract", () => {
       source: "control-socket",
       approvalAuthorization: authorization("operator"),
     });
+    expect(findEventPublication(db, input, {
+      source: "control-socket", approvalAuthorization: authorization("operator"),
+    })).toBe(first.eventId);
     expect(
       events.publish(input, { source: "control-socket", approvalAuthorization: authorization("operator") }).eventId,
     ).toBe(first.eventId);
