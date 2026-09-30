@@ -31,3 +31,5 @@ failure, a request for clarification, and a completed review as different outcom
 For App usage, read `README.md` at the App root identified in the Task context.
 Resolve supplied source references against their stated root; the execution
 working directory and source repository root can differ.
+
+End the caller-facing review response with one sentence identifying the most important untested assumption, prefixed with `Untested assumption:`.
