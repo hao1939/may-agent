@@ -567,16 +567,13 @@ function pendingHumanApprovalCondition(task: HumanTaskView | null) {
   if (!task || task.terminal || !["pending", "waiting", "running", "attention"].includes(task.status)) return null;
   const matches = (task.diagnostics?.conditions ?? []).filter((item) => {
     const condition = item.condition;
-    const expected =
-      condition?.spec.expected && typeof condition.spec.expected === "object" && !Array.isArray(condition.spec.expected)
-        ? (condition.spec.expected as Record<string, unknown>)
-        : {};
     return (
       condition?.spec.type === "project.approval.submitted" &&
       condition.status?.state !== "true" &&
       isHumanActionOwner(condition.spec.owner) &&
-      expected.taskGeneration === task.generation &&
-      expected.conditionId === item.id
+      condition.metadata?.id === item.id &&
+      Number.isSafeInteger(condition.metadata.generation) &&
+      condition.metadata.generation > 0
     );
   });
   return matches.length === 1 ? matches[0]!.condition : null;
@@ -621,8 +618,8 @@ function approvalAnchor(task: HumanTaskView | null): TelegramApprovalAnchor | nu
     approvalId,
     displayedActionHash: createHash("sha256").update(displayedAction).digest("hex"),
     taskGeneration: task!.generation,
-    conditionId: condition.metadata?.id ?? String(expected.conditionId),
-    conditionGeneration: condition.metadata?.generation ?? Number(expected.conditionGeneration ?? 1),
+    conditionId: condition.metadata.id,
+    conditionGeneration: condition.metadata.generation,
     subject: condition.spec.subject,
     expected: structuredClone(condition.spec.expected),
     requestedAction: displayedAction,

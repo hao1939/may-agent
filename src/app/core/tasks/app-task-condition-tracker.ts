@@ -218,11 +218,34 @@ function matchesExpectedRecord(expected: Record<string, unknown>, event: Record<
   });
 }
 
+function canonicalApprovalEvent(event: Record<string, unknown>): Record<string, unknown> {
+  const data = isRecord(event.data) ? event.data : {};
+  const proposal = isRecord(data.proposal) ? data.proposal : {};
+  const expected = isRecord(proposal.expected) ? proposal.expected : {};
+  return {
+    ...event,
+    data: {
+      ...expected,
+      taskGeneration: proposal.taskGeneration,
+      conditionId: proposal.conditionId,
+      conditionGeneration: proposal.conditionGeneration,
+      subject: proposal.subject,
+      requestedAction: proposal.requestedAction,
+      decision: data.decision,
+      proposal,
+      hostApproval: data.hostApproval,
+    },
+  };
+}
+
 function matches(condition: AppTaskCondition, event: Record<string, unknown>): boolean {
   if (condition.spec.type !== event.type) return false;
+  const comparableEvent =
+    condition.spec.type === "project.approval.submitted" && isHumanActionOwner(condition.spec.owner)
+      ? canonicalApprovalEvent(event)
+      : event;
   if (
-    condition.spec.type === "project.approval.submitted" &&
-    isHumanActionOwner(condition.spec.owner) &&
+    comparableEvent !== event &&
     !matchesVerifiedApprovalCondition(condition, event)
   )
     return false;
@@ -230,16 +253,16 @@ function matches(condition: AppTaskCondition, event: Record<string, unknown>): b
   // wait must not be satisfied by an older state, check, or pulse replayed from
   // the event journal. Only an observation made at or after the Condition was
   // established can prove that the external level subsequently changed.
-  if (!isFreshLevelObservation(condition, event)) return false;
+  if (!isFreshLevelObservation(condition, comparableEvent)) return false;
   const subject = typedSubject(condition.spec.subject);
   if (!subject) return false;
-  if (String(eventField(event, ...fieldAliases(subject.field)) ?? "") !== subject.value) return false;
+  if (String(eventField(comparableEvent, ...fieldAliases(subject.field)) ?? "") !== subject.value) return false;
 
   if (isRecord(condition.spec.expected)) {
-    return matchesExpectedRecord(condition.spec.expected, event);
+    return matchesExpectedRecord(condition.spec.expected, comparableEvent);
   }
 
-  const actual = eventField(event, "state", "status", "disposition", "result", "outcome");
+  const actual = eventField(comparableEvent, "state", "status", "disposition", "result", "outcome");
   if (typeof condition.spec.expected === "string") {
     return normalizedState(actual) === normalizedState(condition.spec.expected);
   }
