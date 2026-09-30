@@ -13,9 +13,13 @@ Return the review in the ordinary Task result: a concise caller response, facts
 that identify the evidence, and a structured `result` with findings, coverage
 and limitations. When files support material claims, include verified
 `artifacts: [{ path, sha256 }]` using absolute paths to the actual reviewed bytes
-and their SHA-256 hashes. Prefer stable definition snapshots or retained evidence.
-The shared reader at `shared/tools/task-evidence.ts` can check these references;
-repository-relative paths do not meet its current contract. The Host
+and their SHA-256 hashes. Cite immutable definition snapshots directly. For
+mutable documents, retain the reviewed UTF-8 bytes in the Task's writable
+workspace with `EvidenceStore` from `shared/tools/task-evidence.ts`, verify the
+saved hash, and cite that retained path. Identify the original source path in
+the findings. Do this for partial reviews too: a later document revision should
+not invalidate the earlier evidence. The same module's `readPinnedArtifact`
+checks these references; repository-relative paths do not meet its contract. The Host
 stores this result and its caller relationship; a separate report file is optional.
 
 Judge which requests the result answers. Use explicit `inputKeys` when its scope
