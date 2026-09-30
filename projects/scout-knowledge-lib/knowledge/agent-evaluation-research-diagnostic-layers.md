@@ -1,8 +1,8 @@
 <ai_context>
-summary: "Third companion note to agent-evaluation.md containing the cohesive §37–§45 diagnostic-layers block from August–September 2026. Separates candidate supply from answer selection, answer correctness from trace integrity, implementation readiness from blocker localization, AI-AI coordination from human convention recovery, detected trace patterns from causal attribution, answer-level forgetting from deployment-wide secret leakage, aggregate scores from uncertainty-aware domain estimates under sparse labels, end-to-end voice quality from the language model's decisions inside a cascade, and model capability from deployment-specific scale decisions."
-triggers: ["agent evaluation diagnostic layers", "candidate supply", "answer selection", "judge reliability", "selection loss", "fixed candidate pools", "trace integrity", "CAIT Rate", "execution contract", "answer-trace consistency", "structured-data agent", "IdeaAMBIG", "codification readiness", "specification gap", "defect localization", "clarification action", "convention gap", "implicit communication", "human-AI compatibility", "Hanabi", "Off-Belief Learning", "partner legibility", "failstep", "failure diagnosis", "causal attribution", "deterministic detectors", "trace normalization", "K-Bench", "agentic unlearning", "K-Score", "deployment-wide leakage", "tool-observation leakage", "disaggregated evaluation", "prediction-powered smoothing", "small area estimation", "domain mean", "interval coverage", "reporting taxonomy", "voice agent evaluation", "cascaded voice agent", "MTVA-Bench", "tool argument accuracy", "action ordering", "EnterpriseVal", "deployment evaluation", "frozen configuration", "consequence tier", "reviewer catch rate", "scale gate"]
-last_updated: "2026-09-21"
-source_basis: "Extracted intact from agent-evaluation-research-beyond-outputs.md §37–§40 on 2026-09-11 after the block grew into a reusable August–September companion. §37 derives from arXiv 2608.25937; §38 from the arXiv API and full HTML for 2608.26036; §39 from the arXiv API and full HTML for 2609.10539; §40 from the arXiv API and full HTML for 2609.11489. §41 adds static GitHub inspection of AbdelazizBs/failstep pinned at 09166c7cc356bd1f7c96b1bd54b34d82d7c2d581; repository code was not executed. §42 derives from the arXiv API abstract for K-Bench (2609.12808v1). §43 derives from the live arXiv API abstract for prediction-powered smoothing and validation (2609.20758v1). §44 derives from the live arXiv API abstract for MTVA-Bench (2609.20152v1). §45 derives from the live arXiv API abstract for EnterpriseVal (2609.21841v1)."
+summary: "Third companion note to agent-evaluation.md containing the cohesive §37–§46 diagnostic-layers block from August–September 2026. Separates candidate supply from answer selection, answer correctness from trace integrity, implementation readiness from blocker localization, AI-AI coordination from human convention recovery, detected trace patterns from causal attribution, answer-level forgetting from deployment-wide secret leakage, aggregate scores from uncertainty-aware domain estimates under sparse labels, end-to-end voice quality from the language model's decisions inside a cascade, model capability from deployment-specific scale decisions, and causal debugging of one recorded decision from general agent reliability."
+triggers: ["agent evaluation diagnostic layers", "candidate supply", "answer selection", "judge reliability", "selection loss", "fixed candidate pools", "trace integrity", "CAIT Rate", "execution contract", "answer-trace consistency", "structured-data agent", "IdeaAMBIG", "codification readiness", "specification gap", "defect localization", "clarification action", "convention gap", "implicit communication", "human-AI compatibility", "Hanabi", "Off-Belief Learning", "partner legibility", "failstep", "failure diagnosis", "causal attribution", "deterministic detectors", "trace normalization", "K-Bench", "agentic unlearning", "K-Score", "deployment-wide leakage", "tool-observation leakage", "disaggregated evaluation", "prediction-powered smoothing", "small area estimation", "domain mean", "interval coverage", "reporting taxonomy", "voice agent evaluation", "cascaded voice agent", "MTVA-Bench", "tool argument accuracy", "action ordering", "EnterpriseVal", "deployment evaluation", "frozen configuration", "consequence tier", "reviewer catch rate", "scale gate", "runtape", "counterfactual debugging", "recorded decision", "context ablation", "agent regression test"]
+last_updated: "2026-09-30"
+source_basis: "Extracted intact from agent-evaluation-research-beyond-outputs.md §37–§40 on 2026-09-11 after the block grew into a reusable August–September companion. §37 derives from arXiv 2608.25937; §38 from the arXiv API and full HTML for 2608.26036; §39 from the arXiv API and full HTML for 2609.10539; §40 from the arXiv API and full HTML for 2609.11489. §41 adds static GitHub inspection of AbdelazizBs/failstep pinned at 09166c7cc356bd1f7c96b1bd54b34d82d7c2d581; repository code was not executed. §42 derives from the arXiv API abstract for K-Bench (2609.12808v1). §43 derives from the live arXiv API abstract for prediction-powered smoothing and validation (2609.20758v1). §44 derives from the live arXiv API abstract for MTVA-Bench (2609.20152v1). §45 derives from the live arXiv API abstract for EnterpriseVal (2609.21841v1). §46 derives from static inspection of RehanMohammed985/runtape at e75717124a07d9f5c848b4e34861ba0e980d588f, including README, implementation, tests, benchmark description, saved summaries, and HN item 49904620; Scout did not execute the package or rerun model experiments."
 parent_note: "agent-evaluation.md"
 previous_companion: "agent-evaluation-research-beyond-outputs.md"
 </ai_context>
@@ -14,13 +14,14 @@ continues [Agent Evaluation Research: Beyond Outputs](./agent-evaluation-researc
 which covers §23–§36 and establishes why evaluation must inspect the substrate rather
 than only terminal outputs.
 
-This note covers §37–§45: nine diagnostic layers that localize where apparently
+This note covers §37–§46: ten diagnostic layers that localize where apparently
 successful agent behavior can fail — candidate selection, computational trace,
 specification readiness, partner-legible convention recovery, the boundary
 between detected trace patterns and causal attribution, secret leakage outside
 the final-answer channel, domain-level uncertainty hidden by aggregate scores,
-language-model decisions hidden inside an end-to-end voice pipeline, and the
-translation from model capability to a deployment-specific scale decision.
+language-model decisions hidden inside an end-to-end voice pipeline, the
+translation from model capability to a deployment-specific scale decision, and
+the causal context of one recorded decision.
 
 ---
 
@@ -476,6 +477,66 @@ useful deployment-evaluation design, not a validated universal gate.
 
 Source: https://arxiv.org/abs/2609.21841v1
 Source: https://export.arxiv.org/api/query?search_query=%28cat%3Acs.AI%20OR%20cat%3Acs.MA%20OR%20cat%3Acs.CL%29%20AND%20%28all%3Aagent%20OR%20all%3Aagentic%29&start=0&max_results=20&sortBy=submittedDate&sortOrder=descending
+
+---
+
+## §46 Debug One Recorded Decision by Intervening on Its Context (HN/GitHub, 2026-09-30)
+
+**Runtape** records model calls and tool events, then reruns one selected model
+call while removing or replacing parts of its recorded context. Its useful
+contribution is a bridge between observability and regression testing: a trace
+shows what the agent saw, while repeated input interventions test whether a
+specific message, tool result, paragraph, sentence, or JSON item changed the
+probability of the selected decision. The implementation screens context pieces,
+confirms candidates with a one-sided Fisher exact test corrected for the number
+of tested removals, narrows confirmed pieces, searches a bounded set of
+interactions, and rechecks a headline cause with different replacement text.
+Only the selected model call is replayed; the agent's tools and external effects
+are not executed again.
+
+The paired `fix` path tries a small declared set of changes against the exact
+failure context—for example an untrusted-content rule, an action guard, both, or
+removing the identified source—and labels a candidate as passing only when the
+bad action disappears from its reruns and the reduction is significant. It can
+then emit a pytest regression that replays that decision distribution. This
+suggests a practical incident workflow:
+
+1. preserve the exact trace, model/provider identity, target event, and bad-action
+   predicate;
+2. establish that the failure remains reproducible before attributing it;
+3. intervene on context pieces and correct significance for the search family;
+4. test candidate fixes against the same recorded decision without replaying
+   real-world side effects; and
+5. retain the trace and predicate as a model-backed regression, while separately
+   testing the full agent and effect path.
+
+The repository's author-run benchmark plants one harmful instruction in tool
+output across five synthetic domains. It keeps a case only when that model takes
+the harmful action in at least 5 of 10 runs with the sentence and at most 1 of
+10 without it. In the published summaries, 14 counted cases still reproduced
+when attribution ran; all 14 named the planted sentence as the headline cause,
+and 12 narrowed it exactly. Ten other counted cases had become unstable and
+were reported separately rather than treated as successful attributions. That
+honesty is as important as the headline rate: counterfactual diagnosis needs a
+stable decision and provider, not merely a saved bad sample.
+
+**Boundary:** “cause” here means that intervening on text in this model call and
+context changed the measured decision distribution. It is not an explanation of
+model internals, proof of the root cause across models or contexts, or evidence
+that the proposed fix makes the end-to-end agent safe. The benchmark is
+synthetic, selectively includes cases with a known single planted cause, does
+not cover distributed causes or long causal chains, and includes rescoring after
+the cases informed implementation fixes; the author calls for a new-seed run.
+Scout inspected the repository at the pinned commit but did not execute its 62
+`why`/`fix` tests, rerun the saved traces, or independently reproduce model calls.
+The project was two days old, marked alpha, and had no GitHub stars or forks at
+inspection, so it is promising diagnostic evidence rather than a mature tool.
+
+Source: https://news.ycombinator.com/item?id=49904620
+
+Repo: https://github.com/RehanMohammed985/runtape
+
+Pinned observation: https://github.com/RehanMohammed985/runtape/commit/e75717124a07d9f5c848b4e34861ba0e980d588f
 
 ---
 
