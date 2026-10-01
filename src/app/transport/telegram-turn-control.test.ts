@@ -12,6 +12,7 @@ import { claimObservedAppTask } from "../core/tasks/app-task-reconciler.js";
 import { conversationTaskContext } from "../../../test/fixtures/conversation-task.js";
 import { EventBus } from "../core/events/bus.js";
 import { attachTelegramBot } from "./telegram.js";
+import { createAppInboxItem } from "../core/state/app-inbox-store.js";
 
 async function until(predicate: () => boolean) {
   // A failed durable publication uses the adapter's real 5-second poll backoff.
@@ -22,6 +23,68 @@ async function until(predicate: () => boolean) {
     await Bun.sleep(5);
   }
 }
+
+test.each(["system", "console"] as const)("%s work stays visible without unsolicited Telegram Stop messages", async (source) => {
+  const root = mkdtempSync(join(tmpdir(), "may-telegram-background-"));
+  const priorFetch = globalThis.fetch;
+  const priorToken = process.env.TELEGRAM_BOT_TOKEN;
+  const priorChat = process.env.TELEGRAM_CHAT_ID;
+  const db = getDb(root);
+  const config = conversationTaskContext(db, root);
+  const admitted = admitConversationTaskInput(config, {
+    id: "background",
+    appId: "may",
+    conversationId: "may:primary",
+    source: { kind: source === "system" ? "system" : "human", id: "background" },
+    ...(source === "console" ? { channel: "may-console" } : {}),
+    input: { kind: "message", data: {} },
+    intent: conversationTaskIntent(config),
+  });
+  const claim = claimObservedAppTask(config, {
+    taskId: admitted.taskId, appAgent: "may", handler: "executor:conversation",
+  });
+  expect(claim.kind).toBe("claimed");
+  const sent: Array<{ text: string; reply_markup?: unknown }> = [];
+  const poll = Promise.withResolvers<Response>();
+  globalThis.fetch = (async (url: string | URL | Request, init?: RequestInit) => {
+    const method = String(url).split("/").at(-1);
+    if (method === "getUpdates") return poll.promise;
+    if (method === "sendMessage") sent.push(JSON.parse(String(init?.body)));
+    return Response.json({ ok: true, result: method === "getMe" ? { username: "fixture" } : { message_id: sent.length } });
+  }) as typeof fetch;
+  process.env.TELEGRAM_BOT_TOKEN = "fixture-token";
+  process.env.TELEGRAM_CHAT_ID = "123";
+  const bus = new EventBus();
+  const bot = attachTelegramBot({
+    bus, persistDir: root, interfaceAgent: "may",
+    humanTasks: { listApps: () => [], listTasks: () => ({ items: [], total: 0 }), getTask: () => null },
+    publishEvent: () => { throw new Error("Presentation must not publish work"); },
+  });
+  try {
+    // Mirroring this real Console message proves sync passed its active-turn step.
+    createAppInboxItem(db, {
+      id: "visible-message", appId: "may", conversationId: "may:primary",
+      conversationSequence: 2,
+      source: { kind: "human", id: "visible-message" }, channel: "may-console",
+      input: { kind: "message", data: { message: "Visible checkpoint" } },
+    });
+    bus.emit({ type: "conversation.updated", source: "fixture", owner: "app:may",
+      data: { appId: "may", conversationId: "may:primary" } });
+    await until(() => sent.some((item) => item.text.includes("Visible checkpoint")));
+    expect(sent.filter((item) => item.reply_markup)).toEqual([]);
+    expect(sent.some((item) => item.text.includes("May is working"))).toBe(false);
+  } finally {
+    bot.close();
+    poll.resolve(Response.json({ ok: true, result: [] }));
+    globalThis.fetch = priorFetch;
+    if (priorToken === undefined) delete process.env.TELEGRAM_BOT_TOKEN;
+    else process.env.TELEGRAM_BOT_TOKEN = priorToken;
+    if (priorChat === undefined) delete process.env.TELEGRAM_CHAT_ID;
+    else process.env.TELEGRAM_CHAT_ID = priorChat;
+    closeDb(root);
+    rmSync(root, { recursive: true, force: true });
+  }
+});
 
 test("closing the bot aborts its active network poll", async () => {
   const root = mkdtempSync(join(tmpdir(), "may-telegram-close-"));
@@ -98,6 +161,9 @@ test("Telegram Stop buttons retain exact turns, reject old/unauthorized controls
       conversationId: "may:primary",
       conversationSequence: sequence,
       source: { kind: "human", id },
+      channel: "telegram",
+      channelTargetId: "123",
+      channelMessageId: sequence,
       input: { kind: "message", data: {} },
       intent: conversationTaskIntent(config),
     });

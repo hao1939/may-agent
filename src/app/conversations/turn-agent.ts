@@ -26,7 +26,7 @@ function conversationRequestTool(execution: Parameters<AppInputResolver>[0]["exe
     name: "conversation_request",
     label: "Update Request",
     description:
-      "Save an accepted Request or associate current inputs before working on it. Use the existing id and observed revision; omit scope when its requirements are unchanged. A new Request needs revision 0 and its complete scope. Include inputIds in a mixed batch. Returns the saved open Request and new revision for final requestUpdates. Reopens a closed Request. Requirements and associations survive failure or Stop; final result effects may be deferred by new input. Scoped to this Conversation; does not start, cancel or close work.",
+      "Save an accepted conversational promise to the human, or associate an input advancing that same promise. Routine automated review is recorded in turn/Task evidence; use a Request when an outcome is owed to the human. Use the existing id and observed revision; omit unchanged scope. A new Request needs revision 0 and its complete scope. Include inputIds in a mixed batch. Returns the saved open Request and new revision for final requestUpdates. Reopens a closed Request. Requirements and associations survive failure or Stop; closing a Request requires an explanatory response. Scoped to this Conversation; does not start, cancel or close work.",
     parameters: Type.Pick(
       conversationRequestUpdatesSchema.items,
       ["id", "expectedRevision", "scope", "inputIds"],
@@ -89,9 +89,10 @@ function conversationInputPrompt(
   return [
     `Consider the admitted inputs for App ${app.id} together, in order, using its Conversation result contract.`,
     "The inputs are the whole current batch. replyTo identifies the response destination; every input still needs consideration.",
-    "The App owns Request recognition, input grouping, scope and fulfillment. Several inputs can belong to one Request; several Requests can share this turn.",
+    "A Request is an accepted conversational promise to the human. The App recognizes these promises and judges scope and fulfillment. Routine automated handling belongs in turn/Task evidence; an automated result can also advance an existing human promise. Several inputs can belong to one Request; several Requests can share this turn.",
     "Use conversation_request before working on an accepted Request to preserve its requirements and current input associations, even when scope is unchanged. assignedRequests contains full current requirements for this turn. Every assigned Request and every Request saved during the turn needs a final requestUpdates entry with its own reason. An open disposition must explain what remains; a reply about another Request does not supply that explanation.",
     "previousAttempt.unacceptedResult is a proposal that was not applied. Reconsider it against current requirements and evidence; do not assume its closure or handoff happened and do not blindly replay effects.",
+    "Context is layered: current inputs and assigned Requests first; focusedTask provides a compact current summary. referencedTasks and Topic/message taskRefs are navigation links, not expanded evidence. Use tasks get with the exact appId/taskId for relevant requirements, waits and evidence before judging fulfillment or changing work; conversation_context reads older discussion and Requests.",
     "## Input and context",
     "```json",
     JSON.stringify({ inputs: inputs ?? [{ id, source, input }], replyTo: { id, source }, ...context }, null, 2),

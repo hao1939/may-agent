@@ -74,7 +74,6 @@ describe("workflow finish contract", () => {
       expect(() => validate({ ...quiet, requestUpdates: [{ ...open, reason: "Waiting for the second option" }] })).not.toThrow();
       for (const effect of [
         { requestUpdates: [{ ...request, disposition: "fulfilled", reason: "Comparison verified" }] },
-        { followUp: { appId: "worker", input: { kind: "work", data: {} } } },
         { taskControls: [{ kind: "cancel", appId: "worker", taskId: "job", reason: "No longer needed" }] },
       ]) {
         expect(() => validate({ ...quiet, ...effect })).toThrow();
@@ -82,6 +81,7 @@ describe("workflow finish contract", () => {
         expect(() => validate({ ...quiet, ...effect, response: "Here is the outcome." })).not.toThrow();
       }
       const handoff = { appId: "worker", input: { kind: "work", data: {} } };
+      expect(() => validate({ ...quiet, followUp: handoff })).not.toThrow();
       expect(() => validate({ ...quiet, response: "Delegating.", followUp: handoff, taskControls: [] })).not.toThrow();
       expect(() => validate({
         ...quiet, response: "Delegating and cancelling.", followUp: handoff,

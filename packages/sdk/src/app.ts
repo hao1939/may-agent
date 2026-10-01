@@ -161,6 +161,7 @@ export type AppConversationResource = {
   messages: AppConversationMessage[];
 };
 
+/** An accepted conversational promise to the human, recognized by the App. */
 export type AppConversationRequest = {
   id: string;
   revision: number;
@@ -250,7 +251,7 @@ export const conversationRequestUpdatesSchema = Type.Array(
   {
     maxItems: MAX_CONVERSATION_REQUESTS_PER_TURN,
     description:
-      "Accept, revise, link or close asks. A simple ask may be accepted and fulfilled in one answer. After saving a correction with conversation_request, retain its revision and omit unchanged scope. Read omitted/truncated Requests before changing them. Close only with an explained fulfillment, withdrawal or unfulfilled disposition; admitting or completing a Task alone is not Request closure.",
+      "Accept, revise, link or close conversational promises to the human. Routine automated handling belongs in turn/Task evidence; an automated result can advance an existing human promise. A simple ask may be accepted and fulfilled in one answer. After saving with conversation_request, retain its revision and omit unchanged scope. Read omitted/truncated Requests before changing them. Close only with an explanatory response and a fulfillment, withdrawal or unfulfilled disposition; Task completion alone is not Request closure.",
   },
 );
 
@@ -272,13 +273,13 @@ export type AppInputContext<TData = unknown> = {
   /** Facts from this Conversation Task's earlier attempt, including an interrupted or failed Turn. */
   previousAttempt?: TaskAttempt["previousAttempt"];
   dependency?: AppDependencyObservation;
-  /** Exact bounded observation for the human's focused Task, when supplied. */
+  /** Current identity, phase, outcome and summary for explicit focus. Read exact Task detail before acting. */
   focusedTask?: {
     appId: string;
     task: AppDependencyObservation;
   };
-  /** Current canonical snapshots for exact Tasks represented by recent command/tool views. */
-  referencedTasks?: TaskObservation[];
+  /** Navigation from recent views. Detail and current state are read explicitly, not expanded from history. */
+  referencedTasks?: Array<{ appId: string; taskId: string; ref?: string }>;
   /** Bounded exact conversation facts; it never owns or schedules work. */
   conversation?: AppConversationResource;
 };
@@ -356,7 +357,7 @@ export const conversationTurnResultSchema = Type.Object(
       Type.String({
         minLength: 1,
         description:
-          "Human-facing answer or useful update. Required for human input, Request closure, delegation and Task controls. Automated observations and open Request bookkeeping may stay quiet.",
+          "Human-facing answer or useful update. Required for human input, Request closure and Task controls. Background observations, delegation and open Request bookkeeping may stay quiet; retain internal findings in summary and facts.",
         pattern: "\\S",
       }),
     ),
@@ -387,7 +388,7 @@ export const conversationTurnResultSchema = Type.Object(
         {
           additionalProperties: false,
           description:
-            "Admit one responsible Task, possibly in this App, and link it to the Topic. Reuse an exact Task only when outcome, acceptance, input and execution method fit. Supply an immediate response explaining the intended outcome. This Turn ends after admission; the Request remains open until resolved and explained.",
+            "Submit this input as durable Task work to the selected App and link it to the chosen Topic. Reuse an exact Task only when its outcome, acceptance, input and execution method fit. The Host admits the handoff when this Turn's result is accepted. Task admission alone does not fulfill a Request.",
         },
       ),
     ),
@@ -412,14 +413,13 @@ export const conversationTurnResultSchema = Type.Object(
   },
   {
     additionalProperties: false,
-    // A quiet turn can retain observations and open asks, but cannot silently
-    // close an accepted ask, delegate work or cancel a Task. Tool validation and
+    // A quiet turn can retain observations, open asks and delegate work, but
+    // cannot silently close an accepted ask or cancel a Task. Tool validation and
     // transactional settlement use this same rule.
     anyOf: [
       { required: ["response"] },
       {
         properties: {
-          followUp: { not: {} },
           taskControls: { maxItems: 0 },
           requestUpdates: { items: { properties: { disposition: { const: "open" } } } },
         },

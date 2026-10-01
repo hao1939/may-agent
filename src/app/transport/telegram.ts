@@ -772,7 +772,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
     for (const [surface, coordinates] of surfaces) {
       if (!running) return;
       const previous = turnControls.get(surface);
-      const relevant = sourceSurface === undefined || surface === sourceSurface;
+      const relevant = surface === sourceSurface;
       if (!relevant) {
         if (previous) await clearTurnControl(surface);
         continue;
@@ -783,7 +783,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
       const token = `stop:${randomUUID()}`;
       const messageId = await sendMessage(
         coordinates.chatId,
-        sourceChatId ? "May is working on this message." : "May is working in the shared conversation.",
+        "May is working on this message.",
         undefined,
         {
           messageThreadId: coordinates.topicId,

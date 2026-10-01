@@ -131,19 +131,25 @@ export async function prepareConversationInput(
   const focusedTask = focusedTaskIdentity(context);
   if (focusedTask) {
     let observation: AppDependencyObservation | null = null;
-    if (readDependency) {
-      try {
-        observation = await readDependency({
-          appId: focusedTask.appId,
-          dependency: { kind: "task", id: focusedTask.taskId },
-        });
-      } catch {
-        // Focus is bounded context, not an admission or execution gate.
-      }
+    try {
+      observation = await observeTaskDependency(readDependency, focusedTask.appId, {
+        kind: "task", id: focusedTask.taskId,
+      });
+    } catch {
+      // Focus is bounded context, not an admission or execution gate.
     }
     request.focusedTask = {
       appId: focusedTask.appId,
-      task: observation ?? { kind: "task", id: focusedTask.taskId, status: "unknown" },
+      task: {
+        kind: "task", id: focusedTask.taskId, status: observation?.status ?? "unknown",
+        ...(observation && {
+          generation: observation.generation,
+          resourceVersion: observation.resourceVersion,
+          closed: observation.closed,
+          outcome: observation.outcome === undefined ? undefined : boundedUtf8Text(observation.outcome, 1_000),
+          summary: observation.summary === undefined ? undefined : boundedUtf8Text(observation.summary, 2_000),
+        }),
+      },
     };
   }
   if (item.conversationId) {
@@ -172,26 +178,7 @@ export async function prepareConversationInput(
     );
     request.conversation = boundedConversation;
     const referencedTasks = referencedTaskIdentities(boundedConversation);
-    if (referencedTasks.length > 0) {
-      request.referencedTasks = await Promise.all(
-        referencedTasks.map(async (identity) => {
-          let observation: AppDependencyObservation | null = null;
-          try {
-            observation = await observeTaskDependency(readDependency, identity.appId, {
-              kind: "task",
-              id: identity.taskId,
-            });
-          } catch {
-            // A rendered reference remains useful identity even when its App is no longer readable.
-          }
-          return {
-            appId: identity.appId,
-            ...(identity.ref ? { ref: identity.ref } : {}),
-            task: observation ?? { kind: "task" as const, id: identity.taskId, status: "unknown" as const },
-          };
-        }),
-      );
-    }
+    if (referencedTasks.length > 0) request.referencedTasks = referencedTasks;
   }
   return request;
 }
