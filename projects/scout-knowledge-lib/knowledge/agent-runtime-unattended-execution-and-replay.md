@@ -1,8 +1,8 @@
 <ai_context>
-summary: "Companion to agent-runtime-effect-integrity.md for unattended execution integrity: lifecycle-bound resume identity, cadence and failure accounting, infrastructure trust boundaries, clone identity hygiene, local durability versus external settlement, site-action reconciliation, revision-bound approval, accountable agent writes, desktop effect authorization, deterministic workflow/host recovery boundaries, and pause-versus-execution authority."
-triggers: ["unattended execution", "session resume", "lifecycle generation", "Daintree", "heartbeat", "failure backoff", "Talon", "Docker Sandboxes", "sandbox trust boundary", "clone identity", "LingCage", "effect settlement", "LetItLoop", "Kevlar", "ATR", "approval revision", "AIS", "orphan recovery", "Rebuno", "approval resume", "AgenticOS", "diagnostic attention", "site action ledger", "uncertain effect", "identity drift", "rules drift", "Runpin", "effect deduplication", "agent identity", "Sensefold", "desktop authorization", "macOS Harness", "AgentRun", "workflow DSL", "late settlement", "Kiso", "recovery projection", "crash matrix", "LoopX", "hard lease", "agent pause", "lease retirement"]
-last_updated: "2026-09-26"
-source_basis: "Extracted intact from agent-runtime-effect-integrity.md during its 2026-09-21 oversized-note review, then extended with pinned implementation evidence for lifecycle-bound session resume, unattended cadence and failure accounting, AgentRun's workflow/host recovery boundary, Kiso's deterministic recovery projection, and LoopX's pause/lease transaction boundary, plus explicitly limited Reddit practitioner reports about diagnostic attention and site-action reconciliation. Replay-specific Chronicle, Mutagen, Ovo, and OrcaReplay sections moved intact to agent-runtime-replay-evidence-and-boundaries.md during the 2026-09-24 oversized-note review. Each retained section preserves stable source links, reproduced checks where performed, and explicit evidence limitations."
+summary: "Companion to agent-runtime-effect-integrity.md for unattended execution integrity: lifecycle-bound resume identity, cadence and failure accounting, infrastructure trust boundaries, clone identity hygiene, local durability versus external settlement, site-action reconciliation, revision-bound approval, accountable agent writes, desktop effect authorization, deterministic workflow/host recovery boundaries, trace-to-workflow compilation limits, and pause-versus-execution authority."
+triggers: ["unattended execution", "session resume", "lifecycle generation", "Daintree", "heartbeat", "failure backoff", "Talon", "Docker Sandboxes", "sandbox trust boundary", "clone identity", "LingCage", "effect settlement", "LetItLoop", "Kevlar", "ATR", "approval revision", "AIS", "orphan recovery", "Rebuno", "approval resume", "AgenticOS", "diagnostic attention", "site action ledger", "uncertain effect", "identity drift", "rules drift", "Runpin", "effect deduplication", "agent identity", "Sensefold", "desktop authorization", "macOS Harness", "AgentRun", "workflow DSL", "late settlement", "Hotpath", "trace compilation", "workflow drift", "Kiso", "recovery projection", "crash matrix", "LoopX", "hard lease", "agent pause", "lease retirement"]
+last_updated: "2026-10-01"
+source_basis: "Extracted intact from agent-runtime-effect-integrity.md during its 2026-09-21 oversized-note review, then extended with pinned implementation evidence for lifecycle-bound session resume, unattended cadence and failure accounting, AgentRun's workflow/host recovery boundary, Hotpath's trace-to-workflow compiler and drift fallback, Kiso's deterministic recovery projection, and LoopX's pause/lease transaction boundary, plus explicitly limited Reddit practitioner reports about diagnostic attention and site-action reconciliation. Replay-specific Chronicle, Mutagen, Ovo, and OrcaReplay sections moved intact to agent-runtime-replay-evidence-and-boundaries.md during the 2026-09-24 oversized-note review. Each retained section preserves stable source links, reproduced checks where performed, and explicit evidence limitations."
 </ai_context>
 
 # Agent Runtime Unattended Execution and Replay
@@ -695,6 +695,56 @@ early implementation pattern, not production reliability or adoption evidence.
 - **Inspected revision:** https://github.com/Parcha-ai/agentrun/commit/89b6fff6493700ad097c2a016ad2396e3c8c79bc (`0.1.0-beta.3`)
 - **Primary sources:** [workflow and limits guide](https://github.com/Parcha-ai/agentrun/blob/89b6fff6493700ad097c2a016ad2396e3c8c79bc/docs/guide.md), [host integration contract](https://github.com/Parcha-ai/agentrun/blob/89b6fff6493700ad097c2a016ad2396e3c8c79bc/docs/host-integration.md), [interpreter implementation](https://github.com/Parcha-ai/agentrun/blob/89b6fff6493700ad097c2a016ad2396e3c8c79bc/packages/dsl/src/workflow.ts), [runtime-boundary tests](https://github.com/Parcha-ai/agentrun/blob/89b6fff6493700ad097c2a016ad2396e3c8c79bc/packages/dsl/test/runtime-boundaries.test.mjs), and [nested-recovery tests](https://github.com/Parcha-ai/agentrun/blob/89b6fff6493700ad097c2a016ad2396e3c8c79bc/packages/dsl/test/nested-composition.test.mjs)
 - **Discovery feed:** HN Algolia `search_by_date?query=AI%20agent&tags=story&numericFilters=created_at_i%3E%3D1790186458&hitsPerPage=50`
+
+## Compiling One Trace Freezes More Than the Happy Path — Hotpath (HN / GitHub, October 2026)
+
+Hotpath is an early TypeScript prototype that records an agent's stdio MCP calls,
+compiles one trace into an editable straight-line JSON workflow, and substitutes a
+cheaper model only for text arguments that look model-written. Inputs and values
+copied from prior tool results become templates; tool results receive inferred JSON
+Schema guards. On schema drift before any side effect, the runtime reruns the agent,
+compiles its new trace, and preserves the previous workflow as a backup. It refuses
+to replace the workflow when the fresh trace has lost a prior read-only tool unless
+an operator passes `--accept-recompile`.
+
+That mechanism usefully makes repeated work inspectable, but its compiler also shows
+why a successful trace is not a complete workflow specification. Every MCP tool
+without `readOnlyHint: true` is classified as side-effecting. Calls that returned an
+error are omitted, including unrecovered failures; branches and loops are not
+represented. Tool guards check the *shape* inferred from the recorded result, not
+business correctness. The LLM grounding guard covers only sufficiently long scalar
+values that the recorded example happened to mention; if a path disappears at run
+time there is nothing to check. A passing replay therefore establishes conformance
+to selected properties of one trace, not equivalence to the agent's policy,
+coverage, or judgment.
+
+The side-effect boundary is more conservative. Once a side-effecting tool has run,
+a later drift failure will not fall back to the agent because that could repeat the
+effect. This avoids automatic duplication, but it leaves settlement and recovery to
+an operator; there is no provider idempotency or external reconciliation layer. The
+`--dry-run` mode skips tools marked side-effecting and prints their arguments, but
+its safety depends on truthful MCP annotations and classification.
+
+**Runtime rule:** treat trace compilation as a candidate optimization under an
+independent contract. Review which failed calls, branches, reads, invariants, and
+effects the trace omitted; preserve the source trace and workflow revision; validate
+semantic outputs separately from inferred shape; and stop for reconciliation after
+an admitted effect rather than interpreting “no fallback” as settlement.
+
+The repository's benchmark reports 3–5x speedups and 10–13x lower modeled cost on two
+small fake tasks, but each main figure is one run, the prices are placeholders, the
+pass table contains only one or two runs per scenario, and earlier model outputs
+occasionally omitted items. Scout inspected pinned source and repository-authored
+tests but did not clone the repository, run its suite, reproduce the model benchmark,
+or exercise a real side effect. The repository was created the same day and had one
+GitHub star; this is implementation evidence for a design boundary, not adoption or
+production reliability.
+
+- **HN source:** https://news.ycombinator.com/item?id=49922532
+- **Repo:** https://github.com/mourad-baazi/hotpath
+- **Inspected revision:** https://github.com/mourad-baazi/hotpath/commit/51895c47bb48ed5c22ebb4b674b584803139bacb
+- **Primary sources:** [compiler and inferred guards](https://github.com/mourad-baazi/hotpath/blob/51895c47bb48ed5c22ebb4b674b584803139bacb/packages/compiler/src/compiler.ts), [runtime drift and side-effect boundary](https://github.com/mourad-baazi/hotpath/blob/51895c47bb48ed5c22ebb4b674b584803139bacb/packages/runtime/src/runtime.ts), [fallback tests](https://github.com/mourad-baazi/hotpath/blob/51895c47bb48ed5c22ebb4b674b584803139bacb/packages/runtime/test/fallback.test.ts), and [benchmark limits](https://github.com/mourad-baazi/hotpath/blob/51895c47bb48ed5c22ebb4b674b584803139bacb/docs/BENCHMARK.md)
+- **Discovery feed:** HN Algolia `search_by_date?query=AI%20agent&tags=story&numericFilters=created_at_i%3E1790863221&hitsPerPage=20`
 
 ## Recovery Is Easier to Audit as a Pure Next-Step Projection — Kiso (GitHub, September 2026)
 
