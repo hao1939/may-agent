@@ -2443,15 +2443,25 @@ const olderReview = {
 };
 
 test.each(["focus", "command"])(
-  "Task-backed advice reads canonical %s context without changing the referenced work",
+  "Task-backed advice keeps %s context focused and preserves linked detail",
   async (source) => {
     let calls = 0;
     const f = await fixture(async (_definition, prompt) => {
       calls++;
       const context = readConversationReplyContext(prompt);
-      const observed = source === "focus" ? context.focusedTask : context.referencedTasks?.[0];
-      expect(observed).toMatchObject({ appId: app.id, task: { id: olderReview.id, outcome: olderReview.outcome } });
-      if (source === "command") expect(observed?.ref).toMatch(/^[0-9a-f]{8}$/);
+      if (source === "focus") {
+        expect(context.focusedTask).toMatchObject({
+          appId: app.id, task: { id: olderReview.id, outcome: olderReview.outcome, status: "pending", generation: 1 },
+        });
+        expect(context.focusedTask?.task).not.toHaveProperty("input");
+        expect(context.focusedTask?.task).not.toHaveProperty("acceptance");
+      } else {
+        expect(context.referencedTasks).toEqual([
+          { appId: app.id, taskId: olderReview.id, ref: expect.stringMatching(/^[0-9a-f]{8}$/) },
+        ]);
+      }
+      expect(prompt).not.toContain("DEEP_EVIDENCE");
+      expect(Buffer.byteLength(prompt)).toBeLessThan(16_000);
       return {
         status: "done",
         structuredResult: {
@@ -2461,7 +2471,8 @@ test.each(["focus", "command"])(
         },
       };
     }, manualContextTasks);
-    observeAppTaskIntent(f.context(), { appAgent: app.agent!, intent: olderReview });
+    const detail = { material: "DEEP_EVIDENCE".repeat(10_000) };
+    observeAppTaskIntent(f.context(), { appAgent: app.agent!, intent: { ...olderReview, input: detail } });
     const original = f.store.readTask(olderReview.id);
     if (source === "command")
       f.db
@@ -2495,6 +2506,7 @@ test.each(["focus", "command"])(
     await f.run(admitted.taskId);
     expect(calls).toBe(1);
     expect(f.store.readTask(olderReview.id)).toEqual(original);
+    expect(f.store.readTask(olderReview.id)?.spec.input).toEqual(detail);
     expect(Object.keys(f.store.readSnapshot().resources!).sort()).toEqual([olderReview.id, admitted.taskId].sort());
     expect(getAppInboxItem(f.db, "advice")).toMatchObject({
       status: "done",
