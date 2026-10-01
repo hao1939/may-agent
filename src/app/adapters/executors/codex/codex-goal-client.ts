@@ -222,6 +222,19 @@ export class CodexGoalAppServerClient {
     return { threadId: response.thread.id, cwd: response.cwd ?? input.cwd };
   }
 
+  async injectDeveloperContext(input: { threadId: string; text: string }): Promise<unknown> {
+    return await this.request("thread/inject_items", {
+      threadId: input.threadId,
+      items: [
+        {
+          type: "message",
+          role: "developer",
+          content: [{ type: "input_text", text: input.text }],
+        },
+      ],
+    });
+  }
+
   async setGoal(input: {
     threadId: string;
     objective: string;

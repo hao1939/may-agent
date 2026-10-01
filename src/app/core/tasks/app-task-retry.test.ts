@@ -403,7 +403,9 @@ it.each(["omitted", "explicit", "execution"])(
     expect(readAppTaskAdmissionOutcome(f.config, "work", "ask:measure")).toBeNull();
     expect(f.config.resourceStore.isCancelled("work")).toBe(false);
     setSystemTime(f.config.resourceStore.readTask("work")!.status.executionRetryAt!);
-    expect(f.claim().events.map(({ event }) => event.idempotencyKey)).toEqual(["ask:measure"]);
+    const retry = f.claim();
+    expect(retry.continuedInputKeys).toEqual(["ask:measure"]);
+    expect(retry.events.map(({ event }) => event.idempotencyKey)).toEqual([undefined]);
   },
 );
 
@@ -421,7 +423,8 @@ it("accepts failure facts without resolving the ask, then succeeds on the same a
   const next = f.claim();
   expect(next.taskId).toBe(first.taskId);
   expect(next.generation).toBe(first.generation);
-  expect(next.events).toEqual(first.events);
+  expect(next.events).toEqual([]);
+  expect(next.continuedInputKeys).toEqual(["ask:measure"]);
   expect(next.previousAttempt).toMatchObject({
     attemptId: first.attemptId,
     generation: first.generation,

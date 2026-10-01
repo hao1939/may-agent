@@ -313,9 +313,8 @@ describe("worker failure facts and owner closure", () => {
     expect(config.resourceStore.listRecoveryCandidates().items.map((item) => item.taskId)).not.toContain(intent.id);
   });
 
-  it.each(["summary", "facts", "new-input", "revision"])("rejects an invalid or stale failure report: %s", (reason) => {
+  it.each(["summary", "facts", "revision"])("rejects an invalid or stale failure report: %s", (reason) => {
     const { config, intent, claim } = setup();
-    if (reason === "new-input") recordAppTaskTrigger(config, intent.id, { type: "sample.feedback", eventId: 11 });
     if (reason === "revision")
       observeAppTaskIntent(config, { appAgent: "app-owner", intent: { ...intent, input: { revision: 2 } } });
     if (reason === "revision") expect(reportAppTaskFailure(config, claim, decision).status).toBe("stale");
@@ -326,10 +325,16 @@ describe("worker failure facts and owner closure", () => {
           ...(reason === "summary" ? { summary: " " } : {}),
           ...(reason === "facts" ? { facts: [] } : {}),
         }),
-      ).toThrow(reason === "new-input" ? "newer Task facts are pending" : `Incomplete report ${reason}`);
+      ).toThrow(`Incomplete report ${reason}`);
     expect(config.resourceStore.readCancellation(intent.id)).toBeNull();
     expect(config.resourceStore.readReceipt(intent.id)).toBeNull();
-    if (reason === "new-input") expect(readTaskSnapshot(config).taskTriggers?.[intent.id]?.events).toHaveLength(1);
+  });
+
+  it("retains an honest incomplete report while preserving genuinely newer input", () => {
+    const { config, intent, claim } = setup();
+    recordAppTaskTrigger(config, intent.id, { type: "sample.feedback", eventId: 11 });
+    expect(reportAppTaskFailure(config, claim, decision)).toMatchObject({ status: "applied" });
+    expect(readTaskSnapshot(config).taskTriggers?.[intent.id]?.events?.map((row) => row.event.eventId)).toEqual([11]);
   });
 
   it("accepts failure facts with open children", () => {
@@ -1305,6 +1310,66 @@ describe("App task reconciler state", () => {
     expect(readTaskSnapshot(config).taskTriggers?.[first.taskId]?.events?.map((entry) => entry.event.eventId)).toEqual([
       33, 34, 35,
     ]);
+  });
+
+  it("advances an honest incomplete report past a bounded backlog without weakening action fences", () => {
+    const { config } = fixture();
+    const first = declareAndClaimTask(config, {
+      intent: intent("monitor"),
+      appAgent: "app-owner",
+      handler: "workflow:worker",
+    });
+    if (first.kind !== "claimed") throw new Error("expected first claim");
+    for (let index = 1; index <= 35; index += 1) {
+      recordAppTaskTrigger(config, first.taskId, {
+        type: "sample.observed",
+        eventId: index,
+        data: { index },
+      });
+    }
+    expect(completeAppTask(config, first, { summary: "Observed initial state" }).taskContinues).toBe(true);
+    const bounded = claimObservedAppTask(config, {
+      taskId: first.taskId,
+      appAgent: "app-owner",
+      handler: "workflow:worker",
+      reason: "event",
+    });
+    if (bounded.kind !== "claimed") throw new Error("expected bounded claim");
+    expect(bounded.events.map((row) => row.event.eventId)).toEqual(
+      Array.from({ length: 32 }, (_, index) => index + 1),
+    );
+
+    // A genuinely new event arriving during execution remains pending, but it
+    // does not make a truthful non-fulfillment report stale.
+    recordAppTaskTrigger(config, first.taskId, { type: "sample.new", eventId: 36 });
+    expect(
+      reportAppTaskFailure(config, bounded, {
+        summary: "Could not fulfill the assignment",
+        facts: ["batch:considered"],
+      }),
+    ).toMatchObject({ status: "applied" });
+    expect(config.resourceStore.readAttempt(bounded.attemptId)?.acceptedResult?.state).toBe("incomplete");
+    expect(config.resourceStore.readTrigger(first.taskId)?.events?.map((row) => row.event.eventId)).toEqual([
+      33, 34, 35, 36,
+    ]);
+
+    advanceToTaskRetry(config, first.taskId);
+    const next = claimObservedAppTask(config, {
+      taskId: first.taskId,
+      appAgent: "app-owner",
+      handler: "workflow:worker",
+      reason: "retry",
+    });
+    if (next.kind !== "claimed") throw new Error("expected next claim");
+    expect(next.events.map((row) => row.event.eventId)).toEqual([33, 34, 35, 36]);
+
+    recordAppTaskTrigger(config, first.taskId, { type: "sample.concurrent", eventId: 37 });
+    expect(() =>
+      completeAppTask(config, next, {
+        summary: "Attempted an action from the older snapshot",
+        actions: [{ kind: "unblock-task", taskId: "missing", expectedGeneration: 1, reason: "test fence" }],
+      }),
+    ).toThrow("newer Task facts are pending");
   });
 
   it("rejects self-updates even when alone or mixed with other actions", () => {

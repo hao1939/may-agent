@@ -190,8 +190,15 @@ class FakeClient implements CodexGoalClient {
     expect(input.developerInstructions).toContain('"resourceVersion":');
     return { threadId: input.threadId, cwd: input.cwd };
   }
+  async injectDeveloperContext(input: { threadId: string; text: string }) {
+    this.calls.push(`inject:${input.threadId}`);
+    this.instructions.push(input.text);
+    expect(input.text).toContain("## Canonical May Task Attempt");
+  }
   async setGoal(input: { threadId: string; objective: string }) {
+    const firstGoal = !this.calls.some((call) => call.startsWith("goal:"));
     this.calls.push(`goal:${input.threadId}`);
+    if (firstGoal) expect(this.calls.at(-2)).toBe(`inject:${input.threadId}`);
     expect(input.objective).toContain("Task mental model");
   }
   async waitForActiveTurn() {

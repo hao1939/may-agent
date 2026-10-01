@@ -42,6 +42,7 @@ export type CodexGoalClient = {
     developerInstructions?: string;
     sandbox?: "read-only" | "workspace-write" | "danger-full-access";
   }): Promise<{ threadId: string; cwd: string }>;
+  injectDeveloperContext(input: { threadId: string; text: string }): Promise<unknown>;
   setGoal(input: {
     threadId: string;
     objective: string;
@@ -337,6 +338,11 @@ export function createCodexGoalExecutor(options: CodexGoalExecutorOptions): Task
         staleInterrupts: existing?.staleInterrupts ?? 0,
       };
       writeBinding(options.stateFile, key, persisted);
+
+      // thread/resume developerInstructions are not included in the installed
+      // CLI's next model request. Insert the current canonical packet into the
+      // thread before activating the goal on every start or resume.
+      await client.injectDeveloperContext({ threadId, text: rendered.developerInstructions });
 
       let correction: string | null = null;
       while (true) {

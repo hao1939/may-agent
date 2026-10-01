@@ -2539,14 +2539,6 @@ export function reportAppTaskFailure(
   const tree = config.resourceStore.readTaskContext({ taskIds: [claim.taskId] });
   const match = matchingTaskAttempt(tree, claim);
   if (!match) return { status: "stale" };
-  if (hasUnacceptedLiveTaskEvents(tree, claim.taskId, input.acceptedLiveEventIds)) {
-    throw new AppTaskActionStaleError({
-      taskId: claim.taskId,
-      expectedGeneration: claim.generation,
-      currentGeneration: match.resource.metadata.generation,
-      reason: "newer Task facts are pending",
-    });
-  }
   requireNonEmptyString(input.summary, "Incomplete report summary");
   requireStringList(input.facts, "Incomplete report facts");
   const summary = `Outcome not achieved: ${input.summary.trim()}; continuing after backoff`;
@@ -2568,9 +2560,10 @@ export function reportAppTaskFailure(
     });
   }
   const failures = (resource.status.executionFailures ?? 0) + 1;
-  // Accepted facts are not a final answer to the original assignment.
-  // Preserve input, including accepted live feedback and earlier linked waits.
-  restoreAttemptEvents(tree, claim.taskId, resource, attempt, now);
+  // Accepted facts are not a final answer to the original assignment. Exact
+  // admitted input remains unresolved through input waits, while notifications
+  // this attempt considered advance instead of restoring the same bounded batch.
+  consumeAcceptedLiveTaskEvents(tree, claim.taskId, claim.agent, input.acceptedLiveEventIds);
   finishAttempt(tree, resource, "completed", summary, now);
   touchResource(resource, {
     phase: "pending",

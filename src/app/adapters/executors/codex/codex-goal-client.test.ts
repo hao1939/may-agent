@@ -70,6 +70,21 @@ describe("CodexGoalAppServerClient", () => {
     process.reply(start.id, { thread: { id: "thread-1" }, cwd: "/tmp/work" });
     expect(await started).toEqual({ threadId: "thread-1", cwd: "/tmp/work" });
 
+    const injected = client.injectDeveloperContext({ threadId: "thread-1", text: "CURRENT_TASK_PACKET" });
+    const inject = await waitForWrite(process, "thread/inject_items");
+    expect(inject.params).toEqual({
+      threadId: "thread-1",
+      items: [
+        {
+          type: "message",
+          role: "developer",
+          content: [{ type: "input_text", text: "CURRENT_TASK_PACKET" }],
+        },
+      ],
+    });
+    process.reply(inject.id, {});
+    await injected;
+
     const goalSet = client.setGoal({ threadId: "thread-1", objective: "Fulfill the May Task" });
     const goal = await waitForWrite(process, "thread/goal/set");
     process.reply(goal.id, { goal: { threadId: "thread-1", objective: "Fulfill the May Task", status: "active" } });
@@ -96,7 +111,7 @@ describe("CodexGoalAppServerClient", () => {
       processId: null,
       notifications: 1,
       serverRequests: 0,
-      responses: 5,
+      responses: 6,
     });
     expect(client.diagnostics().protocolBytes).toBeGreaterThan(0);
     expect(client.diagnostics().maxProtocolLineChars).toBeGreaterThan(0);
