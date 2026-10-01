@@ -598,12 +598,15 @@ export type ConversationTaskChangeRef = {
 // Input-backed work exposes its selected report until answered or closed.
 // Seeded work has no input receipt; preserve its per-attempt incomplete observations.
 // Both event admission and recovery use this predicate (aliases: attempt, topic).
+// Match the index's explicit TEXT key. Implicit column affinity otherwise makes
+// SQLite scan all App admissions. Keep generation's existing numeric comparison;
+// its indexed JSON value also lets the existence check avoid reading JSON bodies.
 const returnedAttemptSql = `(
   json_extract(attempt.attempt_json, '$.acceptedResult.state') = 'converged'
   OR (json_extract(attempt.attempt_json, '$.acceptedResult.state') IN ('incomplete', 'stopped')
     AND NOT EXISTS (SELECT 1 FROM app_task_admissions admission
       WHERE admission.app_id = attempt.app_id
-        AND json_extract(admission.admission_json, '$.taskId') = attempt.task_id
+        AND CAST(json_extract(admission.admission_json, '$.taskId') AS TEXT) = attempt.task_id
         AND json_extract(admission.admission_json, '$.taskGeneration') = attempt.task_generation))
   OR (NOT EXISTS (SELECT 1 FROM app_task_cancellations closed
       WHERE closed.app_id = attempt.app_id AND closed.task_id = attempt.task_id)
@@ -611,7 +614,7 @@ const returnedAttemptSql = `(
       JOIN app_inbox_items origin_input
         ON origin_input.id = json_extract(admission.admission_json, '$.inputEvent.data.request.id')
       WHERE admission.app_id = attempt.app_id
-        AND json_extract(admission.admission_json, '$.taskId') = attempt.task_id
+        AND CAST(json_extract(admission.admission_json, '$.taskId') AS TEXT) = attempt.task_id
         AND json_extract(admission.admission_json, '$.taskGeneration') = attempt.task_generation
         AND json_extract(admission.admission_json, '$.resultAttemptId') IS NULL
         AND json_extract(admission.admission_json, '$.reportAttemptId') = attempt.attempt_id
@@ -631,7 +634,14 @@ export function listPendingConversationTaskChanges(
   return db
     .prepare(
       `
-    WITH changes AS (
+    WITH live_conversations AS MATERIALIZED (
+      SELECT DISTINCT input.app_id, input.conversation_id
+      FROM app_inbox_items input
+      JOIN app_tasks owner ON owner.app_id = input.app_id AND owner.task_id = input.execution_task_id
+      WHERE input.app_id = ? AND input.conversation_id IS NOT NULL
+        AND NOT EXISTS (SELECT 1 FROM app_task_cancellations closed
+          WHERE closed.app_id = owner.app_id AND closed.task_id = owner.task_id)
+    ), changes AS (
       SELECT topic.app_id AS appId, topic.conversation_id AS conversationId, topic.id AS topicId,
         linked.app_id AS taskAppId, linked.task_id AS taskId, attempt.attempt_id AS attemptId,
         NULL AS closedGeneration, attempt.started_at AS changedAt,
@@ -655,11 +665,8 @@ export function listPendingConversationTaskChanges(
     SELECT appId, conversationId, topicId, taskAppId, taskId, attemptId, closedGeneration
     FROM changes
     WHERE EXISTS (
-        SELECT 1 FROM app_inbox_items input
-        JOIN app_tasks owner ON owner.app_id = input.app_id AND owner.task_id = input.execution_task_id
-        WHERE input.app_id = changes.appId AND input.conversation_id = changes.conversationId
-          AND NOT EXISTS (SELECT 1 FROM app_task_cancellations closed
-            WHERE closed.app_id = owner.app_id AND closed.task_id = owner.task_id)
+        SELECT 1 FROM live_conversations live
+        WHERE live.app_id = changes.appId AND live.conversation_id = changes.conversationId
       )
       AND NOT EXISTS (
         SELECT 1 FROM app_inbox_items conversation_execution
@@ -676,7 +683,7 @@ export function listPendingConversationTaskChanges(
     LIMIT ?
   `,
     )
-    .all(appId, appId, limit)
+    .all(appId, appId, appId, limit)
     .map((row) => {
       const ref = {
         appId: String(row.appId),

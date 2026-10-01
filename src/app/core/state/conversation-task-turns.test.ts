@@ -1,4 +1,4 @@
-import { afterEach, expect, setSystemTime, test } from "bun:test";
+import { afterEach, expect, setSystemTime, spyOn, test } from "bun:test";
 import { mkdtempSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
@@ -1713,4 +1713,70 @@ test("closure input validates the exact source and rolls admission back without 
   });
   expect(admitConversationTaskChange(f.context(), worker, ref).created).toBe(false);
   expect(listPendingConversationTaskChanges(f.db, app.id)).toEqual([]);
+});
+
+test("recovery indexes the target Task without changing legacy JSON identity comparisons", () => {
+  const f = fixture();
+  const input = f.admit();
+  completeConversationTaskTurn(f.context(), f.claim(input.taskId), decision);
+  const topic = readAppConversationResource(f.db, app.id, "chat").topics[0]!;
+  admitTaskInput(f.context(), {
+    appId: app.id,
+    idempotencyKey: "measurement",
+    inputContext: { id: input.item.id, source: input.item.source, input: { kind: "measure", data: {} } },
+    topicId: topic.id,
+    attachment: { kind: "desired", intent: {
+      id: "7", parentId: "root", outcome: "Measure sample", acceptance: ["Observed value"],
+    } },
+  });
+  const claim = f.claim("7");
+  failAppTaskAttempt(f.context(), claim, "Source unavailable");
+  const ref = { appId: app.id, conversationId: "chat", topicId: topic.id,
+    taskAppId: app.id, taskId: "7", attemptId: claim.attemptId };
+  const admission = f.db.prepare("SELECT task_id, admission_json FROM app_task_admissions WHERE app_id = ?")
+    .all(app.id).find((row) => JSON.parse(String(row.admission_json)).taskId === "7")!;
+  const saved = JSON.parse(String(admission.admission_json));
+  // Upgrade a populated database. Retained payloads are not normalized or rewritten.
+  f.db.exec(`DROP INDEX idx_app_task_admissions_target_text;
+    CREATE INDEX idx_app_task_admissions_target ON app_task_admissions(
+      app_id, json_extract(admission_json, '$.taskId'), json_extract(admission_json, '$.taskGeneration'))`);
+  f.reopen();
+  expect(f.db.prepare("SELECT name FROM sqlite_master WHERE name = 'idx_app_task_admissions_target'").get()).toBeNull();
+  expect(f.db.prepare("SELECT admission_json FROM app_task_admissions WHERE app_id = ? AND task_id = ?")
+    .get(app.id, admission.task_id)?.admission_json).toBe(admission.admission_json);
+  for (let i = 0; i < 500; i++) {
+    f.db.prepare("INSERT INTO app_task_admissions VALUES (?, ?, ?)").run(app.id, `unrelated-${i}`,
+      JSON.stringify({ taskId: `unrelated-${i}`, taskGeneration: 1 }));
+  }
+  f.db.exec("ANALYZE");
+  const prepare = f.db.prepare.bind(f.db);
+  let recoverySql = "";
+  const capture = spyOn(f.db, "prepare").mockImplementation((sql) => {
+    if (sql.includes("WITH live_conversations")) recoverySql = sql;
+    return prepare(sql);
+  });
+  try {
+    for (const [taskId, taskGeneration, matches] of [
+      ["7", 1, true], [7, "1", true], ["7", "01", true], ["7", "1e0", true],
+      ["7", true, true], ["07", 1, false], ["7", "1x", false],
+      ["7", 1.5, false], ["7", null, false], [null, 1, false],
+    ] as const) {
+      f.db.prepare("UPDATE app_task_admissions SET admission_json = ? WHERE app_id = ? AND task_id = ?")
+        .run(JSON.stringify({ ...saved, taskId, taskGeneration }), app.id, admission.task_id);
+      expect(listPendingConversationTaskChanges(f.db, app.id)).toEqual(matches ? [ref] : []);
+      if (!matches) expect(admitConversationTaskChange(f.context(), f.context(), ref).created).toBe(false);
+    }
+    const plan = prepare(`EXPLAIN QUERY PLAN ${recoverySql}`).all(app.id, app.id, app.id, 100);
+    const admissionLookups = plan.map((step) => String(step.detail)).filter((detail) => detail.startsWith("SEARCH admission "));
+    expect(admissionLookups).toHaveLength(2);
+    for (const lookup of admissionLookups)
+      expect(lookup).toContain("idx_app_task_admissions_target_text (app_id=? AND <expr>=?)");
+    expect(plan.filter((step) => String(step.detail).includes("MATERIALIZE live_conversations"))).toHaveLength(1);
+    f.db.prepare("UPDATE app_task_admissions SET admission_json = ? WHERE app_id = ? AND task_id = ?")
+      .run(admission.admission_json, app.id, admission.task_id);
+    expect(admitConversationTaskChange(f.context(), f.context(), ref).created).toBe(true);
+    expect(listPendingConversationTaskChanges(f.db, app.id)).toEqual([]);
+  } finally {
+    capture.mockRestore();
+  }
 });
