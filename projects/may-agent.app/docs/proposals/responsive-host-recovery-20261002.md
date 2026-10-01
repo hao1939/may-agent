@@ -1,10 +1,10 @@
 # Keep recovery from blocking ordinary Host requests
 
 **Design status:** Proposal; repairs the existing Host/App boundary.
-**Implementation status:** Query repair is implemented in Host PR
-[#280](https://github.com/hao1939/may-agent/pull/280), with private comparison and
-portable regressions. Helper completion and SQL diagnostics are separate source
-candidates. Bounded recovery isolation remains pending. Host PRs
+**Implementation status:** Query repair [#280](https://github.com/hao1939/may-agent/pull/280),
+helper completion [#281](https://github.com/hao1939/may-agent/pull/281), and SQL
+diagnostics [#282](https://github.com/hao1939/may-agent/pull/282) are merged and
+deployed together at `dc92e4f5`. Bounded recovery isolation remains pending. Host PRs
 [#277](https://github.com/hao1939/may-agent/pull/277) and
 [#278](https://github.com/hao1939/may-agent/pull/278) are merged and deployed;
 that is not proof that all runtime timeouts are resolved.
@@ -88,6 +88,34 @@ samples remain separate evidence. No live records or schema were changed.
 These rules do not create another public API, Task type or agent workflow.
 
 ## Implementation trials: October 2
+
+### Latest rollout and new measured lead
+
+Merged Host `dc92e4f5` is installed. The standalone receipt
+`projects/may-agent/.state/deploy-receipts/merged-280-281-282-20261002.json`
+reports healthy readiness and identical artifact/loaded hashes, with the matching
+SDK activated. PR #282's numeric-masking correction passed its regression, full
+local CI (3,386 passes, three installation-only skips), and both GitHub checks.
+App definitions are still the earlier release at this checkpoint; a Host rollout
+does not activate the companion metric or review policy.
+
+The first live SQL snapshot identified `taskRequester` in
+`src/app/human-task-service.ts` as the largest measured cost: 18 calls consumed
+26.85 seconds, averaging 1.49 seconds and peaking at 1.61 seconds. A read-only
+query-plan inspection starts with a scan of Condition routes and then an inbox
+lookup using only App identity. This is a concrete investigation lead, not yet a
+verified fix or attribution of every timeout. Preserve the original link semantics
+when comparing an exact indexed lookup on copied data.
+
+Running the candidate App metric read-only against three real heartbeats returned
+72.2% SQLite wall time over 135.48 seconds; the metric query itself took about
+2.1 ms. This is an early post-startup sample, not steady-state health or a registered
+collector/threshold event. The automatic Evaluation → owner decision → repair →
+verification chain remains to be demonstrated. Private measurements and query-plan
+evidence remain alongside the earlier trial records. The following entries retain
+their earlier source and deployment states.
+
+### Earlier source comparisons
 
 The authorized rollout of merged Host `ebe39a5f` completed with healthy readiness
 and matching binary/SDK/UI provenance. Its receipt is

@@ -2,10 +2,11 @@
 
 ## October 2 verification refresh
 
-The running Host is `ebe39a5f`: #277/#278 are deployed, including the corrected
-quiet `followUp` schema. #280 and #281 are merged but not yet installed. App
-definitions still identify `f8baea82...definitions-v4`; source-only companion
-changes are not live. The initial readiness probe returned 503 and a later probe
+The latest running Host is `dc92e4f5`: #280/#281/#282 were deployed after #282's
+review correction and merge. Its standalone receipt reports healthy readiness
+and matching artifact/loaded hashes. App definitions still identify
+`f8baea82...definitions-v4`; source-only companion changes are not live.
+The earlier `ebe39a5f` readiness probe returned 503 and a later probe
 200. Four bounded socket probes then succeeded in roughly 22–51 ms, while a
 separate bounded Task-list read timed out. This is intermittent responsiveness,
 not a permanently unavailable service or proof that all timeout causes are fixed.
@@ -19,8 +20,9 @@ GitHub review/check status remains separately visible on the PR.
 
 Outstanding work remains:
 
-- Roll out the merged Host fixes and reviewed App changes, then measure live
-  behavior. Improved source query timings do not establish daemon latency.
+- Finish, review and activate the companion App changes, then measure connected
+  behavior. Improved source query timings and successful Host readiness do not
+  establish daemon latency or the complete repair loop.
 - Prove SQL metric collection, Evaluation, accepted May disposition, repair and
   measured verification as one chain. Current automated test coverage proves
   constituent mechanics, not an autonomous production repair.
@@ -44,6 +46,17 @@ and reviews May's isolated App candidate; no live telemetry or completed repair
 is claimed by this assignment.
 
 The earlier sections below retain the original trial and its limits.
+
+The new Host's first live diagnostic snapshot found a further costly lookup:
+`taskRequester` consumed 26.85 seconds across 18 calls (1.49 seconds on average).
+A read-only query plan scans Condition routes before resolving the inbox link.
+This evidence was passed to May's existing loop Task for a bounded team
+investigation and equal-result comparison; no repair is claimed. A preview of the
+candidate SQL metric over three real heartbeat samples returned 72.2% over
+135.48 seconds. That preview is separate from a registered collector sample,
+automatic Evaluation report, or accepted owner disposition. The supervisor found
+this lead through the new diagnostics; it must not be relabeled as autonomous
+discovery by the unfinished App loop.
 
 The October 1 trace review found several connections amplifying routine work.
 The changes repair existing contracts: no additional notification queue, intent
