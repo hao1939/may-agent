@@ -1,11 +1,13 @@
 # Keep recovery from blocking ordinary Host requests
 
 **Design status:** Proposal; repairs the existing Host/App boundary.
-**Implementation status:** Read-only investigation and private SQL trials complete.
-The timeout changes below are not implemented or deployed. Host PRs
+**Implementation status:** Query repair is implemented in Host PR
+[#280](https://github.com/hao1939/may-agent/pull/280), with private comparison and
+portable regressions. Helper completion and SQL diagnostics are separate source
+candidates. Bounded recovery isolation remains pending. Host PRs
 [#277](https://github.com/hao1939/may-agent/pull/277) and
-[#278](https://github.com/hao1939/may-agent/pull/278) are separately reviewed fixes,
-not proof that all runtime timeouts are resolved.
+[#278](https://github.com/hao1939/may-agent/pull/278) are merged and deployed;
+that is not proof that all runtime timeouts are resolved.
 
 ## Decision in plain language
 
@@ -85,6 +87,61 @@ samples remain separate evidence. No live records or schema were changed.
 
 These rules do not create another public API, Task type or agent workflow.
 
+## Implementation trials: October 2
+
+The authorized rollout of merged Host `ebe39a5f` completed with healthy readiness
+and matching binary/SDK/UI provenance. Its receipt is
+`projects/may-agent/.state/deploy-receipts/merged-277-278-20261002.json`.
+The installed SDK's `followUp` description delegates durable work; reply policy
+lives in `response` and permits quiet background delegation. App definitions
+remain their previous release; this rollout did not install the companion App
+review/cancellation changes. A short post-rollout probe still found daemon socket
+timeouts while the trivial web endpoint remained responsive. CI was also running;
+this is a loaded sample, not an idle benchmark or proof of one remaining cause.
+
+Host `937f0bf4` repairs the admission lookup using an indexed explicit TEXT Task
+key, with the original generation comparison as a covered index value. It does
+not use unary `+` or coerce generations. Available Conversations are computed
+once per scan. The production function returned identical results on the retained
+snapshot with zero pending outcomes and nine deliberately missing deliveries.
+Three paired samples took roughly 2.9–3.4 s before and 0.6–0.7 s after. Other
+trials materializing more intermediate data added complexity without sufficient
+gain and were not adopted. The source regression checks a populated index upgrade,
+legacy numeric/text/invalid JSON identities and the actual query plan. Full local
+CI passed: 3,376 tests, three deployment skips. PR #280 is merged as `04b13a3c`;
+this source is not deployed.
+
+Host [#281](https://github.com/hao1939/may-agent/pull/281), source `cbefd905`,
+repairs another confirmed defect from the retained token audit: ordinary helpers
+can successfully call `finish` without ending their invocation. The separate
+candidate marks valid base completion terminal and uses the existing runner hooks
+to stop mixed batches and leave queued input for later work. Five regressions fail
+against merged main; targeted direct/managed/required/schema-backed, rejected
+completion and queued-input cases pass with the candidate. Valid results still
+survive shutdown. Full local CI passed: 3,382 tests, three deployment skips.
+The common rule belongs in [Sessions](../2a-design/sessions.md),
+not in a special agent's retry policy. This does not prove all model/provider
+timeouts have the same cause.
+
+Host [#282](https://github.com/hao1939/may-agent/pull/282), source `f734ee6c`,
+adds the SQL observations described below. Full local CI passed on top of merged
+#280: 3,378 tests, three installation-only skips, no failures. The final retained
+snapshot trial ranked a 2.65-second query first by cost and 100 cheap reads
+(0.31 ms combined) first by frequency. This tests attribution, not a new query
+optimization. The May metric suite passed all six tests, with the full May suite
+at 150 passes and one existing skip; type checks, bundle and design integrity
+also passed. Host and App SQL changes remain undeployed. GitHub check/review
+status belongs to the PR, separately from this local verification record.
+
+The proposal at `projects/may.app/design/token-efficiency-proposal-20261002.md`
+also covers the separate Evaluation clock, meaningful Condition selection and
+context costs. #277 already reduces automatic reference expansion; it does not
+establish a universal final-context budget. The prepared Evaluation companion
+fix bases routine eligibility on successful publication and separates capacity
+from same-metric cadence. Its clock choice differs from that proposal's immutable
+review-completion timestamp and must be reconciled before claiming the latter's
+replay guarantee. No additional retry cap or semantic wake filter is adopted here.
+
 ## Implementation boundaries
 
 **State queries first.** Repair `returnedAttemptSql` and its existing
@@ -138,6 +195,60 @@ diagnostics. Add only the missing measurements to those surfaces: operation
 identity, elapsed handling time, last successful check and overdue age. Keep
 one bounded summary per existing observation interval, not one new Event or
 Telegram message per timing sample.
+
+### SQL visibility and routine review
+
+The existing status diagnostics expose process CPU/memory, and subscriber logs
+time larger callbacks; neither identifies SQL cost. The separate candidate
+instruments the shared SQLite adapter and exposes bounded SQL summaries through
+the existing `status` read with `diagnostics: true`. It records completed prepare,
+get, all, run and exec calls, errors, elapsed time, averages and maxima; ranks
+query shapes by total time, worst time and frequency; and reports untracked work
+when its cap is reached. Bound parameters, result rows, database paths and error
+messages are omitted; literal values/comments in displayed SQL are masked. This
+is diagnostic context, never another authority for work or an action registry.
+
+Counters are cumulative for one process lifetime, identified by PID and `since`.
+Query rankings rotate in five-minute windows, retaining the current and previous
+window with explicit timestamps. Each window tracks at most 512 operation/shape
+pairs and returns the top ten by total time, worst time and calls. Rotation keeps
+startup shapes from permanently filling the tracker. Lifetime totals include all
+measured calls, including work omitted from bounded rankings; a nonzero untracked
+counter warns that the ranked set is incomplete. Empty or old windows are not
+proof of current health.
+They cover the shared adapter in that process, not every child, external CLI or
+raw driver connection. Compilation and execution are separate operation groups.
+SQLite lock waits are included in call time; sleeps outside the adapter are not.
+The prototype's bounded shape cache reduced repeated preparation overhead from
+roughly 6–8 microseconds to about 1–2 microseconds per cheap read in a small local
+trial. Those noisy samples are not a production overhead guarantee.
+
+For routine review, use existing measurement/observer scheduling and Evaluation's
+normal review path. Compare count/error/total-time deltas across samples from the
+same process; reset the comparison on restart. A lifetime maximum is an
+investigation lead, not evidence of a new incident. Rank total cost as well as
+individual latency: many cheap calls can monopolize the daemon. An unavailable
+read or untracked cost is a coverage gap, not a healthy result. May owns whether
+the finding warrants a fix and retains the same investigation while it does.
+
+Compact counters also travel in the existing minute heartbeat; top-query details
+do not. May's companion metric uses the existing five-minute collection schedule
+and indexed, recent heartbeat reads to calculate SQL time as a percentage of
+observed daemon time. It separates process lifetimes and leaves missing/stale
+coverage unknown. An initial App threshold is 25% across three consecutive
+samples, requesting ordinary Evaluation/May investigation, not cancellation or
+restart. Tune that attention policy from experience; it is not a Host invariant.
+The portable App test exercises real collection, counter deltas, restart and
+missing/stale data. A real isolated daemon test verifies heartbeat persistence
+and the public diagnostic read. Neither is a claim of live automatic review.
+
+Roll out the Host before installing this metric definition. Recent heartbeat
+history supplies the comparison window without a new sampling loop, query log,
+registry or database write per query. Worker/web attribution remains follow-up
+guidance if daemon totals and recent on-demand rankings prove insufficient.
+The existing stale-heartbeat check provides liveness evidence while
+the daemon cannot publish a new sample; an old SQL rate cannot certify current
+health.
 
 Evaluation judges repeated latency and coverage loss across successful and failed
 work; May decides whether an existing investigation owns it or a new one is
