@@ -164,6 +164,16 @@ an awaited helper remain deferred. The [ownership review](../archive/reviews/own
 records their rationale; this contract does not promise universal recovery or
 that a human has been notified merely because a failure was saved.
 
+An installation can declare a narrower independent operational route without
+implementing that deferred generic fallback. In the current Apps, May consumes
+exact failed Evaluation `project.task.reconciled` facts through its ordinary
+message input, including failures of Evaluation's owner-review Task. The fact
+retains Task, generation and attempt identity; May must reread current state and
+judge recurrence, linked repair and remaining input. This route neither performs
+semantic self-review nor transfers Task authority. Admission, notification,
+review and fulfillment remain distinct, and the original Evaluation retry and
+caller/dependency paths continue independently.
+
 ### Recovery uses evidence before repetition
 
 Agent and workflow execution share one behavior model: read current facts,

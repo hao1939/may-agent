@@ -4,6 +4,7 @@ import { matchesEventSelector, type AppEvent } from "@may-agent/sdk";
 import { Check } from "typebox/value";
 import app, {
   evaluationHumanDecisionInput,
+  evaluationOperationFailureInput,
   evaluationTaskReportInput,
   observerFailureInput,
   admissionFailureInput,
@@ -53,6 +54,7 @@ describe("canonical May conversation App", () => {
     expect(app.subscriptions?.map(({ id }) => id)).toEqual([
       "evaluation-metric-report",
       "evaluation-review-lag",
+      "evaluation-operation-failure-review",
       "input-admission-failure-review",
       "observer-failure-review",
       "scout-research-qualified",
@@ -514,6 +516,78 @@ describe("canonical May conversation App", () => {
         data: { ...event.data, error: "" },
       }),
     ).toThrow("requires non-empty error");
+  });
+
+  test("routes exact Evaluation operation failures to independent May judgment", () => {
+    const subscription = app.subscriptions?.find(
+      ({ id }) => id === "evaluation-operation-failure-review",
+    );
+    if (!subscription)
+      throw new Error("missing Evaluation operation subscription");
+    const event: AppEvent<Record<string, unknown>> = {
+      type: "project.task.reconciled",
+      source: "app-task-reconciler",
+      target: {
+        appId: "evaluation",
+        project: "evaluation",
+        taskId: "runtime/compat/owner-review",
+      },
+      data: {
+        project: "evaluation.app",
+        taskId: "runtime/compat/owner-review",
+        generation: 3,
+        attemptId: "attempt-17",
+        disposition: "incomplete",
+        error: "fresh input key was rejected",
+      },
+    };
+    expect(matchesEventSelector(subscription.event, event)).toBeTrue();
+    const input = evaluationOperationFailureInput(event)!;
+    expect(input).toMatchObject({
+      kind: "message",
+      data: {
+        context: {
+          evaluationOperationFailure: {
+            appId: "evaluation",
+            taskId: "runtime/compat/owner-review",
+            generation: 3,
+            attemptId: "attempt-17",
+            disposition: "incomplete",
+          },
+          event,
+        },
+      },
+    });
+    expect(String(input.data.message)).toContain(
+      "distinct third unsuccessful attempt",
+    );
+    expect(String(input.data.message)).toContain("trial attention policy");
+    expect(String(input.data.message)).toContain("stale-interrupted");
+    expect(String(input.data.message)).toContain(
+      "Generic supervisor fallback remains deferred",
+    );
+    expect(Check(app.inputSchema, input)).toBeTrue();
+
+    for (const disposition of ["converged", "waiting", "cancelled"]) {
+      expect(
+        evaluationOperationFailureInput({
+          ...event,
+          data: { ...event.data, disposition },
+        }),
+      ).toBeNull();
+    }
+    expect(
+      evaluationOperationFailureInput({
+        ...event,
+        data: { ...event.data, project: "may" },
+      }),
+    ).toBeNull();
+    expect(
+      evaluationOperationFailureInput({
+        ...event,
+        data: { ...event.data, attemptId: "" },
+      }),
+    ).toBeNull();
   });
 
   test("normalizes Evaluation escalations into messages with original correlation context", () => {

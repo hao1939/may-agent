@@ -366,6 +366,43 @@ export function evaluationHumanDecisionInput(
   };
 }
 
+/** Route Evaluation execution failures to an owner that does not use Evaluation's worker. */
+export function evaluationOperationFailureInput(
+  event: AppEvent<Record<string, unknown>>,
+): AppInput | null {
+  const data = record(event.data);
+  const appId = optionalText(data.project ?? data.appId).replace(/\.app$/, "");
+  const taskId = optionalText(data.taskId);
+  const attemptId = optionalText(data.attemptId);
+  const generation = Number(data.generation);
+  if (
+    appId !== "evaluation" ||
+    !taskId ||
+    !attemptId ||
+    !Number.isSafeInteger(generation) ||
+    generation < 1 ||
+    (data.disposition !== "incomplete" && data.disposition !== "retrying")
+  ) {
+    return null;
+  }
+  return {
+    kind: "message",
+    data: {
+      message: `Independently review Evaluation operation ${taskId} generation ${generation}, attempt ${attemptId}, which reconciled as ${data.disposition}. Reread that exact Task and attempt before judging. Preserve its unanswered inputs, normal retry, caller/dependency links and current waits. Check whether this is a distinct third unsuccessful attempt for the same Task generation within six hours; that threshold is a trial attention policy, not a retry cap or proof of waste. Include failed/rejected, accepted-incomplete and specifically stale-interrupted evidence when available, exclude user cancellation, and disclose the retained denominator, time cut and coverage limits. Reuse an existing alert or investigation when its current scope fits; do not create duplicate repair or human messages for the same episode. Inspect the exact linked repair at a due checkpoint rather than treating aggregate improvement, notification or admission as fulfillment. Respond to the human only for a material decision or concrete need. Generic supervisor fallback remains deferred.`,
+      context: {
+        evaluationOperationFailure: {
+          appId,
+          taskId,
+          generation,
+          attemptId,
+          disposition: data.disposition,
+        },
+        event: structuredClone(event),
+      },
+    },
+  };
+}
+
 function reportHash(data: Record<string, unknown>, field: string): string {
   const value = requiredText(data, field, "evaluation.task_report_published");
   if (!/^[a-f0-9]{64}$/.test(value)) {
@@ -542,6 +579,13 @@ export default defineApp({
           },
         };
       },
+    },
+    {
+      id: "evaluation-operation-failure-review",
+      // This installation explicitly gives May independent operational
+      // oversight of Evaluation. Semantic self-review remains excluded.
+      event: { type: "project.task.reconciled" },
+      toInput: evaluationOperationFailureInput,
     },
     {
       id: "input-admission-failure-review",

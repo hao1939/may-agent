@@ -81,6 +81,17 @@ decision or approval. Runtime retains the original delivery identity; the App
 does not create another correlation or work lifecycle. New producers can supply
 structured message context without adding a new conversational input kind.
 
+This installation also routes Evaluation `project.task.reconciled` failures
+directly to May's ordinary message path. The route requires the exact Evaluation
+Task, generation and attempt and retains the complete event; it does not depend
+on Evaluation's owner worker successfully reviewing itself. May rereads current
+Task evidence and applies the trial attention policy of three distinct
+unsuccessful attempts for one Task generation in six hours. The policy includes
+supported failed/rejected, accepted-incomplete and stale-interrupted evidence,
+excludes user cancellation, and requires the denominator and coverage limits.
+It requests review only: it does not stop retries, fulfill input, create a second
+repair, prove waste, or install the deferred generic supervisor fallback.
+
 Messages retain the discussion. Topics group related messages and reference
 exact Tasks. Neither owns execution or copies Task state. Later human feedback
 and linked Task outcomes enter the same input loop. A worker's failure report
