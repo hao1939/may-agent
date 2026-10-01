@@ -283,8 +283,6 @@ describe("conversational attempt contract", () => {
     expect(Check(schema, waiting)).toBe(false);
     expect(Check(conversationTurnResultSchema, waiting)).toBe(false);
     expect(Check(schema, { ...answer, dependencies: [] })).toBe(false);
-    expect(JSON.stringify(schema)).toContain("This Turn ends after admission");
-    expect(JSON.stringify(schema)).toContain("the Request remains open until resolved and explained");
     expect(options).toMatchObject({
       requireFinish: true,
       toolPolicy: "app-agent-full",

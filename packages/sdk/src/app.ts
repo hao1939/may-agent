@@ -388,7 +388,7 @@ export const conversationTurnResultSchema = Type.Object(
         {
           additionalProperties: false,
           description:
-            "Admit one responsible Task, possibly in this App, and link it to the Topic. Reuse an exact Task only when outcome, acceptance, input and execution method fit. For human input, explain the intended outcome in response; background delegation may retain its explanation in summary and facts. This Turn ends after admission; the Request remains open until resolved and explained.",
+            "Submit this input as durable Task work to the selected App and link it to the chosen Topic. Reuse an exact Task only when its outcome, acceptance, input and execution method fit. The Host admits the handoff when this Turn's result is accepted. Task admission alone does not fulfill a Request.",
         },
       ),
     ),
