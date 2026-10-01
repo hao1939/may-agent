@@ -523,20 +523,23 @@ function prepareExecution(options: AgentPreparationOptions): Omit<PreparedAgentE
   );
   const guards = buildGuards(options.definition, options.definition.projectRoot ?? options.projectRoot);
   const composed = guards.length ? composeGuards(...guards) : undefined;
-  const beforeToolCall = composed
-    ? async (context: PiBeforeToolCallContext, signal?: AbortSignal) => {
-        const result = await composed(toGuardContext(context), signal);
-        if (result) {
-          options.onGuard?.({
-            context,
-            guard: result.guardName ?? "unknown",
-            block: result.block,
-            reason: result.reason,
-          });
-        }
-        return result;
-      }
-    : undefined;
+  // finish is sequential. Once accepted, later calls in that same batch have
+  // no authority to add effects. A later invocation has a different message.
+  let finishedTurn: PiBeforeToolCallContext["assistantMessage"] | undefined;
+  const beforeToolCall = async (context: PiBeforeToolCallContext, signal?: AbortSignal) => {
+    if (finishedTurn && context.assistantMessage === finishedTurn)
+      return { block: true, reason: "This invocation already finished; remaining tool calls were not executed." };
+    const result = await composed?.(toGuardContext(context), signal);
+    if (result) {
+      options.onGuard?.({
+        context,
+        guard: result.guardName ?? "unknown",
+        block: result.block,
+        reason: result.reason,
+      });
+    }
+    return result;
+  };
 
   let compactInfo: CompactionInfo | undefined;
   const compact =
@@ -594,6 +597,13 @@ function prepareExecution(options: AgentPreparationOptions): Omit<PreparedAgentE
         tools,
       },
       beforeToolCall,
+      afterToolCall: async ({ toolCall, assistantMessage, result, isError }) => {
+        if (toolCall.name === "finish" && !isError && result.terminate === true) finishedTurn = assistantMessage;
+        return undefined;
+      },
+      // Pi's batch hint alone can continue mixed batches or consume queued input.
+      // Stop before another model request; queued input belongs to later work.
+      shouldStopAfterTurn: ({ message }) => finishedTurn !== undefined && message === finishedTurn,
       transformContext,
       getApiKey: options.definition.apiKey ? () => options.definition.apiKey! : undefined,
     },
