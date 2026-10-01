@@ -568,7 +568,26 @@ describe("canonical May conversation App", () => {
     );
     expect(Check(app.inputSchema, input)).toBeTrue();
 
-    for (const disposition of ["converged", "waiting", "cancelled"]) {
+    expect(
+      evaluationOperationFailureInput({
+        ...event,
+        data: { ...event.data, disposition: "stale" },
+      }),
+    ).toMatchObject({
+      data: {
+        context: {
+          evaluationOperationFailure: { disposition: "stale" },
+        },
+      },
+    });
+
+    for (const disposition of [
+      "converged",
+      "progress",
+      "waiting",
+      "cancelled",
+      "agent-handoff",
+    ]) {
       expect(
         evaluationOperationFailureInput({
           ...event,

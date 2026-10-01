@@ -381,7 +381,9 @@ export function evaluationOperationFailureInput(
     !attemptId ||
     !Number.isSafeInteger(generation) ||
     generation < 1 ||
-    (data.disposition !== "incomplete" && data.disposition !== "retrying")
+    (data.disposition !== "incomplete" &&
+      data.disposition !== "retrying" &&
+      data.disposition !== "stale")
   ) {
     return null;
   }
