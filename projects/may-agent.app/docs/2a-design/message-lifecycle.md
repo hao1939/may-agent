@@ -155,10 +155,10 @@ unavailable work; its presence is not proof that the Task exists or succeeded.
 Read current Task evidence when that matters to the answer. Omitted or empty
 reference updates retain earlier references.
 
-For actual work, ordinary handoff admission saves the input, the admitted Task
-reference and its return association together. The agent chooses the work;
-the Host maintains correlation. The existing Topic-to-Task return links remain
-the result subscription described in [Routing and authority](#routing-and-authority).
+`followUp` submits durable Task work; `requestUpdates` records human promises; `response` communicates with the human.
+Reply requirements belong to `response`; delegation alone requires neither a new Request nor a reply.
+The agent chooses the work. On accepted settlement, the Host saves the input, Task reference and return association together.
+Existing Topic-to-Task links return results through [Routing and authority](#routing-and-authority).
 
 Closure must match the latest accepted scope and explain the outcome in
 Conversation. Persist its message and closure decision consistently, so retry
