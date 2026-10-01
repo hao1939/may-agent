@@ -260,10 +260,12 @@ See [work-model.md](work-model.md) and
 
 ## Context is discovered, not dumped
 
-Prompts contain enough identity, request state, and pointers to begin. Agents
-discover project history, skills, knowledge, metrics, and design details when
-needed. Continuity lives in durable App/project/task state and session
-evidence, not an ever-growing default prompt.
+Present information in layers: current assignment and accepted requirements,
+then the current state of explicitly focused work, then references to supporting
+detail and history. The Host preserves complete information and supplies exact
+reads; agents choose what to explore. A summary must expose its identity and
+limits, so omitted detail remains discoverable. Continuity lives in durable
+App/project/task state and session evidence, not an ever-growing default prompt.
 
 See [sessions.md](../2a-design/sessions.md) and
 [skills.md](../2a-design/skills.md).

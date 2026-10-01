@@ -22,8 +22,50 @@ SELECT VALUE AS value, COUNT(*) AS sampleSize, (SELECT cut FROM clock) AS measur
 FROM recoveries`;
 
 export const REVIEW_LAG_METRIC = "may.evaluation-unfinished-review-age-seconds";
+export const SQL_TIME_METRIC = "may.daemon-sql-time-percent";
 // App attention policy; Host samples existing facts and never stops retries from these rules.
 export const reliabilityMetrics: NonNullable<AppDefinition["metrics"]> = [
+  {
+    id: SQL_TIME_METRIC,
+    name: "Daemon time spent in SQLite",
+    owner: "may",
+    project: "may",
+    type: "gauge",
+    unit: "percent",
+    measureInterval: 300_000,
+    threshold: 25,
+    alertOp: ">",
+    config: { alert: { mode: "sustained", consecutive: 3 } },
+    description:
+      "SQLite wall time between retained heartbeat samples over the last ten minutes. Sustained high cost invites investigation; it does not authorize a restart or query cancellation.",
+    sourceQuery: `WITH samples AS (
+      SELECT timestamp, json_extract(data, '$.pid') AS pid,
+        json_extract(data, '$.sql.since') AS since,
+        json_extract(data, '$.sql.totalMs') AS totalMs,
+        json_extract(data, '$.sql.calls') AS calls,
+        json_extract(data, '$.sql.errors') AS errors,
+        json_extract(data, '$.sql.untrackedCalls') AS untrackedCalls
+      FROM events WHERE event_type = 'runtime.daemon.heartbeat'
+        AND timestamp >= ${clock} - 600000 AND timestamp <= ${clock}
+        AND json_type(data, '$.sql.totalMs') IN ('integer', 'real')
+        AND json_type(data, '$.sql.since') = 'integer'
+    ), intervals AS (
+      SELECT pid, since, MAX(timestamp) - MIN(timestamp) AS elapsedMs,
+        MAX(timestamp) AS lastSampleAt, COUNT(*) AS samples,
+        MAX(totalMs) - MIN(totalMs) AS sqlMs,
+        MAX(calls) - MIN(calls) AS calls,
+        MAX(errors) - MIN(errors) AS errors,
+        MAX(untrackedCalls) - MIN(untrackedCalls) AS untrackedCalls
+      FROM samples GROUP BY pid, since HAVING MAX(timestamp) > MIN(timestamp)
+    ) SELECT 100.0 * SUM(sqlMs) / SUM(elapsedMs) AS value, SUM(samples) AS sampleSize,
+      ${clock} AS measuredAt,
+      json_object('scope', 'Daemon shared SQLite adapter, excluding workers, raw drivers and sleeps outside SQLite',
+        'elapsedMs', SUM(elapsedMs), 'sqlMs', SUM(sqlMs), 'calls', SUM(calls),
+        'errors', SUM(errors), 'untrackedCalls', SUM(untrackedCalls),
+        'lastSampleAt', MAX(lastSampleAt),
+        'nextRead', 'Read status with diagnostics:true. diagnostics.sql contains the bounded top query shapes.') AS note
+      FROM intervals HAVING MAX(lastSampleAt) >= ${clock} - 180000`,
+  },
   {
     id: "may.unresolved-input-recovery-count",
     name: "Unresolved input recovery boundaries",

@@ -145,6 +145,17 @@ while SQLite is the canonical bounded read model for lifecycle queries.
 checks may use it directly; historical rows created before the field existed
 remain migration data rather than a reason to weaken the current contract.
 
+A validated `finish` ends the current invocation, including ordinary helpers
+without an output schema. Rejected completion stays correctable. In a sequential
+tool batch, earlier effects remain evidence; calls after accepted completion are
+reported as unexecuted. The runner stops before another model request or queued
+input can prolong that contribution. Pending input remains available for later
+work, and finishing a helper does not fulfill its parent's Task. A later admitted
+invocation can use the same session. The October 2 candidate repairs the ordinary
+helper gap and mixed-batch handling; see the
+[timeout investigation](../proposals/responsive-host-recovery-20261002.md#implementation-trials-october-2)
+for source/trial status, separate from deployment.
+
 Agent tool calls must also have a bounded lifecycle. A shell command is not
 still running merely because a descendant retained stdout or stderr after the
 invoked shell exited. Shell commands run synchronously inside isolated execution

@@ -49,7 +49,7 @@ extra object the human must manage. The vocabulary is:
 | Conversation | The shared append-only message stream and related context |
 | Inbox item | A durably admitted input and its handling/caller correlation |
 | Turn | One bounded attempt of the Conversation's Task handling human input or a routed system fact, including repeated model calls and tool use |
-| Request | An accepted ask May owes an outcome to; it can span Turns and link Tasks |
+| Request | An accepted promise to the human; it can span Turns and link Tasks |
 | Topic | Related discussion and exact Task links, with no execution lifecycle |
 | Task | An App-owned execution identity that handles inputs, records outcomes and stays available until its owner closes it |
 | Model step | One internal model/tool cycle inside a Turn or Task attempt |
@@ -131,8 +131,8 @@ with a useful answer and no delegated Task; the Conversation remains available.
 If the ask was only to start a benchmark, confirmed admission may itself fulfill
 it; closure follows the accepted ask.
 
-One Request represents one intention across inputs. Clarifications and changed
-constraints refine the same accepted scope; independent intentions remain
+One Request represents one human promise across inputs. Clarifications refine
+the accepted scope; independent intentions remain
 distinct even when one Turn addresses them together. May chooses those
 associations and judges fulfillment. The Host preserves the associations and
 requires a disposition for the Requests assigned to a Turn; completing a batch
@@ -155,10 +155,10 @@ unavailable work; its presence is not proof that the Task exists or succeeded.
 Read current Task evidence when that matters to the answer. Omitted or empty
 reference updates retain earlier references.
 
-For actual work, ordinary handoff admission saves the input, the admitted Task
-reference and its return association together. The agent chooses the work;
-the Host maintains correlation. The existing Topic-to-Task return links remain
-the result subscription described in [Routing and authority](#routing-and-authority).
+`followUp` submits durable Task work; `requestUpdates` records human promises; `response` communicates with the human.
+Reply requirements belong to `response`; delegation alone requires neither a new Request nor a reply.
+The agent chooses the work. On accepted settlement, the Host saves the input, Task reference and return association together.
+Existing Topic-to-Task links return results through [Routing and authority](#routing-and-authority).
 
 Closure must match the latest accepted scope and explain the outcome in
 Conversation. Persist its message and closure decision consistently, so retry
@@ -248,22 +248,22 @@ Explicit [current-turn control](human-control-surfaces.md#current-turn-control)
 must bypass this ordinary turn queue. The public Stop event does so; it commits
 the exact turn disposition before aborting that execution.
 
-Code collects bounded structured context:
+Following [layered context](../1-principles/core-principles.md#context-is-discovered-not-dumped), the Host preserves full records and presents:
 
 - the current Turn's complete claimed input batch, in order, and its separate reply destination;
-- a focused Task's complete decision view, when supplied;
+- a focused Task's identity, revision, phase, closure, outcome and latest summary;
 - the selected or replied-to Topic and its exact Task links;
 - the previous proposal or question and bounded recent Turns;
 - the relevant accepted Requests, current scope, and closure evidence;
-- exact canonical snapshots represented by command or tool views;
-- bounded older Topic candidates when the human refers to earlier work; and
-- installed App responsibilities and typed input contracts.
+- exact Task links represented by command or tool views, without expanding their bodies;
+- bounded older Topic candidates, installed App responsibilities and typed input contracts.
 
-The LLM decides meaning. Code validates identities and executes the decision.
-There is no keyword router or second intent classifier.
+Read exact Task detail before acting on its requirements, waits or results.
+`/todo` links are navigation, not a reading list. Summary text can be bounded;
+accepted Request scopes and reply/proposal identity remain intact. The LLM
+decides meaning; code validates and executes its decision.
 
-The reply destination selects where the answer goes; it does not select which
-input matters. The default Conversation capability presents each batch input
+The reply destination selects delivery, not which input matters. The capability presents each batch input
 once in `inputs`, with its source, and labels response routing separately as
 `replyTo`. Bounded history, Requests and previous-attempt evidence remain context.
 This is a presentation choice, not an SDK schema or authority change: core still

@@ -408,6 +408,9 @@ Accepted Task facts retain the owner's metric disposition and exact linked work.
 The `metric_dispositions` view projects those facts without a new decision store;
 the metric evidence endpoint, dashboard and daily digest use it. A published
 Evaluation report and an unaccepted execution result are not owner decisions.
+The Host indexes candidate attempts before expanding their facts, then applies
+the same accepted-fact validation. Exact metric reads must not expand every
+Task attempt as history grows; the index changes read cost, not authority.
 The App workflow prepares a disposition for ordinary Task result acceptance and
 uses the same linked-work reader for direct alerts and Evaluation intake. See
 [metric pattern review](../../../evaluation.app/design/metric-pattern-review.md#breach-identity-and-retained-response)

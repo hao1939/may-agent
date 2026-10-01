@@ -13,6 +13,7 @@ import {
   metricEvidenceHash,
   type MetricReader,
 } from "./lib/metric-evidence.js";
+import { metricReviewNextReviewAt } from "./lib/metric-selection.js";
 import {
   configuredTaskReportRoot,
   metricReportPaths,
@@ -40,12 +41,44 @@ export async function reviewMetric(
   reader: MetricReader = readMetricEvidence,
   reportRoot = configuredTaskReportRoot(),
 ): Promise<ExecutionResult> {
-  const { metricId, end } = ctx.input;
+  const { metricId } = ctx.input;
+  const end = Number(ctx.input.end);
   const profile = reviewerProfile(ctx.input.reviewer);
   if (!metricId || !Number.isSafeInteger(end) || end <= 0)
     return ctx.blocked(
       "Metric review requires an exact metric and observation cut",
     );
+  if (ctx.input.automatic) {
+    let nextReviewAt: number;
+    try {
+      nextReviewAt = await metricReviewNextReviewAt(
+        ctx,
+        metricId,
+        profile.reviewer,
+      );
+    } catch (error) {
+      const summary = `Metric review deadline unavailable: ${error instanceof Error ? error.message : String(error)}`;
+      return ctx.done(summary, {
+        state: "incomplete",
+        report: true,
+        summary,
+        facts: [`metric:${metricId}`, "review-disposition:deadline-unavailable"],
+      });
+    }
+    if (nextReviewAt > Date.now()) {
+      const summary = `Metric ${metricId} is not due for another review.`;
+      return ctx.done(summary, {
+        state: "converged",
+        summary,
+        result: { disposition: "not-due", metricId, nextReviewAt },
+        facts: [
+          `metric:${metricId}`,
+          `metric-review:not-due:${nextReviewAt}`,
+        ],
+        actions: [],
+      });
+    }
+  }
   // The request pins source bytes before assessment. A changed definition,
   // attribution or retained history must not turn publication recovery into a
   // second judgment of the same requested observation.
@@ -228,7 +261,12 @@ export async function reviewMetric(
   return ctx.done(payload.judgment.summary, {
     state: "converged",
     summary: payload.judgment.summary,
-    result: { publication, nextReviewAt: end + profile.allowanceIntervalMs },
+    // The immutable judgment time starts the next interval. Publication replay
+    // cannot silently postpone a review, so a long delay can leave it due now.
+    result: {
+      publication,
+      nextReviewAt: payload.createdAt + profile.metricReviewIntervalMs,
+    },
     facts: [
       `metric:${metricId}`,
       `metric-review-cut:${end}`,

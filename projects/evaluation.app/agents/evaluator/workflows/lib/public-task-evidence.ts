@@ -67,9 +67,7 @@ export type PublicTaskEvidenceProvider = {
   getEvent(eventId: string | number): Promise<Record<string, unknown>>;
 };
 export type SubjectDisposition =
-  | "eligible"
-  | "excluded"
-  | "insufficient-evidence";
+  "eligible" | "excluded" | "insufficient-evidence";
 export type SubjectEvidence = {
   disposition: SubjectDisposition;
   reason: string;
@@ -163,11 +161,17 @@ export function configuredControlSocket(
 
 export function sendPublicReadCommand(
   command: Record<string, unknown>,
-  options: { socketPath?: string; timeoutMs?: number; maxBytes?: number } = {},
+  options: {
+    socketPath?: string;
+    timeoutMs?: number;
+    maxBytes?: number;
+    signal?: AbortSignal;
+  } = {},
 ): Promise<Record<string, unknown>> {
   const commandType = text(command.type);
   // This adapter combines public HTTP reporting and socket resource reads.
-  if (commandType === "task.attempts.read") return readPublicAttempts(command);
+  if (commandType === "task.attempts.read")
+    return readPublicAttempts(command, options.signal);
   if (!ALLOWED_COMMANDS.has(commandType)) {
     return Promise.reject(
       new Error(
@@ -187,6 +191,7 @@ export function sendPublicReadCommand(
       if (settled) return;
       settled = true;
       clearTimeout(timer);
+      options.signal?.removeEventListener("abort", onAbort);
       socket.destroy();
       callback();
     };
@@ -194,11 +199,14 @@ export function sendPublicReadCommand(
       settle(() =>
         reject(error instanceof Error ? error : new Error(String(error))),
       );
+    const onAbort = () => fail(options.signal?.reason);
     const timer = setTimeout(
       () =>
         fail(new Error(`Public evidence read timed out after ${timeoutMs}ms`)),
       timeoutMs,
     );
+    options.signal?.addEventListener("abort", onAbort, { once: true });
+    if (options.signal?.aborted) return onAbort();
     socket.setEncoding("utf8");
     socket.on("error", fail);
     socket.on("connect", () => socket.write(`${JSON.stringify(command)}\n`));

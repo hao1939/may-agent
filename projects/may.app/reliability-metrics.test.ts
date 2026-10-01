@@ -17,6 +17,7 @@ import {
 import {
   reliabilityMetrics,
   REVIEW_LAG_METRIC,
+  SQL_TIME_METRIC,
 } from "./reliability-metrics.js";
 import app from "./app.js";
 
@@ -33,6 +34,56 @@ function sample(id: string) {
     )
     .get() as any;
 }
+
+function sqlHeartbeat(
+  store: SqliteDb,
+  at: number,
+  pid: number,
+  since: number,
+  totalMs: number,
+) {
+  store
+    .prepare(
+      "INSERT INTO events(event_type, source, owner, data, timestamp) VALUES (?, ?, ?, ?, ?)",
+    )
+    .run(
+      "runtime.daemon.heartbeat",
+      "daemon",
+      "agent:may",
+      JSON.stringify({
+        pid,
+        sql: { since, totalMs, calls: totalMs, errors: 0, untrackedCalls: 0 },
+      }),
+      at,
+    );
+}
+
+test("SQL cost uses recent counter deltas, separates restarts and keeps absent or stale coverage unknown", () => {
+  const now = Date.now();
+  expect(sample(SQL_TIME_METRIC)).toBeNull();
+  sqlHeartbeat(db, now - 400_000, 10, 1, 200_000);
+  sqlHeartbeat(db, now - 300_000, 10, 1, 250_000);
+  expect(sample(SQL_TIME_METRIC)).toBeNull(); // old samples cannot report current health
+  sqlHeartbeat(db, now - 200_000, 11, 2, 1_000);
+  sqlHeartbeat(db, now - 100_000, 11, 2, 26_000);
+  // 75 seconds of SQL in 200 seconds of observed time, without bridging a restart.
+  expect(sample(SQL_TIME_METRIC)).toMatchObject({ value: 37.5, sampleSize: 4 });
+  const note = JSON.parse(sample(SQL_TIME_METRIC).note);
+  expect(note).toMatchObject({ elapsedMs: 200_000, sqlMs: 75_000 });
+  expect(note.nextRead).toContain("diagnostics.sql");
+  const plan = db
+    .prepare(
+      `EXPLAIN QUERY PLAN ${reliabilityMetrics.find((metric) => metric.id === SQL_TIME_METRIC)!.sourceQuery}`,
+    )
+    .all();
+  expect(
+    plan.some((step) =>
+      String(step.detail).includes(
+        "idx_events_type (event_type=? AND timestamp>? AND timestamp<?)",
+      ),
+    ),
+  ).toBe(true);
+});
 
 test("May schedules one normal collection opportunity every five minutes without a Task input", () => {
   let now = 0;
@@ -69,6 +120,9 @@ test("declared reliability metrics collect through the Host and retain a real br
     const store = getDb(root);
     const reporting = createAppReporting(() => store);
     reporting.syncDefinitions([{ definition: app }]);
+    const now = Date.now();
+    sqlHeartbeat(store, now - 120_000, 1, now - 200_000, 10);
+    sqlHeartbeat(store, now - 60_000, 1, now - 200_000, 20);
     const old = Date.now() - 2 * 86400000;
     createAppInboxItem(store, {
       id: "unadmitted",

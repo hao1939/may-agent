@@ -13,6 +13,17 @@ declared schedules and the shared Task runtime.
   domain vocabulary. It runs through the same input, Task and attempt path as
   other App work.
 
+The daemon records its runtime heartbeat at startup and every minute.
+Maintenance reads its timestamp as a fallback when the control socket does not
+respond. A fresh timestamp shows that the daemon ran the callback; it does not
+prove that Apps are making progress or that every subsystem is healthy.
+
+The [SQL measurement candidate](../proposals/responsive-host-recovery-20261002.md#sql-visibility-and-routine-review)
+adds compact cumulative SQLite counters to this existing observation. App metric
+collection can compare retained samples without a new timer or model call per
+heartbeat. Detailed query rankings remain an on-demand diagnostic read. The Host
+measures; the App chooses review cadence, thresholds and follow-through.
+
 ```text
 App schedule -> input or fact -> exact Task -> bounded attempt -> outcome/wait
 ```

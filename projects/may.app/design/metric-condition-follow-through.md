@@ -85,6 +85,44 @@ shown with their state; satisfied Conditions and closed Tasks have no live
 Condition deadline. A legacy fact's date remains historical. It is never used
 as a fallback timer. Omitting unchanged Conditions retains their Host-owned wait.
 
+## SQL cost review
+
+The October 2 source candidate adds `may.daemon-sql-time-percent` to May's
+existing five-minute metric collection. It compares retained daemon heartbeat
+counters over ten minutes, separating process lifetimes so a restart cannot look
+like negative cost. Missing or stale samples remain unknown. The initial policy
+requests attention above 25% SQL wall time for three consecutive samples; these
+overlapping windows indicate sustained load, not three independent incidents.
+
+Use the ordinary Evaluation review and May disposition path. When cost warrants
+investigation, read `status` with `diagnostics: true` for average/worst cost and
+recent top query shapes by total time, latency and frequency. Rankings are bounded
+and process-local; inspect untracked counters and window timestamps. Many fast
+queries can matter as much as one slow query. A lifetime maximum alone does not
+prove a new incident, and high SQL time does not authorize cancellation or restart.
+Routine healthy samples need no human message. Reuse an existing investigation
+when its scope fits.
+
+Deploy the Host counters before loading this metric definition. Portable tests
+exercise the metric through the existing collector, including restart and stale
+coverage; they do not prove that a live agent has diagnosed or repaired a query.
+
+The rollout acceptance is a complete example: a real sample and breach reaches
+Evaluation, its exact report reaches May, an accepted owner decision links the
+repair, and a comparable post-application sample verifies the effect. Retain those
+ordinary identities in the accountable Task's evidence. An alert or patch alone
+does not close this loop; a justified no-change decision is also valid. Applying
+a proposed improvement keeps its existing human approval boundary.
+
+Exact metric events should retain their subject through review selection. Periodic
+bounded discovery remains useful when events were missed. The October 2 trial
+found that the current App drops the subject and can examine unrelated metrics
+first; May's assigned Task is preparing a correction. Acceptance must include two
+different metric signals plus a scheduled wake during active review, retained
+deadlines and shared allowance, incomplete reads, and reuse of accepted owner work.
+This is an App selection repair, not a new Host registry or work lifecycle.
+
+
 ## Validation and limits
 
 The preceding PoC is retained on `poc/metric-condition-follow-through`, commit

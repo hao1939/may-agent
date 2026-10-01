@@ -14,6 +14,21 @@ export function metricReviewTaskId(
 ) {
   return `runtime/metric-review/${reviewer}/${createHash("sha256").update(metricId).digest("hex").slice(0, 24)}`;
 }
+
+export async function metricReviewNextReviewAt(
+  ctx: WorkflowContext<any>,
+  metricId: string,
+  reviewer: Reviewer = "evaluator",
+): Promise<number> {
+  const task = (await ctx.read.tasks.get(
+    metricReviewTaskId(metricId, reviewer),
+  )) as any;
+  const accepted = task?.result?.result ?? task?.result;
+  const nextReviewAt = Number(accepted?.nextReviewAt);
+  return Number.isSafeInteger(nextReviewAt) && nextReviewAt > 0
+    ? nextReviewAt
+    : 0;
+}
 type Candidate = { metricId: string; end: number; reviewer: Reviewer };
 export type MetricSelection = {
   candidate: Candidate | null;
@@ -69,11 +84,8 @@ export async function selectMetricCandidate(
     ];
     for (const metric of ordered.slice(0, 3)) {
       cursor = metric.id;
-      const task = (await ctx.read.tasks.get(
-        metricReviewTaskId(metric.id, reviewer),
-      )) as any;
-      const accepted = task?.result?.result ?? task?.result;
-      if (Number(accepted?.nextReviewAt) > now) continue;
+      if ((await metricReviewNextReviewAt(ctx, metric.id, reviewer)) > now)
+        continue;
       const cut = Math.max(
         end,
         Math.min(now, Number(metric.measured_at ?? 0) + 1),

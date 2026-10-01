@@ -8,12 +8,14 @@ export const populationCut = (now = Date.now()) =>
 /** Public Host reporting endpoint; kept separate from the daemon's Task reads. */
 export async function readPublicAttempts(
   input: Record<string, unknown>,
+  signal?: AbortSignal,
 ): Promise<Record<string, unknown>> {
   const params = new URLSearchParams();
   for (const key of ["appId", "taskId", "attemptId", "end", "windowMs"])
     if (input[key] !== undefined) params.set(key, String(input[key]));
+  const timeout = AbortSignal.timeout(5_000);
   const response = await fetch(hostReportUrl(`/api/task-attempts?${params}`), {
-    signal: AbortSignal.timeout(5_000),
+    signal: signal ? AbortSignal.any([signal, timeout]) : timeout,
     redirect: "error",
   });
   if (!response.ok)
