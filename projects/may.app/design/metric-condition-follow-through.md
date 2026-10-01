@@ -85,6 +85,28 @@ shown with their state; satisfied Conditions and closed Tasks have no live
 Condition deadline. A legacy fact's date remains historical. It is never used
 as a fallback timer. Omitting unchanged Conditions retains their Host-owned wait.
 
+## SQL cost review
+
+The October 2 source candidate adds `may.daemon-sql-time-percent` to May's
+existing five-minute metric collection. It compares retained daemon heartbeat
+counters over ten minutes, separating process lifetimes so a restart cannot look
+like negative cost. Missing or stale samples remain unknown. The initial policy
+requests attention above 25% SQL wall time for three consecutive samples; these
+overlapping windows indicate sustained load, not three independent incidents.
+
+Use the ordinary Evaluation review and May disposition path. When cost warrants
+investigation, read `status` with `diagnostics: true` for average/worst cost and
+recent top query shapes by total time, latency and frequency. Rankings are bounded
+and process-local; inspect untracked counters and window timestamps. Many fast
+queries can matter as much as one slow query. A lifetime maximum alone does not
+prove a new incident, and high SQL time does not authorize cancellation or restart.
+Routine healthy samples need no human message. Reuse an existing investigation
+when its scope fits.
+
+Deploy the Host counters before loading this metric definition. Portable tests
+exercise the metric through the existing collector, including restart and stale
+coverage; they do not prove that a live agent has diagnosed or repaired a query.
+
 ## Validation and limits
 
 The preceding PoC is retained on `poc/metric-condition-follow-through`, commit
