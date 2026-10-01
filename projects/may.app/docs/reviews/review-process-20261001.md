@@ -75,6 +75,17 @@ the current view unchanged on later openings.
 
 ## Remaining root-cause limits
 
+The October 2 follow-up confirms both PR heads still pass Quality and Container.
+#278 is approved; #277 requires an approving review. Its sole review thread about
+conflicting `followUp` wording is resolved: the current schema requires an
+explanation for human input and explicitly permits quiet background delegation.
+No additional merge-blocking source defect was found. Full local CI results above
+apply to these unchanged heads; they were not rerun merely to repeat the review.
+
+The [timeout investigation](../../../may-agent.app/docs/proposals/responsive-host-recovery-20261002.md)
+now separately measures the Conversation recovery query and documents a proposed
+repair. The earlier limits below remain relevant to the metric PR's claims.
+
 The slow projection is measured, and removing the watcher's unrelated catalog
 read removes one failure dependency. Broader daemon responsiveness is not yet
 explained completely. An inexpensive catalog query took about 24 ms alone,
