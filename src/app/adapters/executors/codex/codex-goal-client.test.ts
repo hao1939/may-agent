@@ -64,6 +64,24 @@ describe("CodexGoalAppServerClient", () => {
     await initialized;
     expect((await waitForWrite(process, "initialized")).id).toBeUndefined();
 
+    const executed = client.execCommand({
+      command: ["/usr/bin/true"],
+      cwd: "/tmp/work",
+      sandboxPolicy: { type: "readOnly", networkAccess: false },
+      timeoutMs: 5_000,
+      outputBytesCap: 4_096,
+    });
+    const command = await waitForWrite(process, "command/exec");
+    expect(command.params).toEqual({
+      command: ["/usr/bin/true"],
+      cwd: "/tmp/work",
+      sandboxPolicy: { type: "readOnly", networkAccess: false },
+      timeoutMs: 5_000,
+      outputBytesCap: 4_096,
+    });
+    process.reply(command.id, { exitCode: 0, stdout: "", stderr: "" });
+    expect(await executed).toEqual({ exitCode: 0, stdout: "", stderr: "" });
+
     const started = client.startThread({ cwd: "/tmp/work", sandbox: "read-only" });
     const start = await waitForWrite(process, "thread/start");
     expect(start.params).toMatchObject({ cwd: "/tmp/work", approvalPolicy: "never", ephemeral: false });
@@ -111,7 +129,7 @@ describe("CodexGoalAppServerClient", () => {
       processId: null,
       notifications: 1,
       serverRequests: 0,
-      responses: 6,
+      responses: 7,
     });
     expect(client.diagnostics().protocolBytes).toBeGreaterThan(0);
     expect(client.diagnostics().maxProtocolLineChars).toBeGreaterThan(0);

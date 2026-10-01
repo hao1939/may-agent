@@ -4,6 +4,7 @@ import { type AppEvent, type TaskAttempt, type TaskExecutor, type TaskReconcileR
 import {
   CodexGoalAppServerClient,
   type AppServerNotification,
+  type CodexCommandExecResult,
   type CodexGoalObservation,
   type CodexTurnCompletion,
 } from "./codex-goal-client.js";
@@ -31,6 +32,13 @@ type BindingFile = { version: 1; bindings: Record<string, Binding> };
 
 export type CodexGoalClient = {
   initialize(): Promise<void>;
+  execCommand(input: {
+    command: string[];
+    cwd: string;
+    sandboxPolicy: { type: "readOnly"; networkAccess: false };
+    timeoutMs: number;
+    outputBytesCap: number;
+  }): Promise<CodexCommandExecResult>;
   startThread(input: {
     cwd: string;
     developerInstructions?: string;
@@ -74,6 +82,21 @@ export type CodexGoalExecutorOptions = {
 
 const DEFAULT_TURN_TIMEOUT_MS = 30 * 60_000;
 const MAX_PENDING_STEERING_EVENTS = 64;
+const EXECUTOR_PREFLIGHT_TIMEOUT_MS = 5_000;
+const EXECUTOR_PREFLIGHT_OUTPUT_BYTES_CAP = 4 * 1024;
+
+async function preflightExecutor(client: CodexGoalClient, cwd: string): Promise<void> {
+  const result = await client.execCommand({
+    command: ["/usr/bin/true"],
+    cwd,
+    sandboxPolicy: { type: "readOnly", networkAccess: false },
+    timeoutMs: EXECUTOR_PREFLIGHT_TIMEOUT_MS,
+    outputBytesCap: EXECUTOR_PREFLIGHT_OUTPUT_BYTES_CAP,
+  });
+  if (result.exitCode !== 0) {
+    throw new Error(`Codex executor preflight failed with exit code ${result.exitCode}`);
+  }
+}
 
 function bindingKey(attempt: TaskAttempt): string {
   return `${attempt.appId}\u0000${attempt.task.id}`;
@@ -313,6 +336,7 @@ export function createCodexGoalExecutor(options: CodexGoalExecutorOptions): Task
     try {
       attempt.signal.throwIfAborted();
       await client.initialize();
+      await preflightExecutor(client, attempt.cwd);
       const binding = existing
         ? await client.resumeThread({
             threadId: existing.threadId,

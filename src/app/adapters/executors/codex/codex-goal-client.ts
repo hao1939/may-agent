@@ -21,6 +21,12 @@ export type CodexThreadBinding = {
   cwd: string;
 };
 
+export type CodexCommandExecResult = {
+  exitCode: number;
+  stdout: string;
+  stderr: string;
+};
+
 export type CodexTurnCompletion = {
   threadId: string;
   turn: {
@@ -185,6 +191,16 @@ export class CodexGoalAppServerClient {
       },
     });
     this.notify("initialized", {});
+  }
+
+  async execCommand(input: {
+    command: string[];
+    cwd: string;
+    sandboxPolicy: { type: "readOnly"; networkAccess: false };
+    timeoutMs: number;
+    outputBytesCap: number;
+  }): Promise<CodexCommandExecResult> {
+    return await this.request<CodexCommandExecResult>("command/exec", input);
   }
 
   async startThread(input: {
