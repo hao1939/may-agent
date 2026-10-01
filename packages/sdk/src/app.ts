@@ -387,7 +387,7 @@ export const conversationTurnResultSchema = Type.Object(
         {
           additionalProperties: false,
           description:
-            "Admit one responsible Task, possibly in this App, and link it to the Topic. Reuse an exact Task only when outcome, acceptance, input and execution method fit. Supply an immediate response explaining the intended outcome. This Turn ends after admission; the Request remains open until resolved and explained.",
+            "Admit one responsible Task, possibly in this App, and link it to the Topic. Reuse an exact Task only when outcome, acceptance, input and execution method fit. For human input, explain the intended outcome in response; background delegation may retain its explanation in summary and facts. This Turn ends after admission; the Request remains open until resolved and explained.",
         },
       ),
     ),
