@@ -364,9 +364,11 @@ export function createCodexGoalExecutor(options: CodexGoalExecutorOptions): Task
       writeBinding(options.stateFile, key, persisted);
 
       // thread/resume developerInstructions are not included in the installed
-      // CLI's next model request. Insert the current canonical packet into the
-      // thread before activating the goal on every start or resume.
-      await client.injectDeveloperContext({ threadId, text: rendered.developerInstructions });
+      // CLI's next model request. Fresh starts already carry the canonical packet
+      // through thread/start, so inject only when resuming an existing thread.
+      if (existing) {
+        await client.injectDeveloperContext({ threadId, text: rendered.developerInstructions });
+      }
 
       let correction: string | null = null;
       while (true) {

@@ -214,9 +214,7 @@ class FakeClient implements CodexGoalClient {
     expect(input.text).toContain("## Canonical May Task Attempt");
   }
   async setGoal(input: { threadId: string; objective: string }) {
-    const firstGoal = !this.calls.some((call) => call.startsWith("goal:"));
     this.calls.push(`goal:${input.threadId}`);
-    if (firstGoal) expect(this.calls.at(-2)).toBe(`inject:${input.threadId}`);
     expect(input.objective).toContain("Task mental model");
   }
   async waitForActiveTurn() {
@@ -390,6 +388,10 @@ describe("codex-goal Task executor", () => {
       "preflight:/usr/bin/true",
       "resume:thread-1",
     ]);
+    expect(firstClient.calls).not.toContain("inject:thread-1");
+    expect(firstClient.calls.indexOf("goal:thread-1")).toBeGreaterThan(firstClient.calls.indexOf(`start:${root}`));
+    expect(resumedClient.calls.indexOf("inject:thread-1")).toBeGreaterThan(resumedClient.calls.indexOf("resume:thread-1"));
+    expect(resumedClient.calls.indexOf("goal:thread-1")).toBeGreaterThan(resumedClient.calls.indexOf("inject:thread-1"));
     for (const [client, version] of [[firstClient, "v3"], [resumedClient, "v4"]] as const) {
       expect(client.preflights).toEqual([
         {
