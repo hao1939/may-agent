@@ -1,7 +1,8 @@
 # Metric follow-through through existing Conditions
 
-**Status:** Source implementation and scripted integration validation. No rollout
-or model-backed judgment claim.
+**Status:** Implemented and exercised through Host integration tests. The
+validation below distinguishes scripted decisions, saved native-result replay
+and installation evidence.
 
 The old helper prepared a metric fact, then asked the agent to save its next
 review time, create work and copy its Task ID separately. The observed failure
@@ -33,8 +34,18 @@ An `observe` disposition requires the metric's returned or retained Condition.
 An `investigate` disposition needs actual work or a wait: ordinary dependencies
 commission independent work and generate their existing completion Conditions;
 `continue:true` keeps useful work in this Task; `reviewAt` sets an explicit Task
-checkpoint. A Condition alone never submits a repair. Missing linked work is an
-evidence gap, not permission to invent a replacement.
+checkpoint. Ordinary Conditions, including human approvals and external waits,
+also carry follow-through. Host settlement enforces that a sleeping Task has a
+return route, using its retained waits and the proposed changes together. The
+metric helper leaves this check to the Host rather than maintaining a second
+list of allowed wait kinds. A Condition alone never submits a repair. Missing
+linked work is an evidence gap, not permission to invent a replacement.
+
+Composition is repeatable: a complete helper result may contain the metric facts
+it just generated. The helper accepts exact copies of the current code-bound
+decisions and emits each once. Conflicting, stale or fabricated metric facts
+are rejected; `decisions` remains the source for the current judgment. Preparing
+a result never claims that the Host has accepted it.
 
 ## Entry paths and continued work
 
@@ -101,10 +112,20 @@ missing work, invalid Conditions, commissioned dependencies, owner closure and
 automatic return to an open Request. Mixed new requirements go to agent judgment.
 These establish mechanics, not model decision quality or deployment readiness.
 
-The final May App run passed 146 tests with one existing Scout test skipped and
+The initial May App run passed 146 tests with one existing Scout test skipped and
 zero failures (640 assertions, about 70 seconds). The ten focused helper tests
 also passed after final test-type refinements. Strict type checking covered the
 App and new integration fixtures; formatting, design examples/integrity, App
 boundary checks and the May bundle build passed. Source baseline:
 `a77359843e3e533158b943091090b590255cd3d3`, paired with unchanged Host
 `e8b56e17e7f7dc3c5575b8df3861a1dfc69948fa`.
+
+The October 1 follow-up reproduced two rejected native decisions without new
+model calls: a correct retained approval and a helper result returned through
+composition again. Both unchanged outputs pass the corrected helper. Host
+integration tests verify new human/external waits, an omitted approval after
+metric recovery, and atomic rejection when a Task has no return route or tries
+to retire its last one. The full App suite passed 147 tests, with the existing
+Scout skip and no failures. Type checks, bundle build and common design checks
+also passed. This verifies acceptance mechanics; it does not establish optimal
+review cadence or long-running model behavior.

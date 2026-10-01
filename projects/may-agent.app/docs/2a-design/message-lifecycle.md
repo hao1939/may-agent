@@ -102,22 +102,14 @@ user input
   -> return the outcome and close the Request, or explain what remains
 ```
 
-Recognizing a Request is semantic judgment by May after message admission. A
-new message may answer a question, supply context, or correct the same Request;
-it does not automatically create another promise. Keep distinct independent
-asks distinguishable, without mechanically splitting every sentence into a
-Request. A simple question can be recognized and answered in the same turn.
-Its direct answer can also acknowledge the ask; routine replies need no formal
-restatement or separate confirmation step.
-
-A Request records an accepted conversational promise to the human. Routine
-automated reviews record handling in the turn and Task evidence; independent
-background work uses ordinary Tasks. The App recognizes a new Request when
-there is a new conversational promise, or associates an existing Request when
-the update advances that same promise. Input source alone does not determine
-the meaning: an automated Task result may fulfill a real human ask and require
-its normal closure explanation. This is App judgment using existing records,
-not another source filter or Request lifecycle in the Host.
+A Request is an accepted conversational promise to the human, recognized by May
+after message admission. New input can refine an existing Request; distinct
+independent asks remain distinguishable without splitting every sentence.
+A simple answer can acknowledge and fulfill its Request in one turn.
+Routine automated reviews record handling in turn/Task evidence; independent
+background work uses Tasks. An automated result may fulfill a human's existing
+Request and require its normal closure explanation. Input source alone does not
+decide meaning; the App judges it using existing records.
 
 Acknowledge clear asks naturally: “I'll compare the approaches and explain the
 tradeoffs.” This confirms understanding and intended action without demanding

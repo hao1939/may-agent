@@ -56,10 +56,6 @@ export function metricReviewResult(
   });
   if (!admission.ok) throw new Error(admission.error);
   const result = admission.result;
-  if (result.facts.some((fact) => fact.startsWith("metric-disposition:")))
-    throw new Error(
-      "Return metric judgments in decisions; code binds their owner and follow-through",
-    );
   const seen = new Set<string>();
   const facts = review.decisions.map((decision) => {
     const key = JSON.stringify([decision.metricId, decision.alertId]);
@@ -82,6 +78,10 @@ export function metricReviewResult(
         throw new Error(
           "An unresolved metric requires a waiting result and nextAction",
         );
+    }
+    // Host settlement validates ordinary waits, including omitted Conditions.
+    // Only observation has a metric-specific requirement here.
+    if (decision.disposition === "observe") {
       const retired = new Set(
         result.actions
           ?.filter((a) => a.kind === "retire-condition")
@@ -100,24 +100,9 @@ export function metricReviewResult(
           (c.expected as Record<string, unknown> | null)?.source ===
             "app:may:observer:metric-evidence",
       );
-      const owesWork =
-        !!result.dependencies?.length ||
-        owner.waits.open.some(
-          (wait) => wait.dependency && !retired.has(wait.conditionId),
-        );
-      if (decision.disposition === "observe" && !observesMetric)
+      if (!observesMetric)
         throw new Error(
           "Observe requires a saved or returned Condition for this metric",
-        );
-      if (
-        decision.disposition === "investigate" &&
-        !observesMetric &&
-        !owesWork &&
-        !result.continue &&
-        !(result.reviewAt && result.reviewAt > Date.now())
-      )
-        throw new Error(
-          "Investigate requires commissioned work, useful continuation, or an actual wait",
         );
     }
     const fact = `metric-disposition:${JSON.stringify({
@@ -131,8 +116,24 @@ export function metricReviewResult(
       throw new Error("Metric decision exceeds 4000 bytes");
     return fact;
   });
+  // A helper's complete output can pass through this composition again. Only
+  // exact copies of the current code-bound decisions are safe to retain.
+  if (
+    result.facts.some(
+      (fact) => fact.startsWith("metric-disposition:") && !facts.includes(fact),
+    )
+  )
+    throw new Error(
+      "Return metric judgments in decisions; code binds their owner and follow-through",
+    );
   const composed = admitTaskReconcileResult(
-    { ...result, facts: [...result.facts, ...facts] },
+    {
+      ...result,
+      facts: [
+        ...result.facts.filter((fact) => !facts.includes(fact)),
+        ...facts,
+      ],
+    },
     { allowNeedsAgent: false },
   );
   if (!composed.ok) throw new Error(composed.error);

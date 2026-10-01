@@ -141,7 +141,7 @@ test("unmatched and stale samples stay quiet; restart retains the Condition and 
   await until(() => calls === 1, "fresh recovery after restart");
 });
 
-test("publication retries unchanged evidence; recovery does not discharge an independent approval", async () => {
+test("publication retries unchanged evidence; investigation retains an independent approval after the metric wait resolves", async () => {
   let calls = 0;
   const f = await setup(async () => {
     calls++;
@@ -154,9 +154,10 @@ test("publication retries unchanged evidence; recovery does not discharge an ind
       decisions: [
         {
           ...f.subject,
-          disposition: "recovered",
-          reason: "Metric evidence inspected",
+          disposition: "investigate",
+          reason: "Metric recovered; applying the repair still needs approval",
           evidence: ["sample:fresh"],
+          nextAction: "Await the existing approval before applying the repair",
         },
       ],
     };
@@ -190,6 +191,104 @@ test("publication retries unchanged evidence; recovery does not discharge an ind
     f.get("investigation")!.conditions.find((c) => c.id === "approval")!
       .observation!.state,
   ).toBe("unknown");
+  expect(f.decisions()).toHaveLength(2);
+  expect(f.decisions()[1].decision.disposition).toBe("investigate");
+  expect(f.attempts).toHaveLength(2);
+});
+
+test("Host accepts an investigation's ordinary waits and rejects settling without one", async () => {
+  const f = await setup(async () => {
+    throw new Error("Handed-off decisions need no additional model call");
+  });
+  const approval = {
+    id: "approval",
+    type: "approval.granted",
+    subject: "decision:implementation",
+    expected: { approved: true },
+    owner: "human",
+    reviewAfterMs: 3_600_000,
+  };
+  const plan: MetricReview = {
+    task: {
+      state: "waiting",
+      summary: "Await the repair decision",
+      facts: [],
+      conditions: [approval],
+    },
+    decisions: [
+      {
+        ...f.subject,
+        disposition: "investigate",
+        reason: "Repair is ready for review",
+        evidence: ["proposal:repair"],
+        nextAction: "Await approval",
+      },
+    ],
+  };
+  await f.attach("owner", { context: { metricResponse: plan } });
+  await until(
+    () => f.get("owner")?.status === "waiting",
+    "ordinary approval accepted",
+  );
+  expect(f.decisions()).toHaveLength(1);
+  expect(f.get("owner")!.conditions[0].observation!.state).toBe("unknown");
+
+  const external = structuredClone(plan);
+  if (external.task.state !== "waiting") throw new Error("waiting plan");
+  external.task.conditions = [
+    {
+      ...approval,
+      id: "external-ready",
+      owner: "app:source",
+      type: "source.ready",
+      subject: "source:repair",
+    },
+  ];
+  await f.attach("external", { context: { metricResponse: external } });
+  await until(
+    () => f.get("external")?.status === "waiting",
+    "ordinary external wait accepted",
+  );
+  expect(f.decisions()).toHaveLength(2);
+
+  const missing = structuredClone(plan);
+  if (missing.task.state !== "waiting") throw new Error("waiting plan");
+  delete missing.task.conditions;
+  await f.attach("missing-wait", { context: { metricResponse: missing } });
+  await until(
+    () =>
+      !!f.db
+        .prepare(
+          "SELECT 1 FROM app_task_attempts WHERE task_id = ? AND state = 'failed' AND json_extract(attempt_json, '$.summary') LIKE '%requires at least one exact Condition%'",
+        )
+        .get("missing-wait"),
+    "Host rejects a wait without a return route",
+  );
+  expect(f.decisions()).toHaveLength(2);
+
+  missing.task.facts = [
+    "Proposed retiring the last Condition without a replacement",
+  ];
+  missing.task.actions = [
+    {
+      kind: "retire-condition",
+      conditionId: approval.id,
+      expectedConditionGeneration: 1,
+      reason: "Superseded",
+    },
+  ];
+  await f.handoff(handoffDecision(missing, { appId: "may", taskId: "owner" }));
+  await until(
+    () =>
+      !!f.db
+        .prepare(
+          "SELECT 1 FROM app_task_attempts WHERE task_id = ? AND state = 'failed' AND json_extract(attempt_json, '$.summary') LIKE '%requires at least one exact Condition%'",
+        )
+        .get("owner"),
+    "Host rejects removing the last return route",
+  );
+  expect(f.get("owner")!.conditions[0].observation!.state).toBe("unknown");
+  expect(f.decisions()).toHaveLength(2);
 });
 
 test("a later episode joins the selected investigation and saves its new decision once", async () => {

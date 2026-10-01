@@ -34,7 +34,7 @@ export async function execute(ctx: WorkflowContext) {
         [
           "Review this metric follow-through Task against its full current outcome and acceptance.",
           "Read metric-response and current evidence for the relevant episodes before judging them. Use installed observation contracts to build Conditions. Select useful authorized work; dependencies commission independent work. A match or elapsed checkpoint only invites your judgment.",
-          "Return {task: ordinary Task result, decisions: metric judgments}. Code fills each decision's linkedTask from this attempt. Omit unchanged Conditions and dependencies; Host retains them. Return no metric-disposition facts or duplicate review dates. Observe needs a metric Condition; investigate needs work or an actual wait. Keep unrelated requirements and approvals. Account for current assigned input, including new requirements, rather than replaying the original plan.",
+          "Return {task: ordinary Task result, decisions: metric judgments}. Put current judgments in decisions; code generates their metric-disposition facts and fills linkedTask from this attempt. Omit unchanged Conditions and dependencies; Host retains them and validates the wait at settlement. Observe needs a metric Condition; investigate uses ordinary Task work or waits, including retained approvals. Keep unrelated requirements and approvals. Account for current assigned input, including new requirements, rather than replaying the original plan.",
           JSON.stringify(rec),
         ].join("\n"),
         { schema: metricReviewSchema },

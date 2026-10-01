@@ -163,6 +163,27 @@ test("the direct helper and report Conversation use the same complete result com
     read,
   );
   expect(direct.output).toEqual(metricReviewResult(reconciliation(), review()));
+  const recomposed = metricReviewResult(reconciliation(), {
+    task: direct.output,
+    decisions: review().decisions,
+  });
+  expect(direct.output).toEqual(recomposed);
+  expect(recomposed.facts).toHaveLength(1);
+  expect(() =>
+    metricReviewResult(reconciliation(), {
+      task: direct.output,
+      decisions: [{ ...decision, reason: "A different judgment" }],
+    }),
+  ).toThrow("Return metric judgments in decisions");
+  expect(() =>
+    metricReviewResult(
+      { ...reconciliation(), taskId: "another-task" },
+      {
+        task: direct.output,
+        decisions: review().decisions,
+      },
+    ),
+  ).toThrow("Return metric judgments in decisions");
   const conversation = { topic: { kind: "none" as const } };
   const prepared = await respondToMetric(
     createTestAppWorkflowContext({ input: { review: review(), conversation } }),
