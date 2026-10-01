@@ -3,6 +3,7 @@ import {
   compareXhsSavedProfileAccess,
   fingerprintXhsSavedProfileAccess,
   inspectXhsSavedProfileStatus,
+  pollForXhsItems,
 } from "./xhs-browse.mjs";
 
 const EMPTY_SHA256 =
@@ -38,6 +39,66 @@ function fakeClient(historyEntries, observed, calls) {
     },
   };
 }
+
+describe("XHS item hydration polling", () => {
+  it("waits for delayed titled items after navigation", async () => {
+    const observations = [[], [], [{ id: "note-1", title: "Hydrated" }]];
+    const evaluated = [];
+    const waits = [];
+
+    const result = await pollForXhsItems(
+      async (expression) => {
+        evaluated.push(expression);
+        return observations.shift();
+      },
+      {
+        attempts: 4,
+        intervalMs: 25,
+        wait: async (ms) => waits.push(ms),
+      },
+    );
+
+    expect(result).toEqual([{ id: "note-1", title: "Hydrated" }]);
+    expect(evaluated).toHaveLength(3);
+    expect(
+      evaluated.every((expression) =>
+        expression.includes("filter(i => i.title)"),
+      ),
+    ).toBeTrue();
+    expect(waits).toEqual([25, 25]);
+  });
+
+  it("returns immediate content without waiting", async () => {
+    const waits = [];
+    const item = { id: "note-2", title: "Already present" };
+    const result = await pollForXhsItems(async () => [item], {
+      wait: async (ms) => waits.push(ms),
+    });
+
+    expect(result).toEqual([item]);
+    expect(waits).toEqual([]);
+  });
+
+  it("truthfully returns no items after the bounded access boundary", async () => {
+    let evaluations = 0;
+    const waits = [];
+    const result = await pollForXhsItems(
+      async () => {
+        evaluations += 1;
+        return [];
+      },
+      {
+        attempts: 3,
+        intervalMs: 10,
+        wait: async (ms) => waits.push(ms),
+      },
+    );
+
+    expect(result).toEqual([]);
+    expect(evaluations).toBe(3);
+    expect(waits).toEqual([10, 10]);
+  });
+});
 
 describe("XHS saved-profile status inspection", () => {
   it("uses login-tab history without navigating and returns only safe evidence", async () => {

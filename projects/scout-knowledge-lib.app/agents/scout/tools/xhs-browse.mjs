@@ -193,12 +193,28 @@ const EXTRACT_ITEMS_JS = `
   })()
 `;
 
+export async function pollForXhsItems(
+  evaluate,
+  {
+    attempts = 30,
+    intervalMs = 500,
+    wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
+  } = {},
+) {
+  for (let attempt = 0; attempt < attempts; attempt += 1) {
+    const items = await evaluate(EXTRACT_ITEMS_JS);
+    if (items.length > 0) return items;
+    if (attempt + 1 < attempts) await wait(intervalMs);
+  }
+  return [];
+}
+
 async function handleFeed(cdp) {
   const currentUrl = await cdp.evaluate("window.location.href");
   if (!currentUrl.includes("/explore")) {
     await cdp.navigate("https://www.xiaohongshu.com/explore");
   }
-  return await cdp.evaluate(EXTRACT_ITEMS_JS);
+  return await pollForXhsItems((expression) => cdp.evaluate(expression));
 }
 
 async function handleStatus(cdp) {
@@ -484,8 +500,7 @@ async function handleSearch(cdp, keyword) {
     encoded +
     "&source=web_search_result_notes";
   await cdp.navigate(url);
-  await new Promise((r) => setTimeout(r, 2000));
-  return await cdp.evaluate(EXTRACT_ITEMS_JS);
+  return await pollForXhsItems((expression) => cdp.evaluate(expression));
 }
 
 async function handleRead(cdp, urlOrId) {
