@@ -14,6 +14,7 @@ import {
   metricReviewTaskId,
 } from "./lib/metric-selection.js";
 import {
+  metricReviewCut,
   resolveMetricResponsibility,
   type MetricEvidence,
 } from "./lib/metric-evidence.js";
@@ -205,7 +206,7 @@ test("delayed publication reuses judgment, starts a future review interval and r
   setSystemTime(now + 60_000);
   const recovered = await reviewMetric(ctx, async () => evidence(), root);
   expect(recovered.output).toMatchObject({
-    result: { nextReviewAt: now + 60_000 + 3_600_000 },
+    result: { nextReviewAt: now + 3_600_000 },
   });
   expect(calls).toBe(1);
   const selector = context({
@@ -243,6 +244,78 @@ test("delayed publication reuses judgment, starts a future review interval and r
   expect(deferred.output).toMatchObject({
     state: "waiting",
     result: { disposition: "budget-deferred" },
+  });
+});
+
+test("exact metric signals use the per-metric Task, retained deadline and exact evidence read", async () => {
+  const root = mkdtempSync(join(tmpdir(), "metric-signal-"));
+  roots.push(root);
+  const now = end + 10_000;
+  setSystemTime(now);
+  let read: { metricId: string; cut: number } | undefined;
+  const ctx = context({
+    input: {
+      metricId: "may.daemon-sql-time-percent",
+      end: now + 1,
+      automatic: true,
+    },
+    read: createTestAppRead({
+      tasks: { get: async () => ({ result: { nextReviewAt: now - 1 } }) as any },
+    }),
+    callAgent: async () => ({
+      id: "exact-signal-review",
+      kind: "agent",
+      status: "done",
+      summary: "reviewed",
+      output: judgment,
+    }),
+  });
+  const reviewed = await reviewMetric(
+    ctx,
+    async (metricId, cut) => {
+      read = { metricId, cut };
+      return evidence(metricId, cut);
+    },
+    root,
+  );
+  expect(read).toEqual({
+    metricId: "may.daemon-sql-time-percent",
+    cut: now + 1,
+  });
+  expect(reviewed.output).toMatchObject({
+    state: "converged",
+    result: {
+      publication: { metricId: "may.daemon-sql-time-percent" },
+    },
+  });
+
+  let evidenceRead = false;
+  const notDue = await reviewMetric(
+    context({
+      input: { metricId: "sample.other", end: now + 1, automatic: true },
+      read: createTestAppRead({
+        tasks: {
+          get: async () => ({ result: { nextReviewAt: now + 60_000 } }) as any,
+        },
+      }),
+      callAgent: async () => {
+        throw new Error("not-due signal must not consume the shared allowance");
+      },
+    }),
+    async () => {
+      evidenceRead = true;
+      return evidence("sample.other", metricReviewCut(now));
+    },
+    root,
+  );
+  expect(evidenceRead).toBeFalse();
+  expect(notDue.output).toMatchObject({
+    state: "converged",
+    result: {
+      disposition: "not-due",
+      metricId: "sample.other",
+      nextReviewAt: now + 60_000,
+    },
   });
 });
 

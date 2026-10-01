@@ -36,13 +36,20 @@ no observations is not a successful-work percentage. The thresholds request
 attention and do not cap retries or choose a repair.
 
 Evaluation explicitly subscribes to metric breach, recovery, stall and collection
-failure events. They wake its existing selector when automatic review is enabled;
-the existing periodic schedule supplies another opportunity to notice persistent
-concerns. The selector alternates metric and Task opportunities, visits a bounded
-number of active metrics, and retains its cursor in its ordinary
-Task result. It can select open alerts, changed observations, missing/stale samples
-or collection failures. An event is a prompt to reread current evidence, not a
-request for a new model call for every retry. Metrics with only an owner, or with
+failure events. When a canonical signal carries `metricId` and `measuredAt`, it
+routes directly to the existing stable per-metric/reviewer Task and pins the
+end-exclusive evidence cut at `measuredAt + 1`, so the triggering sample is
+included without scanning the full catalog. Canonical App events do not expose
+the private envelope timestamp; a collection-failure signal without an explicit
+observation time therefore wakes the existing periodic selector instead of
+inventing a retry-unstable cut. The existing periodic schedule also revisits
+not-due and persistent concerns; no target queue or new timer is added.
+
+The selector alternates metric and Task opportunities, visits a bounded number
+of active metrics, and retains its cursor in its ordinary Task result. It can
+select open alerts, changed observations, missing/stale samples or collection
+failures. An event is a prompt to reread current evidence, not a request for a
+new model call for every retry. Metrics with only an owner, or with
 unresolved attribution, remain visible. Declared owners resolve against the
 installed App catalog (an exact App identity, or an unambiguous worker owner).
 A project label is a fallback only when no owner was declared and it resolves to
@@ -51,9 +58,11 @@ Evaluation-owned observations are excluded from semantic self-review.
 
 One stable Evaluation Task per metric/reviewer retains the requested cut, shared
 review allowance and next review point. The evidence cut identifies the report;
-successful publication/handling starts the next routine review interval, including
-after a delayed publication retry. DeepSeek can assess different work every five
-minutes but routinely reconsiders the same metric at most once an hour; the regular
+the immutable judgment time starts the next routine review interval. Publication
+replay reuses the same judgment and cannot silently postpone its deadline, so a
+long-delayed publication can leave the metric immediately due. DeepSeek can assess
+different work every five minutes but routinely reconsiders the same metric at
+most once an hour; the regular
 reviewer uses a day. This is App selection policy, not a Host retry limit or an
 obstacle to explicitly requested review. Existing waits still react to observed
 facts. An hour is an initial cadence to reassess against usefulness and coverage.

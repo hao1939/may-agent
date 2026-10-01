@@ -351,6 +351,7 @@ const EVALUATION_AGENT_IDS = new Set([
 function canonicalAppId(value: unknown): string {
   return stringValue(value)
     .toLowerCase()
+    .replace(/^(?:app|agent):/, "")
     .replace(/\.app$/, "");
 }
 
@@ -642,6 +643,7 @@ export function taskIntentForInput(input: AppInput): TaskIntent | null {
       const metricId = stringValue(data.metricId);
       const end = Number(data.end);
       const reviewer = stringValue(data.reviewer) || "evaluator";
+      const automatic = data.automatic === true;
       if (
         !metricId ||
         !Number.isSafeInteger(end) ||
@@ -661,7 +663,7 @@ export function taskIntentForInput(input: AppInput): TaskIntent | null {
           "Publish a bounded assessment to the accountable owner without changing original work or retry policy.",
         ],
         workflow: "metric-review",
-        input: { metricId, end, reviewer, automatic: data.automatic === true },
+        input: { metricId, end, reviewer, automatic },
         priority: "P2",
       };
     }
@@ -992,10 +994,34 @@ export function taskInputForEvent(
     case "metric.breach":
     case "metric.recovered":
     case "metric.stalled":
-    case "metric.measurement.failed":
-      return automaticReviewConfig().enabled
-        ? { kind: "automatic-review", data: { reason: event.type } }
-        : null;
+    case "metric.measurement.failed": {
+      const data = eventData(event);
+      if (isExplicitlyEvaluationOwned(data, event)) return null;
+      const metricId = stringValue(
+        data.metricId ?? data.metric_id ?? event.target?.metricId,
+      );
+      // Canonical App events do not expose the private envelope timestamp.
+      // Only metric signals with an explicit observation time can pin an exact
+      // end-exclusive evidence cut; other signals use periodic bounded discovery.
+      const observedAt = Number(data.measuredAt ?? data.measured_at);
+      const automatic = automaticReviewConfig();
+      if (!automatic.enabled) return null;
+      return metricId &&
+        metricId.length <= 512 &&
+        Number.isSafeInteger(observedAt) &&
+        observedAt > 0 &&
+        observedAt < Number.MAX_SAFE_INTEGER
+        ? {
+            kind: "review-metric",
+            data: {
+              metricId,
+              end: observedAt + 1,
+              reviewer: automatic.reviewer ?? "evaluator",
+              automatic: true,
+            },
+          }
+        : { kind: "automatic-review", data: { reason: event.type } };
+    }
     case "session.end":
       // Session identity and metadata cannot establish canonical work ownership.
       // New semantic evaluation is selected from public external App Tasks.

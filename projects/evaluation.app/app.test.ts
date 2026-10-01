@@ -43,6 +43,7 @@ import {
   PROJECT_HEALTH_EVALUATOR_AGENT_PROMPT_PREAMBLE,
   projectHealthEvaluatorAgentPrompt,
 } from "./agents/evaluator/workflows/project-health-evaluator.ts";
+import { metricReviewTaskId } from "./agents/evaluator/workflows/lib/metric-selection.ts";
 import { AppInboxHost } from "../may-agent/src/app/core/inbox/app-inbox-host.ts";
 import { createAppInboxItem } from "../may-agent/src/app/core/state/app-inbox-store.ts";
 import { admitTaskInput } from "../may-agent/src/app/core/state/inbox.ts";
@@ -56,6 +57,7 @@ import {
   observeAppTaskIntent,
 } from "../may-agent/src/app/core/tasks/app-task-reconciler.ts";
 import { applyDbSchema } from "../may-agent/src/lib/db/schema.ts";
+import { canonicalAppEvent } from "../may-agent/src/app/canonical-app-event.ts";
 
 function subscription(id: string) {
   const route = app.subscriptions?.find((candidate) => candidate.id === id);
@@ -1336,6 +1338,95 @@ describe("evaluation task policy", () => {
       host.close();
       config.resourceStore.close();
       rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  test("canonical metric signals preserve an exact target, cut and configured reviewer", () => {
+    const previousEnabled = process.env.EVALUATION_AUTO_REVIEW_ENABLED;
+    const previousReviewer = process.env.EVALUATION_AUTO_REVIEW_REVIEWER;
+    try {
+      process.env.EVALUATION_AUTO_REVIEW_ENABLED = "true";
+      process.env.EVALUATION_AUTO_REVIEW_REVIEWER = "evaluator-deepseek";
+      const measuredAt = 1_790_882_300_000;
+      const canonical = canonicalAppEvent({
+        type: "metric.breach",
+        source: "metrics",
+        owner: "host",
+        timestamp: measuredAt + 999,
+        data: {
+          metricId: "may.daemon-sql-time-percent",
+          measuredAt,
+          alertId: "alert-sql-1",
+        },
+      });
+      expect(canonical).not.toHaveProperty("timestamp");
+      const input = subscription("metric.breach").toInput(canonical);
+      expect(input).toEqual({
+        kind: "review-metric",
+        data: {
+          metricId: "may.daemon-sql-time-percent",
+          end: measuredAt + 1,
+          reviewer: "evaluator-deepseek",
+          automatic: true,
+        },
+      });
+      expect(Check(app.inputSchema, input)).toBeTrue();
+      const sqlIntent = taskIntentForInput(input!);
+      expect(sqlIntent).toMatchObject({
+        id: metricReviewTaskId(
+          "may.daemon-sql-time-percent",
+          "evaluator-deepseek",
+        ),
+        workflow: "metric-review",
+        input: {
+          metricId: "may.daemon-sql-time-percent",
+          end: measuredAt + 1,
+          reviewer: "evaluator-deepseek",
+          automatic: true,
+        },
+      });
+
+      const otherInput = taskInputForEvent(
+        event("metric.stalled", {
+          metricId: "sample.other",
+          measuredAt: measuredAt + 10,
+        }),
+      )!;
+      const otherIntent = taskIntentForInput(otherInput);
+      const scheduledIntent = taskIntentForInput({
+        kind: "automatic-review",
+        data: { reason: "scheduled" },
+      });
+      expect(otherIntent?.id).toBe(
+        metricReviewTaskId("sample.other", "evaluator-deepseek"),
+      );
+      expect(otherIntent?.id).not.toBe(sqlIntent?.id);
+      expect(scheduledIntent?.id).toBe("runtime/task-outcome-selector");
+      expect(scheduledIntent?.id).not.toBe(sqlIntent?.id);
+
+      const failed = canonicalAppEvent({
+        type: "metric.measurement.failed",
+        source: "metrics",
+        owner: "host",
+        timestamp: measuredAt + 20,
+        data: {
+          metricId: "may.daemon-sql-time-percent",
+          reason: "read failed",
+          triggerEventId: "trigger-1",
+        },
+      });
+      expect(failed).not.toHaveProperty("timestamp");
+      expect(subscription("metric.measurement.failed").toInput(failed)).toEqual({
+        kind: "automatic-review",
+        data: { reason: "metric.measurement.failed" },
+      });
+    } finally {
+      if (previousEnabled === undefined)
+        delete process.env.EVALUATION_AUTO_REVIEW_ENABLED;
+      else process.env.EVALUATION_AUTO_REVIEW_ENABLED = previousEnabled;
+      if (previousReviewer === undefined)
+        delete process.env.EVALUATION_AUTO_REVIEW_REVIEWER;
+      else process.env.EVALUATION_AUTO_REVIEW_REVIEWER = previousReviewer;
     }
   });
 
