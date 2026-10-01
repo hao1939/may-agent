@@ -1,5 +1,50 @@
 # Routine review, Request meaning and evidence-read cost
 
+## October 2 verification refresh
+
+The running Host is `ebe39a5f`: #277/#278 are deployed, including the corrected
+quiet `followUp` schema. #280 and #281 are merged but not yet installed. App
+definitions still identify `f8baea82...definitions-v4`; source-only companion
+changes are not live. The initial readiness probe returned 503 and a later probe
+200. Four bounded socket probes then succeeded in roughly 22–51 ms, while a
+separate bounded Task-list read timed out. This is intermittent responsiveness,
+not a permanently unavailable service or proof that all timeout causes are fixed.
+
+PR #282 review found numeric SQL literals leaking into diagnostics. The issue was
+reproduced with real SQLite and fixed in `eac3961b`, including hexadecimal,
+digit-separated and fractional/exponent forms. The regression fails before the
+correction. Integrated tree `4a7f0c37` passed full local CI: 3,386 tests, three
+installation-only skips and no failures. Remote merge commits preserve that tree;
+GitHub review/check status remains separately visible on the PR.
+
+Outstanding work remains:
+
+- Roll out the merged Host fixes and reviewed App changes, then measure live
+  behavior. Improved source query timings do not establish daemon latency.
+- Prove SQL metric collection, Evaluation, accepted May disposition, repair and
+  measured verification as one chain. Current automated test coverage proves
+  constituent mechanics, not an autonomous production repair.
+- Preserve exact metric identity through the App review route. May reproduced
+  a case where a breached metric outside the first three catalog entries is
+  skipped on the first selection pass. Preserve normal review allowance and
+  deadlines and independently handled input identities when fixing selection.
+- Reconcile the App clock with the token-efficiency proposal: publication-time
+  `Date.now()` moves on replay, whereas retained report `createdAt` already
+  provides a completion-time lead without adding another field.
+- Investigate remaining synchronous recovery cost, repeated unchanged Conditions,
+  usage anomalies during otherwise successful execution, and the retained
+  executor sandbox failure. A universal final optional-context bound also remains
+  unproven. These are separate claims, not reasons for global timeout increases.
+
+May owns Task `goal/app_7ac376d3-1e2d-496c-8896-94c9d791475e` for the loop trial.
+The Host retained its initial assignment as Event 6550700 and later exact-Task
+review inputs. Its first accepted result reproduced the subject-routing delay
+and explicitly kept work unfinished. The supervisor retains Host PR ownership
+and reviews May's isolated App candidate; no live telemetry or completed repair
+is claimed by this assignment.
+
+The earlier sections below retain the original trial and its limits.
+
 The October 1 trace review found several connections amplifying routine work.
 The changes repair existing contracts: no additional notification queue, intent
 classifier, review lifecycle, or authority store is introduced.
