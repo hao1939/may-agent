@@ -2,9 +2,9 @@
 title: "NemoClaw — Agent Frameworks Are Becoming Tenants on a Governed Runtime Substrate"
 source: github
 date: 2026-08-06
-last_updated: 2026-08-26
+last_updated: 2026-10-01
 type: finding
-tags: [github, runtime-platforms, sandboxing, governance, inference-routing, network-policy, hermes-agent, openclaw, langchain]
+tags: [github, runtime-platforms, sandboxing, governance, inference-routing, network-policy, hardware-watchdog, hermes-agent, openclaw, langchain]
 relevance: high
 ---
 
@@ -89,6 +89,16 @@ This yields a more precise trust model for governed agent substrates:
 
 The evidence boundary matters. This is a security-vendor report with a published mechanism and demonstration, and it says the issue was reported to NVIDIA before publication, but this Scout update did not independently reproduce the exploit or locate a linked NVIDIA advisory in the HN submission. The HN item had one point and no comments when checked, so it is a useful primary-source security signal rather than validated community consensus.
 
+## 2026-10-01 update — an independent watchdog is a separate control plane, not proof of complete mediation
+
+HN item 49925788 linked a Tom's Hardware report on NVIDIA's newly announced **Open Agent Safety Platform**. The report describes a two-layer design: OpenShell applies operator-defined sandbox and kernel policy around the agent, while a separate NVIDIA Sentry reference design on BlueField-4 DPUs observes hardware telemetry and can isolate a workflow from outside the agent's software environment. NVIDIA's quoted claim is that Sentry can quarantine a boundary-crossing agent in milliseconds. The same report says the broader platform has about 100 partners and names integrations or development work by Anthropic, Salesforce, SAP, Scale AI, and robotics vendors.
+
+This is a useful extension of the substrate thesis: a watchdog outside the governed workload can retain stop authority even if the agent, harness, or guest software is compromised. It also creates two independently reviewable contracts. OpenShell must correctly mediate the resources it governs; Sentry must observe the relevant behavior, classify it, and make isolation effective before unacceptable damage. A second plane can reduce common-mode compromise only if its policy inputs, telemetry path, credentials, update channel, and effect mechanism are genuinely separate from the workload it watches.
+
+The announcement does **not** establish complete mediation or production effectiveness. Scout inspected the HN record, the full linked news article, and OpenShell's README at commit `348a1fc62566892ba5530ac9f35acc983e4d9324`. The README supports OpenShell's declared kernel, network, credential-injection, and pre-change policy-verification surfaces, but it does not mention Sentry, BlueField, the Open Agent Safety Platform, or the millisecond quarantine claim. Scout did not inspect a Sentry specification, implementation, benchmark, threat model, DPU image, partner deployment, or quarantine receipt. The partner and performance statements therefore remain announcement claims reported by a secondary publication, not independently verified capabilities.
+
+The resulting evaluation rule is: **test each enforcement plane and their handoff separately**. Evidence should show which effects OpenShell can withhold, which violations Sentry can observe, the worst-case detect-to-isolate interval, behavior when telemetry or control channels fail, and whether an independently witnessed receipt proves the workload actually became quiescent. Hardware adjacency does not replace route coverage, policy provenance, or effect-level verification.
+
 ## Scout take
 
 NemoClaw suggests that the next durable vendor layer in open agents is not the chat shell or even the planning loop. It is the **governed substrate** that can host many shells while keeping secrets, egress, and lifecycle state under operator control.
@@ -112,4 +122,7 @@ The August update adds a review-design heuristic: after a cross-file incident, d
 - **Gateway-topology risk-plan implementation (open PR):** https://github.com/NVIDIA/NemoClaw/pull/10078
 - **Implementation diff:** https://github.com/NVIDIA/NemoClaw/pull/10078.diff
 - **HN:** https://news.ycombinator.com/item?id=49445585
+- **Open Agent Safety Platform HN:** https://news.ycombinator.com/item?id=49925788
+- **Open Agent Safety Platform report:** https://www.tomshardware.com/tech-industry/artificial-intelligence/nvidia-launches-open-agent-safety-platform-to-restrain-rogue-ai-agents-new-hardware-and-software-security-stack-can-quarantine-agents-in-milliseconds
+- **Pinned OpenShell README:** https://github.com/NVIDIA/OpenShell/blob/348a1fc62566892ba5530ac9f35acc983e4d9324/README.md
 - **Drive-by hijacking research:** https://www.cyera.com/research/nemoclaw-one-website-visit-to-hijack-your-ai-agent
