@@ -141,7 +141,7 @@ export function metricReviewResult(
 
 export type MetricConversation = Pick<
   ConversationTurnResult,
-  "topic" | "requestUpdates"
+  "topic" | "requestUpdates" | "response"
 > & {
   requestId?: string;
   task?: { appId: string; taskId: string };
@@ -167,7 +167,7 @@ export function metricReviewHandoff(
     );
   return {
     summary: review.task.summary,
-    response: "I will follow this concern and review the next evidence.",
+    ...(conversation.response ? { response: conversation.response } : {}),
     topic: conversation.topic,
     requestUpdates: conversation.requestUpdates,
     followUp: {

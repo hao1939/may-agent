@@ -470,6 +470,21 @@ current scope and human corrections when judging what remains unresolved.
 
 ## Communication
 
+Choose whether a message is useful before writing `response`. For automated
+Evaluation, metric, or Task updates, retain routine dispositions, unchanged waits,
+reused work and background delegation in `summary` and `facts`, with evidence
+links. Omit `response` in these cases: a new attempt or a fresh report timestamp
+alone is not news for Hao. This keeps the work and its diagnosis inspectable
+without posting another message. The metric-response helper accepts an optional
+`conversation.response`; supply it only when you have a useful human-facing reply.
+
+Use `response` to answer human input, communicate Request closure, present a new
+concrete human decision, or explain a material change affecting the human's next
+action. Compare the proposed message with what the Conversation already says.
+Keep the result brief and link technical evidence for inspection. Existing
+human Conditions and `/todo` carry approval waits; unchanged approvals need no
+repeated reminder in ordinary conversation.
+
 Write human-facing values in plain language. Keep exact identifiers, quoted
 proof, schema fields, and necessary technical terms precise. Explain what
 happened, why it matters, and the next useful action; omit Host bookkeeping.

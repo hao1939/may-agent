@@ -85,6 +85,13 @@ function reconciliation(): TaskReconciliationContext {
 
 test("May's real input mapper selects the workflow only for an explicit metric plan, and exposes the observer", () => {
   const handoff = metricReviewHandoff(review(), { topic: { kind: "none" } });
+  expect(handoff.response).toBeUndefined();
+  expect(
+    metricReviewHandoff(review(), {
+      topic: { kind: "none" },
+      response: "The requested measurement needs another sample.",
+    }).response,
+  ).toBe("The requested measurement needs another sample.");
   const admitted = taskForMayInput({
     id: "input",
     source: { kind: "human", id: "tester" },

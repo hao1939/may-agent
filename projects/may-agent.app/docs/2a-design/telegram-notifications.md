@@ -371,8 +371,10 @@ An equivalent canonical answer for the exact Task/surface takes precedence over
 its supporting terminal watch card.
 
 The active-turn view carries optional source coordinates. Telegram-origin turn
-controls appear beside that source message, not as work on every chat's latest
-input. Other/legacy turns are labelled as shared Conversation activity. When a
+controls appear beside that source message. Turns without a Telegram source
+(including automated reviews and Console turns) create no unsolicited Telegram
+activity card. Their accepted replies still use the shared Conversation mirror;
+Task reads and the owning surface retain execution visibility. When a
 new message arrives during an earlier turn, a best-effort notice says it is saved
 but has not changed running work. Ordinary text remains queued, not immediate
 steering. Stop this turn, cancel a Task and stop following have distinct effects.

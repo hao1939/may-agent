@@ -36,6 +36,8 @@ export function handoffDecision(
   task?: { appId: string; taskId: string },
 ) {
   return metricReviewHandoff(review, {
+    response:
+      "I will verify the requested metric recovery against fresh evidence.",
     topic: { kind: "new", title: "Metric follow-through" },
     requestUpdates: [
       {

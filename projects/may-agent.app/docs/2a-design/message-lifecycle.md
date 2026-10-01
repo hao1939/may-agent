@@ -539,9 +539,11 @@ then commits the input outcome, response and closure consistently. A quiet
 system review records handled evidence without an empty chat message.
 
 The shared result schema requires a nonblank response for any considered human
-input, Request closure, delegation or Task control. Automated observations and
-updates retaining an open Request may stay quiet. The finish tool validates the
-same input-specific schema as settlement, so a missing explanation can be
+input, Request closure or Task control. Automated observations, background
+delegation and updates retaining an open Request may stay quiet. Delegating
+work and announcing work are independent decisions: retain summary, facts,
+Topic links and the exact follow-up even when no response is published. The finish
+tool validates the same input-specific schema as settlement, so a missing explanation can be
 corrected inside the current execution. Settlement still checks current identity,
 revisions and authority transactionally; tool validation cannot replace those
 checks. A mixed input batch retains its human reply requirement even when a

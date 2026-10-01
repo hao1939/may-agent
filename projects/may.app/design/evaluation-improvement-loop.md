@@ -90,3 +90,22 @@ See the [September 18 rollout](evaluation-improvement-rollout-20260918.md) for
 the initial installation and the [September 19 live verification](evaluation-improvement-rollout-20260919.md)
 for the current deployed identities, real no-op intake, synthetic approval
 coverage, retained failures and remaining limits.
+
+## Routine review and human communication
+
+Evaluation publications and linked Task returns are background inputs, not new
+human questions. May retains a disposition in the accepted `summary` and `facts`,
+with evidence and existing work links. Routine no-change decisions, unchanged
+approval waits and background handoffs omit `response`. No new notification
+queue or delivery policy is introduced.
+
+The `metric-response` helper preserves an optional `conversation.response`
+chosen by May. It supplies no default acknowledgment. Human input still requires
+an answer; a new concrete decision or material change can merit a short reply.
+Existing human Conditions and `/todo` retain pending approvals independently.
+
+This requires the paired Host schema correction allowing a background `followUp`
+without `response`. Deploy that correction before loading the App helper change.
+The Host owns reliable acceptance and transport; May judges which findings are
+useful to tell the human. Telegram activity controls belong to Telegram-origin
+turns, so routine system reviews do not emit working/Stop cards.
