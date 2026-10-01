@@ -798,11 +798,16 @@ test("settlement resolves the exact App again and rolls back a mismatched or mis
   ).toBe(true);
 });
 
-test.each(["existing", "mapped"] as const)(
-  "%s handoff has one target authority and maps only at settlement",
-  async (kind) => {
+test.each([
+  ["existing", "human"], ["mapped", "human"],
+  ["existing", "system"], ["mapped", "system"],
+] as const)(
+  "%s handoff from %s maps once; background delegation can stay quiet",
+  async (kind, source) => {
     const f = fixture();
-    const admitted = f.admit();
+    const admitted = admitConversationTaskInput(f.context(), {
+      ...f.input(), source: { kind: source, id: "first" },
+    });
     const claim = f.claim(admitted.taskId);
     const intent = { id: "chosen", parentId: "root", outcome: "Collect facts", acceptance: ["Measure"] };
     observeAppTaskIntent(f.context(), { appAgent: app.id, intent });
@@ -819,7 +824,7 @@ test.each(["existing", "mapped"] as const)(
     const getTaskApp = () => ({ app: targetApp, config: f.context() });
     const answer: ConversationTurnResult = {
       summary: "Continue the work",
-      response: "I will continue the requested work.",
+      ...(source === "human" ? { response: "I will continue the requested work." } : {}),
       topic: { kind: "new", title: "Measurement" },
       followUp: {
         appId: app.id,
@@ -849,6 +854,12 @@ test.each(["existing", "mapped"] as const)(
     expect(f.store.readTask("before-settlement")).toBeNull();
     expect(f.store.readTask("unrelated")).toBeNull();
     expect(getAppInboxItem(f.db, "first")?.status).toBe("done");
+    if (source === "system") {
+      expect(readAppConversationResource(f.db, app.id, "chat").messages).toEqual([]);
+      f.reopen();
+      expect(readAppConversationResource(f.db, app.id, "chat").messages).toEqual([]);
+      expect(f.store.readTask(kind === "existing" ? "chosen" : "at-settlement")).not.toBeNull();
+    }
   },
 );
 

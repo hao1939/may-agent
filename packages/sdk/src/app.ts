@@ -356,7 +356,7 @@ export const conversationTurnResultSchema = Type.Object(
       Type.String({
         minLength: 1,
         description:
-          "Human-facing answer or useful update. Required for human input, Request closure, delegation and Task controls. Automated observations and open Request bookkeeping may stay quiet.",
+          "Human-facing answer or useful update. Required for human input, Request closure and Task controls. Background observations, delegation and open Request bookkeeping may stay quiet; retain internal findings in summary and facts.",
         pattern: "\\S",
       }),
     ),
@@ -412,14 +412,13 @@ export const conversationTurnResultSchema = Type.Object(
   },
   {
     additionalProperties: false,
-    // A quiet turn can retain observations and open asks, but cannot silently
-    // close an accepted ask, delegate work or cancel a Task. Tool validation and
+    // A quiet turn can retain observations, open asks and delegate work, but
+    // cannot silently close an accepted ask or cancel a Task. Tool validation and
     // transactional settlement use this same rule.
     anyOf: [
       { required: ["response"] },
       {
         properties: {
-          followUp: { not: {} },
           taskControls: { maxItems: 0 },
           requestUpdates: { items: { properties: { disposition: { const: "open" } } } },
         },
