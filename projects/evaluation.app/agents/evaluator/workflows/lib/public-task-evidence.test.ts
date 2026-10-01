@@ -1,8 +1,13 @@
 import { describe, expect, test } from "bun:test";
+import { createServer, type Socket } from "node:net";
+import { mkdtempSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import {
   configuredControlSocket,
   createPublicTaskEvidenceProvider,
   readSubjectTask,
+  sendPublicReadCommand,
   type PublicCommand,
 } from "./public-task-evidence.ts";
 
@@ -77,6 +82,60 @@ function fixture(
 }
 
 describe("public Task evidence", () => {
+  test("the HTTP attempt-read path honors the same cancellation signal", async () => {
+    const server = Bun.serve({
+      port: 0,
+      fetch: () => Response.json({ available: true }),
+    });
+    const previous = process.env.MAY_REPORT_BASE_URL;
+    process.env.MAY_REPORT_BASE_URL = server.url.toString();
+    try {
+      const controller = new AbortController();
+      controller.abort(new Error("Review stopped"));
+      await expect(
+        sendPublicReadCommand(
+          { type: "task.attempts.read", appId: "sample" },
+          { signal: controller.signal },
+        ),
+      ).rejects.toThrow("Review stopped");
+    } finally {
+      if (previous === undefined) delete process.env.MAY_REPORT_BASE_URL;
+      else process.env.MAY_REPORT_BASE_URL = previous;
+      server.stop(true);
+    }
+  });
+  test("cancelling a public read closes its socket before the independent timeout", async () => {
+    const root = mkdtempSync(join(tmpdir(), "evidence-cancellation-"));
+    const socketPath = join(root, "control.sock");
+    let client: Socket | undefined;
+    let received!: () => void;
+    const requestReceived = new Promise<void>((resolve) => {
+      received = resolve;
+    });
+    const server = createServer((socket) => {
+      client = socket;
+      socket.once("data", received);
+    });
+    try {
+      await new Promise<void>((resolve) => server.listen(socketPath, resolve));
+      const controller = new AbortController();
+      const reading = sendPublicReadCommand(
+        { type: "apps.list" },
+        { socketPath, signal: controller.signal },
+      );
+      await requestReceived;
+      const closed = new Promise<void>((resolve) =>
+        client!.once("close", resolve),
+      );
+      controller.abort(new Error("Review stopped"));
+      await expect(reading).rejects.toThrow("Review stopped");
+      await closed;
+    } finally {
+      client?.destroy();
+      await new Promise<void>((resolve) => server.close(() => resolve()));
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
   test("uses explicit endpoint configuration with bounded defaults", () => {
     expect(
       configuredControlSocket({ MAY_CONTROL_SOCKET: "/tmp/test.sock" }),

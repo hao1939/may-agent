@@ -1,6 +1,9 @@
 import { hostReportUrl } from "./host-reporting.js";
 import { metricEvidenceHash } from "./task-report-store.js";
-import { createPublicTaskEvidenceProvider } from "./public-task-evidence.js";
+import {
+  createPublicTaskEvidenceProvider,
+  sendPublicReadCommand,
+} from "./public-task-evidence.js";
 
 export type MetricResponsibility = {
   appId: string | null;
@@ -66,25 +69,30 @@ export type MetricReader = (
   metricId: string,
   end: number,
   alertId?: number,
+  signal?: AbortSignal,
 ) => Promise<MetricEvidence>;
 
 export function metricReviewCut(now = Date.now()) {
   return Math.floor(now / 3_600_000) * 3_600_000;
 }
 
-export async function readMetricEvidence(
+/** Read retained metric facts. Observation does not require App attribution. */
+export async function readMetricObservation(
   metricId: string,
   end: number,
   alertId?: number,
-  listApps = () => createPublicTaskEvidenceProvider().listApps(),
+  signal?: AbortSignal,
+  request = fetch,
 ): Promise<MetricEvidence> {
+  signal?.throwIfAborted();
   const url = hostReportUrl(
     `/api/metrics/${encodeURIComponent(metricId)}/evidence`,
   );
   url.searchParams.set("end", String(end));
   if (alertId !== undefined) url.searchParams.set("alertId", String(alertId));
-  const response = await fetch(url, {
-    signal: AbortSignal.timeout(10_000),
+  const timeout = AbortSignal.timeout(10_000);
+  const response = await request(url, {
+    signal: signal ? AbortSignal.any([signal, timeout]) : timeout,
     redirect: "error",
   });
   if (!response.ok)
@@ -104,17 +112,35 @@ export async function readMetricEvidence(
       "Metric evidence identity does not match the requested observation",
     );
   }
+  signal?.throwIfAborted();
+  return value;
+}
+
+/** Review adds responsibility to the same retained observations. */
+export async function readMetricEvidence(
+  metricId: string,
+  end: number,
+  alertId?: number,
+  signal?: AbortSignal,
+  listApps = () =>
+    createPublicTaskEvidenceProvider((command) =>
+      sendPublicReadCommand(command, { signal }),
+    ).listApps(),
+): Promise<MetricEvidence> {
+  const value = await readMetricObservation(metricId, end, alertId, signal);
   try {
     value.responsibility = resolveMetricResponsibility(
       value.metric,
       await listApps(),
     );
   } catch {
+    signal?.throwIfAborted();
     value.responsibility = {
       ...resolveMetricResponsibility(value.metric, []),
       status: "unavailable",
     };
   }
+  signal?.throwIfAborted();
   return value;
 }
 

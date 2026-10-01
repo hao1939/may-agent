@@ -228,7 +228,12 @@ export async function reviewMetric(
   return ctx.done(payload.judgment.summary, {
     state: "converged",
     summary: payload.judgment.summary,
-    result: { publication, nextReviewAt: end + profile.allowanceIntervalMs },
+    // The cut identifies historical evidence; successful handling starts the
+    // next routine review interval, including after delayed publication recovery.
+    result: {
+      publication,
+      nextReviewAt: Date.now() + profile.metricReviewIntervalMs,
+    },
     facts: [
       `metric:${metricId}`,
       `metric-review-cut:${end}`,

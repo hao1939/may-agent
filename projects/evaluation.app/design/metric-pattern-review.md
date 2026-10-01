@@ -50,7 +50,14 @@ an installed App. Unknown/ambiguous/unavailable responsibility remains explicit;
 Evaluation-owned observations are excluded from semantic self-review.
 
 One stable Evaluation Task per metric/reviewer retains the requested cut, shared
-review allowance and next review point. Pending review work takes precedence over
+review allowance and next review point. The evidence cut identifies the report;
+successful publication/handling starts the next routine review interval, including
+after a delayed publication retry. DeepSeek can assess different work every five
+minutes but routinely reconsiders the same metric at most once an hour; the regular
+reviewer uses a day. This is App selection policy, not a Host retry limit or an
+obstacle to explicitly requested review. Existing waits still react to observed
+facts. An hour is an initial cadence to reassess against usefulness and coverage.
+Pending review work takes precedence over
 routine sampling. Budget exhaustion retains a timed wait; failed reads/reviewer
 execution remain incomplete and report through the existing owner path. Ordinary
 Task sampling can continue when metric evidence acquisition fails. The report store
@@ -136,6 +143,13 @@ Task controls and review boundaries. The age threshold is an attention policy, n
 a promised response deadline. Zero queued reviews does not prove review coverage.
 
 ## Verification and limits
+
+Reading a retained metric observation does not require resolving its App owner.
+May's metric watcher reads that observation directly; Evaluation adds current
+App responsibility when preparing a review. Missing catalog access is explicit
+coverage information for judgment, not a reason to lose an otherwise valid
+sample. Cancellation reaches pending HTTP and socket reads so a stopped
+observation does not leave its requests running until separate timeouts.
 
 The source checks cover pre-admission evidence without an execution Task, recurring
 failed attempts after later success, coherent denominators, stale observations,
