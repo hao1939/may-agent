@@ -362,7 +362,12 @@ export type SystemEvent =
       type: "runtime.daemon.heartbeat";
       source: "daemon";
       owner: "agent:may";
-      data: { pid: number; interfaceAgent: string; socketEnabled: boolean };
+      data: {
+        pid: number;
+        interfaceAgent: string;
+        socketEnabled: boolean;
+        sql?: { since: number; calls: number; errors: number; totalMs: number; untrackedCalls: number };
+      };
     }
   | {
       type: "handler.started";

@@ -6,6 +6,7 @@
  */
 
 import type { EventInterface } from "../core/events/interface.js";
+import { readSqlPerformance } from "../../lib/db/query-performance.js";
 import type { EventInput, EventReceipt } from "@may-agent/control/events";
 import {
   attachControlSocket,
@@ -82,6 +83,7 @@ export async function attachSocketUI(opts: SocketUIOptions): Promise<SocketUI> {
     // legacy control-socket field empty; clients subscribe explicitly.
     getSessionId: () => "",
     getStatus: opts.getStatus,
+    getDiagnostics: () => ({ sql: readSqlPerformance() }),
     emitEvent: (event) => opts.publishOperatorEvent(operatorEventInput(event)),
     publishEvent: opts.publishEvent,
     getEvent: events.get,

@@ -130,3 +130,24 @@ ordinary calls/transactions. There is no general event plugin or second router.
 
 The canonical design is
 [Events and Task Admission](../../../may-agent.app/docs/2a-design/events.md).
+
+## SQL diagnostics
+
+The existing `status` socket read with `diagnostics: true` includes
+`diagnostics.sql` in the Host. It reports process-lifetime calls, failures, total,
+average and worst elapsed SQLite time. `queries` and optional `previousQueries`
+contain timestamped five-minute windows, with the top ten query shapes by total
+time, worst time and calls. Each window tracks at most 512 operation/shape pairs;
+the lifetime `untracked` counters expose omissions from the rankings. Ordinary
+status reads do not collect or return diagnostic snapshots.
+
+The shared SQLite adapter records prepare/get/all/run/exec calls in this process.
+Raw driver connections and other processes are outside its scope. Parameters,
+rows, database paths and error messages are omitted; SQL literals and comments
+are masked. SQL structure remains operator diagnostic data. Lock waits count as
+elapsed SQL time; sleeps outside SQLite do not.
+
+Compact cumulative counters also accompany the existing minute
+`runtime.daemon.heartbeat` observation. A consumer can compare samples from the
+same PID and `sql.since`, resetting across restarts. This adds no per-query writes
+or new scheduler. Thresholds, review and remediation remain App policy.

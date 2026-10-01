@@ -1,6 +1,7 @@
 import { createInterface } from "node:readline";
 import type { EventBus } from "./core/events/bus.js";
 import type { SubagentManager } from "../lib/index.js";
+import { readSqlPerformance } from "../lib/db/query-performance.js";
 
 export async function runInteractiveLoop(opts: {
   bus: EventBus;
@@ -76,6 +77,7 @@ export async function runDaemonKeepalive(opts: {
   socketEnabled: boolean;
 }): Promise<never> {
   const emitHeartbeat = () => {
+    const { since, calls, errors, totalMs, untracked } = readSqlPerformance();
     opts.bus.emit({
       type: "runtime.daemon.heartbeat",
       source: "daemon",
@@ -84,6 +86,9 @@ export async function runDaemonKeepalive(opts: {
         pid: process.pid,
         interfaceAgent: opts.interfaceAgent,
         socketEnabled: opts.socketEnabled,
+        // Cumulative counters make interval cost reconstructable across retained
+        // heartbeats. Query details remain an on-demand diagnostic read.
+        sql: { since, calls, errors, totalMs, untrackedCalls: untracked.calls },
       },
     });
   };
