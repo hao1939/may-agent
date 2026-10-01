@@ -1,6 +1,7 @@
 import { expect, test } from "bun:test";
 import { getEvent, sendSocketCommand } from "../../packages/control/src/client.js";
 import { buildSandbox } from "./lib/sandbox.js";
+import { openSandboxDb } from "./lib/live-daemon.js";
 
 test("HTTP and socket expose operator diagnostics without turning their payloads into public commands", async () => {
   const sandbox = await buildSandbox({ fixtureAgents: ["may"], daemonArgs: ["--socket", "--web"] });
@@ -24,6 +25,20 @@ test("HTTP and socket expose operator diagnostics without turning their payloads
     expect(await http.json()).toEqual(socketView);
     expect(socketView.event).toMatchObject(fact);
     expect(socketView.delivery.state).toBe("recorded");
+    const status = await sendSocketCommand(sandbox.socketPath, { type: "status", diagnostics: true });
+    const sql = (status.diagnostics as { sql: { calls: number; queries: { topByTotalTime: unknown[] } } }).sql;
+    expect(sql.calls).toBeGreaterThan(0);
+    expect(sql.queries.topByTotalTime.length).toBeGreaterThan(0);
+    expect(sql.queries.topByTotalTime.length).toBeLessThanOrEqual(10);
+    const db = openSandboxDb(sandbox.dbPath);
+    try {
+      const heartbeat = db.query("SELECT data FROM events WHERE event_type = 'runtime.daemon.heartbeat' ORDER BY timestamp DESC LIMIT 1")
+        .get() as { data: string };
+      const counters = JSON.parse(heartbeat.data).sql;
+      expect(counters.calls).toBeGreaterThan(0);
+      expect(counters.totalMs).toBeGreaterThanOrEqual(0);
+      expect(counters).not.toHaveProperty("topByTotalTime");
+    } finally { db.close(); }
     const rejected = await fetch(`${origin}/api/events`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },

@@ -36,6 +36,7 @@ export interface AttachControlSocketOptions {
   socketPath: string;
   getSessionId: () => string;
   getStatus: () => ControlStatus;
+  getDiagnostics?: () => Record<string, unknown>;
   emitEvent: (event: ControlEvent) => ControlEmitResult | void;
   publishEvent?: (event: EventInput, approvalAuthorization?: ApprovalIngressAuthorization) => EventReceipt;
   getEvent?: (eventId: number) => EventView | undefined;
@@ -257,6 +258,7 @@ function eventPayload(event: ControlEvent): Record<string, unknown> {
 export interface ControlSocketCoreOptions {
   getSessionId: () => string;
   getStatus: () => ControlStatus;
+  getDiagnostics?: AttachControlSocketOptions["getDiagnostics"];
   emitEvent: (event: ControlEvent) => ControlEmitResult | void;
   publishEvent?: AttachControlSocketOptions["publishEvent"];
   getEvent?: AttachControlSocketOptions["getEvent"];
@@ -567,7 +569,7 @@ export function createControlSocketCore(opts: ControlSocketCoreOptions): {
               type: "status",
               command: "status",
               ...statusFields(getStatus(), getSessionId(), agentName),
-              ...(frame.diagnostics === true ? { diagnostics: runtimeDiagnostics() } : {}),
+              ...(frame.diagnostics === true ? { diagnostics: { ...runtimeDiagnostics(), ...opts.getDiagnostics?.() } } : {}),
             });
           } catch {
             writeFrame(socket, { type: "error", command: "status", message: "Execution status unavailable" });
@@ -1278,6 +1280,7 @@ export async function attachControlSocket(opts: AttachControlSocketOptions): Pro
   const core = createControlSocketCore({
     getSessionId,
     getStatus,
+    getDiagnostics: opts.getDiagnostics,
     emitEvent,
     publishEvent,
     getEvent,

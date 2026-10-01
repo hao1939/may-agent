@@ -6,6 +6,8 @@
  * This module detects the runtime and provides a unified interface.
  */
 
+import { profileDatabase } from "./db/query-performance.js";
+
 // ── Unified types ──────────────────────────────────────────────────────
 
 export interface RunResult {
@@ -132,10 +134,10 @@ interface NodeDatabase {
 const runtime = detectRuntime();
 
 export function openDatabase(path: string): SqliteDb {
-  return runtime === "bun" ? openBun(path) : openNode(path);
+  return profileDatabase(runtime === "bun" ? openBun(path) : openNode(path));
 }
 
 /** Open an existing database without creation or write capability. */
 export function openReadOnlyDatabase(path: string): SqliteDb {
-  return runtime === "bun" ? openBun(path, true) : openNode(path, true);
+  return profileDatabase(runtime === "bun" ? openBun(path, true) : openNode(path, true));
 }

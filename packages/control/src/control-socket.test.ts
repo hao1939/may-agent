@@ -932,7 +932,12 @@ describe("control socket protocol", () => {
   });
 
   it("returns process memory only when diagnostics are requested", async () => {
-    const core = createCore();
+    let reads = 0;
+    const core = createCore({ getDiagnostics: () => { reads++; return { sql: { calls: 7 } }; } });
+
+    const ordinary = await sendSocketCommand(core.endpoint, { type: "status" });
+    expect(ordinary).not.toHaveProperty("diagnostics");
+    expect(reads).toBe(0);
 
     const status = await sendSocketCommand(core.endpoint, { type: "status", diagnostics: true });
 
@@ -940,6 +945,7 @@ describe("control socket protocol", () => {
       type: "status",
       command: "status",
       diagnostics: {
+        sql: { calls: 7 },
         pid: process.pid,
         uptimeSeconds: expect.any(Number),
         cpu: {
@@ -1316,6 +1322,7 @@ describe("control socket protocol", () => {
         socketPath,
         getSessionId: () => "",
         getStatus: () => [],
+        getDiagnostics: () => ({ sql: { calls: 7 } }),
         emitEvent: () => {},
         subscribeEvents: () => () => {},
         agentName: "may",
@@ -1324,6 +1331,8 @@ describe("control socket protocol", () => {
       sockets.push(socket);
       expect(socket.clientCount()).toBe(0);
       expect(statSync(socketPath).mode & 0o777).toBe(0o600);
+      expect(await sendSocketCommand(socketPath, { type: "status", diagnostics: true }))
+        .toMatchObject({ diagnostics: { sql: { calls: 7 } } });
     } finally {
       rmSync(root, { recursive: true, force: true });
     }
