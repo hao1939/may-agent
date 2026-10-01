@@ -209,6 +209,11 @@ facts. A scheduled signal performs a bounded pending-follow-up query before
 admitting review. Inputs wake the Conversation's execution Task; reuse durable
 input and state evidence without a separate execution authority.
 No dedicated adapter service, supervisor lifecycle or database is needed.
+The current discovery query limits returned results but can still perform seconds
+of synchronous historical work. Its result limit is not an execution-time bound;
+the [responsiveness investigation](../proposals/responsive-host-recovery-20261002.md)
+records this implementation gap and the proposed repair of existing queries and
+background execution.
 Generic Task mechanics remain independent of conversational policy. The
 [unification review](../proposals/conversation-input-unification.md)
 records the code changes and retirement of the former separate consumer.

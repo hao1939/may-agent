@@ -144,6 +144,7 @@ change is pending, unmerged or deployed. Read the record's evidence and the
 current owning contract together; use Git for current PR/source status.
 
 - [Recover current work from execution evidence](proposals/recovery-from-execution-evidence-20260922.md)
+- [Keep recovery from blocking ordinary Host requests](proposals/responsive-host-recovery-20261002.md)
 - [Task context discovery](proposals/task-context-discovery-20260917.md)
 - [Design documentation live-truth review](proposals/design-doc-live-truth-review-20260920.md)
 - [Ordinary commands from Task workers](proposals/task-worker-command-context-20260919.md)

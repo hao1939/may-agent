@@ -107,6 +107,22 @@ Deploy the Host counters before loading this metric definition. Portable tests
 exercise the metric through the existing collector, including restart and stale
 coverage; they do not prove that a live agent has diagnosed or repaired a query.
 
+The rollout acceptance is a complete example: a real sample and breach reaches
+Evaluation, its exact report reaches May, an accepted owner decision links the
+repair, and a comparable post-application sample verifies the effect. Retain those
+ordinary identities in the accountable Task's evidence. An alert or patch alone
+does not close this loop; a justified no-change decision is also valid. Applying
+a proposed improvement keeps its existing human approval boundary.
+
+Exact metric events should retain their subject through review selection. Periodic
+bounded discovery remains useful when events were missed. The October 2 trial
+found that the current App drops the subject and can examine unrelated metrics
+first; May's assigned Task is preparing a correction. Acceptance must include two
+different metric signals plus a scheduled wake during active review, retained
+deadlines and shared allowance, incomplete reads, and reuse of accepted owner work.
+This is an App selection repair, not a new Host registry or work lifecycle.
+
+
 ## Validation and limits
 
 The preceding PoC is retained on `poc/metric-condition-follow-through`, commit

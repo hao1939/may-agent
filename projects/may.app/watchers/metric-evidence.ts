@@ -1,12 +1,12 @@
 import { defineObserver, type ResourceObserver } from "@may-agent/sdk";
 import {
-  readMetricEvidence,
+  readMetricObservation,
   type MetricReader,
 } from "../../evaluation.app/agents/evaluator/workflows/lib/metric-evidence.js";
 
 /** Read retained samples. Existing metric producers own collection and aggregation. */
 export function createMetricEvidenceObserver(
-  reader: MetricReader = readMetricEvidence,
+  reader: MetricReader = readMetricObservation,
 ): ResourceObserver {
   return defineObserver({
     id: "metric-evidence",
@@ -17,7 +17,7 @@ export function createMetricEvidenceObserver(
     timeoutMs: 15_000,
     async inspect(resource, { signal }) {
       signal.throwIfAborted();
-      const evidence = await reader(resource, Date.now());
+      const evidence = await reader(resource, Date.now(), undefined, signal);
       signal.throwIfAborted();
       if (evidence.metricId !== resource || evidence.metric.id !== resource)
         throw new Error("Metric observation identity differs");
