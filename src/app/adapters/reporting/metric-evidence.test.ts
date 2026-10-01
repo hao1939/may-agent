@@ -141,6 +141,15 @@ test("only accepted Task decisions appear, with exact breach and Task provenance
   insert("future", end + 1, {
     acceptedResult: { facts: [`metric-disposition:${JSON.stringify({ ...decision, disposition: "recovered" })}`] },
   });
+  // One attempt can address several independent metrics; the index is only a
+  // candidate filter and must preserve every valid accepted fact.
+  insert("several", end - 80, {
+    acceptedResult: { facts: [
+      "Checked both metrics",
+      `metric-disposition:${JSON.stringify({ ...decision, metricId: "other.metric" })}`,
+      `metric-disposition:${JSON.stringify({ ...decision, alertId: null })}`,
+    ] },
+  });
   const evidence = readMetricEvidence(db, "admission.failures", { end, windowMs, alertId: 42 });
   expect(evidence.dispositions).toHaveLength(1);
   expect(evidence.dispositions?.[0]).toMatchObject({
@@ -151,5 +160,21 @@ test("only accepted Task decisions appear, with exact breach and Task provenance
   });
   const next = readMetricEvidence(db, "admission.failures", { end, windowMs, alertId: 43 });
   expect(next.dispositions).toEqual([]);
-  expect(next.relatedDispositions?.[0]).toMatchObject({ decision: { alertId: 42, linkedTask: decision.linkedTask } });
+  expect(next.relatedDispositions).toMatchObject([
+    { decision: { alertId: null, linkedTask: decision.linkedTask } },
+    { decision: { alertId: 42, linkedTask: decision.linkedTask } },
+  ]);
+  expect(db.prepare("SELECT metric_id FROM metric_dispositions WHERE attempt_id = 'several' ORDER BY metric_id").all())
+    .toEqual([{ metric_id: "admission.failures" }, { metric_id: "other.metric" }]);
+  const before = db.prepare("SELECT * FROM metric_dispositions ORDER BY attempt_id, metric_id").all();
+  // Existing installations replace the old view during the normal atomic schema
+  // upgrade. No attempt bytes or accepted decisions need rewriting.
+  db.exec("DROP VIEW metric_dispositions; CREATE VIEW metric_dispositions AS SELECT 'legacy' AS legacy");
+  applyDbSchema(db);
+  expect(db.prepare("SELECT * FROM metric_dispositions ORDER BY attempt_id, metric_id").all()).toEqual(before);
+  const plan = db.prepare(`EXPLAIN QUERY PLAN
+    SELECT data FROM metric_dispositions WHERE metric_id = ? AND timestamp < ?
+    ORDER BY timestamp DESC, attempt_id DESC LIMIT 13`).all("admission.failures", end);
+  expect(plan.some((row) => String(row.detail).includes("idx_metric_disposition_attempts"))).toBe(true);
+  expect(plan.some((row) => String(row.detail) === "SCAN a")).toBe(false);
 });
