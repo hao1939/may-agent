@@ -13,17 +13,22 @@ classifier, review lifecycle, or authority store is introduced.
 | Review already due | Next review used an old evidence cutoff plus the assessment allowance. | Successful publication starts the next routine interval. DeepSeek keeps five-minute capacity for different work and a one-hour interval for reconsidering the same metric; the regular reviewer keeps one day. Explicit reviews remain available. |
 | Evidence read latency | The accepted-decision view expanded facts from all attempts on each exact metric read; the watcher also fetched an App catalog it did not use. | The Host indexes candidate attempts before applying unchanged fact validation. May's watcher reads retained observations directly; Evaluation adds App responsibility when reviewing. Caller cancellation reaches HTTP/socket reads. |
 
-Host PR #277 owns the Conversation presentation/contract changes. The separate
-metric-read Host candidate owns the SQLite index and view upgrade. The companion
+Status: source validated and committed; these refinements are not deployed.
+
+Host [PR #277](https://github.com/hao1939/may-agent/pull/277) owns the Conversation
+presentation/contract changes (`1c2f8366`). Host
+[PR #278](https://github.com/hao1939/may-agent/pull/278) owns the SQLite index and
+view upgrade (`18785a27`). The companion
 App change owns May's judgment guidance, Evaluation cadence and observation reads.
 The common design records the Request and context hierarchy contracts in
 `may-agent.app/docs`; Evaluation policy stays in its own design.
 
 ## Checks and trials
 
-Both Host candidates passed full local CI before the final idempotent-view
-refinement; the metric candidate's final CI is recorded in its PR. Evaluation
-and May source typechecks, owning tests, bundles and common-design checks passed.
+Both final Host candidates passed full local CI: 3,375 tests for Conversation
+and 3,371 for metric reads, with zero failures. Evaluation and May source
+typechecks, owning tests (246 and 149 passes), bundles and common-design checks
+passed.
 May's suite has one existing skipped integration test; the Host suites have three
 deployment-only skips. The additional observer test also passed a strict test
 file typecheck.
@@ -60,8 +65,11 @@ autonomous diagnosis, or long-term message quality.
 
 The evidence-query comparison used a copied attempt table, with no live schema
 mutation. Old/new views returned the same 1,091 rows across 73,079 attempts.
-Complete projection time was 1.70 seconds versus 0.10 seconds; an exact metric
-read improved similarly. The production schema upgrade preserves validation,
+The reduced-table benchmark took 1.70 seconds versus 0.10 seconds. With the
+full Host indexes restored on a disposable copy, an exact metric read took
+about 3.0 seconds versus 0.13 seconds and used the new index. Unfiltered exports
+can choose a different plan; this is an exact-read optimization, not a promise
+that every query over the view becomes faster. The production schema upgrade preserves validation,
 source identities and accepted facts. It replaces an old view once and leaves
 the current view unchanged on later openings.
 
