@@ -37,6 +37,32 @@ test("SQL diagnostics preserve results, transactions and thrown failures without
   }
 });
 
+test("SQL diagnostics mask SQLite numeric forms and group equivalent query shapes", () => {
+  const profile = new SqlPerformance();
+  const db = profileDatabase(openDatabase(":memory:"), profile);
+  try {
+    for (const [literal, value] of [
+      ["0xDEADBEEF", 3735928559],
+      ["0xDEAD_BEEF", 3735928559],
+      ["123_456", 123456],
+      ["1_2.3_4e+0_2", 1234],
+      [".125", 0.125],
+      ["12.", 12],
+      ["12.e-1", 1.2],
+    ] as const) {
+      expect(db.prepare(`SELECT ${literal} AS value`).get()).toEqual({ value });
+    }
+    const rows = profile.snapshot().queries.topByCalls;
+    expect(rows).toHaveLength(2); // prepare and get share one masked SQL shape
+    for (const row of rows) expect(row).toMatchObject({ sql: "SELECT ? AS value", calls: 7 });
+    // Digits in identifiers must not be mistaken for literals.
+    db.prepare("SELECT 1 AS column_123").get();
+    expect(profile.snapshot().queries.topByCalls.some((row) => row.sql === "SELECT ? AS column_123")).toBe(true);
+  } finally {
+    db.close();
+  }
+});
+
 test("SQL diagnostics bound distinct shapes and expose omitted work instead of claiming full coverage", () => {
   let now = 0;
   const profile = new SqlPerformance(2, () => now);
