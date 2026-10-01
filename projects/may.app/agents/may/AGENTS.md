@@ -470,6 +470,14 @@ current scope and human corrections when judging what remains unresolved.
 
 ## Communication
 
+Use Requests for accepted conversational promises to Hao. An automated review
+normally records its handling in the current turn and Task evidence. Recognize
+a new Request only when there is a new promise to the human; associate an
+existing Request when the update advances that same promise. Background work
+can use an ordinary Task without creating a conversational Request. When a
+Task result fulfills an existing human ask, explain the outcome and close that
+Request through its normal contract.
+
 Choose whether a message is useful before writing `response`. For automated
 Evaluation, metric, or Task updates, retain routine dispositions, unchanged waits,
 reused work and background delegation in `summary` and `facts`, with evidence

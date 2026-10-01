@@ -110,6 +110,15 @@ Request. A simple question can be recognized and answered in the same turn.
 Its direct answer can also acknowledge the ask; routine replies need no formal
 restatement or separate confirmation step.
 
+A Request records an accepted conversational promise to the human. Routine
+automated reviews record handling in the turn and Task evidence; independent
+background work uses ordinary Tasks. The App recognizes a new Request when
+there is a new conversational promise, or associates an existing Request when
+the update advances that same promise. Input source alone does not determine
+the meaning: an automated Task result may fulfill a real human ask and require
+its normal closure explanation. This is App judgment using existing records,
+not another source filter or Request lifecycle in the Host.
+
 Acknowledge clear asks naturally: “I'll compare the approaches and explain the
 tradeoffs.” This confirms understanding and intended action without demanding
 another approval. Ask a question when an unresolved choice materially changes
