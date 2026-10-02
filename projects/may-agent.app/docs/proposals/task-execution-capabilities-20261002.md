@@ -2,7 +2,7 @@
 
 **Supports:** [Host And App Boundary](../2a-design/system-boundary.md). Connects needed agent abilities to guidance and dependable infra contracts.
 
-**Choice basis:** [Applicable philosophy and convention](../1-principles/core-principles.md#one-authority-for-each-resource); [compare competing choices](../1-principles/core-principles.md#resolve-conflicting-designs).
+**Choice basis:** [Simplest sufficient solution at acceptable cost](../1-principles/design-philosophy.md#how-to-decide-a-tradeoff), [agent-first mechanism selection](../1-principles/code-vs-data.md#before-adding-runtime-behavior), and [one authority for each resource](../1-principles/core-principles.md#one-authority-for-each-resource).
 
 **Design status:** Draft for review, 2026-10-02; reorganized around project purpose on 2026-10-03.
 **Implementation status:** Unimplemented for the proposed unified capability
@@ -40,6 +40,23 @@ part or change, explain the need, the value it adds, why the existing mechanism
 is insufficient, and how we can observe the benefit. Merge, remove or defer a
 part that adds no distinct value. Internal plumbing is justified by the contract
 it enables; it need not become a concept the agent or human must manage.
+
+### What would be enough
+
+On representative work, an agent can understand the assignment, discover and
+use an available action, continue independent work, and receive the result or
+failure without arranging delivery. After interruption, it can use retained work
+and incorporate corrections without losing unanswered requirements. The human
+does not need to reconstruct the assignment or remind an owner to collect results.
+Judge this alongside outcome quality, duplicate effects and total execution cost.
+
+The existing Task model already supplies much of this foundation. This proposal
+organizes its guidance and identifies missing behavior; its inventory is not a
+list of new features to build. Repairs to existing promises and the proposed
+reply convenience are separate changes. A common convention is worthwhile when
+it removes repeated decisions or wiring, without requiring every capability to
+use the same API shape. The [purpose and philosophy review](task-capability-pr-review-20261003.md#purpose-and-philosophy-review)
+records the alternatives, costs and limits behind those choices.
 
 ## From an intention to a useful outcome
 
@@ -105,6 +122,11 @@ or judge domain success. Trusted caller policy supplies authority; seeing Task
 context does not grant it. Tasks and attempts are scopes and records, not
 additional decision makers.
 
+Delegation gives the receiver responsibility for the requested contribution.
+The caller retains its original assignment. Choosing not to receive a reply
+does not hand over that assignment or establish that it is fulfilled.
+The agent judges whether accepted delegation is enough for its own assignment.
+
 An accepted judgment is working truth by default. It normally settles the work
 it addresses without a compulsory second judgment. Evidence and outstanding
 facts remain available for correction; acceptance is not guaranteed correctness.
@@ -130,8 +152,9 @@ choice becomes usable when the corresponding infra support is installed.
 3. **Express the action you need.** Discover a permitted capability, supply its
    domain input and choose whether you need an answer when that choice is
    supported. Infra handles identity, delivery and return wiring. Acceptance
-   means responsibility was taken; assess the eventual result against the
-   requested outcome.
+   confirms the action's stated promise: accepting a review takes responsibility
+   for that review; accepting a message for delivery does not mean its recipient
+   has agreed to act. Use returned evidence to judge the requested outcome.
 4. **Choose how to proceed.** Do useful independent work while an answer or
    Condition is pending. Express an external fact you need through a supported
    observation. Yield when appropriate under your assignment; a pending
@@ -141,10 +164,10 @@ choice becomes usable when the corresponding infra support is installed.
    maintains Task state. Your accepted completion judgment normally settles
    the addressed request; it does not guarantee objective correctness.
 6. **Resume from retained work.** After interruption, inspect receipts and
-   results before resubmitting. Reuse accepted work through the capability's
-   supported contract. A new submission is not automatically a retry of a
-   semantically similar request; arbitrary shell effects have no promise of
-   exactly-once execution.
+   results supplied by infra before resubmitting. Refer to accepted work through
+   the capability's supported contract. A new submission is not automatically
+   a retry of a semantically similar request; arbitrary shell effects have no
+   promise of exactly-once execution.
 7. **Respond to failure.** Use the error and prior outcomes to judge whether
    to repair, retry, change approach or ask for help under App policy. Keep
    missing observations explicit. Repeated identical failure is evidence to
@@ -178,8 +201,14 @@ Documenting a promise is insufficient without the feature that fulfills it.
 
 Infra requirements cover enforcement, execution and records. The responsible
 agent interprets facts and chooses a response. Its App supplies domain guidance
-and configured routes. Metrics being available does not by itself establish
-that a reviewer received the evidence or accepted an investigation.
+and configured routes. For failure review, the App/installation must identify
+the reviewing owner and a usable path to it, including failures before the
+assigned worker starts. Infra executes that declared route and retains its
+delivery or admission failure. Metrics being available does not by itself
+establish that a reviewer received the evidence or accepted an investigation.
+Missing coverage remains explicit; infra cannot invent a supervisor or promise
+that an agent will diagnose every pattern. See the existing
+[ownership and intervention contract](../2a-design/system-boundary.md#ownership-and-intervention).
 
 ## Calling convention: intent and an answer choice
 
@@ -187,8 +216,11 @@ The caller decides whether it needs an answer. This preserves one receiver
 request while letting infra supply the caller's bookkeeping automatically.
 The proposed `reply: "required"` returns an answer directly or through a retained
 return path; `reply: "none"` confirms accepted responsibility without creating a
-caller completion dependency. Both confirm acceptance or report rejection.
-A required answer can arrive later while other useful work continues.
+caller completion dependency. Neither choice transfers the caller's original
+assignment. Both report known acceptance or rejection; a lost acknowledgment
+can leave acceptance uncertain and must not be reported as a definite rejection.
+A required answer can arrive later while other useful work continues. It
+requests feedback; it is not an infra-enforced prerequisite for convergence.
 
 This is a proposed convenience over existing request/Condition records, not an
 implemented field in [PR #285](https://github.com/hao1939/may-agent/pull/285).
@@ -250,6 +282,34 @@ available when needed.
 - [System model](../2a-design/system-model.md) and [Host/App boundary](../2a-design/system-boundary.md): the existing ownership and execution foundation.
 - [Attempt input/output proposal](task-attempt-decision-schema-20261002.md): current #285 contract and deferred schema proposals.
 
-Implementation should close demonstrated gaps through existing owners, preserve
-successful behavior and trial the reply convenience separately. Each change
-should identify the outcome it improves and the evidence needed to review it.
+## Smallest next implementation
+
+Start with one real assignment: request a change review, continue testing,
+incorporate a correction and use the returned contribution. First establish
+that path using installed schemas. Inspect what the actual worker can read
+and call; repair the first missing context, action or return connection through
+its existing owner. A native worker needs a usable bridge for that operation
+if it is the worker chosen for the assignment. A complete bridge for every
+capability and executor is outside this first change.
+
+Then trial the proposed reply choice on that same request. Let infra fill the
+existing caller bookkeeping. Compare required reply with no reply: both retain
+the receiver's contribution; only the former owes a caller result notification.
+Keep the current result schema and explicit observation mechanism. Human
+messaging uses its own delivery contract and gets a separate trial when changed.
+
+Check fast results, interruption after acceptance, receiver failure and late
+results after closure through normal admission and return paths. Check ordinary
+success and agent behavior too: useful testing continues, corrections remain
+accounted for, and accepted work is reused when appropriate. Review the chosen
+capability's failure route; a delivered investigation is evidence of review,
+not proof that the original problem was repaired.
+
+This milestone is sufficient when the path works without manual return wiring
+or rescue, preserves the existing successful behaviors, and reduces repeated
+caller bookkeeping at acceptable cost. Measure comparable outcome quality,
+human interventions, duplicate work, calls/tokens and retrieval cost before
+claiming improvement. If a smaller guidance or wiring repair suffices, stop
+there. Expand only for another demonstrated need; do not couple this work to a
+universal dispatcher, catalog service, result-schema migration or new monitoring
+system. These remain proposed checks, not results of a new execution trial.

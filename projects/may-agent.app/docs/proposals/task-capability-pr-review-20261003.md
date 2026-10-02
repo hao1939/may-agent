@@ -230,6 +230,87 @@ Loading this entire design into every invocation would work against the context
 reductions in #277 and #288. A reported lesson or edited guidance file is not
 an activated behavior change (#238, #251, #287).
 
+## Purpose and philosophy review
+
+This pass reviews the merged documentation at App commit `650d79627c` against
+[May's purpose](../1-principles/design-philosophy.md#mays-goal), the
+[tradeoff rules](../1-principles/design-philosophy.md#how-to-decide-a-tradeoff),
+[agent-first mechanism selection](../1-principles/code-vs-data.md#before-adding-runtime-behavior),
+and the owning Task, SDK, cooperation, escalation and metric contracts.
+It uses the retained evidence above; it adds no model trial, current PR-status
+audit or deployment evidence. Refinements remain draft and unimplemented where
+they propose new interfaces.
+
+### Assessment
+
+The direction supports the project purpose: useful outcomes with less human
+coordination require usable agent judgment and dependable execution. The paired
+guide/infra contract is valuable because a prompt rule cannot repair a missing
+action or lost reply, and delivery machinery cannot decide what satisfies a
+requirement. Existing successful work shows that much of this model already
+works. Preserve it and repair demonstrated gaps before adding conveniences.
+
+The proposal was stronger at explaining why each part was useful than at
+explaining why its particular mechanism was the simplest sufficient choice.
+The refinements below narrow those choices and distinguish what acceptance
+means. They do not turn every historical fix into another universal feature.
+
+### Findings and refinements
+
+| Finding in the reviewed draft | Consequence for the project goal | Refinement |
+| --- | --- | --- |
+| No-reply was described as transferring fulfillment to the receiver. | An agent could confuse asking for a contribution with handing over its original promise, losing responsibility while claiming less bookkeeping. | The receiver owns its contribution; the caller retains its assignment. Reply choice controls feedback only. An actual handoff requires its own authorized ownership decision. |
+| Human communication inherited the work-request acceptance wording. | A saved message could be treated as a human commitment, overstating progress and hiding an unanswered requirement. | Define acceptance per action. A communication capability accepts delivery and reply correlation; it cannot accept work on the human's behalf. Keep transport delivery, human response and source outcome distinct. |
+| Discovery said a rejection must report that no acceptance occurred, without distinguishing lost acknowledgments. | Retrying after uncertain acceptance could duplicate already accepted work. | A known pre-admission rejection is definite. After dispatch, return available receipt evidence or uncertainty. Retained call identity supports replay; similar text does not prove a duplicate. |
+| Failure guidance named a reviewer but left the operational prerequisite too implicit. | Recording a trend can appear to close the feedback loop even when no usable reviewer route exists, especially when the worker cannot start. | App/installation selects a reviewer and usable route; infra executes it and exposes failed delivery. Check coverage outside the failed startup path. Reuse configured fallback only; no invented supervisor or retry-count cap. |
+| A small catalog was prescribed even where the existing callable descriptions may suffice. | Another maintained description layer adds prompt and maintenance cost without demonstrated value. | Reuse tool descriptions and owned schemas. Add compact discovery only when capability volume or lookup cost justifies it. Require matching behavior on supported surfaces, not universal adapter coverage. |
+| The proposal listed broad verification goals without one sufficient first outcome. | Work could expand into capability standardization without establishing better results or lower supervision. | Start with one review-and-test assignment using current schemas. Repair its actual path; trial reply convenience separately and stop when the demonstrated need is met. |
+
+These are design ambiguities and scope improvements. They are not evidence that
+the implementation currently exhibits every described failure.
+
+### Choices justified by value and philosophy
+
+| Needed value | Chosen approach and basis | Alternative, accepted cost and revisit condition |
+| --- | --- | --- |
+| Better decisions with less repeated explanation | Keep a short common guide; supply App policy, current facts and exact schemas through their existing owners. Agent-first and one-authority rules keep meaning with the agent. | A comprehensive handbook in every prompt costs context and drifts from schemas. On-demand reads may cost an extra call; preload a specific fact only when observed failures or cost justify it. |
+| Actions the agent can actually use | Describe and enforce the operations installed for the invocation. Reuse existing tool descriptions and SDK contracts. | A universal catalog/dispatcher adds another layer. Accept different tool/function syntax; add a narrow adapter when a real worker needs the operation. |
+| Less caller bookkeeping across interruption | Trial an explicit answer choice that fills existing request/Condition records. Agent chooses the need; infra executes the predictable wiring. | Keep current explicit declarations as the baseline. The convenience earns its cost only if paired SDK/Host changes remove repeated work without new authority or replay ambiguity. It is not a prerequisite for repairing lost feedback. |
+| Continued responsibility without freezing useful work | Retain independent Conditions and let the agent decide execution and completion. Keep durable Task ownership; use direct helpers for bounded contributions. | Automatically waiting on every Condition restricts valid progress. A new execution-state model adds migration cost; neither is justified by the current need. Preserve ordinary accepted judgment even when independent facts remain pending. |
+| Honest, useful completion | Trust accepted judgments by default, preserving scope, evidence and outstanding facts. Existing admission enforces structure and authority. | Mandatory secondary verification for every result consumes attention and delays work. Accept that a judgment can be mistaken; apply explicit App checks where required and allow later correction. |
+| Recoverable work at acceptable cost | Reuse accepted records and replay contracts; redo cheap computation when safe. Distinguish delivery acceptance from fulfillment. | Exact continuation of every tool call/Promise creates permanent recovery machinery. Accept bounded redo or delayed feedback when sufficient; stronger recovery needs evidence of consequential loss. |
+| Repeated failures lead to a decision | Use existing metrics, declared routes and accountable App review. Diagnose with an agent; infra persists and executes its response. | Fixed retry limits do not establish repair; an all-purpose supervisor is another work system. Keep continuing retries/backoff and configured controls. Escalation/repair quality still needs behavior evidence; review missing coverage rather than assume it. |
+
+The first outcome should be demonstrable without inventing any new work owner.
+A request for review and a request for repair use the same existing admission
+foundation; their domain meaning and acceptance evidence belong to the receiving
+App. A human message shares the calling convention while retaining its different
+delivery promise. Common rules unify responsibility and feedback, without making
+all operations identical.
+
+### Evidence needed before expanding
+
+Use the [smallest implementation milestone](task-execution-capabilities-20261002.md#smallest-next-implementation)
+for the next change. Establish the installed path first, then compare the reply
+convenience on the same kind of assignment. Exercise actual entry, acceptance
+and return boundaries, including fast feedback, restart and failure. Retain
+known good cases: changed requirements on one assignment, useful progress with
+independent waits, recovery through supported reads, and reuse of accepted work.
+
+Compare fulfilled requirements and appropriate actions alongside human rescue,
+duplicate work, model calls/tokens and retrieval cost. The retained 30-pair
+comparison is a warning: fewer calls coincided with lower full behavioral
+acceptance. It does not prove that this proposal improves or worsens those
+results. Mechanical checks can establish delivery and replay semantics; model
+trials establish whether the guide helps the agent use them.
+
+Keep the common guide when it clarifies existing behavior at low cost. Repair
+violated current promises at their owner. Implement a new convenience only for
+an observed remaining burden; defer broader exposure when no assignment needs
+it. Stop or reconsider a mechanism whose maintenance, prompt or failure cost
+outweighs its benefit. This is the existing philosophy applied to this proposal,
+not a new approval process or measurement service.
+
 ## Suggested implementation order
 
 1. Consolidate the existing guide and contract descriptions, preserving current

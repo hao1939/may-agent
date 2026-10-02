@@ -2,7 +2,7 @@
 
 **Supports:** [Agent capability guidance and infra contract](task-execution-capabilities-20261002.md). Specifies proposed calling and return semantics supporting the agent guidance design.
 
-**Choice basis:** [Applicable philosophy and convention](../1-principles/core-principles.md#one-authority-for-each-resource); [compare competing choices](../1-principles/core-principles.md#resolve-conflicting-designs).
+**Choice basis:** [Simple first](../1-principles/core-principles.md#simple-first), [convention over configuration](../1-principles/core-principles.md#convention-over-configuration), and [one authority for each resource](../1-principles/core-principles.md#one-authority-for-each-resource).
 
 **Design status:** Draft supporting reference for the [purpose and value design](task-execution-capabilities-20261002.md), 2026-10-03.
 **Implementation status:** Unimplemented for the proposed unified capability
@@ -36,6 +36,9 @@ The Task and attempt are scopes and records, not additional decision makers.
 An attempt ends on its final result, failure or interruption. Ending an attempt
 does not erase an already accepted request. A receiving Task owns fulfilling
 the requested outcome; the caller owns interpreting an answer it requested.
+The caller also retains its original assignment. A contribution request and
+its reply choice do not transfer that assignment; an actual handoff requires
+an authorized ownership decision under the existing App contract.
 
 An ordinary read, command or helper may finish within the attempt. Work promised
 to survive the attempt uses existing Task/input ownership or a supported
@@ -80,12 +83,18 @@ The catalog describes what the caller can accomplish. Worker selection,
 workflow implementation, event types, channels and storage paths remain behind
 that contract. App action declarations and existing tool/observation contracts
 provide the descriptions; infra projects them for the current invocation.
+Use the existing tool descriptions as that catalog when they suffice. Add a
+compact index and on-demand detail only where discovery cost warrants it;
+there is no separate author-maintained capability registry. Full schemas stay
+with the owning operations rather than being copied into this guide.
 
 Only installed, permitted operations should be advertised as callable. A
 read-only invocation receives the read operations of a capability. Infra must
 enforce the same restriction at invocation, including if a caller supplies a
 write action manually. Availability can change after discovery; rejection
-must say that acceptance did not occur.
+before acceptance must say that acceptance did not occur. A timeout or lost
+acknowledgment after dispatch may leave acceptance uncertain; expose the known
+receipt or uncertainty instead of claiming that no work was accepted.
 
 The model's tool schema, workflow SDK adapter and native executor bridge share
 the owning operation's contract. Their syntax may differ. Task context and the
@@ -125,12 +134,18 @@ retry receipts. A small caller-local name can identify a request when later
 declarations refer to it; that name does not require the agent to invent an
 inbox, session or delivery identifier.
 
+Infra retries delivery using the saved call identity. On a later attempt, it
+supplies accepted references and results so the worker can use or explicitly
+refer to them. Similar text alone cannot distinguish recovery from an intended
+new request. The reply convenience does not promise automatic deduplication of
+independent calls with the same content; use the installed replay contract.
+
 The choice belongs to the caller, outside the receiver's domain requirements:
 
-| Proposed choice | Conversation shorthand | Promise |
+| Proposed choice | Caller intent | Promise |
 | --- | --- | --- |
-| `reply: "required"` | Sync: I need the answer. | Return the result directly or preserve a durable return path and deliver it to the calling Task. |
-| `reply: "none"` | Async: I do not need the result. | Confirm acceptance and transfer fulfillment to the receiver; create no caller result dependency or completion notification. |
+| `reply: "required"` | I need the answer. | Return the result directly or preserve a durable return path and deliver it to the calling Task. |
+| `reply: "none"` | I do not need the result. | Confirm acceptance under the action's contract; create no caller result dependency or completion notification. Receiver work keeps its own owner. |
 
 Use `reply` in the proposed schema because it expresses intent without
 suggesting a thread or transport implementation. Here the user's sync/async
@@ -141,6 +156,22 @@ Request/send capabilities that support both choices require the caller to
 choose. A direct read has a fixed result contract and needs no extra choice.
 Capabilities advertise only choices they implement; infra rejects unsupported
 ones. Existing accepted work retains its saved semantics during migration.
+
+### Acceptance is specific to the action
+
+One calling convention does not give every action the same completion promise:
+
+| Action | What acceptance establishes | What it does not establish |
+| --- | --- | --- |
+| Durable App request | The addressed App has accepted the contribution through recoverable admission; exact Task attachment may still be pending. | The contribution has finished, or the caller's original assignment is fulfilled. |
+| Human message | The installed communication capability has accepted its delivery obligation and any requested reply correlation. | The human has received, read, agreed to, or completed the request. |
+| External operation | The provider/capability has accepted the operation as described by its contract. | Its effect has completed or the agent's intended outcome is satisfied. |
+
+Return known acceptance, rejection or uncertainty and make retained work
+discoverable. These are observable meanings, not a mandatory universal result
+envelope. Direct reads and bounded calls retain their ordinary result shapes.
+Trust accepted agent judgments by default, while recording delivery and
+execution facts according to the evidence actually available.
 
 ### When an answer is required
 
@@ -163,21 +194,30 @@ diagnostic evidence. Receiving a failure is evidence for a new decision, not
 proof that the requested outcome succeeded.
 
 The agent separately decides when no useful independent work remains and it
-should report a wait through the supplied schema. A pending answer does not automatically set the Task's
-execution phase or veto convergence. The agent judges fulfillment under App
-policy; infra records that judgment and keeps other facts accurate.
+should report a wait through the supplied schema. A pending answer does not
+automatically set the Task's execution phase or veto convergence. The agent
+judges fulfillment under App policy; infra records that judgment and keeps
+other facts accurate.
 
 ### When no answer is requested
 
 Return a receipt only after the capability has actually accepted responsibility.
-A queued event with no accepting owner is insufficient. Rejection before
-acceptance remains a caller-visible error.
+A queued event with no accepting owner is insufficient. Durable App admission
+can accept work while exact Task attachment remains pending; preserve that
+distinction and its recovery path. Rejection before acceptance remains a
+caller-visible error.
 
-After acceptance the receiving agent owns fulfillment and judges the result.
-Infra executes actions and records the accepted decision. Failures remain visible through that owner, ordinary recovery and the
-existing metrics/evaluation routes. The absence of a requested answer does
-not remove work ownership or failure evidence. No result Condition or routine
-completion wake is added to the calling Task.
+For an App contribution, the receiving owner judges fulfillment. Infra executes
+actions and records the accepted decision. Failures remain visible through that
+owner, ordinary recovery and existing metrics/evaluation routes. The absence of
+a requested answer does not remove work ownership or failure evidence. No result
+Condition or routine completion wake is added to the calling Task.
+
+This is responsibility for the requested contribution. The caller still judges
+its own assignment and any promises it made. Disabling feedback does not, by
+itself, satisfy those promises or authorize handing them off.
+The caller judges whether accepted delegation fulfills its own assignment;
+the reply choice adds no infra completion gate.
 
 The receipt remains available if the caller later explicitly inspects the work.
 Choosing no reply does not mean deleting provenance, hiding failures from
@@ -189,6 +229,12 @@ The agent supplies the logical recipient, message and answer choice. Infra
 selects the installed interface, preserves any required reply correlation and
 reports rejection or delivery failure according to the contract. An ordinary
 message need not be represented as an approval.
+
+Acceptance refers to the capability's delivery obligation. It cannot assign
+work to a human or guarantee that the human will reply. Persisted work, transport
+delivery and a received human answer remain distinct. A missing reply leaves
+the retained interest available for later agent judgment; delivery does not
+gate or rewrite the source Task's accepted outcome.
 
 Conversation records and Telegram are implementation layers. The agent does
 not select between them. Trusted approval decisions still use their supported
@@ -291,6 +337,10 @@ not identical interface syntax. A model gets a tool schema; workflow code gets
 a typed function. A native executor needs a bridge when its model must call
 the same operation live. All reuse the owning implementation. An adapter must
 not infer domain success from process exit or successful delivery.
+Require these semantics for operations an adapter advertises. Add an operation
+to another adapter when an actual assignment needs it, rather than making
+universal feature parity a prerequisite for this proposal. An unsupported
+operation must be visible as unavailable, without invented fallback authority.
 
 The SDK already supplies the main structure: `TaskExecutor` takes a
 `TaskAttempt`; the attempt exposes reads, `apply`, `publish`, `reviseTask` and
@@ -412,6 +462,16 @@ mechanisms rather than adding work for the agent to administer.
    are separate facts. No fixed retry-count limit or infra-chosen remedy is
    implied. A stopped Host still needs installation-level health observation.
 
+The App/installation owns selecting that reviewer and configuring its existing
+route. Infra owns executing the route and retaining acceptance or failure.
+For failure coverage before a worker starts, verify that review does not depend
+on that same failed startup path. If the selected reviewer is also unavailable,
+use only the configured fallback and expose unresolved delivery. Missing review
+coverage is a gap, not permission to infer an owner from an alert label. These
+requirements apply the existing [metric routing](../2a-design/metrics.md#ownership-and-routing)
+and [intervention boundary](../2a-design/system-boundary.md#ownership-and-intervention);
+they add no supervisor service or failure-count policy.
+
 Acceptance checks must exercise real entry and return paths: invalid result
 then correction, accepted finish in a mixed tool batch, delayed observation
 without manual waking, restart after acceptance, later correction during retry,
@@ -445,6 +505,12 @@ The earlier capability review inspected Host `408fc6dd4` (PR #285 with main
 probe reached a publication sink through `tasks` under `readonly`; it did
 not perform a live write. These are observations at that revision, not a rerun
 against the subsequently narrowed #285 head. They motivate the following work:
+
+Separate a broken existing promise from a proposed extension. Historical
+observations identify places to check against the source and installation
+chosen for a change; they do not establish that every limitation is still
+present. Guidance alone can be sufficient when the needed action, wake and
+context already work. Shared discovery and reply convenience remain proposals.
 
 | Boundary | Observed limitation at the probe revision | Focused acceptance case |
 | --- | --- | --- |
