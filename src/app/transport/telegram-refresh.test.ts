@@ -509,6 +509,13 @@ describe("Telegram refresh lifecycle", () => {
       await Bun.sleep(40);
       expect(restarted.sent.some((send) => send.text.includes("Run the verified operator step."))).toBe(false);
 
+      // The exact completed receipt is cached after the first restart read, so
+      // a later wake does not need that durable row to suppress the same action.
+      getDb(root).run("DELETE FROM notification_messages");
+      restarted.wake("first");
+      await Bun.sleep(40);
+      expect(restarted.sent.some((send) => send.text.includes("Run the verified operator step."))).toBe(false);
+
       restarted.tasks.get("first")!.diagnostics!.conditions.push({ id: "missing-condition", condition: null });
       restarted.wake("first");
       await waitFor(() => restarted.sent.some((send) => send.text.includes("Run the verified operator step.")));
@@ -533,6 +540,70 @@ describe("Telegram refresh lifecycle", () => {
       Object.assign(restarted.tasks.get("first")!, action(2, "Run the changed operator step."));
       restarted.wake("first");
       await waitFor(() => restarted.sent.some((send) => send.text.includes("Run the changed operator step.")));
+    } finally {
+      await restarted.close();
+    }
+  });
+
+  it("retains exact receipt suppression when another action send fails", async () => {
+    const root = mkdtempSync(join(tmpdir(), "may-telegram-mixed-action-failure-"));
+    const exactAction = {
+      humanAction: { requestedAction: "Keep the completed receipt suppressed." },
+      diagnostics: {
+        conditions: [
+          {
+            id: "completed-step",
+            condition: {
+              metadata: { id: "completed-step", generation: 1, resourceVersion: 1 },
+              spec: {
+                type: "human.answer.received",
+                subject: "id:completed-step",
+                owner: "human",
+                requestedAction: "Keep the completed receipt suppressed.",
+                expected: { answer: true },
+              },
+              status: { state: "false" },
+            },
+          },
+        ],
+        conditionsTruncated: false,
+      },
+    };
+    const first = fixture({ root, removeOnClose: false });
+    try {
+      Object.assign(first.tasks.get("first")!, exactAction);
+      first.wake("first");
+      await waitFor(() =>
+        ["123", "456"].every((chat) =>
+          first.sent.some((send) => send.chat_id === chat && send.text.includes("Keep the completed receipt suppressed.")),
+        ),
+      );
+    } finally {
+      await first.close();
+    }
+
+    const restarted = fixture({ root });
+    try {
+      Object.assign(restarted.tasks.get("first")!, exactAction);
+      restarted.tasks.get("second")!.humanAction = { requestedAction: "Retry the unrelated failed action." };
+      restarted.sendFailures.add("2 Tasks need your action");
+      restarted.wake("second");
+      await waitFor(() => restarted.errors.filter((text) => text.includes("Send failed")).length >= 2);
+
+      getDb(root).run("DELETE FROM notification_messages");
+      delete restarted.tasks.get("second")!.humanAction;
+      const failedBaseline = restarted.sent.length;
+      restarted.wake("first");
+      await Bun.sleep(40);
+      expect(restarted.sent).toHaveLength(failedBaseline);
+
+      restarted.sendFailures.clear();
+      restarted.tasks.get("second")!.humanAction = { requestedAction: "Retry the unrelated failed action." };
+      restarted.wake("second");
+      await waitFor(() => restarted.sent.length >= failedBaseline + 2);
+      expect(restarted.sent.slice(failedBaseline).every((send) => send.text.includes("2 Tasks need your action"))).toBe(
+        true,
+      );
     } finally {
       await restarted.close();
     }
@@ -575,6 +646,28 @@ describe("Telegram refresh lifecycle", () => {
       await waitFor(
         () => f.sent.filter((send) => send.text.includes("Retry the changed fallback step.")).length >= failedBaseline + 2,
       );
+    } finally {
+      await f.close();
+    }
+  });
+
+  it("keeps a manual fallback read separate from automatic delivery deduplication", async () => {
+    const f = fixture();
+    const action = "Use the unchanged fallback action.";
+    try {
+      await f.command("/apps may");
+      f.tasks.get("first")!.humanAction = { requestedAction: action };
+
+      await f.command("/todo");
+      expect(f.sent.filter((send) => send.chat_id === "123" && send.text.includes(action))).toHaveLength(1);
+
+      f.wake("first");
+      await waitFor(() => f.sent.filter((send) => send.chat_id === "123" && send.text.includes(action)).length === 2);
+      expect(f.reads).toContain("first");
+
+      f.wake("first");
+      await Bun.sleep(40);
+      expect(f.sent.filter((send) => send.chat_id === "123" && send.text.includes(action))).toHaveLength(2);
     } finally {
       await f.close();
     }

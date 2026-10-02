@@ -1064,21 +1064,24 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
     const watched = watchedTasks.get(surface);
     const changed = actions.filter(({ task, detail, signature }) => {
       if (watched?.appId === task.appId && watched.taskId === task.taskId) return false;
-      if (prior.get(todoTaskKey(task)) === presentedTodoActionRevision(signature)) return false;
+      const key = todoTaskKey(task);
+      const revision = presentedTodoActionRevision(signature);
+      if (prior.get(key) === revision) return false;
       if (!signature.exact) return true;
-      return !hasCompletedHumanActionDelivery(persistDir, coordinates.chatId, coordinates.topicId, {
-        appId: detail.appId,
-        taskId: detail.taskId,
-        signature: signature.value,
-      });
+      if (
+        hasCompletedHumanActionDelivery(persistDir, coordinates.chatId, coordinates.topicId, {
+          appId: detail.appId,
+          taskId: detail.taskId,
+          signature: signature.value,
+        })
+      ) {
+        next.set(key, revision);
+        return false;
+      }
+      return true;
     });
-    if (changed.length === 0) {
-      shownTodoActions.set(surface, next);
-      return;
-    }
-    for (const { task, signature } of changed) {
-      next.set(todoTaskKey(task), presentedTodoActionRevision(signature));
-    }
+    shownTodoActions.set(surface, next);
+    if (changed.length === 0) return;
     const first = changed[0]!;
     const single = page.total === 1 && changed.length === 1;
     // The detail was read once above, so displayed text and immutable approval
@@ -1135,7 +1138,12 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
       ),
     });
     if (!messageId || !running) return;
-    if ((selectedApps.get(surface) ?? opts.interfaceAgent) === appId) shownTodoActions.set(surface, next);
+    if ((selectedApps.get(surface) ?? opts.interfaceAgent) === appId) {
+      for (const { task, signature } of changed) {
+        next.set(todoTaskKey(task), presentedTodoActionRevision(signature));
+      }
+      shownTodoActions.set(surface, next);
+    }
     // Record what was actually shown, even if the user selected another App
     // during the send; only the current App's notification cache is protected.
     recordConversationMessage({
