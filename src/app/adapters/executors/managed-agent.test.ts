@@ -27,7 +27,13 @@ test.each(["event", "continued-input"])("generic agent execution carries %s fact
     let prompt = "";
     const runner = createTaskAgentRunner({
       manager: {
-        callAgent: async (_agent: string, text: string) => {
+        callAgent: async (_agent: string, text: string, options: { validateOutput: (value: unknown) => string | null }) => {
+          expect(options.validateOutput({ state: "waiting", summary: "Pending", facts: [], conditions: [{
+            id: "sample", type: "sample.state", subject: "sample:1", owner: "app:example", expected: {},
+          }] })).toContain("expected.state must be ready");
+          expect(options.validateOutput({ state: "waiting", summary: "Pending", facts: [], conditions: [{
+            id: "sample", type: "sample.state", subject: "sample:1", owner: "app:example", expected: { state: "ready" },
+          }] })).toBeNull();
           prompt = text;
           return {
             status: "done",
@@ -42,7 +48,10 @@ test.each(["event", "continued-input"])("generic agent execution carries %s fact
       } as unknown as SubagentManager,
     });
     const input = {
-      descriptor: { id: "example", app: {} },
+      descriptor: { id: "example", app: { tasks: {
+        validateCondition: (condition: { expected: { state?: string } }) =>
+          condition.expected.state === "ready" ? null : "expected.state must be ready",
+      } } },
       attempt: {
         read: { tasks: {} },
         task: { id: "work", generation: 1, outcome: "Inspect evidence", acceptance: [] },

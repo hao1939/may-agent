@@ -637,6 +637,23 @@ const materializedSelectedReportSql = `SELECT 1 FROM selected_reports report
     AND report.origin_conversation_id = topic.conversation_id
     AND report.origin_topic_id = topic.id`;
 
+// The inbox is the delivery receipt. Old per-Topic rows remain valid; new rows
+// carry one immutable result with all currently eligible Topic links. Explicit
+// TEXT keys match the index and preserve indexed lookups against typed columns.
+const groupedChangeReceiptSql = `SELECT grouped.id FROM app_inbox_items grouped
+  WHERE grouped.app_id = changes.appId AND grouped.conversation_id = changes.conversationId
+    AND grouped.source_kind = 'system'
+    AND grouped.input_kind = CASE WHEN changes.attemptId IS NOT NULL THEN 'task-outcome' ELSE 'task-closed' END
+    AND CAST(json_extract(grouped.input_data, '$.appId') AS TEXT) = changes.taskAppId
+    AND CAST(json_extract(grouped.input_data, '$.taskId') AS TEXT) = changes.taskId
+    AND CAST(COALESCE(json_extract(grouped.input_data, '$.attemptId'),
+      json_extract(grouped.input_data, '$.generation')) AS TEXT) =
+      CAST(COALESCE(changes.attemptId, changes.closedGeneration) AS TEXT)
+    AND EXISTS (SELECT 1 FROM json_each(grouped.input_data, '$.topicIds') linked
+      WHERE linked.value = changes.topicId)`;
+const undeliveredChangeSql = `NOT EXISTS (SELECT 1 FROM app_inbox_items handled WHERE handled.id = changes.inputId)
+  AND NOT EXISTS (${groupedChangeReceiptSql})`;
+
 export function listPendingConversationTaskChanges(
   db: SqliteDb,
   appId: string,
@@ -711,10 +728,7 @@ export function listPendingConversationTaskChanges(
           AND changes.taskAppId = conversation_execution.app_id
           AND changes.taskId = conversation_execution.execution_task_id
       )
-      AND NOT EXISTS (
-        SELECT 1 FROM app_inbox_items handled
-        WHERE handled.id = changes.inputId
-      )
+      AND ${undeliveredChangeSql}
     ORDER BY changedAt, taskAppId, taskId, inputId
     LIMIT ?
   `,
@@ -798,12 +812,81 @@ export function admitConversationTaskChange(
         data: { appId: source.resourceStore.appId, taskId: input.taskId, generation: closure.generation, closure },
       };
     }
+    const receipt = db
+      .prepare(
+        `WITH changes AS (
+      SELECT ? AS appId, ? AS conversationId, ? AS topicId, ? AS taskAppId,
+        ? AS taskId, ? AS attemptId, ? AS closedGeneration
+    ) SELECT id FROM app_inbox_items WHERE id = ?
+      UNION ALL SELECT id FROM changes JOIN app_inbox_items ON id IN (${groupedChangeReceiptSql}) LIMIT 1`,
+      )
+      .get(
+        appId,
+        input.conversationId,
+        input.topicId,
+        source.resourceStore.appId,
+        input.taskId,
+        input.attemptId ?? null,
+        input.closedGeneration ?? null,
+        id,
+      );
+    if (receipt) return { item: getAppInboxItem(db, String(receipt.id))!, taskId: task.metadata.id, created: false };
+
+    // Group at admission, before waking the Conversation. A newly linked Topic
+    // later gets its own missing delivery; an old result never answers a new ask.
+    const topicIds = db
+      .prepare(
+        `WITH changes AS (
+      SELECT topic.app_id AS appId, topic.conversation_id AS conversationId, topic.id AS topicId,
+        linked.app_id AS taskAppId, linked.task_id AS taskId,
+        ? AS attemptId, ? AS closedGeneration,
+        CASE WHEN ? IS NOT NULL THEN
+          'conversation-result:' || topic.app_id || ':' || topic.conversation_id || ':' || topic.id || ':' || linked.app_id || ':' || ?
+        ELSE 'conversation-closure:' || topic.app_id || ':' || topic.conversation_id || ':' || topic.id || ':' || linked.app_id || ':' || linked.task_id || ':' || ? END AS inputId
+      FROM conversation_topics topic
+      JOIN conversation_topic_tasks linked ON linked.topic_id = topic.id
+      ${input.attemptId !== undefined ? "JOIN app_task_attempts attempt ON attempt.app_id = linked.app_id AND attempt.attempt_id = ?" : ""}
+      WHERE topic.app_id = ? AND topic.conversation_id = ? AND linked.app_id = ? AND linked.task_id = ?
+        ${input.attemptId !== undefined ? `AND ${returnedAttemptSql(directSelectedReportSql)}` : ""}
+    ) SELECT topicId FROM changes WHERE ${undeliveredChangeSql}
+      ORDER BY CASE WHEN topicId = ? THEN 0 ELSE 1 END, topicId LIMIT 100`,
+      )
+      .all(
+        input.attemptId ?? null,
+        input.closedGeneration ?? null,
+        input.attemptId ?? null,
+        input.attemptId ?? null,
+        input.closedGeneration ?? null,
+        ...(input.attemptId !== undefined ? [input.attemptId] : []),
+        appId,
+        input.conversationId,
+        source.resourceStore.appId,
+        input.taskId,
+        input.topicId,
+      )
+      .map((row) => String(row.topicId))
+      .sort();
+    if (!topicIds.length) return { taskId: task.metadata.id, created: false };
+    id = `conversation-change:${createHash("sha256")
+      .update(
+        JSON.stringify([
+          appId,
+          input.conversationId,
+          source.resourceStore.appId,
+          input.taskId,
+          input.attemptId ?? null,
+          input.closedGeneration ?? null,
+          topicIds,
+        ]),
+      )
+      .digest("hex")}`;
+    fact = { ...fact, data: { ...fact.data, topicIds } };
     return admitConversationTaskInput(target, {
       id,
       idempotencyKey: id,
       appId,
       conversationId: input.conversationId,
-      topicId: input.topicId,
+      topicId: topicIds[0],
       source: { kind: "system", id },
       input: fact,
       intent: task.spec,

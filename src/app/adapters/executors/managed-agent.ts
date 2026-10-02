@@ -116,6 +116,11 @@ async function executeTaskAgent(
   ].join("\n");
 
   const taskContext = taskExecutionContext(input, definitions);
+  const admissionOptions = {
+    allowNeedsAgent: false,
+    validateAction: input.descriptor.app.tasks?.validateAction,
+    validateCondition: input.descriptor.app.tasks?.validateCondition,
+  };
   const agentOptions = {
     taskContext,
     contextPrompt: "Pursue the assignment in the current Task decision brief and return the result required by finish().",
@@ -128,6 +133,10 @@ async function executeTaskAgent(
     trace,
     requireFinish: true,
     outputSchema: appTaskAgentResultSchema,
+    validateOutput: (output: unknown) => {
+      const admitted = normalizeTaskHandlerResult(output, { type: "done", summary: "", runId: null }, admissionOptions);
+      return admitted.resultRejected ? admitted.summary : null;
+    },
     toolPolicy: "full" as const,
     timeout: input.executionTimeoutMs,
     executionRoot: input.executionPaths.workspaceDir,
@@ -156,11 +165,7 @@ async function executeTaskAgent(
           `Agent session ${result.sessionId || "unknown"} returned no result`,
         runId: result.sessionId || null,
       },
-      {
-        allowNeedsAgent: false,
-        validateAction: input.descriptor.app.tasks?.validateAction,
-        validateCondition: input.descriptor.app.tasks?.validateCondition,
-      },
+      admissionOptions,
     ),
     restoredAgentResidue,
   );
