@@ -2209,7 +2209,14 @@ describe("App task reconciler state", () => {
     expect(matchingAppTaskConditionTaskIds(config, event)).toEqual(["work/first", "work/second"]);
     expect(readAppTaskTrigger(config, "work/first")).toBeUndefined();
     expect(readAppTaskTrigger(config, "work/second")).toBeUndefined();
+    // Recovery of one Task must not load every wait in the App.
+    expect(config.resourceStore.readConditionRoutes("provider.state", ["work/first"])).toEqual([
+      expect.objectContaining({ taskIds: ["work/first"] }),
+    ]);
+    expect(config.resourceStore.readConditionRoutes("provider.state", [])).toEqual([]);
+    expect(config.resourceStore.readConditionRoutes("provider.state", ["work/missing"])).toEqual([]);
     expect(matchingAppTaskConditionTaskIds(config, event, ["work/first"])).toEqual(["work/first"]);
+    expect(matchingAppTaskConditionTaskIds(config, event, [])).toEqual([]);
 
     expect(trackAppTaskConditionEventForTasks(config, event, ["work/first"])).toEqual([
       { conditionId: "shared-ready:work/first", taskId: "work/first" },

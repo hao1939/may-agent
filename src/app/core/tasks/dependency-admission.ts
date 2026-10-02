@@ -457,7 +457,7 @@ export function recoverTaskConditions(
   const allowed = new Set(resourceScope.taskIds);
   const recoveredTaskIds = new Set<string>();
   if (eventTypes.includes("app.dependency.updated")) {
-    for (const { condition, taskIds } of config.resourceStore.readConditionRoutes("app.dependency.updated")) {
+    for (const { condition, taskIds } of config.resourceStore.readConditionRoutes("app.dependency.updated", allowed)) {
       if (conditionIds && !conditionIds.includes(condition.metadata.id)) continue;
       if (!condition.spec.subject.startsWith("id:")) continue;
       const item = getAppInboxItem(db, condition.spec.subject.slice(3));
@@ -484,7 +484,7 @@ export function recoverTaskConditions(
     }
   }
   const wakes = events.flatMap((event) => {
-    const taskIds = matchingAppTaskConditionTaskIds(config, event).filter((taskId) => allowed.has(taskId));
+    const taskIds = matchingAppTaskConditionTaskIds(config, event, allowed);
     return trackAppTaskConditionEventForTasks(config, event, taskIds);
   });
   return [...new Set([...recoveredTaskIds, ...wakes.map((wake) => wake.taskId)])];

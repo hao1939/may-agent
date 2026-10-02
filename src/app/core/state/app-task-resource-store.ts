@@ -729,7 +729,12 @@ export class AppTaskResourceStore {
     ).map((row) => parseTaskCancellation(row.cancellation_json));
   }
 
-  readConditionRoutes(eventType: string): Array<{ condition: AppTaskCondition; taskIds: string[] }> {
+  readConditionRoutes(
+    eventType: string,
+    taskIds?: Iterable<string>,
+  ): Array<{ condition: AppTaskCondition; taskIds: string[] }> {
+    const ids = taskIds ? [...new Set(taskIds)] : undefined;
+    if (ids?.length === 0) return [];
     const rows = this.db
       .prepare(
         `SELECT c.condition_id, c.condition_json, linked.task_id
@@ -739,11 +744,12 @@ export class AppTaskResourceStore {
          JOIN app_tasks task
            ON task.app_id = linked.app_id AND task.task_id = linked.task_id
          WHERE c.app_id = ? AND json_extract(c.condition_json, '$.spec.type') = ?
+           ${ids ? `AND linked.task_id IN (${ids.map(() => "?").join(", ")})` : ""}
            AND c.state <> 'true'
            AND task.phase IN ('waiting', 'running', 'pending')
          ORDER BY c.condition_id, linked.task_id`,
       )
-      .all(this.appId, eventType) as Array<{
+      .all(this.appId, eventType, ...(ids ?? [])) as Array<{
       condition_id?: string;
       condition_json?: string;
       task_id?: string;
