@@ -126,51 +126,56 @@ test("the managed ordinary-helper path keeps the result without continuing model
   }
 });
 
-test("caller admission rejects a finish inside the managed invocation and permits correction", async () => {
-  const { root, definition } = fixture();
-  let requests = 0;
-  const validated: unknown[] = [];
-  let sessionId: string | undefined;
-  const manager = new SubagentManager({
-    persistDir: root,
-    agentRunFactory: (config) =>
-      createAgentRun({
-        ...config,
-        streamFn: () => {
-          requests++;
-          return stream(
-            requests > 3
-              ? []
-              : [
-                  call(`finish-${requests}`, {
-                    ...args,
-                    result: { value: requests === 1 ? -1 : 7 },
-                  }),
-                ],
-          );
-        },
-      }),
-  });
-  manager.register(definition);
-  try {
-    const result = await manager.callAgent("helper", "Measure once", {
-      outputSchema: Type.Object({ value: Type.Number() }),
-      sessionStarted: (id) => {
-        sessionId = id;
-      },
-      validateOutput(value) {
-        validated.push(value);
-        return (value as { value: number }).value < 0 ? "result.value must be nonnegative; return { value: 7 }" : null;
-      },
+test.each([false, true])(
+  "caller admission permits correction in the managed invocation (schema: %s)",
+  async (schema) => {
+    const { root, definition } = fixture();
+    let requests = 0;
+    const validated: unknown[] = [];
+    let sessionId: string | undefined;
+    const manager = new SubagentManager({
+      persistDir: root,
+      agentRunFactory: (config) =>
+        createAgentRun({
+          ...config,
+          streamFn: () => {
+            requests++;
+            return stream(
+              requests > 3
+                ? []
+                : [
+                    call(`finish-${requests}`, {
+                      ...args,
+                      result: { value: requests === 1 ? -1 : 7 },
+                    }),
+                  ],
+            );
+          },
+        }),
     });
-    expect(result.status).toBe("done");
-    expect(result.structuredResult).toEqual({ value: 7 });
-    expect(validated).toEqual([{ value: -1 }, { value: 7 }]);
-    expect(requests).toBe(2);
-  } finally {
-    if (sessionId) {
-      manager.cancel(sessionId);
-      await manager.waitFor(sessionId);
+    manager.register(definition);
+    try {
+      const result = await manager.callAgent("helper", "Measure once", {
+        ...(schema ? { outputSchema: Type.Object({ value: Type.Number() }) } : {}),
+        sessionStarted: (id) => {
+          sessionId = id;
+        },
+        validateOutput(value) {
+          validated.push(value);
+          return (value as { value: number }).value < 0
+            ? "result.value must be nonnegative; return { value: 7 }"
+            : null;
+        },
+      });
+      expect(result.status).toBe("done");
+      expect(result.structuredResult).toEqual({ value: 7 });
+      expect(validated).toEqual([{ value: -1 }, { value: 7 }]);
+      expect(requests).toBe(2);
+    } finally {
+      if (sessionId) {
+        manager.cancel(sessionId);
+        await manager.waitFor(sessionId);
+      }
     }
-  }
-});
+  },
+);

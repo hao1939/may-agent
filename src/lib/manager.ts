@@ -605,7 +605,8 @@ export class SubagentManager {
           `Execution: ${JSON.stringify(sessionId)}. Caller session: ${JSON.stringify(opts?.parentSessionId ?? null)}. Workflow: ${JSON.stringify(opts?.workflowRunId ?? null)}.`,
           `Original assignment and caller links: ${JSON.stringify(join(this._persistDir, "sessions", sessionId, "meta.json"))}. If the assignment was compacted, read its task field before continuing.`,
         ].join("\n");
-    const requestedStructuredCompletion = opts?.requireFinish === true || opts?.outputSchema !== undefined;
+    const requestedStructuredCompletion =
+      opts?.requireFinish === true || opts?.outputSchema !== undefined || opts?.validateOutput !== undefined;
     const operationAllowance = validateOperationAllowance(opts?.operationAllowance);
     const toolPolicy = opts?.toolPolicy ?? "full";
     if (requestedStructuredCompletion && persistentChat) {

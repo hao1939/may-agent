@@ -516,7 +516,7 @@ function prepareExecution(options: AgentPreparationOptions): Omit<PreparedAgentE
     ? invokeCatalogSkill(options.definition.skillCatalog, skillName, contextTask)
     : undefined;
   const outputSchema = normalizeExecutionSchema(options.outputSchema);
-  const requireFinish = options.requireFinish === true || outputSchema !== undefined;
+  const requireFinish = options.requireFinish === true || outputSchema !== undefined || options.validateOutput !== undefined;
   const normalizedOptions = { ...options, outputSchema };
   const tools = bindToolsToSession(
     resolveTools(normalizedOptions, requireFinish),

@@ -1966,3 +1966,51 @@ test("legacy per-Topic delivery receipts remain valid alongside new grouped rece
   expect(getAppInboxItem(f.db, legacyId)?.input.data).not.toHaveProperty("topicIds");
   expect(listPendingConversationTaskChanges(f.db, app.id)).toEqual([]);
 });
+
+test("grouped delivery leaves links beyond the admission limit recoverable after restart", () => {
+  const f = fixture();
+  const first = f.admit();
+  completeConversationTaskTurn(f.context(), f.claim(first.taskId), decision);
+  observeAppTaskIntent(f.context(), {
+    appAgent: app.id,
+    intent: {
+      id: "measurement",
+      parentId: "root",
+      outcome: "Collect evidence",
+      acceptance: ["Measured"],
+    },
+  });
+  const claim = f.claim("measurement");
+  completeAppTask(f.context(), claim, { summary: "Measured" });
+  const topics = Array.from({ length: 105 }, (_, i) => `topic-${String(i).padStart(3, "0")}`);
+  for (const id of topics) {
+    createConversationTopic(f.db, {
+      id,
+      appId: app.id,
+      conversationId: "chat",
+      title: id,
+      openedBy: "system",
+      originMessageId: id,
+    });
+    linkConversationTopicTask(f.db, id, app.id, "measurement");
+  }
+  // A direct notification for a link outside the first sorted page must be included.
+  const ref = { conversationId: "chat", topicId: topics[104]!, taskId: "measurement", attemptId: claim.attemptId };
+  const initial = admitConversationTaskChange(f.context(), f.context(), ref);
+  const initialTopics = initial.item.input.data.topicIds as string[];
+  expect(initialTopics).toHaveLength(100);
+  expect(initialTopics).toContain(ref.topicId);
+  f.reopen();
+  const remaining = listPendingConversationTaskChanges(f.db, app.id);
+  expect(remaining.map((entry) => entry.topicId).sort()).toEqual(topics.filter((id) => !initialTopics.includes(id)));
+  const recovered = admitConversationTaskChange(f.context(), f.context(), remaining[0]!);
+  const recoveredTopics = recovered.item.input.data.topicIds as string[];
+  expect(recoveredTopics).toHaveLength(5);
+  expect([...initialTopics, ...recoveredTopics].sort()).toEqual(topics);
+  for (const topicId of topics) {
+    const replay = admitConversationTaskChange(f.context(), f.context(), { ...ref, topicId });
+    expect(replay.created).toBe(false);
+    expect(replay.item.id).toBe(initialTopics.includes(topicId) ? initial.item.id : recovered.item.id);
+  }
+  expect(listPendingConversationTaskChanges(f.db, app.id)).toEqual([]);
+});
