@@ -456,14 +456,15 @@ allowance bounds active work, not an idle chat's lifetime or a durable Task's li
 Unconfirmed cleanup is a visible failure, not permission to overlap executions.
 
 For a native Codex continuation, fresh canonical Task/attempt/input/settlement
-feedback must precede the next model request. When a turn is active, the adapter
-first pauses that turn and waits for the provider's pause acknowledgment, then
-injects the refreshed developer context, and only then resumes execution. The
-pre-pause turn remains fenced from producing the next accepted request. After a
-client or process restart, initialize the new native conversation, inject the
-fresh context, and acknowledge that injection before its first model request;
-do not briefly resume from cached context and correct it afterward. Failure of
-pause, injection or resume is reported through the existing attempt/caller path
+feedback must precede the next model request. The adapter first persists the
+same thread's goal as paused and waits for that acknowledgment while the thread
+is still unloaded, resumes that exact thread in the paused state, injects and
+acknowledges the refreshed developer context, and only then marks the goal active.
+The pre-pause turn remains fenced from producing the next accepted request. After
+a client or process restart, initialize the new client but preserve this same
+paused-goal, thread-resume, context-injection, goal-activation ordering; do not
+briefly activate cached context and correct it afterward. Failure of pause,
+injection or resume is reported through the existing attempt/caller path
 with bounded provider diagnostics. It does not authorize a parallel turn or a
 second retry controller. These ordering guarantees describe reviewed Host
 source only until its exact runtime revision and configured native adapter are

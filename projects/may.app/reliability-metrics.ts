@@ -157,23 +157,23 @@ export const reliabilityMetrics: NonNullable<AppDefinition["metrics"]> = [
       FROM terminal
     ), groups AS (
       SELECT task_id, generation, COUNT(*) AS terminalCount,
-        SUM(unsuccessfulKind IS NOT NULL) AS unsuccessfulCount,
-        SUM(unsuccessfulKind = 'failed-or-rejected') AS failedOrRejected,
-        SUM(unsuccessfulKind = 'accepted-incomplete') AS acceptedIncomplete,
-        SUM(unsuccessfulKind = 'stale-interrupted') AS staleInterrupted
+        COALESCE(SUM(unsuccessfulKind IS NOT NULL), 0) AS unsuccessfulCount,
+        COALESCE(SUM(unsuccessfulKind = 'failed-or-rejected'), 0) AS failedOrRejected,
+        COALESCE(SUM(unsuccessfulKind = 'accepted-incomplete'), 0) AS acceptedIncomplete,
+        COALESCE(SUM(unsuccessfulKind = 'stale-interrupted'), 0) AS staleInterrupted
       FROM classified GROUP BY task_id, generation
     )
     SELECT COALESCE(MAX(unsuccessfulCount), 0) AS value,
-      (SELECT COUNT(*) FROM terminal) AS sampleSize, (SELECT cut FROM clock) AS measuredAt,
+      COALESCE(SUM(terminalCount), 0) AS sampleSize, (SELECT cut FROM clock) AS measuredAt,
       json_object('start', (SELECT cut - 21600000 FROM clock), 'end', (SELECT cut FROM clock),
-        'policy', 'Alert when one Evaluation Task generation has at least 3 retained unsuccessful attempts in 6 hours; review does not stop retries.',
+        'policy', 'Alert when one Evaluation Task generation has at least 3 retained unsuccessful attempts in 6 hours. Review does not stop retries.',
         'denominator', 'All retained terminal Evaluation attempts started in the same six-hour cohort and finished before the sample cut.',
         'coverage', 'Unsuccessful includes failed/rejected attempts, accepted incomplete results, and stale/requeued interruptions. Owner-review is included by ordinary Evaluation task identity. User cancellation and other interruptions are excluded.',
         'groups', json((SELECT json_group_array(json_object('taskId', task_id, 'generation', generation,
           'terminal', terminalCount, 'unsuccessful', unsuccessfulCount, 'failedOrRejected', failedOrRejected,
           'acceptedIncomplete', acceptedIncomplete, 'staleInterrupted', staleInterrupted))
           FROM (SELECT * FROM groups WHERE unsuccessfulCount > 0 ORDER BY unsuccessfulCount DESC, task_id, generation LIMIT 5))),
-        'limits', 'Retained history only; examples are capped at five Task generations. Missing or malformed finish times are excluded. Later success, cause, cost, waste, input fulfillment and repair effectiveness are not established.') AS note
+        'limits', 'Retained history only. Examples are capped at five Task generations. Missing or malformed finish times are excluded. Later success, cause, cost, waste, input fulfillment and repair effectiveness are not established.') AS note
     FROM groups`,
   },
   {

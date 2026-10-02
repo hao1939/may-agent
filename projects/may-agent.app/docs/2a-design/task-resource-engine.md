@@ -372,19 +372,20 @@ The Host maintains `inputWaits[key].pending`, waits/deadlines and continuation; 
 `incomplete` requires a summary and non-empty facts; it cannot include actions, Conditions
 or child App requests. The Host checks eligibility inside the fenced transaction.
 It ends only the attempt, without fulfilling the input or a linked Request.
-The same Task remains pending. For each exact input, the first accepted incomplete
-result that has not yet been reported advances its caller-notification revision
-only after the exact caller return is durably accepted. A later accepted
-incomplete result may advance that revision and report new blocker evidence;
-reconciliation does not replay an already reported revision merely because the
-Task retries. Failed notification delivery retains the same revision for normal
-return-path recovery. This checkpoint controls notification only: it never
-acknowledges input, consumes unanswered work, proves that a person saw the
-report, or changes retry eligibility. This notification advancement is staged
-Host source until its exact revision is integrated, deployed and read back; the
-accepted contract does not make source presence an installation claim. Turn Stop
-and owner closure are different controls: closure fences future work; work after
-closure needs a new linked identity.
+The same Task remains pending. For each exact input, accepted settlement selects
+the first incomplete report and advances its stored `reportRevision`. An ordinary
+later incomplete settlement leaves that selection unchanged; `report: true`
+explicitly selects the later report and advances the revision with its new blocker
+evidence. This selection checkpoint prevents every retry from becoming a new
+report. It is distinct from the later exact caller return and its delivery
+acknowledgment: failed delivery retries the same selected revision rather than
+rolling it back or selecting another report. Neither selecting nor delivering a
+report acknowledges the input, consumes unanswered work, proves that a person saw
+the report, or changes retry eligibility. These mechanics are staged Host source
+until their exact revision is integrated, deployed and read back; the accepted
+contract does not make source presence an installation claim. Turn Stop and owner
+closure are different controls: closure fences future work; work after closure
+needs a new linked identity.
 
 Creating follow-up work does not complete the current task. Required
 decomposition uses typed dependencies and returns `waiting`; independent later
