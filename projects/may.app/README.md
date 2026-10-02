@@ -81,16 +81,24 @@ decision or approval. Runtime retains the original delivery identity; the App
 does not create another correlation or work lifecycle. New producers can supply
 structured message context without adding a new conversational input kind.
 
-This installation also routes Evaluation `project.task.reconciled` failures
-directly to May's ordinary message path. The route requires the exact Evaluation
-Task, generation and attempt and retains the complete event; it does not depend
-on Evaluation's owner worker successfully reviewing itself. May rereads current
-Task evidence and applies the trial attention policy of three distinct
-unsuccessful attempts for one Task generation in six hours. The policy includes
-supported failed/rejected, accepted-incomplete and stale-interrupted evidence,
-excludes user cancellation, and requires the denominator and coverage limits.
-It requests review only: it does not stop retries, fulfill input, create a second
-repair, prove waste, or install the deferred generic supervisor fallback.
+The staged source adds bounded independent Evaluation operation oversight through
+May's existing metric collection, alert episode and `metric-response` path. The
+six-hour metric groups retained terminal attempts by exact Evaluation Task and
+generation; three failed/rejected, accepted-incomplete or stale/requeued
+interruptions open one alert episode. Ordinary identity includes
+`runtime/compat/owner-review`; user cancellation is excluded. Each sample states
+its terminal-attempt denominator, time cut and retained-history/example limits.
+May handles only the episode-opening breach, binds its disposition and linked
+work to that `alertId`, and reuses a fitting investigation. It does not create a
+Conversation/model call, repair or human message for each failure or repeated
+sample. This is a trial App attention policy, not a retry cap, proof of waste,
+input fulfillment, semantic Evaluation self-review, or the deferred generic
+supervisor fallback.
+
+This paragraph describes the candidate in this checkout. It is not installed
+behavior until the compatible May definition is separately reviewed, activated
+and read back. The currently loaded definition may still differ; source checks
+and a commit do not prove activation.
 
 Messages retain the discussion. Topics group related messages and reference
 exact Tasks. Neither owns execution or copies Task state. Later human feedback

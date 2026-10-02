@@ -12,6 +12,7 @@ import {
 } from "./watchers/github-pull-request.js";
 
 import {
+  EVALUATION_OPERATION_METRIC,
   reliabilityMetrics,
   REVIEW_LAG_METRIC,
 } from "./reliability-metrics.js";
@@ -366,41 +367,18 @@ export function evaluationHumanDecisionInput(
   };
 }
 
-/** Route Evaluation execution failures to an owner that does not use Evaluation's worker. */
-export function evaluationOperationFailureInput(
+/** Open one independent May review for each retained Evaluation breach episode. */
+export function evaluationOperationAlertInput(
   event: AppEvent<Record<string, unknown>>,
 ): AppInput | null {
   const data = record(event.data);
-  const appId = optionalText(data.project ?? data.appId).replace(/\.app$/, "");
-  const taskId = optionalText(data.taskId);
-  const attemptId = optionalText(data.attemptId);
-  const generation = Number(data.generation);
-  if (
-    appId !== "evaluation" ||
-    !taskId ||
-    !attemptId ||
-    !Number.isSafeInteger(generation) ||
-    generation < 1 ||
-    (data.disposition !== "incomplete" &&
-      data.disposition !== "retrying" &&
-      data.disposition !== "stale")
-  ) {
+  if (data.metricId !== EVALUATION_OPERATION_METRIC || data.repeat === true)
     return null;
-  }
   return {
     kind: "message",
     data: {
-      message: `Independently review Evaluation operation ${taskId} generation ${generation}, attempt ${attemptId}, which reconciled as ${data.disposition}. Reread that exact Task and attempt before judging. Preserve its unanswered inputs, normal retry, caller/dependency links and current waits. Check whether this is a distinct third unsuccessful attempt for the same Task generation within six hours; that threshold is a trial attention policy, not a retry cap or proof of waste. Include failed/rejected, accepted-incomplete and specifically stale-interrupted evidence when available, exclude user cancellation, and disclose the retained denominator, time cut and coverage limits. Reuse an existing alert or investigation when its current scope fits; do not create duplicate repair or human messages for the same episode. Inspect the exact linked repair at a due checkpoint rather than treating aggregate improvement, notification or admission as fulfillment. Respond to the human only for a material decision or concrete need. Generic supervisor fallback remains deferred.`,
-      context: {
-        evaluationOperationFailure: {
-          appId,
-          taskId,
-          generation,
-          attemptId,
-          disposition: data.disposition,
-        },
-        event: structuredClone(event),
-      },
+      message: `Independently review this Evaluation operation alert episode through the existing metric-response path. Read the exact metric evidence and its alertId, then reread the current Evaluation Tasks and retained attempts named by the bounded sample before judging. The source covers failed/rejected attempts, accepted-incomplete results and stale/requeued interruptions, including runtime/compat/owner-review by ordinary Task identity; it excludes user cancellation and discloses the retained terminal-attempt denominator, six-hour cut and coverage limits. Three unsuccessful attempts for one Task generation in six hours is a trial May attention policy, not a retry cap or proof of waste. Reuse an existing investigation when its scope fits and bind the disposition to this alert episode; do not create a repair or human message for each failure or sample. Preserve original retries, inputs, caller/dependency links and waits. Notification, aggregate recovery and a new investigation do not fulfill the original Evaluation input. Generic supervisor fallback remains deferred.`,
+      context: { event: structuredClone(event) },
     },
   };
 }
@@ -583,11 +561,11 @@ export default defineApp({
       },
     },
     {
-      id: "evaluation-operation-failure-review",
-      // This installation explicitly gives May independent operational
-      // oversight of Evaluation. Semantic self-review remains excluded.
-      event: { type: "project.task.reconciled" },
-      toInput: evaluationOperationFailureInput,
+      id: "evaluation-operation-oversight",
+      // One retained metric alert episode gives May bounded independent
+      // operational oversight without a model call for every failed attempt.
+      event: { type: "metric.breach" },
+      toInput: evaluationOperationAlertInput,
     },
     {
       id: "input-admission-failure-review",

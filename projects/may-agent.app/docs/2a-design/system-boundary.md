@@ -43,16 +43,16 @@ local tools, executors and interfaces shipped in the Host; it does not mean
 another process, remote service, or separate repository. App policy is also
 outside core. Folder location alone does not establish ownership.
 
-| Part | Owns | Must leave to another part |
-| --- | --- | --- |
-| Core: registration and admission | Validate definitions/inputs, preserve exact work and caller identity, publish an accepted generation | Filesystem discovery and App decisions about the requested outcome |
-| Core: Events | Durable facts, validated routes, pending delivery and recovery of accepted input | Provider protocols and deciding what an observation means |
-| Core: State and reads | Accepted work/results, outstanding waits, execution claims and truthful shared projections | Interface wording, reports and provider-specific caches |
-| Core: Work runtime | One current Task attempt, eligibility, capacity, timing, cancellation fences and mechanical recovery | Selecting a strategy because work is quiet or difficult |
-| External execution/tools | Model or process execution, provider I/O, operation references, bounded evidence and cleanup under the chosen contract | Creating a second durable work lifecycle or bypassing Task controls |
-| External observation/reporting/interfaces | Read sources, normalize changes, present shared facts, submit validated controls | Claiming work was accepted because a message was emitted; deriving live execution from history |
-| App and responsible agent | Desired outcomes, useful actions, acceptance, scope, help and closure decisions | Implementing queues, polling bookkeeping, leases or storage recovery |
-| Composition/installation | Select and connect concrete capabilities, trusted operational scope and any supervisor route | Owning a competing scheduler or inferring domain success |
+| Part                                      | Owns                                                                                                                   | Must leave to another part                                                                     |
+| ----------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
+| Core: registration and admission          | Validate definitions/inputs, preserve exact work and caller identity, publish an accepted generation                   | Filesystem discovery and App decisions about the requested outcome                             |
+| Core: Events                              | Durable facts, validated routes, pending delivery and recovery of accepted input                                       | Provider protocols and deciding what an observation means                                      |
+| Core: State and reads                     | Accepted work/results, outstanding waits, execution claims and truthful shared projections                             | Interface wording, reports and provider-specific caches                                        |
+| Core: Work runtime                        | One current Task attempt, eligibility, capacity, timing, cancellation fences and mechanical recovery                   | Selecting a strategy because work is quiet or difficult                                        |
+| External execution/tools                  | Model or process execution, provider I/O, operation references, bounded evidence and cleanup under the chosen contract | Creating a second durable work lifecycle or bypassing Task controls                            |
+| External observation/reporting/interfaces | Read sources, normalize changes, present shared facts, submit validated controls                                       | Claiming work was accepted because a message was emitted; deriving live execution from history |
+| App and responsible agent                 | Desired outcomes, useful actions, acceptance, scope, help and closure decisions                                        | Implementing queues, polling bookkeeping, leases or storage recovery                           |
+| Composition/installation                  | Select and connect concrete capabilities, trusted operational scope and any supervisor route                           | Owning a competing scheduler or inferring domain success                                       |
 
 Host health observations report execution facts such as current sessions,
 process ownership and workflow runs. The Evaluation App selects work for
@@ -93,13 +93,13 @@ automatically. Candidate source is not a deployment claim.
 
 Use the same division of responsibility for normal results and difficult cases:
 
-| Responsibility | Owner |
-| --- | --- |
-| Preserve accepted work, schedule attempts, validate identity and controls, recover execution, expose truthful state | Host core |
-| Perform external I/O, translate a provider protocol, bound operations and report observations | Executor or source adapter |
-| Judge progress and choose how to continue, wait, steer, or report a result within the assignment | Task's worker, under App policy |
-| Judge scope, coordinate help, accept an outcome, revise or close the assignment | Assigning App, parent agent, or human |
-| Review a problem the normal owner cannot handle | Installation-selected supervisor, within granted scope |
+| Responsibility                                                                                                      | Owner                                                  |
+| ------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------ |
+| Preserve accepted work, schedule attempts, validate identity and controls, recover execution, expose truthful state | Host core                                              |
+| Perform external I/O, translate a provider protocol, bound operations and report observations                       | Executor or source adapter                             |
+| Judge progress and choose how to continue, wait, steer, or report a result within the assignment                    | Task's worker, under App policy                        |
+| Judge scope, coordinate help, accept an outcome, revise or close the assignment                                     | Assigning App, parent agent, or human                  |
+| Review a problem the normal owner cannot handle                                                                     | Installation-selected supervisor, within granted scope |
 
 These are responsibilities, not five new services or a required agent hierarchy.
 The same App or agent can perform more than one role. A Task is the durable
@@ -134,15 +134,15 @@ execution path. A periodic check does the same after a missed notification.
 This is what reconciliation means here: compare the intended outcome with
 current facts and act through the existing owner. It is not another lifecycle.
 
-| Situation | Handling |
-| --- | --- |
-| Owner is busy | Preserve pending feedback; keep one executing attempt for the Task. |
-| Execution disappeared | Fence it and recover the same Task under existing policy. |
-| Worker cannot progress within scope | Report the blocker, attempted alternatives and useful remaining work to its assigning owner. |
-| Task was closed or cancelled | The App/agent distinguishes observations from new requirements. Observation routes retain late evidence. Explicit user-authorized operator control reopens the same Task with its new App input atomically; notifications do not authorize it. |
-| Task is unexpectedly missing | Report to its owning App; do not guess a replacement Task. |
-| Owning App cannot accept feedback | Preserve the delivery problem; use one explicit supervisor route if installed. |
-| Supervisor is unavailable | Expose the unresolved problem for human attention; stop fallback traversal. |
+| Situation                           | Handling                                                                                                                                                                                                                                       |
+| ----------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Owner is busy                       | Preserve pending feedback; keep one executing attempt for the Task.                                                                                                                                                                            |
+| Execution disappeared               | Fence it and recover the same Task under existing policy.                                                                                                                                                                                      |
+| Worker cannot progress within scope | Report the blocker, attempted alternatives and useful remaining work to its assigning owner.                                                                                                                                                   |
+| Task was closed or cancelled        | The App/agent distinguishes observations from new requirements. Observation routes retain late evidence. Explicit user-authorized operator control reopens the same Task with its new App input atomically; notifications do not authorize it. |
+| Task is unexpectedly missing        | Report to its owning App; do not guess a replacement Task.                                                                                                                                                                                     |
+| Owning App cannot accept feedback   | Preserve the delivery problem; use one explicit supervisor route if installed.                                                                                                                                                                 |
+| Supervisor is unavailable           | Expose the unresolved problem for human attention; stop fallback traversal.                                                                                                                                                                    |
 
 Fallback reports a problem with references to the original work. It does not
 reassign that work, replay its action under a different authority, enable an
@@ -165,14 +165,20 @@ records their rationale; this contract does not promise universal recovery or
 that a human has been notified merely because a failure was saved.
 
 An installation can declare a narrower independent operational route without
-implementing that deferred generic fallback. In the current Apps, May consumes
-exact failed Evaluation `project.task.reconciled` facts through its ordinary
-message input, including failures of Evaluation's owner-review Task. The fact
-retains Task, generation and attempt identity; May must reread current state and
-judge recurrence, linked repair and remaining input. This route neither performs
-semantic self-review nor transfers Task authority. Admission, notification,
-review and fulfillment remain distinct, and the original Evaluation retry and
-caller/dependency paths continue independently.
+implementing that deferred generic fallback. The staged May source measures a
+bounded six-hour population of retained Evaluation terminal attempts and opens
+one existing metric alert episode when a single Task generation reaches three
+covered unsuccessful attempts. Failed/rejected, accepted-incomplete and
+stale/requeued interruptions are covered, including Evaluation's owner-review
+Task by ordinary identity; user cancellation is excluded. The sample discloses
+its terminal denominator, cut and retention/example limits. May handles the
+episode through its existing metric-response and linked-investigation path, not
+a `project.task.reconciled` Conversation/model call per failure. This route
+neither performs semantic self-review nor transfers Task authority. Admission,
+notification, review and fulfillment remain distinct, and the original
+Evaluation retry and caller/dependency paths continue independently. This is a
+source candidate until compatible App activation and installed-definition
+read-back prove otherwise.
 
 ### Recovery uses evidence before repetition
 
@@ -397,7 +403,6 @@ observation route can retain history after closure; a new requirement needs
 explicit authorized continuation, carrying ordinary App input in `task.reopen`.
 The Host owns the atomic state change and replay fences, not this judgment.
 
-
 A schedule has one destination: create an App input or publish a fact. An
 observer reads external state and returns facts. A metric records what
 happened; it does not become work state.
@@ -436,12 +441,12 @@ until that policy has a clearer requirement and contract. Host
 the reporting correction; review, merge, deployment and live adoption remain
 separate.
 
-| Invocation | Ownership and result |
-| --- | --- |
-| A user runs an unrelated CLI | Its native caller owns it; May does not automatically discover or recover it. |
+| Invocation                                        | Ownership and result                                                                                           |
+| ------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| A user runs an unrelated CLI                      | Its native caller owns it; May does not automatically discover or recover it.                                  |
 | Direct Host execution, one-shot CLI or evaluation | One bounded invocation returns to its caller; no Task, EventBus or database is required merely to run a model. |
-| An agent invokes a helper or CLI tool | Caller scope supplies authority, cancellation and remaining allowance; the tool returns its result directly. |
-| A CLI or other interface submits durable App work | Normal App admission creates or addresses the exact Task; the CLI does not own background execution. |
+| An agent invokes a helper or CLI tool             | Caller scope supplies authority, cancellation and remaining allowance; the tool returns its result directly.   |
+| A CLI or other interface submits durable App work | Normal App admission creates or addresses the exact Task; the CLI does not own background execution.           |
 
 Helpers share the caller's remaining allowance and stop with its cancellation.
 Shorter provider/operation limits can apply. Activity, retries and corrections
@@ -449,6 +454,20 @@ do not extend an invocation's allowance. Code supplies and enforces these limits
 agents judge continuation or steering without managing timeout counters. The
 allowance bounds active work, not an idle chat's lifetime or a durable Task's life.
 Unconfirmed cleanup is a visible failure, not permission to overlap executions.
+
+For a native Codex continuation, fresh canonical Task/attempt/input/settlement
+feedback must precede the next model request. When a turn is active, the adapter
+first pauses that turn and waits for the provider's pause acknowledgment, then
+injects the refreshed developer context, and only then resumes execution. The
+pre-pause turn remains fenced from producing the next accepted request. After a
+client or process restart, initialize the new native conversation, inject the
+fresh context, and acknowledge that injection before its first model request;
+do not briefly resume from cached context and correct it afterward. Failure of
+pause, injection or resume is reported through the existing attempt/caller path
+with bounded provider diagnostics. It does not authorize a parallel turn or a
+second retry controller. These ordering guarantees describe reviewed Host
+source only until its exact runtime revision and configured native adapter are
+separately deployed and read back.
 
 When no limit is configured, hosted execution uses a 30-minute invocation default,
 matching the existing Task workflow default. One-shot CLI keeps its five-minute

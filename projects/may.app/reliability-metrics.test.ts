@@ -15,6 +15,7 @@ import {
   resolveAppInboxRecovery,
 } from "../may-agent/src/app/core/state/app-inbox-store.js";
 import {
+  EVALUATION_OPERATION_METRIC,
   reliabilityMetrics,
   REVIEW_LAG_METRIC,
   SQL_TIME_METRIC,
@@ -131,23 +132,44 @@ test("declared reliability metrics collect through the Host and retain a real br
       input: { kind: "request", data: {} },
       now: old,
     });
-    recordAppInboxRecoveryFailure(store, "unadmitted", "input-admission", "mapping unavailable", old);
+    recordAppInboxRecoveryFailure(
+      store,
+      "unadmitted",
+      "input-admission",
+      "mapping unavailable",
+      old,
+    );
     const bus = new EventBus();
     const collected = await measureSourceMetrics({ bus, persistDir: root });
     expect(collected.failures).toEqual([]);
     expect(collected.skipped).toEqual([]);
-    expect(collected.measured.sort()).toEqual(reliabilityMetrics.map((metric) => metric.id).sort());
-    expect(await reporting.readMetric("may.unresolved-input-recovery-count")).toMatchObject({ value: 1, sampleSize: 1 });
-    const alert = store.prepare("SELECT id, resolved_at FROM metric_alerts WHERE metric_id = ?")
-      .get("may.oldest-input-recovery-age-seconds") as { id: number; resolved_at: number | null };
+    expect(collected.measured.sort()).toEqual(
+      reliabilityMetrics.map((metric) => metric.id).sort(),
+    );
+    expect(
+      await reporting.readMetric("may.unresolved-input-recovery-count"),
+    ).toMatchObject({ value: 1, sampleSize: 1 });
+    const alert = store
+      .prepare("SELECT id, resolved_at FROM metric_alerts WHERE metric_id = ?")
+      .get("may.oldest-input-recovery-age-seconds") as {
+      id: number;
+      resolved_at: number | null;
+    };
     const alertId = alert.id;
     expect(alertId).toBeGreaterThan(0);
     expect(alert.resolved_at).toBeNull();
     resolveAppInboxRecovery(store, "unadmitted", "input-admission", Date.now());
-    expect((await measureSourceMetrics({ bus, persistDir: root })).failures).toEqual([]);
-    expect(await reporting.readMetric("may.unresolved-input-recovery-count")).toMatchObject({ value: 0, sampleSize: 0 });
-    expect(store.prepare("SELECT resolved_at FROM metric_alerts WHERE id = ?").get(alertId))
-      .toMatchObject({ resolved_at: expect.any(Number) });
+    expect(
+      (await measureSourceMetrics({ bus, persistDir: root })).failures,
+    ).toEqual([]);
+    expect(
+      await reporting.readMetric("may.unresolved-input-recovery-count"),
+    ).toMatchObject({ value: 0, sampleSize: 0 });
+    expect(
+      store
+        .prepare("SELECT resolved_at FROM metric_alerts WHERE id = ?")
+        .get(alertId),
+    ).toMatchObject({ resolved_at: expect.any(Number) });
   } finally {
     closeDb(root);
     rmSync(root, { recursive: true, force: true });
@@ -215,6 +237,68 @@ test("retains failed attempts after later success and calculates the rate from t
   expect(JSON.parse(observed.note)).toMatchObject({
     failurePercent: 33.333,
     examples: [{ appId: "sample", taskId: "same-task", attemptId: "failed" }],
+  });
+});
+
+test("Evaluation oversight groups all supported unsuccessful kinds by Task generation", () => {
+  const now = Date.now();
+  const insert = db.prepare(
+    `INSERT INTO app_task_attempts(app_id, task_id, attempt_id, task_generation, state, started_at, attempt_json) VALUES ('evaluation', ?, ?, ?, ?, ?, ?)`,
+  );
+  const add = (
+    taskId: string,
+    attemptId: string,
+    generation: number,
+    state: string,
+    extra: Record<string, unknown> = {},
+  ) =>
+    insert.run(
+      taskId,
+      attemptId,
+      generation,
+      state,
+      now - 10_000,
+      JSON.stringify({
+        startedAt: new Date(now - 10_000).toISOString(),
+        finishedAt: new Date(now - 5_000).toISOString(),
+        ...extra,
+      }),
+    );
+  add("runtime/compat/owner-review", "failed", 7, "failed", {
+    failureReason: "HandlerResultInvalid",
+  });
+  add("runtime/compat/owner-review", "incomplete", 7, "completed", {
+    acceptedResult: { state: "incomplete" },
+  });
+  add("runtime/compat/owner-review", "stale", 7, "interrupted", {
+    failureReason: "stale-reconciliation-result",
+  });
+  add("runtime/compat/owner-review", "cancelled", 7, "interrupted", {
+    failureReason: "owner-stopped",
+  });
+  add("another", "other-generation", 2, "failed");
+
+  const observed = sample(EVALUATION_OPERATION_METRIC);
+  expect(observed).toMatchObject({ value: 3, sampleSize: 5 });
+  expect(JSON.parse(observed.note)).toMatchObject({
+    denominator: expect.stringContaining("terminal Evaluation attempts"),
+    coverage: expect.stringContaining("accepted incomplete"),
+    groups: [
+      {
+        taskId: "runtime/compat/owner-review",
+        generation: 7,
+        terminal: 4,
+        unsuccessful: 3,
+        failedOrRejected: 1,
+        acceptedIncomplete: 1,
+        staleInterrupted: 1,
+      },
+      {
+        taskId: "another",
+        generation: 2,
+        unsuccessful: 1,
+      },
+    ],
   });
 });
 

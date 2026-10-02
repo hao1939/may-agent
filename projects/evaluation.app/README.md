@@ -22,14 +22,23 @@ Automatic semantic sampling is **off by default**. No selector schedule exists u
 Legacy session-aftermath, deep-evaluation, project-health, and executable Tasks remain historical evidence. The Host requires every Task intent to name a structural parent, so all supported inputs use the surviving non-executable `evaluation-system` root group; they do not depend on any cancelled legacy subgroup. Compatibility entrypoints use a distinct `runtime/compat/*` namespace and do not perform new session-only semantic scoring, so they cannot revive or reuse retired Task identities. The App manifest declares all 11 legacy Evaluation metrics as `retired` so normal activation retires persisted definitions without deleting measurements; metric breach/recovery events do not wake an Evaluation owner lane.
 
 Evaluation's local owner still retains ordinary operational failures and retries.
-The installed May App independently consumes exact Evaluation
-`project.task.reconciled` failure facts through May's ordinary message path,
-including failures of `runtime/compat/owner-review` itself. This is operational
-oversight, not Evaluation semantic self-review: May rereads the exact current
-Task/attempt, preserves unanswered input and retries, discloses recurrence
-coverage, and reuses linked repair work. A notification or aggregate recovery
-cannot fulfill the original Evaluation input. The route does not add generic
-supervisor fallback or grant May control of the Evaluation Task.
+The staged May source independently samples retained Evaluation terminal attempts
+with its existing metrics and opens one alert episode when one Task generation
+has three unsuccessful attempts in six hours. Coverage includes
+`runtime/compat/owner-review`, failed/rejected attempts, accepted-incomplete
+results and stale/requeued interruptions; user cancellation is excluded. The
+sample discloses its denominator, cut and limits. May uses the existing alert
+identity and metric follow-through, rather than receiving every
+`project.task.reconciled` fact as a Conversation/model call. This is operational
+oversight, not Evaluation semantic self-review: original retries and caller
+links continue, and notification or aggregate recovery cannot fulfill the
+original Evaluation input. It adds neither generic supervisor fallback nor May
+control of Evaluation Tasks.
+
+That oversight is a source candidate, not an installed claim. It becomes current
+behavior only after separate review, activation and installed-definition
+read-back; Evaluation's loaded README/source revision does not prove May's live
+subscription or metric set.
 
 ## Reports
 

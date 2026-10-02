@@ -372,8 +372,19 @@ The Host maintains `inputWaits[key].pending`, waits/deadlines and continuation; 
 `incomplete` requires a summary and non-empty facts; it cannot include actions, Conditions
 or child App requests. The Host checks eligibility inside the fenced transaction.
 It ends only the attempt, without fulfilling the input or a linked Request.
-The same Task remains pending. Turn Stop and owner closure are different
-controls: closure fences future work; work after closure needs a new linked identity.
+The same Task remains pending. For each exact input, the first accepted incomplete
+result that has not yet been reported advances its caller-notification revision
+only after the exact caller return is durably accepted. A later accepted
+incomplete result may advance that revision and report new blocker evidence;
+reconciliation does not replay an already reported revision merely because the
+Task retries. Failed notification delivery retains the same revision for normal
+return-path recovery. This checkpoint controls notification only: it never
+acknowledges input, consumes unanswered work, proves that a person saw the
+report, or changes retry eligibility. This notification advancement is staged
+Host source until its exact revision is integrated, deployed and read back; the
+accepted contract does not make source presence an installation claim. Turn Stop
+and owner closure are different controls: closure fences future work; work after
+closure needs a new linked identity.
 
 Creating follow-up work does not complete the current task. Required
 decomposition uses typed dependencies and returns `waiting`; independent later
@@ -618,6 +629,7 @@ The reply satisfies or updates exact evidence for the next attempt; it does not
 itself prove the Task outcome.
 
 ## Phases and historical mode data
+
 Phases are:
 
 - `pending`: desired state needs another attempt;
