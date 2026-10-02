@@ -75,6 +75,15 @@ Verified checks on final HEAD:
 - focused runtime regression: 167 passed, 0 failed, including 513 genuine orphan admissions drained in one ordinary recovery invocation;
 - independent review suite: 243 passed, 0 failed, 3,044 assertions;
 - `bun run check:ci`: passed;
+- full `bun run ci`: 3,389 passed, 3 explicitly skipped, 0 failed, 17,369 assertions across 317 files (258 seconds wall time); local log SHA-256 `e8f4bdbb7e22da65c4eaf897251655792e73f6a86f669bfa2936c113f643aa7d`;
 - `git diff --check dc92e4f5..HEAD`: passed.
 
-A previous full `bun run ci` progressed through the broad suite but was terminated by the attempt timeout, so it is **not** a pass. Full Host CI, publication/integration, authorized deployment, and live proof on the three retained Evaluation rows remain separate gates. No live database or installed runtime state was changed by this candidate work.
+The branch is published as `origin/fix/orphaned-task-input-recovery-20261002`; GitHub CLI is not installed in the execution environment, so PR creation remains for the supervisor. The publication URL returned by the remote is <https://github.com/hao1939/may-agent/pull/new/fix/orphaned-task-input-recovery-20261002>. The initial PR body must retain:
+
+```text
+## May Task
+- App ID: may
+- Task ID: goal/app_de102092-e33a-404e-a797-8979e2f3536d
+```
+
+Required GitHub Quality and Container checks, approving human review, integration, authorized deployment, and live proof on the three retained Evaluation rows remain separate gates. No live database or installed runtime state was changed by this candidate work.
