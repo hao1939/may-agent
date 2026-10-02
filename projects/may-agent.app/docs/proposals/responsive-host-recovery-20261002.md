@@ -142,8 +142,10 @@ cost is repeated correlation. One Task has 664 attempts linked through 56 Topics
 producing 37,184 candidate rows that each revisit its report admissions. Those
 rows are retained history and links, not 37,184 unfinished Tasks.
 
-The trial prepares the selected-report links once within the SQL statement,
-then reuses that relation for the repeated checks. SQLite discards it when the
+The shipped query first finds distinct source Tasks linked through the requested
+App's Topics, then prepares only their selected reports through indexed lookups.
+Cross-App source links remain supported. It reuses that relation for the repeated
+checks. SQLite discards it when the
 query ends. There is no persistent cache, schema/index change, new recovery
 controller or movement of retained records. Direct admission still performs its
 existing exact lookup; it does not need a bulk scan. Both paths keep the same
@@ -165,9 +167,78 @@ the source and both result sets. The final regression captures a query fragment
 shared with the old implementation, and fails against that implementation on the
 intended plan assertion. The focused suite passes all 41 tests; full local CI
 passes 3,426 tests with three existing installation-only skips and zero failures.
-GitHub Quality/Container checks are pending at publication. The candidate is not
-merged or deployed. Evidence and reproduction scripts:
+Review found that the first revision materialized all selected reports. Correction
+`dedf0ad88` restricted it to the linked source Tasks and added plan coverage for
+unrelated reports in both the same and other Apps. Bob reviewed that correction;
+the 41 focused tests and 3,426-test candidate CI passed. The merged revision and
+rollout are recorded below. Evidence and reproduction scripts:
 `.state/conversation-recovery-query-20261003/`.
+
+### October 3: merged Host and metric-loop rollout
+
+Host `14491241d` includes merged PRs #292, #293 and #294. The standalone
+deployment receipt is
+`projects/may-agent/.state/deploy-receipts/merged-292-293-294-20261003.json`:
+successful, healthy, and matching staged/loaded binary hashes, with the matching
+SDK activated. Full local CI on this exact revision passed 3,428 tests, with
+three existing deployment-only skips and zero failures; GitHub CI also passed.
+
+Apps release `1e97bd70e1` is active and survived the Host restart. May's source
+command runs through the runtime importer's existing source-directory symlink;
+the compiled cache path is valid and needs no workaround. A real retained sample
+captured a 15,135 ms Conversation recovery call. Breach event `6630537`, alert
+`4946`, admitted an exact metric review to
+`evaluation/runtime/metric-review/evaluator-deepseek/5469738a9e35510d69b4cb40`.
+The ordinary collector later recorded 266 ms and emitted recovery event
+`6630748`; that transition updated the same Task with the same alert identity.
+The accepted wait retained both input requests across restart and capacity
+deferral. The routine per-metric review interval is one
+day; breach/recovery requests bypass it, while DeepSeek's shared five-minute
+capacity allowance still applies. Ordinary unchanged samples request no review.
+
+At 22:55 UTC the next capacity slot started the review automatically. At
+22:56:17 UTC Evaluation published report event `6630922`, evidence hash
+`57ba7af82a8666d8fbd18e6b7546e49a6789e33411b0747fb74285fa2609b381`, and set
+the next routine review exactly 24 hours after judgment. It retained both slow
+query fingerprints, noticed the process restart, and did not infer sustained
+recovery from one low sample. Its comparison against a theoretical full day's
+sample count needs context: the metric was created minutes earlier, so missing
+pre-instrumentation history is not evidence of a broken collector. Root supplied
+that correction to the existing May owner.
+
+May verified the published hashes, recorded a quiet decision to investigate,
+and handed the report to the existing daemon-SQL Task rather than creating new
+work. Admission `conversation-follow-up:may:app_39b3aeae-86b9-4210-a0fd-bf51658b4602`
+retains the exact destination. The owner Task still owes its accepted metric
+disposition and comparable-window verification; the Conversation's accepted
+handoff is not proof of those final results.
+
+One read-only invocation of the merged query against current live data took
+798 ms and returned zero pending results. This ran outside the daemon, without
+admitting work or altering records. The earlier paired snapshot comparison
+established equal results and roughly 3,046-to-147 ms improvement. The ordinary
+Conversation recovery schedule is every 15 minutes; a fresh scheduled run remains
+the better check of actual loaded-runtime cost.
+
+The already-approved AKS retirement also survived restart: exactly 39 definitions
+are retired, seven remain closed, and none are active. Only `status` and
+`updated_at` changed; snapshot counts were preserved. No new cohort collection
+failure occurred after activation across more than one former collection period.
+May independently verified the retained approval, exact cohort and preserved
+history, and completed the original retirement Task. This uses ordinary metric
+declarations; no one-use retirement workflow remains.
+
+Evidence under `.state/conversation-recovery-query-20261003/` includes
+`merged-ci.log`, `host-rollout.log`, `persisted-sampler-probe.json`,
+`before-host-rollout.json`, `after-host-rollout-recovery.json`, and
+`aks-after-host-rollout.json`; `merged-live-query-read.json` and
+`live-loop-evidence.json` retain the later read-only query and exact event/Task
+readback. `may-metric-report-intake.json` and
+`may-metric-followup-admission.json` retain the accepted May decision and handoff.
+Continue the existing May investigation through a disposition based on fresh
+post-rollout measurements.
+Do not treat a restart, a recovered scalar, or a routed request as proof of that
+complete loop.
 
 ### October 2 rollout and measured lead
 
@@ -416,14 +487,15 @@ The SQL report lives under `.state/evaluation/reports/metric-observations/` with
 metric evidence hash
 `40ba55ff0c721fbdc8555e514c35ca68d2c3908a2507a5ec64533288298c6590`.
 
-The October 3 Apps candidate implements the first follow-up separately from the
+The October 3 Apps release implements the first follow-up separately from the
 query repair: `may.daemon-sql-recent-worst-call-ms` invokes the existing diagnostic
 status read from the pinned App release, retains at most six masked current/previous
 window shapes in a <=4,000-character metric note, and treats missing or expired
 rankings as collection failure. Its initial May policy is a five-minute collection
 cadence and a 1,000 ms breach threshold; process-lifetime maxima are excluded.
-This is source and portable-test evidence until the reviewed App generation is
-activated and a live sample follows the ordinary Evaluation/May path.
+Live activation and transition-routing evidence are recorded in the rollout
+section above; completion of Evaluation's assessment and May's disposition must
+be checked separately.
 
 Remaining follow-up guidance: expose overdue review coverage and reassess fair use
 of the existing allowance after the approved retirement is complete; have May

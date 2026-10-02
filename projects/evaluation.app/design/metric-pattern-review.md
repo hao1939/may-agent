@@ -1,9 +1,11 @@
 # Metric observations in the existing review loop
 
 **Design status:** Accepted for the first implementation.
-**Implementation status:** Paired Host/App source candidate. Validation and exact
-revisions are recorded with the Host PR; activation remains separate.
-No installation activation or model-backed judgment trial is implied.
+**Implementation status:** Activated on October 3 in Apps release `1e97bd70e1`
+with Host `14491241d`. Live collection, breach and recovery reached the same
+Evaluation Task; its completed report reached May and was handed to the existing
+investigation. Sustained repair verification remains separate; see the
+[live verification](../../may-agent.app/docs/proposals/responsive-host-recovery-20261002.md#october-3-merged-host-and-metric-loop-rollout).
 
 Persistent failures should receive investigation and an accountable response while
 Host retries continue with backoff. This extends the existing
