@@ -2149,9 +2149,10 @@ export type AppTaskRetryReceipt = {
 
 /**
  * Requeue one exact failed Task generation after an operator has reviewed its
- * retained input. The failed attempt remains immutable operational facts;
- * its input batch is copied back to the pending trigger without replacing any
- * newer facts.
+ * retained input. The failed attempt remains immutable operational facts.
+ * Execution failures restore their unconsidered input batch; an accepted
+ * incomplete report has already advanced considered events and retains exact
+ * unanswered input through inputWaits.
  */
 export function retryFailedAppTask(
   config: AppTaskContext,
@@ -2213,7 +2214,7 @@ export function retryFailedAppTask(
   const previousResourceVersion = resource.metadata.resourceVersion;
   const acceptedAt = new Date().toISOString();
   const mutationScope = beginResourceMutationScopeForTasks(tree, [input.taskId]);
-  restoreAttemptEvents(tree, input.taskId, resource, attempt, acceptedAt);
+  if (attempt.state === "failed") restoreAttemptEvents(tree, input.taskId, resource, attempt, acceptedAt);
   touchResource(resource, {
     phase: "pending",
     executionFailures: undefined,
@@ -2539,14 +2540,6 @@ export function reportAppTaskFailure(
   const tree = config.resourceStore.readTaskContext({ taskIds: [claim.taskId] });
   const match = matchingTaskAttempt(tree, claim);
   if (!match) return { status: "stale" };
-  if (hasUnacceptedLiveTaskEvents(tree, claim.taskId, input.acceptedLiveEventIds)) {
-    throw new AppTaskActionStaleError({
-      taskId: claim.taskId,
-      expectedGeneration: claim.generation,
-      currentGeneration: match.resource.metadata.generation,
-      reason: "newer Task facts are pending",
-    });
-  }
   requireNonEmptyString(input.summary, "Incomplete report summary");
   requireStringList(input.facts, "Incomplete report facts");
   const summary = `Outcome not achieved: ${input.summary.trim()}; continuing after backoff`;
@@ -2568,9 +2561,10 @@ export function reportAppTaskFailure(
     });
   }
   const failures = (resource.status.executionFailures ?? 0) + 1;
-  // Accepted facts are not a final answer to the original assignment.
-  // Preserve input, including accepted live feedback and earlier linked waits.
-  restoreAttemptEvents(tree, claim.taskId, resource, attempt, now);
+  // Accepted facts are not a final answer to the original assignment. Exact
+  // admitted input remains unresolved through input waits, while notifications
+  // this attempt considered advance instead of restoring the same bounded batch.
+  consumeAcceptedLiveTaskEvents(tree, claim.taskId, claim.agent, input.acceptedLiveEventIds);
   finishAttempt(tree, resource, "completed", summary, now);
   touchResource(resource, {
     phase: "pending",

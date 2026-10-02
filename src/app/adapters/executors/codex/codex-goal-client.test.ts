@@ -64,11 +64,47 @@ describe("CodexGoalAppServerClient", () => {
     await initialized;
     expect((await waitForWrite(process, "initialized")).id).toBeUndefined();
 
+    const executed = client.execCommand({
+      command: ["/usr/bin/true"],
+      cwd: "/tmp/work",
+      timeoutMs: 5_000,
+      outputBytesCap: 4_096,
+    });
+    const command = await waitForWrite(process, "command/exec");
+    expect(command.params).toEqual({
+      command: ["/usr/bin/true"],
+      cwd: "/tmp/work",
+      timeoutMs: 5_000,
+      outputBytesCap: 4_096,
+    });
+    process.reply(command.id, { exitCode: 0, stdout: "", stderr: "" });
+    expect(await executed).toEqual({ exitCode: 0, stdout: "", stderr: "" });
+
     const started = client.startThread({ cwd: "/tmp/work", sandbox: "read-only" });
     const start = await waitForWrite(process, "thread/start");
-    expect(start.params).toMatchObject({ cwd: "/tmp/work", approvalPolicy: "never", ephemeral: false });
+    expect(start.params).toEqual({
+      cwd: "/tmp/work",
+      approvalPolicy: "never",
+      sandbox: "read-only",
+      ephemeral: false,
+    });
     process.reply(start.id, { thread: { id: "thread-1" }, cwd: "/tmp/work" });
     expect(await started).toEqual({ threadId: "thread-1", cwd: "/tmp/work" });
+
+    const injected = client.injectDeveloperContext({ threadId: "thread-1", text: "CURRENT_TASK_PACKET" });
+    const inject = await waitForWrite(process, "thread/inject_items");
+    expect(inject.params).toEqual({
+      threadId: "thread-1",
+      items: [
+        {
+          type: "message",
+          role: "developer",
+          content: [{ type: "input_text", text: "CURRENT_TASK_PACKET" }],
+        },
+      ],
+    });
+    process.reply(inject.id, {});
+    await injected;
 
     const goalSet = client.setGoal({ threadId: "thread-1", objective: "Fulfill the May Task" });
     const goal = await waitForWrite(process, "thread/goal/set");
@@ -96,7 +132,7 @@ describe("CodexGoalAppServerClient", () => {
       processId: null,
       notifications: 1,
       serverRequests: 0,
-      responses: 5,
+      responses: 7,
     });
     expect(client.diagnostics().protocolBytes).toBeGreaterThan(0);
     expect(client.diagnostics().maxProtocolLineChars).toBeGreaterThan(0);
@@ -108,6 +144,11 @@ describe("CodexGoalAppServerClient", () => {
 
     const resumed = client.resumeThread({ threadId: "thread-1", cwd: "/tmp/work" });
     const resume = await waitForWrite(process, "thread/resume");
+    expect(resume.params).toEqual({
+      threadId: "thread-1",
+      cwd: "/tmp/work",
+      approvalPolicy: "never",
+    });
     process.reply(resume.id, { thread: { id: "thread-1" }, cwd: "/tmp/work" });
     expect(await resumed).toEqual({ threadId: "thread-1", cwd: "/tmp/work" });
 
@@ -116,6 +157,28 @@ describe("CodexGoalAppServerClient", () => {
     expect(interrupt.params).toEqual({ threadId: "thread-1", turnId: "turn-2" });
     process.reply(interrupt.id, {});
     await interrupted;
+  });
+
+  it("omits an inherited start sandbox and preserves an explicit resume sandbox", async () => {
+    const process = new FakeAppServerProcess();
+    const client = new CodexGoalAppServerClient(process, { requestTimeoutMs: 1_000 });
+
+    const started = client.startThread({ cwd: "/tmp/work" });
+    const start = await waitForWrite(process, "thread/start");
+    expect(start.params).toEqual({ cwd: "/tmp/work", approvalPolicy: "never", ephemeral: false });
+    process.reply(start.id, { thread: { id: "thread-1" }, cwd: "/tmp/work" });
+    await started;
+
+    const resumed = client.resumeThread({ threadId: "thread-1", cwd: "/tmp/work", sandbox: "read-only" });
+    const resume = await waitForWrite(process, "thread/resume");
+    expect(resume.params).toEqual({
+      threadId: "thread-1",
+      cwd: "/tmp/work",
+      approvalPolicy: "never",
+      sandbox: "read-only",
+    });
+    process.reply(resume.id, { thread: { id: "thread-1" }, cwd: "/tmp/work" });
+    await resumed;
   });
 
   it("observes the authoritative turn and terminal status created by an active goal", async () => {

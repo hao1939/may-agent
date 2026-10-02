@@ -21,6 +21,12 @@ export type CodexThreadBinding = {
   cwd: string;
 };
 
+export type CodexCommandExecResult = {
+  exitCode: number;
+  stdout: string;
+  stderr: string;
+};
+
 export type CodexTurnCompletion = {
   threadId: string;
   turn: {
@@ -187,6 +193,16 @@ export class CodexGoalAppServerClient {
     this.notify("initialized", {});
   }
 
+  async execCommand(input: {
+    command: string[];
+    cwd: string;
+    sandboxPolicy?: { type: "readOnly"; networkAccess: false };
+    timeoutMs: number;
+    outputBytesCap: number;
+  }): Promise<CodexCommandExecResult> {
+    return await this.request<CodexCommandExecResult>("command/exec", input);
+  }
+
   async startThread(input: {
     cwd: string;
     model?: string;
@@ -196,7 +212,7 @@ export class CodexGoalAppServerClient {
     const response = await this.request<{ thread: { id: string }; cwd?: string }>("thread/start", {
       cwd: input.cwd,
       approvalPolicy: "never",
-      sandbox: input.sandbox ?? "read-only",
+      ...(input.sandbox ? { sandbox: input.sandbox } : {}),
       ephemeral: false,
       ...(input.model ? { model: input.model } : {}),
       ...(input.developerInstructions ? { developerInstructions: input.developerInstructions } : {}),
@@ -215,11 +231,24 @@ export class CodexGoalAppServerClient {
       threadId: input.threadId,
       cwd: input.cwd,
       approvalPolicy: "never",
-      sandbox: input.sandbox ?? "read-only",
+      ...(input.sandbox ? { sandbox: input.sandbox } : {}),
       ...(input.model ? { model: input.model } : {}),
       ...(input.developerInstructions ? { developerInstructions: input.developerInstructions } : {}),
     });
     return { threadId: response.thread.id, cwd: response.cwd ?? input.cwd };
+  }
+
+  async injectDeveloperContext(input: { threadId: string; text: string }): Promise<unknown> {
+    return await this.request("thread/inject_items", {
+      threadId: input.threadId,
+      items: [
+        {
+          type: "message",
+          role: "developer",
+          content: [{ type: "input_text", text: input.text }],
+        },
+      ],
+    });
   }
 
   async setGoal(input: {

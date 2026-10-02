@@ -10,6 +10,7 @@ import {
   type TaskCompletionReceipt,
 } from "./app-task-store.js";
 import { AppTaskResourceStore, type AppTaskResourceMutation } from "../state/app-task-resource-store.js";
+import { admitTaskInput } from "../state/inbox.js";
 import { migrateTaskCompletionReceipts } from "../state/task-receipt-cutover.js";
 import { appTaskTestContext } from "./app-task-test-support.js";
 import { listRuntimeTaskViews, readRuntimeTaskView } from "../reads/app-read.js";
@@ -29,6 +30,7 @@ import {
   listRunnableAppTaskQueueEntries,
   listRunnableAppTaskIds,
   isAppTaskConverged,
+  readAppTaskAdmissionOutcome,
   readAppTaskIntent,
   readAppTaskChildContext,
   readAppTaskLiveSnapshot,
@@ -313,9 +315,8 @@ describe("worker failure facts and owner closure", () => {
     expect(config.resourceStore.listRecoveryCandidates().items.map((item) => item.taskId)).not.toContain(intent.id);
   });
 
-  it.each(["summary", "facts", "new-input", "revision"])("rejects an invalid or stale failure report: %s", (reason) => {
+  it.each(["summary", "facts", "revision"])("rejects an invalid or stale failure report: %s", (reason) => {
     const { config, intent, claim } = setup();
-    if (reason === "new-input") recordAppTaskTrigger(config, intent.id, { type: "sample.feedback", eventId: 11 });
     if (reason === "revision")
       observeAppTaskIntent(config, { appAgent: "app-owner", intent: { ...intent, input: { revision: 2 } } });
     if (reason === "revision") expect(reportAppTaskFailure(config, claim, decision).status).toBe("stale");
@@ -326,10 +327,16 @@ describe("worker failure facts and owner closure", () => {
           ...(reason === "summary" ? { summary: " " } : {}),
           ...(reason === "facts" ? { facts: [] } : {}),
         }),
-      ).toThrow(reason === "new-input" ? "newer Task facts are pending" : `Incomplete report ${reason}`);
+      ).toThrow(`Incomplete report ${reason}`);
     expect(config.resourceStore.readCancellation(intent.id)).toBeNull();
     expect(config.resourceStore.readReceipt(intent.id)).toBeNull();
-    if (reason === "new-input") expect(readTaskSnapshot(config).taskTriggers?.[intent.id]?.events).toHaveLength(1);
+  });
+
+  it("retains an honest incomplete report while preserving genuinely newer input", () => {
+    const { config, intent, claim } = setup();
+    recordAppTaskTrigger(config, intent.id, { type: "sample.feedback", eventId: 11 });
+    expect(reportAppTaskFailure(config, claim, decision)).toMatchObject({ status: "applied" });
+    expect(readTaskSnapshot(config).taskTriggers?.[intent.id]?.events?.map((row) => row.event.eventId)).toEqual([11]);
   });
 
   it("accepts failure facts with open children", () => {
@@ -1305,6 +1312,100 @@ describe("App task reconciler state", () => {
     expect(readTaskSnapshot(config).taskTriggers?.[first.taskId]?.events?.map((entry) => entry.event.eventId)).toEqual([
       33, 34, 35,
     ]);
+  });
+
+  it("advances later admitted input past a bounded backlog without answering the original ask or weakening action fences", () => {
+    const { config } = fixture();
+    const first = declareAndClaimTask(config, {
+      intent: intent("monitor"),
+      appAgent: "app-owner",
+      handler: "workflow:worker",
+    });
+    if (first.kind !== "claimed") throw new Error("expected first claim");
+    const admit = (key: string) =>
+      admitTaskInput(config, {
+        appId: "sample",
+        attachment: { kind: "existing", taskId: first.taskId },
+        idempotencyKey: key,
+        inputContext: {
+          id: key,
+          source: { kind: "human", id: "requester" },
+          input: { kind: "message", data: { text: `Synthetic request ${key}` } },
+        },
+      });
+    admit("ask:original");
+    for (let index = 1; index <= 31; index += 1) admit(`ask:backlog-${index}`);
+    admit("ask:repair");
+    expect(completeAppTask(config, first, { summary: "Observed initial state" }).taskContinues).toBe(true);
+
+    const bounded = claimObservedAppTask(config, {
+      taskId: first.taskId,
+      appAgent: "app-owner",
+      handler: "workflow:worker",
+      reason: "event",
+    });
+    if (bounded.kind !== "claimed") throw new Error("expected bounded claim");
+    expect(bounded.events).toHaveLength(32);
+    expect(bounded.events[0]?.event.data?.idempotencyKey).toBe("ask:original");
+    expect(JSON.stringify(bounded.events)).not.toContain("ask:repair");
+    expect(bounded.eventsTruncated).toBe(true);
+
+    expect(
+      reportAppTaskFailure(config, bounded, {
+        summary: "The original prerequisite is unavailable",
+        facts: ["A bounded probe failed before launch"],
+        inputKeys: [],
+      }),
+    ).toMatchObject({ status: "applied" });
+    expect(readAppTaskAdmissionOutcome(config, first.taskId, "ask:original")).toBeNull();
+    expect(config.resourceStore.readTask(first.taskId)?.status.inputWaits?.["ask:original"]?.pending).toBe(true);
+
+    advanceToTaskRetry(config, first.taskId);
+    const next = claimObservedAppTask(config, {
+      taskId: first.taskId,
+      appAgent: "app-owner",
+      handler: "workflow:worker",
+      reason: "retry",
+    });
+    if (next.kind !== "claimed") throw new Error("expected next claim");
+    expect(JSON.stringify(next.events)).toContain("ask:repair");
+    expect(next.continuedInputKeys).toContain("ask:original");
+    expect(completeAppTask(config, next, { summary: "Answered only the repair request", inputKeys: ["ask:repair"] }))
+      .toMatchObject({ status: "applied", taskContinues: true });
+    expect(readAppTaskAdmissionOutcome(config, first.taskId, "ask:repair")?.attemptId).toBe(next.attemptId);
+    expect(readAppTaskAdmissionOutcome(config, first.taskId, "ask:original")).toBeNull();
+
+    const fenced = claimObservedAppTask(config, {
+      taskId: first.taskId,
+      appAgent: "app-owner",
+      handler: "workflow:worker",
+      reason: "event",
+    });
+    if (fenced.kind !== "claimed") throw new Error("expected fenced claim");
+    recordAppTaskTrigger(config, first.taskId, { type: "sample.concurrent", eventId: 37 });
+    expect(() =>
+      completeAppTask(config, fenced, {
+        summary: "Attempted an action from the older snapshot",
+        actions: [{ kind: "unblock-task", taskId: "missing", expectedGeneration: 1, reason: "test fence" }],
+      }),
+    ).toThrow("newer Task facts are pending");
+
+    expect(completeAppTask(config, fenced, { summary: "Original prerequisite restored", inputKeys: ["ask:original"] }))
+      .toMatchObject({ status: "applied", taskContinues: true });
+    expect(readAppTaskAdmissionOutcome(config, first.taskId, "ask:original")).toBeNull();
+
+    const final = claimObservedAppTask(config, {
+      taskId: first.taskId,
+      appAgent: "app-owner",
+      handler: "workflow:worker",
+      reason: "event",
+    });
+    if (final.kind !== "claimed") throw new Error("expected final claim");
+    expect(final.continuedInputKeys).toContain("ask:original");
+    expect(completeAppTask(config, final, { summary: "Original request answered", inputKeys: ["ask:original"] }))
+      .toMatchObject({ status: "applied", taskContinues: true });
+    expect(readAppTaskAdmissionOutcome(config, first.taskId, "ask:original")?.attemptId).toBe(final.attemptId);
+    expect(readAppTaskAdmissionOutcome(config, first.taskId, "ask:repair")?.attemptId).toBe(next.attemptId);
   });
 
   it("rejects self-updates even when alone or mixed with other actions", () => {

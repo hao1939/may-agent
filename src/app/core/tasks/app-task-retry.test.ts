@@ -370,9 +370,60 @@ it.each(["execution error", "failure report"])("allows an explicit owner retry d
   expect(f.config.resourceStore.nextDueAt()).toBeNull();
   expect(f.config.resourceStore.readAttempt(first.attemptId)).toEqual(facts);
   const next = f.claim();
-  expect(next.events).toEqual(first.events);
+  expect(next.events).toEqual(kind === "execution error" ? first.events : []);
+  expect(next.continuedInputKeys).toEqual(["ask:measure"]);
   expect(next.generation).toBe(first.generation);
   expect(f.config.resourceStore.readTask("work")?.status.executionFailures).toBeUndefined();
+});
+
+it("lets a later repair input pass a considered backlog before the original input resumes", () => {
+  const f = fixture();
+  for (let index = 1; index <= 34; index++) {
+    recordAppTaskTrigger(f.config, "work", { type: "sample.observed", eventId: index, data: { index } });
+  }
+  admitTaskInput(f.config, {
+    appId: "sample",
+    attachment: { kind: "existing", taskId: "work" },
+    idempotencyKey: "ask:repair",
+    inputContext: {
+      id: "repair",
+      source: { kind: "app", id: "caller" },
+      input: { kind: "message", data: { text: "repair" } },
+    },
+  });
+
+  const first = f.claim();
+  expect(first.events).toHaveLength(32);
+  expect(first.events.some(({ event }) => event.idempotencyKey === "ask:repair")).toBe(false);
+  reportAppTaskFailure(f.config, first, {
+    summary: "The original prerequisite is unavailable",
+    facts: ["probe:failed"],
+    inputKeys: ["ask:measure"],
+  });
+  expect(readAppTaskAdmissionOutcome(f.config, "work", "ask:measure")).toBeNull();
+  expect(f.config.resourceStore.readTask("work")?.status.inputWaits?.["ask:measure"]?.pending).toBe(true);
+
+  const failed = f.config.resourceStore.readTask("work")!;
+  retryFailedAppTask(f.config, {
+    appId: "sample",
+    taskId: "work",
+    expectedGeneration: failed.metadata.generation,
+    expectedResourceVersion: failed.metadata.resourceVersion,
+    controlKey: "owner-retry-backlog",
+  });
+  const repair = f.claim();
+  expect(repair.events.some(({ event }) => event.idempotencyKey === "ask:repair")).toBe(true);
+  expect(repair.events.some(({ event }) => event.idempotencyKey === "ask:measure")).toBe(false);
+  expect(repair.continuedInputKeys).toContain("ask:measure");
+  completeAppTask(f.config, repair, { summary: "Repair request answered", inputKeys: ["ask:repair"] });
+  expect(readAppTaskAdmissionOutcome(f.config, "work", "ask:repair")?.attemptId).toBe(repair.attemptId);
+  expect(readAppTaskAdmissionOutcome(f.config, "work", "ask:measure")).toBeNull();
+
+  const original = f.claim();
+  expect(original.continuedInputKeys).toContain("ask:measure");
+  completeAppTask(f.config, original, { summary: "Original request answered", inputKeys: ["ask:measure"] });
+  expect(readAppTaskAdmissionOutcome(f.config, "work", "ask:measure")?.attemptId).toBe(original.attemptId);
+  expect(readAppTaskAdmissionOutcome(f.config, "work", "ask:repair")?.attemptId).toBe(repair.attemptId);
 });
 
 it.each(["omitted", "explicit", "execution"])(
@@ -403,7 +454,9 @@ it.each(["omitted", "explicit", "execution"])(
     expect(readAppTaskAdmissionOutcome(f.config, "work", "ask:measure")).toBeNull();
     expect(f.config.resourceStore.isCancelled("work")).toBe(false);
     setSystemTime(f.config.resourceStore.readTask("work")!.status.executionRetryAt!);
-    expect(f.claim().events.map(({ event }) => event.idempotencyKey)).toEqual(["ask:measure"]);
+    const retry = f.claim();
+    expect(retry.continuedInputKeys).toEqual(["ask:measure"]);
+    expect(retry.events.map(({ event }) => event.idempotencyKey)).toEqual([undefined]);
   },
 );
 
@@ -421,7 +474,8 @@ it("accepts failure facts without resolving the ask, then succeeds on the same a
   const next = f.claim();
   expect(next.taskId).toBe(first.taskId);
   expect(next.generation).toBe(first.generation);
-  expect(next.events).toEqual(first.events);
+  expect(next.events).toEqual([]);
+  expect(next.continuedInputKeys).toEqual(["ask:measure"]);
   expect(next.previousAttempt).toMatchObject({
     attemptId: first.attemptId,
     generation: first.generation,

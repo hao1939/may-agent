@@ -42,6 +42,7 @@ export type CodexGoalClient = {
     developerInstructions?: string;
     sandbox?: "read-only" | "workspace-write" | "danger-full-access";
   }): Promise<{ threadId: string; cwd: string }>;
+  injectDeveloperContext(input: { threadId: string; text: string }): Promise<unknown>;
   setGoal(input: {
     threadId: string;
     objective: string;
@@ -312,16 +313,25 @@ export function createCodexGoalExecutor(options: CodexGoalExecutorOptions): Task
     try {
       attempt.signal.throwIfAborted();
       await client.initialize();
+      // The installed CLI automatically restarts a persisted active goal during
+      // thread/resume. Pause it while still unloaded so no old-context turn can
+      // start before the current canonical packet is inserted.
+      if (existing) {
+        await client.setGoal({
+          threadId: existing.threadId,
+          objective: rendered.goalObjective,
+          status: "paused",
+        });
+        updateGoalStatus("paused");
+      }
       const binding = existing
         ? await client.resumeThread({
             threadId: existing.threadId,
             cwd: attempt.cwd,
-            sandbox: "read-only",
             developerInstructions: rendered.developerInstructions,
           })
         : await client.startThread({
             cwd: attempt.cwd,
-            sandbox: "read-only",
             developerInstructions: rendered.developerInstructions,
           });
       threadId = binding.threadId;
@@ -337,6 +347,13 @@ export function createCodexGoalExecutor(options: CodexGoalExecutorOptions): Task
         staleInterrupts: existing?.staleInterrupts ?? 0,
       };
       writeBinding(options.stateFile, key, persisted);
+
+      // thread/resume developerInstructions are not included in the installed
+      // CLI's next model request. Fresh starts already carry the canonical packet
+      // through thread/start, so inject only when resuming an existing thread.
+      if (existing) {
+        await client.injectDeveloperContext({ threadId, text: rendered.developerInstructions });
+      }
 
       let correction: string | null = null;
       while (true) {

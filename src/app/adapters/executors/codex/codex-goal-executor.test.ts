@@ -177,21 +177,30 @@ class FakeClient implements CodexGoalClient {
   async initialize() {
     this.calls.push("initialize");
   }
-  async startThread(input: { cwd: string; developerInstructions?: string }) {
+  async startThread(input: { cwd: string; developerInstructions?: string; sandbox?: "read-only" | "workspace-write" | "danger-full-access" }) {
+    expect(input).not.toHaveProperty("sandbox");
     this.calls.push(`start:${input.cwd}`);
     this.instructions.push(input.developerInstructions!);
     expect(input.developerInstructions).toContain("## Canonical May Task Attempt");
+    expect(input.developerInstructions).toContain("Follow the Task's authorized scope");
+    expect(input.developerInstructions).not.toContain("The workspace is read-only");
     expect(input.developerInstructions).toContain("Progress commentary may become a durable Task event");
     return { threadId: this.threadId, cwd: input.cwd };
   }
-  async resumeThread(input: { threadId: string; cwd: string; developerInstructions?: string }) {
+  async resumeThread(input: { threadId: string; cwd: string; developerInstructions?: string; sandbox?: "read-only" | "workspace-write" | "danger-full-access" }) {
+    expect(input).not.toHaveProperty("sandbox");
     this.calls.push(`resume:${input.threadId}`);
     this.instructions.push(input.developerInstructions!);
     expect(input.developerInstructions).toContain('"resourceVersion":');
     return { threadId: input.threadId, cwd: input.cwd };
   }
-  async setGoal(input: { threadId: string; objective: string }) {
-    this.calls.push(`goal:${input.threadId}`);
+  async injectDeveloperContext(input: { threadId: string; text: string }) {
+    this.calls.push(`inject:${input.threadId}`);
+    this.instructions.push(input.text);
+    expect(input.text).toContain("## Canonical May Task Attempt");
+  }
+  async setGoal(input: { threadId: string; objective: string; status?: "active" | "paused" }) {
+    this.calls.push(`${input.status === "paused" ? "pause" : "goal"}:${input.threadId}`);
     expect(input.objective).toContain("Task mental model");
   }
   async waitForActiveTurn() {
@@ -355,6 +364,17 @@ describe("codex-goal Task executor", () => {
         task: { ...contextAttempt(root, "v4").task, generation: 2, resourceVersion: 7 } },
     );
     expect(clients).toHaveLength(0);
+    expect(firstClient.calls.slice(0, 2)).toEqual(["initialize", `start:${root}`]);
+    expect(resumedClient.calls.slice(0, 3)).toEqual([
+      "initialize",
+      "pause:thread-1",
+      "resume:thread-1",
+    ]);
+    expect(firstClient.calls).not.toContain("inject:thread-1");
+    expect(firstClient.calls.indexOf("goal:thread-1")).toBeGreaterThan(firstClient.calls.indexOf(`start:${root}`));
+    expect(resumedClient.calls.indexOf("resume:thread-1")).toBeGreaterThan(resumedClient.calls.indexOf("pause:thread-1"));
+    expect(resumedClient.calls.indexOf("inject:thread-1")).toBeGreaterThan(resumedClient.calls.indexOf("resume:thread-1"));
+    expect(resumedClient.calls.indexOf("goal:thread-1")).toBeGreaterThan(resumedClient.calls.indexOf("inject:thread-1"));
     for (const [client, version] of [[firstClient, "v3"], [resumedClient, "v4"]] as const) {
       const input = client.instructions[0]!;
       const context = JSON.parse(input.split("## Canonical May Task Attempt\n")[1]!);
