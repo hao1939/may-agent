@@ -132,13 +132,15 @@ thread within that attempt. Native process failure ends the attempt;
 ordinary Runtime retry resumes the same Task's persisted thread.
 
 Validate the installed CLI when installing, upgrading, or changing its execution
-environment. Use the actual runtime user and intended permission profile to run
+environment. Use the actual runtime user and installed permission profile to run
 a real command and read a synthetic file. The Host's existing
 `check:codex-goal-protocol` script verifies native restart and fresh outgoing
 context with a local scripted provider; its `check:codex-goal-execution` entry
-also requires the read-only, network-disabled command to succeed. A sandbox
-denial fails execution acceptance even when protocol compatibility passes.
-These checks belong to installation verification, not every Task attempt.
+omits a sandbox override so installation configuration owns the command policy
+and fails on any denial. Task start and resume follow that same installed policy;
+an explicit caller sandbox remains supported. The App still owns authorized
+intent and acceptance, so available executor permissions do not authorize extra
+work. These checks belong to installation verification, not every Task attempt.
 This separation is implemented in the PR #284 candidate; it does not establish
 that the deployed executor is usable.
 
