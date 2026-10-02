@@ -264,11 +264,33 @@ describe("CodexGoalAppServerClient", () => {
     await expect(client.getGoal("thread-1")).rejects.toThrow("invalid JSON");
   });
 
-  it("bounds an unterminated protocol line", async () => {
+  it("stops consuming stdout after a terminal protocol failure", async () => {
     const process = new FakeAppServerProcess();
-    const client = new CodexGoalAppServerClient(process, { requestTimeoutMs: 1_000 });
+    const client = new CodexGoalAppServerClient(process, {
+      requestTimeoutMs: 1_000,
+      terminateAfterMs: 0,
+      killAfterMs: 10,
+    });
+    let notifications = 0;
+    client.onNotification(() => notifications++);
+    const pending = client.getGoal("thread-1");
+    await waitForWrite(process, "thread/goal/get");
+
     process.stdout.write("x".repeat(4 * 1024 * 1024 + 1));
-    await expect(client.getGoal("thread-1")).rejects.toThrow("protocol line exceeded");
+    await expect(pending).rejects.toThrow("protocol line exceeded");
+    const diagnostics = client.diagnostics();
+
+    expect(() => {
+      process.stdout.write(`${JSON.stringify({ method: "turn/started", params: {} })}\n`);
+      process.stdout.write(`${JSON.stringify({ id: 77, method: "unsupported", params: {} })}\n`);
+    }).not.toThrow();
+    expect(client.diagnostics()).toEqual(diagnostics);
+    expect(notifications).toBe(0);
+    expect(process.writes.some((entry) => entry.id === 77)).toBeFalse();
+    expect(process.stdout.listenerCount("data")).toBe(0);
+
+    await client.stop();
+    expect(process.signals).toEqual(["SIGTERM"]);
   });
 
   it("stops through normal stdin shutdown without signaling", async () => {

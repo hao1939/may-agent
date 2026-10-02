@@ -134,6 +134,7 @@ export class CodexGoalAppServerClient {
   private processClosed = false;
   private stopPromise: Promise<void> | null = null;
   private exitError: Error | null = null;
+  private readonly stdoutDataHandler = (chunk: string): void => this.consumeStdout(chunk);
 
   constructor(
     process: AppServerProcess,
@@ -152,7 +153,7 @@ export class CodexGoalAppServerClient {
     }
     process.stdout.setEncoding("utf8");
     process.stderr.setEncoding("utf8");
-    process.stdout.on("data", (chunk: string) => this.consumeStdout(chunk));
+    process.stdout.on("data", this.stdoutDataHandler);
     process.stderr.on("data", (chunk: string) => {
       this.stderrTail = `${this.stderrTail}${chunk}`.slice(-MAX_STDERR_CHARS);
     });
@@ -603,6 +604,8 @@ export class CodexGoalAppServerClient {
   private fail(error: Error): void {
     if (this.exitError) return;
     this.exitError = error;
+    this.process.stdout.off("data", this.stdoutDataHandler);
+    this.stdoutBuffer = "";
     for (const pending of this.pending.values()) {
       clearTimeout(pending.timeout);
       pending.reject(error);
