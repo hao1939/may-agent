@@ -363,10 +363,11 @@ one coalesced App-scoped reread for active chat/topic surfaces. Executor
 progress refreshes an exact watch only and does not rescan `/todo`. A new or
 changed off-watch action may produce one best-effort compact notification on
 each configured surface and records exact Task references in shared
-Conversation after it is shown. Surfaces do not coordinate or promise global
-exactly-once delivery. Configured base chats are active after startup without
-waiting for a new inbound message. Provider delivery status remains
-observational.
+Conversation after it is shown. Manual `/todo` views do not advance or suppress
+that automatic-notification presentation state, so one manual/automatic overlap
+is allowed. Surfaces do not coordinate or promise global exactly-once delivery.
+Configured base chats are active after startup without waiting for a new inbound
+message. Provider delivery status remains observational.
 Single-decision notices invite a direct reply and link only the decision shown.
 Multi-decision summaries invite a list/read rather than suggesting that “yes”
 approves them all. Watch updates show the purpose, current state and useful
