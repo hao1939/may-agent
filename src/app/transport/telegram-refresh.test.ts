@@ -710,6 +710,56 @@ describe("Telegram refresh lifecycle", () => {
     }
   });
 
+  it.each([false, true])("keeps a successfully watched %s action quiet after unwatch", async (exact) => {
+    const f = fixture();
+    const action = exact ? "Keep the exact watched action quiet." : "Keep the fallback watched action quiet.";
+    try {
+      await f.command("/watch first");
+      Object.assign(f.tasks.get("first")!, {
+        humanAction: { requestedAction: action },
+        ...(exact
+          ? {
+              diagnostics: {
+                conditions: [
+                  {
+                    id: "watched-action",
+                    condition: {
+                      metadata: { id: "watched-action", generation: 1, resourceVersion: 1 },
+                      spec: {
+                        type: "human.answer.received",
+                        subject: "id:watched-action",
+                        owner: "human",
+                        requestedAction: action,
+                        expected: { answer: true },
+                      },
+                      status: { state: "false" },
+                    },
+                  },
+                ],
+                conditionsTruncated: false,
+              },
+            }
+          : {}),
+      });
+      f.wake("first");
+      const shown = () => f.sent.filter((send) => send.chat_id === "123" && send.text.includes(action)).length;
+      await waitFor(() => shown() === 1);
+      const completedReceipts = (
+        getDb(f.root).prepare("SELECT data FROM notification_messages WHERE chat_id = '123'").all() as Array<{
+          data: string;
+        }>
+      ).filter((row) => JSON.parse(row.data).completedHumanAction);
+      expect(completedReceipts).toHaveLength(exact ? 1 : 0);
+
+      await f.command("/unwatch");
+      f.wake("first");
+      await Bun.sleep(40);
+      expect(shown()).toBe(1);
+    } finally {
+      await f.close();
+    }
+  });
+
   it("refreshes watch only for presented meaning, dependencies, or reply authority", async () => {
     const f = fixture();
     try {

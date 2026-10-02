@@ -980,6 +980,9 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
     const rendered = renderTelegramTaskUpdate(task);
     const displayedApproval = approvalProposalForTask(task);
     const displayedHumanCondition = !displayedApproval ? humanConditionAnchor(task) : null;
+    const displayedAction = task.humanAction
+      ? { key: todoTaskKey(task), signature: todoActionSignature(task) }
+      : null;
     // Keep the card's context consistent even if selection changes during I/O.
     const conversationTopicId = selectedTaskTopicId(surface, task);
     const delivered = await sendMessage(watched.chatId, rendered, undefined, {
@@ -992,8 +995,18 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
         topicId: conversationTopicId,
         ...(displayedApproval ? { approvalAnchor: displayedApproval } : {}),
         ...(displayedHumanCondition ? { humanCondition: displayedHumanCondition } : {}),
+        ...(displayedAction?.signature.exact
+          ? {
+              completedHumanAction: {
+                version: 1,
+                appId: task.appId,
+                taskId: task.taskId,
+                signature: displayedAction.signature.value,
+              },
+            }
+          : {}),
       }),
-      bindToCompleteDelivery: Boolean(displayedApproval || displayedHumanCondition),
+      bindToCompleteDelivery: Boolean(displayedApproval || displayedHumanCondition || displayedAction?.signature.exact),
     });
     if (delivered && running)
       recordConversationMessage({
@@ -1010,6 +1023,15 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
     // change a newer selection, including a new watch of the same Task.
     if (!delivered || !running || watchedTasks.get(surface) !== watched) return;
     shownWatchRevisions.set(surface, revision);
+    if (displayedAction) {
+      const current = shownTodoActions.get(surface);
+      if (current) current.set(displayedAction.key, presentedTodoActionRevision(displayedAction.signature));
+      else
+        shownTodoActions.set(
+          surface,
+          new Map([[displayedAction.key, presentedTodoActionRevision(displayedAction.signature)]]),
+        );
+    }
     if (task.terminal) stopWatching(surface);
   }
 
