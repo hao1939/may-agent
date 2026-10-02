@@ -264,7 +264,7 @@ The agent reads the supplied Topic links and decides which asks the result
 answers. Separate Conversations still receive separate inputs. Already pending
 legacy inputs remain accountable and are not rewritten or silently consumed.
 
-**Availability:** grouped return admission is implemented in [Host `6332e6892`](https://github.com/hao1939/may-agent/commit/6332e6892).
+**Availability:** grouped return admission is implemented in [Host `7b416af40`](https://github.com/hao1939/may-agent/commit/7b416af40).
 Activate that Host revision before relying on grouped input. Source validation
 and App integration are recorded in the [repeat-pattern follow-up](../../../may.app/design/token-efficiency-proposal-20261002.md#october-3-source-follow-up).
 
@@ -389,8 +389,11 @@ delegated Task.
   conversation execution or adapter rendering.
 - One inbox handles human and system inputs with per-Conversation execution
   ordering. Human priority applies to pending work, not instantaneous preemption.
-- Duplicate Task wakes reuse durable identity. Do not coalesce distinct linked
-  outcomes by overwriting a single in-memory Conversation flag.
+- One wake lets the Conversation attempt handle its pending input batch. Repeated
+  scheduling signals coalesce; distinct messages and linked outcomes remain in
+  durable storage. A later state check does not call the agent when that work is
+  already handled. The [Task attempt contract](task-attempts.md) owns batching,
+  live input, bounded overflow and clock wakes.
 - The timer checks stored follow-up evidence first. Completed or quiet handling
   prevents repeated model calls for the same unchanged facts.
 - Failed or stopped inputs remain visible. Ordinary bounded recovery may redo

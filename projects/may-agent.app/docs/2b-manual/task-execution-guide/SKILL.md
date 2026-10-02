@@ -146,6 +146,13 @@ neither clock. Check the installed schema and the
 [Host availability note](../../2a-design/task-resource-engine.md#conditions)
 before relying on omitted legacy fields.
 
+Read the whole supplied input batch and handle related updates together. One
+wake can bring several messages, results or requirements; it does not require
+one attempt per update. Judge each Request's fulfillment separately. Infra keeps
+unseen input and bounded overflow pending, so you do not arrange another wake
+for each event. The [Task attempt contract](../../2a-design/task-attempts.md)
+describes the limits and how accepted live input joins current work.
+
 Use one timer for a recurring cycle. If the App already schedules it, do not
 also return `reviewAt` for that same cycle. For Task-owned recurring work, return
 the next deliberate deadline after judging the current result.
