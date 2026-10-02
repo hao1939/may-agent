@@ -6,7 +6,8 @@ remain unchanged. Retirement means the existing collector and Evaluation
 selector exclude those definitions; it does not delete records.
 
 May declares the approved complete definitions in `retired-aks-metrics.json`,
-with only `status` changed to `retired`. The normal App-definition reload uses
+with only persisted `status` changed to `retired`. Optional null source fields
+are omitted in the App declaration and persist as the same null values. The normal App-definition reload uses
 `MetricService.define` to apply them. No dedicated workflow, Task-generation
 check or new approval process is needed for this already-authorized operation.
 Repeated reloads retain retirement and leave other definition fields intact;

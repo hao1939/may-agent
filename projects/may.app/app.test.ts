@@ -1,3 +1,4 @@
+import { validateAppDefinition } from "../may-agent/src/app/core/apps/definition-validation.js";
 import { describe, expect, test } from "bun:test";
 import { existsSync, readFileSync } from "node:fs";
 import { matchesEventSelector, type AppEvent } from "@may-agent/sdk";
@@ -32,6 +33,9 @@ function decisionEvent(
 }
 
 describe("canonical May conversation App", () => {
+  test("the Host accepts all declared metric definitions", () => {
+    expect(validateAppDefinition(app)).toEqual([]);
+  });
   test("owns one manifest for human input and addressed decision events", () => {
     expect(app).toMatchObject({
       id: "may",
