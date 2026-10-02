@@ -10,7 +10,7 @@ import {
   ensureTaskResourceSchema,
 } from "../../../lib/db/task-resource-schema.js";
 import { indexTaskReference } from "./task-reference-index.js";
-import { pendingTaskExecutionRetryAt } from "../tasks/app-task-state.js";
+import { CONDITION_RECOVERY_INTERVAL_MS, pendingTaskExecutionRetryAt } from "../tasks/app-task-state.js";
 import type {
   AppTaskAttempt,
   AppTaskCancellation,
@@ -729,7 +729,12 @@ export class AppTaskResourceStore {
     ).map((row) => parseTaskCancellation(row.cancellation_json));
   }
 
-  readConditionRoutes(eventType: string): Array<{ condition: AppTaskCondition; taskIds: string[] }> {
+  readConditionRoutes(
+    eventType: string,
+    taskIds?: Iterable<string>,
+  ): Array<{ condition: AppTaskCondition; taskIds: string[] }> {
+    const ids = taskIds ? [...new Set(taskIds)] : undefined;
+    if (ids?.length === 0) return [];
     const rows = this.db
       .prepare(
         `SELECT c.condition_id, c.condition_json, linked.task_id
@@ -739,11 +744,12 @@ export class AppTaskResourceStore {
          JOIN app_tasks task
            ON task.app_id = linked.app_id AND task.task_id = linked.task_id
          WHERE c.app_id = ? AND json_extract(c.condition_json, '$.spec.type') = ?
+           ${ids ? `AND linked.task_id IN (${ids.map(() => "?").join(", ")})` : ""}
            AND c.state <> 'true'
            AND task.phase IN ('waiting', 'running', 'pending')
          ORDER BY c.condition_id, linked.task_id`,
       )
-      .all(this.appId, eventType) as Array<{
+      .all(this.appId, eventType, ...(ids ?? [])) as Array<{
       condition_id?: string;
       condition_json?: string;
       task_id?: string;
@@ -1570,6 +1576,30 @@ export class AppTaskResourceStore {
       this.bumpRevision();
       return true;
     });
+  }
+
+  /** Repair derived legacy indexes at startup; the worker recomputes the actual next check. */
+  repairWaitingConditionRecovery(now = Date.now()): number {
+    return this.db
+      .prepare(
+        `UPDATE app_tasks
+         SET next_check_at = MAX(?, COALESCE(json_extract(resource_json, '$.status.executionRetryAt'), ?))
+         WHERE app_id = ? AND phase = 'waiting'
+           AND (next_check_at IS NULL OR next_check_at > MAX(?,
+             COALESCE(json_extract(resource_json, '$.status.executionRetryAt'), ?)))
+           AND NOT EXISTS (
+             SELECT 1 FROM app_task_cancellations cancelled
+             WHERE cancelled.app_id = app_tasks.app_id AND cancelled.task_id = app_tasks.task_id
+           )
+           AND EXISTS (
+             SELECT 1 FROM app_task_condition_routes routes
+             JOIN app_task_conditions conditions
+               ON conditions.app_id = routes.app_id AND conditions.condition_id = routes.condition_id
+             WHERE routes.app_id = app_tasks.app_id AND routes.task_id = app_tasks.task_id
+               AND conditions.state <> 'true'
+           )`,
+      )
+      .run(now, now, this.appId, now + CONDITION_RECOVERY_INTERVAL_MS, now).changes;
   }
 
   setRecoveryState(

@@ -103,6 +103,7 @@ import { readTaskSnapshot, type AppTaskContext } from "./app-task-store.js";
 import { HostCapacity } from "../scheduling/host-capacity.js";
 import { closeDb, getDb } from "../../../lib/requests.js";
 import { AppTaskResourceStore } from "../state/app-task-resource-store.js";
+import { AppTaskRecoveryScheduler } from "./app-task-recovery.js";
 import { migrateTaskCompletionReceipts } from "../state/task-receipt-cutover.js";
 import { appTaskTestContext as createTaskContext } from "./app-task-test-support.js";
 import { projectRuntimePaths } from "./app-task-runtime-state.js";
@@ -717,7 +718,6 @@ describe("caller feedback PoC", () => {
       subject: "resource:repo/42",
       expected: { state: "passed", source: "app:reviewer:observer:build" },
       owner: "app:reviewer",
-      reviewAfterMs: 3_600_000,
     });
     const missing = await tool.execute("condition-missing", {
       action: "contract",
@@ -4315,9 +4315,9 @@ describe("canonical App task runtime", () => {
     },
   );
 
-  it.each([false, true])(
-    "returns the exact saved App answer after its notification is lost (restart: %j)",
-    async (restart) => {
+  it.each(["live", "restart", "missing-index", "late-index"])(
+    "returns the exact saved App answer after its notification is lost (%s)",
+    async (route) => {
       const f = fixture();
       const persistDir = join(f.root, "state");
       let bus = eventBus();
@@ -4406,6 +4406,28 @@ describe("canonical App task runtime", () => {
           taskId,
           dispatch: { enqueuedAt: 1, startedAt: 2, readyWaitMs: 1, lane: "normal" },
         });
+      const reopen = async () => {
+        host!.close();
+        await closeInstalledAppTaskRuntimes(bus);
+        closeDb(persistDir);
+        bus = eventBus();
+        await install();
+      };
+      const recoverIndexedOwner = async () => {
+        const queued: string[] = [];
+        const scheduler = new AppTaskRecoveryScheduler({
+          source: loadedTaskConfig(f).resourceStore,
+          now: () => Date.now() + 300_001,
+          enqueue: (id) => queued.push(id),
+        });
+        try {
+          scheduler.recover();
+          expect(queued).toContain("work/owner");
+          await run("work/owner");
+        } finally {
+          scheduler.close();
+        }
+      };
       await install();
       observeAppTaskIntent(loadedTaskConfig(f), {
         appAgent: "sample-owner",
@@ -4418,6 +4440,22 @@ describe("canonical App task runtime", () => {
         },
       });
       await run("work/owner");
+      const repairsLegacyIndex = route === "missing-index" || route === "late-index";
+      if (repairsLegacyIndex) {
+        const store = loadedTaskConfig(f).resourceStore;
+        store.setRecoveryState("work/owner", {
+          ready: false,
+          changed: false,
+          nextCheckAt: route === "missing-index" ? null : Date.now() + 86_400_000,
+        });
+        const before = store.readTaskContext({ taskIds: ["work/owner"] });
+        // No answer exists during startup. A later missed answer must still
+        // be discoverable through the repaired index, without a global replay.
+        await reopen();
+        await recoverIndexedOwner();
+        expect(ownerInputs).toHaveLength(1);
+        expect(loadedTaskConfig(f).resourceStore.readTaskContext({ taskIds: ["work/owner"] })).toEqual(before);
+      }
       await run("work/reviewer");
       await host!.recoverTaskResults();
       expect(host!.get(requestId)).toMatchObject({ status: "done", result: { result: { score: 0.92 } } });
@@ -4470,16 +4508,14 @@ describe("canonical App task runtime", () => {
           },
         ],
       });
-      if (restart) {
-        host!.close();
-        await closeInstalledAppTaskRuntimes(bus);
-        closeDb(persistDir);
-        bus = eventBus();
-        await install();
+      if (route === "restart") await reopen();
+      if (repairsLegacyIndex) {
+        await recoverIndexedOwner();
+      } else {
+        await recoverInstalledAppTasks(bus);
+        await recoverInstalledAppTasks(bus);
+        await run("work/owner");
       }
-      await recoverInstalledAppTasks(bus);
-      await recoverInstalledAppTasks(bus);
-      await run("work/owner");
       expect(ownerInputs).toHaveLength(2);
       expect(ownerInputs[1]!.items.filter(({ event }) => event.type === "app.dependency.updated")).toHaveLength(1);
       expect(readAcceptedRuntimeAttempt(loadedTaskConfig(f), "work/owner")?.acceptedResult?.summary).toBe(
@@ -4496,7 +4532,7 @@ describe("canonical App task runtime", () => {
     },
   );
 
-  it("automatically recovers an exact saved answer through owner due-review and waiting settlement", async () => {
+  it("recovers missed answers in code without repeatedly invoking a waiting owner", async () => {
     const runTrial = async (automaticRecovery: boolean) => {
       const f = fixture();
       const persistDir = join(f.root, "state");
@@ -4530,6 +4566,7 @@ describe("canonical App task runtime", () => {
       let laterAnswerSavedAt = 0;
       const app = defineApp({
         ...definition(),
+        tasks: { ...definition().tasks!, maxConcurrent: 2 },
         task: ({ input }) => {
           const kind = input.kind;
           return {
@@ -4553,6 +4590,7 @@ describe("canonical App task runtime", () => {
       await registry.reload();
       const { installed } = await installCoreTaskRuntimes({
         ...options(f, bus),
+        hostCapacity: new HostCapacity(3),
         appRegistrySnapshot: registry.snapshot(),
         executors: {
           owner: async (attempt) => {
@@ -4580,7 +4618,6 @@ describe("canonical App task runtime", () => {
               summary: "Waiting for the exact first review",
               facts: [],
               dependencies: [{ id: "review", appId: "sample", input: { kind: "review", data: { sample: 1 } } }],
-              reviewAt: Date.now() + 5_000,
             };
           },
           reviewer: async () => {
@@ -4654,20 +4691,39 @@ describe("canonical App task runtime", () => {
           console.info(
             "automatic-recovery-timeout",
             description,
-            listAppInboxItems(getDb(persistDir)),
-            readTaskSnapshot(config),
+            { quietRecoveryChecks, recoveryScans, ownerDispatches },
           );
         expect(predicate(), `Timed out waiting for ${description}`).toBeTrue();
       };
       const admissionTimes: Record<string, number> = {};
       const recoveryScans: Array<{ at: number; taskIds: string[] }> = [];
       const config = loadedTaskConfig(f);
+      let quietRecoveryChecks = 0;
+      bus.listen((event) => {
+        if (
+          event.data.taskId === "work/owner" &&
+          event.type === "project.task.reconcile.skipped" &&
+          event.data.reason === "conditions-open"
+        ) quietRecoveryChecks += 1;
+      });
       const source = installed[0]!.resourceStore;
       const listRecoveryCandidates = source.listRecoveryCandidates.bind(source);
+      // Accelerate only the fixture's mechanical recovery clock. The production
+      // scheduler and ordinary Task dispatch still run on real timers.
+      const nextDueAt = source.nextDueAt.bind(source);
+      source.nextDueAt = () => {
+        const due = nextDueAt();
+        return due === null ? null : Math.min(due, Date.now() + 200);
+      };
       source.listRecoveryCandidates = ((...args: Parameters<typeof source.listRecoveryCandidates>) => {
-        const page = listRecoveryCandidates(...args);
+        const page = listRecoveryCandidates(Date.now() + 300_001, args[1], args[2]);
         recoveryScans.push({ at: Date.now(), taskIds: page.items.map((item) => item.taskId) });
-        return automaticRecovery ? page : { ...page, items: [] };
+        // After losing completion, hold this candidate until a newer answer
+        // exists on the destination. Recovery must still return the original.
+        const items = automaticRecovery
+          ? page.items.filter((item) => item.taskId !== "work/owner" || !notificationLostAt || laterAnswerSavedAt > 0)
+          : [];
+        return { ...page, items };
       }) as typeof source.listRecoveryCandidates;
 
       try {
@@ -4701,6 +4757,11 @@ describe("canonical App task runtime", () => {
         );
         expect(originalRequest).toBeDefined();
 
+        if (automaticRecovery) {
+          await waitFor("three mechanical checks while the answer is still pending", () => quietRecoveryChecks >= 3);
+          expect(ownerInputs).toHaveLength(1);
+          expect(config.resourceStore.readTask("work/owner")?.status.reviewAt).toBeUndefined();
+        }
         releaseFirstReview();
         await waitFor(
           "the exact producer result to be saved despite notification loss",
@@ -4738,7 +4799,7 @@ describe("canonical App task runtime", () => {
 
         if (automaticRecovery) {
           await waitFor(
-            "automatic due-query, exact saved-answer replay, and accepted owner result",
+            "automatic recovery query, exact saved-answer replay, and accepted owner result",
             () =>
               readAcceptedRuntimeAttempt(config, "work/owner")?.acceptedResult?.summary ===
               "Reviewed the original saved answer",
@@ -4759,10 +4820,10 @@ describe("canonical App task runtime", () => {
           );
           const acceptedAttempt = readAcceptedRuntimeAttempt(config, "work/owner");
           expect(dueQuery).toBeDefined();
-          expect(dueReviewDispatch).toBeDefined();
+          expect(dueReviewDispatch).toBeUndefined();
+          expect(ownerInputs).toHaveLength(2);
           expect(exactAnswerDispatch).toBeDefined();
-          expect(dueQuery!.at).toBeLessThanOrEqual(dueReviewDispatch!.at);
-          expect(dueReviewDispatch!.at).toBeLessThanOrEqual(exactAnswerDispatch!.at);
+          expect(dueQuery!.at).toBeLessThanOrEqual(exactAnswerDispatch!.at);
           expect(laterAnswerSavedAt).toBeLessThanOrEqual(exactAnswerDispatch!.at);
           expect(exactAnswerDispatch!.at).toBeLessThanOrEqual(executorReturnedAt);
           expect(acceptedAttempt?.acceptedResult).toMatchObject({
@@ -4775,7 +4836,6 @@ describe("canonical App task runtime", () => {
           expect(acceptedAttempt?.finishedAt).toBeDefined();
           const acceptedPersistedAt = Date.parse(acceptedAttempt!.finishedAt!);
           expect(acceptedPersistedAt).toBeGreaterThanOrEqual(executorReturnedAt);
-          expect(laterAnswerSavedAt).toBeLessThanOrEqual(acceptedPersistedAt);
           expect(config.resourceStore.readTaskConditions("work/owner")).toEqual([]);
           const storedOwner = config.resourceStore.readTask("work/owner");
           expect(storedOwner?.status.reviewAt).toBeUndefined();
@@ -4805,9 +4865,9 @@ describe("canonical App task runtime", () => {
               recoveryScans: recoveryScans.filter((scan) => scan.at >= notificationLostAt),
               ownerDispatches,
               route:
-                "installed indexed scheduler nearest-due query -> owner reviewAt dispatch -> waiting settlement recovery",
+                "installed indexed scheduler -> code recovery of exact saved answer -> one owner attempt",
               scope:
-                "in-process installed Task runtime with deterministic executors and a real timer; not default dependency timing, native agent judgment, restart, or OS/daemon proof",
+                "in-process installed Task runtime with deterministic executors and a real timer; fixture accelerates the indexed recovery clock, not default timing, native agent judgment, restart, or OS/daemon proof",
               executorReturnedAt,
               acceptedAttempt: {
                 id: acceptedAttempt!.metadata.id,
@@ -4839,7 +4899,9 @@ describe("canonical App task runtime", () => {
           );
         }
       } finally {
+        releaseFirstReview();
         source.listRecoveryCandidates = listRecoveryCandidates;
+        source.nextDueAt = nextDueAt;
         inbox.close();
         await closeInstalledAppTaskRuntimes(bus);
         closeDb(persistDir);
@@ -5297,7 +5359,6 @@ describe("canonical App task runtime", () => {
         subject: `id:${requestId}`,
         expected: { field: "status", equals: "done" },
         owner: "app:evaluation",
-        reviewAfterMs: 300_000,
       },
     ]);
     expect(emitted).toHaveLength(emittedBeforeReuse);
@@ -5374,7 +5435,6 @@ describe("canonical App task runtime", () => {
         subject: `id:${requestId}`,
         expected: { field: "status", equals: "done" },
         owner: "app:evaluation",
-        reviewAfterMs: 300_000,
       },
     ]);
   });
@@ -6848,7 +6908,7 @@ describe("canonical App task runtime", () => {
   });
 
   it.each(["executor", "tasks tool"] as const)(
-    "runs three periodic reviews without self-published clock echoes through %s",
+    "runs three explicitly scheduled reviews without self-published clock echoes through %s",
     async (publisher) => {
       setSystemTime(Date.now());
       const f = fixture();
@@ -6930,6 +6990,7 @@ describe("canonical App task runtime", () => {
               : {
                   state: "waiting",
                   summary: "Review complete; next review pending",
+                  reviewAt: Date.now() + 60_000,
                   facts: ["fixture:reviewed"],
                   result: { count },
                   conditions: [
@@ -6939,7 +7000,6 @@ describe("canonical App task runtime", () => {
                       subject: `time:${new Date(Date.now() + 60_000).toISOString()}`,
                       expected: true,
                       owner: "app:sample",
-                      reviewAfterMs: 60_000,
                     },
                   ],
                 };
@@ -10399,7 +10459,7 @@ describe("canonical App task runtime", () => {
 // This exercises the production attempt boundary: persisted waits, generated
 // dependency echoes, and owner-authored deltas all meet in attempt-runner.
 describe("dependency Condition specification updates", () => {
-  it("keeps an explicit cadence update across a generated echo, omission, and earlier independent wakes", async () => {
+  it("keeps compatible legacy fields through generated echoes and new input without timer-driven attempts", async () => {
     setSystemTime(new Date("2030-01-01T00:00:00.000Z"));
     const f = fixture();
     const bus = eventBus();
@@ -10506,6 +10566,10 @@ describe("dependency Condition specification updates", () => {
     const peerDueAt = Date.parse(after.conditions![peer.id]!.status.observedAt!) + peer.reviewAfterMs;
     setSystemTime(new Date(peerDueAt));
     await run();
+    expect(calls).toBe(1);
+    expect(readTaskSnapshot(config).conditions).toEqual(after.conditions);
+    recordAppTaskTrigger(config, taskId, { type: "sample.owner-review", eventId: 1002 });
+    await run();
     after = readTaskSnapshot(config);
     expect(calls).toBe(2);
     expect(after.resources?.[taskId]?.status.phase).toBe("waiting");
@@ -10518,7 +10582,7 @@ describe("dependency Condition specification updates", () => {
       owner: "app:sample",
       data: { kind: "app", id: requestId, status: "done", summary: "Review complete" },
     } as AgentEvent;
-    Object.defineProperty(feedback, EVENT_ROW_ID, { value: 1002 });
+    Object.defineProperty(feedback, EVENT_ROW_ID, { value: 1003 });
     expect(
       admitStandaloneCanonicalAppTaskEvent({
         descriptor: installed[0]!,

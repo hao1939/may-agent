@@ -300,23 +300,7 @@ export async function fixture(detector: ResourceObserver) {
       );
     },
     due(id: string, appId = "sample") {
-      const store = config(appId).resourceStore;
-      const task = store.readTask(id)!;
-      const conditions = store.readTaskConditions(id);
-      for (const condition of conditions) {
-        condition.status.observedAt = new Date(Date.now() - 7_200_000).toISOString();
-        condition.metadata.resourceVersion++;
-      }
-      if (
-        !store.commit({
-          fences: [
-            { taskId: id, resourceVersion: task.metadata.resourceVersion, generation: task.metadata.generation },
-          ],
-          conditions,
-        })
-      )
-        throw new Error("Unable to advance fixture wait clock");
-      store.setRecoveryState(id, { nextCheckAt: Date.now() - 1 });
+      config(appId).resourceStore.setRecoveryState(id, { nextCheckAt: Date.now() - 1 });
     },
     recoveryCandidates(appId = "sample") {
       const ids: string[] = [];

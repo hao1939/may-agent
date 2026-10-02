@@ -1191,6 +1191,8 @@ test.each(["answer", "waiting-report", "execution-error"] as const)(
     if (scenario === "execution-error") expect(workers.readAttempt(claim.attemptId)?.acceptedResult).toBeUndefined();
     // Skip delivery of one newer report. Recovery must select the latest saved
     // report, not every historical attempt or a delayed notification's identity.
+    // These explicit reviews address the original request; a pending Condition
+    // no longer contributes input scope merely because its old timer elapsed.
     const reportIds: string[] = [];
     for (const summary of ["Access repaired; waiting for data", "Please confirm the data source"]) {
       setSystemTime(Date.now() + 300_001);
@@ -1203,6 +1205,7 @@ test.each(["answer", "waiting-report", "execution-error"] as const)(
       if (next.kind !== "claimed") throw new Error(`Expected report attempt, got ${next.kind}`);
       deferAppTask(worker, next, {
         disposition: "waiting",
+        inputKeys: [inputKey],
         report: true,
         summary,
         facts: ["source:review"],
@@ -1242,7 +1245,7 @@ test.each(["answer", "waiting-report", "execution-error"] as const)(
       handler: "executor:fixture",
     });
     if (finishing.kind !== "claimed") throw new Error(`Expected final attempt, got ${finishing.kind}`);
-    completeAppTask(worker, finishing, { summary: "Measured", result: { value: 17 }, facts: ["source:17"] });
+    completeAppTask(worker, finishing, { inputKeys: [inputKey], summary: "Measured", result: { value: 17 }, facts: ["source:17"] });
     expect(readAppTaskAdmissionOutcome(worker, "measurement", inputKey)).toMatchObject({
       attemptId: finishing.attemptId,
       result: { value: 17 },

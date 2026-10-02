@@ -1,7 +1,7 @@
 import { afterEach, expect, test } from "bun:test";
 import { fixture, until } from "../fixtures/resource-observer.js";
 import { defineObserver } from "@may-agent/sdk";
-import { recordAppTaskTrigger } from "../../src/app/core/tasks/app-task-reconciler.js";
+import { claimObservedAppTask, recordAppTaskTrigger } from "../../src/app/core/tasks/app-task-reconciler.js";
 
 function buildDetector(read: (resource: string, signal: AbortSignal) => Promise<{ state: string; revision: number }>) {
   return defineObserver({
@@ -232,19 +232,19 @@ test("a hung read is recorded, signals abort, does not overlap, and leaves anoth
   expect(f.view("bad").conditions[0]?.observation?.state).toBe("unknown");
 });
 
-test("stopping observation entirely still leaves a due same-Task recovery review", async () => {
+test("stopping observation retains visible recovery work without an implicit agent review", async () => {
   const f = await setup(async () => ({ state: "running", revision: 1 }));
   f.add("a", [f.capability.waitFor("build", "42", terminal)]);
   f.stopObserver();
   expect(f.events()).toHaveLength(0);
   f.due("a");
   expect(f.recoveryCandidates()).toContain("a");
-  const recovery = f.claim("a");
-  expect(f.config().resourceStore.readTaskContext({ taskIds: ["a"] }).attempts?.[recovery.attemptId]?.reason).toBe(
-    "condition-review-checkpoint-missed",
-  );
-  expect(f.view("a").conditions[0]?.observation?.state).toBe("unknown");
-  f.defer(recovery);
+  const before = f.view("a");
+  expect(
+    claimObservedAppTask(f.config(), { taskId: "a", appAgent: "sample-owner", handler: "agent" }).kind,
+  ).toBe("waiting");
+  expect(f.view("a")).toEqual(before);
+  expect(f.config().resourceStore.nextDueAt()).toBeGreaterThan(Date.now());
 });
 
 test("unknown detector failure retains the wait; repaired code resumes the same Task", async () => {
@@ -262,7 +262,9 @@ test("unknown detector failure retains the wait; repaired code resumes the same 
   expect(f.view("a").conditions[0]?.observation?.state).toBe("unknown");
   f.due("a");
   expect(f.recoveryCandidates()).toContain("a");
-  f.defer(f.claim("a"));
+  expect(
+    claimObservedAppTask(f.config(), { taskId: "a", appAgent: "sample-owner", handler: "agent" }).kind,
+  ).toBe("waiting");
   repaired = true; // Simulates a reviewed repair; no model diagnosis is claimed.
   await f.scan();
   expect(f.runnable()).toEqual(["a"]);
