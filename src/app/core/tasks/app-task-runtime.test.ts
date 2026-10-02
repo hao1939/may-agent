@@ -675,8 +675,23 @@ it("reattaches an unanswered exact inbox admission once without treating read re
       inputId,
     );
   // Reproduce the legacy gap: the exact admission and caller remain, but no
-  // trigger, current attempt, or input wait owns the unanswered key.
-  db.prepare("UPDATE app_tasks SET trigger_json = NULL WHERE app_id = 'sample' AND task_id = ?").run(taskId);
+  // canonical Task input trigger, current attempt, or input wait owns the unanswered key.
+  // A non-empty event batch supersedes the compatibility projection; its unrelated flat
+  // event happens to reuse the key and must not claim ownership.
+  db.prepare("UPDATE app_tasks SET trigger_json = ? WHERE app_id = 'sample' AND task_id = ?").run(
+    JSON.stringify({
+      taskId,
+      taskGeneration: 1,
+      resourceVersion: 1,
+      event: { type: "app.task.requested", data: { idempotencyKey: admissionKey } },
+      events: [{
+        observedAt: new Date(0).toISOString(),
+        event: { type: "sample.work", idempotencyKey: admissionKey },
+      }],
+      observedAt: new Date(0).toISOString(),
+    }),
+    taskId,
+  );
 
   await recoverInstalledAppTasks(bus);
   await recoverInstalledAppTasks(bus);
@@ -777,7 +792,7 @@ it("does not duplicate healthy, answered, or owner-stopped inbox admissions duri
     .appTaskAdmissions?.[answered.admissionKey]?.resultAttemptId).toBe(answeredClaim.attemptId);
 });
 
-it("does not let more than one recovery page of retained healthy rows starve a later orphan", async () => {
+it("does not let 512 healthy flat Task request rows starve a later orphan", async () => {
   const f = fixture();
   const bus = eventBus();
   const persistDir = join(f.root, "state");
@@ -805,7 +820,18 @@ it("does not let more than one recovery page of retained healthy rows starve a l
   };
   const healthyTaskId = "work/healthy-page";
   const healthyAdmissionKey = admit(healthyTaskId, "healthy-page-owner");
-  for (let index = 0; index < 513; index += 1) {
+  const healthyTriggerRow = db.prepare(
+    "SELECT trigger_json AS triggerJson FROM app_tasks WHERE app_id = 'sample' AND task_id = ?",
+  ).get(healthyTaskId) as { triggerJson: string };
+  const healthyTrigger = JSON.parse(healthyTriggerRow.triggerJson) as Record<string, unknown>;
+  healthyTrigger.event = { type: "sample.work", idempotencyKey: healthyAdmissionKey };
+  healthyTrigger.events = [{
+    observedAt: new Date(0).toISOString(),
+    event: { type: "app.task.requested", idempotencyKey: healthyAdmissionKey },
+  }];
+  db.prepare("UPDATE app_tasks SET trigger_json = ? WHERE app_id = 'sample' AND task_id = ?")
+    .run(JSON.stringify(healthyTrigger), healthyTaskId);
+  for (let index = 0; index < 512; index += 1) {
     const id = `healthy-retained-${String(index).padStart(3, "0")}`;
     createAppInboxItem(db, { id, appId: "sample", now: index + 1,
       source: { kind: "system", id: "fixture" }, input: { kind: "message", data: { index } } });

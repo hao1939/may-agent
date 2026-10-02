@@ -1228,16 +1228,31 @@ function recoverInterruptedAppTasks(
                  SELECT 1 FROM json_each(task.resource_json, '$.status.inputWaits') wait
                  WHERE wait.key = inbox.task_admission_key
                )
-               AND COALESCE(json_extract(task.trigger_json, '$.event.data.idempotencyKey'), '') != inbox.task_admission_key
                AND NOT EXISTS (
-                 SELECT 1 FROM json_each(task.trigger_json, '$.events') event
-                 WHERE json_extract(event.value, '$.event.data.idempotencyKey') = inbox.task_admission_key
+                 SELECT 1 FROM json_each(
+                   CASE
+                     WHEN json_array_length(json_extract(task.trigger_json, '$.events')) > 0
+                       THEN json_extract(task.trigger_json, '$.events')
+                     ELSE json_array(json_object('event', json_extract(task.trigger_json, '$.event')))
+                   END
+                 ) event
+                 WHERE json_extract(event.value, '$.event.type') = 'app.task.requested'
+                   AND CASE
+                     WHEN json_type(event.value, '$.event.data') = 'object'
+                       THEN json_extract(event.value, '$.event.data.idempotencyKey')
+                     ELSE json_extract(event.value, '$.event.idempotencyKey')
+                   END = inbox.task_admission_key
                )
                AND (
                  attempt.state IS NULL OR attempt.state != 'running' OR (
                    NOT EXISTS (
                      SELECT 1 FROM json_each(attempt.attempt_json, '$.events') event
-                     WHERE json_extract(event.value, '$.event.data.idempotencyKey') = inbox.task_admission_key
+                     WHERE json_extract(event.value, '$.event.type') = 'app.task.requested'
+                       AND CASE
+                         WHEN json_type(event.value, '$.event.data') = 'object'
+                           THEN json_extract(event.value, '$.event.data.idempotencyKey')
+                         ELSE json_extract(event.value, '$.event.idempotencyKey')
+                       END = inbox.task_admission_key
                    ) AND NOT EXISTS (
                      SELECT 1 FROM json_each(attempt.attempt_json, '$.continuedInputKeys') continued
                      WHERE continued.value = inbox.task_admission_key
