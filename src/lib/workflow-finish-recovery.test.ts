@@ -95,7 +95,7 @@ describe("workflow finish recovery", () => {
         status: "success",
         summary: "Invalid Task result",
         result: {
-          state: "converged",
+          decision: "converged",
           summary: "Review is pending",
           reviewAt: Date.now() + 60_000,
           facts: [],
@@ -110,7 +110,7 @@ describe("workflow finish recovery", () => {
       reason: RESPONSES_STREAM_TERMINAL_ERROR,
     });
     expect(rejected.disposition).toBe("rejected");
-    expect(rejected.error).toContain("reviewAt is valid only for waiting");
+    expect(rejected.error).toContain("validation failed");
     expect(executions).toBe(0);
 
     const correctedMessages = [
@@ -118,7 +118,7 @@ describe("workflow finish recovery", () => {
         status: "success",
         summary: "Corrected Task result",
         result: {
-          state: "waiting",
+          decision: "wait",
           summary: "Review is pending",
           reviewAt: Date.now() + 60_000,
           facts: [],

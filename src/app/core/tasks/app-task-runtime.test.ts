@@ -1,3 +1,4 @@
+import { normalizeTaskHandlerResult } from "./result.js";
 import { afterEach, describe, expect, it, setSystemTime, spyOn } from "bun:test";
 import { execFile, execFileSync, spawn } from "node:child_process";
 import { existsSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
@@ -1588,7 +1589,7 @@ it("keeps omitted workflows visible, continues unrelated work, and recovers with
         expect("resourceStore" in input.descriptor).toBeFalse();
         expect("manager" in input.source).toBeFalse();
         return {
-          handlerResult: { state: "converged", summary: "Verified by supplied runner", facts: [], actions: [] },
+          handlerResult: { decision: "converged", summary: "Verified by supplied runner", facts: [], actions: [] },
           runId: "fixture-run",
         };
       },
@@ -1613,7 +1614,7 @@ it("settles report and useful continuation equivalently for agent and workflow a
   const f = fixture();
   const bus = eventBus();
   const resultFor = (taskId: string) => ({
-    state: "waiting" as const, report: true as const, continue: true as const,
+    decision: "continue" as const, report: true as const,
     summary: "Review is blocked while independent checks continue", facts: ["checks:started"],
     conditions: [{ id: `review-${taskId.split("/").at(-1)}`, type: "review.completed", subject: `review:${taskId}`,
       expected: true, owner: "human", reviewAfterMs: 60_000 }],
@@ -1697,7 +1698,7 @@ it("retains an App and exact agent work when its agent capability is removed, th
       expect(input).not.toHaveProperty("declaredOutputPaths");
       expect(input.attempt.task.outcome).toBe("Keep accepted work");
       return {
-        handlerResult: { state: "converged", summary: "Current goal verified", facts: [], actions: [] },
+        handlerResult: { decision: "converged", summary: "Current goal verified", facts: [], actions: [] },
         runId: null,
       };
     },
@@ -1760,7 +1761,7 @@ it("releases failed context preparation before later Task events and recovers af
     async execute() {
       calls++;
       return {
-        handlerResult: { state: "converged", summary: "Recovered after role repair", facts: [], actions: [] },
+        handlerResult: { decision: "converged", summary: "Recovered after role repair", facts: [], actions: [] },
         runId: null,
       };
     },
@@ -1824,7 +1825,7 @@ it("does not release an agent handoff until its required workflow verifier is av
     async execute() {
       agentCalls++;
       return Object.freeze({
-        handlerResult: Object.freeze({ state: "converged", summary: "Agent proposes completion", facts: [], actions: [] }),
+        handlerResult: Object.freeze({ decision: "converged", summary: "Agent proposes completion", facts: [], actions: [] }),
         runId: null,
       });
     },
@@ -1847,7 +1848,7 @@ it("does not release an agent handoff until its required workflow verifier is av
     },
     async execute() {
       return {
-        handlerResult: { state: "needs-agent", summary: "Agent judgment required", facts: [], actions: [] },
+        handlerResult: { decision: "needs-agent", summary: "Agent judgment required", facts: [], actions: [] },
         runId: "fixture-handoff",
       };
     },
@@ -2068,13 +2069,13 @@ describe("canonical direct-agent residue cleanup", () => {
 
   it("rejects only converged direct-agent results whose edits were restored", async () => {
     const converged = {
-      state: "converged" as const,
+      decision: "converged" as const,
       summary: "claimed convergence",
       facts: ["agent-result"],
       actions: [],
     };
     expect(rejectConvergedDirectAgentResidue(converged, ["file:tracked.txt"])).toMatchObject({
-      state: "error",
+      decision: "error",
       facts: ["agent-result", "agent-residue-restored:file:tracked.txt"],
     });
     expect(rejectConvergedDirectAgentResidue(converged, [])).toBe(converged);
@@ -2456,7 +2457,7 @@ describe("canonical App task runtime", () => {
         opts,
         descriptor,
         claim,
-        dependencies: [{ ...conversational, taskId: "review/current" }],
+        dependencies: [{ ...conversational, id: "help-exact", taskId: "review/current" }],
       }),
     ).toHaveLength(1);
     host.close();
@@ -3127,7 +3128,7 @@ describe("canonical App task runtime", () => {
             id: requestId,
             appId: "evaluation",
             taskId: "review/current",
-            input: { kind: "deep-scan", data: { reason: "parent-needs-review " } },
+            input: { kind: "deep-scan", data: { reason: "parent-needs-review" } },
           },
         ],
       });
@@ -3167,7 +3168,7 @@ describe("canonical App task runtime", () => {
             id: requestId,
             appId: "evaluation",
             taskId: "review/current",
-            input: { kind: "deep-scan", data: { reason: "parent-needs-review " } },
+            input: { kind: "deep-scan", data: { reason: "parent-needs-review" } },
           },
           {
             id: "second-independent-review",
@@ -3471,6 +3472,257 @@ describe("canonical App task runtime", () => {
     } finally {
       host!.close();
     }
+  });
+
+  it.each(["attempt", "tool", "fast-result", "interrupted"] as const)(
+    "delivers work during an active attempt through %s and retains its exact result",
+    async (route) => {
+      const f = fixture();
+      const bus = eventBus();
+      const persistDir = join(f.root, "state");
+      let host: AppInboxHost;
+      let callerAttempts = 0;
+      let receiverAttempts = 0;
+      let callerAttempt: TaskAttempt | undefined;
+      const request = {
+        id: "review",
+        appId: "sample",
+        input: { kind: "message", data: { text: "Review the change" } },
+      };
+      const app = defineApp({
+        ...definition(),
+        inputSchema: Type.Object({ kind: Type.Literal("message"), data: Type.Object({ text: Type.String() }) }),
+        task: ({ input }) => ({
+          kind: "desired",
+          intent: {
+            id: "work/reviewer",
+            parentId: "operations",
+            outcome: String(input.data.text),
+            acceptance: ["Return the reviewed result"],
+            executor: "worker",
+          },
+        }),
+      });
+      const run = (taskId: string) =>
+        reconcileLoadedAppTaskOnce({
+          bus,
+          appId: "sample",
+          taskId,
+          dispatch: { enqueuedAt: 1, startedAt: 2, readyWaitMs: 1, lane: "normal" },
+        });
+      await installCoreTaskRuntimes({
+        ...options(f, bus),
+        installControllers: false,
+        appRegistrySnapshot: { id: "live-actions", generation: 1, entries: [{ appDir: f.appDir, definition: app }] },
+        executors: {
+          worker: (async (attempt) => {
+            if (attempt.task.id === "work/reviewer") {
+              receiverAttempts++;
+              // The receiving App selected this Task; the Host supplied its configured executor.
+              expect(attempt.task.outcome).toBe("Review the change");
+              return {
+                decision: "converged",
+                summary: "Reviewed",
+                facts: ["review:accepted"],
+                result: { verdict: "accepted" },
+              };
+            }
+            callerAttempts++;
+            if (route === "interrupted" && callerAttempts === 2) {
+              await attempt.apply({ requests: [request], conditions: [{ requestId: "review" }] });
+              expect(listAppInboxItems(getDb(persistDir))).toHaveLength(1);
+              return { decision: "wait", summary: "Recovered the admitted review", facts: [] };
+            }
+            if (callerAttempts > 1)
+              return {
+                decision: "converged",
+                summary: "Used the review and test results",
+                facts: ["review:accepted", "tests:passed"],
+              };
+            callerAttempt = attempt;
+            const changes = { requests: [request], conditions: [{ requestId: "review" }] };
+            const tool = createAppTaskReadTool({
+              bus,
+              scope: () => ({
+                appId: "sample",
+                taskId: attempt.task.id,
+                generation: attempt.task.generation,
+                attemptId: attempt.attemptId,
+              }),
+            });
+            const receipt = await attempt.apply(changes);
+            const replay = await tool.execute("apply-review", { action: "apply", changes });
+            expect(replay.content[0]?.type).toBe("text");
+            expect(JSON.parse((replay.content[0] as { text: string }).text)).toEqual(receipt);
+            expect(listAppInboxItems(getDb(persistDir))).toHaveLength(1);
+            expect(loadedTaskConfig(f).resourceStore.readTask(attempt.task.id)?.status).toMatchObject({
+              phase: "running",
+              currentAttemptId: attempt.attemptId,
+              conditionIds: receipt.conditionIds,
+            });
+            expect(host.get(receipt.requests[0]!.requestId)?.waitingOn).toEqual({ kind: "task", id: "work/reviewer" });
+            await expect(
+              attempt.apply({
+                requests: [{ ...request, input: { kind: "message", data: { text: "Different work" } } }],
+              }),
+            ).rejects.toThrow("already admitted with different input");
+            // A bad batch cannot leak its otherwise valid new request before rejection.
+            await expect(
+              attempt.apply({
+                requests: [{ ...request, id: "invalid-batch" }],
+                conditions: [{ requestId: "unknown" }],
+              }),
+            ).rejects.toThrow("undeclared request");
+            expect(listAppInboxItems(getDb(persistDir))).toHaveLength(1);
+            const alias = await attempt.apply({ requests: [{ ...request, id: "review-again" }] });
+            expect(alias.requests[0]?.requestId).toBe(receipt.requests[0]?.requestId);
+            expect((await attempt.apply({ conditions: [{ requestId: "review-again" }] })).conditionIds).toEqual(
+              receipt.conditionIds,
+            );
+            // The caller remains active and can do independent work after submitting review.
+            writeFileSync(join(attempt.cwd, "checks.txt"), "Independent tests passed");
+            expect(readFileSync(join(attempt.cwd, "checks.txt"), "utf8")).toBe("Independent tests passed");
+            if (route === "fast-result") {
+              await run("work/reviewer");
+              await host.refreshTaskResults("sample", "work/reviewer");
+              await recoverInstalledAppTasks(bus);
+              expect(host.get(receipt.requests[0]!.requestId)?.status).toBe("done");
+            }
+            if (route === "interrupted") throw new Error("Execution interrupted after durable actions");
+            return {
+              decision: "wait",
+              summary: "Tests passed; review is retained",
+              facts: ["tests:passed"],
+              // Final replay and a reference to an earlier action use the identical admission path.
+              ...(route === "attempt" ? changes : { conditions: [{ requestId: "review" }] }),
+            };
+          }) satisfies TaskExecutor,
+        },
+      });
+      const config = loadedTaskConfig(f);
+      host = new AppInboxHost({
+        db: getDb(persistDir),
+        apps: [app],
+        attachTask: (input) => admitTaskInput(config, input),
+        readDependency: (input) => createAppTaskCapability({ bus }).readDependency({ ...input, appDir: f.appDir }),
+        onRequestUpdated: () => {
+          throw new Error("Notification lost; recover from saved result");
+        },
+      });
+      bus.subscribe((event) => {
+        if (event.type !== "app.input.requested") return;
+        const saved = config.resourceStore.readTask("work/caller")!;
+        // Condition is durable before receiver delivery, including a synchronous fast receiver.
+        expect(saved.status.conditionIds).toContain(`app-request:${event.data.requestId}`);
+        host.admit({
+          id: String(event.data.requestId),
+          appId: "sample",
+          source: { kind: "app", id: "sample" },
+          input: event.data.input as typeof request.input,
+          idempotencyKey: String(event.data.idempotencyKey),
+        });
+        return { accepted: true, by: "fixture", route: "direct" };
+      });
+      observeAppTaskIntent(config, {
+        appAgent: "sample-owner",
+        intent: {
+          id: "work/caller",
+          parentId: "operations",
+          executor: "worker",
+          outcome: "Review and test",
+          acceptance: ["Use both results"],
+        },
+      });
+      try {
+        await run("work/caller");
+        await expect(callerAttempt!.apply({})).rejects.toThrow("closed");
+        if (route === "interrupted") {
+          setSystemTime(config.resourceStore.readTask("work/caller")!.status.executionRetryAt! + 1);
+          await run("work/caller");
+        }
+        if (route !== "fast-result") {
+          expect(config.resourceStore.readTask("work/caller")?.status.phase).toBe("waiting");
+          await run("work/reviewer");
+          await host.refreshTaskResults("sample", "work/reviewer");
+          await recoverInstalledAppTasks(bus);
+        }
+        await run("work/caller");
+        expect(config.resourceStore.readTask("work/caller")?.status.phase).toBe("converged");
+        expect(callerAttempts).toBe(route === "interrupted" ? 3 : 2);
+        expect(receiverAttempts).toBe(1);
+        expect(listAppInboxItems(getDb(persistDir))).toHaveLength(1);
+      } finally {
+        host.close();
+      }
+    },
+  );
+
+  it("reuses a live action receipt when final settlement repeats an already retired Condition", async () => {
+    const f = fixture();
+    const bus = eventBus();
+    const action = {
+      kind: "retire-condition" as const,
+      conditionId: "review",
+      expectedConditionGeneration: 1,
+      reason: "Owner no longer requires this independent observation",
+    };
+    await installCoreTaskRuntimes({
+      ...options(f, bus),
+      installControllers: false,
+      executors: {
+        worker: async (attempt) => {
+          await attempt.apply({
+            conditions: [
+              {
+                id: "review",
+                type: "review.done",
+                subject: "review:change",
+                expected: true,
+                owner: "human",
+                reviewAfterMs: 60_000,
+              },
+            ],
+          });
+          const first = await attempt.apply({ actions: [action], facts: ["scope:reviewed"] });
+          expect(first.actionsApplied).toHaveLength(1);
+          expect(await attempt.apply({ actions: [action], facts: ["scope:confirmed"] })).toEqual(first);
+          expect(loadedTaskConfig(f).resourceStore.readTask(attempt.task.id)?.status).toMatchObject({
+            phase: "running",
+            currentAttemptId: attempt.attemptId,
+          });
+          return {
+            decision: "converged",
+            summary: "Requested work is fulfilled",
+            facts: ["scope:verified"],
+            actions: [action],
+          };
+        },
+      },
+      appRegistrySnapshot: {
+        id: "action-replay",
+        generation: 1,
+        entries: [{ appDir: f.appDir, definition: definition() }],
+      },
+    });
+    const config = loadedTaskConfig(f);
+    observeAppTaskIntent(config, {
+      appAgent: "sample-owner",
+      intent: {
+        id: "work/actions",
+        parentId: "operations",
+        outcome: "Use one action path",
+        acceptance: ["Exact retirement is applied once"],
+        executor: "worker",
+      },
+    });
+    await reconcileLoadedAppTaskOnce({
+      bus,
+      appId: "sample",
+      taskId: "work/actions",
+      dispatch: { enqueuedAt: 1, startedAt: 2, readyWaitMs: 1, lane: "normal" },
+    });
+    expect(config.resourceStore.readTask("work/actions")?.status.phase).toBe("converged");
+    expect(config.resourceStore.readTask("work/actions")?.status.conditionIds ?? []).toEqual([]);
   });
 
   it("adds distinct work for the same App without replaying retained waits, including after restart", async () => {
@@ -4804,6 +5056,7 @@ describe("canonical App task runtime", () => {
           agent: "sample-owner",
           app: definition(),
           reconciliationPaused: false,
+          resourceStore: config.resourceStore,
         },
         claim: activeClaim,
         existingConditions: [],
@@ -5500,7 +5753,7 @@ describe("canonical App task runtime", () => {
                 executorCwd = attempt.cwd;
                 return {
                   handlerResult: {
-                    state: "converged" as const,
+                    decision: "converged" as const,
                     summary: "Fixture executor ran",
                     facts: [attempt.cwd],
                     actions: [],
@@ -5727,11 +5980,13 @@ describe("canonical App task runtime", () => {
     const f = fixture();
     const bus = eventBus();
     let calls = 0;
+    let readyToSettle = false;
     await installAppTaskRuntimes({
       ...options(f, bus), installControllers: false,
       executors: {
         worker: async () => {
           calls++;
+          readyToSettle = true;
           return { state: "waiting", summary: "Recorded run 42", result: { runId: 42 },
             ...(change === "action" ? { actions: [{ kind: "unblock-task" as const, taskId: "work/persistence-target",
               expectedGeneration: 1, reason: "Reconsider current facts" }] } : {}),
@@ -5768,18 +6023,26 @@ describe("canonical App task runtime", () => {
         saveAttempts++;
         if (change === "persistent") { injected = true; return false; }
       }
-      if (!injected && saveAttempts === 1) {
+      return commit.call(this, mutation);
+    };
+    const db = config.resourceStore.db;
+    const exec = db.exec;
+    db.exec = function (sql) {
+      // Another writer commits before this transaction acquires SQLite's write lock.
+      // Injecting inside commit on the same connection would correctly roll back with it.
+      if (!injected && readyToSettle && change !== "persistent" && sql === "BEGIN IMMEDIATE") {
         injected = true;
         if (change === "fact" || change === "action") recordAppTaskTrigger(config, taskId, { type: "sample.changed", eventId: 101 });
         else observeAppTaskIntent(config, { appAgent: "sample-owner", intent: { ...taskIntent, outcome: "Replacement intent" } });
       }
-      return commit.call(this, mutation);
+      return exec.call(this, sql);
     };
     try {
       await reconcileLoadedAppTaskOnce({ bus, appId: "sample", taskId,
         dispatch: { enqueuedAt: 1, startedAt: 2, readyWaitMs: 1, lane: "normal" } });
     } finally {
       store.commit = commit;
+      db.exec = exec;
     }
     expect(injected).toBeTrue();
     expect(calls).toBe(1);
@@ -5790,7 +6053,7 @@ describe("canonical App task runtime", () => {
       expect(tree.conditions?.["run:42"]?.spec.subject).toBe("run:42");
       expect(tree.taskTriggers?.[taskId]?.events?.map((row) => row.event.eventId)).toEqual([101]);
       expect(Object.values(tree.attempts ?? {})[0]?.state).toBe("completed");
-      expect(saveAttempts).toBe(2);
+      expect(saveAttempts).toBe(1);
     } else if (change === "intent") {
       expect(tree.resources?.[taskId]?.metadata.generation).toBe(2);
       expect(tree.resources?.[taskId]?.spec.outcome).toBe("Replacement intent");
@@ -5800,7 +6063,7 @@ describe("canonical App task runtime", () => {
       expect(tree.resources?.["work/persistence-target"]?.spec.outcome).toBe("Original assignment");
       expect(tree.resources?.["work/persistence-target"]?.metadata.generation).toBe(1);
       expect(Object.values(tree.attempts ?? {})[0]?.state).toBe("interrupted");
-      expect(saveAttempts).toBe(change === "persistent" ? 2 : 1);
+      expect(saveAttempts).toBe(change === "persistent" ? 2 : 0);
       if (change === "action")
         expect(tree.taskTriggers?.[taskId]?.events?.map((row) => row.event.eventId)).toContain(101);
     }
@@ -7724,12 +7987,14 @@ describe("canonical App task runtime", () => {
         export const description = "Use the common saved wait context";
         export async function execute(ctx) {
           const waits = ctx.reconciliation.waits.open;
-          return waits.length
-            ? { state: "converged", summary: "Answered another input", facts: ["saved-wait"], result: { waits } }
-            : { state: "waiting", summary: "Wait for the source", facts: [], conditions: [{
-                id: "source", type: "source.available", subject: "source:sample", expected: true,
-                owner: "app:source", reviewAfterMs: 60000,
-              }] };
+          if (waits.length) return { decision: "converged", summary: "Answered another input", facts: ["saved-wait"], result: { waits } };
+          const receipt = await ctx.applyTaskChanges({ conditions: [{
+            id: "source", type: "source.available", subject: "source:sample", expected: true,
+            owner: "app:source", reviewAfterMs: 60000,
+          }] });
+          const current = await ctx.read.tasks.get(ctx.reconciliation.taskId);
+          if (current.status !== "running" || receipt.conditionIds[0] !== "source") throw new Error("Live changes ended the attempt");
+          return { decision: "wait", summary: "Wait for the source", facts: [] };
         }
       `,
     );
@@ -8432,7 +8697,7 @@ describe("canonical App task runtime", () => {
         async execute(attempt) {
           calls++;
           if (repaired) expect(attempt.attempt.previousAttempt?.acceptedResult).toMatchObject(decision);
-          return { handlerResult: { ...currentOutcome(), actions: [] }, runId: null };
+          return { handlerResult: normalizeTaskHandlerResult(currentOutcome(), { type: "done", summary: "Report", runId: null }), runId: null };
         },
       };
       const app = defineApp({
@@ -9168,7 +9433,7 @@ describe("canonical App task runtime", () => {
       const config = loadedTaskConfig(f, persistDir);
       const payload = { verdict: "approved", operationId: "fixture-operation" };
       const terminalResult: NormalizedTaskHandlerResult = {
-        state: "converged",
+        decision: "converged",
         summary: "Decision ready",
         response: "The result is ready",
         result: payload,
@@ -9243,7 +9508,7 @@ describe("canonical App task runtime", () => {
               result: {
                 ...terminalResult,
                 // Stored provider output follows the SDK contract, not Host normalization.
-                ...(terminalResult.state === "incomplete" ? { actions: undefined } : {}),
+                ...(terminalResult.decision === "incomplete" ? { actions: undefined } : {}),
               },
             },
           }),
@@ -9400,12 +9665,12 @@ describe("canonical App task runtime", () => {
             },
           ];
         } else if (disposition === "incomplete") {
-          f.terminalResult.state = "incomplete";
+          f.terminalResult.decision = "incomplete";
           f.terminalResult.summary = "The optional experiment is not feasible";
           f.terminalResult.result = { feasible: false };
           delete f.terminalResult.response;
         } else if (disposition === "waiting") {
-          f.terminalResult.state = "waiting";
+          f.terminalResult.decision = "wait";
           delete f.terminalResult.response;
           f.terminalResult.conditions = [
             {
@@ -9481,7 +9746,7 @@ describe("canonical App task runtime", () => {
         sourceBus.setPersistenceSubscriber(writer.handler);
         const { installed } = await installCoreTaskRuntimes(f.base);
         f.observe("external-wait");
-        f.terminalResult.state = "waiting";
+        f.terminalResult.decision = "wait";
         delete f.terminalResult.response;
         f.terminalResult.conditions = [
           {
@@ -9519,7 +9784,7 @@ describe("canonical App task runtime", () => {
         expect(f.config.resourceStore.readTrigger(claim.taskId)?.event.eventId).toBe(fact[EVENT_ROW_ID]);
         expect(f.config.resourceStore.readReceipt(claim.taskId)).toBeNull();
         expect(f.agentCalls()).toBe(1);
-        f.terminalResult.state = "converged";
+        f.terminalResult.decision = "converged";
         delete f.terminalResult.conditions;
         await f.run(claim.taskId);
         expect(readAcceptedRuntimeAttempt(f.config, claim.taskId)?.acceptedResult?.result).toEqual(f.payload);
@@ -9551,7 +9816,7 @@ describe("canonical App task runtime", () => {
       sourceBus.setPersistenceSubscriber(new DbWriter(f.base.persistDir).handler);
       await installCoreTaskRuntimes(f.base);
       f.observe("readback");
-      f.terminalResult.state = "waiting";
+      f.terminalResult.decision = "wait";
       delete f.terminalResult.response;
       const condition = {
         id: "first-proof",
@@ -9585,7 +9850,7 @@ describe("canonical App task runtime", () => {
       expect(readTaskSnapshot(f.config).conditions?.["second-proof"]?.status.state).toBe("true");
       expect(f.config.resourceStore.readTrigger("readback")?.events).toHaveLength(1);
       expect(f.config.resourceStore.readTrigger("readback")?.event.eventId).toBe(fact[EVENT_ROW_ID]);
-      f.terminalResult.state = "converged";
+      f.terminalResult.decision = "converged";
       delete f.terminalResult.conditions;
       await f.run("readback");
       await recoverInstalledAppTasks(f.base.bus);
@@ -9669,7 +9934,7 @@ describe("canonical App task runtime", () => {
                 externalCreates++;
               }
               return {
-                handlerResult: { state: "needs-agent", summary: "Check external operation", facts: [], actions: [] },
+                handlerResult: { decision: "needs-agent", summary: "Check external operation", facts: [], actions: [] },
                 runId: "fixture-workflow",
               };
             },
@@ -9969,7 +10234,7 @@ describe("dependency Condition specification updates", () => {
       });
       expect(config.resourceStore.readTask(taskId)?.status).toMatchObject({
         phase: "pending",
-        summary: `App dependency admission failed: Task result conflicts with existing Condition ${original.id}`,
+        summary: `Handler result was rejected: Task result conflicts with existing Condition ${original.id}`,
       });
       expect(dependencyRequests).toBe(0);
     },

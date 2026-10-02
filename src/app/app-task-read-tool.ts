@@ -3,6 +3,7 @@ import type { AgentTool, AgentToolResult } from "@earendil-works/pi-agent-core";
 import type {
   AppInput,
   TaskListOptions,
+  TaskChanges,
   TaskOutcomePage,
   TaskOutcomeProjection,
   TaskPage,
@@ -10,7 +11,7 @@ import type {
   TaskView,
 } from "@may-agent/sdk";
 import type { EventBus } from "./core/events/bus.js";
-import { observationCondition, type ObservationInterest } from "@may-agent/sdk";
+import { taskChangesSchema, observationCondition, type ObservationInterest } from "@may-agent/sdk";
 
 const parameters = Type.Object(
   {
@@ -21,6 +22,7 @@ const parameters = Type.Object(
       Type.Literal("contract"),
       Type.Literal("publish"),
       Type.Literal("update"),
+      Type.Literal("apply"),
     ]),
     taskId: Type.Optional(
       Type.String({ minLength: 1, description: "Exact Task id; required for get, outcomes and update" }),
@@ -82,6 +84,7 @@ const parameters = Type.Object(
         { additionalProperties: false },
       ),
     ),
+    changes: Type.Optional(Type.Unsafe<TaskChanges>(taskChangesSchema)),
     expectedGeneration: Type.Optional(Type.Integer({ minimum: 1 })),
     input: Type.Optional(
       Type.Object({ kind: Type.String({ minLength: 1 }), data: Type.Unknown() }, { additionalProperties: false }),
@@ -92,7 +95,8 @@ const parameters = Type.Object(
 
 type Params = {
   observation?: ObservationInterest;
-  action: "list" | "outcomes" | "get" | "contract" | "publish" | "update";
+  action: "list" | "outcomes" | "get" | "contract" | "publish" | "update" | "apply";
+  changes?: TaskChanges;
   expectedGeneration?: number;
   input?: AppInput;
   taskId?: string;
@@ -148,7 +152,7 @@ export function createAppTaskReadTool(options: {
     name: "tasks",
     label: "Tasks",
     description:
-      "List or get Tasks, read an App input contract, publish facts, or update an assignment you created. contract returns the full installed input schema and observation capabilities for target.appId (default: current App). Supply observation {observerId,id,resource,expected,reviewAfterMs?} to build a Condition; return it in your Task result to retain the interest. No registration or taskId is needed. Exact apps.list reads expose live observer health; last changed fact is not a heartbeat. Before reusing or revising work, read the exact Task and compare outcome, acceptance, input and execution method; a matching topic alone is insufficient. For update, supply the observed expectedGeneration and complete revised input, preserving required references. Code checks creator authority, saves requirements and wakes the worker. Return proposed changes to your own assignment to its creator. target.appId selects another responsible App; the operation is the same.",
+      "List or get Tasks, read an App input contract, publish facts, update an assignment you created, or apply typed changes. apply takes changes {requests?, conditions?, actions?, inputKeys?, facts?}, uses the same admission as final results, returns saved receipts, and keeps this attempt running. Use it to request review and continue testing. A Condition {requestId} can refer to a request in this call or one already admitted in this caller generation. contract returns the full installed input schema and observation capabilities for target.appId (default: current App). Supply observation {observerId,id,resource,expected,reviewAfterMs?} to build a Condition; return it in your Task result to retain the interest. No registration or taskId is needed. Exact apps.list reads expose live observer health; last changed fact is not a heartbeat. Before reusing or revising work, read the exact Task and compare outcome, acceptance, input and execution method; a matching topic alone is insufficient. For update, supply the observed expectedGeneration and complete revised input, preserving required references. Code checks creator authority, saves requirements and wakes the worker. Return proposed changes to your own assignment to its creator. target.appId selects another responsible App; the operation is the same.",
     parameters,
     execute: async (_toolCallId: string, raw: unknown): Promise<AgentToolResult<undefined>> => {
       const params = raw as Params;
@@ -166,6 +170,18 @@ export function createAppTaskReadTool(options: {
           if (!capability)
             throw new Error(`App ${contract.appId} has no installed observer ${params.observation.observerId}`);
           return result({ ...contract, condition: observationCondition(capability, params.observation) });
+        }
+        if (params.action === "apply") {
+          if (!scope?.taskId || !scope.generation || !scope.attemptId)
+            return result({ error: "No current fenced Task attempt" });
+          if (!params.changes) return result({ error: "apply requires changes" });
+          return result(
+            (await import("./core/tasks/app-task-runtime.js")).applyLoadedAppTaskChanges({
+              bus: options.bus,
+              binding: { appId, taskId: scope.taskId, generation: scope.generation, attemptId: scope.attemptId },
+              changes: params.changes,
+            }),
+          );
         }
         if (params.action === "update") {
           if (!scope?.taskId || !scope.generation || !scope.attemptId)

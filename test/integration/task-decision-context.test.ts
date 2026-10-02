@@ -159,7 +159,7 @@ test("current Task context reaches a late helper and survives settlement into a 
                       summary: "Draft reviewed",
                       verification_facts: ["Fixture checked"],
                       result: {
-                        state: "waiting",
+                        decision: "wait",
                         summary: "Draft v4 reviewed; publication awaits matching human approval",
                         facts: ["Thursday; Cedar", ...(round === 2 ? ["Evidence link retained"] : [])],
                         result: { version: "v4", day: "Thursday" },
@@ -232,7 +232,7 @@ test("current Task context reaches a late helper and survives settlement into a 
         ...execution,
         execute: (attempt, taskEvents) => runTaskAgent({ ...execution, attempt, taskEvents }),
       });
-      expect(run.handlerResult.state).toBe("waiting");
+      expect(run.handlerResult.decision).toBe("wait");
       deferAppTask(config, active, {
         ...run.handlerResult,
         disposition: "waiting",
@@ -290,7 +290,7 @@ export async function reconcile(initial, read, taskId, assignedEvents, observe, 
     if (!JSON.stringify({ assignedEvents, pending: current.pendingEvents }).includes("Thursday"))
       throw new Error("Current correction is missing");
     await publish("draft-v4", { type: "sample.progress", data: { version: "v4", day: "Thursday" } });
-    return { state: "waiting", report: true, continue: true,
+    return { decision: "continue", report: true,
       summary: "Draft v4 prepared; approval remains open", facts: ["Thursday; Cedar"],
       result: { version: "v4", day: "Thursday", notified, initialVersion: initial.result.version } };
   } finally { stop(); }
@@ -355,9 +355,9 @@ export async function execute(ctx) {
         execute: (attempt, taskEvents) => method === "workflow"
           ? runTaskWorkflow({ ...execution, attempt, taskEvents, capability: { workflow: "review", task: "Reconcile review" } })
           : runRegisteredTaskExecutor({ ...execution, attempt, taskEvents, name: "review", execute: opts.executors!.review! }) });
-      expect(run.handlerResult).toMatchObject({ state: "waiting", report: true, continue: true,
+      expect(run.handlerResult).toMatchObject({ decision: "continue", report: true,
         result: { version: "v4", day: "Thursday", notified: round === 1, initialVersion: round === 1 ? "v3" : "v4" } });
-      deferAppTask(config, active, { ...run.handlerResult, disposition: "waiting", acceptedLiveEventIds: run.acceptedLiveEventIds });
+      deferAppTask(config, active, { ...run.handlerResult, continue: run.handlerResult.decision === "continue" ? true : undefined, disposition: "waiting", acceptedLiveEventIds: run.acceptedLiveEventIds });
       const current = await read.get(taskId, { acceptedEvidence: { limit: 8 } });
       expect(current?.status).toBe("pending");
       expect(current?.conditions[0]).toMatchObject({ id: "approval", observation: { state: "unknown" } });

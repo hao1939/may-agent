@@ -231,7 +231,7 @@ class FakeClient implements CodexGoalClient {
                 type: "agentMessage",
                 phase: "final_answer",
                 text: JSON.stringify({
-                  state: "converged",
+                  decision: "converged",
                   summary: "The model matches the cited runtime boundary.",
                   response: "The review found no material mismatch.",
                   facts: ["projects/may-agent/src/app/core/tasks/app-task-runtime.ts:2025"],
@@ -343,7 +343,7 @@ describe("codex-goal Task executor", () => {
 
     const first = await executor(initial);
     expect(first).toMatchObject({
-      state: "converged",
+      decision: "converged",
       response: "The review found no material mismatch.",
       facts: ["projects/may-agent/src/app/core/tasks/app-task-runtime.ts:2025", "codex-thread:thread-1"],
     });
@@ -428,7 +428,7 @@ describe("codex-goal Task executor", () => {
                 type: "agentMessage",
                 phase: "final_answer",
                 text: JSON.stringify({
-                  state: "converged",
+                  decision: "converged",
                   summary: "Stale answer",
                   facts: ["stale"],
                 }),
@@ -445,7 +445,7 @@ describe("codex-goal Task executor", () => {
                       type: "agentMessage",
                       phase: "final_answer",
                       text: JSON.stringify({
-                        state: "converged",
+                        decision: "converged",
                         summary: "Current-turn facts were admitted.",
                         facts: ["current-turn"],
                       }),
@@ -461,7 +461,7 @@ describe("codex-goal Task executor", () => {
     });
 
     await expect(executor(attempt())).resolves.toMatchObject({
-      state: "converged",
+      decision: "converged",
       facts: ["current-turn", "codex-thread:thread-stale-answer"],
     });
     expect(client.calls.filter((call) => call === "goal:thread-stale-answer")).toHaveLength(2);
@@ -499,7 +499,7 @@ describe("codex-goal Task executor", () => {
                   turn === 1
                     ? "not json"
                     : JSON.stringify({
-                        state: "converged",
+                        decision: "converged",
                         summary: "Corrected output satisfies the Task contract.",
                         facts: ["same-thread-correction"],
                       }),
@@ -514,7 +514,7 @@ describe("codex-goal Task executor", () => {
       createClient: () => client,
     });
     await expect(executor(attempt())).resolves.toMatchObject({
-      state: "converged",
+      decision: "converged",
       facts: ["same-thread-correction", "codex-thread:thread-invalid"],
     });
     expect(corrections).toHaveLength(1);
@@ -545,7 +545,7 @@ describe("codex-goal Task executor", () => {
       expect(limited.calls).not.toContain("read");
 
       await expect(executor(attempt({ attemptId: "r_2_retry" }))).resolves.toMatchObject({
-        state: "converged",
+        decision: "converged",
         facts: ["projects/may-agent/src/app/core/tasks/app-task-runtime.ts:2025", `codex-thread:thread-${limitStatus}`],
       });
       expect(resumed.calls).toContain(`resume:thread-${limitStatus}`);
@@ -572,7 +572,7 @@ describe("codex-goal Task executor", () => {
       createClient: () => client,
       turnTimeoutMs: 500,
     });
-    await expect(executor(attempt())).resolves.toMatchObject({ state: "converged" });
+    await expect(executor(attempt())).resolves.toMatchObject({ decision: "converged" });
     expect(client.calls).not.toContain("steer");
     expect(client.calls).not.toContain("interrupt");
   });
@@ -687,7 +687,7 @@ describe("codex-goal Task executor", () => {
       }),
     );
 
-    expect(result.state).toBe("converged");
+    expect(result.decision).toBe("converged");
     expect(result.facts).toContain("codex-progress-events:degraded failed=1 last=event store unavailable");
   });
 
@@ -733,7 +733,7 @@ describe("codex-goal Task executor", () => {
                 type: "agentMessage",
                 phase: "final_answer",
                 text: JSON.stringify({
-                  state: "converged",
+                  decision: "converged",
                   summary: "Prepared the original draft.",
                   facts: ["draft:original"],
                 }),

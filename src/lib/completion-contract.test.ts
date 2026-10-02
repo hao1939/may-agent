@@ -112,7 +112,7 @@ describe("prepared completion contract", () => {
       ...review,
       status: "partial",
       result: {
-        state: "waiting",
+        decision: "wait",
         summary: "The requester must restore access",
         facts: ["source:sample"],
         conditions: [
@@ -134,15 +134,15 @@ describe("prepared completion contract", () => {
     expect(result.terminate).toBe(true);
   });
 
-  it.each(["waiting", "incomplete"])(
+  it.each(["wait", "incomplete"])(
     "rejects an empty %s report before finish and accepts its correction",
-    async (state) => {
+    async (decision) => {
       const { prepared, finish, context } = prepare("worker", taskAgentResultSchema);
       const args = {
         ...review,
         status: "partial",
         result: {
-          state,
+          decision,
           report: true,
           summary: "Access is missing",
           facts: [] as string[],
@@ -163,7 +163,7 @@ describe("prepared completion contract", () => {
       ...review,
       status: "partial",
       result: {
-        state: "waiting",
+        decision: "wait",
         summary: "Waiting for review",
         response: "I will report later.",
         reviewAt: Date.now() + 60_000,
@@ -184,13 +184,13 @@ describe("prepared completion contract", () => {
     [
       "converged reviewAt",
       {
-        state: "converged",
+        decision: "converged",
         summary: "Review is still pending",
         reviewAt: Date.now() + 60_000,
         facts: [],
       },
       {
-        state: "waiting",
+        decision: "wait",
         summary: "Review is still pending",
         reviewAt: Date.now() + 60_000,
         facts: [],
@@ -200,14 +200,12 @@ describe("prepared completion contract", () => {
     [
       "no-progress continuation",
       {
-        state: "waiting",
-        continue: true,
+        decision: "continue",
         summary: "Continue without any completed work",
         facts: [],
       },
       {
-        state: "waiting",
-        continue: true,
+        decision: "continue",
         report: true,
         summary: "Report the blocker and continue useful work",
         reviewAt: Date.now() + 60_000,
@@ -218,10 +216,9 @@ describe("prepared completion contract", () => {
   ])("returns correctable finish feedback for %s before terminating", async (_name, invalid, corrected, error) => {
     const { finish, context } = prepare("worker", taskAgentResultSchema);
     const invalidCall = context({ ...review, status: "partial", result: invalid });
-    const invalidResult = await finish.execute(
-      invalidCall.toolCall.id,
-      validateToolArguments(finish, invalidCall.toolCall),
-    );
+    expect(() => validateToolArguments(finish, invalidCall.toolCall)).toThrow();
+    // Semantic admission also gives correction feedback when reached directly.
+    const invalidResult = await finish.execute(invalidCall.toolCall.id, invalidCall.toolCall.arguments);
     expect(invalidResult.terminate).toBeUndefined();
     expect(invalidResult.content).toContainEqual({ type: "text", text: expect.stringContaining(error) });
 
@@ -235,9 +232,8 @@ describe("prepared completion contract", () => {
 
   it("uses the same semantic finish boundary for agent and workflow report-plus-continuation", async () => {
     const taskResult = {
-      state: "waiting",
+      decision: "continue",
       report: true,
-      continue: true,
       summary: "Review is blocked while independent checks continue",
       facts: ["checks:started"],
       conditions: [

@@ -4,6 +4,8 @@ import type {
   Condition,
   ResourceCreator,
   TaskAcceptanceBasis,
+  TaskChanges,
+  TaskChangeReceipt,
   TaskExecutorName,
   TaskPriority,
   TaskReconcileResult,
@@ -522,6 +524,8 @@ export type TaskAttempt = {
   events: TaskReconciliationEvents;
   /** Runtime-selected schema for the one admitted executor result. */
   resultSchema: Record<string, unknown>;
+  /** Admit requests, Conditions and actions now; this does not end the attempt. */
+  apply(changes: TaskChanges): Promise<TaskChangeReceipt>;
   /** Publish a durable Task-scoped progress, finding, request, or other fact with a retry-stable local key. */
   publish(localKey: string, event: AppEvent<Record<string, unknown>>): Promise<TaskEventReceipt>;
   /** Save revised requirements through the same creator capability used by agent tools. */
@@ -579,6 +583,8 @@ export type WorkflowContext<TInput = unknown> = {
   reconciliation?: TaskReconciliationContext<TInput>;
   /** Task-owned workflows only. Save complete requirements using the recorded creator's authority. */
   reviseTask?: TaskAttempt["reviseTask"];
+  /** Apply the same changes accepted in a final result, while continuing this execution. */
+  applyTaskChanges?: TaskAttempt["apply"];
   read: AppRead;
   agents: {
     call<S extends TSchema>(

@@ -93,7 +93,7 @@ function normalizeAuthoredWorkflowResult(
   const result = value as Record<string, unknown>;
   // A Task workflow reports one Task outcome. Its controller still owns full
   // result admission; completed execution does not itself establish acceptance.
-  if (taskOwned && typeof result.state === "string" && typeof result.summary === "string") {
+  if (taskOwned && (typeof result.decision === "string" || typeof result.state === "string") && typeof result.summary === "string") {
     return { type: "done", summary: result.summary, output: value };
   }
   const isExecutionResult =
@@ -1502,6 +1502,12 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
               },
             }
           : {}),
+        ...(opts.taskBinding && opts.taskContext?.applyTaskChanges ? {
+          applyTaskChanges: (changes: Parameters<TaskAttempt["apply"]>[0]) => {
+            assertExecutionActive();
+            return trackStep(opts.taskContext!.applyTaskChanges(changes));
+          },
+        } : {}),
         agents: {
           call: (agentName: string, agentTask: string, callOptions?: AgentCallOptions & { schema?: TSchema }) =>
             trackStep(

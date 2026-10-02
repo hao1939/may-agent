@@ -37,6 +37,8 @@ import { normalizeTaskHandlerResult, type TaskCapabilityRun } from "./result.js"
 import { appTaskConfig, configuredRegistryEntries, type AppTaskRuntimeDescriptor } from "./runtime-definition.js";
 import type { AppTaskRuntimeOptions } from "./runtime-options.js";
 
+import { applyTaskChanges } from "./task-changes.js";
+
 const APP_TASK_AGENT_TIMEOUT_MS = 15 * 60_000;
 
 const APP_TASK_WORKFLOW_TIMEOUT_MS = 30 * 60_000;
@@ -81,7 +83,7 @@ export async function runTaskWorkflow(
   if (!opts.workflows)
     return {
       handlerResult: {
-        state: "error",
+        decision: "error",
         summary: "Task workflow runner is not installed",
         facts: [],
         actions: [],
@@ -184,6 +186,10 @@ function runtimeTaskAttempt(input: TaskAttemptInput): RuntimeTaskAttempt {
     ),
     events: readAppTaskReconciliationEvents(descriptor.resourceStore, claim),
     resultSchema: structuredClone(appTaskAgentResultSchema) as unknown as Record<string, unknown>,
+    async apply(changes) {
+      if (closed) throw new Error("Task attempt is closed");
+      return applyTaskChanges({ opts, descriptor, claim, changes, acceptedLiveEventIds: [...acceptedLiveEventIds] });
+    },
     async publish(localKey, event) {
       if (closed) throw new Error(`Task ${descriptor.id}/${claim.taskId} attempt is closed`);
       const { localKey: _embeddedLocalKey, source: _source, ...emitted } = event;
@@ -317,7 +323,7 @@ export async function runTaskAgent(input: TaskHandlerInput): Promise<TaskCapabil
   if (!opts.agents?.available(claim.agent))
     return {
       handlerResult: {
-        state: "error",
+        decision: "error",
         summary: `Task agent ${claim.agent} is not available`,
         facts: [],
         actions: [],
@@ -363,7 +369,7 @@ export async function runRegisteredTaskExecutor(input: TaskHandlerInput & {
   } catch (error) {
     return {
       handlerResult: {
-        state: "error",
+        decision: "error",
         summary: `${input.name} executor failed: ${error instanceof Error ? error.message : String(error)}`,
         facts: [],
         actions: [],

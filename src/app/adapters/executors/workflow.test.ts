@@ -44,7 +44,7 @@ export async function execute(ctx) {
     },
   } as unknown as TaskWorkflowInput);
   expect(result.executionFailed).toBe(true);
-  expect(result.handlerResult).toMatchObject({ state: "error", facts: [`workflow-run:${result.runId}`] });
+  expect(result.handlerResult).toMatchObject({ decision: "error", facts: [`workflow-run:${result.runId}`] });
   expect(result.runId).toBeTruthy();
   expect(getWorkflowRun(root, result.runId!)?.result_payload).toMatchObject({
     kind: "result", state: "available", value: { output: { report: "partial.md" }, facts: { inspected: true } },

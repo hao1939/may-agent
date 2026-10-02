@@ -16,6 +16,7 @@ export interface TaskExecutionContext {
   taskEmitter: AppTaskEvents;
   observeEvents: TaskAttempt["onEvent"];
   reviseTask: TaskAttempt["reviseTask"];
+  applyTaskChanges: TaskAttempt["apply"];
   agentDefinitions?: ReadonlyMap<string, SubagentDefinition>;
   /** Navigation facts only; never contain live capabilities or provider credentials. */
   details?: { task: TaskAttempt["task"]; declaredOutputs: string[]; dependencies?: unknown[] };

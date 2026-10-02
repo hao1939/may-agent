@@ -33,7 +33,7 @@ test.each(["event", "continued-input"])("generic agent execution carries %s fact
             status: "done",
             sessionId: "fixture",
             structuredResult: {
-              state: "converged",
+              decision: "converged",
               summary: "Observed operation",
               facts: ["event:1"],
             },
@@ -77,7 +77,7 @@ test.each(["event", "continued-input"])("generic agent execution carries %s fact
     }
     const result = await runner.execute(input);
     expect(result.handlerResult).toMatchObject({
-      state: "converged",
+      decision: "converged",
       summary: "Observed operation",
       facts: ["event:1"],
     });

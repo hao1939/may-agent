@@ -14,6 +14,7 @@ import {
   type TaskAttempt,
   type ResourceCreator,
   type AppInput,
+  type TaskChangeReceipt,
 } from "@may-agent/sdk";
 import {
   appTaskReadinessById,
@@ -3661,6 +3662,123 @@ function finishResourceMutationScope(scope: ResourceMutationScope, tree: TaskTre
   };
 }
 
+export function readTaskChangeInputKeys(
+  config: AppTaskContext,
+  claim: AppTaskClaim,
+  inputKeys?: string[],
+  acceptedLiveEventIds?: number[],
+): string[] {
+  return resultInputKeys(config, config.resourceStore.readTaskContext({ taskIds: [claim.taskId] }), claim, {
+    inputKeys,
+    acceptedLiveEventIds,
+  });
+}
+
+/** Apply typed changes without ending the claim or accepting any input. */
+export function applyRunningTaskChanges(
+  config: AppTaskContext,
+  claim: AppTaskClaim,
+  input: {
+    operationKey: string;
+    actionReceiptKeys: string[];
+    replayedActions: string[];
+    requests: TaskChangeReceipt["requests"];
+    conditions?: AppTaskConditionSpec[];
+    actions?: AppTaskAction[];
+    facts?: string[];
+    inputKeys?: string[];
+    acceptedLiveEventIds?: number[];
+  },
+): TaskChangeReceipt {
+  const actions = input.actions ?? [];
+  const conditions = input.conditions ?? [];
+  const tree = config.resourceStore.readTaskContext({
+    taskIds: [claim.taskId, ...taskActionContextIds(actions)],
+    conditionIds: [...taskActionConditionIds(actions), ...conditions.map(({ id }) => id)],
+  });
+  const match = matchingTaskAttempt(tree, claim);
+  if (!match) throw new Error("Task changes require a current running attempt");
+  if (actions.length) assertAppTaskEffectFresh(config, claim, input.acceptedLiveEventIds);
+  const keys = resultInputKeys(config, tree, claim, input);
+  validateActionFacts(claim.taskId, input.facts, actions.length);
+  validateConditions(conditions, { required: false, taskId: claim.taskId });
+  const retired = new Set(actions.flatMap((a) => (a.kind === "retire-condition" ? [a.conditionId] : [])));
+  if (conditions.some(({ id }) => retired.has(id)))
+    throw new Error("Task changes cannot retire and redeclare the same Condition");
+  const scope = beginResourceMutationScope(tree, claim, actions);
+  const actionsApplied = applyTaskActions(tree, claim, actions, config);
+  if (conditions.length) materializeWaitingConditions(tree, claim.taskId, conditions, new Date().toISOString());
+  for (const key of keys) {
+    const previous = match.resource.status.inputWaits?.[key];
+    const ids = new Set([...(previous?.conditions.map(({ id }) => id) ?? []), ...conditions.map(({ id }) => id)]);
+    retainTaskInputWait(config, match.resource, [key], {
+      ...previous,
+      taskGeneration: claim.generation,
+      pending: true,
+      conditions: [...ids].flatMap((id) =>
+        tree.conditions?.[id] && match.resource.status.conditionIds?.includes(id)
+          ? [{ id, generation: tree.conditions[id].metadata.generation }]
+          : [],
+      ),
+    });
+  }
+  const receipt = {
+    requests: input.requests,
+    conditionIds: conditions.map(({ id }) => id),
+    actionsApplied: [...input.replayedActions, ...actionsApplied],
+  };
+  for (const [index, key] of input.actionReceiptKeys.entries())
+    (match.attempt.changeReceipts ??= {})[key] = {
+      requests: [],
+      conditionIds: [],
+      actionsApplied: [actionsApplied[index]!],
+    };
+  (match.attempt.changeReceipts ??= {})[input.operationKey] = structuredClone(receipt);
+  match.attempt.metadata.resourceVersion++;
+  touchResource(match.resource, {}); // Remains running; only final settlement releases the attempt.
+  commitTaskMutation(config, tree, { resourceMutation: finishResourceMutationScope(scope, tree) });
+  return receipt;
+}
+
+/** Reconstruct a capability claim from Host-owned current execution, never model-supplied context. */
+export function readCurrentTaskClaim(
+  config: AppTaskContext,
+  binding: {
+    taskId: string;
+    generation: number;
+    attemptId: string;
+  },
+): AppTaskClaim {
+  const resource = config.resourceStore.readTask(binding.taskId);
+  const attempt = config.resourceStore.readAttempt(binding.attemptId);
+  if (
+    !resource ||
+    !attempt ||
+    resource.metadata.generation !== binding.generation ||
+    resource.status.currentAttemptId !== binding.attemptId ||
+    attempt.state !== "running" ||
+    attempt.taskId !== binding.taskId ||
+    attempt.taskGeneration !== binding.generation ||
+    config.resourceStore.isCancelled(binding.taskId)
+  )
+    throw new Error("Task attempt is no longer current");
+  return {
+    kind: "claimed",
+    taskId: binding.taskId,
+    generation: binding.generation,
+    resourceVersion: resource.metadata.resourceVersion,
+    specHash: attempt.specHash,
+    attemptId: binding.attemptId,
+    agent: attempt.owner,
+    handler: attempt.handler,
+    intent: readAppTaskIntent(config, binding.taskId)!,
+    events: attempt.events ?? [],
+    eventsTruncated: attempt.eventsTruncated ?? false,
+    continuedInputKeys: attempt.continuedInputKeys,
+    declaredOutputPaths: resource.spec.outputs ?? [],
+  };
+}
+
 // Retain the bounded output, not its proposed effects or terminal judgment.
 // The next attempt receives this result alongside the still-pending input.
 // Existing waits remain attached: newer input does not undo those facts.
@@ -3917,6 +4035,7 @@ export function deferAppTask(
   // revalidated or rewritten when they have no valid checkpoint metadata.
   if (conditions.length) materializeWaitingConditions(tree, claim.taskId, conditions, now);
   renewDueTaskConditionCheckpoints(tree, claim.taskId, now);
+  const hadSatisfiedCondition = hasSatisfiedTaskCondition(tree, claim.taskId);
   unlinkSatisfiedTaskConditions(tree, claim.taskId);
   const openConditions = taskConditionIds(tree, claim.taskId).flatMap((id) => {
     const condition = tree.conditions?.[id];
@@ -3924,7 +4043,7 @@ export function deferAppTask(
   });
   // Only a sleeping attempt needs an external return route. `continue` is its
   // own bounded scheduler request and may remain useful after the last wait resolves.
-  if (input.disposition === "waiting" && !input.continue && reviewAt === undefined && openConditions.length === 0) {
+  if (input.disposition === "waiting" && !input.continue && reviewAt === undefined && openConditions.length === 0 && !hadSatisfiedCondition && pendingEvents.length === 0) {
     throw new Error(`Waiting result for ${claim.taskId} requires at least one exact Condition`);
   }
   for (const key of inputKeys) {
@@ -3947,7 +4066,7 @@ export function deferAppTask(
     });
   }
   touchResource(resource, {
-    phase: continuedTaskInputKeys(tree, claim.taskId, []).length > 0 || input.continue
+    phase: continuedTaskInputKeys(tree, claim.taskId, []).length > 0 || input.continue || (hadSatisfiedCondition && openConditions.length === 0 && reviewAt === undefined) || pendingEvents.length > 0
       ? "pending" : input.disposition,
     observedGeneration: claim.generation,
     observedAttemptId: claim.attemptId,
@@ -3971,7 +4090,7 @@ export function deferAppTask(
   const reconcileTaskIds = [
     ...new Set([
       ...actions.flatMap((action) => (action.kind === "unblock-task" ? [action.taskId] : [])),
-      ...(input.continue ? [claim.taskId] : []),
+      ...(resource.status.phase === "pending" ? [claim.taskId] : []),
     ]),
   ];
   return { status: "applied", actionsApplied, reconcileTaskIds };

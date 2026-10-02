@@ -254,9 +254,9 @@ export function rejectConvergedDirectAgentResidue(
   result: NormalizedTaskHandlerResult,
   restored: string[],
 ): NormalizedTaskHandlerResult {
-  if (result.state !== "converged" || restored.length === 0) return result;
+  if (result.decision !== "converged" || restored.length === 0) return result;
   return {
-    state: "error",
+    decision: "error",
     summary: "Direct-agent convergence was rejected because canonical workspace edits required cleanup",
     facts: [...result.facts, ...restored.map((entry) => `agent-residue-restored:${entry}`)],
     actions: [],

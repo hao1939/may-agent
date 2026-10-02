@@ -1,3 +1,4 @@
+import type { TaskChangeReceipt } from "@may-agent/sdk";
 import { storedResultFacts } from "./result-facts.js";
 import { isDeepStrictEqual } from "node:util";
 import { taskViewPhaseSql } from "./task-view-phase.js";
@@ -597,6 +598,41 @@ export class AppTaskResourceStore {
       .prepare("SELECT attempt_json FROM app_task_attempts WHERE app_id = ? AND attempt_id = ?")
       .get(this.appId, attemptId) as { attempt_json?: string } | null;
     return row?.attempt_json ? parseTaskAttempt(row.attempt_json) : null;
+  }
+
+  /** Exact same changes are reusable after a lost tool response or replacement attempt. */
+  readTaskChangeReceipt(taskId: string, generation: number, key: string): TaskChangeReceipt | null {
+    const row = this.db
+      .prepare(
+        `
+      SELECT json_extract(attempt_json, ?) AS receipt FROM app_task_attempts
+      WHERE app_id = ? AND task_id = ? AND task_generation = ?
+        AND json_type(attempt_json, ?) = 'object'
+      ORDER BY started_at DESC LIMIT 1
+    `,
+      )
+      .get(`$.changeReceipts.${key}`, this.appId, taskId, generation, `$.changeReceipts.${key}`) as {
+      receipt: string;
+    } | null;
+    return row ? parseJson<TaskChangeReceipt>(row.receipt) : null;
+  }
+
+  /** A reused request can retain another local name in an admitted change receipt. */
+  readTaskRequestReceipt(taskId: string, generation: number, localId: string): string | null {
+    const row = this.db
+      .prepare(
+        `
+      SELECT json_extract(request.value, '$.requestId') AS request_id
+      FROM app_task_attempts AS attempt,
+        json_each(attempt.attempt_json, '$.changeReceipts') AS receipt,
+        json_each(receipt.value, '$.requests') AS request
+      WHERE attempt.app_id = ? AND attempt.task_id = ? AND attempt.task_generation = ?
+        AND json_extract(request.value, '$.id') = ?
+      ORDER BY attempt.started_at DESC LIMIT 1
+    `,
+      )
+      .get(this.appId, taskId, generation, localId) as { request_id: string } | null;
+    return row?.request_id ?? null;
   }
 
   readReceipt(taskId: string): TaskCompletionReceipt | null {

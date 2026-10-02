@@ -1,3 +1,4 @@
+import type { TaskChangeReceipt } from "@may-agent/sdk";
 import { MIN_CONDITION_REVIEW_AFTER_MS } from "@may-agent/sdk";
 import type { Condition, ResourceCreator, TaskAcceptanceBasis, TaskAttempt, TaskIntent } from "@may-agent/sdk";
 
@@ -130,6 +131,8 @@ export type AppTaskAttempt = {
   runtimeId: string;
   state: "running" | "completed" | "failed" | "interrupted";
   reason: string;
+  /** Applied change receipts survive failed attempts; keyed by canonical change identity. */
+  changeReceipts?: Record<string, TaskChangeReceipt>;
   /** Ordered event batch presented to this attempt. */
   events?: AppTaskTriggerEvent[];
   /** More linked events remained pending when this attempt was claimed. */

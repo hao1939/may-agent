@@ -162,7 +162,7 @@ export function projectAppTaskWaitPromptContext(waits: readonly AppTaskWaitObser
   });
   return {
     open,
-    note: "These accepted waits remain part of the Task's state. Judge new facts against the goal and these obligations. Return waiting without redeclaring unchanged waits; code retains their identities and observations. Propose new or changed work only when the goal requires it, never merely because a wait was absent from prose or child summaries.",
+    note: "These accepted waits remain part of the Task's state. Judge new facts against the goal and these obligations. Return decision wait without redeclaring unchanged waits; code retains their identities and observations. Propose new or changed work only when the goal requires it, never merely because a wait was absent from prose or child summaries.",
   };
 }
 

@@ -55,7 +55,7 @@ describe("Codex goal Task generation fencing", () => {
 
     const admitted = admitCodexGoalTaskResult(
       JSON.stringify({
-        state: "converged",
+        decision: "converged",
         summary: "Revision one was reviewed",
         response: "The review is ready.",
         facts: ["review-v1.md"],
