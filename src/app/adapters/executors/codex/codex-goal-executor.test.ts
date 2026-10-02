@@ -167,13 +167,6 @@ describe("Codex goal Task context", () => {
 class FakeClient implements CodexGoalClient {
   readonly calls: string[] = [];
   readonly instructions: string[] = [];
-  readonly preflights: Array<{
-    command: string[];
-    cwd: string;
-    sandboxPolicy: { type: "readOnly"; networkAccess: false };
-    timeoutMs: number;
-    outputBytesCap: number;
-  }> = [];
   readonly threadId: string;
   private listener?: (notification: AppServerNotification) => void;
 
@@ -183,17 +176,6 @@ class FakeClient implements CodexGoalClient {
 
   async initialize() {
     this.calls.push("initialize");
-  }
-  async execCommand(input: {
-    command: string[];
-    cwd: string;
-    sandboxPolicy: { type: "readOnly"; networkAccess: false };
-    timeoutMs: number;
-    outputBytesCap: number;
-  }) {
-    this.calls.push(`preflight:${input.command.join(" ")}`);
-    this.preflights.push(input);
-    return { exitCode: 0, stdout: "", stderr: "" };
   }
   async startThread(input: { cwd: string; developerInstructions?: string }) {
     this.calls.push(`start:${input.cwd}`);
@@ -378,14 +360,9 @@ describe("codex-goal Task executor", () => {
         task: { ...contextAttempt(root, "v4").task, generation: 2, resourceVersion: 7 } },
     );
     expect(clients).toHaveLength(0);
-    expect(firstClient.calls.slice(0, 3)).toEqual([
+    expect(firstClient.calls.slice(0, 2)).toEqual(["initialize", `start:${root}`]);
+    expect(resumedClient.calls.slice(0, 3)).toEqual([
       "initialize",
-      "preflight:/usr/bin/true",
-      `start:${root}`,
-    ]);
-    expect(resumedClient.calls.slice(0, 4)).toEqual([
-      "initialize",
-      "preflight:/usr/bin/true",
       "pause:thread-1",
       "resume:thread-1",
     ]);
@@ -395,15 +372,6 @@ describe("codex-goal Task executor", () => {
     expect(resumedClient.calls.indexOf("inject:thread-1")).toBeGreaterThan(resumedClient.calls.indexOf("resume:thread-1"));
     expect(resumedClient.calls.indexOf("goal:thread-1")).toBeGreaterThan(resumedClient.calls.indexOf("inject:thread-1"));
     for (const [client, version] of [[firstClient, "v3"], [resumedClient, "v4"]] as const) {
-      expect(client.preflights).toEqual([
-        {
-          command: ["/usr/bin/true"],
-          cwd: root,
-          sandboxPolicy: { type: "readOnly", networkAccess: false },
-          timeoutMs: 5_000,
-          outputBytesCap: 4_096,
-        },
-      ]);
       const input = client.instructions[0]!;
       const context = JSON.parse(input.split("## Canonical May Task Attempt\n")[1]!);
       expect(context.current).toMatchObject({ summary: `Draft ${version}`, result: { version }, facts: ["Cedar verified"] });
@@ -430,80 +398,6 @@ describe("codex-goal Task executor", () => {
       generation: 2,
       attempts: 2,
     });
-  });
-
-  it("fails before starting a thread when the bounded sandbox preflight exits nonzero", async () => {
-    const root = fixtureRoot();
-    const stateFile = join(root, "bindings.json");
-    const client = new FakeClient("thread-must-not-start");
-    client.execCommand = async (input) => {
-      client.calls.push(`preflight:${input.command.join(" ")}`);
-      client.preflights.push(input);
-      return { exitCode: 1, stdout: "ignored", stderr: `sandbox unavailable\n${"x".repeat(2_000)}` };
-    };
-    const executor = createCodexGoalExecutor({ stateFile, createClient: () => client });
-
-    let failure: unknown;
-    try {
-      await executor(attempt({ cwd: root }));
-    } catch (error) {
-      failure = error;
-    }
-    expect(failure).toBeInstanceOf(Error);
-    expect((failure as Error).message).toStartWith("Codex executor preflight failed with exit code 1: sandbox unavailable");
-    expect((failure as Error).message).toEndWith("…[truncated]");
-    expect((failure as Error).message.length).toBeLessThan(1_200);
-    expect(client.calls).toEqual(["initialize", "preflight:/usr/bin/true", "stop"]);
-    expect(client.instructions).toEqual([]);
-    expect(existsSync(stateFile)).toBe(false);
-  });
-
-  it("fails before resuming a thread when the sandbox preflight transport fails", async () => {
-    const root = fixtureRoot();
-    const stateFile = join(root, "bindings.json");
-    writeFileSync(
-      stateFile,
-      `${JSON.stringify({
-        version: 1,
-        bindings: {
-          [codexGoalExecutorInternals.bindingKey(attempt())]: {
-            appId: "evaluation",
-            taskId: attempt().task.id,
-            generation: 1,
-            threadId: "thread-existing",
-            cwd: root,
-            createdAt: "2026-10-01T00:00:00.000Z",
-            updatedAt: "2026-10-01T00:00:00.000Z",
-            attempts: 1,
-            staleInterrupts: 0,
-          },
-        },
-      })}\n`,
-    );
-    const client = new FakeClient("thread-must-not-resume");
-    client.execCommand = async (input) => {
-      client.calls.push(`preflight:${input.command.join(" ")}`);
-      throw new Error(`command/exec transport unavailable\n${"y".repeat(2_000)}`);
-    };
-    const executor = createCodexGoalExecutor({ stateFile, createClient: () => client });
-
-    let failure: unknown;
-    try {
-      await executor(attempt({ cwd: root }));
-    } catch (error) {
-      failure = error;
-    }
-    expect(failure).toBeInstanceOf(Error);
-    expect((failure as Error).message).toStartWith(
-      "Codex executor preflight transport failed: command/exec transport unavailable",
-    );
-    expect((failure as Error).message).toEndWith("…[truncated]");
-    expect((failure as Error).message.length).toBeLessThan(1_200);
-    expect(client.calls).toEqual(["initialize", "preflight:/usr/bin/true", "stop"]);
-    expect(client.instructions).toEqual([]);
-    expect(
-      JSON.parse(readFileSync(stateFile, "utf8")).bindings[codexGoalExecutorInternals.bindingKey(attempt())],
-    ).toMatchObject({ threadId: "thread-existing", attempts: 1 });
   });
 
   it("never admits a final answer from an older turn", async () => {

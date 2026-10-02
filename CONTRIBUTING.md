@@ -176,9 +176,13 @@ changes together, run `npm audit --prefix container --omit=dev`, and validate
 versions, flags/configuration, runtime-user PATH behavior, and the image smoke
 test. For Codex, run `bun run check:codex-goal-protocol` against the old and new
 CLI and review upstream changes. The image smoke test runs the same production
-client check against the shipped CLI without a model call; it covers thread and
-paused-goal persistence, not model turns or tool execution. Node/npm move together
-through the Node base image. Upgrading the standalone Pi CLI does not upgrade
+client protocol check against the shipped CLI without a model call; it covers thread
+and paused-goal persistence, not model turns or tool execution. After installation or
+container-runtime changes, run `bun run check:codex-goal-execution` as the actual
+runtime user. That explicit acceptance check reads a synthetic file through
+`command/exec` with the production read-only, network-disabled sandbox profile and
+must fail on any sandbox denial; ordinary Task attempts do not repeat it. Node/npm
+move together through the Node base image. Upgrading the standalone Pi CLI does not upgrade
 the Pi libraries linked into May. A new CLI version still needs model-backed
 checks before claiming live provider compatibility.
 

@@ -4,7 +4,6 @@ import { type AppEvent, type TaskAttempt, type TaskExecutor, type TaskReconcileR
 import {
   CodexGoalAppServerClient,
   type AppServerNotification,
-  type CodexCommandExecResult,
   type CodexGoalObservation,
   type CodexTurnCompletion,
 } from "./codex-goal-client.js";
@@ -32,13 +31,6 @@ type BindingFile = { version: 1; bindings: Record<string, Binding> };
 
 export type CodexGoalClient = {
   initialize(): Promise<void>;
-  execCommand(input: {
-    command: string[];
-    cwd: string;
-    sandboxPolicy: { type: "readOnly"; networkAccess: false };
-    timeoutMs: number;
-    outputBytesCap: number;
-  }): Promise<CodexCommandExecResult>;
   startThread(input: {
     cwd: string;
     developerInstructions?: string;
@@ -82,42 +74,6 @@ export type CodexGoalExecutorOptions = {
 
 const DEFAULT_TURN_TIMEOUT_MS = 30 * 60_000;
 const MAX_PENDING_STEERING_EVENTS = 64;
-const EXECUTOR_PREFLIGHT_TIMEOUT_MS = 5_000;
-const EXECUTOR_PREFLIGHT_OUTPUT_BYTES_CAP = 4 * 1024;
-const EXECUTOR_PREFLIGHT_DIAGNOSTIC_CHARS = 1_024;
-
-function boundedPreflightDiagnostic(value: unknown): string {
-  const text = (value instanceof Error ? value.message : String(value))
-    .replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/g, " ")
-    .trim();
-  if (!text) return "no diagnostic output";
-  return text.length <= EXECUTOR_PREFLIGHT_DIAGNOSTIC_CHARS
-    ? text
-    : `${text.slice(0, EXECUTOR_PREFLIGHT_DIAGNOSTIC_CHARS)}…[truncated]`;
-}
-
-async function preflightExecutor(client: CodexGoalClient, cwd: string): Promise<void> {
-  let result: CodexCommandExecResult;
-  try {
-    result = await client.execCommand({
-      command: ["/usr/bin/true"],
-      cwd,
-      sandboxPolicy: { type: "readOnly", networkAccess: false },
-      timeoutMs: EXECUTOR_PREFLIGHT_TIMEOUT_MS,
-      outputBytesCap: EXECUTOR_PREFLIGHT_OUTPUT_BYTES_CAP,
-    });
-  } catch (error) {
-    throw new Error(`Codex executor preflight transport failed: ${boundedPreflightDiagnostic(error)}`, {
-      cause: error,
-    });
-  }
-  if (result.exitCode !== 0) {
-    const diagnostic = result.stderr.trim() || result.stdout.trim();
-    throw new Error(
-      `Codex executor preflight failed with exit code ${result.exitCode}: ${boundedPreflightDiagnostic(diagnostic)}`,
-    );
-  }
-}
 
 function bindingKey(attempt: TaskAttempt): string {
   return `${attempt.appId}\u0000${attempt.task.id}`;
@@ -357,7 +313,6 @@ export function createCodexGoalExecutor(options: CodexGoalExecutorOptions): Task
     try {
       attempt.signal.throwIfAborted();
       await client.initialize();
-      await preflightExecutor(client, attempt.cwd);
       // The installed CLI automatically restarts a persisted active goal during
       // thread/resume. Pause it while still unloaded so no old-context turn can
       // start before the current canonical packet is inserted.
