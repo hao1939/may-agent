@@ -185,7 +185,7 @@ describe("project task handler contract", () => {
       const admitted = admitTaskReconcileResult(output, workflowOptions);
       expect({ owner, valid: admitted.ok }).toEqual({ owner, valid });
       if (admitted.ok) {
-        expect(admitted.result.conditions?.[0]?.owner).toBe(owner.trim());
+        expect((admitted.result.conditions?.[0] as { owner?: string })?.owner).toBe(owner.trim());
         expect(Check(taskAgentResultSchema, admitted.result)).toBe(true);
       }
     }
@@ -202,7 +202,7 @@ describe("project task handler contract", () => {
     expect(admitTaskReconcileResult(result, workflowOptions)).toMatchObject({
       ok: false,
       error:
-        "actions[0].kind must be unblock-task or retire-condition; revise requirements through tasks update and delegate new work through dependencies",
+        "actions[0].kind must be unblock-task or retire-condition; revise requirements through tasks update and delegate new work through requests",
     });
   });
 
@@ -306,6 +306,47 @@ describe("project task handler contract", () => {
     });
   });
 
+  it("separates submitted work from the caller's decision to wait", () => {
+    const request = { id: "review", appId: "evaluation", input: { kind: "message", data: { text: "Review" } } };
+    const submitted = {
+      state: "converged",
+      summary: "Submitted for independent handling",
+      facts: [],
+      requests: [request],
+    };
+    expect(Check(taskAgentResultSchema, submitted)).toBe(true);
+    expect(admitTaskReconcileResult(submitted, workflowOptions)).toMatchObject({
+      ok: true,
+      result: { requests: [request] },
+    });
+    const waiting = {
+      ...submitted,
+      state: "waiting",
+      conditions: [{ requestId: "review" }],
+      continue: true,
+      facts: ["Other useful work remains"],
+    };
+    expect(Check(taskAgentResultSchema, waiting)).toBe(true);
+    expect(admitTaskReconcileResult(waiting, workflowOptions)).toMatchObject({
+      ok: true,
+      result: { requests: [request], conditions: [{ requestId: "review" }], continue: true },
+    });
+    // Runtime admission resolves references to requests saved earlier in this Task generation.
+    expect(admitTaskReconcileResult({ ...waiting, conditions: [{ requestId: "saved" }] }, workflowOptions).ok).toBe(
+      true,
+    );
+    expect(admitTaskReconcileResult({ ...waiting, state: "converged" }, workflowOptions)).toEqual({
+      ok: false,
+      error: "Conditions are valid only for waiting",
+    });
+    expect(Check(taskAgentResultSchema, { ...submitted, requests: [{ ...request, waitForResult: true }] })).toBe(false);
+    expect(admitTaskReconcileResult({ ...waiting, dependencies: [request] }, workflowOptions)).toEqual({
+      ok: false,
+      error: "use requests or legacy dependencies, not both",
+    });
+    expect(Check(taskAgentResultSchema, { ...waiting, requests: undefined, dependencies: [request] })).toBe(false);
+  });
+
   it("admits typed App dependencies only while waiting", () => {
     const dependency = {
       id: "review",
@@ -330,7 +371,8 @@ describe("project task handler contract", () => {
         summary: "Waiting for independent review",
         facts: ["dependency:evaluation/review"],
         actions: [],
-        dependencies: [dependency],
+        requests: [dependency],
+        conditions: [{ requestId: "review" }],
       },
     });
     expect(
@@ -366,7 +408,7 @@ describe("project task handler contract", () => {
         },
         workflowOptions,
       ),
-    ).toEqual({ ok: false, error: "dependencies[0].taskId must be a non-empty string when present" });
+    ).toEqual({ ok: false, error: "requests[0].taskId must be a non-empty string when present" });
   });
 
   it("rejects raw child specifications in both schema and admission", () => {
@@ -380,7 +422,7 @@ describe("project task handler contract", () => {
     expect(admitTaskReconcileResult(output, workflowOptions)).toEqual({
       ok: false,
       error:
-        "actions[0].kind must be unblock-task or retire-condition; revise requirements through tasks update and delegate new work through dependencies",
+        "actions[0].kind must be unblock-task or retire-condition; revise requirements through tasks update and delegate new work through requests",
     });
   });
 

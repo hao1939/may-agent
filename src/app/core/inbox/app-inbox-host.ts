@@ -1,4 +1,5 @@
 import { AppTaskAdmissionError } from "../state/task-admission-error.js";
+import { appInputRoute, assertAppTaskInputRoute } from "../apps/input-routing.js";
 import { stateTransaction } from "../../../lib/db/transaction.js";
 import { createHash } from "node:crypto";
 import { readInputContext, observeTaskDependency, type AppDependencyReader, type TaskInputObservation } from "./input-context.js";
@@ -30,6 +31,7 @@ import {
 import {
   createAppInboxItem,
   getAppInboxItem,
+  listAppInboxItems,
   hasConversationExecutionTask,
   listAppInboxItemsWaitingOnTask,
   listAppInboxTaskDependencyKeys,
@@ -145,6 +147,19 @@ const REVIEWABLE_TASK_DEPENDENCY_STATUSES = new Set<AppDependencyObservation["st
 function requiredText(value: unknown, field: string): string {
   if (typeof value !== "string" || !value.trim()) throw new Error(`${field} must be a non-empty string`);
   return value.trim();
+}
+
+/** App work with no retained Conversation or historical executor ownership. */
+function isUnattachedTaskRequest(item: AppInboxItem): boolean {
+  return Boolean(
+    item.source.kind === "app" &&
+    !item.conversationId &&
+    !item.executionTaskId &&
+    !item.waitingOn &&
+    !item.taskAdmissionKey &&
+    item.startedAt === undefined &&
+    !item.lease,
+  );
 }
 
 function validateAppDefinition(app: AppDefinition): RegisteredApp {
@@ -303,10 +318,7 @@ export class AppInboxHost {
     assertValidAppInput(app, input);
     // A schema describes valid data; accepting work also requires a handler.
     // A declared handler may fail temporarily: its durable input remains retryable.
-    const hasHandler = Boolean(
-      (app.conversation && (!app.conversation.inputKinds || app.conversation.inputKinds.includes(input.kind))) ||
-      (app.tasks && app.task),
-    );
+    const hasHandler = appInputRoute(app, input.kind) !== null;
     if (!hasHandler) throw new Error(`App ${app.id} has no handler for input kind ${input.kind}`);
   }
 
@@ -357,11 +369,23 @@ export class AppInboxHost {
     if (targetTaskId && hasConversationExecutionTask(this.#db, app.id, targetTaskId)) {
       throw new Error("Conversation Task input must use conversationId without targetTaskId");
     }
-    const conversationInput = Boolean(
-      !targetTaskId &&
-      app.conversation &&
-      (!app.conversation.inputKinds || app.conversation.inputKinds.includes(input.input.kind)),
-    );
+    const conversationInput =
+      appInputRoute(app, input.input.kind, targetTaskId, input.source.kind === "app" && !input.conversationId) ===
+      "conversation";
+    if (conversationInput) {
+      const retained = input.idempotencyKey
+        ? listAppInboxItems(this.#db, { appId: app.id, idempotencyKey: input.idempotencyKey, limit: 1 })[0]
+        : input.id
+          ? this.get(input.id)
+          : null;
+      if (retained && isUnattachedTaskRequest(retained)) {
+        // A replay cannot turn saved delegated work into a Conversation. Check
+        // the exact input before using the same Task attachment path as recovery.
+        const admitted = createAppInboxItem(this.#db, { ...input, targetTaskId, now: this.#now() });
+        this.#admitTask(admitted.item);
+        return { ...admitted, item: this.get(admitted.item.id)! };
+      }
+    }
     const defaultConversationId = app.conversation?.conversationId?.trim();
     const useDefaultConversation =
       conversationInput &&
@@ -492,12 +516,6 @@ export class AppInboxHost {
       if (item.targetTaskId && hasConversationExecutionTask(this.#db, app.id, item.targetTaskId)) {
         throw new AppTaskAdmissionError("Conversation Task input must use conversationId without targetTaskId");
       }
-      if (
-        !item.targetTaskId &&
-        app.conversation &&
-        (!app.conversation.inputKinds || app.conversation.inputKinds.includes(item.input.kind))
-      )
-        throw new Error("Conversation input requires offline cutover to its Task execution owner");
       if (item.waitingOn?.kind === "task") {
         // An old Host may have stopped while projecting an already attached
         // input. Fence only that expired, ordinary input claim; never remap it.
@@ -510,6 +528,9 @@ export class AppInboxHost {
             .run(item.id, item.lease.owner, item.lease.generation, this.#now());
         return;
       }
+      if (isUnattachedTaskRequest(item)) assertAppTaskInputRoute(app, item.input.kind, item.targetTaskId);
+      if (appInputRoute(app, item.input.kind, item.targetTaskId, isUnattachedTaskRequest(item)) === "conversation")
+        throw new Error("Conversation input requires offline cutover to its Task execution owner");
       if (!app.tasks || !app.task) throw new Error(`App ${app.id} does not resolve input to Task work`);
       if (!this.#attachTask) throw new Error("App task admission is not configured");
       assertValidAppInput(app, item.input);

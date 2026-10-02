@@ -1,7 +1,15 @@
 import { Type, type TSchema } from "typebox";
 import { Check, Errors } from "typebox/value";
 import { appInputSchema } from "./app-input.js";
-import type { Condition, TaskAction, TaskAppDependency, TaskReconcileResult, TaskVerificationResult } from "./task.js";
+import type {
+  Condition,
+  TaskCondition,
+  TaskAction,
+  TaskAppRequest,
+  TaskReconcileResult,
+  TaskChanges,
+  TaskVerificationResult,
+} from "./task.js";
 
 export const MIN_CONDITION_REVIEW_AFTER_MS = 60_000;
 export const MAX_TASK_RESULT_BYTES = 16 * 1024;
@@ -91,8 +99,24 @@ const resultFields = {
 
   facts: Type.Array(nonEmptyStringSchema, { maxItems: 32 }),
   actions: Type.Optional(Type.Array(taskActionSchema, { maxItems: 16 })),
-  conditions: Type.Optional(Type.Array(conditionSchema, { maxItems: 16 })),
-  dependencies: Type.Optional(
+  conditions: Type.Optional(
+    Type.Array(
+      Type.Union([
+        conditionSchema,
+        Type.Object(
+          { requestId: nonEmptyStringSchema },
+          {
+            additionalProperties: false,
+            description:
+              "Caller waits for this local or durable request id, submitted here or already admitted in the caller generation. Host resolves the exact result and creates the durable Condition.",
+          },
+        ),
+      ]),
+      // Preserve the former allowance of 16 external Conditions plus 8 requests.
+      { maxItems: 24 },
+    ),
+  ),
+  requests: Type.Optional(
     Type.Array(
       Type.Object(
         {
@@ -136,7 +160,7 @@ export const taskAgentResultSchema = Type.Union(
       {
         additionalProperties: false,
         description:
-          "Keep input open. Continue useful work or sleep on a saved wait, exact Condition, typed dependency or review time. Omit unchanged waits; existing obligations remain.",
+          "Keep input open. Continue useful work or sleep on a saved wait, exact Condition, App request or review time. Omit unchanged waits; existing obligations remain.",
       },
     ),
     Type.Object(
@@ -181,12 +205,9 @@ export const taskAgentResultSchema = Type.Union(
   {
     $id: TASK_AGENT_RESULT_SCHEMA_ID,
     description:
-      "Report one Task attempt against its goal and acceptance. Put supported progress, limitations and exact evidence links in facts; partial output may be retained in result. Existing independent obligations survive omitted fields. Supported observations settle Conditions; authorized decisions supply approval. Feedback is evidence to assess. The Host persists and delivers results; the App judges outcomes. Waiting may set reviewAt (Unix milliseconds) without changing Condition intervals. Dependencies request independently owned Task results: reuse stable id and exact taskId when applicable. Host publishes and correlates; blocked retains the wait, done returns an answer or owner closure. Parent links organize work; dependsOn gates execution. Use ordinary helper calls for bounded contributions.",
+      "Report one Task attempt against its goal and acceptance. Put supported progress, limitations and exact evidence links in facts; partial output may be retained in result. Existing independent obligations survive omitted fields. Supported observations settle Conditions; authorized decisions supply approval. Feedback is evidence to assess. The Host persists and delivers results; the App judges outcomes. Waiting may set reviewAt (Unix milliseconds) without changing Condition intervals. Requests submit independently owned work: reuse stable id and exact taskId when applicable. The receiver handles the request independently. To wait for its result, return conditions:[{requestId: id}] and state waiting; Host resolves the reference into an ordinary Condition. continue:true permits independent work. Requests without Conditions may accompany convergence. Omission never retires an existing wait; use retire-condition for that decision. Host publishes and correlates; blocked retains the wait, done returns an answer or owner closure. Parent links organize work; dependsOn gates execution. Use ordinary helper calls for bounded contributions.",
   },
 );
-
-/** @deprecated Use `taskAgentResultSchema`. */
-export const taskOwnerResultSchema = taskAgentResultSchema;
 
 /** Model-output schema for a workflow, including its explicit agent handoff. */
 export const taskReconcileResultSchema = Type.Union(
@@ -203,6 +224,25 @@ export const taskReconcileResultSchema = Type.Union(
   ],
   { $id: TASK_RECONCILE_RESULT_SCHEMA_ID },
 );
+
+const changeFields = {
+  requests: resultFields.requests,
+  conditions: resultFields.conditions,
+  actions: resultFields.actions,
+};
+
+/** Same typed changes for a live action and final-result declarations. */
+export const taskChangesSchema = Type.Object(
+  {
+    ...changeFields,
+    inputKeys: resultFields.inputKeys,
+    facts: Type.Optional(resultFields.facts),
+  },
+  { additionalProperties: false },
+);
+
+/** @deprecated Use `taskAgentResultSchema`. */
+export const taskOwnerResultSchema = taskAgentResultSchema;
 
 export const taskVerificationResultSchema = Type.Object(
   {
@@ -279,7 +319,7 @@ function normalizeAction(value: unknown, index: number): TaskAction | string {
       };
     }
     default:
-      return `actions[${index}].kind must be unblock-task or retire-condition; revise requirements through tasks update and delegate new work through dependencies`;
+      return `actions[${index}].kind must be unblock-task or retire-condition; revise requirements through tasks update and delegate new work through requests`;
   }
 }
 
@@ -340,6 +380,23 @@ export function admitTaskReconcileResult(
   options: TaskReconcileAdmissionOptions,
 ): TaskReconcileAdmission {
   if (!isRecord(output)) return { ok: false, error: "expected an object" };
+  if (output.dependencies !== undefined) {
+    if (output.requests !== undefined) return { ok: false, error: "use requests or legacy dependencies, not both" };
+    if (output.state !== "waiting") return { ok: false, error: "dependencies are valid only for waiting" };
+    if (!Array.isArray(output.dependencies)) return { ok: false, error: "dependencies must be an array" };
+    const { dependencies, ...rest } = output;
+    if (rest.conditions !== undefined && !Array.isArray(rest.conditions))
+      return { ok: false, error: "conditions must be an array" };
+    output = {
+      ...rest,
+      requests: dependencies,
+      conditions: [
+        ...(Array.isArray(rest.conditions) ? rest.conditions : []),
+        ...dependencies.map((dependency) => ({ requestId: isRecord(dependency) ? dependency.id : undefined })),
+      ],
+    };
+  }
+  if (!isRecord(output)) return { ok: false, error: "expected an object" };
   if (!nonEmptyString(output.summary)) return { ok: false, error: "summary must be a non-empty string" };
   const facts = normalizedStringArray(output.facts, true);
   if (!facts) return { ok: false, error: "facts must be a string array" };
@@ -352,9 +409,9 @@ export function admitTaskReconcileResult(
       output.result !== undefined ||
       output.actions !== undefined ||
       output.conditions !== undefined ||
-      output.dependencies !== undefined
+      output.requests !== undefined
     ) {
-      return { ok: false, error: "needs-agent cannot include response, result, actions, Conditions, or dependencies" };
+      return { ok: false, error: "needs-agent cannot include response, result, actions, Conditions, or requests" };
     }
     const canonicalOutput = output.state === "needs-owner" ? { ...output, state: "needs-agent" } : output;
     if (!Check(taskReconcileResultSchema, canonicalOutput)) {
@@ -380,8 +437,8 @@ export function admitTaskReconcileResult(
   }
   if (output.state === "incomplete") {
     if (facts.length === 0) return { ok: false, error: "incomplete requires facts for the decision" };
-    if (output.actions !== undefined || output.conditions !== undefined || output.dependencies !== undefined) {
-      return { ok: false, error: "incomplete cannot include actions, Conditions, or dependencies" };
+    if (output.actions !== undefined || output.conditions !== undefined || output.requests !== undefined) {
+      return { ok: false, error: "incomplete cannot include actions, Conditions, or requests" };
     }
   }
   const admittedOutput = output as Record<string, unknown>;
@@ -418,46 +475,50 @@ export function admitTaskReconcileResult(
 
   const rawConditions = admittedOutput.conditions ?? [];
   if (!Array.isArray(rawConditions)) return { ok: false, error: "conditions must be an array" };
-  if (rawConditions.length > 16) return { ok: false, error: "conditions exceed the 16-entry limit" };
-  const conditions: Condition[] = [];
+  if (rawConditions.length > 24) return { ok: false, error: "conditions exceed the 24-entry limit" };
+  const conditions: TaskCondition[] = [];
   for (let index = 0; index < rawConditions.length; index += 1) {
-    const normalized = normalizeCondition(rawConditions[index], index);
+    const declaration = rawConditions[index];
+    if (isRecord(declaration) && "requestId" in declaration) {
+      const requestId = normalizedString(declaration.requestId);
+      if (!requestId) return { ok: false, error: `conditions[${index}].requestId must be a non-empty string` };
+      conditions.push({ requestId });
+      continue;
+    }
+    const normalized = normalizeCondition(declaration, index);
     if (typeof normalized === "string") return { ok: false, error: normalized };
     conditions.push(normalized);
   }
   if (output.state !== "waiting" && conditions.length > 0) {
     return { ok: false, error: "Conditions are valid only for waiting" };
   }
-  const rawDependencies = admittedOutput.dependencies ?? [];
-  if (!Array.isArray(rawDependencies)) return { ok: false, error: "dependencies must be an array" };
-  if (rawDependencies.length > 8) return { ok: false, error: "dependencies exceed the 8-entry limit" };
-  const dependencies: TaskAppDependency[] = [];
-  const dependencyIds = new Set<string>();
-  for (let index = 0; index < rawDependencies.length; index += 1) {
-    const dependency = rawDependencies[index];
-    if (!isRecord(dependency)) return { ok: false, error: `dependencies[${index}] must be an object` };
-    const id = normalizedString(dependency.id);
-    const appId = normalizedString(dependency.appId);
-    const taskId = dependency.taskId === undefined ? undefined : normalizedString(dependency.taskId);
-    if (!id) return { ok: false, error: `dependencies[${index}].id must be a non-empty string` };
-    if (!appId) return { ok: false, error: `dependencies[${index}].appId must be a non-empty string` };
-    if (dependency.taskId !== undefined && !taskId) {
-      return { ok: false, error: `dependencies[${index}].taskId must be a non-empty string when present` };
+  const rawRequests = admittedOutput.requests ?? [];
+  if (!Array.isArray(rawRequests)) return { ok: false, error: "requests must be an array" };
+  if (rawRequests.length > 8) return { ok: false, error: "requests exceed the 8-entry limit" };
+  const requests: TaskAppRequest[] = [];
+  const requestIds = new Set<string>();
+  for (let index = 0; index < rawRequests.length; index += 1) {
+    const request = rawRequests[index];
+    if (!isRecord(request)) return { ok: false, error: `requests[${index}] must be an object` };
+    const id = normalizedString(request.id);
+    const appId = normalizedString(request.appId);
+    const taskId = request.taskId === undefined ? undefined : normalizedString(request.taskId);
+    if (!id) return { ok: false, error: `requests[${index}].id must be a non-empty string` };
+    if (!appId) return { ok: false, error: `requests[${index}].appId must be a non-empty string` };
+    if (request.taskId !== undefined && !taskId) {
+      return { ok: false, error: `requests[${index}].taskId must be a non-empty string when present` };
     }
-    if (dependencyIds.has(id)) return { ok: false, error: `dependencies contains duplicate id ${id}` };
-    if (!isRecord(dependency.input) || !nonEmptyString(dependency.input.kind) || !("data" in dependency.input)) {
-      return { ok: false, error: `dependencies[${index}].input must contain kind and data` };
+    if (requestIds.has(id)) return { ok: false, error: `requests contains duplicate id ${id}` };
+    if (!isRecord(request.input) || !nonEmptyString(request.input.kind) || !("data" in request.input)) {
+      return { ok: false, error: `requests[${index}].input must contain kind and data` };
     }
-    dependencyIds.add(id);
-    dependencies.push({
+    requestIds.add(id);
+    requests.push({
       id,
       appId,
       ...(taskId ? { taskId } : {}),
-      input: { kind: dependency.input.kind.trim(), data: structuredClone(dependency.input.data) },
+      input: { kind: request.input.kind.trim(), data: structuredClone(request.input.data) },
     });
-  }
-  if (output.state !== "waiting" && dependencies.length > 0) {
-    return { ok: false, error: "dependencies are valid only for waiting" };
   }
   if (output.continue !== undefined && (output.continue !== true || output.state !== "waiting" || !facts.length)) {
     return { ok: false, error: "continue requires waiting and progress facts" };
@@ -472,9 +533,7 @@ export function admitTaskReconcileResult(
 
   const report = {
     summary: output.summary.trim(),
-    ...("inputKeys" in output && output.inputKeys
-      ? { inputKeys: [...output.inputKeys] }
-      : {}),
+    ...("inputKeys" in output && output.inputKeys ? { inputKeys: [...output.inputKeys] } : {}),
     ...(result ? { result: structuredClone(result) } : {}),
     facts,
   };
@@ -486,7 +545,7 @@ export function admitTaskReconcileResult(
       ...(reviewAt !== undefined ? { reviewAt: Number(reviewAt) } : {}),
       ...(admittedOutput.continue === true ? { continue: true as const } : {}),
       ...(conditions.length ? { conditions } : {}),
-      ...(dependencies.length ? { dependencies } : {}),
+      ...(requests.length ? { requests } : {}),
     };
     return {
       ok: true,
@@ -507,7 +566,29 @@ export function admitTaskReconcileResult(
       },
     };
   }
-  return { ok: true, result: { ...answer, state: "converged", actions } };
+  return { ok: true, result: { ...answer, state: "converged", actions, ...(requests.length ? { requests } : {}) } };
+}
+
+export function admitTaskChanges(output: unknown): { ok: true; changes: TaskChanges } | { ok: false; error: string } {
+  if (!Check(taskChangesSchema, output))
+    return { ok: false, error: "Task changes must contain only inputKeys, facts, requests, conditions and actions" };
+  const admitted = admitTaskReconcileResult(
+    { state: "waiting", summary: "Apply Task changes", facts: [], ...(output as TaskChanges) },
+    { allowNeedsAgent: false },
+  );
+  if (!admitted.ok) return admitted;
+  const { requests, conditions, actions, inputKeys, facts } = admitted.result;
+  if (actions?.length && !facts.length) return { ok: false, error: "Task actions require non-empty facts" };
+  return {
+    ok: true,
+    changes: {
+      ...(requests ? { requests } : {}),
+      ...(conditions ? { conditions } : {}),
+      ...(actions ? { actions } : {}),
+      ...(inputKeys !== undefined ? { inputKeys } : {}),
+      facts,
+    },
+  };
 }
 
 /**

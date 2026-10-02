@@ -1505,6 +1505,14 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
               },
             }
           : {}),
+        ...(opts.taskBinding && opts.taskContext?.applyTaskChanges
+          ? {
+              applyTaskChanges: (changes: Parameters<TaskAttempt["apply"]>[0]) => {
+                assertExecutionActive();
+                return trackStep(opts.taskContext!.applyTaskChanges(changes));
+              },
+            }
+          : {}),
         agents: {
           call: (agentName: string, agentTask: string, callOptions?: AgentCallOptions & { schema?: TSchema }) =>
             trackStep(

@@ -37,6 +37,8 @@ import { normalizeTaskHandlerResult, type TaskCapabilityRun } from "./result.js"
 import { appTaskConfig, configuredRegistryEntries, type AppTaskRuntimeDescriptor } from "./runtime-definition.js";
 import type { AppTaskRuntimeOptions } from "./runtime-options.js";
 
+import { applyTaskChanges } from "./task-changes.js";
+
 const APP_TASK_AGENT_TIMEOUT_MS = 15 * 60_000;
 
 const APP_TASK_WORKFLOW_TIMEOUT_MS = 30 * 60_000;
@@ -141,6 +143,8 @@ function runtimeTaskAttempt(input: TaskAttemptInput): RuntimeTaskAttempt {
   const selfPublishedEventIds = new Set<number>();
   const controller = new AbortController();
   let closed = false;
+  const trustedEventIds = () =>
+    [...new Set([...acceptedLiveEventIds, ...selfPublishedEventIds])].sort((left, right) => left - right);
   // Finish fallible context reads before acquiring subscriptions. If preparation
   // fails, no abandoned observer remains outside the attempt cleanup boundary.
   const attempt: TaskAttempt = {
@@ -184,6 +188,10 @@ function runtimeTaskAttempt(input: TaskAttemptInput): RuntimeTaskAttempt {
     ),
     events: readAppTaskReconciliationEvents(descriptor.resourceStore, claim),
     resultSchema: structuredClone(appTaskAgentResultSchema) as unknown as Record<string, unknown>,
+    async apply(changes) {
+      if (closed) throw new Error("Task attempt is closed");
+      return applyTaskChanges({ opts, descriptor, claim, changes, acceptedLiveEventIds: trustedEventIds() });
+    },
     async publish(localKey, event) {
       if (closed) throw new Error(`Task ${descriptor.id}/${claim.taskId} attempt is closed`);
       const { localKey: _embeddedLocalKey, source: _source, ...emitted } = event;
@@ -270,8 +278,7 @@ function runtimeTaskAttempt(input: TaskAttemptInput): RuntimeTaskAttempt {
   return {
     events,
     attempt,
-    acceptedLiveEventIds: () =>
-      [...new Set([...acceptedLiveEventIds, ...selfPublishedEventIds])].sort((left, right) => left - right),
+    acceptedLiveEventIds: trustedEventIds,
     close() {
       if (closed) return;
       closed = true;
@@ -334,7 +341,7 @@ export async function runTaskAgent(input: TaskHandlerInput): Promise<TaskCapabil
       projectDir: descriptor.projectDir,
       app: descriptor.app,
     },
-    dependencies: appDependencyCatalog(configuredRegistryEntries(opts), descriptor.id),
+    dependencies: appDependencyCatalog(configuredRegistryEntries(opts)),
     sessionStarted: (id) => {
       recordAppTaskAttemptSession(appTaskConfig(descriptor), claim, id);
     },

@@ -405,6 +405,13 @@ export function readActiveAppTurn(
   return undefined;
 }
 
+/** Exact lineage lookup includes completed admissions for stable request reuse. */
+export function listAppInboxItemsByIdempotencyPrefix(db: SqliteDb, sourceAppId: string, prefix: string): AppInboxItem[] {
+  return db.prepare(`SELECT * FROM app_inbox_items
+    WHERE source_kind = 'app' AND source_id = ? AND idempotency_key >= ? AND idempotency_key < ?
+    ORDER BY idempotency_key, id LIMIT 256`).all(sourceAppId, prefix, `${prefix}\uffff`).map(rowToItem);
+}
+
 /** Unfinished requests created by one exact parent Task generation. */
 export function listOpenAppInboxItemsByIdempotencyPrefix(
   db: SqliteDb,

@@ -295,6 +295,13 @@ export async function buildTools(config: AgentConfig, opts: ToolsetLoaderOptions
         }
         return { appId: session.projectId };
       },
+      applier: () => {
+        const sessionId = opts.getAgentSessionId(config.name);
+        const session = sessionId ? manager.activeSessions.get(sessionId) : undefined;
+        if (session?.taskBinding && !session.taskContext)
+          throw new Error("Current Task execution context is unavailable");
+        return session?.taskContext?.applyTaskChanges;
+      },
     }),
   );
   return tools;

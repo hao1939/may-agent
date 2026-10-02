@@ -371,6 +371,82 @@ describe("App inbox host", () => {
     expect(failedMappings).toBe(2);
   });
 
+  it.each(["conversation", "started", "lease"])(
+    "does not relabel historical Conversation ownership as an unattached Task request (%s)",
+    async (ownership) => {
+      createAppInboxItem(db, {
+        id: "retained",
+        appId: "evaluation",
+        source: { kind: "app", id: "caller" },
+        creator: { appId: "caller", taskId: "work" },
+        input: { kind: "probe", data: { value: "retained" } },
+        ...(ownership === "conversation" ? { conversationId: "primary" } : {}),
+        now: 1,
+      });
+      if (ownership === "started") db.run("UPDATE app_inbox_items SET started_at = 1 WHERE id = 'retained'");
+      if (ownership === "lease")
+        db.run(
+          "UPDATE app_inbox_items SET lease_owner = 'old-executor', lease_generation = 1, lease_expires_at = 2 WHERE id = 'retained'",
+        );
+      const host = new AppInboxHost({
+        db,
+        now: () => 1_000,
+        apps: [{ ...app(), conversation: { mode: "agent", inputKinds: ["probe"] } }],
+        attachTask: () => {
+          throw new Error("Historical input must not be attached");
+        },
+      });
+      try {
+        await host.recoverAdmissions();
+        expect(host.get("retained")).toMatchObject({
+          status: "pending",
+          recovery: {
+            "input-admission": {
+              error: "Conversation input requires offline cutover to its Task execution owner",
+            },
+          },
+        });
+        expect(host.get("retained")?.result).toBeUndefined();
+      } finally {
+        host.close();
+      }
+    },
+  );
+
+  it("keeps an existing Task attachment when its input kind becomes conversational", async () => {
+    createAppInboxItem(db, {
+      id: "attached",
+      appId: "evaluation",
+      source: { kind: "app", id: "caller" },
+      creator: { appId: "caller", taskId: "work" },
+      input: { kind: "probe", data: { value: "attached" } },
+      now: 1,
+    });
+    db.run(
+      "UPDATE app_inbox_items SET status = 'handling', waiting_on_kind = 'task', waiting_on_id = 'existing', task_admission_key = 'task:attached', lease_owner = 'expired', lease_generation = 1, lease_expires_at = 2 WHERE id = 'attached'",
+    );
+    const host = new AppInboxHost({
+      db,
+      now: () => 1_000,
+      apps: [{ ...app(), conversation: { mode: "agent", inputKinds: ["probe"] } }],
+      attachTask: () => {
+        throw new Error("An attached input must not be remapped");
+      },
+    });
+    try {
+      await host.recoverAdmissions();
+      expect(host.get("attached")).toMatchObject({
+        status: "handling",
+        waitingOn: { kind: "task", id: "existing" },
+        taskAdmissionKey: "task:attached",
+      });
+      expect(host.get("attached")?.lease).toBeUndefined();
+      expect(host.get("attached")?.recovery).toBeUndefined();
+    } finally {
+      host.close();
+    }
+  });
+
   it("returns pre-Task admission failure to the exact App caller and replays lost publication", async () => {
     let now = 1_000;
     let repaired = false;
