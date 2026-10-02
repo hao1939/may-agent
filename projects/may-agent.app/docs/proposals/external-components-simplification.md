@@ -1,5 +1,9 @@
 # External components: simple, solid, and clearly organized
 
+**Supports:** [Host And App Boundary](../2a-design/system-boundary.md). Repairs specific responsiveness and clarity gaps without expanding every external component.
+
+**Choice basis:** [Applicable philosophy and convention](../1-principles/core-principles.md#one-authority-for-each-resource); [compare competing choices](../1-principles/core-principles.md#resolve-conflicting-designs).
+
 **Design status:** First milestone accepted for implementation; follow-ups remain
 conditional.
 **Implementation status:** The Scout fix and owning documentation are integrated

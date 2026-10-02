@@ -1,5 +1,9 @@
 # Agent prompt assembly: source review and simplification proposal
 
+**Supports:** [Agent Cooperation](../2a-design/agents.md). Reviews whether usable instructions and facts reach the actual worker without duplication.
+
+**Choice basis:** [Applicable philosophy and convention](../1-principles/core-principles.md#context-is-discovered-not-dumped); [compare competing choices](../1-principles/core-principles.md#resolve-conflicting-designs).
+
 **Status:** Cleanup implemented on candidate source; verification recorded below.
 Not deployed. The source review and initial probes below describe the baseline.
 

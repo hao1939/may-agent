@@ -1,5 +1,9 @@
 # App SDK quickstart
 
+**Supports:** [May-Agent SDK](../2a-design/sdk.md). Provides a checked starting path from App declaration to admitted work.
+
+**Choice basis:** [Core Principles](../1-principles/core-principles.md#convention-over-configuration).
+
 Run a real document review, inspect its evidence, and send a correction to the
 same Task. Then change the reviewer guidance and check a fresh execution.
 The [sample App](../../../sample.app/README.md) is the runnable source for this

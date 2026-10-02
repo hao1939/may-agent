@@ -1,5 +1,7 @@
 # Retired Design Alternatives
 
+**Historical context:** [System Model](../../2a-design/system-model.md). Retained rationale and evidence; this record does not define the current contract.
+
 **Status:** thoughts and alternatives, not active design
 **Date:** 2026-05-19
 

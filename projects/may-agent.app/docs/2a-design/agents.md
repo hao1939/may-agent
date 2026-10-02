@@ -1,5 +1,9 @@
 # Agent Cooperation
 
+**Supports:** [System Model](system-model.md#enable-useful-action-within-authority). Gives workers usable context and ways to cooperate within the caller's scope.
+
+**Choice basis:** [Core Principles](../1-principles/core-principles.md#context-is-discovered-not-dumped).
+
 **Design status:** Accepted.
 **Implementation status:** Bounded calls/forks and durable cross-App Task
 dependencies are implemented. Helpers retain their live caller's scope and

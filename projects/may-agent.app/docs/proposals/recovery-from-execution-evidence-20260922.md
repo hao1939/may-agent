@@ -1,5 +1,9 @@
 # Recover current work from execution evidence
 
+**Supports:** [Host And App Boundary](../2a-design/system-boundary.md). Separates restoring current work from improving future behavior, preserving exact owner feedback.
+
+**Choice basis:** [Applicable philosophy and convention](../1-principles/core-principles.md#one-authority-for-each-resource); [compare competing choices](../1-principles/core-principles.md#resolve-conflicting-designs).
+
 **Status:** Design refinement and bounded verification plan, September 22, 2026.
 No new recovery runtime is implemented by this document.
 **Contract owners:** [System boundary](../2a-design/system-boundary.md#recovery-uses-evidence-before-repetition),

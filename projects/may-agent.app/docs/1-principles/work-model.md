@@ -1,5 +1,9 @@
 # Work Model
 
+**Supports:** [Design Philosophy](design-philosophy.md#own-the-outcome). Keeps responsibility, judgment and execution distinct so authorized work reaches an outcome.
+
+**Choice basis:** [Design Philosophy](design-philosophy.md#how-to-decide-a-tradeoff).
+
 **Design status:** Accepted.
 
 The May system uses one durable work model:

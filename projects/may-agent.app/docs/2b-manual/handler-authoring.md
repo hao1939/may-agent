@@ -1,5 +1,9 @@
 # Task Reconciler Authoring
 
+**Supports:** [Task Resource Engine](../2a-design/task-resource-engine.md). Shows how to return outcomes and retain waits through shared Task admission.
+
+**Choice basis:** [Core Principles](../1-principles/core-principles.md#convention-over-configuration).
+
 A Task reconciler performs one bounded attempt and proposes a result. The App
 owns the outcome; the Host owns scheduling, fencing, persistence and recovery.
 Start with the [SDK Quickstart](sdk-quickstart.md) and its checked App declaration.

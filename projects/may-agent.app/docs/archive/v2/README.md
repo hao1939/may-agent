@@ -1,5 +1,7 @@
 # V2 Archive
 
+**Supports:** [Documentation Archive](../README.md). Keeps earlier reasoning inspectable without making it current authority.
+
 These files are historical. They are kept only to explain how the system got to
 the final Project App V3 model.
 

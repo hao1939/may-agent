@@ -1,5 +1,7 @@
 # Plan: Dissolve `shared/workflows/`
 
+**Historical context:** [Workflow Discovery And Execution](../../2a-design/workflows.md). Retained rationale and evidence; this record does not define the current contract.
+
 > Historical record. Use the [current contract index](../../INDEX.md) for present behavior; dated claims below describe their original review.
 
 

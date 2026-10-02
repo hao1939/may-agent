@@ -1,5 +1,7 @@
 # Controller implementation review — September 10, 2026
 
+**Historical context:** [Task Resource Engine](../../2a-design/task-resource-engine.md). Retained rationale and evidence; this record does not define the current contract.
+
 **Status:** Historical snapshot of the proposal and its slice-specific proof.
 Test counts describe the named revisions, not a current release.
 Use the [active controller proposal](../../proposals/task-controller-pattern.md)

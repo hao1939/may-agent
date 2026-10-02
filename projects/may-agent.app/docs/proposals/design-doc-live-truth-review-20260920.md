@@ -1,5 +1,9 @@
 # Design documentation must match intended contracts and evidence
 
+**Supports:** [System Model](../2a-design/system-model.md). Separates intended contracts, source evidence and installed behavior so reviews use truthful claims.
+
+**Choice basis:** [Applicable philosophy and convention](../1-principles/core-principles.md#review-rule); [compare competing choices](../1-principles/core-principles.md#resolve-conflicting-designs).
+
 **Status:** Reviewed documentation scope, corrected September 21, 2026.
 **Original proposal:** preserved verbatim at
 `/app/.state/review-pilots/design-doc-live-truth-20260921/proposal-original.md`.

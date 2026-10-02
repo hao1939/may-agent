@@ -1,5 +1,9 @@
 # Teaching agents: from a correction to dependable behavior
 
+**Supports:** [Agent improvement: an optional App integration](../2a-design/practice-learning-loop.md). Proposes how verified corrections become usable guidance or capabilities.
+
+**Choice basis:** [Applicable philosophy and convention](../1-principles/evolution.md#promotion-tests); [compare competing choices](../1-principles/core-principles.md#resolve-conflicting-designs).
+
 **Design status:** Proposed for review, September 12, 2026.
 **Implementation status:** Isolated trials support guidance adoption, method
 discovery and dependable workflow execution through existing Host capabilities.

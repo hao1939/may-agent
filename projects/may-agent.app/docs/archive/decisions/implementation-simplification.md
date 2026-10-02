@@ -1,5 +1,7 @@
 # Proposal: Explicit and Auditable Agent Execution
 
+**Historical context:** [App Contract](../../2a-design/agent-app.md). Retained rationale and evidence; this record does not define the current contract.
+
 **Status:** Historical accepted and implemented decision record.
 **Current authority:** [Architecture](../../2a-design/architecture.md),
 [System Boundary](../../2a-design/system-boundary.md), and

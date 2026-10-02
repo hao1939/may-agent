@@ -1,5 +1,7 @@
 # Atomic request attachment review — September 10, 2026
 
+**Historical context:** [Runtime Storage](../../2a-design/storage.md). Retained rationale and evidence; this record does not define the current contract.
+
 **Status:** Historical implementation evidence. The attachment and readiness
 corrections merged in PRs #108 and #109. Candidate timings and test counts
 below refer to their named source revisions, not a current deployment.

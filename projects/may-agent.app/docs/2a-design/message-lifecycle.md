@@ -1,5 +1,9 @@
 # Message Lifecycle
 
+**Supports:** [System Model](system-model.md#understand-intent-and-close-the-loop). Retains accepted human asks and closes the loop across discussion and delegated work.
+
+**Choice basis:** [Core Principles](../1-principles/core-principles.md#one-authority-for-each-resource).
+
 **Design status:** Accepted.
 **Implementation status:** Human Turns, accepted Requests, correlated handoffs,
 linked-result review and Turn Stop use the shared Task lifecycle. New input is
@@ -838,12 +842,11 @@ current context, decision, state and transport modules.
 
 ### Live validation and remaining checks
 
-The [Task runtime tests](../../../may-agent/src/app/core/tasks/conversation-runtime.test.ts)
-and [state tests](../../../may-agent/src/app/core/state/conversation-task-turns.test.ts)
-exercise actual admission, handoff, scoped Stop, accepted Requests and recovery
-across storage reopen. The [test guide](../../../may-agent/test/README.md)
-separates these checks from process-loss and browser coverage. Earlier model
-trials remain linked in the [Request follow-through review](../proposals/task-runtime-organization.md#request-follow-through-review)
+The [Task runtime tests](../../../may-agent/src/app/core/tasks/conversation-runtime.test.ts) and
+[state tests](../../../may-agent/src/app/core/state/conversation-task-turns.test.ts) exercise admission,
+handoff, scoped Stop, accepted Requests and recovery across storage reopen. The
+[test guide](../../../may-agent/test/README.md) separates these checks from process-loss and browser coverage.
+Earlier model trials remain in the [Request follow-through review](../proposals/task-runtime-organization.md#request-follow-through-review)
 and [workflow review](../proposals/workflow-practices-review.md).
 
 Remaining proof is behavioral: multi-turn discussion should not create unnecessary
@@ -877,18 +880,15 @@ with candidate evidence in the [simplification proposal](../proposals/authority-
 
 ## Instructions for the current attempt
 
-May's shared identity supplies human authority, ownership, evidence and plain
-communication rules. The conversation prompt supplies the common bounded
-protocol with explicit human or system origin; linked-result judgment belongs
-to May's policy. Ordinary Task attempts keep the existing Task protocol.
-There is no new role router or prompt registry.
+May's shared identity supplies human authority, ownership, evidence and plain communication.
+The Conversation prompt supplies its bounded protocol with explicit human/system
+origin; May owns linked-result judgment. Ordinary Tasks keep their existing
+protocol. No role router or prompt registry is added.
 
-The #158 cutover retires the separate supervision Task and its special
-follow-up prompt dependency. Retained historical input may still mention
-`mayFollowUpTask`; it does not authorize restoring the retired executor.
-Context tests prove available guidance, not model judgment. Use the existing
-cutover evidence to assess an older installation rather than assuming a
-definition reload rewrites its stored work.
+The [cutover record](../proposals/conversation-input-unification.md) owns retirement
+of the separate supervision Task and `mayFollowUpTask` prompt. Historical input
+cannot restore that executor. Context tests establish available guidance, not
+model judgment; definition reload does not rewrite stored work.
 
 Every conversational Turn uses the same result schema: answer, authorized Task
 control, or direct `followUp`; the unified design also admits an explicit quiet

@@ -1,5 +1,9 @@
 # Metrics And Alerts
 
+**Supports:** [System Model](system-model.md#improve-from-evidence-and-make-problems-actionable). Supplies trends, coverage and failure evidence for agents to judge worthwhile follow-through.
+
+**Choice basis:** [Core Principles](../1-principles/core-principles.md#simple-first).
+
 **Design status:** Accepted.
 **Implementation status:** `MetricService`, App-defined sources, exact-command
 batch sampling, workflow observations and bounded reporting pages are implemented.

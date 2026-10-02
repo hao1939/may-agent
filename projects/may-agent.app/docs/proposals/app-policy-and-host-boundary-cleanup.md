@@ -1,5 +1,9 @@
 # Keep domain policy in Apps, keep the Host generic
 
+**Supports:** [Host And App Boundary](../2a-design/system-boundary.md). Moves varying domain policy to its owner while retaining common execution guarantees.
+
+**Choice basis:** [Applicable philosophy and convention](../1-principles/core-principles.md#one-authority-for-each-resource); [compare competing choices](../1-principles/core-principles.md#resolve-conflicting-designs).
+
 **Status:** Accepted; documentation and six focused Host source slices are
 implemented for review. The broader cleanup is not complete. Deployment and live
 permission/state changes remain separate and are not authorized here.

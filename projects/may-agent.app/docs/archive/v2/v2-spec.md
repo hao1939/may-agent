@@ -1,5 +1,7 @@
 # v2 Spec
 
+**Historical context:** [System Model](../../2a-design/system-model.md). Retained rationale and evidence; this record does not define the current contract.
+
 **Status**: Historical — v2 conformance framing. Do not use this document as
 the current execution model. For current infra direction, see
 [system-boundary.md](../../2a-design/system-boundary.md), [architecture.md](../../2a-design/architecture.md),

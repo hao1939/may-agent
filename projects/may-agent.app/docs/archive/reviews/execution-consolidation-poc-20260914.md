@@ -1,5 +1,7 @@
 # Execution consolidation: candidate and PoCs
 
+**Historical context:** [Agent Cooperation](../../2a-design/agents.md). Retained rationale and evidence; this record does not define the current contract.
+
 September 14, 2026. Isolated source implementation and portable experiments;
 the original trials used no live deployment or provider credentials. The
 [proposal](../../proposals/execution-entrypoint-consolidation.md) owns the change;

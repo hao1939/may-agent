@@ -1,5 +1,7 @@
 # Request waiting audit — September 8, 2026
 
+**Historical context:** [Task Resource Engine](../../2a-design/task-resource-engine.md). Retained rationale and evidence; this record does not define the current contract.
+
 Decision: defer deletion of frontend child-request waiting. Leave its public
 contract, compatibility prompt, retained state interpretation, and recovery intact. This
 is an explicit compatibility decision, not a claim that the path is unused.

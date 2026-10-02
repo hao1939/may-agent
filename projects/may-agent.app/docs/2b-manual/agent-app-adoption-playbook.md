@@ -1,5 +1,9 @@
 # App Adoption Checklist
 
+**Supports:** [App Contract](../2a-design/agent-app.md). Applies App ownership and admission conventions to a new domain.
+
+**Choice basis:** [Core Principles](../1-principles/core-principles.md#convention-over-configuration).
+
 Use an App for a durable responsibility with typed inputs and acceptance rules.
 Begin with the [SDK Quickstart](sdk-quickstart.md) and its checked example;
 this checklist adds the decisions needed for your own domain.

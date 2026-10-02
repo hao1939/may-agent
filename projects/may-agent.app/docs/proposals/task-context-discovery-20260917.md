@@ -1,5 +1,9 @@
 # Task context discovery and agent-directed work
 
+**Supports:** [Agent Cooperation](../2a-design/agents.md). Makes assignment evidence and available actions discoverable without manual context reconstruction.
+
+**Choice basis:** [Applicable philosophy and convention](../1-principles/core-principles.md#context-is-discovered-not-dumped); [compare competing choices](../1-principles/core-principles.md#resolve-conflicting-designs).
+
 **Status:** Implemented candidate; discovery and handoff local trials completed, not merged.
 **Contract owners:** [Workspace convention](../2a-design/workflows.md#task-entry-and-discovery)
 and [one handoff contract](../2a-design/workflows.md#one-handoff-contract).

@@ -1,5 +1,9 @@
 # Escalation
 
+**Supports:** [System Model](system-model.md#improve-from-evidence-and-make-problems-actionable). Returns an unresolved need to someone with the authority to decide or help.
+
+**Choice basis:** [Core Principles](../1-principles/core-principles.md#one-authority-for-each-resource).
+
 **Design status:** Accepted.
 **Implementation status:** Exact human Conditions, typed Task dependencies and
 caller feedback use the shared Task path. Retained legacy escalation feedback

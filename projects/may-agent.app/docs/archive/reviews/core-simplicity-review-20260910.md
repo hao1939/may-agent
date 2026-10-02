@@ -1,5 +1,7 @@
 # Core simplicity and robustness review — 2026-09-10
 
+**Historical context:** [Architecture](../../2a-design/architecture.md). Retained rationale and evidence; this record does not define the current contract.
+
 **Status:** Historical source review and recommendations; the original review
 applied no runtime changes. Subsequent fixes are recorded separately below.
 **Source:** Host `d9e7597e93608c45bed4fe649ff1b0fb1d040743`, verified against

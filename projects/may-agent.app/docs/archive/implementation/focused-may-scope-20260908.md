@@ -1,5 +1,7 @@
 # Approved September 8 May simplification scope
 
+**Historical context:** [System Model](../../2a-design/system-model.md). Retained rationale and evidence; this record does not define the current contract.
+
 Snapshot of the human-approved September 8 current-review section in
 `projects/may-agent.app/docs/proposals/authority-boundary-simplification.md`.
 Earlier pilot sections are outside this implementation scope. Relative links

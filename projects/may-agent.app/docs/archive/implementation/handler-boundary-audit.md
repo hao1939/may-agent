@@ -1,5 +1,7 @@
 # Handler Boundary Audit
 
+**Historical context:** [Host And App Boundary](../../2a-design/system-boundary.md). Retained rationale and evidence; this record does not define the current contract.
+
 **Status:** Historical completed audit.
 **Current authority:** [Handler authoring](../../2b-manual/handler-authoring.md)
 and [System operations convergence](system-operations-model.md).

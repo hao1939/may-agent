@@ -1,5 +1,9 @@
 # Design: Session Evaluation Trail
 
+**Supports:** [System Model](system-model.md#improve-from-evidence-and-make-problems-actionable). Retains inspectable assessment evidence and its limits for later feedback and calibration.
+
+**Choice basis:** [Core Principles](../1-principles/core-principles.md#simple-first).
+
 **Design status:** Accepted.
 **Implementation status:** Partially aligned. Summary evaluation and its SQLite
 projection, historical trail reads, and direct HTTP human-feedback append are

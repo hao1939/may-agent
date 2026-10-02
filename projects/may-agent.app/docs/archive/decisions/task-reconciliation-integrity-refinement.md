@@ -1,5 +1,7 @@
 # Task Reconciliation Integrity Refinement
 
+**Historical context:** [Task Resource Engine](../../2a-design/task-resource-engine.md). Retained rationale and evidence; this record does not define the current contract.
+
 **Design status:** Historical; accepted and incorporated into
 [Task Resource Engine](../../2a-design/task-resource-engine.md).
 **Implementation status:** Implemented, migrated, deployed, and live-verified.

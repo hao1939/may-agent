@@ -1,5 +1,9 @@
 # Agent extension methods: choosing, activating and evaluating changes
 
+**Supports:** [Teaching agents: from a correction to dependable behavior](agent-behavior-and-capability-extension.md). Compares when guidance, skills, workflows and tools deliver useful improvements.
+
+**Choice basis:** [Applicable philosophy and convention](../1-principles/evolution.md#promotion-tests); [compare competing choices](../1-principles/core-principles.md#resolve-conflicting-designs).
+
 **Status:** Bounded investigation completed, September 12, 2026. Isolated fixtures only;
 no production guidance, permissions, App state or deployment changes.
 **Parent:** [Behavior-extension proposal](agent-behavior-and-capability-extension.md).

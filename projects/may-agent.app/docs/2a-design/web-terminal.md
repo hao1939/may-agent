@@ -1,5 +1,9 @@
 # Web Terminal
 
+**Supports:** [Human Control Surfaces](human-control-surfaces.md). Provides browser access to an existing operator session without another work model.
+
+**Choice basis:** [Core Principles](../1-principles/core-principles.md#simple-first).
+
 **Design status:** Accepted.
 **Implementation status:** Implemented with ttyd and one persistent Herdr
 session.

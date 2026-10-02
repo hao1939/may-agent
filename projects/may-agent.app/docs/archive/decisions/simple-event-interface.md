@@ -1,5 +1,7 @@
 # Simple Event Interface
 
+**Historical context:** [Events And Task Admission](../../2a-design/events.md). Retained rationale and evidence; this record does not define the current contract.
+
 > Historical record. Use the [current contract index](../../INDEX.md) for present behavior; dated claims below describe their original review.
 
 

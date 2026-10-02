@@ -1,5 +1,9 @@
 # Host Runtime
 
+**Supports:** [System Model](system-model.md#carry-work-through-change-and-interruption). Runs and recovers bounded work while keeping admission and human controls responsive.
+
+**Choice basis:** [Core Principles](../1-principles/core-principles.md#stable-core-replaceable-capabilities).
+
 **Design status:** Accepted.
 **Implementation status:** Task reconciliation owns durable App work. Bounded
 Conversation turns perform self-contained authorized work within their Task
@@ -351,6 +355,67 @@ Maintenance retains bounded database, retention and lifecycle-evidence repair.
 Those operations do not create an input-delivery lifecycle or replace Task
 admission/result recovery. Read the selected handlers in composition before
 inferring that a legacy timer or source file runs in the daemon.
+
+## Task execution isolation
+
+Task readiness may be coalesced and bounded, but admission is never queued
+behind Task execution. Once an Event and its exact wake are durable, the Task
+controller starts an isolated worker process for that attempt. The worker
+rereads and claims the current generation, constructs context, executes, and
+persists the fenced result. Slow workspace inspection, Git commands, file
+reads, provider calls, model turns, and tools therefore never execute on the
+interface event loop.
+
+The worker uses the same Task resources and EventHub journal as the parent. It
+does not create a worker Task, proxy Task, semantic queue, or second retry
+policy. Events are persisted once in the worker and relayed with their durable
+row IDs so parent-side listeners can observe them without duplicate journal
+rows. The parent fans out a bounded batch and then yields to interface work;
+the bound is shared across all active workers, not applied separately to each
+worker. A burst of progress events must not monopolize the event loop. If the
+worker exits, the controller's existing retry and lease recovery continue the
+same Task identity.
+
+The parent relay and App message pump yield through I/O-capable timer turns.
+A continuing background backlog leaves a small nonzero poll window before its
+next item. Neither `setImmediate` nor a permanent zero-delay timer chain is a
+fairness boundary in the deployed Bun runtime; both can starve the Unix control
+socket even though every callback is nominally asynchronous.
+
+The parent-side exact wake is constant in scope: it reads the named Task and
+its open Conditions, records the trigger, and schedules that identity. It does
+not load the Task's children or attempt history and does not treat feedback as
+a fresh declaration of the Task goal. Broader context belongs to the isolated
+attempt that later reconciles the Task.
+
+An attempt worker loads only its owning App's Task runtime and owning agent.
+The recovery worker loads only the agents required by Task-enabled Apps. Both
+reuse the read models already published by the parent; they must not
+resynchronize every App at startup because those duplicate writes contend with
+the Event journal and can delay human-message durability.
+
+The worker is owned by that Runtime process. A private IPC channel closes
+when the parent exits, causing the worker to stop; normal recovery then
+continues the same Task. A worker from an old Runtime must never remain alive
+and write beside its replacement.
+
+Startup launches recovery after opening the interfaces, but does not await it
+before accepting human input. Task controllers open when that pass either
+finishes or yields to their bounded recovery checks. A recovery error is Task
+evidence to retry, not a reason to terminate the interface process.
+
+Resource-backed Tasks coordinate concurrent writers with their existing
+SQLite transaction and exact resource-version/generation/attempt fences. They
+must not also wait on the legacy `state.json` filesystem lock: that duplicate
+lock adds no authority and a synchronous wait would freeze unrelated Host
+work. The old JSON importer is retired.
+
+Only scheduling and bounded readiness checks remain in the interface process.
+Task claim, context construction, execution, and result persistence belong to
+the worker process. The startup repair pass uses the same process boundary;
+after it finishes, the parent performs only one bounded indexed readiness scan.
+Read-only interface queries remain independent and must meet their
+responsiveness budget while workers are active.
 
 ## Recovery
 

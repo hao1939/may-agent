@@ -1,5 +1,9 @@
 # Human Control Surfaces
 
+**Supports:** [System Model](system-model.md#understand-intent-and-close-the-loop). Makes ongoing work understandable and steerable through consistent views and exact controls.
+
+**Choice basis:** [Core Principles](../1-principles/core-principles.md#convention-over-configuration).
+
 **Design status:** Accepted.
 **Implementation status:** Shared Conversation and Task reads, watch controls,
 human-action projection, contextual replies and exact Turn Stop are implemented.

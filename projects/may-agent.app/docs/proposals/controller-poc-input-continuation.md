@@ -1,5 +1,9 @@
 # Returning an answer after a wait
 
+**Supports:** [Task Resource Engine](../2a-design/task-resource-engine.md). Tests returning an answer after a durable wait through the same Task.
+
+**Choice basis:** [Applicable philosophy and convention](../1-principles/core-principles.md#one-authority-for-each-resource); [compare competing choices](../1-principles/core-principles.md#resolve-conflicting-designs).
+
 **Status:** Active, unmerged source experiment. The delayed-input failure in the
 [previous checkpoint](controller-poc-outcomes-and-closure.md#the-follow-through-gap)
 is fixed for the exercised Task paths. Actual Conversation execution and Request

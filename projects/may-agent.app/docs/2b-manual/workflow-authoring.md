@@ -1,5 +1,9 @@
 # How To Write An App Workflow
 
+**Supports:** [Workflow Discovery And Execution](../2a-design/workflows.md). Applies scoped execution and evidence conventions to reusable procedures.
+
+**Choice basis:** [Core Principles](../1-principles/core-principles.md#convention-over-configuration).
+
 This manual describes the canonical App workflow surface. See
 [Workflows](../2a-design/workflows.md), [SDK](../2a-design/sdk.md), and
 [App](../2a-design/agent-app.md) for the governing contracts.

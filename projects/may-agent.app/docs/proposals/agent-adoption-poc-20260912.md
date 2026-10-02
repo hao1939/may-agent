@@ -1,5 +1,9 @@
 # Agent adoption PoC: what actually changed behavior
 
+**Supports:** [Teaching agents: from a correction to dependable behavior](agent-behavior-and-capability-extension.md). Tests whether taught guidance reaches later work and changes behavior.
+
+**Choice basis:** [Applicable philosophy and convention](../1-principles/evolution.md#promotion-tests); [compare competing choices](../1-principles/core-principles.md#resolve-conflicting-designs).
+
 **Status:** Focused local experiment completed, September 12, 2026.
 **Scope:** Execution-side evidence for the [proposal](agent-behavior-and-capability-extension.md),
 not production activation or the complete conversational teaching experience.

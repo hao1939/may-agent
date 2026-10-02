@@ -1,5 +1,7 @@
 # Resource/Event boundary review — 2026-09-27
 
+**Historical context:** [Events And Task Admission](../../2a-design/events.md). Retained rationale and evidence; this record does not define the current contract.
+
 Host baseline: `1ff18acc`. Workspace baseline: `28580398c6`. This review changes
 common design and guidance; it does not change Host code or deploy anything.
 The current contract is [Events](../../2a-design/events.md#resource-responsibility-and-reconciliation).

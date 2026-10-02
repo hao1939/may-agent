@@ -1,5 +1,9 @@
 # Scheduling And Observation
 
+**Supports:** [Events And Task Admission](events.md). Provides declared observations and due inputs without a second work scheduler.
+
+**Choice basis:** [Core Principles](../1-principles/core-principles.md#convention-over-configuration).
+
 **Design status:** Accepted.
 **Implementation status:** Daemon Task
 activation and startup recovery are independent of `--cron`. Shared timing

@@ -1,5 +1,7 @@
 # Documentation Archive
 
+**Supports:** [Evidence-First Process](../1-principles/evidence-first.md). Keeps earlier reasoning inspectable without making it current authority.
+
 Archived documents preserve rationale and evidence. They are not current
 contracts; Tier-2 design governs when wording conflicts.
 

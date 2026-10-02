@@ -1,5 +1,9 @@
 # App operations and recovery
 
+**Supports:** [Host Runtime](../2a-design/runtime.md). Applies activation and recovery contracts with evidence of the actual installation.
+
+**Choice basis:** [Core Principles](../1-principles/core-principles.md#convention-over-configuration).
+
 Durable request correlation and task state are authoritative. Tasks own App
 work; events trigger review and are not work queues to replay manually.
 

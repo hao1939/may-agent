@@ -1,5 +1,9 @@
 # Event Graph And Trace
 
+**Supports:** [Events And Task Admission](events.md). Lets people and agents follow causality and locate missing progress without inventing work state.
+
+**Choice basis:** [Core Principles](../1-principles/core-principles.md#one-authority-for-each-resource).
+
 **Design status:** Accepted.
 **Implementation status:** Core trace storage, links, APIs, UI projection, and
 transactional execution closure are implemented for new Runtime Events. App

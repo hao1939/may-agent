@@ -1,5 +1,7 @@
 # Project Creative Audit — 2026-06-14
 
+**Historical context:** [Projects](../../2a-design/projects.md). Retained rationale and evidence; this record does not define the current contract.
+
 This historical review came from the retired project discussion log. It is
 evidence, not current design or runtime status authority.
 

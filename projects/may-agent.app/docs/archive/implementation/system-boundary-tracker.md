@@ -1,5 +1,7 @@
 # Infra Surface Refactor Plan (Historical)
 
+**Historical context:** [Host And App Boundary](../../2a-design/system-boundary.md). Retained rationale and evidence; this record does not define the current contract.
+
 **Design status:** Historical tracker.
 **Implementation status:** Historical evidence only; not an active implementation contract.
 

@@ -1,5 +1,9 @@
 # Heartbeat terminology
 
+**Supports:** [Host Runtime](runtime.md). Exposes liveness and distinguishes it from useful progress or domain review.
+
+**Choice basis:** [Core Principles](../1-principles/core-principles.md#simple-first).
+
 **Design status:** Accepted.
 **Implementation status:** The Host has no standalone heartbeat
 workflow loader or public heartbeat-start command. Recurring App work uses

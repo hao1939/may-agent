@@ -1,5 +1,7 @@
 # Console and Telegram Information Experience — Evidence and Prototype
 
+**Historical context:** [Human Control Surfaces](../../2a-design/human-control-surfaces.md). Retained rationale and evidence; this record does not define the current contract.
+
 **Status:** Superseded review evidence. The accepted Task-focused interface and
 current Tier-2 adapter designs now govern.
 **Task:** `console-telegram-ux-evidence-design`

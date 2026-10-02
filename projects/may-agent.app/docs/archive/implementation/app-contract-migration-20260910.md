@@ -1,5 +1,7 @@
 # App contract migration notes — archived September 10, 2026
 
+**Historical context:** [App Contract](../../2a-design/agent-app.md). Retained rationale and evidence; this record does not define the current contract.
+
 **Status:** Historical sequence, not the current execution model. The original
 “all human messages” and “one execution path” migration wording predates the
 bounded conversational frontend. Read [App Contract](../../2a-design/agent-app.md)

@@ -1,5 +1,9 @@
 # Task controller pattern: one commitment, one lifecycle
 
+**Supports:** [Task Resource Engine](../2a-design/task-resource-engine.md). Retains controller design rationale and historical evidence; later lifecycle decisions own current behavior.
+
+**Choice basis:** [Applicable philosophy and convention](../1-principles/core-principles.md#one-authority-for-each-resource); [compare competing choices](../1-principles/core-principles.md#resolve-conflicting-designs).
+
 **Design status:** Controller/lifecycle direction approved; this proposal defines
 the implementation slices and their acceptance evidence.
 **Implementation status:** May already uses SQLite Task resources, App input
@@ -19,7 +23,11 @@ The [September 10 core review](../archive/reviews/core-simplicity-review-2026091
 used the earlier `d9e7597e` baseline. Neither identifies a deployed release.
 
 The accepted [one-lifecycle baseline](conversation-input-unification.md) supersedes
-this proposal's `achieve`/`maintain` lifetime distinction. Tasks record explicit
+this proposal's `achieve`/`maintain` lifetime distinction and fixed retry-exhaustion
+policy. The [current Task contract](../2a-design/task-resource-engine.md#one-lifecycle-baseline)
+keeps attempts bounded and paces unfinished retries with backoff until progress
+or authorized owner control. Older retry allowances below are historical choices,
+not a second current policy. Tasks record explicit
 outcomes and remain available until an App, parent agent or human closes them;
 Conversation uses the same Task execution authority. The current protocol and
 historical implementation evidence below remain useful migration references.

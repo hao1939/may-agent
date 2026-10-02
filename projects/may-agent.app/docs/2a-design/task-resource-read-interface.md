@@ -1,5 +1,9 @@
 # Task resource read interface
 
+**Supports:** [Task Resource Engine](task-resource-engine.md). Makes current work inspectable at bounded cost through one shared read contract.
+
+**Choice basis:** [Core Principles](../1-principles/core-principles.md#convention-over-configuration).
+
 **Design status:** Accepted.
 **Implementation status:** The shared reader and explicit `inputKeys` reads are implemented; [Host #269 is merged](../proposals/explicit-task-input-consideration-20260930.md). Source status is not deployment evidence.
 

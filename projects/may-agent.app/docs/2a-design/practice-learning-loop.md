@@ -1,5 +1,9 @@
 # Agent improvement: an optional App integration
 
+**Supports:** [System Model](system-model.md#improve-from-evidence-and-make-problems-actionable). Connects assessment, candidate improvement and verification through ordinary App work.
+
+**Choice basis:** [Agent Evolution](../1-principles/evolution.md#promotion-tests).
+
 **Design status:** Accepted as an App integration, not a required Host subsystem.
 **Implementation status:** Evaluation reviews external App Tasks; May receives
 published findings; Gym provides bounded comparisons. These App contracts are

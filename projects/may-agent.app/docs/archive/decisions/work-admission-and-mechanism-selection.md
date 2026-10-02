@@ -1,5 +1,7 @@
 # Work Admission And Mechanism Selection
 
+**Historical context:** [Work Model](../../1-principles/work-model.md). Retained rationale and evidence; this record does not define the current contract.
+
 **Status:** Accepted; incorporation complete; archive with migration closeout
 **Scope:** Give App authors one semantic rule for choosing inbox, task, fact,
 agent/skill, or workflow without introducing another runtime mechanism.

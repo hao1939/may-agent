@@ -1,5 +1,7 @@
 # Inbox Scope Reduction
 
+**Historical context:** [App Contract](../../2a-design/agent-app.md). Retained rationale and evidence; this record does not define the current contract.
+
 > Historical record. Use the [current contract index](../../INDEX.md) for present behavior; dated claims below describe their original review.
 
 

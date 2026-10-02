@@ -1,5 +1,9 @@
 # Core Principles
 
+**Supports:** [Design Philosophy](design-philosophy.md#how-to-decide-a-tradeoff). Turns value and cost reasoning into reusable technical decision rules.
+
+**Choice basis:** [Design Philosophy](design-philosophy.md#how-to-decide-a-tradeoff).
+
 **Design status:** Accepted.
 
 These are the technical decision rules derived from our
@@ -469,3 +473,46 @@ existing tests or operating evidence. If it did not, revise the choice and
 remove machinery that no longer earns its cost. The philosophy is useful when
 it improves decisions and outcomes; its own documentation and process cost
 must earn their place too.
+
+## Resolve conflicting designs
+
+Use the [design hierarchy](../README.md#design-hierarchy) to find the common
+purpose behind the competing choices, and the
+[philosophy's tradeoff rules](design-philosophy.md#how-to-decide-a-tradeoff)
+to decide between them. A proposal's recency, larger feature set or use of the
+word "simple" does not establish that it is better.
+
+1. **Locate the actual disagreement.** Name the affected contract, scope and
+   shared parent requirement. Distinguish an incompatible promise from different
+   implementations, a source defect, a historical record or a deferred proposal.
+2. **Agree on enough.** Compare against the same useful outcome, authority,
+   workload and expected lifetime. Current human requirements can refine the
+   goal; neither proposal may quietly strengthen or narrow it for convenience.
+3. **Apply philosophy and conventions.** Start with deletion or reuse and the
+   simplest sufficient contract. Follow existing ownership, judgment, execution
+   and calling conventions. Explain which rule applies and its concrete effect;
+   citing "agent decides" or "robustness" alone does not choose an implementation.
+4. **Compare consequences.** Consider outcome quality, human effort, recurring
+   cost, maintenance and failure behavior. State any convention exception, its
+   benefit, accepted cost and evidence. If the answer depends on an unknown,
+   use a bounded investigation of that unknown instead of combining both designs.
+5. **Record one decision at its owner.** Explain the selected option and why,
+   what remains uncertain, and when to reconsider. Link affected proposals to
+   that decision and mark superseded scope explicitly. A draft remains a draft;
+   an accepted change updates the owning contract and affected consumers.
+
+For example, both exact step resumption and restarting from retained inputs can
+support work surviving interruption. The parent requirement is continued useful
+work with acceptable redo cost. Cheap repeatable work may favor restart; costly
+or consequential effects may justify retained receipts or checkpoints. The
+philosophy chooses the sufficient behavior for the actual workload; the existence
+of a resume mechanism does not itself make precise resumption a requirement.
+
+Keep the reasoning brief in the existing proposal or decision record:
+
+> Supports [parent outcome]. Following [philosophy/convention], choose [A]
+> over [B] because [evidence and benefit] justify [cost]. Accept [limitation];
+> reconsider if [assumption changes]. This [preserves/proposes to change]
+> [owning contract].
+
+This is a reasoning convention, not another approval gate or scoring system.

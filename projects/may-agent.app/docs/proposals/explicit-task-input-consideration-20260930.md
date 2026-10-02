@@ -1,5 +1,9 @@
 # Explicit Task result scope
 
+**Supports:** [Task Resource Engine](../2a-design/task-resource-engine.md). Preserves exact requirements when a result addresses only part of an input batch.
+
+**Choice basis:** [Applicable philosophy and convention](../1-principles/core-principles.md#one-authority-for-each-resource); [compare competing choices](../1-principles/core-principles.md#resolve-conflicting-designs).
+
 **Status:** Merged in [Host PR #269](https://github.com/hao1939/may-agent/pull/269)
 on 2026-09-30 as `de59c8dae911c8a4e39c925d619164128610301a`; deployment remains separate.
 The simpler process was tested at `ef017d1700f1daba7d31b87960df93a4f6104399`. The earlier additive

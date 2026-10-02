@@ -1,5 +1,9 @@
 # How to Use may-agent
 
+**Supports:** [Human Control Surfaces](../2a-design/human-control-surfaces.md). Explains how people use and steer the shared system.
+
+**Choice basis:** [Core Principles](../1-principles/core-principles.md#convention-over-configuration).
+
 ## Human Requests
 
 A Request is an accepted ask that May must close the loop on. The conversation

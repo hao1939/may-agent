@@ -1,5 +1,9 @@
 # Reachable feedback and honest source promotion
 
+**Supports:** [Teaching agents: from a correction to dependable behavior](agent-behavior-and-capability-extension.md). Makes improvement feedback reachable and distinguishes source preparation from activated behavior.
+
+**Choice basis:** [Applicable philosophy and convention](../1-principles/evolution.md#promotion-tests); [compare competing choices](../1-principles/core-principles.md#resolve-conflicting-designs).
+
 **Status:** Isolated source candidate, four feedback model checks and the
 ordinary-Task and linked-Gym follow-ups below, September 12, 2026. Not merged into
 installation source, activated or deployed. Unsuccessful trials remain evidence.

@@ -1,5 +1,9 @@
 # Review Host scripts, preserve reusable tools and retire completed PoCs
 
+**Supports:** [App Root Layout](../2a-design/app-root-layout.md). Retains useful experimental knowledge while retiring source machinery without ongoing value.
+
+**Choice basis:** [Applicable philosophy and convention](../1-principles/core-principles.md#convention-over-configuration); [compare competing choices](../1-principles/core-principles.md#resolve-conflicting-designs).
+
 **Status:** Accepted for implementation, September 12, 2026. Reviewed source
 candidate published in Host #174; not merged or deployed. Removing `scripts/poc/` is a firm
 completion requirement, not an optional follow-up.

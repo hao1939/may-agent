@@ -1,5 +1,9 @@
 # Workflow practices review
 
+**Supports:** [Workflow Discovery And Execution](../2a-design/workflows.md). Reviews adoption of practical workflow conventions and distinguishes source changes from useful behavior.
+
+**Choice basis:** [Applicable philosophy and convention](../1-principles/code-vs-data.md#composition-preserves-execution-rules); [compare competing choices](../1-principles/core-principles.md#resolve-conflicting-designs).
+
 **Status:** In progress. This is a review and rollout checklist, not a claim
 that all installed workflows follow the new practice.
 

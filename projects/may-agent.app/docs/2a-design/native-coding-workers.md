@@ -1,5 +1,9 @@
 # Native Coding Workers
 
+**Supports:** [Agent Cooperation](agents.md). Reuses a native worker's abilities while preserving Task ownership and bounded execution.
+
+**Choice basis:** [Core Principles](../1-principles/core-principles.md#one-authority-for-each-resource).
+
 **Design status:** One Task owns each durable outcome; native workers supply
 bounded execution or evidence.
 **Implementation status:** Bounded `run_cli_agent` calls and the `codex-goal`

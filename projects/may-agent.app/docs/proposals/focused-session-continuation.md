@@ -1,5 +1,9 @@
 # Reduce context cost through App knowledge and agent methods
 
+**Supports:** [Agent Cooperation](../2a-design/agents.md). Tests lower context cost while preserving the quality of the same assigned work.
+
+**Choice basis:** [Applicable philosophy and convention](../1-principles/core-principles.md#context-is-discovered-not-dumped); [compare competing choices](../1-principles/core-principles.md#resolve-conflicting-designs).
+
 **Design status:** Experimental proposal with an isolated PoC, refined September 15, 2026.
 **Implementation status:** The supporting opt-in preparer merged in Host PR #192 as
 `83a27430794abf49a5ebb3f14a58af387bb8cccb`. Portable checks and bounded model

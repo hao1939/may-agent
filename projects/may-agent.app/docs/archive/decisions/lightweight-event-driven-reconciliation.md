@@ -1,5 +1,7 @@
 # Lightweight Event-Driven Reconciliation
 
+**Historical context:** [System Model](../../2a-design/system-model.md). Retained rationale and evidence; this record does not define the current contract.
+
 > Historical record. Use the [current contract index](../../INDEX.md) for present behavior; dated claims below describe their original review.
 
 

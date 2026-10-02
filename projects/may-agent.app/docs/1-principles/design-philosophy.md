@@ -64,6 +64,11 @@ that its content is satisfactory and redo cost is acceptable. That evidence
 can close the milestone without implementing exact step resumption. Further
 work needs a remaining unmet need or a worthwhile new opportunity.
 
+The [System Model](../2a-design/system-model.md#from-purpose-to-system-responsibilities)
+derives the required system abilities from this goal and links their designs.
+The [documentation hierarchy](../README.md#design-hierarchy) explains how each
+specific design keeps its rationale traceable to that contribution.
+
 ## Value and cost
 
 **Value is what a choice contributes to the project goal:** better outcomes,

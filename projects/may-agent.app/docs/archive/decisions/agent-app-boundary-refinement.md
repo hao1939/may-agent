@@ -1,5 +1,7 @@
 # Proposal: Agent App and Optional Autonomy Boundary
 
+**Historical context:** [App Contract](../../2a-design/agent-app.md). Retained rationale and evidence; this record does not define the current contract.
+
 **Design status:** Historical accepted decision record.
 **Current authority:** [Agent App Contract](../../2a-design/agent-app.md),
 [Task Resource Engine](../../2a-design/task-resource-engine.md), and

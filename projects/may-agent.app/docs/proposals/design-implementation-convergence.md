@@ -1,5 +1,9 @@
 # Design and implementation gaps
 
+**Supports:** [Host And App Boundary](../2a-design/system-boundary.md). Records known source gaps without treating implementation defects as revised requirements.
+
+**Choice basis:** [Applicable philosophy and convention](../1-principles/core-principles.md#one-authority-for-each-resource); [compare competing choices](../1-principles/core-principles.md#resolve-conflicting-designs).
+
 **Status:** Source review index refreshed against Host `1ff18acc` and workspace
 `7f95373b96` on 2026-09-27. This is not a live deployment or App-quality audit.
 The [documentation review](../archive/reviews/design-doc-hygiene-20260927.md)

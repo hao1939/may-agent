@@ -1,5 +1,9 @@
 # Events And Task Admission
 
+**Supports:** [System Model](system-model.md#carry-work-through-change-and-interruption). Makes input and changed facts reach their accountable owners through durable admission.
+
+**Choice basis:** [Core Principles](../1-principles/core-principles.md#one-authority-for-each-resource).
+
 **Design status:** Accepted.
 **Implementation status:** Event persistence, frozen admission journaling,
 direct input-to-Task attachment with paced recovery, exact wakes, Condition wakes, and

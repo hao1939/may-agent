@@ -1,5 +1,7 @@
 # May documentation clarity review
 
+**Historical context:** [System Model](../../2a-design/system-model.md). Retained rationale and evidence; this record does not define the current contract.
+
 **Status:** Historical review; the documentation corrections and consolidation were applied on 2026-09-09.
 **Date:** 2026-09-09.
 **Source baseline:** Host `de2c1699a2df7d5391ffb277b7b490687a6c60e7` (PR #95).

@@ -1,5 +1,7 @@
 # Default error handling and metrics — archived draft
 
+**Historical context:** [Metrics And Alerts](../../2a-design/metrics.md). Retained rationale and evidence; this record does not define the current contract.
+
 **Design status:** Historical draft from 2026-09-09, paused on 2026-09-10.
 The core-metrics classification below was reopened during the subsequent
 [discussion](error-handling-and-conversation-discussion-20260910.md). A simple error hook and App subscriber were

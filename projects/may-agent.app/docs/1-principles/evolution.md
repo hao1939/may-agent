@@ -1,5 +1,9 @@
 # Agent Evolution
 
+**Supports:** [Design Philosophy](design-philosophy.md#learn-without-accumulating-noise). Makes verified experience improve later behavior without accumulating unused machinery.
+
+**Choice basis:** [Design Philosophy](design-philosophy.md#how-to-decide-a-tradeoff).
+
 **Design status:** Accepted.
 
 Evolution is evidence-backed improvement of an owner's behavior. It is not one

@@ -1,5 +1,7 @@
 # Convention-Based Service Composition
 
+**Historical context:** [Host And App Boundary](../../2a-design/system-boundary.md). Retained rationale and evidence; this record does not define the current contract.
+
 **Status:** Accepted and incorporated; archived decision
 **Decision date:** 2026-08-15
 **Scope:** How runtime modules and App-owned capabilities compose after the

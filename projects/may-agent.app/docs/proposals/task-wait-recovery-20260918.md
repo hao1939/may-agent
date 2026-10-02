@@ -1,5 +1,9 @@
 # Recovering unanswered input after wait corrections
 
+**Supports:** [Task Resource Engine](../2a-design/task-resource-engine.md). Retains unanswered input after a corrected wait so later work can fulfill the original requirements.
+
+**Choice basis:** [Applicable philosophy and convention](../1-principles/core-principles.md#one-authority-for-each-resource); [compare competing choices](../1-principles/core-principles.md#resolve-conflicting-designs).
+
 Status: merged locally and deployed on September 18, 2026. Host `e0e0b846`
 includes the original wait recovery candidate `afcefe76`, PR #195 integration
 `9b649b91`, and equivalent historical admission recovery. Paired App release:

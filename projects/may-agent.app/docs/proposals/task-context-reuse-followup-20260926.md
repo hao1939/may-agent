@@ -1,5 +1,9 @@
 # Task context: reuse and smaller presentation changes
 
+**Supports:** [Agent Cooperation](../2a-design/agents.md). Tests whether smaller context and reuse guidance reduce work without degrading behavior.
+
+**Choice basis:** [Applicable philosophy and convention](../1-principles/core-principles.md#context-is-discovered-not-dumped); [compare competing choices](../1-principles/core-principles.md#resolve-conflicting-designs).
+
 **Status:** Completed: 68 matched executions plus a separate six-run field check.
 Evidence verified. No production
 source or deployment changed. This follows the

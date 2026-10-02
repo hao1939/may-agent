@@ -1,13 +1,26 @@
 # Documentation Index
 
+**Supports:** [Design hierarchy](README.md#design-hierarchy). Routes a feature or proposal to its owning contract and the reasoning behind it.
+
 Start with [README.md](README.md) for task-oriented reading paths. This index
 lists every current design/manual and routes historical material to the
 archive.
+
+## Follow the design from its purpose
+
+Start with [project purpose and value](1-principles/design-philosophy.md#mays-goal),
+then [required system abilities and their owning designs](2a-design/system-model.md#from-purpose-to-system-responsibilities).
+Each subsystem's rationale should link back to the responsibility it supports;
+its contract links onward to usage and evidence. See the
+[design hierarchy](README.md#design-hierarchy) for the convention. The tables
+below locate contract owners; they do not replace those reasoning links.
 
 ## Which document owns the answer?
 
 | Question | Authority |
 | --- | --- |
+| Why does a design exist, and how does it serve the project purpose? | [Design hierarchy](README.md#design-hierarchy) and [system responsibilities](2a-design/system-model.md#from-purpose-to-system-responsibilities) |
+| How do philosophy, conventions and practice choose between proposals? | [Resolve conflicting designs](1-principles/core-principles.md#resolve-conflicting-designs) |
 | How do we apply the philosophy to actual work and reviews? | [Decision and review guide](1-principles/core-principles.md#review-rule) |
 | What is May for, and what counts as progress? | [May's goal](1-principles/design-philosophy.md#mays-goal) |
 | How do we define a project goal clearly enough to choose work? | [Define the goal first](1-principles/design-philosophy.md#define-the-goal-first) |
@@ -143,31 +156,63 @@ and implementation history at stable paths. Inclusion here does not mean a
 change is pending, unmerged or deployed. Read the record's evidence and the
 current owning contract together; use Git for current PR/source status.
 
-- [Recover current work from execution evidence](proposals/recovery-from-execution-evidence-20260922.md)
-- [Keep recovery from blocking ordinary Host requests](proposals/responsive-host-recovery-20261002.md)
-- [Task context discovery](proposals/task-context-discovery-20260917.md)
-- [Design documentation live-truth review](proposals/design-doc-live-truth-review-20260920.md)
-- [Ordinary commands from Task workers](proposals/task-worker-command-context-20260919.md)
-- [Explicit Task result scope](proposals/explicit-task-input-consideration-20260930.md)
-- [Wait corrections and unanswered input recovery](proposals/task-wait-recovery-20260918.md)
-- [Reduce context cost through App knowledge and agent methods](proposals/focused-session-continuation.md)
-- [Keep domain policy in Apps, keep the Host generic](proposals/app-policy-and-host-boundary-cleanup.md)
-- [A recurring task to review and improve May](proposals/may-project-review-loop-20260912.md)
-- [Review Host scripts and retire completed PoCs](proposals/poc-retirement-and-knowledge-20260912.md)
-- [Teaching agents: from a correction to dependable behavior](proposals/agent-behavior-and-capability-extension.md)
-- [guidance PoC](proposals/agent-adoption-poc-20260912.md)
-- [workflow process-stability follow-up](proposals/workflow-stability-poc-20260912.md)
-- [real-daemon teaching / natural procedure selection](proposals/conversation-adoption-poc-20260912.md)
-- [Telegram: a natural conversation with reliable follow-through](proposals/telegram-conversation-experience.md)
-- [Conversation and Task: one reconciliation model](proposals/conversation-input-unification.md)
-- [Workflow tracing by default and useful health metrics](proposals/workflow-tracing-and-health-metrics.md)
-- [External components: simple, solid, and clearly organized](proposals/external-components-simplification.md)
-- [Reliable observer feedback without a subscription system](proposals/observer-feedback-and-resource-conventions.md)
-- [Storage: a state service backed by SQLite](proposals/storage-state-service.md)
-- [Task controller pattern](proposals/task-controller-pattern.md)
-- [Stable core and replaceable capabilities](proposals/task-runtime-organization.md)
-- [Simplify the system: fewer paths, clear owners](proposals/authority-boundary-simplification.md)
-- [design-implementation-convergence.md](proposals/design-implementation-convergence.md)
+Compare records against the same parent need and owning contract. Their
+individual status and evidence distinguish proposed changes from retained trials;
+a place in this table does not make a record current authority.
+
+| Proposal or evidence record | Parent need or contract |
+| --- | --- |
+| [Task observation: declare the interest, supply the detector](proposals/task-observation-contract-20260930.md) | [App Contract](2a-design/agent-app.md) |
+| [Agent prompt assembly: source review and simplification proposal](proposals/agent-prompt-assembly-review-20260927.md) | [Agent Cooperation](2a-design/agents.md) |
+| [Consolidate execution entry points](proposals/execution-entrypoint-consolidation.md) | [Agent Cooperation](2a-design/agents.md) |
+| [Reduce context cost through App knowledge and agent methods](proposals/focused-session-continuation.md) | [Agent Cooperation](2a-design/agents.md) |
+| [Task context discovery and agent-directed work](proposals/task-context-discovery-20260917.md) | [Agent Cooperation](2a-design/agents.md) |
+| [Task context: reuse and smaller presentation changes](proposals/task-context-reuse-followup-20260926.md) | [Agent Cooperation](2a-design/agents.md) |
+| [Task context: matched behavior comparison](proposals/task-decision-context-behavior-comparison-20260926.md) | [Agent Cooperation](2a-design/agents.md) |
+| [Apply the Task decision-context proposal](proposals/task-decision-context-integration-20260926.md) | [Agent Cooperation](2a-design/agents.md) |
+| [Ordinary commands from Task workers](proposals/task-worker-command-context-20260919.md) | [Agent Cooperation](2a-design/agents.md) |
+| [Review Host scripts, preserve reusable tools and retire completed PoCs](proposals/poc-retirement-and-knowledge-20260912.md) | [App Root Layout](2a-design/app-root-layout.md) |
+| [Core review: simple, robust, replaceable](proposals/task-runtime-organization.md) | [Architecture](2a-design/architecture.md) |
+| [Return problems to the caller](proposals/caller-feedback-and-waiting.md) | [Escalation](2a-design/escalation.md) |
+| [Reliable observer feedback without a subscription system](proposals/observer-feedback-and-resource-conventions.md) | [Events And Task Admission](2a-design/events.md) |
+| [Telegram: a natural conversation with reliable follow-through](proposals/telegram-conversation-experience.md) | [Human Control Surfaces](2a-design/human-control-surfaces.md) |
+| [Workflow tracing by default and useful health metrics](proposals/workflow-tracing-and-health-metrics.md) | [Metrics And Alerts](2a-design/metrics.md) |
+| [Teaching agents: from a correction to dependable behavior](proposals/agent-behavior-and-capability-extension.md) | [Agent improvement: an optional App integration](2a-design/practice-learning-loop.md) |
+| [A recurring task to review and improve May](proposals/may-project-review-loop-20260912.md) | [Agent improvement: an optional App integration](2a-design/practice-learning-loop.md) |
+| [Keep recovery from blocking ordinary Host requests](proposals/responsive-host-recovery-20261002.md) | [Host Runtime](2a-design/runtime.md) |
+| [Storage: a state service backed by SQLite](proposals/storage-state-service.md) | [Runtime Storage](2a-design/storage.md) |
+| [App behavior convergence review](proposals/app-behavior-convergence-20260925.md) | [Host And App Boundary](2a-design/system-boundary.md) |
+| [Keep domain policy in Apps, keep the Host generic](proposals/app-policy-and-host-boundary-cleanup.md) | [Host And App Boundary](2a-design/system-boundary.md) |
+| [Simplify the system: fewer paths, clear owners](proposals/authority-boundary-simplification.md) | [Host And App Boundary](2a-design/system-boundary.md) |
+| [Design and implementation gaps](proposals/design-implementation-convergence.md) | [Host And App Boundary](2a-design/system-boundary.md) |
+| [One execution feedback model](proposals/execution-feedback-and-review.md) | [Host And App Boundary](2a-design/system-boundary.md) |
+| [Execution feedback: repair proposal](proposals/execution-feedback-repair-plan.md) | [Host And App Boundary](2a-design/system-boundary.md) |
+| [External components: simple, solid, and clearly organized](proposals/external-components-simplification.md) | [Host And App Boundary](2a-design/system-boundary.md) |
+| [Recover current work from execution evidence](proposals/recovery-from-execution-evidence-20260922.md) | [Host And App Boundary](2a-design/system-boundary.md) |
+| [Agent capability guidance and infra contract](proposals/task-execution-capabilities-20261002.md) | [Host And App Boundary](2a-design/system-boundary.md) |
+| [One Task lifecycle](proposals/conversation-input-unification.md) | [System Model](2a-design/system-model.md) |
+| [Design documentation must match intended contracts and evidence](proposals/design-doc-live-truth-review-20260920.md) | [System Model](2a-design/system-model.md) |
+| [Does the common Task loop pay for itself?](proposals/controller-poc-deeper-review.md) | [Task Resource Engine](2a-design/task-resource-engine.md) |
+| [Controller PoC: evidence and next gate](proposals/controller-poc-evidence.md) | [Task Resource Engine](2a-design/task-resource-engine.md) |
+| [Returning an answer after a wait](proposals/controller-poc-input-continuation.md) | [Task Resource Engine](2a-design/task-resource-engine.md) |
+| [Common outcomes and closure: source experiment](proposals/controller-poc-outcomes-and-closure.md) | [Task Resource Engine](2a-design/task-resource-engine.md) |
+| [Recovery against the continuing-Task design](proposals/controller-poc-recovery-review.md) | [Task Resource Engine](2a-design/task-resource-engine.md) |
+| [Explicit Task result scope](proposals/explicit-task-input-consideration-20260930.md) | [Task Resource Engine](2a-design/task-resource-engine.md) |
+| [Agent input and output: understanding requests, deciding next steps](proposals/task-attempt-decision-schema-20261002.md) | [Task Resource Engine](2a-design/task-resource-engine.md) |
+| [Task controller pattern: one commitment, one lifecycle](proposals/task-controller-pattern.md) | [Task Resource Engine](2a-design/task-resource-engine.md) |
+| [Recovering unanswered input after wait corrections](proposals/task-wait-recovery-20260918.md) | [Task Resource Engine](2a-design/task-resource-engine.md) |
+| [Workflow practices review](proposals/workflow-practices-review.md) | [Workflow Discovery And Execution](2a-design/workflows.md) |
+| [Workflow PoC: make the process dependable](proposals/workflow-stability-poc-20260912.md) | [Workflow Discovery And Execution](2a-design/workflows.md) |
+| [Design hierarchy and rationale review](proposals/design-hierarchy-review-20261003.md) | [May System Documentation](README.md#design-hierarchy) |
+| [Agent adoption PoC: what actually changed behavior](proposals/agent-adoption-poc-20260912.md) | [Teaching agents: from a correction to dependable behavior](proposals/agent-behavior-and-capability-extension.md) |
+| [Can an agent operate the improvement mechanism itself?](proposals/agent-operated-improvement-poc-20260912.md) | [Teaching agents: from a correction to dependable behavior](proposals/agent-behavior-and-capability-extension.md) |
+| [Teaching May through conversation: next-phase results](proposals/conversation-adoption-poc-20260912.md) | [Teaching agents: from a correction to dependable behavior](proposals/agent-behavior-and-capability-extension.md) |
+| [Agent extension methods: choosing, activating and evaluating changes](proposals/extension-methods-poc-20260912.md) | [Teaching agents: from a correction to dependable behavior](proposals/agent-behavior-and-capability-extension.md) |
+| [Reachable feedback and honest source promotion](proposals/feedback-adoption-integration-20260912.md) | [Teaching agents: from a correction to dependable behavior](proposals/agent-behavior-and-capability-extension.md) |
+| [Agent improvement through one ordinary Task](proposals/task-improvement-poc-20260912.md) | [Teaching agents: from a correction to dependable behavior](proposals/agent-behavior-and-capability-extension.md) |
+| [Reviewing the capability contract against 90 recent PRs](proposals/task-capability-pr-review-20261003.md) | [Agent capability guidance and infra contract](proposals/task-execution-capabilities-20261002.md) |
+| [Task execution capability contracts](proposals/task-execution-capability-contracts-20261003.md) | [Agent capability guidance and infra contract](proposals/task-execution-capabilities-20261002.md) |
+| [Task observation implementation and recovery evidence](proposals/task-observation-implementation-20260930.md) | [Task observation: declare the interest, supply the detector](proposals/task-observation-contract-20260930.md) |
 
 Earlier reviewed drafts were resolved as follows:
 

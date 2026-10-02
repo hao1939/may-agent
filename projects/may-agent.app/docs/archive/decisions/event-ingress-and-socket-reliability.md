@@ -1,5 +1,7 @@
 # Event Ingress And Socket Reliability
 
+**Historical context:** [Events And Task Admission](../../2a-design/events.md). Retained rationale and evidence; this record does not define the current contract.
+
 **Status:** Socket/receipt mechanics implemented; App ownership sections
 superseded by `canonical-agent-app-migration.md` (2026-08-15)
 **Scope:** App/agent event ingress, durable receipts, Unix socket behavior,

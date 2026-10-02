@@ -1,5 +1,9 @@
 # Common outcomes and closure: source experiment
 
+**Supports:** [Task Resource Engine](../2a-design/task-resource-engine.md). Tests separating accepted contributions, outstanding work and owner closure.
+
+**Choice basis:** [Applicable philosophy and convention](../1-principles/core-principles.md#one-authority-for-each-resource); [compare competing choices](../1-principles/core-principles.md#resolve-conflicting-designs).
+
 **Status:** Active, unmerged experiment; not ready for cutover. It follows the
 [first evidence slice](controller-poc-evidence.md), which remains separately
 reviewable in Host PR #150. The accepted target is still the

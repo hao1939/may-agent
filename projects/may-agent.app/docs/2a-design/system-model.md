@@ -12,6 +12,91 @@ responsibility and decides what a useful outcome means. The Host records work,
 runs bounded execution, and preserves truthful state through waits and failures.
 An agent, workflow or native executor performs the work within that boundary.
 
+## From purpose to system responsibilities
+
+**Supports:** [May's goal](../1-principles/design-philosophy.md#mays-goal).
+
+**Choice basis:** [Technical decision and review rules](../1-principles/core-principles.md#review-rule), applied to the goal's value, cost and steering requirements.
+
+The goal is useful, verified results with decreasing supervision and acceptable
+total cost, while work remains understandable and steerable. The responsibilities
+below explain what the system must make possible to serve that goal. They are
+reasons for the designs, not additional components. Exact contracts stay in the
+linked owning documents; the [documentation hierarchy](../README.md#design-hierarchy)
+defines how to follow the reasoning in both directions.
+
+### Understand intent and close the loop
+
+Useful results require understanding what the human needs and retaining what
+was promised as discussion evolves. Conversation and accepted Requests preserve
+that relationship; progress or handoff alone cannot establish fulfillment.
+The agent judges intent and outcome, while infra retains inputs, accepted
+decisions and delivery facts.
+
+Owning designs: [message lifecycle](message-lifecycle.md),
+[project context](projects.md), and [human control surfaces](human-control-surfaces.md).
+Interfaces share those contracts: [Telegram](telegram-notifications.md),
+[Web UI](webui.md), [May console](may-console.md),
+[project readout](default-project-ui.md), [HTTP](http-boundary.md),
+and [web terminal](web-terminal.md).
+
+### Enable useful action within authority
+
+Less supervision requires agents to choose and execute appropriate actions
+without operating delivery machinery. Understandable context and callable
+contracts support judgment; scoped execution and human controls keep the work
+steerable. Agents decide, infra executes, and Apps supply domain guidance.
+Known procedures can use workflows, asking an agent where judgment is needed.
+
+Owning designs: [agents](agents.md), [SDK](sdk.md), [workflows](workflows.md),
+[skills](skills.md), [native workers](native-coding-workers.md), and
+[Host/App boundary](system-boundary.md). The
+[capability guidance proposal](../proposals/task-execution-capabilities-20261002.md)
+refines this responsibility and its connections to continued work; its proposed
+interfaces remain separate from installed behavior.
+
+### Carry work through change and interruption
+
+Work that spans executions should not require the human to reconstruct the
+assignment or repeat reminders. Retain requirements, accepted work and relevant
+waiting facts, then return new input to the owner. An attempt can end while
+the responsibility remains. This requires durable ownership and useful recovery,
+not exact resumption of every internal step. Direct bounded work stays simple.
+
+Owning designs: [Task engine](task-resource-engine.md), [events](events.md),
+[storage](storage.md), [runtime](runtime.md), and [sessions](sessions.md).
+[Cron](cron.md) and [heartbeat](heartbeat.md) supply declared time or health
+observations through those owners; they do not introduce another work lifecycle.
+
+### Improve from evidence and make problems actionable
+
+Decreasing supervision and acceptable cost require recognizing repeated failures,
+learning from successful work, and checking whether changes improve later work.
+Infra retains usable evidence and executes declared observation routes. The
+responsible agent judges trends and chooses repair, further observation or help.
+The evidence must distinguish an accepted assessment from recovery of the work.
+
+Owning designs: [metrics](metrics.md), [guards](guards.md),
+[event traces](event-graph.md), [evaluation evidence](session-eval-trail.md),
+[escalation](escalation.md), and the optional
+[practice and learning integration](practice-learning-loop.md). The
+[learning principle](../1-principles/evolution.md) explains when verified experience
+should change knowledge or mechanisms.
+
+### Reuse the foundation at an acceptable cost
+
+New domains should add useful abilities without rebuilding execution and
+coordination. Shared contracts and clear owners keep changes local and reduce
+implementation, operation and reasoning costs. A common interface earns its
+place through real use; abstraction or coverage alone does not establish value.
+
+Owning designs: [architecture](architecture.md), [Host/App boundary](system-boundary.md),
+[App contract](agent-app.md), [App layout](app-root-layout.md), and
+[bounded Task reads](task-resource-read-interface.md). Shared mechanisms can
+support several responsibilities; each has one contract owner.
+
+## The shared work model
+
 **Discuss in Conversation. Track accepted asks as Requests. Delegate Tasks when
 work needs independent execution.** Underneath, the Conversation uses one
 logical Task lineage to handle its inputs; normally that is one stable Task. If

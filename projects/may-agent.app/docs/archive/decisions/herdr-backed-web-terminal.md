@@ -1,5 +1,7 @@
 # Herdr-Backed Web Terminal
 
+**Historical context:** [Web Terminal](../../2a-design/web-terminal.md). Retained rationale and evidence; this record does not define the current contract.
+
 > Historical record. Use the [current contract index](../../INDEX.md) for present behavior; dated claims below describe their original review.
 
 

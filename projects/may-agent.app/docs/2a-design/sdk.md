@@ -1,5 +1,9 @@
 # May-Agent SDK
 
+**Supports:** [Host And App Boundary](system-boundary.md). Exposes shared contracts to Apps and workflows without exposing Host mechanics.
+
+**Choice basis:** [Core Principles](../1-principles/core-principles.md#convention-over-configuration).
+
 **Design status:** Accepted.
 **Implementation status:** Durable App work, including Conversation turns, uses
 Task reconciliation. The shared bounded Task collection is exposed as

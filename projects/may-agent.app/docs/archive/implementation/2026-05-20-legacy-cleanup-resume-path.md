@@ -1,5 +1,7 @@
 # 2026-05-20 — Legacy cleanup: dead ApiGate + unified resume path
 
+**Historical context:** [Sessions](../../2a-design/sessions.md). Retained rationale and evidence; this record does not define the current contract.
+
 **Status:** Historical implementation record. Completed removals and deferred
 observations below describe that migration point; re-verify any remaining gap
 against current Tier 2 design and source before acting.

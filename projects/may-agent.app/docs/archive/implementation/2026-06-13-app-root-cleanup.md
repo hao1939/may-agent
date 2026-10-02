@@ -1,5 +1,7 @@
 # App Root Cleanup — 2026-06-13
 
+**Historical context:** [App Root Layout](../../2a-design/app-root-layout.md). Retained rationale and evidence; this record does not define the current contract.
+
 **Status:** Historical implementation record.
 
 This record preserves the first root-layout cleanup inventory. It is not the

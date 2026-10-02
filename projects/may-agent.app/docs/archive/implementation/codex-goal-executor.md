@@ -1,5 +1,7 @@
 # Resumable Codex Goal Executor
 
+**Historical context:** [Native Coding Workers](../../2a-design/native-coding-workers.md). Retained rationale and evidence; this record does not define the current contract.
+
 **Status:** Historical evaluation proposal; the accepted behavior and current
 correction/wait boundaries are authoritative in
 [`native-coding-workers.md`](../../2a-design/native-coding-workers.md).

@@ -1,5 +1,7 @@
 # Bounded May project-review pilot — 2026-09-12
 
+**Historical context:** [A recurring task to review and improve May](../../proposals/may-project-review-loop-20260912.md). Retained rationale and evidence; this record does not define the current contract.
+
 **Status:** Preliminary isolated trials and one real local-container review
 completed. This is evidence for the
 [review-loop proposal](../../proposals/may-project-review-loop-20260912.md),

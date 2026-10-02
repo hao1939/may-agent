@@ -1,5 +1,7 @@
 # Task-Focused Shared Human Interface
 
+**Historical context:** [Human Control Surfaces](../../2a-design/human-control-surfaces.md). Retained rationale and evidence; this record does not define the current contract.
+
 **Status:** Accepted and implemented; archived decision record
 
 **Scope:** May Console, Telegram, future Conversation adapters, Task references,

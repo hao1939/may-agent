@@ -1,5 +1,9 @@
 # Simplify the system: fewer paths, clear owners
 
+**Supports:** [Host And App Boundary](../2a-design/system-boundary.md). Removes competing execution and state paths to reduce operational and change cost.
+
+**Choice basis:** [Applicable philosophy and convention](../1-principles/core-principles.md#one-authority-for-each-resource); [compare competing choices](../1-principles/core-principles.md#resolve-conflicting-designs).
+
 **Status:** Task/HTTP, caller-feedback, script-retirement, event-delivery and
 checkpoint/tool-state cleanup are merged. The September 27 repository-wide
 cleanup is merged through Host `b79a693f`; see its inventory below. Workflow redo

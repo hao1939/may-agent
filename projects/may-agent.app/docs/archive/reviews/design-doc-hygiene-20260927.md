@@ -1,5 +1,7 @@
 # Design documentation review — 2026-09-27
 
+**Historical context:** [System Model](../../2a-design/system-model.md). Retained rationale and evidence; this record does not define the current contract.
+
 This is a source and documentation review, not deployment or model-behavior
 verification. Host baseline: `1ff18acc` (includes #252/#253). Workspace baseline:
 `7f95373b96`. The source reading guide now names that Host baseline.

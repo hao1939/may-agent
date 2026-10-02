@@ -1,5 +1,7 @@
 # Convergence review history through September 8, 2026
 
+**Historical context:** [System Model](../../2a-design/system-model.md). Retained rationale and evidence; this record does not define the current contract.
+
 **Status:** Historical snapshot of the previous main tracker. Earlier open,
 candidate and rollout statements refer to their named revisions. Use the
 [current gap index](../../proposals/design-implementation-convergence.md)

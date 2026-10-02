@@ -1,5 +1,9 @@
 # Storage: a state service backed by SQLite
 
+**Supports:** [Runtime Storage](../2a-design/storage.md). Converges atomic state changes behind the existing owning storage boundary.
+
+**Choice basis:** [Applicable philosophy and convention](../1-principles/core-principles.md#one-authority-for-each-resource); [compare competing choices](../1-principles/core-principles.md#resolve-conflicting-designs).
+
 **Design status:** The local state-service boundary is accepted. Input-to-Task
 attachment is implemented; Conversation state and handler extraction below is
 the next proposed slice. Broader extraction remains conditional on evidence.

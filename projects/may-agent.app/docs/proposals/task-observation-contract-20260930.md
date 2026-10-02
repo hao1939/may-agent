@@ -1,5 +1,9 @@
 # Task observation: declare the interest, supply the detector
 
+**Supports:** [App Contract](../2a-design/agent-app.md). Proposes how an agent states an interest and infra wires the App detector through existing Conditions.
+
+**Choice basis:** [Applicable philosophy and convention](../1-principles/core-principles.md#convention-over-configuration); [compare competing choices](../1-principles/core-principles.md#resolve-conflicting-designs).
+
 **Status:** Original proposal, followed by a nine-scenario POC and the
 [implementation candidate](task-observation-implementation-20260930.md).
 Use that record and the current App/SDK contracts for the implemented API and

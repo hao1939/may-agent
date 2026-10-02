@@ -1,5 +1,9 @@
 # Does the common Task loop pay for itself?
 
+**Supports:** [Task Resource Engine](../2a-design/task-resource-engine.md). Tests whether the common lifecycle reduces complexity while preserving natural delegation and recovery.
+
+**Choice basis:** [Applicable philosophy and convention](../1-principles/core-principles.md#one-authority-for-each-resource); [compare competing choices](../1-principles/core-principles.md#resolve-conflicting-designs).
+
 **Status:** Source follow-up to [Host #158](https://github.com/hao1939/may-agent/pull/158),
 September 12, 2026. Unmerged and undeployed. The [proposal](conversation-input-unification.md)
 owns the lifecycle contract; the [earlier audit](controller-poc-recovery-review.md)

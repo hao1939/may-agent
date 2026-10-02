@@ -1,5 +1,9 @@
 # Metric Alert Manual
 
+**Supports:** [Metrics And Alerts](../2a-design/metrics.md). Turns metric evidence into owned investigation without confusing a breach with a diagnosis.
+
+**Choice basis:** [Core Principles](../1-principles/core-principles.md#convention-over-configuration).
+
 A metric alert is an observation that may need judgment. It is not a Task,
 owner inbox item, or automatic instruction to change the system.
 

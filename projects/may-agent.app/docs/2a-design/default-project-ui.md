@@ -1,5 +1,9 @@
 # Default Project UI
 
+**Supports:** [Human Control Surfaces](human-control-surfaces.md). Makes any App's goal, progress and next decision understandable through a common readout.
+
+**Choice basis:** [Core Principles](../1-principles/core-principles.md#convention-over-configuration).
+
 **Design status:** Accepted.
 **Implementation status:** The Task board uses bounded human Task list/detail
 reads through the daemon. It no longer loads a path-based whole-App snapshot.

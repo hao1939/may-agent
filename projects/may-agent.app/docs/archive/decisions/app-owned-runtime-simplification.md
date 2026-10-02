@@ -1,5 +1,7 @@
 # App-Owned Runtime Simplification
 
+**Historical context:** [App Contract](../../2a-design/agent-app.md). Retained rationale and evidence; this record does not define the current contract.
+
 **Status:** Superseded and completed by `canonical-agent-app-migration.md`
 **Scope:** Simplify the autonomous infrastructure by making an Agent App the
 durable owner of addressed work

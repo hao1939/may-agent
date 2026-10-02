@@ -1,10 +1,82 @@
 # May System Documentation
 
+**Supports:** [May's goal](1-principles/design-philosophy.md#mays-goal). Keeps feature needs and design choices traceable so the system remains understandable and affordable to change.
+
 This is the single design and operating-documentation home for May, including
 its Host in `projects/may-agent`. Start with [May's goal](1-principles/design-philosophy.md#mays-goal)
 for the intended outcome and [System Model](2a-design/system-model.md) for how
 the system works. Use [INDEX.md](INDEX.md) to find the document that owns a
 specific contract.
+
+## Design hierarchy
+
+The design has a hierarchy of reasons. From a specific rule, a reader should
+be able to follow why it exists back to the project's purpose. From the purpose,
+a reader should be able to find the designs responsible for delivering its value.
+
+```text
+Project purpose and value                     Design Philosophy
+  -> needed features and behavior              System Model
+    -> responsibilities and shared boundaries  Architecture / Host-App Boundary
+      -> specific behavior and contracts       owning subsystem design
+        -> use, implementation and evidence    manuals, code, trials and reviews
+
+Philosophy + conventions + verified practice
+  -> why we choose this design over alternatives, at each relevant level
+```
+
+Each step explains how it contributes to the step above. The
+[project goal](1-principles/design-philosophy.md#mays-goal) owns purpose and value;
+the [system responsibilities](2a-design/system-model.md#from-purpose-to-system-responsibilities)
+translate them into abilities and link the owning designs. The tiers below
+remain storage categories. No directory move or new document is required for
+each level; a section can own a small responsibility.
+
+For each design, keep the following explanation beside its contract:
+
+- **Supports:** link to the specific parent responsibility or requirement.
+- **Contribution:** explain what becomes possible or less costly, and what
+  would be lost without this behavior. A generic link to the project goal is
+  insufficient on its own.
+- **Choice and limits:** explain why this mechanism is sufficient, its material
+  cost, and why a simpler existing path does not meet the need. Link the relevant
+  philosophy and convention, explaining how they informed the choice. State a
+  justified exception explicitly. Avoid restating the parent contract.
+- **Evidence:** link observations or checks that support the choice, identify
+  uncertainty, and say what would justify revisiting it.
+
+A short paragraph can cover these points. Existing documents can retain their
+own headings; this is a review convention, not a required schema or approval
+process. Drafts identify their proposed parent and remain drafts until accepted.
+A proposal can be merged while still draft or unimplemented. Record design
+acceptance, source implementation and deployment separately; merging the document
+does not by itself establish any of them.
+
+Keep scope/ownership, evidence/uncertainty and status/revisit conditions explicit
+where they affect the decision. They are supporting dimensions, not more levels
+in the hierarchy. Cost belongs in the comparison of choices, including human
+attention, runtime work and maintenance. A source fix and a verified improvement
+in use are different evidence.
+
+Use one primary parent for navigation and additional links where a shared design
+supports several responsibilities. Storage, events and execution need not be
+copied into separate value branches. Dependency links explain what a design uses;
+the parent link explains why it exists. Evidence can challenge a mechanism or a
+parent requirement, so review can move upward as well as downward.
+
+For example: less human supervision -> carry work through interruption ->
+durable Task ownership -> retain unanswered inputs and accepted results ->
+verify that resumed work incorporates a correction without losing prior work.
+This justifies preserving responsibility; it does not, by itself, require
+preserving every execution step. Cheap work can still restart.
+
+Purpose and value explain **why** a design is needed. Philosophy and conventions
+guide **how** to choose it. The
+[conflict review rule](1-principles/core-principles.md#resolve-conflicting-designs)
+owns comparison of competing proposals. Existing conventions provide a useful
+default; an evidence-backed exception can improve the outcome. A new proposal
+does not silently replace the accepted contract, and an accepted contract can
+be revised when its value no longer justifies its cost.
 
 ## Reading source and installation status
 
@@ -37,6 +109,7 @@ small shared state boundary.
 | I want to… | Start here | Then read as needed |
 | --- | --- | --- |
 | Understand what May is for and what counts as progress | [Goal definition](1-principles/design-philosophy.md#define-the-goal-first) | [Fundamental tradeoff rules](1-principles/design-philosophy.md#how-to-decide-a-tradeoff) |
+| Explain why a feature exists or choose between conflicting proposals | [Design hierarchy](#design-hierarchy) | [Feature responsibilities](2a-design/system-model.md#from-purpose-to-system-responsibilities), then [conflict review](1-principles/core-principles.md#resolve-conflicting-designs) |
 | Choose work or review a design or PR | [Decision and review guide](1-principles/core-principles.md#review-rule) | [Fundamental tradeoff rules](1-principles/design-philosophy.md#how-to-decide-a-tradeoff), then the owning contract in [INDEX](INDEX.md) |
 | Read and review the implementation | [Source reading guide](2b-manual/source-reading-guide.md) | Follow a Task and agent execution; inspect model context, evidence and extension boundaries |
 | Build an App or improve its behavior | [SDK Quickstart](2b-manual/sdk-quickstart.md) | [App Contract](2a-design/agent-app.md), [Task authoring](2b-manual/handler-authoring.md), [Workflow authoring](2b-manual/workflow-authoring.md), [Adoption checklist](2b-manual/agent-app-adoption-playbook.md) |

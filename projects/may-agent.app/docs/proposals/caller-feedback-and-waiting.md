@@ -1,5 +1,9 @@
 # Return problems to the caller
 
+**Supports:** [Escalation](../2a-design/escalation.md). Returns failure evidence and needed decisions to the exact owner while preserving useful work.
+
+**Choice basis:** [Applicable philosophy and convention](../1-principles/core-principles.md#one-authority-for-each-resource); [compare competing choices](../1-principles/core-principles.md#resolve-conflicting-designs).
+
 **Status:** Source merged as `b1c7cbef` on September 12, 2026; isolated mechanics
 and bounded live-agent adoption tested. Deployment remains separate.
 **Review:** [Host PR #169](https://github.com/hao1939/may-agent/pull/169), merged.

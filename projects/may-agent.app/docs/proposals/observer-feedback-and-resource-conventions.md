@@ -1,5 +1,9 @@
 # Reliable observer feedback without a subscription system
 
+**Supports:** [Events And Task Admission](../2a-design/events.md). Explores returning provider facts through existing observation and caller ownership.
+
+**Choice basis:** [Applicable philosophy and convention](../1-principles/core-principles.md#one-authority-for-each-resource); [compare competing choices](../1-principles/core-principles.md#resolve-conflicting-designs).
+
 **September 30 follow-up:** [Task observation contract](task-observation-contract-20260930.md)
 proposes an agent-facing contract that derives observation needs from existing
 Conditions. It records a fresh source review and probes; read it for current

@@ -1,5 +1,9 @@
 # Task observation implementation and recovery evidence
 
+**Supports:** [Task observation: declare the interest, supply the detector](task-observation-contract-20260930.md). Records implementation and recovery evidence for the supported observation contract.
+
+**Choice basis:** [Applicable philosophy and convention](../1-principles/core-principles.md#convention-over-configuration); [compare competing choices](../1-principles/core-principles.md#resolve-conflicting-designs).
+
 **Status:** Source implementation candidate; not deployed. This follows the
 [proposal](task-observation-contract-20260930.md) and POC branch
 `poc/task-observation-20260930` at workspace commit `fe77f03b9b`.

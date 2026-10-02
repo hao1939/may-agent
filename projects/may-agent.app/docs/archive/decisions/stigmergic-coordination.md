@@ -1,5 +1,7 @@
 # Proposal: Formalize Stigmergic Coordination
 
+**Historical context:** [Projects](../../2a-design/projects.md). Retained rationale and evidence; this record does not define the current contract.
+
 **Status:** historical / partially superseded by Project App V3
 **Date:** 2026-05-03 (revised 2026-05-08)
 **References:** [architecture.md](../../2a-design/architecture.md),

@@ -1,5 +1,9 @@
 # HTTP API And Web UI Boundary
 
+**Supports:** [Host And App Boundary](system-boundary.md). Connects browser reads and controls to their existing owners without duplicating policy.
+
+**Choice basis:** [Core Principles](../1-principles/core-principles.md#one-authority-for-each-resource).
+
 **Design status:** Accepted.
 **Implementation status:** Controls use shared event publication. Conversation,
 human Task and App-ID Task reads forward through the daemon's shared read

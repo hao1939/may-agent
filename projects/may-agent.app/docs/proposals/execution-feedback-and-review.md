@@ -1,5 +1,9 @@
 # One execution feedback model
 
+**Supports:** [Host And App Boundary](../2a-design/system-boundary.md). Clarifies execution facts and return ownership across helpers and durable work.
+
+**Choice basis:** [Applicable philosophy and convention](../1-principles/core-principles.md#one-authority-for-each-resource); [compare competing choices](../1-principles/core-principles.md#resolve-conflicting-designs).
+
 The follow-up [repair proposal](execution-feedback-repair-plan.md) turns the
 component review into focused implementation slices, tradeoffs and acceptance
 checks. This document retains the common model and preceding PoC evidence.

@@ -1,5 +1,7 @@
 # Retry/Recovery Decomposition Rule (stable-responsibility anchoring)
 
+**Historical context:** [Choosing the Right Mechanism](../../1-principles/code-vs-data.md). Retained rationale and evidence; this record does not define the current contract.
+
 > **Archived 2026-08-16.** This is a historical task-tree cleanup record, not
 > the current recovery contract. The canonical
 > [Task Resource Engine](../../2a-design/task-resource-engine.md) now reuses the

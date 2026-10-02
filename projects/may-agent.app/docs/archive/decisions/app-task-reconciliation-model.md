@@ -1,5 +1,7 @@
 # Proposal: App Task Reconciliation Model
 
+**Historical context:** [Task Resource Engine](../../2a-design/task-resource-engine.md). Retained rationale and evidence; this record does not define the current contract.
+
 **Design status:** Historical accepted decision record; the durable contract is
 now [Task Resource Engine](../../2a-design/task-resource-engine.md).
 **Implementation status:** Implemented, migrated, deployed, and live-verified

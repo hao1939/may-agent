@@ -1,5 +1,7 @@
 # Default error handling and metrics: live PoC
 
+**Historical context:** [Metrics And Alerts](../../2a-design/metrics.md). Retained rationale and evidence; this record does not define the current contract.
+
 **Date:** 2026-09-09. **Status:** Isolated experiment completed; prototype is
 unpublished and not deployed. The [draft](default-error-handling-and-metrics-draft-20260909.md)
 and subsequent [discussion](error-handling-and-conversation-discussion-20260910.md)

@@ -1,5 +1,9 @@
 # App Contract
 
+**Supports:** [Host And App Boundary](system-boundary.md). Lets a domain add accountable capabilities without rebuilding the Host.
+
+**Choice basis:** [Core Principles](../1-principles/core-principles.md#convention-over-configuration).
+
 **Design status:** Accepted.
 **Implementation status:** App admission maps input to Tasks; agents, workflows
 and native executors perform bounded attempts under the shared lifecycle.

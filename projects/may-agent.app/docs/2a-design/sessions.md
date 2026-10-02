@@ -1,5 +1,9 @@
 # Sessions
 
+**Supports:** [Agent Cooperation](agents.md). Retains execution evidence and bounded conversation continuity without owning Task outcomes.
+
+**Choice basis:** [Core Principles](../1-principles/core-principles.md#one-authority-for-each-resource).
+
 **Design status:** Accepted.
 **Implementation status:** Implemented, including per-turn trace propagation,
 fail-closed start persistence, and terminal error persistence. Shared execution

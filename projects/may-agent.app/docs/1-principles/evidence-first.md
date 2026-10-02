@@ -1,5 +1,9 @@
 # Evidence-First Process
 
+**Supports:** [Design Philosophy](design-philosophy.md#explore-verify-then-harden). Tests whether a proposed change improves useful work before wider investment.
+
+**Choice basis:** [Design Philosophy](design-philosophy.md#how-to-decide-a-tradeoff).
+
 **Design status:** Accepted.
 
 How to validate ideas before building systems. The historical context-learning

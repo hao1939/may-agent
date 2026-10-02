@@ -1,5 +1,9 @@
 # One Task lifecycle
 
+**Supports:** [System Model](../2a-design/system-model.md). Explains and tests one durable lifecycle for conversation, ordinary work and maintenance.
+
+**Choice basis:** [Applicable philosophy and convention](../1-principles/core-principles.md#review-rule); [compare competing choices](../1-principles/core-principles.md#resolve-conflicting-designs).
+
 **Status:** Accepted design baseline, refined September 12, 2026 and implemented
 in Host source through #158 and its follow-up cleanup. Use one Task model,
 controller and lifecycle: explicit outcomes, rest between inputs, and

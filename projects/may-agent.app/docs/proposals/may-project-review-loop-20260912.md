@@ -1,5 +1,9 @@
 # A recurring task to review and improve May
 
+**Supports:** [Agent improvement: an optional App integration](../2a-design/practice-learning-loop.md). Trials an ordinary Task for choosing worthwhile improvements from design and operating evidence.
+
+**Choice basis:** [Applicable philosophy and convention](../1-principles/evolution.md#promotion-tests); [compare competing choices](../1-principles/core-principles.md#resolve-conflicting-designs).
+
 **Design status:** Proposal for review, September 12, 2026.
 **Implementation status:** A bounded pilot is authorized. Preliminary isolated
 trials and a local-container navigation correction completed. Extending original

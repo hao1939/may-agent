@@ -1,5 +1,9 @@
 # Workflow PoC: make the process dependable
 
+**Supports:** [Workflow Discovery And Execution](../2a-design/workflows.md). Tests dependable sequencing and failure handling rather than treating workflow use as better judgment.
+
+**Choice basis:** [Applicable philosophy and convention](../1-principles/code-vs-data.md#composition-preserves-execution-rules); [compare competing choices](../1-principles/core-principles.md#resolve-conflicting-designs).
+
 **Status:** Local investigation, September 12, 2026. No production changes.
 **Revises:** The workflow conclusion in the [first PoC](agent-adoption-poc-20260912.md).
 **Proposal:** [Teaching agents and extending abilities](agent-behavior-and-capability-extension.md).

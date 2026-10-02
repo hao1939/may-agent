@@ -1,5 +1,7 @@
 # Error handling, metrics and responsive conversation
 
+**Historical context:** [Metrics And Alerts](../../2a-design/metrics.md). Retained rationale and evidence; this record does not define the current contract.
+
 **Status:** Archived discussion, paused at the user's request on 2026-09-10.
 App placement, consolidation and default metric architecture remain open.
 This is a discussion summary, not a new accepted subsystem contract.

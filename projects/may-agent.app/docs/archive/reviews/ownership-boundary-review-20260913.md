@@ -1,5 +1,7 @@
 # Ownership boundary review — September 13, 2026
 
+**Historical context:** [Host And App Boundary](../../2a-design/system-boundary.md). Retained rationale and evidence; this record does not define the current contract.
+
 **Status:** Source review and isolated reproductions; suggested fixes are not
 implemented by this document. The owning contract is
 [Host and App Boundary](../../2a-design/system-boundary.md#ownership-and-intervention),

@@ -1,5 +1,7 @@
 # How we review, design, and implement May
 
+**Historical context:** [Design Philosophy](../../1-principles/design-philosophy.md). Retained rationale and evidence; this record does not define the current contract.
+
 **Status:** Dated research, September 12, 2026. The proposed application is in
 [a recurring project review task](../../proposals/may-project-review-loop-20260912.md).
 This record supplies observations and their sources; it adds no standing

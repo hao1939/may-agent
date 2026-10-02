@@ -1,5 +1,7 @@
 # E2E harness findings — gaps surfaced while building test/e2e/
 
+**Historical context:** [Evidence-First Process](../../1-principles/evidence-first.md). Retained rationale and evidence; this record does not define the current contract.
+
 **Status:** Historical; all recorded findings are resolved. Active contracts
 now live in the linked Tier 2 design and manual documents.
 **Current authority:** [Architecture](../../2a-design/architecture.md),

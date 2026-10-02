@@ -1,5 +1,7 @@
 # Task execution readability review — September 28, 2026
 
+**Historical context:** [Task Resource Engine](../../2a-design/task-resource-engine.md). Retained rationale and evidence; this record does not define the current contract.
+
 **Status:** Candidate source reviewed; full local CI and design/example checks passed.
 This record does not establish merge, deployment or model behavior.
 

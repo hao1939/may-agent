@@ -1,5 +1,9 @@
 # Controller PoC: evidence and next gate
 
+**Supports:** [Task Resource Engine](../2a-design/task-resource-engine.md). Retains the first bounded evidence for the common lifecycle migration.
+
+**Choice basis:** [Applicable philosophy and convention](../1-principles/core-principles.md#one-authority-for-each-resource); [compare competing choices](../1-principles/core-principles.md#resolve-conflicting-designs).
+
 **Status:** Active source experiment, September 11, 2026. The
 [one-lifecycle baseline](conversation-input-unification.md) is accepted; its
 implementation and simplification are not yet proved. No production state or

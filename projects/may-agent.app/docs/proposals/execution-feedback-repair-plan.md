@@ -1,5 +1,9 @@
 # Execution feedback: repair proposal
 
+**Supports:** [Host And App Boundary](../2a-design/system-boundary.md). Repairs demonstrated feedback and continuation gaps through existing owners.
+
+**Choice basis:** [Applicable philosophy and convention](../1-principles/core-principles.md#one-authority-for-each-resource); [compare competing choices](../1-principles/core-principles.md#resolve-conflicting-designs).
+
 **Status:** Implemented candidate with isolated PoCs, September 13, 2026.
 The four repairs, bounded-execution policy and explicit parent continuation
 are implemented locally for the recorded scope. Entry-point consolidation is

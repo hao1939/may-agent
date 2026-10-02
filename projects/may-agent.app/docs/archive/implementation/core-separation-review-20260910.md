@@ -1,5 +1,7 @@
 # Core separation and recovery review — September 10, 2026
 
+**Historical context:** [Host And App Boundary](../../2a-design/system-boundary.md). Retained rationale and evidence; this record does not define the current contract.
+
 **Status:** Historical snapshot, preserved during documentation consolidation.
 It contains completed implementation, earlier findings, and then-open candidates;
 its words “current”, “candidate”, and “next” refer to the recorded review.

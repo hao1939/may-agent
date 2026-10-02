@@ -1,5 +1,7 @@
 # Agent App External Interaction
 
+**Historical context:** [System Model](../../2a-design/system-model.md). Retained rationale and evidence; this record does not define the current contract.
+
 **Status:** Superseded by `canonical-agent-app-migration.md` (2026-08-15)
 **Scope:** How a human, agent, automation, or UI gives intent to an Agent App
 

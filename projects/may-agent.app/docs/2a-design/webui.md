@@ -1,5 +1,9 @@
 # Web UI
 
+**Supports:** [Human Control Surfaces](human-control-surfaces.md). Makes shared work and evidence inspectable and steerable from a browser.
+
+**Choice basis:** [Core Principles](../1-principles/core-principles.md#convention-over-configuration).
+
 **Design status:** Accepted.
 **Implementation status:** The static operator UI, paged human Task board,
 App-ID Task reads, workflow health views and context-usage reports are implemented.

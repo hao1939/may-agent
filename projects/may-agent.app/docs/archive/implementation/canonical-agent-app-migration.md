@@ -1,5 +1,7 @@
 # Canonical Agent App Migration
 
+**Historical context:** [App Contract](../../2a-design/agent-app.md). Retained rationale and evidence; this record does not define the current contract.
+
 **Status:** Implemented; staged rollout completed 2026-08-16
 **Decision owner:** Hao
 **Last reviewed:** 2026-08-16

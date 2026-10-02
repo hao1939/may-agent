@@ -1,5 +1,9 @@
 # Skill Discovery And Invocation
 
+**Supports:** [System Model](system-model.md#enable-useful-action-within-authority). Makes reusable methods discoverable without loading every method into every invocation.
+
+**Choice basis:** [Core Principles](../1-principles/core-principles.md#context-is-discovered-not-dumped).
+
 **Design status:** Accepted.
 **Implementation status:** Implemented for scoped discovery, bounded catalogs,
 explicit/model activation, delegation, new-session reload snapshots, and trace

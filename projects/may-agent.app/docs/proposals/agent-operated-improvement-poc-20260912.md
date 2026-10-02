@@ -1,5 +1,9 @@
 # Can an agent operate the improvement mechanism itself?
 
+**Supports:** [Teaching agents: from a correction to dependable behavior](agent-behavior-and-capability-extension.md). Tests whether an agent can discover, activate and verify an improvement using existing capabilities.
+
+**Choice basis:** [Applicable philosophy and convention](../1-principles/evolution.md#promotion-tests); [compare competing choices](../1-principles/core-principles.md#resolve-conflicting-designs).
+
 **Harness status:** Retired from the current Host candidate by the
 [scripts retirement decision](poc-retirement-and-knowledge-20260912.md).
 The source remains at the exact trial revisions recorded below; its final

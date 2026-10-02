@@ -1,5 +1,9 @@
 # Recovery against the continuing-Task design
 
+**Supports:** [Task Resource Engine](../2a-design/task-resource-engine.md). Retains failure, recovery and cutover evidence for the common Task lifecycle.
+
+**Choice basis:** [Applicable philosophy and convention](../1-principles/core-principles.md#one-authority-for-each-resource); [compare competing choices](../1-principles/core-principles.md#resolve-conflicting-designs).
+
 **Status:** Critical-path source PoC reviewed, September 12, 2026; unmerged and
 undeployed. This review applies the
 [accepted proposal](conversation-input-unification.md#recovery-keeps-the-same-task)

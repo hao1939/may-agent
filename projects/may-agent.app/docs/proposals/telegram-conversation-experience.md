@@ -1,5 +1,9 @@
 # Telegram: a natural conversation with reliable follow-through
 
+**Supports:** [Human Control Surfaces](../2a-design/human-control-surfaces.md). Applies common discussion and follow-through rules to the Telegram experience.
+
+**Choice basis:** [Applicable philosophy and convention](../1-principles/core-principles.md#convention-over-configuration); [compare competing choices](../1-principles/core-principles.md#resolve-conflicting-designs).
+
 **Design status:** Accepted for implementation, September 11, 2026.
 **Implementation status:** Candidate source on Host branch
 `fix/telegram-conversation-experience`, based on `a8f65188`, in

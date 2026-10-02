@@ -1,5 +1,9 @@
 # Host And App Boundary
 
+**Supports:** [System Model](system-model.md#enable-useful-action-within-authority). Keeps judgment with Apps and agents while infra carries execution and bookkeeping.
+
+**Choice basis:** [Core Principles](../1-principles/core-principles.md#one-authority-for-each-resource).
+
 **Design status:** Accepted.
 **Implementation status:** The shared Task boundary is implemented for current
 Apps. Named-agent permissions, deployment policy and private maintenance still

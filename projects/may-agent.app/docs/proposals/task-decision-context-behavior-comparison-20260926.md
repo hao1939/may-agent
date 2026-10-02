@@ -1,5 +1,9 @@
 # Task context: matched behavior comparison
 
+**Supports:** [Agent Cooperation](../2a-design/agents.md). Compares actual decisions as well as context cost to assess a proposed brief.
+
+**Choice basis:** [Applicable philosophy and convention](../1-principles/core-principles.md#context-is-discovered-not-dumped); [compare competing choices](../1-principles/core-principles.md#resolve-conflicting-designs).
+
 Date: 2026-09-26. Completed experiment; production code was unchanged throughout.
 
 **Conclusion:** PR #230 reduced model calls and input volume in this comparison.

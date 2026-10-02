@@ -1,5 +1,7 @@
 # Execution feedback implementation and PoCs
 
+**Historical context:** [Agent Cooperation](../../2a-design/agents.md). Retained rationale and evidence; this record does not define the current contract.
+
 September 13, 2026. This records an isolated source candidate, not a live rollout.
 The [repair plan](../../proposals/execution-feedback-repair-plan.md) owns scope;
 [System Model](../../2a-design/system-model.md#execution-and-outstanding-results)

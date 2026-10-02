@@ -1,5 +1,9 @@
 # Reading the May source
 
+**Supports:** [Architecture](../2a-design/architecture.md). Connects contract owners to source paths and the evidence needed to review a change.
+
+**Choice basis:** [Core Principles](../1-principles/core-principles.md#convention-over-configuration).
+
 Start with one Task, follow its agent execution, then choose the part you want
 to review. The broader source map was checked against Host `7f349322`
 (2026-09-27, through #256). The execution section follows the candidate in the

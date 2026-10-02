@@ -1,5 +1,9 @@
 # Projects
 
+**Supports:** [System Model](system-model.md#understand-intent-and-close-the-loop). Retains goal context and ownership across assignments without another work lifecycle.
+
+**Choice basis:** [Core Principles](../1-principles/core-principles.md#one-authority-for-each-resource).
+
 **Design status:** Accepted.
 **Implementation status:** Canonical Apps and Tasks own current work. The command
 router applies runtime/session controls and admits semantic work through App

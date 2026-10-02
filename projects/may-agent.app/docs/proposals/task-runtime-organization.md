@@ -1,5 +1,9 @@
 # Core review: simple, robust, replaceable
 
+**Supports:** [Architecture](../2a-design/architecture.md). Organizes the core around owned guarantees and checks where simplification preserves useful behavior.
+
+**Choice basis:** [Applicable philosophy and convention](../1-principles/core-principles.md#stable-core-replaceable-capabilities); [compare competing choices](../1-principles/core-principles.md#resolve-conflicting-designs).
+
 **Status:** Active improvement plan at the [reviewed source baseline](../README.md).
 The four core boundaries, shared settlement, durable retries, atomic attachment,
 finite Task stop and conversational Request/Stop mechanics are implemented.
@@ -10,6 +14,12 @@ Later source fixes merged in #121 and #127; the focused Conversation review uses
 interaction work; deployment has its own evidence.
 
 ## Current focus: simple and robust core
+
+The finite-stop references in the dated implementation inventory describe the
+earlier controller policy. The [current Task lifecycle](../2a-design/task-resource-engine.md#one-lifecycle-baseline)
+owns retry and closure behavior; those historical milestones do not establish a
+retry-count requirement. Use the linked source dates as evidence of that work,
+not as the current implementation baseline.
 
 > Removal should degrade capability, while preserving the remaining system's correctness.
 

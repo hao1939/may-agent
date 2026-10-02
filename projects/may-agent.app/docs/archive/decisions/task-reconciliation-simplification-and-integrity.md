@@ -1,5 +1,7 @@
 # Task Reconciliation Integrity Cleanup
 
+**Historical context:** [Task Resource Engine](../../2a-design/task-resource-engine.md). Retained rationale and evidence; this record does not define the current contract.
+
 **Status:** Accepted, delivered, and archived
 **Scope:** Remove active compatibility vocabulary and make the existing task
 model easier to explain without changing its capabilities

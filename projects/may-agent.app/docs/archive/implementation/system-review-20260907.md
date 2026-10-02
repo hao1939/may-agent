@@ -1,5 +1,7 @@
 # May whole-system review — 2026-09-07
 
+**Historical context:** [System Model](../../2a-design/system-model.md). Retained rationale and evidence; this record does not define the current contract.
+
 **Status:** Source-review evidence, not a new design authority.
 
 ## Conclusion

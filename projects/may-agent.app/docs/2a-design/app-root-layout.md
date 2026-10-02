@@ -1,5 +1,9 @@
 # App Root Layout
 
+**Supports:** [App Contract](agent-app.md). Keeps source, runtime authority and evidence distinct so operation and change remain understandable.
+
+**Choice basis:** [Core Principles](../1-principles/core-principles.md#convention-over-configuration).
+
 **Design status:** Accepted.
 **Implementation status:** Partial; source roots are stable and read-only layout diagnostics identify unclassified entries.
 

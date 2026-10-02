@@ -1,5 +1,7 @@
 # Task Authorship Convention
 
+**Historical context:** [Task Resource Engine](../../2a-design/task-resource-engine.md). Retained rationale and evidence; this record does not define the current contract.
+
 **Status:** Not adopted; superseded by the uniform fenced-authoring rule
 **Scope:** Who may create or change executable task specifications
 **Aligns with:** [Task Resource Engine](../../2a-design/task-resource-engine.md),

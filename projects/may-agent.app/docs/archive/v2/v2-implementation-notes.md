@@ -1,5 +1,7 @@
 # v2 Implementation Notes (Historical — as of v0.2)
 
+**Historical context:** [System Model](../../2a-design/system-model.md). Retained rationale and evidence; this record does not define the current contract.
+
 **Status**: Historical — written during v0.2 migration. For current direction, see
 [system-boundary.md](../../2a-design/system-boundary.md).
 

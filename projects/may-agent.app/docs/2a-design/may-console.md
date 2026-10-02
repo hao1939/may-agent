@@ -1,11 +1,16 @@
 # May Console
 
+**Supports:** [Human Control Surfaces](human-control-surfaces.md). Provides terminal access to the shared discussion and controls without another runtime.
+
+**Choice basis:** [Core Principles](../1-principles/core-principles.md#convention-over-configuration).
+
 **Design status:** Accepted.
 **Implementation status:** Shared commands, Conversation reads, focused App,
 one Task watch and Task cards are implemented. Direct responsible-Task admission
 sets the watch, and an exact correlated Conversation result suppresses its
-equivalent supporting terminal card. Durable turn Stop currently uses `/stop`;
-the Esc binding below is accepted design and remains unimplemented.
+equivalent supporting terminal card. TTY Esc publishes durable Turn Stop with
+the observed turn identity and revision; completion menus consume Esc first.
+Source verification does not establish the installed terminal version.
 Shared semantics belong to
 [Human Control Surfaces](human-control-surfaces.md).
 
@@ -85,8 +90,8 @@ request was accepted or the target already ended. The
 [shared control contract](human-control-surfaces.md#current-turn-control)
 owns persistence, stale-control and external-effect semantics.
 
-The current source exposes this through `/stop` and does not bind Esc. Replace
-that entrypoint and its help/completion entries when implementing the shortcut.
+The terminal keypress handler implements Esc through the shared Stop event;
+there is no separate `/stop` command in its current command surface.
 Ordinary messages currently queue during an active turn. Stopping and then
 sending a correction is the first redirection path; a seamless steering/resume
 feature is optional, and no `/steer` command is required.

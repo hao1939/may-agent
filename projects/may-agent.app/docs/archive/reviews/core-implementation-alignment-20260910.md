@@ -1,5 +1,7 @@
 # Refined core design against implementation — 2026-09-10
 
+**Historical context:** [Architecture](../../2a-design/architecture.md). Retained rationale and evidence; this record does not define the current contract.
+
 **Status:** Dated source review and isolated evidence. Implementation priorities
 live in the [core review plan](../../proposals/task-runtime-organization.md).
 This document is not a deployment record or a new subsystem specification.

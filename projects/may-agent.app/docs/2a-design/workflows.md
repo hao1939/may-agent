@@ -1,5 +1,9 @@
 # Workflow Discovery And Execution
 
+**Supports:** [System Model](system-model.md#enable-useful-action-within-authority). Makes a useful repeated procedure dependable while retaining agent judgment.
+
+**Choice basis:** [Choosing the Right Mechanism](../1-principles/code-vs-data.md#composition-preserves-execution-rules).
+
 **Design status:** Accepted.
 **Implementation status:** Bounded workflows use the scoped SDK context,
 Task-bound execution, cancellation, retained results and shared result admission.

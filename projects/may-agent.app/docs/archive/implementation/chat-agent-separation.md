@@ -1,5 +1,7 @@
 # Chat and Bounded Job Convergence
 
+**Historical context:** [Agent Cooperation](../../2a-design/agents.md). Retained rationale and evidence; this record does not define the current contract.
+
 **Status:** Completed and superseded by canonical May App admission
 (2026-08-17).
 **Current authority:** [Human Control Surfaces](../../2a-design/human-control-surfaces.md),

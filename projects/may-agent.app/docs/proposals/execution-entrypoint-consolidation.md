@@ -1,5 +1,9 @@
 # Consolidate execution entry points
 
+**Supports:** [Agent Cooperation](../2a-design/agents.md). Converges bounded execution paths so callers receive the same scope, limits and results.
+
+**Choice basis:** [Applicable philosophy and convention](../1-principles/core-principles.md#context-is-discovered-not-dumped); [compare competing choices](../1-principles/core-principles.md#resolve-conflicting-designs).
+
 **Status:** Implemented and submitted as [Host PR #186](https://github.com/hao1939/may-agent/pull/186),
 September 14, 2026. Paired App/design source is merged locally; Host merge and deployment remain separate.
 The [consolidation PoC record](../archive/reviews/execution-consolidation-poc-20260914.md)

@@ -1,5 +1,9 @@
 # Choosing the Right Mechanism
 
+**Supports:** [Design Philosophy](design-philosophy.md#what-this-means-for-technical-choices). Chooses the smallest mechanism that addresses the actual cause.
+
+**Choice basis:** [Design Philosophy](design-philosophy.md#how-to-decide-a-tradeoff).
+
 **Design status:** Accepted.
 
 Start from the cause of the problem, not the mechanism you happen to know.

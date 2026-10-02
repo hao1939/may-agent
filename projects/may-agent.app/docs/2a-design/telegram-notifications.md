@@ -1,5 +1,9 @@
 # Telegram Channel
 
+**Supports:** [Human Control Surfaces](human-control-surfaces.md). Carries the same discussion, results and controls through a usable messaging interface.
+
+**Choice basis:** [Core Principles](../1-principles/core-principles.md#convention-over-configuration).
+
 **Design status:** Accepted.
 **Implementation status:** Shared Conversation admission, native App/Task
 reads, one Task watch per chat/topic, focused context, human-action projection,

@@ -1,5 +1,9 @@
 # Keep recovery from blocking ordinary Host requests
 
+**Supports:** [Host Runtime](../2a-design/runtime.md). Keeps background recovery from consuming the responsiveness needed for new work and human control.
+
+**Choice basis:** [Applicable philosophy and convention](../1-principles/core-principles.md#stable-core-replaceable-capabilities); [compare competing choices](../1-principles/core-principles.md#resolve-conflicting-designs).
+
 **Design status:** Proposal; repairs the existing Host/App boundary.
 **Implementation status:** Query repair [#280](https://github.com/hao1939/may-agent/pull/280),
 helper completion [#281](https://github.com/hao1939/may-agent/pull/281), and SQL

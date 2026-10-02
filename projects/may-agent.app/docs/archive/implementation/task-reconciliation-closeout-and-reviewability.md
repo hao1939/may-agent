@@ -1,5 +1,7 @@
 # Task Reconciliation Closeout Tracker
 
+**Historical context:** [Task Resource Engine](../../2a-design/task-resource-engine.md). Retained rationale and evidence; this record does not define the current contract.
+
 **Status:** Accepted, delivered, and archived
 
 **Design authority:** [Task Resource Engine](../../2a-design/task-resource-engine.md)

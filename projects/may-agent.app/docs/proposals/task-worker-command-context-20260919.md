@@ -1,5 +1,9 @@
 # Ordinary commands from Task workers
 
+**Supports:** [Agent Cooperation](../2a-design/agents.md). Gives Task workers a working ordinary command environment within shared execution scope.
+
+**Choice basis:** [Applicable philosophy and convention](../1-principles/core-principles.md#context-is-discovered-not-dumped); [compare competing choices](../1-principles/core-principles.md#resolve-conflicting-designs).
+
 **Status:** [PR #199](https://github.com/hao1939/may-agent/pull/199) merged
 as `f6ab8e18b16a42197519c2485a81d9d15fd0a3b8`; its worker-boundary change is
 included in deployed Host source `7fc90f57829ad6a8ddd48eb3de8489e527314cf5`.

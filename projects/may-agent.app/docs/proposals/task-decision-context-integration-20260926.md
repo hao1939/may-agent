@@ -1,5 +1,9 @@
 # Apply the Task decision-context proposal
 
+**Supports:** [Agent Cooperation](../2a-design/agents.md). Records preparation and activation evidence for making current Task context usable.
+
+**Choice basis:** [Applicable philosophy and convention](../1-principles/core-principles.md#context-is-discovered-not-dumped); [compare competing choices](../1-principles/core-principles.md#resolve-conflicting-designs).
+
 Status: implemented and deployed to the local installation; Host PR #230 awaits
 human review/merge. Date: 2026-09-26.
 

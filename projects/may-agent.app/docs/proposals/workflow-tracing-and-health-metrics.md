@@ -1,5 +1,9 @@
 # Workflow tracing by default and useful health metrics
 
+**Supports:** [Metrics And Alerts](../2a-design/metrics.md). Makes workflow evidence and health observations affordable and useful to an owning reviewer.
+
+**Choice basis:** [Applicable philosophy and convention](../1-principles/core-principles.md#simple-first); [compare competing choices](../1-principles/core-principles.md#resolve-conflicting-designs).
+
 **Design status:** SQLite-first direction and bounded page refinement agreed;
 remaining expansion below is for review, September 11, 2026.
 **Implementation status:** First bounded source slice merged in Host #143 as

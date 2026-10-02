@@ -1,5 +1,9 @@
 # Architecture
 
+**Supports:** [System Model](system-model.md#reuse-the-foundation-at-an-acceptable-cost). Makes shared execution and coordination reusable with clear component owners.
+
+**Choice basis:** [Core Principles](../1-principles/core-principles.md#stable-core-replaceable-capabilities).
+
 **Design status:** Accepted.
 **Implementation status:** The four responsibilities below are implemented.
 Conversation, ordinary work and maintenance share Task execution; the inbox

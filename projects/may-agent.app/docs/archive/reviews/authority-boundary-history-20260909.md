@@ -1,5 +1,7 @@
 # Authority-boundary review history — September 9, 2026
 
+**Historical context:** [Host And App Boundary](../../2a-design/system-boundary.md). Retained rationale and evidence; this record does not define the current contract.
+
 > Historical snapshot of the August 29–September 8 proposal and review notes.
 > Status, operational observations and authorization statements below describe
 > those dated sessions; they are not current permissions or deployment status.

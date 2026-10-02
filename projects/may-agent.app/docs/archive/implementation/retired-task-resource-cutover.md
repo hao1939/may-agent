@@ -1,5 +1,7 @@
 # Retired Task resource cutover procedure
 
+**Historical context:** [Task Resource Engine](../../2a-design/task-resource-engine.md). Retained rationale and evidence; this record does not define the current contract.
+
 **Status:** Historical procedure; not a current operating instruction.
 **Version boundary:** Host commit `5468985506931b5f6695fc98a75014dd48f8c731`
 removed the completed JSON cutover path and `scripts/cutover-task-resources.ts`.

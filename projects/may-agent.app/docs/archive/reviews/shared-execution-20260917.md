@@ -1,5 +1,7 @@
 # Shared agent/workflow execution — 2026-09-17
 
+**Historical context:** [Workflow Discovery And Execution](../../2a-design/workflows.md). Retained rationale and evidence; this record does not define the current contract.
+
 Status: implemented and exercised in four local trials on the existing
 instance. No remote rollout or merge is claimed.
 

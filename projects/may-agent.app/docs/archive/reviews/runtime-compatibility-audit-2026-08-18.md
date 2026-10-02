@@ -1,5 +1,7 @@
 # Runtime compatibility audit — 2026-08-18
 
+**Historical context:** [Host Runtime](../../2a-design/runtime.md). Retained rationale and evidence; this record does not define the current contract.
+
 > Historical record. Use the [current contract index](../../INDEX.md) for present behavior; dated claims below describe their original review.
 
 

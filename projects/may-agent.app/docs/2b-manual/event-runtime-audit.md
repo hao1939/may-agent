@@ -1,5 +1,9 @@
 # Event Runtime Audit
 
+**Supports:** [Events And Task Admission](../2a-design/events.md). Checks admitted input, delivery and ownership through the real event path.
+
+**Choice basis:** [Core Principles](../1-principles/core-principles.md#convention-over-configuration).
+
 Use this guide to compare the running system with the event design. Keep live
 row counts and one-off findings in runtime reports or task evidence, not in the
 stable design doc.

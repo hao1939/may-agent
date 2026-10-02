@@ -1,5 +1,9 @@
 # App behavior convergence review
 
+**Supports:** [Host And App Boundary](../2a-design/system-boundary.md). Reviews whether App judgment and infra execution meet at the intended boundaries.
+
+**Choice basis:** [Applicable philosophy and convention](../1-principles/core-principles.md#one-authority-for-each-resource); [compare competing choices](../1-principles/core-principles.md#resolve-conflicting-designs).
+
 The common model is **read current facts → choose useful authorized work →
 verify the effect → retain remaining obligations on the same Task**. Code
 provides dependable mechanics; agents judge uncertain meaning. A structurally

@@ -1,5 +1,7 @@
 # Historical pilot evidence
 
+**Historical context:** [Host And App Boundary](../../2a-design/system-boundary.md). Retained rationale and evidence; this record does not define the current contract.
+
 > Dated September 6, 2026 verification record. Statements about running or
 > stopped processes describe the observation window, not current live state.
 > See the [active proposal](../../proposals/authority-boundary-simplification.md)

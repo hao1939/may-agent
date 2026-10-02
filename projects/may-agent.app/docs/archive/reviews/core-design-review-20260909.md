@@ -1,5 +1,7 @@
 # Core design review — 2026-09-09
 
+**Historical context:** [Architecture](../../2a-design/architecture.md). Retained rationale and evidence; this record does not define the current contract.
+
 **Status:** Dated source review and recommendations, not a new accepted contract.
 
 The [refined follow-up proposal](../../proposals/task-controller-pattern.md#interruption-and-external-effects)

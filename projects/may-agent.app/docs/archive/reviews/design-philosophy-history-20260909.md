@@ -1,5 +1,7 @@
 # Design Philosophy History
 
+**Historical context:** [Design Philosophy](../../1-principles/design-philosophy.md). Retained rationale and evidence; this record does not define the current contract.
+
 **Status:** Historical evidence and interpretation, recorded September 9, 2026.
 
 Current guidance lives in [Design Philosophy](../../1-principles/design-philosophy.md)

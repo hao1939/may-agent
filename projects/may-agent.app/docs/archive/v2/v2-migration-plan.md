@@ -1,5 +1,7 @@
 # v2 Migration — Detailed Plan
 
+**Historical context:** [System Model](../../2a-design/system-model.md). Retained rationale and evidence; this record does not define the current contract.
+
 **Status**: Historical. The implemented state is captured in
 `v2-implementation-notes.md`; the active architecture reference is
 `../../2a-design/architecture.md`. Current infra-surface work supersedes this plan's older

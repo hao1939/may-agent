@@ -1,5 +1,7 @@
 # Bug E + F: Multi-line stop_reason truncation and Current State overwrite
 
+**Historical context:** [Sessions](../../2a-design/sessions.md). Retained rationale and evidence; this record does not define the current contract.
+
 **Date:** 2026-05-18
 **Status:** Historical completed fix record.
 **Owner:** platform

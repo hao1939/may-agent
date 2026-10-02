@@ -1,5 +1,9 @@
 # Runtime Storage
 
+**Supports:** [Architecture](architecture.md). Preserves authoritative records and consistent changes needed for dependable continuation.
+
+**Choice basis:** [Core Principles](../1-principles/core-principles.md#one-authority-for-each-resource).
+
 **Design status:** Accepted.
 **Implementation status:** SQLite holds canonical work and admission state;
 files hold full execution artifacts. Conversation execution uses the shared

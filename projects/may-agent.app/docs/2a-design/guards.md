@@ -1,5 +1,9 @@
 # Guards As Signals
 
+**Supports:** [System Model](system-model.md#improve-from-evidence-and-make-problems-actionable). Makes mechanically detectable execution risks observable without treating a signal as semantic judgment.
+
+**Choice basis:** [Choosing the Right Mechanism](../1-principles/code-vs-data.md#why-not-default-to-prompt-rules-or-blocking-guards).
+
 **Design status:** Accepted.
 **Implementation status:** Implemented; the runtime and public SDK recognize
 observe, warn, repair/run-step, and block.

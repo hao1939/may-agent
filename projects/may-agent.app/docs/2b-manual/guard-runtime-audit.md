@@ -1,5 +1,9 @@
 # Guard Runtime Audit
 
+**Supports:** [Guards As Signals](../2a-design/guards.md). Checks signal quality, intervention and follow-through against the guard contract.
+
+**Choice basis:** [Core Principles](../1-principles/core-principles.md#convention-over-configuration).
+
 Use this guide to inspect the running guard system. Keep dated snapshots and
 one-off findings in runtime reports or task evidence, not in
 `2a-design/guards.md`.

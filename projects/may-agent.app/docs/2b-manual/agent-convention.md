@@ -1,5 +1,9 @@
 # Agent Directory Convention
 
+**Supports:** [Agent Cooperation](../2a-design/agents.md). Explains how role guidance, tools and current context actually reach a worker.
+
+**Choice basis:** [Core Principles](../1-principles/core-principles.md#convention-over-configuration).
+
 ## Directory Layout
 
 ```
