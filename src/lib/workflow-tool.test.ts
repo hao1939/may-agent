@@ -284,6 +284,56 @@ export async function execute(ctx) {
     expect(events.some((event) => event.type === "test.late-effect")).toBe(false);
   });
 
+  it("keeps setup and authored execution on one common deadline", async () => {
+    const root = workflowRoot("workflow-setup-timeout-");
+    const workflowDir = join(root, "workflows");
+    mkdirSync(workflowDir);
+    writeFileSync(
+      join(workflowDir, "timeout.ts"),
+      `
+export const name = "timeout";
+export const description = "Setup timeout test workflow";
+export async function execute(ctx) {
+  try {
+    await ctx.agents.call("worker", "must not start after the deadline");
+  } catch {}
+  await ctx.events.emit({ type: "test.late-effect", data: {} });
+  return ctx.done("late completion");
+}
+`,
+    );
+
+    let calls = 0;
+    const events: Array<{ type?: string }> = [];
+    const runner = createWorkflowRunner({
+      manager: {
+        callAgent: async () => {
+          calls += 1;
+          throw new Error("unexpected child execution");
+        },
+        status: () => [],
+      } as any,
+      workflowDir,
+      agentName: "owner",
+      executionTimeoutMs: 10,
+      runtimeCtx: {
+        emit: (event: { type?: string }) => {
+          if (event.type !== "workflow.started") return;
+          const setupEndsAt = Date.now() + 25;
+          while (Date.now() < setupEndsAt) {}
+        },
+      } as any,
+      onEvent: (event) => events.push(event),
+    });
+
+    const result = await runner.run("timeout", "test");
+
+    expect(result.type).toBe("error");
+    expect(result.type === "error" ? result.error : "").toContain('Workflow "timeout" timed out after 10ms');
+    expect(calls).toBe(0);
+    expect(events.some((event) => event.type === "test.late-effect")).toBe(false);
+  });
+
   it("lets a workflow declare a longer bounded timeout", async () => {
     const root = workflowRoot("workflow-timeout-override-");
     const workflowDir = join(root, "workflows");
