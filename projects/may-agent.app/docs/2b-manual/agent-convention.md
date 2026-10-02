@@ -328,6 +328,8 @@ supporting context from identity, skills or Task references; skill selection
 uses the catalog and explicit `skill` argument.
 
 Skills are convention-discovered rather than enumerated in `agent.json`.
+An optional `skills/paths.json` can select additional skill directories at that
+scope; see [discovery paths and availability](../2a-design/skills.md#optional-discovery-paths).
 Operational enable/disable policy may be added later without moving skill
 instructions into configuration.
 

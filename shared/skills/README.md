@@ -19,14 +19,16 @@ to learn specific capabilities.
 - Loose Markdown files are legacy documentation, not discovered skills.
 - Keep skills narrow. If a behavior needs deterministic execution, use a
   workflow or handler instead of adding a longer skill.
-- Treat the immediate `<name>/SKILL.md` packages as the catalog. Do not maintain
-  a second hand-written registry or copy skill bodies into knowledge files.
+- Discover immediate `<name>/SKILL.md` packages here and in optional directories
+  listed in `paths.json`. Do not maintain a second hand-written skill registry
+  or copy skill bodies into knowledge files.
 
-Practical manuals can live directly in these packages. The May design
-[documentation index](../../projects/may-agent.app/docs/INDEX.md#tier-2b--manuals)
+May's practical skill manuals stay in `projects/may-agent.app/docs/2b-manual/`.
+The [documentation index](../../projects/may-agent.app/docs/INDEX.md#tier-2b--manuals)
 links to the canonical design authoring and Task execution skills. Update affected
 skill guidance together with design changes; maintain one body for people and
-agents. Their references require the May documentation tree alongside `shared/`.
+agents. `paths.json` points discovery at that directory; see the
+[optional-path contract and availability](../../projects/may-agent.app/docs/2a-design/skills.md#optional-discovery-paths).
 
 ## Current System Skills
 

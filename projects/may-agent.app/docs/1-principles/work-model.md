@@ -8,7 +8,7 @@
 
 Read [System Model](../2a-design/system-model.md) for the vocabulary and complete
 work loop. This page helps choose a mechanism; the linked contracts own its
-behavior. [Working on a Task](../../../../shared/skills/task-execution-guide/SKILL.md) explains use.
+behavior. [Working on a Task](../2b-manual/task-execution-guide/SKILL.md) explains use.
 
 ## Choose by responsibility
 

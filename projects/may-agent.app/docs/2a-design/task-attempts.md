@@ -12,7 +12,7 @@ check results and repair several times before returning. Infra supplies current
 scope and context, executes admitted changes and maintains the Task between
 attempts. The worker judges what its result means under App acceptance policy.
 
-Read the [agent guide](../../../../shared/skills/task-execution-guide/SKILL.md) for ordinary use.
+Read the [agent guide](../2b-manual/task-execution-guide/SKILL.md) for ordinary use.
 [Task lifecycle and Conditions](task-resource-engine.md) own durable state;
 [agent and workflow contributions](execution-contributions.md) own bounded helper calls.
 The sections below are the reference for executor and App implementers.

@@ -36,18 +36,23 @@ work. Workflow and session records remain execution evidence.
 
 A practical document can itself supply task-specific skill instructions. Keep
 applicability, method, decision boundaries and references in that one source;
-people and agents read the same body. The [Task execution guide](../../../../shared/skills/task-execution-guide/SKILL.md)
-and [design authoring guide](../../../../shared/skills/design-authoring/SKILL.md) follow this convention.
-Their canonical bodies live at `shared/skills/design-authoring/SKILL.md` and
-`shared/skills/task-execution-guide/SKILL.md`. The documentation index links to
-those same files, and the existing shared-scope loader discovers the packages.
+people and agents read the same body. The [Task execution guide](../2b-manual/task-execution-guide/SKILL.md)
+and [design authoring guide](../2b-manual/design-authoring/SKILL.md) follow this convention.
+Their canonical bodies stay with the manuals at
+`docs/2b-manual/design-authoring/SKILL.md` and
+`docs/2b-manual/task-execution-guide/SKILL.md` in the May App tree. The documentation
+index links to those same files; agents can read them directly or receive them
+as context references. `shared/skills/paths.json` selects the manual directory
+for shared catalog discovery through the optional-path support described below.
+Maintain the instructions here alongside design changes.
 Keep foundational knowledge and exact contracts at their owning document paths;
 skills link to those references and depend on the May documentation tree.
 
 Update affected skill guidance in the same change as the owning design. Keep
 proposed behavior clearly separate from available capabilities. There must be
 no independently edited manual/skill variants, extra registry or loader.
-Ordinary Markdown frontmatter alone still does not register a skill.
+Package format and automatic catalog discovery are separate. Additional source
+locations are explicitly selected; the Host does not scan all documentation.
 
 Validate metadata, references, discovery, bounded-catalog visibility and full-body
 invocation before claiming a package is usable. Definition activation and useful
@@ -154,14 +159,48 @@ An app-local agent may overlay a same-named global-agent skill; a global-agent
 skill may in turn overlay a shared skill. The closest valid definition wins.
 Skills never merge.
 
-Duplicate names within one scope are invalid. Discovery returns a diagnostic
-and omits the ambiguous name rather than selecting by filesystem order.
+Distinct packages with duplicate names within one scope are invalid. Discovery
+returns a diagnostic and omits the ambiguous name rather than selecting by
+filesystem order. Multiple paths to the same canonical package count once per
+scope.
 `loadSourcedSkills()` preserves source metadata; the Host defines and applies
 the precedence policy.
 
 Symlinks may expose one canonical package to another client, but discovery
 must validate the canonical target against trusted skill roots. Do not maintain
 copied, independently edited variants.
+
+### Optional discovery paths
+
+Each conventional `skills/` root may contain `paths.json`: a JSON array of
+additional directories, resolved relative to that root. For example, May's
+`shared/skills/paths.json` contains:
+
+```json
+["../../projects/may-agent.app/docs/2b-manual"]
+```
+
+These directories add immediate `<name>/SKILL.md` packages at the same scope
+and priority as their declaring root. The normal packages remain available.
+The file selects directories, not individual skills; adding another manual
+package requires no registry update. Discovery does not follow further
+`paths.json` files found in those directories.
+
+An explicitly selected directory becomes a trusted skill root. Symlink targets
+still must stay within trusted roots. Catalog and invocation paths use the
+canonical file location so relative references work through a symlink too.
+Malformed configuration, absolute or empty paths, and missing/non-directory
+targets produce skill diagnostics through the existing configuration-error path.
+Hosted definition preparation rejects an invalid generation and retains the
+previous one.
+
+Keep selected directories and their references in the definition source release.
+Relative paths then resolve inside the captured release; live source edits do
+not change an existing execution's definition.
+
+**Availability:** Implemented in companion Host source on
+`feat/skill-discovery-paths`; merge and deployment remain pending. Older Hosts
+ignore this optional file and discover only the conventional roots.
 
 ## Discovery Lifecycle
 

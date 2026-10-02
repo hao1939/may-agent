@@ -1,6 +1,6 @@
 # Proposals and implementation follow-up
 
-**Supports:** [Design authoring and review](../../../../shared/skills/design-authoring/SKILL.md). Keeps unresolved choices visible without making readers reconstruct current behavior from old PR discussions.
+**Supports:** [Design authoring and review](../2b-manual/design-authoring/SKILL.md). Keeps unresolved choices visible without making readers reconstruct current behavior from old PR discussions.
 
 For supported behavior, use [the current contract index](../INDEX.md). These
 documents hold remaining choices, adoption questions or implementation follow-up.
@@ -64,6 +64,6 @@ retains its audit and remaining App-owned changes. Evaluate cost together with
 fulfilled requirements and recovered failures; a smaller prompt alone is not
 an improved outcome.
 
-When a remaining choice lands, follow the [proposal lifecycle](../../../../shared/skills/design-authoring/SKILL.md#keep-status-and-history-honest):
+When a remaining choice lands, follow the [proposal lifecycle](../2b-manual/design-authoring/SKILL.md#keep-status-and-history-honest):
 update its owning contract and guide, retain useful evidence, and remove it from
 this active reading path. Archiving does not silently close unresolved work.

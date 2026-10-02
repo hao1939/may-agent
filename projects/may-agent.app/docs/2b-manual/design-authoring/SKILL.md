@@ -5,15 +5,15 @@ description: Author, review or reorganize May designs, tracing choices to purpos
 
 # Authoring and reviewing May designs
 
-**Supports:** [Purpose and value](../../../projects/may-agent.app/docs/1-principles/purpose.md). Makes designs understandable, comparable and usable by people and agents, reducing repeated explanation and maintenance cost.
+**Supports:** [Purpose and value](../../1-principles/purpose.md). Makes designs understandable, comparable and usable by people and agents, reducing repeated explanation and maintenance cost.
 
-**Choice basis:** [Simple first](../../../projects/may-agent.app/docs/1-principles/core-principles.md#simple-first) and [decision review](../../../projects/may-agent.app/docs/1-principles/core-principles.md#review-rule).
+**Choice basis:** [Simple first](../../1-principles/core-principles.md#simple-first) and [decision review](../../1-principles/core-principles.md#review-rule).
 
 Use this document directly when writing, reviewing or reorganizing a design.
 It is both the human guide and the agent's skill instructions; maintain only
 this source. For an authoring/refinement request, update the owning documents.
 For a review request, return concrete findings and recommended corrections.
-Find the owner through [INDEX](../../../projects/may-agent.app/docs/INDEX.md), then read only the relevant
+Find the owner through [INDEX](../../INDEX.md), then read only the relevant
 principles, contract and evidence. Do not load the full documentation tree.
 
 ## Design hierarchy
@@ -49,16 +49,16 @@ abilities without being copied into every branch of the hierarchy.
 
 | Reader's question | Home |
 | --- | --- |
-| What is May for, and what counts as enough? | [Purpose](../../../projects/may-agent.app/docs/1-principles/purpose.md) |
+| What is May for, and what counts as enough? | [Purpose](../../1-principles/purpose.md) |
 | How do we choose among alternatives? | Philosophy and technical principles |
-| How does the whole system work? | [System Model](../../../projects/may-agent.app/docs/2a-design/system-model.md): vocabulary and one end-to-end example |
+| How does the whole system work? | [System Model](../../2a-design/system-model.md): vocabulary and one end-to-end example |
 | Which component owns a responsibility? | Architecture and Host/App boundary |
 | What behavior can a caller rely on? | One owning contract in `2a-design/` |
-| How do I use or operate it? | A practical guide in `2b-manual/` or a canonical `shared/skills/<name>/SKILL.md` linked from the index, with checked examples |
+| How do I use or operate it? | A practical guide in `2b-manual/`, including `<name>/SKILL.md` packages, with checked examples |
 | What change is still being considered? | An active proposal, naming the owning contract and unresolved choice |
 | Why was a choice made, and what was observed? | A dated decision, trial or review in `archive/` |
 
-Use [INDEX](../../../projects/may-agent.app/docs/INDEX.md) to find the owner before adding a page. Create a new
+Use [INDEX](../../INDEX.md) to find the owner before adding a page. Create a new
 file when it answers an independently useful question, has a clear owner and
 can be read without its sibling's full text. Length is a signal to inspect
 mixed responsibilities, not a reason to split every heading. Consolidate
@@ -122,17 +122,19 @@ Keep foundational knowledge short. Load task-specific procedures and exact
 reference material only when needed. Write the practical document so an agent
 can use it directly as a skill: clear applicability, actions, decision boundaries,
 results and relevant links. Do not maintain a separate skill summary or instruction
-copy. For catalog discovery, keep the canonical guide at a supported
-`<name>/SKILL.md` location with required `name` and `description` frontmatter;
-link to it from the documentation index. This guide and the
-[Task execution guide](../task-execution-guide/SKILL.md) live in `shared/skills/`
-so May's existing loader discovers them. Foundational knowledge, exact contracts
-and detailed manuals stay at their owning paths as on-demand references.
+copy. Keep a manual that serves as a skill at `2b-manual/<name>/SKILL.md`, with
+required `name` and `description` frontmatter, and link to it from the documentation
+index. This guide and the [Task execution guide](../task-execution-guide/SKILL.md)
+follow that layout. Agents and people read the same files. The optional
+`shared/skills/paths.json` discovery path points to this manual directory; see
+[availability and discovery](../../2a-design/skills.md#optional-discovery-paths).
+Foundational knowledge, exact contracts and detailed manuals stay at their
+owning paths as on-demand references.
 
 When changing a design, check the linked skill's applicability, actions, examples
 and references. Update affected guidance in the same change. A proposed feature
 can remain documented as a gap; do not teach it as available before implementation.
-Check [packaging, discovery and activation](../../../projects/may-agent.app/docs/2a-design/skills.md)
+Check [packaging, discovery and activation](../../2a-design/skills.md)
 when moving or adding a skill. References resolve from the skill directory and
 must be readable in the intended workspace or definition release. These guides
 depend on the May documentation tree; do not distribute their folders alone.
@@ -145,8 +147,8 @@ parts of a design as well as identifying problems.
 
 ## Review and validate
 
-Apply [the decision review](../../../projects/may-agent.app/docs/1-principles/core-principles.md#review-rule) and,
-when choices conflict, [the conflict rule](../../../projects/may-agent.app/docs/1-principles/core-principles.md#resolve-conflicting-designs).
+Apply [the decision review](../../1-principles/core-principles.md#review-rule) and,
+when choices conflict, [the conflict rule](../../1-principles/core-principles.md#resolve-conflicting-designs).
 Distinguish a contract conflict, source defect, missing evidence, historical
 statement and editorial preference; they need different remedies. Trust admitted
 agent judgment by default without presenting it as guaranteed correctness.
@@ -159,8 +161,9 @@ From the workspace root, run `bun run check:may-design` after changing contracts
 examples or navigation. Inspect moved links and heading targets as well as the
 ordinary example and one relevant failure path. These checks establish structure
 and executable examples; they do not prove agent comprehension or live adoption.
-For new or repackaged skills, also verify metadata, discovery and full-body
-invocation through the existing loader. Check catalog visibility separately;
-the bounded prompt can omit a discovered skill. Source edits reach new executions
-only after normal definition activation; existing sessions retain their snapshot.
+For new or repackaged skills, verify metadata and references from the canonical
+location. If catalog delivery is intended, also verify trusted-root discovery,
+visibility and full-body invocation through the existing loader. The bounded
+prompt can omit a discovered skill. Source edits reach installed definitions
+only after normal activation; existing sessions retain their snapshot.
 Use an actual task comparison before claiming that new guidance improves behavior.

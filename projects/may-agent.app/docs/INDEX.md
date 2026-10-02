@@ -14,14 +14,14 @@ contracts and guides. [Proposals](proposals/README.md) contain remaining choices
 | Why choose this design? | [Philosophy](1-principles/design-philosophy.md), [review and conflict rules](1-principles/core-principles.md#review-rule) |
 | How does work flow from an ask to an outcome? | [System Model](2a-design/system-model.md) |
 | What does the agent decide and infra execute? | [Host/App boundary](2a-design/system-boundary.md) |
-| How should an agent work with current capabilities? | [Task execution guide](../../../shared/skills/task-execution-guide/SKILL.md) |
+| How should an agent work with current capabilities? | [Task execution guide](2b-manual/task-execution-guide/SKILL.md) |
 | How do Task state, Conditions and recovery work? | [Task lifecycle](2a-design/task-resource-engine.md) |
 | What does an attempt receive and return? | [Task attempts](2a-design/task-attempts.md) |
 | How do agents and workflows call each other? | [Contributions](2a-design/execution-contributions.md) |
 | When is a human ask fulfilled? | [Message lifecycle](2a-design/message-lifecycle.md) |
 | How is a Conversation turn executed or stopped? | [Conversation execution](2a-design/conversation-execution.md) |
 | How do input and changed facts reach their owner? | [Events](2a-design/events.md), [execution feedback](2a-design/execution-feedback.md) |
-| Where should a design or implemented proposal go? | [Authoring guide](../../../shared/skills/design-authoring/SKILL.md) |
+| Where should a design or implemented proposal go? | [Authoring guide](2b-manual/design-authoring/SKILL.md) |
 
 ## Tier 1 — Principles
 
@@ -105,14 +105,14 @@ current-design list.
 
 ## Tier 2b — Manuals
 
-The design authoring and Task execution manuals live in shared skill packages.
+The design authoring and Task execution manuals are skill packages in `2b-manual/`.
 Their links below open the canonical instructions used by both humans and agents.
 Other manuals remain focused references; read them when the task needs that detail.
 
 | Document                                                                   | Purpose                                                     |
 | -------------------------------------------------------------------------- | ----------------------------------------------------------- |
-| [Task execution skill](../../../shared/skills/task-execution-guide/SKILL.md) | Agent decisions and supported capabilities, from assignment through recovery. |
-| [Design authoring and review skill](../../../shared/skills/design-authoring/SKILL.md) | Purpose-linked writing, review, lifecycle and reusable agent guidance. |
+| [Task execution skill](2b-manual/task-execution-guide/SKILL.md) | Agent decisions and supported capabilities, from assignment through recovery. |
+| [Design authoring and review skill](2b-manual/design-authoring/SKILL.md) | Purpose-linked writing, review, lifecycle and reusable agent guidance. |
 | [user-guide.md](2b-manual/user-guide.md)                                   | CLI flags, Docker, socket, and chat commands.               |
 | [source-reading-guide.md](2b-manual/source-reading-guide.md)               | Task and agent execution, model context, evidence tracing and extension ownership. |
 | [sdk-quickstart.md](2b-manual/sdk-quickstart.md)                           | Checked App quickstart and public capability guide.                                         |
