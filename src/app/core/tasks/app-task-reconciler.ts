@@ -1305,7 +1305,10 @@ export function repairOrphanedInboxTaskInputs(
 ): AppTaskRecoveryRepair[] {
   const repairs: AppTaskRecoveryRepair[] = [];
   for (const candidate of candidates) {
-    if (config.resourceStore.isCancelled(candidate.taskId)) continue;
+    if (
+      config.resourceStore.isCancelled(candidate.taskId) ||
+      config.resourceStore.readAdmissionCancellation(candidate.taskId, candidate.admissionKey)
+    ) continue;
     const tree = config.resourceStore.readTaskContext({
       taskIds: [candidate.taskId],
       admissionIds: [candidate.admissionKey],

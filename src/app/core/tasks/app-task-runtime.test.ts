@@ -740,24 +740,90 @@ it("does not duplicate healthy, answered, or owner-stopped inbox admissions duri
   completeAppTask(config, answeredClaim, { summary: "Answered" });
   const stopped = add("stopped");
   const stoppedResource = config.resourceStore.readTask(stopped.taskId)!;
-  cancelLoadedAppTask({ bus, appId: "sample", taskId: stopped.taskId,
+  const { cancellation } = cancelLoadedAppTask({ bus, appId: "sample", taskId: stopped.taskId,
     expectedGeneration: stoppedResource.metadata.generation,
     expectedResourceVersion: stoppedResource.metadata.resourceVersion,
     reason: "Owner stopped work" });
-  const before = Object.fromEntries([healthy, answered, stopped].map(({ taskId }) =>
+  reopenLoadedAppTask({ bus, appId: "sample", taskId: stopped.taskId,
+    expectedGeneration: cancellation.generation, expectedResourceVersion: cancellation.resourceVersion,
+    reason: "Handle a new request", controlKey: "reopen-stopped" });
+  const freshInputId = "stopped-fresh-request";
+  const freshAdmissionKey = `task:${freshInputId}`;
+  createAppInboxItem(db, { id: freshInputId, appId: "sample", source: { kind: "human", id: "requester" },
+    input: { kind: "message", data: { name: "fresh" } } });
+  admitTaskInput(config, { appId: "sample", attachment: { kind: "existing", taskId: stopped.taskId },
+    idempotencyKey: freshAdmissionKey, inputContext: { id: freshInputId,
+      source: { kind: "human", id: "requester" }, input: { kind: "message", data: { name: "fresh" } } } });
+  db.prepare(`UPDATE app_inbox_items SET status = 'handling', waiting_on_kind = 'task', waiting_on_id = ?,
+    task_admission_key = ? WHERE id = ?`).run(stopped.taskId, freshAdmissionKey, freshInputId);
+  db.prepare("UPDATE app_tasks SET trigger_json = NULL WHERE app_id = 'sample' AND task_id = ?").run(stopped.taskId);
+  const before = Object.fromEntries([healthy, answered].map(({ taskId }) =>
     [taskId, config.resourceStore.readTask(taskId)]));
 
   await recoverInstalledAppTasks(bus);
   await recoverInstalledAppTasks(bus);
 
-  expect(Object.fromEntries([healthy, answered, stopped].map(({ taskId }) =>
+  expect(Object.fromEntries([healthy, answered].map(({ taskId }) =>
     [taskId, config.resourceStore.readTask(taskId)]))).toEqual(before);
-  for (const { admissionKey } of [healthy, answered, stopped]) {
+  expect(config.resourceStore.readTask(stopped.taskId)?.status.inputWaits).toEqual({
+    [freshAdmissionKey]: { taskGeneration: cancellation.generation + 1, conditions: [], pending: true },
+  });
+  expect(config.resourceStore.readAdmissionCancellation(stopped.taskId, stopped.admissionKey)).toEqual(cancellation);
+  for (const { admissionKey } of [healthy, answered, stopped, { admissionKey: freshAdmissionKey }]) {
     expect(db.prepare("SELECT COUNT(*) AS count FROM app_task_admissions WHERE app_id = 'sample' AND task_id = ?")
       .get(admissionKey)!.count).toBe(1);
   }
   expect(config.resourceStore.readTaskContext({ taskIds: [], admissionIds: [answered.admissionKey] })
     .appTaskAdmissions?.[answered.admissionKey]?.resultAttemptId).toBe(answeredClaim.attemptId);
+});
+
+it("does not let more than one recovery page of retained healthy rows starve a later orphan", async () => {
+  const f = fixture();
+  const bus = eventBus();
+  const persistDir = join(f.root, "state");
+  await installCoreTaskRuntimes({
+    ...options(f, bus),
+    installControllers: false,
+    appRegistrySnapshot: { id: "orphan-fairness", generation: 1,
+      entries: [{ appDir: f.appDir, definition: definition() }] },
+  });
+  const config = loadedTaskConfig(f);
+  const db = getDb(persistDir);
+  const admit = (taskId: string, inputId: string) => {
+    const admissionKey = `task:${inputId}`;
+    observeAppTaskIntent(config, { appAgent: "sample-owner", intent: {
+      id: taskId, parentId: "operations", outcome: `Handle ${inputId}`, acceptance: ["Handled"],
+    } });
+    createAppInboxItem(db, { id: inputId, appId: "sample", source: { kind: "human", id: "requester" },
+      input: { kind: "message", data: { inputId } } });
+    admitTaskInput(config, { appId: "sample", attachment: { kind: "existing", taskId }, idempotencyKey: admissionKey,
+      inputContext: { id: inputId, source: { kind: "human", id: "requester" },
+        input: { kind: "message", data: { inputId } } } });
+    db.prepare(`UPDATE app_inbox_items SET status = 'handling', waiting_on_kind = 'task', waiting_on_id = ?,
+      task_admission_key = ? WHERE id = ?`).run(taskId, admissionKey, inputId);
+    return admissionKey;
+  };
+  const healthyTaskId = "work/healthy-page";
+  const healthyAdmissionKey = admit(healthyTaskId, "healthy-page-owner");
+  for (let index = 0; index < 513; index += 1) {
+    const id = `healthy-retained-${String(index).padStart(3, "0")}`;
+    createAppInboxItem(db, { id, appId: "sample", now: index + 1,
+      source: { kind: "system", id: "fixture" }, input: { kind: "message", data: { index } } });
+    db.prepare(`UPDATE app_inbox_items SET status = 'handling', waiting_on_kind = 'task', waiting_on_id = ?,
+      task_admission_key = ?, changed_at = ? WHERE id = ?`)
+      .run(healthyTaskId, healthyAdmissionKey, index + 1, id);
+  }
+  const orphanTaskId = "work/later-orphan";
+  const orphanAdmissionKey = admit(orphanTaskId, "later-orphan");
+  db.prepare(`UPDATE app_inbox_items SET changed_at = 10000 WHERE id = 'later-orphan'`).run();
+  db.prepare("UPDATE app_tasks SET trigger_json = NULL WHERE app_id = 'sample' AND task_id = ?").run(orphanTaskId);
+
+  await recoverInstalledAppTasks(bus);
+
+  expect(config.resourceStore.readTask(orphanTaskId)?.status.inputWaits).toEqual({
+    [orphanAdmissionKey]: { taskGeneration: 1, conditions: [], pending: true },
+  });
+  expect(config.resourceStore.readTask(healthyTaskId)?.status.inputWaits).toBeUndefined();
 });
 
 describe("caller feedback PoC", () => {

@@ -1200,11 +1200,51 @@ function recoverInterruptedAppTasks(
       ? repairOrphanedInboxTaskInputs(
           config,
           (appDb.prepare(
-            `SELECT waiting_on_id AS taskId, task_admission_key AS admissionKey
-             FROM app_inbox_items
-             WHERE app_id = ? AND status = 'handling' AND waiting_on_kind = 'task'
-               AND waiting_on_id IS NOT NULL AND task_admission_key IS NOT NULL
-             ORDER BY changed_at, id LIMIT 512`,
+            `SELECT inbox.waiting_on_id AS taskId, inbox.task_admission_key AS admissionKey
+             FROM app_inbox_items inbox
+             JOIN app_task_admissions admission
+               ON admission.app_id = inbox.app_id AND admission.task_id = inbox.task_admission_key
+             JOIN app_tasks task
+               ON task.app_id = inbox.app_id AND task.task_id = inbox.waiting_on_id
+             LEFT JOIN app_task_attempts attempt
+               ON attempt.app_id = task.app_id AND attempt.attempt_id = task.current_attempt_id
+             WHERE inbox.app_id = ? AND inbox.status = 'handling' AND inbox.waiting_on_kind = 'task'
+               AND inbox.waiting_on_id IS NOT NULL AND inbox.task_admission_key IS NOT NULL
+               AND json_extract(admission.admission_json, '$.taskId') = inbox.waiting_on_id
+               AND json_type(admission.admission_json, '$.inputEvent') IS NOT NULL
+               AND json_extract(admission.admission_json, '$.taskGeneration') <= task.generation
+               AND json_type(admission.admission_json, '$.resultAttemptId') IS NULL
+               AND NOT EXISTS (
+                 SELECT 1 FROM app_task_cancellations cancellation
+                 WHERE cancellation.app_id = inbox.app_id AND cancellation.task_id = inbox.waiting_on_id
+               )
+               AND NOT EXISTS (
+                 SELECT 1 FROM app_task_control_receipts control
+                 WHERE control.app_id = inbox.app_id AND control.task_id = inbox.waiting_on_id
+                   AND control.action = 'reopen'
+                   AND control.expected_generation >= json_extract(admission.admission_json, '$.taskGeneration')
+               )
+               AND NOT EXISTS (
+                 SELECT 1 FROM json_each(task.resource_json, '$.status.inputWaits') wait
+                 WHERE wait.key = inbox.task_admission_key
+               )
+               AND COALESCE(json_extract(task.trigger_json, '$.event.data.idempotencyKey'), '') != inbox.task_admission_key
+               AND NOT EXISTS (
+                 SELECT 1 FROM json_each(task.trigger_json, '$.events') event
+                 WHERE json_extract(event.value, '$.event.data.idempotencyKey') = inbox.task_admission_key
+               )
+               AND (
+                 attempt.state IS NULL OR attempt.state != 'running' OR (
+                   NOT EXISTS (
+                     SELECT 1 FROM json_each(attempt.attempt_json, '$.events') event
+                     WHERE json_extract(event.value, '$.event.data.idempotencyKey') = inbox.task_admission_key
+                   ) AND NOT EXISTS (
+                     SELECT 1 FROM json_each(attempt.attempt_json, '$.continuedInputKeys') continued
+                     WHERE continued.value = inbox.task_admission_key
+                   )
+                 )
+               )
+             ORDER BY inbox.changed_at, inbox.id LIMIT 512`,
           ).all(descriptor.id) as Array<{ taskId: string; admissionKey: string }>),
         )
       : [];
