@@ -1141,7 +1141,11 @@ describe("Human Task service", () => {
     const plan = plans[0] ?? [];
     const conditionStep = plan.findIndex(({ detail }) => detail.includes("idx_app_task_conditions_open_human_owner"));
     const routeStep = plan.findIndex(
-      ({ detail }, index) => index > conditionStep && detail.includes("human_route") && detail.includes("app_id=? AND condition_id=?"),
+      ({ detail }, index) =>
+        index > conditionStep &&
+        detail.includes("human_route") &&
+        detail.includes("app_id=?)") &&
+        detail.includes("condition_id=?"),
     );
     const taskStep = plan.findIndex(
       ({ detail }, index) => index > routeStep && detail.startsWith("SEARCH t") && detail.includes("app_id=? AND task_id=?"),
@@ -1684,6 +1688,91 @@ describe("Human Task service", () => {
     );
   });
 
+  test("finds the exact requester through the Condition-ID route index", () => {
+    const db = database();
+    insertTask(db, { appId: "child", taskId: "hot-task", phase: "running", updatedAt: 30 });
+    const insertRequest = db.prepare(
+      `INSERT INTO app_inbox_items(
+         id, app_id, source_kind, source_id, input_kind, input_data, status,
+         waiting_on_kind, waiting_on_id, created_at, updated_at
+       ) VALUES (?, ?, ?, 'fixture', 'probe', '{}', 'handling', ?, ?, ?, ?)`,
+    );
+    db.exec("BEGIN");
+    for (let index = 0; index < 20_000; index += 1) {
+      const sourceKind = index < 600 ? "app" : "human";
+      const waitingOnKind = index < 150 || index === 600 ? "task" : null;
+      insertRequest.run(
+        `req-${index}`,
+        index === 0 ? "other-child" : "child",
+        sourceKind,
+        waitingOnKind,
+        index === 1 ? "other-task" : waitingOnKind ? "hot-task" : null,
+        index,
+        index,
+      );
+    }
+    for (let index = 0; index < 250; index += 1) {
+      const appId = `parent-${index}`;
+      const requestId = ["req-148", "req-149", "req-0", "req-1", "req-600"][index] ?? `missing-${index}`;
+      insertTask(db, { appId, taskId: `parent-task-${index}`, phase: "waiting", updatedAt: index });
+      insertCondition(db, {
+        appId,
+        taskId: `parent-task-${index}`,
+        conditionId: `app-request:${requestId}`,
+        type: "app.dependency.updated",
+        subject: index === 1 ? "id:wrong-request" : `id:${requestId}`,
+      });
+    }
+    for (let index = 250; index < 300; index += 1) {
+      db.prepare(
+        "INSERT INTO app_task_conditions(app_id, condition_id, state, condition_json) VALUES (?, ?, 'unknown', ?)",
+      ).run(
+        `orphan-${index}`,
+        `orphan-${index}`,
+        JSON.stringify({ spec: { type: "app.dependency.updated", subject: `id:orphan-${index}` } }),
+      );
+    }
+    db.exec("COMMIT; DROP INDEX idx_app_task_condition_routes_condition");
+    applyDbSchema(db);
+    db.exec("ANALYZE");
+
+    let requesterPlan: Array<{ detail: string }> = [];
+    const observed: SqliteDb = {
+      ...db,
+      prepare(sql) {
+        const statement = db.prepare(sql);
+        if (!sql.includes("FROM app_inbox_items request")) return statement;
+        return new Proxy(statement, {
+          get(target, key) {
+            if (key === "get")
+              return (...values: Parameters<typeof statement.get>) => {
+                requesterPlan = db.prepare(`EXPLAIN QUERY PLAN ${sql}`).all(...values) as Array<{ detail: string }>;
+                return target.get(...values);
+              };
+            const value = Reflect.get(target, key);
+            return typeof value === "function" ? value.bind(target) : value;
+          },
+        });
+      },
+    };
+    const requestedBy = new HumanTaskService(observed, registry("child", "parent-0")).getTask({
+      appId: "child",
+      taskId: "hot-task",
+    })?.requestedBy;
+
+    expect(requestedBy).toMatchObject({ appId: "parent-0", taskId: "parent-task-0" });
+    const routeStep = requesterPlan.findIndex(({ detail }) =>
+      detail.includes("idx_app_task_condition_routes_condition"),
+    );
+    const conditionStep = requesterPlan.findIndex(
+      ({ detail }, index) =>
+        index > routeStep && detail.includes("SEARCH condition") && detail.includes("app_id=? AND condition_id=?"),
+    );
+    expect(routeStep).toBeGreaterThanOrEqual(0);
+    expect(conditionStep).toBeGreaterThan(routeStep);
+    expect(requesterPlan[routeStep]?.detail).toContain("condition_id=?");
+  });
+
   test("lets a terminal Task result replace passive executor progress", () => {
     const db = database();
     insertReceipt(db, "alpha", "finished", 20);
@@ -1904,8 +1993,11 @@ describe("Human Task service", () => {
       expect(cancelled.applied).toBe(true);
       if (taskId === "withdrawn") {
         // Retain compatibility with pre-existing withdrawal records stored as closed.
-        db.prepare("UPDATE app_task_cancellations SET cancellation_json = ? WHERE app_id = ? AND task_id = ?")
-          .run(JSON.stringify({ ...cancelled.cancellation, kind: "closed" }), "alpha", taskId);
+        db.prepare("UPDATE app_task_cancellations SET cancellation_json = ? WHERE app_id = ? AND task_id = ?").run(
+          JSON.stringify({ ...cancelled.cancellation, kind: "closed" }),
+          "alpha",
+          taskId,
+        );
       }
     }
     insertReceipt(db, "alpha", "previously-finished", 20);
