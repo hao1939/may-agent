@@ -266,9 +266,13 @@ even if another chunk fails. Only the final receipt after complete delivery may
 carry the exact human-action revision or reply authority. On restart that
 receipt may suppress the same complete action set for the same chat/topic. A
 changed action, candidate, Condition generation, incomplete current read, or
-destination remains eligible. Legacy Condition or approval anchors alone do not
-prove the complete action identity; only the exact complete-delivery revision
-may suppress a repeat.
+destination remains eligible for a new notification after restart; an
+incomplete read cannot reuse a durable exact receipt. During one adapter
+lifetime, its bounded per-surface presentation comparison may quiet the same
+unchanged incomplete snapshot after a successful send; this does not establish
+snapshot completeness, approval authority, or a restart-safe receipt. Legacy
+Condition or approval anchors alone do not prove the complete action identity;
+only the exact complete-delivery revision may suppress a repeat after restart.
 
 Refreshes run on later events, without a periodic delivery retry loop. A later
 wake may retry an unconfirmed message and duplicate its display or some chunks.
