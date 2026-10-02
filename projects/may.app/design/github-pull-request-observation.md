@@ -1,6 +1,12 @@
 # GitHub pull-request ownership and observation
 
-Status: local source candidate; activation requires supervisor clearance.
+**Supports:** [App observation](../../may-agent.app/docs/2a-design/agent-app.md#request-entrypoints-schedules-and-observers): return meaningful provider facts to accountable work without repeated supervision.
+
+**Choice basis:** [Simple first](../../may-agent.app/docs/1-principles/core-principles.md#simple-first) and [safe retry ownership](../../may-agent.app/docs/2a-design/system-boundary.md#retry-and-recovery-ownership): reuse the event journal's idempotent admission.
+
+Status: observer implemented; this companion adds durable republication identity.
+See the [source follow-up](token-efficiency-proposal-20261002.md#october-3-source-follow-up)
+for validation and integration. Source changes are not deployment evidence.
 
 ## Public ownership convention
 
@@ -59,9 +65,10 @@ Open resources are remembered in a bounded disposable snapshot and refreshed
 even after leaving the newest list page, so closure remains observable. Owner
 metadata is re-read every time: removal or change invalidates the old route, and
 a failed direct read never targets a cached owner. Recently closed resources can
-therefore produce an initially merged observation. Snapshot loss can re-publish
-facts and resources outside the two newest pages/cache can be missed; this is a
-bounded observer, not complete GitHub history.
+therefore produce an initially merged observation. Snapshot loss can retry
+publication of the same durable fact without another owner attempt. Resources
+outside the two newest pages/cache can be missed; this is a bounded observer,
+not complete GitHub history.
 
 ## Facts, budgets, and coexistence
 
@@ -85,8 +92,24 @@ A successful `may.github.pull-request.state` fact contains repository/number,
 head, open/closed and merge state, and commit-bound reviews. Its fingerprint
 covers meaningful provider facts, not fetch time. Owner identity is part of the
 suppression key, so moving a valid block routes a fresh observation to the new
-owner even if provider state is unchanged. Incomplete reviews produce a targeted
-review diagnostic while preserving independently valid PR state. Direct-read or
+owner even if provider state is unchanged.
+
+Published facts use the existing event idempotency key, derived from owner Task
+and generation, resource, GitHub `updated_at`, semantic fingerprint, and current
+PR Condition specification identities. A newly declared Condition can therefore
+receive a fresh observation without provider change. Observation timestamps and
+resource versions do not renew that identity. Durable replay survives reload or
+restart even when the observer snapshot was lost. Provider `updated_at` is
+required; it distinguishes an observed A → B → A transition from a replay of A.
+It is provider revision evidence, not a guarantee of complete transition history.
+A changed revision after lost memory may cause one fresh delivery even if the
+selected fields are unchanged; it does not create a recurring unchanged wait.
+
+Published payloads omit local `fetchedAt` so retries retain identical bytes;
+the event envelope records observation time and the direct reader retains fetch
+time for diagnostics. This adds no delivery registry or agent bookkeeping.
+Incomplete reviews produce a targeted review diagnostic while preserving
+independently valid PR state. Direct-read or
 ownership failure is logged but is not targeted using stale ownership.
 
 Host publication remains generation-fenced and commits `nextObservation` only

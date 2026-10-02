@@ -70,6 +70,7 @@ export type GitHubPullRequestFact = {
   reviewError?: string;
   fingerprint: string;
   fetchedAt: string;
+  providerUpdatedAt: string;
 };
 
 type OwnedFact = {
@@ -138,7 +139,7 @@ export function validateGitHubPullRequestCondition(
         /^[0-9a-f]{64}$/.test(expected.notEquals))
     )
   ) {
-    return "GitHub pull-request Conditions require matching provider/repository and fingerprint notEquals (null initially, then the exact observed SHA-256 fingerprint)";
+    return 'GitHub pull-request Condition expected must be { provider: "github", repository: "<owner>/<repo>", field: "fingerprint", notEquals: null | "<observed SHA-256>" }; notEquals is a sibling of field, not nested under fingerprint';
   }
   return null;
 }
@@ -379,6 +380,11 @@ async function readOwnedGitHubPullRequest(
     );
   if (pull.state !== "open" && pull.state !== "closed")
     throw new Error("GitHub pull request has unknown or missing state");
+  const providerUpdatedAt = text(pull.updated_at);
+  if (!providerUpdatedAt || !Number.isFinite(Date.parse(providerUpdatedAt)))
+    throw new Error(
+      "GitHub pull request is missing a valid updated_at revision",
+    );
   const reviews: ReviewFact[] = [];
   let reviewError: string | undefined;
   try {
@@ -453,6 +459,7 @@ async function readOwnedGitHubPullRequest(
         .update(JSON.stringify(meaningful))
         .digest("hex"),
       fetchedAt: observedAt.toISOString(),
+      providerUpdatedAt,
     },
   };
 }
@@ -563,6 +570,51 @@ function ownerIsCurrent(task: TaskDetail | null, owner: Owner): boolean {
 }
 function marker(value: string): string {
   return createHash("sha256").update(value).digest("hex");
+}
+
+// A new/redeclared wait needs a fresh observation even if the provider did not
+// change. Include specification identity, never mutable observation timestamps
+// or resourceVersion (which change when the same wait is merely checked).
+function requestScope(
+  task: TaskDetail,
+  fact: GitHubPullRequestFact,
+): unknown[] {
+  return task.conditions
+    .filter(
+      (condition) =>
+        condition.type === GITHUB_PULL_REQUEST_EVENT &&
+        condition.subject ===
+          `${GITHUB_PULL_REQUEST_PREFIX}${fact.repository}#${fact.number}`,
+    )
+    .map((condition) => [
+      condition.id,
+      condition.observation?.generation ?? 0,
+      condition.expected,
+    ])
+    .sort((left, right) => String(left[0]).localeCompare(String(right[0])));
+}
+
+function publication(
+  fact: GitHubPullRequestFact,
+  owner: Owner,
+  task: TaskDetail,
+) {
+  const { fetchedAt: _fetchedAt, ...value } = fact;
+  return {
+    ...value,
+    idempotencyKey: `github-pr:${marker(
+      JSON.stringify([
+        owner.appId,
+        owner.taskId,
+        task.generation ?? 0,
+        fact.pullRequestId,
+        requestScope(task, fact),
+        fact.providerUpdatedAt,
+        fact.fingerprint,
+        fact.reviewError ?? null,
+      ]),
+    )}`,
+  };
 }
 
 export async function observeGitHubPullRequests(
@@ -688,7 +740,13 @@ export async function observeGitHubPullRequests(
         continue;
       }
       const key = marker(
-        `${owned.owner.appId}\0${owned.owner.taskId}\0${owned.fact.pullRequestId}`,
+        JSON.stringify([
+          owned.owner.appId,
+          owned.owner.taskId,
+          task!.generation,
+          owned.fact.pullRequestId,
+          requestScope(task!, owned.fact),
+        ]),
       );
       const success = marker(owned.fact.fingerprint);
       const prior = record(priorStates[key]) as PublicationState;
@@ -700,7 +758,10 @@ export async function observeGitHubPullRequests(
             project: scope.project,
             taskId: owned.owner.taskId,
           },
-          data: owned.fact,
+          // Fetch time is diagnostic metadata, not a new provider fact. Keep
+          // replay bytes stable so the existing event journal can deduplicate
+          // publication after snapshot loss, reload or restart.
+          data: publication(owned.fact, owned.owner, task!),
         });
       }
       if (

@@ -328,23 +328,10 @@ describe("canonical May conversation App", () => {
     expect((targeted as any).intent.input.data).not.toHaveProperty("caller");
   });
 
-  test("targets the standing hygiene Task with one four-hour event schedule", () => {
+  test("leaves the hygiene cadence to its Task reviewAt without a duplicate App timer", () => {
     expect(
       app.schedules.find(({ id }) => id === "task-hygiene-review"),
-    ).toEqual({
-      id: "task-hygiene-review",
-      intervalMs: 14_400_000,
-      event: {
-        type: "project.task.tick",
-        source: "app:may:schedule:task-hygiene-review",
-        owner: "app:may",
-        target: {
-          appId: "may",
-          taskId: "goal/app_224ef63e-ddd6-4f4b-b159-26de9dd60107",
-        },
-        data: { project: "may", purpose: "task-hygiene-review" },
-      },
-    });
+    ).toBeUndefined();
   });
 
   test("uses a latest-slot weekly input schedule for bounded archive rotation", () => {

@@ -250,6 +250,24 @@ a link also checks current Task evidence, covering work that finished before
 the link was saved. Multiple linked Conversations retain separate input and
 response identities.
 
+Within one Conversation, one exact Task result or closure is delivered once with
+its currently eligible `topicIds` (up to 100 per admission). The inbox retains
+that grouped delivery receipt. Additional Topics linked later receive the same
+saved evidence only for their missing links. Existing per-Topic receipts remain
+valid, including across restart. Selected reports still reach only the Topics
+whose caller inputs selected that report; grouping never broadens eligibility.
+
+The purpose is to avoid repeated judgments and copied result bodies. Every
+Request retains its own scope, revision and fulfillment decision. Delivery of a
+shared result neither closes those Requests nor marks their requirements done.
+The agent reads the supplied Topic links and decides which asks the result
+answers. Separate Conversations still receive separate inputs. Already pending
+legacy inputs remain accountable and are not rewritten or silently consumed.
+
+**Availability:** grouped return admission is implemented in [Host `7b416af40`](https://github.com/hao1939/may-agent/commit/7b416af40).
+Activate that Host revision before relying on grouped input. Source validation
+and App integration are recorded in the [repeat-pattern follow-up](../../../may.app/design/token-efficiency-proposal-20261002.md#october-3-source-follow-up).
+
 Start with accepted results, cancellation, and states needing a human decision,
 including an explicit wait or exhausted failure. Any open Task can report
 a useful accepted outcome without closing. Routine progress remains
@@ -371,8 +389,11 @@ delegated Task.
   conversation execution or adapter rendering.
 - One inbox handles human and system inputs with per-Conversation execution
   ordering. Human priority applies to pending work, not instantaneous preemption.
-- Duplicate Task wakes reuse durable identity. Do not coalesce distinct linked
-  outcomes by overwriting a single in-memory Conversation flag.
+- One wake lets the Conversation attempt handle its pending input batch. Repeated
+  scheduling signals coalesce; distinct messages and linked outcomes remain in
+  durable storage. A later state check does not call the agent when that work is
+  already handled. The [Task attempt contract](task-attempts.md) owns batching,
+  live input, bounded overflow and clock wakes.
 - The timer checks stored follow-up evidence first. Completed or quiet handling
   prevents repeated model calls for the same unchanged facts.
 - Failed or stopped inputs remain visible. Ordinary bounded recovery may redo

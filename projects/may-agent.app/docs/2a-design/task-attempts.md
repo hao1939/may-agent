@@ -65,6 +65,25 @@ implements no scheduler, queue, retry loop across Task attempts, or Task storage
 Bounded repair inside one execution follows the
 [workflow repair convention](execution-contributions.md#repair-within-an-attempt).
 
+A wake asks the Host to check a Task's pending work. One attempt receives the
+pending input batch; there is no one-event/one-agent-call rule and no collection
+delay. The queue holds one pending entry per Task. Signals received during
+execution request one later state check, which starts agent work only if the
+Task remains eligible. Every distinct update keeps its durable identity even
+when its scheduling signals coalesce.
+
+The current claim includes up to 32 ordered events, with human input admitted
+before a system backlog fills the batch. Overflow stays pending for subsequent
+bounded work. Input accepted live can join the current attempt; unseen input
+remains for the next one. At settlement, a plain `project.task.tick` received
+while work was running is covered by the current review and is cleared. New
+facts, messages and requirements are retained until considered. A later tick
+received after settlement can request a new scheduled review. Failure recovery,
+explicit continuation and due review deadlines retain their existing rules.
+Clock-wake settlement is implemented in [Host `7b416af40`](https://github.com/hao1939/may-agent/commit/7b416af40),
+under review in [#295](https://github.com/hao1939/may-agent/pull/295); source
+validation does not establish deployment.
+
 `signal` cancels current managed, workflow or native execution, including on
 fenced Turn Stop or owner closure. It complements durable controls and result
 fences; aborting an attempt alone does not close its Task.

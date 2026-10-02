@@ -108,7 +108,10 @@ with an explicit outcome.
 Resolver observations and admitted task changes use the same fenced mutation
 path. Task ID prefixes carry no authority semantics; add a pure App
 `validateAction` rule only when the domain requires a stricter mutation
-boundary.
+boundary. Keep these validators pure and give a field path plus a minimal valid
+example on rejection. The Host can reuse them while a direct Task agent calls
+`finish`, then repeat them at settlement; do not perform effects in validation.
+See [completion admission](../2a-design/execution-contributions.md).
 
 App UI actions declare an input schema and a pure `toInput` translation in
 `app.actions`. Infrastructure validates the action and durably admits the
@@ -120,7 +123,7 @@ Validate with the app's `bun run check` and runtime reconciliation tests.
 
 - Does each durable input map to or wake the correct Task?
 - Does the attempt return structured evidence through the shared result contract?
-- Does each wait name an external fact, accountable owner and recovery review?
+- Does each wait name an external fact, accountable owner and a real wake route?
 - Can recovery continue the same Task without an App-local scheduler?
 - Are storage and result authority retained by the Host?
 
