@@ -329,7 +329,9 @@ describe("canonical May conversation App", () => {
   });
 
   test("leaves the hygiene cadence to its Task reviewAt without a duplicate App timer", () => {
-    expect(app.schedules.find(({ id }) => id === "task-hygiene-review")).toBeUndefined();
+    expect(
+      app.schedules.find(({ id }) => id === "task-hygiene-review"),
+    ).toBeUndefined();
   });
 
   test("uses a latest-slot weekly input schedule for bounded archive rotation", () => {

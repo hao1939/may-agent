@@ -382,7 +382,9 @@ async function readOwnedGitHubPullRequest(
     throw new Error("GitHub pull request has unknown or missing state");
   const providerUpdatedAt = text(pull.updated_at);
   if (!providerUpdatedAt || !Number.isFinite(Date.parse(providerUpdatedAt)))
-    throw new Error("GitHub pull request is missing a valid updated_at revision");
+    throw new Error(
+      "GitHub pull request is missing a valid updated_at revision",
+    );
   const reviews: ReviewFact[] = [];
   let reviewError: string | undefined;
   try {
@@ -738,7 +740,13 @@ export async function observeGitHubPullRequests(
         continue;
       }
       const key = marker(
-        JSON.stringify([owned.owner.appId, owned.owner.taskId, task!.generation, owned.fact.pullRequestId, requestScope(task!, owned.fact)]),
+        JSON.stringify([
+          owned.owner.appId,
+          owned.owner.taskId,
+          task!.generation,
+          owned.fact.pullRequestId,
+          requestScope(task!, owned.fact),
+        ]),
       );
       const success = marker(owned.fact.fingerprint);
       const prior = record(priorStates[key]) as PublicationState;
