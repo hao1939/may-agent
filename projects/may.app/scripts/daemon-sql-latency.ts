@@ -30,6 +30,7 @@ type RetainedQuery = {
   fingerprint: string;
   operation: string;
   shape: string;
+  shapeTruncated: boolean;
   count: number;
   totalMs: number;
   averageMs: number;
@@ -82,20 +83,19 @@ export function sqlLatencySample(
     ["current", sql.queries],
     ["previous", sql.previousQueries],
   ] as const) {
-    const window = record(rawWindow) as QueryWindow;
+    if (rawWindow === undefined) continue;
+    if (!rawWindow || typeof rawWindow !== "object" || Array.isArray(rawWindow))
+      throw new Error(`SQL ${name} window is malformed`);
+    const window = rawWindow as QueryWindow;
     const since = finite(window.since);
     const until = finite(window.until);
-    if (
-      since === null ||
-      until === null ||
-      since > until ||
-      until > now + 30_000 ||
-      now - until > SQL_DIAGNOSTIC_MAX_AGE_MS
-    )
-      continue;
+    if (since === null || until === null || since > until)
+      throw new Error(`SQL ${name} window bounds are malformed`);
     const trackedQueries = finite(window.trackedQueries);
     if (trackedQueries === null)
       throw new Error(`SQL ${name} window trackedQueries is malformed`);
+    if (until > now + 30_000 || now - until > SQL_DIAGNOSTIC_MAX_AGE_MS)
+      continue;
     const rows = rankedRows(window);
     const rankedUniqueQueries = new Set(
       rows.map((row) => (nonEmptyString(row.id) ? row.id : Symbol())),
@@ -129,6 +129,7 @@ export function sqlLatencySample(
         fingerprint: row.id.slice(0, 80),
         operation: row.operation.slice(0, 32),
         shape: row.sql.slice(0, MAX_SHAPE_CHARS),
+        shapeTruncated: row.sql.length > MAX_SHAPE_CHARS,
         count,
         totalMs,
         averageMs,
@@ -169,13 +170,16 @@ export function sqlLatencySample(
       rankedUniqueQueries: rows.length,
       retainedQueries: selected.length,
       selectedRowsTruncated: rows.length > selected.length,
-      shapeTextTruncated: rows.some((row) => row.shape.length === MAX_SHAPE_CHARS),
+      shapeTextTruncated: rows.some((row) => row.shapeTruncated),
     },
-    queries: selected,
+    queries: selected.map(
+      ({ shapeTruncated: _shapeTruncated, ...query }) => query,
+    ),
   };
   let note = JSON.stringify(noteValue);
   while (note.length > SQL_DIAGNOSTIC_NOTE_MAX_CHARS && selected.length > 1) {
     selected.pop();
+    noteValue.queries.pop();
     noteValue.coverage.retainedQueries = selected.length;
     noteValue.coverage.selectedRowsTruncated = true;
     note = JSON.stringify(noteValue);

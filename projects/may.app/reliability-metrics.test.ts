@@ -275,6 +275,102 @@ test("SQL latency rejects coercible and non-finite identity or timing fields", (
   expect(() => sqlLatencySample(emptyIdentity, now)).toThrow("malformed");
 });
 
+test("SQL latency rejects malformed present window bounds instead of hiding a slow window", () => {
+  const now = Date.now();
+  const ranked = (id: string, maxMs: number) => ({
+    id,
+    operation: "get",
+    sql: "SELECT ?",
+    calls: 1,
+    totalMs: maxMs,
+    averageMs: maxMs,
+    maxMs,
+  });
+  const valid = {
+    diagnostics: {
+      pid: 7,
+      sql: {
+        since: now - 600_000,
+        measuredAt: now,
+        queries: {
+          since: now - 300_000,
+          until: now,
+          trackedQueries: 1,
+          topByTotalTime: [ranked("slow", 5_000)],
+          topByWorstTime: [],
+        },
+        previousQueries: {
+          since: now - 600_000,
+          until: now - 300_000,
+          trackedQueries: 1,
+          topByTotalTime: [ranked("healthy", 10)],
+          topByWorstTime: [],
+        },
+      },
+    },
+  };
+
+  const nullBounds = structuredClone(valid) as any;
+  nullBounds.diagnostics.sql.queries.since = null;
+  nullBounds.diagnostics.sql.queries.until = null;
+  expect(() => sqlLatencySample(nullBounds, now)).toThrow(
+    "current window bounds are malformed",
+  );
+
+  for (const [window, name] of [
+    ["queries", "current"],
+    ["previousQueries", "previous"],
+  ] as const) {
+    for (const field of ["since", "until"] as const) {
+      for (const malformed of [NaN, Infinity, -1, "0"]) {
+        const status = structuredClone(valid) as any;
+        status.diagnostics.sql[window][field] = malformed;
+        expect(() => sqlLatencySample(status, now)).toThrow(
+          `${name} window bounds are malformed`,
+        );
+      }
+    }
+  }
+});
+
+test("SQL latency shape truncation flag distinguishes the 300-character boundary", () => {
+  const now = Date.now();
+  const status = (shape: string) => ({
+    diagnostics: {
+      pid: 7,
+      sql: {
+        since: now - 1,
+        measuredAt: now,
+        queries: {
+          since: now - 1,
+          until: now,
+          trackedQueries: 1,
+          topByTotalTime: [
+            {
+              id: "shape",
+              operation: "get",
+              sql: shape,
+              calls: 1,
+              totalMs: 1,
+              averageMs: 1,
+              maxMs: 1,
+            },
+          ],
+          topByWorstTime: [],
+        },
+      },
+    },
+  });
+
+  const exact = JSON.parse(sqlLatencySample(status("x".repeat(300)), now).note);
+  expect(exact.coverage.shapeTextTruncated).toBe(false);
+  expect(exact.queries[0].shape).toHaveLength(300);
+
+  const over = JSON.parse(sqlLatencySample(status("x".repeat(301)), now).note);
+  expect(over.coverage.shapeTextTruncated).toBe(true);
+  expect(over.queries[0].shape).toHaveLength(300);
+});
+
 test("SQL latency source command is pinned to the loaded App release rather than collector cwd", () => {
   const metric = reliabilityMetrics.find(
     (item) => item.id === SQL_LATENCY_METRIC,
