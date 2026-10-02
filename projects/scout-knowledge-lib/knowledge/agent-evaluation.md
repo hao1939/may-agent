@@ -15,6 +15,7 @@ source_update_2026_09_25_hippo_memory: "kitfunso/hippo-memory at commit d4e16333
 source_update_2026_09_25_kitaru: "zenml-io/kitaru at commit 618e58f06a828b39aa9b2195a1aa97d748f05155; replay, cohort, and experiment documentation plus Mastra replay-safety tests were inspected. The suite was not run."
 source_update_2026_09_25_agentlens: "HN item 49848914 and fang520huang-lgtm/AgentLens at commit 30a5301f1ce76bc6048ee28a879aaca2c710a7e8; README, session schema, comparison and redaction implementation, tests, and complete repository tree were inspected. All 12 repository tests passed locally under Node."
 source_update_2026_09_23: "HN item 49813880 and Life Forge repository at commit b747337d6de0a280af7c9e19b8a4e794137121e8; relevant source, bundled reports, test-suite manifest, and an offline reference-agent run were inspected."
+source_update_2026_10_02_detection_modes: "HN item 49936772 and the expanded Nothing Threw essay, README, taxonomy, and September/October field notes were reviewed at repository commit 761d6ed15e9b10cb9021530531bfb5cb0d0c716d."
 source_update_2026_09_23_detection_modes: "HN item 49815867 and the Nothing Threw essay, README, taxonomy, and September field notes were reviewed at repository commit c17bc3afb70c1168708082a7d94884075a8e293e."
 source_update_2026_09_23_apprenticebench: "HN item 49819853 and NeoCognition's ApprenticeBench article were reviewed. The evidence is a first-party benchmark report; no public task corpus, trajectories, or independent reproduction was located from the linked benchmark sites."
 source_basis: "Consolidated from agent-evaluation.md, agent-evaluation-trends.md, agent-evaluation-trends-updated.md, xhs-eval-synthesis-2024.md, and xhs_eval_trends_may2024.md. Testing tooling section added from findings/github-trending-ai-agents-2026.md, findings/2026-06-17-arxiv-ai-agent-triage.md, findings/hn-ai-agent-trends.md, findings/2026-06-14-arxiv-agent-triage.md, findings/2026-06-15-arxiv-agent-triage-batch7.md. Batch 6 sourcing: Multiagent Confidence Protocols, Intelligence Entropy evaluation dimension. Session-state sourcing (Jul 18): MemTrace knowledge-point evaluation. Diagnostic Refinement wave (Jun 20): LegalHalluLens, EARS, Thermodynamic Signatures, Rift. Observability Inversion (Jun 26): RigorBench, Steer Don't Solve, Topos. GitHub update (2026-08-08): RealReplicaBench section rechecked at commit 42693bb and expanded to distinguish per-run answer concealment from corpus-level secrecy: all 107 task definitions and rubrics are public, and private expected-answer files are present in the repository even though the runner excludes them from the agent-visible task tree. GitHub update (2026-08-06): RealReplicaBench section refreshed from the current Accio-org/RealReplicaBench public repo (redirect from Accio-Lab), adding the evaluation-boundary nuance that published leaderboard scores come from Accio-managed evaluation endpoints while the repo exposes a bring-your-own-credentials path and still lacks immutable public raw result bundles. HN update (2026-08-04): HN 49170915 added as practitioner evidence that benchmark saturation is pushing teams toward open-ended multi-agent evaluation worlds. HN update (2026-08-05): HN 49169641 / Computer Anthology added as evidence that serious eval teams are turning benchmarks into continuously renewed benchmark families and that scaffold choice can move pass@1 by double-digit points. HN update (2026-08-05): Ask HN 49181014 added as practitioner evidence that teams now want harness-only benchmarks with model/reasoning provenance instead of pooled model scores. HN update (2026-08-07): HN 49200652 added as live evidence that an unversioned agentic leaderboard can change ordering during the discussion when graders and task versions change. arXiv update (2026-08-07): AV-AIVAT (2608.06362) added as evidence that costly interactive agent comparisons need anytime-valid stopping, variance reduction, and replayable stopping metadata. arXiv update (2026-08-09): SkillTV-Bench (2608.05573v1) added as evidence that task-time procedural skills must be compiled into evidence-seeking inspection plans and that false accepts can erase gains from larger rollout pools. GitHub update (2026-08-20): EvoTrace at commit 1e457e8 added as an implementation of local coding-session mining into provenance-bearing task/environment/verifier bundles, with reconstruction confidence and explicit policy/runtime limits. HN update (2026-08-24): PagerDuty's repeated A/B test of unified versus domain-specific standards skills added as evidence that unconditional request exposure and routing reliability must be measured separately from quality conditional on activation. GitHub update (2026-09-10): reverify at commit f32ea84 added as implementation evidence for machine-verdict admission, information-weighted claim scoring, negative memory, and separate unverified hand-offs. GitHub update (2026-09-10): spec-wins at commit 776e799 added as evidence that hidden grader passage and specification conformance must remain distinct claims, with residual source/counterexample audit after executable grading. HN update (2026-09-10): coding-atlas at commit 7e29832 added as receipt-rich evidence for separating work outcome, disclosure accuracy, and harness effects in coding-agent evaluation. GitHub update (2026-09-13): AI-Has-Taste at commit 2537a78 added as implementation evidence for separating frozen claim scope, artifact integrity, selected replay status, and broader proof/review status. HN update (2026-09-13): Agents School added as a live implementation of deterministic transcript checking and versioned signed credentials whose current evidence class remains explicitly self-reported rather than independently audited. GitHub update (2026-09-14): WorldZero at commit 4dfce7a added as implementation evidence for behavior-first causal evaluation with event-linked reconstruction witnesses, matched-null episodes, separate claim auditing, and explicit benefit/transfer layers. HN update (2026-09-15): Dan Luu's broader coding-agent workflow report added as practitioner evidence that agent-generated artifacts can substantiate a fabricated reproduction and that execution against the claimed environment must remain independent from evidence production. HN update (2026-09-16): five-bugs added as replayable small-sample evidence that model diversity cannot recover an omitted requirement when every run sees the same weak executable specification; the note distinguishes independently replayed patches from author-reported run provenance. arXiv update (2026-09-16): Coding Agents Have Converged (2609.17394v1) added as verdict-matrix evidence that leaderboard resolution depends on directionally imbalanced discordant outcomes, paired testing, explicit grouping rules, and model-scaffold provenance rather than raw task count or small aggregate gaps. arXiv update (2026-09-17): DualViewEval (2609.18909v1) added as abstract-level evidence that benchmark compression should preserve process relations as well as outcome similarity. HN update (2026-09-17): Cooper's Insurance Agent Benchmark added paired model-alone versus document-harness evidence, with explicit reliability, abstention, cost, and private-corpus limitations. GitHub update (2026-09-18): gauntlet at commit 3c9b660 added implementation evidence for sealed trials, contamination scanning, and preregistered keep/revert/provisional gates, while exposing two evidence-boundary risks: Cartesian repeat pairing is bootstrapped as if the derived signs were independent, and the shipped guard detects lexical shingle overlap while fresh holdout generation remains planned. HN update (2026-09-18): RoninAgent Subject-0 added as first-party evidence that red-team reports must distinguish a supplied adversarial objective from spontaneous goal formation and classify proposed, denied, executed, observed, and persistent effects separately. HN update (2026-09-19): Anuclei's release note added first-party implementation evidence for conversation-level evaluation, evidence-cited deterministic diagnosis, stale-narrative marking, and declared-versus-observed delegation reconciliation. GitHub update (2026-09-20): NiceEval at commit 0d1ed3e added implementation evidence for deriving a readable manifest and evaluation fingerprint from one captured input, while keeping verdict and score folds separate and making source-closure limits explicit. HN update (2026-09-20): evaluation.club added practitioner guidance for treating prompts as replaceable treatments while domain experts own versioned measures, paired trials, holdouts, and labelled production feedback. HN/GitHub update (2026-09-20): jevals at commit a415922 added implementation evidence for separating reusable typed semantic checks from backend calibration, consequence-specific authorization, failure policy, and holdout validation. HN update (2026-09-21): Southbridge's Jev sentinel study added first-party evidence that anchored categorical trace readings can improve held-out time and spend forecasting when combined with counters, while remaining distinct from acceptance, security, and intervention authority. Companion extraction note: §12–§22 and §23–§31 were moved to agent-evaluation-research.md after being appended to the parent. Reddit update (2026-09-22): PhysAudit post added as a first-party design account for deterministic, domain-specific and claim-conditioned validation of AI-generated scientific code; repository and results were not independently checked. XHS update (2026-09-22): a directly read AgentJev post added secondary announcement evidence for a local probability-output decision model intended for low-latency agent gates and routers; its repository, weights, latency, and quality claims were not independently checked."
@@ -416,7 +417,7 @@ capture limits on a large workspace.
 - **Comparison implementation:** https://github.com/fang520huang-lgtm/AgentLens/blob/30a5301f1ce76bc6048ee28a879aaca2c710a7e8/src/compare.js
 - **Feature tests:** https://github.com/fang520huang-lgtm/AgentLens/blob/30a5301f1ce76bc6048ee28a879aaca2c710a7e8/test/features.test.js
 
-### Record how failures were detected, not only what failed — Nothing Threw (HN/GitHub, Sep 2026)
+### Record how failures were detected, not only what failed — Nothing Threw (HN/GitHub, Sep–Oct 2026)
 
 The public *Nothing Threw* catalogue offers a small but useful operational
 measurement pattern: classify each incident by both its failure mechanism and
@@ -429,27 +430,41 @@ retroactively make an incident gate-detected, and ordinary review remains human
 detection. This prevents post-incident controls from inflating the system's
 observed ability to notice new failures.
 
-The project author reports 48 incidents from five months of agents operating a
-small events business: one was caught by a deterministic gate, five threw at the
-time, twelve were challenged by a human, one was reported by an operator, and
-29 surfaced later. The reported automated share (`GATE + THREW`) stayed between
-9% and 15% across four catalogue passes despite incident-specific checks being
-added. The mechanism is more informative than the percentages. Several costly
-cases were not broken queries or failed jobs, but valid operations followed by
-false interpretations: attributed conversions were treated as sales, current
-targeting was applied to historical spend, and two purportedly independent
-sources shared the same observability blind spot. All could produce fluent,
-internally consistent output and an exit status of zero.
+At the current revision, the project author reports 74 incidents from five
+months of agents operating one small events business: two were caught by a
+deterministic gate, seven threw at the time, nineteen were challenged by a
+human, one was reported by an operator, and 45 surfaced later. The reported
+strictly automated share (`GATE + THREW`) moved 11%, 9%, 15%, 13%, then 12%
+across five catalogue passes despite incident-specific checks being added. The
+new 26-incident window contributed one gate and two surfaced errors; sixteen
+incidents were found later. The mechanism is more informative than the
+percentages. Several costly cases were not broken queries or failed jobs, but
+valid operations followed by false interpretations: attributed conversions
+were treated as sales, current targeting was applied to historical spend, and
+two purportedly independent sources shared the same observability blind spot.
+All could produce fluent, internally consistent output and an exit status of
+zero.
+
+The update also exposes why detector identity belongs in the record. An LLM
+reviewer caught three new incidents before merge, which the catalogue classifies
+as `HUMAN`, not as a deterministic gate. Counting it as automated would change
+the new-window share from 3/26 to 6/26 and the cumulative share from 9/74 to
+12/74. That reviewer was itself running as an improvised stand-in on all twelve
+reported nights because its intended agent was not registered. Evaluation
+should therefore retain detector type, configured identity, effective runtime
+identity, execution coverage, and the policy for translating its findings into
+a verdict—not merely an “automated” boolean.
 
 This suggests that **detection mode is an evaluation outcome**, not incidental
 metadata. For each production incident, preserve which control existed before
 the run, what signal first contradicted the output, detection latency, affected
 claim or effect, correction, recurrence, and cost. Then measure gate/throw,
-human/operator, and later-discovery rates separately. Pair this with exposure
-or workload volume: a ratio over discovered incidents measures the composition
-of what was found, not the rate of all failures. Also map the provenance and
-blind spots of supposedly independent sources; two agreeing views do not form
-an independent cross-check when both omit the same real-world event.
+model-review, human/operator, and later-discovery rates separately. Pair this
+with exposure or workload volume: a ratio over discovered incidents measures
+the composition of what was found, not the rate of all failures. Also map the
+provenance and blind spots of supposedly independent sources; two agreeing
+views do not form an independent cross-check when both omit the same real-world
+event.
 
 The catalogue should not be read as evidence that semantic conclusions are
 untestable. It shows that this system's incident-specific checks did not cover
@@ -457,24 +472,30 @@ later, different inference failures. Claim-conditioned invariants, source
 reconciliation, impossible-value checks, and sampled external audits can still
 make some conclusion failures machine-detectable. A useful control report asks
 both “would the original check reject the same bug now?” and “what broader
-family of claims can this control falsify?”
+family of claims can this control falsify?” It should also audit the incident
+ledger itself: the author says the catalogue has been checked against the live
+systems twice and each check found an error.
 
 **Evidence boundary:** this is one operator's retrospective, selected catalogue,
 not a failure-rate dataset. Incidents found accidentally imply unobserved cases
-remain; changing discovery practices can move the denominator; and the author
-reports that a live audit found one catalogue claim itself wrong. The public
-entries name commits, pull requests, logs, or API reads, but many anchors refer
-to a now-private business repository and were not independently inspected by
-Scout. Scout reviewed the complete essay plus the public README, taxonomy, and
-September field notes at pinned commit `c17bc3a`; the HN item had two points and
-no comments when checked.
+remain; changing discovery practices can move the denominator; and two live
+checks finding two catalogue errors weaken the exact counts while strengthening
+the case for auditing the detector ledger. The public entries name commits,
+pull requests, logs, or API reads, but many anchors refer to a now-private
+business repository and were not independently inspected by Scout. Scout
+reviewed the current HN item, complete essay, README, taxonomy, September field
+notes, and October field notes at pinned commit
+`761d6ed15e9b10cb9021530531bfb5cb0d0c716d`. Scout did not inspect the private
+anchors, rerun the monthly sweep, or independently reproduce any incident.
 
-- **HN:** https://news.ycombinator.com/item?id=49815867
+- **Current HN:** https://news.ycombinator.com/item?id=49936772
+- **Earlier HN:** https://news.ycombinator.com/item?id=49815867
 - **Repo:** https://github.com/taylorancapital/nothing-threw
-- **Essay:** https://github.com/taylorancapital/nothing-threw/blob/c17bc3afb70c1168708082a7d94884075a8e293e/SIX_OF_FORTY_EIGHT.md
-- **Pinned revision:** https://github.com/taylorancapital/nothing-threw/commit/c17bc3afb70c1168708082a7d94884075a8e293e
-- **Coverage:** complete HN item; complete essay, README, taxonomy, and September
-  field notes at the pinned revision; no private business-repository anchors
+- **Essay:** https://github.com/taylorancapital/nothing-threw/blob/761d6ed15e9b10cb9021530531bfb5cb0d0c716d/SIX_OF_FORTY_EIGHT.md
+- **Pinned revision:** https://github.com/taylorancapital/nothing-threw/commit/761d6ed15e9b10cb9021530531bfb5cb0d0c716d
+- **Coverage:** complete current HN item; complete essay, README, taxonomy,
+  September field notes, and October field notes at the pinned revision; no
+  private business-repository anchors
 
 ### XHS practitioner signal: test incident reasoning, not framework recall
 
