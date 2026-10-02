@@ -434,6 +434,52 @@ describe("source-query metric measurement", () => {
     ]);
   });
 
+  it("isolates a rejected BEGIN from a later source read after an intervening writer update", async () => {
+    const db = getDb(persistDir);
+    db.exec("CREATE TABLE transaction_marker(value INTEGER NOT NULL); INSERT INTO transaction_marker VALUES (7)");
+    const metrics = createMetricService({ getDb: () => db });
+    for (const definition of [
+      { id: "transaction.begin", sourceQuery: "BEGIN" },
+      { id: "transaction.healthy", sourceQuery: "SELECT value FROM transaction_marker" },
+      {
+        id: "transaction.observes-writer",
+        sourceQuery: "SELECT COUNT(*) AS value FROM metric_snapshots WHERE metric_id = 'transaction.healthy'",
+      },
+    ]) {
+      metrics.define({
+        ...definition,
+        name: definition.id,
+        type: "gauge",
+        owner: "fixture",
+        threshold: 0,
+        alertOp: ">",
+      });
+    }
+
+    const result = await measureSourceMetrics({
+      bus,
+      persistDir,
+      isDue: ({ id }) => id.startsWith("transaction."),
+    });
+
+    expect(result).toEqual({
+      measured: ["transaction.healthy", "transaction.observes-writer"],
+      skipped: ["transaction.begin"],
+      failures: [{ id: "transaction.begin", reason: "Source returned no finite numeric sample" }],
+    });
+    expect(metrics.get("transaction.observes-writer")!.observation?.value).toBe(1);
+    expect(
+      db
+        .prepare(
+          `SELECT json_extract(data, '$.reason') AS reason
+           FROM events
+           WHERE event_type = 'metric.measurement.failed'
+             AND json_extract(data, '$.metricId') = 'transaction.begin'`,
+        )
+        .get(),
+    ).toEqual({ reason: "Source returned no finite numeric sample" });
+  });
+
   it("keeps the writer usable when a failed source reader closes and a later reader reopens", async () => {
     const db = getDb(persistDir);
     db.exec("CREATE TABLE recovery_marker(value INTEGER NOT NULL); INSERT INTO recovery_marker VALUES (1)");
