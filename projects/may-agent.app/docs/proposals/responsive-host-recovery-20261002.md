@@ -93,7 +93,35 @@ These rules do not create another public API, Task type or agent workflow.
 
 ## Implementation trials: October 2
 
-### Latest rollout and new measured lead
+### October 3: remaining human-action lookup cost
+
+The installed Host is now `f2eb4b876`, with the matching SDK and App definitions
+at `e0b41fcf29`. The request/Condition rollout trial completed through ordinary
+Task reconciliation. One readiness HTTP503 recovered on subsequent checks;
+its cause remains unconfirmed.
+
+Current SQL diagnostics identified a different lookup in
+`reachableHumanConditionOwners`: 20 calls took about 42 seconds across two
+retained windows. Although it follows exact Task links logically, SQLite starts
+from the wider waiting-request set. Host [PR #292](https://github.com/hao1939/may-agent/pull/292)
+keeps the recursive order parent → route → Condition → request and uses the
+existing request primary key. Full ID and subject checks retain correlation;
+there is no schema, cache, policy or lifecycle change.
+
+On a compact copy of the six relevant relations, the original query took
+439–519 ms; the ordered lookup took 0.90–1.56 ms with the same 16 returned rows.
+Adding the inverse-ID predicate alone did not improve the plan. The production
+regression fails against the original query, and the candidate passed full local
+CI and independent review. These are source and isolated-comparison results,
+not deployed latency. Local evidence: `.state/human-task-query-20261003/`.
+
+Recent `may.daemon-sql-time-percent` samples are about 15–20%, below the existing
+25% sustained-load threshold. Average-load recovery can coexist with slow
+individual operations. Keep that coverage limitation visible without treating
+an untriggered threshold as broken delivery. A separate Conversation recovery
+read took 13.127 seconds once and remains a distinct next lead.
+
+### October 2 rollout and measured lead
 
 Merged Host `dc92e4f5` is installed. The standalone receipt
 `projects/may-agent/.state/deploy-receipts/merged-280-281-282-20261002.json`
