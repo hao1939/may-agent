@@ -28,7 +28,7 @@ const profiles: Record<Reviewer, ReviewerProfile> = {
     agent: "evaluator-deepseek",
     configuredModel: deepseekConfig.model,
     allowanceIntervalMs: 300_000,
-    metricReviewIntervalMs: 3_600_000,
+    metricReviewIntervalMs: 86_400_000,
     allowanceNamespace: "evaluator-deepseek",
   },
 };

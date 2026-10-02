@@ -35,15 +35,21 @@ semantic review population. Age includes old unfinished work; a count of zero wi
 no observations is not a successful-work percentage. The thresholds request
 attention and do not cap retries or choose a repair.
 
-Evaluation explicitly subscribes to metric breach, recovery, stall and collection
-failure events. When a canonical signal carries `metricId` and `measuredAt`, it
-routes directly to the existing stable per-metric/reviewer Task and pins the
-end-exclusive evidence cut at `measuredAt + 1`, so the triggering sample is
-included without scanning the full catalog. Canonical App events do not expose
-the private envelope timestamp; a collection-failure signal without an explicit
-observation time therefore wakes the existing periodic selector instead of
-inventing a retry-unstable cut. The existing periodic schedule also revisits
-not-due and persistent concerns; no target queue or new timer is added.
+Evaluation subscribes to metric breach and recovery transitions. Samples update
+metric values and retained evidence; changed values within an open alert, stall
+observations and individual collection failures do not commission another review.
+The existing stale-metric alert and routine review retain visibility into missing
+samples and collector failures. Legacy breach events marked `repeat:true` are
+ignored by this subscriber.
+
+A transition carrying `metricId`, `alertId` and `measuredAt` routes directly to the
+stable per-metric/reviewer Task. It pins the exact alert and the end-exclusive
+evidence cut at `measuredAt + 1`, including the triggering sample. Breach and
+recovery bypass the routine metric cadence but still respect shared reviewer
+capacity. If capacity is occupied, the same Task retains its requested observation
+and an ordinary timed wait. Canonical events do not expose the private envelope
+timestamp; signals without an explicit observation time use the existing bounded
+selector. No target queue or new timer is added.
 
 The selector alternates metric and Task opportunities, visits a bounded number
 of active metrics, and retains its cursor in its ordinary Task result. It can
@@ -60,12 +66,13 @@ One stable Evaluation Task per metric/reviewer retains the requested cut, shared
 review allowance and next review point. The evidence cut identifies the report;
 the immutable judgment time starts the next routine review interval. Publication
 replay reuses the same judgment and cannot silently postpone its deadline, so a
-long-delayed publication can leave the metric immediately due. DeepSeek can assess
-different work every five minutes but routinely reconsiders the same metric at
-most once an hour; the regular
-reviewer uses a day. This is App selection policy, not a Host retry limit or an
+long-delayed publication can leave the metric immediately due. Both reviewer
+profiles routinely reconsider the same metric at most once a day. DeepSeek's
+separate five-minute capacity allowance permits reviewing different work; it is
+not a per-metric review schedule. Breach and recovery request prompt review without
+waiting for tomorrow. This is App selection policy, not a Host retry limit or an
 obstacle to explicitly requested review. Existing waits still react to observed
-facts. An hour is an initial cadence to reassess against usefulness and coverage.
+facts.
 Pending review work takes precedence over
 routine sampling. Budget exhaustion retains a timed wait; failed reads/reviewer
 execution remain incomplete and report through the existing owner path. Ordinary
@@ -81,8 +88,8 @@ reconsider an unchanged concern.
 Metric reports use the existing judgment schema, immutable report storage,
 publication marker, bounded reader and May intake. Their subject is
 `{metricId, alertId?}` under `metric-observation-v1`; responsibility is separate
-evidence, not part of metric identity. The optional alert ID identifies the latest
-recorded episode in the inspected snapshot; other episodes remain evidence, not
+evidence, not part of metric identity. The optional alert ID identifies the triggering episode for a transition review,
+or the latest recorded episode for a routine review; other episodes remain evidence, not
 an assertion of shared cause. Existing Task subjects and historical report paths
 remain readable. No placeholder Task is used as evidence. The metric report hash
 binds its captured observations; altered report bytes or mixed subject/rubric
@@ -114,9 +121,9 @@ reopening or one-Task-per-sample behavior is introduced.
 
 The owner chooses an ordinary Task result and its metric judgments together.
 May's `metric-response` composes `review: {task, decisions}` into that complete
-result, filling `linkedTask` from the owning attempt. An unresolved observation
-requires a metric Condition; investigation requires submitted work, useful
-continuation, or an actual wait. From Conversation the same review travels in
+result, filling `linkedTask` from the owning attempt. Passive metric collection needs no Task wait. Investigation requires submitted
+work, useful continuation, or an actual repair, dependency or human wait. A metric
+Condition is appropriate only when a future observation can change the next action. From Conversation the same review travels in
 an ordinary `followUp`; a new goal selects `metric-follow-through`. Its initial
 attempt saves the selected result, and later evidence asks May for judgment.
 Existing Tasks retain their executor and use the same complete-result helper.

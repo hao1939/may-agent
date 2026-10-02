@@ -312,6 +312,7 @@ const metricReviewDataSchema = Type.Object(
       ]),
     ),
     automatic: Type.Optional(Type.Boolean()),
+    alertId: Type.Optional(Type.Integer({ minimum: 1 })),
   },
   { additionalProperties: false },
 );
@@ -644,11 +645,14 @@ export function taskIntentForInput(input: AppInput): TaskIntent | null {
       const end = Number(data.end);
       const reviewer = stringValue(data.reviewer) || "evaluator";
       const automatic = data.automatic === true;
+      const alertId = data.alertId;
       if (
         !metricId ||
         !Number.isSafeInteger(end) ||
         end <= 0 ||
-        !["evaluator", "evaluator-deepseek"].includes(reviewer)
+        !["evaluator", "evaluator-deepseek"].includes(reviewer) ||
+        (alertId !== undefined &&
+          (!Number.isSafeInteger(alertId) || Number(alertId) <= 0))
       )
         return null;
       return {
@@ -663,8 +667,14 @@ export function taskIntentForInput(input: AppInput): TaskIntent | null {
           "Publish a bounded assessment to the accountable owner without changing original work or retry policy.",
         ],
         workflow: "metric-review",
-        input: { metricId, end, reviewer, automatic },
-        priority: "P2",
+        input: {
+          metricId,
+          end,
+          reviewer,
+          automatic,
+          ...(alertId !== undefined ? { alertId } : {}),
+        },
+        priority: alertId !== undefined ? "P1" : "P2",
       };
     }
     case "review-task-outcome": {
@@ -992,11 +1002,11 @@ export function taskInputForEvent(
         data: { ...eventData(event), automatic: true },
       };
     case "metric.breach":
-    case "metric.recovered":
-    case "metric.stalled":
-    case "metric.measurement.failed": {
+    case "metric.recovered": {
       const data = eventData(event);
       if (isExplicitlyEvaluationOwned(data, event)) return null;
+      // State transitions commission review; updates to an open episode are evidence.
+      if (event.type === "metric.breach" && data.repeat === true) return null;
       const metricId = stringValue(
         data.metricId ?? data.metric_id ?? event.target?.metricId,
       );
@@ -1018,6 +1028,9 @@ export function taskInputForEvent(
               end: observedAt + 1,
               reviewer: automatic.reviewer ?? "evaluator",
               automatic: true,
+              ...(Number.isSafeInteger(data.alertId) && Number(data.alertId) > 0
+                ? { alertId: data.alertId }
+                : {}),
             },
           }
         : { kind: "automatic-review", data: { reason: event.type } };
@@ -1383,12 +1396,7 @@ const baseApp = defineApp({
   task: taskForEvaluationInput,
   workspace: { kind: "local", localPath: "." },
   subscriptions: [
-    ...[
-      "metric.breach",
-      "metric.recovered",
-      "metric.stalled",
-      "metric.measurement.failed",
-    ].map((event) => ({
+    ...["metric.breach", "metric.recovered"].map((event) => ({
       id: event,
       event,
       toInput: taskInputForEvent,

@@ -34,6 +34,8 @@ type Input = {
   end: number;
   reviewer?: Reviewer;
   automatic?: boolean;
+  /** A breach or recovery requests review independently of routine cadence. */
+  alertId?: number;
 };
 
 export async function reviewMetric(
@@ -41,14 +43,20 @@ export async function reviewMetric(
   reader: MetricReader = readMetricEvidence,
   reportRoot = configuredTaskReportRoot(),
 ): Promise<ExecutionResult> {
-  const { metricId } = ctx.input;
+  const { metricId, alertId: requestedAlertId } = ctx.input;
   const end = Number(ctx.input.end);
   const profile = reviewerProfile(ctx.input.reviewer);
-  if (!metricId || !Number.isSafeInteger(end) || end <= 0)
+  if (
+    !metricId ||
+    !Number.isSafeInteger(end) ||
+    end <= 0 ||
+    (requestedAlertId !== undefined &&
+      (!Number.isSafeInteger(requestedAlertId) || requestedAlertId <= 0))
+  )
     return ctx.blocked(
       "Metric review requires an exact metric and observation cut",
     );
-  if (ctx.input.automatic) {
+  if (ctx.input.automatic && requestedAlertId === undefined) {
     let nextReviewAt: number;
     try {
       nextReviewAt = await metricReviewNextReviewAt(
@@ -62,7 +70,10 @@ export async function reviewMetric(
         state: "incomplete",
         report: true,
         summary,
-        facts: [`metric:${metricId}`, "review-disposition:deadline-unavailable"],
+        facts: [
+          `metric:${metricId}`,
+          "review-disposition:deadline-unavailable",
+        ],
       });
     }
     if (nextReviewAt > Date.now()) {
@@ -71,10 +82,7 @@ export async function reviewMetric(
         state: "converged",
         summary,
         result: { disposition: "not-due", metricId, nextReviewAt },
-        facts: [
-          `metric:${metricId}`,
-          `metric-review:not-due:${nextReviewAt}`,
-        ],
+        facts: [`metric:${metricId}`, `metric-review:not-due:${nextReviewAt}`],
         actions: [],
       });
     }
@@ -83,7 +91,14 @@ export async function reviewMetric(
   // attribution or retained history must not turn publication recovery into a
   // second judgment of the same requested observation.
   const requestKey = createHash("sha256")
-    .update(JSON.stringify([metricId, end, profile.reviewer]))
+    .update(
+      JSON.stringify([
+        metricId,
+        end,
+        profile.reviewer,
+        ...(requestedAlertId === undefined ? [] : [requestedAlertId]),
+      ]),
+    )
     .digest("hex");
   const evidencePath = resolveTaskReportPath(
     reportRoot,
@@ -93,7 +108,7 @@ export async function reviewMetric(
   try {
     evidence = existsSync(evidencePath)
       ? JSON.parse(readFileSync(evidencePath, "utf8"))
-      : await reader(metricId, end);
+      : await reader(metricId, end, requestedAlertId);
   } catch (error) {
     const summary = `Metric evidence unavailable: ${error instanceof Error ? error.message : String(error)}`;
     return ctx.done(summary, {
@@ -107,14 +122,19 @@ export async function reviewMetric(
     evidence.responsibility?.appId === "evaluation" ||
     evidence.metricId !== metricId ||
     evidence.metric?.id !== metricId ||
-    evidence.end !== end
+    evidence.end !== end ||
+    (requestedAlertId !== undefined &&
+      !evidence.alerts?.some(
+        (alert: { alertId: number }) => alert.alertId === requestedAlertId,
+      ))
   )
     return ctx.blocked(
       "Metric review requires exact evidence outside Evaluation ownership",
     );
   writeImmutable(evidencePath, `${JSON.stringify(evidence, null, 2)}\n`);
   const evidenceHash = metricEvidenceHash(evidence);
-  const alertId: number | undefined = evidence.alerts?.[0]?.alertId;
+  const alertId: number | undefined =
+    requestedAlertId ?? evidence.alerts?.[0]?.alertId;
   const paths = metricReportPaths(
     undefined,
     metricId,
