@@ -407,10 +407,10 @@ describe("codex-goal Task executor", () => {
     });
   });
 
-  it("pages one exact completed turn past large output without truncating the final answer", async () => {
+  it("pages one exact completed turn and preserves the final answer", async () => {
     const root = fixtureRoot();
     const client = new FakeClient("thread-bounded-items");
-    const answerResponse = `exact-answer-${"z".repeat(200_000)}-終`;
+    const answerResponse = "exact-answer-終";
     const requests: Array<{
       threadId: string;
       turnId: string;
@@ -425,7 +425,7 @@ describe("codex-goal Task executor", () => {
           data: [
             {
               turnId: input.turnId,
-              item: { type: "commandExecution", aggregatedOutput: "x".repeat(3 * 1024 * 1024) },
+              item: { type: "commandExecution", aggregatedOutput: "synthetic command output" },
             },
           ],
           nextCursor: "older-item",
@@ -492,26 +492,50 @@ describe("codex-goal Task executor", () => {
       threadId: client.threadId,
       turn: { id: `turn-${turn}`, status: "completed" },
     });
-    client.listThreadItems = async (input) => ({
-      data:
-        turn === 1
-          ? []
-          : [
-              {
-                turnId: input.turnId,
-                item: {
-                  type: "agentMessage",
-                  phase: "final_answer",
-                  text: JSON.stringify({
-                    state: "converged",
-                    summary: "Current-turn facts were admitted.",
-                    facts: ["current-turn"],
-                  }),
-                },
+    const observedTurnIds: string[] = [];
+    client.listThreadItems = async (input) => {
+      if (!input.cursor) {
+        observedTurnIds.push("turn-old");
+        return {
+          data: [
+            {
+              turnId: "turn-old",
+              item: {
+                type: "agentMessage",
+                phase: "final_answer",
+                text: JSON.stringify({
+                  state: "converged",
+                  summary: "Stale answer must never be admitted.",
+                  facts: ["stale-turn"],
+                }),
               },
-            ],
-      nextCursor: null,
-    });
+            },
+          ],
+          nextCursor: "current-item",
+        };
+      }
+      observedTurnIds.push(input.turnId);
+      return {
+        data:
+          turn === 1
+            ? []
+            : [
+                {
+                  turnId: input.turnId,
+                  item: {
+                    type: "agentMessage",
+                    phase: "final_answer",
+                    text: JSON.stringify({
+                      state: "converged",
+                      summary: "Current-turn facts were admitted.",
+                      facts: ["current-turn"],
+                    }),
+                  },
+                },
+              ],
+        nextCursor: null,
+      };
+    };
     const executor = createCodexGoalExecutor({
       stateFile: join(root, "bindings.json"),
       createClient: () => client,
@@ -522,6 +546,34 @@ describe("codex-goal Task executor", () => {
       facts: ["current-turn", "codex-thread:thread-stale-answer"],
     });
     expect(client.calls.filter((call) => call === "goal:thread-stale-answer")).toHaveLength(2);
+    expect(observedTurnIds).toEqual(["turn-old", "turn-1", "turn-old", "turn-2"]);
+  });
+
+  it("fails closed when item pagination repeats a cursor", async () => {
+    const root = fixtureRoot();
+    const client = new FakeClient("thread-cursor-cycle");
+    const cursors: Array<string | undefined> = [];
+    client.listThreadItems = async (input) => {
+      cursors.push(input.cursor);
+      return {
+        data: [
+          {
+            turnId: input.turnId,
+            item: { type: "commandExecution", aggregatedOutput: "no final answer" },
+          },
+        ],
+        nextCursor: "cycle",
+      };
+    };
+    const executor = createCodexGoalExecutor({
+      stateFile: join(root, "bindings.json"),
+      createClient: () => client,
+    });
+
+    await expect(executor(attempt())).rejects.toThrow(
+      "Codex app-server repeated item cursor for turn turn-1",
+    );
+    expect(cursors).toEqual([undefined, "cycle"]);
   });
 
   it("corrects invalid output in the same Task attempt and Codex thread", async () => {

@@ -12,6 +12,8 @@ const root = mkdtempSync(join(tmpdir(), "may-codex-protocol-"));
 const codexState = join(root, "codex");
 mkdirSync(codexState);
 const captures: unknown[] = [];
+const retainedHistoryItems = 8;
+const retainedAnswerChars = 525_000;
 let releaseResponses!: () => void;
 const responseGate = new Promise<void>((resolve) => {
   releaseResponses = resolve;
@@ -22,13 +24,14 @@ const server = createServer(async (request, response) => {
   captures.push(JSON.parse(Buffer.concat(chunks).toString("utf8")));
   const sequence = captures.length;
   await responseGate;
+  const fixtureAnswer = sequence > 2 ? `retained-output:${"x".repeat(retainedAnswerChars)}` : "Fixture response.";
   const item = {
     id: `msg_${sequence}`,
     type: "message",
     role: "assistant",
     phase: "final_answer",
     status: "completed",
-    content: [{ type: "output_text", text: "Fixture response.", annotations: [] }],
+    content: [{ type: "output_text", text: fixtureAnswer, annotations: [] }],
   };
   const completed = {
     id: `resp_${sequence}`,
@@ -42,7 +45,7 @@ const server = createServer(async (request, response) => {
     { type: "response.created", response: { ...completed, status: "in_progress", output: [] } },
     { type: "response.output_item.added", output_index: 0, item: { ...item, status: "in_progress", content: [] } },
     { type: "response.content_part.added", item_id: item.id, output_index: 0, content_index: 0, part: item.content[0] },
-    { type: "response.output_text.delta", item_id: item.id, output_index: 0, content_index: 0, delta: "Fixture response." },
+    { type: "response.output_text.delta", item_id: item.id, output_index: 0, content_index: 0, delta: fixtureAnswer },
     { type: "response.output_item.done", output_index: 0, item },
     { type: "response.completed", response: completed },
   ];
