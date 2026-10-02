@@ -133,8 +133,8 @@ retry policy or recovery loop. Reusing the current invocation preserves useful
 work and reduces repeated context processing, following
 [code returning evidence to the deciding agent](../1-principles/core-principles.md#code-executes-and-brings-back-evidence-agents-judge).
 
-**Implementation status:** This early feedback is implemented on Host branch
-`fix/conversation-finish-validation`, pending review and deployment. The managed
+**Implementation status:** This early feedback is implemented in Host
+[#297](https://github.com/hao1939/may-agent/pull/297), pending review and deployment. The managed
 runner regressions reproduce both late Topic and Request failures on merged
 #296, then correct each within one invocation with the candidate. State tests
 cover no preflight writes or App mapping, new/reopened Requests, revision and
