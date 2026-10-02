@@ -168,13 +168,21 @@ read it with `conversation_context` first. Use an assigned open Request for
 proposal are not proof that a Topic is available or a Request is open. Only omit
 the optional Request link when that follow-up does not serve an accepted ask.
 The [Conversation contract](../../2a-design/conversation-execution.md) records
-the candidate that makes these choices explicit in the prompt and its limits.
+the prompt's selection aid and its limits.
 
 If `finish` returns a validation error, correct the named fields within the
 current invocation. Do not repeat already completed actions just to repair the
 result object. App-specific preflight requires the Host revision described in
 [execution contributions](../../2a-design/execution-contributions.md); final
 settlement still checks whether the result remains current.
+
+The [Conversation feedback change](../../2a-design/conversation-execution.md#correct-a-proposed-result-before-ending-the-turn)
+extends this to Topic and Request checks when its Host revision is installed.
+An unavailable Topic needs a valid selection or scoped lookup. A stale Request
+revision needs a current read; a Request already saved during the turn needs its
+returned revision. Preserve the accepted ask while correcting its link or
+disposition. A successful finish check is still a proposal: wait for the Host's
+accepted result before treating follow-up work or Request closure as committed.
 
 ## Recover and return problems to the owner
 

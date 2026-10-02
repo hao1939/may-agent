@@ -398,6 +398,10 @@ verification retain their own boundaries.
 **Availability:** App validation during direct-agent finish is implemented in
 [Host `7b416af40`](https://github.com/hao1939/may-agent/commit/7b416af40); older Hosts validate it only after the invocation ends.
 Source validation and App integration are recorded in the [repeat-pattern follow-up](../../../may.app/design/token-efficiency-proposal-20261002.md#october-3-source-follow-up).
+Conversation uses the same callback for read-only Topic, Request and input checks
+in the [Conversation feedback candidate](conversation-execution.md#correct-a-proposed-result-before-ending-the-turn).
+That section owns its coverage and deployment status; #295 alone does not supply
+those checks to the Conversation resolver.
 
 The App/task boundary separately validates the workflow's terminal output,
 generation, allowed actions, Conditions, and evidence. An execution status of

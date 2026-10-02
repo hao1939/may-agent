@@ -106,14 +106,40 @@ the current record before using them. Omit the optional link when the work does
 not serve an accepted Request; preserve a real promise through its current
 Request rather than dropping its link to avoid a rejection.
 
-**Source status:** Host candidate `34eb0f33b87bf30b9b20ae0aab8ce9fdec1aada0`
-provides this prompt guidance on top of merged #295. It reuses the independently
-reviewed candidate `c217e5df49f71f210e90d9765626225d40c0e149`; activation is
-separate. Tests cover prompt construction and scoped lookup, not model
-compliance. The existing settlement checks remain authoritative. Conversation
-Topic/Request errors can still be discovered after model finish; bringing their
-read-only checks into the existing finish feedback path is a separate remaining
-gap, not a guarantee supplied by this selection aid.
+Host [#296](https://github.com/hao1939/may-agent/pull/296) provides this prompt
+guidance. Its tests cover prompt construction and scoped lookup, not model
+compliance. The existing settlement checks remain authoritative.
+
+### Correct a proposed result before ending the turn
+
+If the agent selects an unavailable Topic or links a closed Request, `finish`
+should return that error while the current invocation can still correct it.
+The Host checks the proposal using the same Topic, Request and input rules as
+settlement. The agent decides the correction; infra supplies the error and
+retains the current work within its existing execution allowance.
+
+The early check is read-only: it neither creates a Topic, updates a Request,
+maps App work nor admits a follow-up. It considers the proposed changes together.
+A Request created or explicitly reopened as open by this turn can receive its
+follow-up. A Request closed by the same result cannot. A Request saved through
+`conversation_request` during execution remains saved if a later finish is
+rejected; use its returned revision instead of repeating the save.
+
+Final settlement still rechecks current state transactionally. Concurrent
+changes, App mapping, admission effects and workspace finalization can fail
+after a successful preflight. Early feedback reduces avoidable retries; it does
+not reserve state or guarantee acceptance. It adds no new agent output fields,
+retry policy or recovery loop. Reusing the current invocation preserves useful
+work and reduces repeated context processing, following
+[code returning evidence to the deciding agent](../1-principles/core-principles.md#code-executes-and-brings-back-evidence-agents-judge).
+
+**Implementation status:** This early feedback is implemented on Host branch
+`fix/conversation-finish-validation`, pending review and deployment. The managed
+runner regressions reproduce both late Topic and Request failures on merged
+#296, then correct each within one invocation with the candidate. State tests
+cover no preflight writes or App mapping, new/reopened Requests, revision and
+input errors, final revalidation, and restart. These are scripted execution
+proofs; they do not establish live model compliance or token savings.
 
 The reply destination selects delivery, not which input matters. The capability presents each batch input
 once in `inputs`, with its source, and labels response routing separately as

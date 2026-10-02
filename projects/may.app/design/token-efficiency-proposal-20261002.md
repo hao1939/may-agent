@@ -84,6 +84,18 @@ agent executor by May; its later convergence cannot be attributed to this
 workflow activation. No synthetic repair event or direct Task-store mutation
 was used to claim live recovery.
 
+At 07:48 Shanghai, merged [#296](https://github.com/hao1939/may-agent/pull/296)
+was deployed as Host `4031c7027c25475229d61cab11dfe49e98684bf4`.
+Receipt `/app/projects/may-agent/.state/deploy-receipts/merged-296-20261003.json`
+reports success, healthy and no duplicate deployment. The receipt, provenance
+and live binary agree on SHA-256
+`7efb0bbeacfb5b7d0af08d30f479d77a669b55485252d01cbfd597111910cdde`;
+all three services and readiness passed. App source remained the release above.
+Evidence is in `/app/.state/conversation-validation-rollout-20261003/`.
+This activates the current Topic/Request selection guidance from May's existing
+reviewed candidate. It does not include the subsequent pre-finish validation
+candidate or establish recovery of the original invalid selections.
+
 ## Proposed outcome
 
 May should stop a completed invocation, retain unresolved work without repeatedly reasoning about unchanged evidence, and make unusually costly execution visible to an accountable owner.
