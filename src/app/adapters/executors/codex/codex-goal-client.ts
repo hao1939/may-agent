@@ -196,7 +196,7 @@ export class CodexGoalAppServerClient {
   async execCommand(input: {
     command: string[];
     cwd: string;
-    sandboxPolicy: { type: "readOnly"; networkAccess: false };
+    sandboxPolicy?: { type: "readOnly"; networkAccess: false };
     timeoutMs: number;
     outputBytesCap: number;
   }): Promise<CodexCommandExecResult> {
@@ -212,7 +212,7 @@ export class CodexGoalAppServerClient {
     const response = await this.request<{ thread: { id: string }; cwd?: string }>("thread/start", {
       cwd: input.cwd,
       approvalPolicy: "never",
-      sandbox: input.sandbox ?? "read-only",
+      ...(input.sandbox ? { sandbox: input.sandbox } : {}),
       ephemeral: false,
       ...(input.model ? { model: input.model } : {}),
       ...(input.developerInstructions ? { developerInstructions: input.developerInstructions } : {}),
@@ -231,7 +231,7 @@ export class CodexGoalAppServerClient {
       threadId: input.threadId,
       cwd: input.cwd,
       approvalPolicy: "never",
-      sandbox: input.sandbox ?? "read-only",
+      ...(input.sandbox ? { sandbox: input.sandbox } : {}),
       ...(input.model ? { model: input.model } : {}),
       ...(input.developerInstructions ? { developerInstructions: input.developerInstructions } : {}),
     });

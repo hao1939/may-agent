@@ -71,9 +71,7 @@ writeFileSync(
 const args = process.argv.slice(2);
 const checkExecution = args.includes("--check-execution");
 const command = args.find((argument) => argument !== "--check-execution") ?? "codex";
-const executionFixture = join(root, "execution-fixture.txt");
-const executionFixtureText = "may-codex-read-only-execution-ok\n";
-writeFileSync(executionFixture, executionFixtureText);
+const executionFixtureText = "may-codex-installation-execution-ok\n";
 const spawnClient = () =>
   CodexGoalAppServerClient.spawn({
     cwd: root,
@@ -95,24 +93,37 @@ const freshPacket = JSON.stringify({
 });
 let client: CodexGoalAppServerClient | undefined;
 try {
+  if (checkExecution) {
+    const invocationCwd = process.cwd();
+    const executionFixture = join(root, "execution-fixture.txt");
+    writeFileSync(executionFixture, executionFixtureText);
+    const executionClient = CodexGoalAppServerClient.spawn({
+      cwd: invocationCwd,
+      command,
+      env: process.env,
+      requestTimeoutMs: 5_000,
+    });
+    try {
+      await executionClient.initialize();
+      const execution = await executionClient.execCommand({
+        command: ["/usr/bin/cat", executionFixture],
+        cwd: invocationCwd,
+        timeoutMs: 5_000,
+        outputBytesCap: 4_096,
+      });
+      assert.equal(
+        execution.exitCode,
+        0,
+        `Installed CLI configured execution check failed: ${JSON.stringify(execution)}`,
+      );
+      assert.equal(execution.stdout, executionFixtureText, "Installed CLI did not read the synthetic fixture exactly");
+      assert.equal(execution.stderr, "", `Installed CLI execution check wrote stderr: ${execution.stderr}`);
+    } finally {
+      await executionClient.stop();
+    }
+  }
   client = spawnClient();
   await client.initialize();
-  if (checkExecution) {
-    const execution = await client.execCommand({
-      command: ["/usr/bin/cat", executionFixture],
-      cwd: root,
-      sandboxPolicy: { type: "readOnly", networkAccess: false },
-      timeoutMs: 5_000,
-      outputBytesCap: 4_096,
-    });
-    assert.equal(
-      execution.exitCode,
-      0,
-      `Installed CLI read-only execution check failed: ${JSON.stringify(execution)}`,
-    );
-    assert.equal(execution.stdout, executionFixtureText, "Installed CLI did not read the synthetic fixture exactly");
-    assert.equal(execution.stderr, "", `Installed CLI execution check wrote stderr: ${execution.stderr}`);
-  }
   const thread = await client.startThread({ cwd: root, developerInstructions: firstPacket });
   assert.equal(thread.cwd, root);
   const originalObjective = "Verify the old assignment";
@@ -159,7 +170,7 @@ try {
   assert.match(resumedRequest, /Condition is required for waiting/);
   assert.doesNotMatch(resumedRequest, /This stale turn must be fenced/);
   process.stdout.write(
-    `Codex compatibility passed: active-goal pause/resume, fresh request packet, prior rejection and old-turn fence${checkExecution ? ", plus read-only execution acceptance" : ""}.\n`,
+    `Codex compatibility passed: active-goal pause/resume, fresh request packet, prior rejection and old-turn fence${checkExecution ? ", plus installed-policy execution acceptance" : ""}.\n`,
   );
 } finally {
   releaseResponses();

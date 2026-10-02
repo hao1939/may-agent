@@ -328,12 +328,10 @@ export function createCodexGoalExecutor(options: CodexGoalExecutorOptions): Task
         ? await client.resumeThread({
             threadId: existing.threadId,
             cwd: attempt.cwd,
-            sandbox: "read-only",
             developerInstructions: rendered.developerInstructions,
           })
         : await client.startThread({
             cwd: attempt.cwd,
-            sandbox: "read-only",
             developerInstructions: rendered.developerInstructions,
           });
       threadId = binding.threadId;

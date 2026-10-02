@@ -31,7 +31,10 @@ inherited credentials or an external model call. The image smoke test runs this
 check with the shipped CLI as the runtime user.
 
 This tests the production client protocol behavior May uses for restart/resume
-and fresh request context. It does not run the complete executor orchestration
+and fresh request context. Task starts and resumes omit a sandbox override so the
+installed CLI configuration owns execution policy; the Task/App acceptance still
+defines authorized intent, and an explicit client sandbox remains supported.
+It does not run the complete executor orchestration
 or test tool execution, live provider recovery, or Codex compaction: no
 deterministic portable compaction trigger is available in this fixture. Keep
 the colocated executor, turn, error, and cancellation tests and review upstream

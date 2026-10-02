@@ -181,9 +181,14 @@ without external model calls. It covers active-goal restart and fresh context
 in outgoing requests; it does not prove command execution or model quality.
 After installation, CLI upgrades or container-runtime changes, run
 `bun run check:codex-goal-execution` as the actual runtime user. That explicit
-acceptance check reads a synthetic file through
-`command/exec` with the production read-only, network-disabled sandbox profile and
-must fail on any sandbox denial; ordinary Task attempts do not repeat it.
+acceptance check reads a synthetic file through `command/exec` in the invocation
+working directory, omits a sandbox override so the installed CLI configuration
+owns execution policy, and must fail on any denial. The check uses a separate
+short-lived client with the actual environment; the credential-free protocol
+fixture remains isolated from installation state. Ordinary Task attempts do not
+repeat it. Apps still define review or implementation intent and acceptance;
+available executor permissions do not grant Task authority. Explicit caller
+sandbox overrides remain supported when a caller deliberately supplies one.
 Node/npm move together through the Node base image. Upgrading the standalone
 Pi CLI does not upgrade the Pi libraries linked into May. A new CLI version still needs model-backed
 checks before claiming live provider compatibility.

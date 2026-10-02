@@ -177,14 +177,18 @@ class FakeClient implements CodexGoalClient {
   async initialize() {
     this.calls.push("initialize");
   }
-  async startThread(input: { cwd: string; developerInstructions?: string }) {
+  async startThread(input: { cwd: string; developerInstructions?: string; sandbox?: "read-only" | "workspace-write" | "danger-full-access" }) {
+    expect(input).not.toHaveProperty("sandbox");
     this.calls.push(`start:${input.cwd}`);
     this.instructions.push(input.developerInstructions!);
     expect(input.developerInstructions).toContain("## Canonical May Task Attempt");
+    expect(input.developerInstructions).toContain("Follow the Task's authorized scope");
+    expect(input.developerInstructions).not.toContain("The workspace is read-only");
     expect(input.developerInstructions).toContain("Progress commentary may become a durable Task event");
     return { threadId: this.threadId, cwd: input.cwd };
   }
-  async resumeThread(input: { threadId: string; cwd: string; developerInstructions?: string }) {
+  async resumeThread(input: { threadId: string; cwd: string; developerInstructions?: string; sandbox?: "read-only" | "workspace-write" | "danger-full-access" }) {
+    expect(input).not.toHaveProperty("sandbox");
     this.calls.push(`resume:${input.threadId}`);
     this.instructions.push(input.developerInstructions!);
     expect(input.developerInstructions).toContain('"resourceVersion":');

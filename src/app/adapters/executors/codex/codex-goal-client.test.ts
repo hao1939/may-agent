@@ -67,7 +67,6 @@ describe("CodexGoalAppServerClient", () => {
     const executed = client.execCommand({
       command: ["/usr/bin/true"],
       cwd: "/tmp/work",
-      sandboxPolicy: { type: "readOnly", networkAccess: false },
       timeoutMs: 5_000,
       outputBytesCap: 4_096,
     });
@@ -75,7 +74,6 @@ describe("CodexGoalAppServerClient", () => {
     expect(command.params).toEqual({
       command: ["/usr/bin/true"],
       cwd: "/tmp/work",
-      sandboxPolicy: { type: "readOnly", networkAccess: false },
       timeoutMs: 5_000,
       outputBytesCap: 4_096,
     });
@@ -84,7 +82,12 @@ describe("CodexGoalAppServerClient", () => {
 
     const started = client.startThread({ cwd: "/tmp/work", sandbox: "read-only" });
     const start = await waitForWrite(process, "thread/start");
-    expect(start.params).toMatchObject({ cwd: "/tmp/work", approvalPolicy: "never", ephemeral: false });
+    expect(start.params).toEqual({
+      cwd: "/tmp/work",
+      approvalPolicy: "never",
+      sandbox: "read-only",
+      ephemeral: false,
+    });
     process.reply(start.id, { thread: { id: "thread-1" }, cwd: "/tmp/work" });
     expect(await started).toEqual({ threadId: "thread-1", cwd: "/tmp/work" });
 
@@ -141,6 +144,11 @@ describe("CodexGoalAppServerClient", () => {
 
     const resumed = client.resumeThread({ threadId: "thread-1", cwd: "/tmp/work" });
     const resume = await waitForWrite(process, "thread/resume");
+    expect(resume.params).toEqual({
+      threadId: "thread-1",
+      cwd: "/tmp/work",
+      approvalPolicy: "never",
+    });
     process.reply(resume.id, { thread: { id: "thread-1" }, cwd: "/tmp/work" });
     expect(await resumed).toEqual({ threadId: "thread-1", cwd: "/tmp/work" });
 
@@ -149,6 +157,28 @@ describe("CodexGoalAppServerClient", () => {
     expect(interrupt.params).toEqual({ threadId: "thread-1", turnId: "turn-2" });
     process.reply(interrupt.id, {});
     await interrupted;
+  });
+
+  it("omits an inherited start sandbox and preserves an explicit resume sandbox", async () => {
+    const process = new FakeAppServerProcess();
+    const client = new CodexGoalAppServerClient(process, { requestTimeoutMs: 1_000 });
+
+    const started = client.startThread({ cwd: "/tmp/work" });
+    const start = await waitForWrite(process, "thread/start");
+    expect(start.params).toEqual({ cwd: "/tmp/work", approvalPolicy: "never", ephemeral: false });
+    process.reply(start.id, { thread: { id: "thread-1" }, cwd: "/tmp/work" });
+    await started;
+
+    const resumed = client.resumeThread({ threadId: "thread-1", cwd: "/tmp/work", sandbox: "read-only" });
+    const resume = await waitForWrite(process, "thread/resume");
+    expect(resume.params).toEqual({
+      threadId: "thread-1",
+      cwd: "/tmp/work",
+      approvalPolicy: "never",
+      sandbox: "read-only",
+    });
+    process.reply(resume.id, { thread: { id: "thread-1" }, cwd: "/tmp/work" });
+    await resumed;
   });
 
   it("observes the authoritative turn and terminal status created by an active goal", async () => {
