@@ -74,6 +74,10 @@ export async function runTaskAttempt(input: {
 
   try {
     const config = appTaskConfig(descriptor);
+    // Recover the exact saved answer before deciding whether any agent work is needed.
+    const recoveredTaskIds = recoverTaskConditions(opts, descriptor, config, { taskId: input.taskId }).filter(
+      (taskId) => taskId !== input.taskId,
+    );
     const claim = claimObservedAppTask(config, {
       taskId: input.taskId,
       appAgent: descriptor.agent,
@@ -118,7 +122,7 @@ export async function runTaskAttempt(input: {
               factsSessionId: sessionId,
               terminalStatus,
             });
-            return [input.taskId];
+            return [...new Set([...recoveredTaskIds, input.taskId])];
           }
         }
       }
@@ -136,11 +140,11 @@ export async function runTaskAttempt(input: {
         route: "task-controller",
         ...skip,
       });
-      return [];
+      return recoveredTaskIds;
     }
     timing.attemptId = claim.attemptId;
     timing.generation = claim.generation;
-    return await runClaimedTask(opts, descriptor, config, claim);
+    return [...new Set([...recoveredTaskIds, ...(await runClaimedTask(opts, descriptor, config, claim))])];
   } finally {
     input.reportTiming(timing);
   }
@@ -498,9 +502,6 @@ async function runClaimedTask(
         const stale = apply.status === "stale" ? recoverStaleTaskResult(config, claim) : null;
         emit("project.task.reconciled", {
           disposition: apply.status === "applied" ? "waiting" : "stale",
-          ...(claim.trigger?.type === "project.task.condition-review.missed"
-            ? { reason: "condition-review-checkpoint-missed" }
-            : {}),
           input: intent.input ?? {},
           summary: result.summary,
           ...(result.response ? { response: result.response } : {}),

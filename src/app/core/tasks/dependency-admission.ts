@@ -24,8 +24,6 @@ import { type AppTaskContext } from "./app-task-store.js";
 import { appTaskConfig, configuredRegistryEntries, type AppTaskRuntimeDescriptor } from "./runtime-definition.js";
 import type { AppTaskRuntimeOptions } from "./runtime-options.js";
 
-const APP_DEPENDENCY_REVIEW_AFTER_MS = 300_000;
-
 function taskRequestIdentity(appId: string, claim: Pick<AppTaskClaim, "taskId" | "generation">, id: string) {
   return createHash("sha256")
     .update(JSON.stringify([appId, claim.taskId, claim.generation, id]))
@@ -66,7 +64,6 @@ function requestCompletionCondition(item: NonNullable<ReturnType<typeof getAppIn
     subject: `id:${item.id}`,
     expected: { field: "status", equals: "done" },
     owner: `app:${item.appId}`,
-    reviewAfterMs: APP_DEPENDENCY_REVIEW_AFTER_MS,
   };
 }
 
@@ -138,7 +135,6 @@ export function admitTaskAppRequests(input: {
       subject: `id:${item.id}`,
       expected: { field: "status", equals: "done" },
       owner: `app:${item.appId}`,
-      reviewAfterMs: APP_DEPENDENCY_REVIEW_AFTER_MS,
     } satisfies AppTaskConditionSpec,
   });
 
@@ -318,7 +314,6 @@ export function admitTaskAppRequests(input: {
       subject: `id:${requestId}`,
       expected: { field: "status", equals: "done" },
       owner: `app:${dependency.appId}`,
-      reviewAfterMs: APP_DEPENDENCY_REVIEW_AFTER_MS,
     });
   }
 
@@ -330,7 +325,6 @@ export function admitTaskAppRequests(input: {
         {
           ...condition,
           owner: condition.owner ?? `app:${dependency.appId}`,
-          reviewAfterMs: condition.reviewAfterMs ?? APP_DEPENDENCY_REVIEW_AFTER_MS,
         },
       ];
     }),
@@ -398,10 +392,14 @@ export function recoverTaskConditions(
   opts: AppTaskRuntimeOptions,
   descriptor: AppTaskRuntimeDescriptor,
   config: AppTaskContext,
-  input: { conditionIds?: string[] } = {},
+  input: { conditionIds?: string[]; taskId?: string } = {},
 ): string[] {
   if (!opts.persistDir) return [];
-  const resourceScope = config.resourceStore.readOpenConditionReplayScope(input.conditionIds);
+  const conditionIds = input.taskId
+    ? config.resourceStore.readTaskConditions(input.taskId).map((condition) => condition.metadata.id)
+    : input.conditionIds;
+  if (conditionIds?.length === 0) return [];
+  const resourceScope = config.resourceStore.readOpenConditionReplayScope(conditionIds);
   const eventTypes = resourceScope.eventTypes;
   if (eventTypes.length === 0) return [];
 
@@ -460,7 +458,7 @@ export function recoverTaskConditions(
   const recoveredTaskIds = new Set<string>();
   if (eventTypes.includes("app.dependency.updated")) {
     for (const { condition, taskIds } of config.resourceStore.readConditionRoutes("app.dependency.updated")) {
-      if (input.conditionIds && !input.conditionIds.includes(condition.metadata.id)) continue;
+      if (conditionIds && !conditionIds.includes(condition.metadata.id)) continue;
       if (!condition.spec.subject.startsWith("id:")) continue;
       const item = getAppInboxItem(db, condition.spec.subject.slice(3));
       if (!item || item.source.kind !== "app" || item.source.id !== descriptor.id) continue;

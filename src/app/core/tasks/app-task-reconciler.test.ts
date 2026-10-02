@@ -5635,7 +5635,7 @@ describe("App task reconciler state", () => {
     expect(() =>
       deferCanonicalAppTask(config, claim, {
         disposition: "waiting",
-        summary: "waiting without a recovery checkpoint",
+        summary: "waiting with an invalid legacy interval",
         conditions: [
           {
             id: "session-terminal:s_1",
@@ -5643,6 +5643,7 @@ describe("App task reconciler state", () => {
             subject: "session:s_1",
             expected: "done",
             owner: "app:test-external",
+            reviewAfterMs: 1,
           },
         ],
       }),

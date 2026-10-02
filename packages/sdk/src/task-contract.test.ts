@@ -654,9 +654,12 @@ describe("project task handler contract", () => {
         },
         workflowOptions,
       ),
-    ).toEqual({
-      ok: false,
-      error: "conditions[0].reviewAfterMs must be an integer of at least 60000",
+    ).toMatchObject({
+      ok: true,
+      result: {
+        state: "waiting",
+        conditions: [{ id: "credential-ready:xhs", owner: "app:credential-provider" }],
+      },
     });
   });
 

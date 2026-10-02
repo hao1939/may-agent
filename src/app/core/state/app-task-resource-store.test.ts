@@ -745,7 +745,7 @@ describe("AppTaskResourceStore", () => {
     store.close();
   });
 
-  it("indexes a resource-backed Condition checkpoint and wakes it when due", () => {
+  it("indexes mechanical Condition recovery independently of a legacy review interval", () => {
     const root = mkdtempSync(join(tmpdir(), "may-task-resource-due-"));
     roots.push(root);
     const appDir = join(root, "resource-due.app");
@@ -791,8 +791,8 @@ describe("AppTaskResourceStore", () => {
       }).status,
     ).toBe("applied");
     const dueAt = store.nextDueAt();
-    expect(dueAt).toBeGreaterThanOrEqual(before + 60_000);
-    expect(dueAt).toBeLessThanOrEqual(Date.now() + 60_000);
+    expect(dueAt).toBeGreaterThanOrEqual(before + 300_000);
+    expect(dueAt).toBeLessThanOrEqual(Date.now() + 300_000);
     expect(store.readConditionRoutes("example.completed")).toEqual([expect.objectContaining({ taskIds: ["normal"] })]);
     expect(store.readConditionRoutesForAllApps("example.completed")).toEqual([
       expect.objectContaining({ appId: "example", taskIds: ["normal"] }),
