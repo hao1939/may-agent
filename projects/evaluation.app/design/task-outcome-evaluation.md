@@ -224,12 +224,22 @@ semantic assessment: Evaluation still excludes itself as an assessment subject.
 Local failure feedback does not depend on the external automatic-assessment
 flag or spend that lane's semantic allowance.
 
-The owner rereads current evidence before choosing an action. Normal retry,
-waiting and later verified recovery remain valid. A recovered incident can need
-no intervention while a supported recurring problem can merit investigation.
-The event is historical evidence, not a command to unblock, reassign or create a
-repair. Unhandled meaning must remain in the owner's accepted result as an
-explicit obstacle, next step or existing linked work.
+The owner groups repeated notices by exact affected local Task identity and reads
+each current affected Task once before choosing an action. For
+`project.task.reconciled`, that identity is `{project (or appId), taskId}`. For
+`evaluation.review_failed`, it is `{evaluation, reviewTaskId, reviewGeneration}`;
+the payload's `{appId, taskId}` identifies the external assessment subject and
+must not become Evaluation remediation work. A missing or unreadable local
+identity remains an explicit evidence gap. The standing
+`runtime/compat/owner-review` Task is the inbox and settlement boundary; its own
+resource version does not establish an affected incident's current state. Failed
+attempt history and current target state remain distinct. Normal retry, waiting
+and later verified recovery remain valid: a recovered incident can need no
+intervention, a persistent failure can merit investigation and must retain its
+obstacle and next step, and an unavailable affected-Task read remains an explicit
+evidence gap. The event is historical evidence, not a command to unblock,
+reassign or create a repair. Unhandled meaning must remain in the owner's accepted
+result as an explicit obstacle, next step or existing linked work.
 
 An owner-review failure uses its existing Task retry and retained input; this
 subscription does not recursively wake that same owner. `converged`, `waiting`
