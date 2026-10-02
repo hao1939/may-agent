@@ -347,6 +347,49 @@ The history supports this direction, but does not establish current live token
 savings, recovery of a particular production Task, or better model judgment.
 Those need comparable behavioral trials and post-activation observations.
 
+## Request and Condition source trial
+
+Follow-up on 2026-10-03 after withdrawing the duplicate reply option. The existing
+request/Condition path passed a connected trial using the production Host and
+May mapper, temporary databases and scripted executor decisions. No live runtime
+or stored production work changed.
+
+| Same receiver request | Without caller result Condition | With caller result Condition |
+| --- | --- | --- |
+| Receiver executions | 1 | 1 |
+| Caller executions | 1; delegation was its assigned outcome | 2; the second used the returned review |
+| Independent work after live admission | Completed in the same attempt | Completed in the same attempt |
+| Accepted receiver result | Retained and inspectable | Retained and returned through the saved Condition |
+| Replay of the same admission | Same receipt, no duplicate receiver | Same receipt, no duplicate receiver |
+| Restart after settlement | Results retained; no repeated work in the check | Results retained; no repeated work in the check |
+
+Both callers retained an unrelated metric Condition. Their addressed inputs had
+accepted `converged` decisions while the Task view remained `waiting`. The first
+trial incorrectly required overall `done` and timed out. Reading exact accepted
+evidence showed successful settlement; the trial assertion was corrected, with
+no runtime change. This is why completion checks must use the addressed result
+rather than treating all Conditions as a shared completion gate.
+
+Source: App `630b3d69d2caeeecbb0d7bd4a166a1d369ffbaa0`; Host checkout
+`aabc1178ba4a19da092f8a394ec59628e9592d32`, with tree
+`4ba022f1b1c647e73de912306541c2d3c6c168ca`, identical to merged `f2eb4b876`.
+The fixture was `projects/may.app/scripts/metric-follow-through.fixture.ts`.
+Retained local evidence is `/app/.state/request-condition-trial-20261003/`:
+`trial.ts`, `result.json`, failed-run logs and `failure-false.json`. Reproduce with
+`python3 /app/.state/request-condition-trial-20261003/reproduce.py`; it extracts
+the pinned App, Evaluation and shared-tool sources, uses the reviewed Host/SDK,
+and removes its temporary source tree afterward. Initial setup runs missed two
+fixture import dependencies. Bun 1.3.14 also emitted a tsconfig directory warning;
+the completed run exited zero and wrote the asserted result.
+
+This establishes the exercised mechanics, not model judgment, handling a new
+correction, live adoption, every failure path or cost improvement. The caller
+assignments deliberately differed in whether consuming the review was required;
+their attempt counts are not an efficiency comparison. The running installation
+still had Host/SDK `e2e5c8481` and App definitions `8d4adfea0`. Rollout remains
+separate: activate the compatible May mapper/reader first, then the merged
+Host/SDK, and inspect the installed path before changing producer guidance.
+
 ## Inventory
 
 The following inventory is ordered by merge time. Release/dependency entries

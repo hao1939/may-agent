@@ -285,4 +285,7 @@ human interventions, duplicate work, calls/tokens and retrieval cost before
 claiming improvement. If a smaller guidance or wiring repair suffices, stop
 there. Expand only for another demonstrated need; do not couple this work to a
 universal dispatcher, catalog service, result-schema migration or new monitoring
-system. These remain proposed checks, not results of a new execution trial.
+system. The [request/Condition source trial](../archive/reviews/task-capability-pr-review-20261003.md#request-and-condition-source-trial)
+now verifies live admission, continued independent work, result observation and
+restart with scripted judgments. It does not establish agent judgment, handling
+of a new correction, or installed behavior; those remain to be exercised.

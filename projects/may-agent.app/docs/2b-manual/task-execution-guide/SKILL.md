@@ -125,6 +125,11 @@ different actions. A pending Condition is context for judgment; it does not
 give infra authority to invent a semantic veto or to fabricate satisfaction.
 An explicit App acceptance requirement still applies.
 
+Read the exact accepted result when checking completion. The Task can still
+display `waiting` because another Condition remains open, even after accepting
+`converged` for the addressed input. Use the Task's `acceptedAttempt` reference
+and opt-in `acceptedEvidence` read; its overall status alone cannot answer this.
+
 ## Recover and return problems to the owner
 
 Repair within this attempt when authorized work can progress and allowance
