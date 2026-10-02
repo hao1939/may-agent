@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it } from "bun:test";
-import { mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { dirname, join, resolve } from "node:path";
 import {
   discoverAgentSkills,
   formatBoundedSkillCatalog,
@@ -89,6 +89,92 @@ describe("May skill catalog", () => {
     const invocation = invokeCatalogSkill(catalog, "verify-change", "review the patch");
     expect(invocation.prompt).toContain("SECRET METHOD");
     expect(invocation.prompt).toContain("review the patch");
+  });
+
+  it("discovers manuals through optional relative paths and preserves canonical references", async () => {
+    const root = tempRoot();
+    const shared = join(root, "shared");
+    const sharedSkills = join(shared, "skills");
+    const agentDir = join(root, "agents", "may");
+    const manuals = join(root, "docs", "manual");
+    const file = writeSkill(manuals, "task-guide", "Work on a task", "Read [the contract](../contract.md).");
+    writeFileSync(join(manuals, "contract.md"), "Current contract");
+    writeSkill(sharedSkills, "shared-only", "Shared method", "Shared instructions");
+    writeFileSync(join(sharedSkills, "paths.json"), JSON.stringify(["../../docs/manual", "../../docs/manual", "."]));
+    // A link and a configured root can expose the same source without duplicating it.
+    symlinkSync(join(manuals, "task-guide"), join(sharedSkills, "task-guide"), "dir");
+    const catalog = await discoverAgentSkills({ agentDir, sharedRoot: shared });
+
+    expect(catalog.diagnostics).toEqual([]);
+    expect(catalog.skills.size).toBe(2);
+    const skill = catalog.skills.get("task-guide")!;
+    expect(skill.scope).toBe("shared");
+    expect(skill.filePath).toBe(file);
+    expect(skill.canonicalPath).toBe(file);
+    const invocation = invokeCatalogSkill(catalog, "task-guide", "Continue the task");
+    expect(invocation.prompt).toContain(`References are relative to ${join(manuals, "task-guide")}.`);
+    expect(readFileSync(resolve(dirname(skill.filePath), "../contract.md"), "utf8")).toBe("Current contract");
+    expect(formatBoundedSkillCatalog(catalog).text).toContain(file);
+
+    writeSkill(manuals, "task-guide", "Work on a task", "Revised instructions");
+    const refreshed = await discoverAgentSkills({ agentDir, sharedRoot: shared });
+    expect(invokeCatalogSkill(catalog, "task-guide", "Continue").prompt).not.toContain("Revised instructions");
+    expect(invokeCatalogSkill(refreshed, "task-guide", "Continue").prompt).toContain("Revised instructions");
+  });
+
+  it("keeps scope precedence and rejects distinct same-scope duplicates in configured paths", async () => {
+    const root = tempRoot();
+    const agentDir = join(root, "agents", "may");
+    const shared = join(root, "shared");
+    const manuals = join(root, "docs", "manual");
+    writeSkill(join(agentDir, "skills"), "review-change", "Local review", "Local instructions");
+    writeSkill(join(shared, "skills"), "ambiguous", "First method", "First instructions");
+    writeSkill(manuals, "review-change", "Shared review", "Shared instructions");
+    writeSkill(manuals, "ambiguous", "Second method", "Second instructions");
+    writeFileSync(join(shared, "skills", "paths.json"), JSON.stringify(["../../docs/manual"]));
+
+    const catalog = await discoverAgentSkills({ agentDir, sharedRoot: shared });
+    expect(catalog.skills.get("review-change")?.scope).toBe("agent");
+    expect(catalog.skills.has("ambiguous")).toBe(false);
+    expect(catalog.diagnostics.join("\n")).toContain('Ambiguous shared skill name "ambiguous"');
+  });
+
+  it("reports invalid or unavailable optional paths without dropping ordinary skills", async () => {
+    const root = tempRoot();
+    const agentDir = join(root, "agents", "may");
+    const skills = join(agentDir, "skills");
+    writeSkill(skills, "verify-change", "Verify a change", "Existing method");
+    for (const value of [
+      "{",
+      "{}",
+      "[42]",
+      '[""]',
+      JSON.stringify([root]),
+      '["missing"]',
+      '["verify-change/SKILL.md"]',
+    ]) {
+      writeFileSync(join(skills, "paths.json"), value);
+      const catalog = await discoverAgentSkills({ agentDir });
+      expect(catalog.skills.has("verify-change")).toBe(true);
+      expect(catalog.diagnostics.join("\n")).toContain("paths.json");
+    }
+  });
+
+  it("rejects symlinks escaping configured roots and does not follow nested path files", async () => {
+    const root = tempRoot();
+    const agentDir = join(root, "agents", "may");
+    const manuals = join(root, "docs", "manual");
+    writeSkill(manuals, "task-guide", "Task guide", "Current guidance");
+    writeSkill(join(root, "outside"), "escaped", "Outside method", "Outside instructions");
+    writeSkill(join(agentDir, "skills"), "local", "Local method", "Local instructions");
+    writeFileSync(join(agentDir, "skills", "paths.json"), JSON.stringify(["../../../docs/manual"]));
+    writeFileSync(join(manuals, "paths.json"), JSON.stringify(["../../outside"]));
+    symlinkSync(join(root, "outside", "escaped"), join(manuals, "escaped"), "dir");
+
+    const catalog = await discoverAgentSkills({ agentDir });
+    expect(catalog.skills.has("task-guide")).toBe(true);
+    expect(catalog.skills.has("escaped")).toBe(false);
+    expect(catalog.diagnostics.join("\n")).toContain("escapes trusted skill roots");
   });
 
   it("omits lower-priority entries when the prompt budget is exhausted", () => {

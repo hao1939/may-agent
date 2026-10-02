@@ -1,5 +1,5 @@
 import { describe, expect, it, mock } from "bun:test";
-import { mkdirSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
+import { mkdirSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { DefinitionSourceReleaseStore } from "../app-source-release.js";
@@ -55,6 +55,47 @@ function makeRuntime(): AgentRegistryRuntime {
 }
 
 describe("agent registry loader", () => {
+  it("loads configured manual skills from the captured definition release", async () => {
+    const root = tempRoot();
+    try {
+      const agentsRoot = join(root, "agents");
+      const agentDir = join(agentsRoot, "worker");
+      const sharedSkills = join(root, "shared", "skills");
+      const manualPath = join("projects", "example.app", "docs", "manual");
+      const skillPath = join(manualPath, "task-guide", "SKILL.md");
+      mkdirSync(agentDir, { recursive: true });
+      mkdirSync(sharedSkills, { recursive: true });
+      mkdirSync(join(root, manualPath, "task-guide"), { recursive: true });
+      writeFileSync(join(agentDir, "agent.json"), makeAgentJson("worker"));
+      writeFileSync(join(sharedSkills, "paths.json"), JSON.stringify(["../../projects/example.app/docs/manual"]));
+      writeFileSync(join(root, skillPath), "---\nname: task-guide\ndescription: Work on a task\n---\nRead [contract](../contract.md).");
+      writeFileSync(join(root, manualPath, "contract.md"), "Captured contract");
+      const opts = makeOpts(root, agentsRoot, join(root, "projects"));
+      const release = new DefinitionSourceReleaseStore(root, opts.persistDir).stage();
+      writeFileSync(join(root, skillPath), "Changed live source");
+      writeFileSync(join(root, manualPath, "contract.md"), "Changed live contract");
+      const prepared = await prepareAgents({
+        ...opts,
+        agentsRoot: release.agentsRoot,
+        projectsRoot: release.projectsRoot,
+        sharedRoot: release.sharedRoot,
+      }, makeRuntime());
+      const skill = prepared.definitions[0].skillCatalog?.skills.get("task-guide");
+      expect(skill?.filePath).toBe(join(release.root, skillPath));
+      expect(skill?.scope).toBe("shared");
+      expect(skill?.content).toContain("Read [contract](../contract.md).");
+      expect(readFileSync(join(release.root, manualPath, "contract.md"), "utf8")).toBe("Captured contract");
+      expect(opts.manager.agentNames()).toEqual([]);
+
+      // A bad discovery path uses the normal rejected-generation diagnostic.
+      writeFileSync(join(sharedSkills, "paths.json"), JSON.stringify(["missing"]));
+      await expect(prepareAgents(opts, makeRuntime())).rejects.toThrow("worker.skills:");
+      expect(opts.manager.agentNames()).toEqual([]);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
   it("loads the configured context adapter through ordinary definition preparation", async () => {
     const root = tempRoot();
     try {
