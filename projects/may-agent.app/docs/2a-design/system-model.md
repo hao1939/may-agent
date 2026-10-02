@@ -219,7 +219,7 @@ independent work. The agent decides what can progress and whether to yield.
 Infra retains each outstanding requirement and delivers relevant results.
 Ending an attempt, completing its addressed input and closing the Task have
 different scopes. [Task lifecycle](task-resource-engine.md#execution-and-outstanding-results)
-owns their current-state interpretation; [the agent guide](../2b-manual/task-execution-guide.md)
+owns their current-state interpretation; [the agent guide](../../../../shared/skills/task-execution-guide/SKILL.md)
 shows how to act on it.
 
 ## A turn or a Task?

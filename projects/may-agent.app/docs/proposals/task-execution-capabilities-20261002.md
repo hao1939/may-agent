@@ -14,7 +14,7 @@ Proposed interfaces and observed implementation limits are recorded in
 ## How to read this proposal
 
 Start with the example and value below. Review [the remaining calling and discovery choices](task-execution-capability-contracts-20261003.md)
-when assessing an interface change. Use [the current agent guide](../2b-manual/task-execution-guide.md)
+when assessing an interface change. Use [the current agent guide](../../../../shared/skills/task-execution-guide/SKILL.md)
 to perform work today; its text is usable directly as a skill. The
 [90-PR review](../archive/reviews/task-capability-pr-review-20261003.md) supplies
 dated evidence, including successful behavior worth preserving.
@@ -141,7 +141,7 @@ facts remain available for correction; acceptance is not guaranteed correctness.
 
 ## Guidance for agents and workflow authors
 
-Read [Working on a Task](../2b-manual/task-execution-guide.md) directly as the
+Read [Working on a Task](../../../../shared/skills/task-execution-guide/SKILL.md) directly as the
 agent's operating guidance. It teaches the current assignment, reads, actions,
 Conditions and result contract through one example. Humans and agents use that
 same document; do not maintain a second skill copy or inject this whole proposal
@@ -245,10 +245,10 @@ conjunction with fulfilled requirements and appropriate actions.
 
 ## Supporting contracts and evidence
 
-The [operating guide](../2b-manual/task-execution-guide.md) is directly usable
+The [operating guide](../../../../shared/skills/task-execution-guide/SKILL.md) is directly usable
 as agent guidance. This proposal describes desired infra additions and their
 value. Exact contracts and App knowledge remain available on demand. The
-[authoring guide](../2b-manual/design-authoring.md#make-guidance-usable-by-agents)
+[authoring guide](../../../../shared/skills/design-authoring/SKILL.md#make-guidance-usable-by-agents)
 owns how one document serves human and agent readers.
 
 - [Supporting capability contracts](task-execution-capability-contracts-20261003.md): discovery, calls, workflows, Conditions, live/final actions, context delivery and implementation checks.

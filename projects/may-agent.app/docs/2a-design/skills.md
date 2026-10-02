@@ -36,16 +36,22 @@ work. Workflow and session records remain execution evidence.
 
 A practical document can itself supply task-specific skill instructions. Keep
 applicability, method, decision boundaries and references in that one source;
-people and agents read the same body. The [Task execution guide](../2b-manual/task-execution-guide.md)
-and [design authoring guide](../2b-manual/design-authoring.md) follow this convention.
-They can be supplied as context references or read through the documentation index.
+people and agents read the same body. The [Task execution guide](../../../../shared/skills/task-execution-guide/SKILL.md)
+and [design authoring guide](../../../../shared/skills/design-authoring/SKILL.md) follow this convention.
+Their canonical bodies live at `shared/skills/design-authoring/SKILL.md` and
+`shared/skills/task-execution-guide/SKILL.md`. The documentation index links to
+those same files, and the existing shared-scope loader discovers the packages.
+Keep foundational knowledge and exact contracts at their owning document paths;
+skills link to those references and depend on the May documentation tree.
 
-This authoring convention does not change automatic package discovery below.
-Ordinary Markdown frontmatter does not register a new skill. If catalog delivery
-is required, its package must expose the canonical source through supported
-trusted paths or a generated artifact and preserve accessible references. There
-must be no independently edited design/skill variants. Source availability,
-catalog activation and useful agent behavior are separate things to verify.
+Update affected skill guidance in the same change as the owning design. Keep
+proposed behavior clearly separate from available capabilities. There must be
+no independently edited manual/skill variants, extra registry or loader.
+Ordinary Markdown frontmatter alone still does not register a skill.
+
+Validate metadata, references, discovery, bounded-catalog visibility and full-body
+invocation before claiming a package is usable. Definition activation and useful
+agent behavior are separate checks: a source edit does not refresh live sessions.
 
 ## Skill And Workflow Boundary
 

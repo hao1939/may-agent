@@ -22,6 +22,12 @@ to learn specific capabilities.
 - Treat the immediate `<name>/SKILL.md` packages as the catalog. Do not maintain
   a second hand-written registry or copy skill bodies into knowledge files.
 
+Practical manuals can live directly in these packages. The May design
+[documentation index](../../projects/may-agent.app/docs/INDEX.md#tier-2b--manuals)
+links to the canonical design authoring and Task execution skills. Update affected
+skill guidance together with design changes; maintain one body for people and
+agents. Their references require the May documentation tree alongside `shared/`.
+
 ## Current System Skills
 
 - `system-investigation/SKILL.md` — investigate runtime, metrics, alerts,

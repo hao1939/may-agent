@@ -15,7 +15,7 @@ choice. The cost is changing schemas, adapters, guidance and independently
 released App producers. Retaining the existing fields with clearer guidance is
 the simpler baseline; a proposed spelling should demonstrate useful improvement.
 
-Use [Working on a Task](../2b-manual/task-execution-guide.md) and the
+Use [Working on a Task](../../../../shared/skills/task-execution-guide/SKILL.md) and the
 [attempt contract](../2a-design/task-attempts.md) for current behavior. The
 [App contract](../2a-design/agent-app.md#admission-and-clarification) owns free-form
 and structured input admission. [The #285 review record](../archive/reviews/task-attempt-decision-review-20261002.md)

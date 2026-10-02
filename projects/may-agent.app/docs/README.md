@@ -17,7 +17,7 @@ fact while other useful work can continue.
 1. [Purpose and value](1-principles/purpose.md): what May is for and what counts as progress.
 2. [System Model](2a-design/system-model.md): one complete example, vocabulary and required abilities.
 3. [Design Philosophy](1-principles/design-philosophy.md) and [Core Principles](1-principles/core-principles.md): how we choose a sufficient design.
-4. [Working on a Task](2b-manual/task-execution-guide.md): how an agent uses current capabilities and decides its next step.
+4. [Working on a Task](../../../shared/skills/task-execution-guide/SKILL.md): how an agent uses current capabilities and decides its next step.
 
 Then use [INDEX](INDEX.md) to find the one document that owns your question.
 You do not need to read proposals or historical trials to understand the current
@@ -28,12 +28,12 @@ contract. Specific implementation gaps remain marked beside affected behavior.
 | I want to… | Read |
 | --- | --- |
 | Understand the system | [System Model](2a-design/system-model.md), then [Architecture](2a-design/architecture.md) |
-| Work as an agent | [Task execution guide](2b-manual/task-execution-guide.md); load exact capability references as needed |
+| Work as an agent | [Task execution guide](../../../shared/skills/task-execution-guide/SKILL.md); load exact capability references as needed |
 | Build an App or workflow | [SDK Quickstart](2b-manual/sdk-quickstart.md), [Task authoring](2b-manual/handler-authoring.md), [Workflow authoring](2b-manual/workflow-authoring.md) |
 | Change infra | [Host/App boundary](2a-design/system-boundary.md), then the owning contract in [INDEX](INDEX.md) |
 | Read implementation | [Source reading guide](2b-manual/source-reading-guide.md) |
 | Operate or recover May | [User guide](2b-manual/user-guide.md), [Operations and Recovery](2b-manual/app-operations-recovery.md) |
-| Write or review a design | [Design authoring and review](2b-manual/design-authoring.md), usable directly as agent skill instructions |
+| Write or review a design | [Design authoring and review](../../../shared/skills/design-authoring/SKILL.md), usable directly as agent skill instructions |
 | Review future changes | [Active proposals and follow-up](proposals/README.md) |
 | Inspect earlier decisions or trials | [Archive](archive/README.md) |
 
@@ -42,7 +42,7 @@ contract. Specific implementation gaps remain marked beside affected behavior.
 Purpose and value → needed abilities → responsibilities → contracts → usage and evidence.
 Philosophy, conventions and verified practice explain the choices along that path.
 Each design links its contribution to a parent need and states why its mechanism
-is appropriate. The [authoring guide](2b-manual/design-authoring.md#design-hierarchy)
+is appropriate. The [authoring guide](../../../shared/skills/design-authoring/SKILL.md#design-hierarchy)
 owns this convention and how to compare, split or retire documents.
 
 ## Where information belongs
@@ -51,15 +51,17 @@ owns this convention and how to compare, split or retire documents.
 | --- | --- |
 | `1-principles/` | Purpose, values and decision rules |
 | `2a-design/` | Owning contracts, with explicit implementation limits |
-| `2b-manual/` | Practical guidance for agents, authors and operators |
+| `2b-manual/` and linked `shared/skills/` packages | Practical guidance for agents, authors and operators |
 | `examples/` | Checked examples used by the guides |
 | `proposals/` | Remaining design choices and implementation follow-up |
 | `archive/` | Dated decisions, migrations and trial evidence |
 
-The practical guides are written for direct agent use as well as human reading.
-Pass the relevant document as guidance or let the agent discover it through this
-index; there is no separately maintained skill version. Load detailed references
-only when the task needs them.
+The design authoring and Task execution manuals are canonical `SKILL.md` packages
+in `shared/skills/`, discovered by May's existing skill loader. This index links
+to the same files people and agents read; there is no separate manual copy.
+Other manuals and contracts remain references loaded only when needed. Update
+affected skills alongside design changes. Normal definition activation makes
+the updated catalog available to new executions; existing sessions stay pinned.
 
 ## Reading source and installation status
 
@@ -73,6 +75,6 @@ for that question.
 
 Update the owning rule and directly affected guides/examples together. Integrate
 implemented proposals, separate unresolved choices, and archive dated evidence.
-The [authoring guide](2b-manual/design-authoring.md) explains the procedure and
+The [authoring guide](../../../shared/skills/design-authoring/SKILL.md) explains the procedure and
 agent-usability criteria. `bun run check:may-design` checks document integrity,
 examples and App boundaries; it does not certify agent judgment or deployment.

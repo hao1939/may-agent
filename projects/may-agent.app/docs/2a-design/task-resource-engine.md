@@ -217,7 +217,7 @@ outstanding dependencies do not authorize a second competing parent attempt.
 [Task attempts](task-attempts.md) owns the supported live changes and final
 result contract. The worker can act many times before returning; infra derives
 current Task state from admitted input, results, Conditions and owner controls.
-[Working on a Task](../2b-manual/task-execution-guide.md) shows the current
+[Working on a Task](../../../../shared/skills/task-execution-guide/SKILL.md) shows the current
 `state`/`continue` choices without relying on a future schema.
 
 ## Resource authority

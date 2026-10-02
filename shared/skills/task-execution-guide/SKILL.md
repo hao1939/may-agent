@@ -1,16 +1,17 @@
 ---
 name: task-execution-guide
-description: Work on a May Task using its current assignment, scoped capabilities, Conditions and attempt results. Read this guide directly when starting, continuing or recovering agent or workflow work.
+description: Start, continue or recover a May Task using its assignment, scoped capabilities, Conditions and attempt result schema. Use for agent or workflow work under the May Task contract.
 ---
 
 # Working on a Task
 
-**Supports:** [Enable useful action within authority](../2a-design/system-model.md#enable-useful-action-within-authority). Helps agents use the shared execution contract with less bookkeeping and unnecessary context.
+**Supports:** [Enable useful action within authority](../../../projects/may-agent.app/docs/2a-design/system-model.md#enable-useful-action-within-authority). Helps agents use the shared execution contract with less bookkeeping and unnecessary context.
 
-**Choice basis:** [Apps own meaning; the Host owns mechanics](../1-principles/core-principles.md#apps-own-meaning-the-host-owns-mechanics) and [context discovery](../1-principles/core-principles.md#context-is-discovered-not-dumped).
+**Choice basis:** [Apps own meaning; the Host owns mechanics](../../../projects/may-agent.app/docs/1-principles/core-principles.md#apps-own-meaning-the-host-owns-mechanics) and [context discovery](../../../projects/may-agent.app/docs/1-principles/core-principles.md#context-is-discovered-not-dumped).
 
-Use this document directly as agent guidance when receiving a Task assignment;
-the same text is the human guide and the reusable skill. It explains
+Use this skill when receiving a Task assignment; it is also the canonical human
+manual. Keep it updated with the owning execution contracts. Linked references
+resolve from this directory and require the May documentation tree. It explains
 the current source contract, including Host #285. Use the tools and result schema
 actually supplied to the attempt: App adoption and installed versions can differ.
 The proposed unified capability catalog, `reply` field and `decision` spelling
@@ -51,7 +52,7 @@ contain many model calls, tools and work/check/repair iterations.
 Use the existing `tasks` read capability for current Task detail and exact inputs
 when the brief is insufficient. Start from a known identity; list only when
 discovering work. Large evidence should remain referenced until needed. See
-[Task reads](../2a-design/task-resource-read-interface.md) for exact operations,
+[Task reads](../../../projects/may-agent.app/docs/2a-design/task-resource-read-interface.md) for exact operations,
 pagination, input keys and coverage limits.
 
 Treat free-form input as requirements to understand, not text to silently
@@ -69,10 +70,10 @@ The following groups organize guidance; they are not new runtime APIs.
 
 | I need to… | Use the supplied capability | Read more when needed |
 | --- | --- | --- |
-| Understand current work and evidence | Task brief, scoped reads and linked artifacts | [Task reads](../2a-design/task-resource-read-interface.md), [context assembly](../2a-design/agents.md#context-passing) |
-| Perform an operation or ask for a contribution | Available tools, agent/workflow catalogs, or typed App requests | [Contribution contract](../2a-design/execution-contributions.md), [Task changes](handler-authoring.md#task-changes-and-safety) |
-| Receive a later result or changed external fact | Caller Condition or a supported resource-observation Condition | [Conditions](../2a-design/task-resource-engine.md#conditions), [observers](../2a-design/agent-app.md#task-driven-resource-observation) |
-| Report progress and decide the next step | Scoped progress capabilities and the supplied final result schema | [Attempt results](../2a-design/task-attempts.md#result-contract) |
+| Understand current work and evidence | Task brief, scoped reads and linked artifacts | [Task reads](../../../projects/may-agent.app/docs/2a-design/task-resource-read-interface.md), [context assembly](../../../projects/may-agent.app/docs/2a-design/agents.md#context-passing) |
+| Perform an operation or ask for a contribution | Available tools, agent/workflow catalogs, or typed App requests | [Contribution contract](../../../projects/may-agent.app/docs/2a-design/execution-contributions.md), [Task changes](../../../projects/may-agent.app/docs/2b-manual/handler-authoring.md#task-changes-and-safety) |
+| Receive a later result or changed external fact | Caller Condition or a supported resource-observation Condition | [Conditions](../../../projects/may-agent.app/docs/2a-design/task-resource-engine.md#conditions), [observers](../../../projects/may-agent.app/docs/2a-design/agent-app.md#task-driven-resource-observation) |
+| Report progress and decide the next step | Scoped progress capabilities and the supplied final result schema | [Attempt results](../../../projects/may-agent.app/docs/2a-design/task-attempts.md#result-contract) |
 
 Use the description and schema of the capability exposed in this attempt. Check
 what it returns: a completed result, accepted work with a reference, or failure.
@@ -132,14 +133,14 @@ would not help. Scope changes, unavailable authority and abandonment belong to
 the responsible owner through normal feedback and control paths.
 
 Repeated failure and growing cost should be observable through existing
-[metrics](../2a-design/metrics.md) and [failure feedback](../2a-design/execution-feedback.md).
+[metrics](../../../projects/may-agent.app/docs/2a-design/metrics.md) and [failure feedback](../../../projects/may-agent.app/docs/2a-design/execution-feedback.md).
 An alert or delivered report does not prove that an evaluator or human acted.
 Do not claim escalation succeeded merely because a record was written.
 
 Retries use bounded attempts and backoff; there is no universal failure-count
 stop. Where an operation cannot make repeat delivery safe, its contract must
 expose that exception. Follow its reconciliation path and preserve uncertainty
-until acceptance is known. See [retry ownership](../2a-design/system-boundary.md#retry-and-recovery-ownership).
+until acceptance is known. See [retry ownership](../../../projects/may-agent.app/docs/2a-design/system-boundary.md#retry-and-recovery-ownership).
 
 ## For workflow and executor authors
 
@@ -148,7 +149,7 @@ declared procedure and asks an agent where judgment is needed; executor adapters
 provide equivalent context and return through the same admission boundary.
 Do not implement another scheduler, delivery loop or completion authority.
 
-Use [Task reconciler authoring](handler-authoring.md), [Workflow authoring](workflow-authoring.md)
-and [Task attempts](../2a-design/task-attempts.md) for exact interfaces. The checked
-[App example](../examples/app.ts) demonstrates admission and waiting. It validates
+Use [Task reconciler authoring](../../../projects/may-agent.app/docs/2b-manual/handler-authoring.md), [Workflow authoring](../../../projects/may-agent.app/docs/2b-manual/workflow-authoring.md)
+and [Task attempts](../../../projects/may-agent.app/docs/2a-design/task-attempts.md) for exact interfaces. The checked
+[App example](../../../projects/may-agent.app/docs/examples/app.ts) demonstrates admission and waiting. It validates
 mechanics, not whether a real agent makes the right decision in every case.

@@ -6,6 +6,13 @@ const root = process.cwd();
 const designDir = join(root, "projects", "may-agent.app", "docs", "2a-design");
 const principlesDir = join(root, "projects", "may-agent.app", "docs", "1-principles");
 const manualDir = join(root, "projects", "may-agent.app", "docs", "2b-manual");
+const indexPath = join(root, "projects", "may-agent.app", "docs", "INDEX.md");
+// Manuals packaged as skills remain part of the design review surface. The
+// documentation index is the navigation authority; avoid a second skill list.
+const indexedSkillPaths = [...new Set(
+  [...readFileSync(indexPath, "utf8").matchAll(/\[[^\]]+\]\(([^)#]+\/SKILL\.md)(?:#[^)]+)?\)/g)]
+    .map((match) => resolve(dirname(indexPath), match[1])),
+)];
 const errors: string[] = [];
 const warnings: string[] = [];
 
@@ -79,7 +86,15 @@ for (const path of markdownFiles(designDir)) {
   checkMarkdownLinks(path, text);
 }
 
-for (const path of [...markdownFiles(principlesDir), ...markdownFiles(designDir), ...markdownFiles(manualDir)]) {
+for (const path of indexedSkillPaths) {
+  if (!existsSync(path)) {
+    errors.push(`${relativeDocPath(path)}: indexed skill is missing`);
+  } else {
+    checkMarkdownLinks(path, readFileSync(path, "utf8"));
+  }
+}
+
+for (const path of [...markdownFiles(principlesDir), ...markdownFiles(designDir), ...markdownFiles(manualDir), ...indexedSkillPaths.filter(existsSync)]) {
   const text = readFileSync(path, "utf8");
   for (const contract of staleContractPatterns) {
     if (contract.pattern.test(text)) {
