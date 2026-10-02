@@ -15,11 +15,12 @@ import {
   resolveAppInboxRecovery,
 } from "../may-agent/src/app/core/state/app-inbox-store.js";
 import {
+  EVALUATION_OPERATION_METRIC,
   reliabilityMetrics,
   REVIEW_LAG_METRIC,
   SQL_TIME_METRIC,
 } from "./reliability-metrics.js";
-import app from "./app.js";
+import app, { evaluationOperationAlertInput } from "./app.js";
 
 let db: SqliteDb;
 beforeEach(() => {
@@ -131,23 +132,158 @@ test("declared reliability metrics collect through the Host and retain a real br
       input: { kind: "request", data: {} },
       now: old,
     });
-    recordAppInboxRecoveryFailure(store, "unadmitted", "input-admission", "mapping unavailable", old);
+    recordAppInboxRecoveryFailure(
+      store,
+      "unadmitted",
+      "input-admission",
+      "mapping unavailable",
+      old,
+    );
     const bus = new EventBus();
     const collected = await measureSourceMetrics({ bus, persistDir: root });
     expect(collected.failures).toEqual([]);
     expect(collected.skipped).toEqual([]);
-    expect(collected.measured.sort()).toEqual(reliabilityMetrics.map((metric) => metric.id).sort());
-    expect(await reporting.readMetric("may.unresolved-input-recovery-count")).toMatchObject({ value: 1, sampleSize: 1 });
-    const alert = store.prepare("SELECT id, resolved_at FROM metric_alerts WHERE metric_id = ?")
-      .get("may.oldest-input-recovery-age-seconds") as { id: number; resolved_at: number | null };
+    expect(collected.measured.sort()).toEqual(
+      reliabilityMetrics.map((metric) => metric.id).sort(),
+    );
+    expect(
+      await reporting.readMetric("may.unresolved-input-recovery-count"),
+    ).toMatchObject({ value: 1, sampleSize: 1 });
+    const alert = store
+      .prepare("SELECT id, resolved_at FROM metric_alerts WHERE metric_id = ?")
+      .get("may.oldest-input-recovery-age-seconds") as {
+      id: number;
+      resolved_at: number | null;
+    };
     const alertId = alert.id;
     expect(alertId).toBeGreaterThan(0);
     expect(alert.resolved_at).toBeNull();
     resolveAppInboxRecovery(store, "unadmitted", "input-admission", Date.now());
-    expect((await measureSourceMetrics({ bus, persistDir: root })).failures).toEqual([]);
-    expect(await reporting.readMetric("may.unresolved-input-recovery-count")).toMatchObject({ value: 0, sampleSize: 0 });
-    expect(store.prepare("SELECT resolved_at FROM metric_alerts WHERE id = ?").get(alertId))
-      .toMatchObject({ resolved_at: expect.any(Number) });
+    expect(
+      (await measureSourceMetrics({ bus, persistDir: root })).failures,
+    ).toEqual([]);
+    expect(
+      await reporting.readMetric("may.unresolved-input-recovery-count"),
+    ).toMatchObject({ value: 0, sampleSize: 0 });
+    expect(
+      store
+        .prepare("SELECT resolved_at FROM metric_alerts WHERE id = ?")
+        .get(alertId),
+    ).toMatchObject({ resolved_at: expect.any(Number) });
+  } finally {
+    closeDb(root);
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("real Host collection maps one May review input per Evaluation breach episode", async () => {
+  const root = mkdtempSync(join(tmpdir(), "may-evaluation-episode-"));
+  try {
+    const store = getDb(root);
+    createAppReporting(() => store).syncDefinitions([{ definition: app }]);
+    const now = Date.now();
+    const insert = store.prepare(
+      `INSERT INTO app_task_attempts(app_id, task_id, attempt_id, task_generation, state, started_at, attempt_json)
+       VALUES ('evaluation', 'runtime/compat/owner-review', ?, 4, 'failed', ?, ?)`,
+    );
+    const addFailure = (index: number) =>
+      insert.run(
+        `failed-${index}`,
+        now - 10_000,
+        JSON.stringify({
+          startedAt: new Date(now - 10_000).toISOString(),
+          finishedAt: new Date(now - 5_000).toISOString(),
+          failureReason: "HandlerResultInvalid",
+        }),
+      );
+
+    const bus = new EventBus();
+    const breachEvents: any[] = [];
+    bus.subscribe((event) => {
+      if (
+        event.type === "metric.breach" &&
+        event.data.metricId === EVALUATION_OPERATION_METRIC
+      ) {
+        breachEvents.push(event);
+      }
+    });
+    const collect = () =>
+      measureSourceMetrics({
+        bus,
+        persistDir: root,
+        isDue: (metric) => metric.id === EVALUATION_OPERATION_METRIC,
+      });
+    const reviewInputs = () =>
+      breachEvents
+        .map((event) =>
+          evaluationOperationAlertInput(JSON.parse(JSON.stringify(event))),
+        )
+        .filter(Boolean);
+
+    addFailure(1);
+    await collect();
+    addFailure(2);
+    await collect();
+    expect(breachEvents).toEqual([]);
+    addFailure(3);
+    await collect();
+    expect(breachEvents).toHaveLength(1);
+    expect(breachEvents[0]!.data).toMatchObject({
+      metricId: EVALUATION_OPERATION_METRIC,
+      alertId: expect.any(Number),
+      current: 3,
+    });
+    expect(reviewInputs()).toHaveLength(1);
+
+    addFailure(4);
+    await collect();
+    expect(breachEvents).toHaveLength(2);
+    expect(breachEvents[1]!.data).toMatchObject({
+      alertId: breachEvents[0]!.data.alertId,
+      repeat: true,
+      current: 4,
+    });
+    expect(reviewInputs()).toHaveLength(1);
+    expect(
+      store
+        .prepare(
+          "SELECT COUNT(*) AS count FROM metric_alerts WHERE metric_id = ?",
+        )
+        .get(EVALUATION_OPERATION_METRIC),
+    ).toEqual({ count: 1 });
+
+    store
+      .prepare(
+        "UPDATE app_task_attempts SET started_at = ? WHERE app_id = 'evaluation'",
+      )
+      .run(now - 7 * 60 * 60 * 1000);
+    await collect();
+    expect(
+      store
+        .prepare(
+          "SELECT resolved_at FROM metric_alerts WHERE metric_id = ? ORDER BY id DESC LIMIT 1",
+        )
+        .get(EVALUATION_OPERATION_METRIC),
+    ).toMatchObject({ resolved_at: expect.any(Number) });
+
+    store
+      .prepare(
+        "UPDATE app_task_attempts SET started_at = ? WHERE app_id = 'evaluation'",
+      )
+      .run(now - 10_000);
+    await collect();
+    expect(breachEvents).toHaveLength(3);
+    expect(breachEvents[2]!.data.alertId).not.toBe(
+      breachEvents[0]!.data.alertId,
+    );
+    expect(reviewInputs()).toHaveLength(2);
+    expect(
+      store
+        .prepare(
+          "SELECT COUNT(*) AS count FROM metric_alerts WHERE metric_id = ?",
+        )
+        .get(EVALUATION_OPERATION_METRIC),
+    ).toEqual({ count: 2 });
   } finally {
     closeDb(root);
     rmSync(root, { recursive: true, force: true });
@@ -215,6 +351,75 @@ test("retains failed attempts after later success and calculates the rate from t
   expect(JSON.parse(observed.note)).toMatchObject({
     failurePercent: 33.333,
     examples: [{ appId: "sample", taskId: "same-task", attemptId: "failed" }],
+  });
+});
+
+test("Evaluation oversight groups all supported unsuccessful kinds by Task generation", () => {
+  expect(sample(EVALUATION_OPERATION_METRIC)).toMatchObject({
+    value: 0,
+    sampleSize: 0,
+  });
+  const now = Date.now();
+  const insert = db.prepare(
+    `INSERT INTO app_task_attempts(app_id, task_id, attempt_id, task_generation, state, started_at, attempt_json) VALUES ('evaluation', ?, ?, ?, ?, ?, ?)`,
+  );
+  const add = (
+    taskId: string,
+    attemptId: string,
+    generation: number,
+    state: string,
+    extra: Record<string, unknown> = {},
+  ) =>
+    insert.run(
+      taskId,
+      attemptId,
+      generation,
+      state,
+      now - 10_000,
+      JSON.stringify({
+        startedAt: new Date(now - 10_000).toISOString(),
+        finishedAt: new Date(now - 5_000).toISOString(),
+        ...extra,
+      }),
+    );
+  add("runtime/compat/owner-review", "failed", 7, "failed", {
+    failureReason: "HandlerResultInvalid",
+  });
+  add("runtime/compat/owner-review", "incomplete", 7, "completed", {
+    acceptedResult: { state: "incomplete" },
+  });
+  add("runtime/compat/owner-review", "stale", 7, "interrupted", {
+    failureReason: "stale-reconciliation-result",
+  });
+  add("runtime/compat/owner-review", "cancelled", 7, "interrupted", {
+    failureReason: "owner-stopped",
+  });
+  add("another", "other-generation", 2, "failed");
+
+  const observed = sample(EVALUATION_OPERATION_METRIC);
+  expect(observed).toMatchObject({ value: 3, sampleSize: 5 });
+  expect(JSON.parse(observed.note)).toMatchObject({
+    denominator: expect.stringContaining("terminal Evaluation attempts"),
+    coverage: expect.stringContaining("accepted incomplete"),
+    groups: [
+      {
+        taskId: "runtime/compat/owner-review",
+        generation: 7,
+        terminal: 4,
+        unsuccessful: 3,
+        failedOrRejected: 1,
+        acceptedIncomplete: 1,
+        staleInterrupted: 1,
+      },
+      {
+        taskId: "another",
+        generation: 2,
+        unsuccessful: 1,
+        failedOrRejected: 1,
+        acceptedIncomplete: 0,
+        staleInterrupted: 0,
+      },
+    ],
   });
 });
 

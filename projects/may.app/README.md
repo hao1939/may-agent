@@ -81,6 +81,25 @@ decision or approval. Runtime retains the original delivery identity; the App
 does not create another correlation or work lifecycle. New producers can supply
 structured message context without adding a new conversational input kind.
 
+The staged source adds bounded independent Evaluation operation oversight through
+May's existing metric collection, alert episode and `metric-response` path. The
+six-hour metric groups retained terminal attempts by exact Evaluation Task and
+generation; three failed/rejected, accepted-incomplete or stale/requeued
+interruptions open one alert episode. Ordinary identity includes
+`runtime/compat/owner-review`; user cancellation is excluded. Each sample states
+its terminal-attempt denominator, time cut and retained-history/example limits.
+May handles only the episode-opening breach, binds its disposition and linked
+work to that `alertId`, and reuses a fitting investigation. It does not create a
+Conversation/model call, repair or human message for each failure or repeated
+sample. This is a trial App attention policy, not a retry cap, proof of waste,
+input fulfillment, semantic Evaluation self-review, or the deferred generic
+supervisor fallback.
+
+This paragraph describes the candidate in this checkout. It is not installed
+behavior until the compatible May definition is separately reviewed, activated
+and read back. The currently loaded definition may still differ; source checks
+and a commit do not prove activation.
+
 Messages retain the discussion. Topics group related messages and reference
 exact Tasks. Neither owns execution or copies Task state. Later human feedback
 and linked Task outcomes enter the same input loop. A worker's failure report

@@ -4,6 +4,7 @@ import { matchesEventSelector, type AppEvent } from "@may-agent/sdk";
 import { Check } from "typebox/value";
 import app, {
   evaluationHumanDecisionInput,
+  evaluationOperationAlertInput,
   evaluationTaskReportInput,
   observerFailureInput,
   admissionFailureInput,
@@ -53,6 +54,7 @@ describe("canonical May conversation App", () => {
     expect(app.subscriptions?.map(({ id }) => id)).toEqual([
       "evaluation-metric-report",
       "evaluation-review-lag",
+      "evaluation-operation-oversight",
       "input-admission-failure-review",
       "observer-failure-review",
       "scout-research-qualified",
@@ -514,6 +516,62 @@ describe("canonical May conversation App", () => {
         data: { ...event.data, error: "" },
       }),
     ).toThrow("requires non-empty error");
+  });
+
+  test("routes one Evaluation operation metric alert episode to independent May judgment", () => {
+    const subscription = app.subscriptions?.find(
+      ({ id }) => id === "evaluation-operation-oversight",
+    );
+    if (!subscription)
+      throw new Error("missing Evaluation operation subscription");
+    const event: AppEvent<Record<string, unknown>> = {
+      type: "metric.breach",
+      source: "metric-service",
+      owner: "app:may",
+      target: { appId: "may", project: "evaluation" },
+      data: {
+        metricId: "may.evaluation-unsuccessful-task-attempts-6h",
+        alertId: 42,
+        value: 3,
+        sampleSize: 8,
+      },
+    };
+    expect(matchesEventSelector(subscription.event, event)).toBeTrue();
+    const input = evaluationOperationAlertInput(event)!;
+    expect(input).toMatchObject({
+      kind: "message",
+      data: { context: { event } },
+    });
+    expect(String(input.data.message)).toContain("metric-response");
+    expect(String(input.data.message)).toContain("runtime/compat/owner-review");
+    expect(String(input.data.message)).toContain("accepted-incomplete");
+    expect(String(input.data.message)).toContain(
+      "stale/requeued interruptions",
+    );
+    expect(String(input.data.message)).toContain(
+      "terminal-attempt denominator",
+    );
+    expect(String(input.data.message)).toContain("trial May attention policy");
+    expect(String(input.data.message)).toContain(
+      "do not create a repair or human message for each failure or sample",
+    );
+    expect(String(input.data.message)).toContain(
+      "Generic supervisor fallback remains deferred",
+    );
+    expect(Check(app.inputSchema, input)).toBeTrue();
+
+    expect(
+      evaluationOperationAlertInput({
+        ...event,
+        data: { ...event.data, repeat: true },
+      }),
+    ).toBeNull();
+    expect(
+      evaluationOperationAlertInput({
+        ...event,
+        data: { ...event.data, metricId: "another.metric" },
+      }),
+    ).toBeNull();
   });
 
   test("normalizes Evaluation escalations into messages with original correlation context", () => {

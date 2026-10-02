@@ -164,6 +164,14 @@ an awaited helper remain deferred. The [ownership review](../archive/reviews/own
 records their rationale; this contract does not promise universal recovery or
 that a human has been notified merely because a failure was saved.
 
+An installation can declare a narrower independent operational route without
+implementing that deferred generic fallback. App-specific oversight thresholds,
+coverage and response policy belong in the responsible App; May's current policy
+is documented in the [May App](../../../may.app/README.md#conversation-guidance-ownership).
+Such a route neither performs semantic self-review nor transfers Task authority.
+Admission, notification, review and fulfillment remain distinct, and the original
+retry and caller/dependency paths continue independently.
+
 ### Recovery uses evidence before repetition
 
 Agent and workflow execution share one behavior model: read current facts,
@@ -439,6 +447,21 @@ do not extend an invocation's allowance. Code supplies and enforces these limits
 agents judge continuation or steering without managing timeout counters. The
 allowance bounds active work, not an idle chat's lifetime or a durable Task's life.
 Unconfirmed cleanup is a visible failure, not permission to overlap executions.
+
+For a native Codex continuation, fresh canonical Task/attempt/input/settlement
+feedback must precede the next model request. The adapter first persists the
+same thread's goal as paused and waits for that acknowledgment while the thread
+is still unloaded, resumes that exact thread in the paused state, injects and
+acknowledges the refreshed developer context, and only then marks the goal active.
+The pre-pause turn remains fenced from producing the next accepted request. After
+a client or process restart, initialize the new client but preserve this same
+paused-goal, thread-resume, context-injection, goal-activation ordering; do not
+briefly activate cached context and correct it afterward. Failure of pause,
+injection or resume is reported through the existing attempt/caller path
+with bounded provider diagnostics. It does not authorize a parallel turn or a
+second retry controller. These ordering guarantees describe reviewed Host
+source only until its exact runtime revision and configured native adapter are
+separately deployed and read back.
 
 When no limit is configured, hosted execution uses a 30-minute invocation default,
 matching the existing Task workflow default. One-shot CLI keeps its five-minute

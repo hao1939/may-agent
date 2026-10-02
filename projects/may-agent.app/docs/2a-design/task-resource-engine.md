@@ -372,8 +372,20 @@ The Host maintains `inputWaits[key].pending`, waits/deadlines and continuation; 
 `incomplete` requires a summary and non-empty facts; it cannot include actions, Conditions
 or child App requests. The Host checks eligibility inside the fenced transaction.
 It ends only the attempt, without fulfilling the input or a linked Request.
-The same Task remains pending. Turn Stop and owner closure are different
-controls: closure fences future work; work after closure needs a new linked identity.
+The same Task remains pending. During settlement the Host selects a caller report
+if that input has no earlier selected report or the result says `report: true`.
+The stored `reportRevision` identifies that selection for delivery and deduplication.
+Report selection and caller delivery are existing bookkeeping; neither fulfills
+the input or proves a person saw the report.
+
+**Candidate correction:** Accepted incomplete settlement advances the notifications
+that the attempt considered and retains unanswered requirements in `inputWaits`.
+This advancement occurs at settlement, independently of caller delivery. Automatic
+and explicit owner retries preserve it; execution failures without an accepted
+report restore their unconsidered batch. Generation and action fences still apply.
+Source tests do not establish live adoption. Turn Stop and owner closure remain
+separate controls: closure fences future work; work after closure needs a new
+linked identity.
 
 Creating follow-up work does not complete the current task. Required
 decomposition uses typed dependencies and returns `waiting`; independent later

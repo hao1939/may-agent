@@ -22,6 +22,8 @@ SELECT VALUE AS value, COUNT(*) AS sampleSize, (SELECT cut FROM clock) AS measur
 FROM recoveries`;
 
 export const REVIEW_LAG_METRIC = "may.evaluation-unfinished-review-age-seconds";
+export const EVALUATION_OPERATION_METRIC =
+  "may.evaluation-unsuccessful-task-attempts-6h";
 export const SQL_TIME_METRIC = "may.daemon-sql-time-percent";
 // App attention policy; Host samples existing facts and never stops retries from these rules.
 export const reliabilityMetrics: NonNullable<AppDefinition["metrics"]> = [
@@ -124,6 +126,55 @@ export const reliabilityMetrics: NonNullable<AppDefinition["metrics"]> = [
           FROM (SELECT * FROM cohort WHERE state = 'failed' ORDER BY started_at DESC, attempt_id LIMIT 3))),
         'limits', 'Retained history only. Later success does not prove recovery of the same input. Cause and quality unassessed.') AS note
     FROM cohort`,
+  },
+  {
+    id: EVALUATION_OPERATION_METRIC,
+    name: "Repeated unsuccessful Evaluation Task attempts",
+    owner: "may",
+    project: "evaluation",
+    type: "gauge",
+    unit: "attempts",
+    measureInterval: 300_000,
+    threshold: 2,
+    alertOp: ">",
+    description:
+      "Largest retained unsuccessful-attempt count for one Evaluation Task generation in the last six hours. Three attempts opens one alert episode for independent May review; it is an App trial policy, not a retry cap or proof of waste.",
+    sourceQuery: `WITH clock AS (SELECT ${clock} AS cut), terminal AS (
+      SELECT task_id, task_generation AS generation, attempt_id, state, started_at,
+        json_extract(attempt_json, '$.finishedAt') AS finishedAt,
+        json_extract(attempt_json, '$.failureReason') AS failureReason,
+        json_extract(attempt_json, '$.acceptedResult.state') AS resultState
+      FROM app_task_attempts, clock
+      WHERE app_id = 'evaluation' AND started_at >= cut - 21600000 AND started_at < cut
+        AND state IN ('completed', 'failed', 'interrupted')
+        AND CAST(strftime('%s', json_extract(attempt_json, '$.finishedAt')) AS INTEGER) * 1000 < cut
+    ), classified AS (
+      SELECT *, CASE
+        WHEN state = 'failed' THEN 'failed-or-rejected'
+        WHEN state = 'completed' AND resultState = 'incomplete' THEN 'accepted-incomplete'
+        WHEN state = 'interrupted' AND (failureReason = 'stale-reconciliation-result' OR failureReason LIKE '%-requeued') THEN 'stale-interrupted'
+        ELSE NULL END AS unsuccessfulKind
+      FROM terminal
+    ), groups AS (
+      SELECT task_id, generation, COUNT(*) AS terminalCount,
+        COALESCE(SUM(unsuccessfulKind IS NOT NULL), 0) AS unsuccessfulCount,
+        COALESCE(SUM(unsuccessfulKind = 'failed-or-rejected'), 0) AS failedOrRejected,
+        COALESCE(SUM(unsuccessfulKind = 'accepted-incomplete'), 0) AS acceptedIncomplete,
+        COALESCE(SUM(unsuccessfulKind = 'stale-interrupted'), 0) AS staleInterrupted
+      FROM classified GROUP BY task_id, generation
+    )
+    SELECT COALESCE(MAX(unsuccessfulCount), 0) AS value,
+      COALESCE(SUM(terminalCount), 0) AS sampleSize, (SELECT cut FROM clock) AS measuredAt,
+      json_object('start', (SELECT cut - 21600000 FROM clock), 'end', (SELECT cut FROM clock),
+        'policy', 'Alert when one Evaluation Task generation has at least 3 retained unsuccessful attempts in 6 hours. Review does not stop retries.',
+        'denominator', 'All retained terminal Evaluation attempts started in the same six-hour cohort and finished before the sample cut.',
+        'coverage', 'Unsuccessful includes failed/rejected attempts, accepted incomplete results, and stale/requeued interruptions. Owner-review is included by ordinary Evaluation task identity. User cancellation and other interruptions are excluded.',
+        'groups', json((SELECT json_group_array(json_object('taskId', task_id, 'generation', generation,
+          'terminal', terminalCount, 'unsuccessful', unsuccessfulCount, 'failedOrRejected', failedOrRejected,
+          'acceptedIncomplete', acceptedIncomplete, 'staleInterrupted', staleInterrupted))
+          FROM (SELECT * FROM groups WHERE unsuccessfulCount > 0 ORDER BY unsuccessfulCount DESC, task_id, generation LIMIT 5))),
+        'limits', 'Retained history only. Examples are capped at five Task generations. Missing or malformed finish times are excluded. Later success, cause, cost, waste, input fulfillment and repair effectiveness are not established.') AS note
+    FROM groups`,
   },
   {
     id: REVIEW_LAG_METRIC,
