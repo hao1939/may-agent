@@ -12,6 +12,7 @@ const root = mkdtempSync(join(tmpdir(), "may-codex-protocol-"));
 const codexState = join(root, "codex");
 mkdirSync(codexState);
 const captures: unknown[] = [];
+const retainedAnswer = `retained-output:${"x".repeat(525_000)}`;
 let releaseResponses!: () => void;
 const responseGate = new Promise<void>((resolve) => {
   releaseResponses = resolve;
@@ -22,12 +23,14 @@ const server = createServer(async (request, response) => {
   captures.push(JSON.parse(Buffer.concat(chunks).toString("utf8")));
   const sequence = captures.length;
   await responseGate;
+  const fixtureAnswer = sequence > 2 ? retainedAnswer : "Fixture response.";
   const item = {
     id: `msg_${sequence}`,
     type: "message",
     role: "assistant",
+    phase: "final_answer",
     status: "completed",
-    content: [{ type: "output_text", text: "Fixture response.", annotations: [] }],
+    content: [{ type: "output_text", text: fixtureAnswer, annotations: [] }],
   };
   const completed = {
     id: `resp_${sequence}`,
@@ -41,7 +44,7 @@ const server = createServer(async (request, response) => {
     { type: "response.created", response: { ...completed, status: "in_progress", output: [] } },
     { type: "response.output_item.added", output_index: 0, item: { ...item, status: "in_progress", content: [] } },
     { type: "response.content_part.added", item_id: item.id, output_index: 0, content_index: 0, part: item.content[0] },
-    { type: "response.output_text.delta", item_id: item.id, output_index: 0, content_index: 0, delta: "Fixture response." },
+    { type: "response.output_text.delta", item_id: item.id, output_index: 0, content_index: 0, delta: fixtureAnswer },
     { type: "response.output_item.done", output_index: 0, item },
     { type: "response.completed", response: completed },
   ];
@@ -127,7 +130,12 @@ try {
   const thread = await client.startThread({ cwd: root, developerInstructions: firstPacket });
   assert.equal(thread.cwd, root);
   const originalObjective = "Verify the old assignment";
-  await client.setGoal({ threadId: thread.threadId, objective: originalObjective, status: "active", tokenBudget: 1_000 });
+  await client.setGoal({
+    threadId: thread.threadId,
+    objective: originalObjective,
+    status: "active",
+    tokenBudget: 1_000,
+  });
   const firstTurn = await client.waitForActiveTurn(thread.threadId, 5_000);
   await waitForCaptures(1);
   assert.match(JSON.stringify(captures[0]), /attempt-alpha/);
@@ -160,6 +168,7 @@ try {
   await assert.rejects(
     client.steer({ threadId: thread.threadId, turnId: firstTurn, message: "This stale turn must be fenced." }),
   );
+  await client.setGoal({ threadId: thread.threadId, objective: freshObjective, status: "paused" });
   releaseResponses();
   await client.waitForTurn(secondTurn, 5_000);
 
@@ -169,8 +178,59 @@ try {
   assert.match(resumedRequest, /input:beta/);
   assert.match(resumedRequest, /Condition is required for waiting/);
   assert.doesNotMatch(resumedRequest, /This stale turn must be fenced/);
+
+  const retainedTurns = new Set<string>();
+  let firstRetainedTurn: string | undefined;
+  for (let index = 0; index < 8; index += 1) {
+    const retainedTurn = await client.startTurn({
+      threadId: thread.threadId,
+      prompt: `Retain completed synthetic turn ${index + 1}`,
+    });
+    assert.equal(retainedTurns.has(retainedTurn), false, "each retained-history turn must be distinct");
+    retainedTurns.add(retainedTurn);
+    firstRetainedTurn ??= retainedTurn;
+    await waitForCaptures(index + 3);
+    await client.waitForTurn(retainedTurn, 5_000);
+  }
+  assert.ok(firstRetainedTurn, "retained-history fixture must record its first turn identity");
+  assert.equal(captures.length, 10, "retained-history fixture must complete all ten synthetic model turns");
+  await client.stop();
+  client = spawnClient();
+  await client.initialize();
+  assert.deepEqual(
+    await client.resumeThread({ threadId: thread.threadId, cwd: root, developerInstructions: freshPacket }),
+    thread,
+  );
+  const exactItems = await client.listThreadItems({
+    threadId: thread.threadId,
+    turnId: secondTurn,
+    limit: 1,
+    sortDirection: "desc",
+  });
+  assert.equal(exactItems.data.length, 1);
+  assert.equal(exactItems.data[0]?.turnId, secondTurn);
+  assert.equal((exactItems.data[0]?.item as { text?: string }).text, "Fixture response.");
+  assert.equal((exactItems.data[0]?.item as { phase?: string }).phase, "final_answer");
+
+  const retainedItems = await client.listThreadItems({
+    threadId: thread.threadId,
+    turnId: firstRetainedTurn,
+    limit: 1,
+    sortDirection: "desc",
+  });
+  assert.equal(retainedItems.data.length, 1);
+  assert.equal(retainedItems.data[0]?.turnId, firstRetainedTurn);
+  assert.equal((retainedItems.data[0]?.item as { phase?: string }).phase, "final_answer");
+  assert.ok(
+    (retainedItems.data[0]?.item as { text?: string }).text === retainedAnswer,
+    "first retained-history turn must preserve its full expected final answer",
+  );
+
   process.stdout.write(
-    `Codex compatibility passed: active-goal pause/resume, fresh request packet, prior rejection and old-turn fence${checkExecution ? ", plus installed-policy execution acceptance" : ""}.\n`,
+    `${JSON.stringify({ installedCliBoundedRead: true, exactFinalAnswer: true, diagnostics: client.diagnostics() })}\n`,
+  );
+  process.stdout.write(
+    `Codex compatibility passed: active-goal pause/resume, fresh request packet, prior rejection, old-turn fence, and bounded exact-turn retrieval${checkExecution ? ", plus installed-policy execution acceptance" : ""}.\n`,
   );
 } finally {
   releaseResponses();

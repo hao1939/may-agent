@@ -148,6 +148,7 @@ describe("CodexGoalAppServerClient", () => {
       threadId: "thread-1",
       cwd: "/tmp/work",
       approvalPolicy: "never",
+      excludeTurns: true,
     });
     process.reply(resume.id, { thread: { id: "thread-1" }, cwd: "/tmp/work" });
     expect(await resumed).toEqual({ threadId: "thread-1", cwd: "/tmp/work" });
@@ -176,9 +177,39 @@ describe("CodexGoalAppServerClient", () => {
       cwd: "/tmp/work",
       approvalPolicy: "never",
       sandbox: "read-only",
+      excludeTurns: true,
     });
     process.reply(resume.id, { thread: { id: "thread-1" }, cwd: "/tmp/work" });
     await resumed;
+  });
+
+  it("requests bounded newest-first items for one exact turn", async () => {
+    const process = new FakeAppServerProcess();
+    const client = new CodexGoalAppServerClient(process, { requestTimeoutMs: 1_000 });
+
+    const listed = client.listThreadItems({
+      threadId: "thread-1",
+      turnId: "turn-complete",
+      cursor: "next-page",
+      limit: 1,
+      sortDirection: "desc",
+    });
+    const request = await waitForWrite(process, "thread/items/list");
+    expect(request.params).toEqual({
+      threadId: "thread-1",
+      turnId: "turn-complete",
+      cursor: "next-page",
+      limit: 1,
+      sortDirection: "desc",
+    });
+    process.reply(request.id, {
+      data: [{ turnId: "turn-complete", item: { type: "agentMessage", text: "complete answer" } }],
+      nextCursor: null,
+    });
+    await expect(listed).resolves.toEqual({
+      data: [{ turnId: "turn-complete", item: { type: "agentMessage", text: "complete answer" } }],
+      nextCursor: null,
+    });
   });
 
   it("observes the authoritative turn and terminal status created by an active goal", async () => {
@@ -233,11 +264,33 @@ describe("CodexGoalAppServerClient", () => {
     await expect(client.getGoal("thread-1")).rejects.toThrow("invalid JSON");
   });
 
-  it("bounds an unterminated protocol line", async () => {
+  it("stops consuming stdout after a terminal protocol failure", async () => {
     const process = new FakeAppServerProcess();
-    const client = new CodexGoalAppServerClient(process, { requestTimeoutMs: 1_000 });
+    const client = new CodexGoalAppServerClient(process, {
+      requestTimeoutMs: 1_000,
+      terminateAfterMs: 0,
+      killAfterMs: 10,
+    });
+    let notifications = 0;
+    client.onNotification(() => notifications++);
+    const pending = client.getGoal("thread-1");
+    await waitForWrite(process, "thread/goal/get");
+
     process.stdout.write("x".repeat(4 * 1024 * 1024 + 1));
-    await expect(client.getGoal("thread-1")).rejects.toThrow("protocol line exceeded");
+    await expect(pending).rejects.toThrow("protocol line exceeded");
+    const diagnostics = client.diagnostics();
+
+    expect(() => {
+      process.stdout.write(`${JSON.stringify({ method: "turn/started", params: {} })}\n`);
+      process.stdout.write(`${JSON.stringify({ id: 77, method: "unsupported", params: {} })}\n`);
+    }).not.toThrow();
+    expect(client.diagnostics()).toEqual(diagnostics);
+    expect(notifications).toBe(0);
+    expect(process.writes.some((entry) => entry.id === 77)).toBeFalse();
+    expect(process.stdout.listenerCount("data")).toBe(0);
+
+    await client.stop();
+    expect(process.signals).toEqual(["SIGTERM"]);
   });
 
   it("stops through normal stdin shutdown without signaling", async () => {
@@ -280,8 +333,9 @@ describe("CodexGoalAppServerClient", () => {
     await expect(timedOut).rejects.toThrow("request thread/goal/get timed out");
     process.reply(first.id, { goal: { status: "active" } });
 
-    const next = client.readThread("thread-1", false);
+    const next = client.readThread("thread-1");
     const second = await waitForWrite(process, "thread/read");
+    expect(second.params).toEqual({ threadId: "thread-1", includeTurns: false });
     process.reply(second.id, { thread: { id: "thread-1" } });
     await expect(next).resolves.toEqual({ thread: { id: "thread-1" } });
     await client.stop();
