@@ -229,6 +229,43 @@ describe("App source releases", () => {
     expect(() => new DefinitionSourceReleaseStore(root, stateDir).stage()).toThrow("untracked executable/config files");
   });
 
+  it.each(["shared", "agent", "app-agent"])(
+    "requires configured manual skills and references to be committed before reload (%s)",
+    async (scope) => {
+      const { root, stateDir } = await fixture();
+      const skillRoot = scope === "shared" ? "shared/skills"
+        : scope === "agent" ? "agents/worker/skills" : "projects/sample.app/agents/worker/skills";
+      const manualRoot = "projects/sample.app/docs/manual";
+      mkdirSync(join(root, skillRoot), { recursive: true });
+      mkdirSync(join(root, manualRoot, "existing"), { recursive: true });
+      writeFileSync(join(root, manualRoot, "existing/SKILL.md"), "---\nname: existing\ndescription: Existing manual\n---\nExisting guidance");
+      writeFileSync(join(root, skillRoot, "paths.json"), JSON.stringify([
+        scope === "shared" ? "../../projects/sample.app/docs/manual"
+          : scope === "agent" ? "../../../projects/sample.app/docs/manual" : "../../../docs/manual",
+      ]));
+      await git(root, "add", skillRoot, manualRoot);
+      await git(root, "commit", "-qm", "configure manual discovery");
+      const store = new DefinitionSourceReleaseStore(root, stateDir);
+      const active = store.ensureCurrent();
+
+      for (const file of ["new-guide/SKILL.md", "existing/references/使用说明.txt", "contract.md"]) {
+        const pinned = store.stage();
+        const sourcePath = join(manualRoot, file);
+        mkdirSync(join(root, sourcePath, ".."), { recursive: true });
+        writeFileSync(join(root, sourcePath), "New manual source\n");
+        expect(() => store.stage()).toThrow(sourcePath);
+        expect(store.current()?.id).toBe(active.id);
+        // An explicit pin still selects the committed tree, not local additions.
+        expect(store.stage(pinned.sourceCommit).id).toBe(pinned.id);
+        expect(existsSync(join(active.root, sourcePath))).toBeFalse();
+        await git(root, "add", sourcePath);
+        await git(root, "commit", "-qm", "include manual source");
+        const next = store.stage();
+        expect(readFileSync(join(next.root, sourcePath), "utf8")).toBe("New manual source\n");
+      }
+    },
+  );
+
   it("keeps minimal non-git sandboxes valid without inventing shared guidance", async () => {
     const { root, stateDir } = await fixture(false);
     rmSync(join(root, "shared"), { recursive: true, force: true });

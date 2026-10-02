@@ -1,7 +1,9 @@
 import { describe, expect, it, mock } from "bun:test";
+import { execFile } from "node:child_process";
 import { mkdirSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { promisify } from "node:util";
 import { DefinitionSourceReleaseStore } from "../app-source-release.js";
 import { invalidateRuntimeModuleCache } from "../../lib/runtime-import.js";
 import {
@@ -55,7 +57,7 @@ function makeRuntime(): AgentRegistryRuntime {
 }
 
 describe("agent registry loader", () => {
-  it("loads configured manual skills from the captured definition release", async () => {
+  it.each([false, true])("loads configured manual skills from the captured definition release (git: %s)", async (withGit) => {
     const root = tempRoot();
     try {
       const agentsRoot = join(root, "agents");
@@ -70,8 +72,18 @@ describe("agent registry loader", () => {
       writeFileSync(join(sharedSkills, "paths.json"), JSON.stringify(["../../projects/example.app/docs/manual"]));
       writeFileSync(join(root, skillPath), "---\nname: task-guide\ndescription: Work on a task\n---\nRead [contract](../contract.md).");
       writeFileSync(join(root, manualPath, "contract.md"), "Captured contract");
+      writeFileSync(join(root, "shared", "common-sense.md"), "Shared guidance");
+      if (withGit) {
+        const git = (...args: string[]) => promisify(execFile)("git", args, { cwd: root, timeout: 10_000 });
+        await git("init", "-q");
+        await git("config", "user.email", "test@example.com");
+        await git("config", "user.name", "Test");
+        await git("add", "agents", "projects", "shared");
+        await git("commit", "-qm", "capture manual source");
+      }
       const opts = makeOpts(root, agentsRoot, join(root, "projects"));
       const release = new DefinitionSourceReleaseStore(root, opts.persistDir).stage();
+      expect(Boolean(release.sourceCommit)).toBe(withGit);
       writeFileSync(join(root, skillPath), "Changed live source");
       writeFileSync(join(root, manualPath, "contract.md"), "Changed live contract");
       const prepared = await prepareAgents({

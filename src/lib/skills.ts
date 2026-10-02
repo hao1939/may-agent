@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
 import { existsSync, readFileSync, readdirSync, realpathSync, statSync } from "node:fs";
-import { isAbsolute, join, relative, resolve } from "node:path";
+import { isAbsolute, join, relative } from "node:path";
+import { resolveSkillRoots } from "./skill-paths.js";
 import { BACKGROUND_CONTEXT } from "@earendil-works/pi-agent-core/harness/context";
 import {
   formatSkillInvocation,
@@ -47,33 +48,6 @@ function immediateSkillPackages(root: string | undefined, scope: MaySkillScope, 
     .filter((source) => existsSync(join(source.packagePath, "SKILL.md")));
 }
 
-/** Optional paths extend one scope; they do not recursively load more path files. */
-function skillRoots(root: string, scope: MaySkillScope, diagnostics: string[]): string[] {
-  const pathsFile = join(root, "paths.json");
-  const roots = existsSync(root) ? [realpathSync(root)] : [];
-  if (!existsSync(pathsFile)) return roots;
-  let paths: unknown;
-  try {
-    paths = JSON.parse(readFileSync(pathsFile, "utf8"));
-    if (!Array.isArray(paths) || paths.some((path) => typeof path !== "string" || !path.trim() || isAbsolute(path))) {
-      throw new Error("Expected an array of non-empty relative directory paths");
-    }
-  } catch (err) {
-    diagnostics.push(`${scope}:${pathsFile}: ${err instanceof Error ? err.message : String(err)}`);
-    return roots;
-  }
-  for (const path of paths as string[]) {
-    try {
-      const target = realpathSync(resolve(root, path));
-      if (!statSync(target).isDirectory()) throw new Error("Expected a directory");
-      roots.push(target);
-    } catch (err) {
-      diagnostics.push(`${scope}:${pathsFile}: ${path}: ${err instanceof Error ? err.message : String(err)}`);
-    }
-  }
-  return [...new Set(roots)];
-}
-
 export async function discoverAgentSkills(opts: {
   agentDir: string;
   appLocal?: boolean;
@@ -91,7 +65,12 @@ export async function discoverAgentSkills(opts: {
       ? [{ path: join(opts.globalAgentDir, "skills"), scope: "agent" as const, priority: 2 }]
       : []),
     ...(opts.sharedRoot ? [{ path: join(opts.sharedRoot, "skills"), scope: "shared" as const, priority: 3 }] : []),
-  ].flatMap((root) => skillRoots(root.path, root.scope, diagnostics).map((path) => ({ ...root, path })));
+  ].flatMap((root) => {
+    const errors: string[] = [];
+    const paths = resolveSkillRoots(root.path, errors);
+    diagnostics.push(...errors.map((error) => `${root.scope}:${error}`));
+    return paths.map((path) => ({ ...root, path }));
+  });
   const trustedRoots = addressedRoots.map((root) => root.path);
   const sources = addressedRoots.flatMap((root) => immediateSkillPackages(root.path, root.scope, root.priority));
   const env = new NodeExecutionEnv({ cwd: opts.agentDir });

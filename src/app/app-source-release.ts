@@ -9,13 +9,15 @@ import {
   readFileSync,
   readlinkSync,
   readdirSync,
+  realpathSync,
   renameSync,
   rmSync,
   symlinkSync,
   writeFileSync,
 } from "node:fs";
-import { basename, join, relative, resolve } from "node:path";
+import { basename, join, relative, resolve, sep } from "node:path";
 import { randomUUID } from "node:crypto";
+import { resolveSkillRoots } from "../lib/skill-paths.js";
 
 export type DefinitionSourceRelease = Readonly<{
   id: string;
@@ -64,6 +66,13 @@ function appDirectoryNames(projectsRoot: string): string[] {
     .filter((entry) => entry.isDirectory() && entry.name.endsWith(".app"))
     .map((entry) => entry.name)
     .sort();
+}
+
+function agentSkillRoots(agentsRoot: string): string[] {
+  if (!existsSync(agentsRoot)) return [];
+  return readdirSync(agentsRoot, { withFileTypes: true })
+    .filter((entry) => entry.isDirectory())
+    .map((entry) => join(agentsRoot, entry.name, "skills"));
 }
 
 function validateRelease(root: string): DefinitionSourceRelease {
@@ -151,13 +160,23 @@ function assertCommittedDefinitionSource(projectRoot: string, commit: string, re
     throw new Error(`App source has uncommitted tracked changes; commit them before reload:\n${status}`);
   }
 
+  // Manuals and their supporting files are definition source regardless of
+  // extension. Use the same directory configuration as skill discovery.
+  const diagnostics: string[] = [];
+  const skillRoots = [
+    join(projectRoot, "shared", "skills"),
+    ...agentSkillRoots(join(projectRoot, "agents")),
+    ...trackedNames.flatMap((name) => agentSkillRoots(join(projectRoot, "projects", name, "agents"))),
+  ].flatMap((root) => resolveSkillRoots(root, diagnostics));
+  if (diagnostics.length) throw new Error(`Invalid skill discovery paths before reload:\n${diagnostics.join("\n")}`);
+  const canonicalProjectRoot = realpathSync(projectRoot);
+
   const untracked = execFileSync(
     "git",
-    ["-C", projectRoot, "ls-files", "--others", "--exclude-standard", "--", ...paths],
+    ["-C", projectRoot, "ls-files", "-z", "--others", "--exclude-standard", "--", ...paths],
     { encoding: "utf8" },
   )
-    .split("\n")
-    .map((path) => path.trim())
+    .split("\0")
     .filter(Boolean)
     .filter((path) => {
       if (isNonSourcePath(path)) return false;
@@ -165,7 +184,8 @@ function assertCommittedDefinitionSource(projectRoot: string, commit: string, re
         path.startsWith("agents/") ||
         path.startsWith("shared/skills/") ||
         path.startsWith("shared/tools/") ||
-        path === "shared/common-sense.md"
+        path === "shared/common-sense.md" ||
+        skillRoots.some((root) => resolve(canonicalProjectRoot, path).startsWith(`${root}${sep}`))
       ) {
         return true;
       }
