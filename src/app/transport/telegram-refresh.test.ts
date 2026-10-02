@@ -619,6 +619,50 @@ describe("Telegram refresh lifecycle", () => {
     }
   });
 
+  it("keeps a failed watched action eligible after unwatch", async () => {
+    const f = fixture();
+    const action = "Watch failure must not mark this action presented.";
+    try {
+      await f.command("/watch first");
+      f.sendFailures.add(action);
+      f.tasks.get("first")!.humanAction = { requestedAction: action };
+      f.wake("first");
+      await waitFor(() => f.errors.some((text) => text.includes("Send failed: fixture send unavailable")));
+      await f.command("/unwatch");
+      const failedAttempts = f.sent.filter((send) => send.chat_id === "123" && send.text.includes(action)).length;
+      f.sendFailures.clear();
+      f.wake("first");
+      await waitFor(
+        () => f.sent.filter((send) => send.chat_id === "123" && send.text.includes(action)).length > failedAttempts,
+      );
+    } finally {
+      await f.close();
+    }
+  });
+
+  it("remembers the explicit todo snapshot displayed while a newer action remains eligible", async () => {
+    const f = fixture();
+    try {
+      await f.command("/apps may");
+      const task = f.tasks.get("first")!;
+      task.humanAction = { requestedAction: "First request displayed in todo." };
+      const held = f.hold(
+        (send) => send.chat_id === "123" && send.text.includes("First request displayed in todo."),
+      );
+      const command = f.command("/todo");
+      await waitFor(() => held.started);
+      task.humanAction = { requestedAction: "New action created during delivery." };
+      held.release();
+      await command;
+      f.wake("first");
+      await waitFor(() =>
+        f.sent.some((send) => send.chat_id === "123" && send.text.includes("New action created during delivery.")),
+      );
+    } finally {
+      await f.close();
+    }
+  });
+
   it("refreshes watch only for presented meaning, dependencies, or reply authority", async () => {
     const f = fixture();
     try {

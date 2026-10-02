@@ -1059,9 +1059,8 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
       return { task, detail, signature: todoActionSignature(detail) };
     });
     const prior = shownTodoActions.get(surface) ?? new Map<string, string>();
-    const next = new Map(
-      actions.map(({ task, signature }) => [todoTaskKey(task), presentedTodoActionRevision(signature)]),
-    );
+    const currentKeys = new Set(actions.map(({ task }) => todoTaskKey(task)));
+    const next = new Map([...prior].filter(([key]) => currentKeys.has(key)));
     const watched = watchedTasks.get(surface);
     const changed = actions.filter(({ task, detail, signature }) => {
       if (watched?.appId === task.appId && watched.taskId === task.taskId) return false;
@@ -1076,6 +1075,9 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
     if (changed.length === 0) {
       shownTodoActions.set(surface, next);
       return;
+    }
+    for (const { task, signature } of changed) {
+      next.set(todoTaskKey(task), presentedTodoActionRevision(signature));
     }
     const first = changed[0]!;
     const single = page.total === 1 && changed.length === 1;
@@ -1691,24 +1693,24 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
       } else {
         nextTodoPageBySurface.delete(surface);
       }
+      // Capture the rendered page's exact snapshots before delivery. A Task may
+      // change while Telegram is sending; the later revision was not presented.
+      const displayedTodoActions = new Map(
+        page.items.map((task) => {
+          const owner = task.humanAction?.task ?? {
+            appId: task.appId,
+            taskId: task.taskId,
+          };
+          const detail = opts.humanTasks.getTask?.(owner) ?? task;
+          return [todoTaskKey(task), presentedTodoActionRevision(todoActionSignature(detail))];
+        }),
+      );
       deliverCommandView(
         renderTelegramTodos(page.items, page.total ?? page.items.length, appId, Boolean(page.nextCursor)),
         page.items.map((task) => ({ appId: task.appId, taskId: task.taskId })),
         () => {
           if (!more && appId === (selectedApps.get(surface) ?? opts.interfaceAgent)) {
-            shownTodoActions.set(
-              surface,
-              new Map(
-                page.items.map((task) => {
-                  const owner = task.humanAction?.task ?? {
-                    appId: task.appId,
-                    taskId: task.taskId,
-                  };
-                  const detail = opts.humanTasks.getTask?.(owner) ?? task;
-                  return [todoTaskKey(task), presentedTodoActionRevision(todoActionSignature(detail))];
-                }),
-              ),
-            );
+            shownTodoActions.set(surface, displayedTodoActions);
           }
         },
         undefined,
