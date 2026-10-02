@@ -1,7 +1,8 @@
 import { afterEach, beforeEach, expect, test } from "bun:test";
-import { mkdtempSync, rmSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { createServer } from "node:net";
 import { openDatabase, type SqliteDb } from "../may-agent/src/lib/db.js";
 import { applyDbSchema } from "../may-agent/src/lib/db/schema.js";
 import { closeDb, getDb } from "../may-agent/src/lib/db/connection.js";
@@ -18,8 +19,14 @@ import {
   EVALUATION_OPERATION_METRIC,
   reliabilityMetrics,
   REVIEW_LAG_METRIC,
+  SQL_LATENCY_METRIC,
   SQL_TIME_METRIC,
 } from "./reliability-metrics.js";
+import {
+  SQL_DIAGNOSTIC_MAX_AGE_MS,
+  SQL_DIAGNOSTIC_NOTE_MAX_CHARS,
+  sqlLatencySample,
+} from "./scripts/daemon-sql-latency.js";
 import app, { evaluationOperationAlertInput } from "./app.js";
 
 let db: SqliteDb;
@@ -86,6 +93,456 @@ test("SQL cost uses recent counter deltas, separates restarts and keeps absent o
   ).toBe(true);
 });
 
+test("recent SQL call latency retains a slow call under low aggregate load with bounded masked evidence", () => {
+  const now = Date.now();
+  sqlHeartbeat(db, now - 120_000, 22, now - 300_000, 1_000);
+  sqlHeartbeat(db, now - 60_000, 22, now - 300_000, 1_100);
+  expect(sample(SQL_TIME_METRIC).value).toBeCloseTo((100 / 60_000) * 100);
+
+  const slow = {
+    id: "all:6ea5fa410384c38f",
+    operation: "all",
+    sql: "SELECT * FROM report_links WHERE task_id = ? AND secret = ?",
+    calls: 1,
+    totalMs: 13_127.34,
+    averageMs: 13_127.34,
+    maxMs: 13_127.34,
+  };
+  const status = {
+    type: "status",
+    command: "status",
+    diagnostics: {
+      pid: 22,
+      sql: {
+        since: now - 300_000,
+        measuredAt: now,
+        maxMs: 99_999, // process-lifetime maximum is deliberately ignored
+        queryLimit: 512,
+        untracked: { calls: 0 },
+        queries: {
+          since: now - 300_000,
+          until: now,
+          trackedQueries: 2,
+          topByTotalTime: [slow],
+          topByWorstTime: [slow],
+        },
+      },
+    },
+  };
+  const observed = sqlLatencySample(status, now);
+  expect(observed).toMatchObject({
+    value: 13_127.34,
+    sampleSize: 1,
+    measuredAt: now,
+  });
+  expect(observed.note.length).toBeLessThanOrEqual(
+    SQL_DIAGNOSTIC_NOTE_MAX_CHARS,
+  );
+  expect(JSON.parse(observed.note)).toMatchObject({
+    pid: 22,
+    sqlSince: now - 300_000,
+    coverage: {
+      lifetimeUntrackedCalls: 0,
+      selectedRowsTruncated: false,
+      shapeTextTruncated: false,
+    },
+    queries: [
+      {
+        fingerprint: "all:6ea5fa410384c38f",
+        operation: "all",
+        shape: slow.sql,
+        count: 1,
+        totalMs: 13_127.34,
+        averageMs: 13_127.34,
+        worstMs: 13_127.34,
+        window: { since: now - 300_000, until: now },
+      },
+    ],
+  });
+});
+
+test("recent SQL call latency rejects missing or expired rankings and bounds ranked evidence", () => {
+  const now = Date.now();
+  expect(() => sqlLatencySample({ diagnostics: {} }, now)).toThrow(
+    "identity is unavailable",
+  );
+  const row = (index: number) => ({
+    id: `all:${String(index).padStart(16, "0")}`,
+    operation: "all",
+    sql: `SELECT ${"masked_shape ".repeat(80)}?`,
+    calls: index + 1,
+    totalMs: 20_000 - index,
+    averageMs: 100,
+    maxMs: 2_000 - index,
+  });
+  const status = {
+    diagnostics: {
+      pid: 9,
+      sql: {
+        since: now - 600_000,
+        measuredAt: now,
+        queryLimit: 512,
+        untracked: { calls: 7 },
+        queries: {
+          since: now - 300_000,
+          until: now,
+          trackedQueries: 10,
+          topByTotalTime: Array.from({ length: 10 }, (_, index) => row(index)),
+          topByWorstTime: Array.from({ length: 10 }, (_, index) => row(index)),
+        },
+      },
+    },
+  };
+  const observed = sqlLatencySample(status, now);
+  const note = JSON.parse(observed.note);
+  expect(observed.note.length).toBeLessThanOrEqual(
+    SQL_DIAGNOSTIC_NOTE_MAX_CHARS,
+  );
+  expect(note.coverage).toMatchObject({
+    lifetimeUntrackedCalls: 7,
+    rankedUniqueQueries: 10,
+    retainedQueries: 6,
+    selectedRowsTruncated: true,
+    shapeTextTruncated: true,
+    windows: [{ trackedQueries: 10, rankedCoverageTruncated: false }],
+  });
+  expect(note.queries).toHaveLength(6);
+  expect(() =>
+    sqlLatencySample(
+      {
+        ...status,
+        diagnostics: {
+          ...status.diagnostics,
+          sql: {
+            ...status.diagnostics.sql,
+            measuredAt: now - SQL_DIAGNOSTIC_MAX_AGE_MS - 1,
+          },
+        },
+      },
+      now,
+    ),
+  ).toThrow("stale");
+});
+
+test("SQL latency evidence preserves the worst-call witness across windows and note trimming", () => {
+  const now = Date.now();
+  const fast = Array.from({ length: 8 }, (_, index) => ({
+    id: `fast:${index}`,
+    operation: "all",
+    sql: `SELECT ${"wide_shape ".repeat(80)}?`,
+    calls: 1_000,
+    totalMs: 100_000 - index,
+    averageMs: 10,
+    maxMs: 10,
+  }));
+  const slow = { id: "slow:witness", operation: "get", sql: "SELECT slow ?", calls: 1, totalMs: 2_001, averageMs: 2_001, maxMs: 2_001 };
+  const observed = sqlLatencySample({ diagnostics: { pid: 7, sql: {
+    since: now - 600_000, measuredAt: now, queryLimit: 8, untracked: { calls: 3 },
+    queries: { since: now - 300_000, until: now, trackedQueries: 20, topByTotalTime: fast, topByWorstTime: fast },
+    previousQueries: { since: now - 600_000, until: now - 300_000, trackedQueries: 1, topByTotalTime: [slow], topByWorstTime: [slow] },
+  } } }, now);
+  const note = JSON.parse(observed.note);
+  expect(observed.value).toBe(2_001);
+  expect(observed.note.length).toBeLessThanOrEqual(SQL_DIAGNOSTIC_NOTE_MAX_CHARS);
+  expect(note.queries[0].fingerprint).toBe("slow:witness");
+  expect(note.queries.slice(1).every((row: any) => row.fingerprint.startsWith("fast:"))).toBe(true);
+  expect(note.coverage).toMatchObject({
+    lifetimeUntrackedCalls: 3,
+    selectedRowsTruncated: true,
+    shapeTextTruncated: true,
+    windows: [
+      { name: "current", trackedQueries: 20, rankedCoverageTruncated: true },
+      { name: "previous", trackedQueries: 1, rankedCoverageTruncated: false },
+    ],
+  });
+});
+
+test("SQL latency rejects coercible and non-finite identity or timing fields", () => {
+  const now = Date.now();
+  const valid = { diagnostics: { pid: 7, sql: { since: now - 1, measuredAt: now,
+    queries: { since: now - 1, until: now, trackedQueries: 1, topByTotalTime: [{ id: "x", operation: "get", sql: "SELECT ?", calls: 1, totalMs: 1, averageMs: 1, maxMs: 1 }], topByWorstTime: [] },
+  } } };
+  for (const bad of [null, true, "", Infinity]) {
+    const identity = structuredClone(valid) as any;
+    identity.diagnostics.pid = bad;
+    expect(() => sqlLatencySample(identity, now)).toThrow();
+    const timing = structuredClone(valid) as any;
+    timing.diagnostics.sql.queries.topByTotalTime[0].maxMs = bad;
+    expect(() => sqlLatencySample(timing, now)).toThrow("malformed");
+  }
+  const emptyIdentity = structuredClone(valid) as any;
+  emptyIdentity.diagnostics.sql.queries.topByTotalTime[0].id = "";
+  expect(() => sqlLatencySample(emptyIdentity, now)).toThrow("malformed");
+});
+
+test("SQL latency rejects malformed present window bounds instead of hiding a slow window", () => {
+  const now = Date.now();
+  const ranked = (id: string, maxMs: number) => ({
+    id,
+    operation: "get",
+    sql: "SELECT ?",
+    calls: 1,
+    totalMs: maxMs,
+    averageMs: maxMs,
+    maxMs,
+  });
+  const valid = {
+    diagnostics: {
+      pid: 7,
+      sql: {
+        since: now - 600_000,
+        measuredAt: now,
+        queries: {
+          since: now - 300_000,
+          until: now,
+          trackedQueries: 1,
+          topByTotalTime: [ranked("slow", 5_000)],
+          topByWorstTime: [],
+        },
+        previousQueries: {
+          since: now - 600_000,
+          until: now - 300_000,
+          trackedQueries: 1,
+          topByTotalTime: [ranked("healthy", 10)],
+          topByWorstTime: [],
+        },
+      },
+    },
+  };
+
+  const nullBounds = structuredClone(valid) as any;
+  nullBounds.diagnostics.sql.queries.since = null;
+  nullBounds.diagnostics.sql.queries.until = null;
+  expect(() => sqlLatencySample(nullBounds, now)).toThrow(
+    "current window bounds are malformed",
+  );
+
+  for (const [window, name] of [
+    ["queries", "current"],
+    ["previousQueries", "previous"],
+  ] as const) {
+    for (const field of ["since", "until"] as const) {
+      for (const malformed of [NaN, Infinity, -1, "0"]) {
+        const status = structuredClone(valid) as any;
+        status.diagnostics.sql[window][field] = malformed;
+        expect(() => sqlLatencySample(status, now)).toThrow(
+          `${name} window bounds are malformed`,
+        );
+      }
+    }
+  }
+});
+
+test("SQL latency shape truncation flag distinguishes the 300-character boundary", () => {
+  const now = Date.now();
+  const status = (shape: string) => ({
+    diagnostics: {
+      pid: 7,
+      sql: {
+        since: now - 1,
+        measuredAt: now,
+        queries: {
+          since: now - 1,
+          until: now,
+          trackedQueries: 1,
+          topByTotalTime: [
+            {
+              id: "shape",
+              operation: "get",
+              sql: shape,
+              calls: 1,
+              totalMs: 1,
+              averageMs: 1,
+              maxMs: 1,
+            },
+          ],
+          topByWorstTime: [],
+        },
+      },
+    },
+  });
+
+  const exact = JSON.parse(sqlLatencySample(status("x".repeat(300)), now).note);
+  expect(exact.coverage.shapeTextTruncated).toBe(false);
+  expect(exact.queries[0].shape).toHaveLength(300);
+
+  const over = JSON.parse(sqlLatencySample(status("x".repeat(301)), now).note);
+  expect(over.coverage.shapeTextTruncated).toBe(true);
+  expect(over.queries[0].shape).toHaveLength(300);
+});
+
+test("SQL latency source command is pinned to the loaded App release rather than collector cwd", () => {
+  const metric = reliabilityMetrics.find(
+    (item) => item.id === SQL_LATENCY_METRIC,
+  )!;
+  expect(metric).toMatchObject({
+    measureInterval: 300_000,
+    threshold: 1_000,
+    alertOp: ">",
+    unit: "milliseconds",
+  });
+  const command = metric.sourceCommand!;
+  expect(command.startsWith("bun ")).toBe(true);
+  const script = JSON.parse(command.slice(4));
+  expect(script).toBe(join(import.meta.dir, "scripts/daemon-sql-latency.ts"));
+  expect(existsSync(script)).toBe(true);
+});
+
+test("SQL latency producer command resolves the configured default daemon socket", async () => {
+  const root = mkdtempSync(join(tmpdir(), "may-sql-latency-default-socket-"));
+  const socketPath = join(root, "instances", "background", "may.sock");
+  mkdirSync(join(root, "instances", "background"), { recursive: true });
+  const now = Date.now();
+  const server = createServer((socket) => {
+    socket.setEncoding("utf8");
+    socket.on("data", () => {
+      socket.end(
+        `${JSON.stringify({
+          type: "status",
+          command: "status",
+          diagnostics: {
+            pid: 42,
+            sql: {
+              since: now - 300_000,
+              measuredAt: now,
+              queries: {
+                since: now - 300_000,
+                until: now,
+                trackedQueries: 1,
+                topByTotalTime: [
+                  {
+                    id: "get:defaultsocket",
+                    operation: "get",
+                    sql: "SELECT value FROM configured_socket WHERE id = ?",
+                    calls: 1,
+                    totalMs: 1_250,
+                    averageMs: 1_250,
+                    maxMs: 1_250,
+                  },
+                ],
+                topByWorstTime: [],
+              },
+            },
+          },
+        })}\n`,
+      );
+    });
+  });
+  try {
+    await new Promise<void>((resolve) => server.listen(socketPath, resolve));
+    const metric = reliabilityMetrics.find(
+      (item) => item.id === SQL_LATENCY_METRIC,
+    )!;
+    const env = { ...process.env, MAY_PERSIST_DIR: root };
+    delete env.MAY_CONTROL_SOCKET;
+    delete env.MAY_INSTANCE;
+    delete env.MAY_INTERFACE_AGENT;
+    const producer = Bun.spawn(["/bin/sh", "-lc", metric.sourceCommand!], {
+      env,
+      stdout: "pipe",
+      stderr: "pipe",
+    });
+    const [stdout, stderr, exitCode] = await Promise.all([
+      new Response(producer.stdout).text(),
+      new Response(producer.stderr).text(),
+      producer.exited,
+    ]);
+    expect(exitCode, stderr).toBe(0);
+    expect(JSON.parse(stdout)).toMatchObject({
+      value: 1_250,
+      sampleSize: 1,
+      measuredAt: now,
+    });
+  } finally {
+    await new Promise<void>((resolve) => server.close(() => resolve()));
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("Host source collection retains diagnostic evidence and opens one metric breach episode", async () => {
+  const root = mkdtempSync(join(tmpdir(), "may-sql-latency-source-"));
+  const socketPath = join(root, "diagnostics.sock");
+  const previousSocket = process.env.MAY_CONTROL_SOCKET;
+  const now = Date.now();
+  const server = createServer((socket) => {
+    socket.setEncoding("utf8");
+    socket.on("data", () => {
+      socket.end(
+        `${JSON.stringify({
+          type: "status",
+          command: "status",
+          diagnostics: {
+            pid: 41,
+            sql: {
+              since: now - 300_000,
+              measuredAt: now,
+              queryLimit: 512,
+              untracked: { calls: 0 },
+              queries: {
+                since: now - 300_000,
+                until: now,
+                trackedQueries: 1,
+                topByTotalTime: [
+                  {
+                    id: "get:slowfingerprint",
+                    operation: "get",
+                    sql: "SELECT value FROM retained WHERE id = ?",
+                    calls: 1,
+                    totalMs: 1_500,
+                    averageMs: 1_500,
+                    maxMs: 1_500,
+                  },
+                ],
+                topByWorstTime: [],
+              },
+            },
+          },
+        })}\n`,
+      );
+    });
+  });
+  try {
+    await new Promise<void>((resolve) => server.listen(socketPath, resolve));
+    process.env.MAY_CONTROL_SOCKET = socketPath;
+    const store = getDb(root);
+    const reporting = createAppReporting(() => store);
+    reporting.syncDefinitions([{ definition: app }]);
+    const bus = new EventBus();
+    const breaches: any[] = [];
+    bus.subscribe((event) => {
+      if (event.type === "metric.breach") breaches.push(event);
+    });
+    const result = await measureSourceMetrics({
+      bus,
+      persistDir: root,
+      isDue: (metric) => metric.id === SQL_LATENCY_METRIC,
+    });
+    expect(result).toEqual({
+      measured: [SQL_LATENCY_METRIC],
+      skipped: [],
+      failures: [],
+    });
+    const retained = await reporting.readMetric(SQL_LATENCY_METRIC);
+    expect(retained).toMatchObject({ value: 1_500, sampleSize: 1 });
+    expect(JSON.parse(retained!.note!)).toMatchObject({
+      pid: 41,
+      queries: [{ fingerprint: "get:slowfingerprint", worstMs: 1_500 }],
+    });
+    expect(breaches).toHaveLength(1);
+    expect(breaches[0].data).toMatchObject({
+      metricId: SQL_LATENCY_METRIC,
+      current: 1_500,
+      alertId: expect.any(Number),
+    });
+  } finally {
+    if (previousSocket === undefined) delete process.env.MAY_CONTROL_SOCKET;
+    else process.env.MAY_CONTROL_SOCKET = previousSocket;
+    await new Promise<void>((resolve) => server.close(() => resolve()));
+    closeDb(root);
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
 test("May schedules one normal collection opportunity every five minutes without a Task input", () => {
   let now = 0;
   const bus = new EventBus();
@@ -117,7 +574,9 @@ test("May schedules one normal collection opportunity every five minutes without
 
 test("declared reliability metrics collect through the Host and retain a real breach and recovery", async () => {
   const root = mkdtempSync(join(tmpdir(), "may-reliability-collection-"));
+  const previousSocket = process.env.MAY_CONTROL_SOCKET;
   try {
+    process.env.MAY_CONTROL_SOCKET = join(root, "missing.sock");
     const store = getDb(root);
     const reporting = createAppReporting(() => store);
     reporting.syncDefinitions([{ definition: app }]);
@@ -141,10 +600,17 @@ test("declared reliability metrics collect through the Host and retain a real br
     );
     const bus = new EventBus();
     const collected = await measureSourceMetrics({ bus, persistDir: root });
-    expect(collected.failures).toEqual([]);
-    expect(collected.skipped).toEqual([]);
+    // This isolated collector has no daemon diagnostic socket. The new metric
+    // must fail visibly rather than recording a healthy zero.
+    expect(collected.failures).toEqual([
+      { id: SQL_LATENCY_METRIC, reason: expect.stringContaining("ENOENT") },
+    ]);
+    expect(collected.skipped).toEqual([SQL_LATENCY_METRIC]);
     expect(collected.measured.sort()).toEqual(
-      reliabilityMetrics.map((metric) => metric.id).sort(),
+      reliabilityMetrics
+        .filter((metric) => metric.id !== SQL_LATENCY_METRIC)
+        .map((metric) => metric.id)
+        .sort(),
     );
     expect(
       await reporting.readMetric("may.unresolved-input-recovery-count"),
@@ -161,7 +627,9 @@ test("declared reliability metrics collect through the Host and retain a real br
     resolveAppInboxRecovery(store, "unadmitted", "input-admission", Date.now());
     expect(
       (await measureSourceMetrics({ bus, persistDir: root })).failures,
-    ).toEqual([]);
+    ).toEqual([
+      { id: SQL_LATENCY_METRIC, reason: expect.stringContaining("ENOENT") },
+    ]);
     expect(
       await reporting.readMetric("may.unresolved-input-recovery-count"),
     ).toMatchObject({ value: 0, sampleSize: 0 });
@@ -171,6 +639,8 @@ test("declared reliability metrics collect through the Host and retain a real br
         .get(alertId),
     ).toMatchObject({ resolved_at: expect.any(Number) });
   } finally {
+    if (previousSocket === undefined) delete process.env.MAY_CONTROL_SOCKET;
+    else process.env.MAY_CONTROL_SOCKET = previousSocket;
     closeDb(root);
     rmSync(root, { recursive: true, force: true });
   }

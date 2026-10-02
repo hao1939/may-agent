@@ -416,10 +416,18 @@ The SQL report lives under `.state/evaluation/reports/metric-observations/` with
 metric evidence hash
 `40ba55ff0c721fbdc8555e514c35ca68d2c3908a2507a5ec64533288298c6590`.
 
-Follow-up guidance, not implemented by the query repair: preserve bounded recent
-query evidence through existing diagnostic/metric surfaces; expose overdue review
-coverage and reassess fair use of the existing allowance after the approved
-retirement is complete; have May verify repairs against fresh live measurements.
+The October 3 Apps candidate implements the first follow-up separately from the
+query repair: `may.daemon-sql-recent-worst-call-ms` invokes the existing diagnostic
+status read from the pinned App release, retains at most six masked current/previous
+window shapes in a <=4,000-character metric note, and treats missing or expired
+rankings as collection failure. Its initial May policy is a five-minute collection
+cadence and a 1,000 ms breach threshold; process-lifetime maxima are excluded.
+This is source and portable-test evidence until the reviewed App generation is
+activated and a live sample follows the ordinary Evaluation/May path.
+
+Remaining follow-up guidance: expose overdue review coverage and reassess fair use
+of the existing allowance after the approved retirement is complete; have May
+verify repairs against fresh live measurements.
 Reuse the existing retirement Task and approval rather than making another
 decision packet by default. Host owns truthful measurement and access, Evaluation owns selection and
 assessment, and May owns intervention. No second monitor, queue or per-query event
