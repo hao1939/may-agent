@@ -551,8 +551,9 @@ Task and input-level explicit review decisions, and canonical Task/Condition
 state remain intact. This repairs derived indexes without a manual state
 migration or invented input. Human waits remain visible between checks.
 
-**Source availability:** implemented in Host/SDK
-[`47aadcfed`](https://github.com/hao1939/may-agent/commit/47aadcfed8254ced9b7e9d46f720c983385c6876).
+**Source availability:** merged in Host/SDK
+[PR #293](https://github.com/hao1939/may-agent/pull/293), commit
+[`b595f65a9`](https://github.com/hao1939/may-agent/commit/b595f65a98134dd677241a60b8769839a2206538).
 Earlier Hosts invoke agents for Condition
 checkpoints and require `reviewAfterMs` on new explicit Conditions. Integrate and
 activate the Host before App producers rely on omitted intervals. This contract
