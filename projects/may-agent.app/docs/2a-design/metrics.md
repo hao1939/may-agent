@@ -123,7 +123,11 @@ Stable deterministic sources may be declared directly on `defineApp` through
 current and measures `sourceQuery` or `sourceCommand` on the shared Host
 snapshot event. This path creates no Task and calls no agent. A query may return
 `value` plus optional `sampleSize`, `measuredAt`, and `note` columns so the
-sample retains its evidence.
+sample retains its evidence. Runtime executes source queries through a separate
+read-only SQLite connection; the writable metrics connection remains available
+to record samples, alerts, and measurement failures. SQLite preparation executes
+the first statement and ignores any SQL tail, so this is capability enforcement
+for the executed statement, not a parser-based single-statement guarantee.
 
 A command may also return
 `{"samples":{"example.count":{"value":7,"sampleSize":10}}}`. Metrics using
