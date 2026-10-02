@@ -129,9 +129,10 @@ The separate read-only SQLite connection described next is the intended source
 contract and is implemented by Host PR #286; it is still a candidate until that
 exact source is merged and deployed. The currently installed collector must not
 be assumed to enforce this boundary from this document alone. Under the
-candidate, Runtime executes source queries through a separate read-only SQLite
-connection; the writable metrics connection remains available to record
-samples, alerts, and measurement failures. SQLite preparation executes the first
+candidate, Runtime opens a separate read-only SQLite connection for each source
+query and closes it before using the writable metrics connection to record
+samples, alerts, or measurement failures. A failed query cannot leave connection
+state that affects the next metric. SQLite preparation executes the first
 statement and ignores any SQL tail, so this is capability enforcement for the
 executed statement, not a parser-based single-statement guarantee.
 
