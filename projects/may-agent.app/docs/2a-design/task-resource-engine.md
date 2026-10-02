@@ -372,22 +372,20 @@ The Host maintains `inputWaits[key].pending`, waits/deadlines and continuation; 
 `incomplete` requires a summary and non-empty facts; it cannot include actions, Conditions
 or child App requests. The Host checks eligibility inside the fenced transaction.
 It ends only the attempt, without fulfilling the input or a linked Request.
-The same Task remains pending. For each exact input, accepted settlement selects
-an incomplete report when no earlier report was selected for that input or the
-result says `report: true`; selection advances its stored `reportRevision`. An
-ordinary later incomplete settlement otherwise leaves the selection unchanged.
-This existing selection checkpoint prevents every retry from becoming a new
-report. Current report delivery returns the selected revision through the exact
-caller link and is separate from answering or fulfilling the input. Failed
-delivery retries that same selected revision rather than rolling it back or
-selecting another report. The staged change advances considered notifications
-after delivery while preserving `inputWaits`, so an old bounded notification
-backlog cannot invalidate the accepted settlement or consume unanswered work.
-Neither selection, delivery nor notification advancement acknowledges the input,
-proves that a person saw the report, or changes retry eligibility. The staged
-change remains source-only until its exact revision is integrated, deployed and
-read back. Turn Stop and owner closure are different controls: closure fences
-future work; work after closure needs a new linked identity.
+The same Task remains pending. During settlement the Host selects a caller report
+if that input has no earlier selected report or the result says `report: true`.
+The stored `reportRevision` identifies that selection for delivery and deduplication.
+Report selection and caller delivery are existing bookkeeping; neither fulfills
+the input or proves a person saw the report.
+
+**Candidate correction:** Accepted incomplete settlement advances the notifications
+that the attempt considered and retains unanswered requirements in `inputWaits`.
+This advancement occurs at settlement, independently of caller delivery. Automatic
+and explicit owner retries preserve it; execution failures without an accepted
+report restore their unconsidered batch. Generation and action fences still apply.
+Source tests do not establish live adoption. Turn Stop and owner closure remain
+separate controls: closure fences future work; work after closure needs a new
+linked identity.
 
 Creating follow-up work does not complete the current task. Required
 decomposition uses typed dependencies and returns `waiting`; independent later
@@ -632,7 +630,6 @@ The reply satisfies or updates exact evidence for the next attempt; it does not
 itself prove the Task outcome.
 
 ## Phases and historical mode data
-
 Phases are:
 
 - `pending`: desired state needs another attempt;
