@@ -82,11 +82,12 @@ Conversation cannot retain Conditions. The caller supplies its current Topic,
 Request updates and optional exact May Task to the helper along with the review.
 The helper returns an ordinary Conversation `followUp`, carrying that review in
 `goal.data.context.metricResponse`. No disposition is claimed by Conversation.
-A new goal selects the `metric-follow-through` workflow. Its first attempt saves
-the selected decision mechanically. A fresh single handoff to an existing metric
-workflow does the same; mixed input and later results, status changes or due
-checkpoints ask May to judge the full current assignment. Original input and continued obligations
-are context, not instructions to replay the first decision.
+A new goal selects the `metric-follow-through` workflow. Every attempt asks May
+to judge the full current assignment; the selected handoff and original input are
+context, not instructions to replay an earlier decision. This adds one owner call
+on the initial handoff, but prevents blind retries of an unchanged saved plan and
+lets accepted-incomplete results, corrected waits, and later admitted input affect
+the next judgment.
 
 Several episodes can join the same investigation after scope judgment. Exact
 missing or closed targets stay unresolved under existing admission rules; late
@@ -178,7 +179,6 @@ first; May's assigned Task is preparing a correction. Acceptance must include tw
 different metric signals plus a scheduled wake during active review, retained
 deadlines and shared allowance, incomplete reads, and reuse of accepted owner work.
 This is an App selection repair, not a new Host registry or work lifecycle.
-
 
 ## Validation and limits
 
