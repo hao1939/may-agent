@@ -3740,45 +3740,6 @@ export function applyRunningTaskChanges(
   return receipt;
 }
 
-/** Reconstruct a capability claim from Host-owned current execution, never model-supplied context. */
-export function readCurrentTaskClaim(
-  config: AppTaskContext,
-  binding: {
-    taskId: string;
-    generation: number;
-    attemptId: string;
-  },
-): AppTaskClaim {
-  const resource = config.resourceStore.readTask(binding.taskId);
-  const attempt = config.resourceStore.readAttempt(binding.attemptId);
-  if (
-    !resource ||
-    !attempt ||
-    resource.metadata.generation !== binding.generation ||
-    resource.status.currentAttemptId !== binding.attemptId ||
-    attempt.state !== "running" ||
-    attempt.taskId !== binding.taskId ||
-    attempt.taskGeneration !== binding.generation ||
-    config.resourceStore.isCancelled(binding.taskId)
-  )
-    throw new Error("Task attempt is no longer current");
-  return {
-    kind: "claimed",
-    taskId: binding.taskId,
-    generation: binding.generation,
-    resourceVersion: resource.metadata.resourceVersion,
-    specHash: attempt.specHash,
-    attemptId: binding.attemptId,
-    agent: attempt.owner,
-    handler: attempt.handler,
-    intent: readAppTaskIntent(config, binding.taskId)!,
-    events: attempt.events ?? [],
-    eventsTruncated: attempt.eventsTruncated ?? false,
-    continuedInputKeys: attempt.continuedInputKeys,
-    declaredOutputPaths: resource.spec.outputs ?? [],
-  };
-}
-
 // Retain the bounded output, not its proposed effects or terminal judgment.
 // The next attempt receives this result alongside the still-pending input.
 // Existing waits remain attached: newer input does not undo those facts.

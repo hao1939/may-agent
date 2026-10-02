@@ -4,8 +4,6 @@ import {
   type AppTaskAttachment,
   type TaskIntent as AppTaskIntent,
   type TaskRevision,
-  type TaskChanges,
-  type TaskChangeReceipt,
 } from "@may-agent/sdk";
 import { reviseAppTask, type TaskRevisionActor } from "./task-revision.js";
 import type {
@@ -54,7 +52,6 @@ import {
   reopenAppTask,
   observeAppTaskIntent,
   readAppTaskAdmissionOutcome,
-  readCurrentTaskClaim,
   recordAppTaskTrigger,
   recoverableAppTaskAttempts,
   releaseInterruptedAppTaskAttempt,
@@ -70,7 +67,6 @@ import { type AppTaskContext } from "./app-task-store.js";
 import { hasLiveAppTaskSession, interruptSupersededAgentSession } from "./attempt-execution.js";
 import { publishTaskCancellation, runTaskAttempt, type AppTaskTiming } from "./attempt-runner.js";
 import { AppTaskController, type AppTaskDispatch } from "./controller.js";
-import { applyTaskChanges } from "./task-changes.js";
 import { recoverTaskConditions } from "./dependency-admission.js";
 import type { TaskSessionRecovery } from "./execution.js";
 import type { AppTaskQueueOptions } from "./queue.js";
@@ -1039,19 +1035,6 @@ export function getLoadedAppTaskView(input: {
   const config = readableAppTaskContextById(input.bus, input.appId);
   if (!config) throw new Error(`App ${input.appId} has no loaded Task runtime`);
   return createRuntimeTaskRead({ taskStateConfig: config }).get(input.taskId, input.options);
-}
-
-/** Tool entrypoint: the Host supplies execution identity, the agent supplies only changes. */
-export function applyLoadedAppTaskChanges(input: {
-  bus: EventBus;
-  binding: { appId: string; taskId: string; generation: number; attemptId: string };
-  changes: TaskChanges;
-}): TaskChangeReceipt {
-  const opts = appRouterOptionsByBus.get(input.bus);
-  const descriptor = loadedAppTaskRuntimeDescriptor(input.bus, input.binding.appId);
-  if (!opts || !descriptor) throw new Error("Task changes require a loaded caller");
-  return applyTaskChanges({ opts, descriptor,
-    claim: readCurrentTaskClaim(appTaskConfig(descriptor), input.binding), changes: input.changes });
 }
 
 /** Common creator capability; App selection and delivery are ordinary runtime wiring. */

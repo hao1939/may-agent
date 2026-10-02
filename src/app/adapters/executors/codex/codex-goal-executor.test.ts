@@ -456,7 +456,7 @@ describe("codex-goal Task executor", () => {
     });
 
     await expect(executor(attempt())).resolves.toMatchObject({
-      state: "converged",
+      decision: "converged",
       response: answerResponse,
       facts: ["bounded-item-pagination", "codex-thread:thread-bounded-items"],
     });

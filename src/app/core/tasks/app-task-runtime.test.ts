@@ -3549,6 +3549,7 @@ describe("canonical App task runtime", () => {
                 generation: attempt.task.generation,
                 attemptId: attempt.attemptId,
               }),
+              applier: () => attempt.apply,
             });
             const receipt = await attempt.apply(changes);
             const replay = await tool.execute("apply-review", { action: "apply", changes });
@@ -6680,6 +6681,7 @@ describe("canonical App task runtime", () => {
                     generation: attempt.task.generation,
                     attemptId: attempt.attemptId,
                   }),
+                  applier: () => attempt.apply,
                 });
                 const receipt = await tool.execute("publish-clock", {
                   action: "publish",
@@ -6785,6 +6787,177 @@ describe("canonical App task runtime", () => {
       await recoverInstalledAppTasks(bus);
       await run();
       expect(calls).toBe(3);
+    },
+  );
+
+  it("admits acknowledged live input through apply while fencing unacknowledged input", async () => {
+    const f = fixture();
+    const bus = eventBus();
+    const persistDir = join(f.root, "state");
+    const writer = new DbWriter(persistDir);
+    bus.setPersistenceSubscriber(writer.handler);
+    bus.setDeliveryRecorder(writer.recordDelivery);
+    const taskId = "work/live-apply";
+    const request = { id: "review", appId: "sample", input: { kind: "review", data: { current: true } } };
+    const app = defineApp({
+      ...definition(),
+      task: () => ({ kind: "desired", intent: {
+        id: "work/reviewer", parentId: "operations", outcome: "Review the change",
+        acceptance: ["Return review"], executor: "worker",
+      } }),
+    });
+    let ready = () => {};
+    const listening = new Promise<void>((resolve) => { ready = resolve; });
+    let release = () => {};
+    let fail = (_error: unknown) => {};
+    const finished = new Promise<void>((resolve, reject) => { release = resolve; fail = reject; });
+    let rejected = "";
+    const { installed } = await installCoreTaskRuntimes({
+      ...options(f, bus),
+      installControllers: false,
+      executors: {
+        worker: async (attempt) => {
+          attempt.onEvent((_event, accept) => {
+            void (async () => {
+              const deadline = performance.now() + 2_000;
+              while (!loadedTaskConfig(f).resourceStore.readTrigger(taskId) && performance.now() < deadline)
+                await Bun.sleep(5);
+              try {
+                await attempt.apply({ requests: [request], conditions: [{ requestId: "review" }] });
+              } catch (error) {
+                rejected = (error as Error).message;
+              }
+              expect(listAppInboxItems(getDb(persistDir))).toHaveLength(0);
+              accept();
+              await attempt.apply({ requests: [request], conditions: [{ requestId: "review" }] });
+            })().then(release, fail);
+          });
+          ready();
+          await finished;
+          return { decision: "wait", summary: "Review remains outstanding", facts: [] };
+        },
+      },
+      appRegistrySnapshot: {
+        id: "live-apply", generation: 1,
+        entries: [{ appDir: f.appDir, definition: app }],
+      },
+    });
+    bus.subscribeDurableRoute((event) => {
+      if (event.type !== "review.feedback") return;
+      return admitStandaloneCanonicalAppTaskEvent({
+        descriptor: installed[0]!, event, intent: null, targetedTaskId: taskId,
+      }).delivery;
+    });
+    const config = loadedTaskConfig(f);
+    observeAppTaskIntent(config, {
+      appAgent: "sample-owner",
+      intent: { id: taskId, parentId: "operations", outcome: "Apply reviewed input", acceptance: ["Review retained"], executor: "worker" },
+    });
+    const run = reconcileLoadedAppTaskOnce({
+      bus, appId: "sample", taskId,
+      dispatch: { enqueuedAt: 1, startedAt: 2, readyWaitMs: 1, lane: "normal" },
+    });
+    await listening;
+    bus.emit({
+      type: "review.feedback", source: "human", owner: "agent:sample-owner",
+      target: { appId: "sample", taskId }, data: { verdict: "continue" },
+    } as AgentEvent);
+    await run;
+    expect(rejected).toContain("newer Task facts are pending");
+    expect(listAppInboxItems(getDb(persistDir))).toEqual([
+      expect.objectContaining({ appId: "sample", status: "pending", input: request.input }),
+    ]);
+    expect(config.resourceStore.readTask(taskId)?.status).toMatchObject({
+      phase: "waiting", conditionIds: [expect.stringContaining("app-request:")],
+    });
+  });
+
+  it.each(["executor", "tasks tool"] as const)(
+    "admits a request after self-publication through the %s surface",
+    async (surface) => {
+      const f = fixture();
+      const bus = eventBus();
+      const persistDir = join(f.root, "state");
+      const writer = new DbWriter(persistDir);
+      bus.setPersistenceSubscriber(writer.handler);
+      bus.setDeliveryRecorder(writer.recordDelivery);
+      const taskId = "work/publish-then-apply";
+      const request = { id: "review", appId: "sample", input: { kind: "review", data: { current: true } } };
+      const app = defineApp({
+        ...definition(),
+        task: () => ({ kind: "desired", intent: {
+          id: "work/reviewer", parentId: "operations", outcome: "Review the change",
+          acceptance: ["Return review"], executor: "worker",
+        } }),
+      });
+      let receipt: unknown;
+      await installCoreTaskRuntimes({
+        ...options(f, bus),
+        installControllers: false,
+        executors: {
+          worker: async (attempt) => {
+            const tool = createAppTaskReadTool({
+              bus,
+              scope: () => ({
+                appId: "sample",
+                taskId,
+                generation: attempt.task.generation,
+                attemptId: attempt.attemptId,
+              }),
+              applier: () => attempt.apply,
+            });
+            if (surface === "executor") {
+              await attempt.publish("finding", {
+                type: "review.finding",
+                target: { appId: "sample", taskId },
+                data: { current: true },
+              });
+              receipt = await attempt.apply({ requests: [request], conditions: [{ requestId: "review" }] });
+            } else {
+              await tool.execute("publish", {
+                action: "publish",
+                localKey: "finding",
+                eventType: "review.finding",
+                target: { appId: "sample", taskId },
+                data: { current: true },
+              });
+              const applied = await tool.execute("apply", {
+                action: "apply",
+                changes: { requests: [request], conditions: [{ requestId: "review" }] },
+              });
+              receipt = JSON.parse((applied.content[0] as { text: string }).text);
+            }
+            return { decision: "wait", summary: "Review remains outstanding", facts: [] };
+          },
+        },
+        appRegistrySnapshot: {
+          id: "publish-then-apply",
+          generation: 1,
+          entries: [{ appDir: f.appDir, definition: app }],
+        },
+      });
+      const config = loadedTaskConfig(f);
+      observeAppTaskIntent(config, {
+        appAgent: "sample-owner",
+        intent: {
+          id: taskId,
+          parentId: "operations",
+          outcome: "Publish and request review",
+          acceptance: ["Review request retained"],
+          executor: "worker",
+        },
+      });
+      await reconcileLoadedAppTaskOnce({
+        bus,
+        appId: "sample",
+        taskId,
+        dispatch: { enqueuedAt: 1, startedAt: 2, readyWaitMs: 1, lane: "normal" },
+      });
+      expect(receipt).toMatchObject({ requests: [{ id: "review" }], conditionIds: [expect.any(String)] });
+      expect(listAppInboxItems(getDb(persistDir))).toHaveLength(1);
+      expect(config.resourceStore.readTask(taskId)?.status).toMatchObject({
+        phase: "waiting", conditionIds: [expect.stringContaining("app-request:")],
+      });
     },
   );
 

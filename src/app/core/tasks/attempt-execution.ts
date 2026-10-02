@@ -143,6 +143,8 @@ function runtimeTaskAttempt(input: TaskAttemptInput): RuntimeTaskAttempt {
   const selfPublishedEventIds = new Set<number>();
   const controller = new AbortController();
   let closed = false;
+  const trustedEventIds = () =>
+    [...new Set([...acceptedLiveEventIds, ...selfPublishedEventIds])].sort((left, right) => left - right);
   // Finish fallible context reads before acquiring subscriptions. If preparation
   // fails, no abandoned observer remains outside the attempt cleanup boundary.
   const attempt: TaskAttempt = {
@@ -188,7 +190,7 @@ function runtimeTaskAttempt(input: TaskAttemptInput): RuntimeTaskAttempt {
     resultSchema: structuredClone(appTaskAgentResultSchema) as unknown as Record<string, unknown>,
     async apply(changes) {
       if (closed) throw new Error("Task attempt is closed");
-      return applyTaskChanges({ opts, descriptor, claim, changes, acceptedLiveEventIds: [...acceptedLiveEventIds] });
+      return applyTaskChanges({ opts, descriptor, claim, changes, acceptedLiveEventIds: trustedEventIds() });
     },
     async publish(localKey, event) {
       if (closed) throw new Error(`Task ${descriptor.id}/${claim.taskId} attempt is closed`);
@@ -276,8 +278,7 @@ function runtimeTaskAttempt(input: TaskAttemptInput): RuntimeTaskAttempt {
   return {
     events,
     attempt,
-    acceptedLiveEventIds: () =>
-      [...new Set([...acceptedLiveEventIds, ...selfPublishedEventIds])].sort((left, right) => left - right),
+    acceptedLiveEventIds: trustedEventIds,
     close() {
       if (closed) return;
       closed = true;

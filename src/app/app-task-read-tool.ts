@@ -147,6 +147,8 @@ export function createAppTaskReadTool(options: {
       };
     }): number | Promise<number>;
   };
+  /** Resolve the live attempt capability at invocation time; shared tools must not retain one session's scope. */
+  applier?: () => ((changes: TaskChanges) => Promise<unknown>) | undefined;
 }): AgentTool {
   return {
     name: "tasks",
@@ -175,13 +177,9 @@ export function createAppTaskReadTool(options: {
           if (!scope?.taskId || !scope.generation || !scope.attemptId)
             return result({ error: "No current fenced Task attempt" });
           if (!params.changes) return result({ error: "apply requires changes" });
-          return result(
-            (await import("./core/tasks/app-task-runtime.js")).applyLoadedAppTaskChanges({
-              bus: options.bus,
-              binding: { appId, taskId: scope.taskId, generation: scope.generation, attemptId: scope.attemptId },
-              changes: params.changes,
-            }),
-          );
+          const apply = options.applier?.();
+          if (!apply) return result({ error: "Current Task apply capability is unavailable" });
+          return result(await apply(params.changes));
         }
         if (params.action === "update") {
           if (!scope?.taskId || !scope.generation || !scope.attemptId)
