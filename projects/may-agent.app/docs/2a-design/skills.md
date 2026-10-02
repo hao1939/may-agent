@@ -194,9 +194,23 @@ targets produce skill diagnostics through the existing configuration-error path.
 Hosted definition preparation rejects an invalid generation and retains the
 previous one.
 
-Keep selected directories and their references in the definition source release.
+Hosted releases support selected directories already captured under `agents/`,
+`shared/skills/`, optional `shared/tools/`, or `projects/*.app/`. Keep manuals
+and their references there. A path such as `../../docs/manual` from shared
+skills can work in direct filesystem discovery, but top-level `docs/` is not
+captured by App releases. Release staging rejects that configuration rather
+than adding a second source-copying mechanism. Filesystem snapshots also omit
+runtime/generated directories under the existing release policy.
+
+Validate paths against the actual snapshot before caching it, and again when
+reusing or activating it. Missing targets and canonical roots/configuration
+files escaping the snapshot reject the release without replacing the active
+one. Explicitly pinned Git releases validate the selected commit's captured
+configuration, not later working-tree edits. Ordinary Git reloads additionally
+require manuals and supporting files in configured roots to be committed.
 Relative paths then resolve inside the captured release; live source edits do
-not change an existing execution's definition.
+not change its cataloged skill bodies or captured references. This does not
+validate every link inside a manual; authors must check those references.
 
 **Availability:** Implemented in companion Host source on
 `feat/skill-discovery-paths`; merge and deployment remain pending. Older Hosts
@@ -250,10 +264,11 @@ safety, shared principles, and the owning agent's `AGENTS.md`.
 Use `formatSkillsForSystemPrompt()` as the base representation, with a May
 budget wrapper:
 
-- use at most 2% of the model context window when known;
-- otherwise cap the catalog at 8,000 characters;
-- shorten descriptions before omitting skills;
+- cap the catalog at 8,000 characters by default (the formatter accepts an
+  explicit character budget; current prompt assembly uses the default);
+- shorten descriptions to at most 240 characters before omitting skills;
 - retain closer-scope skills before shared skills;
+- order names alphabetically within a scope;
 - report omissions in runtime diagnostics.
 
 Only expose model-invocable catalog entries when the session has a read-capable
@@ -264,7 +279,12 @@ An omitted skill can still exist in the loaded catalog. A model with only a
 file-read tool may have no usable way to locate it from runtime diagnostics.
 Use concise scoped descriptions and an accessible exact reference or supported
 explicit selection where needed; do not assume omission is harmless. The
-[method PoC](../archive/reviews/extension-methods-poc-20260912.md#delivery-and-natural-use)
+shared instructions link directly to the Task execution guide so it remains
+reachable even when omitted. Prefer a supplied captured skill location. The
+installation-root fallback reads current guidance and is not a promise to pin
+that read to an older execution; the supplied tool/result schemas remain
+authoritative. This is App-authored guidance, not Host semantic prioritization.
+The [method PoC](../archive/reviews/extension-methods-poc-20260912.md#delivery-and-natural-use)
 reproduces this boundary and its limits. Catalog visibility, full-body delivery,
 method use and useful outcome are separate evidence.
 

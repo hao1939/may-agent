@@ -42,6 +42,13 @@ different facts. Report the one actually proved.
 
 ### Assignments
 
+For Task execution or recovery questions, read
+`projects/may-agent.app/docs/2b-manual/task-execution-guide/SKILL.md` from the
+installation root. It links the owning contracts for Task reads, Conditions,
+contributions and results. Use the catalog's captured skill path when available;
+the guide remains directly readable when the compact catalog omits it. Follow
+the tool and result schemas actually supplied to this attempt.
+
 Put the complete handoff in the destination's App input or helper request.
 Large context may use references with a brief, purpose, exact location and
 required-reading marker. Pin a needed version/section or request current state.
