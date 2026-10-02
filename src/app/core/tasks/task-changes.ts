@@ -12,7 +12,7 @@ import {
 import {
   admitTaskAppRequests,
   mergeTaskConditions,
-  openTaskAppDependencyConditions,
+  linkedTaskAppDependencyConditions,
   resolveTaskRequestCondition,
 } from "./dependency-admission.js";
 
@@ -72,12 +72,12 @@ export function applyTaskChanges(input: {
     const explicit = mergeTaskConditions(
       conditions.filter((condition): condition is Condition => !("requestId" in condition)),
     );
-    const existing = openTaskAppDependencyConditions(config, input.claim.taskId);
-    mergeTaskConditions([...existing, ...explicit], new Set(existing.map(({ id }) => id)));
+    const linked = linkedTaskAppDependencyConditions(config, input.claim.taskId);
+    mergeTaskConditions([...linked.all, ...explicit], new Set(linked.all.map(({ id }) => id)));
     const submitted = admitTaskAppRequests({
       ...input,
       requests: changes.requests ?? [],
-      existingConditions: existing,
+      existingConditions: linked.unfinished,
       deferPublication: (publish) => publications.push(publish),
     });
     const references = conditions.flatMap((condition) =>
@@ -87,8 +87,8 @@ export function applyTaskChanges(input: {
     );
     const declaredIds = new Set([...references, ...explicit].map(({ id }) => id));
     const resolved = mergeTaskConditions(
-      [...references, ...existing, ...explicit],
-      new Set([...references, ...existing].map(({ id }) => id)),
+      [...references, ...linked.all, ...explicit],
+      new Set([...references, ...linked.all].map(({ id }) => id)),
     ).filter(({ id }) => declaredIds.has(id));
     const retired = new Set(
       (changes.actions ?? []).flatMap((action) =>

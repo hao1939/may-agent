@@ -24,7 +24,7 @@ import { appInputFeedbackEvent } from "../inbox/input-result.js";
 import { AppInboxHost } from "../inbox/app-inbox-host.js";
 import { admitTaskInput } from "../state/inbox.js";
 import { createAppInboxItem, listAppInboxItems } from "../state/app-inbox-store.js";
-import { claimAppInboxItem, waitAppInboxClaim } from "../../../../test/fixtures/legacy-inbox.js";
+import { claimAppInboxItem, completeAppInboxClaim, waitAppInboxClaim } from "../../../../test/fixtures/legacy-inbox.js";
 import { AppRegistry } from "../apps/registry.js";
 import { discoverAppDefinitions } from "../../adapters/discovery/app-definitions.js";
 import { createAppTaskCapability } from "./app-task-capability.js";
@@ -3797,10 +3797,20 @@ describe("canonical App task runtime", () => {
     expect(config.resourceStore.readTask("work/action-conflict")?.status.conditionIds ?? []).toEqual([]);
   });
 
-  it("preserves a customized saved request Condition when applying a reference only", async () => {
+  it.each([false, true])(
+    "preserves a customized saved request Condition when applying a reference only (satisfied: %s)",
+    async (satisfied) => {
     const f = fixture();
     const bus = eventBus();
+    bus.subscribeDurableRoute((event) => {
+      if (event.type !== "app.dependency.updated") return;
+      const conditionTaskIds = previewLoadedCanonicalAppTaskEvent({ bus, appId: "sample", event });
+      if (conditionTaskIds.length === 0) return;
+      trackAppTaskConditionEventForTasks(loadedTaskConfig(f), event, conditionTaskIds);
+      return { accepted: true, by: "fixture-condition-observer", route: "direct" };
+    });
     let assertionFailure: unknown;
+    let workerCalls = 0;
     const request = {
       id: "review",
       appId: "sample",
@@ -3826,6 +3836,13 @@ describe("canonical App task runtime", () => {
       executors: {
         worker: async (attempt) => {
           try {
+            workerCalls++;
+            if (satisfied && workerCalls === 2) {
+              expect(attempt.events.items.some(({ event }) =>
+                event.type === "app.dependency.updated" && event.data.status === "done"),
+              ).toBe(true);
+              return { state: "converged", summary: "Observed completed review", facts: ["review:complete"] };
+            }
             const receipt = await attempt.apply({ requests: [request] });
             const requestId = receipt.requests[0]!.requestId;
             const condition = {
@@ -3838,8 +3855,18 @@ describe("canonical App task runtime", () => {
               reviewAfterMs: 3_600_000,
             };
             await attempt.apply({ conditions: [condition] });
+            if (satisfied) {
+              const observed = bus.emit({
+                type: "app.dependency.updated",
+                source: "fixture",
+                owner: "app:sample",
+                data: { id: requestId, status: "done" },
+              });
+              expect(observed[EVENT_DELIVERY_RESULT]?.accepted).toBe(true);
+            }
             const before = loadedTaskConfig(f).resourceStore.readTaskConditions(attempt.task.id)
               .find(({ metadata }) => metadata.id === condition.id)!;
+            expect(before.status.state).toBe(satisfied ? "true" : "unknown");
 
             expect((await attempt.apply({ conditions: [{ requestId: request.id }] })).conditionIds).toEqual([
               condition.id,
@@ -3881,14 +3908,31 @@ describe("canonical App task runtime", () => {
       dispatch: { enqueuedAt: 1, startedAt: 2, readyWaitMs: 1, lane: "normal" },
     });
     if (assertionFailure) throw assertionFailure;
-    expect(acceptedTaskAttempt(config, "work/custom-condition")?.acceptedResult?.state).toBe("converged");
+    expect(acceptedTaskAttempt(config, "work/custom-condition")?.acceptedResult?.state).toBe(
+      satisfied ? undefined : "converged",
+    );
     expect(config.resourceStore.readTask("work/custom-condition")?.status).toMatchObject({
-      phase: "waiting",
+      phase: satisfied ? "pending" : "waiting",
       conditionIds: [expect.stringContaining("app-request:")],
     });
-  });
+    if (satisfied) {
+      await reconcileLoadedAppTaskOnce({
+        bus,
+        appId: "sample",
+        taskId: "work/custom-condition",
+        dispatch: { enqueuedAt: 3, startedAt: 4, readyWaitMs: 1, lane: "normal" },
+      });
+      expect(workerCalls).toBe(2);
+      expect(acceptedTaskAttempt(config, "work/custom-condition")?.acceptedResult?.state).toBe("converged");
+      expect(config.resourceStore.readTask("work/custom-condition")?.status.phase).toBe("converged");
+    }
+    },
+  );
 
-  it("adds distinct work for the same App without replaying retained waits, including after restart", async () => {
+  it.each([
+    { completedFirst: false, secondSample: 2 },
+    { completedFirst: true, secondSample: 1 },
+  ])("adds distinct work across restart (completed first: $completedFirst)", async ({ completedFirst, secondSample }) => {
     const f = fixture();
     const bus = eventBus();
     const persistDir = join(f.root, "state");
@@ -3911,7 +3955,7 @@ describe("canonical App task runtime", () => {
         calls++;
         return { state: "waiting", summary: "Review in progress", facts: [],
           dependencies: calls <= 2 ? [{ id: `review-${calls}`, appId: "sample",
-            input: { kind: "review", data: { sample: calls } } }] : [] };
+            input: { kind: "review", data: { sample: calls === 1 ? 1 : secondSample } } }] : [] };
       } },
       appRegistrySnapshot: { id: "additive-work", generation: 1, entries: [{ appDir: f.appDir,
         definition: { ...definition(), task: () => ({ kind: "existing", taskId: "review" }) } }] },
@@ -3926,7 +3970,18 @@ describe("canonical App task runtime", () => {
       dispatch: { enqueuedAt: 1, startedAt: 2, readyWaitMs: 1, lane: "normal" } });
     await run();
     const firstWait = config.resourceStore.readTask(taskId)!.status.conditionIds![0]!;
-    expect(firstWait).toBe(`app-request:${admissions[0]}`);
+    const firstRequestId = admissions[0]!;
+    expect(firstWait).toBe(`app-request:${firstRequestId}`);
+    if (completedFirst) {
+      const firstClaim = claimAppInboxItem(getDb(persistDir), firstRequestId, "fixture", 1_000, Date.now());
+      if (!firstClaim) throw new Error("expected first review claim");
+      expect(completeAppInboxClaim(getDb(persistDir), firstClaim, { summary: "First review complete" })).toBe(true);
+      trackAppTaskConditionEventForTasks(config, {
+        type: "app.dependency.updated", source: "fixture", data: { id: firstRequestId, status: "done" },
+      }, [taskId]);
+      expect(config.resourceStore.readTaskConditions(taskId).find(({ metadata }) => metadata.id === firstWait)?.status.state)
+        .toBe("true");
+    }
     await closeInstalledAppTaskRuntimes(bus);
     closeDb(persistDir);
     await install();
@@ -3936,15 +3991,18 @@ describe("canonical App task runtime", () => {
     expect(calls).toBe(2);
     expect(admissions).toHaveLength(2);
     expect(config.resourceStore.readTask(taskId)?.status).toMatchObject({
-      phase: "waiting", conditionIds: [firstWait, `app-request:${admissions[1]}`],
+      phase: "waiting",
+      conditionIds: completedFirst ? [`app-request:${admissions[1]}`] : [firstWait, `app-request:${admissions[1]}`],
     });
     recordAppTaskTrigger(config, taskId, { type: "sample.work", data: { message: "Keep both reviews" } });
     await run();
     expect(calls).toBe(3);
     expect(admissions).toHaveLength(2);
-    expect(config.resourceStore.readTask(taskId)?.status.conditionIds).toEqual([firstWait, `app-request:${admissions[1]}`]);
+    expect(config.resourceStore.readTask(taskId)?.status.conditionIds).toEqual(
+      completedFirst ? [`app-request:${admissions[1]}`] : [firstWait, `app-request:${admissions[1]}`],
+    );
     expect(listAppInboxItems(getDb(persistDir), { appId: "sample" }).map((item) => item.input.data))
-      .toEqual(expect.arrayContaining([{ sample: 1 }, { sample: 2 }]));
+      .toEqual(expect.arrayContaining([{ sample: 1 }, { sample: secondSample }]));
   });
 
   it("returns a pre-Task admission blocker through the installed caller route for actual consideration", async () => {

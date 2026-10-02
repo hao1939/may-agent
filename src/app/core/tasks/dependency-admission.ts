@@ -337,16 +337,22 @@ export function admitTaskAppRequests(input: {
   );
 }
 
-export function openTaskAppDependencyConditions(config: AppTaskContext, taskId: string): AppTaskConditionSpec[] {
+export function linkedTaskAppDependencyConditions(
+  config: AppTaskContext,
+  taskId: string,
+): { all: AppTaskConditionSpec[]; unfinished: AppTaskConditionSpec[] } {
   const tree = config.resourceStore.readTaskContext({ taskIds: [taskId] });
   const resource = tree.resources?.[taskId];
-  return (resource?.status.conditionIds ?? []).flatMap((conditionId) => {
+  const all: AppTaskConditionSpec[] = [];
+  const unfinished: AppTaskConditionSpec[] = [];
+  for (const conditionId of resource?.status.conditionIds ?? []) {
     const condition = tree.conditions?.[conditionId];
-    if (!condition || condition.status.state === "true" || condition.spec.type !== "app.dependency.updated") {
-      return [];
-    }
-    return [{ id: condition.metadata.id, ...structuredClone(condition.spec) }];
-  });
+    if (!condition || condition.spec.type !== "app.dependency.updated") continue;
+    const spec = { id: condition.metadata.id, ...structuredClone(condition.spec) };
+    all.push(spec);
+    if (condition.status.state !== "true") unfinished.push(spec);
+  }
+  return { all, unfinished };
 }
 
 export function mergeTaskConditions(
