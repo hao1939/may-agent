@@ -131,6 +131,22 @@ Malformed output or admission rejection is corrected on the same native
 thread within that attempt. Native process failure ends the attempt;
 ordinary Runtime retry resumes the same Task's persisted thread.
 
+Validate the installed CLI when installing, upgrading, or changing its execution
+environment. Use the actual runtime user and intended permission profile to run
+a real command and read a synthetic file. The Host's existing
+`check:codex-goal-protocol` script verifies native restart and fresh outgoing
+context with a local scripted provider; its `check:codex-goal-execution` entry
+also requires the read-only, network-disabled command to succeed. A sandbox
+denial fails execution acceptance even when protocol compatibility passes.
+These checks belong to installation verification, not every Task attempt.
+This separation is implemented in the PR #284 candidate; it does not establish
+that the deployed executor is usable.
+
+Later failures still use normal bounded execution, retained attempt evidence,
+caller feedback and independent operational review. A failed tool command may
+be useful evidence for the agent rather than a failed Task. Installation checks
+do not replace those paths or authorize widening the executor's permissions.
+
 Usage or budget exhaustion is an execution failure, not a Task wait.
 Do not invent a timer Condition or claim elapsed time proves provider capacity.
 Runtime's bounded recovery remains responsible for retrying the Task.
