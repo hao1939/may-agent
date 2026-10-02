@@ -1,8 +1,11 @@
 # Metric follow-through through existing Conditions
 
-**Status:** Implemented and exercised through Host integration tests. The
-validation below distinguishes scripted decisions, saved native-result replay
-and installation evidence.
+**Supports:** [Evidence-driven improvement](../../may-agent.app/docs/2a-design/system-model.md#improve-from-evidence-and-make-problems-actionable).
+**Choice basis:** [Agent decisions and mechanical execution](../../may-agent.app/docs/1-principles/code-vs-data.md).
+
+**Status:** Source implementation with Host integration coverage. The breach-only
+investigation policy requires installation adoption; source checks do not prove
+live retirement of older sample Conditions.
 
 The old helper prepared a metric fact, then asked the agent to save its next
 review time, create work and copy its Task ID separately. The observed failure
@@ -17,29 +20,50 @@ evidence and nextAction when unresolved. App code validates the response and
 adds the metric facts with the actual owning Task identity. It returns one
 ordinary result. Host accepts that result and its Conditions together.
 
-The agent discovers May's `metric-evidence` resource observer through the
-existing `tasks` contract tool. It chooses the expected predicate and review
-interval; the tool produces an ordinary Condition. The observer reads retained
-samples and exposes value, measuredAt, sampleId and freshness. It does not
-collect samples, judge health, calculate another trend or register another watch.
-For metrics where zero means recovery, an example predicate is
-`{field:"value",equals:0,freshness:"fresh"}`. Stale zero is not fresh recovery.
-For a strictly newer fresh sample, use
-`{field:"measuredAt",gt:baselineMeasuredAt,freshness:"fresh"}`. The installed
-Condition operators are `gt`, `gte`, `lt` and `lte`; `greaterThan` is not an
-operator. The observer resource is the bare metric ID, without a `metric:`
-prefix. The live observation contract supplies these examples to the agent.
+## Samples are evidence; status changes request attention
 
-An `observe` disposition requires the metric's returned or retained Condition.
-An `investigate` disposition needs actual work or a wait: ordinary dependencies
-commission independent work and generate their existing completion Conditions;
-`continue:true` keeps useful work in this Task; `reviewAt` sets an explicit Task
-checkpoint. Ordinary Conditions, including human approvals and external waits,
-also carry follow-through. Host settlement enforces that a sleeping Task has a
-return route, using its retained waits and the proposed changes together. The
-metric helper leaves this check to the Host rather than maintaining a second
-list of allowed wait kinds. A Condition alone never submits a repair. Missing
-linked work is an evidence gap, not permission to invent a replacement.
+The existing metric service collects samples and evaluates the declared alert
+rule in code. A new breach episode invites investigation. Samples within that
+episode and repeated breach notifications do not commission another review.
+Several metrics may reuse one investigation after the agent checks its scope.
+A `metric.recovered` event can update an existing investigation through a
+Condition bound to both metric ID and alert ID. Recovery of the metric alone
+never fulfills the original work.
+
+When only passive collection remains, the agent records `no-change` and finishes
+the review. The collector remains responsible for detecting the next breach.
+There is no periodic model call to decide whether a newer timestamp is useful.
+
+For an investigation, the agent chooses useful work or a real return path:
+repair results, human decisions, a relevant status change, or a deliberate
+checkpoint for actual outstanding work. `requests` commission work; a separate
+caller Condition observes its result. `continue:true` keeps useful work in the
+current Task. Host settlement validates its accepted result and retained waits.
+A Condition never submits a repair, and missing linked work is an evidence gap
+rather than permission to invent replacement work.
+
+The metric result composer rejects `may.metric.state` Conditions in proposed
+results and retained waits that were not explicitly retired. This is May's
+investigation policy; the generic Host Condition engine still executes declared
+observations. The metric observer remains available for explicitly requested
+measurement work outside automated investigation follow-through.
+
+## Adopting the policy for existing work
+
+An existing investigation gets one owner judgment through its next ordinary
+wake. The agent rereads the complete requirement and uses generation-fenced
+`retire-condition` actions for obsolete sample waits, including satisfied ones.
+Omission alone is insufficient because Host retains Conditions. The result must
+preserve independent repair requests, approvals and unanswered requirements;
+only the agent judges whether its review is complete.
+
+A previously saved handoff can still carry an `observe` plan with a sample
+Condition. The workflow asks for current judgment instead of installing that old
+plan again. New handoffs are validated before creating follow-through work. The
+legacy disposition spelling stays readable; it cannot bypass the sample-wait
+check. Retirement commits through normal Task settlement, so restart preserves
+both the change and unrelated obligations. There is no direct database migration
+or silent inference of completion.
 
 Composition is repeatable: a complete helper result may contain the metric facts
 it just generated. The helper accepts exact copies of the current code-bound
@@ -60,8 +84,8 @@ The helper returns an ordinary Conversation `followUp`, carrying that review in
 `goal.data.context.metricResponse`. No disposition is claimed by Conversation.
 A new goal selects the `metric-follow-through` workflow. Its first attempt saves
 the selected decision mechanically. A fresh single handoff to an existing metric
-workflow does the same; mixed input and later observation/deadline wakes ask May
-to judge the full current assignment. Original input and continued obligations
+workflow does the same; mixed input and later results, status changes or due
+checkpoints ask May to judge the full current assignment. Original input and continued obligations
 are context, not instructions to replay the first decision.
 
 Several episodes can join the same investigation after scope judgment. Exact
@@ -143,12 +167,15 @@ bun test ./metric-follow-through.test.ts ./agents/may/workflows/metric-response.
 bun test ./scripts/metric-follow-through.test.ts --timeout 80000
 ```
 
-The timer case deliberately waits for the real 60-second minimum checkpoint.
-Other cases cover fresh evidence available before admission, quiet/stale samples,
-restart without replay, failed publication, independent approval, shared episodes,
-missing work, invalid Conditions, commissioned dependencies, owner closure and
-automatic return to an open Request. Mixed new requirements go to agent judgment.
-These establish mechanics, not model decision quality or deployment readiness.
+The timer case deliberately waits for the real 60-second minimum repair checkpoint.
+The current regressions cover repeated fresh/stale samples without agent calls,
+repair and exact recovery-status return, replay after restart, failed publication,
+independent approvals, shared breach episodes, missing work, invalid Conditions,
+commissioned requests and owner closure. An old sample-driven wait is seeded as
+an accepted result, then retired by a scripted owner decision; repeated samples
+stay quiet across restart while the original approval still returns. A separate
+case checks an older handed-off plan reaches judgment instead of replay.
+These establish mechanics, not unscripted model judgment or live adoption.
 
 The initial May App run passed 146 tests with one existing Scout test skipped and
 zero failures (640 assertions, about 70 seconds). The ten focused helper tests
@@ -167,3 +194,10 @@ to retire its last one. The full App suite passed 147 tests, with the existing
 Scout skip and no failures. Type checks, bundle build and common design checks
 also passed. This verifies acceptance mechanics; it does not establish optimal
 review cadence or long-running model behavior.
+
+The October 3 breach-policy revision passed the full May App suite: 160 tests,
+one existing Scout test skipped, zero failures (754 assertions). App type checks,
+bundle build, changed-TypeScript formatting and design/example/App-boundary
+checks passed against Host/SDK `f2eb4b87683ee92b048bb9fc8fe627fd76d0b4ac`. The
+design check retains its existing unclassified-root-`reports` warning. No live
+Task, Condition, installation or notification was changed by these tests.

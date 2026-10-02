@@ -83,11 +83,19 @@ owns interpretation, and May owns follow-through. It does not add a retry-count
 limit. This is a paired source change, not a claim of installed review coverage.
 
 May's [metric follow-through](../../../may.app/design/metric-condition-follow-through.md)
-uses the existing Task/Condition contract. The agent chooses the predicate or
-independent work; App code binds the disposition to the actual owning Task and
-returns it with the Condition or dependency. Host storage and scheduling retain
-the wait and deliver evidence. A matching sample or elapsed checkpoint invites
-judgment and does not accept recovery. Current deadlines come from the linked
+uses the existing Task/Condition contract. Sampling updates evidence without
+invoking an agent. The metric service evaluates the rule; a new breach episode
+invites investigation, and a recovery status change can update existing work.
+Repeated samples and repeat notifications for an open breach do not commission
+another investigation. The agent judges useful work or no change; App code binds
+that judgment to its actual owning Task. When only collection remains, finish
+the review rather than installing a sample-driven wait.
+
+Requests commission work; caller Conditions observe repair results, human
+decisions or a relevant status change. Host retains and delivers these facts.
+An existing sample wait is retired through an explicit owner result, preserving
+independent obligations. Neither a status change nor a checkpoint accepts
+recovery or fulfills the original work. Current deadlines come from the linked
 Task and its saved Conditions, not a historical date in a disposition fact.
 
 Session completion is a separate observation from accepted Task settlement.

@@ -390,7 +390,11 @@ export function evaluationOperationAlertInput(
   event: AppEvent<Record<string, unknown>>,
 ): AppInput | null {
   const data = record(event.data);
-  if (data.metricId !== EVALUATION_OPERATION_METRIC || data.repeat === true)
+  if (
+    event.type !== "metric.breach" ||
+    data.metricId !== EVALUATION_OPERATION_METRIC ||
+    data.repeat === true
+  )
     return null;
   return {
     kind: "message",
@@ -458,7 +462,7 @@ export function evaluationTaskReportInput(
   return {
     kind: "message",
     data: {
-      message: `This is an automated review, not a new human question. Retain the disposition and evidence in summary/facts; omit response for routine findings, unchanged waits, reused work and background delegation. Use response for a requested answer, a new actionable decision or a material change the human needs to know. Review the published Evaluation report for ${metricId ?? `${appId}/${taskId}`}. Run evaluation-report-intake with this exact context.publication before any duplicate or reuse conclusion; the intake checks exact publication identity before reusing a prior intake, and an unrelated prior disposition is not this report. Then verify material concerns against current evidence and record an ordinary Task disposition. Reuse linked work. Settle the immediate incident separately from the population finding: current recovery does not erase recurring failures, cost or uncertainty. A duplicate or harmless one-off can need no change; a supported recurring pattern can justify the smallest investigation even after recovery. Before proposing a candidate, judge practical value versus cost and whether a simpler solution would suffice. For an unresolved metric concern use metric-response with review:{task,decisions} and the current conversation context to prepare one complete followUp; choose a Condition through the installed metric-evidence contract or commission work through a dependency. Return its complete result, not just a fact. Reuse the exact existing Task when scope fits. Notification, acknowledgment and a patch are not verified recovery; metrics do not authorize stopping retries or reopening work.`,
+      message: `This is an automated review, not a new human question. Retain the disposition and evidence in summary/facts; omit response for routine findings, unchanged waits, reused work and background delegation. Use response for a requested answer, a new actionable decision or a material change the human needs to know. Review the published Evaluation report for ${metricId ?? `${appId}/${taskId}`}. Run evaluation-report-intake with this exact context.publication before any duplicate or reuse conclusion; the intake checks exact publication identity before reusing a prior intake, and an unrelated prior disposition is not this report. Then verify material concerns against current evidence and record an ordinary Task disposition. Reuse linked work. Settle the immediate incident separately from the population finding: current recovery does not erase recurring failures, cost or uncertainty. A duplicate or harmless one-off can need no change; a supported recurring pattern can justify the smallest investigation even after recovery. Before proposing a candidate, judge practical value versus cost and whether a simpler solution would suffice. For an unresolved metric concern use metric-response with review:{task,decisions} and the current conversation context to prepare one complete followUp; commission useful work through a request or retain its repair-result, exact breach recovery or human-decision Condition. Do not create sample Conditions or a periodic sample-review loop; if only collection remains, record no-change and finish the review. Return its complete result, not just a fact. Reuse the exact existing Task when scope fits. Notification, acknowledgment and a patch are not verified recovery; metrics do not authorize stopping retries or reopening work.`,
       context: {
         publication,
         caller: {
@@ -572,7 +576,7 @@ export default defineApp({
           kind: "message",
           data: {
             message:
-              "Review the unfinished Evaluation work identified by this metric. Read current review Tasks, allowance and return paths. Preserve retries and reuse linked owner work. If review remains overdue, use metric-response with a complete review and the current conversation context; choose an observable Condition or commission work, then return the prepared handoff. This age threshold requests inspection; it is not a promised deadline or authority to stop work.",
+              "Review the unfinished Evaluation work identified by this metric. Read current review Tasks, allowance and return paths. Preserve retries and reuse linked owner work. If review remains overdue, use metric-response with a complete review and the current conversation context; wait for an actual review result or human decision, or commission useful work, then return the prepared handoff. New samples are evidence, not investigation triggers. This age threshold requests inspection; it is not a promised deadline or authority to stop work.",
             context: { event: structuredClone(event) },
           },
         };

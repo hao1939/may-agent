@@ -18,7 +18,17 @@ async function setup(judge: (prompt: string) => Promise<MetricReview>) {
   fixtures.push(f);
   return f;
 }
-function observe(
+function repairCondition(reviewAfterMs = 3_600_000): Condition {
+  return {
+    id: "repair-result",
+    type: "repair.finished",
+    subject: "request:verification",
+    expected: { done: true },
+    owner: "app:may",
+    reviewAfterMs,
+  };
+}
+function investigate(
   subject: { metricId: string; alertId: number },
   condition: Condition,
 ): MetricReview {
@@ -38,16 +48,16 @@ function observe(
     decisions: [
       {
         ...subject,
-        disposition: "observe",
-        reason: "Existing recovery needs verification",
+        disposition: "investigate",
+        reason: "A repair result is owed",
         evidence: [`metric:${subject.metricId}`],
-        nextAction: "Review fresh evidence",
+        nextAction: "Review the repair result",
       },
     ],
   };
 }
 
-test("Conversation saves the complete decision without another agent turn, then fresh evidence wakes judgment and returns to its Request", async () => {
+test("Conversation saves one breach decision; samples stay quiet and the repair result returns to its Request", async () => {
   let calls = 0;
   let release!: () => void;
   const hold = new Promise<void>((resolve) => {
@@ -55,7 +65,7 @@ test("Conversation saves the complete decision without another agent turn, then 
   });
   const f = await setup(async (prompt) => {
     calls++;
-    expect(prompt).toContain("may.metric.state");
+    expect(prompt).toContain("repair.finished");
     await hold;
     return {
       task: {
@@ -74,13 +84,23 @@ test("Conversation saves the complete decision without another agent turn, then 
     };
   });
   try {
-    const plan = observe(f.subject, await f.condition());
-    f.record(0); // Already recovered before saving the Condition.
+    const plan = investigate(f.subject, repairCondition());
     await f.handoff(handoffDecision(plan));
-    await until(() => calls === 1, "fresh state wakes owner");
+    await until(
+      () => f.get("goal/poc-message")?.status === "waiting",
+      "breach decision retained",
+    );
+    for (const value of [3, 4, 4, 2, 0, 0]) {
+      f.record(value);
+      await f.poll();
+    }
+    expect(calls).toBe(0);
+    expect(f.attempts).toHaveLength(1);
+    f.publishRepair();
+    await until(() => calls === 1, "repair result wakes owner");
     expect(f.decisions()).toHaveLength(1);
     expect(f.decisions()[0].decision).toMatchObject({
-      disposition: "observe",
+      disposition: "investigate",
       linkedTask: { appId: "may", taskId: "goal/poc-message" },
       followThrough: "task",
     });
@@ -105,7 +125,7 @@ test("Conversation saves the complete decision without another agent turn, then 
   }
 });
 
-test("unmatched and stale samples stay quiet; restart retains the Condition and does not replay the decision", async () => {
+test("fresh and stale samples stay quiet across restart; the retained repair result wakes its owner", async () => {
   let calls = 0;
   const f = await setup(async () => {
     calls++;
@@ -119,7 +139,7 @@ test("unmatched and stale samples stay quiet; restart retains the Condition and 
     };
   });
   await f.attach("investigation", {
-    context: { metricResponse: observe(f.subject, await f.condition()) },
+    context: { metricResponse: investigate(f.subject, repairCondition()) },
   });
   await until(
     () => f.get("investigation")?.status === "waiting",
@@ -138,10 +158,12 @@ test("unmatched and stale samples stay quiet; restart retains the Condition and 
   expect(f.decisions()).toHaveLength(1);
   f.record(0);
   await f.poll();
-  await until(() => calls === 1, "fresh recovery after restart");
+  expect(calls).toBe(0);
+  f.publishRepair();
+  await until(() => calls === 1, "repair result after restart");
 });
 
-test("publication retries unchanged evidence; investigation retains an independent approval after the metric wait resolves", async () => {
+test("repair publication recovery retains the independent approval and ignores new samples", async () => {
   let calls = 0;
   const f = await setup(async () => {
     calls++;
@@ -162,7 +184,7 @@ test("publication retries unchanged evidence; investigation retains an independe
       ],
     };
   });
-  const plan = observe(f.subject, await f.condition());
+  const plan = investigate(f.subject, repairCondition());
   if (plan.task.state !== "waiting") throw new Error("waiting plan");
   plan.task.conditions!.push({
     id: "approval",
@@ -178,11 +200,12 @@ test("publication retries unchanged evidence; investigation retains an independe
     "accepted wait",
   );
   f.publicationFails = true;
+  expect(() => f.publishRepair()).toThrow("Fixture publication unavailable");
   f.record(0);
   await f.poll();
   expect(calls).toBe(0);
   f.publicationFails = false;
-  await f.poll();
+  f.publishRepair();
   await until(
     () => calls === 1 && f.get("investigation")?.status === "waiting",
     "retried publication reviewed",
@@ -295,9 +318,9 @@ test("a later episode joins the selected investigation and saves its new decisio
   const f = await setup(async () => {
     throw new Error("No additional agent turn for a handed-off decision");
   });
-  const condition = await f.condition();
+  const condition = repairCondition();
   await f.attach("shared-investigation", {
-    context: { metricResponse: observe(f.subject, condition) },
+    context: { metricResponse: investigate(f.subject, condition) },
   });
   await until(
     () => f.get("shared-investigation")?.status === "waiting",
@@ -307,10 +330,13 @@ test("a later episode joins the selected investigation and saves its new decisio
   const nextAlert = f.record(3)!.alertId!;
   expect(nextAlert).not.toBe(f.subject.alertId);
   await f.handoff(
-    handoffDecision(observe({ ...f.subject, alertId: nextAlert }, condition), {
-      appId: "may",
-      taskId: "shared-investigation",
-    }),
+    handoffDecision(
+      investigate({ ...f.subject, alertId: nextAlert }, condition),
+      {
+        appId: "may",
+        taskId: "shared-investigation",
+      },
+    ),
   );
   await until(() => f.decisions().length === 2, "next episode saved");
   expect(f.get("goal/poc-message")).toBeNull();
@@ -327,7 +353,7 @@ test("missing selected work and invalid Conditions never leave accepted metric d
   const f = await setup(async () => {
     throw new Error("invalid work must not ask another agent");
   });
-  const plan = observe(f.subject, await f.condition());
+  const plan = investigate(f.subject, repairCondition());
   await f.handoff(handoffDecision(plan, { appId: "may", taskId: "missing" }));
   await until(
     () =>
@@ -348,30 +374,31 @@ test("missing selected work and invalid Conditions never leave accepted metric d
   expect(f.decisions()).toHaveLength(0);
 });
 
-test("real review checkpoint wakes a failed observer's owner, keeps the Condition, and exposes its renewed deadline", async () => {
+test("a deliberate repair checkpoint retains its wait and exposes the renewed deadline", async () => {
   let calls = 0;
   const f = await setup(async () => {
     calls++;
     return {
       task: {
         state: "waiting",
-        summary: "Observer unavailable; keep its existing wait",
-        facts: ["Rechecked observer failure"],
+        summary: "Repair still pending; keep its existing wait",
+        facts: ["Rechecked repair status"],
       },
       decisions: [
         {
           ...f.subject,
-          disposition: "observe",
-          reason: "Still needs fresh evidence",
-          evidence: ["observer:failure"],
-          nextAction: "Review source recovery",
+          disposition: "investigate",
+          reason: "Repair remains owed",
+          evidence: ["repair:pending"],
+          nextAction: "Review the outstanding repair",
         },
       ],
     };
   });
-  f.readFails = true;
   await f.attach("investigation", {
-    context: { metricResponse: observe(f.subject, await f.condition(60_000)) },
+    context: {
+      metricResponse: investigate(f.subject, repairCondition(60_000)),
+    },
   });
   await until(() => f.get("investigation")?.status === "waiting", "first wait");
   const first = f.get("investigation")!.conditions[0].observation!.reviewAt!;
@@ -488,14 +515,17 @@ test("an investigation commissions ordinary dependent work and its result wakes 
   }
 });
 
-test("owner closure stops metric demand; late recovery stays history", async () => {
+test("owner closure stops follow-through; late repair results stay history", async () => {
   const f = await setup(async () => {
     throw new Error("Closed work must not wake");
   });
   await f.attach("investigation", {
-    context: { metricResponse: observe(f.subject, await f.condition()) },
+    context: { metricResponse: investigate(f.subject, repairCondition()) },
   });
-  await until(() => f.reads === 1, "initial observation");
+  await until(
+    () => f.get("investigation")?.status === "waiting",
+    "initial repair wait",
+  );
   const current = f.get("investigation")!;
   f.tasks.cancel({
     appId: "may",
@@ -506,9 +536,172 @@ test("owner closure stops metric demand; late recovery stays history", async () 
     decision: "human",
   });
   f.record(0);
+  f.publishRepair();
   await f.poll();
   expect(f.get("investigation")!.closed).toBe(true);
   expect(f.attempts).toHaveLength(1);
-  expect(f.reads).toBe(1);
-  expect(f.decisions()[0].decision.disposition).toBe("observe");
+  expect(f.reads).toBe(0);
+  expect(f.decisions()[0].decision.disposition).toBe("investigate");
+});
+
+test("one owner decision retires a retained sample wait, preserves approval, and stops sample wakeups across restart", async () => {
+  let calls = 0;
+  let seedLegacyWait = true;
+  let sample: Condition;
+  const approval: Condition = {
+    id: "approval",
+    type: "approval.granted",
+    subject: "decision:implementation",
+    expected: { approved: true },
+    owner: "human",
+    reviewAfterMs: 3_600_000,
+  };
+  const f = await fixture(async (attempt) => {
+    if (seedLegacyWait) {
+      seedLegacyWait = false;
+      // A real accepted result from the old policy, before adopting the new workflow.
+      return {
+        state: "waiting",
+        summary: "Legacy sample monitor with independent approval",
+        facts: [],
+        conditions: [sample, approval],
+      };
+    }
+    return executeReview(attempt, async (prompt) => {
+      calls++;
+      expect(prompt).toContain(
+        "Retire every obsolete retained may.metric.state Condition",
+      );
+      if (calls === 1)
+        return {
+          task: {
+            state: "waiting",
+            summary: "Approval is the remaining work",
+            facts: ["Retired passive metric monitoring"],
+            actions: [
+              {
+                kind: "retire-condition",
+                conditionId: sample.id,
+                expectedConditionGeneration: 1,
+                reason: "New samples are evidence, not investigation triggers",
+              },
+            ],
+          },
+          decisions: [
+            {
+              ...f.subject,
+              disposition: "investigate",
+              reason: "Repair approval remains owed",
+              evidence: ["proposal:repair"],
+              nextAction: "Await approval",
+            },
+          ],
+        };
+      return {
+        task: {
+          state: "converged",
+          summary: "Approval judged",
+          facts: ["Independent decision received"],
+        },
+        decisions: [],
+      };
+    });
+  });
+  fixtures.push(f);
+  sample = await f.condition(3_600_000, {
+    field: "measuredAt",
+    gt: Date.now(),
+    freshness: "fresh",
+  });
+  await f.attach("legacy-monitor");
+  await until(
+    () => f.get("legacy-monitor")?.status === "waiting",
+    "old wait saved",
+  );
+  f.record(3);
+  await f.poll();
+  await until(
+    () => calls === 1 && f.get("legacy-monitor")?.status === "waiting",
+    "owner replaces old wait",
+  );
+  expect(f.get("legacy-monitor")!.conditions.map((c) => c.id)).toEqual([
+    "approval",
+  ]);
+  for (const value of [4, 5, 0, 0]) {
+    f.record(value);
+    await f.poll();
+  }
+  await f.restart();
+  f.record(0);
+  await f.poll();
+  expect(calls).toBe(1);
+  expect(f.attempts).toHaveLength(2);
+  f.publishApproval();
+  await until(
+    () => calls === 2 && f.get("legacy-monitor")?.status === "done",
+    "original approval still returns",
+  );
+});
+
+test("a recovery status change updates the exact existing investigation; ordinary samples and other episodes do not", async () => {
+  let calls = 0;
+  const f = await setup(async (prompt) => {
+    calls++;
+    expect(prompt).toContain("metric.recovered");
+    return {
+      task: {
+        state: "waiting",
+        summary: "Metric recovered; approval remains",
+        facts: ["Reviewed status change"],
+      },
+      decisions: [
+        {
+          ...f.subject,
+          disposition: "no-change",
+          reason: "Recovery does not authorize applying the candidate",
+          evidence: ["event:metric.recovered"],
+        },
+      ],
+    };
+  });
+  const plan = investigate(f.subject, {
+    id: "episode-recovered",
+    type: "metric.recovered",
+    subject: `metric:${f.subject.metricId}`,
+    expected: { alertId: f.subject.alertId },
+    owner: "app:may",
+    reviewAfterMs: 3_600_000,
+  });
+  plan.task.conditions!.push({
+    id: "approval",
+    type: "approval.granted",
+    subject: "decision:implementation",
+    expected: { approved: true },
+    owner: "human",
+    reviewAfterMs: 3_600_000,
+  });
+  await f.attach("status-owner", { context: { metricResponse: plan } });
+  await until(
+    () => f.get("status-owner")?.status === "waiting",
+    "status wait saved",
+  );
+  for (const value of [4, 5, 3, 0]) {
+    f.record(value);
+    await f.poll();
+  }
+  f.publishRecovery(f.subject.alertId + 1);
+  await f.poll();
+  expect(calls).toBe(0);
+  f.publishRecovery();
+  await until(
+    () => calls === 1 && f.get("status-owner")?.status === "waiting",
+    "exact status change reviewed",
+  );
+  expect(
+    f.get("status-owner")!.conditions.find((c) => c.id === "approval")!
+      .observation!.state,
+  ).toBe("unknown");
+  f.record(0);
+  await f.poll();
+  expect(calls).toBe(1);
 });

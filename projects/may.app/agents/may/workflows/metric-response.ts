@@ -16,7 +16,7 @@ import {
 
 export const name = "metric-response";
 export const description =
-  'Read exact metric handling and live Task waits with input:{metricId,alertId} (null without a breach). Compose with input:{review:{task,decisions},conversation?}. A minimal observation task is {state:"waiting",summary:"...",facts:[],conditions:[CONDITION_FROM_TASKS_CONTRACT]}; decisions is [{metricId,alertId,disposition:"observe",reason:"...",evidence:["..."],nextAction:"..."}]. Other dispositions are investigate, no-change and recovered. In Conversation include conversation:{topic,requestUpdates,requestId,task?,response?} using current context; task is only an existing exact May Task target. Omit response for routine automated follow-through; supply your own useful human-facing response when answering a human or reporting a material change. Return the complete output unchanged through finish().result. Code binds new Task identity. Conditions come from tasks contract; dependencies commission work. Preparation alone accepts nothing.';
+  "Read exact metric handling and live Task waits with input:{metricId,alertId} (null without a breach). Compose with input:{review:{task,decisions},conversation?}. A breach episode triggers investigation; new samples only update evidence. Use investigate for useful work, with a repair-result, human-decision or exact metric.recovered Condition when needed. Use no-change and finish the review when only passive collection remains; do not create may.metric.state Conditions or sample-review timers. Retire obsolete saved sample Conditions explicitly while preserving independent work. The legacy observe disposition remains readable. Other dispositions are recovered and no-change. In Conversation include conversation:{topic,requestUpdates,requestId,task?,response?} using current context; task is only an existing exact May Task target. Omit response for routine automated follow-through. Return the complete output unchanged through finish().result. Code binds new Task identity. Requests commission work; caller Conditions observe results. Preparation alone accepts nothing.";
 
 type Link = { appId: string; taskId: string };
 type Decision = {
@@ -105,7 +105,8 @@ export async function inspectMetricResponse(
             ? null
             : ((
                 linkedTask.currentObligations as
-                  { reviewAt?: number } | undefined
+                  | { reviewAt?: number }
+                  | undefined
               )?.reviewAt ?? null),
           conditions: Array.isArray(linkedTask.conditions)
             ? linkedTask.conditions.map((condition) => ({

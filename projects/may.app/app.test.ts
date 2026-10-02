@@ -595,6 +595,27 @@ describe("canonical May conversation App", () => {
       "Generic supervisor fallback remains deferred",
     );
     expect(Check(app.inputSchema, input)).toBeTrue();
+    for (const type of [
+      "metric.updated",
+      "may.metric.state",
+      "metric.recovered",
+    ]) {
+      expect(evaluationOperationAlertInput({ ...event, type })).toBeNull();
+    }
+    for (let sample = 0; sample < 20; sample++) {
+      expect(
+        evaluationOperationAlertInput({
+          ...event,
+          data: { ...event.data, repeat: true, measuredAt: sample },
+        }),
+      ).toBeNull();
+    }
+    expect(
+      evaluationOperationAlertInput({
+        ...event,
+        data: { ...event.data, alertId: 43 },
+      }),
+    ).not.toBeNull();
 
     expect(
       evaluationOperationAlertInput({

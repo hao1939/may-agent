@@ -9,7 +9,10 @@ import {
   type TaskExecutor,
 } from "@may-agent/sdk";
 import { AppRegistry } from "../../may-agent/src/app/core/apps/registry.js";
-import { EventBus } from "../../may-agent/src/app/core/events/bus.js";
+import {
+  EventBus,
+  type AgentEvent,
+} from "../../may-agent/src/app/core/events/bus.js";
 import { HostCapacity } from "../../may-agent/src/app/core/scheduling/host-capacity.js";
 import { createAppTaskCapability } from "../../may-agent/src/app/core/tasks/app-task-capability.js";
 import { startAppInboxRuntime } from "../../may-agent/src/app/composition/app-inbox-runtime.js";
@@ -156,7 +159,11 @@ export async function fixture(execute: TaskExecutor) {
     bus = new EventBus();
     const writer = new DbWriter(persistDir);
     bus.setPersistenceSubscriber((event) => {
-      if (publicationFails && event.type === detector.type)
+      if (
+        publicationFails &&
+        (event.type === detector.type ||
+          String(event.type) === "repair.finished")
+      )
         throw new Error("Fixture publication unavailable");
       return writer.handler(event);
     });
@@ -324,7 +331,38 @@ export async function fixture(execute: TaskExecutor) {
       metrics.record(metricId, value, { measuredAt, sampleSize: value });
       return metrics.evaluate(metricId)[0];
     },
-    async condition(reviewAfterMs = 3_600_000): Promise<Condition> {
+    publishRepair() {
+      bus.emit({
+        type: "repair.finished",
+        source: "test:repair",
+        owner: "app:may",
+        data: { request: "verification", done: true },
+      } as unknown as AgentEvent);
+    },
+    publishRecovery(alert = alertId) {
+      bus.emit({
+        type: "metric.recovered",
+        source: "runtime:metric-source-measurement",
+        owner: "app:may",
+        data: { metricId, alertId: alert },
+      });
+    },
+    publishApproval() {
+      bus.emit({
+        type: "approval.granted",
+        source: "test:human",
+        owner: "app:may",
+        data: { decision: "implementation", approved: true },
+      } as unknown as AgentEvent);
+    },
+    async condition(
+      reviewAfterMs = 3_600_000,
+      expected: Record<string, unknown> = {
+        field: "value",
+        equals: 0,
+        freshness: "fresh",
+      },
+    ): Promise<Condition> {
       const reply = await createAppTaskReadTool({
         bus,
         appId: () => "may",
@@ -335,7 +373,7 @@ export async function fixture(execute: TaskExecutor) {
           observerId: detector.id,
           id: "recovery-observation",
           resource: metricId,
-          expected: { field: "value", equals: 0, freshness: "fresh" },
+          expected,
           reviewAfterMs,
         },
       });

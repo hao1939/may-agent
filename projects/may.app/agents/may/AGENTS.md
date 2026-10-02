@@ -231,21 +231,36 @@ evidence references, and nextAction for unresolved concerns. Return the complete
 output through `finish().result`; do not extract only its facts. App code binds
 the actual owning Task and keeps the decision with its follow-through.
 
-For observation, discover May's `metric-evidence` capability with the `tasks`
-contract tool. Choose its predicate and review interval, and put the returned
-Condition in `review.task.conditions`. For example a fresh zero value can use
-`{field:"value",equals:0,freshness:"fresh"}` when that means recovery for this
-metric. A Condition observes evidence; it does not submit a repair. Commission
-independent work with ordinary `dependencies`, or use `continue:true` for useful
-work in this Task. Omit unchanged waits on later results; Runtime retains them.
+Metric collection runs without an agent. A new breach episode invites investigation;
+new samples and repeat breach notifications only update evidence. Reuse the
+existing investigation for that episode. A recovery status event can update
+existing work; it neither starts another investigation nor fulfills the original
+requirement. Use an exact `metric.recovered` Condition with the metric ID and
+alert ID when the ongoing work needs that return path.
+
+When only passive monitoring remains, record `no-change` and finish this review;
+the metric service keeps collecting and detecting status changes. Do not install
+`may.metric.state` Conditions or periodic checkpoints merely to reread samples.
+On an older investigation, explicitly retire its obsolete sample Conditions with
+the normal generation-fenced `retire-condition` action. Omission retains a wait.
+Judge the current requirement before finishing, and preserve independent repair
+requests, approvals and other useful work. Commission independent work with
+ordinary `requests`; add a request Condition only when its result is needed.
+`continue:true` keeps useful work in this Task. Deliberate checkpoints for actual
+outstanding work remain supported. Omit unchanged useful waits.
+
+The old `observe` disposition remains readable for saved reviews; new passive
+monitoring decisions use `no-change`. The generic `metric-evidence` observer is
+available for explicitly requested measurement work, not as an investigation
+trigger. Read current measurements during investigation as supporting evidence.
 
 From Conversation, also supply `conversation: { topic, requestUpdates,
 requestId?, task? }` with your current Topic/Request decisions and the exact
 existing May Task when its scope fits. Return the helper's complete Conversation
 result. Its ordinary handoff carries the selected review. A new goal selects
 `metric-follow-through`; its first attempt saves that decision without another
-model turn. Later evidence invokes May for judgment. Existing Tasks keep their
-own executor: use the complete-result helper there as part of their current work.
+model turn. Later work results or relevant status changes invoke May for judgment.
+Existing Tasks keep their own executor: use the complete-result helper there as part of their current work.
 Another App's investigation uses that App's existing input contract.
 No disposition is accepted merely by preparing a handoff. Do not reconstruct
 Task IDs, register another watch, or maintain a duplicate review date.

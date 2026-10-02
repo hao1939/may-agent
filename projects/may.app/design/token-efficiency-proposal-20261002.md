@@ -107,29 +107,31 @@ Capture that time once for the completed review and retain it through publicatio
 
 **Acceptance:** old evidence and queue delay still produce a future review deadline; immediate periodic reselection is skipped; publication retry preserves the completed judgment and time; explicit new requirements retain their supported admission path.
 
-## 3. Use existing Conditions for meaningful reconsideration
+## 3. Investigate breaches, not samples
 
-An agent should be able to explain its wait in plain language: “I am waiting for approval,” “I need one sample after deployment,” or “Reconsider if this gets worse.” App code saves the corresponding ordinary Conditions and review checkpoint. Host performs the observation.
+The metric service collects samples and evaluates status in code. A new breach
+episode invites investigation; a recovery status change can update the existing
+owner. Newer measurement timestamps, ordinary value changes and repeated breach
+notifications update evidence without another investigation call.
 
-| Situation | Useful wake condition |
-|---|---|
-| A source correction awaits approval | The existing approval/dependency event, with a deliberate follow-up checkpoint |
-| A producer is missing | Producer recovery or the first supported fresh measurement, with coordinated checkpoints for related metrics |
-| A known breach remains under investigation | Supported recovery/deterioration predicates and the investigation's review checkpoint |
-| A change was just applied and needs verification | A fresh sample newer than the verified application baseline |
-| The user supplies new requirements | Normal input to the existing Task; the agent reconciles all current obligations |
+When no intervention remains, record `no-change` and finish the review while
+collection continues. Existing investigations use Conditions for actual work:
+repair results, human decisions or a status change bound to the exact episode.
+Deliberate checkpoints belong to outstanding work, not passive sample review.
+An explicitly requested post-change measurement can use the generic measurement
+capability; it does not justify an open-ended investigation polling loop.
 
-The existing metric observer already exposes value, freshness and measurement time. Prefer those predicates over “any newer sample” when ordinary new samples cannot change the decision. A long fallback interval does not slow a Condition that matches every sample.
+[Metric follow-through](metric-condition-follow-through.md) owns the source fix:
+reject sample Conditions on its result/handoff path, guide the owner to retire
+old waits explicitly, and preserve repair, approval and original-input obligations.
+Existing generic Host observation mechanics remain unchanged.
 
-For a shared investigation, coordinate related checkpoint timing. Preserve distinct per-metric evidence and obligations while avoiding dozens of staggered short timers that each request the same judgment. Do not deduplicate away a metric's independent recovery or approval requirement.
-
-Evaluation should first respect the corrected review deadline and retained investigation. Before spending another model call, use bounded code-owned facts to recognize the same covered concern: current alert episode, coverage/freshness, responsible owner, definition and accepted review policy. Routine timestamp changes alone do not invalidate that policy. Explicit requests, changed coverage, new episodes, supported material changes and due checkpoints remain review opportunities.
-
-Start with the existing result, evidence and Condition fields. Do not introduce a universal semantic fingerprint or a second policy store. Complex rate/trend interpretation remains agent judgment at an eligible review. A comparison that cannot establish coverage must retain the uncertainty and a due reconsideration path.
-
-Keep publication integrity and exact evidence hashes intact. Improve eligibility before expensive assessment; do not silently drop published findings or skip May's required integrity checks. Likewise, one review should not commission another follow-up merely to restate an unchanged wait already covered by the same investigation.
-
-**Acceptance:** replay a sequence of unchanged samples and repeated producer errors without new agent work before the chosen checkpoint. Then prove that approval, recovery, deterioration, missing coverage, an explicit requirement and the due checkpoint each reach the responsible owner. A bounded agent trial must demonstrate useful Condition selection; guidance text alone is insufficient evidence.
+**Acceptance:** repeated fresh and stale samples cause no investigation calls.
+A new breach enters the normal route once; an exact recovery status, repair result
+or human decision reaches existing work. One accepted owner result retires a
+legacy sample wait; it stays retired after restart and independent approval still
+returns. Scripted integration tests prove mechanics; live adoption and useful
+agent decisions require separate evidence.
 
 ## 4. Bound optional context after enrichment
 

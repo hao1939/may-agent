@@ -18,12 +18,12 @@ import { execute } from "./agents/may/workflows/metric-follow-through.js";
 const decision = {
   metricId: "test.metric",
   alertId: null,
-  disposition: "observe" as const,
-  reason: "Review fresh evidence",
+  disposition: "investigate" as const,
+  reason: "A repair is pending",
   evidence: ["metric:test.metric"],
-  nextAction: "Judge recovery",
+  nextAction: "Judge the repair result",
 };
-const condition = observationCondition(
+const metricCondition = observationCondition(
   { ...createMetricEvidenceObserver(), appId: "may" },
   {
     observerId: "metric-evidence",
@@ -32,6 +32,14 @@ const condition = observationCondition(
     expected: { field: "value", equals: 0, freshness: "fresh" },
   },
 );
+const condition = {
+  id: "repair-result",
+  type: "repair.finished",
+  subject: "request:verification",
+  expected: { done: true },
+  owner: "app:may",
+  reviewAfterMs: 3_600_000,
+};
 function review(): MetricReview {
   return {
     task: {
@@ -89,9 +97,9 @@ test("May's real input mapper selects the workflow only for an explicit metric p
   expect(
     metricReviewHandoff(review(), {
       topic: { kind: "none" },
-      response: "The requested measurement needs another sample.",
+      response: "The repair needs a decision.",
     }).response,
-  ).toBe("The requested measurement needs another sample.");
+  ).toBe("The repair needs a decision.");
   const admitted = taskForMayInput({
     id: "input",
     source: { kind: "human", id: "tester" },
@@ -119,7 +127,7 @@ test("May's real input mapper selects the workflow only for an explicit metric p
   expect(app.observers?.some((o) => o.id === "metric-evidence")).toBe(true);
 });
 
-test("a request Condition does not replace a metric observation", () => {
+test("a request Condition carries repair follow-through without a metric observation", () => {
   const result = review();
   result.task = {
     state: "waiting",
@@ -134,16 +142,14 @@ test("a request Condition does not replace a metric observation", () => {
     ],
     conditions: [{ requestId: "review" }],
   };
-  expect(() => metricReviewResult(reconciliation(), result)).toThrow(
-    "Observe requires a saved or returned Condition for this metric",
-  );
+  expect(metricReviewResult(reconciliation(), result)).toMatchObject({
+    state: "waiting",
+    conditions: [{ requestId: "review" }],
+  });
 });
 
-test("a missing wait or fabricated owner cannot be accepted as metric handling", () => {
+test("fabricated owners and dispositions cannot be accepted as metric handling", () => {
   const rec = reconciliation();
-  const plan = review();
-  plan.task = { state: "waiting", summary: "Review later", facts: [] };
-  expect(() => metricReviewResult(rec, plan)).toThrow("Condition");
   expect(() =>
     metricReviewResult(rec, {
       ...review(),
@@ -267,4 +273,86 @@ test("mixed new input reaches judgment with the original requirements and existi
   );
   expect(calls).toBe(1);
   expect(result.output).toMatchObject({ state: "waiting", continue: true });
+});
+
+test("sample Conditions are rejected before a direct result or Conversation handoff is accepted", () => {
+  for (const expected of [
+    { field: "measuredAt", gt: 10, freshness: "fresh" },
+    { field: "sampleId", gt: 10 },
+    { field: "value", equals: 0, freshness: "fresh" },
+  ]) {
+    const plan = review();
+    plan.task.conditions = [{ ...metricCondition, expected }];
+    expect(() => metricReviewResult(reconciliation(), plan)).toThrow(
+      "not a new sample",
+    );
+    expect(() =>
+      metricReviewHandoff(plan, { topic: { kind: "none" } }),
+    ).toThrow("not a new sample");
+  }
+});
+
+test("omission cannot retain old sample waits; explicit retirement preserves the repair wait", () => {
+  const rec = reconciliation();
+  rec.task.conditions = [metricCondition, condition];
+  const plan = review();
+  plan.task.conditions = undefined;
+  expect(() => metricReviewResult(rec, plan)).toThrow("Retire retained");
+  plan.task.actions = [
+    {
+      kind: "retire-condition",
+      conditionId: metricCondition.id,
+      expectedConditionGeneration: 1,
+      reason: "Breach policy replaces passive sample monitoring",
+    },
+  ];
+  expect(metricReviewResult(rec, plan)).toMatchObject({
+    state: "waiting",
+    actions: plan.task.actions,
+  });
+  expect(rec.task.conditions).toHaveLength(2); // composition never mutates retained work
+});
+
+test("an older sample-driven handoff asks for one current judgment instead of replaying its wait", async () => {
+  const rec = reconciliation();
+  const legacy = review();
+  legacy.task.conditions = [metricCondition];
+  legacy.decisions[0].disposition = "observe";
+  rec.task.acceptedAttempt = undefined;
+  rec.input = { kind: "goal", data: { context: { metricResponse: legacy } } };
+  let calls = 0;
+  const result = await execute(
+    createTestAppWorkflowContext({
+      input: rec.input,
+      reconciliation: rec,
+      callAgent: (async (_agent: string, prompt: string) => {
+        calls++;
+        expect(prompt).toContain(
+          "Retire every obsolete retained may.metric.state Condition",
+        );
+        expect(prompt).toContain(
+          "Metric recovery alone never fulfills original work",
+        );
+        return {
+          id: "current-judgment",
+          kind: "agent",
+          status: "done",
+          summary: "Monitoring needs no open work",
+          output: {
+            task: {
+              state: "converged",
+              summary: "No intervention warranted",
+              facts: ["Existing breach reviewed"],
+            },
+            decisions: [
+              { ...decision, disposition: "no-change", nextAction: undefined },
+            ],
+          },
+        };
+      }) as never,
+    }),
+  );
+  expect(calls).toBe(1);
+  expect(result.output).toMatchObject({ state: "converged" });
+  expect(result.output).not.toHaveProperty("conditions");
 });

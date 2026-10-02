@@ -6,6 +6,7 @@ import {
   type ConversationTurnResult,
   type TaskReconcileResult,
   type TaskReconciliationContext,
+  type Condition,
 } from "@may-agent/sdk";
 import { Check } from "typebox/value";
 
@@ -19,7 +20,10 @@ export const metricReviewSchema = Type.Object(
           metricId: text,
           alertId: Type.Union([Type.Integer({ minimum: 1 }), Type.Null()]),
           disposition: Type.Union([
-            Type.Literal("observe"),
+            Type.Literal("observe", {
+              description:
+                "Legacy disposition. Use no-change for passive collection; sample Conditions cannot trigger investigation.",
+            }),
             Type.Literal("investigate"),
             Type.Literal("no-change"),
             Type.Literal("recovered"),
@@ -36,6 +40,33 @@ export const metricReviewSchema = Type.Object(
   { additionalProperties: false },
 );
 export type MetricReview = Static<typeof metricReviewSchema>;
+
+/** Metric collection is evidence, not an investigation's return route. */
+export function isMetricSampleCondition(condition: { type?: string }): boolean {
+  return condition.type === "may.metric.state";
+}
+
+function assertInvestigationWaits(
+  result: TaskReconcileResult,
+  retained: readonly Condition[] = [],
+): void {
+  const retired = new Set(
+    result.actions
+      ?.filter((action) => action.kind === "retire-condition")
+      .map((action) => action.conditionId),
+  );
+  const sampleWaits = [
+    ...retained.filter((condition) => !retired.has(condition.id)),
+    ...(result.conditions ?? []),
+  ].filter(
+    (condition) =>
+      !("requestId" in condition) && isMetricSampleCondition(condition),
+  );
+  if (sampleWaits.length)
+    throw new Error(
+      "Metric investigations start on a breach, not a new sample. Retire retained may.metric.state Conditions and do not add new ones. Use no-change when only metric collection remains, or investigate with useful work, repair-result or human-decision waits; preserve independent obligations.",
+    );
+}
 
 export function readMetricReview(
   value: unknown,
@@ -61,6 +92,7 @@ export function metricReviewResult(
 ): TaskReconcileResult {
   const review = readMetricReview(value);
   const result = review.task;
+  assertInvestigationWaits(result, owner.task.conditions);
   const seen = new Set<string>();
   const facts = review.decisions.map((decision) => {
     const key = JSON.stringify([decision.metricId, decision.alertId]);
@@ -84,33 +116,8 @@ export function metricReviewResult(
           "An unresolved metric requires a waiting result and nextAction",
         );
     }
-    // Host settlement validates ordinary waits, including omitted Conditions.
-    // Only observation has a metric-specific requirement here.
-    if (decision.disposition === "observe") {
-      const retired = new Set(
-        result.actions
-          ?.filter((a) => a.kind === "retire-condition")
-          .map((a) => a.conditionId),
-      );
-      const open = owner.task.conditions.filter(
-        (c) =>
-          owner.waits.open.some((wait) => wait.conditionId === c.id) &&
-          !retired.has(c.id),
-      );
-      const observesMetric = [...open, ...(result.conditions ?? [])].some(
-        (c) =>
-          !("requestId" in c) &&
-          c.subject === `resource:${decision.metricId}` &&
-          c.type === "may.metric.state" &&
-          c.owner === "app:may" &&
-          (c.expected as Record<string, unknown> | null)?.source ===
-            "app:may:observer:metric-evidence",
-      );
-      if (!observesMetric)
-        throw new Error(
-          "Observe requires a saved or returned Condition for this metric",
-        );
-    }
+    // Host settlement validates actual work/waits. The legacy "observe"
+    // spelling stays readable, but cannot install a metric-sample wake.
     const fact = `metric-disposition:${JSON.stringify({
       version: 1,
       ...decision,
@@ -160,6 +167,7 @@ export function metricReviewHandoff(
   conversation: MetricConversation,
 ): ConversationTurnResult {
   const review = readMetricReview(value);
+  assertInvestigationWaits(review.task);
   if (
     !review.decisions.length ||
     review.task.state !== "waiting" ||
