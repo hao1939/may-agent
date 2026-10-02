@@ -185,7 +185,9 @@ persists state, schedules attempts, limits concurrency, recovers after restart,
 and exposes observations.
 
 Do not put domain policy in queues, adapters, sessions, or storage code. Do not
-make App code manage leases, retries, delivery bookkeeping, or database rows.
+make App code manage leases, mechanical retries, delivery bookkeeping, or database
+rows. An agent or App-authored procedure can choose a retry, repair or failover
+as a recovery decision; infra executes it through the owning capability.
 
 Domain policy can be deterministic code. A rule selecting a maintenance agent
 or a benchmark is still App policy; a rule rejecting an obsolete attempt result
@@ -310,8 +312,8 @@ new work mechanism.
 
 An App becomes more powerful by adding domain policy, acceptance checks,
 learned workflows, and bounded capabilities available during reconciliation.
-Those extensions must not add App-owned storage, workers, schedulers, retries,
-recovery, or delivery paths.
+Those extensions must not add App-owned storage, workers, schedulers, mechanical
+retry controllers, process recovery, or delivery paths.
 
 ## Separate triggering, execution, and recovery
 
@@ -344,6 +346,28 @@ repeating it. Cheap computation does not make duplicate effects acceptable.
 
 See [Task Engine](../2a-design/task-resource-engine.md),
 [Runtime](../2a-design/runtime.md), and [Scheduling](../2a-design/cron.md).
+
+### Safe retry by default; explicit exceptions
+
+Make retrying the same operation safe by default. This reduces agent bookkeeping,
+duplicate effects and human rescue while preserving continued work. Infra owns
+routine retries, backoff, operation identity and replay under the existing
+execution policy. Agents may also choose retry, repair or failover as recovery
+decisions; they need not wait for automatic retries to end. Infra executes those
+decisions with the same authority, effect-safety and execution bounds.
+
+Use the simplest sufficient protection at the operation's owner. Reuse accepted
+work and committed effects; repeating cheap computation can remain acceptable.
+When safe retry is unavailable or disproportionate, disclose the specific
+operation's exception, its consequences and recovery options. A default design
+rule is not proof that every installed capability fulfills it. Keep recurring
+failures observable so an agent can judge whether a different approach is needed.
+This adds no universal retry-count limit or automatic Task pause.
+
+The [Host/App retry and recovery contract](../2a-design/system-boundary.md#retry-and-recovery-ownership)
+owns the detailed responsibilities and exception handling. See the
+[mechanism guide](code-vs-data.md#decision-guide) when deciding between a shared
+execution repair and an App-owned recovery procedure.
 
 ## Metrics are observations, not decisions
 

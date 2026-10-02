@@ -345,11 +345,15 @@ Do not let metric code mutate tasks or dispatch sessions directly.
 
 ## Pure Functions And Retry
 
-Call pure deterministic functions normally. Keep local retries bounded by the
-current run and use checks appropriate to the effect. Return useful partial
-output and failed-check evidence when repair cannot continue; a loop-exhausted
-message alone loses the information the caller needs. A fixed local limit can
-fit a particular procedure, but no number is a universal requirement.
+Call pure deterministic functions normally. Routine delivery retry, backoff and
+replay belong to the owning infra capability; workflow authors need no wrapper
+loop for them. A workflow may choose retry, repair or failover as a domain
+recovery action and have infra execute it. Follow the shared
+[retry ownership and safety contract](../2a-design/system-boundary.md#retry-and-recovery-ownership).
+Keep local domain repair iterations within the current run and use checks
+appropriate to the effect. Return useful partial output and failed-check evidence
+when repair cannot continue; a loop-exhausted message alone loses what the caller
+needs. A fixed local limit can fit a procedure, but no number is universal.
 
 Local iterations share one Task attempt and its deadline. Feed the failed check's
 evidence into the repair, and stop when scope, prerequisites or remaining budget
@@ -361,12 +365,13 @@ the workflow where local repair is useful. Task reconciliation owns durable
 retry/backoff and continuation across runs.
 
 A restart can rerun the whole workflow, including after an agent handoff; it
-does not resume the lost TypeScript continuation. Before repeating an external
-write, read the provider using the operation identity retained in Task input or
-use the provider's existing idempotency key. Do not generate a new operation key
-from the replacement attempt or session. If the effect cannot be confirmed,
-return the exact uncertainty as a blocker rather than blindly repeating it.
-Keep required verification valid for both workflow and agent-produced results.
+does not resume the lost TypeScript continuation. Reuse the capability's retained
+operation reference and supported replay behavior. When implementing a provider
+capability, preserve its operation identity and enforce effect safety there;
+do not generate a fresh key from the replacement attempt or session. If a
+declared exception leaves the effect unknown, return that evidence for the
+owning agent's recovery judgment. This need not stop independent work. Keep
+required verification valid for both workflow and agent-produced results.
 
 ## Cross-App And Human Escalation
 

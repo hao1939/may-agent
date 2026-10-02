@@ -12,6 +12,9 @@ Task runtimes and test fixtures use resource authority; the legacy JSON
 store and completed offline cutover path have been removed. The retired inbox
 delivery table is retained only as historical schema evidence. Incident-shaped public
 inputs remain a convergence gap rather than an alternate accepted boundary.
+The safe-retry default below is a capability requirement; coverage must be
+verified at each operation's effect boundary. Existing Task replay does not
+certify every installed tool or external provider effect.
 
 The responsibility split is:
 
@@ -38,7 +41,7 @@ event
 ```
 
 The Host does not invent domain work. The App does not implement storage,
-queues, retries, recovery, or presentation transport.
+queues, mechanical retry controllers, process recovery, or presentation transport.
 
 ## Core, external capabilities and composition
 
@@ -496,7 +499,7 @@ unfinished stored request or task
   -> run the same obligation again when allowed
 ```
 
-Recovery cannot invent a new task, owner, strategy, or completion claim.
+Mechanical recovery cannot invent a new task, owner, strategy, or completion claim.
 Apps with paused task reconciliation continue to store new work but do not
 start task attempts.
 
@@ -505,6 +508,66 @@ Precise session or step resumption is not required by this boundary. Prefer
 safe redo when its cost is acceptable; retain additional progress only when
 it earns its complexity. See the
 [redo-versus-resume rule](../1-principles/core-principles.md#prefer-redo-when-it-is-simpler-and-affordable).
+
+### Retry and recovery ownership
+
+Following the [safe-retry principle](../1-principles/core-principles.md#safe-retry-by-default-explicit-exceptions),
+infra owns routine retries of the same operation: identity, timing, backoff,
+replay and recovery under the existing execution policy. The owning Task runtime,
+executor or capability adapter supplies those mechanics. Agents and App-authored
+workflows need no delivery retry loop or model call to resend unchanged work;
+callers must not add a competing controller for the same recovery responsibility.
+
+The agent may explicitly choose retry, repair, failover or another recovery
+strategy within its authority, without waiting for automatic retries to end.
+A workflow may express an established domain recovery procedure. Infra executes
+those decisions through the owning capability. Both automatic and agent-requested
+retries follow the same effect-safety, scope, cancellation and concurrency rules.
+
+For durable work, retain operation identity before dispatch and reuse it across
+delivery retries and recovery. Repeated or concurrent submissions reuse accepted
+work and its receipt/result; a lost acknowledgment must not create another
+request. Replaying a submission retrieves that existing work. A new execution
+after failure follows the owner's recovery policy or an authorized recovery
+decision through existing controls. Intentionally new work uses ordinary
+admission. Similar input text alone cannot establish which of these is intended.
+Infra supplies retained references and results for inspection and control;
+the agent need not manufacture delivery identities.
+
+Attempt-scoped retries share the current deadline and cancellation; they do not
+extend the allowance. Durable work retains its owner's recovery policy across
+attempts. Return known input or authority errors for correction; mechanical
+retry does not invent new input or permissions. Retain progress and correlated
+failures in existing context, metrics and declared review routes. Recurring
+retries must remain observable without making an agent administer each one.
+
+### Safe retry and declared exceptions
+
+The default contract is that replaying the same operation does not duplicate
+its committed effects. Code, reads or cheap computation may run again. Use the
+smallest sufficient protection at the owning boundary: existing atomic admission
+and replay records, an idempotent desired-state operation, or a provider's
+supported idempotency key. One admitted Task alone does not make every external
+effect inside it safe to repeat. Check the actual effect boundary, including
+interruption after the effect but before its acknowledgment is recorded.
+
+If an operation cannot provide safe retry at acceptable cost, disclose the
+exception in its existing description/contract before use: what can repeat,
+the scope or retention limit of protection, and available recovery actions.
+For example, a provider may accept a message but support neither a retry key
+nor confirmation after a lost response. Keep exceptions specific to the affected
+operation; they need no caller-managed idempotency flag or separate registry.
+
+Infra performs supported status checks and known-safe recovery. If an exception
+leaves the effect unknown and replay could duplicate it, return that evidence
+to the responsible agent to judge another effect, a different approach or help.
+For a safely retryable operation, uncertainty normally calls for recovery of
+that same operation and needs no additional semantic decision. Neither case
+automatically pauses independent Task work or imposes a retry-count limit.
+
+Operation safety and advertised limits must agree with installed behavior.
+This contract is no exactly-once guarantee for arbitrary shell commands or
+unsupported provider effects, and does not introduce a new retry service.
 
 ## Public boundary
 
@@ -564,6 +627,8 @@ generic query, command, service locator, database, path bag, or runtime context.
   belong to one Task?
 - Does the App decide meaning and completion?
 - Does the Host own execution, concurrency, restart, and result exposure?
+- Does the owning capability handle routine retries safely, disclose exceptions,
+  and preserve agent-directed recovery through the same execution boundary?
 - Can a fact start work only through an explicit App route?
 - Are sessions and workflows bounded attempts rather than hidden controllers?
 - Is any new public capability smaller than exposing Host internals?

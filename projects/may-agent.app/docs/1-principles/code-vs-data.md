@@ -68,7 +68,10 @@ Is this one novel or ambiguous decision?
 Is this reusable guidance whose application depends on context?
   -> skill or owned knowledge
 
-Is a stable sequence, branch, retry, or verification repeatedly missed?
+Is this routine delivery retry, backoff or replay of the same operation?
+  -> the owning infra capability, under the shared execution contract
+
+Is a stable domain sequence, recovery method or verification repeatedly missed?
   -> agent-owned workflow
 
 Is this a deterministic fact or invariant?
@@ -89,6 +92,9 @@ Does existing behavior only need a wake or observation?
 
 These mechanisms compose. A scheduled task may bind a workflow whose agent
 steps use skills and tools while guards observe mechanical risk.
+Agents and workflows may choose retries or failover as recovery actions; infra
+executes them. A domain repair loop does not become a delivery retry controller.
+See the [retry ownership contract](../2a-design/system-boundary.md#retry-and-recovery-ownership).
 
 ## Examples
 

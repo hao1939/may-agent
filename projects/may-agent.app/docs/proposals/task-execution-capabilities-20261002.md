@@ -226,7 +226,8 @@ caller completion dependency. Neither choice transfers the caller's original
 assignment. Both report known acceptance or rejection; a lost acknowledgment
 normally triggers recovery or retry of the same operation. Infra must not turn
 it into a new request. If acceptance is still uncertain, retain that fact while
-following the capability's [safe retry contract](task-execution-capability-contracts-20261003.md#safe-retry-by-default-explicit-exceptions).
+following the shared [retry and recovery contract](../2a-design/system-boundary.md#retry-and-recovery-ownership)
+and its [declared exceptions](../2a-design/system-boundary.md#safe-retry-and-declared-exceptions).
 A required answer can arrive later while other useful work continues. It
 requests feedback; it is not an infra-enforced prerequisite for convergence.
 
