@@ -357,9 +357,13 @@ test("an older sample-driven handoff asks for one current judgment instead of re
   expect(result.output).not.toHaveProperty("conditions");
 });
 
-test("an unchanged saved plan is current context, never a replayed judgment", async () => {
+test("an unchanged unsupported saved plan is current context, never a replayed judgment", async () => {
   const rec = reconciliation();
   const saved = review();
+  delete saved.task.conditions;
+  expect(saved.task).not.toHaveProperty("conditions");
+  expect(saved.task).not.toHaveProperty("continue");
+  expect(saved.task).not.toHaveProperty("reviewAt");
   rec.input = { kind: "goal", data: { context: { metricResponse: saved } } };
   rec.events.items = [
     {

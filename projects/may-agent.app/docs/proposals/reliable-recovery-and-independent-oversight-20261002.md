@@ -4,8 +4,19 @@
 
 **Choice basis:** [Agent decisions and mechanical execution](../1-principles/code-vs-data.md); [safe retry and recovery ownership](../2a-design/system-boundary.md#retry-and-recovery-ownership); [evidence before expansion](../1-principles/evidence-first.md).
 
-**Design status:** Proposed remaining recovery and oversight work; dated trial record.
-**Implementation status (2026-10-03):** [PR #284](https://github.com/hao1939/may-agent/pull/284) is merged as `0317016b`. Fresh-context, backlog and executor-policy source repairs are integrated. Independent oversight and connected original-input recovery still need their own evidence; this review neither deploys nor proves live recovery.
+**Design status:** Current-first implementation and evidence index, followed by the dated proposal and trial record.
+**Implementation status (2026-10-03):** Host `14491241d07346c7993c99bd6a709e29797d2883` and Apps release `1e97bd70e1e9beb9dd20b33f0b696c5f4122bfd6-definitions-v4` are the observed installed baseline. PRs #284 and #288 integrated the fresh-context, backlog and executor-policy repairs. The original `evaluation/runtime/compat/owner-review` Task then resumed on the same Codex thread and settled its 133 retained inputs in three accepted attempts. This bounded supervised outcome does not prove universal autonomous recovery.
+
+Current ownership and decisive evidence:
+
+| Concern | Owning mechanism | Current evidence and limit |
+| --- | --- | --- |
+| Fresh attempt, input and rejection context reaches start and resume | Persistent executor adapter at the common Task-attempt boundary | Integrated Host regression and installed same-thread recovery; fresh packet delivery is mechanical, while the agent still judges correction. |
+| Old bounded backlog does not starve later input or reject honest incomplete work | Host Task reconciliation, settlement and exact generation/action fences | PR #288 connected recovery settled the original and later input without deleting history; one oversized item can still exceed the existing bound. |
+| Executor capability and sandbox compatibility | Installation acceptance plus the configured executor adapter | Installed native CLI start/resume trials performed synthetic file operations under the runtime identity; this is installation evidence, not a per-attempt preflight or permission widening. |
+| Evaluation operational recurrence and accepted-incomplete/stale interruption coverage | May metric policy and ordinary alert/investigation identity | Existing Evaluation metrics and May follow-through provide an independent route. The three-attempt/six-hour threshold remains trial App policy, not a Host rule or proof of waste. |
+| Whether and how uncertain work is repaired | Original worker and assigning owner through the existing Task, caller, Condition and review paths | Accepted evidence can support repair, a real wait, delivered help or no action. Admission, a new alert or a repair Task alone is not fulfillment. |
+| Generic automatic supervisor fallback | Deferred design capability | Current caller, admission, metric and installation-specific oversight routes have not demonstrated a missing primitive that justifies a global routing hierarchy. |
 
 The October 2 narrative below preserves the candidate revisions and results as
 recorded then. Statements about candidates being undeployed are historical,

@@ -199,7 +199,6 @@ different metric signals plus a scheduled wake during active review, retained
 deadlines and shared allowance, incomplete reads, and reuse of accepted owner work.
 This is an App selection repair, not a new Host registry or work lifecycle.
 
-
 ## Validation and limits
 
 The preceding PoC is retained on `poc/metric-condition-follow-through`, commit
