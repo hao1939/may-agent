@@ -48,7 +48,7 @@ import {
   reopenLoadedAppTask,
 } from "./app-task-runtime.js";
 import { createTaskAttemptProcessExecutor } from "../../composition/workers/task-attempt-process.js";
-import { admitTaskAppDependencies, recoverTaskConditions } from "./dependency-admission.js";
+import { admitTaskAppRequests, recoverTaskConditions } from "./dependency-admission.js";
 import { createTaskExecutionBackends } from "../../composition/task-execution.js";
 import { createTaskSessionRecovery } from "../../adapters/executors/session-recovery.js";
 import { createTaskAgentRunner } from "../../adapters/executors/managed-agent.js";
@@ -62,6 +62,13 @@ import {
   planCanonicalAgentResidueCleanup,
   rejectConvergedDirectAgentResidue,
 } from "../../adapters/executors/agent-workspace.js";
+
+// Existing wait regressions use the same submission path and explicitly select every returned Condition.
+function admitTaskAppDependencies(input: Omit<Parameters<typeof admitTaskAppRequests>[0], "requests"> & {
+  dependencies: Parameters<typeof admitTaskAppRequests>[0]["requests"];
+}) {
+  return [...admitTaskAppRequests({ ...input, requests: input.dependencies }).values()];
+}
 
 // These integration fixtures select the shipped backends explicitly.
 // Boundary/absence tests below call installCoreTaskRuntimes directly.
@@ -2428,16 +2435,19 @@ describe("canonical App task runtime", () => {
     expect(() => admitTaskAppDependencies({ opts, descriptor, claim, dependencies: [dependency("invalid")] })).toThrow(
       directError,
     );
-    const conversational = { id: "help", appId: "evaluation", input: { kind: "message", data: { text: "Review this" } } };
-    expect(() => admitTaskAppDependencies({ opts, descriptor, claim, dependencies: [conversational] })).toThrow(
-      "input message is conversational and cannot be used for delegated Task work",
-    );
     expect(listAppInboxItems(config.resourceStore.db)).toEqual([]);
     expect(readTaskSnapshot(config)).toEqual(before);
     expect(requests).toBe(0);
     const conditions = admitTaskAppDependencies({ opts, descriptor, claim, dependencies: [dependency("outcome")] });
     expect(conditions).toHaveLength(1);
     expect(requests).toBe(1);
+    const conversational = {
+      id: "help",
+      appId: "evaluation",
+      input: { kind: "message", data: { text: "Review this" } },
+    };
+    expect(admitTaskAppDependencies({ opts, descriptor, claim, dependencies: [conversational] })).toHaveLength(1);
+    expect(requests).toBe(2);
     expect(readTaskSnapshot(config).conditions?.approval).toEqual(before.conditions?.approval);
     // Exact ordinary-Task input bypasses new-work mapping, including when its
     // kind is also supported for a direct Conversation.
@@ -2453,7 +2463,7 @@ describe("canonical App task runtime", () => {
   });
 
   it.each(["live", "restart", "lost-feedback"] as const)(
-    "returns a stranded conversational dependency for correction and answers the original ask (%s)",
+    "routes a retained text request through ordinary work and answers the original ask (%s)",
     async (route) => {
       const f = fixture();
       const persistDir = join(f.root, "state");
@@ -2556,7 +2566,7 @@ describe("canonical App task runtime", () => {
           },
         });
         // Retained input from an older Host: durable provenance exists, but no
-        // receiver has executed or admitted the unsupported conversational kind.
+        // receiver has executed or attached its text input.
         const saved = createAppInboxItem(getDb(persistDir), {
           id: "saved-help",
           appId: "sample",
@@ -2601,48 +2611,27 @@ describe("canonical App task runtime", () => {
             }).created,
           ).toBe(false);
         } else await host.recoverAdmissions();
-        if (loseFeedback) {
-          const rejected = host.get(saved.id)!;
-          expect(rejected.recovery?.["input-admission"]?.reportedAt).toBeUndefined();
-          expect(rejected.recovery?.["input-feedback"]?.failures).toBe(1);
-          await restart();
-          loseFeedback = false;
-          setSystemTime(rejected.reviewAt!);
-          await host.recoverAdmissions();
-        }
         expect(host.get(saved.id)).toMatchObject({
           id: saved.id,
           creator: saved.creator,
-          status: "done",
-          handling: { phase: "failed" },
-          result: { result: { disposition: "admission-rejected" } },
+          status: "handling",
+          waitingOn: { kind: "task", id: "work/repair" },
+          taskAdmissionKey: `task:${saved.id}`,
         });
-        expect(host.get(saved.id)?.result?.summary).toContain("cannot be used for delegated Task work");
         expect(host.get(saved.id)?.executionTaskId).toBeUndefined();
-        expect(feedback).toHaveLength(1);
-        await host.recoverAdmissions();
-        expect(feedback).toHaveLength(1);
-        recoverTaskConditions(runtimeOptions(), descriptor(), config());
+        expect(feedback).toHaveLength(0);
         expect(readAppTaskAdmissionOutcome(config(), "work/caller", "ask:original")).toBeNull();
-        const correction = claim("work/caller");
-        expect(JSON.stringify(correction.events)).toContain("admission-rejected");
-        expect(correction.continuedInputKeys).toContain("ask:original");
-        const dependencies = [
-          { id: "repair", appId: "sample", input: { kind: "review", data: { text: "Need the repair decision" } } },
-        ];
-        const conditions = admitTaskAppDependencies({
-          opts: runtimeOptions(),
-          descriptor: descriptor(),
-          claim: correction,
-          dependencies,
+        expect(listAppInboxItems(getDb(persistDir))).toHaveLength(1);
+        completeAppTask(config(), claim("work/repair"), {
+          summary: "Decision obtained",
+          result: { decision: "repair" },
         });
-        expect(
-          admitTaskAppDependencies({ opts: runtimeOptions(), descriptor: descriptor(), claim: correction, dependencies }),
-        ).toEqual(conditions);
-        deferAppTask(config(), correction, { disposition: "waiting", summary: "Requested supported work", conditions });
-        expect(listAppInboxItems(getDb(persistDir))).toHaveLength(2);
-        completeAppTask(config(), claim("work/repair"), { summary: "Decision obtained", result: { decision: "repair" } });
         await host.refreshTaskResults("sample", "work/repair");
+        expect(host.get(saved.id)?.status).toBe("done");
+        if (loseFeedback) {
+          expect(feedback).toHaveLength(0);
+          loseFeedback = false;
+        } else expect(feedback).toHaveLength(1);
         await restart();
         recoverTaskConditions(runtimeOptions(), descriptor(), config());
         const continued = claim("work/caller");
@@ -2653,7 +2642,9 @@ describe("canonical App task runtime", () => {
           facts: ["source:healthy"],
           inputKeys: ["ask:original"],
         });
-        expect(readAppTaskAdmissionOutcome(config(), "work/caller", "ask:original")?.attemptId).toBe(continued.attemptId);
+        expect(readAppTaskAdmissionOutcome(config(), "work/caller", "ask:original")?.attemptId).toBe(
+          continued.attemptId,
+        );
         expect(config().resourceStore.isCancelled("work/caller")).toBe(false);
       } finally {
         host!.close();
@@ -3325,6 +3316,163 @@ describe("canonical App task runtime", () => {
     }
   });
 
+  it.each([true, false])("handles the same App text request with a caller Condition: %s", async (waitForAnswer) => {
+    const f = fixture();
+    const persistDir = join(f.root, "state");
+    let bus = eventBus();
+    let host: AppInboxHost;
+    let receiverReady = false;
+    let mappings = 0;
+    let callerAttempts = 0;
+    const request = { id: "review", appId: "sample", input: { kind: "message", data: { text: "Review this design" } } };
+    const app = defineApp({
+      ...definition(),
+      conversation: { mode: "agent", inputKinds: ["message"] },
+      inputSchema: Type.Object({ kind: Type.Literal("message"), data: Type.Object({ text: Type.String() }) }),
+      task: ({ input }) => {
+        mappings++;
+        expect(input).toEqual(request.input);
+        return {
+          kind: "desired",
+          intent: {
+            id: "work/receiver",
+            parentId: "operations",
+            outcome: "Review this design",
+            acceptance: ["Return the reviewed result"],
+            executor: "worker",
+          },
+        };
+      },
+    });
+    const runtimeOptions = () => ({
+      ...options(f, bus),
+      installControllers: false,
+      appRegistrySnapshot: { id: "caller-condition", generation: 1, entries: [{ appDir: f.appDir, definition: app }] },
+      executors: {
+        worker: (async (attempt) => {
+          if (attempt.task.id === "work/receiver")
+            return receiverReady
+              ? {
+                  state: "converged",
+                  summary: "Reviewed",
+                  facts: ["design:reviewed"],
+                  result: { verdict: "accepted" },
+                  inputKeys: attempt.task.currentObligations?.available
+                    ? attempt.task.currentObligations.inputWaits.items.map(({ key }) => key)
+                    : [],
+                }
+              : {
+                  state: "waiting",
+                  summary: "Review started",
+                  report: true,
+                  facts: ["design:opened"],
+                  reviewAt: Date.now() + 300_000,
+                };
+          callerAttempts++;
+          if (
+            attempt.events.items.some(
+              ({ event }) => event.type === "app.dependency.updated" && event.data.status === "done",
+            )
+          )
+            return { state: "converged", summary: "Used the review", facts: ["design:reviewed"] };
+          return waitForAnswer
+            ? {
+                state: "waiting",
+                summary: "Need the review result",
+                facts: [],
+                requests: [request],
+                conditions: [{ requestId: request.id }],
+              }
+            : { state: "converged", summary: "Sent for independent handling", facts: [], requests: [request] };
+        }) satisfies TaskExecutor,
+      },
+    });
+    const install = async () => {
+      await installCoreTaskRuntimes(runtimeOptions());
+      host = new AppInboxHost({
+        db: getDb(persistDir),
+        apps: [app],
+        attachTask: (input) => admitTaskInput(loadedTaskConfig(f), input),
+        admitConversation: () => {
+          throw new Error("App work entered human Conversation");
+        },
+        readDependency: (input) => createAppTaskCapability({ bus }).readDependency({ ...input, appDir: f.appDir }),
+        onRequestUpdated: () => {
+          throw new Error("Lost notification; recover the exact saved result");
+        },
+      });
+      bus.subscribe((event) => {
+        if (event.type !== "app.input.requested") return;
+        host.admit({
+          id: String(event.data.requestId),
+          appId: "sample",
+          source: { kind: "app", id: "sample" },
+          input: event.data.input as typeof request.input,
+          idempotencyKey: String(event.data.idempotencyKey),
+        });
+        return { accepted: true, by: "fixture", route: "direct" };
+      });
+    };
+    const run = (taskId: string) =>
+      reconcileLoadedAppTaskOnce({
+        bus,
+        appId: "sample",
+        taskId,
+        dispatch: { enqueuedAt: 1, startedAt: 2, readyWaitMs: 1, lane: "normal" },
+      });
+    await install();
+    let config = loadedTaskConfig(f);
+    observeAppTaskIntent(config, {
+      appAgent: "sample-owner",
+      intent: {
+        id: "work/caller",
+        parentId: "operations",
+        executor: "worker",
+        outcome: "Arrange review",
+        acceptance: ["Respect caller's result decision"],
+      },
+    });
+    try {
+      await run("work/caller");
+      const saved = listAppInboxItems(getDb(persistDir))[0]!;
+      expect(saved.input).toEqual(request.input);
+      expect(saved.waitingOn).toEqual({ kind: "task", id: "work/receiver" });
+      expect(config.resourceStore.readTask("work/caller")?.status.conditionIds ?? []).toEqual(
+        waitForAnswer ? [`app-request:${saved.id}`] : [],
+      );
+      await run("work/receiver");
+      await host.refreshTaskResults("sample", "work/receiver");
+      expect(host.get(saved.id)?.status).toBe("handling");
+      expect(host.get(saved.id)?.result).toBeUndefined();
+      expect(config.resourceStore.readTask("work/caller")?.status.phase).toBe(waitForAnswer ? "waiting" : "converged");
+      host.close();
+      await closeInstalledAppTaskRuntimes(bus);
+      closeDb(persistDir);
+      bus = eventBus();
+      await install();
+      config = loadedTaskConfig(f);
+      await host.recoverAdmissions();
+      receiverReady = true;
+      recordAppTaskTrigger(config, "work/receiver", { type: "review.ready", data: {} });
+      await run("work/receiver");
+      await host.refreshTaskResults("sample", "work/receiver");
+      expect(host.get(saved.id)).toMatchObject({ status: "done", result: { result: { verdict: "accepted" } } });
+      await recoverInstalledAppTasks(bus);
+      expect(callerAttempts).toBe(1);
+      if (!waitForAnswer) {
+        expect(config.resourceStore.readTaskForView("work/caller")?.phase).toBe("converged");
+        recordAppTaskTrigger(config, "work/caller", { type: "caller.review", data: {} });
+      }
+      await run("work/caller");
+      expect(callerAttempts).toBe(2);
+      expect(config.resourceStore.readTask("work/caller")?.status.phase).toBe("converged");
+      expect(listAppInboxItems(getDb(persistDir))).toHaveLength(1);
+      expect(mappings).toBe(1);
+    } finally {
+      host!.close();
+    }
+  });
+
   it("adds distinct work for the same App without replaying retained waits, including after restart", async () => {
     const f = fixture();
     const bus = eventBus();
@@ -3533,7 +3681,8 @@ describe("canonical App task runtime", () => {
                 state: "waiting",
                 summary: "Measure through the responsible App",
                 facts: [],
-                dependencies: [
+                conditions: [{ requestId: "measurement" }],
+                requests: [
                   {
                     id: "measurement",
                     appId: "sample",

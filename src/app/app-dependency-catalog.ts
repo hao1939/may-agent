@@ -189,7 +189,9 @@ export function appDependencyCatalog(
     .map(({ definition }) => ({
       appId: definition.id,
       description: definition.description?.trim() || "No description declared.",
-      inputs: appInputContracts(definition.inputSchema).filter((input) => appInputRoute(definition, input.kind) === "task"),
+      inputs: appInputContracts(definition.inputSchema).filter(
+        (input) => appInputRoute(definition, input.kind, undefined, true) === "task",
+      ),
     }))
     .filter((entry) => entry.inputs.length > 0)
     .sort((left, right) => left.appId.localeCompare(right.appId));

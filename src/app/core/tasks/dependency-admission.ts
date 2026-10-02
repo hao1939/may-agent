@@ -1,4 +1,4 @@
-import { type Condition as AppTaskConditionSpec, type TaskAppDependency } from "@may-agent/sdk";
+import { type Condition as AppTaskConditionSpec, type TaskAppRequest } from "@may-agent/sdk";
 import { createHash } from "node:crypto";
 import { isDeepStrictEqual } from "node:util";
 import { assertValidAppInput } from "../apps/definition-validation.js";
@@ -25,16 +25,17 @@ import type { AppTaskRuntimeOptions } from "./runtime-options.js";
 
 const APP_DEPENDENCY_REVIEW_AFTER_MS = 300_000;
 
-export function admitTaskAppDependencies(input: {
+/** Submit once and return exact completion specifications; only the caller's Conditions install waits. */
+export function admitTaskAppRequests(input: {
   opts: AppTaskRuntimeOptions;
   descriptor: AppTaskRuntimeDescriptor;
   claim: AppTaskClaim;
-  dependencies: TaskAppDependency[];
+  requests: TaskAppRequest[];
   existingConditions?: AppTaskConditionSpec[];
   acceptedLiveEventIds?: number[];
-}): AppTaskConditionSpec[] {
+}): Map<string, AppTaskConditionSpec> {
   const dependencyIds = new Set<string>();
-  for (const dependency of input.dependencies) {
+  for (const dependency of input.requests) {
     if (dependencyIds.has(dependency.id)) {
       throw new Error(`Task result declares App dependency ${dependency.id} more than once`);
     }
@@ -84,7 +85,7 @@ export function admitTaskAppDependencies(input: {
     } satisfies AppTaskConditionSpec,
   });
 
-  for (const dependency of input.dependencies) {
+  for (const dependency of input.requests) {
     const direct = existing.filter(
       ({ condition, requestId }) =>
         dependency.id === requestId || dependency.id === condition.id || dependency.id === `app-request:${requestId}`,
@@ -106,8 +107,8 @@ export function admitTaskAppDependencies(input: {
       detachedItem.status !== "done" &&
       detachedItem.source.kind === "app" &&
       detachedItem.source.id === input.descriptor.id &&
-      detachedItem.idempotencyKey?.startsWith(requestLineagePrefix)
-      && belongsToCaller(detachedItem)
+      detachedItem.idempotencyKey?.startsWith(requestLineagePrefix) &&
+      belongsToCaller(detachedItem)
         ? [detachedMatch(detachedItem)]
         : [];
     const detachedByMeaning =
@@ -158,7 +159,7 @@ export function admitTaskAppDependencies(input: {
     matches.set(dependency.id, match);
   }
 
-  const newDependencies = input.dependencies.filter((dependency) => !matches.has(dependency.id));
+  const newDependencies = input.requests.filter((dependency) => !matches.has(dependency.id));
   for (const dependency of newDependencies) {
     const unresolvedExisting = existing.find(({ item, requestId }) => !item && !matchedExisting.has(requestId));
     if (unresolvedExisting) {
@@ -256,14 +257,19 @@ export function admitTaskAppDependencies(input: {
     });
   }
 
-  return input.dependencies.map((dependency) => {
-    const condition = matches.get(dependency.id)?.condition ?? admitted.get(dependency.id)!;
-    return {
-      ...condition,
-      owner: condition.owner ?? `app:${dependency.appId}`,
-      reviewAfterMs: condition.reviewAfterMs ?? APP_DEPENDENCY_REVIEW_AFTER_MS,
-    };
-  });
+  return new Map(
+    input.requests.map((dependency) => {
+      const condition = matches.get(dependency.id)?.condition ?? admitted.get(dependency.id)!;
+      return [
+        dependency.id,
+        {
+          ...condition,
+          owner: condition.owner ?? `app:${dependency.appId}`,
+          reviewAfterMs: condition.reviewAfterMs ?? APP_DEPENDENCY_REVIEW_AFTER_MS,
+        },
+      ];
+    }),
+  );
 }
 
 export function openTaskAppDependencyConditions(config: AppTaskContext, taskId: string): AppTaskConditionSpec[] {
@@ -305,7 +311,7 @@ export function mergeTaskConditions(
   return [...merged.values()];
 }
 
-function assertInstalledAppDependency(opts: AppTaskRuntimeOptions, dependency: TaskAppDependency): void {
+function assertInstalledAppDependency(opts: AppTaskRuntimeOptions, dependency: TaskAppRequest): void {
   const registryConfigured = Boolean(opts.appRegistrySnapshot || opts.appRegistry);
   if (!registryConfigured) return;
   const entries = configuredRegistryEntries(opts);

@@ -3,7 +3,7 @@ import { Type, defineApp } from "@may-agent/sdk";
 import { appDependencyCatalog } from "./app-dependency-catalog.js";
 
 describe("App dependency catalog", () => {
-  it("shows only durable Task input contracts across installed Apps", () => {
+  it("includes text and structured inputs for Apps with Task handling", () => {
     const target = defineApp({
       id: "evaluation",
       version: 1,
@@ -17,9 +17,7 @@ describe("App dependency catalog", () => {
           data: Type.Object({
             appId: Type.String(),
             taskId: Type.String(),
-            assessmentPurpose: Type.Optional(
-              Type.Union([Type.Literal("outcome"), Type.Literal("ongoing")]),
-            ),
+            assessmentPurpose: Type.Optional(Type.Union([Type.Literal("outcome"), Type.Literal("ongoing")])),
           }),
         }),
       ]),
@@ -70,14 +68,17 @@ describe("App dependency catalog", () => {
       {
         appId: "may",
         description: "Owns facts-based evaluation outcomes.",
-        inputs: [{ kind: "goal", requiredData: [], dataTypes: {}, fixedData: {} }],
+        inputs: [
+          { kind: "goal", requiredData: [], dataTypes: {}, fixedData: {} },
+          { kind: "message", requiredData: [], dataTypes: {}, fixedData: {} },
+        ],
       },
     ]);
     expect(
       appDependencyCatalog([
         { appDir: "/fixtures/may.app", definition: { ...source, conversation: { mode: "agent" } } },
       ]),
-    ).toEqual([]);
+    ).toEqual([catalog[1]]);
   });
 
   it("summarizes required paths, field shapes, and fixed data without copying the full schema", () => {

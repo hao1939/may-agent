@@ -6,19 +6,20 @@ export function appInputRoute(
   app: Readonly<AppDefinition>,
   kind: string,
   targetTaskId?: string,
+  appRequest = false,
 ): "conversation" | "task" | null {
-  if (!targetTaskId && app.conversation && (!app.conversation.inputKinds || app.conversation.inputKinds.includes(kind)))
+  if (
+    !appRequest &&
+    !targetTaskId &&
+    app.conversation &&
+    (!app.conversation.inputKinds || app.conversation.inputKinds.includes(kind))
+  )
     return "conversation";
   return app.tasks && app.task ? "task" : null;
 }
 
 /** A delegated outcome needs the App's durable work contract. */
 export function assertAppTaskInputRoute(app: Readonly<AppDefinition>, kind: string, targetTaskId?: string): void {
-  const route = appInputRoute(app, kind, targetTaskId);
-  if (route === "task") return;
-  throw new AppTaskAdmissionError(
-    route === "conversation"
-      ? `App ${app.id} input ${kind} is conversational and cannot be used for delegated Task work. Submit an input from the App's durable Task contract.`
-      : `App ${app.id} has no Task handler for input kind ${kind}`,
-  );
+  if (appInputRoute(app, kind, targetTaskId, true) === "task") return;
+  throw new AppTaskAdmissionError(`App ${app.id} has no Task handler for input kind ${kind}`);
 }

@@ -4,6 +4,7 @@ import {
   type TaskReconcileResult as AppTaskHandlerResult,
   type TaskIntent as AppTaskIntent,
   type TaskAttempt,
+  type Condition as AppTaskConditionSpec,
 } from "@may-agent/sdk";
 import { join } from "node:path";
 import { canonicalAppEvent } from "../../canonical-app-event.js";
@@ -42,7 +43,7 @@ import {
 } from "./attempt-execution.js";
 import { type AppTaskDispatch } from "./controller.js";
 import {
-  admitTaskAppDependencies,
+  admitTaskAppRequests,
   mergeTaskConditions,
   openTaskAppDependencyConditions,
   recoverTaskConditions,
@@ -349,6 +350,14 @@ async function runClaimedTask(
       }
       const { acceptanceBasis } = accepted;
       try {
+        if (result.requests?.length)
+          admitTaskAppRequests({
+            opts,
+            descriptor,
+            claim,
+            requests: result.requests,
+            acceptedLiveEventIds: report.acceptedLiveEventIds,
+          });
         const apply: ReturnType<typeof completeConversationTaskTurn> = persistResult(() =>
           report.conversation
             ? completeConversationTaskTurn(config, claim, report.conversation.decision, {
@@ -790,29 +799,38 @@ function admitWaitingConditions(input: {
   descriptor: AppTaskRuntimeDescriptor;
   config: AppTaskContext;
   claim: AppTaskClaim;
-  result: Pick<TaskCapabilityRun["handlerResult"], "conditions" | "dependencies">;
+  result: Pick<TaskCapabilityRun["handlerResult"], "conditions" | "requests">;
   acceptedLiveEventIds?: number[];
 }) {
   const { opts, descriptor, config, claim, result, acceptedLiveEventIds } = input;
   // Validate owner declarations as one provenance group before admitting
   // dependencies. Otherwise conflicting explicit specifications could be
   // rejected only after publishing or adopting new dependency work.
-  const explicitConditions = mergeTaskConditions(result.conditions ?? []);
+  const explicitConditions = mergeTaskConditions(
+    (result.conditions ?? []).filter((condition): condition is AppTaskConditionSpec => !("requestId" in condition)),
+  );
+  const requestConditions = (result.conditions ?? []).filter((condition) => "requestId" in condition);
+  for (const condition of requestConditions) {
+    if (!result.requests?.some((request) => request.id === condition.requestId)) {
+      throw new Error(`Condition refers to undeclared request ${condition.requestId}`);
+    }
+  }
   const existingAppDependencyConditions = openTaskAppDependencyConditions(config, claim.taskId);
   const existingIds = new Set(existingAppDependencyConditions.map((condition) => condition.id));
   // Also reject an explicit retarget of persisted dependency identity
   // before dependency admission can publish unrelated new work.
   mergeTaskConditions([...existingAppDependencyConditions, ...explicitConditions], existingIds);
-  const dependencyConditions = result.dependencies?.length
-    ? admitTaskAppDependencies({
+  const submitted = result.requests?.length
+    ? admitTaskAppRequests({
         opts,
         descriptor,
         claim,
-        dependencies: result.dependencies,
+        requests: result.requests,
         existingConditions: existingAppDependencyConditions,
         acceptedLiveEventIds,
       })
-    : [];
+    : new Map<string, AppTaskConditionSpec>();
+  const dependencyConditions = requestConditions.map((condition) => submitted.get(condition.requestId)!);
   // Generated dependency Conditions establish/reuse the wait, but the
   // owner's explicit declaration is the final compatible specification.
   const declaredConditions = [...dependencyConditions, ...explicitConditions];

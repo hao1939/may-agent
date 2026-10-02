@@ -149,12 +149,10 @@ function requiredText(value: unknown, field: string): string {
   return value.trim();
 }
 
-/** Trusted Task provenance, with no Conversation or historical executor ownership. */
+/** App work with no retained Conversation or historical executor ownership. */
 function isUnattachedTaskRequest(item: AppInboxItem): boolean {
   return Boolean(
-    item.creator?.taskId &&
     item.source.kind === "app" &&
-    item.creator.appId === item.source.id &&
     !item.conversationId &&
     !item.executionTaskId &&
     !item.waitingOn &&
@@ -371,7 +369,9 @@ export class AppInboxHost {
     if (targetTaskId && hasConversationExecutionTask(this.#db, app.id, targetTaskId)) {
       throw new Error("Conversation Task input must use conversationId without targetTaskId");
     }
-    const conversationInput = appInputRoute(app, input.input.kind, targetTaskId) === "conversation";
+    const conversationInput =
+      appInputRoute(app, input.input.kind, targetTaskId, input.source.kind === "app" && !input.conversationId) ===
+      "conversation";
     if (conversationInput) {
       const retained = input.idempotencyKey
         ? listAppInboxItems(this.#db, { appId: app.id, idempotencyKey: input.idempotencyKey, limit: 1 })[0]
@@ -380,7 +380,7 @@ export class AppInboxHost {
           : null;
       if (retained && isUnattachedTaskRequest(retained)) {
         // A replay cannot turn saved delegated work into a Conversation. Check
-        // the exact input before using the same rejection/feedback path as recovery.
+        // the exact input before using the same Task attachment path as recovery.
         const admitted = createAppInboxItem(this.#db, { ...input, targetTaskId, now: this.#now() });
         this.#admitTask(admitted.item);
         return { ...admitted, item: this.get(admitted.item.id)! };
@@ -529,7 +529,7 @@ export class AppInboxHost {
         return;
       }
       if (isUnattachedTaskRequest(item)) assertAppTaskInputRoute(app, item.input.kind, item.targetTaskId);
-      if (appInputRoute(app, item.input.kind, item.targetTaskId) === "conversation")
+      if (appInputRoute(app, item.input.kind, item.targetTaskId, isUnattachedTaskRequest(item)) === "conversation")
         throw new Error("Conversation input requires offline cutover to its Task execution owner");
       if (!app.tasks || !app.task) throw new Error(`App ${app.id} does not resolve input to Task work`);
       if (!this.#attachTask) throw new Error("App task admission is not configured");
