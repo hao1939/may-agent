@@ -86,16 +86,32 @@ function conversationInputPrompt(
 ): string {
   const apps = appDependencyCatalog(registry.snapshot().entries);
   const { id, source, input, inputs, ...context } = inputContext;
+  const selectableConversationIdentities = {
+    topicIds: (inputContext.conversation?.topics ?? []).map((topic) => topic.id),
+    assignedOpenRequestIds: (inputContext.assignedRequests ?? [])
+      .filter((request) => request.status === "open")
+      .map((request) => request.id),
+  };
   return [
     `Consider the admitted inputs for App ${app.id} together, in order, using its Conversation result contract.`,
     "The inputs are the whole current batch. replyTo identifies the response destination; every input still needs consideration.",
     "A Request is an accepted conversational promise to the human. The App recognizes these promises and judges scope and fulfillment. Routine automated handling belongs in turn/Task evidence; an automated result can also advance an existing human promise. Several inputs can belong to one Request; several Requests can share this turn.",
     "Use conversation_request before working on an accepted Request to preserve its requirements and current input associations, even when scope is unchanged. assignedRequests contains full current requirements for this turn. Every assigned Request and every Request saved during the turn needs a final requestUpdates entry with its own reason. An open disposition must explain what remains; a reply about another Request does not supply that explanation.",
+    "Selection identities are explicit in selectableConversationIdentities. topic.kind=existing must use one of its topicIds or an exact Topic successfully returned by conversation_context in this turn; Topic IDs elsewhere in messages or previousAttempt are context only and may be stale. followUp.requestId must exactly match one of its assignedOpenRequestIds or an open Request successfully saved by conversation_request in this turn; otherwise omit requestId. Never select an unavailable Topic or a closed or unassigned Request from Conversation history or previousAttempt.",
     "previousAttempt.unacceptedResult is a proposal that was not applied. Reconsider it against current requirements and evidence; do not assume its closure or handoff happened and do not blindly replay effects.",
     "Context is layered: current inputs and assigned Requests first; focusedTask provides a compact current summary. referencedTasks and Topic/message taskRefs are navigation links, not expanded evidence. Use tasks get with the exact appId/taskId for relevant requirements, waits and evidence before judging fulfillment or changing work; conversation_context reads older discussion and Requests.",
     "## Input and context",
     "```json",
-    JSON.stringify({ inputs: inputs ?? [{ id, source, input }], replyTo: { id, source }, ...context }, null, 2),
+    JSON.stringify(
+      {
+        inputs: inputs ?? [{ id, source, input }],
+        replyTo: { id, source },
+        ...context,
+        selectableConversationIdentities,
+      },
+      null,
+      2,
+    ),
     "```",
     "",
     "## Installed Apps",
