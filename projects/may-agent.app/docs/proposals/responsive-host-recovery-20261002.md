@@ -115,11 +115,59 @@ regression fails against the original query, and the candidate passed full local
 CI and independent review. These are source and isolated-comparison results,
 not deployed latency. Local evidence: `.state/human-task-query-20261003/`.
 
-Recent `may.daemon-sql-time-percent` samples are about 15–20%, below the existing
+The first hosted CI run passed Container but exposed a timing assumption in the
+existing observation smoke: a second fact arrived before success settled, so
+the Host rejected that stale result and completed a third attempt automatically.
+The test required exactly two attempts. An isolated reproduction retained the
+rejection reason and successful final result. The corrected smoke retains its
+original cadence and verifies automatic completion, attempt correlation and the
+exact durable observation. This finding needs no runtime recovery change.
+May pushed the independently reviewed correction as `087951ad9`; the final local
+suite passed 3,426 tests with three installation-only skips, plus Host/SDK type,
+App-boundary and lint checks. Both hosted checks passed on that revision.
+PR #292 merged as `0bd3e894f`; rollout and live latency verification remain separate.
+
+The initial `may.daemon-sql-time-percent` samples at this checkpoint were about
+15–20%, below the existing
 25% sustained-load threshold. Average-load recovery can coexist with slow
 individual operations. Keep that coverage limitation visible without treating
-an untriggered threshold as broken delivery. A separate Conversation recovery
-read took 13.127 seconds once and remains a distinct next lead.
+an untriggered threshold as broken delivery.
+
+### October 3: repeated report lookups during Conversation recovery
+
+The next retained diagnostic was `listPendingConversationTaskChanges`: one call
+took 13.127 seconds. A compact isolated copy reproduced an 11.343-second scan
+returning no pending results. Its admission index already works; the remaining
+cost is repeated correlation. One Task has 664 attempts linked through 56 Topics,
+producing 37,184 candidate rows that each revisit its report admissions. Those
+rows are retained history and links, not 37,184 unfinished Tasks.
+
+The trial prepares the selected-report links once within the SQL statement,
+then reuses that relation for the repeated checks. SQLite discards it when the
+query ends. There is no persistent cache, schema/index change, new recovery
+controller or movement of retained records. Direct admission still performs its
+existing exact lookup; it does not need a bulk scan. Both paths keep the same
+eligibility rule and legacy identity comparisons.
+
+On the copied data, this reduced the empty-result scan to 198–283 ms. A separate
+in-memory fixture removed ten existing delivery receipts: both queries returned
+the identical ten results in order, taking 5.896 seconds versus 182 ms. Earlier
+exclusion of handled results or the Conversation's own Task alone remained slow.
+Calling the actual old and candidate production functions under Bun on file-backed
+copies returned the same empty and ten-result sets in order: 3.354 seconds versus
+120 ms, and 3.478 seconds versus 191 ms respectively. Those are separate runs
+from the Python SQL experiments above. These are isolated comparisons, not
+installed latency. The candidate still examines linked history and allocates a
+query-local relation; further machinery needs evidence that this remaining cost
+warrants it. May committed the two-file repair as `b40f05170` and Root published
+[PR #294](https://github.com/hao1939/may-agent/pull/294). Bob independently reviewed
+the source and both result sets. The final regression captures a query fragment
+shared with the old implementation, and fails against that implementation on the
+intended plan assertion. The focused suite passes all 41 tests; full local CI
+passes 3,426 tests with three existing installation-only skips and zero failures.
+GitHub Quality/Container checks are pending at publication. The candidate is not
+merged or deployed. Evidence and reproduction scripts:
+`.state/conversation-recovery-query-20261003/`.
 
 ### October 2 rollout and measured lead
 
@@ -314,6 +362,69 @@ Evaluation judges repeated latency and coverage loss across successful and faile
 work; May decides whether an existing investigation owns it or a new one is
 worthwhile. An isolated successful retry does not erase recurring cost. Conversely,
 a timeout alone does not prove the source metric or domain outcome failed.
+
+### October 3: automatic SQL review coverage
+
+The first overload was discovered. Evaluation's retained SQL report at
+`2026-10-02T09:12:33.965Z` identified 98 samples above the 25% threshold,
+reused May's existing query investigation and required measurement after deployment.
+It explicitly distinguished cited owner dispositions from independently inspected
+code or Task evidence. This is evidence that the aggregate alert/review route
+worked, not that every slow query was covered.
+
+The later 13.1-second Conversation recovery query exposed two missing connections:
+
+- Aggregate SQL load and individual-call latency are independent measurements.
+  The recent six aggregate samples ranged from 14.98% to 31.21%, without three
+  consecutive breaches. A slow call can remain expensive after aggregate recovery.
+  Current/previous five-minute query rankings were available through diagnostics,
+  but the immutable metric evidence contained counters and a textual diagnostic
+  lead, not the ranked query evidence. Those short-lived rankings may expire before
+  a delayed reviewer reads them. Process-lifetime maxima cannot establish a new
+  incident.
+- The routine selector's requested-review precedence is an unconditional gate:
+  any retained same-reviewer review, including automatic or budget-waiting work,
+  prevents routine selection and cursor advancement. Of 150 accepted selector
+  decisions between 09:08 and 22:06 UTC on October 2, 124 deferred; 12 selected
+  metrics and 14 selected Tasks. Eleven metric selections were `aks-rp-e2e`
+  metrics; the last cursor reached `gym.completed-codex-learning-receipts`.
+  The catalog contained 101 active metrics, 39 in `aks-rp-e2e`. The SQL review
+  was eligible again at 10:12 UTC, but had no later review by this cutoff.
+  Eligibility is not a guaranteed visit. This was slow coverage, not a complete
+  selector outage or proof that one unchanged request blocked the whole period.
+
+Hao then pointed out that retirement was already decided. The existing May Task
+`goal/app_25ec07ef-27a5-4583-b4fa-84d736e60a4b`, generation 25, records his
+authenticated Telegram approval `telegram:1026884473:50100`, "retire the aks
+metrics," against the exact 39-definition packet. Its later attempts did not
+apply retirement: they repeatedly cited old source pins and an unavailable
+Task-bound retirement workflow. Canonical reads still showed 39 active and seven
+closed definitions, with zero retired in this cohort; measurement failure event
+`6628864` still invoked the absent producer. This is an approved-action delivery
+gap, not evidence that the user has yet to decide or that a successful retirement
+was recently undone. First recover that existing authorized outcome and remeasure
+review capacity before changing selection policy. Source drift must be evaluated
+against the approved operation and actual source receipts, not inferred merely
+from an unrelated repository HEAD change.
+
+Evidence is retained locally under
+`/app/.state/conversation-recovery-query-20261003/`: `evaluation-metric-trace.json`,
+`selector-history.json`, `approved-retirement-trace.json`, and exact May feedback
+receipts. Reads used the
+indexed selector/review Task identities; no production records were rewritten.
+The SQL report lives under `.state/evaluation/reports/metric-observations/` with
+metric evidence hash
+`40ba55ff0c721fbdc8555e514c35ca68d2c3908a2507a5ec64533288298c6590`.
+
+Follow-up guidance, not implemented by the query repair: preserve bounded recent
+query evidence through existing diagnostic/metric surfaces; expose overdue review
+coverage and reassess fair use of the existing allowance after the approved
+retirement is complete; have May verify repairs against fresh live measurements.
+Reuse the existing retirement Task and approval rather than making another
+decision packet by default. Host owns truthful measurement and access, Evaluation owns selection and
+assessment, and May owns intervention. No second monitor, queue or per-query event
+stream is justified. App selection details belong in
+[Evaluation's design](../../../evaluation.app/design/task-outcome-evaluation.md).
 
 A daemon cannot reliably detect its own event-loop stall while it is stalled.
 Its heartbeat timestamp must be readable from the existing web/maintenance
