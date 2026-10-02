@@ -44,8 +44,13 @@ function record(value: unknown): Record<string, unknown> {
 }
 
 function finite(value: unknown): number | null {
-  const number = Number(value);
-  return Number.isFinite(number) && number >= 0 ? number : null;
+  return typeof value === "number" && Number.isFinite(value) && value >= 0
+    ? value
+    : null;
+}
+
+function nonEmptyString(value: unknown): value is string {
+  return typeof value === "string" && value.trim().length > 0;
 }
 
 function rankedRows(window: QueryWindow): RankedQuery[] {
@@ -72,7 +77,11 @@ export function sqlLatencySample(
     throw new Error("SQL diagnostics are stale");
 
   const candidates: RetainedQuery[] = [];
-  for (const rawWindow of [sql.queries, sql.previousQueries]) {
+  const windows: Array<Record<string, unknown>> = [];
+  for (const [name, rawWindow] of [
+    ["current", sql.queries],
+    ["previous", sql.previousQueries],
+  ] as const) {
     const window = record(rawWindow) as QueryWindow;
     const since = finite(window.since);
     const until = finite(window.until);
@@ -84,22 +93,38 @@ export function sqlLatencySample(
       now - until > SQL_DIAGNOSTIC_MAX_AGE_MS
     )
       continue;
-    for (const row of rankedRows(window)) {
+    const trackedQueries = finite(window.trackedQueries);
+    if (trackedQueries === null)
+      throw new Error(`SQL ${name} window trackedQueries is malformed`);
+    const rows = rankedRows(window);
+    const rankedUniqueQueries = new Set(
+      rows.map((row) => (nonEmptyString(row.id) ? row.id : Symbol())),
+    ).size;
+    windows.push({
+      name,
+      since,
+      until,
+      trackedQueries,
+      rankedEntries: rows.length,
+      rankedUniqueQueries,
+      rankedCoverageTruncated: trackedQueries > rankedUniqueQueries,
+    });
+    for (const row of rows) {
       const count = finite(row.calls);
       const totalMs = finite(row.totalMs);
       const averageMs = finite(row.averageMs);
       const worstMs = finite(row.maxMs);
       if (
-        typeof row.id !== "string" ||
-        typeof row.operation !== "string" ||
-        typeof row.sql !== "string" ||
+        !nonEmptyString(row.id) ||
+        !nonEmptyString(row.operation) ||
+        !nonEmptyString(row.sql) ||
         count === null ||
         count < 1 ||
         totalMs === null ||
         averageMs === null ||
         worstMs === null
       )
-        continue;
+        throw new Error(`SQL ${name} ranking contains malformed data`);
       candidates.push({
         fingerprint: row.id.slice(0, 80),
         operation: row.operation.slice(0, 32),
@@ -121,15 +146,14 @@ export function sqlLatencySample(
     if (!byIdentity.has(key)) byIdentity.set(key, query);
   }
   const rows = [...byIdentity.values()];
-  const selected: RetainedQuery[] = [];
-  for (const query of [
-    ...[...rows].sort((a, b) => b.totalMs - a.totalMs),
-    ...[...rows].sort((a, b) => b.worstMs - a.worstMs),
-  ]) {
+  const worst = [...rows].sort((a, b) => b.worstMs - a.worstMs)[0]!;
+  // The scalar witness is mandatory; remaining bounded slots preserve top-total coverage.
+  const selected: RetainedQuery[] = [worst];
+  for (const query of [...rows].sort((a, b) => b.totalMs - a.totalMs)) {
     if (!selected.includes(query)) selected.push(query);
     if (selected.length === MAX_RANKED_QUERIES) break;
   }
-  const value = Math.max(...rows.map((row) => row.worstMs));
+  const value = worst.worstMs;
   const noteValue = {
     scope:
       "Completed calls in the daemon shared SQLite adapter; workers, raw drivers and sleeps outside SQLite are excluded",
@@ -140,10 +164,12 @@ export function sqlLatencySample(
       "Recent current/previous five-minute rankings only; process-lifetime maxima do not define this incident",
     coverage: {
       queryLimit: finite(sql.queryLimit),
-      untrackedCalls: finite(record(sql.untracked).calls),
-      rankedQueries: rows.length,
+      lifetimeUntrackedCalls: finite(record(sql.untracked).calls),
+      windows,
+      rankedUniqueQueries: rows.length,
       retainedQueries: selected.length,
-      truncated: rows.length > selected.length,
+      selectedRowsTruncated: rows.length > selected.length,
+      shapeTextTruncated: rows.some((row) => row.shape.length === MAX_SHAPE_CHARS),
     },
     queries: selected,
   };
@@ -151,7 +177,7 @@ export function sqlLatencySample(
   while (note.length > SQL_DIAGNOSTIC_NOTE_MAX_CHARS && selected.length > 1) {
     selected.pop();
     noteValue.coverage.retainedQueries = selected.length;
-    noteValue.coverage.truncated = true;
+    noteValue.coverage.selectedRowsTruncated = true;
     note = JSON.stringify(noteValue);
   }
   if (note.length > SQL_DIAGNOSTIC_NOTE_MAX_CHARS)

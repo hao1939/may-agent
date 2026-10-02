@@ -141,7 +141,11 @@ test("recent SQL call latency retains a slow call under low aggregate load with 
   expect(JSON.parse(observed.note)).toMatchObject({
     pid: 22,
     sqlSince: now - 300_000,
-    coverage: { truncated: false, untrackedCalls: 0 },
+    coverage: {
+      lifetimeUntrackedCalls: 0,
+      selectedRowsTruncated: false,
+      shapeTextTruncated: false,
+    },
     queries: [
       {
         fingerprint: "all:6ea5fa410384c38f",
@@ -182,6 +186,7 @@ test("recent SQL call latency rejects missing or expired rankings and bounds ran
         queries: {
           since: now - 300_000,
           until: now,
+          trackedQueries: 10,
           topByTotalTime: Array.from({ length: 10 }, (_, index) => row(index)),
           topByWorstTime: Array.from({ length: 10 }, (_, index) => row(index)),
         },
@@ -194,9 +199,12 @@ test("recent SQL call latency rejects missing or expired rankings and bounds ran
     SQL_DIAGNOSTIC_NOTE_MAX_CHARS,
   );
   expect(note.coverage).toMatchObject({
-    untrackedCalls: 7,
+    lifetimeUntrackedCalls: 7,
+    rankedUniqueQueries: 10,
     retainedQueries: 6,
-    truncated: true,
+    selectedRowsTruncated: true,
+    shapeTextTruncated: true,
+    windows: [{ trackedQueries: 10, rankedCoverageTruncated: false }],
   });
   expect(note.queries).toHaveLength(6);
   expect(() =>
@@ -214,6 +222,57 @@ test("recent SQL call latency rejects missing or expired rankings and bounds ran
       now,
     ),
   ).toThrow("stale");
+});
+
+test("SQL latency evidence preserves the worst-call witness across windows and note trimming", () => {
+  const now = Date.now();
+  const fast = Array.from({ length: 8 }, (_, index) => ({
+    id: `fast:${index}`,
+    operation: "all",
+    sql: `SELECT ${"wide_shape ".repeat(80)}?`,
+    calls: 1_000,
+    totalMs: 100_000 - index,
+    averageMs: 10,
+    maxMs: 10,
+  }));
+  const slow = { id: "slow:witness", operation: "get", sql: "SELECT slow ?", calls: 1, totalMs: 2_001, averageMs: 2_001, maxMs: 2_001 };
+  const observed = sqlLatencySample({ diagnostics: { pid: 7, sql: {
+    since: now - 600_000, measuredAt: now, queryLimit: 8, untracked: { calls: 3 },
+    queries: { since: now - 300_000, until: now, trackedQueries: 20, topByTotalTime: fast, topByWorstTime: fast },
+    previousQueries: { since: now - 600_000, until: now - 300_000, trackedQueries: 1, topByTotalTime: [slow], topByWorstTime: [slow] },
+  } } }, now);
+  const note = JSON.parse(observed.note);
+  expect(observed.value).toBe(2_001);
+  expect(observed.note.length).toBeLessThanOrEqual(SQL_DIAGNOSTIC_NOTE_MAX_CHARS);
+  expect(note.queries[0].fingerprint).toBe("slow:witness");
+  expect(note.queries.slice(1).every((row: any) => row.fingerprint.startsWith("fast:"))).toBe(true);
+  expect(note.coverage).toMatchObject({
+    lifetimeUntrackedCalls: 3,
+    selectedRowsTruncated: true,
+    shapeTextTruncated: true,
+    windows: [
+      { name: "current", trackedQueries: 20, rankedCoverageTruncated: true },
+      { name: "previous", trackedQueries: 1, rankedCoverageTruncated: false },
+    ],
+  });
+});
+
+test("SQL latency rejects coercible and non-finite identity or timing fields", () => {
+  const now = Date.now();
+  const valid = { diagnostics: { pid: 7, sql: { since: now - 1, measuredAt: now,
+    queries: { since: now - 1, until: now, trackedQueries: 1, topByTotalTime: [{ id: "x", operation: "get", sql: "SELECT ?", calls: 1, totalMs: 1, averageMs: 1, maxMs: 1 }], topByWorstTime: [] },
+  } } };
+  for (const bad of [null, true, "", Infinity]) {
+    const identity = structuredClone(valid) as any;
+    identity.diagnostics.pid = bad;
+    expect(() => sqlLatencySample(identity, now)).toThrow();
+    const timing = structuredClone(valid) as any;
+    timing.diagnostics.sql.queries.topByTotalTime[0].maxMs = bad;
+    expect(() => sqlLatencySample(timing, now)).toThrow("malformed");
+  }
+  const emptyIdentity = structuredClone(valid) as any;
+  emptyIdentity.diagnostics.sql.queries.topByTotalTime[0].id = "";
+  expect(() => sqlLatencySample(emptyIdentity, now)).toThrow("malformed");
 });
 
 test("SQL latency source command is pinned to the loaded App release rather than collector cwd", () => {
