@@ -181,6 +181,90 @@ describe("conversational attempt contract", () => {
     expect(current).toEqual(before);
   });
 
+  it("makes only current Topics and assigned open Requests selectable during generation", async () => {
+    const validTopic = {
+      id: "topic-current",
+      title: "Current review",
+      openedBy: "human",
+      originMessageId: "human-1",
+      taskRefs: [],
+    };
+    const current: AppInputContext = {
+      ...request,
+      assignedRequests: [
+        { id: "assigned-open", revision: 3, scope: "Complete the current review", status: "open", inputIds: [request.id] },
+        { id: "assigned-closed", revision: 2, scope: "An earlier closed ask", status: "closed", inputIds: [request.id] },
+      ],
+      conversation: {
+        id: "chat",
+        owner: "may",
+        version: 4,
+        current: { messageId: "human-1", topicId: validTopic.id },
+        topics: [validTopic],
+        requests: [
+          { id: "unassigned-open", revision: 1, scope: "Unrelated open ask", status: "open", taskRefs: [] },
+          { id: "assigned-closed", revision: 2, scope: "An earlier closed ask", status: "closed", taskRefs: [] },
+        ],
+        messages: [
+          {
+            id: "old-message",
+            sequence: 1,
+            author: { kind: "agent", id: "may" },
+            text: "Historical context",
+            metadata: { topicId: "topic-stale" },
+            createdAt: 1,
+          },
+        ],
+      },
+    };
+
+    const { prompt } = await attempt(current);
+    const presented = JSON.parse(prompt.match(/## Input and context\n```json\n([\s\S]*?)\n```/)![1]!);
+    expect(presented.selectableConversationIdentities).toEqual({
+      topicIds: [validTopic.id],
+      assignedOpenRequestIds: ["assigned-open"],
+    });
+    expect(presented.selectableConversationIdentities.topicIds).not.toContain("topic-stale");
+    expect(presented.selectableConversationIdentities.assignedOpenRequestIds).not.toContain("unassigned-open");
+    expect(presented.selectableConversationIdentities.assignedOpenRequestIds).not.toContain("assigned-closed");
+    expect(prompt).toContain("topic.kind=existing must use one of its topicIds");
+    expect(prompt).toContain("or an exact Topic successfully returned by conversation_context in this turn");
+    expect(prompt).toContain("otherwise omit requestId");
+  });
+
+  it("permits an exact older Topic only after a successful scoped lookup", async () => {
+    const olderTopic = {
+      id: "topic-older",
+      title: "Earlier design",
+      openedBy: "human" as const,
+      originMessageId: "human-older",
+      taskRefs: [],
+    };
+    const { definition, prompt } = await attempt(request, may, {
+      signal: new AbortController().signal,
+      sessionStarted() {},
+      taskBinding: { appId: may.id, taskId: "conversation", generation: 1, attemptId: "attempt" },
+      readContext: (query) =>
+        query.action === "read" && query.topicId === olderTopic.id
+          ? { topic: olderTopic, requests: [], messages: [] }
+          : { topic: null },
+    });
+    const tool = definition.tools.find((candidate) => candidate.name === "conversation_context")!;
+    const read = async (topicId: string) => {
+      const output = await tool.execute("lookup", { action: "read", topicId });
+      const content = output.content[0];
+      if (content.type !== "text") throw new Error("expected text");
+      return JSON.parse(content.text);
+    };
+
+    expect(JSON.parse(prompt.match(/## Input and context\n```json\n([\s\S]*?)\n```/)![1]!)
+      .selectableConversationIdentities.topicIds).toEqual([]);
+    expect(await read(olderTopic.id)).toEqual({ topic: olderTopic, requests: [], messages: [] });
+    expect(await read("topic-unavailable")).toEqual({ topic: null });
+    expect(prompt).toContain("exact Topic successfully returned by conversation_context in this turn");
+    expect(prompt).toContain("Never select an unavailable Topic");
+  });
+
   it.each([undefined, { id: "other", owner: "foreign", messages: [] }])(
     "scoped reads work with omitted or misleading presentation (%j)",
     async (conversation) => {
