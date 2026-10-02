@@ -210,7 +210,7 @@ class FakeClient implements CodexGoalClient {
     this.calls.push("terminal-turn");
     return { threadId: this.threadId, turn: { id: "turn-1", status: "completed" } };
   }
-  async readThread() {
+  async readThread(): Promise<unknown> {
     this.calls.push("read");
     return {
       thread: {
@@ -232,6 +232,21 @@ class FakeClient implements CodexGoalClient {
           },
         ],
       },
+    };
+  }
+  async listThreadItems(input: {
+    threadId: string;
+    turnId: string;
+    cursor?: string;
+    limit?: number;
+    sortDirection?: "asc" | "desc";
+  }) {
+    this.calls.push(`items:${input.turnId}`);
+    const read = (await this.readThread()) as { thread: { turns: Array<{ id: string; items: unknown[] }> } };
+    const turn = read.thread.turns.find((candidate) => candidate.id === input.turnId);
+    return {
+      data: [...(turn?.items ?? [])].reverse().map((item) => ({ turnId: input.turnId, item })),
+      nextCursor: null,
     };
   }
   async steer(_input: { threadId: string; turnId: string; message: string }) {
@@ -382,6 +397,62 @@ describe("codex-goal Task executor", () => {
       generation: 2,
       attempts: 2,
     });
+  });
+
+  it("pages one exact completed turn past large output without truncating the final answer", async () => {
+    const root = fixtureRoot();
+    const client = new FakeClient("thread-bounded-items");
+    const answerResponse = `exact-answer-${"z".repeat(200_000)}-終`;
+    const requests: Array<{
+      threadId: string;
+      turnId: string;
+      cursor?: string;
+      limit?: number;
+      sortDirection?: "asc" | "desc";
+    }> = [];
+    client.listThreadItems = async (input) => {
+      requests.push(input);
+      if (!input.cursor) {
+        return {
+          data: [{
+            turnId: input.turnId,
+            item: { type: "commandExecution", aggregatedOutput: "x".repeat(3 * 1024 * 1024) },
+          }],
+          nextCursor: "older-item",
+        };
+      }
+      return {
+        data: [{
+          turnId: input.turnId,
+          item: {
+            type: "agentMessage",
+            phase: "final_answer",
+            text: JSON.stringify({
+              state: "converged",
+              summary: "Recovered the exact completed-turn answer.",
+              response: answerResponse,
+              facts: ["bounded-item-pagination"],
+            }),
+          },
+        }],
+        nextCursor: null,
+      };
+    };
+    const executor = createCodexGoalExecutor({
+      stateFile: join(root, "bindings.json"),
+      createClient: () => client,
+    });
+
+    await expect(executor(attempt())).resolves.toMatchObject({
+      state: "converged",
+      response: answerResponse,
+      facts: ["bounded-item-pagination", "codex-thread:thread-bounded-items"],
+    });
+    expect(requests).toEqual([
+      { threadId: "thread-bounded-items", turnId: "turn-1", cursor: undefined, limit: 1, sortDirection: "desc" },
+      { threadId: "thread-bounded-items", turnId: "turn-1", cursor: "older-item", limit: 1,
+        sortDirection: "desc" },
+    ]);
   });
 
   it("never admits a final answer from an older turn", async () => {

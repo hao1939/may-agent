@@ -5,6 +5,7 @@ import {
   CodexGoalAppServerClient,
   type AppServerNotification,
   type CodexGoalObservation,
+  type CodexThreadItemsPage,
   type CodexTurnCompletion,
 } from "./codex-goal-client.js";
 import { projectCanonicalTaskAttempt, renderCodexGoalTaskAttempt } from "./codex-goal-packet.js";
@@ -54,7 +55,13 @@ export type CodexGoalClient = {
     timeoutMs?: number,
   ): Promise<CodexGoalObservation>;
   waitForTurn(turnId: string, timeoutMs?: number): Promise<CodexTurnCompletion>;
-  readThread(threadId: string, includeTurns?: boolean): Promise<unknown>;
+  listThreadItems(input: {
+    threadId: string;
+    turnId: string;
+    cursor?: string;
+    limit?: number;
+    sortDirection?: "asc" | "desc";
+  }): Promise<CodexThreadItemsPage>;
   steer(input: { threadId: string; turnId: string; message: string }): Promise<string>;
   interrupt(input: { threadId: string; turnId: string }): Promise<void>;
   onNotification(listener: (notification: AppServerNotification) => void): () => void;
@@ -129,20 +136,22 @@ export function migrateCodexGoalBindingFile(input: { legacyPath: string; current
   return { migrated: true, bindings: Object.keys(current.bindings).length };
 }
 
-function finalAnswer(readResult: unknown, turnId: string): string | null {
-  if (!readResult || typeof readResult !== "object") return null;
-  const thread = (readResult as { thread?: unknown }).thread;
-  if (!thread || typeof thread !== "object") return null;
-  const turns = (thread as { turns?: unknown }).turns;
-  if (!Array.isArray(turns)) return null;
-  for (const turn of [...turns].reverse()) {
-    if (!turn || typeof turn !== "object") continue;
-    if ((turn as { id?: unknown }).id !== turnId) continue;
-    const items = (turn as { items?: unknown }).items;
-    if (!Array.isArray(items)) continue;
-    for (const item of [...items].reverse()) {
-      if (!item || typeof item !== "object") continue;
-      const candidate = item as { type?: unknown; phase?: unknown; text?: unknown };
+async function finalAnswer(client: CodexGoalClient, threadId: string, turnId: string): Promise<string | null> {
+  let cursor: string | undefined;
+  const seenCursors = new Set<string>();
+  while (true) {
+    const page = await client.listThreadItems({
+      threadId,
+      turnId,
+      cursor,
+      // One item keeps each response independent of the completed turn's
+      // potentially large command output while preserving answer bytes.
+      limit: 1,
+      sortDirection: "desc",
+    });
+    for (const entry of page.data) {
+      if (entry.turnId !== turnId || !entry.item || typeof entry.item !== "object") continue;
+      const candidate = entry.item as { type?: unknown; phase?: unknown; text?: unknown };
       if (
         candidate.type === "agentMessage" &&
         candidate.phase === "final_answer" &&
@@ -151,8 +160,13 @@ function finalAnswer(readResult: unknown, turnId: string): string | null {
         return candidate.text;
       }
     }
+    if (!page.nextCursor) return null;
+    if (seenCursors.has(page.nextCursor)) {
+      throw new Error(`Codex app-server repeated item cursor for turn ${turnId}`);
+    }
+    seenCursors.add(page.nextCursor);
+    cursor = page.nextCursor;
   }
-  return null;
 }
 
 function eventMessage(event: AppEvent<Record<string, unknown>>): string {
@@ -362,7 +376,7 @@ export function createCodexGoalExecutor(options: CodexGoalExecutorOptions): Task
         if (completion.turn.status !== "completed") {
           throw new Error(`Codex goal turn ended ${completion.turn.status}`);
         }
-        const answer = finalAnswer(await client.readThread(threadId, true), completedTurnId);
+        const answer = await finalAnswer(client, threadId, completedTurnId);
         const admitted = admitCodexGoalTaskResult(answer, {
           allowNeedsAgent: false,
         });

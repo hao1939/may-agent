@@ -108,14 +108,49 @@ describe("CodexGoalAppServerClient", () => {
 
     const resumed = client.resumeThread({ threadId: "thread-1", cwd: "/tmp/work" });
     const resume = await waitForWrite(process, "thread/resume");
+    expect(resume.params).toMatchObject({ threadId: "thread-1", excludeTurns: true });
+    // A server honoring excludeTurns does not serialize this retained history
+    // into the response frame.
+    const priorHistory = { turns: [{ items: [{ aggregatedOutput: "x".repeat(5 * 1024 * 1024) }] }] };
+    expect(JSON.stringify(priorHistory).length).toBeGreaterThan(4 * 1024 * 1024);
     process.reply(resume.id, { thread: { id: "thread-1" }, cwd: "/tmp/work" });
     expect(await resumed).toEqual({ threadId: "thread-1", cwd: "/tmp/work" });
+    expect(client.diagnostics().maxProtocolLineChars).toBeLessThan(4 * 1024 * 1024);
 
     const interrupted = client.interrupt({ threadId: "thread-1", turnId: "turn-2" });
     const interrupt = await waitForWrite(process, "turn/interrupt");
     expect(interrupt.params).toEqual({ threadId: "thread-1", turnId: "turn-2" });
     process.reply(interrupt.id, {});
     await interrupted;
+  });
+
+  it("requests bounded newest-first items for one exact turn", async () => {
+    const process = new FakeAppServerProcess();
+    const client = new CodexGoalAppServerClient(process, { requestTimeoutMs: 1_000 });
+
+    const listed = client.listThreadItems({
+      threadId: "thread-1",
+      turnId: "turn-complete",
+      cursor: "next-page",
+      limit: 1,
+      sortDirection: "desc",
+    });
+    const request = await waitForWrite(process, "thread/items/list");
+    expect(request.params).toEqual({
+      threadId: "thread-1",
+      turnId: "turn-complete",
+      cursor: "next-page",
+      limit: 1,
+      sortDirection: "desc",
+    });
+    process.reply(request.id, {
+      data: [{ turnId: "turn-complete", item: { type: "agentMessage", text: "complete answer" } }],
+      nextCursor: null,
+    });
+    await expect(listed).resolves.toEqual({
+      data: [{ turnId: "turn-complete", item: { type: "agentMessage", text: "complete answer" } }],
+      nextCursor: null,
+    });
   });
 
   it("observes the authoritative turn and terminal status created by an active goal", async () => {
@@ -217,8 +252,9 @@ describe("CodexGoalAppServerClient", () => {
     await expect(timedOut).rejects.toThrow("request thread/goal/get timed out");
     process.reply(first.id, { goal: { status: "active" } });
 
-    const next = client.readThread("thread-1", false);
+    const next = client.readThread("thread-1");
     const second = await waitForWrite(process, "thread/read");
+    expect(second.params).toEqual({ threadId: "thread-1", includeTurns: false });
     process.reply(second.id, { thread: { id: "thread-1" } });
     await expect(next).resolves.toEqual({ thread: { id: "thread-1" } });
     await client.stop();
