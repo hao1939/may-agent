@@ -1,4 +1,6 @@
 import { execFile, type ExecFileOptionsWithStringEncoding } from "node:child_process";
+import { join } from "node:path";
+import { openReadOnlyDatabase, type SqliteDb } from "../lib/db.js";
 import { createMetricService } from "../lib/metrics.js";
 import { log } from "../lib/log.js";
 import { EVENT_ROW_ID, eventData, type AgentEvent, type EventBus } from "./core/events/bus.js";
@@ -72,12 +74,6 @@ function sourceQuerySample(row: Record<string, unknown> | null): CommandSample |
   if (Object.prototype.hasOwnProperty.call(row, "value")) return commandSample(row);
   const candidate = Object.values(row)[0];
   return commandSample({ ...row, value: candidate });
-}
-
-function isReadOnlySourceQuery(query: string): boolean {
-  const normalized = query.trim();
-  if (!/^(SELECT|WITH)\b/i.test(normalized)) return false;
-  return !normalized.replace(/;\s*$/, "").includes(";");
 }
 
 function commandSample(value: unknown): CommandSample | null {
@@ -206,50 +202,55 @@ export async function measureSourceMetrics(options: {
   // declared command, once, when its first due command-backed metric is read.
   // Query-backed or not-due definitions must not trigger producer side effects.
   const commandOutputs = new Map<string, Promise<string>>();
+  let sourceDb: SqliteDb | undefined;
 
-  for (const row of dueRows) {
-    options.onAttempt?.(row);
-    try {
-      let sample: CommandSample | null = null;
-      let measuredBy = "runtime:metric-source-query";
-      let note = queryNote;
-      if (row.source_query) {
-        if (!isReadOnlySourceQuery(row.source_query)) {
-          failed(row.id, "Source query must be a single read-only query");
+  try {
+    for (const row of dueRows) {
+      options.onAttempt?.(row);
+      try {
+        let sample: CommandSample | null = null;
+        let measuredBy = "runtime:metric-source-query";
+        let note = queryNote;
+        if (row.source_query) {
+          // SQLite prepare executes the first statement and ignores SQL tail; it
+          // is not a parser-based single-statement guarantee. The separate
+          // connection enforces read-only capability for the executed statement.
+          sourceDb ??= openReadOnlyDatabase(join(options.persistDir, "may.db"));
+          sample = sourceQuerySample(sourceDb.prepare(row.source_query).get() as Record<string, unknown> | null);
+        } else if (row.source_command) {
+          measuredBy = "runtime:metric-source-command";
+          note = commandNote;
+          let output = commandOutputs.get(row.source_command);
+          if (!output) {
+            output = executeCommand(row.source_command);
+            commandOutputs.set(row.source_command, output);
+          }
+          sample = parseCommandOutput(await output, row.id);
+        }
+        if (!sample) {
+          failed(row.id, "Source returned no finite numeric sample");
           continue;
         }
-        sample = sourceQuerySample(db.prepare(row.source_query).get() as Record<string, unknown> | null);
-      } else if (row.source_command) {
-        measuredBy = "runtime:metric-source-command";
-        note = commandNote;
-        let output = commandOutputs.get(row.source_command);
-        if (!output) {
-          output = executeCommand(row.source_command);
-          commandOutputs.set(row.source_command, output);
-        }
-        sample = parseCommandOutput(await output, row.id);
+        metrics.record(row.id, sample.value, {
+          measuredAt: sample.measuredAt ?? defaultMeasuredAt,
+          measuredBy,
+          sampleSize: sample.sampleSize,
+          note: sample.note ?? note,
+        });
+        metrics.evaluate(row.id);
+        measured.push(row.id);
+      } catch (error) {
+        failed(row.id, measurementError(error));
+      } finally {
+        // Recording and evaluating one observation remains a synchronous durable
+        // boundary. Yield before the next metric so a large snapshot cannot keep
+        // control traffic, including readiness, off the daemon event loop for the
+        // duration of the complete metric collection.
+        await new Promise<void>((resolve) => setTimeout(resolve, 0));
       }
-      if (!sample) {
-        failed(row.id, "Source returned no finite numeric sample");
-        continue;
-      }
-      metrics.record(row.id, sample.value, {
-        measuredAt: sample.measuredAt ?? defaultMeasuredAt,
-        measuredBy,
-        sampleSize: sample.sampleSize,
-        note: sample.note ?? note,
-      });
-      metrics.evaluate(row.id);
-      measured.push(row.id);
-    } catch (error) {
-      failed(row.id, measurementError(error));
-    } finally {
-      // Recording and evaluating one observation remains a synchronous durable
-      // boundary. Yield before the next metric so a large snapshot cannot keep
-      // control traffic, including readiness, off the daemon event loop for the
-      // duration of the complete metric collection.
-      await new Promise<void>((resolve) => setTimeout(resolve, 0));
     }
+  } finally {
+    sourceDb?.close();
   }
 
   return { measured, skipped, failures };

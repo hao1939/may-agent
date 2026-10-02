@@ -374,25 +374,102 @@ describe("source-query metric measurement", () => {
     });
   });
 
-  it("skips stored mutation statements instead of executing them", async () => {
+  it("enforces read-only queries while preserving SQLite first-statement behavior and writer continuity", async () => {
     const db = getDb(persistDir);
-    db.run(
-      `INSERT INTO metrics
-         (id, name, type, owner, threshold, priority, status, source_query, updated_at, alert_op)
-       VALUES ('unsafe.metric', 'Unsafe', 'gauge', 'may', 1, 'P1', 'active',
-               'DELETE FROM metric_alerts', 0, '>')`,
-    );
+    db.exec("CREATE TABLE proof_marker(value INTEGER NOT NULL); INSERT INTO proof_marker VALUES (1)");
+    const metrics = createMetricService({ getDb: () => db });
+    const definitions = [
+      {
+        id: "boundary.cte-write",
+        sourceQuery: "WITH fixture AS (SELECT 1) UPDATE proof_marker SET value = 2 RETURNING value",
+      },
+      { id: "boundary.quoted-semicolon", sourceQuery: "SELECT 3 AS value, 'first; second' AS note" },
+      { id: "boundary.healthy", sourceQuery: "SELECT value FROM proof_marker" },
+      { id: "boundary.trailing-tail", sourceQuery: "SELECT 5 AS value; UPDATE proof_marker SET value = 99" },
+      {
+        id: "boundary.observes-writer",
+        sourceQuery: "SELECT COUNT(*) AS value FROM metric_snapshots WHERE metric_id = 'boundary.healthy'",
+      },
+    ];
+    for (const definition of definitions) {
+      metrics.define({
+        ...definition,
+        name: definition.id,
+        type: "gauge",
+        owner: "fixture",
+        threshold: 0,
+        alertOp: ">",
+      });
+    }
 
-    bus.emit({
-      type: "trigger.metrics-snapshot",
-      source: "control-socket",
-      owner: "agent:may",
-      data: {},
+    const result = await measureSourceMetrics({
+      bus,
+      persistDir,
+      isDue: ({ id }) => id.startsWith("boundary."),
     });
-    await measurement.idle();
 
-    expect(db.prepare("SELECT current FROM metrics WHERE id = 'unsafe.metric'").get()).toEqual({
-      current: null,
+    expect(result).toEqual({
+      measured: [
+        "boundary.healthy",
+        "boundary.observes-writer",
+        "boundary.quoted-semicolon",
+        "boundary.trailing-tail",
+      ],
+      skipped: ["boundary.cte-write"],
+      failures: [{ id: "boundary.cte-write", reason: expect.stringContaining("readonly") }],
+    });
+    expect(db.prepare("SELECT value FROM proof_marker").get()).toEqual({ value: 1 });
+    expect(metrics.get("boundary.quoted-semicolon")!.observation).toMatchObject({
+      value: 3,
+      note: "first; second",
+    });
+    expect(metrics.get("boundary.observes-writer")!.observation?.value).toBe(1);
+    expect(
+      db.prepare("SELECT metric_id FROM metric_alerts WHERE metric_id LIKE 'boundary.%' ORDER BY metric_id").all(),
+    ).toEqual([
+      { metric_id: "boundary.healthy" },
+      { metric_id: "boundary.observes-writer" },
+      { metric_id: "boundary.quoted-semicolon" },
+      { metric_id: "boundary.trailing-tail" },
+    ]);
+  });
+
+  it("keeps the writer usable when a failed source reader closes and a later reader reopens", async () => {
+    const db = getDb(persistDir);
+    db.exec("CREATE TABLE recovery_marker(value INTEGER NOT NULL); INSERT INTO recovery_marker VALUES (1)");
+    const metrics = createMetricService({ getDb: () => db });
+    metrics.define({
+      id: "reader.failure",
+      name: "Failed reader",
+      type: "gauge",
+      owner: "fixture",
+      sourceQuery: "SELECT value FROM missing_reader_fixture",
+      threshold: 0,
+      alertOp: ">",
+    });
+    metrics.define({
+      id: "reader.reopened",
+      name: "Reopened reader",
+      type: "gauge",
+      owner: "fixture",
+      sourceQuery: "SELECT value FROM recovery_marker",
+      threshold: 0,
+      alertOp: ">",
+    });
+
+    const failed = await measureSourceMetrics({ bus, persistDir, isDue: ({ id }) => id === "reader.failure" });
+    expect(failed).toEqual({
+      measured: [],
+      skipped: ["reader.failure"],
+      failures: [{ id: "reader.failure", reason: expect.stringContaining("missing_reader_fixture") }],
+    });
+
+    db.run("UPDATE recovery_marker SET value = 7");
+    const recovered = await measureSourceMetrics({ bus, persistDir, isDue: ({ id }) => id === "reader.reopened" });
+    expect(recovered).toEqual({ measured: ["reader.reopened"], skipped: [], failures: [] });
+    expect(metrics.get("reader.reopened")!.observation?.value).toBe(7);
+    expect(db.prepare("SELECT metric_id FROM metric_alerts WHERE metric_id = 'reader.reopened'").get()).toEqual({
+      metric_id: "reader.reopened",
     });
   });
 
