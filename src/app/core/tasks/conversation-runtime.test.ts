@@ -241,6 +241,40 @@ test.each(["throws", "invalid", "missing-topic"] as const)(
   },
 );
 
+test("one wake handles the pending Conversation batch; repeated signals only recheck current state", async () => {
+  const batches: string[][] = [];
+  const f = await fixture(async (_definition, prompt, options) => {
+    const inputs = readConversationReplyContext(prompt).inputs!;
+    batches.push(inputs.map((input) => input.source.id));
+    // These signals arrive during execution, but add no new durable input.
+    for (let i = 0; i < 10; i++)
+      wakeLoadedAppTasks({ bus: f.bus, appId: app.id, taskIds: [options.taskBinding!.taskId] });
+    return {
+      status: "done",
+      structuredResult: {
+        ...answer,
+        requestUpdates: answer.requestUpdates!.map((update) => ({ ...update, inputIds: inputs.map(({ id }) => id) })),
+      },
+    };
+  });
+  const first = f.admit("first", "Compare A and B", 1);
+  f.admit("second", "Include cost", 2);
+  f.admit("third", "And speed", 3);
+  const rechecked = eventAfter(
+    f.bus,
+    (event) =>
+      event.type === "project.task.reconcile.profiled" && event.data.taskId === first.taskId && !event.data.attemptId,
+  );
+  wakeLoadedAppTasks({ bus: f.bus, appId: app.id, taskIds: [first.taskId] });
+  await rechecked;
+  expect(batches).toEqual([["first", "second", "third"]]);
+  for (const id of batches[0]!) expect(getAppInboxItem(f.db, id)?.status).toBe("done");
+  expect(f.store.readTrigger(first.taskId)).toBeNull();
+  await f.reopen();
+  await f.run(first.taskId);
+  expect(batches).toHaveLength(1);
+});
+
 test("Conversation admission survives reopen and runs without an ingress wake", async () => {
   let calls = 0;
   const f = await fixture(async () => {
