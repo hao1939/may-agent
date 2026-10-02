@@ -12,7 +12,6 @@ const root = mkdtempSync(join(tmpdir(), "may-codex-protocol-"));
 const codexState = join(root, "codex");
 mkdirSync(codexState);
 const captures: unknown[] = [];
-const retainedHistoryItems = 8;
 const retainedAnswerChars = 525_000;
 let releaseResponses!: () => void;
 const responseGate = new Promise<void>((resolve) => {
