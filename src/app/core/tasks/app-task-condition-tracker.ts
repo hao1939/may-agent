@@ -463,7 +463,7 @@ export function matchingAppTaskConditionTaskIds(
 ): string[] {
   const allowed = allowedTaskIds ? new Set(allowedTaskIds) : undefined;
   const eventType = typeof event.type === "string" ? event.type : "";
-  const routes = config.resourceStore.readConditionRoutes(eventType);
+  const routes = config.resourceStore.readConditionRoutes(eventType, allowed);
   const matched = new Set<string>();
   for (const { condition, taskIds } of routes ?? []) {
     if (!matchesAppTaskCondition(condition, event)) continue;

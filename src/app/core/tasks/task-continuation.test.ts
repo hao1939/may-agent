@@ -301,7 +301,7 @@ test("omitted declarations preserve deadlines without attaching unrelated Condit
   }
 });
 
-test("converged review renews only overdue retained Condition checkpoints", () => {
+test("converged review preserves retained observations and their independent waits", () => {
   const root = mkdtempSync(join(tmpdir(), "task-converged-condition-review-"));
   const databasePath = join(root, "state.db");
   let config = appTaskTestContext({
@@ -377,19 +377,11 @@ test("converged review renews only overdue retained Condition checkpoints", () =
       phase: "waiting",
       conditionIds: [overdue.id, future.id],
     });
-    expect(after.conditions?.[overdue.id]).toMatchObject({
-      metadata: {
-        id: overdue.id,
-        generation: overdueBefore?.metadata.generation,
-        resourceVersion: (overdueBefore?.metadata.resourceVersion ?? 0) + 1,
-      },
-      spec: overdueBefore?.spec,
-      status: { state: "unknown", observedAt: new Date(Date.now()).toISOString() },
-    });
+    expect(after.conditions?.[overdue.id]).toEqual(overdueBefore);
     expect(after.conditions?.[future.id]).toEqual(futureBefore);
     expect(after.conditions?.[satisfied.id]).toBeUndefined();
-    const renewedDue = Date.now() + overdue.reviewAfterMs;
-    expect(config.resourceStore.nextDueAt()).toBe(renewedDue);
+    const recoveryDue = Date.now() + 300_000;
+    expect(config.resourceStore.nextDueAt()).toBe(recoveryDue);
     expect(claim().kind).toBe("waiting");
 
     config.resourceStore.close();
@@ -400,7 +392,7 @@ test("converged review renews only overdue retained Condition checkpoints", () =
       maxConcurrent: 1,
       resourceStore: AppTaskResourceStore.openStandalone(databasePath, "sample"),
     });
-    expect(config.resourceStore.nextDueAt()).toBe(renewedDue);
+    expect(config.resourceStore.nextDueAt()).toBe(recoveryDue);
     expect(claim().kind).toBe("waiting");
   } finally {
     config.resourceStore.close();

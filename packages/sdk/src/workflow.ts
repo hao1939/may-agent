@@ -166,7 +166,7 @@ export type TaskDetail = TaskView & {
       state: "unknown" | "false" | "true";
       observed?: unknown;
       observedAt?: string;
-      /** Host-derived next checkpoint in epoch milliseconds; elapsed time does not satisfy the Condition. */
+      /** @deprecated Older Hosts exposed a Condition checkpoint here. Use the Task reviewAt decision. */
       reviewAt?: number;
       facts?: string[];
     };

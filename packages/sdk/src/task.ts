@@ -42,7 +42,7 @@ export type Condition = {
   requestedAction?: string;
   /** Required on newly admitted waits; optional here so historical Conditions remain readable. */
   owner?: string;
-  /** Required on newly admitted waits; elapsed time never makes the Condition true. */
+  /** @deprecated Retained for compatibility; use Task reviewAt to request agent reconsideration. */
   reviewAfterMs?: number;
 };
 
