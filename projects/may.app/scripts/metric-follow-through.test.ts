@@ -14,9 +14,30 @@ afterEach(async () => {
   for (const f of fixtures.splice(0)) await f.close();
 });
 async function setup(judge: (prompt: string) => Promise<MetricReview>) {
-  const f = await fixture((attempt) => executeReview(attempt, judge));
+  let initialOwnerCalls = 0;
+  // These scheduling tests script the owner agreeing with an incoming plan.
+  // The recovery tests below use fixture directly and make independent choices.
+  const f = await fixture((attempt) =>
+    executeReview(attempt, async (prompt) => {
+      const reconciliation = JSON.parse(prompt.split("\n").at(-1)!);
+      const requested = reconciliation.events.items.find(
+        ({ event }: { event: { type: string } }) =>
+          event.type === "app.task.requested",
+      )?.event.data.request?.input;
+      const initial = reconciliation.task.acceptedAttempt
+        ? requested
+        : reconciliation.input;
+      const saved = initial?.data?.context?.metricResponse as
+        MetricReview | undefined;
+      if (saved) {
+        initialOwnerCalls++;
+        return structuredClone(saved);
+      }
+      return judge(prompt);
+    }),
+  );
   fixtures.push(f);
-  return f;
+  return Object.assign(f, { initialOwnerCalls: () => initialOwnerCalls });
 }
 function repairCondition(reviewAfterMs?: number): Condition {
   return {
@@ -56,7 +77,7 @@ function investigate(
   };
 }
 
-test("Conversation saves one breach decision; samples stay quiet and the repair result returns to its Request", async () => {
+test("the receiving owner accepts one breach plan; samples stay quiet and the repair result returns to its Request", async () => {
   let calls = 0;
   let release!: () => void;
   const hold = new Promise<void>((resolve) => {
@@ -89,11 +110,13 @@ test("Conversation saves one breach decision; samples stay quiet and the repair 
       () => f.get("goal/poc-message")?.status === "waiting",
       "breach decision retained",
     );
+    expect(f.initialOwnerCalls()).toBe(1);
     for (const value of [3, 4, 4, 2, 0, 0]) {
       f.record(value);
       await f.poll();
     }
     expect(calls).toBe(0);
+    expect(f.initialOwnerCalls()).toBe(1);
     expect(f.attempts).toHaveLength(1);
     f.publishRepair();
     await until(() => calls === 1, "repair result wakes owner");
@@ -145,12 +168,14 @@ test("fresh and stale samples stay quiet across restart; the retained repair res
     "initial accepted wait",
   );
   const condition = structuredClone(f.get("investigation")!.conditions[0]);
+  expect(f.initialOwnerCalls()).toBe(1);
   await f.poll();
   f.record(0, Date.now() - 86_400_000);
   await f.poll();
   expect(calls).toBe(0);
   await f.restart();
   expect(calls).toBe(0);
+  expect(f.initialOwnerCalls()).toBe(1);
   expect(f.get("investigation")!.conditions[0]).toEqual(condition);
   expect(f.decisions()).toHaveLength(1);
   f.record(0);
@@ -196,6 +221,7 @@ test("repair publication recovery retains the independent approval and ignores n
     () => f.get("investigation")?.status === "waiting",
     "accepted wait",
   );
+  expect(f.initialOwnerCalls()).toBe(1);
   f.publicationFails = true;
   expect(() => f.publishRepair()).toThrow("Fixture publication unavailable");
   f.record(0);
@@ -218,7 +244,7 @@ test("repair publication recovery retains the independent approval and ignores n
 
 test("Host accepts an investigation's ordinary waits and rejects settling without one", async () => {
   const f = await setup(async () => {
-    throw new Error("Handed-off decisions need no additional model call");
+    throw new Error("No other input should reach this scripted owner");
   });
   const approval = {
     id: "approval",
@@ -251,6 +277,7 @@ test("Host accepts an investigation's ordinary waits and rejects settling withou
     "ordinary approval accepted",
   );
   expect(f.decisions()).toHaveLength(1);
+  expect(f.initialOwnerCalls()).toBe(1);
   expect(f.get("owner")!.conditions[0].observation!.state).toBe("unknown");
 
   const external = structuredClone(plan);
@@ -270,6 +297,7 @@ test("Host accepts an investigation's ordinary waits and rejects settling withou
     "ordinary external wait accepted",
   );
   expect(f.decisions()).toHaveLength(2);
+  expect(f.initialOwnerCalls()).toBe(2);
 
   const missing = structuredClone(plan);
   if (missing.task.state !== "waiting") throw new Error("waiting plan");
@@ -284,6 +312,7 @@ test("Host accepts an investigation's ordinary waits and rejects settling withou
         .get("missing-wait"),
     "Host rejects a wait without a return route",
   );
+  expect(f.initialOwnerCalls()).toBe(3);
   expect(f.decisions()).toHaveLength(2);
 
   missing.task.facts = [
@@ -307,13 +336,16 @@ test("Host accepts an investigation's ordinary waits and rejects settling withou
         .get("owner"),
     "Host rejects removing the last return route",
   );
+  expect(f.initialOwnerCalls()).toBe(4);
   expect(f.get("owner")!.conditions[0].observation!.state).toBe("unknown");
   expect(f.decisions()).toHaveLength(2);
 });
 
 test("a later episode joins the selected investigation and saves its new decision once", async () => {
   const f = await setup(async () => {
-    throw new Error("No additional agent turn for a handed-off decision");
+    throw new Error(
+      "Only incoming episode plans should reach this scripted owner",
+    );
   });
   const condition = repairCondition();
   await f.attach("shared-investigation", {
@@ -323,6 +355,7 @@ test("a later episode joins the selected investigation and saves its new decisio
     () => f.get("shared-investigation")?.status === "waiting",
     "first episode saved",
   );
+  expect(f.initialOwnerCalls()).toBe(1);
   f.record(0);
   const nextAlert = f.record(3)!.alertId!;
   expect(nextAlert).not.toBe(f.subject.alertId);
@@ -336,6 +369,7 @@ test("a later episode joins the selected investigation and saves its new decisio
     ),
   );
   await until(() => f.decisions().length === 2, "next episode saved");
+  expect(f.initialOwnerCalls()).toBe(2);
   expect(f.get("goal/poc-message")).toBeNull();
   expect(f.get("shared-investigation")!.conditions).toHaveLength(1);
   expect(
@@ -344,6 +378,142 @@ test("a later episode joins the selected investigation and saves its new decisio
       .map((d) => d.decision.alertId)
       .sort(),
   ).toEqual([f.subject.alertId, nextAlert].sort());
+});
+
+test("a receiving owner can replace a handed-off wait with useful work on the same Task", async () => {
+  let calls = 0;
+  const prompts: string[] = [];
+  const f = await fixture((attempt) =>
+    executeReview(attempt, async (prompt) => {
+      calls++;
+      prompts.push(prompt);
+      if (calls === 1)
+        return {
+          task: {
+            state: "waiting",
+            continue: true,
+            summary: "Inspect the failed deliveries next",
+            facts: ["Independent investigation work remains"],
+          },
+          decisions: [
+            {
+              ...plan.decisions[0]!,
+              nextAction: "Inspect the failed deliveries",
+            },
+          ],
+        };
+      return {
+        task: {
+          state: "converged",
+          summary: "Inspected the requested deliveries",
+          facts: ["Retained deliveries verified; no intervention remains"],
+        },
+        decisions: [
+          {
+            ...f.subject,
+            disposition: "no-change",
+            reason: "Requested evidence inspected",
+            evidence: ["report:deliveries"],
+          },
+        ],
+      };
+    }),
+  );
+  fixtures.push(f);
+  const plan = investigate(f.subject, repairCondition());
+  delete plan.task.conditions;
+  plan.task.summary = "Suggested wait without a return route";
+  await f.handoff(handoffDecision(plan));
+  await until(
+    () => f.get("goal/poc-message")?.status === "done",
+    "owner finishes its investigation",
+  );
+  expect(calls).toBe(2);
+  for (const prompt of prompts) {
+    expect(prompt).toContain(
+      "Follow the metric concern through an evidence-based owner decision",
+    );
+    expect(prompt).toContain("Suggested wait without a return route");
+  }
+  expect(f.attempts.map(({ taskId }) => taskId)).toEqual([
+    "goal/poc-message",
+    "goal/poc-message",
+  ]);
+  expect(f.decisions().map(({ decision }) => decision.disposition)).toEqual([
+    "investigate",
+    "no-change",
+  ]);
+  expect(f.request()!.status).toBe("open");
+});
+
+test("a rejected metric result reaches the owner on retry; the corrected wait survives restart", async () => {
+  let calls = 0;
+  let originalInputId: string | undefined;
+  const f = await fixture((attempt) =>
+    executeReview(attempt, async () => {
+      calls++;
+      if (calls <= 2) {
+        const event = attempt.events.items.find(
+          ({ event }) => event.type === "app.task.requested",
+        )!.event;
+        const id = (event.data.request as { id: string }).id;
+        if (calls === 1) originalInputId = id;
+        else {
+          expect(id).toBe(originalInputId);
+          expect(attempt.previousAttempt).toMatchObject({ state: "failed" });
+          expect(attempt.previousAttempt!.summary).toContain(
+            "requires at least one exact Condition",
+          );
+        }
+        const result = investigate(f.subject, repairCondition());
+        if (calls === 1) delete result.task.conditions;
+        return result;
+      }
+      return {
+        task: {
+          state: "converged",
+          summary: "Repair result verified",
+          facts: ["Requested repair verified"],
+        },
+        decisions: [
+          {
+            ...f.subject,
+            disposition: "recovered",
+            reason: "Repair verified",
+            evidence: ["repair:result"],
+          },
+        ],
+      };
+    }),
+  );
+  fixtures.push(f);
+  const plan = investigate(f.subject, repairCondition());
+  delete plan.task.conditions;
+  await f.handoff(handoffDecision(plan));
+  await until(
+    () => calls === 2 && f.get("goal/poc-message")?.status === "waiting",
+    "owner corrects rejected result",
+  );
+  expect(f.decisions()).toHaveLength(1);
+  expect(f.attempts).toHaveLength(2);
+  expect(f.get("goal/poc-message")!.conditions.map(({ id }) => id)).toEqual([
+    "repair-result",
+  ]);
+  expect(f.request()!.status).toBe("open");
+  await f.restart();
+  f.record(4);
+  await f.poll();
+  expect(calls).toBe(2);
+  f.publishRepair();
+  await until(
+    () => calls === 3 && f.get("goal/poc-message")?.status === "done",
+    "real repair result resumes owner",
+  );
+  expect(new Set(f.attempts.map(({ taskId }) => taskId))).toEqual(
+    new Set(["goal/poc-message"]),
+  );
+  expect(f.decisions()).toHaveLength(2);
+  expect(f.request()!.status).toBe("open");
 });
 
 test("missing selected work and invalid Conditions never leave accepted metric dispositions", async () => {
@@ -397,6 +567,7 @@ test("an explicit Task review runs once and preserves the repair wait", async ()
   plan.task.reviewAt = Date.now() + 500;
   await f.attach("investigation", { context: { metricResponse: plan } });
   await until(() => f.get("investigation")?.status === "waiting", "first wait");
+  expect(f.initialOwnerCalls()).toBe(1);
   const condition = structuredClone(f.get("investigation")!.conditions[0]);
   await until(
     () => calls === 1 && f.get("investigation")?.status === "waiting",
@@ -491,6 +662,7 @@ test("an investigation commissions ordinary dependent work and its result wakes 
       () => childCalls === 1 && f.get("owner")?.status === "waiting",
       "dependent work admitted",
     );
+    expect(f.initialOwnerCalls()).toBe(1);
     expect(
       f
         .get("owner")!
@@ -523,6 +695,7 @@ test("owner closure stops follow-through; late repair results stay history", asy
     () => f.get("investigation")?.status === "waiting",
     "initial repair wait",
   );
+  expect(f.initialOwnerCalls()).toBe(1);
   const current = f.get("investigation")!;
   f.tasks.cancel({
     appId: "may",
@@ -682,6 +855,7 @@ test("a recovery status change updates the exact existing investigation; ordinar
     () => f.get("status-owner")?.status === "waiting",
     "status wait saved",
   );
+  expect(f.initialOwnerCalls()).toBe(1);
   for (const value of [4, 5, 3, 0]) {
     f.record(value);
     await f.poll();
@@ -689,6 +863,7 @@ test("a recovery status change updates the exact existing investigation; ordinar
   f.publishRecovery(f.subject.alertId + 1);
   await f.poll();
   expect(calls).toBe(0);
+  expect(f.initialOwnerCalls()).toBe(1);
   f.publishRecovery();
   await until(
     () => calls === 1 && f.get("status-owner")?.status === "waiting",

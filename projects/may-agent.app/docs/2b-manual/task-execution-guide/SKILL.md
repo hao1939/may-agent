@@ -155,6 +155,12 @@ Explain the evidence and concrete next action when repeating the same attempt
 would not help. Scope changes, unavailable authority and abandonment belong to
 the responsible owner through normal feedback and control paths.
 
+Read `previousAttempt` before repeating a failed proposal. A handed-off plan is
+context for your assignment; choose your own current work, wait or completion
+from its requirements and evidence. Workflow authors must return rejected
+decisions and their errors to the responsible agent instead of mechanically
+replaying the same saved result. Check accepted effects before repeating actions.
+
 Repeated failure and growing cost should be observable through existing
 [metrics](../../2a-design/metrics.md) and [failure feedback](../../2a-design/execution-feedback.md).
 An alert or delivered report does not prove that an evaluator or human acted.

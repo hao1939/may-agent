@@ -5,7 +5,9 @@
 
 **Status:** Source implementation with Host integration coverage. The breach-only
 investigation policy requires installation adoption; source checks do not prove
-live retirement of older sample Conditions.
+live retirement of older sample Conditions. The receiving-owner judgment change
+below is a source candidate, tested against merged Host #295, not an activation
+or live recovery claim.
 
 The old helper prepared a metric fact, then asked the agent to save its next
 review time, create work and copy its Task ID separately. The observed failure
@@ -58,9 +60,9 @@ preserve independent repair requests, approvals and unanswered requirements;
 only the agent judges whether its review is complete.
 
 A previously saved handoff can still carry an `observe` plan with a sample
-Condition. The workflow asks for current judgment instead of installing that old
-plan again. New handoffs are validated before creating follow-through work. The
-legacy disposition spelling stays readable; it cannot bypass the sample-wait
+Condition. Like any incoming plan, it reaches the receiving owner as context
+for current judgment. New handoffs are validated before creating follow-through
+work. The legacy disposition spelling stays readable; it cannot bypass the sample-wait
 check. Retirement commits through normal Task settlement, so restart preserves
 both the change and unrelated obligations. There is no direct database migration
 or silent inference of completion.
@@ -82,11 +84,29 @@ Conversation cannot retain Conditions. The caller supplies its current Topic,
 Request updates and optional exact May Task to the helper along with the review.
 The helper returns an ordinary Conversation `followUp`, carrying that review in
 `goal.data.context.metricResponse`. No disposition is claimed by Conversation.
-A new goal selects the `metric-follow-through` workflow. Its first attempt saves
-the selected decision mechanically. A fresh single handoff to an existing metric
-workflow does the same; mixed input and later results, status changes or due
-checkpoints ask May to judge the full current assignment. Original input and continued obligations
-are context, not instructions to replay the first decision.
+A new goal selects the `metric-follow-through` workflow. Each eligible attempt
+asks the owning agent to judge the full current assignment, including the
+handed-off review, all pending input, retained waits and previous attempt feedback.
+The caller's suggested Task result is context; it does not decide whether the
+receiving Task should work, wait or finish. For example, “investigate these failed
+deliveries” may arrive with a suggested wait but no Condition. The receiver can
+inspect the deliveries now or choose a real return route.
+
+If settlement rejects a result, Host preserves its unhandled input and supplies
+the failure on the next attempt. The workflow reaches the agent again instead
+of copying the same rejected plan. Code still binds the metric facts to this
+Task and Host still owns admission, retries and backoff; no replay registry or
+new retry loop is needed. A rejected decision cannot publish an accepted metric
+disposition or fulfill its caller's Request.
+
+This adds one owner judgment for an initial handoff that previously copied the
+plan without a model call. It gives the receiving owner responsibility for the
+assignment and allows correction. It does not make metric samples or unchanged
+waiting Conditions eligible for another attempt. Host-connected regressions
+cover current work replacing a suggested wait, correction after a real rejected
+settlement, retained input identity, quiet samples across restart, and delivery
+of the eventual repair result. Scripted judgments prove execution mechanics,
+not live agent quality or net token savings.
 
 Several episodes can join the same investigation after scope judgment. Exact
 missing or closed targets stay unresolved under existing admission rules; late

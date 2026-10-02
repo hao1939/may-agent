@@ -187,6 +187,13 @@ current authority, input, result shape and allowed changes before committing.
 This convention uses existing workflow control flow and adds no repair service
 or automatic verifier-feedback protocol.
 
+A saved contribution is context for the receiving assignment, not an execution
+decision that must be copied into the receiver's result. When a later attempt
+has a rejected proposal and its error, the responsible agent must be able to
+reconsider it. A workflow must not bypass that judgment by treating the restored
+input as a fresh command to repeat the same rejected result. Preserve accepted
+effects and exact input identity while using the existing retry path.
+
 <a id="execution-evidence-candidate"></a>
 
 
