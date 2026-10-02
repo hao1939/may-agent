@@ -1,6 +1,8 @@
 import type { TaskChangeReceipt } from "@may-agent/sdk";
 import type { Condition, ResourceCreator, TaskAcceptanceBasis, TaskAttempt, TaskIntent } from "@may-agent/sdk";
 
+export const CONDITION_RECOVERY_INTERVAL_MS = 300_000;
+
 export type AppTaskTriggerEvent = {
   event: Record<string, unknown>;
   observedAt: string;

@@ -103,6 +103,7 @@ import { readTaskSnapshot, type AppTaskContext } from "./app-task-store.js";
 import { HostCapacity } from "../scheduling/host-capacity.js";
 import { closeDb, getDb } from "../../../lib/requests.js";
 import { AppTaskResourceStore } from "../state/app-task-resource-store.js";
+import { AppTaskRecoveryScheduler } from "./app-task-recovery.js";
 import { migrateTaskCompletionReceipts } from "../state/task-receipt-cutover.js";
 import { appTaskTestContext as createTaskContext } from "./app-task-test-support.js";
 import { projectRuntimePaths } from "./app-task-runtime-state.js";
@@ -4314,9 +4315,9 @@ describe("canonical App task runtime", () => {
     },
   );
 
-  it.each([false, true])(
-    "returns the exact saved App answer after its notification is lost (restart: %j)",
-    async (restart) => {
+  it.each(["live", "restart", "missing-index", "late-index"])(
+    "returns the exact saved App answer after its notification is lost (%s)",
+    async (route) => {
       const f = fixture();
       const persistDir = join(f.root, "state");
       let bus = eventBus();
@@ -4405,6 +4406,28 @@ describe("canonical App task runtime", () => {
           taskId,
           dispatch: { enqueuedAt: 1, startedAt: 2, readyWaitMs: 1, lane: "normal" },
         });
+      const reopen = async () => {
+        host!.close();
+        await closeInstalledAppTaskRuntimes(bus);
+        closeDb(persistDir);
+        bus = eventBus();
+        await install();
+      };
+      const recoverIndexedOwner = async () => {
+        const queued: string[] = [];
+        const scheduler = new AppTaskRecoveryScheduler({
+          source: loadedTaskConfig(f).resourceStore,
+          now: () => Date.now() + 300_001,
+          enqueue: (id) => queued.push(id),
+        });
+        try {
+          scheduler.recover();
+          expect(queued).toContain("work/owner");
+          await run("work/owner");
+        } finally {
+          scheduler.close();
+        }
+      };
       await install();
       observeAppTaskIntent(loadedTaskConfig(f), {
         appAgent: "sample-owner",
@@ -4417,6 +4440,22 @@ describe("canonical App task runtime", () => {
         },
       });
       await run("work/owner");
+      const repairsLegacyIndex = route === "missing-index" || route === "late-index";
+      if (repairsLegacyIndex) {
+        const store = loadedTaskConfig(f).resourceStore;
+        store.setRecoveryState("work/owner", {
+          ready: false,
+          changed: false,
+          nextCheckAt: route === "missing-index" ? null : Date.now() + 86_400_000,
+        });
+        const before = store.readTaskContext({ taskIds: ["work/owner"] });
+        // No answer exists during startup. A later missed answer must still
+        // be discoverable through the repaired index, without a global replay.
+        await reopen();
+        await recoverIndexedOwner();
+        expect(ownerInputs).toHaveLength(1);
+        expect(loadedTaskConfig(f).resourceStore.readTaskContext({ taskIds: ["work/owner"] })).toEqual(before);
+      }
       await run("work/reviewer");
       await host!.recoverTaskResults();
       expect(host!.get(requestId)).toMatchObject({ status: "done", result: { result: { score: 0.92 } } });
@@ -4469,16 +4508,14 @@ describe("canonical App task runtime", () => {
           },
         ],
       });
-      if (restart) {
-        host!.close();
-        await closeInstalledAppTaskRuntimes(bus);
-        closeDb(persistDir);
-        bus = eventBus();
-        await install();
+      if (route === "restart") await reopen();
+      if (repairsLegacyIndex) {
+        await recoverIndexedOwner();
+      } else {
+        await recoverInstalledAppTasks(bus);
+        await recoverInstalledAppTasks(bus);
+        await run("work/owner");
       }
-      await recoverInstalledAppTasks(bus);
-      await recoverInstalledAppTasks(bus);
-      await run("work/owner");
       expect(ownerInputs).toHaveLength(2);
       expect(ownerInputs[1]!.items.filter(({ event }) => event.type === "app.dependency.updated")).toHaveLength(1);
       expect(readAcceptedRuntimeAttempt(loadedTaskConfig(f), "work/owner")?.acceptedResult?.summary).toBe(

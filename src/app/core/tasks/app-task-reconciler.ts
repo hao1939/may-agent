@@ -1,6 +1,6 @@
 import { isDeepStrictEqual } from "node:util";
 import { stateTransaction } from "../../../lib/db/transaction.js";
-import { taskEventPredatesReopening } from "./app-task-state.js";
+import { CONDITION_RECOVERY_INTERVAL_MS, taskEventPredatesReopening } from "./app-task-state.js";
 import { createHash, randomUUID } from "node:crypto";
 import { basename } from "node:path";
 import {
@@ -1849,8 +1849,6 @@ function acceptedTaskReviewAt(_tree: TaskTree, resource: AppTaskResource): numbe
   ].filter((value): value is number => Number.isSafeInteger(value) && Number(value) > 0);
   return deadlines.length ? Math.min(...deadlines) : null;
 }
-
-const CONDITION_RECOVERY_INTERVAL_MS = 300_000;
 
 function nextTaskCheckAt(tree: TaskTree, resource: AppTaskResource): number | null {
   const deadlines = [

@@ -10,7 +10,7 @@ import {
   ensureTaskResourceSchema,
 } from "../../../lib/db/task-resource-schema.js";
 import { indexTaskReference } from "./task-reference-index.js";
-import { pendingTaskExecutionRetryAt } from "../tasks/app-task-state.js";
+import { CONDITION_RECOVERY_INTERVAL_MS, pendingTaskExecutionRetryAt } from "../tasks/app-task-state.js";
 import type {
   AppTaskAttempt,
   AppTaskCancellation,
@@ -1576,6 +1576,30 @@ export class AppTaskResourceStore {
       this.bumpRevision();
       return true;
     });
+  }
+
+  /** Repair derived legacy indexes at startup; the worker recomputes the actual next check. */
+  repairWaitingConditionRecovery(now = Date.now()): number {
+    return this.db
+      .prepare(
+        `UPDATE app_tasks
+         SET next_check_at = MAX(?, COALESCE(json_extract(resource_json, '$.status.executionRetryAt'), ?))
+         WHERE app_id = ? AND phase = 'waiting'
+           AND (next_check_at IS NULL OR next_check_at > MAX(?,
+             COALESCE(json_extract(resource_json, '$.status.executionRetryAt'), ?)))
+           AND NOT EXISTS (
+             SELECT 1 FROM app_task_cancellations cancelled
+             WHERE cancelled.app_id = app_tasks.app_id AND cancelled.task_id = app_tasks.task_id
+           )
+           AND EXISTS (
+             SELECT 1 FROM app_task_condition_routes routes
+             JOIN app_task_conditions conditions
+               ON conditions.app_id = routes.app_id AND conditions.condition_id = routes.condition_id
+             WHERE routes.app_id = app_tasks.app_id AND routes.task_id = app_tasks.task_id
+               AND conditions.state <> 'true'
+           )`,
+      )
+      .run(now, now, this.appId, now + CONDITION_RECOVERY_INTERVAL_MS, now).changes;
   }
 
   setRecoveryState(

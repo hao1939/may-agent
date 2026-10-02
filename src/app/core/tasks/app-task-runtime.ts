@@ -1160,6 +1160,9 @@ function recoverInterruptedAppTasks(
   for (const descriptor of descriptors) {
     const controller = controllers.get(descriptor.id);
     const config = appTaskConfig(descriptor);
+    if (config.resourceStore.repairWaitingConditionRecovery() > 0) {
+      appTaskRecoverySchedulersByBus.get(opts.bus)?.get(descriptor.id)?.stateChanged();
+    }
     settleTerminalAppTaskSessions(opts, descriptor);
     const runningRecoveryTaskIds = config.resourceStore.listTaskIdsByPhase(["running"], 512);
     const attentionRecoveryTaskIds = config.resourceStore.listTaskIdsByPhase(["attention"], 512);

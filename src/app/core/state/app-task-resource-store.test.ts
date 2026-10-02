@@ -828,6 +828,77 @@ describe("AppTaskResourceStore", () => {
     store.close();
   });
 
+  it("repairs obsolete Condition indexes without moving earlier checks or bypassing backoff", () => {
+    const store = open();
+    const now = Date.now();
+    const retryAt = now + 3_600_000;
+    const earlyAt = now + 60_000;
+    const indexes: Record<string, number | null> = {
+      missing: null,
+      late: now + 86_400_000,
+      early: earlyAt,
+      overdue: now - 1,
+      retry: retryAt,
+      "retry-missing": null,
+      closed: null,
+      satisfied: null,
+      "no-condition": null,
+      cancelled: null,
+    };
+    const tree: TaskTree = { project: "example", resources: {}, conditions: {} };
+    for (const id of Object.keys(indexes)) {
+      const task = resource(id, id === "closed" ? "converged" : "waiting");
+      task.status.observedGeneration = 1;
+      if (id.startsWith("retry")) task.status.executionRetryAt = retryAt;
+      if (id === "early") task.status.reviewAt = earlyAt;
+      if (id !== "no-condition") {
+        task.status.conditionIds = [id];
+        tree.conditions![id] = {
+          metadata: { id, generation: 1, resourceVersion: 1 },
+          spec: { type: "example.completed", subject: `example:${id}`, expected: true },
+          status: { observedGeneration: 1, state: id === "satisfied" ? "true" : "unknown" },
+        };
+      }
+      tree.resources![id] = task;
+    }
+    tree.cancellations = {
+      cancelled: {
+        appId: "example",
+        taskId: "cancelled",
+        generation: 1,
+        resourceVersion: 1,
+        outcome: "finish cancelled",
+        reason: "Owner stopped work",
+        summary: "Stopped",
+        cancelledAt: new Date(now).toISOString(),
+      },
+    };
+    try {
+      store.bootstrapSnapshot(tree, "legacy-indexes");
+      for (const [id, index] of Object.entries(indexes)) {
+        // Recreate legacy derived rows, including a missing retry index.
+        store.db
+          .prepare("UPDATE app_tasks SET next_check_at = ? WHERE app_id = ? AND task_id = ?")
+          .run(index, "example", id);
+      }
+      const before = store.readTaskContext({ taskIds: Object.keys(indexes) });
+      expect(store.repairWaitingConditionRecovery(now)).toBe(3);
+      expect(store.readTaskContext({ taskIds: Object.keys(indexes) })).toEqual(before);
+      const actual = store.db
+        .prepare("SELECT task_id, next_check_at FROM app_tasks WHERE app_id = ?")
+        .all("example") as Array<{ task_id: string; next_check_at: number | null }>;
+      expect(Object.fromEntries(actual.map((row) => [row.task_id, row.next_check_at]))).toEqual({
+        ...indexes,
+        missing: now,
+        late: now,
+        "retry-missing": retryAt,
+      });
+      expect(store.repairWaitingConditionRecovery(now)).toBe(0);
+    } finally {
+      store.close();
+    }
+  });
+
   it("routes only open Conditions owned by live waiting or running tasks", () => {
     const store = open();
     const tree = fixture();
