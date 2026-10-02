@@ -514,12 +514,15 @@ function reachableHumanConditionOwners(
          UNION
          SELECT request.app_id, request.waiting_on_id
          FROM reachable parent
-         JOIN app_task_condition_routes route
+         -- Preserve this join order so each known parent reaches one exact request lookup;
+         -- the inverse ID predicate selects the primary key while the full ID and subject checks preserve correlation.
+         CROSS JOIN app_task_condition_routes route
            ON route.app_id = parent.app_id AND route.task_id = parent.task_id
-         JOIN app_task_conditions condition
+         CROSS JOIN app_task_conditions condition
            ON condition.app_id = route.app_id AND condition.condition_id = route.condition_id
-         JOIN app_inbox_items request
-           ON condition.condition_id = 'app-request:' || request.id
+         CROSS JOIN app_inbox_items request
+           ON request.id = substr(condition.condition_id, length('app-request:') + 1)
+          AND condition.condition_id = 'app-request:' || request.id
           AND json_extract(condition.condition_json, '$.spec.subject') = 'id:' || request.id
          WHERE condition.state != 'true'
            AND request.waiting_on_kind = 'task' AND request.waiting_on_id IS NOT NULL

@@ -1,4 +1,3 @@
-import { conditionReviewAt } from "../tasks/app-task-state.js";
 import type {
   AppRead,
   ExecutionView,
@@ -170,7 +169,6 @@ function readTaskDetail(
           generation: condition.metadata.generation,
           resourceVersion: condition.metadata.resourceVersion,
           ...structuredClone(condition.status),
-          reviewAt: conditionReviewAt(condition),
         },
       })),
       current.resource.status.observedAttemptId ? store.readAttempt(current.resource.status.observedAttemptId) : null,

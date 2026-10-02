@@ -212,6 +212,8 @@ export type AgentPreparationOptions = {
   skill?: string;
   requireFinish?: boolean;
   outputSchema?: TSchema;
+  /** Pure caller admission check; rejection keeps this invocation open for correction. */
+  validateOutput?: (result: unknown) => string | null;
   toolPolicy?: ToolPolicy;
   /** Override the registered agent's filesystem tools for this execution only. */
   executionRoot?: string;
@@ -372,7 +374,7 @@ function resolveTools(options: AgentPreparationOptions, requireFinish: boolean):
   if (!baseFinish) {
     throw new Error(`Agent ${definition.name} requires finish() but no finish capability was supplied`);
   }
-  const finish = createWorkflowFinishTool(baseFinish, options.outputSchema);
+  const finish = createWorkflowFinishTool(baseFinish, options.outputSchema, options.validateOutput);
   const index = tools.findIndex((tool) => tool.name === "finish");
   return applyToolExecutionPolicy(
     index < 0 ? [...tools, finish] : tools.map((tool, offset) => (offset === index ? finish : tool)),
@@ -514,7 +516,7 @@ function prepareExecution(options: AgentPreparationOptions): Omit<PreparedAgentE
     ? invokeCatalogSkill(options.definition.skillCatalog, skillName, contextTask)
     : undefined;
   const outputSchema = normalizeExecutionSchema(options.outputSchema);
-  const requireFinish = options.requireFinish === true || outputSchema !== undefined;
+  const requireFinish = options.requireFinish === true || outputSchema !== undefined || options.validateOutput !== undefined;
   const normalizedOptions = { ...options, outputSchema };
   const tools = bindToolsToSession(
     resolveTools(normalizedOptions, requireFinish),

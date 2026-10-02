@@ -83,7 +83,7 @@ describe("App read projections", () => {
     const before = readRuntimeTaskView({ taskStateConfig: config }, taskId)!;
     expect(before.conditions.every((c) => c.observation?.state === "unknown")).toBe(true);
     for (const c of before.conditions)
-      expect(c.observation?.reviewAt).toBe(Date.parse(c.observation!.observedAt!) + 3600000);
+      expect(c.observation?.reviewAt).toBeUndefined();
     trackAppTaskConditionEventForTasks(config, {
       type: "approval.observed", eventId: 700, data: { draft: "v3", approved: true },
     }, [taskId]);

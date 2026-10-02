@@ -73,14 +73,16 @@ export const conditionSchema = Type.Object(
       Type.String({ minLength: 1, description: "Needed action; use a delivery capability to contact its owner." }),
     ),
     owner: conditionOwnerSchema,
-    reviewAfterMs: Type.Integer({
-      minimum: MIN_CONDITION_REVIEW_AFTER_MS,
-      description: "Reconsider after this interval; no notification or repair is performed.",
-    }),
+    reviewAfterMs: Type.Optional(
+      Type.Integer({
+        minimum: MIN_CONDITION_REVIEW_AFTER_MS,
+        description: "Legacy field; does not schedule agent execution. Use Task reviewAt for deliberate reconsideration.",
+      }),
+    ),
   },
   {
     additionalProperties: false,
-    description: "Known observable fact. Reuse its ID and compatible specification when revising the interval.",
+    description: "Known observable fact. Host recovers missed observations without invoking the agent.",
   },
 );
 
@@ -205,7 +207,7 @@ export const taskAgentResultSchema = Type.Union(
   {
     $id: TASK_AGENT_RESULT_SCHEMA_ID,
     description:
-      "Report one Task attempt against its goal and acceptance. Put supported progress, limitations and exact evidence links in facts; partial output may be retained in result. Existing independent obligations survive omitted fields. Supported observations settle Conditions; authorized decisions supply approval. Feedback is evidence to assess. The Host persists and delivers results; the App judges outcomes. Waiting may set reviewAt (Unix milliseconds) without changing Condition intervals. Requests submit independently owned work: reuse stable id and exact taskId when applicable. The receiver handles the request independently. To wait for its result, return conditions:[{requestId: id}] and state waiting; Host resolves the reference into an ordinary Condition. continue:true permits independent work. Requests without Conditions may accompany convergence. Omission never retires an existing wait; use retire-condition for that decision. Host publishes and correlates; blocked retains the wait, done returns an answer or owner closure. Parent links organize work; dependsOn gates execution. Use ordinary helper calls for bounded contributions.",
+      "Report one Task attempt against its goal and acceptance. Put supported progress, limitations and exact evidence links in facts; partial output may be retained in result. Existing independent obligations survive omitted fields. Supported observations settle Conditions; authorized decisions supply approval. Feedback is evidence to assess. The Host persists and delivers results; the App judges outcomes. Waiting may set reviewAt (Unix milliseconds) for deliberate agent reconsideration. Conditions recover missed observations in code without periodic agent calls. Requests submit independently owned work: reuse stable id and exact taskId when applicable. The receiver handles the request independently. To wait for its result, return conditions:[{requestId: id}] and state waiting; Host resolves the reference into an ordinary Condition. continue:true permits independent work. Requests without Conditions may accompany convergence. Omission never retires an existing wait; use retire-condition for that decision. Host publishes and correlates; blocked retains the wait, done returns an answer or owner closure. Parent links organize work; dependsOn gates execution. Use ordinary helper calls for bounded contributions.",
   },
 );
 
@@ -360,7 +362,10 @@ function normalizeCondition(value: unknown, index: number): Condition | string {
     return `conditions[${index}].owner must be a canonical kind:identity`;
   }
   const reviewAfterMs = value.reviewAfterMs;
-  if (!Number.isInteger(reviewAfterMs) || Number(reviewAfterMs) < MIN_CONDITION_REVIEW_AFTER_MS) {
+  if (
+    reviewAfterMs !== undefined &&
+    (!Number.isInteger(reviewAfterMs) || Number(reviewAfterMs) < MIN_CONDITION_REVIEW_AFTER_MS)
+  ) {
     return `conditions[${index}].reviewAfterMs must be an integer of at least ${MIN_CONDITION_REVIEW_AFTER_MS}`;
   }
   return {
@@ -370,7 +375,7 @@ function normalizeCondition(value: unknown, index: number): Condition | string {
     expected: structuredClone(value.expected),
     ...(requestedAction.value ? { requestedAction: requestedAction.value } : {}),
     owner,
-    reviewAfterMs: Number(reviewAfterMs),
+    ...(reviewAfterMs === undefined ? {} : { reviewAfterMs: Number(reviewAfterMs) }),
   };
 }
 

@@ -1,6 +1,6 @@
 import { isDeepStrictEqual } from "node:util";
 import { stateTransaction } from "../../../lib/db/transaction.js";
-import { conditionReviewAt, taskEventPredatesReopening } from "./app-task-state.js";
+import { CONDITION_RECOVERY_INTERVAL_MS, taskEventPredatesReopening } from "./app-task-state.js";
 import { createHash, randomUUID } from "node:crypto";
 import { basename } from "node:path";
 import {
@@ -258,22 +258,22 @@ function taskEventIdentity(event: Record<string, unknown>): string {
 }
 
 /**
- * Remove only durable live events explicitly incorporated by this fenced
- * attempt. The caller persists this mutation atomically with the admitted
- * result; an interrupted, failed, or stale attempt therefore cannot lose input.
+ * Advance explicitly incorporated live input and redundant clock wakes when an
+ * attempt settles. A clock wake requests the review already in progress; it
+ * carries no new facts or requirements. Failed/stale execution retains input.
  */
-function consumeAcceptedLiveTaskEvents(
+function consumeSettledTaskEvents(
   tree: TaskTree,
   taskId: string,
   agent: string,
   eventIds: readonly number[] | undefined,
 ): void {
   const accepted = new Set((eventIds ?? []).filter((eventId) => Number.isSafeInteger(eventId) && eventId > 0));
-  if (accepted.size === 0) return;
   const previous = tree.taskTriggers?.[taskId];
   if (!previous) return;
   const pending = taskTriggerEvents(previous);
   const remaining = pending.filter((entry) => {
+    if (entry.event.type === "project.task.tick") return false;
     const eventId = Number(entry.event.eventId);
     return !Number.isSafeInteger(eventId) || !accepted.has(eventId);
   });
@@ -863,14 +863,6 @@ function openTaskConditionIds(tree: TaskTree, taskId: string): string[] {
   return [...new Set(ids)];
 }
 
-function missedTaskConditionCheckpointIds(tree: TaskTree, taskId: string, nowMs = Date.now()): string[] {
-  return taskConditionEntries(tree, taskId).flatMap(([id, condition]) => {
-    if (!isOpenCondition(condition)) return [];
-    const dueAt = conditionReviewAt(condition);
-    return dueAt !== undefined && nowMs >= dueAt ? [id] : [];
-  });
-}
-
 function hasSatisfiedTaskCondition(tree: TaskTree, taskId: string): boolean {
   return taskConditionEntries(tree, taskId).some(
     ([, condition]) => isAppTaskCondition(condition) && condition.status.state === "true",
@@ -930,15 +922,17 @@ function materializeWaitingConditions(
   for (const raw of declarations.values()) {
     const id = raw.id.trim();
     if (!previousIds.has(id)) ids.push(id);
+    const current = registry[id];
+    // New producers omit this obsolete field; doing so must not restart a saved wait.
+    const reviewAfterMs = raw.reviewAfterMs ?? current?.spec.reviewAfterMs;
     const spec = {
       type: raw.type.trim(),
       subject: raw.subject.trim(),
       expected: raw.expected,
       ...(raw.requestedAction?.trim() ? { requestedAction: raw.requestedAction.trim() } : {}),
       owner: raw.owner!.trim(),
-      reviewAfterMs: raw.reviewAfterMs!,
+      ...(reviewAfterMs === undefined ? {} : { reviewAfterMs }),
     };
-    const current = registry[id];
     const sameSpec = current && JSON.stringify(stableValue(current.spec)) === JSON.stringify(stableValue(spec));
     const linkedToAnotherTask = Object.values(tree.resources ?? {}).some(
       (resource) => resource.metadata.id !== taskId && resource.status.conditionIds?.includes(id),
@@ -946,9 +940,6 @@ function materializeWaitingConditions(
     if (current && !sameSpec && linkedToAnotherTask) {
       throw new Error(`Condition ${id} is already linked to another task with a different specification`);
     }
-    // Unrelated reevaluation must not postpone a future recovery checkpoint.
-    // Once due, an accepted recheck may renew it without satisfying the wait.
-    const reviewDue = current && Date.parse(current.status.observedAt ?? "") + spec.reviewAfterMs <= Date.parse(now);
     const startsNewObservation = !sameSpec;
     registry[id] = startsNewObservation
       ? {
@@ -965,35 +956,11 @@ function materializeWaitingConditions(
             observedAt: now,
           },
         }
-      : previousIds.has(id) && current.status.state !== "true" && reviewDue
-        ? {
-            ...current,
-            metadata: {
-              ...current.metadata,
-              resourceVersion: current.metadata.resourceVersion + 1,
-            },
-            status: { ...current.status, observedAt: now },
-          }
-        : current;
+      : current;
   }
   const resource = tree.resources?.[taskId];
   if (resource) touchResource(resource, { conditionIds: ids });
   pruneUnlinkedConditions(tree);
-}
-
-function renewDueTaskConditionCheckpoints(tree: TaskTree, taskId: string, now: string): void {
-  const nowMs = Date.parse(now);
-  for (const id of taskConditionIds(tree, taskId)) {
-    const condition = tree.conditions?.[id];
-    if (!isAppTaskCondition(condition) || condition.status.state === "true") continue;
-    const reviewAfterMs = condition.spec.reviewAfterMs;
-    const observedAtMs = Date.parse(condition.status.observedAt ?? "");
-    if (!Number.isInteger(reviewAfterMs) || !Number.isFinite(observedAtMs) || observedAtMs + Number(reviewAfterMs) > nowMs) {
-      continue;
-    }
-    condition.metadata.resourceVersion += 1;
-    condition.status.observedAt = now;
-  }
 }
 
 export function recoverableAppTaskAttempts(
@@ -1874,18 +1841,6 @@ export function readPendingAppTaskTrigger(config: AppTaskContext, taskId: string
   return event ? structuredClone(event) : undefined;
 }
 
-function nextTaskConditionReviewAt(tree: TaskTree, taskId: string): number | null {
-  return (
-    taskConditionEntries(tree, taskId)
-      .flatMap(([, condition]) => {
-        if (!isOpenCondition(condition)) return [];
-        const dueAt = conditionReviewAt(condition);
-        return dueAt === undefined ? [] : [dueAt];
-      })
-      .sort((left, right) => left - right)[0] ?? null
-  );
-}
-
 function acceptedTaskReviewAt(_tree: TaskTree, resource: AppTaskResource): number | null {
   if (resource.status.phase !== "waiting") return null;
   const deadlines = [
@@ -1895,16 +1850,19 @@ function acceptedTaskReviewAt(_tree: TaskTree, resource: AppTaskResource): numbe
   return deadlines.length ? Math.min(...deadlines) : null;
 }
 
-function nextTaskReviewAt(tree: TaskTree, resource: AppTaskResource): number | null {
+function nextTaskCheckAt(tree: TaskTree, resource: AppTaskResource): number | null {
   const deadlines = [
-    nextTaskConditionReviewAt(tree, resource.metadata.id),
+    // Recovery rereads saved facts in code; only reviewAt authorizes an agent review.
+    resource.status.phase === "waiting" && openTaskConditionIds(tree, resource.metadata.id).length
+      ? Date.now() + CONDITION_RECOVERY_INTERVAL_MS
+      : null,
     acceptedTaskReviewAt(tree, resource),
   ].filter((value): value is number => value !== null);
   return deadlines.length ? Math.min(...deadlines) : null;
 }
 
 function resourceWrite(tree: TaskTree, resource: AppTaskResource, ready = false) {
-  const nextCheckAt = nextTaskReviewAt(tree, resource);
+  const nextCheckAt = nextTaskCheckAt(tree, resource);
   return {
     resource,
     ...(tree.taskTriggers?.[resource.metadata.id] ? { trigger: tree.taskTriggers[resource.metadata.id] } : {}),
@@ -1994,7 +1952,6 @@ function isRunnableOnPassiveResync(tree: TaskTree, resource: AppTaskResource): b
   if (resource.status.phase === "pending") return true;
   if (resource.status.phase === "waiting") {
     if (hasSatisfiedTaskCondition(tree, taskId)) return true;
-    if (missedTaskConditionCheckpointIds(tree, taskId).length > 0) return true;
     const reviewAt = acceptedTaskReviewAt(tree, resource);
     if (reviewAt !== null) return reviewAt <= Date.now();
     return !(resource.status.conditionIds?.length ?? 0);
@@ -2012,7 +1969,7 @@ function acknowledgeIndexedRecoveryWait(
 ): void {
   // The indexed wake has been consumed and the Task is durably blocked. Its
   // dependency or Condition transition will record the next exact
-  // wake. Clear consumed signals, but preserve a Condition's future review.
+  // wake. The next check recovers facts without invoking the agent.
   // Another writer may have changed a trigger, dependency, or Condition since
   // our read. Reuse the store revision so its newer wake remains recoverable.
   config.resourceStore.setRecoveryState(taskId, {
@@ -2565,7 +2522,7 @@ export function reportAppTaskFailure(
   // Accepted facts are not a final answer to the original assignment. Exact
   // admitted input remains unresolved through input waits, while notifications
   // this attempt considered advance instead of restoring the same bounded batch.
-  consumeAcceptedLiveTaskEvents(tree, claim.taskId, claim.agent, input.acceptedLiveEventIds);
+  consumeSettledTaskEvents(tree, claim.taskId, claim.agent, input.acceptedLiveEventIds);
   finishAttempt(tree, resource, "completed", summary, now);
   touchResource(resource, {
     phase: "pending",
@@ -2890,7 +2847,6 @@ export function claimObservedAppTask(
 
   const openConditionIds = openTaskConditionIds(tree, input.taskId);
   const hasSatisfiedCondition = hasSatisfiedTaskCondition(tree, input.taskId);
-  const missedCheckpointConditionIds = missedTaskConditionCheckpointIds(tree, input.taskId);
   const reviewAt = acceptedTaskReviewAt(tree, resource);
   const reviewDue = reviewAt !== null && reviewAt <= Date.now();
   if (
@@ -2899,15 +2855,13 @@ export function claimObservedAppTask(
     (openConditionIds.length > 0 || reviewAt !== null) &&
     !pendingTrigger &&
     !hasSatisfiedCondition &&
-    missedCheckpointConditionIds.length === 0 &&
     !reviewDue
   ) {
-    acknowledgeIndexedRecoveryWait(config, input.taskId, snapshotRevision, nextTaskReviewAt(tree, resource));
+    acknowledgeIndexedRecoveryWait(config, input.taskId, snapshotRevision, nextTaskCheckAt(tree, resource));
     return { kind: "waiting", taskId: input.taskId, conditionIds: openConditionIds };
   }
 
   const continuedInputKeys = continuedTaskInputKeys(tree, input.taskId, claimedEvents, [
-    ...missedCheckpointConditionIds,
     ...taskConditionEntries(tree, input.taskId)
       .filter(([, condition]) => isAppTaskCondition(condition) && condition.status.state === "true")
       .map(([id]) => id),
@@ -2926,33 +2880,20 @@ export function claimObservedAppTask(
   const trigger =
     (claimedEvents.length > 0 ? preferredTriggerFromEvents(claimedEvents, agent) : undefined) ??
     (previousAttempt ? attemptTrigger(previousAttempt) : undefined) ??
-    (missedCheckpointConditionIds.length > 0
+    (reviewDue
       ? {
-          ...syntheticAttemptTrigger(config, input.taskId, "condition-review-checkpoint-missed"),
-          type: "project.task.condition-review.missed",
+          ...syntheticAttemptTrigger(config, input.taskId, "review-at-reached"),
+          type: "project.task.review-at.reached",
           data: {
             project: projectIdFromAppDir(config.appDir) || "unknown-app",
             taskId: input.taskId,
             task_id: input.taskId,
-            reason: "condition-review-checkpoint-missed",
-            conditionIds: missedCheckpointConditionIds,
+            reason: "review-at-reached",
+            reviewAt,
             synthetic: "controller-review-trigger",
           },
         }
-      : reviewDue
-        ? {
-            ...syntheticAttemptTrigger(config, input.taskId, "review-at-reached"),
-            type: "project.task.review-at.reached",
-            data: {
-              project: projectIdFromAppDir(config.appDir) || "unknown-app",
-              taskId: input.taskId,
-              task_id: input.taskId,
-              reason: "review-at-reached",
-              reviewAt,
-              synthetic: "controller-review-trigger",
-            },
-          }
-        : syntheticAttemptTrigger(config, input.taskId, input.reason));
+      : syntheticAttemptTrigger(config, input.taskId, input.reason));
   const specHash = appTaskSpecHash(intent, agent);
   const attempt: AppTaskAttempt = {
     metadata: { id: attemptId, resourceVersion: 1 },
@@ -2963,7 +2904,7 @@ export function claimObservedAppTask(
     handler,
     runtimeId: reconcilerRuntimeId,
     state: "running",
-    reason: missedCheckpointConditionIds.length > 0 ? "condition-review-checkpoint-missed" : (input.reason ?? "event"),
+    reason: input.reason ?? "event",
     // Persist repair context with the claim so every interruption path retains it.
     ...(priorFacts?.unacceptedResult ? { unacceptedResult: structuredClone(priorFacts.unacceptedResult) } : {}),
     ...(claimedEvents.length > 0 ? { events: structuredClone(claimedEvents) } : {}),
@@ -3502,8 +3443,9 @@ function validateConditions(
       throw new Error(`Handler result Condition ${identity} owner must be a canonical kind:identity`);
     }
     if (
-      !Number.isInteger(condition.reviewAfterMs) ||
-      Number(condition.reviewAfterMs) < MIN_APP_TASK_CONDITION_REVIEW_AFTER_MS
+      condition.reviewAfterMs !== undefined &&
+      (!Number.isInteger(condition.reviewAfterMs) ||
+        Number(condition.reviewAfterMs) < MIN_APP_TASK_CONDITION_REVIEW_AFTER_MS)
     ) {
       throw new Error(
         `Handler result Condition ${identity} reviewAfterMs must be an integer of at least ${MIN_APP_TASK_CONDITION_REVIEW_AFTER_MS}`,
@@ -3761,7 +3703,7 @@ function recordPendingAppTaskResult(
   inputOutcomeAdmissions(config, tree, claim, {
     acceptedLiveEventIds: input.acceptedLiveEventIds, inputKeys: [],
   }, "retain");
-  consumeAcceptedLiveTaskEvents(tree, claim.taskId, claim.agent, input.acceptedLiveEventIds);
+  consumeSettledTaskEvents(tree, claim.taskId, claim.agent, input.acceptedLiveEventIds);
   finishAttempt(tree, resource, input.reason ? "failed" : "completed", input.summary, new Date().toISOString());
   if (input.reason) attempt.failureReason = input.reason;
   attempt.unacceptedResult = {
@@ -3843,8 +3785,7 @@ export function completeAppTask(
   const actionsApplied = applyTaskActions(tree, claim, actions, config);
   const now = new Date().toISOString();
   match.attempt.acceptedResult = acceptedAttemptResult(tree, claim.taskId, "converged", { ...input, inputKeys: resolvedInputKeys }, acceptanceBasis);
-  consumeAcceptedLiveTaskEvents(tree, claim.taskId, claim.agent, input.acceptedLiveEventIds);
-  renewDueTaskConditionCheckpoints(tree, claim.taskId, now);
+  consumeSettledTaskEvents(tree, claim.taskId, claim.agent, input.acceptedLiveEventIds);
   unlinkSatisfiedTaskConditions(tree, claim.taskId);
   finishAttempt(tree, resource, "completed", input.summary, now);
   const reconcileActionTaskIds = actions.flatMap((action) => (action.kind === "unblock-task" ? [action.taskId] : []));
@@ -3964,10 +3905,7 @@ export function deferAppTask(
   );
   if (input.report) acceptedResult.report = true;
   if (input.continue) acceptedResult.continue = true;
-  consumeAcceptedLiveTaskEvents(tree, claim.taskId, claim.agent, input.acceptedLiveEventIds);
-  // A review checkpoint is recovery insurance for an event-driven wait. It
-  // never makes the awaited fact true, so preserve the owner's Conditions.
-  // Retained and redeclared waits must renew due checkpoints the same way.
+  consumeSettledTaskEvents(tree, claim.taskId, claim.agent, input.acceptedLiveEventIds);
   let conditions = input.conditions ?? [];
   const pendingTriggerRecord = tree.taskTriggers?.[claim.taskId];
   const pendingEvents = pendingTriggerRecord ? taskTriggerEvents(pendingTriggerRecord) : [];
@@ -3986,13 +3924,8 @@ export function deferAppTask(
   const now = new Date().toISOString();
   match.attempt.acceptedResult = acceptedResult;
   finishAttempt(tree, resource, "completed", input.summary, now);
-  // Apply authored declarations first so a changed specification advances the
-  // existing identity before satisfied links are pruned. Every accepted review
-  // renews retained due checkpoints, regardless of whether its authored delta
-  // is omitted, empty, or adds a peer; legacy rows are retained without being
-  // revalidated or rewritten when they have no valid checkpoint metadata.
+  // A declaration changes the specification; an unchanged wait preserves its observation.
   if (conditions.length) materializeWaitingConditions(tree, claim.taskId, conditions, now);
-  renewDueTaskConditionCheckpoints(tree, claim.taskId, now);
   const hadSatisfiedCondition = hasSatisfiedTaskCondition(tree, claim.taskId);
   unlinkSatisfiedTaskConditions(tree, claim.taskId);
   const openConditions = taskConditionIds(tree, claim.taskId).flatMap((id) => {

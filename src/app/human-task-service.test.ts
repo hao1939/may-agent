@@ -1224,6 +1224,147 @@ describe("Human Task service", () => {
     });
   });
 
+  test("follows exact App-request edges with a primary-key lookup across completed children and cycles", () => {
+    const db = database();
+    insertTask(db, { appId: "root-app", taskId: "root", phase: "waiting", updatedAt: 50 });
+    insertTask(db, { appId: "middle-app", taskId: "completed-middle", phase: "waiting", updatedAt: 40 });
+    insertReceipt(db, "middle-app", "completed-middle", 41);
+    insertTask(db, { appId: "leaf-app", taskId: "human-leaf", phase: "waiting", updatedAt: 30 });
+    insertTask(db, { appId: "prefix-decoy", taskId: "prefix-human", phase: "waiting", updatedAt: 20 });
+    insertTask(db, { appId: "subject-decoy", taskId: "subject-human", phase: "waiting", updatedAt: 10 });
+
+    const insertRequest = db.prepare(
+      `INSERT INTO app_inbox_items(
+         id, app_id, source_kind, source_id, input_kind, input_data, status,
+         waiting_on_kind, waiting_on_id, created_at, updated_at
+       ) VALUES (?, ?, 'app', 'fixture', 'probe', '{}', 'handling', 'task', ?, 1, 1)`,
+    );
+    const link = (input: {
+      appId: string;
+      taskId: string;
+      conditionId: string;
+      requestId: string;
+      targetAppId: string;
+      targetTaskId: string;
+      subject?: string;
+    }) => {
+      insertRequest.run(input.requestId, input.targetAppId, input.targetTaskId);
+      insertCondition(db, {
+        appId: input.appId,
+        taskId: input.taskId,
+        conditionId: input.conditionId,
+        type: "app.dependency.updated",
+        subject: input.subject ?? `id:${input.requestId}`,
+      });
+    };
+    link({
+      appId: "root-app",
+      taskId: "root",
+      conditionId: "app-request:to-middle",
+      requestId: "to-middle",
+      targetAppId: "middle-app",
+      targetTaskId: "completed-middle",
+    });
+    link({
+      appId: "middle-app",
+      taskId: "completed-middle",
+      conditionId: "app-request:to-leaf",
+      requestId: "to-leaf",
+      targetAppId: "leaf-app",
+      targetTaskId: "human-leaf",
+    });
+    link({
+      appId: "leaf-app",
+      taskId: "human-leaf",
+      conditionId: "app-request:cycle-to-root",
+      requestId: "cycle-to-root",
+      targetAppId: "root-app",
+      targetTaskId: "root",
+    });
+    link({
+      appId: "root-app",
+      taskId: "root",
+      conditionId: "not-request:prefix-only",
+      requestId: "prefix-only",
+      targetAppId: "prefix-decoy",
+      targetTaskId: "prefix-human",
+    });
+    link({
+      appId: "root-app",
+      taskId: "root",
+      conditionId: "app-request:wrong-subject",
+      requestId: "wrong-subject",
+      targetAppId: "subject-decoy",
+      targetTaskId: "subject-human",
+      subject: "id:some-other-request",
+    });
+    insertCondition(db, {
+      appId: "leaf-app",
+      taskId: "human-leaf",
+      conditionId: "human-action",
+      owner: "human:operator",
+      requestedAction: "Approve the leaf repair.",
+    });
+    insertCondition(db, {
+      appId: "prefix-decoy",
+      taskId: "prefix-human",
+      conditionId: "prefix-human-action",
+      owner: "human",
+      requestedAction: "This prefix decoy must stay hidden.",
+    });
+    insertCondition(db, {
+      appId: "subject-decoy",
+      taskId: "subject-human",
+      conditionId: "subject-human-action",
+      owner: "human",
+      requestedAction: "This subject decoy must stay hidden.",
+    });
+
+    let reachablePlan: Array<{ detail: string }> = [];
+    const observed: SqliteDb = {
+      ...db,
+      prepare(sql) {
+        const statement = db.prepare(sql);
+        if (!sql.includes("WITH RECURSIVE reachable")) return statement;
+        return new Proxy(statement, {
+          get(target, key) {
+            if (key === "all")
+              return (...values: Parameters<typeof statement.all>) => {
+                reachablePlan = db.prepare(`EXPLAIN QUERY PLAN ${sql}`).all(...values) as Array<{ detail: string }>;
+                return target.all(...values);
+              };
+            const value = Reflect.get(target, key);
+            return typeof value === "function" ? value.bind(target) : value;
+          },
+        });
+      },
+    };
+    const service = new HumanTaskService(observed, registry("root-app", "middle-app", "leaf-app"));
+
+    expect(service.listTasks({ appId: "root-app", humanActionOnly: true })).toMatchObject({
+      total: 1,
+      items: [
+        {
+          appId: "leaf-app",
+          taskId: "human-leaf",
+          humanAction: { requestedAction: "Approve the leaf repair." },
+        },
+      ],
+    });
+    expect(service.getTask({ appId: "root-app", taskId: "root" })?.humanAction).toMatchObject({
+      requestedAction: "Approve the leaf repair.",
+      task: { appId: "leaf-app", taskId: "human-leaf" },
+    });
+    expect(reachablePlan).toContainEqual(
+      expect.objectContaining({
+        detail: expect.stringContaining("SEARCH request USING INDEX sqlite_autoindex_app_inbox_items_1 (id=?)"),
+      }),
+    );
+    expect(
+      reachablePlan.some(({ detail }) => detail.includes("SEARCH request USING INDEX idx_app_inbox_waiting")),
+    ).toBe(false);
+  });
+
   test("lists Apps and bounded Tasks from indexed resource rows", () => {
     const db = database();
     insertTask(db, { appId: "alpha", taskId: "old", phase: "waiting", updatedAt: 10 });
