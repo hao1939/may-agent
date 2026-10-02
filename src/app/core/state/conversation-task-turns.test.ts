@@ -1162,6 +1162,19 @@ test.each(["answer", "waiting-report", "execution-error"] as const)(
       "accepted attempt",
     );
     if (scenario !== "answer") {
+      // Other Apps and unlinked Tasks may retain reports for the same origin.
+      // They must not enlarge this App's report lookup or hide a cross-App result.
+      const selected = f.db.prepare("SELECT admission_json FROM app_task_admissions WHERE app_id = ?")
+        .all("worker").map((row) => JSON.parse(String(row.admission_json)))
+        .find((row) => row.taskId === "measurement")!;
+      f.db.exec("BEGIN");
+      for (let i = 0; i < 100; i++) {
+        f.db.prepare("INSERT INTO app_task_admissions VALUES (?, ?, ?)")
+          .run(`unrelated-app-${i}`, "report", JSON.stringify(selected));
+        f.db.prepare("INSERT INTO app_task_admissions VALUES (?, ?, ?)")
+          .run("worker", `unlinked-${i}`, JSON.stringify({ ...selected, taskId: `unlinked-${i}` }));
+      }
+      f.db.exec("COMMIT");
       expect(listPendingConversationTaskChanges(f.db, app.id)).toEqual([
         { ...returned, appId: app.id, taskAppId: "worker" },
       ]);
@@ -1718,7 +1731,7 @@ test("closure input validates the exact source and rolls admission back without 
   expect(listPendingConversationTaskChanges(f.db, app.id)).toEqual([]);
 });
 
-test("recovery indexes the target Task without changing legacy JSON identity comparisons", () => {
+test("recovery scopes report lookups to linked Tasks without changing legacy JSON identity comparisons", () => {
   const f = fixture();
   const input = f.admit();
   completeConversationTaskTurn(f.context(), f.claim(input.taskId), decision);
@@ -1747,16 +1760,26 @@ test("recovery indexes the target Task without changing legacy JSON identity com
   expect(f.db.prepare("SELECT name FROM sqlite_master WHERE name = 'idx_app_task_admissions_target'").get()).toBeNull();
   expect(f.db.prepare("SELECT admission_json FROM app_task_admissions WHERE app_id = ? AND task_id = ?")
     .get(app.id, admission.task_id)?.admission_json).toBe(admission.admission_json);
+  f.db.exec("BEGIN");
   for (let i = 0; i < 500; i++) {
     f.db.prepare("INSERT INTO app_task_admissions VALUES (?, ?, ?)").run(app.id, `unrelated-${i}`,
-      JSON.stringify({ taskId: `unrelated-${i}`, taskGeneration: 1 }));
+      JSON.stringify({ ...saved, taskId: `unrelated-${i}`, reportAttemptId: claim.attemptId }));
+    f.db.prepare("INSERT INTO app_task_admissions VALUES (?, ?, ?)").run(`unrelated-app-${i}`, "report",
+      JSON.stringify({ ...saved, reportAttemptId: claim.attemptId }));
   }
+  f.db.exec("COMMIT");
   f.db.exec("ANALYZE");
   const prepare = f.db.prepare.bind(f.db);
   let recoverySql = "";
+  let recoveryArgs: unknown[] = [];
   const capture = spyOn(f.db, "prepare").mockImplementation((sql) => {
-    if (sql.includes("WITH live_conversations")) recoverySql = sql;
-    return prepare(sql);
+    const statement = prepare(sql);
+    if (!sql.includes("live_conversations AS MATERIALIZED")) return statement;
+    recoverySql = sql;
+    return { ...statement, all(...args: unknown[]) {
+      recoveryArgs = args;
+      return statement.all(...args);
+    } };
   });
   try {
     for (const [taskId, taskGeneration, matches] of [
@@ -1769,11 +1792,15 @@ test("recovery indexes the target Task without changing legacy JSON identity com
       expect(listPendingConversationTaskChanges(f.db, app.id)).toEqual(matches ? [ref] : []);
       if (!matches) expect(admitConversationTaskChange(f.context(), f.context(), ref).created).toBe(false);
     }
-    const plan = prepare(`EXPLAIN QUERY PLAN ${recoverySql}`).all(app.id, app.id, app.id, 100);
+    const plan = prepare(`EXPLAIN QUERY PLAN ${recoverySql}`).all(...recoveryArgs);
     const admissionLookups = plan.map((step) => String(step.detail)).filter((detail) => detail.startsWith("SEARCH admission "));
-    expect(admissionLookups).toHaveLength(2);
-    for (const lookup of admissionLookups)
-      expect(lookup).toContain("idx_app_task_admissions_target_text (app_id=? AND <expr>=?)");
+    expect(admissionLookups).toEqual([
+      expect.stringContaining("idx_app_task_admissions_target_text (app_id=? AND <expr>=?)"),
+      expect.stringContaining("idx_app_task_admissions_target_text (app_id=? AND <expr>=?)"),
+    ]);
+    expect(plan.some((step) => String(step.detail).startsWith("SCAN admission"))).toBe(false);
+    expect(plan.filter((step) => String(step.detail).includes("MATERIALIZE linked_tasks"))).toHaveLength(1);
+    expect(plan.filter((step) => String(step.detail).includes("MATERIALIZE selected_reports"))).toHaveLength(1);
     expect(plan.filter((step) => String(step.detail).includes("MATERIALIZE live_conversations"))).toHaveLength(1);
     f.db.prepare("UPDATE app_task_admissions SET admission_json = ? WHERE app_id = ? AND task_id = ?")
       .run(admission.admission_json, app.id, admission.task_id);
