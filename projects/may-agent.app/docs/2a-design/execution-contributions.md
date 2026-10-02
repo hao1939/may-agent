@@ -276,7 +276,7 @@ is waiting. Routing still establishes relevance and authority: an unrelated
 broadcast or invalid input must not wake every Task.
 
 Receiving or claiming that input does not cancel, satisfy, replace, or reset
-the outstanding waits and their review deadlines. Only accepted reconciliation
+the outstanding waits or independently chosen Task review deadlines. Only accepted reconciliation
 can retire a wait after establishing that it is satisfied, obsolete, or explicitly
 cancelled. The Host retains unchanged accepted waits; the next result need not
 redeclare them to keep their identities. A Task can therefore
@@ -284,9 +284,9 @@ wake to handle an unexpected review finding while retaining both a pipeline
 wait and a separate external decision wait; no new subscription registry or
 work lifecycle is needed.
 
-Redeclaring an unchanged wait preserves its future review deadline. Once the
-checkpoint is due, accepted reevaluation may renew it if the fact is still
-pending; renewal does not satisfy the wait.
+Redeclaring an unchanged wait preserves its observation. Infra recovers missed
+facts in code. An agent chooses an explicit Task `reviewAt` for deliberate
+reconsideration; simply remaining pending does not renew that deadline.
 
 Replacing an interrupted or expired attempt also preserves the accepted Task
 generation and its waits. Execution recovery is not desired-state drift. The
@@ -300,9 +300,9 @@ If a pass is already running, newer admitted input remains durable for that
 same Task until incorporated by an accepted result. Returning a new waiting
 result must not discard that input simply because it matches none of the
 returned Conditions. Do not create a parallel attempt. Unchanged observations must
-not purchase repeated model work. Repeated provider observations and declared
-review checkpoints repair missed wake hints by rereading current state, not by
-assuming the awaited operation succeeded or replaying obsolete workflow steps.
+not purchase repeated model work. Repeated provider observations and mechanical
+recovery checks repair missed wake hints by rereading current state. An unchanged pending result invokes no
+agent; a recovered result follows the normal exact return route.
 
 Review a waiting result for both its named producer and its retained wake
 coverage. Test an unexpected routed event with two outstanding waits, retention

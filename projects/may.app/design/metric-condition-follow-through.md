@@ -103,11 +103,16 @@ version 1 facts bind `linkedTask` to the owning Task and mark unresolved decisio
 with `followThrough:"task"`. They omit nextReviewAt. The existing read projection
 already supports this optional field; no Host schema or storage change is needed.
 
-`metric-response` and report intake read current Task obligations and each saved
-Condition's `observation.reviewAt`, including renewed checkpoints. All waits are
-shown with their state; satisfied Conditions and closed Tasks have no live
-Condition deadline. A legacy fact's date remains historical. It is never used
-as a fallback timer. Omitting unchanged Conditions retains their Host-owned wait.
+`metric-response` and report intake read current Task obligations. New Hosts
+separate code-only Condition recovery from the agent's Task `reviewAt` decision;
+Conditions retain their state without a recurring model-review deadline. The
+reader tolerates absent `observation.reviewAt`; dates supplied by older Hosts
+remain compatibility evidence. A legacy disposition fact's date is never a
+fallback timer. Omitting unchanged Conditions retains their Host-owned wait.
+
+The [Task contract](../../may-agent.app/docs/2a-design/task-resource-engine.md#conditions)
+owns the Host revision and rollout requirement. Explicit repair checkpoints use
+Task `reviewAt`; missed delivery recovery does not require an agent checkpoint.
 
 ## SQL cost review
 
@@ -167,7 +172,7 @@ bun test ./metric-follow-through.test.ts ./agents/may/workflows/metric-response.
 bun test ./scripts/metric-follow-through.test.ts --timeout 80000
 ```
 
-The timer case deliberately waits for the real 60-second minimum repair checkpoint.
+The timer case deliberately waits for a real agent-selected repair deadline.
 The current regressions cover repeated fresh/stale samples without agent calls,
 repair and exact recovery-status return, replay after restart, failed publication,
 independent approvals, shared breach episodes, missing work, invalid Conditions,

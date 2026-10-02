@@ -18,14 +18,14 @@ async function setup(judge: (prompt: string) => Promise<MetricReview>) {
   fixtures.push(f);
   return f;
 }
-function repairCondition(reviewAfterMs = 3_600_000): Condition {
+function repairCondition(reviewAfterMs?: number): Condition {
   return {
     id: "repair-result",
     type: "repair.finished",
     subject: "request:verification",
     expected: { done: true },
     owner: "app:may",
-    reviewAfterMs,
+    ...(reviewAfterMs === undefined ? {} : { reviewAfterMs }),
   };
 }
 function investigate(
@@ -41,7 +41,6 @@ function investigate(
         {
           ...condition,
           owner: condition.owner!,
-          reviewAfterMs: condition.reviewAfterMs!,
         },
       ],
     },
@@ -145,16 +144,14 @@ test("fresh and stale samples stay quiet across restart; the retained repair res
     () => f.get("investigation")?.status === "waiting",
     "initial accepted wait",
   );
-  const deadline = f.get("investigation")!.conditions[0].observation!.reviewAt;
+  const condition = structuredClone(f.get("investigation")!.conditions[0]);
   await f.poll();
   f.record(0, Date.now() - 86_400_000);
   await f.poll();
   expect(calls).toBe(0);
   await f.restart();
   expect(calls).toBe(0);
-  expect(f.get("investigation")!.conditions[0].observation!.reviewAt).toBe(
-    deadline,
-  );
+  expect(f.get("investigation")!.conditions[0]).toEqual(condition);
   expect(f.decisions()).toHaveLength(1);
   f.record(0);
   await f.poll();
@@ -374,7 +371,7 @@ test("missing selected work and invalid Conditions never leave accepted metric d
   expect(f.decisions()).toHaveLength(0);
 });
 
-test("a deliberate repair checkpoint retains its wait and exposes the renewed deadline", async () => {
+test("an explicit Task review runs once and preserves the repair wait", async () => {
   let calls = 0;
   const f = await setup(async () => {
     calls++;
@@ -395,27 +392,27 @@ test("a deliberate repair checkpoint retains its wait and exposes the renewed de
       ],
     };
   });
-  await f.attach("investigation", {
-    context: {
-      metricResponse: investigate(f.subject, repairCondition(60_000)),
-    },
-  });
+  const plan = investigate(f.subject, repairCondition());
+  if (plan.task.state !== "waiting") throw new Error("waiting plan");
+  plan.task.reviewAt = Date.now() + 500;
+  await f.attach("investigation", { context: { metricResponse: plan } });
   await until(() => f.get("investigation")?.status === "waiting", "first wait");
-  const first = f.get("investigation")!.conditions[0].observation!.reviewAt!;
+  const condition = structuredClone(f.get("investigation")!.conditions[0]);
   await until(
     () => calls === 1 && f.get("investigation")?.status === "waiting",
-    "actual checkpoint",
-    70_000,
+    "explicit Task review",
   );
   const handling = await inspectMetricResponse(
     f.evidence(),
     f.subject.alertId,
     async (appId, taskId) => ({ ...f.get(taskId)!, appId }),
   );
-  expect(handling.followThrough!.conditions[0].reviewAt).toBeGreaterThan(first);
+  expect(handling.followThrough!.reviewAt).toBeNull();
+  expect(handling.followThrough!.conditions[0].reviewAt).toBeNull();
+  expect(f.get("investigation")!.conditions[0]).toEqual(condition);
   expect(f.get("investigation")!.conditions).toHaveLength(1);
   expect(f.attempts).toHaveLength(2);
-}, 80_000);
+});
 
 test("an investigation commissions ordinary dependent work and its result wakes the same owner", async () => {
   let childCalls = 0,

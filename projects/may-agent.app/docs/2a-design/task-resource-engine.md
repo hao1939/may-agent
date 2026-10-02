@@ -369,7 +369,6 @@ A Condition names one exact external observation, for example:
   subject: "credential:xhs",
   expected: { field: "state", equals: "ready" },
   owner: "app:credential-provider",
-  reviewAfterMs: 300_000,
 }
 ```
 
@@ -383,7 +382,6 @@ A Condition that explicitly belongs to a human adds one plain action:
   expected: { field: "decision", anyOf: ["approve", "reject", "hold"] },
   owner: "human:operator",
   requestedAction: "Approve, reject, or hold rollout v4.",
-  reviewAfterMs: 3_600_000,
 }
 ```
 
@@ -393,18 +391,22 @@ waiting; adapters use that time for age. Changing the specification starts a
 new wait, while rereconciling the same Condition does not create another human
 obligation.
 
-For newly admitted Conditions, `owner` and `reviewAfterMs` are required.
-`owner` uses `human` or a canonical `kind:identity` such as `app:<id>` or
-`human:<role>`. The kind starts with a lowercase letter and contains only
-lowercase letters, digits or hyphens; the identity contains no whitespace or
-colon. Surrounding whitespace is trimmed. A display name or sentence is not
-an identity. This field names who can supply the fact; it neither sends a human
-message nor establishes permission to repair the resource. Legacy Conditions
-that omit either field remain readable but are not a model for new waits and
-need correction when reviewed. `reviewAfterMs` must be
-an integer of at least 60,000. Returning an unchanged wait preserves its future
-review deadline; accepted reevaluation may renew a due deadline if the fact is
-still pending. A normal wake neither resets nor removes unrelated waits.
+New Conditions require `owner`: `human` or a canonical `kind:identity` such as
+`app:<id>` or `human:<role>`. The kind starts with a lowercase letter and contains
+only lowercase letters, digits or hyphens; the identity contains no whitespace
+or colon. This names who can supply the fact; it neither sends a message nor
+establishes permission to repair the resource.
+
+A Condition declares the fact to await. Infra recovers missed observations and
+exact saved request results in code. An unchanged pending fact does not start
+another agent attempt. The agent may separately return Task `reviewAt` when it
+has a reason to reconsider at a deadline. Omit that deadline when only the
+external result or human decision can make useful work possible.
+
+Legacy `reviewAfterMs` remains readable and optional at admission (if supplied,
+an integer of at least 60,000), but does not schedule agent execution. New
+producers should omit it. Redeclaring the same Condition without this field
+preserves its stored compatibility value, identity and observation timestamps; no state rewrite or timer renewal masquerades as a new observation.
 
 A watcher reads an external source and publishes a fact. It does not know task
 storage or invoke an agent. The generic Condition tracker atomically updates
@@ -423,9 +425,11 @@ Every admitted sleeping wait must identify:
 
 - the exact fact or Task result being awaited;
 - the accountable external owner;
-- a durable event or dependency route that wakes this same Task; and
-- a next review time that protects against missed wakes or a disappeared
-  producer.
+- a durable event or dependency route that wakes this same Task.
+
+The Host periodically recovers missed facts through that route. A disappeared
+producer needs an App health/age policy or an explicitly chosen review deadline;
+it is not grounds for an implicit recurring model call.
 
 Outstanding waits are independent of wake admission. Legitimate new input
 routed to a Task requests reevaluation even if it matches none of its current
@@ -440,21 +444,22 @@ pre-enumerated set of known domain changes. See
 Condition declarations are identity-scoped deltas, not snapshots. A distinct ID
 adds an obligation; the same ID may update its complete specification while
 preserving unrelated Conditions, dependency links, failed-operation facts,
-selected reports and pending input. A generated or persisted dependency Condition protects identity, while a compatible explicit same-ID declaration controls the complete specification, including `reviewAfterMs`; conflicts reject. Omission means no change.
+selected reports and pending input. A generated or persisted dependency Condition
+protects exact result identity. A compatible explicit same-ID declaration controls
+the complete specification; conflicts reject. Omission means no change.
 Satisfaction or generation-fenced retirement names the exact Condition; retry,
 failure, unblock, dependency repair, wake or ordinary reconsideration never
 clears peers. Retained legacy rows remain readable without being revalidated as
 newly authored declarations. A changed specification starts
-a new generation and cannot inherit an older approval. Condition `reviewAfterMs`
-checkpoints renew after an accepted waiting or converged settlement while the
-fact remains pending. Stale or otherwise unaccepted proposals, including those
-superseded by pending input, do not renew checkpoints.
-Public `observation.reviewAt` uses the scheduler's `observedAt + reviewAfterMs`
-calculation (epoch milliseconds), omitted for satisfied or unusable observations.
-Use this checkpoint, not creation time; passing it warrants review, not failure.
-Task-level `reviewAt` is a recovery checkpoint: a future omitted deadline is
-preserved, a due checkpoint is consumed, and sleeping again must return a new
-explicit deadline or Condition. Immediate `continue: true` work requires neither.
+a new generation and cannot inherit an older approval. Public Condition
+observations expose actual retained evidence; they do not expose an agent review
+deadline. Older `observation.reviewAt` values are historical, not current wake
+instructions.
+
+Task-level `reviewAt` is an explicit agent reconsideration decision: a future
+omitted deadline is preserved, a due deadline is consumed, and sleeping again
+must return a new explicit deadline or retain a Condition. It is not automatically
+renewed by another waiting result. Immediate `continue: true` work requires neither.
 Accepted completion consumes that checkpoint unless an independently correlated
 input deadline still exists. Whole-Task
 cancellation remains the only broad termination operation. Callers that once
@@ -471,8 +476,8 @@ page size are bounded, with explicit omitted-field and continuation metadata.
 History never automatically replaces current result, certifies recovery, discharges unrelated obligations, or creates another evidence lifecycle.
 An owner may use an exact scoped receipt when reconciling the obligation it proves.
 
-Omitting the wake route or review deadline does not turn an incomplete state
-into a valid indefinite wait. Code validates shape and exact routes it knows;
+A pending Condition needs a real wake route; an explicit Task `reviewAt` is
+optional reconsideration, not a substitute for that route. Code validates shape and exact routes it knows;
 App validation/guidance must establish whether its source can actually produce
 the fact. A syntactically valid owner is not proof that a wait is meaningful.
 
@@ -523,18 +528,27 @@ attempt persists the ordered batch only—the most relevant `trigger` is derived
 in memory. Retained pre-migration attempts and synthetic controller attempts
 without a durable event batch may still carry a compatibility trigger.
 
-`reviewAfterMs` is recovery insurance, never proof that the Condition became
-true and never the primary execution loop. Recovery replays available exact
-dependency outcomes and external facts. A due checkpoint can admit one bounded
-attempt with the original input and due Condition IDs. That attempt judges
-whether the wait remains useful and can renew its deadline. The Host does not
-generically establish that every external producer or accountable owner exists.
+Recovery uses the existing indexed Task scheduler and bounded worker capacity.
+A waiting Task with open Conditions gets a Host-owned recovery date (currently
+five minutes). Before claiming an attempt, the worker replays relevant retained
+events and reads exact saved request answers or selected reports. A new fact
+uses the normal Condition/event route. With no changed fact, new input, useful
+continuation or explicit `reviewAt`, the worker re-arms the recovery index and
+returns without calling the agent, adding an attempt or changing observation
+timestamps. Storage failures retain retryable recovery work.
 
-The review deadline is never silently removed merely because several checks
-found no change. The owning App may revise the interval with evidence or
-report why it can no longer progress. Human waits remain visible to `/todo`
-between reviews. Checkpoints can invoke the selected executor, including an LLM;
-choose intervals appropriate to that cost rather than claiming all waits are free.
+Existing saved Condition timers may leave old due index entries. Their next
+check follows the same code-only path and replaces the index date; no migration
+or invented input is needed. Task and input-level explicit review deadlines
+remain effective. Human waits remain visible between checks.
+
+**Source availability:** implemented in Host/SDK
+[`c933c365b`](https://github.com/hao1939/may-agent/commit/c933c365bb01093f67d83e6b1f65a453cd558216).
+Earlier Hosts invoke agents for Condition
+checkpoints and require `reviewAfterMs` on new explicit Conditions. Integrate and
+activate the Host before App producers rely on omitted intervals. This contract
+update is not deployment evidence.
+
 Provider observation time and monotonic source revision, when
 available, prevent known older facts from replacing newer Condition state.
 

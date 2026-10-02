@@ -137,7 +137,9 @@ are not three kinds of work the agent must learn to route or recover.
 
 Events notify the owner that something deserves attention. The handler rereads
 current state, judges what remains necessary and uses the same bounded Task
-execution path. A periodic check does the same after a missed notification.
+execution path. Infra periodically recovers missed notifications from retained
+facts and exact operation results without invoking the agent for an unchanged
+wait. A deliberate agent review uses the Task's explicit `reviewAt` deadline.
 This is what reconciliation means here: compare the intended outcome with
 current facts and act through the existing owner. It is not another lifecycle.
 

@@ -257,8 +257,8 @@ read alone starts no wait. Workflow/executor code uses `read.contract(appId)`
 and SDK `observationCondition` for the same result. The `builds` App here is an
 example, not an installed provider. Install the matching Host/SDK before using
 the new declaration. For diagnosis, exact `apps.list {appId}` reads show recent
-resource inspection health; the Task's saved review deadline still provides a
-review opportunity if detection stops entirely.
+resource inspection health. Use an explicit Task `reviewAt` when the agent wants
+a review if detection stops; the Condition itself does not schedule model work.
 
 
 ### Smoke-test the installed observation path
@@ -288,8 +288,8 @@ An agent can carry out the same steps using `tasks.contract` and Task results.
 If the result is still unverified, inspect the Task's current Conditions and
 pending input, exact source App `observerHealth`, event receipt, and accepted
 attempts. These distinguish source failure, unmatched evidence, delivery failure
-and an owner that did not continue. Keep the Task unresolved for diagnosis using
-its existing review deadline. Periodic observation retries failed reads and
+and an owner that did not continue. Retain the unresolved wait while diagnosing
+the missing result. Periodic observation retries failed reads and
 covers missed prompt notifications. Host capacity and provider latency still
 apply; a successful smoke run is evidence for that resource and moment, not a
 promise that every future check succeeds.

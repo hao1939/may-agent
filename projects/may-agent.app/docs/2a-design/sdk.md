@@ -37,7 +37,7 @@ guarantees; this map explains how an App uses them.
 | Understand the current situation | Starting Task context, pending updates, accepted results, exact links and scoped Task reads. | Which evidence to read, what it means, and what remains necessary. |
 | Execute | Configured agents, Task-bound workflows and registered executors share the Task attempt/result boundary. The Host supplies execution identity, capacity and cancellation controls. | Strategy, domain effects and whether another bounded attempt is useful. |
 | Cooperate | Bounded calls return contributions directly; typed Task dependencies retain independent work and its caller return. | Who can help, what answer is needed, and whether the returned contribution is sufficient. |
-| Wait and react | Retained Conditions and dependencies, addressed updates, supported live feedback and later reconciliation, with recovery review deadlines. | Whether new facts satisfy a wait, change the plan or leave useful independent work. |
+| Wait and react | Retained Conditions and dependencies, addressed updates, supported live feedback and later reconciliation, with code-only missed-result recovery and explicit Task review deadlines. | Whether new facts satisfy a wait, change the plan or leave useful independent work. |
 | Use capabilities | Configured models and tools, App-local tool conventions, and scoped SDK reads, events and metrics. Availability and authority depend on the installation. | Which tools fit the assignment and whether another domain capability is needed. |
 | Keep results and evidence | Accepted structured results, Task history, context references and execution evidence. | Claims, result scope, limitations, and preservation of any external/file bytes needed to support them. |
 | Diagnose and improve | Public Task/attempt evidence, observations, metrics and normal inputs to other installed Apps. | Expected behavior, useful measurements, diagnosis, candidate changes and acceptance. |
@@ -86,7 +86,7 @@ whether something finished.
   request identity and caller return; use that existing relationship for feedback.
 - For changing external state, use an installed capability or a bounded App
   observer that reports facts, together with an exact Condition identifying the
-  source object, expected state, accountable owner and recovery review interval.
+  source object, expected state and accountable owner.
   A webhook can supply the fact. When the provider needs polling, ordinary
   observer code does those source reads and reports changes; the agent spends
   effort interpreting relevant changes. Declaring a Condition does not install

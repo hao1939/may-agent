@@ -53,18 +53,17 @@ Return the existing attempt `state`:
 - Workflows can use `needs-agent` for exceptional bounded judgment from the
   same App's selected agent; it does not transfer ownership.
 
-The [checked `waitingResult`](../examples/app.ts) illustrates an exact fact contract,
-canonical owner and five-minute review interval. Replace its illustrative
-pipeline identity with your actual producer and route. New waits require
-`owner` and `reviewAfterMs`; the minimum interval is 60 seconds.
+The [checked `waitingResult`](../examples/app.ts) illustrates an exact fact contract
+and canonical owner. Replace its illustrative pipeline identity with your actual
+producer and route. Infra observes the fact and recovers missed delivery in code.
+An unchanged wait needs no model call or agent-managed polling interval.
 
-An unchanged wait preserves its future deadline. A due review may renew it after
-reevaluation, and elapsed time alone never satisfies it. When current evidence
-justifies a different recovery cadence, return one compatible, complete Condition
-declaration with the same ID and revised `reviewAfterMs`; changing task-level
-`reviewAt` does not reschedule that independent wait. Keep unrelated Conditions
-and deadlines independent rather than choosing one maximum interval. See
-[Conditions](../2a-design/task-resource-engine.md#conditions) for the complete rule.
+Use Task `reviewAt` only when the agent deliberately chooses to reconsider work
+at that time. A due deadline is consumed; another waiting result does not renew
+it automatically. Keep unrelated Conditions and input deadlines independent.
+`reviewAfterMs` is accepted only for compatibility and no longer requests agent
+execution. See [Conditions](../2a-design/task-resource-engine.md#conditions) for
+the Host revision and rollout order; older Hosts require the legacy field.
 
 ## Task changes and safety
 

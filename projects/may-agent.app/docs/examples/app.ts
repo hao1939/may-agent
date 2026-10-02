@@ -15,7 +15,6 @@ export const waitingResult = {
     subject: "pipeline-run:123",
     expected: { field: "state", equals: "completed" },
     owner: "app:pipeline",
-    reviewAfterMs: 300_000,
   }],
 } satisfies TaskReconcileResult;
 

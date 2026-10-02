@@ -15,6 +15,11 @@ is up to date with no remaining waits. The
 those execution surfaces and records outcomes and limitations. No standing
 App review schedule or standing agent guidance was activated.
 
+**Current contract:** future trials must choose Task `reviewAt` explicitly for
+scheduled agent reviews. The Condition intervals recorded below describe the
+older pilot Host; they do not schedule agent execution on the revised
+[Task contract](../2a-design/task-resource-engine.md#conditions).
+
 Use one ordinary May Task to periodically compare May's intended design,
 implementation and observed execution, then carry the most worthwhile
 authorized work through verification. Keep its findings and continuation in

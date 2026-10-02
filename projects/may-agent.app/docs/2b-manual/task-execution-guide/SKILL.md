@@ -130,6 +130,15 @@ display `waiting` because another Condition remains open, even after accepting
 `converged` for the addressed input. Use the Task's `acceptedAttempt` reference
 and opt-in `acceptedEvidence` read; its overall status alone cannot answer this.
 
+A Condition says what fact you need. Infra checks for missed results without
+asking you to repeat the same judgment. When only a result or human decision
+remains, wait on its exact Condition. Return `reviewAt` only when you intend to
+reconsider useful work or escalation at that time. It is a one-time deadline;
+waiting again does not automatically renew it. Legacy Condition `reviewAfterMs`
+is not an execution deadline. Check the installed schema and the
+[Host availability note](../../2a-design/task-resource-engine.md#conditions)
+before relying on omitted legacy fields.
+
 ## Recover and return problems to the owner
 
 Repair within this attempt when authorized work can progress and allowance

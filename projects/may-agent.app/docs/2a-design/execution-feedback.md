@@ -45,7 +45,8 @@ not establish them. A provider read failure is not proof its operation failed.
 | Log output or ordinary reported progress | Retain with the run and expose to readers; no agent turn for each line or heartbeat |
 | An awaited operation finishes, fails or needs input | Record the result/evidence and route feedback to the responsible Task |
 | A linked resource's configured relevant fields change | Publish the observed revision to its owning Task; the agent judges its significance |
-| A wait reaches its review deadline | Use the existing Condition/recovery review; elapsed time alone proves neither success nor failure |
+| Infra checks a pending Condition | Recover retained observations and exact saved results in code; an unchanged wait invokes no agent |
+| An agent-selected Task `reviewAt` becomes due | Reconsider the work once; elapsed time alone proves neither success nor failure |
 | New actionable input arrives while the Task is running | Preserve it through existing Task admission and pending-input handling; do not start a competing session |
 
 An immediate tool result already available to the active attempt does not need

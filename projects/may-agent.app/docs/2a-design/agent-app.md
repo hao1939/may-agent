@@ -346,7 +346,7 @@ use `tasks apply` to submit while continuing this attempt, or return
 The short Condition references a request's local `id` in this call/result or
 one already admitted in the same caller generation. Host
 resolves it to the exact durable request and fills in the existing completion
-Condition's subject, expected result, owner and review interval. Apps still
+Condition's subject, expected result and owner. Apps still
 return full Conditions for other observable facts. This is one Condition
 lifecycle, not a separate dependency scheduler. Existing waits survive omitted
 fields; withdrawing one still requires the explicit `retire-condition` action.
@@ -532,12 +532,13 @@ batch does not prove that every resource read or downstream delivery succeeded.
 Existing failure events retain failures in the journal; no watch-status table
 or heartbeat per resource poll is added.
 
-A broken or missing detector leaves the saved wait and its review deadline.
-The existing indexed recovery scheduler can make that same Task eligible for
-diagnosis without a detector event. The Task owner investigates; Evaluation
-can independently review repeated ineffective attempts; an installation's
-supervisor coordinates shared repairs. Their judgments are App behavior, not
-Host routing policy. Host/process outage needs an external supervisor/operator.
+A broken or missing detector leaves the saved wait and exposes its health
+failure. Indexed recovery checks retained facts without invoking an agent for
+an unchanged wait. A diagnosis needs an App health policy, new actionable input,
+or an agent-selected Task `reviewAt`. The Task owner investigates; Evaluation
+can independently review repeated failures; an installation's supervisor
+coordinates shared repairs. Their judgments are App behavior, not Host routing
+policy. Host/process outage needs an external supervisor/operator.
 See [recovery responsibilities](system-boundary.md#recovery-uses-evidence-before-repetition).
 
 An App can verify the installed path using an ordinary smoke Task against a
