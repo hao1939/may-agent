@@ -53,8 +53,8 @@ export type Condition = {
  */
 export type TaskReconcileState = "converged" | "waiting" | "needs-agent" | "incomplete";
 
-/** One exact App input whose answer is needed; independent of the Task hierarchy. */
-export type TaskAppDependency = {
+/** Work submitted to another App, independent of whether the caller waits. */
+export type TaskAppRequest = {
   /** Stable name within this task generation. */
   id: string;
   appId: string;
@@ -62,6 +62,13 @@ export type TaskAppDependency = {
   taskId?: string;
   input: AppInput;
 };
+
+/** Caller wait on a new or already admitted request in this Task generation. */
+export type TaskRequestCondition = { requestId: string };
+export type TaskCondition = Condition | TaskRequestCondition;
+
+/** @deprecated Return requests and caller Conditions instead. */
+export type TaskAppDependency = TaskAppRequest;
 
 /** Reconsider an existing wait through a fenced attempt. Revise requirements with TaskAttempt.reviseTask. */
 export type TaskAction =
@@ -94,6 +101,7 @@ export type TaskReconcileResult = {
       actions?: TaskAction[];
       conditions?: never;
       dependencies?: never;
+      requests?: TaskAppRequest[];
     }
   | ({
       state: "waiting";
@@ -104,8 +112,10 @@ export type TaskReconcileResult = {
       response?: never;
       result?: Record<string, unknown>;
       actions?: TaskAction[];
-      conditions?: Condition[];
-      /** Typed App inputs whose answers are needed; code retains unchanged waits. */
+      conditions?: TaskCondition[];
+      /** Submit work; add a request Condition only when its answer is needed. */
+      requests?: TaskAppRequest[];
+      /** @deprecated Use requests and conditions: [{ requestId: id }]. */
       dependencies?: TaskAppDependency[];
     } & (
       | { report?: never }
@@ -126,6 +136,7 @@ export type TaskReconcileResult = {
       actions?: never;
       conditions?: never;
       dependencies?: never;
+      requests?: never;
     }
   | {
       state: "needs-agent";
@@ -135,8 +146,25 @@ export type TaskReconcileResult = {
       actions?: never;
       conditions?: never;
       dependencies?: never;
+      requests?: never;
     }
 );
+
+/** Changes admitted while running or as part of the final result; never a Task replacement. */
+export type TaskChanges = {
+  inputKeys?: string[];
+  facts?: string[];
+  requests?: TaskAppRequest[];
+  conditions?: TaskCondition[];
+  actions?: TaskAction[];
+};
+
+/** Durable admission, not fulfillment of the receiver or caller's work. */
+export type TaskChangeReceipt = {
+  requests: Array<{ id: string; requestId: string }>;
+  conditionIds: string[];
+  actionsApplied: string[];
+};
 
 export type TaskAcceptanceBasis = {
   method: "deterministic" | "workflow-contract" | "agent-judgment";
@@ -171,6 +199,8 @@ export type TaskVerifier = (
 export {
   MIN_CONDITION_REVIEW_AFTER_MS,
   admitTaskReconcileResult,
+  admitTaskChanges,
+  taskChangesSchema,
   admitTaskResultForSchema,
   admitTaskVerificationResult,
   conditionSchema,

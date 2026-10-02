@@ -2157,6 +2157,7 @@ test.each([false, true])("the Conversation delegates and steers same-App work th
       const catalog = JSON.parse(prompt.split("## Installed Apps\n```json\n")[1]!.split("\n```")[0]!);
       expect(catalog.find((entry: { appId: string }) => entry.appId === app.id)?.inputs).toEqual([
         expect.objectContaining({ kind: "goal" }),
+        expect.objectContaining({ kind: "message" }),
       ]);
       const next = ++humanTurns > 1;
       if (next)

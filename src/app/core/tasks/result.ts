@@ -2,7 +2,8 @@ import {
   admitTaskReconcileResult as admitAppTaskHandlerResult,
   type TaskAction as AppTaskAction,
   type Condition as AppTaskConditionSpec,
-  type TaskAppDependency,
+  type TaskAppRequest,
+  type TaskCondition,
   type TaskVerifier as AppTaskVerifier,
 } from "@may-agent/sdk";
 import type { ConversationTaskProposal } from "../state/conversation-task-turns.js";
@@ -35,8 +36,8 @@ export type NormalizedTaskHandlerResult = {
   reviewAt?: number;
   facts: string[];
   actions: AppTaskAction[];
-  conditions?: AppTaskConditionSpec[];
-  dependencies?: TaskAppDependency[];
+  conditions?: TaskCondition[];
+  requests?: TaskAppRequest[];
 };
 
 export function normalizeTaskHandlerResult(
@@ -86,7 +87,9 @@ export function normalizeTaskHandlerResult(
   const conditions = admission.result.conditions ?? [];
   if (options.validateCondition) {
     for (let index = 0; index < conditions.length; index += 1) {
-      const problem = options.validateCondition(conditions[index]!);
+      const condition = conditions[index]!;
+      if ("requestId" in condition) continue; // Host-owned request completion, not an App observation.
+      const problem = options.validateCondition(condition);
       if (problem) {
         return {
           state: "error",

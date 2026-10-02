@@ -104,7 +104,7 @@ async function executeTaskAgent(
       ? [
           "",
           "## Installed Apps",
-          "Choose the accountable App by responsibility. These are the currently installed typed dependency targets:",
+          "Choose the accountable App by responsibility. These are the currently installed App request targets:",
           "```json",
           JSON.stringify(dependencyCatalog, null, 2),
           "```",

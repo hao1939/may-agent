@@ -41,12 +41,8 @@ import {
   type TaskHandlerInput,
 } from "./attempt-execution.js";
 import { type AppTaskDispatch } from "./controller.js";
-import {
-  admitTaskAppDependencies,
-  mergeTaskConditions,
-  openTaskAppDependencyConditions,
-  recoverTaskConditions,
-} from "./dependency-admission.js";
+import { recoverTaskConditions } from "./dependency-admission.js";
+import { applyTaskChanges } from "./task-changes.js";
 import { type TaskCapabilityRun } from "./result.js";
 import {
   appTaskConfig,
@@ -349,23 +345,37 @@ async function runClaimedTask(
       }
       const { acceptanceBasis } = accepted;
       try {
-        const apply: ReturnType<typeof completeConversationTaskTurn> = persistResult(() =>
-          report.conversation
-            ? completeConversationTaskTurn(config, claim, report.conversation.decision, {
-                taskControls: report.conversation.taskControls,
-                acceptanceBasis,
-                getTaskApp: (appId) => conversationTaskApp(opts, descriptor, appId),
-              })
-            : completeAppTask(config, claim, {
-                summary: result.summary,
-                response: result.response,
-                result: result.result,
-                facts: result.facts,
-                actions: result.actions,
-                inputKeys: result.inputKeys,
-                acceptanceBasis,
-                acceptedLiveEventIds: report.acceptedLiveEventIds,
-              }),
+        let apply!: ReturnType<typeof completeConversationTaskTurn>;
+        const changes = persistResult(() =>
+          applyTaskChanges({
+            opts,
+            descriptor,
+            claim,
+            changes: {
+              requests: result.requests,
+              actions: result.actions,
+              facts: result.facts,
+              inputKeys: result.inputKeys,
+            },
+            acceptedLiveEventIds: report.acceptedLiveEventIds,
+            settle: () => {
+              apply = report.conversation
+                ? completeConversationTaskTurn(config, claim, report.conversation.decision, {
+                    taskControls: report.conversation.taskControls,
+                    acceptanceBasis,
+                    getTaskApp: (appId) => conversationTaskApp(opts, descriptor, appId),
+                  })
+                : completeAppTask(config, claim, {
+                    summary: result.summary,
+                    response: result.response,
+                    result: result.result,
+                    facts: result.facts,
+                    inputKeys: result.inputKeys,
+                    acceptanceBasis,
+                    acceptedLiveEventIds: report.acceptedLiveEventIds,
+                  });
+            },
+          }),
         );
         const appliedDisposition = apply.taskContinues ? "progress" : "converged";
         const stale = apply.status === "stale" ? recoverStaleTaskResult(config, claim) : null;
@@ -383,7 +393,7 @@ async function runClaimedTask(
           ...(result.result ? { result: result.result } : {}),
           facts: result.facts,
           acceptanceBasis,
-          actionsApplied: apply.actionsApplied,
+          actionsApplied: [...changes.actionsApplied, ...apply.actionsApplied],
           ...(stale ? { staleRecovery: stale.staleRecovery } : {}),
           workflowRunId: report.runId,
         });
@@ -454,39 +464,35 @@ async function runClaimedTask(
         ]);
       }
 
-      let conditions: ReturnType<typeof admitWaitingConditions>;
       try {
-        conditions = admitWaitingConditions({
-          opts,
-          descriptor,
-          config,
-          claim,
-          result,
-          acceptedLiveEventIds: report.acceptedLiveEventIds,
-        });
-      } catch (error) {
-        const stale = rejectStaleEffect(error, report);
-        if (stale) return stale.reconcileTaskIds;
-        return await rejectResult(
-          `App dependency admission failed: ${error instanceof Error ? error.message : String(error)}`,
-        );
-      }
-
-      try {
-        const apply = persistResult(() =>
-          deferAppTask(config, claim, {
-            disposition: "waiting",
-            continue: result.continue,
-            report: result.report,
-            summary: result.summary,
-            response: result.response,
-            result: result.result,
-            reviewAt: result.reviewAt,
-            facts: result.facts,
-            actions: result.actions,
-            inputKeys: result.inputKeys,
-            conditions,
+        let apply!: ReturnType<typeof deferAppTask>;
+        const changes = persistResult(() =>
+          applyTaskChanges({
+            opts,
+            descriptor,
+            claim,
+            changes: {
+              requests: result.requests,
+              conditions: result.conditions,
+              actions: result.actions,
+              facts: result.facts,
+              inputKeys: result.inputKeys,
+            },
             acceptedLiveEventIds: report.acceptedLiveEventIds,
+            settle: () => {
+              apply = deferAppTask(config, claim, {
+                disposition: "waiting",
+                continue: result.continue,
+                report: result.report,
+                summary: result.summary,
+                response: result.response,
+                result: result.result,
+                reviewAt: result.reviewAt,
+                facts: result.facts,
+                inputKeys: result.inputKeys,
+                acceptedLiveEventIds: report.acceptedLiveEventIds,
+              });
+            },
           }),
         );
         const stale = apply.status === "stale" ? recoverStaleTaskResult(config, claim) : null;
@@ -500,14 +506,14 @@ async function runClaimedTask(
           ...(result.response ? { response: result.response } : {}),
           ...(result.result ? { result: result.result } : {}),
           facts: result.facts,
-          actionsApplied: apply.actionsApplied,
+          actionsApplied: [...changes.actionsApplied, ...apply.actionsApplied],
           ...(stale ? { staleRecovery: stale.staleRecovery } : {}),
           workflowRunId: report.runId,
         });
         const recoveredTaskIds =
           apply.status === "applied"
             ? recoverTaskConditions(opts, descriptor, config, {
-                conditionIds: conditions?.map((condition) => condition.id),
+                conditionIds: changes.conditionIds.length ? changes.conditionIds : undefined,
               })
             : [];
         return [...new Set([...(stale?.reconcileTaskIds ?? apply.reconcileTaskIds), ...recoveredTaskIds])];
@@ -669,8 +675,7 @@ function conversationTaskApp(opts: AppTaskRuntimeOptions, descriptor: AppTaskRun
   const registry = opts.appRegistrySnapshot ?? opts.appRegistry?.snapshot();
   if (!registry) throw new Error("Conversation execution requires an installed App registry");
   const entry = registry.entries.find(({ definition }) => definition.id === appId);
-  if (!entry?.definition.tasks || !opts.persistDir)
-    throw new Error(`App ${appId} has no installed Task capability`);
+  if (!entry?.definition.tasks || !opts.persistDir) throw new Error(`App ${appId} has no installed Task capability`);
   const target =
     appId === descriptor.id
       ? descriptor
@@ -683,9 +688,7 @@ function conversationTaskApp(opts: AppTaskRuntimeOptions, descriptor: AppTaskRun
 }
 
 /** Select the recorded handler. All paths share Task lifetime and result settlement. */
-async function executeTaskHandler(
-  input: TaskHandlerInput & { conversation: boolean },
-): Promise<TaskCapabilityRun> {
+async function executeTaskHandler(input: TaskHandlerInput & { conversation: boolean }): Promise<TaskCapabilityRun> {
   const { conversation, ...context } = input;
   const { opts, descriptor, claim, attempt, taskEvents } = context;
   const execution = {
@@ -782,46 +785,6 @@ async function executeTaskHandler(
   }
   const report = await runTaskAgent(execution);
   return handoffWorkflow?.verifier ? { ...report, verifier: handoffWorkflow.verifier } : report;
-}
-
-/** Validate declarations before admitting dependencies; stored peer waits stay with the reconciler. */
-function admitWaitingConditions(input: {
-  opts: AppTaskRuntimeOptions;
-  descriptor: AppTaskRuntimeDescriptor;
-  config: AppTaskContext;
-  claim: AppTaskClaim;
-  result: Pick<TaskCapabilityRun["handlerResult"], "conditions" | "dependencies">;
-  acceptedLiveEventIds?: number[];
-}) {
-  const { opts, descriptor, config, claim, result, acceptedLiveEventIds } = input;
-  // Validate owner declarations as one provenance group before admitting
-  // dependencies. Otherwise conflicting explicit specifications could be
-  // rejected only after publishing or adopting new dependency work.
-  const explicitConditions = mergeTaskConditions(result.conditions ?? []);
-  const existingAppDependencyConditions = openTaskAppDependencyConditions(config, claim.taskId);
-  const existingIds = new Set(existingAppDependencyConditions.map((condition) => condition.id));
-  // Also reject an explicit retarget of persisted dependency identity
-  // before dependency admission can publish unrelated new work.
-  mergeTaskConditions([...existingAppDependencyConditions, ...explicitConditions], existingIds);
-  const dependencyConditions = result.dependencies?.length
-    ? admitTaskAppDependencies({
-        opts,
-        descriptor,
-        claim,
-        dependencies: result.dependencies,
-        existingConditions: existingAppDependencyConditions,
-        acceptedLiveEventIds,
-      })
-    : [];
-  // Generated dependency Conditions establish/reuse the wait, but the
-  // owner's explicit declaration is the final compatible specification.
-  const declaredConditions = [...dependencyConditions, ...explicitConditions];
-  const declaredIds = new Set(declaredConditions.map((condition) => condition.id));
-  const conditions = mergeTaskConditions(
-    [...existingAppDependencyConditions, ...declaredConditions],
-    new Set([...existingAppDependencyConditions, ...dependencyConditions].map((condition) => condition.id)),
-  ).filter((condition) => declaredIds.has(condition.id));
-  return conditions.length > 0 ? conditions : undefined;
 }
 
 function emitTaskReconciliationEvent(

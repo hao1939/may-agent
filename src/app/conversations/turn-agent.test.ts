@@ -535,14 +535,14 @@ describe("conversational attempt contract", () => {
     },
   );
 
-  it("supplies May's own durable input contract without offering recursive conversation input", async () => {
+  it("supplies text and structured App inputs for ordinary Task handoffs", async () => {
     const { prompt } = await attempt();
     const catalog = JSON.parse(prompt.split("## Installed Apps\n```json\n")[1].split("\n```")[0]);
     expect(
       catalog
         .find((entry: { appId: string }) => entry.appId === "may")
         ?.inputs.map((entry: { kind: string }) => entry.kind),
-    ).toEqual(["goal"]);
+    ).toEqual(["goal", "message"]);
     expect(
       catalog
         .find((entry: { appId: string }) => entry.appId === "owner")

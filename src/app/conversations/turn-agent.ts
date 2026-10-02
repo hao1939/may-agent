@@ -84,7 +84,7 @@ function conversationInputPrompt(
   inputContext: Readonly<AppInputContext>,
   registry: Pick<AppRegistry, "snapshot">,
 ): string {
-  const apps = appDependencyCatalog(registry.snapshot().entries, app.id);
+  const apps = appDependencyCatalog(registry.snapshot().entries);
   const { id, source, input, inputs, ...context } = inputContext;
   return [
     `Consider the admitted inputs for App ${app.id} together, in order, using its Conversation result contract.`,

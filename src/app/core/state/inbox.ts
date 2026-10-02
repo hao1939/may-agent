@@ -244,7 +244,9 @@ export function rejectTaskInput(
     summary,
     response: revision
       ? `${summary}. Read the current Task and submit a new revision with its current expectedGeneration.`
-      : `${summary}. Read the current Task and correct the target. If the user explicitly requested reopening, use task.reopen with the current generation, resource version and new App input.`,
+      : item.targetTaskId
+        ? `${summary}. Read the current Task and correct the target. If the user explicitly requested reopening, use task.reopen with the current generation, resource version and new App input.`
+        : `${summary}. Read the App input contract and submit a corrected request. The original requirement remains unresolved.`,
     result: { disposition: "admission-rejected", appId: item.appId, requestId: item.id },
   };
   // A final rejection is new feedback even if a retryable failure with the same
