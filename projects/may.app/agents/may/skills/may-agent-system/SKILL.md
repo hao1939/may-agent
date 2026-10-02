@@ -1,6 +1,6 @@
 ---
 name: may-agent-system
-description: Maintain and evolve the May Host and its Apps. Use for task reconciliation, Conditions, event/timer wakes, App boundaries, executors, event handlers, metrics, runtime health, escalation flows, agent conventions, or design-doc-aligned changes under /app/projects/may-agent.app, /app/projects/*.app, agents/, shared/, or May Host runtime code.
+description: Investigate or change May Host and Apps using their owning design. Covers Tasks, events, executors, metrics, recovery and App boundaries.
 ---
 
 # May Host System
