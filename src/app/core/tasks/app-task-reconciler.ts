@@ -1293,6 +1293,68 @@ export function repairUnadmittedAppDependencyWaits(
   return repairs;
 }
 
+export type OrphanedInboxTaskInput = {
+  taskId: string;
+  admissionKey: string;
+};
+
+/** Reattach an exact retained caller input that lost every executable Task owner. */
+export function repairOrphanedInboxTaskInputs(
+  config: AppTaskContext,
+  candidates: Iterable<OrphanedInboxTaskInput>,
+): AppTaskRecoveryRepair[] {
+  const repairs: AppTaskRecoveryRepair[] = [];
+  for (const candidate of candidates) {
+    if (config.resourceStore.isCancelled(candidate.taskId)) continue;
+    const tree = config.resourceStore.readTaskContext({
+      taskIds: [candidate.taskId],
+      admissionIds: [candidate.admissionKey],
+    });
+    const resource = tree.resources?.[candidate.taskId];
+    const admission = tree.appTaskAdmissions?.[candidate.admissionKey];
+    if (
+      !resource ||
+      !admission?.inputEvent ||
+      admission.taskId !== candidate.taskId ||
+      admission.taskGeneration > resource.metadata.generation ||
+      admission.resultAttemptId
+    ) continue;
+
+    const trigger = tree.taskTriggers?.[candidate.taskId];
+    const triggerKeys = taskInputAdmissionKeys(trigger ? taskTriggerEvents(trigger) : []);
+    const currentAttempt = resource.status.currentAttemptId
+      ? tree.attempts?.[resource.status.currentAttemptId]
+      : undefined;
+    const attemptKeys = currentAttempt?.state === "running"
+      ? taskInputAdmissionKeys(currentAttempt.events ?? [], currentAttempt.continuedInputKeys)
+      : [];
+    if (
+      resource.status.inputWaits?.[candidate.admissionKey] ||
+      triggerKeys.includes(candidate.admissionKey) ||
+      attemptKeys.includes(candidate.admissionKey)
+    ) continue;
+
+    const mutationScope = beginResourceMutationScopeForTasks(tree, [candidate.taskId]);
+    retainTaskInputWait(config, resource, [candidate.admissionKey], {
+      taskGeneration: admission.taskGeneration,
+      conditions: [],
+      pending: true,
+    });
+    touchResource(resource, {
+      ...(resource.status.phase === "running" ? {} : { phase: "pending" as const }),
+    });
+    commitTaskMutation(config, tree, {
+      resourceMutation: finishResourceMutationScope(mutationScope, tree),
+    });
+    repairs.push({
+      taskId: candidate.taskId,
+      disposition: "requeued",
+      summary: `Reattached retained Task input ${candidate.admissionKey}`,
+    });
+  }
+  return repairs;
+}
+
 export function repairRunningAppTasksWithoutAttempt(
   config: AppTaskContext,
   candidateTaskIds: Iterable<string>,

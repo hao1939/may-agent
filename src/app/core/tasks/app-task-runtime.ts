@@ -57,6 +57,7 @@ import {
   releaseInterruptedAppTaskAttempt,
   releaseLateTerminalWorkflowAppTaskAttempt,
   repairPreviousRuntimeRecoveryAttention,
+  repairOrphanedInboxTaskInputs,
   repairRunningAppTasksWithoutAttempt,
   repairUnadmittedAppDependencyWaits,
   retryFailedAppTask,
@@ -1195,6 +1196,23 @@ function recoverInterruptedAppTasks(
       }
     }
     const appDb = opts.persistDir ? getDb(opts.persistDir) : undefined;
+    const orphanedInputRepairs = appDb
+      ? repairOrphanedInboxTaskInputs(
+          config,
+          (appDb.prepare(
+            `SELECT waiting_on_id AS taskId, task_admission_key AS admissionKey
+             FROM app_inbox_items
+             WHERE app_id = ? AND status = 'handling' AND waiting_on_kind = 'task'
+               AND waiting_on_id IS NOT NULL AND task_admission_key IS NOT NULL
+             ORDER BY changed_at, id LIMIT 512`,
+          ).all(descriptor.id) as Array<{ taskId: string; admissionKey: string }>),
+        )
+      : [];
+    for (const repair of orphanedInputRepairs) {
+      if (controller && !descriptor.reconciliationPaused) {
+        enqueueAppTask(controller, config, repair.taskId);
+      }
+    }
     const dependencyRepairs = appDb
       ? repairUnadmittedAppDependencyWaits(
           config,

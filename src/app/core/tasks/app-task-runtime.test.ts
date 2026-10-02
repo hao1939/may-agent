@@ -28,7 +28,11 @@ import { AppRegistry } from "../apps/registry.js";
 import { discoverAppDefinitions } from "../../adapters/discovery/app-definitions.js";
 import { createAppTaskCapability } from "./app-task-capability.js";
 import { createAppTaskEvents } from "./app-task-emitter.js";
-import { projectAppTaskReconciliationEvents, readAppTaskWaitPromptContext } from "./app-task-context.js";
+import {
+  projectAppTaskReconciliationEvents,
+  readAppTaskReconciliationEvents,
+  readAppTaskWaitPromptContext,
+} from "./app-task-context.js";
 import { trackAppTaskConditionEventForTasks } from "./app-task-condition-tracker.js";
 import {
   admitLoadedCanonicalAppTaskEvent,
@@ -627,6 +631,133 @@ it.each(["converged", "waiting", "incomplete"] as const)("carries explicit earli
   expect(readAppTaskAdmissionOutcome(config, taskId, "earlier", state === "converged" ? "answer" : "report"))
     .toMatchObject({ state, attemptId: accepted!.metadata.id });
   if (state !== "converged") expect(readAppTaskAdmissionOutcome(config, taskId, "earlier")).toBeNull();
+});
+
+it("reattaches an unanswered exact inbox admission once without treating read recovery as settlement", async () => {
+  const f = fixture();
+  const bus = eventBus();
+  const persistDir = join(f.root, "state");
+  await installCoreTaskRuntimes({
+    ...options(f, bus),
+    installControllers: false,
+    appRegistrySnapshot: {
+      id: "orphaned-input-recovery",
+      generation: 1,
+      entries: [{ appDir: f.appDir, definition: definition() }],
+    },
+  });
+  const config = loadedTaskConfig(f);
+  const db = getDb(persistDir);
+  const taskId = "work/orphaned-input";
+  const inputId = "orphaned-request";
+  const admissionKey = `task:${inputId}`;
+  observeAppTaskIntent(config, { appAgent: "sample-owner", intent: {
+    id: taskId, parentId: "operations", outcome: "Answer retained request", acceptance: ["Exact answer retained"],
+  } });
+  createAppInboxItem(db, {
+    id: inputId,
+    appId: "sample",
+    source: { kind: "human", id: "requester" },
+    input: { kind: "message", data: { text: "retained ask" } },
+  });
+  admitTaskInput(config, {
+    appId: "sample",
+    attachment: { kind: "existing", taskId },
+    idempotencyKey: admissionKey,
+    inputContext: { id: inputId, source: { kind: "human", id: "requester" }, input: { kind: "message", data: { text: "retained ask" } } },
+  });
+  db.prepare(`UPDATE app_inbox_items SET status = 'handling', waiting_on_kind = 'task', waiting_on_id = ?,
+    task_admission_key = ?, recovery_json = ? WHERE id = ?`).run(
+      taskId,
+      admissionKey,
+      JSON.stringify({ "input-result": { failures: 1, fingerprint: "read", error: "locked", firstFailedAt: 1,
+        lastFailedAt: 1, retryAt: 1, recoveredAt: 2 } }),
+      inputId,
+    );
+  // Reproduce the legacy gap: the exact admission and caller remain, but no
+  // trigger, current attempt, or input wait owns the unanswered key.
+  db.prepare("UPDATE app_tasks SET trigger_json = NULL WHERE app_id = 'sample' AND task_id = ?").run(taskId);
+
+  await recoverInstalledAppTasks(bus);
+  await recoverInstalledAppTasks(bus);
+
+  const item = listAppInboxItems(db, { appId: "sample" }).find((candidate) => candidate.id === inputId)!;
+  expect(item.status).toBe("handling");
+  expect(item.result).toBeUndefined();
+  expect(item.recovery?.["input-result"]?.recoveredAt).toBe(2);
+  const admission = config.resourceStore.readTaskContext({ taskIds: [], admissionIds: [admissionKey] })
+    .appTaskAdmissions?.[admissionKey];
+  expect(admission).toMatchObject({ taskId, inputEvent: expect.any(Object) });
+  expect(admission?.resultAttemptId).toBeUndefined();
+  expect(admission?.reportAttemptId).toBeUndefined();
+  expect(config.resourceStore.readTask(taskId)?.status.inputWaits).toEqual({
+    [admissionKey]: { taskGeneration: admission!.taskGeneration, conditions: [], pending: true },
+  });
+  expect(db.prepare("SELECT COUNT(*) AS count FROM app_task_admissions WHERE app_id = 'sample' AND task_id = ?")
+    .get(admissionKey)!.count).toBe(1);
+
+  const claim = claimObservedAppTask(config, { taskId, appAgent: "sample-owner", handler: "agent:sample-owner" });
+  if (claim.kind !== "claimed") throw new Error(claim.kind);
+  expect(claim.continuedInputKeys).toEqual([admissionKey]);
+  expect(readAppTaskReconciliationEvents(config.resourceStore, claim).continuedInputs?.[0]?.event.data)
+    .toMatchObject({ idempotencyKey: admissionKey });
+});
+
+it("does not duplicate healthy, answered, or owner-stopped inbox admissions during recovery", async () => {
+  const f = fixture();
+  const bus = eventBus();
+  const persistDir = join(f.root, "state");
+  await installCoreTaskRuntimes({
+    ...options(f, bus),
+    installControllers: false,
+    appRegistrySnapshot: { id: "orphan-controls", generation: 1,
+      entries: [{ appDir: f.appDir, definition: definition() }] },
+  });
+  const config = loadedTaskConfig(f);
+  const db = getDb(persistDir);
+  const add = (name: string) => {
+    const taskId = `work/${name}`;
+    const inputId = `${name}-request`;
+    const admissionKey = `task:${inputId}`;
+    observeAppTaskIntent(config, { appAgent: "sample-owner", intent: {
+      id: taskId, parentId: "operations", outcome: `Handle ${name}`, acceptance: ["Handled"],
+    } });
+    createAppInboxItem(db, { id: inputId, appId: "sample", source: { kind: "human", id: "requester" },
+      input: { kind: "message", data: { name } } });
+    admitTaskInput(config, { appId: "sample", attachment: { kind: "existing", taskId }, idempotencyKey: admissionKey,
+      inputContext: { id: inputId, source: { kind: "human", id: "requester" },
+        input: { kind: "message", data: { name } } } });
+    db.prepare(`UPDATE app_inbox_items SET status = 'handling', waiting_on_kind = 'task', waiting_on_id = ?,
+      task_admission_key = ? WHERE id = ?`).run(taskId, admissionKey, inputId);
+    return { taskId, admissionKey };
+  };
+  const healthy = add("healthy");
+  const answered = add("answered");
+  const answeredClaim = claimObservedAppTask(config, {
+    taskId: answered.taskId, appAgent: "sample-owner", handler: "agent:sample-owner",
+  });
+  if (answeredClaim.kind !== "claimed") throw new Error(answeredClaim.kind);
+  completeAppTask(config, answeredClaim, { summary: "Answered" });
+  const stopped = add("stopped");
+  const stoppedResource = config.resourceStore.readTask(stopped.taskId)!;
+  cancelLoadedAppTask({ bus, appId: "sample", taskId: stopped.taskId,
+    expectedGeneration: stoppedResource.metadata.generation,
+    expectedResourceVersion: stoppedResource.metadata.resourceVersion,
+    reason: "Owner stopped work" });
+  const before = Object.fromEntries([healthy, answered, stopped].map(({ taskId }) =>
+    [taskId, config.resourceStore.readTask(taskId)]));
+
+  await recoverInstalledAppTasks(bus);
+  await recoverInstalledAppTasks(bus);
+
+  expect(Object.fromEntries([healthy, answered, stopped].map(({ taskId }) =>
+    [taskId, config.resourceStore.readTask(taskId)]))).toEqual(before);
+  for (const { admissionKey } of [healthy, answered, stopped]) {
+    expect(db.prepare("SELECT COUNT(*) AS count FROM app_task_admissions WHERE app_id = 'sample' AND task_id = ?")
+      .get(admissionKey)!.count).toBe(1);
+  }
+  expect(config.resourceStore.readTaskContext({ taskIds: [], admissionIds: [answered.admissionKey] })
+    .appTaskAdmissions?.[answered.admissionKey]?.resultAttemptId).toBe(answeredClaim.attemptId);
 });
 
 describe("caller feedback PoC", () => {
