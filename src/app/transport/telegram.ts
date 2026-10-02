@@ -1693,26 +1693,11 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
       } else {
         nextTodoPageBySurface.delete(surface);
       }
-      // Capture the rendered page's exact snapshots before delivery. A Task may
-      // change while Telegram is sending; the later revision was not presented.
-      const displayedTodoActions = new Map(
-        page.items.map((task) => {
-          const owner = task.humanAction?.task ?? {
-            appId: task.appId,
-            taskId: task.taskId,
-          };
-          const detail = opts.humanTasks.getTask?.(owner) ?? task;
-          return [todoTaskKey(task), presentedTodoActionRevision(todoActionSignature(detail))];
-        }),
-      );
+      // Manual list reads do not claim or suppress automatic action delivery.
       deliverCommandView(
         renderTelegramTodos(page.items, page.total ?? page.items.length, appId, Boolean(page.nextCursor)),
         page.items.map((task) => ({ appId: task.appId, taskId: task.taskId })),
-        () => {
-          if (!more && appId === (selectedApps.get(surface) ?? opts.interfaceAgent)) {
-            shownTodoActions.set(surface, displayedTodoActions);
-          }
-        },
+        undefined,
         undefined,
         undefined,
         "HTML",

@@ -580,40 +580,17 @@ describe("Telegram refresh lifecycle", () => {
     }
   });
 
-  it("does not repeat an unchanged exact action after an explicit todo view", async () => {
+  it("delivers an explicit todo directly from its list snapshot without detail reads", async () => {
     const f = fixture();
-    const task = f.tasks.get("first")!;
     try {
       await f.command("/apps may");
-      Object.assign(task, {
-        humanAction: { requestedAction: "Run the exact current step." },
-        diagnostics: {
-          conditions: [
-            {
-              id: "exact-step",
-              condition: {
-                metadata: { id: "exact-step", generation: 1, resourceVersion: 1 },
-                spec: {
-                  type: "human.answer.received",
-                  subject: "id:exact-step",
-                  owner: "human",
-                  requestedAction: "Run the exact current step.",
-                  expected: { answer: true },
-                },
-                status: { state: "false" },
-              },
-            },
-          ],
-          conditionsTruncated: false,
-        },
-      });
+      f.tasks.get("first")!.humanAction = { requestedAction: "Use the readable compact action." };
+      f.readFailures.add("first");
       await f.command("/todo");
-      await waitFor(() => f.sent.some((send) => send.chat_id === "123" && send.text.includes("Needs you for may")));
-      await Bun.sleep(20);
-      const baseline = f.sent.filter((send) => send.chat_id === "123").length;
-      f.wake("first");
-      await Bun.sleep(40);
-      expect(f.sent.filter((send) => send.chat_id === "123")).toHaveLength(baseline);
+      expect(f.sent.some((send) => send.chat_id === "123" && send.text.includes("Use the readable compact action."))).toBe(
+        true,
+      );
+      expect(f.reads).not.toContain("first");
     } finally {
       await f.close();
     }
@@ -634,29 +611,6 @@ describe("Telegram refresh lifecycle", () => {
       f.wake("first");
       await waitFor(
         () => f.sent.filter((send) => send.chat_id === "123" && send.text.includes(action)).length > failedAttempts,
-      );
-    } finally {
-      await f.close();
-    }
-  });
-
-  it("remembers the explicit todo snapshot displayed while a newer action remains eligible", async () => {
-    const f = fixture();
-    try {
-      await f.command("/apps may");
-      const task = f.tasks.get("first")!;
-      task.humanAction = { requestedAction: "First request displayed in todo." };
-      const held = f.hold(
-        (send) => send.chat_id === "123" && send.text.includes("First request displayed in todo."),
-      );
-      const command = f.command("/todo");
-      await waitFor(() => held.started);
-      task.humanAction = { requestedAction: "New action created during delivery." };
-      held.release();
-      await command;
-      f.wake("first");
-      await waitFor(() =>
-        f.sent.some((send) => send.chat_id === "123" && send.text.includes("New action created during delivery.")),
       );
     } finally {
       await f.close();
