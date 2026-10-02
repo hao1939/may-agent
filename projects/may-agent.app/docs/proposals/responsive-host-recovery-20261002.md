@@ -217,8 +217,15 @@ One read-only invocation of the merged query against current live data took
 798 ms and returned zero pending results. This ran outside the daemon, without
 admitting work or altering records. The earlier paired snapshot comparison
 established equal results and roughly 3,046-to-147 ms improvement. The ordinary
-Conversation recovery schedule is every 15 minutes; a fresh scheduled run remains
-the better check of actual loaded-runtime cost.
+Conversation recovery schedule is every 15 minutes. Its next normal run, event
+`6631042` at 23:00 UTC, was accepted and selected 22 missing change inputs. Live
+sample `2214426` retained the new `linked_tasks` query fingerprint
+`all:8e7e7b40407fa85b` at 869.76 ms, down from the old live query's 15,135 ms.
+This is actual loaded-daemon evidence, although changing workloads make it a
+different comparison from the controlled snapshot test. The sample changed the
+metric value while remaining below threshold; it emitted no new breach/recovery
+and did not create another Evaluation review. One successful scan is not proof
+that all SQL bottlenecks or future regressions are gone.
 
 The already-approved AKS retirement also survived restart: exactly 39 definitions
 are retired, seven remain closed, and none are active. Only `status` and
