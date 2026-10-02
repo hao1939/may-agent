@@ -212,19 +212,25 @@ Use this order:
    A deployed change or successful trial is evidence, not the human decision
    represented by a still-independent Condition.
 6. For standing promises, recurring hygiene, and current human obligations,
-   preserve the existing identity and next review. For retired metric cohorts,
-   require canonical retirement, stopped collection, preserved history, and
-   restart/reload persistence before treating their old review Requests as
-   fulfilled.
-7. Re-read canonical state after settlement. Record counts, exact identities,
+   preserve the existing identity and next review. Match each Request's original
+   scope before declaring it fulfilled. Canonical metric retirement, stopped
+   collection, preserved history, and restart/reload persistence are decisive
+   only when retirement is part of that Request's obligation.
+7. Apply Conversation updates in reviewed batches within the contract's update
+   limit. Give each supported batch one useful explanation while preserving an
+   individually justified disposition for every Request.
+8. Re-read canonical state after settlement. Record counts, exact identities,
    receipts, remaining obligations, and evidence limitations; do not infer that
    a successful result closed a Request or removed a Condition.
 
-A handler that returns `waiting` without an exact Condition is not a valid
-migration wait. Correct the owning Task or workflow to perform its current
-review and converge, or bind the genuine external fact through the supported
-Condition contract. Do not add a scheduler, notification filter, or retry loop
-to compensate for an invalid result shape.
+Validate a `waiting` result against its owning contract. An exact Condition is
+required for an external fact, but useful continuation, a deliberate `reviewAt`,
+or an already retained applicable wait can also be valid. In the motivating
+migration incident, the defect was the missing supported return route for the
+specific unfinished work, not the absence of a newly created Condition by
+itself. Correct the owning Task or workflow to review current evidence and use
+one of its supported return paths. Do not add a scheduler, notification filter,
+or retry loop to compensate for an invalid result shape.
 
 ## Historical Trace Audit And Backfill
 

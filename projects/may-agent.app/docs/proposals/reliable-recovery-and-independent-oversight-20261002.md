@@ -4,8 +4,19 @@
 
 **Choice basis:** [Agent decisions and mechanical execution](../1-principles/code-vs-data.md); [safe retry and recovery ownership](../2a-design/system-boundary.md#retry-and-recovery-ownership); [evidence before expansion](../1-principles/evidence-first.md).
 
-**Design status:** Proposed remaining recovery and oversight work; dated trial record.
-**Implementation status (2026-10-03):** [PR #284](https://github.com/hao1939/may-agent/pull/284) is merged as `0317016b`. Fresh-context, backlog and executor-policy source repairs are integrated. Independent oversight and connected original-input recovery still need their own evidence; this review neither deploys nor proves live recovery.
+**Design status:** Current-first implementation and evidence index, followed by the dated proposal and trial record.
+**Implementation status (2026-10-03):** Host `14491241d07346c7993c99bd6a709e29797d2883` and Apps release `1e97bd70e1e9beb9dd20b33f0b696c5f4122bfd6-definitions-v4` are the observed installed baseline. PRs #284 and #288 integrated the fresh-context, backlog and executor-policy repairs. The original `evaluation/runtime/compat/owner-review` Task then resumed on the same Codex thread and settled its 133 retained inputs in three accepted attempts. This bounded supervised outcome does not prove universal autonomous recovery.
+
+Current ownership and decisive evidence:
+
+| Concern                                                                               | Owning mechanism                                                                                  | Current evidence and limit                                                                                                                                                                  |
+| ------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Fresh attempt, input and rejection context reaches start and resume                   | Persistent executor adapter at the common Task-attempt boundary                                   | Integrated Host regression and installed same-thread recovery; fresh packet delivery is mechanical, while the agent still judges correction.                                                |
+| Old bounded backlog does not starve later input or reject honest incomplete work      | Host Task reconciliation, settlement and exact generation/action fences                           | PR #288 connected recovery settled the original and later input without deleting history; one oversized item can still exceed the existing bound.                                           |
+| Executor capability and sandbox compatibility                                         | Installation acceptance plus the configured executor adapter                                      | Installed native CLI start/resume trials performed synthetic file operations under the runtime identity; this is installation evidence, not a per-attempt preflight or permission widening. |
+| Evaluation operational recurrence and accepted-incomplete/stale interruption coverage | May metric policy and ordinary alert/investigation identity                                       | Existing Evaluation metrics and May follow-through provide an independent route. The three-attempt/six-hour threshold remains trial App policy, not a Host rule or proof of waste.          |
+| Whether and how uncertain work is repaired                                            | Original worker and assigning owner through the existing Task, caller, Condition and review paths | Accepted evidence can support repair, a real wait, delivered help or no action. Admission, a new alert or a repair Task alone is not fulfillment.                                           |
+| Generic automatic supervisor fallback                                                 | Deferred design capability                                                                        | Current caller, admission, metric and installation-specific oversight routes have not demonstrated a missing primitive that justifies a global routing hierarchy.                           |
 
 The October 2 narrative below preserves the candidate revisions and results as
 recorded then. Statements about candidates being undeployed are historical,
@@ -41,14 +52,14 @@ Use the merged Host repairs as the source baseline, then verify and close the re
 
 The October 2 investigation found a chain of failures in Evaluation's Codex owner task:
 
-| Observation | Missing guarantee |
-| --- | --- |
-| Every retained command failed before launch because the inner sandbox could not create a namespace. | The selected executor must be usable for its declared capabilities before model work starts. |
-| Passing new developer instructions on resume did not put them into the next model request. | Current assignment and rejection feedback must actually reach the worker. |
-| With 35 queued events, the same first 32 were repeatedly claimed and an incomplete report rejected as stale. No new event was needed. | Backlog must not invalidate an honest failure report or prevent later input being considered. |
-| The worker returned an inbox ID as an input key and a wait without a Condition. | Exact result scope and supported waits must be discoverable; invalid results must remain correctable. |
-| A repair request existed, but its recipient could not execute it. | Delegation needs follow-through; admission is not repair. |
-| Independent metrics excluded Evaluation or its owner-review inputs. | Self-review exclusions must have an explicit independent owner. |
+| Observation                                                                                                                           | Missing guarantee                                                                                     |
+| ------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
+| Every retained command failed before launch because the inner sandbox could not create a namespace.                                   | The selected executor must be usable for its declared capabilities before model work starts.          |
+| Passing new developer instructions on resume did not put them into the next model request.                                            | Current assignment and rejection feedback must actually reach the worker.                             |
+| With 35 queued events, the same first 32 were repeatedly claimed and an incomplete report rejected as stale. No new event was needed. | Backlog must not invalidate an honest failure report or prevent later input being considered.         |
+| The worker returned an inbox ID as an input key and a wait without a Condition.                                                       | Exact result scope and supported waits must be discoverable; invalid results must remain correctable. |
+| A repair request existed, but its recipient could not execute it.                                                                     | Delegation needs follow-through; admission is not repair.                                             |
+| Independent metrics excluded Evaluation or its owner-review inputs.                                                                   | Self-review exclusions must have an explicit independent owner.                                       |
 
 Evidence includes two isolated reproductions: the actual installed CLI against a local scripted HTTP endpoint, and the production Task APIs against an in-memory database. The former also verified that explicitly inserting a fresh context item reaches the next request. Neither used a real model.
 
@@ -62,17 +73,17 @@ These findings describe the dated audit baseline. Recheck each slice against cur
 
 ## Contract and ownership
 
-| Responsibility | Owner and existing mechanism |
-| --- | --- |
-| Preserve requirements, exact caller identity, attempts, results and rejection evidence | Host Task/input/attempt storage and settlement |
-| Deliver current context; execute under declared permissions; expose provider failures and usage | Executor adapter through the common Task attempt boundary |
-| Interpret failure and choose the next useful authorized action | Worker under App policy |
-| Coordinate help, judge the repair and retain the original acceptance obligation | Assigning owner through caller feedback and typed dependencies |
-| Interpret recurrence and cost; decide when to seek human judgment | Owning App; May coordinates cross-App work in this installation |
-| Independently assess ordinary App work | Evaluation within its supported scope |
-| Independently oversee Evaluation's operational work | May, using an execution path that does not require Evaluation's broken executor |
-| Sample metrics, execute observer reads, schedule checkpoints and recover missed delivery | Existing Host metric, observer, Condition and admission machinery |
-| Repair an unavailable Host or authoritative store | Installation operator/process supervisor |
+| Responsibility                                                                                  | Owner and existing mechanism                                                    |
+| ----------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------- |
+| Preserve requirements, exact caller identity, attempts, results and rejection evidence          | Host Task/input/attempt storage and settlement                                  |
+| Deliver current context; execute under declared permissions; expose provider failures and usage | Executor adapter through the common Task attempt boundary                       |
+| Interpret failure and choose the next useful authorized action                                  | Worker under App policy                                                         |
+| Coordinate help, judge the repair and retain the original acceptance obligation                 | Assigning owner through caller feedback and typed dependencies                  |
+| Interpret recurrence and cost; decide when to seek human judgment                               | Owning App; May coordinates cross-App work in this installation                 |
+| Independently assess ordinary App work                                                          | Evaluation within its supported scope                                           |
+| Independently oversee Evaluation's operational work                                             | May, using an execution path that does not require Evaluation's broken executor |
+| Sample metrics, execute observer reads, schedule checkpoints and recover missed delivery        | Existing Host metric, observer, Condition and admission machinery               |
+| Repair an unavailable Host or authoritative store                                               | Installation operator/process supervisor                                        |
 
 Preserve these invariants:
 
@@ -158,14 +169,14 @@ These are evidence requirements, not a new mandatory “recovery plan” schema.
 
 First prove and repair the installed caller-report and explicit operational-review routes. The fallback rows below describe a possible later extension, not a prerequisite for the first implementation or an already implemented guarantee. Add a generic fallback only if a connected trial demonstrates that existing durable admission and owner routes cannot carry the failure.
 
-| Situation | Proposed route |
-| --- | --- |
-| A trusted input caller exists | Existing exact caller-report path; preserve the original input scope. |
-| Operational work has no input caller | Its App's declared operational review route. Do not infer a structural parent or broadcast. |
-| The App cannot accept that feedback | One installation-selected fallback through existing App input admission; in this installation, May. |
-| Evaluation's own operational owner is failing | Explicit independent May review; do not require Evaluation to review or certify the failure. |
+| Situation                                                    | Proposed route                                                                                      |
+| ------------------------------------------------------------ | --------------------------------------------------------------------------------------------------- |
+| A trusted input caller exists                                | Existing exact caller-report path; preserve the original input scope.                               |
+| Operational work has no input caller                         | Its App's declared operational review route. Do not infer a structural parent or broadcast.         |
+| The App cannot accept that feedback                          | One installation-selected fallback through existing App input admission; in this installation, May. |
+| Evaluation's own operational owner is failing                | Explicit independent May review; do not require Evaluation to review or certify the failure.        |
 | May/fallback cannot accept or act within its review boundary | Expose the unresolved need through the configured human-attention surface; stop fallback traversal. |
-| Host/store is unavailable | Existing external operator path; no in-process agent guarantee is claimed. |
+| Host/store is unavailable                                    | Existing external operator path; no in-process agent guarantee is claimed.                          |
 
 The fallback is a proposed installation capability, not an automatic global authority attached to the name “May.” It receives the original evidence and a request to judge; it does not inherit control of the source Task. Use the current durable admission/delivery records and recovery scan. Missing or failed delivery remains visible, with its original work reference. Avoid recursive supervisor chains and duplicate normal/fallback responsibility.
 
@@ -177,11 +188,11 @@ Start with existing attempt and input records. Attribute native executor usage t
 
 Use a small initial attention policy:
 
-| Signal | Initial rule and response |
-| --- | --- |
-| Required executor capability unavailable | First failed prerequisite returns a factual owner report. The owner can choose an observed readiness wait immediately. |
-| Recurring unsuccessful execution | At least three failed, rejected, stale-interrupted or accepted-incomplete attempts for the same Task/generation within six hours requests owner review; sample through the existing five-minute metric cadence. Exclude explicit user stops/cancellation. |
-| An unresolved repair/help commitment reaches its chosen checkpoint | Existing Condition review wakes the accountable owner, who must inspect that exact commitment rather than only the aggregate metric. |
+| Signal                                                             | Initial rule and response                                                                                                                                                                                                                                 |
+| ------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Required executor capability unavailable                           | First failed prerequisite returns a factual owner report. The owner can choose an observed readiness wait immediately.                                                                                                                                    |
+| Recurring unsuccessful execution                                   | At least three failed, rejected, stale-interrupted or accepted-incomplete attempts for the same Task/generation within six hours requests owner review; sample through the existing five-minute metric cadence. Exclude explicit user stops/cancellation. |
+| An unresolved repair/help commitment reaches its chosen checkpoint | Existing Condition review wakes the accountable owner, who must inspect that exact commitment rather than only the aggregate metric.                                                                                                                      |
 
 The recurrence threshold is a proposed initial App policy, not a Host rule or evidence that three attempts are inherently wasteful. It covers both fast loops and hourly retries. Tune it with representative workload before adoption; healthy transient recovery and legitimate concurrency are required controls. Combine states as a union of distinct attempt IDs, not a sum of overlapping labels.
 
@@ -205,14 +216,14 @@ If that repair also stalls, the independent owner receives its current failure a
 
 ## Implementation slices
 
-| Order | Reviewable change | Owning source and decisive evidence |
-| --- | --- | --- |
-| A | Fresh context and settlement feedback | Host Codex packet/client/executor; installed-CLI fixture captures the new attempt, input keys and rejection in the actual outgoing request after resume/restart. |
-| B | Backlog-safe failure settlement and input consideration | Common Host Task reconciler; 35+ event fixture accepts the failure report with backoff, preserves every requirement, and lets later input reach a decision. |
-| C | Usable installed executor | Installation acceptance runs a real command/file read under the runtime user and intended permission profile; no per-attempt preflight or implicit permission widening. |
-| D | Reliable owner return and explicit independent fallback | Existing Host caller-report/admission boundary, May policy and Evaluation operational routes; invalid worker result, unavailable recipient and lost notification all retain one accountable return path. |
-| E | Recurrence coverage and repair follow-through | Existing metric reads, May definitions and Evaluation selection/evidence; task-scoped breach reaches an independent owner, reuses its investigation and inspects the repair at its checkpoint. |
-| F | Connected behavior trial and adoption | Real controller, admission, observer and return path; demonstrate correction, safe owner/human escalation, and completion of the original input after recovery. |
+| Order | Reviewable change                                       | Owning source and decisive evidence                                                                                                                                                                      |
+| ----- | ------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| A     | Fresh context and settlement feedback                   | Host Codex packet/client/executor; installed-CLI fixture captures the new attempt, input keys and rejection in the actual outgoing request after resume/restart.                                         |
+| B     | Backlog-safe failure settlement and input consideration | Common Host Task reconciler; 35+ event fixture accepts the failure report with backoff, preserves every requirement, and lets later input reach a decision.                                              |
+| C     | Usable installed executor                               | Installation acceptance runs a real command/file read under the runtime user and intended permission profile; no per-attempt preflight or implicit permission widening.                                  |
+| D     | Reliable owner return and explicit independent fallback | Existing Host caller-report/admission boundary, May policy and Evaluation operational routes; invalid worker result, unavailable recipient and lost notification all retain one accountable return path. |
+| E     | Recurrence coverage and repair follow-through           | Existing metric reads, May definitions and Evaluation selection/evidence; task-scoped breach reaches an independent owner, reuses its investigation and inspects the repair at its checkpoint.           |
+| F     | Connected behavior trial and adoption                   | Real controller, admission, observer and return path; demonstrate correction, safe owner/human escalation, and completion of the original input after recovery.                                          |
 
 A and B can be developed independently. C's usable capability and D/E's accountable response are required for the complete trial. Merge paired SDK/Host/App changes in compatibility order and declare dependencies in each PR. Do not describe A–C alone as systemic recovery.
 
@@ -220,23 +231,23 @@ A and B can be developed independently. C's usable capability and D/E's accounta
 
 Portable deterministic tests must invoke production entry and return paths, with temporary storage and a local scripted provider where needed. Promote the useful audit reproductions into the owning suites; do not publish operational transcripts or depend on an installation path.
 
-| Scenario | Required proof |
-| --- | --- |
-| Correctable schema or settlement error | Next actual model request contains the precise error and current selectable inputs; correction settles only what was handled. |
-| Resume, restart and compaction | Same Task/requirements survive; new context reaches execution before consequential actions; stale output remains fenced. |
-| 35+ old events, plus a later repair requirement | No repeated stale loop from unchanged backlog; unanswered inputs remain; the later requirement is considered. |
-| Genuine new requirement during an attempt | Preserve the requirement and reject only effects whose prerequisites became stale. |
-| Command sandbox unavailable at installation | Execution acceptance fails with the actual diagnostic; protocol compatibility cannot conceal it. |
-| Execution environment fails after installation | Existing attempt evidence, caller feedback and independent recurrence review retain the failure and original obligation, including when worker result construction is unavailable. |
-| Quiet readiness/dependency wait | No model polling for unchanged observations; readiness, fresh relevant input and due checkpoint each reach the right Task. |
-| Invalid wait or dependency attachment failure | Original failure and request remain visible; no invented Condition, lost input or accepted success. |
-| Lost/duplicate feedback and restart | Existing delivery recovery returns the selected report once; no duplicate repair or human ask. |
-| Repair recipient also fails | Parent receives/observes the exact repair failure and reconsiders at its boundary; an investigation ID cannot suppress it. |
-| Evaluation owner or observation source fails | Independent May route remains usable; self-review is not required. |
-| Human help is required | Saved ask, actual delivery and correlated reply are distinguishable; unanswered help stays open. |
-| Aggregate metric improves while an input stays blocked | No false closure of that input or its repair. |
-| Healthy expensive work, transient recovery and a valid long wait | Evidence can justify continued work/wait; no automatic cancellation or noisy duplicate escalation. |
-| Closed Task receives late evidence | History is retained without reopening; authorized new requirements use the normal reopen contract. |
+| Scenario                                                         | Required proof                                                                                                                                                                     |
+| ---------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Correctable schema or settlement error                           | Next actual model request contains the precise error and current selectable inputs; correction settles only what was handled.                                                      |
+| Resume, restart and compaction                                   | Same Task/requirements survive; new context reaches execution before consequential actions; stale output remains fenced.                                                           |
+| 35+ old events, plus a later repair requirement                  | No repeated stale loop from unchanged backlog; unanswered inputs remain; the later requirement is considered.                                                                      |
+| Genuine new requirement during an attempt                        | Preserve the requirement and reject only effects whose prerequisites became stale.                                                                                                 |
+| Command sandbox unavailable at installation                      | Execution acceptance fails with the actual diagnostic; protocol compatibility cannot conceal it.                                                                                   |
+| Execution environment fails after installation                   | Existing attempt evidence, caller feedback and independent recurrence review retain the failure and original obligation, including when worker result construction is unavailable. |
+| Quiet readiness/dependency wait                                  | No model polling for unchanged observations; readiness, fresh relevant input and due checkpoint each reach the right Task.                                                         |
+| Invalid wait or dependency attachment failure                    | Original failure and request remain visible; no invented Condition, lost input or accepted success.                                                                                |
+| Lost/duplicate feedback and restart                              | Existing delivery recovery returns the selected report once; no duplicate repair or human ask.                                                                                     |
+| Repair recipient also fails                                      | Parent receives/observes the exact repair failure and reconsiders at its boundary; an investigation ID cannot suppress it.                                                         |
+| Evaluation owner or observation source fails                     | Independent May route remains usable; self-review is not required.                                                                                                                 |
+| Human help is required                                           | Saved ask, actual delivery and correlated reply are distinguishable; unanswered help stays open.                                                                                   |
+| Aggregate metric improves while an input stays blocked           | No false closure of that input or its repair.                                                                                                                                      |
+| Healthy expensive work, transient recovery and a valid long wait | Evidence can justify continued work/wait; no automatic cancellation or noisy duplicate escalation.                                                                                 |
+| Closed Task receives late evidence                               | History is retained without reopening; authorized new requirements use the normal reopen contract.                                                                                 |
 
 Then run bounded agent trials with discoverable evidence, not a supplied diagnosis or repair script. Admit the original work once; let the normal controller, feedback and observers drive later work. Manual wakes, direct database edits and operator-performed recovery are disclosed intervention, not proof of autonomous recovery.
 

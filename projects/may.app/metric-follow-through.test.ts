@@ -356,3 +356,116 @@ test("an older sample-driven handoff asks for one current judgment instead of re
   expect(result.output).toMatchObject({ state: "converged" });
   expect(result.output).not.toHaveProperty("conditions");
 });
+
+test("an unchanged saved plan is current context, never a replayed judgment", async () => {
+  const rec = reconciliation();
+  const saved = review();
+  rec.input = { kind: "goal", data: { context: { metricResponse: saved } } };
+  rec.events.items = [
+    {
+      observedAt: "2026-01-02",
+      event: {
+        type: "app.task.requested",
+        source: "system",
+        data: { request: { input: rec.input } },
+      },
+    },
+  ];
+  let calls = 0;
+  const run = () =>
+    execute(
+      createTestAppWorkflowContext({
+        input: rec.input,
+        reconciliation: rec,
+        callAgent: (async (_agent: string, prompt: string) => {
+          calls++;
+          expect(prompt).toContain("A repair is pending");
+          expect(prompt).toContain("All requirements fulfilled");
+          return {
+            id: `judgment-${calls}`,
+            kind: "agent",
+            status: "done",
+            summary: "Current owner judgment",
+            output: {
+              task: {
+                state: "waiting",
+                continue: true,
+                summary: `Current review ${calls}`,
+                facts: [`owner-call:${calls}`],
+              },
+              decisions: [],
+            },
+          };
+        }) as never,
+      }),
+    );
+  expect((await run()).output).toMatchObject({
+    state: "waiting",
+    summary: "Current review 1",
+  });
+  expect((await run()).output).toMatchObject({
+    state: "waiting",
+    summary: "Current review 2",
+  });
+  expect(calls).toBe(2);
+});
+
+test("initial eventless handoff still reaches the owner and preserves a genuine wait", async () => {
+  const rec = reconciliation();
+  rec.task.acceptedAttempt = undefined;
+  rec.input = { kind: "goal", data: { context: { metricResponse: review() } } };
+  let calls = 0;
+  const result = await execute(
+    createTestAppWorkflowContext({
+      input: rec.input,
+      reconciliation: rec,
+      callAgent: (async () => {
+        calls++;
+        return {
+          id: "initial-judgment",
+          kind: "agent",
+          status: "done",
+          summary: "Keep repair wait",
+          output: review(),
+        };
+      }) as never,
+    }),
+  );
+  expect(calls).toBe(1);
+  expect(result.output).toMatchObject({
+    state: "waiting",
+    conditions: [{ id: "repair-result" }],
+  });
+});
+
+test("owner failure blocks and invalid output retains an incomplete result", async () => {
+  for (const response of [
+    {
+      id: "failed-owner",
+      kind: "agent",
+      status: "error",
+      summary: "Owner unavailable",
+      facts: ["attempt:failed-owner"],
+    },
+    {
+      id: "invalid-owner",
+      kind: "agent",
+      status: "done",
+      summary: "Invalid owner output",
+      output: { task: { state: "converged", summary: "Missing decisions" } },
+    },
+  ]) {
+    const result = await execute(
+      createTestAppWorkflowContext({
+        reconciliation: reconciliation(),
+        callAgent: (async () => response) as never,
+      }),
+    );
+    if (response.status === "error") {
+      expect(result.status).toBe("blocked");
+      expect(result.summary).toBe("Owner unavailable");
+    } else {
+      expect(result.output).toMatchObject({ state: "incomplete" });
+    }
+  }
+});
