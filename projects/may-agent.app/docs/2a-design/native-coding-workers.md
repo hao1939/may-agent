@@ -141,8 +141,13 @@ and fails on any denial. Task start and resume follow that same installed policy
 an explicit caller sandbox remains supported. The App still owns authorized
 intent and acceptance, so available executor permissions do not authorize extra
 work. These checks belong to installation verification, not every Task attempt.
-This separation is implemented in the PR #284 candidate; it does not establish
-that the deployed executor is usable.
+PR #284 is merged and active: installation-owned permissions and the actual
+installed execution/protocol check are the current behavior. PR #288 is a
+reviewed candidate, not live behavior. It bounds resume history retrieval and
+stops reading after a terminal transport failure; until it is merged and deployed,
+the active Host does not have those corrections. Its same-thread oversized-item
+trial proves transport recovery only. It does not prove that a model noticed,
+judged, or corrected the failure autonomously.
 
 Later failures still use normal bounded execution, retained attempt evidence,
 caller feedback and independent operational review. A failed tool command may

@@ -193,9 +193,12 @@ bun projects/may-agent.app/docs/examples/client.ts reload "$sample_socket" "$sam
 ```
 
 Reload activates App/agent definitions from the installation's configured source
-checkout; an arbitrary worktree commit is not automatically selected. It rejects
-uncommitted executable definitions. This operation affects the installed registry,
-so perform it within your installation's normal operator authority.
+checkout; an arbitrary worktree commit is not automatically selected. Pass the
+exact commit from that configured source. Reload pins that commit into the staged
+release and rejects dirty executable definitions in the configured source; a
+clean side worktree does not make a dirty configured source eligible. This
+operation affects the installed registry, so perform it within your installation's
+normal operator authority.
 
 Read the reload receipt's `eventId` using the client's `event` command. Once
 finished, its `operation` link names `event:COMPLETION_ID` and says `succeeded` or

@@ -93,7 +93,12 @@ releases.
 ## Deployment
 
 Reload applies one committed agent-and-App definition release; it rejects
-uncommitted executable definition changes and does not replace Host code.
+uncommitted executable definition changes and does not replace Host code. The
+operator must name a commit reachable from the installation's configured source
+checkout. That exact commit is staged and pinned into the release; a clean
+unrelated worktree is not the target, and a dirty configured source is rejected
+rather than silently combined with the pin. Verify the completion receipt's
+`sourceCommit` and the active release link after publication.
 A Host deployment does not imply App activation and does not require a live Host
 Operations App Task. An explicitly authorized operator may run the standalone
 deployment procedure with installation permissions and a stable correlation.
