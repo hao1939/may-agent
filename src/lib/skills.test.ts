@@ -160,6 +160,19 @@ describe("May skill catalog", () => {
     }
   });
 
+  it("reports a dangling path configuration instead of treating it as absent", async () => {
+    const root = tempRoot();
+    const agentDir = join(root, "agents", "may");
+    const skills = join(agentDir, "skills");
+    writeSkill(skills, "verify-change", "Verify a change", "Existing method");
+    symlinkSync(join(root, "missing.json"), join(skills, "paths.json"));
+
+    const catalog = await discoverAgentSkills({ agentDir });
+    expect(catalog.skills.has("verify-change")).toBe(true);
+    expect(catalog.diagnostics.join("\n")).toContain("paths.json");
+    expect(catalog.diagnostics.join("\n")).toContain("ENOENT");
+  });
+
   it("rejects symlinks escaping configured roots and does not follow nested path files", async () => {
     const root = tempRoot();
     const agentDir = join(root, "agents", "may");

@@ -317,7 +317,7 @@ describe("App source releases", () => {
     expect(readFileSync(join(release.projectsRoot, "sample.app", "manual", "guide", "SKILL.md"), "utf8")).toBe("Captured guidance");
   });
 
-  it.each([true, false])("rejects path configuration linked to mutable source (git: %s)", async (withGit) => {
+  it.each([true, false])("rejects path configuration linked to mutable or missing source (git: %s)", async (withGit) => {
     const { root, stateDir } = await fixture(withGit);
     const config = join(root, "path-config.json");
     writeFileSync(config, "[]");
@@ -326,7 +326,13 @@ describe("App source releases", () => {
       await git(root, "add", "path-config.json", "shared/skills/paths.json");
       await git(root, "commit", "-qm", "link mutable configuration");
     }
-    expect(() => new DefinitionSourceReleaseStore(root, stateDir).stage()).toThrow("escapes captured App source");
+    const store = new DefinitionSourceReleaseStore(root, stateDir);
+    expect(() => store.stage()).toThrow("escapes captured App source");
+    rmSync(config);
+    const pin = withGit ? String((await git(root, "rev-parse", "HEAD")).stdout).trim() : undefined;
+    // Snapshot validation must reject the entry even before its target exists.
+    expect(() => store.stage(pin)).toThrow("Invalid skill discovery paths in captured App source");
+    expect(store.current()).toBeNull();
   });
 
   it("validates cached and activated snapshots independently of the mutable path configuration", async () => {

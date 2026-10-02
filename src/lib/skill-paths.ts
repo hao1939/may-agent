@@ -1,13 +1,13 @@
-import { existsSync, readFileSync, realpathSync, statSync } from "node:fs";
+import { existsSync, lstatSync, readFileSync, realpathSync, statSync } from "node:fs";
 import { isAbsolute, join, resolve } from "node:path";
 
 /** Shared by discovery and release checks; additional roots do not load more path files. */
 export function resolveSkillRoots(root: string, diagnostics: string[]): string[] {
   const pathsFile = join(root, "paths.json");
   const roots = existsSync(root) ? [realpathSync(root)] : [];
-  if (!existsSync(pathsFile)) return roots;
   let paths: unknown;
   try {
+    if (!lstatSync(pathsFile, { throwIfNoEntry: false })) return roots;
     paths = JSON.parse(readFileSync(pathsFile, "utf8"));
     if (!Array.isArray(paths) || paths.some((path) => typeof path !== "string" || !path.trim() || isAbsolute(path))) {
       throw new Error("Expected an array of non-empty relative directory paths");
