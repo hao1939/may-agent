@@ -184,6 +184,48 @@ cancellation, cross-App Task dependencies and results, failure, and recovery. Co
 execution tests separately cover async fork/workflow/CLI events and direct-chat
 cold resume.
 
+## Post-rollout state reconciliation
+
+A rollout can make retained Requests, Conditions, metric definitions, or operator
+prompts stale without making them disposable. Review each retained item from its
+full current scope and canonical linked evidence; do not bulk-close by age,
+origin, title, or a shared fix.
+
+Use this order:
+
+1. Pin the deployed Host and App-definition identities and the exact rollout or
+   trial receipts. Separate source readiness, deployment, activation, and the
+   observed outcome.
+2. Read the retained item's current scope, origin, revision, linked Task, and
+   actual accepted result. A system-origin Request may still carry a real
+   closure contract; a human-origin item may already have been superseded.
+3. Classify premises individually. Retire an obsolete premise only when current
+   evidence disproves it. Preserve independent authority, credential, security,
+   approval, or outcome requirements even when the implementation premise was
+   repaired.
+4. Close a Request only through the Conversation Request contract, with the
+   current revision and an explanatory response. Consolidate explanations for a
+   proved cohort when the Conversation schema permits, but retain one justified
+   disposition per Request. Do not silently close old automated-review Requests
+   merely because new automated reviews are now quiet by default.
+5. Retire a Condition only through its owning Task's generation-fenced action.
+   A deployed change or successful trial is evidence, not the human decision
+   represented by a still-independent Condition.
+6. For standing promises, recurring hygiene, and current human obligations,
+   preserve the existing identity and next review. For retired metric cohorts,
+   require canonical retirement, stopped collection, preserved history, and
+   restart/reload persistence before treating their old review Requests as
+   fulfilled.
+7. Re-read canonical state after settlement. Record counts, exact identities,
+   receipts, remaining obligations, and evidence limitations; do not infer that
+   a successful result closed a Request or removed a Condition.
+
+A handler that returns `waiting` without an exact Condition is not a valid
+migration wait. Correct the owning Task or workflow to perform its current
+review and converge, or bind the genuine external fact through the supported
+Condition contract. Do not add a scheduler, notification filter, or retry loop
+to compensate for an invalid result shape.
+
 ## Historical Trace Audit And Backfill
 
 Run the bounded structural and semantic audit against a retained state directory:
