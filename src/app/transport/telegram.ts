@@ -980,6 +980,9 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
     const rendered = renderTelegramTaskUpdate(task);
     const displayedApproval = approvalProposalForTask(task);
     const displayedHumanCondition = !displayedApproval ? humanConditionAnchor(task) : null;
+    const displayedAction = task.humanAction
+      ? { key: todoTaskKey(task), signature: todoActionSignature(task) }
+      : null;
     // Keep the card's context consistent even if selection changes during I/O.
     const conversationTopicId = selectedTaskTopicId(surface, task);
     const delivered = await sendMessage(watched.chatId, rendered, undefined, {
@@ -992,8 +995,18 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
         topicId: conversationTopicId,
         ...(displayedApproval ? { approvalAnchor: displayedApproval } : {}),
         ...(displayedHumanCondition ? { humanCondition: displayedHumanCondition } : {}),
+        ...(displayedAction?.signature.exact
+          ? {
+              completedHumanAction: {
+                version: 1,
+                appId: task.appId,
+                taskId: task.taskId,
+                signature: displayedAction.signature.value,
+              },
+            }
+          : {}),
       }),
-      bindToCompleteDelivery: Boolean(displayedApproval || displayedHumanCondition),
+      bindToCompleteDelivery: Boolean(displayedApproval || displayedHumanCondition || displayedAction?.signature.exact),
     });
     if (delivered && running)
       recordConversationMessage({
@@ -1010,6 +1023,15 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
     // change a newer selection, including a new watch of the same Task.
     if (!delivered || !running || watchedTasks.get(surface) !== watched) return;
     shownWatchRevisions.set(surface, revision);
+    if (displayedAction) {
+      const current = shownTodoActions.get(surface);
+      if (current) current.set(displayedAction.key, presentedTodoActionRevision(displayedAction.signature));
+      else
+        shownTodoActions.set(
+          surface,
+          new Map([[displayedAction.key, presentedTodoActionRevision(displayedAction.signature)]]),
+        );
+    }
     if (task.terminal) stopWatching(surface);
   }
 
@@ -1059,24 +1081,29 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
       return { task, detail, signature: todoActionSignature(detail) };
     });
     const prior = shownTodoActions.get(surface) ?? new Map<string, string>();
-    const next = new Map(
-      actions.map(({ task, signature }) => [todoTaskKey(task), presentedTodoActionRevision(signature)]),
-    );
+    const currentKeys = new Set(actions.map(({ task }) => todoTaskKey(task)));
+    const next = new Map([...prior].filter(([key]) => currentKeys.has(key)));
     const watched = watchedTasks.get(surface);
     const changed = actions.filter(({ task, detail, signature }) => {
       if (watched?.appId === task.appId && watched.taskId === task.taskId) return false;
+      const key = todoTaskKey(task);
+      const revision = presentedTodoActionRevision(signature);
+      if (prior.get(key) === revision) return false;
       if (!signature.exact) return true;
-      if (prior.get(todoTaskKey(task)) === presentedTodoActionRevision(signature)) return false;
-      return !hasCompletedHumanActionDelivery(persistDir, coordinates.chatId, coordinates.topicId, {
-        appId: detail.appId,
-        taskId: detail.taskId,
-        signature: signature.value,
-      });
+      if (
+        hasCompletedHumanActionDelivery(persistDir, coordinates.chatId, coordinates.topicId, {
+          appId: detail.appId,
+          taskId: detail.taskId,
+          signature: signature.value,
+        })
+      ) {
+        next.set(key, revision);
+        return false;
+      }
+      return true;
     });
-    if (changed.length === 0) {
-      shownTodoActions.set(surface, next);
-      return;
-    }
+    shownTodoActions.set(surface, next);
+    if (changed.length === 0) return;
     const first = changed[0]!;
     const single = page.total === 1 && changed.length === 1;
     // The detail was read once above, so displayed text and immutable approval
@@ -1133,7 +1160,12 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
       ),
     });
     if (!messageId || !running) return;
-    if ((selectedApps.get(surface) ?? opts.interfaceAgent) === appId) shownTodoActions.set(surface, next);
+    if ((selectedApps.get(surface) ?? opts.interfaceAgent) === appId) {
+      for (const { task, signature } of changed) {
+        next.set(todoTaskKey(task), presentedTodoActionRevision(signature));
+      }
+      shownTodoActions.set(surface, next);
+    }
     // Record what was actually shown, even if the user selected another App
     // during the send; only the current App's notification cache is protected.
     recordConversationMessage({
@@ -1691,26 +1723,11 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
       } else {
         nextTodoPageBySurface.delete(surface);
       }
+      // Manual list reads do not claim or suppress automatic action delivery.
       deliverCommandView(
         renderTelegramTodos(page.items, page.total ?? page.items.length, appId, Boolean(page.nextCursor)),
         page.items.map((task) => ({ appId: task.appId, taskId: task.taskId })),
-        () => {
-          if (!more && appId === (selectedApps.get(surface) ?? opts.interfaceAgent)) {
-            shownTodoActions.set(
-              surface,
-              new Map(
-                page.items.map((task) => {
-                  const owner = task.humanAction?.task ?? {
-                    appId: task.appId,
-                    taskId: task.taskId,
-                  };
-                  const detail = opts.humanTasks.getTask?.(owner) ?? task;
-                  return [todoTaskKey(task), presentedTodoActionRevision(todoActionSignature(detail))];
-                }),
-              ),
-            );
-          }
-        },
+        undefined,
         undefined,
         undefined,
         "HTML",
