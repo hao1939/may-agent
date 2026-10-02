@@ -84,6 +84,15 @@ describe("evaluator heartbeat", () => {
     });
   });
 
+  test("keeps invalid structured output incomplete", () => {
+    expect(
+      normalizeAgentResult({ state: "converged" }, reconciliation()),
+    ).toMatchObject({
+      state: "incomplete",
+      facts: [expect.stringContaining("owner-result-rejected:")],
+    });
+  });
+
   test("filters stale and runtime unblock actions", () => {
     const result = normalizeAgentResult(
       {
@@ -108,8 +117,7 @@ describe("evaluator heartbeat", () => {
       reconciliation(),
     );
     expect(result).toMatchObject({
-      state: "converged",
-      actions: [],
+      state: "incomplete",
       facts: ["owner-actions:filtered"],
     });
   });
@@ -136,9 +144,8 @@ describe("evaluator heartbeat", () => {
     await expect(execute(ctx)).resolves.toMatchObject({
       status: "done",
       output: {
-        state: "converged",
+        state: "incomplete",
         facts: ["execution:s_owner", "execution-status:interrupted"],
-        actions: [],
       },
     });
     expect(prompts).toHaveLength(1);

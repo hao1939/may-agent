@@ -15,12 +15,11 @@ export const description =
 type OwnerReviewInput = { scope?: string; reason?: string };
 type AgentResult = Exclude<TaskReconcileResult, { state: "needs-agent" }>;
 
-function fallbackResult(summary: string, facts: string[]): AgentResult {
+function incompleteResult(summary: string, facts: string[]): AgentResult {
   return {
-    state: "converged",
+    state: "incomplete",
     summary,
-    facts: facts.slice(0, 32),
-    actions: [],
+    facts: [facts[0] ?? summary, ...facts.slice(1, 32)],
   };
 }
 
@@ -32,7 +31,7 @@ export function normalizeAgentResult(
     allowNeedsAgent: false,
   });
   if (admission.ok === false) {
-    return fallbackResult(
+    return incompleteResult(
       `Owner review returned an invalid structured result; preserving current desired state. ${admission.error}`,
       [`owner-result-rejected:${admission.error.slice(0, 400)}`],
     );
@@ -52,7 +51,7 @@ export function normalizeAgentResult(
     );
   });
   if (actions.length === (result.actions ?? []).length) return result;
-  return fallbackResult(
+  return incompleteResult(
     `Filtered ${(result.actions ?? []).length - actions.length} stale or out-of-scope unblock action(s); ${result.summary}`,
     [...result.facts, "owner-actions:filtered"],
   );
@@ -98,7 +97,7 @@ export async function execute(
   const result =
     execution.status === "done"
       ? normalizeAgentResult(execution.output, reconciliation)
-      : fallbackResult(
+      : incompleteResult(
           `Owner review execution ${execution.id} ended ${execution.status}; preserving current desired state.`,
           [`execution:${execution.id}`, `execution-status:${execution.status}`],
         );
