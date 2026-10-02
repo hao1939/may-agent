@@ -326,11 +326,12 @@ The source [Task types](../../../may-agent/packages/sdk/src/task.ts) and
 [result admission](../../../may-agent/packages/sdk/src/task-contract.ts) define
 the executable contract. A result supplies `state`, `summary`, `facts`, and
 optional bounded `result`, caller `response`, Task `actions`, Conditions, and
-`TaskAppDependency` entries. `actions` are Task changes, not App commands.
+`TaskAppRequest` entries. Legacy `dependencies` normalize to requests and caller
+Conditions at admission; the existing result schema and IDs remain unchanged.
 
 The result union selects how this attempt settles; it does not make stored
-facts mutually exclusive. A waiting result may report progress and request
-continuation while old Conditions, accepted results and other pending inputs
+facts mutually exclusive. A waiting result may request `continue: true` while
+old Conditions, accepted results and other pending inputs
 remain. Omitted waits are preserved; an exact accepted action retires one.
 
 When a file materially supports a completion or recovery claim, the result should
@@ -344,7 +345,7 @@ binds bytes, not source authority or semantic truth. See the
 | Outcome                                                                                 | Runtime disposition                                                                                                                                                                |
 | --------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Valid `converged` result                                                                | Accept the exact input's outcome when current-input fences, evidence, actions and verification permit; keep the Task open                                                          |
-| Valid `waiting` result                                                                  | Retain exact external Conditions or typed input dependencies; release execution capacity; structural children alone do not establish a wait                                        |
+| Valid `waiting` result                                                     | Retain independent Conditions and input; yield on a return route or schedule useful work; structural children alone do not establish a wait |
 | Valid `incomplete` result                                                               | Retain unsuccessful attempt facts, report the input's first accepted blocker to its linked caller, and retry unfinished work with backoff; no cancellation or implicit parent wake |
 | Workflow `needs-agent`                                                                  | At most one sequential selected-agent judgment for the same Task; no ownership transfer                                                                                            |
 | Unavailable agent/workflow/executor or failed workspace prerequisite                    | Visible failure and same-Task paced retry; no silent executor substitution                                                                                                         |
@@ -388,20 +389,20 @@ This advancement occurs at settlement, independently of caller delivery. Automat
 and explicit owner retries preserve it; execution failures without an accepted
 report restore their unconsidered batch. Generation and action fences still apply.
 Source tests do not establish live adoption. Turn Stop and owner closure remain
-separate controls: closure fences future work; work after closure needs a new
-linked identity.
+separate controls: closure fences automatic work. An authorized new requirement
+may explicitly reopen the same Task; late observations alone retain history.
 
-Creating follow-up work does not complete the current task. Required
-decomposition uses typed dependencies and returns `waiting`; independent later
-work may be a successor only after the current outcome is actually accepted.
+Creating follow-up work does not complete the current task. Live `tasks apply`
+and final declarations share admission; only final settlement ends the attempt.
+Requests deliver work through the receiving App and normal Task scheduling.
 
-**Candidate contract:** `waiting` with `continue: true` requests one more bounded
+**Source contract (Host PR #285, merged):** `state: "waiting"` with `continue: true` requests one more bounded
 pass on the same Task while retaining unanswered input and every independent
 wait. It requires non-empty progress facts, but not a newly submitted dependency:
 continuation is an immediate scheduling request, not a claim that an external
 fact is outstanding. It may coexist with `report: true`, which selects a new
 caller-relevant update without changing scheduling or wait state. Omitting
-`continue` means the attempt sleeps, so a saved Condition, typed dependency, or
+`continue` yields the attempt, so a saved Condition or
 future `reviewAt` must provide a real return route. Facts make the request
 auditable; they do not prove progress or replace the existing attempt/resource
 bounds and owner review.
@@ -420,7 +421,7 @@ workflow supplies a stable local key, and the Host verifies the attempt fence,
 deduplicates, persists exact wakes, then publishes. Races against a newer
 generation or already-advanced target are treated as stale and retried from
 current state, not converted into partial mutation or misleading attention.
-Cross-App result work is returned as a typed dependency. Its durable App
+Cross-App result work uses a typed request and optional caller Condition. Its App
 request row is the correlation record; generic event emission cannot create a
 second request lifecycle.
 

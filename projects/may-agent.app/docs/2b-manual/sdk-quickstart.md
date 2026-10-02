@@ -293,3 +293,22 @@ its existing review deadline. Periodic observation retries failed reads and
 covers missed prompt notifications. Host capacity and provider latency still
 apply; a successful smoke run is evidence for that resource and moment, not a
 promise that every future check succeeds.
+
+## Find the assignment and current evidence
+
+Use the supplied Task entry and exact context/catalog references to discover the
+assignment, result contract and available reads. A helper keeps its own narrower
+contribution. The generated snapshot describes a captured revision; use the
+scoped Task reader when a decision needs current state. Native adapters must
+actually expose a read capability before their workers can call it.
+
+Keep assigned input separate from the currently unclaimed pending window. An
+empty pending window does not erase a correction already assigned to this attempt.
+Accepted results, unfinished requirements and independent Conditions can coexist.
+Reading them does not acknowledge or fulfill them. Unavailable evidence differs
+from an empty successful read. Follow exact detail links when omitted information
+matters to the decision; no mandatory sequence of tool calls is required.
+
+The [Task resource proposal](../proposals/task-resource-layout-20260929.md) records
+the missed-review case and remaining usability comparison. The current
+[Task read contract](../2a-design/task-resource-read-interface.md) owns the API.

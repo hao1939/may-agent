@@ -324,32 +324,82 @@ Task results may include a caller-facing `response`; `summary` describes
 operational state. Neither field contains channel delivery state. A Task can
 converge in one attempt, while longer work preserves the same identity.
 
-A Task may request one typed outcome from another App:
+**Source contract (Host PR #285, merged):** A Task submits work through `requests`. Its own `conditions` express whether it
+needs the result:
 
 ```ts
-dependencies: [{ id: "review", appId: "evaluation", input: { kind, data } }];
+{
+  state: "waiting",
+  summary: "Need the review before finishing",
+  facts: [],
+  requests: [{ id: "review", appId: "evaluation", input: { kind, data } }],
+  conditions: [{ requestId: "review" }],
+}
 ```
 
-When the intent is feedback or a decision for exact unfinished work, it names
-that Task rather than creating a sibling:
+The receiving App owns interpreting and fulfilling the request. The Condition
+belongs to the caller. Omitting that Condition submits identical work without
+adding a caller wait; such submission may accompany `converged`. A caller may
+use `tasks apply` to submit while continuing this attempt, or return
+`state: "waiting", continue: true` to schedule another attempt for useful work.
 
-```ts
-dependencies: [
-  { id: "feedback", appId: "evaluation", taskId, input: { kind, data } },
-];
-```
+The short Condition references a request's local `id` in this call/result or
+one already admitted in the same caller generation. Host
+resolves it to the exact durable request and fills in the existing completion
+Condition's subject, expected result, owner and review interval. Apps still
+return full Conditions for other observable facts. This is one Condition
+lifecycle, not a separate dependency scheduler. Existing waits survive omitted
+fields; withdrawing one still requires the explicit `retire-condition` action.
 
-The local `id` is stable within the parent generation. Runtime owns the
-derived request identity, idempotency, admission, completion Condition, and
-result Event. The source App supplies input accepted by the destination App's
-declared schema; it does not emit `app.input.requested`, query the destination
-store, or wait for transport acknowledgement.
+An optional `taskId` sends the input to exact existing work. Without it, the
+receiving App's pure mapper selects an existing or new Task. The local request
+`id` remains stable within the caller generation; Host owns durable identity,
+idempotency, admission, result correlation and recovery. The source App supplies
+input accepted by the destination schema. It does not publish transport events
+or manage subscriptions. Legacy `dependencies` results are normalized once to
+requests plus caller Conditions for compatibility; the agent schema exposes only
+the new form and rejects combining the two forms.
 
-Only successful durable admission installs an external wait. Rejection leaves
-the same parent Task runnable with exact evidence so its App can correct the
-input or choose another safe path. Completion, failure, interruption,
-attention, and disappearance of a formerly linked Task all wake the exact
-requester. Runtime re-observes persisted waits after restart.
+Text and structured input are both eligible for App-to-App Task handling.
+`message` versus `goal` describes the payload, not whether the caller can await
+its result. The App owns each kind's interpretation and acceptance. The installed
+catalog lists these input contracts for Apps with Task handling. Human and
+explicit Conversation inputs retain their Conversation path. An App request
+without Conversation identity uses ordinary Task handling even when its input
+kind is also used by a human frontend. Exact Task targeting cannot address a
+Conversation executor.
+
+Live `tasks apply`, `TaskAttempt.apply`, workflow `applyTaskChanges`, and final
+result declarations use one admission path. Host saves request plus caller
+Condition before dispatching `app.input.requested`. The receiver's App mapper
+selects a Task; normal scheduling starts that Task's configured agent/workflow.
+An explicit `taskId` uses direct Task admission. Inbox recovery retries delivery
+from the saved request. A Condition alone does not send work. Live application
+returns receipts without ending the attempt; final settlement releases it.
+Native Codex currently uses final declarations, without a live May tool bridge.
+
+Within App policy and authority, the worker judges when its selected inputs are
+fulfilled. Accepted `converged` marks those requests done and returns their
+answer; it needs no second completion state or mandatory independent review.
+Unresolved Conditions remain accurate independent facts, not a generic veto of
+that decision. Existing result evidence supports later owner reconsideration;
+accepted judgment does not guarantee objective correctness.
+
+Only durable submission can establish a request Condition. Invalid requests leave
+the caller runnable with diagnostic evidence. A saved receiver admission failure
+uses existing feedback and recovery. Progress or a blocker never answers the
+request; an accepted result must name the exact original input. A caller waiting
+on that result wakes for feedback and interprets it. Without a Condition, receiver
+work, failures and results remain durable, but there is no automatic caller wait
+or wake. Runtime re-observes exact saved results after restart or lost feedback.
+
+Retained App inputs with no execution or attachment history use this same Task
+route. Already attached work keeps its owner. Historical Conversation execution
+still requires its existing cutover procedure; source changes do not silently
+convert it into new work. The paired May mapping candidate preserves text and context in ordinary Tasks
+and requires fulfillment, not acknowledgment. That App-source change is not
+merged by this documentation update. Install a compatible App mapper before
+enabling the Host's new text-request route.
 
 May's human-facing behavior is one use of this generic contract, not part of
 the App authoring model. [Message Lifecycle](message-lifecycle.md) owns its

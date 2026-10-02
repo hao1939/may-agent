@@ -8,6 +8,11 @@
 **Design reviewed:** [From intention to outcome](task-execution-capabilities-20261002.md),
 with [supporting capability contracts](task-execution-capability-contracts-20261003.md).
 
+**October 3 source update:** #285 is now merged as `797c7ee35`. The original
+90-PR cohort and trial claims below keep their recorded scope. The
+[workspace review](workspace-hygiene-review-20261003.md) integrates the matching
+contract text without claiming deployment or the deferred `decision`/`reply` API.
+
 ## Conclusion
 
 The purpose is useful work accomplished with less human coordination. The design
@@ -62,7 +67,7 @@ The capability draft was reviewed in the companion App checkout based on
 record validation at their own revisions; those reports are not fresh runtime
 measurements or proof of deployment.
 
-[PR #285](https://github.com/hao1939/may-agent/pull/285) is **open**, outside the
+[PR #285](https://github.com/hao1939/may-agent/pull/285) was **open at this review**, outside the
 90 merged changes. At review its head was `c8a8513da83a396d2dce43037dd844821defab28`.
 Its narrowed scope retains routing and shared admission, with requests and
 caller Conditions separate. The `decision` schema migration is deferred;

@@ -890,10 +890,10 @@ of the separate supervision Task and `mayFollowUpTask` prompt. Historical input
 cannot restore that executor. Context tests establish available guidance, not
 model judgment; definition reload does not rewrite stored work.
 
-Every conversational Turn uses the same result schema: answer, authorized Task
-control, or direct `followUp`; the unified design also admits an explicit quiet
-system result without a Conversation message. It cannot return child-request dependencies.
-The installed input catalog includes May's own durable goal contract and excludes
-its conversational input kinds. Exact feedback and human cancellation retain
-their validation and authority rules. Frontends reuse the bounded full App tool
-profile; there is no separate child-result prompt or deputy execution mode.
+Conversational Turns return an answer, authorized Task control, direct `followUp`,
+or an explicit quiet system result. They cannot declare child requests.
+Ordinary App requests accept text or structured input through the receiving Task
+mapper, preserving requirements; `message` alone does not select Conversation.
+A caller Condition expresses whether it needs the reply. Human and explicitly
+routed Conversation inputs retain this bounded frontend contract, its authority
+checks and full App tools, without a separate child-result coordinator or prompt.

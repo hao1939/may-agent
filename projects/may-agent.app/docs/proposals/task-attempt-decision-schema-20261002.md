@@ -6,11 +6,12 @@
 
 **Design status:** Draft for review, 2026-10-02.
 **Implementation status:** [Host PR #285](https://github.com/hao1939/may-agent/pull/285)
-keeps request routing, separate requests/Conditions and shared live/final admission.
-**The `decision` schema migration is deferred (2026-10-03).** Candidate source
+merged as `797c7ee35` on the fetched source baseline. It keeps request routing, separate requests/Conditions and shared live/final admission.
+**The `decision` schema migration is deferred (2026-10-03).** Merged Host source
 retains `state`, `continue` and the existing schema IDs. The proposed output schema,
 its examples and migration plan below are future design, not the PR contract.
-This is source work for review, not a deployment claim.
+The paired App mapping/admission changes remain separate unmerged work. This
+documentation review establishes Host source status, not App activation or deployment.
 The rules below clarify how decisions are trusted and recorded. They add no
 new agent output fields, completion gate, or result lifecycle.
 

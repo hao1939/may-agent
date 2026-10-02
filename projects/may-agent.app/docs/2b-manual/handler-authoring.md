@@ -40,15 +40,18 @@ or implement controller retries.
 ## Return evidence and an exact outcome
 
 Use the SDK's `TaskReconcileResult`, `TaskAction`, `Condition` and
-`TaskAppDependency` types. The
+`TaskAppRequest` types. The
 [Task result contract](../2a-design/task-resource-engine.md#result-contract)
 owns their disposition; do not maintain a second result schema here.
 
-- `converged` claims the current acceptance criteria are satisfied.
-- `waiting` yields this pass with Conditions, dependencies, a review deadline,
-  or `continue: true` when useful independent work remains.
-- `needs-agent` requests exceptional bounded judgment from the same App's
-  selected agent; it does not transfer ownership.
+Return the existing attempt `state`:
+
+- `converged` accepts the selected inputs under App policy.
+- `waiting` yields on saved Conditions or a review deadline; add `continue: true`
+  to schedule another attempt for useful independent work.
+- `incomplete` retains failure evidence and unfinished work for recovery.
+- Workflows can use `needs-agent` for exceptional bounded judgment from the
+  same App's selected agent; it does not transfer ownership.
 
 The [checked `waitingResult`](../examples/app.ts) illustrates an exact fact contract,
 canonical owner and five-minute review interval. Replace its illustrative
@@ -66,23 +69,24 @@ and deadlines independent rather than choosing one maximum interval. See
 ## Task changes and safety
 
 Workers use `actions` and `TaskAction` to update or unblock existing Tasks.
-Typed dependencies request new work; assigning-owner controls close Tasks.
+Typed `requests` commission work; assigning-owner controls close Tasks.
 Updates use
 `expectedGeneration`; the reconciler checks generation and resource version,
 then commits task state, receipts, Conditions, and dependent wakeups atomically.
 
-An executable parent owns decomposition and aggregate acceptance. Return
-`waiting` with typed dependencies to request an answer from another Task.
+An executable parent owns decomposition and aggregate acceptance. Submit a
+`request` and a Condition referencing its ID when its answer is needed.
 The target App chooses its Task and executor; the Host retains the exact return
 link. Those Tasks run independently and do not hold the parent's worker slot.
 Read their correlated reports and answers before accepting the aggregate result.
 Do not author a task-lifecycle Condition or an App-local refill event for this path.
 
-The [continuation implementation record](../archive/reviews/execution-feedback-poc-20260913.md)
-allows `continue: true` with new dependencies and progress facts when useful
-independent work remains. Another bounded pass of the same parent can prepare
-that work. Omit it when only results remain. Existing Conditions survive;
-neither yielding nor continuing answers the original input by itself.
+Use `tasks({action: "apply", changes})`, `attempt.apply(changes)` or workflow
+`ctx.applyTaskChanges(changes)` to submit requests while continuing this attempt.
+Final results use the same change fields. Return `state: "waiting"` with
+`continue: true` for another bounded pass; omit continuation when only results
+remain. Existing Conditions survive; neither choice answers the original input
+by itself. The proposed `decision` spelling is deferred.
 
 Exact input-return links determine outstanding results. A parent link or a
 related Task is not, by itself, a wait or a subscription.

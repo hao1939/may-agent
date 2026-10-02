@@ -162,6 +162,12 @@ a place in this table does not make a record current authority.
 
 | Proposal or evidence record | Parent need or contract |
 | --- | --- |
+| [Workspace hygiene and unmerged design review](proposals/workspace-hygiene-review-20261003.md) | [App Root Layout](2a-design/app-root-layout.md) |
+| [App environment and improvement review](proposals/app-environment-review-20260928.md) | [App Contract](2a-design/agent-app.md) |
+| [Task resource entry and evidence access](proposals/task-resource-layout-20260929.md) | [Task Reads](2a-design/task-resource-read-interface.md) |
+| [Task execution surface: retained trials](proposals/task-executor-surface-20260928.md) | [Execution Boundary](2a-design/system-boundary.md) |
+| [Reliable recovery and independent oversight](proposals/reliable-recovery-and-independent-oversight-20261002.md) | [Host/App Boundary](2a-design/system-boundary.md) |
+| [Token efficiency: audit and remaining proposals](../../may.app/design/token-efficiency-proposal-20261002.md) | [Metrics](2a-design/metrics.md) |
 | [Task observation: declare the interest, supply the detector](proposals/task-observation-contract-20260930.md) | [App Contract](2a-design/agent-app.md) |
 | [Agent prompt assembly: source review and simplification proposal](proposals/agent-prompt-assembly-review-20260927.md) | [Agent Cooperation](2a-design/agents.md) |
 | [Consolidate execution entry points](proposals/execution-entrypoint-consolidation.md) | [Agent Cooperation](2a-design/agents.md) |

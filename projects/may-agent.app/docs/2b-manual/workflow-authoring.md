@@ -136,7 +136,7 @@ Task workflow. See [Task authoring](handler-authoring.md) for the owning contrac
 No live children is not sufficient evidence that acceptance is met. Retain exact
 `facts`, and describe a real wait or the supported outcome.
 
-Return execution status, waits and dependencies as typed output. When supplied
+Return an attempt decision, Conditions and requests as typed output. When supplied
 by the Task caller, `ctx.reviseTask` updates creator-owned requirements through
 the Host's authority checks. It does not update execution status. Do not edit
 Task-state files, write projections, acquire Task locks, or emit

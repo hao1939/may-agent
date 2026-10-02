@@ -224,13 +224,15 @@ The same agent profile can serve several Tasks. One Task waiting does not make
 that agent globally unavailable. Within one Task, preserve one current attempt;
 outstanding dependencies do not authorize a second competing parent attempt.
 
-**Execution boundary:** typed dependencies are admitted when a Task returns a
-`waiting` result. That result may also request `continue: true` for another
-bounded pass of useful independent work; existing waits remain intact. It does
-not continue the same JavaScript stack after a durable handoff. Current Task
-reads expose Conditions independently of the scheduling phase; compact human
-views may show only the facts relevant to their presentation. Agents still
-need to name an observable Condition for sources without a typed dependency.
+**Source execution contract ([PR #285](https://github.com/hao1939/may-agent/pull/285)):**
+an attempt can submit requests and caller Conditions through `tasks apply` and
+continue useful work. Final `state: "waiting", continue: true` schedules a new attempt;
+without continuation, `waiting` yields on a saved return route. Both use the same admission.
+An attempt can contain many tool calls; returning its final decision ends it.
+The Host maintains Task state from accepted results, input and Conditions.
+The [schema proposal](../proposals/task-attempt-decision-schema-20261002.md)
+records the delivery path and limits. Its proposed `decision` result schema
+is deferred; the current `state`/`continue` format remains supported.
 
 ## A turn or a Task?
 
