@@ -107,6 +107,7 @@ function pullPayload(
     merged_at: merged ? "2026-09-21T00:00:00Z" : null,
     merge_commit_sha: merged ? `merge-${number}` : null,
     head: { sha: `head-${number}` },
+    updated_at: merged ? "2026-09-21T00:00:00Z" : "2026-09-20T00:00:00Z",
     base: { repo: { full_name: scope.repository } },
   };
 }
@@ -143,6 +144,45 @@ const observe = (ctx: ObserverContext, fetcher: typeof fetch) =>
     () => new Date("2026-09-21T01:00:00Z"),
   );
 describe("May GitHub pull-request resource ownership", () => {
+  test("republication is stable across fetch times and distinguishes provider revisions and owner generations", async () => {
+    const tasks = new Map([["goal/linked-pr", task("goal/linked-pr")]]);
+    const pulls = new Map([[215, pullPayload(215, ownerBody())]]);
+    const read = (at: string) =>
+      observeGitHubPullRequests(
+        context(tasks),
+        scope,
+        provider(pulls),
+        () => new Date(at),
+      );
+    const first = (await read("2026-09-21T01:00:00Z")).events[0]!;
+    const again = (await read("2026-09-21T02:00:00Z")).events[0]!;
+    expect(again).toEqual(first);
+    expect(first.data).not.toHaveProperty("fetchedAt");
+    expect(first.data).toHaveProperty("idempotencyKey");
+    pulls.get(215)!.updated_at = "2026-09-21T03:00:00Z";
+    const laterRevision = (await read("2026-09-21T04:00:00Z")).events[0]!;
+    expect(laterRevision.data.idempotencyKey).not.toBe(
+      first.data.idempotencyKey,
+    );
+    tasks.get("goal/linked-pr")!.generation = 2;
+    expect(
+      (await read("2026-09-21T05:00:00Z")).events[0]!.data.idempotencyKey,
+    ).not.toBe(laterRevision.data.idempotencyKey);
+    const retained = await read("2026-09-21T05:00:00Z");
+    tasks
+      .get("goal/linked-pr")!
+      .conditions.push({ ...condition, reviewAfterMs: undefined });
+    const demand = await observe(
+      context(tasks, retained.nextObservation),
+      provider(pulls),
+    );
+    expect(demand.events).toHaveLength(1);
+    expect(demand.events[0]!.data.idempotencyKey).not.toBe(
+      retained.events[0]!.data.idempotencyKey,
+    );
+    Reflect.deleteProperty(pulls.get(215)!, "updated_at");
+    expect((await read("2026-09-21T06:00:00Z")).events).toEqual([]);
+  });
   test("parses one exact visible metadata block and rejects ambiguity", () => {
     expect(parseMayTaskOwner(ownerBody())).toEqual({
       appId: "may",

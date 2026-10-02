@@ -464,6 +464,11 @@ A schedule declares exactly one destination:
 Use an input schedule when each due slot declares task intent. Use an event
 schedule when time merely records a fact or wakes an exact existing task.
 
+Give a recurring activity one scheduling owner: an App schedule or the Task's
+explicitly chosen `reviewAt`. Returning the same due time through both paths
+creates two inputs and can purchase two reviews of one cycle. A separate review
+deadline is appropriate only for a distinct reconsideration.
+
 An observer is a bounded deterministic adapter for external state:
 
 ```text
@@ -476,6 +481,17 @@ below receives just a resource and abort signal and returns observed data.
 Neither launches agents, accesses inbox or task storage, or mutates runtime state. Legacy watchers migrate to
 observers, workflow inputs, or explicit offline maintenance according to their
 actual responsibility.
+
+For unsolicited targeted observations, disposable suppression memory is an
+optimization, not durable delivery identity. Producers should use the existing
+event `data.idempotencyKey` with stable semantic payload bytes. The key identifies
+the resource, recipient and provider revision; include current requirement
+identity when a newly declared wait needs a fresh observation. Keep poll/fetch
+time in diagnostic metadata, not in the replayed payload. Replay of the same
+fact then reuses its durable event and admission; it does not request another
+agent judgment. A later real transition, owner change or new requirement must
+retain its own identity. If a provider offers no reliable revision, record that
+limitation rather than treating a value fingerprint as a permanent blacklist.
 
 ### Task-driven resource observation
 
@@ -495,7 +511,7 @@ A worker discovers the installed capability through `tasks.contract` or
 an ordinary Condition. Agents can supply `observation` to `tasks.contract` to
 get the same ready-to-use Condition. Return it through the existing Task result;
 building it alone saves nothing. The helper supplies exact source identity,
-generic resource encoding and a one-hour diagnostic review default. It does
+generic resource encoding. It does
 not start the provider operation or register a separate watch.
 
 The Host queries existing Condition routes, shares each source/resource read,

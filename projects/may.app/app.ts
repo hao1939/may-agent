@@ -542,20 +542,6 @@ export default defineApp({
         data: { project: "may", limit: 100 },
       },
     },
-    {
-      id: "task-hygiene-review",
-      intervalMs: 4 * 60 * 60 * 1000,
-      event: {
-        type: "project.task.tick",
-        source: "app:may:schedule:task-hygiene-review",
-        owner: "app:may",
-        target: {
-          appId: "may",
-          taskId: "goal/app_224ef63e-ddd6-4f4b-b159-26de9dd60107",
-        },
-        data: { project: "may", purpose: "task-hygiene-review" },
-      },
-    },
   ],
   task: taskForMayInput,
   tasks: {

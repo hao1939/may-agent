@@ -16,11 +16,36 @@
 | Meaningful reconsideration | Conditions and retained investigation identity exist. Better choice of wake predicates and measured review eligibility remain App policy and trial work. |
 | Context size | Host [#288](https://github.com/hao1939/may-agent/pull/288) fixes a separate full-history Codex resume cost. It does not prove that optional Conversation reference enrichment is bounded or cheaper. Assess that path separately. |
 | Continuing detection | Invocation anomaly counters and an independently delivered review need an implementation inventory and connected trial. A proposed metric is not evidence that monitoring is installed. |
+| Repeated delivery and correctable output | [Host `6332e6892`](https://github.com/hao1939/may-agent/commit/6332e6892) and this Apps companion add durable GitHub fact identity, groups same-result Topic returns, and validates direct-agent results before terminal finish. The owning [observer contract](github-pull-request-observation.md), [Conversation contract](../../may-agent.app/docs/2a-design/conversation-execution.md#routing-and-authority), and [completion contract](../../may-agent.app/docs/2a-design/execution-contributions.md) describe behavior and limits. |
+| Duplicate hygiene timers | The companion removes the hard-coded App timer for the standing hygiene Task. Its already chosen `reviewAt` owns the cycle; the agent explicitly selects the next review. This preserves the existing Task and deadline without a state migration. |
 
 The remaining sections retain the audit baseline and original implementation
 plan. “Today” in that narrative means the October 2 audit, not the source state
 after these fixes. Source integration, installed behavior and measured benefit
 remain separate evidence.
+
+## October 3 source follow-up
+
+[Host `6332e6892`](https://github.com/hao1939/may-agent/commit/6332e6892) groups exact result deliveries and runs pure App validation before
+terminal finish. The accompanying Apps revision supplies durable GitHub event
+identity, actionable Condition examples, one hygiene timer and the updated
+contracts/manual. Its exact revision is recorded in the Host PR. Integrate Host
+first, then activate the Apps companion through the ordinary release path.
+The App changes remain compatible with the older Host, but correction during
+finish and grouped result delivery require the new Host.
+
+The connected fixture runs the real observer, event journal, inbox and Task
+admission against synthetic HTTP responses. Observer reconstruction suppresses
+unchanged republication, a later provider transition arrives, and failed
+publication is retried. A scripted model corrects one rejected finish in the
+same invocation and stops after acceptance. Conversation tests retain one result
+for 15 linked Topics, preserve independent Requests, survive reopening, honor
+legacy receipts and deliver to late links. Query-plan coverage verifies indexed
+receipt lookup; metric follow-through tests retain quiet samples and owner wakes.
+
+These are source and fixture results. They do not measure live token savings,
+prove agent comprehension, or rewrite already pending duplicate inputs. No
+production Task state or deployment changed in this follow-up.
 
 ## Proposed outcome
 

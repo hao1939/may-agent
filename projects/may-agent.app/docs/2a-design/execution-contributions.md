@@ -374,9 +374,22 @@ accepted result or require a new Task lifecycle.
 
 When later workflow code requires structured agent output, the workflow owns a
 TypeBox or equivalent schema and validates `result.output` before use. A prose
-response or invalid payload cannot become trusted domain data. At most one
-bounded correction may occur inside the agent execution contract; validation
-never starts an unbounded model retry loop.
+response or invalid payload cannot become trusted domain data. A rejected
+completion can be corrected within the same invocation and its existing execution
+allowance; validation does not start a separate invocation.
+
+For a direct Task agent, Host supplies the App's pure action/Condition admission
+checks to `finish` alongside the shared result schema. A correctable shape or
+policy error returns feedback before finish becomes terminal. The agent decides
+how to correct its result; validators neither perform effects nor judge whether
+its assignment is valuable or complete. Final Task settlement repeats validation
+and checks current authority and concurrency. Passing finish preflight is not a
+promise of later settlement. Workflow output transformation and independent
+verification retain their own boundaries.
+
+**Availability:** App validation during direct-agent finish is implemented in
+[Host `6332e6892`](https://github.com/hao1939/may-agent/commit/6332e6892); older Hosts validate it only after the invocation ends.
+Source validation and App integration are recorded in the [repeat-pattern follow-up](../../../may.app/design/token-efficiency-proposal-20261002.md#october-3-source-follow-up).
 
 The App/task boundary separately validates the workflow's terminal output,
 generation, allowed actions, Conditions, and evidence. An execution status of

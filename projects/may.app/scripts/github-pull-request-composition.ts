@@ -186,6 +186,7 @@ bus.subscribeDurableRoute((event: any) => {
 });
 let merged = false,
   discoveryUnavailable = false,
+  providerUpdatedAt = "2026-09-20T06:00:00Z",
   httpCalls = 0,
   currentTime = Date.now(),
   passes = 0;
@@ -201,6 +202,7 @@ const provider: any = async (u: any) => {
     head: { sha: "a".repeat(40) },
     base: { repo: { full_name: "hao1939/may-agent" } },
     merged,
+    updated_at: providerUpdatedAt,
     merged_at: merged ? "2026-09-20T06:30:19Z" : null,
     merge_commit_sha: merged ? "b".repeat(40) : null,
   };
@@ -271,7 +273,7 @@ try {
   runtime.replace(entries);
   currentTime += observer.intervalMs;
   await scan();
-  assert.equal(observations.length, beforeRestart + 1);
+  assert.equal(observations.length, beforeRestart);
   assert.equal(observations.at(-1)?.target?.taskId, taskId);
 
   const busyClaim = claim();
@@ -280,6 +282,7 @@ try {
   await scan();
   assert.equal(observations.length, before);
   merged = true;
+  providerUpdatedAt = "2026-09-20T06:30:19Z";
   currentTime += observer.intervalMs;
   await scan();
   const fact = observations.at(-1);
@@ -315,6 +318,20 @@ try {
     store.readTaskConditions(taskId).map((c: any) => c.metadata.id),
     ["human-review", "independent-dependency"],
   );
+
+  // A real later provider transition may return to the earlier value. It has
+  // a new provider revision and must not be lost to a lifetime fingerprint key.
+  const beforeReopen = observations.length;
+  merged = false;
+  providerUpdatedAt = "2026-09-20T07:00:00Z";
+  currentTime += observer.intervalMs;
+  await scan();
+  assert.equal(observations.length, beforeReopen + 1);
+  assert.equal(observations.at(-1).data.merged, false);
+  runtime.replace(entries);
+  currentTime += observer.intervalMs;
+  await scan();
+  assert.equal(observations.length, beforeReopen + 1);
 
   // Install the actual May definition into the Host inbox runtime before the
   // outage. Observing app.observer.failed on the bus is not proof that May got
@@ -414,7 +431,8 @@ try {
     queuedEventId: fact[EVENT_ROW_ID],
     unchangedSuppressed: true,
     publicationFailureRetried: true,
-    runtimeRestartRepublishedSafely: true,
+    runtimeRestartSuppressedDuplicate: true,
+    laterProviderTransitionDelivered: true,
     totalDiscoveryFailurePublished:
       observerFailures.length === failuresBeforeDiscoveryOutage + 1,
     installedFailureSubscriptionAdmitted: true,

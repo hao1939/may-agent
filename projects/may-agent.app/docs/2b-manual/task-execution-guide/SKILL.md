@@ -146,6 +146,20 @@ neither clock. Check the installed schema and the
 [Host availability note](../../2a-design/task-resource-engine.md#conditions)
 before relying on omitted legacy fields.
 
+Use one timer for a recurring cycle. If the App already schedules it, do not
+also return `reviewAt` for that same cycle. For Task-owned recurring work, return
+the next deliberate deadline after judging the current result.
+
+A Conversation may receive one Task outcome with several `topicIds`. Read the
+relevant asks and judge each separately; shared evidence does not mean that all
+Requests are fulfilled. You do not need to arrange the return deliveries.
+
+If `finish` returns a validation error, correct the named fields within the
+current invocation. Do not repeat already completed actions just to repair the
+result object. App-specific preflight requires the Host revision described in
+[execution contributions](../../2a-design/execution-contributions.md); final
+settlement still checks whether the result remains current.
+
 ## Recover and return problems to the owner
 
 Repair within this attempt when authorized work can progress and allowance

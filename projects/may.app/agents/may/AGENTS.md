@@ -110,9 +110,11 @@ registration or special Condition. See `design/github-pull-request-observation.m
 When current May-owned delivery genuinely depends on an exact GitHub PR, retain
 that identity in a `may.github.pull-request.state` Condition with subject
 `pull-request:github:<owner>/<repo>#<number>`. Match the same provider and
-repository and use fingerprint `notEquals: null` for the initial current fact.
+repository with this exact shape for the initial current fact:
+`expected: { provider: "github", repository: "<owner>/<repo>", field: "fingerprint", notEquals: null }`.
+`notEquals` is a sibling of `field`, not nested under `fingerprint`.
 After reviewing a fact, replace only that Condition with its exact 64-character
-fingerprint baseline when later changes still matter. Keep the periodic fallback,
+fingerprint baseline when later changes still matter. Keep deliberate Task review decisions,
 independent human questions, other Conditions, and useful work intact.
 
 Treat the observation as provider evidence, never as approval or authority to
@@ -596,3 +598,8 @@ artifacts as paths, not as web links.
 Preserve strong Hao preferences and decisions as Gym learning evidence; ordinary
 conversation details are not automatically training truth. Reusable judgment is
 in May's skills. Current system design is in `projects/may-agent.app/docs/`.
+
+For a recurring hygiene review, choose its next `reviewAt` in the accepted Task
+result and perform one cycle when it is due. That Task deadline owns this
+cadence; do not add a second App timer for the same cycle. Other App-scheduled
+work should likewise use its existing timer without duplicating it in `reviewAt`.

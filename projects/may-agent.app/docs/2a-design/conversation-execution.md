@@ -250,6 +250,24 @@ a link also checks current Task evidence, covering work that finished before
 the link was saved. Multiple linked Conversations retain separate input and
 response identities.
 
+Within one Conversation, one exact Task result or closure is delivered once with
+its currently eligible `topicIds` (up to 100 per admission). The inbox retains
+that grouped delivery receipt. Additional Topics linked later receive the same
+saved evidence only for their missing links. Existing per-Topic receipts remain
+valid, including across restart. Selected reports still reach only the Topics
+whose caller inputs selected that report; grouping never broadens eligibility.
+
+The purpose is to avoid repeated judgments and copied result bodies. Every
+Request retains its own scope, revision and fulfillment decision. Delivery of a
+shared result neither closes those Requests nor marks their requirements done.
+The agent reads the supplied Topic links and decides which asks the result
+answers. Separate Conversations still receive separate inputs. Already pending
+legacy inputs remain accountable and are not rewritten or silently consumed.
+
+**Availability:** grouped return admission is implemented in [Host `6332e6892`](https://github.com/hao1939/may-agent/commit/6332e6892).
+Activate that Host revision before relying on grouped input. Source validation
+and App integration are recorded in the [repeat-pattern follow-up](../../../may.app/design/token-efficiency-proposal-20261002.md#october-3-source-follow-up).
+
 Start with accepted results, cancellation, and states needing a human decision,
 including an explicit wait or exhausted failure. Any open Task can report
 a useful accepted outcome without closing. Routine progress remains
