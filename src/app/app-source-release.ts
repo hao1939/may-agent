@@ -75,6 +75,33 @@ function agentSkillRoots(agentsRoot: string): string[] {
     .map((entry) => join(agentsRoot, entry.name, "skills"));
 }
 
+function validateCapturedSkillRoots(root: string): void {
+  const diagnostics: string[] = [];
+  const canonicalRoot = realpathSync(root);
+  const skillRoots = [
+    join(root, "shared", "skills"),
+    ...agentSkillRoots(join(root, "agents")),
+    ...appDirectoryNames(join(root, "projects")).flatMap((name) =>
+      agentSkillRoots(join(root, "projects", name, "agents")),
+    ),
+  ];
+  for (const skillRoot of skillRoots) {
+    const pathsFile = join(skillRoot, "paths.json");
+    const targets = resolveSkillRoots(skillRoot, diagnostics);
+    if (existsSync(pathsFile)) targets.push(realpathSync(pathsFile));
+    for (const target of targets) {
+      if (target !== canonicalRoot && !target.startsWith(`${canonicalRoot}${sep}`)) {
+        diagnostics.push(`${skillRoot}: ${target} escapes captured App source`);
+      }
+    }
+  }
+  if (diagnostics.length) {
+    throw new Error(
+      `Invalid skill discovery paths in captured App source. Keep configured directories inside captured agents/, shared/skills/, shared/tools/ or projects/*.app/:\n${diagnostics.join("\n")}`,
+    );
+  }
+}
+
 function validateRelease(root: string): DefinitionSourceRelease {
   const manifestPath = join(root, "release.json");
   if (!existsSync(manifestPath)) throw new Error(`App source release has no manifest: ${root}`);
@@ -101,6 +128,7 @@ function validateRelease(root: string): DefinitionSourceRelease {
   ) {
     throw new Error(`Definition source release contains no shared prompt/skills source: ${sharedRoot}`);
   }
+  validateCapturedSkillRoots(root);
   return Object.freeze({
     id: parsed.id,
     root,
@@ -257,6 +285,7 @@ function copyFilesystemDefinitions(projectRoot: string, stageRoot: string): void
     const source = join(sourceProjectsRoot, name);
     cpSync(source, join(targetProjectsRoot, name), {
       recursive: true,
+      verbatimSymlinks: true,
       filter: (path) => {
         const rel = relative(source, path);
         return !isNonSourcePath(rel.replace(/\\/g, "/"));
@@ -267,6 +296,7 @@ function copyFilesystemDefinitions(projectRoot: string, stageRoot: string): void
   mkdirSync(join(stageRoot, "agents"), { recursive: true });
   if (existsSync(sourceAgentsRoot)) cpSync(sourceAgentsRoot, join(stageRoot, "agents"), {
     recursive: true,
+    verbatimSymlinks: true,
     filter: (path) => {
       const rel = relative(sourceAgentsRoot, path);
       return !isNonSourcePath(rel.replace(/\\/g, "/"));
@@ -283,6 +313,7 @@ function copyFilesystemDefinitions(projectRoot: string, stageRoot: string): void
     if (existsSync(source)) {
       cpSync(source, join(targetSharedRoot, directory), {
         recursive: true,
+        verbatimSymlinks: true,
         filter: (path) => !isNonSourcePath(relative(source, path).replace(/\\/g, "/")),
       });
     } else if (directory === "skills") {
@@ -350,6 +381,9 @@ export class DefinitionSourceReleaseStore {
     try {
       if (commit) extractCommittedDefinitions(this.projectRoot, commit, stageRoot);
       else copyFilesystemDefinitions(this.projectRoot, stageRoot);
+      // Check the actual snapshot, never mutable source for a pinned release.
+      // Reject before caching; validation also covers reuse and activation.
+      validateCapturedSkillRoots(stageRoot);
       // Shared tools change snapshot contents, not the manifest schema. Keep
       // active snapshots readable when rolling back to the previous Host.
       const manifest: ReleaseManifest = { version: 3, id, ...(commit ? { sourceCommit: commit } : {}) };

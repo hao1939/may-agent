@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it } from "bun:test";
 import { execFile } from "node:child_process";
-import { existsSync, mkdirSync, readFileSync, renameSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, renameSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { promisify } from "node:util";
@@ -265,6 +265,89 @@ describe("App source releases", () => {
       }
     },
   );
+
+  it.each([true, false])("rejects skill roots omitted from the snapshot without replacing the active release (git: %s)", async (withGit) => {
+    const { root, stateDir } = await fixture(withGit);
+    const store = new DefinitionSourceReleaseStore(root, stateDir);
+    const active = store.ensureCurrent();
+    const manual = join(root, "docs", "manual", "guide");
+    mkdirSync(manual, { recursive: true });
+    writeFileSync(join(manual, "SKILL.md"), "---\nname: guide\ndescription: Guide\n---\nGuidance");
+    const pathsFile = join(root, "shared", "skills", "paths.json");
+    writeFileSync(pathsFile, JSON.stringify(["../../docs/manual"]));
+    let pin: string | undefined;
+    if (withGit) {
+      await git(root, "add", "docs", "shared/skills/paths.json");
+      await git(root, "commit", "-qm", "configure uncaptured manuals");
+      pin = String((await git(root, "rev-parse", "HEAD")).stdout).trim();
+    }
+    expect(() => store.stage()).toThrow("Invalid skill discovery paths in captured App source");
+    if (pin) {
+      // A valid local edit cannot repair the selected, invalid commit.
+      writeFileSync(pathsFile, "[]");
+      expect(() => store.stage(pin)).toThrow("Invalid skill discovery paths in captured App source");
+    }
+    expect(store.current()?.id).toBe(active.id);
+  });
+
+  it.each([true, false])("rejects configured roots pointing back into mutable source (git: %s)", async (withGit) => {
+    const { root, stateDir } = await fixture(withGit);
+    symlinkSync(join(root, "shared", "skills", "sample"), join(root, "projects", "sample.app", "manual"));
+    writeFileSync(join(root, "shared", "skills", "paths.json"), JSON.stringify(["../../projects/sample.app/manual"]));
+    if (withGit) {
+      await git(root, "add", "projects/sample.app/manual", "shared/skills/paths.json");
+      await git(root, "commit", "-qm", "link mutable manual source");
+    }
+    expect(() => new DefinitionSourceReleaseStore(root, stateDir).stage()).toThrow("escapes captured App source");
+  });
+
+  it.each([true, false])("keeps relative skill links inside the captured tree (git: %s)", async (withGit) => {
+    const { root, stateDir } = await fixture(withGit);
+    const appRoot = join(root, "projects", "sample.app");
+    mkdirSync(join(appRoot, "docs", "manual", "guide"), { recursive: true });
+    writeFileSync(join(appRoot, "docs", "manual", "guide", "SKILL.md"), "Captured guidance");
+    symlinkSync("docs/manual", join(appRoot, "manual"));
+    writeFileSync(join(root, "shared", "skills", "paths.json"), JSON.stringify(["../../projects/sample.app/manual"]));
+    if (withGit) {
+      await git(root, "add", "projects/sample.app", "shared/skills/paths.json");
+      await git(root, "commit", "-qm", "link captured manual source");
+    }
+    const release = new DefinitionSourceReleaseStore(root, stateDir).stage();
+    writeFileSync(join(appRoot, "docs", "manual", "guide", "SKILL.md"), "Changed live guidance");
+    expect(readFileSync(join(release.projectsRoot, "sample.app", "manual", "guide", "SKILL.md"), "utf8")).toBe("Captured guidance");
+  });
+
+  it.each([true, false])("rejects path configuration linked to mutable source (git: %s)", async (withGit) => {
+    const { root, stateDir } = await fixture(withGit);
+    const config = join(root, "path-config.json");
+    writeFileSync(config, "[]");
+    symlinkSync(config, join(root, "shared", "skills", "paths.json"));
+    if (withGit) {
+      await git(root, "add", "path-config.json", "shared/skills/paths.json");
+      await git(root, "commit", "-qm", "link mutable configuration");
+    }
+    expect(() => new DefinitionSourceReleaseStore(root, stateDir).stage()).toThrow("escapes captured App source");
+  });
+
+  it("validates cached and activated snapshots independently of the mutable path configuration", async () => {
+    const { root, stateDir } = await fixture();
+    const store = new DefinitionSourceReleaseStore(root, stateDir);
+    const active = store.ensureCurrent();
+    const pathsFile = join(root, "shared", "skills", "paths.json");
+    writeFileSync(pathsFile, "[]");
+    await git(root, "add", "shared/skills/paths.json");
+    await git(root, "commit", "-qm", "valid path configuration");
+    const pin = String((await git(root, "rev-parse", "HEAD")).stdout).trim();
+    writeFileSync(pathsFile, '["../../missing"]');
+    const candidate = store.stage(pin);
+    expect(readFileSync(join(candidate.sharedRoot, "skills", "paths.json"), "utf8")).toBe("[]");
+
+    // Simulate a cached release made by an older Host which accepted bad paths.
+    writeFileSync(join(candidate.sharedRoot, "skills", "paths.json"), '["../../missing"]');
+    expect(() => store.stage(pin)).toThrow("Invalid skill discovery paths in captured App source");
+    expect(() => store.activate(candidate)).toThrow("Invalid skill discovery paths in captured App source");
+    expect(store.current()?.id).toBe(active.id);
+  });
 
   it("keeps minimal non-git sandboxes valid without inventing shared guidance", async () => {
     const { root, stateDir } = await fixture(false);
