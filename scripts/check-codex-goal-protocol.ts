@@ -174,6 +174,28 @@ try {
   assert.doesNotMatch(resumedRequest, /This stale turn must be fenced/);
 
   await client.setGoal({ threadId: thread.threadId, objective: freshObjective, status: "paused" });
+  const retainedTurns = new Set<string>();
+  for (let index = 0; index < 8; index += 1) {
+    await client.setGoal({
+      threadId: thread.threadId,
+      objective: `Retain completed synthetic turn ${index + 1}`,
+      status: "active",
+    });
+    const retainedTurn = await client.waitForActiveTurn(thread.threadId, 5_000);
+    assert.equal(retainedTurns.has(retainedTurn), false, "each retained-history turn must be distinct");
+    retainedTurns.add(retainedTurn);
+    await client.setGoal({ threadId: thread.threadId, objective: freshObjective, status: "paused" });
+    await waitForCaptures(index + 3);
+    await client.waitForTurn(retainedTurn, 5_000);
+  }
+  assert.equal(captures.length, 10, "retained-history fixture must complete all ten synthetic model turns");
+  await client.stop();
+  client = spawnClient();
+  await client.initialize();
+  assert.deepEqual(
+    await client.resumeThread({ threadId: thread.threadId, cwd: root, developerInstructions: freshPacket }),
+    thread,
+  );
   const exactItems = await client.listThreadItems({
     threadId: thread.threadId,
     turnId: secondTurn,
