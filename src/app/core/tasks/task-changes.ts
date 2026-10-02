@@ -87,9 +87,16 @@ export function applyTaskChanges(input: {
     );
     const declaredIds = new Set([...references, ...explicit].map(({ id }) => id));
     const resolved = mergeTaskConditions(
-      [...existing, ...references, ...explicit],
-      new Set([...existing, ...references].map(({ id }) => id)),
+      [...references, ...existing, ...explicit],
+      new Set([...references, ...existing].map(({ id }) => id)),
     ).filter(({ id }) => declaredIds.has(id));
+    const retired = new Set(
+      (changes.actions ?? []).flatMap((action) =>
+        action.kind === "retire-condition" ? [action.conditionId] : [],
+      ),
+    );
+    if (resolved.some(({ id }) => retired.has(id)))
+      throw new Error("Task changes cannot retire and redeclare the same Condition");
     const actions: NonNullable<TaskChanges["actions"]> = [];
     const actionReceiptKeys: string[] = [];
     const replayedActions: string[] = [];

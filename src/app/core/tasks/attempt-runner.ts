@@ -1,7 +1,7 @@
 import {
   admitTaskVerificationResult as admitAppTaskVerificationResult,
   type TaskAcceptanceBasis as AppTaskAcceptanceBasis,
-  type TaskDecisionResult as AppTaskHandlerResult,
+  type TaskReconcileResult as AppTaskHandlerResult,
   type TaskIntent as AppTaskIntent,
   type TaskAttempt,
 } from "@may-agent/sdk";
@@ -232,7 +232,7 @@ async function runClaimedTask(
       } catch (error) {
         return await finishUnsuccessfulAttempt({
           handlerResult: {
-            decision: "error",
+            state: "error",
             summary: `Task workspace preparation failed: ${error instanceof Error ? error.message : String(error)}`,
             facts: [],
             actions: [],
@@ -258,7 +258,7 @@ async function runClaimedTask(
       finishUnsuccessfulAttempt({
         ...report,
         ...diagnostics,
-        handlerResult: { ...result, decision: "error", summary, facts },
+        handlerResult: { ...result, state: "error", summary, facts },
       });
 
     if (report.unavailable) {
@@ -268,7 +268,7 @@ async function runClaimedTask(
       });
     }
     if (
-      result.decision === "converged" &&
+      result.state === "converged" &&
       claim.handoff?.reason === "needs-agent" &&
       intent.workflow &&
       !report.verifier
@@ -278,7 +278,7 @@ async function runClaimedTask(
         { handlerBlocked: true },
       );
     }
-    if (result.decision === "incomplete") {
+    if (result.state === "incomplete") {
       const stale = await fenceWorkspaceFinalization(report);
       if (stale) return stale.reconcileTaskIds;
       // An incomplete report does not accept or discard workspace output. Retain it using
@@ -313,7 +313,7 @@ async function runClaimedTask(
         );
       }
     }
-    if (result.decision === "converged") {
+    if (result.state === "converged") {
       const accepted = await establishTaskAcceptance({
         descriptor,
         intent,
@@ -436,7 +436,7 @@ async function runClaimedTask(
             ...report,
             handlerResult: {
               ...result,
-              decision: "error",
+              state: "error",
               summary: `Handler actions were rejected: ${error instanceof Error ? error.message : String(error)}`,
             },
           },
@@ -453,7 +453,7 @@ async function runClaimedTask(
       }
     }
 
-    if (result.decision === "wait" || result.decision === "continue") {
+    if (result.state === "waiting") {
       const stale = await fenceWorkspaceFinalization(report);
       if (stale) return stale.reconcileTaskIds;
       const finalized = await finalizeWorkspace("waiting");
@@ -482,7 +482,7 @@ async function runClaimedTask(
             settle: () => {
               apply = deferAppTask(config, claim, {
                 disposition: "waiting",
-                continue: result.decision === "continue" ? true : undefined,
+                continue: result.continue,
                 report: result.report,
                 summary: result.summary,
                 response: result.response,
@@ -618,7 +618,7 @@ async function runClaimedTask(
       run.unavailable ||
       run.handlerBlocked ||
       run.workspacePreparationFailed ||
-      (workflowKey && result.decision === "needs-agent") ||
+      (workflowKey && result.state === "needs-agent") ||
       result.resultRejected;
     const details = diagnostic
       ? {
@@ -633,7 +633,7 @@ async function runClaimedTask(
                 ? "HandlerExecutionFailed"
                 : run.workspacePreparationFailed
                   ? "WorkspacePreparationFailed"
-                  : result.decision === "needs-agent"
+                  : result.state === "needs-agent"
                     ? "needs-agent"
                     : "handler-blocked",
         }
@@ -725,7 +725,7 @@ async function executeTaskHandler(input: TaskHandlerInput & { conversation: bool
     });
     return {
       handlerResult: {
-        decision: "converged",
+        state: "converged",
         summary: proposal.decision.summary,
         response: proposal.decision.response,
         result: { conversation: proposal.decision },
@@ -753,7 +753,7 @@ async function executeTaskHandler(input: TaskHandlerInput & { conversation: bool
     if (registered) return runRegisteredTaskExecutor({ ...execution, name: executorKey, execute: registered });
     return {
       handlerResult: {
-        decision: "error",
+        state: "error",
         summary: `Task executor ${executorKey} is not registered`,
         facts: [],
         actions: [],
@@ -774,7 +774,7 @@ async function executeTaskHandler(input: TaskHandlerInput & { conversation: bool
   if (claim.handoff && claim.intent.workflow && !handoffWorkflow?.available) {
     return {
       handlerResult: {
-        decision: "error",
+        state: "error",
         summary: handoffWorkflow?.error ?? "Task workflow runner is not installed",
         facts: [],
         actions: [],

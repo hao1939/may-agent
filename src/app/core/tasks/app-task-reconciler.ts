@@ -3702,9 +3702,6 @@ export function applyRunningTaskChanges(
   const keys = resultInputKeys(config, tree, claim, input);
   validateActionFacts(claim.taskId, input.facts, actions.length);
   validateConditions(conditions, { required: false, taskId: claim.taskId });
-  const retired = new Set(actions.flatMap((a) => (a.kind === "retire-condition" ? [a.conditionId] : [])));
-  if (conditions.some(({ id }) => retired.has(id)))
-    throw new Error("Task changes cannot retire and redeclare the same Condition");
   const scope = beginResourceMutationScope(tree, claim, actions);
   const actionsApplied = applyTaskActions(tree, claim, actions, config);
   if (conditions.length) materializeWaitingConditions(tree, claim.taskId, conditions, new Date().toISOString());

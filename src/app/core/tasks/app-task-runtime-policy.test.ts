@@ -27,7 +27,7 @@ describe("App Task Condition admission", () => {
     );
 
     expect(normalized).toMatchObject({
-      decision: "error",
+      state: "error",
       summary: "Handler result was rejected: conditions[0] is not observable by this App",
     });
   });

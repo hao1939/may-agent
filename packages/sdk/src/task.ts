@@ -86,8 +86,7 @@ export type TaskAction =
       reason: string;
     };
 
-/** @deprecated Return TaskDecisionResult with an explicit decision. */
-export type LegacyTaskReconcileResult = {
+export type TaskReconcileResult = {
   summary: string;
   facts: string[];
   /** Exact requests covered by this result. Omit to use the saved assignment, or use [] for none.
@@ -167,72 +166,6 @@ export type TaskChangeReceipt = {
   actionsApplied: string[];
 };
 
-export type TaskDecision = "continue" | "wait" | "converged" | "incomplete";
-type DecisionEvidence = {
-  summary: string;
-  facts: string[];
-  inputKeys?: string[];
-  result?: Record<string, unknown>;
-  state?: never;
-  continue?: never;
-  dependencies?: never;
-};
-
-/** One attempt's judgment about its Task; only Host maintains current Task state. */
-export type TaskDecisionResult =
-  | (DecisionEvidence &
-      TaskChanges & {
-        decision: "continue";
-        facts: [string, ...string[]];
-        reviewAt?: number;
-        report?: true;
-        response?: never;
-      })
-  | (DecisionEvidence &
-      TaskChanges & {
-        decision: "wait";
-        reviewAt?: number;
-        response?: never;
-      } & ({ report?: never } | { report: true; facts: [string, ...string[]] }))
-  | (DecisionEvidence & {
-      decision: "converged";
-      response?: string;
-      requests?: TaskAppRequest[];
-      actions?: TaskAction[];
-      conditions?: never;
-      reviewAt?: never;
-      report?: never;
-    })
-  | (DecisionEvidence & {
-      decision: "incomplete";
-      facts: [string, ...string[]];
-      response?: string;
-      report?: true;
-      requests?: never;
-      conditions?: never;
-      actions?: never;
-      reviewAt?: never;
-    })
-  | {
-      decision: "needs-agent";
-      summary: string;
-      facts: string[];
-      state?: never;
-      continue?: never;
-      inputKeys?: never;
-      result?: never;
-      response?: never;
-      report?: never;
-      requests?: never;
-      conditions?: never;
-      actions?: never;
-      dependencies?: never;
-      reviewAt?: never;
-    };
-
-/** New producers use decision; legacy workflow results normalize once at admission. */
-export type TaskReconcileResult = TaskDecisionResult | (LegacyTaskReconcileResult & { decision?: never });
-
 export type TaskAcceptanceBasis = {
   method: "deterministic" | "workflow-contract" | "agent-judgment";
   verifier?: string;
@@ -259,7 +192,7 @@ export type TaskVerificationContext = {
 
 export type TaskVerifier = (
   context: TaskVerificationContext,
-  result: TaskDecisionResult,
+  result: TaskReconcileResult,
 ) => Promise<TaskVerificationResult>;
 
 /** Runtime validation is opt-in so the App declaration entry point stays lightweight. */

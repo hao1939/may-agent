@@ -12,10 +12,10 @@ import {
 const workflowOptions = { allowNeedsAgent: true };
 
 it("admits exact result scope consistently for agent and workflow results", () => {
-  for (const decision of ["converged", "wait", "incomplete"] as const) {
-    expect(admitTaskReconcileResult({ decision, summary: "Progress only", facts: ["inspected"], inputKeys: [] }, workflowOptions))
+  for (const state of ["converged", "waiting", "incomplete"] as const) {
+    expect(admitTaskReconcileResult({ state, summary: "Progress only", facts: ["inspected"], inputKeys: [] }, workflowOptions))
       .toMatchObject({ ok: true, result: { inputKeys: [] } });
-    const output = { decision, summary: "Reviewed the earlier request", facts: ["request:read"], inputKeys: ["earlier"] };
+    const output = { state, summary: "Reviewed the earlier request", facts: ["request:read"], inputKeys: ["earlier"] };
     for (const schema of [taskAgentResultSchema, taskReconcileResultSchema]) {
       const admitted = admitTaskResultForSchema(schema, output);
       expect(admitted).toMatchObject({ ok: true, result: output });
@@ -23,26 +23,27 @@ it("admits exact result scope consistently for agent and workflow results", () =
     }
   }
   for (const inputKeys of [null, "earlier", [""], [" "], ["earlier", "earlier"], Array.from({ length: 65 }, (_, i) => `${i}`)]) {
-    expect(admitTaskReconcileResult({ decision: "converged", summary: "Done", facts: [], inputKeys }, workflowOptions).ok).toBe(false);
+    expect(admitTaskReconcileResult({ state: "converged", summary: "Done", facts: [], inputKeys }, workflowOptions).ok).toBe(false);
   }
-  expect(admitTaskReconcileResult({ decision: "needs-agent", summary: "Delegate", facts: [], inputKeys: ["earlier"] }, workflowOptions).ok).toBe(false);
+  expect(admitTaskReconcileResult({ state: "needs-agent", summary: "Delegate", facts: [], inputKeys: ["earlier"] }, workflowOptions).ok).toBe(false);
 });
 
 it("routes persisted Task result schemas through the same semantic admission", () => {
   const convergedReview = {
-    decision: "converged",
+    state: "converged",
     summary: "Review later is not a converged result",
     facts: [],
     reviewAt: Date.now() + 60_000,
   };
   const noProgressContinuation = {
-    decision: "continue",
+    state: "waiting",
+    continue: true,
     summary: "Continuation needs evidence of useful work",
     facts: [],
   };
 
   for (const invalid of [convergedReview, noProgressContinuation]) {
-    expect(Check(taskAgentResultSchema, invalid)).toBe(false);
+    expect(Check(taskAgentResultSchema, invalid)).toBe(true);
     expect(admitTaskResultForSchema(structuredClone(taskAgentResultSchema), invalid)).toEqual(
       admitTaskReconcileResult(invalid, { allowNeedsAgent: false }),
     );
@@ -50,7 +51,7 @@ it("routes persisted Task result schemas through the same semantic admission", (
   }
   expect(
     admitTaskResultForSchema(taskReconcileResultSchema, {
-      decision: "needs-agent",
+      state: "needs-agent",
       summary: "Workflow requests a worker",
       facts: [],
     })?.ok,
@@ -60,7 +61,8 @@ it("routes persisted Task result schemas through the same semantic admission", (
 
 it("admits independent reporting and useful continuation without inventing a wait", () => {
   const result = {
-    decision: "continue",
+    state: "waiting",
+    continue: true,
     report: true,
     summary: "Review requested; prepare independent notes next",
     facts: ["review:requested"],
@@ -70,15 +72,15 @@ it("admits independent reporting and useful continuation without inventing a wai
   expect(admitted.ok).toBe(true);
   if (!admitted.ok) throw new Error(admitted.error);
   expect(admitTaskReconcileResult(admitted.result, workflowOptions)).toEqual(admitted);
-  expect(admitted.result).toMatchObject({ decision: "continue", report: true });
-  for (const invalid of [{ continue: false }, { decision: "converged" }, { facts: [] }]) {
+  expect(admitted.result).toMatchObject({ state: "waiting", report: true, continue: true });
+  for (const invalid of [{ continue: false }, { state: "converged" }, { facts: [] }]) {
     expect(admitTaskReconcileResult({ ...result, ...invalid }, workflowOptions).ok).toBe(false);
   }
 });
 
 describe("App stop contract", () => {
   const incomplete = {
-    decision: "incomplete",
+    state: "incomplete",
     summary: "Optional export is not feasible",
     response: "The requested export needs owner help.",
     facts: ["analysis:export"],
@@ -107,7 +109,7 @@ describe("project task handler contract", () => {
     ["custom.fact", true],
   ] as const)("requires publishable namespaced Condition types: %s", (type, valid) => {
     const output = {
-      decision: "wait",
+      state: "waiting",
       summary: "Await exact review",
       facts: [],
       conditions: [
@@ -125,15 +127,15 @@ describe("project task handler contract", () => {
     expect(admitTaskReconcileResult(output, workflowOptions).ok).toBe(valid);
   });
   it("agrees with the finish schema on quiet waits and explicit facts-backed reports", () => {
-    for (const decision of ["wait", "incomplete", "converged", "needs-agent"] as const) {
+    for (const state of ["waiting", "incomplete", "converged", "needs-agent"] as const) {
       for (const facts of [[], ["source:access-denied"]]) {
         for (const report of [undefined, true, false]) {
-          const output = { decision, summary: "Access is missing", facts, ...(report === undefined ? {} : { report }) };
+          const output = { state, summary: "Access is missing", facts, ...(report === undefined ? {} : { report }) };
           const valid =
-            decision !== "needs-agent" &&
+            state !== "needs-agent" &&
             report !== false &&
-            (report !== true || (decision !== "converged" && facts.length > 0)) &&
-            (decision !== "incomplete" || facts.length > 0);
+            (report !== true || (state !== "converged" && facts.length > 0)) &&
+            (state !== "incomplete" || facts.length > 0);
           expect({ output, valid: Check(taskAgentResultSchema, output) }).toEqual({ output, valid });
           const admitted = admitTaskReconcileResult(output, { allowNeedsAgent: false });
           expect({ output, valid: admitted.ok }).toEqual({ output, valid });
@@ -165,7 +167,7 @@ describe("project task handler contract", () => {
     ] as const;
     for (const [owner, valid] of owners) {
       const output = {
-        decision: "wait",
+        state: "waiting",
         summary: "Waiting for source access",
         facts: ["source:sample"],
         conditions: [
@@ -191,7 +193,7 @@ describe("project task handler contract", () => {
 
   it("rejects legacy close actions instead of manufacturing a successful outcome", () => {
     const result = {
-      decision: "converged",
+      state: "converged",
       summary: "Withdraw the child scope",
       facts: ["owner:withdrawal"],
       actions: [{ kind: "close-task", taskId: "child", expectedGeneration: 1, summary: "No longer needed" }],
@@ -208,7 +210,7 @@ describe("project task handler contract", () => {
     expect(
       admitTaskReconcileResult(
         {
-          decision: "wait",
+          state: "waiting",
           summary: "Reconsider this exact request later",
           reviewAt: 1_800_000_000_000,
           facts: ["budget:deferred"],
@@ -226,7 +228,7 @@ describe("project task handler contract", () => {
     ).toEqual({
       ok: true,
       result: {
-        decision: "wait",
+        state: "waiting",
         summary: "Reconsider this exact request later",
         reviewAt: 1_800_000_000_000,
         facts: ["budget:deferred"],
@@ -243,7 +245,7 @@ describe("project task handler contract", () => {
     expect(
       admitTaskReconcileResult(
         {
-          decision: "converged",
+          state: "converged",
           summary: "done",
           reviewAt: 1_800_000_000_000,
           facts: [],
@@ -257,7 +259,7 @@ describe("project task handler contract", () => {
     expect(
       admitTaskReconcileResult(
         {
-          decision: "converged",
+          state: "converged",
           summary: "Conversation request answered",
           response: "Here is the answer the caller asked for.",
           facts: ["request:conversation-1"],
@@ -267,7 +269,7 @@ describe("project task handler contract", () => {
     ).toEqual({
       ok: true,
       result: {
-        decision: "converged",
+        state: "converged",
         summary: "Conversation request answered",
         response: "Here is the answer the caller asked for.",
         facts: ["request:conversation-1"],
@@ -276,7 +278,7 @@ describe("project task handler contract", () => {
     });
     expect(
       admitTaskReconcileResult(
-        { decision: "converged", summary: "Answered", response: "   ", facts: [] },
+        { state: "converged", summary: "Answered", response: "   ", facts: [] },
         workflowOptions,
       ),
     ).toEqual({ ok: false, error: "response must be a non-empty string" });
@@ -284,7 +286,7 @@ describe("project task handler contract", () => {
 
   it("carries a bounded App-defined structured result across task states", () => {
     const output = {
-      decision: "converged" as const,
+      state: "converged" as const,
       summary: "Classified the terminal run",
       result: { productVerdict: "none", cause: "pipeline-artifact" },
       facts: ["pipeline-run:42"],
@@ -294,9 +296,9 @@ describe("project task handler contract", () => {
       result: { ...output, actions: [] },
     });
     expect(Check(taskAgentResultSchema, output)).toBeTrue();
-    expect(admitTaskReconcileResult({ ...output, decision: "wait" }, workflowOptions)).toEqual({
+    expect(admitTaskReconcileResult({ ...output, state: "waiting" }, workflowOptions)).toEqual({
       ok: true,
-      result: { ...output, decision: "wait", actions: [] },
+      result: { ...output, state: "waiting", actions: [] },
     });
     expect(admitTaskReconcileResult({ ...output, result: { value: "x".repeat(17 * 1024) } }, workflowOptions)).toEqual({
       ok: false,
@@ -307,7 +309,7 @@ describe("project task handler contract", () => {
   it("separates submitted work from the caller's decision to wait", () => {
     const request = { id: "review", appId: "evaluation", input: { kind: "message", data: { text: "Review" } } };
     const submitted = {
-      decision: "converged",
+      state: "converged",
       summary: "Submitted for independent handling",
       facts: [],
       requests: [request],
@@ -319,25 +321,28 @@ describe("project task handler contract", () => {
     });
     const waiting = {
       ...submitted,
-      decision: "continue",
+      state: "waiting",
       conditions: [{ requestId: "review" }],
+      continue: true,
       facts: ["Other useful work remains"],
     };
     expect(Check(taskAgentResultSchema, waiting)).toBe(true);
     expect(admitTaskReconcileResult(waiting, workflowOptions)).toMatchObject({
       ok: true,
-      result: { requests: [request], conditions: [{ requestId: "review" }], decision: "continue" },
+      result: { requests: [request], conditions: [{ requestId: "review" }], continue: true },
     });
-    // References to saved requests resolve with the caller's durable state at runtime.
-    expect(admitTaskReconcileResult({ ...waiting, conditions: [{ requestId: "saved" }] }, workflowOptions).ok).toBe(true);
-    expect(admitTaskReconcileResult({ ...waiting, decision: "converged" }, workflowOptions)).toEqual({
+    // Runtime admission resolves references to requests saved earlier in this Task generation.
+    expect(admitTaskReconcileResult({ ...waiting, conditions: [{ requestId: "saved" }] }, workflowOptions).ok).toBe(
+      true,
+    );
+    expect(admitTaskReconcileResult({ ...waiting, state: "converged" }, workflowOptions)).toEqual({
       ok: false,
       error: "Conditions are valid only for waiting",
     });
     expect(Check(taskAgentResultSchema, { ...submitted, requests: [{ ...request, waitForResult: true }] })).toBe(false);
     expect(admitTaskReconcileResult({ ...waiting, dependencies: [request] }, workflowOptions)).toEqual({
       ok: false,
-      error: "decision cannot mix with legacy state, continue or dependencies",
+      error: "use requests or legacy dependencies, not both",
     });
     expect(Check(taskAgentResultSchema, { ...waiting, requests: undefined, dependencies: [request] })).toBe(false);
   });
@@ -362,7 +367,7 @@ describe("project task handler contract", () => {
     ).toEqual({
       ok: true,
       result: {
-        decision: "wait",
+        state: "waiting",
         summary: "Waiting for independent review",
         facts: ["dependency:evaluation/review"],
         actions: [],
@@ -408,7 +413,7 @@ describe("project task handler contract", () => {
 
   it("rejects raw child specifications in both schema and admission", () => {
     const output = {
-      decision: "wait",
+      state: "waiting",
       summary: "Delegate work",
       facts: ["needed"],
       actions: [{ kind: "create-task", id: "child", outcome: "Measure", acceptance: ["Measured"] }],
@@ -423,7 +428,7 @@ describe("project task handler contract", () => {
 
   it("accepts the established human identity for an accountable timed wait", () => {
     const result = {
-      decision: "wait",
+      state: "waiting",
       summary: "Waiting for the operator",
       facts: [],
       conditions: [
@@ -449,7 +454,7 @@ describe("project task handler contract", () => {
     { priority: "P1" },
   ])("rejects raw assignment updates at both result boundaries: %j", (change) => {
     const output = {
-      decision: "converged",
+      state: "converged",
       summary: "Proposed correction",
       facts: ["scope:corrected"],
       actions: [{ kind: "update-task", taskId: "child", expectedGeneration: 1, ...change }],
@@ -465,7 +470,7 @@ describe("project task handler contract", () => {
     expect(
       admitTaskReconcileResult(
         {
-          decision: "converged",
+          state: "converged",
           summary: "Attempted a legacy update",
           facts: ["task:work/stale"],
           actions: [
@@ -487,12 +492,12 @@ describe("project task handler contract", () => {
 
   it("keeps failure outside the public handler states", () => {
     expect(
-      admitTaskReconcileResult({ decision: "failed", summary: "attempt failed", facts: [] }, workflowOptions),
+      admitTaskReconcileResult({ state: "failed", summary: "attempt failed", facts: [] }, workflowOptions),
     ).toEqual({ ok: false, error: "state must be converged, waiting, incomplete, or needs-agent" });
   });
 
   it("allows needs-agent only at the workflow boundary", () => {
-    const output = { decision: "needs-agent", summary: "Novel judgment", facts: ["scope:novel"] };
+    const output = { state: "needs-agent", summary: "Novel judgment", facts: ["scope:novel"] };
     expect(admitTaskReconcileResult(output, workflowOptions).ok).toBe(true);
     expect(admitTaskReconcileResult(output, { ...workflowOptions, allowNeedsAgent: false })).toEqual({
       ok: false,
@@ -508,20 +513,20 @@ describe("project task handler contract", () => {
       ),
     ).toEqual({
       ok: true,
-      result: { decision: "needs-agent", summary: "Legacy handoff", facts: ["legacy:workflow"] },
+      result: { state: "needs-agent", summary: "Legacy handoff", facts: ["legacy:workflow"] },
     });
   });
 
   it("uses the model schema as the exact runtime admission boundary", () => {
     const withUnknownResultField = admitTaskReconcileResult(
-      { decision: "converged", summary: "done", facts: [], unexpected: true },
+      { state: "converged", summary: "done", facts: [], unexpected: true },
       workflowOptions,
     );
     expect(withUnknownResultField.ok).toBe(false);
 
     const withUnknownActionField = admitTaskReconcileResult(
       {
-        decision: "converged",
+        state: "converged",
         summary: "created",
         facts: ["proof"],
         actions: [
@@ -550,13 +555,13 @@ describe("project task handler contract", () => {
 
   it("admits waiting for runtime validation against newly declared or saved waits", () => {
     expect(
-      admitTaskReconcileResult({ decision: "wait", summary: "Waiting", facts: [], conditions: [] }, workflowOptions).ok,
+      admitTaskReconcileResult({ state: "waiting", summary: "Waiting", facts: [], conditions: [] }, workflowOptions).ok,
     ).toBe(true);
 
     expect(
       admitTaskReconcileResult(
         {
-          decision: "wait",
+          state: "waiting",
           summary: "Waiting for credential observation",
           facts: ["credential is absent"],
           conditions: [
@@ -576,7 +581,7 @@ describe("project task handler contract", () => {
     ).toBe(true);
 
     const untypedConditionResult = {
-      decision: "wait",
+      state: "waiting",
       summary: "Waiting for approval",
       facts: [],
       conditions: [
@@ -597,7 +602,7 @@ describe("project task handler contract", () => {
     expect(
       admitTaskReconcileResult(
         {
-          decision: "wait",
+          state: "waiting",
           summary: "Waiting with an invalid busy review loop",
           facts: [],
           conditions: [
@@ -616,7 +621,7 @@ describe("project task handler contract", () => {
     ).toBe(false);
 
     const incompleteCondition = {
-      decision: "wait",
+      state: "waiting",
       summary: "Waiting without accountable recovery",
       facts: [],
       conditions: [
@@ -660,7 +665,7 @@ describe("project task handler contract", () => {
       expect(
         admitTaskReconcileResult(
           {
-            decision: "wait",
+            state: "waiting",
             summary: "Waiting on internal task state",
             facts: [],
             conditions: [
@@ -704,19 +709,4 @@ describe("project task handler contract", () => {
       }),
     ).toEqual({ ok: false, error: "verifier accepted must be boolean" });
   });
-});
-
-it("normalizes saved legacy schema output once and rejects mixed decisions", () => {
-  for (const state of ["converged", "waiting", "incomplete"] as const) {
-    for (const id of ["may.task-agent-result.v1", "may.task-reconcile-result.v1"]) {
-      const schema = { ...taskAgentResultSchema, $id: id };
-      const result = admitTaskResultForSchema(schema, { state, summary: "Retained", facts: ["observed"] });
-      expect(result).toMatchObject({ ok: true, result: { decision: state === "waiting" ? "wait" : state } });
-      if (result?.ok) expect(result.result).not.toHaveProperty("state");
-    }
-  }
-  expect(admitTaskReconcileResult({ state: "waiting", continue: true, summary: "Testing", facts: ["tests:started"] }, workflowOptions))
-    .toMatchObject({ ok: true, result: { decision: "continue" } });
-  for (const legacy of [{ state: "waiting" }, { continue: true }, { dependencies: [] }])
-    expect(admitTaskReconcileResult({ decision: "wait", summary: "Waiting", facts: [], ...legacy }, workflowOptions).ok).toBe(false);
 });

@@ -1589,7 +1589,7 @@ it("keeps omitted workflows visible, continues unrelated work, and recovers with
         expect("resourceStore" in input.descriptor).toBeFalse();
         expect("manager" in input.source).toBeFalse();
         return {
-          handlerResult: { decision: "converged", summary: "Verified by supplied runner", facts: [], actions: [] },
+          handlerResult: { state: "converged", summary: "Verified by supplied runner", facts: [], actions: [] },
           runId: "fixture-run",
         };
       },
@@ -1614,7 +1614,7 @@ it("settles report and useful continuation equivalently for agent and workflow a
   const f = fixture();
   const bus = eventBus();
   const resultFor = (taskId: string) => ({
-    decision: "continue" as const, report: true as const,
+    state: "waiting", continue: true as const, report: true as const,
     summary: "Review is blocked while independent checks continue", facts: ["checks:started"],
     conditions: [{ id: `review-${taskId.split("/").at(-1)}`, type: "review.completed", subject: `review:${taskId}`,
       expected: true, owner: "human", reviewAfterMs: 60_000 }],
@@ -1698,7 +1698,7 @@ it("retains an App and exact agent work when its agent capability is removed, th
       expect(input).not.toHaveProperty("declaredOutputPaths");
       expect(input.attempt.task.outcome).toBe("Keep accepted work");
       return {
-        handlerResult: { decision: "converged", summary: "Current goal verified", facts: [], actions: [] },
+        handlerResult: { state: "converged", summary: "Current goal verified", facts: [], actions: [] },
         runId: null,
       };
     },
@@ -1761,7 +1761,7 @@ it("releases failed context preparation before later Task events and recovers af
     async execute() {
       calls++;
       return {
-        handlerResult: { decision: "converged", summary: "Recovered after role repair", facts: [], actions: [] },
+        handlerResult: { state: "converged", summary: "Recovered after role repair", facts: [], actions: [] },
         runId: null,
       };
     },
@@ -1825,7 +1825,7 @@ it("does not release an agent handoff until its required workflow verifier is av
     async execute() {
       agentCalls++;
       return Object.freeze({
-        handlerResult: Object.freeze({ decision: "converged", summary: "Agent proposes completion", facts: [], actions: [] }),
+        handlerResult: Object.freeze({ state: "converged", summary: "Agent proposes completion", facts: [], actions: [] }),
         runId: null,
       });
     },
@@ -1848,7 +1848,7 @@ it("does not release an agent handoff until its required workflow verifier is av
     },
     async execute() {
       return {
-        handlerResult: { decision: "needs-agent", summary: "Agent judgment required", facts: [], actions: [] },
+        handlerResult: { state: "needs-agent", summary: "Agent judgment required", facts: [], actions: [] },
         runId: "fixture-handoff",
       };
     },
@@ -2069,13 +2069,13 @@ describe("canonical direct-agent residue cleanup", () => {
 
   it("rejects only converged direct-agent results whose edits were restored", async () => {
     const converged = {
-      decision: "converged" as const,
+      state: "converged" as const,
       summary: "claimed convergence",
       facts: ["agent-result"],
       actions: [],
     };
     expect(rejectConvergedDirectAgentResidue(converged, ["file:tracked.txt"])).toMatchObject({
-      decision: "error",
+      state: "error",
       facts: ["agent-result", "agent-residue-restored:file:tracked.txt"],
     });
     expect(rejectConvergedDirectAgentResidue(converged, [])).toBe(converged);
@@ -3521,7 +3521,7 @@ describe("canonical App task runtime", () => {
               // The receiving App selected this Task; the Host supplied its configured executor.
               expect(attempt.task.outcome).toBe("Review the change");
               return {
-                decision: "converged",
+                state: "converged",
                 summary: "Reviewed",
                 facts: ["review:accepted"],
                 result: { verdict: "accepted" },
@@ -3531,11 +3531,11 @@ describe("canonical App task runtime", () => {
             if (route === "interrupted" && callerAttempts === 2) {
               await attempt.apply({ requests: [request], conditions: [{ requestId: "review" }] });
               expect(listAppInboxItems(getDb(persistDir))).toHaveLength(1);
-              return { decision: "wait", summary: "Recovered the admitted review", facts: [] };
+              return { state: "waiting", summary: "Recovered the admitted review", facts: [] };
             }
             if (callerAttempts > 1)
               return {
-                decision: "converged",
+                state: "converged",
                 summary: "Used the review and test results",
                 facts: ["review:accepted", "tests:passed"],
               };
@@ -3591,7 +3591,7 @@ describe("canonical App task runtime", () => {
             }
             if (route === "interrupted") throw new Error("Execution interrupted after durable actions");
             return {
-              decision: "wait",
+              state: "waiting",
               summary: "Tests passed; review is retained",
               facts: ["tests:passed"],
               // Final replay and a reference to an earlier action use the identical admission path.
@@ -3692,7 +3692,7 @@ describe("canonical App task runtime", () => {
             currentAttemptId: attempt.attemptId,
           });
           return {
-            decision: "converged",
+            state: "converged",
             summary: "Requested work is fulfilled",
             facts: ["scope:verified"],
             actions: [action],
@@ -3724,6 +3724,168 @@ describe("canonical App task runtime", () => {
     });
     expect(config.resourceStore.readTask("work/actions")?.status.phase).toBe("converged");
     expect(config.resourceStore.readTask("work/actions")?.status.conditionIds ?? []).toEqual([]);
+  });
+
+  it("rejects a replayed retirement combined with redeclaring the same Condition", async () => {
+    const f = fixture();
+    const bus = eventBus();
+    let assertionFailure: unknown;
+    const condition = {
+      id: "review",
+      type: "review.done",
+      subject: "review:change",
+      expected: true,
+      owner: "human",
+      reviewAfterMs: 60_000,
+    };
+    const action = {
+      kind: "retire-condition" as const,
+      conditionId: condition.id,
+      expectedConditionGeneration: 1,
+      reason: "Owner no longer requires this independent observation",
+    };
+    await installCoreTaskRuntimes({
+      ...options(f, bus),
+      installControllers: false,
+      executors: {
+        worker: async (attempt) => {
+          try {
+            await attempt.apply({ conditions: [condition] });
+            await attempt.apply({ actions: [action], facts: ["scope:reviewed"] });
+            expect(loadedTaskConfig(f).resourceStore.readTask(attempt.task.id)?.status.conditionIds ?? []).toEqual([]);
+
+            await expect(
+              attempt.apply({
+                conditions: [condition],
+                actions: [action],
+                facts: ["scope:confirmed"],
+              }),
+            ).rejects.toThrow("cannot retire and redeclare the same Condition");
+            expect(loadedTaskConfig(f).resourceStore.readTask(attempt.task.id)?.status.conditionIds ?? []).toEqual([]);
+            return { state: "converged", summary: "Retirement remained authoritative", facts: ["scope:verified"] };
+          } catch (error) {
+            assertionFailure = error;
+            throw error;
+          }
+        },
+      },
+      appRegistrySnapshot: {
+        id: "action-replay-conflict",
+        generation: 1,
+        entries: [{ appDir: f.appDir, definition: definition() }],
+      },
+    });
+    const config = loadedTaskConfig(f);
+    observeAppTaskIntent(config, {
+      appAgent: "sample-owner",
+      intent: {
+        id: "work/action-conflict",
+        parentId: "operations",
+        outcome: "Keep retirement atomic",
+        acceptance: ["A replay cannot recreate its retired Condition"],
+        executor: "worker",
+      },
+    });
+    await reconcileLoadedAppTaskOnce({
+      bus,
+      appId: "sample",
+      taskId: "work/action-conflict",
+      dispatch: { enqueuedAt: 1, startedAt: 2, readyWaitMs: 1, lane: "normal" },
+    });
+    if (assertionFailure) throw assertionFailure;
+    expect(config.resourceStore.readTask("work/action-conflict")?.status.phase).toBe("converged");
+    expect(config.resourceStore.readTask("work/action-conflict")?.status.conditionIds ?? []).toEqual([]);
+  });
+
+  it("preserves a customized saved request Condition when applying a reference only", async () => {
+    const f = fixture();
+    const bus = eventBus();
+    let assertionFailure: unknown;
+    const request = {
+      id: "review",
+      appId: "sample",
+      input: { kind: "message", data: { text: "Review the change" } },
+    };
+    const app = defineApp({
+      ...definition(),
+      inputSchema: Type.Object({ kind: Type.Literal("message"), data: Type.Object({ text: Type.String() }) }),
+      task: ({ input }) => ({
+        kind: "desired",
+        intent: {
+          id: "work/reviewer",
+          parentId: "operations",
+          outcome: String(input.data.text),
+          acceptance: ["Return the reviewed result"],
+          executor: "worker",
+        },
+      }),
+    });
+    await installCoreTaskRuntimes({
+      ...options(f, bus),
+      installControllers: false,
+      executors: {
+        worker: async (attempt) => {
+          try {
+            const receipt = await attempt.apply({ requests: [request] });
+            const requestId = receipt.requests[0]!.requestId;
+            const condition = {
+              id: `app-request:${requestId}`,
+              type: "app.dependency.updated",
+              subject: `id:${requestId}`,
+              expected: { field: "status", equals: "done" },
+              requestedAction: "Review the exact submitted change",
+              owner: "app:sample",
+              reviewAfterMs: 3_600_000,
+            };
+            await attempt.apply({ conditions: [condition] });
+            const before = loadedTaskConfig(f).resourceStore.readTaskConditions(attempt.task.id)
+              .find(({ metadata }) => metadata.id === condition.id)!;
+
+            expect((await attempt.apply({ conditions: [{ requestId: request.id }] })).conditionIds).toEqual([
+              condition.id,
+            ]);
+            const after = loadedTaskConfig(f).resourceStore.readTaskConditions(attempt.task.id)
+              .find(({ metadata }) => metadata.id === condition.id)!;
+            expect(after.spec).toEqual(before.spec);
+            expect(after.metadata.generation).toBe(before.metadata.generation);
+            expect(after.status.observedGeneration).toBe(before.status.observedGeneration);
+            expect(after).toEqual(before);
+            return { state: "converged", summary: "Saved request wait was preserved", facts: ["review:requested"] };
+          } catch (error) {
+            assertionFailure = error;
+            throw error;
+          }
+        },
+      },
+      appRegistrySnapshot: {
+        id: "custom-request-condition",
+        generation: 1,
+        entries: [{ appDir: f.appDir, definition: app }],
+      },
+    });
+    const config = loadedTaskConfig(f);
+    observeAppTaskIntent(config, {
+      appAgent: "sample-owner",
+      intent: {
+        id: "work/custom-condition",
+        parentId: "operations",
+        outcome: "Request review with a customized wait",
+        acceptance: ["Reference replay preserves the saved specification"],
+        executor: "worker",
+      },
+    });
+    await reconcileLoadedAppTaskOnce({
+      bus,
+      appId: "sample",
+      taskId: "work/custom-condition",
+      dispatch: { enqueuedAt: 1, startedAt: 2, readyWaitMs: 1, lane: "normal" },
+    });
+    if (assertionFailure) throw assertionFailure;
+    expect(acceptedTaskAttempt(config, "work/custom-condition")?.acceptedResult?.state).toBe("converged");
+    expect(config.resourceStore.readTask("work/custom-condition")?.status).toMatchObject({
+      phase: "waiting",
+      conditionIds: [expect.stringContaining("app-request:")],
+    });
   });
 
   it("adds distinct work for the same App without replaying retained waits, including after restart", async () => {
@@ -5754,7 +5916,7 @@ describe("canonical App task runtime", () => {
                 executorCwd = attempt.cwd;
                 return {
                   handlerResult: {
-                    decision: "converged" as const,
+                    state: "converged" as const,
                     summary: "Fixture executor ran",
                     facts: [attempt.cwd],
                     actions: [],
@@ -6834,7 +6996,7 @@ describe("canonical App task runtime", () => {
           });
           ready();
           await finished;
-          return { decision: "wait", summary: "Review remains outstanding", facts: [] };
+          return { state: "waiting", summary: "Review remains outstanding", facts: [] };
         },
       },
       appRegistrySnapshot: {
@@ -6927,7 +7089,7 @@ describe("canonical App task runtime", () => {
               });
               receipt = JSON.parse((applied.content[0] as { text: string }).text);
             }
-            return { decision: "wait", summary: "Review remains outstanding", facts: [] };
+            return { state: "waiting", summary: "Review remains outstanding", facts: [] };
           },
         },
         appRegistrySnapshot: {
@@ -8160,14 +8322,14 @@ describe("canonical App task runtime", () => {
         export const description = "Use the common saved wait context";
         export async function execute(ctx) {
           const waits = ctx.reconciliation.waits.open;
-          if (waits.length) return { decision: "converged", summary: "Answered another input", facts: ["saved-wait"], result: { waits } };
+          if (waits.length) return { state: "converged", summary: "Answered another input", facts: ["saved-wait"], result: { waits } };
           const receipt = await ctx.applyTaskChanges({ conditions: [{
             id: "source", type: "source.available", subject: "source:sample", expected: true,
             owner: "app:source", reviewAfterMs: 60000,
           }] });
           const current = await ctx.read.tasks.get(ctx.reconciliation.taskId);
           if (current.status !== "running" || receipt.conditionIds[0] !== "source") throw new Error("Live changes ended the attempt");
-          return { decision: "wait", summary: "Wait for the source", facts: [] };
+          return { state: "waiting", summary: "Wait for the source", facts: [] };
         }
       `,
     );
@@ -9606,7 +9768,7 @@ describe("canonical App task runtime", () => {
       const config = loadedTaskConfig(f, persistDir);
       const payload = { verdict: "approved", operationId: "fixture-operation" };
       const terminalResult: NormalizedTaskHandlerResult = {
-        decision: "converged",
+        state: "converged",
         summary: "Decision ready",
         response: "The result is ready",
         result: payload,
@@ -9681,7 +9843,7 @@ describe("canonical App task runtime", () => {
               result: {
                 ...terminalResult,
                 // Stored provider output follows the SDK contract, not Host normalization.
-                ...(terminalResult.decision === "incomplete" ? { actions: undefined } : {}),
+                ...(terminalResult.state === "incomplete" ? { actions: undefined } : {}),
               },
             },
           }),
@@ -9838,12 +10000,12 @@ describe("canonical App task runtime", () => {
             },
           ];
         } else if (disposition === "incomplete") {
-          f.terminalResult.decision = "incomplete";
+          f.terminalResult.state = "incomplete";
           f.terminalResult.summary = "The optional experiment is not feasible";
           f.terminalResult.result = { feasible: false };
           delete f.terminalResult.response;
         } else if (disposition === "waiting") {
-          f.terminalResult.decision = "wait";
+          f.terminalResult.state = "waiting";
           delete f.terminalResult.response;
           f.terminalResult.conditions = [
             {
@@ -9919,7 +10081,7 @@ describe("canonical App task runtime", () => {
         sourceBus.setPersistenceSubscriber(writer.handler);
         const { installed } = await installCoreTaskRuntimes(f.base);
         f.observe("external-wait");
-        f.terminalResult.decision = "wait";
+        f.terminalResult.state = "waiting";
         delete f.terminalResult.response;
         f.terminalResult.conditions = [
           {
@@ -9957,7 +10119,7 @@ describe("canonical App task runtime", () => {
         expect(f.config.resourceStore.readTrigger(claim.taskId)?.event.eventId).toBe(fact[EVENT_ROW_ID]);
         expect(f.config.resourceStore.readReceipt(claim.taskId)).toBeNull();
         expect(f.agentCalls()).toBe(1);
-        f.terminalResult.decision = "converged";
+        f.terminalResult.state = "converged";
         delete f.terminalResult.conditions;
         await f.run(claim.taskId);
         expect(readAcceptedRuntimeAttempt(f.config, claim.taskId)?.acceptedResult?.result).toEqual(f.payload);
@@ -9989,7 +10151,7 @@ describe("canonical App task runtime", () => {
       sourceBus.setPersistenceSubscriber(new DbWriter(f.base.persistDir).handler);
       await installCoreTaskRuntimes(f.base);
       f.observe("readback");
-      f.terminalResult.decision = "wait";
+      f.terminalResult.state = "waiting";
       delete f.terminalResult.response;
       const condition = {
         id: "first-proof",
@@ -10023,7 +10185,7 @@ describe("canonical App task runtime", () => {
       expect(readTaskSnapshot(f.config).conditions?.["second-proof"]?.status.state).toBe("true");
       expect(f.config.resourceStore.readTrigger("readback")?.events).toHaveLength(1);
       expect(f.config.resourceStore.readTrigger("readback")?.event.eventId).toBe(fact[EVENT_ROW_ID]);
-      f.terminalResult.decision = "converged";
+      f.terminalResult.state = "converged";
       delete f.terminalResult.conditions;
       await f.run("readback");
       await recoverInstalledAppTasks(f.base.bus);
@@ -10107,7 +10269,7 @@ describe("canonical App task runtime", () => {
                 externalCreates++;
               }
               return {
-                handlerResult: { decision: "needs-agent", summary: "Check external operation", facts: [], actions: [] },
+                handlerResult: { state: "needs-agent", summary: "Check external operation", facts: [], actions: [] },
                 runId: "fixture-workflow",
               };
             },

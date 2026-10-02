@@ -9,7 +9,7 @@ describe("admitCodexGoalTaskResult", () => {
   it("uses the production SDK admission boundary after exact JSON parsing", () => {
     const admitted = admitCodexGoalTaskResult(
       JSON.stringify({
-        decision: "converged",
+        state: "converged",
         summary: "The bounded proof passed",
         response: "The task is complete.",
         facts: ["bun test: passed"],
@@ -20,7 +20,7 @@ describe("admitCodexGoalTaskResult", () => {
     expect(admitted).toEqual({
       kind: "accepted",
       result: {
-        decision: "converged",
+        state: "converged",
         summary: "The bounded proof passed",
         response: "The task is complete.",
         facts: ["bun test: passed"],
@@ -47,7 +47,7 @@ describe("admitCodexGoalTaskResult", () => {
       null,
       "Done.",
       '```json\n{"state":"converged","summary":"Done","facts":[]}\n```',
-      JSON.stringify({ decision: "converged", summary: "Done", facts: "not-an-array" }),
+      JSON.stringify({ state: "converged", summary: "Done", facts: "not-an-array" }),
     ]) {
       expect(admitCodexGoalTaskResult(candidate, options).kind).toBe("retry");
     }
@@ -61,12 +61,12 @@ describe("admitCodexGoalTaskResult", () => {
     expect(first.kind).toBe("retry");
 
     const second = admitCodexGoalTaskResult(
-      JSON.stringify({ decision: "converged", summary: "Corrected state", facts: ["verified on retry"] }),
+      JSON.stringify({ state: "converged", summary: "Corrected state", facts: ["verified on retry"] }),
       options,
     );
     expect(second).toMatchObject({
       kind: "accepted",
-      result: { decision: "converged", summary: "Corrected state" },
+      result: { state: "converged", summary: "Corrected state" },
     });
   });
 });

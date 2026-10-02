@@ -221,7 +221,7 @@ async function executeTaskWorkflow(
         taskGeneration: taskDetail.generation,
         workflowRunId: runId,
         status: done ? "done" : "blocked",
-        disposition: handlerResult.decision,
+        disposition: handlerResult.state,
         ...(done ? { summary } : { reason: summary }),
       },
       ...(trace ? { trace } : {}),
@@ -263,7 +263,7 @@ async function executeTaskWorkflow(
     } as unknown as AgentEvent);
     return {
       handlerResult: {
-        decision: "error",
+        state: "error",
         summary,
         facts: runId ? [`workflow-run:${runId}`] : [],
         actions: [],

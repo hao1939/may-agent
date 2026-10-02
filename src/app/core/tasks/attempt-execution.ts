@@ -83,7 +83,7 @@ export async function runTaskWorkflow(
   if (!opts.workflows)
     return {
       handlerResult: {
-        decision: "error",
+        state: "error",
         summary: "Task workflow runner is not installed",
         facts: [],
         actions: [],
@@ -324,7 +324,7 @@ export async function runTaskAgent(input: TaskHandlerInput): Promise<TaskCapabil
   if (!opts.agents?.available(claim.agent))
     return {
       handlerResult: {
-        decision: "error",
+        state: "error",
         summary: `Task agent ${claim.agent} is not available`,
         facts: [],
         actions: [],
@@ -370,7 +370,7 @@ export async function runRegisteredTaskExecutor(input: TaskHandlerInput & {
   } catch (error) {
     return {
       handlerResult: {
-        decision: "error",
+        state: "error",
         summary: `${input.name} executor failed: ${error instanceof Error ? error.message : String(error)}`,
         facts: [],
         actions: [],

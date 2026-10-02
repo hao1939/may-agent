@@ -6,8 +6,7 @@ import type {
   TaskCondition,
   TaskAction,
   TaskAppRequest,
-  LegacyTaskReconcileResult,
-  TaskDecisionResult,
+  TaskReconcileResult,
   TaskChanges,
   TaskVerificationResult,
 } from "./task.js";
@@ -137,7 +136,7 @@ const TASK_AGENT_RESULT_SCHEMA_ID = "may.task-agent-result.v1";
 const TASK_RECONCILE_RESULT_SCHEMA_ID = "may.task-reconcile-result.v1";
 
 /** Model-output schema for a resolved agent. */
-const legacyTaskAgentResultSchema = Type.Union(
+export const taskAgentResultSchema = Type.Union(
   [
     Type.Object(
       { state: Type.Literal("converged"), ...resultFields, response: Type.Optional(nonEmptyStringSchema) },
@@ -211,9 +210,9 @@ const legacyTaskAgentResultSchema = Type.Union(
 );
 
 /** Model-output schema for a workflow, including its explicit agent handoff. */
-const legacyTaskReconcileResultSchema = Type.Union(
+export const taskReconcileResultSchema = Type.Union(
   [
-    legacyTaskAgentResultSchema,
+    taskAgentResultSchema,
     Type.Object(
       {
         state: Type.Literal("needs-agent"),
@@ -226,21 +225,11 @@ const legacyTaskReconcileResultSchema = Type.Union(
   { $id: TASK_RECONCILE_RESULT_SCHEMA_ID },
 );
 
-const evidenceFields = {
-  summary: resultFields.summary,
-  facts: resultFields.facts,
-  inputKeys: resultFields.inputKeys,
-  result: resultFields.result,
-};
 const changeFields = {
   requests: resultFields.requests,
   conditions: resultFields.conditions,
   actions: resultFields.actions,
 };
-const ongoingFields = { ...evidenceFields, ...changeFields, reviewAt: resultFields.reviewAt };
-const factsRequired = Type.Array(nonEmptyStringSchema, { minItems: 1, maxItems: 32 });
-const TASK_AGENT_DECISION_SCHEMA_ID = "may.task-agent-result.v2";
-const TASK_RECONCILE_DECISION_SCHEMA_ID = "may.task-reconcile-result.v2";
 
 /** Same typed changes for a live action and final-result declarations. */
 export const taskChangesSchema = Type.Object(
@@ -252,62 +241,8 @@ export const taskChangesSchema = Type.Object(
   { additionalProperties: false },
 );
 
-export const taskAgentResultSchema = Type.Union(
-  [
-    Type.Object(
-      {
-        decision: Type.Literal("continue"),
-        ...ongoingFields,
-        facts: factsRequired,
-        report: Type.Optional(Type.Literal(true)),
-      },
-      { additionalProperties: false },
-    ),
-    Type.Object({ decision: Type.Literal("wait"), ...ongoingFields }, { additionalProperties: false }),
-    Type.Object(
-      { decision: Type.Literal("wait"), ...ongoingFields, report: Type.Literal(true), facts: factsRequired },
-      { additionalProperties: false },
-    ),
-    Type.Object(
-      {
-        decision: Type.Literal("converged"),
-        ...evidenceFields,
-        requests: resultFields.requests,
-        actions: resultFields.actions,
-        response: Type.Optional(nonEmptyStringSchema),
-      },
-      { additionalProperties: false },
-    ),
-    Type.Object(
-      {
-        decision: Type.Literal("incomplete"),
-        ...evidenceFields,
-        facts: factsRequired,
-        report: Type.Optional(Type.Literal(true)),
-        response: Type.Optional(nonEmptyStringSchema),
-      },
-      { additionalProperties: false },
-    ),
-  ],
-  {
-    $id: TASK_AGENT_DECISION_SCHEMA_ID,
-    description:
-      "Return one final decision about this Task: continue schedules another attempt for useful work; wait yields on a retained Condition or review time; converged fulfills only inputKeys under App acceptance; incomplete retains unsuccessful work for paced recovery. Multiple tool actions may run within an attempt. Use tasks apply to submit requests, Conditions or actions immediately and keep working; final declarations use the same admission. Requests are receiver-owned work; Conditions belong to the caller and do not stop useful execution. requestId selects a request here or already admitted in this caller generation. Omit unchanged waits. Retire them explicitly. Preserve original input and updates; acknowledgment, interpretation and handoff are not fulfillment. New input and independent obligations survive. Task state and lifetime are Host-owned.",
-  },
-);
-
-/** @deprecated Use taskAgentResultSchema. */
+/** @deprecated Use `taskAgentResultSchema`. */
 export const taskOwnerResultSchema = taskAgentResultSchema;
-export const taskReconcileResultSchema = Type.Union(
-  [
-    taskAgentResultSchema,
-    Type.Object(
-      { decision: Type.Literal("needs-agent"), summary: nonEmptyStringSchema, facts: resultFields.facts },
-      { additionalProperties: false },
-    ),
-  ],
-  { $id: TASK_RECONCILE_DECISION_SCHEMA_ID },
-);
 
 export const taskVerificationResultSchema = Type.Object(
   {
@@ -318,7 +253,7 @@ export const taskVerificationResultSchema = Type.Object(
   { additionalProperties: false },
 );
 
-export type TaskReconcileAdmission = { ok: true; result: TaskDecisionResult } | { ok: false; error: string };
+export type TaskReconcileAdmission = { ok: true; result: TaskReconcileResult } | { ok: false; error: string };
 
 export type TaskReconcileAdmissionOptions = {
   allowNeedsAgent: boolean;
@@ -440,10 +375,10 @@ function normalizeCondition(value: unknown, index: number): Condition | string {
 }
 
 /** The single production admission and normalization boundary for task handlers. */
-function admitLegacyTaskResult(
+export function admitTaskReconcileResult(
   output: unknown,
   options: TaskReconcileAdmissionOptions,
-): { ok: true; result: LegacyTaskReconcileResult } | { ok: false; error: string } {
+): TaskReconcileAdmission {
   if (!isRecord(output)) return { ok: false, error: "expected an object" };
   if (output.dependencies !== undefined) {
     if (output.requests !== undefined) return { ok: false, error: "use requests or legacy dependencies, not both" };
@@ -479,8 +414,8 @@ function admitLegacyTaskResult(
       return { ok: false, error: "needs-agent cannot include response, result, actions, Conditions, or requests" };
     }
     const canonicalOutput = output.state === "needs-owner" ? { ...output, state: "needs-agent" } : output;
-    if (!Check(legacyTaskReconcileResultSchema, canonicalOutput)) {
-      const first = [...Errors(legacyTaskReconcileResultSchema, canonicalOutput)][0];
+    if (!Check(taskReconcileResultSchema, canonicalOutput)) {
+      const first = [...Errors(taskReconcileResultSchema, canonicalOutput)][0];
       return {
         ok: false,
         error: `handler result schema rejected ${first?.instancePath || "result"}: ${first?.message ?? "invalid value"}`,
@@ -588,8 +523,8 @@ function admitLegacyTaskResult(
   if (output.continue !== undefined && (output.continue !== true || output.state !== "waiting" || !facts.length)) {
     return { ok: false, error: "continue requires waiting and progress facts" };
   }
-  if (!Check(legacyTaskReconcileResultSchema, output)) {
-    const first = [...Errors(legacyTaskReconcileResultSchema, output)][0];
+  if (!Check(taskReconcileResultSchema, output)) {
+    const first = [...Errors(taskReconcileResultSchema, output)][0];
     return {
       ok: false,
       error: `handler result schema rejected ${first?.instancePath || "result"}: ${first?.message ?? "invalid value"}`,
@@ -634,51 +569,11 @@ function admitLegacyTaskResult(
   return { ok: true, result: { ...answer, state: "converged", actions, ...(requests.length ? { requests } : {}) } };
 }
 
-/** Accept legacy producers once; all runtime consumers receive a decision. */
-export function admitTaskReconcileResult(
-  output: unknown,
-  options: TaskReconcileAdmissionOptions,
-): TaskReconcileAdmission {
-  if (!isRecord(output)) return { ok: false, error: "expected an object" };
-  const original = output;
-  if (output.decision !== undefined) {
-    if (output.state !== undefined || output.continue !== undefined || output.dependencies !== undefined)
-      return { ok: false, error: "decision cannot mix with legacy state, continue or dependencies" };
-    const { decision, ...fields } = output;
-    output = {
-      ...fields,
-      state: decision === "wait" || decision === "continue" ? "waiting" : decision,
-      ...(decision === "continue" ? { continue: true } : {}),
-    };
-  }
-  const admitted = admitLegacyTaskResult(output, options);
-  if (!admitted.ok) return admitted;
-  if (original.decision !== undefined) {
-    const schema = options.allowNeedsAgent ? taskReconcileResultSchema : taskAgentResultSchema;
-    if (!Check(schema, original)) {
-      const first = [...Errors(schema, original)][0];
-      return {
-        ok: false,
-        error: `handler result schema rejected ${first?.instancePath || "result"}: ${first?.message ?? "invalid value"}`,
-      };
-    }
-  }
-  const { state, ...fields } = admitted.result;
-  const { continue: continuing, ...rest } = fields as typeof fields & { continue?: true };
-  return {
-    ok: true,
-    result: {
-      ...rest,
-      decision: state === "waiting" ? (continuing ? "continue" : "wait") : state,
-    } as TaskDecisionResult,
-  };
-}
-
 export function admitTaskChanges(output: unknown): { ok: true; changes: TaskChanges } | { ok: false; error: string } {
   if (!Check(taskChangesSchema, output))
     return { ok: false, error: "Task changes must contain only inputKeys, facts, requests, conditions and actions" };
   const admitted = admitTaskReconcileResult(
-    { decision: "wait", summary: "Apply Task changes", facts: [], ...(output as TaskChanges) },
+    { state: "waiting", summary: "Apply Task changes", facts: [], ...(output as TaskChanges) },
     { allowNeedsAgent: false },
   );
   if (!admitted.ok) return admitted;
@@ -704,10 +599,10 @@ export function admitTaskChanges(output: unknown): { ok: true; changes: TaskChan
  */
 export function admitTaskResultForSchema(schema: TSchema | undefined, output: unknown): TaskReconcileAdmission | null {
   const id = (schema as (TSchema & { $id?: unknown }) | undefined)?.$id;
-  if (id === TASK_AGENT_RESULT_SCHEMA_ID || id === TASK_AGENT_DECISION_SCHEMA_ID) {
+  if (id === TASK_AGENT_RESULT_SCHEMA_ID) {
     return admitTaskReconcileResult(output, { allowNeedsAgent: false });
   }
-  if (id === TASK_RECONCILE_RESULT_SCHEMA_ID || id === TASK_RECONCILE_DECISION_SCHEMA_ID) {
+  if (id === TASK_RECONCILE_RESULT_SCHEMA_ID) {
     return admitTaskReconcileResult(output, { allowNeedsAgent: true });
   }
   return null;
