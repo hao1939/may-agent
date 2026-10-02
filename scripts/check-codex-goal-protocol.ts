@@ -26,6 +26,7 @@ const server = createServer(async (request, response) => {
     id: `msg_${sequence}`,
     type: "message",
     role: "assistant",
+    phase: "final_answer",
     status: "completed",
     content: [{ type: "output_text", text: "Fixture response.", annotations: [] }],
   };
@@ -169,8 +170,24 @@ try {
   assert.match(resumedRequest, /input:beta/);
   assert.match(resumedRequest, /Condition is required for waiting/);
   assert.doesNotMatch(resumedRequest, /This stale turn must be fenced/);
+
+  await client.setGoal({ threadId: thread.threadId, objective: freshObjective, status: "paused" });
+  const exactItems = await client.listThreadItems({
+    threadId: thread.threadId,
+    turnId: secondTurn,
+    limit: 1,
+    sortDirection: "desc",
+  });
+  assert.equal(exactItems.data.length, 1);
+  assert.equal(exactItems.data[0]?.turnId, secondTurn);
+  assert.equal((exactItems.data[0]?.item as { text?: string }).text, "Fixture response.");
+  assert.equal((exactItems.data[0]?.item as { phase?: string }).phase, "final_answer");
+
   process.stdout.write(
-    `Codex compatibility passed: active-goal pause/resume, fresh request packet, prior rejection and old-turn fence${checkExecution ? ", plus installed-policy execution acceptance" : ""}.\n`,
+    `${JSON.stringify({ installedCliBoundedRead: true, exactFinalAnswer: true, diagnostics: client.diagnostics() })}\n`,
+  );
+  process.stdout.write(
+    `Codex compatibility passed: active-goal pause/resume, fresh request packet, prior rejection, old-turn fence, and bounded exact-turn retrieval${checkExecution ? ", plus installed-policy execution acceptance" : ""}.\n`,
   );
 } finally {
   releaseResponses();

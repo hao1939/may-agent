@@ -37,6 +37,11 @@ export type CodexTurnCompletion = {
   };
 };
 
+export type CodexThreadItemsPage = {
+  data: Array<{ turnId: string; item: unknown }>;
+  nextCursor?: string | null;
+};
+
 export type CodexThreadGoal = {
   threadId: string;
   objective: string;
@@ -232,6 +237,7 @@ export class CodexGoalAppServerClient {
       cwd: input.cwd,
       approvalPolicy: "never",
       ...(input.sandbox ? { sandbox: input.sandbox } : {}),
+      excludeTurns: true,
       ...(input.model ? { model: input.model } : {}),
       ...(input.developerInstructions ? { developerInstructions: input.developerInstructions } : {}),
     });
@@ -269,8 +275,24 @@ export class CodexGoalAppServerClient {
     return await this.request("thread/goal/get", { threadId });
   }
 
-  async readThread(threadId: string, includeTurns = true): Promise<unknown> {
+  async readThread(threadId: string, includeTurns = false): Promise<unknown> {
     return await this.request("thread/read", { threadId, includeTurns });
+  }
+
+  async listThreadItems(input: {
+    threadId: string;
+    turnId: string;
+    cursor?: string;
+    limit?: number;
+    sortDirection?: "asc" | "desc";
+  }): Promise<CodexThreadItemsPage> {
+    return await this.request("thread/items/list", {
+      threadId: input.threadId,
+      turnId: input.turnId,
+      ...(input.cursor ? { cursor: input.cursor } : {}),
+      ...(input.limit === undefined ? {} : { limit: input.limit }),
+      ...(input.sortDirection ? { sortDirection: input.sortDirection } : {}),
+    });
   }
 
   async startTurn(input: {

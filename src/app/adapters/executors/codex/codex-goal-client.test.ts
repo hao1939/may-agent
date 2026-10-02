@@ -148,6 +148,7 @@ describe("CodexGoalAppServerClient", () => {
       threadId: "thread-1",
       cwd: "/tmp/work",
       approvalPolicy: "never",
+      excludeTurns: true,
     });
     process.reply(resume.id, { thread: { id: "thread-1" }, cwd: "/tmp/work" });
     expect(await resumed).toEqual({ threadId: "thread-1", cwd: "/tmp/work" });
@@ -176,9 +177,39 @@ describe("CodexGoalAppServerClient", () => {
       cwd: "/tmp/work",
       approvalPolicy: "never",
       sandbox: "read-only",
+      excludeTurns: true,
     });
     process.reply(resume.id, { thread: { id: "thread-1" }, cwd: "/tmp/work" });
     await resumed;
+  });
+
+  it("requests bounded newest-first items for one exact turn", async () => {
+    const process = new FakeAppServerProcess();
+    const client = new CodexGoalAppServerClient(process, { requestTimeoutMs: 1_000 });
+
+    const listed = client.listThreadItems({
+      threadId: "thread-1",
+      turnId: "turn-complete",
+      cursor: "next-page",
+      limit: 1,
+      sortDirection: "desc",
+    });
+    const request = await waitForWrite(process, "thread/items/list");
+    expect(request.params).toEqual({
+      threadId: "thread-1",
+      turnId: "turn-complete",
+      cursor: "next-page",
+      limit: 1,
+      sortDirection: "desc",
+    });
+    process.reply(request.id, {
+      data: [{ turnId: "turn-complete", item: { type: "agentMessage", text: "complete answer" } }],
+      nextCursor: null,
+    });
+    await expect(listed).resolves.toEqual({
+      data: [{ turnId: "turn-complete", item: { type: "agentMessage", text: "complete answer" } }],
+      nextCursor: null,
+    });
   });
 
   it("observes the authoritative turn and terminal status created by an active goal", async () => {
@@ -280,8 +311,9 @@ describe("CodexGoalAppServerClient", () => {
     await expect(timedOut).rejects.toThrow("request thread/goal/get timed out");
     process.reply(first.id, { goal: { status: "active" } });
 
-    const next = client.readThread("thread-1", false);
+    const next = client.readThread("thread-1");
     const second = await waitForWrite(process, "thread/read");
+    expect(second.params).toEqual({ threadId: "thread-1", includeTurns: false });
     process.reply(second.id, { thread: { id: "thread-1" } });
     await expect(next).resolves.toEqual({ thread: { id: "thread-1" } });
     await client.stop();
