@@ -114,7 +114,7 @@ function gitCommit(projectRoot: string): string | null {
   }
 }
 
-function assertCommittedDefinitionSource(projectRoot: string, commit: string): void {
+function assertCommittedDefinitionSource(projectRoot: string, commit: string, requireCleanWorktree: boolean): void {
   const trackedNames = execFileSync("git", ["-C", projectRoot, "ls-tree", "-d", "--name-only", `${commit}:projects`], {
     encoding: "utf8",
   })
@@ -137,6 +137,10 @@ function assertCommittedDefinitionSource(projectRoot: string, commit: string): v
   } catch {
     throw new Error(`Commit ${commit} is missing shared definition source`);
   }
+
+  // An explicit commit pin makes the immutable Git tree the complete source
+  // authority. Mutable worktree files cannot affect the archived release.
+  if (!requireCleanWorktree) return;
 
   const status = execFileSync(
     "git",
@@ -315,7 +319,7 @@ export class DefinitionSourceReleaseStore {
       );
     }
     mkdirSync(this.releasesRoot, { recursive: true });
-    if (commit) assertCommittedDefinitionSource(this.projectRoot, commit);
+    if (commit) assertCommittedDefinitionSource(this.projectRoot, commit, !expectedSourceCommit);
     // v4 includes shared tools; never reuse a cached v3 snapshot that omitted them.
     const id = commit ? `${commit}-definitions-v4` : `filesystem-${Date.now()}-${randomUUID()}-definitions-v4`;
     const releaseRoot = join(this.releasesRoot, id);

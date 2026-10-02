@@ -126,6 +126,23 @@ describe("App source releases", () => {
     expect(existsSync(join(drifted.stateDir, "releases"))).toBeFalse();
   });
 
+  it("stages an explicitly pinned commit without consulting mutable worktree source", async () => {
+    const { root, stateDir, appPath } = await fixture();
+    const pinnedHead = String((await git(root, "rev-parse", "HEAD")).stdout).trim();
+    writeFileSync(
+      appPath,
+      `export default { id: "dirty", version: 1, owner: "worker", inputSchema: { type: "object" } };\n`,
+    );
+    const untrackedHandler = join(root, "projects", "sample.app", "new-handler.ts");
+    writeFileSync(untrackedHandler, "export const handler = true;\n");
+
+    const released = new DefinitionSourceReleaseStore(root, stateDir).stage(pinnedHead);
+
+    expect(released.sourceCommit).toBe(pinnedHead);
+    expect(readFileSync(join(released.projectsRoot, "sample.app", "app.js"), "utf8")).toContain("sample-v1");
+    expect(existsSync(join(released.projectsRoot, "sample.app", "new-handler.ts"))).toBeFalse();
+  });
+
   it("snapshots small non-git fixture Apps without copying runtime state", async () => {
     const { root, stateDir } = await fixture(false);
     for (const directory of [".state", "evidence", "facts"]) {
