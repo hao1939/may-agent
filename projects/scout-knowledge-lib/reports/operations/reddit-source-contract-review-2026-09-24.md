@@ -1,5 +1,64 @@
 # Reddit Source Contract Review — 2026-09-24
 
+## 2026-10-02 decision update: daily bounded check, not four-hourly scanning or retirement
+
+**Recommendation to May:** approve reducing the automatic Reddit opportunity
+from roughly every four hours to **once daily**. Keep the standing
+`explore-reddit` responsibility and an on-demand source check, but make
+intervening reconciliations review-only unless new access or yield evidence
+arrives. After seven daily accepted checks, retire the automatic feed (while
+retaining on-demand checks) if all seven still have an unreadable selected body
+and zero source-grounded publications. Restore a faster cadence only after
+repeatable attributable body access or material publication yield. This is a
+strategy recommendation only; this review changed no schedule, Task, workflow,
+credential, or source policy.
+
+The current Task read strengthens, rather than changes, the 2026-09-30 daily
+recommendation below. Its latest accepted attempt, ending
+`2026-10-02T04:12:57Z`, found search Atom HTTP 200, stable candidate
+`t3_1wvk73z`, and HTTP 403 at the exact ordinary permalink. It correctly made no
+knowledge or digest change and did not turn feed metadata into a body claim.
+The newest two accepted-evidence pages contain **16 consecutive attempts** from
+`2026-09-29T16:09Z` through `2026-10-02T04:12Z`; every attempt selected a
+distinct stable post, recorded feed HTTP 200 and exact-permalink HTTP 403, and
+published no change. This confirms the Evaluation report's recurring pattern
+and extends its seven-cycle window.
+
+Each no-op remains valid: the source contract requires a readable attributable
+body before a research claim, and forbids login, bypass, substitution, or using
+a feed title as body evidence. Population utility is a separate decision. The
+16 accepted owner attempts consumed approximately **1,266 seconds** of elapsed
+attempt runtime (21.1 minutes; mean 79.1 seconds, median 77.1, range
+62.5–118.1) and produced **0 publications**. At six opportunities per day, the
+observed mean projects to about **475 seconds/day** (7.9 minutes) or **55
+minutes/week** of owner-attempt runtime. Daily checking projects to about 79
+seconds/day or 9.2 minutes/week, an approximately **83% reduction in scheduled
+opportunities and this runtime proxy**. These are elapsed-time proxies, not
+billing estimates; token, nested-workflow, monetary, and infrastructure costs
+were not exposed.
+
+| Strategy | Expected value | Cost/risk judgment | Disposition |
+|---|---|---|---|
+| Keep roughly four-hour cadence | Detects access recovery within about four hours and samples more candidate IDs. | Repeats a 16/16 zero-publication body boundary; titles and IDs cannot support body-level research. | **Reject for now.** The marginal information is mainly another access-status observation. |
+| Daily bounded check plus review-only intervening reconciliations | Retains a lawful recovery signal and on-demand path while accepting up to roughly one-day recovery latency. | Cuts scheduled opportunities about 83%; may miss short-lived posts or detect recovery later. | **Recommend.** Review after seven daily accepted checks. |
+| Retire automatic Reddit now | Removes recurring scan cost. | Loses automatic recovery detection despite the short approximately 60-hour current window and the earlier one-body-then-429 post-RSS result. | **Premature now.** Use as the next decision if the seven-daily-check gate also has zero readable bodies and zero publications. |
+| Do nothing pending more evidence | Avoids schedule-change work. | Treats predictable repeated no-ops as useful exploration and has no defined stopping rule. | **Weaker than daily.** May should explicitly accept the recurring cost if choosing it. |
+
+The exact owner decision needed is for **May to approve or reject the daily
+cadence and seven-check retirement gate**, then route any approved schedule
+mutation through the authorized App/operator path. No authentication or source
+exception is requested. The earlier post-specific RSS observation—one
+identity-matched body followed immediately by HTTP 429—means this evidence does
+not prove permanent Reddit unreadability or justify authentication-first action;
+it does show that the current four-hourly ordinary-permalink strategy has near
+zero expected research value under the required evidence boundary.
+
+Evidence basis: current canonical `scout-knowledge-lib/explore-reddit`
+generation 2, resource version 311, accepted-evidence pages read on 2026-10-02;
+and Evaluation report
+`/app/.state/evaluation/reports/task-outcomes/evaluator-deepseek/scout-knowledge-lib/task-obligation-v1/explore-reddit-249731cd547c7be9-ef255144f8b6.md`.
+No fresh Reddit request was made for this strategy review.
+
 ## 2026-09-30 post-RSS validation: one body, then rate limit; retain daily recommendation
 
 **Disposition:** do not prepare a source-contract candidate. Recommend that the
