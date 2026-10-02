@@ -28,7 +28,11 @@ async function observationSmoke(mode: "prompt" | "periodic") {
   bus.setDeliveryRecorder(writer.recordDelivery);
   let reads = 0;
   let passed = mode === "prompt";
-  const attempts: string[] = [];
+  const attempts: Array<{
+    attemptId: string;
+    previousAttemptId?: string;
+    evidenceEventId?: number;
+  }> = [];
   const observedAt = "2026-01-01T00:00:00.000Z";
   const detector = defineObserver({
     id: "build",
@@ -66,7 +70,6 @@ async function observationSmoke(mode: "prompt" | "periodic") {
       hostCapacity: new HostCapacity(1),
       executors: {
         smoke: async (attempt) => {
-          attempts.push(attempt.attemptId);
           const contract = await attempt.read.contract("sample");
           const capability = contract.observations.find((item) => item.id === "build")!;
           const evidence = attempt.events.items.find(
@@ -76,6 +79,11 @@ async function observationSmoke(mode: "prompt" | "periodic") {
               item.event.data.resource === "known-build" &&
               item.event.data.state === "passed",
           );
+          attempts.push({
+            attemptId: attempt.attemptId,
+            ...(attempt.previousAttempt ? { previousAttemptId: attempt.previousAttempt.attemptId } : {}),
+            ...(evidence ? { evidenceEventId: evidence.eventId } : {}),
+          });
           if (!evidence)
             return {
               state: "waiting",
@@ -162,18 +170,41 @@ async function observationSmoke(mode: "prompt" | "periodic") {
       () => tasks.get({ appId: "sample", taskId: "smoke" })?.status === "done",
       "automatic owner continuation",
     );
-    expect(attempts).toHaveLength(2);
+    if (mode === "prompt") expect(attempts).toHaveLength(2);
+    else expect(attempts.length).toBeGreaterThanOrEqual(2);
+    expect(attempts[0]?.evidenceEventId).toBeUndefined();
+    for (let index = 1; index < attempts.length; index++) {
+      expect(attempts[index]?.evidenceEventId).toBeNumber();
+      expect(attempts[index]?.previousAttemptId).toBe(attempts[index - 1]?.attemptId);
+    }
     if (mode === "prompt") expect(reads).toBe(1);
     else expect(reads).toBeGreaterThanOrEqual(2);
-    const event = db.prepare(
-      "SELECT id FROM events WHERE event_type='build.state' AND json_extract(data, '$.state')='passed'",
-    ).get() as { id: number };
-    expect(tasks.get({ appId: "sample", taskId: "smoke" })?.result).toEqual({
-      eventId: event.id,
+    const terminalAttempt = attempts.at(-1)!;
+    const completed = tasks.get({ appId: "sample", taskId: "smoke" })!;
+    expect(completed.result).toEqual({
+      eventId: terminalAttempt.evidenceEventId,
       observedAt,
       resource: "known-build",
-      receivingAttemptId: attempts[1],
-      waitingAttemptId: attempts[0],
+      receivingAttemptId: terminalAttempt.attemptId,
+      waitingAttemptId: terminalAttempt.previousAttemptId,
+    });
+    const durable = db.prepare(
+      "SELECT event_type, source, data FROM events WHERE id = ?",
+    ).get((completed.result as { eventId: number }).eventId) as {
+      event_type: string;
+      source: string;
+      data: string;
+    };
+    expect({
+      eventId: (completed.result as { eventId: number }).eventId,
+      type: durable.event_type,
+      source: durable.source,
+      data: JSON.parse(durable.data),
+    }).toEqual({
+      eventId: terminalAttempt.evidenceEventId,
+      type: "build.state",
+      source: "app:sample:observer:build",
+      data: { resource: "known-build", state: "passed", observedAt },
     });
   } finally {
     runtime?.close();
