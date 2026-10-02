@@ -161,6 +161,15 @@ A Conversation may receive one Task outcome with several `topicIds`. Read the
 relevant asks and judge each separately; shared evidence does not mean that all
 Requests are fulfilled. You do not need to arrange the return deliveries.
 
+For a Conversation result, select an existing Topic from current context or
+read it with `conversation_context` first. Use an assigned open Request for
+`followUp.requestId`, or save its current scope and input associations through
+`conversation_request` before linking it. Historical IDs and a rejected previous
+proposal are not proof that a Topic is available or a Request is open. Only omit
+the optional Request link when that follow-up does not serve an accepted ask.
+The [Conversation contract](../../2a-design/conversation-execution.md) records
+the candidate that makes these choices explicit in the prompt and its limits.
+
 If `finish` returns a validation error, correct the named fields within the
 current invocation. Do not repeat already completed actions just to repair the
 result object. App-specific preflight requires the Host revision described in

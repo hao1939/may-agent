@@ -95,6 +95,26 @@ Read exact Task detail before acting on its requirements, waits or results.
 accepted Request scopes and reply/proposal identity remain intact. The LLM
 decides meaning; code validates and executes its decision.
 
+The turn prompt identifies the current Topic choices and assigned open Requests
+as `selectableConversationIdentities`. This is a compact selection aid, derived
+from the same context, not a second authority or a new resource. An existing
+Topic must come from those choices or a successful scoped `conversation_context`
+read during the turn. A follow-up's optional `requestId` must name an assigned
+open Request or one saved as open through `conversation_request` during the
+turn. History and `previousAttempt` can contain stale references; read or save
+the current record before using them. Omit the optional link when the work does
+not serve an accepted Request; preserve a real promise through its current
+Request rather than dropping its link to avoid a rejection.
+
+**Source status:** Host candidate `34eb0f33b87bf30b9b20ae0aab8ce9fdec1aada0`
+provides this prompt guidance on top of merged #295. It reuses the independently
+reviewed candidate `c217e5df49f71f210e90d9765626225d40c0e149`; activation is
+separate. Tests cover prompt construction and scoped lookup, not model
+compliance. The existing settlement checks remain authoritative. Conversation
+Topic/Request errors can still be discovered after model finish; bringing their
+read-only checks into the existing finish feedback path is a separate remaining
+gap, not a guarantee supplied by this selection aid.
+
 The reply destination selects delivery, not which input matters. The capability presents each batch input
 once in `inputs`, with its source, and labels response routing separately as
 `replyTo`. Bounded history, Requests and previous-attempt evidence remain context.
