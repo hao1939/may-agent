@@ -37,6 +37,11 @@ export type CodexTurnCompletion = {
   };
 };
 
+export type CodexThreadItemsPage = {
+  data: Array<{ turnId: string; item: unknown }>;
+  nextCursor?: string | null;
+};
+
 export type CodexThreadGoal = {
   threadId: string;
   objective: string;
@@ -129,6 +134,7 @@ export class CodexGoalAppServerClient {
   private processClosed = false;
   private stopPromise: Promise<void> | null = null;
   private exitError: Error | null = null;
+  private readonly stdoutDataHandler = (chunk: string): void => this.consumeStdout(chunk);
 
   constructor(
     process: AppServerProcess,
@@ -147,7 +153,7 @@ export class CodexGoalAppServerClient {
     }
     process.stdout.setEncoding("utf8");
     process.stderr.setEncoding("utf8");
-    process.stdout.on("data", (chunk: string) => this.consumeStdout(chunk));
+    process.stdout.on("data", this.stdoutDataHandler);
     process.stderr.on("data", (chunk: string) => {
       this.stderrTail = `${this.stderrTail}${chunk}`.slice(-MAX_STDERR_CHARS);
     });
@@ -232,6 +238,7 @@ export class CodexGoalAppServerClient {
       cwd: input.cwd,
       approvalPolicy: "never",
       ...(input.sandbox ? { sandbox: input.sandbox } : {}),
+      excludeTurns: true,
       ...(input.model ? { model: input.model } : {}),
       ...(input.developerInstructions ? { developerInstructions: input.developerInstructions } : {}),
     });
@@ -269,8 +276,24 @@ export class CodexGoalAppServerClient {
     return await this.request("thread/goal/get", { threadId });
   }
 
-  async readThread(threadId: string, includeTurns = true): Promise<unknown> {
+  async readThread(threadId: string, includeTurns = false): Promise<unknown> {
     return await this.request("thread/read", { threadId, includeTurns });
+  }
+
+  async listThreadItems(input: {
+    threadId: string;
+    turnId: string;
+    cursor?: string;
+    limit?: number;
+    sortDirection?: "asc" | "desc";
+  }): Promise<CodexThreadItemsPage> {
+    return await this.request("thread/items/list", {
+      threadId: input.threadId,
+      turnId: input.turnId,
+      ...(input.cursor ? { cursor: input.cursor } : {}),
+      ...(input.limit === undefined ? {} : { limit: input.limit }),
+      ...(input.sortDirection ? { sortDirection: input.sortDirection } : {}),
+    });
   }
 
   async startTurn(input: {
@@ -581,6 +604,8 @@ export class CodexGoalAppServerClient {
   private fail(error: Error): void {
     if (this.exitError) return;
     this.exitError = error;
+    this.process.stdout.off("data", this.stdoutDataHandler);
+    this.stdoutBuffer = "";
     for (const pending of this.pending.values()) {
       clearTimeout(pending.timeout);
       pending.reject(error);
