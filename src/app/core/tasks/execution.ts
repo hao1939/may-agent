@@ -27,6 +27,8 @@ export type AppInputResolver = (input: {
   inputContext: Readonly<AppInputContext>;
   execution: {
     outputSchema: TSchema;
+    /** Read-only admission feedback; settlement still rechecks current state. */
+    validateOutput?: (result: unknown) => string | null;
     readContext: (query: ConversationContextQuery) => unknown;
     signal: AbortSignal;
     sessionStarted: (sessionId: string) => void;

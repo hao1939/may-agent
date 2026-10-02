@@ -131,6 +131,7 @@ export function createConversationAgentResolver(options: {
         taskContext: options.taskContext,
         requireFinish: true,
         outputSchema: binding.outputSchema,
+        validateOutput: binding.validateOutput,
         // Reuse bounded App execution, without detached lifecycle tools.
         toolPolicy: "app-agent-full",
         timeout: APP_REQUEST_AGENT_TIMEOUT_MS,

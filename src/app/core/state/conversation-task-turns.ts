@@ -41,6 +41,7 @@ function stableTopicId(appId: string, conversationId: string, originMessageId: s
 }
 import {
   applyConversationRequestUpdates,
+  prepareConversationRequestUpdates,
   listConversationInputRequests,
   linkConversationRequestInputs,
   ConversationRequestConflict,
@@ -117,6 +118,45 @@ function resolveConversationTaskApp(config: AppTaskContext, appId: string, getTa
   return target;
 }
 
+/** Resolve the same Topic at preflight and settlement, without creating it. */
+function conversationResultTopic(
+  config: AppTaskContext,
+  item: ReturnType<typeof readConversationTaskTurn>["replyInput"],
+  decision: ConversationTurnResult,
+): string | undefined {
+  const existing = item.topicId || (decision.topic.kind === "existing" ? decision.topic.id : undefined);
+  if (existing) {
+    if (!readConversationTopic(config.resourceStore.db, item.appId, item.conversationId!, existing))
+      throw new Error("Conversation decision selected an unavailable Topic");
+    return existing;
+  }
+  return decision.topic.kind === "new" ? stableTopicId(item.appId, item.conversationId!, item.source.id) : undefined;
+}
+
+/** Read the follow-up target and its effective Request; never run App mapping here. */
+function readConversationFollowUp(
+  config: AppTaskContext,
+  item: ReturnType<typeof readConversationTaskTurn>["replyInput"],
+  desired: NonNullable<ConversationTurnResult["followUp"]>,
+  topicId: string | undefined,
+  getTaskApp?: ConversationTaskAppResolver,
+  proposedRequests: readonly AppConversationRequest[] = [],
+) {
+  if (!topicId) throw new Error("Conversation follow-up requires a Topic");
+  const { app: targetApp, config: target } = resolveConversationTaskApp(config, desired.appId, getTaskApp);
+  if (!targetApp.task) throw new Error("Conversation follow-up requires an installed Task App");
+  assertValidAppInput(targetApp, desired.input);
+  if (desired.task && (desired.task.appId !== desired.appId || !target.resourceStore.readTask(desired.task.taskId)))
+    throw new Error("Follow-up requires an exact Task in the selected App");
+  const request = desired.requestId
+    ? proposedRequests.find(({ id }) => id === desired.requestId) ??
+      readConversationRequest(config.resourceStore.db, item.appId, item.conversationId!, desired.requestId)
+    : null;
+  if (desired.requestId && request?.status !== "open")
+    throw new Error("Conversation follow-up must serve an open accepted Request");
+  return { targetApp, target, request };
+}
+
 /** Capture exact targets and versions; settlement rechecks them under the Task fence. */
 export function prepareConversationTaskProposal(
   config: AppTaskContext,
@@ -145,6 +185,28 @@ export function prepareConversationTaskProposal(
     });
   }
   return { decision, taskControls };
+}
+
+/** Read-only finish feedback. Never map work or persist the proposed effects. */
+export function validateConversationTaskProposal(
+  config: AppTaskContext,
+  claim: AppTaskClaim,
+  decision: ConversationTurnResult,
+  getTaskApp?: ConversationTaskAppResolver,
+): ConversationTaskProposal {
+  const proposal = prepareConversationTaskProposal(config, claim, decision, getTaskApp);
+  const { items, replyInput: item } = readConversationTaskTurn(config, claim);
+  assertConversationRequestsAddressed(config, items, decision);
+  const topicId = conversationResultTopic(config, item, decision);
+  const requests = prepareConversationRequestUpdates(config.resourceStore.db, {
+    actor: { appId: item.appId, taskId: claim.taskId },
+    appId: item.appId, conversationId: item.conversationId!, topicId,
+    updates: decision.requestUpdates ?? [], updateKey: `attempt:${claim.attemptId}`, messageId: `result:${item.id}`,
+  });
+  for (const update of decision.requestUpdates ?? []) requestInputIds(config, items, update);
+  if (decision.followUp)
+    readConversationFollowUp(config, item, decision.followUp, topicId, getTaskApp, requests.map(({ request }) => request));
+  return proposal;
 }
 
 /** Stop exactly the input considered by this Turn. Newer input remains pending. */
@@ -470,12 +532,10 @@ export function completeConversationTaskTurn(
     if (accepted.status !== "applied" || !config.resourceStore.readAttempt(claim.attemptId)?.acceptedResult)
       return accepted;
     const conversationId = item.conversationId!;
-    let topicId = item.topicId;
-    if (!topicId && decision.topic.kind === "existing") topicId = decision.topic.id;
-    if (!topicId && decision.topic.kind === "new") {
-      topicId = stableTopicId(item.appId, conversationId, item.source.id);
+    const topicId = conversationResultTopic(config, item, decision);
+    if (!item.topicId && decision.topic.kind === "new") {
       createConversationTopic(db, {
-        id: topicId,
+        id: topicId!,
         appId: item.appId,
         conversationId,
         title: decision.topic.title,
@@ -483,11 +543,6 @@ export function completeConversationTaskTurn(
         originMessageId: item.source.id,
         now,
       });
-    }
-    if (topicId) {
-      const topic = readConversationTopic(db, item.appId, conversationId, topicId);
-      if (!topic) throw new Error("Conversation decision selected an unavailable Topic");
-      topicId = topic.id;
     }
     const result = {
       summary: decision.summary,
@@ -529,24 +584,19 @@ export function completeConversationTaskTurn(
       );
     }
     if (decision.followUp) {
-      if (!topicId) throw new Error("Conversation follow-up requires a Topic");
       const desired = decision.followUp;
-      const { app: targetApp, config: target } = resolveConversationTaskApp(config, desired.appId, options.getTaskApp);
-      if (!targetApp.task) throw new Error("Conversation follow-up requires an installed Task App");
-      assertValidAppInput(targetApp, desired.input);
-      if (desired.task && (desired.task.appId !== desired.appId || !target.resourceStore.readTask(desired.task.taskId)))
-        throw new Error("Follow-up requires an exact Task in the selected App");
-      // The decision is the only handoff authority. Map once, under settlement,
-      // using the attempt's installed App declaration rather than a second target.
+      const { targetApp, target, request } = readConversationFollowUp(
+        config,
+        item,
+        desired,
+        topicId,
+        options.getTaskApp,
+      );
+      // Mapping is an execution effect. Run it once, only during settlement.
       const attachment = desired.task
         ? { kind: "existing" as const, taskId: desired.task.taskId }
-        : targetApp.task({ id: item.id, source: item.source, input: desired.input });
+        : targetApp.task!({ id: item.id, source: item.source, input: desired.input });
       if (!attachment) throw new Error("App selected no Task for Conversation follow-up");
-      const request = decision.followUp.requestId
-        ? readConversationRequest(db, item.appId, conversationId, decision.followUp.requestId)
-        : null;
-      if (decision.followUp.requestId && request?.status !== "open")
-        throw new Error("Conversation follow-up must serve an open accepted Request");
       const admitted = admitTaskInput(target, {
         appId: decision.followUp.appId,
         creator: { appId: item.appId, taskId: claim.taskId },

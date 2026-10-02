@@ -1,4 +1,5 @@
 import { createAssistantMessageEventStream, type AssistantMessage } from "@earendil-works/pi-ai";
+import { usageReply } from "../../../test/fixtures/execution-usage.js";
 import { fakeModel } from "../../../test/fixtures/model.js";
 import { afterEach, describe, expect, it, setSystemTime } from "bun:test";
 import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
@@ -348,6 +349,126 @@ describe("conversational attempt contract", () => {
     expect(db.prepare("SELECT id FROM app_inbox_items WHERE parent_id = ?").all(request.id)).toEqual([]);
     expect(readAppConversationResource(db, may.id, "may:primary").topics).toEqual([]);
   });
+
+  it.each(["Topic", "Request"] as const)(
+    "corrects an unavailable %s before finish in the same invocation",
+    async (kind) => {
+      const root = mkdtempSync(join(tmpdir(), "conversation-finish-feedback-"));
+      roots.push(root);
+      const db = getDb(root);
+      applyConversationRequestUpdates(db, {
+        appId: "may",
+        conversationId: "may:primary",
+        updateKey: "history",
+        now: 1,
+        messageId: "old-answer",
+        updates: [{ id: "old", expectedRevision: 0, scope: "Earlier ask", disposition: "fulfilled", reason: "Done" }],
+      });
+      const definition: SubagentDefinition = {
+        name: "may",
+        description: "Fixture",
+        domain: "tests",
+        systemPrompt: "Answer the current ask",
+        projectRoot: root,
+        model: fakeModel(),
+        tools: [createFinishTool({ agentName: "may", projectRoot: root })],
+      };
+      const corrected = {
+        ...answer,
+        requestUpdates: [
+          {
+            id: "current",
+            expectedRevision: 1,
+            disposition: "fulfilled",
+            reason: "Compared the requested options",
+          },
+        ],
+      };
+      const invalid = {
+        ...corrected,
+        topic: kind === "Topic" ? { kind: "existing", id: "absent" } : { kind: "new", title: "Review" },
+        ...(kind === "Request"
+          ? { followUp: { appId: "owner", requestId: "old", input: { kind: "work", data: { text: "Review" } } } }
+          : {}),
+      };
+      const finish = (result: unknown) => ({
+        name: "finish",
+        arguments: {
+          status: "success",
+          summary: "Compared options",
+          verification_facts: ["Fixture comparison"],
+          result,
+        },
+      });
+      const steps = [
+        { name: "conversation_request", arguments: { id: "current", expectedRevision: 0, scope: "Compare options" } },
+        finish(invalid),
+        finish(corrected),
+      ];
+      const feedback: string[] = [];
+      let calls = 0;
+      let modelSteps = 0;
+      let beforeCorrection: unknown;
+      const manager = {
+        getAgentDefinition: () => definition,
+        callAgentDefinition: async (agent: SubagentDefinition, prompt: string, options: CallOptions) => {
+          calls++;
+          const prepared = prepareAgentExecution({
+            ...options,
+            definition: agent,
+            projectRoot: root,
+            sessionId: "correction",
+            task: prompt,
+          });
+          prepared.runner.streamFn = () => {
+            const next = steps[modelSteps++];
+            if (modelSteps === 3) beforeCorrection = readConversationRequest(db, "may", "may:primary", "current");
+            const message = usageReply({
+              content: next ? [{ type: "toolCall", id: `step-${modelSteps}`, ...next }] : [],
+              stopReason: next ? "toolUse" : "stop",
+            });
+            const stream = createAssistantMessageEventStream();
+            stream.push({ type: "done", reason: next ? "toolUse" : "stop", message });
+            return stream;
+          };
+          return executePreparedAgent(prepared, {
+            timeoutMs: 5_000,
+            onObservation(event) {
+              if (event.type === "tool_execution_end" && event.toolName === "finish")
+                feedback.push(JSON.stringify(event.result));
+            },
+          });
+        },
+      } as unknown as SubagentManager;
+      let host = await taskRuntime(root, manager);
+      const input = { ...request, appId: "may", conversationId: "may:primary", conversationSequence: 1 };
+      const admitted = host.admit(input);
+      await host.run(admitted.taskId);
+      expect(calls).toBe(1);
+      expect(modelSteps).toBe(3);
+      expect(feedback).toHaveLength(2);
+      expect(feedback[0]).toContain(kind === "Topic" ? "unavailable Topic" : "open accepted Request");
+      expect(beforeCorrection).toMatchObject({ status: "open", revision: 1 });
+      expect(getAppInboxItem(db, request.id)).toMatchObject({
+        status: "done",
+        result: { response: corrected.response },
+      });
+      expect(readConversationRequest(db, "may", "may:primary", "current")).toMatchObject({
+        status: "closed",
+        revision: 2,
+      });
+      expect(db.prepare("SELECT COUNT(*) AS count FROM app_task_attempts").get()).toEqual({ count: 1 });
+      expect(db.prepare("SELECT COUNT(*) AS count FROM app_tasks").get()).toEqual({ count: 1 });
+      expect(readAppConversationResource(db, "may", "may:primary").topics).toEqual([]);
+      await closeInstalledAppTaskRuntimes(host.bus);
+      closeDb(root);
+      host = await taskRuntime(root, manager);
+      host.admit(input);
+      await host.run(admitted.taskId);
+      expect(calls).toBe(1);
+      expect(getAppInboxItem(host.db, request.id)?.status).toBe("done");
+    },
+  );
 
   it.each(["done", "interrupted", "budget-exhausted"] as const)(
     "repairs a tool failure within one Turn and retains work after executor %s",

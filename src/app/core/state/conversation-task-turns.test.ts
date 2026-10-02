@@ -25,10 +25,12 @@ import { prepareConversationTaskTurn } from "../../composition/conversation-task
 import { createAppInboxItem, getAppInboxItem } from "./app-inbox-store.js";
 import { claimAppInboxItem } from "../../../../test/fixtures/legacy-inbox.js";
 import { readAppConversationResource, linkConversationTopicTask, createConversationTopic } from "./conversations.js";
-import { readConversationRequest } from "./conversation-requests.js";
+import { readConversationRequest, applyConversationRequestUpdates } from "./conversation-requests.js";
 import { admitTaskInput } from "./inbox.js";
 import {
   admitConversationTaskInput,
+  validateConversationTaskProposal,
+  updateConversationTaskRequest,
   admitConversationTaskChange,
   completeConversationTaskTurn,
   conversationTaskId,
@@ -2013,4 +2015,151 @@ test("grouped delivery leaves links beyond the admission limit recoverable after
     expect(replay.item.id).toBe(initialTopics.includes(topicId) ? initial.item.id : recovered.item.id);
   }
   expect(listPendingConversationTaskChanges(f.db, app.id)).toEqual([]);
+});
+
+function handoffFixture() {
+  const f = fixture();
+  const first = f.admit();
+  const claim = f.claim(first.taskId);
+  let mappings = 0;
+  const getTaskApp = () => ({
+    app: defineApp({
+      ...app,
+      tasks: {},
+      task: () => {
+        mappings++;
+        return {
+          kind: "desired",
+          intent: { id: "measurement", parentId: "root", outcome: "Get facts", acceptance: ["Measure"] },
+        };
+      },
+    }),
+    config: f.context(),
+  });
+  const handoff: ConversationTurnResult = {
+    ...decision,
+    requestUpdates: [
+      { id: "comparison", expectedRevision: 0, scope: "Compare A and B", disposition: "open", reason: "Collect facts" },
+    ],
+    followUp: { appId: app.id, requestId: "comparison", input: { kind: "message", data: { text: "Get facts" } } },
+  };
+  return Object.assign(f, { first, claim, getTaskApp, handoff, mappings: () => mappings });
+}
+
+test("Conversation preflight is read-only; settlement maps once and retains the new Request across reopen", () => {
+  const f = handoffFixture();
+  const before = f.db.prepare("SELECT total_changes() AS count").get();
+  const proposal = validateConversationTaskProposal(f.context(), f.claim, f.handoff, f.getTaskApp);
+  expect(f.db.prepare("SELECT total_changes() AS count").get()).toEqual(before);
+  expect(f.mappings()).toBe(0);
+  expect(readConversationRequest(f.db, app.id, "chat", "comparison")).toBeNull();
+  expect(f.store.readTask("measurement")).toBeNull();
+  expect(readAppConversationResource(f.db, app.id, "chat").topics).toEqual([]);
+  completeConversationTaskTurn(f.context(), f.claim, proposal.decision, { ...proposal, getTaskApp: f.getTaskApp });
+  expect(f.mappings()).toBe(1);
+  f.reopen();
+  // Reopen through the fixture context: no replay or replacement Task is required.
+  expect(readConversationRequest(f.context().resourceStore.db, app.id, "chat", "comparison")).toMatchObject({
+    status: "open",
+    revision: 1,
+  });
+  expect(f.context().resourceStore.readTask("measurement")).not.toBeNull();
+});
+
+test.each([
+  ["unavailable Topic", "unavailable Topic"],
+  ["missing Request", "open accepted Request"],
+  ["closed Request", "open accepted Request"],
+  ["closing Request", "open accepted Request"],
+  ["stale revision", "revision changed"],
+  ["foreign input", "inputs in this turn"],
+] as const)("Conversation preflight rejects %s without effects", (kind, error) => {
+  const f = handoffFixture();
+  const proposed = structuredClone(f.handoff);
+  if (kind === "unavailable Topic") proposed.topic = { kind: "existing", id: "absent" };
+  if (kind === "missing Request") proposed.followUp!.requestId = "absent";
+  if (kind === "closed Request") {
+    applyConversationRequestUpdates(f.db, {
+      appId: app.id,
+      conversationId: "chat",
+      updateKey: "old",
+      messageId: "old-answer",
+      now: 1,
+      updates: [{ id: "old", scope: "Earlier work", expectedRevision: 0, disposition: "fulfilled", reason: "Done" }],
+    });
+    proposed.followUp!.requestId = "old";
+  }
+  if (kind === "closing Request") proposed.requestUpdates![0]!.disposition = "fulfilled";
+  if (kind === "stale revision") proposed.requestUpdates![0]!.expectedRevision = 2;
+  if (kind === "foreign input") proposed.requestUpdates![0]!.inputIds = ["other-turn"];
+  const before = f.db.prepare("SELECT total_changes() AS count").get();
+  expect(() => validateConversationTaskProposal(f.context(), f.claim, proposed, f.getTaskApp)).toThrow(error);
+  expect(f.db.prepare("SELECT total_changes() AS count").get()).toEqual(before);
+  expect(f.mappings()).toBe(0);
+  expect(getAppInboxItem(f.db, f.first.item.id)?.status).not.toBe("done");
+  expect(f.store.readAttempt(f.claim.attemptId)?.acceptedResult).toBeUndefined();
+});
+
+test("preflight reads Requests saved during the turn and requires their latest revision and disposition", () => {
+  const f = handoffFixture();
+  const saved = updateConversationTaskRequest(
+    f.context(),
+    f.claim,
+    { id: "comparison", expectedRevision: 0, scope: "Compare A and B" },
+    "accept",
+  );
+  expect(saved.revision).toBe(1);
+  expect(() =>
+    validateConversationTaskProposal(f.context(), f.claim, { ...decision, requestUpdates: [] }, f.getTaskApp),
+  ).toThrow("was not addressed");
+  expect(() => validateConversationTaskProposal(f.context(), f.claim, f.handoff, f.getTaskApp)).toThrow(
+    "revision changed",
+  );
+  f.handoff.requestUpdates![0]!.expectedRevision = saved.revision;
+  const proposal = validateConversationTaskProposal(f.context(), f.claim, f.handoff, f.getTaskApp);
+  expect(readConversationRequest(f.db, app.id, "chat", "comparison")?.revision).toBe(1);
+  completeConversationTaskTurn(f.context(), f.claim, proposal.decision, { ...proposal, getTaskApp: f.getTaskApp });
+  expect(readConversationRequest(f.db, app.id, "chat", "comparison")).toMatchObject({ revision: 2, status: "open" });
+});
+
+test("an explicitly reopened Request can receive the same turn's follow-up", () => {
+  const f = handoffFixture();
+  applyConversationRequestUpdates(f.db, {
+    appId: app.id,
+    conversationId: "chat",
+    updateKey: "old",
+    messageId: "old-answer",
+    now: 1,
+    updates: [
+      { id: "comparison", scope: "Compare A and B", expectedRevision: 0, disposition: "fulfilled", reason: "Done" },
+    ],
+  });
+  f.handoff.requestUpdates![0]!.expectedRevision = 1;
+  const proposal = validateConversationTaskProposal(f.context(), f.claim, f.handoff, f.getTaskApp);
+  expect(readConversationRequest(f.db, app.id, "chat", "comparison")?.status).toBe("closed");
+  completeConversationTaskTurn(f.context(), f.claim, proposal.decision, { ...proposal, getTaskApp: f.getTaskApp });
+  expect(readConversationRequest(f.db, app.id, "chat", "comparison")).toMatchObject({ revision: 2, status: "open" });
+});
+
+test("settlement rechecks a Request changed after successful preflight", () => {
+  const f = handoffFixture();
+  const proposal = validateConversationTaskProposal(f.context(), f.claim, f.handoff, f.getTaskApp);
+  applyConversationRequestUpdates(f.db, {
+    appId: app.id,
+    conversationId: "chat",
+    updateKey: "concurrent",
+    now: 1,
+    updates: [{ id: "comparison", scope: "Also compare C", expectedRevision: 0, disposition: "open" }],
+  });
+  expect(() =>
+    completeConversationTaskTurn(f.context(), f.claim, proposal.decision, { ...proposal, getTaskApp: f.getTaskApp }),
+  ).toThrow("revision changed");
+  expect(f.mappings()).toBe(0);
+  expect(f.store.readAttempt(f.claim.attemptId)?.acceptedResult).toBeUndefined();
+  expect(getAppInboxItem(f.db, f.first.item.id)?.status).not.toBe("done");
+  expect(readConversationRequest(f.db, app.id, "chat", "comparison")).toMatchObject({
+    revision: 1,
+    scope: "Also compare C",
+  });
+  expect(readAppConversationResource(f.db, app.id, "chat").topics).toEqual([]);
 });
