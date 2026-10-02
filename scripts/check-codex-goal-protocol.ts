@@ -163,6 +163,7 @@ try {
   await assert.rejects(
     client.steer({ threadId: thread.threadId, turnId: firstTurn, message: "This stale turn must be fenced." }),
   );
+  await client.setGoal({ threadId: thread.threadId, objective: freshObjective, status: "paused" });
   releaseResponses();
   await client.waitForTurn(secondTurn, 5_000);
 
@@ -173,18 +174,14 @@ try {
   assert.match(resumedRequest, /Condition is required for waiting/);
   assert.doesNotMatch(resumedRequest, /This stale turn must be fenced/);
 
-  await client.setGoal({ threadId: thread.threadId, objective: freshObjective, status: "paused" });
   const retainedTurns = new Set<string>();
   for (let index = 0; index < 8; index += 1) {
-    await client.setGoal({
+    const retainedTurn = await client.startTurn({
       threadId: thread.threadId,
-      objective: `Retain completed synthetic turn ${index + 1}`,
-      status: "active",
+      prompt: `Retain completed synthetic turn ${index + 1}`,
     });
-    const retainedTurn = await client.waitForActiveTurn(thread.threadId, 5_000);
     assert.equal(retainedTurns.has(retainedTurn), false, "each retained-history turn must be distinct");
     retainedTurns.add(retainedTurn);
-    await client.setGoal({ threadId: thread.threadId, objective: freshObjective, status: "paused" });
     await waitForCaptures(index + 3);
     await client.waitForTurn(retainedTurn, 5_000);
   }
