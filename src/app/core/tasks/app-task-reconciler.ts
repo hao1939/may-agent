@@ -2149,9 +2149,10 @@ export type AppTaskRetryReceipt = {
 
 /**
  * Requeue one exact failed Task generation after an operator has reviewed its
- * retained input. The failed attempt remains immutable operational facts;
- * its input batch is copied back to the pending trigger without replacing any
- * newer facts.
+ * retained input. The failed attempt remains immutable operational facts.
+ * Execution failures restore their unconsidered input batch; an accepted
+ * incomplete report has already advanced considered events and retains exact
+ * unanswered input through inputWaits.
  */
 export function retryFailedAppTask(
   config: AppTaskContext,
@@ -2213,7 +2214,7 @@ export function retryFailedAppTask(
   const previousResourceVersion = resource.metadata.resourceVersion;
   const acceptedAt = new Date().toISOString();
   const mutationScope = beginResourceMutationScopeForTasks(tree, [input.taskId]);
-  restoreAttemptEvents(tree, input.taskId, resource, attempt, acceptedAt);
+  if (attempt.state === "failed") restoreAttemptEvents(tree, input.taskId, resource, attempt, acceptedAt);
   touchResource(resource, {
     phase: "pending",
     executionFailures: undefined,

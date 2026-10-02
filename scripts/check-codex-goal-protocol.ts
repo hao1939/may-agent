@@ -80,6 +80,8 @@ async function waitForCaptures(count: number): Promise<void> {
   while (captures.length < count && Date.now() < deadline) await Bun.sleep(10);
   assert.ok(captures.length >= count, `Expected ${count} outgoing model request(s), received ${captures.length}`);
 }
+const restrictedContainerDenial =
+  "bwrap: No permissions to create a new namespace, likely because the kernel does not allow non-privileged user namespaces. On e.g. debian this can be enabled with 'sysctl kernel.unprivileged_userns_clone=1'.";
 const firstPacket = JSON.stringify({ attemptId: "attempt-alpha", resourceVersion: 7, inputKeys: ["input:alpha"] });
 const freshPacket = JSON.stringify({
   attemptId: "attempt-beta",
@@ -91,6 +93,23 @@ let client: CodexGoalAppServerClient | undefined;
 try {
   client = spawnClient();
   await client.initialize();
+  const preflight = await client.execCommand({
+    command: ["/usr/bin/true"],
+    cwd: root,
+    sandboxPolicy: { type: "readOnly", networkAccess: false },
+    timeoutMs: 5_000,
+    outputBytesCap: 4_096,
+  });
+  const preflightMode =
+    preflight.exitCode === 0 && preflight.stdout === "" && preflight.stderr === ""
+      ? "executed"
+      : preflight.exitCode === 1 && preflight.stdout === "" && preflight.stderr.trim() === restrictedContainerDenial
+        ? "restricted-container-denial"
+        : null;
+  assert.ok(
+    preflightMode,
+    `Installed CLI command/exec preflight returned an incompatible result: ${JSON.stringify(preflight)}`,
+  );
   const thread = await client.startThread({ cwd: root, developerInstructions: firstPacket });
   assert.equal(thread.cwd, root);
   const originalObjective = "Verify the old assignment";
@@ -137,7 +156,7 @@ try {
   assert.match(resumedRequest, /Condition is required for waiting/);
   assert.doesNotMatch(resumedRequest, /This stale turn must be fenced/);
   process.stdout.write(
-    "Codex compatibility passed: active-goal pause/resume, fresh request packet, prior rejection and old-turn fence.\n",
+    `Codex compatibility passed: command/exec preflight (${preflightMode}), active-goal pause/resume, fresh request packet, prior rejection and old-turn fence.\n`,
   );
 } finally {
   releaseResponses();
