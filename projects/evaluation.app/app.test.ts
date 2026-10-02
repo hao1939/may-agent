@@ -100,8 +100,6 @@ describe("canonical evaluation App", () => {
     expect(app.subscriptions?.map(({ id }) => id)).toEqual([
       "metric.breach",
       "metric.recovered",
-      "metric.stalled",
-      "metric.measurement.failed",
       "project-comment",
       "project-owner-request",
       "telegram-owner-reply",
@@ -1356,7 +1354,7 @@ describe("evaluation task policy", () => {
         data: {
           metricId: "may.daemon-sql-time-percent",
           measuredAt,
-          alertId: "alert-sql-1",
+          alertId: 7,
         },
       });
       expect(canonical).not.toHaveProperty("timestamp");
@@ -1368,6 +1366,7 @@ describe("evaluation task policy", () => {
           end: measuredAt + 1,
           reviewer: "evaluator-deepseek",
           automatic: true,
+          alertId: 7,
         },
       });
       expect(Check(app.inputSchema, input)).toBeTrue();
@@ -1383,11 +1382,20 @@ describe("evaluation task policy", () => {
           end: measuredAt + 1,
           reviewer: "evaluator-deepseek",
           automatic: true,
+          alertId: 7,
         },
       });
+      expect(sqlIntent?.priority).toBe("P1");
+      expect(
+        taskInputForEvent({
+          ...canonical,
+          data: { ...canonical.data, repeat: true },
+        }),
+      ).toBeNull();
 
       const otherInput = taskInputForEvent(
-        event("metric.stalled", {
+        event("metric.recovered", {
+          alertId: 8,
           metricId: "sample.other",
           measuredAt: measuredAt + 10,
         }),
@@ -1401,6 +1409,10 @@ describe("evaluation task policy", () => {
         metricReviewTaskId("sample.other", "evaluator-deepseek"),
       );
       expect(otherIntent?.id).not.toBe(sqlIntent?.id);
+      expect(otherIntent).toMatchObject({
+        priority: "P1",
+        input: { alertId: 8 },
+      });
       expect(scheduledIntent?.id).toBe("runtime/task-outcome-selector");
       expect(scheduledIntent?.id).not.toBe(sqlIntent?.id);
 
@@ -1416,10 +1428,12 @@ describe("evaluation task policy", () => {
         },
       });
       expect(failed).not.toHaveProperty("timestamp");
-      expect(subscription("metric.measurement.failed").toInput(failed)).toEqual({
-        kind: "automatic-review",
-        data: { reason: "metric.measurement.failed" },
-      });
+      expect(taskInputForEvent(failed)).toBeNull();
+      expect(
+        taskInputForEvent(
+          event("metric.stalled", { metricId: "sample.other", measuredAt }),
+        ),
+      ).toBeNull();
     } finally {
       if (previousEnabled === undefined)
         delete process.env.EVALUATION_AUTO_REVIEW_ENABLED;

@@ -206,7 +206,7 @@ test("delayed publication reuses judgment, starts a future review interval and r
   setSystemTime(now + 60_000);
   const recovered = await reviewMetric(ctx, async () => evidence(), root);
   expect(recovered.output).toMatchObject({
-    result: { nextReviewAt: now + 3_600_000 },
+    result: { nextReviewAt: now + 86_400_000 },
   });
   expect(calls).toBe(1);
   const selector = context({
@@ -247,77 +247,114 @@ test("delayed publication reuses judgment, starts a future review interval and r
   });
 });
 
-test("exact metric signals use the per-metric Task, retained deadline and exact evidence read", async () => {
-  const root = mkdtempSync(join(tmpdir(), "metric-signal-"));
-  roots.push(root);
-  const now = end + 10_000;
-  setSystemTime(now);
-  let read: { metricId: string; cut: number } | undefined;
-  const ctx = context({
-    input: {
-      metricId: "may.daemon-sql-time-percent",
-      end: now + 1,
-      automatic: true,
-    },
-    read: createTestAppRead({
-      tasks: { get: async () => ({ result: { nextReviewAt: now - 1 } }) as any },
-    }),
-    callAgent: async () => ({
-      id: "exact-signal-review",
-      kind: "agent",
-      status: "done",
-      summary: "reviewed",
-      output: judgment,
-    }),
-  });
-  const reviewed = await reviewMetric(
-    ctx,
-    async (metricId, cut) => {
-      read = { metricId, cut };
-      return evidence(metricId, cut);
-    },
-    root,
-  );
-  expect(read).toEqual({
-    metricId: "may.daemon-sql-time-percent",
-    cut: now + 1,
-  });
-  expect(reviewed.output).toMatchObject({
-    state: "converged",
-    result: {
-      publication: { metricId: "may.daemon-sql-time-percent" },
-    },
-  });
-
-  let evidenceRead = false;
-  const notDue = await reviewMetric(
-    context({
-      input: { metricId: "sample.other", end: now + 1, automatic: true },
+test.each([null, end + 10_000])(
+  "a metric transition (resolvedAt=%s) bypasses daily cadence while routine review and shared capacity remain bounded",
+  async (resolvedAt) => {
+    const root = mkdtempSync(join(tmpdir(), "metric-signal-"));
+    roots.push(root);
+    const now = end + 10_000;
+    setSystemTime(now);
+    let read: { metricId: string; cut: number; alertId?: number } | undefined;
+    const ctx = context({
+      input: {
+        metricId: "may.daemon-sql-time-percent",
+        end: now + 1,
+        automatic: true,
+        alertId: 7,
+      },
       read: createTestAppRead({
         tasks: {
-          get: async () => ({ result: { nextReviewAt: now + 60_000 } }) as any,
+          get: async () =>
+            ({ result: { nextReviewAt: now + 86_400_000 } }) as any,
         },
       }),
-      callAgent: async () => {
-        throw new Error("not-due signal must not consume the shared allowance");
+      callAgent: async () => ({
+        id: "exact-signal-review",
+        kind: "agent",
+        status: "done",
+        summary: "reviewed",
+        output: judgment,
+      }),
+    });
+    const reviewed = await reviewMetric(
+      ctx,
+      async (metricId, cut, alertId) => {
+        read = { metricId, cut, alertId };
+        return {
+          ...evidence(metricId, cut),
+          alerts: [{ alertId: 7, createdAt: now - 1000, resolvedAt }],
+        };
       },
-    }),
-    async () => {
-      evidenceRead = true;
-      return evidence("sample.other", metricReviewCut(now));
-    },
-    root,
-  );
-  expect(evidenceRead).toBeFalse();
-  expect(notDue.output).toMatchObject({
-    state: "converged",
-    result: {
-      disposition: "not-due",
-      metricId: "sample.other",
-      nextReviewAt: now + 60_000,
-    },
-  });
-});
+      root,
+    );
+    expect(read).toEqual({
+      metricId: "may.daemon-sql-time-percent",
+      cut: now + 1,
+      alertId: 7,
+    });
+    expect(reviewed.output).toMatchObject({
+      state: "converged",
+      result: {
+        publication: { metricId: "may.daemon-sql-time-percent", alertId: 7 },
+      },
+    });
+
+    let evidenceRead = false;
+    const notDue = await reviewMetric(
+      context({
+        input: { metricId: "sample.other", end: now + 1, automatic: true },
+        read: createTestAppRead({
+          tasks: {
+            get: async () =>
+              ({ result: { nextReviewAt: now + 60_000 } }) as any,
+          },
+        }),
+        callAgent: async () => {
+          throw new Error(
+            "not-due signal must not consume the shared allowance",
+          );
+        },
+      }),
+      async () => {
+        evidenceRead = true;
+        return evidence("sample.other", metricReviewCut(now));
+      },
+      root,
+    );
+    expect(evidenceRead).toBeFalse();
+    expect(notDue.output).toMatchObject({
+      state: "converged",
+      result: {
+        disposition: "not-due",
+        metricId: "sample.other",
+        nextReviewAt: now + 60_000,
+      },
+    });
+
+    const waiting = await reviewMetric(
+      context({
+        input: {
+          metricId: "sample.other",
+          end: now + 1,
+          automatic: true,
+          alertId: 8,
+        },
+        callAgent: async () => {
+          throw new Error("Shared capacity remains enforced");
+        },
+      }),
+      async (id, cut, alertId) => ({
+        ...evidence(id, cut),
+        alerts: [{ alertId }],
+      }),
+      root,
+    );
+    expect(waiting.output).toMatchObject({
+      state: "waiting",
+      result: { disposition: "budget-deferred" },
+    });
+  },
+);
 
 test("periodic selection revisits persistent metrics, honors the prior review boundary and exposes unavailable coverage", async () => {
   let nextReviewAt = end + 3_600_000;
@@ -328,6 +365,7 @@ test("periodic selection revisits persistent metrics, honors the prior review bo
   });
   const list = async () => ({
     metrics: [
+      { id: "aaa.retired", status: "retired", alertOpen: true },
       {
         id: "sample.failures",
         project: "sample",
@@ -359,7 +397,10 @@ test("periodic selection revisits persistent metrics, honors the prior review bo
     ctx,
     "",
     "evaluator",
-    async (id, cut) => evidence(id, cut),
+    async (id, cut) => {
+      expect(id).not.toBe("aaa.retired");
+      return evidence(id, cut);
+    },
     list,
     end,
   );
