@@ -136,9 +136,10 @@ inbox, session or delivery identifier.
 
 Infra retries delivery using the saved call identity. On a later attempt, it
 supplies accepted references and results so the worker can use or explicitly
-refer to them. Similar text alone cannot distinguish recovery from an intended
-new request. The reply convenience does not promise automatic deduplication of
-independent calls with the same content; use the installed replay contract.
+refer to them. The default is safe retry of that operation, with explicit
+exceptions described [below](#safe-retry-by-default-explicit-exceptions).
+An intentional new operation remains distinct even when its content matches;
+similar text alone cannot establish replay identity.
 
 The choice belongs to the caller, outside the receiver's domain requirements:
 
@@ -156,6 +157,62 @@ Request/send capabilities that support both choices require the caller to
 choose. A direct read has a fixed result contract and needs no extra choice.
 Capabilities advertise only choices they implement; infra rejects unsupported
 ones. Existing accepted work retains its saved semantics during migration.
+
+### Safe retry by default; explicit exceptions
+
+Design capabilities so retrying the same operation is safe by default. Infra
+performs routine caller retries, retaining identity and handling timing, backoff,
+replay and recovery under the existing execution policy. Agents and authored
+workflows need no delivery retry loop or extra model call to resend unchanged
+work. The agent may explicitly choose retry, repair, failover or another recovery
+strategy within its authority, without waiting for automatic retries to end.
+Infra executes that decision through the owning capability, using its saved
+identity for the same operation and ordinary admission for intentionally new
+work. Both automatic and agent-requested retries follow the same effect-safety,
+scope and concurrency rules. Existing operation references remain usable for
+control or inspection without making bookkeeping the caller's job.
+
+An attempt-scoped call respects its current deadline and cancellation; retries
+do not extend the allowance. Durable work continues through its existing owner's
+recovery policy. Publish progress and correlated failures through existing
+context, metrics and declared review routes, so recurring retries remain visible
+without requiring the agent to administer each one. Mechanical recovery does
+not invent new input, permissions or a different strategy.
+
+For durable work, retain its identity before dispatch and reuse it across
+delivery retries and recovery. Repeated or concurrent submissions of that same
+operation reuse accepted work and its receipt/result. Resume unfinished work
+through its existing owner. Do not create another request or repeat a committed
+effect merely because an acknowledgment was lost. Apply the same rule regardless
+of whether the caller requested a reply; scope and freshness checks still apply.
+
+This is an idempotent effect contract, not a promise that code executes only
+once. Reads or cheap computation may run again. Implement the smallest sufficient
+protection at the owning boundary: existing atomic admission and replay records,
+an idempotent desired-state operation, or a provider's supported idempotency key.
+One admitted Task alone does not make every external effect inside it safe to
+repeat. Verify the actual effect boundary, including interruption after the
+effect but before recording its acknowledgment.
+
+Some operations cannot provide that behavior at acceptable cost. For example,
+a message provider may accept a send but supply neither a retry key nor a way
+to confirm the send after a lost response. Mark that operation's limitation in
+its existing description/contract before use: what could repeat, the scope or
+retention limit of any retry protection, and the available recovery action.
+An exception belongs to the affected operation, not every action in its App.
+Do not add a caller-managed idempotency flag or a separate exception registry.
+
+For an exception, infra performs supported status checks and known-safe recovery.
+If the effect remains unknown and replay could duplicate it, expose that evidence
+to the responsible agent to decide whether another effect is acceptable or a
+different action is needed. This does not stop independent Task work or impose a
+retry-count limit. Within a safe retry contract, uncertainty normally calls for
+recovery of the same operation and needs no new semantic decision from the agent.
+
+Safe retry is a design default to implement and verify, not evidence that every
+current tool already supports it. Publish actual limitations with installed
+capabilities. This refinement adds no runtime field or exactly-once guarantee
+for arbitrary shell commands or unsupported provider effects.
 
 ### Acceptance is specific to the action
 

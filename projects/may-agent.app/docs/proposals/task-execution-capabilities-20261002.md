@@ -163,15 +163,21 @@ choice becomes usable when the corresponding infra support is installed.
    gaps, and the attempt decision required by the supplied schema. Infra
    maintains Task state. Your accepted completion judgment normally settles
    the addressed request; it does not guarantee objective correctness.
-6. **Resume from retained work.** After interruption, inspect receipts and
-   results supplied by infra before resubmitting. Refer to accepted work through
-   the capability's supported contract. A new submission is not automatically
-   a retry of a semantically similar request; arbitrary shell effects have no
-   promise of exactly-once execution.
-7. **Respond to failure.** Use the error and prior outcomes to judge whether
-   to repair, retry, change approach or ask for help under App policy. Keep
-   missing observations explicit. Repeated identical failure is evidence to
-   reassess the approach; it does not require a universal retry limit.
+6. **Resume from retained work.** Infra handles routine retries and recovery of
+   the same operation, including identity, backoff and safe replay. Use its
+   supplied progress and results; you need not administer delivery retries.
+   You may explicitly request a retry as a recovery decision; infra executes it
+   through the same capability contract. An intentional new operation remains
+   distinct. Where safe retry is unavailable, use the disclosed exception and
+   evidence to judge whether another effect or a different approach is appropriate.
+7. **Respond to failure.** When judgment helps, use the error and prior outcomes
+   to choose an explicit retry, repair, failover, a changed approach or help
+   under App policy. You need not wait for automatic retries to end before
+   making an authorized recovery decision.
+   Infra continues known-safe recovery under the existing execution policy;
+   you do not administer each retry. Keep missing observations explicit.
+   Repeated identical failure is evidence to reassess the approach; it does
+   not require a universal retry limit.
 8. **Use the same contract throughout execution.** You may take many live
    actions and return one final decision. Refer to already accepted work;
    do not repeat it merely to include it in the final result. Only supported
@@ -195,7 +201,7 @@ Documenting a promise is insufficient without the feature that fulfills it.
 | 3. Actions | Advertise only installed, permitted operations with input/result and lifetime semantics. Derive trusted caller identity. For durable work, save ownership and required return bookkeeping before confirming acceptance. | A required review reply reaches its caller after restart; no-reply work remains receiver-owned without a caller completion wake. Missing delivery support rejects visibly. |
 | 4. Progress and waiting | Retain accepted Conditions and required replies across attempts; observe and deliver changed facts. Keep observation status separate from the worker's execution decision. | A pending review allows testing to continue. A worker can yield for the saved answer without creating a second observer. |
 | 5. Judgment | Validate and record the worker's decision and derive Task state. Trust the App's judgment by default; preserve outstanding facts without adding an infra semantic veto. | An authorized, valid convergence decision settles addressed work even if a related Condition remains pending; both facts remain accurately recorded. |
-| 6. Resume | Preserve accepted durable work, expose receipts/results and fence stale Task changes. Honor the owning capability's replay contract. Make uncertain acceptance explicit when it cannot be established. | Replaying the same admitted request returns its retained receipt; a stale attempt cannot overwrite newer Task state. |
+| 6. Resume | Own routine retries, backoff and recovery within existing execution bounds. Make replay of the same operation safe by default, preserving identity and accepted work. Enforce scope and stale-attempt fences. Disclose exceptions with recovery guidance and honest effect uncertainty. | Infra recovers a lost acknowledgment without asking the agent to resend: one admitted request, no duplicate effect. An unsafe external resend is exposed as an exception rather than silently replayed. |
 | 7. Failure | Return actionable validation/execution errors with available acceptance evidence. Retain correlated failures and usage for permitted reads, existing metrics and observation routes. Deliver evidence through the declared route and execute authorized repair/escalation actions. | An evaluator agent receives a recurring failure trend, judges whether investigation is needed and submits the chosen action; infra retains and delivers that work. |
 | 8. Consistent execution | Route live tools, SDK calls and supported final declarations through the owning admission implementation. Supply equivalent supported semantics through executor adapters. | The same permitted request has the same ownership and feedback through each surface; a live action does not end the attempt. |
 
@@ -218,7 +224,9 @@ The proposed `reply: "required"` returns an answer directly or through a retaine
 return path; `reply: "none"` confirms accepted responsibility without creating a
 caller completion dependency. Neither choice transfers the caller's original
 assignment. Both report known acceptance or rejection; a lost acknowledgment
-can leave acceptance uncertain and must not be reported as a definite rejection.
+normally triggers recovery or retry of the same operation. Infra must not turn
+it into a new request. If acceptance is still uncertain, retain that fact while
+following the capability's [safe retry contract](task-execution-capability-contracts-20261003.md#safe-retry-by-default-explicit-exceptions).
 A required answer can arrive later while other useful work continues. It
 requests feedback; it is not an infra-enforced prerequisite for convergence.
 
@@ -298,7 +306,8 @@ the receiver's contribution; only the former owes a caller result notification.
 Keep the current result schema and explicit observation mechanism. Human
 messaging uses its own delivery contract and gets a separate trial when changed.
 
-Check fast results, interruption after acceptance, receiver failure and late
+Check fast results, lost acknowledgment followed by safe retry, interruption
+after acceptance, receiver failure and late
 results after closure through normal admission and return paths. Check ordinary
 success and agent behavior too: useful testing continues, corrections remain
 accounted for, and accepted work is reused when appropriate. Review the chosen
