@@ -1113,6 +1113,9 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
       const executionDeadlineAt = run.startedAt + executionTimeoutMs;
       const executionTimeoutMessage = `Workflow "${workflow.name}" timed out after ${executionTimeoutMs}ms`;
       const assertExecutionActive = (): void => {
+        if (!signal.aborted && Date.now() >= executionDeadlineAt) {
+          controller.abort(new Error(executionTimeoutMessage));
+        }
         signal.throwIfAborted();
       };
       const cancelActiveStepSessions = (): void => {
@@ -1599,7 +1602,10 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
         signal.addEventListener("abort", stopForAbort, { once: true });
       });
       const executionTimer = executionTimeoutMs
-        ? setTimeout(() => controller.abort(new Error(executionTimeoutMessage)), executionTimeoutMs)
+        ? setTimeout(
+            () => controller.abort(new Error(executionTimeoutMessage)),
+            Math.max(0, executionDeadlineAt - Date.now()),
+          )
         : undefined;
       // Register cancellation before invoking authored code, which may itself
       // synchronously trigger its caller's cancellation.
