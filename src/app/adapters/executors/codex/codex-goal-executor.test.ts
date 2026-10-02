@@ -213,8 +213,8 @@ class FakeClient implements CodexGoalClient {
     this.instructions.push(input.text);
     expect(input.text).toContain("## Canonical May Task Attempt");
   }
-  async setGoal(input: { threadId: string; objective: string }) {
-    this.calls.push(`goal:${input.threadId}`);
+  async setGoal(input: { threadId: string; objective: string; status?: "active" | "paused" }) {
+    this.calls.push(`${input.status === "paused" ? "pause" : "goal"}:${input.threadId}`);
     expect(input.objective).toContain("Task mental model");
   }
   async waitForActiveTurn() {
@@ -383,13 +383,15 @@ describe("codex-goal Task executor", () => {
       "preflight:/usr/bin/true",
       `start:${root}`,
     ]);
-    expect(resumedClient.calls.slice(0, 3)).toEqual([
+    expect(resumedClient.calls.slice(0, 4)).toEqual([
       "initialize",
       "preflight:/usr/bin/true",
+      "pause:thread-1",
       "resume:thread-1",
     ]);
     expect(firstClient.calls).not.toContain("inject:thread-1");
     expect(firstClient.calls.indexOf("goal:thread-1")).toBeGreaterThan(firstClient.calls.indexOf(`start:${root}`));
+    expect(resumedClient.calls.indexOf("resume:thread-1")).toBeGreaterThan(resumedClient.calls.indexOf("pause:thread-1"));
     expect(resumedClient.calls.indexOf("inject:thread-1")).toBeGreaterThan(resumedClient.calls.indexOf("resume:thread-1"));
     expect(resumedClient.calls.indexOf("goal:thread-1")).toBeGreaterThan(resumedClient.calls.indexOf("inject:thread-1"));
     for (const [client, version] of [[firstClient, "v3"], [resumedClient, "v4"]] as const) {
@@ -437,13 +439,20 @@ describe("codex-goal Task executor", () => {
     client.execCommand = async (input) => {
       client.calls.push(`preflight:${input.command.join(" ")}`);
       client.preflights.push(input);
-      return { exitCode: 1, stdout: "ignored", stderr: "sandbox unavailable" };
+      return { exitCode: 1, stdout: "ignored", stderr: `sandbox unavailable\n${"x".repeat(2_000)}` };
     };
     const executor = createCodexGoalExecutor({ stateFile, createClient: () => client });
 
-    await expect(executor(attempt({ cwd: root }))).rejects.toThrow(
-      "Codex executor preflight failed with exit code 1",
-    );
+    let failure: unknown;
+    try {
+      await executor(attempt({ cwd: root }));
+    } catch (error) {
+      failure = error;
+    }
+    expect(failure).toBeInstanceOf(Error);
+    expect((failure as Error).message).toStartWith("Codex executor preflight failed with exit code 1: sandbox unavailable");
+    expect((failure as Error).message).toEndWith("…[truncated]");
+    expect((failure as Error).message.length).toBeLessThan(1_200);
     expect(client.calls).toEqual(["initialize", "preflight:/usr/bin/true", "stop"]);
     expect(client.instructions).toEqual([]);
     expect(existsSync(stateFile)).toBe(false);
@@ -474,11 +483,22 @@ describe("codex-goal Task executor", () => {
     const client = new FakeClient("thread-must-not-resume");
     client.execCommand = async (input) => {
       client.calls.push(`preflight:${input.command.join(" ")}`);
-      throw new Error("command/exec transport unavailable");
+      throw new Error(`command/exec transport unavailable\n${"y".repeat(2_000)}`);
     };
     const executor = createCodexGoalExecutor({ stateFile, createClient: () => client });
 
-    await expect(executor(attempt({ cwd: root }))).rejects.toThrow("command/exec transport unavailable");
+    let failure: unknown;
+    try {
+      await executor(attempt({ cwd: root }));
+    } catch (error) {
+      failure = error;
+    }
+    expect(failure).toBeInstanceOf(Error);
+    expect((failure as Error).message).toStartWith(
+      "Codex executor preflight transport failed: command/exec transport unavailable",
+    );
+    expect((failure as Error).message).toEndWith("…[truncated]");
+    expect((failure as Error).message.length).toBeLessThan(1_200);
     expect(client.calls).toEqual(["initialize", "preflight:/usr/bin/true", "stop"]);
     expect(client.instructions).toEqual([]);
     expect(

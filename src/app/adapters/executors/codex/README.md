@@ -22,14 +22,20 @@ Colocated tests cover process bounds, bindings, exact-turn results, progress and
 stale ownership. `codex-goal-fencing.test.ts` exercises the Host boundary.
 
 `bun run check:codex-goal-protocol` exercises the production client against the
-installed Codex CLI. It initializes a thread, saves a paused goal, observes its
-notification, restarts the process, and reads the same thread and goal. It uses
-disposable state without inherited credentials or a model call. The image smoke
-test runs this check with the shipped CLI as the runtime user.
+installed Codex CLI and a loopback Responses fixture. It checks paused-goal
+notification and persistence, captures the actual outgoing request, restarts and
+resumes the process, inserts a fresh canonical attempt packet (including exact
+revision, input key, and prior rejection), and checks that an active new turn
+rejects steering addressed to the old turn. It uses disposable state without
+inherited credentials or an external model call. The image smoke test runs this
+check with the shipped CLI as the runtime user.
 
-This tests the protocol behavior May uses for setup and persistence. It does
-not test model turns, tool execution or live provider compatibility. Keep the
-colocated turn/error/cancellation tests and review upstream release changes when
-upgrading the pinned CLI. Generated schemas can help investigate a failure;
-whole-schema fingerprints are not a compatibility contract. See the
+This tests the production client protocol behavior May uses for restart/resume
+and fresh request context. It does not run the complete executor orchestration
+or test tool execution, live provider recovery, or Codex compaction: no
+deterministic portable compaction trigger is available in this fixture. Keep
+the colocated executor, turn, error, and cancellation tests and review upstream
+release changes when upgrading the pinned CLI. Generated schemas can help
+investigate a failure; whole-schema fingerprints are not a compatibility
+contract. See the
 [official app-server documentation](https://developers.openai.com/codex/app-server).

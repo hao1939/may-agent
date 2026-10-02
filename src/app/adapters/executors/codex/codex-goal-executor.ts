@@ -84,17 +84,38 @@ const DEFAULT_TURN_TIMEOUT_MS = 30 * 60_000;
 const MAX_PENDING_STEERING_EVENTS = 64;
 const EXECUTOR_PREFLIGHT_TIMEOUT_MS = 5_000;
 const EXECUTOR_PREFLIGHT_OUTPUT_BYTES_CAP = 4 * 1024;
+const EXECUTOR_PREFLIGHT_DIAGNOSTIC_CHARS = 1_024;
+
+function boundedPreflightDiagnostic(value: unknown): string {
+  const text = (value instanceof Error ? value.message : String(value))
+    .replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/g, " ")
+    .trim();
+  if (!text) return "no diagnostic output";
+  return text.length <= EXECUTOR_PREFLIGHT_DIAGNOSTIC_CHARS
+    ? text
+    : `${text.slice(0, EXECUTOR_PREFLIGHT_DIAGNOSTIC_CHARS)}…[truncated]`;
+}
 
 async function preflightExecutor(client: CodexGoalClient, cwd: string): Promise<void> {
-  const result = await client.execCommand({
-    command: ["/usr/bin/true"],
-    cwd,
-    sandboxPolicy: { type: "readOnly", networkAccess: false },
-    timeoutMs: EXECUTOR_PREFLIGHT_TIMEOUT_MS,
-    outputBytesCap: EXECUTOR_PREFLIGHT_OUTPUT_BYTES_CAP,
-  });
+  let result: CodexCommandExecResult;
+  try {
+    result = await client.execCommand({
+      command: ["/usr/bin/true"],
+      cwd,
+      sandboxPolicy: { type: "readOnly", networkAccess: false },
+      timeoutMs: EXECUTOR_PREFLIGHT_TIMEOUT_MS,
+      outputBytesCap: EXECUTOR_PREFLIGHT_OUTPUT_BYTES_CAP,
+    });
+  } catch (error) {
+    throw new Error(`Codex executor preflight transport failed: ${boundedPreflightDiagnostic(error)}`, {
+      cause: error,
+    });
+  }
   if (result.exitCode !== 0) {
-    throw new Error(`Codex executor preflight failed with exit code ${result.exitCode}`);
+    const diagnostic = result.stderr.trim() || result.stdout.trim();
+    throw new Error(
+      `Codex executor preflight failed with exit code ${result.exitCode}: ${boundedPreflightDiagnostic(diagnostic)}`,
+    );
   }
 }
 
@@ -337,6 +358,17 @@ export function createCodexGoalExecutor(options: CodexGoalExecutorOptions): Task
       attempt.signal.throwIfAborted();
       await client.initialize();
       await preflightExecutor(client, attempt.cwd);
+      // The installed CLI automatically restarts a persisted active goal during
+      // thread/resume. Pause it while still unloaded so no old-context turn can
+      // start before the current canonical packet is inserted.
+      if (existing) {
+        await client.setGoal({
+          threadId: existing.threadId,
+          objective: rendered.goalObjective,
+          status: "paused",
+        });
+        updateGoalStatus("paused");
+      }
       const binding = existing
         ? await client.resumeThread({
             threadId: existing.threadId,
