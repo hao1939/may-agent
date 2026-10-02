@@ -367,7 +367,11 @@ one coalesced App-scoped reread for active chat/topic surfaces. Executor
 progress refreshes an exact watch only and does not rescan `/todo`. A new or
 changed off-watch action may produce one best-effort compact notification on
 each configured surface and records exact Task references in shared
-Conversation after it is shown. Manual `/todo` views do not advance or suppress
+Conversation after it is shown. Confirmed automatic watch updates use the same
+delivered-action tracking as automatic alerts. After stopping a watch, an
+unchanged action already shown by an automatic update stays quiet on later
+wakes. Complete watch deliveries carry the same exact receipt used after restart.
+Manual `/todo` views do not advance or suppress
 that automatic-notification presentation state, so one manual/automatic overlap
 is allowed. Surfaces do not coordinate or promise global exactly-once delivery.
 Configured base chats are active after startup without waiting for a new inbound
