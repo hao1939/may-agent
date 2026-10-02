@@ -648,8 +648,13 @@ export function listPendingConversationTaskChanges(
     .prepare(
       `
     -- Linked Task history can repeat the same exact admission lookup for every Topic and attempt.
-    -- Read current selected-report links once; the automatic CTE index handles repeated correlation.
-    WITH selected_reports AS MATERIALIZED (
+    -- Read selected reports only for linked source Tasks, including cross-App links.
+    WITH linked_tasks AS MATERIALIZED (
+      SELECT DISTINCT linked.app_id, linked.task_id
+      FROM conversation_topics topic
+      JOIN conversation_topic_tasks linked ON linked.topic_id = topic.id
+      WHERE topic.app_id = ?
+    ), selected_reports AS MATERIALIZED (
       SELECT admission.app_id,
         CAST(json_extract(admission.admission_json, '$.taskId') AS TEXT) AS task_id,
         json_extract(admission.admission_json, '$.taskGeneration') AS task_generation,
@@ -657,7 +662,10 @@ export function listPendingConversationTaskChanges(
         origin_input.app_id AS origin_app_id,
         origin_input.conversation_id AS origin_conversation_id,
         origin_input.topic_id AS origin_topic_id
-      FROM app_task_admissions admission
+      FROM linked_tasks linked
+      CROSS JOIN app_task_admissions admission
+        ON admission.app_id = linked.app_id
+          AND CAST(json_extract(admission.admission_json, '$.taskId') AS TEXT) = linked.task_id
       JOIN app_inbox_items origin_input
         ON origin_input.id = json_extract(admission.admission_json, '$.inputEvent.data.request.id')
       WHERE json_extract(admission.admission_json, '$.resultAttemptId') IS NULL
@@ -711,7 +719,7 @@ export function listPendingConversationTaskChanges(
     LIMIT ?
   `,
     )
-    .all(appId, appId, appId, limit)
+    .all(appId, appId, appId, appId, limit)
     .map((row) => {
       const ref = {
         appId: String(row.appId),
