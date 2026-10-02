@@ -141,7 +141,7 @@ that alone does not prove its owner was notified or acted. Inspect the reason
 and existing declared owner/parent route, then repair the prerequisite or obtain
 an authorized decision for that same Task. Do not create a replacement Task or
 invent an owner-inbox event merely because it is waiting for attention. The
-[controller proposal](../proposals/task-controller-pattern.md) tracks the
+[controller proposal](../archive/reviews/task-controller-pattern.md) tracks the
 remaining end-to-end decision-route proof.
 
 For a state-shape migration:

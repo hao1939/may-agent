@@ -165,7 +165,7 @@ the particular action that needs it. Detail-file failure preserves inline facts;
 when the initial workspace entry cannot be saved, the root keeps its full input.
 Explicit App context preparation still receives the original call request.
 
-The [integration record](../proposals/task-decision-context-integration-20260926.md)
+The [integration record](../archive/reviews/task-decision-context-integration-20260926.md)
 records source integration, trials and rollout evidence. This does not add mid-command
 steering to native executors or change workflow result/Task settlement rules.
 
@@ -242,7 +242,7 @@ Session transcripts do not capture every post-transform provider input.
 
 The [assembly manual](../2b-manual/agent-convention.md#system-prompt-assembly)
 explains ordering, extension choices and activation. The
-[implementation record](../proposals/agent-prompt-assembly-review-20260927.md#implementation-and-verification)
+[implementation record](../archive/reviews/agent-prompt-assembly-review-20260927.md#implementation-and-verification)
 records source and test status separately from deployment and behavioral quality.
 
 ## Choosing the mechanism

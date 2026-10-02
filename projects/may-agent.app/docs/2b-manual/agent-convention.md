@@ -125,7 +125,7 @@ file inside a definition release stays with that snapshot; a live fact changes
 when its tool reads the current owned source. Keep source/freshness clear.
 Restart restores the active definition, not unactivated edits. Temporary input
 or a selected skill may remain in history without becoming standing guidance.
-The [method matrix](../proposals/extension-methods-poc-20260912.md)
+The [method matrix](../archive/reviews/extension-methods-poc-20260912.md)
 explains the selection, activation and retention tradeoffs.
 
 ## AGENTS.md Shape
@@ -224,7 +224,7 @@ into `manager.runDefinition`, `prepareAgentExecution`, and the runner's
 `transformContext`/`streamFn` boundary. Inspect the actual system text, message
 view and tool schemas there. Definition/session metadata, transcripts and Task
 detail artifacts provide useful evidence, but are not an exact capture of every
-provider request. The [dated review](../proposals/agent-prompt-assembly-review-20260927.md)
+provider request. The [dated review](../archive/reviews/agent-prompt-assembly-review-20260927.md)
 contains the complete source map, baseline contradictions and implementation evidence.
 
 ### How to extend
@@ -302,7 +302,7 @@ executions retain their captured definitions. Reporting `context_updates`,
 editing a source file, passing CI and activating an App are separate facts.
 For the prompt cleanup, integrate May's companion guidance before activating
 the Host change; it remains compatible with the previous Host. No data migration
-is needed. See the [implementation record](../proposals/agent-prompt-assembly-review-20260927.md#implementation-and-verification).
+is needed. See the [implementation record](../archive/reviews/agent-prompt-assembly-review-20260927.md#implementation-and-verification).
 
 ## agent.json
 

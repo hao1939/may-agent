@@ -117,3 +117,48 @@ contracts; Tier-2 design governs when wording conflicts.
 
 See [V2 archive](v2/README.md) for the retired V2 specification, migration
 plan, implementation notes, and review.
+
+## Implementation and trial records
+
+These records were separated from active proposals during the readability
+cleanup. Their status statements describe the recorded revision or trial. Read
+the linked contract for current behavior; preserve unresolved limitations rather
+than interpreting archival as completion. Relative links were updated on move.
+
+| Record | Owning need or contract |
+| --- | --- |
+| [Workspace hygiene and unmerged design review](reviews/workspace-hygiene-review-20261003.md) | [App Root Layout](../2a-design/app-root-layout.md) |
+| [Task execution surface: retained trials](reviews/task-executor-surface-20260928.md) | [Execution Boundary](../2a-design/system-boundary.md) |
+| [Task observation: declare the interest, supply the detector](reviews/task-observation-contract-20260930.md) | [App Contract](../2a-design/agent-app.md) |
+| [Agent prompt assembly: source review and simplification proposal](reviews/agent-prompt-assembly-review-20260927.md) | [Agent Cooperation](../2a-design/agents.md) |
+| [Task context: reuse and smaller presentation changes](reviews/task-context-reuse-followup-20260926.md) | [Agent Cooperation](../2a-design/agents.md) |
+| [Task context: matched behavior comparison](reviews/task-decision-context-behavior-comparison-20260926.md) | [Agent Cooperation](../2a-design/agents.md) |
+| [Apply the Task decision-context proposal](reviews/task-decision-context-integration-20260926.md) | [Agent Cooperation](../2a-design/agents.md) |
+| [Ordinary commands from Task workers](reviews/task-worker-command-context-20260919.md) | [Agent Cooperation](../2a-design/agents.md) |
+| [Return problems to the caller](reviews/caller-feedback-and-waiting.md) | [Escalation](../2a-design/escalation.md) |
+| [One Task lifecycle](reviews/conversation-input-unification.md) | [System Model](../2a-design/system-model.md) |
+| [Design documentation must match intended contracts and evidence](reviews/design-doc-live-truth-review-20260920.md) | [System Model](../2a-design/system-model.md) |
+| [Does the common Task loop pay for itself?](reviews/controller-poc-deeper-review.md) | [Task Resource Engine](../2a-design/task-resource-engine.md) |
+| [Controller PoC: evidence and next gate](reviews/controller-poc-evidence.md) | [Task Resource Engine](../2a-design/task-resource-engine.md) |
+| [Returning an answer after a wait](reviews/controller-poc-input-continuation.md) | [Task Resource Engine](../2a-design/task-resource-engine.md) |
+| [Common outcomes and closure: source experiment](reviews/controller-poc-outcomes-and-closure.md) | [Task Resource Engine](../2a-design/task-resource-engine.md) |
+| [Recovery against the continuing-Task design](reviews/controller-poc-recovery-review.md) | [Task Resource Engine](../2a-design/task-resource-engine.md) |
+| [Explicit Task result scope](reviews/explicit-task-input-consideration-20260930.md) | [Task Resource Engine](../2a-design/task-resource-engine.md) |
+| [Recovering unanswered input after wait corrections](reviews/task-wait-recovery-20260918.md) | [Task Resource Engine](../2a-design/task-resource-engine.md) |
+| [Workflow PoC: make the process dependable](reviews/workflow-stability-poc-20260912.md) | [Workflow Discovery And Execution](../2a-design/workflows.md) |
+| [Design hierarchy and rationale review](reviews/design-hierarchy-review-20261003.md) | [May System Documentation](../README.md#design-hierarchy) |
+| [Agent adoption PoC: what actually changed behavior](reviews/agent-adoption-poc-20260912.md) | [Teaching agents: from a correction to dependable behavior](../proposals/agent-behavior-and-capability-extension.md) |
+| [Can an agent operate the improvement mechanism itself?](reviews/agent-operated-improvement-poc-20260912.md) | [Teaching agents: from a correction to dependable behavior](../proposals/agent-behavior-and-capability-extension.md) |
+| [Teaching May through conversation: next-phase results](reviews/conversation-adoption-poc-20260912.md) | [Teaching agents: from a correction to dependable behavior](../proposals/agent-behavior-and-capability-extension.md) |
+| [Agent extension methods: choosing, activating and evaluating changes](reviews/extension-methods-poc-20260912.md) | [Teaching agents: from a correction to dependable behavior](../proposals/agent-behavior-and-capability-extension.md) |
+| [Reachable feedback and honest source promotion](reviews/feedback-adoption-integration-20260912.md) | [Teaching agents: from a correction to dependable behavior](../proposals/agent-behavior-and-capability-extension.md) |
+| [Agent improvement through one ordinary Task](reviews/task-improvement-poc-20260912.md) | [Teaching agents: from a correction to dependable behavior](../proposals/agent-behavior-and-capability-extension.md) |
+| [Reviewing the capability contract against 90 recent PRs](reviews/task-capability-pr-review-20261003.md) | [Agent capability guidance and infra contract](../proposals/task-execution-capabilities-20261002.md) |
+| [Task observation implementation and recovery evidence](reviews/task-observation-implementation-20260930.md) | [Task observation: declare the interest, supply the detector](reviews/task-observation-contract-20260930.md) |
+| [#285 design and candidate review](reviews/task-attempt-decision-review-20261002.md) | [Task attempts](../2a-design/task-attempts.md); [deferred schema choice](../proposals/task-attempt-decision-schema-20261002.md) |
+
+| [Consolidate execution entry points](reviews/execution-entrypoint-consolidation.md) | [Agent Cooperation](../2a-design/agents.md) |
+| [Execution feedback: repair proposal](reviews/execution-feedback-repair-plan.md) | [Host And App Boundary](../2a-design/system-boundary.md) |
+| [One execution feedback model](reviews/execution-feedback-and-review.md) | [Host And App Boundary](../2a-design/system-boundary.md) |
+| [Task controller pattern: one commitment, one lifecycle](reviews/task-controller-pattern.md) | [Task Resource Engine](../2a-design/task-resource-engine.md) |
+| [Task context discovery and agent-directed work](reviews/task-context-discovery-20260917.md) | [Agent Cooperation](../2a-design/agents.md) |

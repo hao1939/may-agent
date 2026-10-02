@@ -13,7 +13,7 @@ establish the deployed artifact; see the [source review](../archive/reviews/desi
 
 The [storage extraction review](../proposals/storage-state-service.md#candidate-review-and-landing-order)
 retains the earlier boundary work. The
-[one-lifecycle baseline](../proposals/conversation-input-unification.md)
+[one-lifecycle baseline](../archive/reviews/conversation-input-unification.md)
 records the shared authority decision. Active-Turn reads use current Task
 execution and exact successor links; historical inbox leases are not authority.
 
@@ -116,7 +116,7 @@ pending input. Evidence already removed before this upgrade cannot be
 reconstructed. Mixed old/new writers are unsupported: an older writer can
 still delete receipt history. Rollback preserves Task results and pending input
 but restores the earlier duplicate-wake risk. See
-[duplicate handling](events.md#duplicate-delivery-and-safe-reconsideration).
+[duplicate handling](execution-feedback.md#duplicate-delivery-and-safe-reconsideration).
 
 Small Event bodies remain inline. Large bodies are written to the
 content-addressed store before their event row commits; SQL retains a bounded
@@ -140,7 +140,7 @@ The shared-lifecycle PoC also checks the admission owner's current authority
 inside that transaction: a failed lease renewal can revoke local ownership
 before the stored lease expires. A replay of an already committed attachment
 returns its exact outcome without authorizing new work. The
-[ownership evidence](../proposals/controller-poc-recovery-review.md#public-stop-and-admission-ownership)
+[ownership evidence](../archive/reviews/controller-poc-recovery-review.md#public-stop-and-admission-ownership)
 records the fix and its limits.
 
 Recovery may restore a missing input link from historical admission aliases
@@ -228,7 +228,7 @@ decisions; they do not receive the database or the Host-private state API.
 Adapters use their existing read/control protocols. No new server, database,
 resource controller, generic repository or per-write event protocol is required.
 
-The accepted [one-lifecycle baseline](../proposals/conversation-input-unification.md)
+The accepted [one-lifecycle baseline](../archive/reviews/conversation-input-unification.md)
 uses a Task claim as the single authority for Conversation execution. Ordered
 input and caller correlation remain; an inbox row must not hold a second
 independent execution claim. Fenced Task settlement composes typed conversation

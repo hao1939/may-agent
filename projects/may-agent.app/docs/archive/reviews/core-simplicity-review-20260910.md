@@ -176,7 +176,7 @@ process cannot reopen execution. Explicit retry, execution-spec change and
 accepted progress/waits remain possible on the same Task.
 
 This does not change the original probe or its captured measurements. The
-[controller proposal](../../proposals/task-controller-pattern.md#durable-retries)
+[controller proposal](task-controller-pattern.md#durable-retries)
 records the candidate's scope and verification. It adds no retry service or
 new Task lifecycle, and is not a deployed fix. Findings 1 and 2 were separately
 fixed by merged PR #105; recovery-query scaling remains deferred.

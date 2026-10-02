@@ -30,7 +30,7 @@ Create a Task only when it owns work, not merely because an event arrived.
 `workflow: "handle-request"` resolves
 `agents/<selected-agent>/workflows/handle-request.ts`. A Task without a workflow
 or named executor uses its explicit or inherited agent. See
-[execution selection](../2a-design/task-resource-engine.md#selecting-the-attempt-mechanism)
+[execution selection](../2a-design/task-attempts.md#selecting-the-attempt-mechanism)
 for unavailable bindings, blocked workflows and same-Task recovery.
 
 A workflow can call bounded agents and nested workflows with supplied
@@ -41,7 +41,7 @@ or implement controller retries.
 
 Use the SDK's `TaskReconcileResult`, `TaskAction`, `Condition` and
 `TaskAppRequest` types. The
-[Task result contract](../2a-design/task-resource-engine.md#result-contract)
+[Task result contract](../2a-design/task-attempts.md#result-contract)
 owns their disposition; do not maintain a second result schema here.
 
 Return the existing attempt `state`:

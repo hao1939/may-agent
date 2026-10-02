@@ -9,18 +9,22 @@
 exact input dependencies, accepted outcomes and indexed recovery are implemented.
 Task activation is independent of optional schedules. Attempts are bounded;
 unfinished work retries with backoff until progress or authorized owner closure.
-Explicit result scope is [merged in Host #269](../proposals/explicit-task-input-consideration-20260930.md); source and deployment evidence remain separate.
+Explicit result scope is [merged in Host #269](../archive/reviews/explicit-task-input-consideration-20260930.md); source and deployment evidence remain separate.
 
 This page owns the durable Task contract. Historical `achieve`/`maintain` mode
 data does not select a lifecycle; result labels describe attempts, not lifetime.
-The [caller-feedback contract](../proposals/caller-feedback-and-waiting.md), merged in #169,
-supports explicit updates while waiting or retrying and factual execution-error returns
-through the exact input's caller link; the proposal retains historical rollout evidence.
+[Caller feedback](events.md#results-and-correlation) supports explicit updates
+while waiting or retrying and factual execution-error returns through the exact
+input's caller link. Its [implementation record](../archive/reviews/caller-feedback-and-waiting.md)
+retains historical rollout evidence.
 [Message Lifecycle](message-lifecycle.md) owns conversational behavior;
 [App Contract](agent-app.md) owns declaration and input mapping.
 
-Read the lifecycle below first. Use [the executor contract](#one-attempt-interface)
+Read the lifecycle below first. Use [the executor contract](task-attempts.md#one-attempt-interface)
 and [resource reads](#resource-read-interface) as references when implementing an adapter.
+
+
+For execution input, live actions, result fields and acceptance, read [Task attempts and results](task-attempts.md). This chapter owns the durable lifecycle and Conditions.
 
 ## One lifecycle baseline
 
@@ -52,8 +56,11 @@ requirement inputs are never silently archived. Authorized continuation needs no
 Pre-reopen events cannot wake the new generation or satisfy its Conditions; unrelated Tasks may still observe them.
 See [the operator procedure](../2b-manual/app-operations-recovery.md#rejected-input-and-explicit-task-reopening) for replay, unchanged assignments and Conversation's successor convention.
 
-The [proposal](../proposals/conversation-input-unification.md) owns prerequisite handling, control scopes, code deletion and migration. Source verification does
-not certify App judgment or an installed release.
+[Attempt selection](task-attempts.md#selecting-the-attempt-mechanism) owns
+prerequisite failures; [Conversation execution](conversation-execution.md) owns
+turn controls. The [unification record](../archive/reviews/conversation-input-unification.md)
+retains code-deletion and migration evidence. Source verification does not
+certify App judgment or an installed release.
 
 ## One App work path
 
@@ -143,6 +150,75 @@ evidence so the worker or an authorized caller can investigate the actual failur
 a generic attention summary. Context larger than the Task evidence budget
 remains on the cited workflow run. This does not turn a prior failure into
 policy or make an unchanged automatic retry useful.
+
+## Execution and outstanding results
+
+For the agent's work, ask two independent questions:
+
+- **Running:** is an execution in progress?
+- **Waiting:** is a needed result still outstanding?
+
+| Running | Waiting | Meaning |
+| --- | --- | --- |
+| Yes | No | Working, with no outstanding result needed from elsewhere. |
+| Yes | Yes | Working while also waiting for a result; for example, preparing a review while a pipeline runs. |
+| No | Yes | No current execution; a result remains outstanding. Other useful work may already be queued. |
+| No | No | No current execution or outstanding wait. Work may be queued, up to date, closed, or need attention; read those facts separately. |
+
+An execution includes its tool calls and I/O; running does not mean the model
+is continuously generating text or consuming CPU. A direct tool call can keep
+that execution open while it awaits its response. Such a call does not require
+a persisted Condition merely to describe that it is waiting.
+
+The agent requests an outcome and handles a completed result, a pending result
+or a failure. It need not choose between infrastructure categories such as a
+helper call, delegated Task or provider operation. The selected capability must
+make its promise clear: does this call return the result, or has work been
+accepted with a reference and a supported later return path? Code owns that
+bookkeeping and cleanup. These are common meanings, not a new universal tool
+schema. See the [capability boundary](system-boundary.md#core-external-capabilities-and-composition).
+
+Task closure remains separate: an open Task is a responsibility, not proof of
+running execution or waiting. Existing attempts/claims and Condition/input
+links provide the durable facts. The scheduling phase describes eligibility;
+do not add combined phases, duplicate running/waiting flags or an agent-wide
+availability registry. A child relationship or an FYI event alone is not an
+outstanding result obligation.
+
+A Task can execute useful work while retaining outstanding dependencies. New
+relevant input can start a pass without satisfying an older wait. The agent
+chooses what can progress within scope and budget; code preserves the other
+waits and delivers their results. Answering that new input does not fulfill an
+older ask whose required result is still pending.
+
+When a result is still needed and no useful independent work remains, end the
+attempt with a durable wait.
+Release its execution capacity while the Task stays open. A matching result,
+other relevant input or a declared review checkpoint can wake it later. Ending
+an attempt is neither closing the Task nor abandoning the Request.
+
+| Current facts | Human-facing explanation |
+| --- | --- |
+| An attempt is running; results remain outstanding | Working on the review; also awaiting pipeline 42. |
+| No attempt is running; an external result is needed | Waiting for pipeline 42; no parent execution is running. |
+| No attempt is running; useful work is ready | Queued to continue the review. |
+| Current inputs are handled; no results remain outstanding | Up to date; available for later input. |
+| Progress needs an owner's decision | Needs attention: explain the decision and what can still proceed. |
+
+Idle is only an execution observation. It cannot establish that work is complete
+or that a wait is sensible. Likewise, waiting for a worker's answer does not
+prove that worker is currently running. Read its current status when making
+that claim, and keep a missing/unknown result distinguishable from completion.
+
+The same agent profile can serve several Tasks. One Task waiting does not make
+that agent globally unavailable. Within one Task, preserve one current attempt;
+outstanding dependencies do not authorize a second competing parent attempt.
+
+[Task attempts](task-attempts.md) owns the supported live changes and final
+result contract. The worker can act many times before returning; infra derives
+current Task state from admitted input, results, Conditions and owner controls.
+[Working on a Task](../2b-manual/task-execution-guide.md) shows the current
+`state`/`continue` choices without relying on a future schema.
 
 ## Resource authority
 
@@ -279,175 +355,8 @@ caller reconcile current evidence. A parent relation, an explicit `dependsOn`
 prerequisite and a Conversation follow-up link retain their different meanings.
 Parent placement alone supplies no return route. Child completion
 does not itself fulfill a parent Task or a human Request. The
-[comparison](../proposals/conversation-input-unification.md#which-differences-are-real)
+[comparison](../archive/reviews/conversation-input-unification.md#which-differences-are-real)
 explains how the target separates accepted outcomes, availability and closure.
-
-## Selecting the attempt mechanism
-
-Agent selection is:
-
-```text
-task.agent ?? nearest explicit ancestor agent ?? app.agent
-```
-
-If the Task names a workflow, that exact workflow is the selected handler.
-An unavailable agent, workflow or executor preserves visible failure and retries
-the same Task with backoff. It does not silently select another executor.
-Rejected handler output, explicit workflow blockers, thrown errors and timeouts
-also retain unfinished input and pace another attempt. A function or notification
-still named `attention` does not imply a permanent stop: inspect stored phase
-and retry eligibility. Only explicit workflow `needs-agent` requests a handoff.
-
-Workspace preparation failure is a failed prerequisite, not a handler
-execution failure. Preserve it as `WorkspacePreparationFailed` and do not invoke
-the handler in that attempt. The same retry policy rechecks the prerequisite;
-it does not prove an unchanged failure is transient. An owner can repair or
-revise the assignment, pause it, or close it. Exact, generation-fenced retry can
-recheck sooner without replacing the Task or erasing earlier attempt evidence.
-
-These distinctions are implemented in current source. Deployment evidence must
-identify its release separately. Retry policy does not establish that every
-repeated provider failure is transient.
-
-Human/control Task detail, list, and App counts must select the current Task
-generation. A historical completion receipt is evidence about that generation,
-not authority to hide a newer live generation or prevent its fenced retry.
-Same-generation completion still supersedes a stale live row. Cancellation
-keeps its own durable authority and fence.
-
-A workflow may explicitly return `needs-agent` after exhausting its bounded,
-safe moves. That creates at most one sequential agent attempt for the same
-task. Work for another App is a typed Runtime-managed task dependency, not
-`needs-agent`.
-
-## Result contract
-
-The source [Task types](../../../may-agent/packages/sdk/src/task.ts) and
-[result admission](../../../may-agent/packages/sdk/src/task-contract.ts) define
-the executable contract. A result supplies `state`, `summary`, `facts`, and
-optional bounded `result`, caller `response`, Task `actions`, Conditions, and
-`TaskAppRequest` entries. Legacy `dependencies` normalize to requests and caller
-Conditions at admission; the existing result schema and IDs remain unchanged.
-
-The result union selects how this attempt settles; it does not make stored
-facts mutually exclusive. A waiting result may request `continue: true` while
-old Conditions, accepted results and other pending inputs
-remain. Omitted waits are preserved; an exact accepted action retires one.
-
-When a file materially supports a completion or recovery claim, the result should
-retain a structured verified Artifact reference such as
-`artifacts: [{ path, sha256 }]`. A prose path is not discoverable by bounded
-public evidence read-back. Use the shared `EvidenceStore` when writing new
-evidence, or ordinary hash tooling for an existing authoritative file; the hash
-binds bytes, not source authority or semantic truth. See the
-[checked wait example](../examples/app.ts).
-
-| Outcome                                                                                 | Runtime disposition                                                                                                                                                                |
-| --------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Valid `converged` result                                                                | Accept the exact input's outcome when current-input fences, evidence, actions and verification permit; keep the Task open                                                          |
-| Valid `waiting` result                                                     | Retain independent Conditions and input; yield on a return route or schedule useful work; structural children alone do not establish a wait |
-| Valid `incomplete` result                                                               | Retain unsuccessful attempt facts, report the input's first accepted blocker to its linked caller, and retry unfinished work with backoff; no cancellation or implicit parent wake |
-| Workflow `needs-agent`                                                                  | At most one sequential selected-agent judgment for the same Task; no ownership transfer                                                                                            |
-| Unavailable agent/workflow/executor or failed workspace prerequisite                    | Visible failure and same-Task paced retry; no silent executor substitution                                                                                                         |
-| Invalid/rejected handler result (including self-unblock) or explicitly blocked workflow | Preserve diagnostic evidence and unfinished input, reject proposed effects and retry with pacing; not an accepted answer                                                           |
-| Thrown execution error or timeout                                                       | Same-Task execution-failure recovery, subject to its retry policy                                                                                                                  |
-| Stale generation, resource version or unseen-input fence                                | Reject stale effects; reread current state without replacing accepted state or releasing another attempt                                                                           |
-| Durable cancellation                                                                    | Retain cancellation, interrupt the exact attempt and reject its later stale result                                                                                                 |
-
-Unknown result fields are rejected. `needs-agent` is workflow-only. A waiting
-result may retain a bounded typed judgment in `result`; later attempts read it
-without reconstructing state from prose. A result may explicitly
-`retire-condition` only for one Condition currently linked to its own Task and
-must cite that Condition's observed generation plus non-empty result facts. This
-removes the Task's obsolete link; it does not assert that the external event
-occurred, mutate a shared Condition for another Task, or clear unrelated waits.
-Omission preserves waits, and stale generation or newer-input fences reject the
-whole result. A waiting result's absolute `reviewAt` is saved with the exact input
-and scheduled across restart. Early input does not consume it; an omitted future
-deadline survives re-wait. Due timers permit reconsideration, not satisfaction,
-answers, or bypassing failure backoff. Sleeping again needs a Condition or new
-future deadline; `continue: true` requests useful work. Failed verification cannot establish completion.
-
-The worker judges which requests its result covers; `inputKeys` names that complete set (up to 64).
-Omission uses the saved assignment and accepted live requests; `[]` covers none. Scheduling never expands that result.
-The Host validates references and saves result links; structural acceptance does not certify the worker's judgment.
-`converged` answers this set; waiting/incomplete retain it; unselected inputs survive.
-The Host maintains `inputWaits[key].pending`, waits/deadlines and continuation; workers read this current state without maintaining the ledger.
-
-`incomplete` requires a summary and non-empty facts; it cannot include actions, Conditions
-or child App requests. The Host checks eligibility inside the fenced transaction.
-It ends only the attempt, without fulfilling the input or a linked Request.
-The same Task remains pending. During settlement the Host selects a caller report
-if that input has no earlier selected report or the result says `report: true`.
-The stored `reportRevision` identifies that selection for delivery and deduplication.
-Report selection and caller delivery are existing bookkeeping; neither fulfills
-the input or proves a person saw the report.
-
-**Candidate correction:** Accepted incomplete settlement advances the notifications
-that the attempt considered and retains unanswered requirements in `inputWaits`.
-This advancement occurs at settlement, independently of caller delivery. Automatic
-and explicit owner retries preserve it; execution failures without an accepted
-report restore their unconsidered batch. Generation and action fences still apply.
-Source tests do not establish live adoption. Turn Stop and owner closure remain
-separate controls: closure fences automatic work. An authorized new requirement
-may explicitly reopen the same Task; late observations alone retain history.
-
-Creating follow-up work does not complete the current task. Live `tasks apply`
-and final declarations share admission; only final settlement ends the attempt.
-Requests deliver work through the receiving App and normal Task scheduling.
-
-**Source contract (Host PR #285, merged):** `state: "waiting"` with `continue: true` requests one more bounded
-pass on the same Task while retaining unanswered input and every independent
-wait. It requires non-empty progress facts, but not a newly submitted dependency:
-continuation is an immediate scheduling request, not a claim that an external
-fact is outstanding. It may coexist with `report: true`, which selects a new
-caller-relevant update without changing scheduling or wait state. Omitting
-`continue` yields the attempt, so a saved Condition or
-future `reviewAt` must provide a real return route. Facts make the request
-auditable; they do not prove progress or replace the existing attempt/resource
-bounds and owner review.
-
-The SDK's `admitTaskReconcileResult` is the single pure semantic validator for
-agent and workflow results. Executor finish paths call it before terminating so
-an invalid proposal returns correctable feedback; fenced settlement calls it
-again before applying effects. The pure validator knows only the proposed result.
-Settlement remains the authority for current generation, attempt, pending-input,
-creator, Condition and persistence checks. A schema, executor adapter, or recovery
-path must not define a narrower competing interpretation.
-
-Task changes and the final result apply in one transaction. Events emitted
-while an attempt runs are separate durable commit points: a resource-backed
-workflow supplies a stable local key, and the Host verifies the attempt fence,
-deduplicates, persists exact wakes, then publishes. Races against a newer
-generation or already-advanced target are treated as stale and retried from
-current state, not converted into partial mutation or misleading attention.
-Cross-App result work uses a typed request and optional caller Condition. Its App
-request row is the correlation record; generic event emission cannot create a
-second request lifecycle.
-
-## Acceptance
-
-Mechanical validation proves that a result is safe to apply, not that its
-domain claim is true. Every completed receipt records:
-
-```ts
-type TaskAcceptanceBasis = {
-  method: "deterministic" | "workflow-contract" | "agent-judgment";
-  verifier?: string;
-  facts: string[];
-};
-```
-
-A workflow verifier runs after result validation and before commit. It proves a
-positive postcondition. Missing or unknown evidence is not success. When a
-workflow can hand off with `needs-agent`, its hard verifier still applies to a
-later agent claim of convergence.
-
-Ordinary checks and repairs can run inside the workflow before it returns.
-The Host's final verifier runs after that invocation has ended; rejection records
-a failed attempt rather than re-entering that invocation. Unfinished input retries
-on the same Task with current evidence and backoff; verification failure cannot
-be used as an accepted answer.
 
 ## Conditions
 
@@ -526,7 +435,7 @@ retire only those established as satisfied, obsolete, or explicitly cancelled.
 Any relevant change can wake a pass; all acceptance requirements must still
 hold before completion. This includes unexpected event types, not only a
 pre-enumerated set of known domain changes. See
-[workflow wait semantics and implementation status](workflows.md#a-wait-reason-is-not-an-exclusive-event-filter).
+[workflow wait semantics and implementation status](execution-contributions.md#a-wait-reason-is-not-an-exclusive-event-filter).
 
 Condition declarations are identity-scoped deltas, not snapshots. A distinct ID
 adds an obligation; the same ID may update its complete specification while
@@ -585,7 +494,7 @@ Failure findings remain failed-attempt evidence, not stale-result interruptions.
 A new cross-App request remains effect-fenced separately.
 
 Delivery identity survives claim, settlement and late relay; receipt is not outcome acceptance.
-See [duplicate handling](events.md#duplicate-delivery-and-safe-reconsideration) for Host/App duties and Host #175.
+See [duplicate handling](execution-feedback.md#duplicate-delivery-and-safe-reconsideration) for Host/App duties and Host #175.
 
 Facts retain their source/content scope; Apps judge whether they establish readiness.
 A changed head neither erases useful evidence nor makes old-head proof current validation.
@@ -748,7 +657,7 @@ These are not stages every failure must climb. Apps judge a change of approach,
 scope or continuation; delegation is needed only when the next action crosses
 ownership. Attention must carry a concrete reason. Whether each failure reaches
 an existing exact caller route remains an explicit proof obligation in the
-[controller proposal](../proposals/task-controller-pattern.md).
+[controller proposal](../archive/reviews/task-controller-pattern.md).
 
 Retained legacy attention marked `previous-runtime-attempt-not-recoverable`
 is repaired into eligibility for the same Task and generation. This known
@@ -803,51 +712,6 @@ Tests and audits must prove:
     Direct non-App CLI experiments remain bounded caller-owned execution.
 12. Resource-backed Task contention never uses a synchronous filesystem wait,
     and slow Task I/O cannot delay event admission or resource reads.
-
-## One attempt interface
-
-Executor choice does not change Task semantics:
-
-```ts
-type TaskExecutor = (attempt: TaskAttempt) => Promise<TaskReconcileResult>;
-```
-
-The SDK-owned `TaskAttempt` supplies exact App/attempt identities, cancellation,
-resolved role, current `TaskDetail`, working/output paths, direct child/wait views,
-ordered unaccepted Events, result schema and fenced `publish`/`onEvent`.
-Transport adapters preserve this contract when projecting it to JSON.
-
-An executor reads current Task state and its bounded unobserved event batch,
-keeps working while safe progress is available, optionally publishes retry-safe
-progress or findings, and returns a proposed result, an exact external wait or
-a truthful blocker. The Host admits the returned result. Internal model turns
-and bounded work/check/repair iterations are not new Task attempts. `onEvent` is
-an optional low-latency view of new durable Task input such as feedback,
-approval, steering, or cancellation.
-The listener's attempt-local `accept` consumes the exact input only with an
-admitted result; the next attempt still receives it if the executor cannot
-incorporate it live. New input does not invalidate facts or completed work.
-The Runtime retains no-action output and open waits, but defers terminal
-judgments until the newer input has been considered. Results proposing Task
-actions remain atomic with those actions; unseen input still fences the batch.
-It preserves the clean workspace for that next pass. Cross-App dependency
-publication still requires current accepted input. The Runtime owns fencing,
-leases, event persistence, result admission, and recovery, so an executor
-implements no scheduler, queue, retry loop across Task attempts, or Task storage.
-Bounded repair inside one execution follows the
-[workflow repair convention](workflows.md#repair-within-an-attempt).
-
-`signal` cancels current managed, workflow or native execution, including on
-fenced Turn Stop or owner closure. It complements durable controls and result
-fences; aborting an attempt alone does not close its Task.
-
-An event addressed to `{ appId, taskId }` is durable Task input. Managed
-sessions can receive it live; a headless CLI that cannot accept a live message
-receives it on the next attempt. Both return through the same result fence.
-Executor selection follows [the selection contract](#selecting-the-attempt-mechanism):
-Host registrations take precedence over built-in adapters, and a missing name
-records visible failure and paced retry. Native process records, session IDs,
-prompts and outputs are attempt evidence, never another work authority.
 
 ## Task and task view
 

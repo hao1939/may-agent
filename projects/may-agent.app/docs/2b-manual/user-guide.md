@@ -37,7 +37,7 @@ turns as useful. A long discussion is not a reason to move it into a Task.
 An independent background assignment has an exact Task owned by the App that
 can do it; its findings can support your ongoing discussion.
 
-The [background authorization policy](../2a-design/message-lifecycle.md#authorization-for-background-work)
+The [background authorization policy](../2a-design/conversation-execution.md#authorization-for-background-work)
 allows already-authorized work to run in the background without another
 approval just for that execution choice. Discussing an idea does not authorize
 implementing it. New scope or authority outside existing instructions needs

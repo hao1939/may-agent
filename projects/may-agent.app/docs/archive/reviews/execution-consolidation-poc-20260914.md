@@ -4,7 +4,7 @@
 
 September 14, 2026. Isolated source implementation and portable experiments;
 the original trials used no live deployment or provider credentials. The
-[proposal](../../proposals/execution-entrypoint-consolidation.md) owns the change;
+[proposal](execution-entrypoint-consolidation.md) owns the change;
 the [execution boundary](../../2a-design/system-boundary.md#execution) owns the contract.
 
 ## Source and result

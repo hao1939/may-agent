@@ -17,14 +17,14 @@ Source checks and temporary-state experiments below are not deployment proof.
 implementation plan starts from `743aa5de`, including merged #127. Historical
 attachment evidence uses `569e4da0` (PR #108), with the original inventory and
 candidate at `350552a4` and `54b9eecf`. Settlement/retry slices also merged and
-are tracked in the [controller proposal](task-controller-pattern.md).
+are tracked in the [controller proposal](../archive/reviews/task-controller-pattern.md).
 
 **Vocabulary:** In the historical attachment sections, "request" means an inbox
 item and caller correlation. An accepted human ask is a separate **Request**.
 [Message Lifecycle](../2a-design/message-lifecycle.md#mental-model) owns the terms;
 the next slice removes that ambiguity from active APIs without rewriting history.
 
-The later [one-lifecycle baseline](conversation-input-unification.md) moves
+The later [one-lifecycle baseline](../archive/reviews/conversation-input-unification.md) moves
 Conversation execution into a stable Task claim and settlement path. Keep the
 typed state operations established here; compose them under that common fence.
 The inbox execution claim described in this implementation record is current
@@ -40,7 +40,7 @@ Keep SQLite as the authority underneath those operations.
 Apps define what we want; controllers move work forward; the state service keeps
 recorded truth consistent. This proposal owns the storage boundary, operation
 contracts, code organization and extraction evidence. The
-[controller proposal](task-controller-pattern.md) owns reconciliation, bounded
+[controller proposal](../archive/reviews/task-controller-pattern.md) owns reconciliation, bounded
 execution and recovery behavior. Neither implementation depends on completing a
 broad rewrite of the other.
 
@@ -644,7 +644,7 @@ without authorizing another execution; eligible new input still waits for fresh
 work. Its [recorded proof](../archive/implementation/storage-attachment-review-20260910.md#retry-exhaustion-follow-up)
 includes separate-process settlement without EventBus and rollback/reopen cases.
 Broader owner follow-through remains in the
-[controller proposal](task-controller-pattern.md#existing-parent-owner-proof).
+[controller proposal](../archive/reviews/task-controller-pattern.md#existing-parent-owner-proof).
 
 ## Sources and related contracts
 
@@ -652,7 +652,7 @@ Broader owner follow-through remains in the
 - [Task resource contract](../2a-design/task-resource-engine.md#resource-authority): existing Task authority and versions.
 - [Event contract](../2a-design/events.md): publication, admission and observation boundaries.
 - [Core principles](../1-principles/core-principles.md) and [system boundary](../2a-design/system-boundary.md).
-- [Controller proposal](task-controller-pattern.md) and [core organization proposal](task-runtime-organization.md).
+- [Controller proposal](../archive/reviews/task-controller-pattern.md) and [core organization proposal](task-runtime-organization.md).
 - [Task transitions and claims at the reviewed revision](https://github.com/hao1939/may-agent/blob/350552a4ba9a4278fe30897430619667bb7bb7f3/src/app/app-task-reconciler.ts).
 - [Request attachment and delegation](https://github.com/hao1939/may-agent/blob/350552a4ba9a4278fe30897430619667bb7bb7f3/src/app/app-inbox-host.ts#L1256), [request/Conversation claims](https://github.com/hao1939/may-agent/blob/350552a4ba9a4278fe30897430619667bb7bb7f3/src/app/app-inbox-store.ts#L660).
 - [Transactional Task store](https://github.com/hao1939/may-agent/blob/350552a4ba9a4278fe30897430619667bb7bb7f3/src/app/app-task-resource-store.ts#L1207), [fenced event persistence](https://github.com/hao1939/may-agent/blob/350552a4ba9a4278fe30897430619667bb7bb7f3/src/lib/db-writer.ts#L638), [Host capacity](https://github.com/hao1939/may-agent/blob/350552a4ba9a4278fe30897430619667bb7bb7f3/src/app/host-capacity.ts).

@@ -655,6 +655,6 @@ Related design:
 [Host/App boundary](../2a-design/system-boundary.md),
 [redo versus resume](../1-principles/core-principles.md#prefer-redo-when-it-is-simpler-and-affordable),
 [Sessions](../2a-design/sessions.md),
-[one Task lifecycle](conversation-input-unification.md),
-[execution consolidation](execution-entrypoint-consolidation.md), and
+[one Task lifecycle](../archive/reviews/conversation-input-unification.md),
+[execution consolidation](../archive/reviews/execution-entrypoint-consolidation.md), and
 [recurring project review](may-project-review-loop-20260912.md).

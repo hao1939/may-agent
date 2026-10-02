@@ -4,7 +4,7 @@
 
 **Status:** Dated source review and recommendations, not a new accepted contract.
 
-The [refined follow-up proposal](../../proposals/task-controller-pattern.md#interruption-and-external-effects)
+The [refined follow-up proposal](task-controller-pattern.md#interruption-and-external-effects)
 owns the proposed scope, accepted degradation and completion checks. This record
 preserves the source findings and experimental evidence supporting that review.
 
@@ -47,7 +47,7 @@ not just the quality of a recovery optimization.
 Normal execution checks that a workflow's `needs-agent` handoff retains its
 required verifier, then establishes acceptance before committing convergence
 ([normal path][normal-acceptance]). The
-[accepted contract](../../2a-design/task-resource-engine.md#acceptance) requires
+[accepted contract](../../2a-design/task-attempts.md#acceptance) requires
 that verification to apply to the later agent result too.
 
 Terminal-session recovery instead reconstructs a managed-agent claim and calls

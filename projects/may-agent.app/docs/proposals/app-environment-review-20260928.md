@@ -82,6 +82,6 @@ No fixed reading sequence, automatic improvement loop or extra approval ceremony
 is required. Stop when the remaining cost exceeds the demonstrated benefit.
 
 Original variants, candidate source and reproduction records are recoverable
-through the [workspace review](workspace-hygiene-review-20261003.md). The full
+through the [workspace review](../archive/reviews/workspace-hygiene-review-20261003.md). The full
 September assignment remains historical evidence, not a new instruction to
 operate live Tasks during documentation maintenance.

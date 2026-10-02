@@ -84,5 +84,5 @@ existing installation-dependent skips and no failures; the 27-case focused
 state/concurrency run also passed. The workspace design check passed with six
 existing layout warnings. GitHub Quality and Container also passed on `aab337de`.
 The existing parent-owner route now has a separate
-[runtime proof](../../proposals/task-controller-pattern.md#existing-parent-owner-proof);
+[runtime proof](../reviews/task-controller-pattern.md#existing-parent-owner-proof);
 broader owner-decision follow-through and live deployment remain separate work.

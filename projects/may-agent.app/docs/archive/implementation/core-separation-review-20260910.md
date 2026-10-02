@@ -9,7 +9,7 @@ They do not establish current implementation or deployment.
 
 Use [Architecture](../../2a-design/architecture.md) for the accepted boundaries,
 [the core review plan](../../proposals/task-runtime-organization.md) for remaining
-work, and [the controller proposal](../../proposals/task-controller-pattern.md#candidate-stop-without-claiming-success)
+work, and [the controller proposal](../reviews/task-controller-pattern.md#candidate-stop-without-claiming-success)
 for the active non-success stop specification. Historical evidence below is unchanged
 apart from link relocation.
 
@@ -115,7 +115,7 @@ skips; missing workspace support and restoration use the same Task identity.
 This is merged source, not deployment evidence. It does not implement the whole
 controller-pattern proposal below.
 
-The [Task controller pattern proposal](../../proposals/task-controller-pattern.md) joins minimal
+The [Task controller pattern proposal](../reviews/task-controller-pattern.md) joins minimal
 Task authoring and ordinary reconciliation into one commitment lifecycle:
 admission, bounded work, exact waits, checked settlement and owner decisions.
 Recovery restores that same path. Settlement and durable retry slices are now

@@ -423,7 +423,7 @@ Version 3 reconstructs identities from retained input/attempt evidence once;
 removed historical evidence cannot be reconstructed. Compact keys last for the
 Task's lifetime. Old and new writers must not operate together, and rollback
 restores the earlier redundant-wake risk. The
-[Events contract](../../2a-design/events.md#duplicate-delivery-and-safe-reconsideration)
+[Events contract](../../2a-design/execution-feedback.md#duplicate-delivery-and-safe-reconsideration)
 owns producer restraint, safe receiver no-ops, semantic App judgment and the
 limits of external-action idempotency. Task and storage contracts link to it.
 

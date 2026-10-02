@@ -161,7 +161,7 @@ guarded close preserves the Task for later review; it never falls back to raw
 cancellation merely to reduce counts. Intentional withdrawal remains a separate,
 explicitly authorized decision, including when it stops active work.
 
-The [shared-loop design](../may-agent.app/docs/proposals/conversation-input-unification.md)
+The [shared-loop design](../may-agent.app/docs/archive/reviews/conversation-input-unification.md)
 owns the lifecycle and its evidence. Host deployment and runtime operations
 remain with the Host Operations App (`app:may-agent`).
 

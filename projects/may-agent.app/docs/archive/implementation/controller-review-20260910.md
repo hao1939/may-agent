@@ -4,7 +4,7 @@
 
 **Status:** Historical snapshot of the proposal and its slice-specific proof.
 Test counts describe the named revisions, not a current release.
-Use the [active controller proposal](../../proposals/task-controller-pattern.md)
+Use the [active controller proposal](../reviews/task-controller-pattern.md)
 for remaining work and the [Task engine](../../2a-design/task-resource-engine.md)
 for accepted behavior.
 
@@ -239,7 +239,7 @@ progress. End the attempt when it needs an external wait or owner decision,
 exhausts its bound, or loses authority. Code performs deterministic checks; the
 App/LLM judges uncertain repair choices and whether further effort is worthwhile.
 
-The [workflow contract](../../2a-design/workflows.md#repair-within-an-attempt)
+The [workflow contract](../../2a-design/execution-contributions.md#repair-within-an-attempt)
 owns this convention. Current workflows can loop inside `execute()`. The Host's
 optional final verifier runs after that function returns and records rejection
 as blocked; it does not resume the finished workflow automatically. Reuse App

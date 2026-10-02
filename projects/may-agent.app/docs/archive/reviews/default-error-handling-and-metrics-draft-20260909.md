@@ -64,7 +64,7 @@ and automatically invoking an LLM for every failure would add unnecessary cost.
 | Assigned outcome is infeasible or too expensive | Stop unchanged automatic repetition | Reduce scope, accept partial value, wait or stop |
 
 Scope changes and stops follow the
-[owner-decision proposal](../../proposals/task-controller-pattern.md#retry-repair-wait-or-stop).
+[owner-decision proposal](task-controller-pattern.md#retry-repair-wait-or-stop).
 They must preserve caller expectations and cannot silently mark undelivered
 work successful. Infeasibility can satisfy an investigation Task while leaving
 a build Task unfulfilled. An unchanged blocker should not trigger repeated LLM

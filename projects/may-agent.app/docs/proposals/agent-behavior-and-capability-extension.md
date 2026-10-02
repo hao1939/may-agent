@@ -7,11 +7,11 @@
 **Design status:** Proposed for review, September 12, 2026.
 **Implementation status:** Isolated trials support guidance adoption, method
 discovery and dependable workflow execution through existing Host capabilities.
-The [agent-operated trial](agent-operated-improvement-poc-20260912.md) focuses on
+The [agent-operated trial](../archive/reviews/agent-operated-improvement-poc-20260912.md) focuses on
 the remaining usability question: can an agent discover, author, activate and
 verify another agent's improvement without human-operated intermediate steps?
 The linked reports retain successes and unsuccessful trials. The
-[ordinary-Task follow-up](task-improvement-poc-20260912.md) also demonstrates
+[ordinary-Task follow-up](../archive/reviews/task-improvement-poc-20260912.md) also demonstrates
 wait/resume and owner withdrawal for an improver. Its target still runs as a
 fresh direct execution; this is not installed or general reliability evidence.
 Section 6 links the earlier evidence; section 7 separates this mechanism work
@@ -67,9 +67,9 @@ This applies the accepted [contract-and-convention principle](../1-principles/co
 The owning contracts remain [agent conventions](../2b-manual/agent-convention.md),
 [skills](../2a-design/skills.md), [workflows](../2a-design/workflows.md),
 [Host/App boundaries](../2a-design/system-boundary.md), and
-[execution feedback](../2a-design/events.md#execution-feedback-and-agent-wakes).
+[execution feedback](../2a-design/execution-feedback.md#execution-feedback-and-agent-wakes).
 It does not introduce a competing lifecycle to the
-[One Task proposal](conversation-input-unification.md).
+[One Task proposal](../archive/reviews/conversation-input-unification.md).
 
 ## 1. Teach through normal conversation
 
@@ -142,7 +142,7 @@ or authority genuinely belongs there.
 
 ### Choose by need, delivery and lifetime
 
-The [method matrix](extension-methods-poc-20260912.md#which-method-fits-which-case)
+The [method matrix](../archive/reviews/extension-methods-poc-20260912.md#which-method-fits-which-case)
 records suitable cases, activation, retention, limits and observed agent use for
 each method. For a proposed change, answer these in its existing guidance or
 review, without adding another manifest:
@@ -455,7 +455,7 @@ attempt, not cancellation of the assignment. Unfinished work retains the normal
 retry policy; a bounded improvement budget must be enforced at the applicable
 operation boundary, not expressed by pretending `stopped` closes the Task.
 
-The [unified-Task improvement experiment](task-improvement-poc-20260912.md)
+The [unified-Task improvement experiment](../archive/reviews/task-improvement-poc-20260912.md)
 examines this composition. It also checks **effective** tool capabilities after
 Task preparation: the runtime rebuilds standard coding tools for the Task
 workspace. A differently scoped source capability must keep its own adapter
@@ -534,7 +534,7 @@ queues, retry workers or subscription bookkeeping.
 
 ### Agent-operated improvement
 
-The [focused trial](agent-operated-improvement-poc-20260912.md) supplies an
+The [focused trial](../archive/reviews/agent-operated-improvement-poc-20260912.md) supplies an
 objective and synthetic standing authority, not an edit recipe. The improver
 chooses the guidance change, invokes real source activation, handles an explicit
 pre-admission failure, tests the active target and reports its result. Later
@@ -551,7 +551,7 @@ reliability rate. The report records setup failures, costs and remaining limits.
 
 ### Method choice, lifetime and cross-agent teaching
 
-The [method investigation](extension-methods-poc-20260912.md) distinguishes
+The [method investigation](../archive/reviews/extension-methods-poc-20260912.md) distinguishes
 source mechanics from agent behavior. A referenced policy and a discoverable
 skill worked; an unreferenced document and a skill omitted by the bounded catalog
 did not supply the policy. Explicit selection or an exact path restored use.
@@ -574,7 +574,7 @@ an agent to repair behavior.
 
 ### Natural teaching and procedure selection
 
-The [next-phase report](conversation-adoption-poc-20260912.md) records fourteen
+The [next-phase report](../archive/reviews/conversation-adoption-poc-20260912.md) records fourteen
 real-daemon conversation turns, five pilot executions and twelve procedure
 comparisons. May authored and activated a scoped rule, used it later, amended
 and withdrew it, kept temporary scope, ignored hostile evidence and reported
@@ -592,7 +592,7 @@ not broader workflow enforcement or an unmeasured quality/speed claim.
 ### Focused execution trial
 
 On Host `49272b5ac545aa2c4b7ab887c10183f5a76a8bd0`, the
-[September 12 PoC](agent-adoption-poc-20260912.md) ran 31 model-backed executions
+[September 12 PoC](../archive/reviews/agent-adoption-poc-20260912.md) ran 31 model-backed executions
 and offline source/runner boundary checks. The report preserves the comparison,
 the prompt correction made during the trial, and sanitized answers/tool usage.
 
@@ -608,7 +608,7 @@ coverage. The supplied evidence established a defect and passing CI, not why
 the checks missed it. Keep facts and inferred causes separate in the existing
 review method; do not turn each example into another mandatory rule or workflow.
 
-The follow-up [stability report](workflow-stability-poc-20260912.md) separately
+The follow-up [stability report](../archive/reviews/workflow-stability-poc-20260912.md) separately
 examines required-step coverage, partial failure, revision changes, retry limits,
 cancellation and retained evidence. It supersedes the first trial's overly broad
 workflow recommendation, while retaining the original measurements unchanged.
@@ -646,12 +646,12 @@ no provider calls. These checks do not establish improved model behavior.
 ## 7. Implementation scope
 
 The current deliverable is the agent-operated mechanism, now demonstrated in
-the [bounded PoC](agent-operated-improvement-poc-20260912.md). One installed
+the [bounded PoC](../archive/reviews/agent-operated-improvement-poc-20260912.md). One installed
 adoption path is a separate next step. The earlier Gym integration candidates
 below remain useful work, but completing that campaign is not a gate on this
 mechanism or a process the human must operate.
 
-The [feedback/adoption integration candidate](feedback-adoption-integration-20260912.md)
+The [feedback/adoption integration candidate](../archive/reviews/feedback-adoption-integration-20260912.md)
 now fixes the feedback location and false source-promotion completion locally.
 Four additional model checks used the real projection: later reads saw saved,
 updated and cleared feedback without definition reload. Gym keeps source-only

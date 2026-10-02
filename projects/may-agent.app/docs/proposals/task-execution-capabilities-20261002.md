@@ -11,11 +11,19 @@ mechanisms provide the foundation. This document changes no runtime behavior.
 Proposed interfaces and observed implementation limits are recorded in
 [the supporting contract reference](task-execution-capability-contracts-20261003.md).
 
+## How to read this proposal
+
+Start with the example and value below. Review [the remaining calling and discovery choices](task-execution-capability-contracts-20261003.md)
+when assessing an interface change. Use [the current agent guide](../2b-manual/task-execution-guide.md)
+to perform work today; its text is usable directly as a skill. The
+[90-PR review](../archive/reviews/task-capability-pr-review-20261003.md) supplies
+dated evidence, including successful behavior worth preserving.
+
 ## Purpose
 
 This feature design supports [useful action within authority](../2a-design/system-model.md#enable-useful-action-within-authority)
 and [continued work](../2a-design/system-model.md#carry-work-through-change-and-interruption).
-The project purpose belongs to [May's goal](../1-principles/design-philosophy.md#mays-goal):
+The project purpose belongs to [May's goal](../1-principles/purpose.md#mays-goal):
 useful results with decreasing supervision, acceptable total cost, and work that
 remains understandable and steerable.
 
@@ -55,7 +63,7 @@ organizes its guidance and identifies missing behavior; its inventory is not a
 list of new features to build. Repairs to existing promises and the proposed
 reply convenience are separate changes. A common convention is worthwhile when
 it removes repeated decisions or wiring, without requiring every capability to
-use the same API shape. The [purpose and philosophy review](task-capability-pr-review-20261003.md#purpose-and-philosophy-review)
+use the same API shape. The [purpose and philosophy review](../archive/reviews/task-capability-pr-review-20261003.md#purpose-and-philosophy-review)
 records the alternatives, costs and limits behind those choices.
 
 ## From an intention to a useful outcome
@@ -133,77 +141,33 @@ facts remain available for correction; acceptance is not guaranteed correctness.
 
 ## Guidance for agents and workflow authors
 
-At the start of execution, the agent should understand its assignment and
-requirements, what changed and remains outstanding, which actions are available,
-and what result it owes. It also needs to understand what infra promises after
-an action or decision is accepted. That shared understanding is the
-operating contract between infra and the App's agent or workflow.
+Read [Working on a Task](../2b-manual/task-execution-guide.md) directly as the
+agent's operating guidance. It teaches the current assignment, reads, actions,
+Conditions and result contract through one example. Humans and agents use that
+same document; do not maintain a second skill copy or inject this whole proposal
+into every attempt.
 
-This is proposed guidance, not an activated prompt change. Use only the
-capabilities and exact schemas supplied to the invocation; the proposed reply
-choice becomes usable when the corresponding infra support is installed.
-
-1. **Understand your assignment.** Identify the requested outcome, requirements
-   and authority. Interpret free-form input under App policy. A helper owes
-   its assigned contribution, even when it can see the whole Task.
-2. **Use current facts.** Distinguish assigned work, new input, accepted results
-   and history. Read referenced details when a decision needs them. Seeing or
-   acknowledging input does not mean you have fulfilled it.
-3. **Express the action you need.** Discover a permitted capability, supply its
-   domain input and choose whether you need an answer when that choice is
-   supported. Infra handles identity, delivery and return wiring. Acceptance
-   confirms the action's stated promise: accepting a review takes responsibility
-   for that review; accepting a message for delivery does not mean its recipient
-   has agreed to act. Use returned evidence to judge the requested outcome.
-4. **Choose how to proceed.** Do useful independent work while an answer or
-   Condition is pending. Express an external fact you need through a supported
-   observation. Yield when appropriate under your assignment; a pending
-   Condition does not by itself make the whole Task wait.
-5. **Report your judgment.** Return the addressed outcome, useful evidence or
-   gaps, and the attempt decision required by the supplied schema. Infra
-   maintains Task state. Your accepted completion judgment normally settles
-   the addressed request; it does not guarantee objective correctness.
-6. **Resume from retained work.** Infra handles routine retries and recovery of
-   the same operation, including identity, backoff and safe replay. Use its
-   supplied progress and results; you need not administer delivery retries.
-   You may explicitly request a retry as a recovery decision; infra executes it
-   through the same capability contract. An intentional new operation remains
-   distinct. Where safe retry is unavailable, use the disclosed exception and
-   evidence to judge whether another effect or a different approach is appropriate.
-7. **Respond to failure.** When judgment helps, use the error and prior outcomes
-   to choose an explicit retry, repair, failover, a changed approach or help
-   under App policy. You need not wait for automatic retries to end before
-   making an authorized recovery decision.
-   Infra continues known-safe recovery under the existing execution policy;
-   you do not administer each retry. Keep missing observations explicit.
-   Repeated identical failure is evidence to reassess the approach; it does
-   not require a universal retry limit.
-8. **Use the same contract throughout execution.** You may take many live
-   actions and return one final decision. Refer to already accepted work;
-   do not repeat it merely to include it in the final result. Only supported
-   structured declarations execute actions; ordinary final prose does not.
-
-These rules are the small common guide. The responsible agent makes judgments
-using its App's domain guidance and escalation policy. Capability details can be read
-when needed. Agents need observable behavior; queue names, database tables,
-delivery channels and scheduler internals are infra implementation details.
+The proposed additions below should make that work easier: discover useful
+actions by purpose and express whether an answer is needed while infra supplies
+the bookkeeping. Until implemented, use the exact schemas exposed to the attempt.
+The four capability purposes organize discovery, not new services or work states.
 
 ## Infra feature and contract requirements
 
-For each guidance rule, infra must provide the corresponding behavior below.
+The desired capability surface must provide the corresponding behavior below.
 The contract includes meaning, input/output schemas and runtime behavior.
 Documenting a promise is insufficient without the feature that fulfills it.
 
 | Guidance rule | Infra must provide | Acceptance example |
 | --- | --- | --- |
-| 1. Assignment | Supply the assignment, admitted input, authority and exact result contract. Preserve source input/provenance; enforce scope at admission. | A helper sees parent context but cannot independently settle its parent's Task. |
-| 2. Current facts | Supply bounded current context, freshness/coverage markers and usable detail reads. Keep input visibility separate from fulfillment. | A newly visible requirement remains outstanding until an accepted result addresses it; failed refresh is marked explicitly. |
-| 3. Actions | Advertise only installed, permitted operations with input/result and lifetime semantics. Derive trusted caller identity. For durable work, save ownership and required return bookkeeping before confirming acceptance. | A required review reply reaches its caller after restart; no-reply work remains receiver-owned without a caller completion wake. Missing delivery support rejects visibly. |
-| 4. Progress and waiting | Retain accepted Conditions and required replies across attempts; observe and deliver changed facts. Keep observation status separate from the worker's execution decision. | A pending review allows testing to continue. A worker can yield for the saved answer without creating a second observer. |
-| 5. Judgment | Validate and record the worker's decision and derive Task state. Trust the App's judgment by default; preserve outstanding facts without adding an infra semantic veto. | An authorized, valid convergence decision settles addressed work even if a related Condition remains pending; both facts remain accurately recorded. |
-| 6. Resume | Own routine retries, backoff and recovery within existing execution bounds. Make replay of the same operation safe by default, preserving identity and accepted work. Enforce scope and stale-attempt fences. Disclose exceptions with recovery guidance and honest effect uncertainty. | Infra recovers a lost acknowledgment without asking the agent to resend: one admitted request, no duplicate effect. An unsafe external resend is exposed as an exception rather than silently replayed. |
-| 7. Failure | Return actionable validation/execution errors with available acceptance evidence. Retain correlated failures and usage for permitted reads, existing metrics and observation routes. Deliver evidence through the declared route and execute authorized repair/escalation actions. | An evaluator agent receives a recurring failure trend, judges whether investigation is needed and submits the chosen action; infra retains and delivers that work. |
-| 8. Consistent execution | Route live tools, SDK calls and supported final declarations through the owning admission implementation. Supply equivalent supported semantics through executor adapters. | The same permitted request has the same ownership and feedback through each surface; a live action does not end the attempt. |
+| Assignment | Supply the assignment, admitted input, authority and exact result contract. Preserve source input/provenance; enforce scope at admission. | A helper sees parent context but cannot independently settle its parent's Task. |
+| Current facts | Supply bounded current context, freshness/coverage markers and usable detail reads. Keep input visibility separate from fulfillment. | A newly visible requirement remains outstanding until an accepted result addresses it; failed refresh is marked explicitly. |
+| Actions | Advertise only installed, permitted operations with input/result and lifetime semantics. Derive trusted caller identity. For durable work, save ownership and required return bookkeeping before confirming acceptance. | A required review reply reaches its caller after restart; no-reply work remains receiver-owned without a caller completion wake. Missing delivery support rejects visibly. |
+| Progress and waiting | Retain accepted Conditions and required replies across attempts; observe and deliver changed facts. Keep observation status separate from the worker's execution decision. | A pending review allows testing to continue. A worker can yield for the saved answer without creating a second observer. |
+| Judgment | Validate and record the worker's decision and derive Task state. Trust the App's judgment by default; preserve outstanding facts without adding an infra semantic veto. | An authorized, valid convergence decision settles addressed work even if a related Condition remains pending; both facts remain accurately recorded. |
+| Resume | Own routine retries, backoff and recovery within existing execution bounds. Make replay of the same operation safe by default, preserving identity and accepted work. Enforce scope and stale-attempt fences. Disclose exceptions with recovery guidance and honest effect uncertainty. | Infra recovers a lost acknowledgment without asking the agent to resend: one admitted request, no duplicate effect. An unsafe external resend is exposed as an exception rather than silently replayed. |
+| Failure | Return actionable validation/execution errors with available acceptance evidence. Retain correlated failures and usage for permitted reads, existing metrics and observation routes. Deliver evidence through the declared route and execute authorized repair/escalation actions. | An evaluator agent receives a recurring failure trend, judges whether investigation is needed and submits the chosen action; infra retains and delivers that work. |
+| Consistent execution | Route live tools, SDK calls and supported final declarations through the owning admission implementation. Supply equivalent supported semantics through executor adapters. | The same permitted request has the same ownership and feedback through each surface; a live action does not end the attempt. |
 
 Infra requirements cover enforcement, execution and records. The responsible
 agent interprets facts and chooses a response. Its App supplies domain guidance
@@ -253,7 +217,7 @@ unresolved. Use the same distinction when judging the design itself.
 | Reusable, affordable operation | Less human coordination and agent bookkeeping; Apps and executors reuse the same contracts; prompt, retrieval and execution costs improve without degrading behavior. |
 
 Compare like-for-like assignments and inspect the actions as well as the final
-answer. The [90-PR review](task-capability-pr-review-20261003.md) provides evidence
+answer. The [90-PR review](../archive/reviews/task-capability-pr-review-20261003.md) provides evidence
 for the contract, including retained finished work and recovered failures. Its
 matched context comparison reduced model calls from 227 to 152, while full
 behavioral acceptance fell from 29/30 to 27/30. Cost and quality need separate
@@ -265,7 +229,7 @@ model trials and observed work establish whether the agent uses it effectively.
 
 ### Behaviors to preserve and teach
 
-The [positive evidence review](task-capability-pr-review-20261003.md#successful-behavior-to-preserve)
+The [positive evidence review](../archive/reviews/task-capability-pr-review-20261003.md#successful-behavior-to-preserve)
 includes completed work, recovered mistakes and appropriate decisions to wait
 or leave existing work unchanged. Use these as on-demand guidance examples:
 incorporate a correction into the same assignment, try a supported alternate
@@ -281,13 +245,14 @@ conjunction with fulfilled requirements and appropriate actions.
 
 ## Supporting contracts and evidence
 
-This design is guidance for agents and feature requirements for infra. The short
-guide above can inform execution instructions; the full design is a reference,
-not text to load into every attempt. App knowledge and detailed contracts remain
-available when needed.
+The [operating guide](../2b-manual/task-execution-guide.md) is directly usable
+as agent guidance. This proposal describes desired infra additions and their
+value. Exact contracts and App knowledge remain available on demand. The
+[authoring guide](../2b-manual/design-authoring.md#make-guidance-usable-by-agents)
+owns how one document serves human and agent readers.
 
 - [Supporting capability contracts](task-execution-capability-contracts-20261003.md): discovery, calls, workflows, Conditions, live/final actions, context delivery and implementation checks.
-- [Review against 90 PRs and successful work](task-capability-pr-review-20261003.md): evidence, limitations and verification priorities.
+- [Review against 90 PRs and successful work](../archive/reviews/task-capability-pr-review-20261003.md): evidence, limitations and verification priorities.
 - [System model](../2a-design/system-model.md) and [Host/App boundary](../2a-design/system-boundary.md): the existing ownership and execution foundation.
 - [Attempt input/output proposal](task-attempt-decision-schema-20261002.md): current #285 contract and deferred schema proposals.
 

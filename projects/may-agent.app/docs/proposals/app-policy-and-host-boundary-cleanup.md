@@ -118,7 +118,7 @@ declared tools and the necessary execution restrictions over another preset fami
 
 ### 3. Return problems through the existing caller path
 
-Use the merged [caller-feedback design](caller-feedback-and-waiting.md): do safe
+Use the merged [caller-feedback design](../archive/reviews/caller-feedback-and-waiting.md): do safe
 local work, return evidence and any needed decision to the exact caller, and
 keep the assignment open until its owner closes it.
 

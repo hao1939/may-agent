@@ -12,7 +12,7 @@ agent. `TaskIntent.mode` is retired for new intent; the reconciler rejects it.
 The Host accepts the old `owner` spelling and retained mode data only at explicit
 compatibility boundaries.
 The resource-observer facade and installed contract/health reads are implemented
-in the [September 30 candidate](../proposals/task-observation-implementation-20260930.md);
+in the [September 30 candidate](../archive/reviews/task-observation-implementation-20260930.md);
 source checks do not establish deployment.
 
 `@may-agent/sdk` is the narrow boundary between an App and the Host. It
@@ -108,7 +108,7 @@ Due reviews can invoke the selected executor, including a model; choose their
 interval for recovery needs, separately from an observer's cheap read cadence.
 The [event contract](events.md#resource-responsibility-and-reconciliation),
 [Conditions](task-resource-engine.md#conditions), and
-[input during execution](workflows.md#input-during-execution) own these mechanics.
+[input during execution](execution-contributions.md#input-during-execution) own these mechanics.
 
 Apps can add a source through `AppDefinition.observers`: a resource detector
 from `defineObserver` returns data for existing Condition demand; the raw
@@ -119,7 +119,7 @@ source and [resource-carried ownership](agent-app.md#resource-ownership-by-conve
 before writing another adapter. Waking remains a Host consequence of resource
 updates, independent of which adapter observed the fact.
 
-The [implementation record](../proposals/task-observation-implementation-20260930.md)
+The [implementation record](../archive/reviews/task-observation-implementation-20260930.md)
 separates tested mechanics from remaining behavioral and deployment checks.
 A stored Condition alone is not proof that a healthy producer covers the source.
 
@@ -217,10 +217,10 @@ as human Turns. Other kinds use normal Task mapping.
 policy. Historical `requests` declarations are rejected; retained records do
 not create a second work lifecycle.
 
-The implemented [shared-input design](../proposals/conversation-input-unification.md)
+The implemented [shared-input design](../archive/reviews/conversation-input-unification.md)
 routes source-marked linked Task reviews through that same Conversation Task,
 including a quiet result. System facts retain their origin and cannot be
-presented as human asks. [Message Lifecycle](message-lifecycle.md#one-conversation-input-path)
+presented as human asks. [Message Lifecycle](conversation-execution.md#one-conversation-input-path)
 owns the detailed routing contract.
 
 ### Fact Event policy

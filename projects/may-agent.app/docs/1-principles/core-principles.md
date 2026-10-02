@@ -88,10 +88,9 @@ known-safe responses and expose truthful outcomes. Code executes predictable
 rules; the App's worker judges uncertain causes and how to proceed. The
 assigning owner judges scope and whether more work is worthwhile. A worker
 can report failure honestly; abandoning the assignment belongs to its owner.
-The [continuing-Task baseline](../proposals/conversation-input-unification.md#recovery-keeps-the-same-task)
-uses backoff to pace unfinished work without a fixed failure-count stop;
-merged source in Host #158 implements it; release/deployment remains a separate
-check. Its [deeper PoC review](../proposals/controller-poc-deeper-review.md)
+The [Task lifecycle](../2a-design/task-resource-engine.md#one-lifecycle-baseline)
+uses backoff to pace unfinished work without a fixed failure-count stop.
+Its [deeper PoC review](../archive/reviews/controller-poc-deeper-review.md)
 examines continuing-retry cost and owner decisions in use.
 
 Useful default error handling and metrics remain product goals. Being provided
@@ -151,7 +150,7 @@ not proof that the intended outcome was achieved.
 These are two responsibilities in one work loop, not two new subsystems or a
 ban on direct agent tool use. Executors and observers provide capabilities;
 existing Host Events, State and Work runtime preserve and deliver their feedback.
-See [execution feedback and wakes](../2a-design/events.md#execution-feedback-and-agent-wakes)
+See [execution feedback and wakes](../2a-design/execution-feedback.md#execution-feedback-and-agent-wakes)
 for the concrete contract.
 
 ### Use ownership to simplify intervention
@@ -258,7 +257,7 @@ needs only to wait. Relevant input can wake the assigning Task again, including
 human discussion or the delegated result. Conversation is its human-facing role;
 it adds no execution lifecycle. Both Tasks may belong to May. Another App is
 useful for existing ownership, required authority, or expertise. The
-[common-lifecycle proposal](../proposals/conversation-input-unification.md)
+[common-lifecycle proposal](../archive/reviews/conversation-input-unification.md)
 owns this accepted direction and its current implementation limits.
 
 See [work-model.md](work-model.md) and

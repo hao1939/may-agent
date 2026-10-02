@@ -12,7 +12,7 @@ The [enforcement table](../2a-design/workflows.md#enforcement-infrastructure-and
 identifies what shared code enforces, what it only supports, and known gaps.
 The best practices below guide author decisions; uncertain choices stay advisory
 until experience justifies a stronger contract. This guide targets the shared
-handoff contract and evidence recorded in the [Task context proposal](../proposals/task-context-discovery-20260917.md).
+handoff contract and evidence recorded in the [Task context proposal](../archive/reviews/task-context-discovery-20260917.md).
 
 ## Choose A Skill, Module, Or Workflow
 
@@ -271,7 +271,7 @@ reuse as returning existing evidence unless the tool actually implements reuse.
 Describe ambiguous result fields too: distinguish the state observed from the
 state required when either could plausibly fill the same field. This is App/tool
 authoring guidance, not a generic Host rule for deciding which results match.
-The [focused comparison](../proposals/task-context-reuse-followup-20260926.md)
+The [focused comparison](../archive/reviews/task-context-reuse-followup-20260926.md)
 records the evidence and its limits.
 
 For long work, `await` suspends that dependency, while the Host continues admitting
@@ -358,7 +358,7 @@ needs. A fixed local limit can fit a procedure, but no number is universal.
 Local iterations share one Task attempt and its deadline. Feed the failed check's
 evidence into the repair, and stop when scope, prerequisites or remaining budget
 no longer permit useful work. See the
-[two-loop boundary](../2a-design/workflows.md#repair-within-an-attempt).
+[two-loop boundary](../2a-design/execution-contributions.md#repair-within-an-attempt).
 The Host's optional final verifier runs after the workflow returns and does not
 automatically feed rejection back into `execute()`. Reuse check helpers inside
 the workflow where local repair is useful. Task reconciliation owns durable

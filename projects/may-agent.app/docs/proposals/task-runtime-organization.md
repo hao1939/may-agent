@@ -38,7 +38,7 @@ to decide which execution/recovery paths should remain. It also records the
 September 11 source-layout findings and small import/composition improvements;
 it does not replace the accepted inbox/state sequence below.
 
-The [one-lifecycle design](conversation-input-unification.md) now owns the
+The [one-lifecycle design](../archive/reviews/conversation-input-unification.md) now owns the
 accepted common Task lifecycle: explicit outcomes, rest between inputs and
 owner-controlled closure. Conversation uses a stable execution Task, retaining
 message/Request records and replacing separate inbox execution and supervision.
@@ -345,7 +345,7 @@ Preserve regression coverage without restarting completed work.
 ### First stop slice: the current finite Task only
 
 Host #111 merged finite `achieve` Task stop without live direct children. The
-[current stop contract](task-controller-pattern.md#stop-without-claiming-success)
+[current stop contract](../archive/reviews/task-controller-pattern.md#stop-without-claiming-success)
 retains non-success evidence and parent review. It is distinct from turn Stop
 and Request closure. Policy quality and live follow-through have separate proof.
 
@@ -360,7 +360,7 @@ The Host source guide still links these entrypoints. Their current owners are:
 
 <a id="step-3-finish-the-taskexecutor-boundary"></a>
 
-- Task/executor boundary: [Task engine](../2a-design/task-resource-engine.md#one-attempt-interface);
+- Task/executor boundary: [Task engine](../2a-design/task-attempts.md#one-attempt-interface);
   [original Step 3](../archive/implementation/core-separation-review-20260910.md#step-3-finish-the-taskexecutor-boundary).
 
 <a id="shared-timing-intentional-events"></a>

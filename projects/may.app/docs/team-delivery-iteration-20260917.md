@@ -15,7 +15,7 @@ outcome. Recovery reads current requirements and actual state before continuing
 unfinished work. Rejected settlement does not erase effects or establish success.
 
 The common rule is documented in
-[the workflow contract](../../may-agent.app/docs/2a-design/workflows.md#evidence-retention-and-autonomous-recovery)
+[the workflow contract](../../may-agent.app/docs/2a-design/execution-contributions.md#evidence-retention-and-autonomous-recovery)
 and shared agent guidance. `shared/tools/task-evidence.ts` handles immutable
 local records and checked reads without a Git repository, team names or a
 scheduler. May owns the Git/requirement validity checks, verification argv and

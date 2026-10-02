@@ -1,7 +1,7 @@
 # Scout reuse guidance and durable return links
 
 Source and isolated trials are complete. Running definitions were not activated.
-This applies the [Task-context comparison](../../../may-agent.app/docs/proposals/task-context-reuse-followup-20260926.md)
+This applies the [Task-context comparison](../../../may-agent.app/docs/archive/reviews/task-context-reuse-followup-20260926.md)
 to the existing Apps, without adding a Host reuse policy.
 
 ## Review and change

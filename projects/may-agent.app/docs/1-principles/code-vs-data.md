@@ -147,7 +147,7 @@ input observation, permission, cancellation and recovery rules as those
 operations. Code handles predictable execution and retains evidence; agents
 choose methods and judge changing requirements. `await` expresses a dependency
 within an active attempt; durable events and Task state coordinate work across
-attempts. See [Workflow execution](../2a-design/workflows.md#invocation-and-ownership).
+attempts. See [Workflow execution](../2a-design/execution-contributions.md#invocation-and-ownership).
 
 Standardize those execution guarantees, not a universal procedure. Participants,
 step order, review methods, private parameters and evidence applicability belong

@@ -168,7 +168,7 @@ Direct-agent
 persistent-chat turns, if used, must have distinct traces unless reply context
 links them.
 
-The accepted [unified route](../2a-design/message-lifecycle.md#one-conversation-input-path)
+The accepted [unified route](../2a-design/conversation-execution.md#one-conversation-input-path)
 will replace the supervision hop with a source-marked conversation inbox item.
 Audit that path only after its implementation lands. Verify Task/timer input
 identity, quiet completion and Request closure; do not interpret a system

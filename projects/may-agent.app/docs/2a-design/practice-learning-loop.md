@@ -128,8 +128,8 @@ passing component tests or from an old rollout paragraph.
 
 The [convergence index](../proposals/design-implementation-convergence.md) records
 confirmed source gaps. Prior
-[agent-operated trials](../proposals/agent-operated-improvement-poc-20260912.md)
-and [feedback/adoption trials](../proposals/feedback-adoption-integration-20260912.md)
+[agent-operated trials](../archive/reviews/agent-operated-improvement-poc-20260912.md)
+and [feedback/adoption trials](../archive/reviews/feedback-adoption-integration-20260912.md)
 retain both successful and unsuccessful evidence at their original paths. They
 are examples with bounded claims, not current source inventories.
 

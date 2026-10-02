@@ -94,4 +94,4 @@ annotation-driven behavior also remain unimplemented proposals.
 The [App environment review](app-environment-review-20260928.md) owns the adoption
 question; the [capability contract proposal](task-execution-capability-contracts-20261003.md)
 owns the common agent/workflow/executor direction. Source provenance and recovery
-instructions are in the [workspace review](workspace-hygiene-review-20261003.md).
+instructions are in the [workspace review](../archive/reviews/workspace-hygiene-review-20261003.md).

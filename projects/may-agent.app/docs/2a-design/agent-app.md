@@ -565,7 +565,7 @@ bounded reads and source revision calculation. It does not resolve a live
 agent/session, write Task state, invent repair actions or send model prompts.
 The Host owns admission, scheduling and recovery; trusted App/agent guidance
 owns what to do with the evidence. Observer and executor feedback follow
-[the same event contract](events.md#execution-feedback-and-agent-wakes).
+[the same event contract](execution-feedback.md#execution-feedback-and-agent-wakes).
 
 Keep the convention explicit and limited:
 

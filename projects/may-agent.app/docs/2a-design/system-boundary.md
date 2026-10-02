@@ -357,7 +357,7 @@ inbox item -> Task owned by the App -> accepted result
 A conversational frontend may finish authorized work directly or admit durable
 intent/feedback. [Message Lifecycle](message-lifecycle.md) owns May's policy and
 Topic-linked follow-up through the same conversation handler; it does not add
-another Task lifecycle. The accepted [baseline](../proposals/conversation-input-unification.md)
+another Task lifecycle. The accepted [baseline](../archive/reviews/conversation-input-unification.md)
 makes one stable Task the Conversation's actual execution owner, with no second
 executing inbox handler. Outcomes can be accepted while the Task stays open;
 an App, parent agent or human decides when to close it. The Host enforces that
@@ -367,7 +367,7 @@ This lifecycle and the shared-input route are implemented in merged
 Release/deployment was not verified by this source review; the proposal records
 the paired App and cutover requirements. The source also uses direct admission for ordinary App input:
 a saved input and its Task link replace inbox execution claims. The
-[cleanup review](../proposals/controller-poc-deeper-review.md#direct-admission-cleanup)
+[cleanup review](../archive/reviews/controller-poc-deeper-review.md#direct-admission-cleanup)
 records failure recovery, exact result projection and the accepted costs.
 
 A simple task may converge on its first bounded attempt. Harder work keeps the

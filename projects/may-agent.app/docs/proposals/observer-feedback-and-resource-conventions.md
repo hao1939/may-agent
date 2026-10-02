@@ -4,7 +4,7 @@
 
 **Choice basis:** [Applicable philosophy and convention](../1-principles/core-principles.md#one-authority-for-each-resource); [compare competing choices](../1-principles/core-principles.md#resolve-conflicting-designs).
 
-**September 30 follow-up:** [Task observation contract](task-observation-contract-20260930.md)
+**September 30 follow-up:** [Task observation contract](../archive/reviews/task-observation-contract-20260930.md)
 proposes an agent-facing contract that derives observation needs from existing
 Conditions. It records a fresh source review and probes; read it for current
 capabilities and remaining gaps. The September 11/13 material below is historical.
@@ -12,7 +12,7 @@ capabilities and remaining gaps. The September 11/13 material below is historica
 ## Original proposal and historical implementation notes
 
 **Design status:** Proposed implementation for review, September 11, 2026.
-The [feedback contract](../2a-design/events.md#execution-feedback-and-agent-wakes)
+The [feedback contract](../2a-design/execution-feedback.md#execution-feedback-and-agent-wakes)
 and [contract-and-convention principle](../1-principles/core-principles.md#convention-over-configuration)
 are accepted; the implementation choices below are not yet approved.
 **Implementation status:** Source review and a synthetic failure reproduction
@@ -23,7 +23,7 @@ already implements the publication-aware snapshot support described below.
 The reviewed Scout source still uses its file cache; provider discovery and
 end-to-end adoption remain separate work. The earlier status and baseline below
 record the original proposal, not the present Host implementation.
-[One execution feedback model](execution-feedback-and-review.md) owns the
+[One execution feedback model](../archive/reviews/execution-feedback-and-review.md) owns the
 shared contract and immediate CLI progress/status gaps. Review during execution
 and automatic fallback are deferred; provider work here does not depend on them.
 Do not recreate the implemented Host capability.

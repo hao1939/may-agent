@@ -10,7 +10,7 @@ The [documentation review](../archive/reviews/design-doc-hygiene-20260927.md)
 records checks and corrections. The [resource/Event review](../archive/reviews/resource-event-boundary-20260927.md)
 adds a reproduced admission-recovery failure and verified freshness-policy
 coupling against the same Host and workspace `28580398c6`.
-The September 30 [observation review](task-observation-contract-20260930.md#evidence-gathered-for-this-proposal)
+The September 30 [observation review](../archive/reviews/task-observation-contract-20260930.md#evidence-gathered-for-this-proposal)
 rechecked those two findings on `de59c8dae9`: translation recovery is repaired;
 the freshness-policy coupling remains. Other rows below retain their original
 review baseline.
@@ -36,7 +36,7 @@ here. Apply the value/cost review before extending the contract.
 | Limit or unanswered question | Current rule and next evidence |
 | --- | --- |
 | Immediate redirection of a running Conversation Turn | New input is retained for the next claim; exact Stop is implemented. [Turn control](../2a-design/human-control-surfaces.md#current-turn-control) distinguishes it from live steering. Demonstrate need before adding more control paths. |
-| Explicit incorporation of live workflow input | Executor acknowledgments exist, but generic workflow callbacks only observe; refreshed model context is also a read. [Workflow input](../2a-design/workflows.md#input-during-execution) preserves pending input for later reconciliation. Demonstrate avoidable repeated work before extending the acknowledgment surface. |
+| Explicit incorporation of live workflow input | Executor acknowledgments exist, but generic workflow callbacks only observe; refreshed model context is also a read. [Workflow input](../2a-design/execution-contributions.md#input-during-execution) preserves pending input for later reconciliation. Demonstrate avoidable repeated work before extending the acknowledgment surface. |
 | Automatic supervisor fallback and review inside awaited helpers | [Ownership boundary](../2a-design/system-boundary.md#ownership-and-intervention) keeps these deferred. Unresolved ownership is retained evidence; it is not proof a human saw a `/todo`. Verify an explicit responsible route when that guarantee is needed. |
 | Agent judgment and the installed improvement loop | Follow exact report → investigation → candidate → comparison → approval → application → fresh behavior. [Learning loop](../2a-design/practice-learning-loop.md) owns common boundaries; App contracts own decisions. Component tests do not certify that sequence. |
 | Recovery efficiency at installation scale | Measure indexed query/dispatch behavior and actual backlog before optimizing. [Task runtime](../2a-design/task-resource-engine.md#pause-reload-and-recovery) owns recovery; age/count alone is not proof of a defect. |

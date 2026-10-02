@@ -35,7 +35,7 @@ to reduce the line count.
 | Session review UI ownership | [#173](https://github.com/hao1939/may-agent/pull/173) integrated in `c0cbb59e`: HTTP-owned generation and inline feedback writes were removed; historical notes and the existing Evaluation App action remain. This deliberately gives up inline corrections, without claiming an equivalent replacement. |
 | Independent tool-state cleanup | Merged in #198 as `28670dd2`: retained checkpoint numbering, one test declaration and removal of obsolete CLI reuse discovery. The [candidate evidence](#independent-tool-cleanup) is historical; do not reimplement it. |
 | Caller feedback and retired experiments | #169 merged as `b1c7cbef`; #174 merged as `649d801c`. Preserve caller reports and the supported checks without restoring `scripts/poc/`. |
-| Duplicate event delivery | #175 merged as `e38d2861`. Retain exact per-Task delivery identities; [Events](../2a-design/events.md#duplicate-delivery-and-safe-reconsideration) owns the common contract. |
+| Duplicate event delivery | #175 merged as `e38d2861`. Retain exact per-Task delivery identities; [Events](../2a-design/execution-feedback.md#duplicate-delivery-and-safe-reconsideration) owns the common contract. |
 | Workflow redo, model-quality comparison and App-owned delivery | Deferred experiments with the explicit evidence/authority requirements below. They do not block the independent cleanup or authorize deployment. |
 
 Continue from the merged September 27 cleanup. Preserve the

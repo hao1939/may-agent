@@ -74,44 +74,17 @@ can run from admitted input, a relevant event or recovery with schedules disable
 
 ## One reconciliation model
 
-The shared runtime uses one Task execution lifecycle:
+The work runtime uses one claim, execution, result admission and recovery path
+for Conversation, ordinary Tasks and maintenance. Conversation operations join
+the same settlement transaction; generic Tasks need no Conversation records.
+Source and authority determine capacity and control scope.
 
-```text
-persist input -> wake exact Task -> read and claim current state
-  -> bounded attempt -> commit outcome -> rest or handle eligible pending input
-
-owner closes Task -> prevent new claims and fence late output
-```
-
-A Conversation normally executes through one stable Task; each Turn is its
-bounded attempt. After terminal closure or cancellation, fresh human input may
-create a deterministic linked successor. Exact replay stays with its original
-identity, and old system feedback cannot establish a successor. [Message
-Lifecycle](message-lifecycle.md#cancelled-conversation-execution-and-successors)
-owns those rules. Messages, Topics and Requests remain separate product records,
-with no execution lifecycle of their own. An independent assignment gets another
-Task and returns its result through the same event loop. No Task per message,
-second executing inbox owner or separate conversation supervisor is needed.
-
-An accepted result describes the work considered. It can satisfy a caller while
-the Task remains open. The App, parent agent or human decides when to close the
-Task; the core enforces that authorized decision. Ordinary Apps can close after
-accepting a result by convention. Maintenance and Conversation normally stay
-available, with timers used only where useful. This removes `achieve`/`maintain`
-from the target lifecycle without asking the core to infer responsibility lifetime.
-
-Core owns one claim, execution, outcome and recovery path. Typed conversation
-operations join its settlement transaction when needed; generic Tasks do not
-require conversation records. Source and purpose choose human/background
-capacity. Stop remains scoped to the current execution; closing its Task has
-wider effect. Required child outcomes constrain the work that depends on them,
-while unrelated input remains handleable.
-
-The [implementation comparison](../proposals/conversation-input-unification.md#options-and-their-cost)
-records why shared scheduling alone was insufficient. The merged implementation
-replaced the second execution authority rather than adding a Task around it.
-The source map below keeps the existing component homes; the #171 extraction,
-integrated in #168, makes the attempt path easier to read without adding another runtime.
+[System Model](system-model.md#one-reconciliation-model) explains the flow.
+[Task Resource Engine](task-resource-engine.md) owns lifetime, continuation and
+closure; [Conversation execution](conversation-execution.md) owns turn-specific
+input and control. Their shared runtime has no separate executing inbox or
+conversation supervisor. The [unification record](../archive/reviews/conversation-input-unification.md)
+retains the implementation comparison and cutover evidence.
 
 ## Composition and lifecycle
 
@@ -219,7 +192,7 @@ the [responsiveness investigation](../proposals/responsive-host-recovery-2026100
 records this implementation gap and the proposed repair of existing queries and
 background execution.
 Generic Task mechanics remain independent of conversational policy. The
-[unification review](../proposals/conversation-input-unification.md)
+[unification review](../archive/reviews/conversation-input-unification.md)
 records the code changes and retirement of the former separate consumer.
 
 ## Behavior when a capability is absent

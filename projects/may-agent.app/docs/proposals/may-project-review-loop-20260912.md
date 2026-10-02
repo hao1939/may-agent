@@ -322,7 +322,7 @@ specific decision is pending.
 Hao clarified the general requirement after the pilot: workers should avoid
 unnecessary duplicate wakes, and callers must handle repeated notifications
 safely. Duplicate events are expected. This follows the existing
-[execution-feedback contract](../2a-design/events.md#execution-feedback-and-agent-wakes);
+[execution-feedback contract](../2a-design/execution-feedback.md#execution-feedback-and-agent-wakes);
 it is not a periodic-review-specific instruction or an exactly-once delivery
 promise.
 
@@ -360,7 +360,7 @@ Host [PR #175](https://github.com/hao1939/may-agent/pull/175) now covers the
 shared Host mechanism: exact self-publication receipts and durable receiving
 Task identities. Regressions reproduce the former failure during execution,
 after acceptance/restart, and when a real child settles before its parent relay.
-The owning design now records [duplicate handling](../2a-design/events.md#duplicate-delivery-and-safe-reconsideration),
+The owning design now records [duplicate handling](../2a-design/execution-feedback.md#duplicate-delivery-and-safe-reconsideration),
 [Task input](../2a-design/task-resource-engine.md#event-input-and-checkpoints),
 and [storage/upgrade limits](../2a-design/storage.md#record-ownership).
 This candidate does not deploy the fix or establish semantic deduplication for

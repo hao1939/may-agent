@@ -1,0 +1,154 @@
+---
+name: task-execution-guide
+description: Work on a May Task using its current assignment, scoped capabilities, Conditions and attempt results. Read this guide directly when starting, continuing or recovering agent or workflow work.
+---
+
+# Working on a Task
+
+**Supports:** [Enable useful action within authority](../2a-design/system-model.md#enable-useful-action-within-authority). Helps agents use the shared execution contract with less bookkeeping and unnecessary context.
+
+**Choice basis:** [Apps own meaning; the Host owns mechanics](../1-principles/core-principles.md#apps-own-meaning-the-host-owns-mechanics) and [context discovery](../1-principles/core-principles.md#context-is-discovered-not-dumped).
+
+Use this document directly as agent guidance when receiving a Task assignment;
+the same text is the human guide and the reusable skill. It explains
+the current source contract, including Host #285. Use the tools and result schema
+actually supplied to the attempt: App adoption and installed versions can differ.
+The proposed unified capability catalog, `reply` field and `decision` spelling
+are not available merely because they appear in a proposal.
+
+**You decide what useful work to do. Infra executes admitted actions, retains
+requirements and results, delivers feedback, and schedules later work.** The App
+defines the assignment, authority and any required acceptance checks.
+
+## A complete example
+
+You are asked to implement a change and obtain a review.
+
+1. Read the current assignment and relevant evidence. Check whether a previous
+   attempt already made the change or requested the review.
+2. Make and check the change. Request the review from its accountable App using
+   the available Task capability. If its answer is needed, declare the caller
+   Condition referring to that request. Infra saves and connects both.
+3. Continue independent work, such as running tests, within this attempt's
+   allowance. A pending review does not force the whole Task to wait.
+4. If only the review remains, return `waiting` with its saved return route.
+   If useful work needs another attempt, return `waiting` with `continue: true`
+   and progress facts. Returning the final result ends this attempt.
+5. When the answer arrives, inspect the findings and decide the next action.
+   Converge the addressed work when it satisfies the assignment under App policy.
+
+The review requirement in this example comes from the assignment. It is not a
+universal infra completion gate. Infra trusts an admitted worker decision;
+unresolved Conditions retain their actual state. Acceptance does not guarantee
+that the worker judged correctly, and later evidence may warrant reconsideration.
+
+## Understand the work before repeating it
+
+The supplied context identifies the Task, this attempt, assigned inputs, current
+requirements, retained results and relevant outstanding facts. One attempt can
+contain many model calls, tools and work/check/repair iterations.
+
+Use the existing `tasks` read capability for current Task detail and exact inputs
+when the brief is insufficient. Start from a known identity; list only when
+discovering work. Large evidence should remain referenced until needed. See
+[Task reads](../2a-design/task-resource-read-interface.md) for exact operations,
+pagination, input keys and coverage limits.
+
+Treat free-form input as requirements to understand, not text to silently
+discard after a structured request arrives. Several inputs can refine one ask.
+Preserve material constraints and uncertainty. Decide which inputs your result
+addresses; reading or receiving them alone does not settle them.
+
+On recovery, inspect accepted work, previous failure evidence and the actual
+target state before repeating an effect. A proposed but unaccepted result can
+be useful evidence; it is not authorization to replay its actions.
+
+## Find the capability by its purpose
+
+The following groups organize guidance; they are not new runtime APIs.
+
+| I need to… | Use the supplied capability | Read more when needed |
+| --- | --- | --- |
+| Understand current work and evidence | Task brief, scoped reads and linked artifacts | [Task reads](../2a-design/task-resource-read-interface.md), [context assembly](../2a-design/agents.md#context-passing) |
+| Perform an operation or ask for a contribution | Available tools, agent/workflow catalogs, or typed App requests | [Contribution contract](../2a-design/execution-contributions.md), [Task changes](handler-authoring.md#task-changes-and-safety) |
+| Receive a later result or changed external fact | Caller Condition or a supported resource-observation Condition | [Conditions](../2a-design/task-resource-engine.md#conditions), [observers](../2a-design/agent-app.md#task-driven-resource-observation) |
+| Report progress and decide the next step | Scoped progress capabilities and the supplied final result schema | [Attempt results](../2a-design/task-attempts.md#result-contract) |
+
+Use the description and schema of the capability exposed in this attempt. Check
+what it returns: a completed result, accepted work with a reference, or failure.
+Do not infer that acceptance means the requested work is finished. Use logical
+recipients and the communication surface supplied by the App; transport details
+belong to adapters. A missing capability is a limitation to report or resolve
+through an authorized existing path, not a reason to edit infra state directly.
+
+## Act now or retain a dependency
+
+A bounded tool or helper can return within this attempt. Its completion is a
+contribution to your assignment, not automatic settlement of the whole Task.
+Work that must survive the attempt uses the supported durable request path.
+
+A Task request describes the receiver's work. A separate caller Condition states
+that its answer is needed. Use the current request/Condition contract; a future
+`reply` convenience must not be invented. Request admission does not require
+the caller to stop doing independent work.
+
+Live `tasks({ action: "apply", changes })`, executor `attempt.apply(changes)`
+and workflow `ctx.applyTaskChanges(changes)` share admission with final result
+declarations. Use the entrypoint actually supplied to your executor. Infra binds
+identity and correlates results; keep the same admitted identity when retrying
+the same operation. Do not resubmit accepted work under a fresh ID to check on it.
+
+A Condition observes a fact; declaring one does not launch the operation being
+observed. Select an installed observation capability and a meaningful expectation.
+Infra handles observation scheduling, matching and delivery. Omission preserves
+existing waits. Retire an obsolete wait explicitly through the supported action.
+
+## Decide how this attempt ends
+
+| Your judgment | Current result expression | Infra consequence |
+| --- | --- | --- |
+| Useful work remains for another bounded pass | `state: "waiting", continue: true`, with progress facts | Retain input and independent waits; schedule another attempt |
+| A later fact is needed and nothing useful can proceed now | `state: "waiting"`, with a saved Condition or future review route | Release capacity and retain the wait |
+| The addressed work is sufficient under App policy | `state: "converged"` | Record accepted completion for that input scope and return the result |
+| This attempt could not complete the work | `state: "incomplete"`, with summary and failure facts | Retain unfinished work and report/retry through existing policy |
+
+Use the full supplied schema for required fields and permitted combinations.
+`inputKeys` selects the complete input scope of your result. Omission uses the
+saved assignment plus accepted live inputs; `[]` covers none. One result has one
+disposition for that selected set. Unselected requirements remain outstanding.
+
+Completion of an input, ending an attempt and owner closure of a Task are
+different actions. A pending Condition is context for judgment; it does not
+give infra authority to invent a semantic veto or to fabricate satisfaction.
+An explicit App acceptance requirement still applies.
+
+## Recover and return problems to the owner
+
+Repair within this attempt when authorized work can progress and allowance
+remains. Infra owns routine retry and delivery recovery under existing policy.
+An agent can choose a different repair, retry or failover when judgment is needed.
+Explain the evidence and concrete next action when repeating the same attempt
+would not help. Scope changes, unavailable authority and abandonment belong to
+the responsible owner through normal feedback and control paths.
+
+Repeated failure and growing cost should be observable through existing
+[metrics](../2a-design/metrics.md) and [failure feedback](../2a-design/execution-feedback.md).
+An alert or delivered report does not prove that an evaluator or human acted.
+Do not claim escalation succeeded merely because a record was written.
+
+Retries use bounded attempts and backoff; there is no universal failure-count
+stop. Where an operation cannot make repeat delivery safe, its contract must
+expose that exception. Follow its reconciliation path and preserve uncertainty
+until acceptance is known. See [retry ownership](../2a-design/system-boundary.md#retry-and-recovery-ownership).
+
+## For workflow and executor authors
+
+Use the same Task, input, result and Condition meanings. Workflow code runs its
+declared procedure and asks an agent where judgment is needed; executor adapters
+provide equivalent context and return through the same admission boundary.
+Do not implement another scheduler, delivery loop or completion authority.
+
+Use [Task reconciler authoring](handler-authoring.md), [Workflow authoring](workflow-authoring.md)
+and [Task attempts](../2a-design/task-attempts.md) for exact interfaces. The checked
+[App example](../examples/app.ts) demonstrates admission and waiting. It validates
+mechanics, not whether a real agent makes the right decision in every case.

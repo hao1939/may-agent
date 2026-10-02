@@ -32,6 +32,21 @@ Skill loading must not create a parallel request lifecycle or its own success
 state machine. The enclosing request correlates a bounded turn; an App Task owns durable
 work. Workflow and session records remain execution evidence.
 
+## Documentation used directly as guidance
+
+A practical document can itself supply task-specific skill instructions. Keep
+applicability, method, decision boundaries and references in that one source;
+people and agents read the same body. The [Task execution guide](../2b-manual/task-execution-guide.md)
+and [design authoring guide](../2b-manual/design-authoring.md) follow this convention.
+They can be supplied as context references or read through the documentation index.
+
+This authoring convention does not change automatic package discovery below.
+Ordinary Markdown frontmatter does not register a new skill. If catalog delivery
+is required, its package must expose the canonical source through supported
+trusted paths or a generated artifact and preserve accessible references. There
+must be no independently edited design/skill variants. Source availability,
+catalog activation and useful agent behavior are separate things to verify.
+
 ## Skill And Workflow Boundary
 
 Skills and workflows share a few authoring conventions, not an execution
@@ -204,7 +219,7 @@ An omitted skill can still exist in the loaded catalog. A model with only a
 file-read tool may have no usable way to locate it from runtime diagnostics.
 Use concise scoped descriptions and an accessible exact reference or supported
 explicit selection where needed; do not assume omission is harmless. The
-[method PoC](../proposals/extension-methods-poc-20260912.md#delivery-and-natural-use)
+[method PoC](../archive/reviews/extension-methods-poc-20260912.md#delivery-and-natural-use)
 reproduces this boundary and its limits. Catalog visibility, full-body delivery,
 method use and useful outcome are separate evidence.
 

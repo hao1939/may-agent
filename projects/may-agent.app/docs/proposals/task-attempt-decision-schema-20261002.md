@@ -1,388 +1,31 @@
-# Agent input and output: understanding requests, deciding next steps
+# Proposal: make the attempt decision explicit
 
-**Supports:** [Task Resource Engine](../2a-design/task-resource-engine.md). Clarifies agent decisions and infra bookkeeping; its deferred schema remains separate from the current contract.
+**Supports:** [Task attempts and results](../2a-design/task-attempts.md). Tests whether a clearer result discriminant reduces agent confusion without changing responsibility or scheduling semantics.
 
-**Choice basis:** [Applicable philosophy and convention](../1-principles/core-principles.md#one-authority-for-each-resource); [compare competing choices](../1-principles/core-principles.md#resolve-conflicting-designs).
+**Choice basis:** [Simple first](../1-principles/core-principles.md#simple-first) and [convention over configuration](../1-principles/core-principles.md#convention-over-configuration).
 
-**Design status:** Draft for review, 2026-10-02.
-**Implementation status:** [Host PR #285](https://github.com/hao1939/may-agent/pull/285)
-merged as `797c7ee35` on the fetched source baseline. It keeps request routing, separate requests/Conditions and shared live/final admission.
-**The `decision` schema migration is deferred (2026-10-03).** Merged Host source
-retains `state`, `continue` and the existing schema IDs. The proposed output schema,
-its examples and migration plan below are future design, not the PR contract.
-The paired App mapping/admission changes remain separate unmerged work. This
-documentation review establishes Host source status, not App activation or deployment.
-The rules below clarify how decisions are trusted and recorded. They add no
-new agent output fields, completion gate, or result lifecycle.
+**Design status:** Draft; schema migration deferred.
+**Implementation status:** Unimplemented. Host #285 retains `state` and `continue` and the existing schema IDs. Its merged routing and live/final admission behavior belongs in the current contract. Paired App mapping changes remain separately unmerged in the recorded review.
 
-The companion [Task execution capabilities proposal](task-execution-capabilities-20261002.md)
-organizes agent access around understanding, acting, observing and reporting.
-It proposes an explicit caller reply choice and automatic bookkeeping for that
-choice. Those additions are follow-up design, not fields implemented by #285;
-the candidate schemas and examples below retain their current meaning.
+## The decision still to make
 
-## Governing rules: agent decides, infra executes, trust by default
+Should `decision: "continue" | "wait" | "converged" | "incomplete"` replace the
+current `state`/`continue` expression? The expected benefit is clearer agent
+choice. The cost is changing schemas, adapters, guidance and independently
+released App producers. Retaining the existing fields with clearer guidance is
+the simpler baseline; a proposed spelling should demonstrate useful improvement.
 
-1. **The agent decides.** Within the App's assignment and authority, the agent
-   judges what to do, whether a result is sufficient, and when the work is done.
-   This is the general rule for every decision. Conditions and observations
-   provide context for that judgment; they do not create an infra-owned policy
-   for deciding whether the work is good enough.
-2. **Infra executes the decision and keeps the records.** It validates the
-   contract, authority and current execution, then applies the decision to the
-   exact inputs, schedules work, delivers results and maintains Conditions.
-   On accepted convergence, it marks the addressed request done and returns the
-   result through the normal path. Completion is operationally meaningful.
-3. **Trust by default; do not promise certainty.** An accepted decision is the
-   system's working conclusion. Callers may use the result and move on without
-   a mandatory second judgment or independent verification. Agents can be
-   mistaken; new evidence can lead the responsible owner to reconsider through
-   the existing work and control paths. The system does not guarantee that an
-   accepted conclusion is objectively correct.
+Use [Working on a Task](../2b-manual/task-execution-guide.md) and the
+[attempt contract](../2a-design/task-attempts.md) for current behavior. The
+[App contract](../2a-design/agent-app.md#admission-and-clarification) owns free-form
+and structured input admission. [The #285 review record](../archive/reviews/task-attempt-decision-review-20261002.md)
+retains the full earlier discussion, trust-rule refinement and candidate evidence.
+The separate [capability proposal](task-execution-capabilities-20261002.md) owns
+the proposed caller reply convenience.
 
-`converged` therefore means “the responsible worker has decided this work is
-done,” and the normal request state becomes **done**. It is not necessary to
-add a separate “claimed done” stage or make the caller approve every answer.
-An App can require a particular check through its explicit acceptance policy;
-infra executes that policy rather than inventing a universal proof requirement.
-
-### Recording decisions and facts
-
-Keep the existing attempt identity, result, summary, facts and acceptance basis
-available for explanation and review. `agent-judgment`, `workflow-contract` and
-`deterministic` describe how a decision was accepted. They are useful evidence,
-not confidence grades, extra completion states or guarantees of correctness.
-Only record a verifier check when that check actually ran.
-
-The ordinary view can say **Done**. Its details can show the responsible agent,
-reason and available evidence, including relevant outstanding Conditions.
-Avoid requiring a qualification or audit step for every routine success.
-An unresolved observation remains unresolved until its own observation or
-authorized control changes it; accepting a work decision does not fabricate
-other facts. Those records can coexist naturally without a whitelist of
-permitted combinations.
-
-The request's completion, the Task's current execution and the Task's lifetime
-retain their existing scopes. Completing the addressed request need not close
-an ongoing Task or erase its other inputs and Conditions.
-
-### Normal flow
-
-```text
-agent receives work and available facts
-  -> agent decides what is sufficient and returns a result
-  -> infra validates and records that decision
-  -> accepted convergence marks the addressed request done
-  -> caller receives the result and continues its work
-  -> new evidence, when relevant, is considered through the existing owner
-```
-
-For example, a worker asks for review, completes its tests and decides that its
-work is done. Infra applies that decision through the same path as any other
-convergence. The review's current state stays accurate. Whether that review
-should change the decision is an App/agent judgment under the assignment.
-This example follows the rules above; it introduces no special exception.
-
-### Scope of this refinement
-
-Keep the existing agent schema and result records; defer the proposed spelling. No new `judgment`
-envelope, mandatory Condition-at-decision snapshot, or caller verification
-round is required to establish trust by default. Expose existing evidence where
-it helps a reader understand a result; extend a projection only for a concrete
-consumer need. Such presentation work must not become a completion prerequisite.
-
-The candidate already stores `acceptanceBasis` on accepted attempts. Ordinary
-App feedback does not carry all of that detail today. This is a presentation
-limitation, not a reason to withhold completion. The earlier synthetic review
-exercise established that infra follows the supplied convergence decision;
-it did not establish an incorrect real-agent judgment. The automatic rejection
-rule and subsequent expanded bookkeeping proposal are superseded by these
-general rules. No retry, escalation or evaluator policy is added here.
-
-## Recommendation
-
-Accept free-form requests as well as structured App input. Prefer a structured
-request when the caller already knows its meaning. During ordinary handling,
-the App/agent interprets text into the same outcome, acceptance and constraints
-used for structured work. Preserve the original inputs and their exact links.
-
-The agent returns one **attempt decision**. Infra applies it to the existing
-Task, together with current inputs, Conditions, accepted results and owner
-controls. Execution status remains part of Task state.
-
-For #285, retain `state: "waiting" | "converged" | "incomplete"` and
-`continue: true` on a waiting result when useful independent work remains.
-Keep requests and Conditions independent: a request describes the receiver's
-work; a Condition describes a result or fact the caller needs. Renaming these
-choices to `decision` adds migration cost without being necessary for this fix.
-
-The common choices read naturally:
-
-- **Continue:** I have useful work to do now.
-- **Wait:** I need a result or fact before I can make more progress on the
-  work addressed by this attempt.
-- **Converged:** I judge the addressed work done; mark its request complete
-  and return the result.
-- **Incomplete:** This attempt was unsuccessful; retain the unfinished work
-  and failure evidence for ordinary recovery.
-
-An attempt decision is recorded with its result. It is not a second mutable
-Task status, a new controller, or an agent-written copy of the Task record.
-
-The input contract below explains what the agent receives and understands;
-the output contract explains which decisions infra can execute. Free-form
-content is valid input, while executable decisions have a strict schema.
-
-## Attempt boundary and actions during execution
-
-An attempt starts when the Host claims a Task and ends when its executor returns
-one final result, fails, or is interrupted. It can contain many model turns,
-tool calls and actions. Requesting review does not end it. A final
-`state: "waiting", continue: true` ends it and asks the Host to schedule the
-next attempt.
-
-Expose the same typed changes in two places:
-
-```ts
-type TaskChanges = {
-  requests?: TaskAppRequest[];
-  conditions?: TaskCondition[];
-  actions?: TaskAction[];
-  inputKeys?: string[];
-  facts?: string[];
-};
-
-type TaskChangeReceipt = {
-  requests: Array<{ id: string; requestId: string }>;
-  conditionIds: string[];
-  actionsApplied: string[];
-};
-```
-
-The agent tool is `tasks({action: "apply", changes})`. Registered executors use
-`await attempt.apply(changes)`; Task-owned workflows use
-`await ctx.applyTaskChanges(changes)`. Final results carry the same change fields
-alongside the existing result `state`. All enter one Host admission implementation. The tool
-returns durable receipts and leaves the current attempt running. Only final
-settlement releases it. Neither path accepts a model-supplied caller identity.
-
-The Host checks authority, validates all changes, saves the receiver request and
-caller Condition, and then dispatches delivery. Invalid batches roll back. The
-same declarations after a lost tool response reuse saved receipts; an already
-applied exact action is not performed again during final settlement. Receipts
-live in existing attempt records; requests and Conditions remain their own
-authorities. Interruption does not undo admitted work. Reading or applying
-changes does not fulfill the original input.
-
-`inputKeys` binds a change to the exact inputs being handled when it is admitted.
-A final result cannot silently transfer that wait to unrelated input. A caller
-can submit review, run tests, read feedback, and finish in one attempt. If the
-worker judges that it needs the pending review before answering and has no
-independent work, return `state: "waiting"` and omit the saved wait. Otherwise its final
-decision retains its own meaning; an open review does not select that decision.
-
-The native Codex executor accepts the same final schema. Its CLI does not yet
-expose May's live `tasks` tool; this change does not claim a new native tool bridge.
-It can declare requests in its final result, and the next attempt continues work.
-
-## How a saved request reaches the receiving agent
-
-```text
-caller chooses request and optional caller Condition
-  -> Host validates and saves them before delivery
-  -> Host emits app.input.requested (delivery hint)
-  -> receiving App's input mapper selects existing/new Task
-  -> Host attaches exact input and queues that Task
-  -> normal Task controller starts its configured agent/workflow
-  -> receiving App accepts an answer for that exact input
-  -> Host retains the result and delivers correlated caller feedback
-```
-
-With an explicit `taskId`, admission addresses that existing Task directly.
-Otherwise the receiving App's mapper selects the Task. An agent name is not a
-second address or queue; the selected Task's configuration chooses its executor.
-The saved request is delivery authority, so inbox recovery repairs interruption
-before dispatch or a lost delivery notification. Saving a Condition alone never
-starts the receiving agent. The Condition expresses why the caller needs feedback.
-
-The refined [capability-facing contract](task-execution-capabilities-20261002.md#calling-convention-intent-and-an-answer-choice)
-lets the agent supply recipient/content and choose whether it needs an answer.
-For a required reply, infra establishes the trusted return path and any needed
-caller bookkeeping, then delivers the answer whether the caller continues or
-yields. The agent does not separately register a watch merely to receive it.
-For no reply, infra confirms acceptance and the receiving owner keeps the work;
-no caller result dependency or completion notification is requested.
-
-The same ownership rule applies to human communication: channel selection,
-presentation, correlation and delivery recovery belong to the capability.
-Conversation context and Telegram are internal parts of that implementation,
-not routing choices or bookkeeping required from the agent. The caller's reply
-choice does not decide whether the whole Task should pause.
-
-**Remaining gap:** PR #285 preserves every submitted request and its result, but
-automatic caller feedback currently follows a saved request Condition. Without
-that Condition the result remains readable; it does not automatically wake the
-caller. The proposed caller reply choice is not part of #285. Its automatic
-return path and no-reply behavior need a paired capability/SDK change; this
-candidate does not implement that interface.
-
-## Input: flexible content, one admission contract
-
-Keep the existing Host envelope:
-
-```ts
-type AppInput<TData = unknown> = {
-  kind: string;
-  data: TData;
-};
-```
-
-The receiving App publishes the schema for its `kind` and `data`. The Host
-checks that shape and trusted routing/authority, then preserves the original
-input. It does not use an LLM to guess what the requester meant during
-mechanical admission. A human can type plain text; the interface supplies the
-envelope without making the human write JSON.
-
-For May, the common accepted subset can be described as follows. This reuses
-its existing `message` and `goal` shapes, including `data.message` for text;
-existing revision and assignment fields remain part of the full App schema.
-
-```ts
-// App-owned work content, not another Host resource or lifecycle.
-type GoalContent = {
-  outcome: string;
-  acceptance: string[];
-  constraints?: string[];
-};
-
-type MayRequestInput =
-  | {
-      kind: "message";
-      data: {
-        message: string;
-        context?: Record<string, unknown>;
-      };
-    }
-  | {
-      kind: "goal";
-      data: GoalContent;
-    };
-```
-
-`message` accepts non-empty free-form text without demanding fully specified
-acceptance criteria. A supplied `goal` requires its existing non-empty outcome
-and acceptance list. Other Apps can expose domain schemas through the same
-envelope; a machine-oriented App need not accept arbitrary prose. Its caller
-can inspect the advertised contract and interpret a request into that schema.
-
-These are two input representations, with one request/admission mechanism.
-Neither `message` nor `goal` determines whether the caller waits, whether a
-Condition exists, or whether the work is complete. Human Conversation identity
-still selects its existing handling path; changing the payload's kind must
-not fabricate Conversation identity or create a second lifecycle.
-
-### Understanding free-form input
-
-```text
-free-form text or structured App input
-  -> preserve original input and trusted source
-  -> App/agent understands the request in its current context
-  -> work against the existing Request scope / Task assignment
-  -> return a structured attempt decision
-  -> infra retains results, waits and the next eligible work
-```
-
-Interpretation is part of normal work. It does not require a mandatory
-preprocessing agent, a separate model call, or a new intention table. Simple
-text can be understood and fulfilled in the same attempt. Existing App code
-can map already structured inputs directly; an agent handles meaning when
-judgment is needed. Do not put semantic inference into the pure Task mapper.
-
-The useful normalized content is:
-
-| Content | Question answered | Existing home |
-| --- | --- | --- |
-| Outcome | What does the requester want achieved? | Accepted Request scope and the corresponding Task's `outcome` |
-| Acceptance | What evidence would show this work is fulfilled? | Task `acceptance`, under App policy |
-| Constraints and context | What bounds or references govern the work? | Request scope and App-owned Task `input` |
-| Original input links | Which messages or requests does this work address? | Existing Request/input and Task admission links |
-
-Those records have distinct scopes: a conversational Request owns the human
-promise, and its Task owns the assigned executable outcome. Reuse them; do
-not create a third canonical interpretation record or copy all raw input into
-each output. The Host's trusted input keys preserve provenance and correlation.
-
-The current #285 companion mapper starts a text Task with the original message
-as `outcome` and a general fulfillment rule. It does not yet extract structured
-acceptance or constraints using a model. The proposed interpretation happens
-inside the ordinary agent handling that follows this admission.
-
-A worker's interpretation is not permission to rewrite its assignment. Apply
-an actual scope/acceptance revision through the existing authorized creator
-path and generation checks. Preserve tentative understanding in ordinary
-attempt evidence/structured `result` if it is useful across attempts; it is
-not a replacement assignment. A worker cannot weaken acceptance to declare
-itself finished.
-
-### Uncertainty, corrections and multiple inputs
-
-Do not turn missing information into fabricated requirements. If the request
-is clear enough, proceed with supported interpretation and the existing
-authority. If a missing fact materially changes the outcome, scope or
-authority, ask the smallest useful question through the normal caller route.
-Independent useful work can continue. If only the answer remains, yield with
-a real Condition/return path; a sentence saying “waiting for clarification”
-does not create a notification or a durable wait by itself.
-
-There is no mandatory confirmation round after every conversion. Explicit
-constraints remain binding; an inferred working assumption stays distinguishable
-from a requester-supplied requirement. If a later message corrects that
-assumption, update the same Request and applicable Task assignment through
-their existing authority boundaries.
-
-The App/agent judges whether a later input updates the same requirement,
-introduces an independent ask, or only contributes evidence. Several inputs
-can belong to one evolving requirement. Infra preserves those links and the
-original text; understanding or normalizing input does not fulfill it.
-Late evidence on a closed Task remains history unless an authorized new
-requirement explicitly reopens it.
-
-For example, “Investigate the repeated retries; don't change code yet” can
-be understood as this App-owned content:
-
-```json
-{
-  "outcome": "Explain the cause of repeated retries and propose a correction.",
-  "acceptance": [
-    "Support the diagnosis with relevant execution evidence.",
-    "Provide a proposed correction for review."
-  ],
-  "constraints": ["Do not change code."]
-}
-```
-
-“Focus on the last three hours” refines that same requirement. Retain both
-inputs and incorporate the time range without losing the no-code-change
-constraint. One final result can address both inputs. A later “implement the
-correction” is new authority/scope to interpret, not something the first
-normalization was allowed to assume.
-
-### Input supplied to an agent attempt
-
-The agent needs more than the latest message. Reuse the existing Task attempt
-context and bounded reads to provide:
-
-- the current Task outcome, acceptance, App input and authority context;
-- the assigned inputs and their exact keys, with original bodies retrievable;
-- outstanding input obligations and Conditions, independent of execution status;
-- relevant new feedback, prior attempt failure/progress and accepted evidence.
-
-Existing `TaskDetail`, `currentObligations`, `pendingEvents` and exact
-`tasks.get({ inputKeys })` reads already carry these meanings. Do not expand
-all history into every prompt or introduce another writable agent-input state.
-An interpretation summary helps comprehension, while original requirements
-remain available for verification. If context is truncated or unavailable,
-the worker must not infer that omitted obligations were completed.
+Everything below describes the deferred interface. Its examples are not current
+copyable SDK examples. This change adds no completion gate, Condition veto,
+caller verification round or guaranteed correctness of agent judgment.
 
 ## Deferred spelling refinement: why the current expression is confusing
 
@@ -410,28 +53,6 @@ This follows the existing [execution and outstanding results model](../2a-design
 and [Host/App boundary](../2a-design/system-boundary.md). It changes the output
 expression and its wiring, not who owns the work.
 
-## Ownership and vocabulary
-
-| Concept | Meaning | Authority |
-| --- | --- | --- |
-| Attempt decision | What the worker judges after this bounded run | App/agent, within the assignment |
-| Task execution status | What is actually running or eligible to run now | Host, using claims, accepted decisions, current inputs and controls |
-| Condition | An exact needed fact with a supported observation or return path | App/agent chooses the fact; Host retains, observes and delivers it |
-| Accepted result | Trusted App/worker conclusion for the addressed requirements, with retained evidence | App defines acceptance; Host validates, records completion and delivers the result |
-| Task lifetime | Whether this responsibility remains open | Authorized assigning owner; Host enforces the control |
-
-The latest decision and current status can differ. After an agent returns
-`wait`, new input can make the Task pending before another agent runs. A
-`continue` decision makes work eligible; capacity, backoff, owner controls and
-execution limits still govern when it starts. A `converged` decision completes
-the addressed request while retained Conditions or other inputs can still
-affect Task execution. Infra derives that execution state from existing records;
-it does not use it to invent a new completion judgment.
-
-The combined Task view uses existing records: lifetime, execution phase/current
-attempt, outstanding Conditions, pending inputs and accepted results. Do not
-add combined phases such as `running-and-waiting`, duplicate booleans, or a new
-agent-wide state. A human view can say “Running tests; review still outstanding.”
 
 ## Proposed agent output schema — deferred
 
@@ -619,6 +240,7 @@ and acceptance rules still apply without inventing an input key.
 were answered. Infra preserves correlation; the App/agent judges whether
 the evidence satisfies the requirement.
 
+
 ## How infra applies a decision
 
 | Accepted decision | Addressed inputs | What can happen next |
@@ -665,6 +287,7 @@ deadline prompts reconsideration, not success or automatic human notification.
 `wait` is an ordinary worker yield, not an owner-issued pause. New eligible
 input can wake it. Owner Stop/pause/closure controls retain their own semantics
 and are not encoded as another agent decision.
+
 
 ## Examples
 
@@ -748,6 +371,7 @@ neither closes the Task nor claims that a human has been contacted. If the
 agent instead knows an exact external fact is needed, it can deliberately
 request help and return `wait` with that Condition.
 
+
 ## Deliberate limits and alternatives for review
 
 The recommended field is an **attempt decision**, not a pure scheduling
@@ -772,6 +396,7 @@ requirement's multiple inputs to be handled separately.
 If mixed acceptance and new waits in one result are required now, revise this
 schema before implementation. Do not add a second scheduling flag later as
 an exception to `converged`. That would recreate the ambiguity being removed.
+
 
 ## Compatibility and implementation scope — deferred schema migration
 
@@ -818,65 +443,24 @@ output, a universal business schema to the Host, or a new interpretation
 service. Review App guidance and retained source-input context alongside the
 output change so typed and free-form paths reach the same fulfillment rules.
 
-The canonical App contract and Task engine design should change only when the
-proposal is accepted and implemented. Keep this record as the review rationale.
+If this proposal is accepted, update the owning attempt contract with an explicit
+implementation gap until the new interface is supported. Teach the new fields as
+callable only when that support is available. Keep this record as the rationale.
 Deploy Host support for both result spellings before switching independently
 released App producers to the new one; #285's separate receiver-mapping
 integration order still applies. Source review does not authorize deployment.
 
-## Validation required before calling the implementation ready
 
-Use the existing `state`/`continue` form for #285. New result spellings and their
-compatibility checks belong to the deferred migration, not its merge criteria.
+## Evidence needed to choose this change
 
-| Scenario | Required observation |
-| --- | --- |
-| Equivalent text and structured requests | Same intended work/acceptance, preserved source input, and no payload-kind scheduling difference |
-| Missing material detail in free-form input | Uncertainty stays explicit; clarification uses an actual return route without fabricated requirements |
-| Later correction to a free-form request | Same requirement is revised when appropriate; earlier constraints and exact input links remain |
-| Invalid structured App input | Useful schema feedback; no silent semantic rewrite at Host admission |
-| Interpretation followed by interruption | Original inputs and unresolved obligations remain discoverable; understanding alone does not settle them |
-| Continue with an unresolved Condition | Another bounded attempt runs; wait and original requirements remain |
-| Continue without any Condition | Accepted with progress facts; no invented wait or failure retry |
-| Wait without repeating an existing Condition | Saved wait and correlation survive, including restart |
-| Wait with no return route and no pending work | Correctable rejection; unfinished input is preserved |
-| Result arrives before, during or just after wait settlement | No lost wake, false invalid-wait rejection or duplicate parent attempt |
-| New input arrives during wait/convergence | Exact scope and freshness fences preserve it; old decision does not suppress it |
-| Several inputs update one requirement | One accepted result can fulfill the entire selected set with evidence |
-| One input accepted while an independent wait remains | Accepted result is retained and the other requirement stays open |
-| Accepted convergence | Addressed request becomes done and its caller can proceed without an added confirmation or verification round |
-| Conditions coexist with a completion decision | Normal decision admission applies; infra does not invent a semantic veto or fabricate changes to Condition state |
-| Agent, workflow and configured-verifier results | Existing evidence records the actual acceptance path without presenting it as a guarantee |
-| Later evidence challenges an accepted result | Existing owner/input/control paths carry reconsideration; late observations do not invent reopening authority |
-| Helper acknowledgment/progress/failure | Caller receives appropriate evidence; original input is not falsely fulfilled |
-| Retire one wait or omit all declarations | Exact retirement only; omission never clears unrelated waits |
-| Restart or lost feedback | Same request, result and Condition recovered without duplicate receiver work |
-| Invalid schema or stale result | Useful correction/error evidence; proposed effects are not accepted as success |
-| Existing output / saved schema | Existing state/continue contract and schema IDs remain; legacy dependencies normalize once |
-| Closed or stopped Task | Late decision cannot override the explicit control |
+Compare current and proposed guidance on continuing independent work with a
+pending review, yielding on a saved wait, addressing several corrected inputs,
+and returning incomplete work. Inspect actual agent decisions and retained state;
+valid JSON alone does not show improved understanding. Check migration cost
+against any reduction in incorrect decisions or repeated explanation.
 
-Run focused SDK/runtime and affected App checks, then the Host's full CI and
-both PR checks on a fixed revision. Include an explicitly authorized model
-trial if claiming that real agents choose the new outputs reliably; scripted
-tests establish mechanics, not that behavioral claim.
-
-Checks completed for the earlier candidate against Host `075d0d4a`: six JSON examples parse;
-all five TypeScript excerpts and the final/action examples type-check together;
-four final/action examples pass SDK admission. The canonical documentation
-examples also pass their SDK/control type checks and seeded Task replay checks.
-Focused runtime tests cover live submission, final replay, fast results,
-interruption, saved local references, rollback, and repeated retirement.
-May's input/metric checks and Evaluation's affected owner checks pass.
-Full Host CI and GitHub check results are recorded in PR #285.
-The clarified trust rule requires no new result envelope or historical snapshot.
-These checks establish execution mechanics; they do not guarantee the correctness
-of agent judgments or establish live resolution of the original incident.
-
-Those earlier checks covered the wider candidate, not the narrowed revision.
-Current verification is recorded with exact revisions in PR #285. Scripted
-trials establish mechanics; there is no deployment or model-behavior claim.
-
-Review the governing rules, exact input/output boundary, shared action admission,
-one disposition per selected input set, and compatibility limits. The narrowed
-candidate fixes routing and shares admission while retaining the existing result
-format. The spelling proposal is deferred; source review does not authorize rollout.
+Before implementation is ready, verify SDK/schema/admission agreement, live and
+final actions, replay, fast results, restart and mixed-version producers. The
+[historical review cases](../archive/reviews/task-attempt-decision-review-20261002.md#validation-required-before-calling-the-implementation-ready)
+provide concrete scenarios, but earlier candidate passes do not validate this
+deferred schema or establish deployment.

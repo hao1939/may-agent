@@ -10,7 +10,7 @@ The current contract is [Events](../../2a-design/events.md#resource-responsibili
 Finding 1 is repaired: the healthy route proceeds, unresolved translation stays
 in the admission plan, and a later due scan retries only the failed work. The
 original probe's failure assertions no longer hold. Finding 2 still reproduces.
-See the [observation proposal](../../proposals/task-observation-contract-20260930.md#evidence-gathered-for-this-proposal)
+See the [observation proposal](task-observation-contract-20260930.md#evidence-gathered-for-this-proposal)
 for current results and limits; the evidence below describes the original baseline.
 
 ## Decision and scope

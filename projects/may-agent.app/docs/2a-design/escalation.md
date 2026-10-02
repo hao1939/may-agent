@@ -17,7 +17,7 @@ Return problems to the exact caller, who can decide what to do next.
 "Escalation" describes asking someone with different authority to decide or
 act; it is not a resource or a required response to failure. Different authority
 can exist within one App. Ordinary cross-App delegation is not automatically
-an escalation. The [caller-feedback contract](../proposals/caller-feedback-and-waiting.md)
+an escalation. The [caller-feedback contract](../archive/reviews/caller-feedback-and-waiting.md)
 owns reporting during waits and unsuccessful attempts.
 
 ```text

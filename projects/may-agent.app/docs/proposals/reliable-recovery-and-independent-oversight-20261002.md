@@ -54,7 +54,7 @@ Evidence includes two isolated reproductions: the actual installed CLI against a
 
 The local audit at `.state/codex-owner-review-root-cause-20261002/REPORT.md` retains exact identities, source revisions, traces and reproduction commands. It is ignored operational evidence, not a dependency for portable tests. The recent three-hour window contained 86 model requests and 9.16 million tokens for the affected thread, mostly cached input. Lower usage alone will not prove recovery.
 
-This extends [recovery from execution evidence](recovery-from-execution-evidence-20260922.md) and [caller feedback](caller-feedback-and-waiting.md). The September recovery proposal deferred a new fallback until a missed route was demonstrated; this incident supplies that evidence. Automatic supervisor fallback is still explicitly deferred in the [current boundary](../2a-design/system-boundary.md#ownership-and-intervention).
+This extends [recovery from execution evidence](recovery-from-execution-evidence-20260922.md) and [caller feedback](../archive/reviews/caller-feedback-and-waiting.md). The September recovery proposal deferred a new fallback until a missed route was demonstrated; this incident supplies that evidence. Automatic supervisor fallback is still explicitly deferred in the [current boundary](../2a-design/system-boundary.md#ownership-and-intervention).
 
 The separate [token-efficiency proposal](../../../may.app/design/token-efficiency-proposal-20261002.md) owns finish-loop termination, overdue review scheduling and optional context budgets. This proposal supplies the recovery and oversight behavior around that work.
 

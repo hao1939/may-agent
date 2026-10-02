@@ -446,7 +446,7 @@ checks and a shorter prompt alone do not establish better judgment or cost.
 
 **Value:** make completion, continuity and affordable execution dependable at the boundaries where past implementations failed.
 
-The [PR review](task-capability-pr-review-20261003.md) makes several parts of
+The [PR review](../archive/reviews/task-capability-pr-review-20261003.md) makes several parts of
 the contract more precise. These extend the main design's infra requirements, using existing
 mechanisms rather than adding work for the agent to administer.
 

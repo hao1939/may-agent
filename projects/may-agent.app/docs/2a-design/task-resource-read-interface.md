@@ -5,7 +5,7 @@
 **Choice basis:** [Core Principles](../1-principles/core-principles.md#convention-over-configuration).
 
 **Design status:** Accepted.
-**Implementation status:** The shared reader and explicit `inputKeys` reads are implemented; [Host #269 is merged](../proposals/explicit-task-input-consideration-20260930.md). Source status is not deployment evidence.
+**Implementation status:** The shared reader and explicit `inputKeys` reads are implemented; [Host #269 is merged](../archive/reviews/explicit-task-input-consideration-20260930.md). Source status is not deployment evidence.
 
 This reference is part of the [Task resource engine](task-resource-engine.md) contract.
 
@@ -92,7 +92,7 @@ in that first page. The [result contract](task-resource-engine.md) controls
 settlement through the complete `inputKeys` scope. The Host saves useful
 continuation in current input records, independently of waits, and supplies that
 work on the next attempt after continuation or retry. See the
-[implementation and trial record](../proposals/explicit-task-input-consideration-20260930.md)
+[implementation and trial record](../archive/reviews/explicit-task-input-consideration-20260930.md)
 for implementation and deployment status.
 
 The exact read uses one synchronous SQLite read snapshot for the resource,
@@ -101,7 +101,7 @@ through the Task-bound reader. Model-facing briefs shorten large bodies and link
 content-addressed detail snapshots under the existing attempt context directory.
 The public Task reader remains authoritative; these files retain the scope and
 coverage of the original read. See the
-[integration record](../proposals/task-decision-context-integration-20260926.md).
+[integration record](../archive/reviews/task-decision-context-integration-20260926.md).
 
 The optional outcome projection groups exact Task identities for a simpler read
 view while preserving every member and link. It is not a new work resource,

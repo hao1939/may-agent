@@ -27,7 +27,7 @@ would make the experience worse.
 
 This proposal has two parts: fix confirmed reliability defects, then simplify
 presentation and guidance. Neither requires a new work lifecycle or the pending
-[Conversation execution migration](conversation-input-unification.md).
+[Conversation execution migration](../archive/reviews/conversation-input-unification.md).
 
 ## What the person should experience
 

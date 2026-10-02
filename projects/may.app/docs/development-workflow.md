@@ -174,7 +174,7 @@ repository must already ignore that directory, as this App does; the workflow
 checks this before work and never changes ignore rules to hide source edits.
 The shared `shared/tools/task-evidence.ts` helper publishes complete
 content-addressed files and never replaces an existing artifact. Its common
-recovery rule is described in the [workflow contract](../../may-agent.app/docs/2a-design/workflows.md#evidence-retention-and-autonomous-recovery). May supplies
+recovery rule is described in the [workflow contract](../../may-agent.app/docs/2a-design/execution-contributions.md#evidence-retention-and-autonomous-recovery). May supplies
 the Git/requirement validity checks and team policy. Raw JSON preserves exact values; readable Markdown supports paginated
 inspection of long text. These are local deliverables retained with the Task
 worktree, not a permanent archive independent of worktree retention.

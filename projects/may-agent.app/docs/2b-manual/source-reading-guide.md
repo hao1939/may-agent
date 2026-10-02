@@ -64,7 +64,7 @@ The source layout follows those responsibilities:
 
 Common design lives outside the Host in `may-agent.app/docs/`. Domain behavior
 lives in `may.app`, `scout-knowledge-lib.app`, `evaluation.app` and `gym.app`.
-For example, [May's agent definition](../../../may.app/agents/may/) belongs to
+For example, [May's agent definition](../../../may.app/agents/may) belongs to
 May's App; the Host loads it. Evaluation selection and Gym's improvement
 judgment are also App capabilities.
 

@@ -5,8 +5,8 @@
 **Status:** Source review and isolated reproductions; suggested fixes are not
 implemented by this document. The owning contract is
 [Host and App Boundary](../../2a-design/system-boundary.md#ownership-and-intervention),
-with implementation history in the [feedback proposal](../../proposals/execution-feedback-and-review.md).
-The [repair proposal](../../proposals/execution-feedback-repair-plan.md) records
+with implementation history in the [feedback proposal](execution-feedback-and-review.md).
+The [repair proposal](execution-feedback-repair-plan.md) records
 the recommended changes, alternatives, sequencing and acceptance checks.
 
 The Task core largely fits the agreed model. The most consequential drift is
@@ -337,7 +337,7 @@ Narrow the session-job migration: durable assignments belong to Tasks, bounded
 helpers remain direct, and provider-owned async operations keep their native
 identity. The words agent and worker do not determine their lifecycle.
 Prove useful parent concurrency before removing the old path. The preferred
-[continuation PoC](../../proposals/execution-feedback-and-review.md#delegation-and-useful-parent-work)
+[continuation PoC](execution-feedback-and-review.md#delegation-and-useful-parent-work)
 would retain dependencies and make the same parent Task runnable at an ordinary
 attempt boundary. No new Task phase, scheduler, mandatory supervisor or
 mid-helper model review is needed. This extension remains unimplemented.

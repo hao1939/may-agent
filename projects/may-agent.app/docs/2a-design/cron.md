@@ -232,7 +232,7 @@ task is a task-wake event, not caller input. Conversely, a real periodic
 review whose result must be tracked independently is an input schedule even if
 the source is the system rather than a human.
 
-The [conversation follow-up design](message-lifecycle.md#timer-safety-net)
+The [conversation follow-up design](conversation-execution.md#timer-safety-net)
 reuses an App event schedule as a safety net. An empty pending-work query
 creates no model work, and repeated ticks reuse already admitted reviews.
 Removing this schedule degrades fallback discovery; required Task and inbox

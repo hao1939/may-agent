@@ -3,7 +3,7 @@
 **Historical context:** [Agent Cooperation](../../2a-design/agents.md). Retained rationale and evidence; this record does not define the current contract.
 
 September 13, 2026. This records an isolated source candidate, not a live rollout.
-The [repair plan](../../proposals/execution-feedback-repair-plan.md) owns scope;
+The [repair plan](execution-feedback-repair-plan.md) owns scope;
 [System Model](../../2a-design/system-model.md#execution-and-outstanding-results)
 owns the running/waiting distinction.
 
@@ -148,7 +148,7 @@ decides whether continued work is worthwhile.
 **Scope clarification from the follow-up source review:** manager silence
 protection is skipped only for a Task binding plus a finite positive admitted
 timeout. Remaining entries include standalone calls that already have a configured
-limit; they are not all unbounded. The [consolidation proposal](../../proposals/execution-entrypoint-consolidation.md)
+limit; they are not all unbounded. The [consolidation proposal](execution-entrypoint-consolidation.md)
 tracks that implementation gap. This clarification does not add verification to
 the completed PoC.
 The daemon's separate error-only-turn detector remains; current Task worker

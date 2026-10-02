@@ -8,7 +8,7 @@
 No new recovery runtime is implemented by this document.
 **Contract owners:** [System boundary](../2a-design/system-boundary.md#recovery-uses-evidence-before-repetition),
 [Task runtime](../2a-design/task-resource-engine.md),
-[workflow evidence](../2a-design/workflows.md#evidence-retention-and-autonomous-recovery).
+[workflow evidence](../2a-design/execution-contributions.md#evidence-retention-and-autonomous-recovery).
 May-specific decisions and improvement approval belong in
 [May's integration](../../../may.app/design/evaluation-improvement-loop.md#recover-current-work-improve-future-work).
 
@@ -48,9 +48,9 @@ special recovery branch per incident.
 | Unrelated creator changes invalidated Evaluation evidence | Completed work appeared changed when the creator Conversation changed. | Follow relevant evidence links; history/navigation is not automatically an outcome dependency. |
 | Deployment formerly depended on App execution | Fixing the running system could depend on the App path being repaired. | Preserve a standalone operator/installation route for infrastructure repair. |
 
-Evidence: [wait corrections](task-wait-recovery-20260918.md),
-[owner-help trials](controller-poc-deeper-review.md#capability-and-owner-help-probes),
-[command environment](task-worker-command-context-20260919.md),
+Evidence: [wait corrections](../archive/reviews/task-wait-recovery-20260918.md),
+[owner-help trials](../archive/reviews/controller-poc-deeper-review.md#capability-and-owner-help-probes),
+[command environment](../archive/reviews/task-worker-command-context-20260919.md),
 [ownership review](../archive/reviews/ownership-boundary-review-20260913.md),
 [PR #225](https://github.com/hao1939/may-agent/pull/225) and
 [PR #226](https://github.com/hao1939/may-agent/pull/226).
@@ -109,7 +109,7 @@ verified delivery; a missing required independent review does remain owed.
 | Restore an unavailable executor or Host | Existing owner controls and standalone install/restart route | An in-process agent cannot repair a dead process. Automatic unavailable-owner supervisor routing is deferred. |
 
 Caller reports are selected per input, not broadcast to every structural parent.
-The existing [caller-feedback refinement](caller-feedback-and-waiting.md)
+The existing [caller-feedback refinement](../archive/reviews/caller-feedback-and-waiting.md)
 already covers failure plus an independent wait and later explicit updates.
 Do not restore the old automatic notification for every retry or invent a
 second escalation mechanism to replace this route.

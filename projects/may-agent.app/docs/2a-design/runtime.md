@@ -13,7 +13,7 @@ The owner/disposition worker, analysis attachment, delegation publisher, and
 request delivery gate have been removed. Scoped Task list/get reads share one
 Runtime implementation across SDK, agent tool, control socket, and HTTP.
 
-The accepted [one-lifecycle baseline](../proposals/conversation-input-unification.md)
+The accepted [one-lifecycle baseline](../archive/reviews/conversation-input-unification.md)
 is implemented in current Host source: Conversation, ordinary App work, and
 maintenance all execute as bounded Task attempts with explicit outcomes and
 owner-controlled closure. [Message Lifecycle](message-lifecycle.md) owns the
@@ -145,7 +145,7 @@ mapping or storage leaves the durable input available for bounded recovery;
 there is no independently executing inbox pump. Recovery batches and pacing
 are implementation limits, not another owner or a promise of immediate execution.
 
-The [one-lifecycle implementation](../proposals/conversation-input-unification.md#proposed-controller-boundary-and-code-layout)
+The [one-lifecycle implementation](../archive/reviews/conversation-input-unification.md#proposed-controller-boundary-and-code-layout)
 replaced Conversation execution in the inbox pump with Task admission and one
 common claim/attempt/settlement path. Caller correlation and admission recovery
 remain; there is no independently executing inbox handler wrapped by a Task.
@@ -164,7 +164,7 @@ Conversation Task handling human input may use the reserve; automated review and
 independently delegated work use background capacity. This adds no capacity
 service or preemption; a single-slot Host cannot reserve a second slot for human
 execution. The dated [conversation input unification
-proposal](../proposals/conversation-input-unification.md) retains the migration
+proposal](../archive/reviews/conversation-input-unification.md) retains the migration
 tradeoff that led to this implementation.
 
 Capacity is backpressure, not policy. It decides when work may start, never
@@ -460,7 +460,7 @@ Saved execution output is only a candidate for normal Task admission: newer
 input or a recorded scope revision may require continuation even after that
 output is accepted. Recovery must not equate a finished session with a completed
 Task. Normal and recovered results share settlement and publication decisions;
-see [Task acceptance](task-resource-engine.md#acceptance). The
+see [Task acceptance](task-attempts.md#acceptance). The
 [historical review](../archive/implementation/controller-review-20260910.md#settlement-candidate-and-remaining-work)
 records the merged correction's original proof.
 

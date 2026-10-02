@@ -12,9 +12,60 @@ responsibility and decides what a useful outcome means. The Host records work,
 runs bounded execution, and preserves truthful state through waits and failures.
 An agent, workflow or native executor performs the work within that boundary.
 
+## One example, from ask to outcome
+
+The intended complete flow is:
+
+```text
+Human: "Help me compare these two approaches."
+  -> May recognizes the Request and explains the comparison it will make
+  -> human and May discuss the tradeoffs in Conversation
+  -> an authorized independent benchmark becomes a Task
+  -> Host persists the Task and schedules a bounded attempt
+  -> executor works, checks evidence and repairs within its budget
+  -> executor returns a proposed result
+  -> Host validates and commits the result under the App's acceptance rules
+  -> the benchmark owner may close its Task; the result remains readable
+  -> Task event routes through its saved Conversation link into the inbox
+  -> the conversation handler explains the comparison and closes the Request
+```
+
+The comparison can finish entirely in Conversation if no independent work is
+needed. “The benchmark is running” can finish a turn while the comparison
+Request remains open. If the ask was only to start the benchmark, confirmed
+admission may fulfill that narrower ask. Closure follows the accepted scope.
+The source supports this tracking and closure; storage tests alone do not prove
+that May consistently judges the accepted scope correctly in real discussion.
+
+The same flow has ordinary branches:
+
+| What happens | What follows |
+| --- | --- |
+| The attempt can fix a failed check | Work/check/repair continues inside its existing budget; after it returns, later work needs another attempt |
+| Part of the work needs an external fact or decision | Preserve its return route; continue useful independent work within budget. End the attempt with a durable wait when nothing else can progress |
+| Execution fails | Preserve evidence and contain the failure; pace unfinished-work retries with backoff through bounded attempts; expose failure evidence so the App can judge repair, failover or owner intervention |
+| The original goal is no longer worthwhile or possible | The App seeks or applies an authorized scope/stop decision; inability to finish is never reported as success |
+| The human cancels a Task | Preserve its evidence and reject late effects/results under the cancellation fences |
+| The Host restarts | Retain Task identity and accepted state; restore eligibility and prefer affordable safe redo to elaborate resumption |
+
+Safe repetition follows the capability's idempotency or reconciliation contract.
+Infra owns routine retries; the App/agent judges a changed recovery strategy.
+An arbitrary provider action does not become exactly-once merely because its
+request is stored. See [retry ownership and exceptions](system-boundary.md#retry-and-recovery-ownership).
+
+Infra accepts the worker's judgment under the App contract. Accepted completion
+is usable by default; it is not a guarantee that the judgment is correct.
+
+Human messages and linked results use the same Conversation handler. A quiet
+Conversation needs no model polling. [Conversation execution](conversation-execution.md#one-conversation-input-path)
+owns routing, authority, missed-follow-up recovery and ordering.
+Stopping a conversational turn, cancelling a Task and ending a watch have
+[separate effects](human-control-surfaces.md#current-turn-control).
+
+
 ## From purpose to system responsibilities
 
-**Supports:** [May's goal](../1-principles/design-philosophy.md#mays-goal).
+**Supports:** [May's goal](../1-principles/purpose.md#mays-goal).
 
 **Choice basis:** [Technical decision and review rules](../1-principles/core-principles.md#review-rule), applied to the goal's value, cost and steering requirements.
 
@@ -156,83 +207,20 @@ Conversation's Task remains available. Closing a Task prevents future execution
 and retains evidence; it never implies success or silently cancels its children.
 Esc/Stop ends only the current Turn, so later discussion remains possible.
 
-[Architecture](architecture.md#one-reconciliation-model) defines the execution
-boundary. The [implementation record](../proposals/conversation-input-unification.md)
-retains the migration evidence. Current `TaskIntent` has no lifetime mode;
-historical `achieve`/`maintain` values do not select a different lifecycle.
+[Architecture](architecture.md#one-reconciliation-model) defines the component
+boundary; [Task lifecycle](task-resource-engine.md) owns the exact continuation
+and closure rules. Older migration choices remain in the
+[implementation record](../archive/reviews/conversation-input-unification.md).
 
 ## Execution and outstanding results
 
-For the agent's work, ask two independent questions:
-
-- **Running:** is an execution in progress?
-- **Waiting:** is a needed result still outstanding?
-
-| Running | Waiting | Meaning |
-| --- | --- | --- |
-| Yes | No | Working, with no outstanding result needed from elsewhere. |
-| Yes | Yes | Working while also waiting for a result; for example, preparing a review while a pipeline runs. |
-| No | Yes | No current execution; a result remains outstanding. Other useful work may already be queued. |
-| No | No | No current execution or outstanding wait. Work may be queued, up to date, closed, or need attention; read those facts separately. |
-
-An execution includes its tool calls and I/O; running does not mean the model
-is continuously generating text or consuming CPU. A direct tool call can keep
-that execution open while it awaits its response. Such a call does not require
-a persisted Condition merely to describe that it is waiting.
-
-The agent requests an outcome and handles a completed result, a pending result
-or a failure. It need not choose between infrastructure categories such as a
-helper call, delegated Task or provider operation. The selected capability must
-make its promise clear: does this call return the result, or has work been
-accepted with a reference and a supported later return path? Code owns that
-bookkeeping and cleanup. These are common meanings, not a new universal tool
-schema. See the [capability boundary](system-boundary.md#core-external-capabilities-and-composition).
-
-Task closure remains separate: an open Task is a responsibility, not proof of
-running execution or waiting. Existing attempts/claims and Condition/input
-links provide the durable facts. The scheduling phase describes eligibility;
-do not add combined phases, duplicate running/waiting flags or an agent-wide
-availability registry. A child relationship or an FYI event alone is not an
-outstanding result obligation.
-
-A Task can execute useful work while retaining outstanding dependencies. New
-relevant input can start a pass without satisfying an older wait. The agent
-chooses what can progress within scope and budget; code preserves the other
-waits and delivers their results. Answering that new input does not fulfill an
-older ask whose required result is still pending.
-
-When a result is still needed and no useful independent work remains, end the
-attempt with a durable wait.
-Release its execution capacity while the Task stays open. A matching result,
-other relevant input or a declared review checkpoint can wake it later. Ending
-an attempt is neither closing the Task nor abandoning the Request.
-
-| Current facts | Human-facing explanation |
-| --- | --- |
-| An attempt is running; results remain outstanding | Working on the review; also awaiting pipeline 42. |
-| No attempt is running; an external result is needed | Waiting for pipeline 42; no parent execution is running. |
-| No attempt is running; useful work is ready | Queued to continue the review. |
-| Current inputs are handled; no results remain outstanding | Up to date; available for later input. |
-| Progress needs an owner's decision | Needs attention: explain the decision and what can still proceed. |
-
-Idle is only an execution observation. It cannot establish that work is complete
-or that a wait is sensible. Likewise, waiting for a worker's answer does not
-prove that worker is currently running. Read its current status when making
-that claim, and keep a missing/unknown result distinguishable from completion.
-
-The same agent profile can serve several Tasks. One Task waiting does not make
-that agent globally unavailable. Within one Task, preserve one current attempt;
-outstanding dependencies do not authorize a second competing parent attempt.
-
-**Source execution contract ([PR #285](https://github.com/hao1939/may-agent/pull/285)):**
-an attempt can submit requests and caller Conditions through `tasks apply` and
-continue useful work. Final `state: "waiting", continue: true` schedules a new attempt;
-without continuation, `waiting` yields on a saved return route. Both use the same admission.
-An attempt can contain many tool calls; returning its final decision ends it.
-The Host maintains Task state from accepted results, input and Conditions.
-The [schema proposal](../proposals/task-attempt-decision-schema-20261002.md)
-records the delivery path and limits. Its proposed `decision` result schema
-is deferred; the current `state`/`continue` format remains supported.
+A pending Condition says a fact is still needed; it does not prohibit useful
+independent work. The agent decides what can progress and whether to yield.
+Infra retains each outstanding requirement and delivers relevant results.
+Ending an attempt, completing its addressed input and closing the Task have
+different scopes. [Task lifecycle](task-resource-engine.md#execution-and-outstanding-results)
+owns their current-state interpretation; [the agent guide](../2b-manual/task-execution-guide.md)
+shows how to act on it.
 
 ## A turn or a Task?
 
@@ -245,7 +233,7 @@ human's authorization. Length, complexity and tool use do not require delegation
 A Turn can repeat work, checks and repairs until it produces an appropriate
 answer or reaches an explicit stopping point. "Bounded" limits execution cost;
 it does not restrict the Turn to one model response or imply fulfillment when
-time runs out. [Turn behavior](message-lifecycle.md#frontend-one-bounded-turn)
+time runs out. [Turn behavior](conversation-execution.md#frontend-one-bounded-turn)
 defines the stopping points.
 
 Delegate a Task for an authorized outcome that can advance independently and needs
@@ -256,59 +244,6 @@ authority, or supplies useful expertise. A matching name alone is not a handoff
 requirement. Existing ownership and operation controls still apply.
 
 [Message Lifecycle](message-lifecycle.md) owns the interaction and approval rules.
-
-## One example, from ask to outcome
-
-The intended complete flow is:
-
-```text
-Human: "Help me compare these two approaches."
-  -> May recognizes the Request and explains the comparison it will make
-  -> human and May discuss the tradeoffs in Conversation
-  -> an authorized independent benchmark becomes a Task
-  -> Host persists the Task and schedules a bounded attempt
-  -> executor works, checks evidence and repairs within its budget
-  -> executor returns a proposed result
-  -> Host validates and commits the result under the App's acceptance rules
-  -> the benchmark owner may close its Task; the result remains readable
-  -> Task event routes through its saved Conversation link into the inbox
-  -> the conversation handler explains the comparison and closes the Request
-```
-
-The comparison can finish entirely in Conversation if no independent work is
-needed. “The benchmark is running” can finish a turn while the comparison
-Request remains open. If the ask was only to start the benchmark, confirmed
-admission may fulfill that narrower ask. Closure follows the accepted scope.
-The source supports this tracking and closure; storage tests alone do not prove
-that May consistently judges the accepted scope correctly in real discussion.
-
-The same flow has ordinary branches:
-
-| What happens | What follows |
-| --- | --- |
-| The attempt can fix a failed check | Work/check/repair continues inside its existing budget; after it returns, later work needs another attempt |
-| Part of the work needs an external fact or decision | Preserve its return route; continue useful independent work within budget. End the attempt with a durable wait when nothing else can progress |
-| Execution fails | Preserve evidence and contain the failure; use bounded retry when justified, otherwise expose the decision the App needs to make |
-| The original goal is no longer worthwhile or possible | The App seeks or applies an authorized scope/stop decision; inability to finish is never reported as success |
-| The human cancels a Task | Preserve its evidence and reject late effects/results under the cancellation fences |
-| The Host restarts | Retain Task identity and accepted state; restore eligibility and prefer affordable safe redo to elaborate resumption |
-
-Repeating reconciliation is safe only when the App observes prior external
-effects before repeating them. SQLite cannot make arbitrary provider actions
-exactly once. A process exit or an agent's success claim is evidence, not
-accepted completion.
-
-The accepted design uses one conversation handler for human messages and
-linked Task facts. An ordinary timer signal first runs a bounded database check
-for missed follow-up; qualifying reviews enter the same inbox. The handler
-reads current Task evidence and Request scope, then responds or completes
-quietly. Its stable conversation Task runs the handler; it needs no separate
-supervisor or waiting execution. Human input has priority over pending system
-reviews; an active review remains bounded.
-[Message Lifecycle](message-lifecycle.md#one-conversation-input-path) owns the
-routing, authority and replay rules.
-Stopping a conversational turn, cancelling a Task and ending a watch have
-[separate effects](human-control-surfaces.md#current-turn-control).
 
 ## Core and replaceable capabilities
 
