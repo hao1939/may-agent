@@ -5,9 +5,9 @@
 **Choice basis:** [Simplest sufficient solution at acceptable cost](../1-principles/design-philosophy.md#how-to-decide-a-tradeoff), [agent-first mechanism selection](../1-principles/code-vs-data.md#before-adding-runtime-behavior), and [one authority for each resource](../1-principles/core-principles.md#one-authority-for-each-resource).
 
 **Design status:** Draft for review, 2026-10-02; reorganized around project purpose on 2026-10-03.
-**Implementation status:** Unimplemented for the proposed unified capability
-exposure and caller reply choice. Existing Task, input, Condition and executor
-mechanisms provide the foundation. This document changes no runtime behavior.
+**Implementation status:** Unified capability exposure remains proposed. Existing
+Task requests and separate caller Conditions provide the coordination contract;
+no additional request mode is proposed. This document changes no runtime behavior.
 Proposed interfaces and observed implementation limits are recorded in
 [the supporting contract reference](task-execution-capability-contracts-20261003.md).
 
@@ -60,9 +60,9 @@ Judge this alongside outcome quality, duplicate effects and total execution cost
 
 The existing Task model already supplies much of this foundation. This proposal
 organizes its guidance and identifies missing behavior; its inventory is not a
-list of new features to build. Repairs to existing promises and the proposed
-reply convenience are separate changes. A common convention is worthwhile when
-it removes repeated decisions or wiring, without requiring every capability to
+list of new features to build. Repair existing promises before extending discovery.
+A common convention is worthwhile when it removes repeated decisions or wiring,
+without requiring every capability to
 use the same API shape. The [purpose and philosophy review](../archive/reviews/task-capability-pr-review-20261003.md#purpose-and-philosophy-review)
 records the alternatives, costs and limits behind those choices.
 
@@ -72,8 +72,9 @@ Consider: "Improve this change and get it reviewed."
 
 1. The agent understands the requested outcome, current requirements and its
    authority. Infra supplies the relevant input, prior work and usable actions.
-2. The agent makes the change and asks for review because the answer will help
-   it judge the outcome. Infra accepts the request and retains its return path.
+2. The agent makes the change, requests review, and declares a caller Condition
+   referring to that request. Infra accepts the work and correlates the Condition
+   with its result.
 3. The agent runs tests while review is pending. A new requirement refines the
    same assignment; infra makes it reachable without losing earlier obligations.
 4. If a read fails, the agent can choose another supported read. If execution
@@ -131,7 +132,7 @@ context does not grant it. Tasks and attempts are scopes and records, not
 additional decision makers.
 
 Delegation gives the receiver responsibility for the requested contribution.
-The caller retains its original assignment. Choosing not to receive a reply
+The caller retains its original assignment. Omitting a caller Condition
 does not hand over that assignment or establish that it is fulfilled.
 The agent judges whether accepted delegation is enough for its own assignment.
 
@@ -147,9 +148,9 @@ Conditions and result contract through one example. Humans and agents use that
 same document; do not maintain a second skill copy or inject this whole proposal
 into every attempt.
 
-The proposed additions below should make that work easier: discover useful
-actions by purpose and express whether an answer is needed while infra supplies
-the bookkeeping. Until implemented, use the exact schemas exposed to the attempt.
+The proposed discovery improvements should make useful actions easier to find.
+Use existing requests to assign work and Conditions to observe results while
+infra supplies the correlation. Use the exact schemas exposed to the attempt.
 The four capability purposes organize discovery, not new services or work states.
 
 ## Infra feature and contract requirements
@@ -162,8 +163,8 @@ Documenting a promise is insufficient without the feature that fulfills it.
 | --- | --- | --- |
 | Assignment | Supply the assignment, admitted input, authority and exact result contract. Preserve source input/provenance; enforce scope at admission. | A helper sees parent context but cannot independently settle its parent's Task. |
 | Current facts | Supply bounded current context, freshness/coverage markers and usable detail reads. Keep input visibility separate from fulfillment. | A newly visible requirement remains outstanding until an accepted result addresses it; failed refresh is marked explicitly. |
-| Actions | Advertise only installed, permitted operations with input/result and lifetime semantics. Derive trusted caller identity. For durable work, save ownership and required return bookkeeping before confirming acceptance. | A required review reply reaches its caller after restart; no-reply work remains receiver-owned without a caller completion wake. Missing delivery support rejects visibly. |
-| Progress and waiting | Retain accepted Conditions and required replies across attempts; observe and deliver changed facts. Keep observation status separate from the worker's execution decision. | A pending review allows testing to continue. A worker can yield for the saved answer without creating a second observer. |
+| Actions | Advertise only installed, permitted operations with input/result and lifetime semantics. Derive trusted caller identity and retain durable work and its correlation before confirming acceptance. | The same review request remains receiver-owned and its result inspectable with or without a caller Condition. Missing delivery support rejects visibly. |
+| Progress and waiting | Retain accepted Conditions across attempts; observe and deliver changed facts. Keep observation status separate from the worker's execution decision. | A review Condition returns the result after restart while allowing independent testing. The worker can yield using the saved Condition. |
 | Judgment | Validate and record the worker's decision and derive Task state. Trust the App's judgment by default; preserve outstanding facts without adding an infra semantic veto. | An authorized, valid convergence decision settles addressed work even if a related Condition remains pending; both facts remain accurately recorded. |
 | Resume | Own routine retries, backoff and recovery within existing execution bounds. Make replay of the same operation safe by default, preserving identity and accepted work. Enforce scope and stale-attempt fences. Disclose exceptions with recovery guidance and honest effect uncertainty. | Infra recovers a lost acknowledgment without asking the agent to resend: one admitted request, no duplicate effect. An unsafe external resend is exposed as an exception rather than silently replayed. |
 | Failure | Return actionable validation/execution errors with available acceptance evidence. Retain correlated failures and usage for permitted reads, existing metrics and observation routes. Deliver evidence through the declared route and execute authorized repair/escalation actions. | An evaluator agent receives a recurring failure trend, judges whether investigation is needed and submits the chosen action; infra retains and delivers that work. |
@@ -180,27 +181,24 @@ Missing coverage remains explicit; infra cannot invent a supervisor or promise
 that an agent will diagnose every pattern. See the existing
 [ownership and intervention contract](../2a-design/system-boundary.md#ownership-and-intervention).
 
-## Calling convention: intent and an answer choice
+## Requests assign work; Conditions observe results
 
-The caller decides whether it needs an answer. This preserves one receiver
-request while letting infra supply the caller's bookkeeping automatically.
-The proposed `reply: "required"` returns an answer directly or through a retained
-return path; `reply: "none"` confirms accepted responsibility without creating a
-caller completion dependency. Neither choice transfers the caller's original
-assignment. Both report known acceptance or rejection; a lost acknowledgment
-normally triggers recovery or retry of the same operation. Infra must not turn
-it into a new request. If acceptance is still uncertain, retain that fact while
-following the shared [retry and recovery contract](../2a-design/system-boundary.md#retry-and-recovery-ownership)
-and its [declared exceptions](../2a-design/system-boundary.md#safe-retry-and-declared-exceptions).
-A required answer can arrive later while other useful work continues. It
-requests feedback; it is not an infra-enforced prerequisite for convergence.
+The [App input contract](../2a-design/agent-app.md#admission-and-clarification) owns this
+separation. A request describes the receiver's work. A caller Condition records
+an interest in its result, using the request's local ID. Infra supplies durable
+identity, correlation and observation. Both can be submitted together through
+the existing admission path; no `reply` field is needed.
 
-This is a proposed convenience over existing request/Condition records, not an
-implemented field in [PR #285](https://github.com/hao1939/may-agent/pull/285).
-That PR retains the current `state`/`continue` result format. Use the exact
-installed contracts until a paired change introduces a new interface. The
-[calling contract](task-execution-capability-contracts-20261003.md#calling-convention-intent-and-an-answer-choice)
-owns the example schema, return behavior and workflow semantics.
+With or without that Condition, the receiver owns the same contribution and its
+accepted results and failure evidence remain inspectable. The Condition controls
+result observation and waking the caller. The agent separately decides whether
+to keep working, yield or finish. A pending Condition can coexist with useful
+work and an accepted result; it is not an infra completion gate.
+
+A bounded direct call returns its result normally without a durable Condition.
+The [supporting example](task-execution-capability-contracts-20261003.md#requests-and-caller-conditions)
+shows how to use the existing request/Condition contract. Keep the current
+`state`/`continue` result format and use the installed schemas.
 
 ## How we judge the design's value
 
@@ -266,10 +264,10 @@ its existing owner. A native worker needs a usable bridge for that operation
 if it is the worker chosen for the assignment. A complete bridge for every
 capability and executor is outside this first change.
 
-Then trial the proposed reply choice on that same request. Let infra fill the
-existing caller bookkeeping. Compare required reply with no reply: both retain
-the receiver's contribution; only the former owes a caller result notification.
-Keep the current result schema and explicit observation mechanism. Human
+Exercise the same receiver request with and without a caller Condition. Both
+retain the receiver's responsibility, results and failure evidence; the Condition
+supplies caller result observation and wakeup. Infra resolves correlation from
+the request ID. Keep the current result schema and observation mechanism. Human
 messaging uses its own delivery contract and gets a separate trial when changed.
 
 Check fast results, lost acknowledgment followed by safe retry, interruption

@@ -5,6 +5,9 @@
 > linked owning contracts for current behavior. Open limitations remain evidence;
 > archiving this record does not establish that they were resolved.
 
+> Update, 2026-10-03: the reply-option trial recommended below was withdrawn.
+> The [current capability proposal](../../proposals/task-execution-capabilities-20261002.md#requests-assign-work-conditions-observe-results)
+> uses existing requests and separate caller Conditions. The earlier comparison is retained as history.
 
 **Supports:** [Agent capability guidance and infra contract](../../proposals/task-execution-capabilities-20261002.md). Uses recent fixes and successful work to assess the value and gaps of the capability contract.
 

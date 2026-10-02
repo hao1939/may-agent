@@ -2,6 +2,10 @@
 
 > Historical #285 design and candidate review. The [current attempt contract](../../2a-design/task-attempts.md) owns supported behavior; the [deferred schema proposal](../../proposals/task-attempt-decision-schema-20261002.md) owns the remaining spelling choice. Candidate checks below are dated evidence, not deployment proof.
 
+> Update, 2026-10-03: the reply-option proposal discussed below was withdrawn.
+> The [current capability proposal](../../proposals/task-execution-capabilities-20261002.md#requests-assign-work-conditions-observe-results)
+> keeps requests and caller Conditions separate. Earlier recommendations remain here as history.
+
 **Supports:** [Task Resource Engine](../../2a-design/task-resource-engine.md). Clarifies agent decisions and infra bookkeeping; its deferred schema remains separate from the current contract.
 
 **Choice basis:** [Applicable philosophy and convention](../../1-principles/core-principles.md#one-authority-for-each-resource); [compare competing choices](../../1-principles/core-principles.md#resolve-conflicting-designs).
@@ -207,7 +211,7 @@ The saved request is delivery authority, so inbox recovery repairs interruption
 before dispatch or a lost delivery notification. Saving a Condition alone never
 starts the receiving agent. The Condition expresses why the caller needs feedback.
 
-The refined [capability-facing contract](../../proposals/task-execution-capabilities-20261002.md#calling-convention-intent-and-an-answer-choice)
+The refined [capability-facing contract](../../proposals/task-execution-capabilities-20261002.md#requests-assign-work-conditions-observe-results)
 lets the agent supply recipient/content and choose whether it needs an answer.
 For a required reply, infra establishes the trusted return path and any needed
 caller bookkeeping, then delivers the answer whether the caller continues or
@@ -556,7 +560,7 @@ This proposal does not loosen App acceptance checks.
 ### Requests and Conditions
 
 This section describes #285's candidate request representation. The later
-[capability proposal](../../proposals/task-execution-capabilities-20261002.md#calling-convention-intent-and-an-answer-choice)
+[capability proposal](../../proposals/task-execution-capabilities-20261002.md#requests-assign-work-conditions-observe-results)
 moves the answer choice into the caller's request and has infra fill the
 necessary existing records. It does not require changing the receiver's input
 or adding a second Condition lifecycle.

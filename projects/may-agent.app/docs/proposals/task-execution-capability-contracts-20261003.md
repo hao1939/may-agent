@@ -1,21 +1,20 @@
 # Task execution capability contracts
 
-**Supports:** [Agent capability guidance and infra contract](task-execution-capabilities-20261002.md). Specifies proposed calling and return semantics supporting the agent guidance design.
+**Supports:** [Agent capability guidance and infra contract](task-execution-capabilities-20261002.md). Connects proposed discovery improvements to existing calling and return contracts.
 
 **Choice basis:** [Simple first](../1-principles/core-principles.md#simple-first), [convention over configuration](../1-principles/core-principles.md#convention-over-configuration), and [one authority for each resource](../1-principles/core-principles.md#one-authority-for-each-resource).
 
 **Design status:** Draft supporting reference for the [purpose and value design](task-execution-capabilities-20261002.md), 2026-10-03.
-**Implementation status:** Unimplemented for the proposed unified capability
-exposure and caller reply choice. Existing mechanisms and historical source
+**Implementation status:** Unified capability exposure remains proposed. Requests
+and separate caller Conditions use the existing source contract, including
+[PR #285](https://github.com/hao1939/may-agent/pull/285). Historical source
 observations are identified below. This document adds no runtime fields or
-installed capabilities. The proposed reply choice is not implemented
-by [PR #285](https://github.com/hao1939/may-agent/pull/285); existing
-`state`/`continue` results remain supported.
+installed capabilities; existing `state`/`continue` results remain supported.
 
 Read the main design for why the parts exist and the paired agent guidance and
-infra requirements. This reference owns detailed calling and execution semantics.
-Each section identifies the value its contract supports. All reuse existing
-Task, input, Condition, event and receipt mechanisms.
+infra requirements. This reference applies the owning App and attempt contracts
+to discovery and execution. Each section identifies the value it supports. All
+reuse existing Task, input, Condition, event and receipt mechanisms.
 
 ## Ownership and lifetime
 
@@ -37,7 +36,7 @@ An attempt ends on its final result, failure or interruption. Ending an attempt
 does not erase an already accepted request. A receiving Task owns fulfilling
 the requested outcome; the caller owns interpreting an answer it requested.
 The caller also retains its original assignment. A contribution request and
-its reply choice do not transfer that assignment; an actual handoff requires
+its caller Condition do not transfer that assignment; an actual handoff requires
 an authorized ownership decision under the existing App contract.
 
 An ordinary read, command or helper may finish within the attempt. Work promised
@@ -52,8 +51,8 @@ mechanics. Arbitrary shell-created work does not acquire that promise by itself.
 | Purpose | What the agent expresses | Existing implementation to build on |
 | --- | --- | --- |
 | Understand | Read the assignment, relevant input, earlier evidence, current results and available actions. | Task context, `tasks` reads/contracts, scoped SDK reads and existing catalogs. |
-| Act | Perform an operation or ask another owner to achieve an outcome, with an explicit choice about the answer. | Named tools, App inputs/actions, bounded helpers, workflows and Task request admission. |
-| Observe | Identify an external fact that matters to the assignment. | Conditions and App-owned observation capabilities. |
+| Act | Perform an operation or ask another owner to achieve an outcome. | Named tools, App inputs/actions, bounded helpers, workflows and Task request admission. |
+| Observe | Identify a request result or external fact that matters to the assignment. | Conditions and App-owned observation capabilities. |
 | Report and decide | Supply evidence and decide whether to continue, wait, converge or report incomplete work. | Progress/evidence records and the existing attempt-result admission. |
 
 These are navigation groups for existing capabilities. They do not introduce
@@ -69,15 +68,15 @@ decision ends the attempt. Each contract makes that observable behavior clear.
 
 Supply a small catalog alongside the Task context. Each entry gives a stable
 logical name, purpose and short input/result description. Load full input and
-output schemas, examples, supported reply choices and any relevant effect or
+output schemas, examples, result-observation support and any relevant effect or
 cancellation semantics on demand.
 
 For example:
 
 > **Review a change** — Ask the responsible reviewer to assess a change.
 > Supply the change reference and optional concerns. The answer contains
-> findings and a recommendation. You can request the answer or submit without
-> one. Accepted review work survives the current attempt.
+> findings and a recommendation. Declare a caller Condition to observe the result.
+> Accepted review work and its result remain inspectable across attempts.
 
 The catalog describes what the caller can accomplish. Worker selection,
 workflow implementation, event types, channels and storage paths remain behind
@@ -105,159 +104,94 @@ Keep initial context bounded. Supply current assignment, selected inputs,
 outstanding work and relevant new facts first, with exact read/navigation
 capabilities for details and history. Reading input does not fulfill it.
 
-## Calling convention: intent and an answer choice
+## Requests and caller Conditions
 
-**Value:** Let the caller express the needed outcome and answer while infra carries coordination.
+**Value:** Assign work and observe its result without mixing receiver responsibility
+with caller scheduling.
 
-The meaningful parts of a request are the operation, its domain input and
-whether the caller needs an answer. The following illustrates those semantics:
+The [App input contract](../2a-design/agent-app.md#admission-and-clarification)
+owns requests and their correlation. A request describes the receiver's work;
+a separate Condition records the caller's interest in its result. They can be
+submitted together through the existing Task changes surface:
 
 ```json
 {
-  "capability": "review_change",
-  "input": {
-    "change": "example/change/42",
-    "concerns": ["Task and agent boundary"]
-  },
-  "reply": "required"
+  "requests": [{
+    "id": "review",
+    "appId": "reviewer",
+    "input": {
+      "kind": "message",
+      "data": {"message": "Review example/change/42, focusing on the Task and agent boundary."}
+    }
+  }],
+  "conditions": [{"requestId": "review"}]
 }
 ```
 
-`review_change` is an illustrative logical capability name. A named tool can
-expose these inputs directly. Existing App actions can translate them into
-their App input contract. A universal dispatcher or new durable operation
-registry is unnecessary.
+This is a Task changes payload, not a complete final attempt result. `reviewer`
+is illustrative: the receiving App must expose the corresponding input contract.
+Use a live tool, workflow SDK or executor capability actually supplied to the
+attempt. No universal capability dispatcher or additional request mode is needed.
 
-Infra derives caller Task, attempt, authority, execution limits and return
-address from the invocation. It maintains durable request identities and
-retry receipts. A small caller-local name can identify a request when later
-declarations refer to it; that name does not require the agent to invent an
-inbox, session or delivery identifier.
+The caller supplies a stable local request ID. Infra derives trusted Task,
+attempt and authority, owns durable identities and resolves
+`{ "requestId": "review" }` to the existing completion Condition. A Condition may also refer to
+an already admitted request in the same caller generation. The agent does not
+manufacture transport identifiers or register a second observer.
 
-Infra retries delivery using the saved call identity. On a later attempt, it
-supplies accepted references and results so the worker can use or explicitly
-refer to them. The default is safe retry of that operation, with explicit
-exceptions described [below](#safe-retry-by-default-explicit-exceptions).
-An intentional new operation remains distinct even when its content matches;
-similar text alone cannot establish replay identity.
+Omitting `conditions` submits identical receiver work without adding a caller
+result interest. Ownership, accepted results and failure evidence remain retained
+and inspectable. Declaring the Condition connects result observation and caller
+wakeup; it does not change the request's meaning or force the caller to stop
+independent work. Its attempt decision remains separate. Omitting an existing
+Condition from a later declaration preserves it; use explicit retirement when
+that interest no longer applies. Retirement does not cancel receiver work.
 
-The choice belongs to the caller, outside the receiver's domain requirements:
-
-| Proposed choice | Caller intent | Promise |
-| --- | --- | --- |
-| `reply: "required"` | I need the answer. | Return the result directly or preserve a durable return path and deliver it to the calling Task. |
-| `reply: "none"` | I do not need the result. | Confirm acceptance under the action's contract; create no caller result dependency or completion notification. Receiver work keeps its own owner. |
-
-Use `reply` in the proposed schema because it expresses intent without
-suggesting a thread or transport implementation. Here the user's sync/async
-distinction concerns the answer. A required answer can arrive later while
-independent work continues. It does not require blocking the whole Task.
-
-Request/send capabilities that support both choices require the caller to
-choose. A direct read has a fixed result contract and needs no extra choice.
-Capabilities advertise only choices they implement; infra rejects unsupported
-ones. Existing accepted work retains its saved semantics during migration.
+A short bounded call returns its result normally and needs no durable Condition
+merely because it is awaited. For durable work, admission returns a receipt;
+completion arrives later through the saved Condition or is available by reading
+the retained work. A receipt proves acceptance, not fulfillment of either the
+receiver's contribution or the caller's assignment.
 
 ### Safe retry by default; explicit exceptions
 
-The general rule belongs to [Core Principles](../1-principles/core-principles.md#safe-retry-by-default-explicit-exceptions).
 The [Host/App contract](../2a-design/system-boundary.md#retry-and-recovery-ownership)
 owns retry responsibility, identity, execution bounds and failure visibility;
 its [exception contract](../2a-design/system-boundary.md#safe-retry-and-declared-exceptions)
-owns effect safety and disclosed limitations. These shared rules apply to
-existing capabilities as well as the interfaces proposed here. They do not
-establish that every installed operation already fulfills the default.
+owns effect safety and disclosed limitations. Apply the same rules whether or
+not the caller declared a Condition. Infra recovers delivery through the saved
+request identity. Lost acknowledgment does not call for a new request or Condition.
 
-For this proposal, apply the same safe-retry behavior to both reply choices.
-Infra recovers delivery through the saved request and return path. The caller
-need not create another Condition or request to recover a missing acknowledgment.
-An agent-requested retry or failover uses the same owning capability and authority
-checks. The proposed reply convenience adds no replay registry, retry policy or
-requirement for the agent to administer retries.
+Repeating the same local request ID in the same caller generation reuses its
+admission; changing the content under that identity is rejected. Intentional new
+work uses a distinct identity, even when its text matches. Retain uncertainty
+where external acceptance or effects cannot be established safely. An agent
+chooses a repair or failover through the owning capability and authority checks.
+These rules add no replay registry or agent-managed delivery loop.
 
 ### Acceptance is specific to the action
-
-One calling convention does not give every action the same completion promise:
 
 | Action | What acceptance establishes | What it does not establish |
 | --- | --- | --- |
 | Durable App request | The addressed App has accepted the contribution through recoverable admission; exact Task attachment may still be pending. | The contribution has finished, or the caller's original assignment is fulfilled. |
-| Human message | The installed communication capability has accepted its delivery obligation and any requested reply correlation. | The human has received, read, agreed to, or completed the request. |
+| Human message | The installed communication capability has accepted its delivery obligation and any supported reply correlation. | The human has received, read, agreed to, or completed the request. |
 | External operation | The provider/capability has accepted the operation as described by its contract. | Its effect has completed or the agent's intended outcome is satisfied. |
 
 Return known acceptance, rejection or uncertainty and make retained work
-discoverable. These are observable meanings, not a mandatory universal result
-envelope. Direct reads and bounded calls retain their ordinary result shapes.
-Trust accepted agent judgments by default, while recording delivery and
-execution facts according to the evidence actually available.
+discoverable. These meanings do not require a universal result envelope. Direct
+reads and bounded calls retain their ordinary result shapes. Execution failures
+remain correlated with the receiver work and available through existing
+recovery and oversight paths, regardless of a caller Condition. A failure fact
+supports the next decision; it does not satisfy the requested outcome.
 
-### When an answer is required
+### Human communication uses its existing contract
 
-For a short awaited call, return its result normally; no durable Condition is
-needed merely to await it. If the action uses durable work, save the request
-and exact caller return link before dispatch or an acceptance response. Return
-a receipt indicating that the answer is pending, and retain the result path
-across attempt boundaries.
-
-For durable Task requests, the choice gives infra enough information to fill
-the existing caller request/Condition bookkeeping. The agent must not submit
-a second Condition or register an observer merely to receive the answer.
-This is a convenience over existing owning records, not a second wait registry.
-
-An answer that arrives while the attempt runs is available through the normal
-Task input/read path. After yielding, the retained input can schedule a later
-attempt. A result returned directly does not also need a duplicate agent wake.
-An admission or execution failure follows the same caller correlation with
-diagnostic evidence. Receiving a failure is evidence for a new decision, not
-proof that the requested outcome succeeded.
-
-The agent separately decides when no useful independent work remains and it
-should report a wait through the supplied schema. A pending answer does not
-automatically set the Task's execution phase or veto convergence. The agent
-judges fulfillment under App policy; infra records that judgment and keeps
-other facts accurate.
-
-### When no answer is requested
-
-Return a receipt only after the capability has actually accepted responsibility.
-A queued event with no accepting owner is insufficient. Durable App admission
-can accept work while exact Task attachment remains pending; preserve that
-distinction and its recovery path. Rejection before acceptance remains a
-caller-visible error.
-
-For an App contribution, the receiving owner judges fulfillment. Infra executes
-actions and records the accepted decision. Failures remain visible through that
-owner, ordinary recovery and existing metrics/evaluation routes. The absence of
-a requested answer does not remove work ownership or failure evidence. No result
-Condition or routine completion wake is added to the calling Task.
-
-This is responsibility for the requested contribution. The caller still judges
-its own assignment and any promises it made. Disabling feedback does not, by
-itself, satisfy those promises or authorize handing them off.
-The caller judges whether accepted delegation fulfills its own assignment;
-the reply choice adds no infra completion gate.
-
-The receipt remains available if the caller later explicitly inspects the work.
-Choosing no reply does not mean deleting provenance, hiding failures from
-system oversight, or cancelling accepted work when the caller stops.
-
-### Human communication follows the same convention
-
-The agent supplies the logical recipient, message and answer choice. Infra
-selects the installed interface, preserves any required reply correlation and
-reports rejection or delivery failure according to the contract. An ordinary
-message need not be represented as an approval.
-
-Acceptance refers to the capability's delivery obligation. It cannot assign
-work to a human or guarantee that the human will reply. Persisted work, transport
-delivery and a received human answer remain distinct. A missing reply leaves
-the retained interest available for later agent judgment; delivery does not
-gate or rewrite the source Task's accepted outcome.
-
-Conversation records and Telegram are implementation layers. The agent does
-not select between them. Trusted approval decisions still use their supported
-ingress and authority checks; ordinary reply text cannot grant authority by
-claiming to be an approval.
+The agent supplies a logical recipient and message through the installed
+communication surface. Infra handles delivery and supported reply correlation.
+An ordinary message need not become an approval or acquire a new answer-choice
+field. When a human decision matters to the Task, retain that interest using the
+supported Condition/approval contract. Delivery is not a human decision, and
+reply text alone cannot grant authority outside the trusted decision ingress.
 
 For Conversation work, a capitalized **Request** is the existing record of an
 accepted promise to the human. The agent decides which inputs refine one
@@ -273,10 +207,11 @@ or event a Conversation Request.
 
 **Value:** Retain interests and return changed facts without preventing independent progress.
 
-An explicit Condition is appropriate when the agent needs an external fact,
-such as a deployment becoming healthy or a human deciding a proposal. The App
-supplies that observation's meaning and provider adapter. Infra resolves its
-identity, observes it and presents changed facts through the owning Task.
+An explicit Condition records interest in a request result or external fact,
+such as a deployment becoming healthy or a human deciding a proposal. For request
+results, infra resolves the saved request reference. For external facts, the App
+supplies the observation's meaning and provider adapter. Infra observes the fact
+and presents changes through the owning Task.
 
 Use an already returned operation reference when the capability owns the
 external work. Avoid asking the agent to reconstruct provider identity,
@@ -347,7 +282,7 @@ Task -> bounded attempt -> executor adapter -> agent or authored workflow
 | --- | --- | --- | --- |
 | Understand | Reads the Task context and discovers relevant tool contracts. | Receives typed input/context and uses SDK reads; known operations need no repeated catalog lookup. | Supplies canonical context and access to the permitted operations. |
 | Act | Calls a tool or returns a supported declaration. | Calls the corresponding scoped SDK capability or returns a supported declaration. | Bridges to that capability and carries identity, cancellation and results. |
-| Observe | Chooses a Condition or a request whose answer is required. | Expresses the same interest under App policy. | Delivers facts through the existing Task input path. |
+| Observe | Declares a Condition for a request result or external fact. | Expresses the same interest under App policy. | Delivers facts through the existing Task input path. |
 | Report and decide | Returns its judgment under the assignment. | Returns the procedure's result or obtains a judgment from an agent. | Returns the worker's result for normal admission; reports execution failure if it cannot do so. |
 
 The invariant is the operation's meaning, authority, admission and feedback,
@@ -379,15 +314,15 @@ surface must reflect that; do not invent a Task or grant Task mutations merely
 to run a helper. Supported work that must outlive such a call still needs an
 explicit durable owner.
 
-### Reply choice is independent of JavaScript async execution
+### Awaiting submission and awaiting completion
 
-Workflow code awaits submission even when it requests no reply. That await
-establishes acceptance or returns an error; it does not wait for receiver
-completion. Dropping a JavaScript Promise is not durable delegation.
+Workflow code awaits durable submission, with or without a caller Condition.
+That await establishes acceptance or returns an error; it does not wait for
+receiver completion. Dropping a JavaScript Promise is not durable delegation.
 
-When a required answer is pending, a workflow can do independent steps or end
-the attempt with a retained wait, just as an agent can. If it yields, the next
-attempt uses saved inputs/results and existing receipts. Infra does not keep
+While a caller Condition observes a pending result, a workflow can do independent
+steps or end the attempt with a retained wait, just as an agent can. If it yields,
+the next attempt uses saved inputs/results and existing receipts. Infra does not keep
 an old JavaScript stack or Promise alive across restart. Short awaited helpers
 retain their ordinary bounded-call behavior.
 
@@ -505,8 +440,8 @@ and lifetimes, without duplicating the same test for every named capability.
 | Task context, `tasks.get/list/contract`, SDK reads | Understand: align discoverable operations and exact scoped reads. |
 | Coding, page retrieval, provider tools | Act: keep direct result contracts and attempt-scoped execution. |
 | Agent helpers and workflow calls | Act: retain bounded contribution semantics and inherited execution scope. |
-| App inputs/actions and #285 `TaskChanges` | Act: reuse durable ownership and shared admission for requests. Add the reply choice at the caller boundary. |
-| `message` and human interfaces | Act: connect logical recipient/message and the declared reply choice to existing delivery. |
+| App inputs/actions and #285 `TaskChanges` | Act: reuse durable ownership and shared admission for requests; caller Conditions separately observe their results. |
+| `message` and human interfaces | Act: retain logical recipient/message, existing delivery and supported reply correlation. |
 | Conditions and resource observers | Observe: retain one interest lifecycle and automatic source execution. |
 | Metrics, schedules and subscriptions | Execute declared observation/review rules and supply evidence; the responsible agent judges which action to take. |
 | `finish` and Task/Conversation results | Report and decide: retain the owning context's result contract and ordinary acceptance. |
@@ -528,14 +463,15 @@ Separate a broken existing promise from a proposed extension. Historical
 observations identify places to check against the source and installation
 chosen for a change; they do not establish that every limitation is still
 present. Guidance alone can be sufficient when the needed action, wake and
-context already work. Shared discovery and reply convenience remain proposals.
+context already work. Shared discovery remains a proposal; request/Condition
+separation is an existing contract to preserve and verify.
 
-| Boundary | Observed limitation at the probe revision | Focused acceptance case |
+| Boundary | Evidence or behavior to verify | Focused acceptance case |
 | --- | --- | --- |
 | Discovery and restrictions | Tool-name filtering retains mutable `tasks` operations under `readonly`. | Expose only permitted operations and reject a manually supplied forbidden operation before effects. |
 | Message delivery | Raw `message` recording can lack an accepting human consumer. | Agent selects recipient/message; mocked interface delivers it; required reply reaches the exact caller. Missing delivery support rejects visibly. |
-| Reply choice | #285's automatic request feedback follows an explicitly saved Condition; no `reply` field is implemented. | Required reply automatically gets the existing bookkeeping; no-reply creates no caller dependency or completion wake. Receiver work is identical. |
-| Live admission | #285 shared admission is now merged; the earlier probe was against its candidate revision. Verify any further convenience against the merged boundary. | Tool/SDK/final declarations share authority and receipt behavior; a live action preserves the attempt. |
+| Request/Condition separation | #285's request-result observation follows an explicitly saved Condition. This is intended behavior, not a missing request option. | The same receiver request retains results and failure evidence with or without a caller Condition; adding the Condition connects result observation and caller wakeup. |
+| Live admission | #285 shared admission is now merged; the earlier probe was against its candidate revision. Verify the installed boundary. | Tool/SDK/final declarations share authority and receipt behavior; a live action preserves the attempt. |
 | Native executor exposure | Codex receives Task context, steering and final-result admission, without a live May capability bridge. | Native attempt can request review, continue testing, and use the same saved receipt/return path. |
 | Agent/workflow agreement | Existing adapters expose related contracts through different entry points. | The same permitted request from a tool, SDK call or supported result declaration produces equivalent ownership and feedback; a helper result does not settle its parent. |
 | SDK/model reads | Exact SDK metric/execution/result reads have uneven model exposure. | Add a narrow adapter only where a Task role needs it; successful discovery leads to a usable scoped read. |
@@ -543,12 +479,11 @@ context already work. Shared discovery and reply convenience remain proposals.
 For the chosen request capability, also exercise a fast reply before the caller
 yields, interruption after acceptance, restart before feedback, duplicate
 submission, changed requirements, receiver failure, and a late result for a
-closed caller. No-reply work must remain owned and observable when the caller
-ends. A pending result must not force waiting or reject an otherwise admitted
-agent convergence decision.
+closed caller. Receiver work must remain owned and observable without a caller
+Condition and when the caller ends. A pending result must not force waiting or
+reject an otherwise admitted agent convergence decision.
 
 Use existing Task, input, Condition, event and delivery records to close these
-boundaries. Preserve the existing `state`/`continue` result contract and compatibility
-behavior until a paired SDK/Host/App change explicitly introduces a new
-request convention. This draft adds no runtime fields, changes no deployed
-behavior, and does not expand #285's implementation claim.
+boundaries. Preserve the existing request/Condition separation, `state`/`continue`
+result contract and compatibility behavior. This draft adds no runtime fields,
+changes no deployed behavior, and does not expand #285's implementation claim.

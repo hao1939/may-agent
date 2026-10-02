@@ -14,7 +14,7 @@ manual. Keep it updated with the owning execution contracts. Linked references
 resolve from this directory and require the May documentation tree. It explains
 the current source contract, including Host #285. Use the tools and result schema
 actually supplied to the attempt: App adoption and installed versions can differ.
-The proposed unified capability catalog, `reply` field and `decision` spelling
+The proposed unified capability catalog and `decision` spelling
 are not available merely because they appear in a proposal.
 
 **You decide what useful work to do. Infra executes admitted actions, retains
@@ -88,10 +88,12 @@ A bounded tool or helper can return within this attempt. Its completion is a
 contribution to your assignment, not automatic settlement of the whole Task.
 Work that must survive the attempt uses the supported durable request path.
 
-A Task request describes the receiver's work. A separate caller Condition states
-that its answer is needed. Use the current request/Condition contract; a future
-`reply` convenience must not be invented. Request admission does not require
-the caller to stop doing independent work.
+A Task request describes the receiver's work. A separate caller Condition records
+an interest in its result. Declare `{ "requestId": "review" }` for the request
+named `review`; infra supplies the correlation. Without that Condition, receiver
+work, accepted results and failure evidence remain retained and inspectable.
+Request admission and pending Conditions allow independent work to continue;
+the attempt decision determines whether to continue, yield or finish.
 
 Live `tasks({ action: "apply", changes })`, executor `attempt.apply(changes)`
 and workflow `ctx.applyTaskChanges(changes)` share admission with final result

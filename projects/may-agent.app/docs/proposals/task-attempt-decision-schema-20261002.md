@@ -5,7 +5,7 @@
 **Choice basis:** [Simple first](../1-principles/core-principles.md#simple-first) and [convention over configuration](../1-principles/core-principles.md#convention-over-configuration).
 
 **Design status:** Draft; schema migration deferred.
-**Implementation status:** Unimplemented. Host #285 retains `state` and `continue` and the existing schema IDs. Its merged routing and live/final admission behavior belongs in the current contract. Paired App mapping changes remain separately unmerged in the recorded review.
+**Implementation status:** Unimplemented. Host #285 retains `state` and `continue` and the existing schema IDs. Its merged routing and live/final admission behavior belongs in the current contract. App adoption and deployment must be verified separately from Host source status.
 
 ## The decision still to make
 
@@ -20,8 +20,8 @@ Use [Working on a Task](../2b-manual/task-execution-guide/SKILL.md) and the
 [App contract](../2a-design/agent-app.md#admission-and-clarification) owns free-form
 and structured input admission. [The #285 review record](../archive/reviews/task-attempt-decision-review-20261002.md)
 retains the full earlier discussion, trust-rule refinement and candidate evidence.
-The separate [capability proposal](task-execution-capabilities-20261002.md) owns
-the proposed caller reply convenience.
+The separate [capability proposal](task-execution-capabilities-20261002.md) explores
+discovery and execution guidance using the existing request/Condition contract.
 
 Everything below describes the deferred interface. Its examples are not current
 copyable SDK examples. This change adds no completion gate, Condition veto,
@@ -174,11 +174,11 @@ This proposal does not loosen App acceptance checks.
 
 ### Requests and Conditions
 
-This section describes #285's candidate request representation. The later
-[capability proposal](task-execution-capabilities-20261002.md#calling-convention-intent-and-an-answer-choice)
-moves the answer choice into the caller's request and has infra fill the
-necessary existing records. It does not require changing the receiver's input
-or adding a second Condition lifecycle.
+The [App input contract](../2a-design/agent-app.md#admission-and-clarification)
+owns the existing request/Condition representation. Requests assign receiver
+work; Conditions record caller interests. Both remain independent of the attempt
+decision. The deferred spelling change does not alter this separation or add a
+request option that duplicates a Condition.
 
 `requests[].id` is stable within the caller Task generation. Repeating the
 same request reuses its durable admission; reusing that identity with changed
