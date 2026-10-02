@@ -176,7 +176,7 @@ test("declared reliability metrics collect through the Host and retain a real br
   }
 });
 
-test("real Host collection opens one May review per Evaluation breach episode", async () => {
+test("real Host collection maps one May review input per Evaluation breach episode", async () => {
   const root = mkdtempSync(join(tmpdir(), "may-evaluation-episode-"));
   try {
     const store = getDb(root);
@@ -213,7 +213,7 @@ test("real Host collection opens one May review per Evaluation breach episode", 
         persistDir: root,
         isDue: (metric) => metric.id === EVALUATION_OPERATION_METRIC,
       });
-    const admittedReviews = () =>
+    const reviewInputs = () =>
       breachEvents
         .map((event) =>
           evaluationOperationAlertInput(JSON.parse(JSON.stringify(event))),
@@ -233,7 +233,7 @@ test("real Host collection opens one May review per Evaluation breach episode", 
       alertId: expect.any(Number),
       current: 3,
     });
-    expect(admittedReviews()).toHaveLength(1);
+    expect(reviewInputs()).toHaveLength(1);
 
     addFailure(4);
     await collect();
@@ -243,7 +243,7 @@ test("real Host collection opens one May review per Evaluation breach episode", 
       repeat: true,
       current: 4,
     });
-    expect(admittedReviews()).toHaveLength(1);
+    expect(reviewInputs()).toHaveLength(1);
     expect(
       store
         .prepare(
@@ -276,7 +276,7 @@ test("real Host collection opens one May review per Evaluation breach episode", 
     expect(breachEvents[2]!.data.alertId).not.toBe(
       breachEvents[0]!.data.alertId,
     );
-    expect(admittedReviews()).toHaveLength(2);
+    expect(reviewInputs()).toHaveLength(2);
     expect(
       store
         .prepare(

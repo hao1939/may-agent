@@ -373,19 +373,21 @@ The Host maintains `inputWaits[key].pending`, waits/deadlines and continuation; 
 or child App requests. The Host checks eligibility inside the fenced transaction.
 It ends only the attempt, without fulfilling the input or a linked Request.
 The same Task remains pending. For each exact input, accepted settlement selects
-the first incomplete report and advances its stored `reportRevision`. An ordinary
-later incomplete settlement leaves that selection unchanged; `report: true`
-explicitly selects the later report and advances the revision with its new blocker
-evidence. This selection checkpoint prevents every retry from becoming a new
-report. It is distinct from the later exact caller return and its delivery
-acknowledgment: failed delivery retries the same selected revision rather than
-rolling it back or selecting another report. Neither selecting nor delivering a
-report acknowledges the input, consumes unanswered work, proves that a person saw
-the report, or changes retry eligibility. These mechanics are staged Host source
-until their exact revision is integrated, deployed and read back; the accepted
-contract does not make source presence an installation claim. Turn Stop and owner
-closure are different controls: closure fences future work; work after closure
-needs a new linked identity.
+an incomplete report when no earlier report was selected for that input or the
+result says `report: true`; selection advances its stored `reportRevision`. An
+ordinary later incomplete settlement otherwise leaves the selection unchanged.
+This existing selection checkpoint prevents every retry from becoming a new
+report. Current report delivery returns the selected revision through the exact
+caller link and is separate from answering or fulfilling the input. Failed
+delivery retries that same selected revision rather than rolling it back or
+selecting another report. The staged change advances considered notifications
+after delivery while preserving `inputWaits`, so an old bounded notification
+backlog cannot invalidate the accepted settlement or consume unanswered work.
+Neither selection, delivery nor notification advancement acknowledges the input,
+proves that a person saw the report, or changes retry eligibility. The staged
+change remains source-only until its exact revision is integrated, deployed and
+read back. Turn Stop and owner closure are different controls: closure fences
+future work; work after closure needs a new linked identity.
 
 Creating follow-up work does not complete the current task. Required
 decomposition uses typed dependencies and returns `waiting`; independent later

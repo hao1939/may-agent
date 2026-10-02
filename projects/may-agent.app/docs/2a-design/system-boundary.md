@@ -165,20 +165,12 @@ records their rationale; this contract does not promise universal recovery or
 that a human has been notified merely because a failure was saved.
 
 An installation can declare a narrower independent operational route without
-implementing that deferred generic fallback. The staged May source measures a
-bounded six-hour population of retained Evaluation terminal attempts and opens
-one existing metric alert episode when a single Task generation reaches three
-covered unsuccessful attempts. Failed/rejected, accepted-incomplete and
-stale/requeued interruptions are covered, including Evaluation's owner-review
-Task by ordinary identity; user cancellation is excluded. The sample discloses
-its terminal denominator, cut and retention/example limits. May handles the
-episode through its existing metric-response and linked-investigation path, not
-a `project.task.reconciled` Conversation/model call per failure. This route
-neither performs semantic self-review nor transfers Task authority. Admission,
-notification, review and fulfillment remain distinct, and the original
-Evaluation retry and caller/dependency paths continue independently. This is a
-source candidate until compatible App activation and installed-definition
-read-back prove otherwise.
+implementing that deferred generic fallback. App-specific oversight thresholds,
+coverage and response policy belong in the responsible App; May's current policy
+is documented in the [May App](../../../may.app/README.md#conversation-guidance-ownership).
+Such a route neither performs semantic self-review nor transfers Task authority.
+Admission, notification, review and fulfillment remain distinct, and the original
+retry and caller/dependency paths continue independently.
 
 ### Recovery uses evidence before repetition
 
