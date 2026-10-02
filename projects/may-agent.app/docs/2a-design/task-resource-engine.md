@@ -403,6 +403,10 @@ another agent attempt. The agent may separately return Task `reviewAt` when it
 has a reason to reconsider at a deadline. Omit that deadline when only the
 external result or human decision can make useful work possible.
 
+`reviewAt` authorizes one owner attempt; an LLM-backed owner incurs model usage.
+There is no default recurring agent review. The agent or App chooses a useful
+review deadline based on the decision needed, urgency and execution cost.
+
 Legacy `reviewAfterMs` remains readable and optional at admission (if supplied,
 an integer of at least 60,000), but does not schedule agent execution. New
 producers should omit it. Redeclaring the same Condition without this field
@@ -530,7 +534,9 @@ without a durable event batch may still carry a compatibility trigger.
 
 Recovery uses the existing indexed Task scheduler and bounded worker capacity.
 A waiting Task with open Conditions gets a Host-owned recovery date (currently
-five minutes). Before claiming an attempt, the worker replays relevant retained
+five minutes, fixed in the Host with no agent override). This is fallback timing
+for missed delivery; normal result events wake work as they arrive. Before
+claiming an attempt, the worker replays relevant retained
 events and reads exact saved request answers or selected reports. A new fact
 uses the normal Condition/event route. With no changed fact, new input, useful
 continuation or explicit `reviewAt`, the worker re-arms the recovery index and

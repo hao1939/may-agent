@@ -134,8 +134,15 @@ A Condition says what fact you need. Infra checks for missed results without
 asking you to repeat the same judgment. When only a result or human decision
 remains, wait on its exact Condition. Return `reviewAt` only when you intend to
 reconsider useful work or escalation at that time. It is a one-time deadline;
-waiting again does not automatically renew it. Legacy Condition `reviewAfterMs`
-is not an execution deadline. Check the installed schema and the
+waiting again does not automatically renew it. That review runs the owner again
+and costs tokens when the owner uses an LLM. Choose timing for urgency and cost:
+a low-urgency escalation check might be 30–60 minutes away. This is an example,
+not a default or a recurring schedule.
+
+The Host separately chooses the missed-result recovery cadence; the Task result
+does not customize it. Normal result events wake work as they arrive, without
+waiting for that periodic check. Legacy Condition `reviewAfterMs` controls
+neither clock. Check the installed schema and the
 [Host availability note](../../2a-design/task-resource-engine.md#conditions)
 before relying on omitted legacy fields.
 

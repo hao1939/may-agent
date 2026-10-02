@@ -61,6 +61,8 @@ An unchanged wait needs no model call or agent-managed polling interval.
 Use Task `reviewAt` only when the agent deliberately chooses to reconsider work
 at that time. A due deadline is consumed; another waiting result does not renew
 it automatically. Keep unrelated Conditions and input deadlines independent.
+This authorizes another owner attempt and may spend model tokens. Infra chooses
+its separate missed-result recovery interval; the Task result cannot override it.
 `reviewAfterMs` is accepted only for compatibility and no longer requests agent
 execution. See [Conditions](../2a-design/task-resource-engine.md#conditions) for
 the Host revision and rollout order; older Hosts require the legacy field.
