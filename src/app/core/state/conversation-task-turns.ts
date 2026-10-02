@@ -126,9 +126,9 @@ function conversationResultTopic(
 ): string | undefined {
   const existing = item.topicId || (decision.topic.kind === "existing" ? decision.topic.id : undefined);
   if (existing) {
-    if (!readConversationTopic(config.resourceStore.db, item.appId, item.conversationId!, existing))
-      throw new Error("Conversation decision selected an unavailable Topic");
-    return existing;
+    const topic = readConversationTopic(config.resourceStore.db, item.appId, item.conversationId!, existing);
+    if (!topic) throw new Error("Conversation decision selected an unavailable Topic");
+    return topic.id;
   }
   return decision.topic.kind === "new" ? stableTopicId(item.appId, item.conversationId!, item.source.id) : undefined;
 }
