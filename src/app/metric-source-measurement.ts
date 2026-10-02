@@ -1,4 +1,6 @@
 import { execFile, type ExecFileOptionsWithStringEncoding } from "node:child_process";
+import { join } from "node:path";
+import { openReadOnlyDatabase } from "../lib/db.js";
 import { createMetricService } from "../lib/metrics.js";
 import { log } from "../lib/log.js";
 import { EVENT_ROW_ID, eventData, type AgentEvent, type EventBus } from "./core/events/bus.js";
@@ -74,12 +76,6 @@ function sourceQuerySample(row: Record<string, unknown> | null): CommandSample |
   return commandSample({ ...row, value: candidate });
 }
 
-function isReadOnlySourceQuery(query: string): boolean {
-  const normalized = query.trim();
-  if (!/^(SELECT|WITH)\b/i.test(normalized)) return false;
-  return !normalized.replace(/;\s*$/, "").includes(";");
-}
-
 function commandSample(value: unknown): CommandSample | null {
   if (typeof value === "number" && Number.isFinite(value)) return { value };
   if (!value || typeof value !== "object" || Array.isArray(value)) return null;
@@ -147,7 +143,8 @@ function measurementError(error: unknown): string {
  *
  * The metric definition remains the domain authority. This Host consumer only
  * executes that accepted definition, records the correlated real observation,
- * and asks MetricService to apply the existing alert lifecycle.
+ * and asks MetricService to apply the existing alert lifecycle. Each source
+ * query owns a read-only connection that closes before writer-side recording.
  */
 export async function measureSourceMetrics(options: {
   bus: EventBus;
@@ -214,11 +211,16 @@ export async function measureSourceMetrics(options: {
       let measuredBy = "runtime:metric-source-query";
       let note = queryNote;
       if (row.source_query) {
-        if (!isReadOnlySourceQuery(row.source_query)) {
-          failed(row.id, "Source query must be a single read-only query");
-          continue;
+        // SQLite prepare executes the first statement and ignores SQL tail; it
+        // is not a parser-based single-statement guarantee. Give every query its
+        // own read-only connection and close it before the writer records or
+        // evaluates the sample, so query transaction state cannot leak forward.
+        const sourceDb = openReadOnlyDatabase(join(options.persistDir, "may.db"));
+        try {
+          sample = sourceQuerySample(sourceDb.prepare(row.source_query).get() as Record<string, unknown> | null);
+        } finally {
+          sourceDb.close();
         }
-        sample = sourceQuerySample(db.prepare(row.source_query).get() as Record<string, unknown> | null);
       } else if (row.source_command) {
         measuredBy = "runtime:metric-source-command";
         note = commandNote;
