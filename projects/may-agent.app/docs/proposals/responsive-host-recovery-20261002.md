@@ -115,6 +115,18 @@ regression fails against the original query, and the candidate passed full local
 CI and independent review. These are source and isolated-comparison results,
 not deployed latency. Local evidence: `.state/human-task-query-20261003/`.
 
+The first hosted CI run passed Container but exposed a timing assumption in the
+existing observation smoke: a second fact arrived before success settled, so
+the Host rejected that stale result and completed a third attempt automatically.
+The test required exactly two attempts. An isolated reproduction retained the
+rejection reason and successful final result. The corrected smoke retains its
+original cadence and verifies automatic completion, attempt correlation and the
+exact durable observation. This finding needs no runtime recovery change.
+May pushed the independently reviewed correction as `087951ad9`; the final local
+suite passed 3,426 tests with three installation-only skips, plus Host/SDK type,
+App-boundary and lint checks. Both hosted checks passed on that revision, and
+PR #292 is ready for human review. It has not been merged or deployed.
+
 Recent `may.daemon-sql-time-percent` samples are about 15–20%, below the existing
 25% sustained-load threshold. Average-load recovery can coexist with slow
 individual operations. Keep that coverage limitation visible without treating
