@@ -514,15 +514,18 @@ describe("Telegram refresh lifecycle", () => {
       await waitFor(() => restarted.sent.some((send) => send.text.includes("Run the verified operator step.")));
       const missingConditionBaseline = restarted.sent.length;
       restarted.wake("first");
-      await waitFor(() => restarted.sent.length > missingConditionBaseline);
+      await Bun.sleep(40);
+      expect(restarted.sent).toHaveLength(missingConditionBaseline);
 
       restarted.tasks.get("first")!.diagnostics!.conditions.pop();
       restarted.tasks.get("first")!.diagnostics!.conditionsTruncated = true;
+      restarted.tasks.get("first")!.diagnostics!.conditions[0]!.condition!.metadata.generation = 2;
       restarted.wake("first");
-      await waitFor(() => restarted.sent.some((send) => send.text.includes("Run the verified operator step.")));
+      await waitFor(() => restarted.sent.length > missingConditionBaseline);
       const incompleteBaseline = restarted.sent.length;
       restarted.wake("first");
-      await waitFor(() => restarted.sent.length > incompleteBaseline);
+      await Bun.sleep(40);
+      expect(restarted.sent).toHaveLength(incompleteBaseline);
 
       await restarted.command("/todo");
       await waitFor(() => restarted.sent.some((send) => send.text.includes("Needs you for may")));
@@ -532,6 +535,48 @@ describe("Telegram refresh lifecycle", () => {
       await waitFor(() => restarted.sent.some((send) => send.text.includes("Run the changed operator step.")));
     } finally {
       await restarted.close();
+    }
+  });
+
+  it("deduplicates an unchanged fallback presentation only after a successful send", async () => {
+    const f = fixture();
+    const task = f.tasks.get("first")!;
+    try {
+      await f.command("/apps may");
+      Object.assign(task, { humanAction: { requestedAction: "Run the fallback operator step." } });
+      f.wake("first");
+      await waitFor(() =>
+        ["123", "456"].every((chat) =>
+          f.sent.some((send) => send.chat_id === chat && send.text.includes("Run the fallback operator step.")),
+        ),
+      );
+      const successfulBaseline = f.sent.filter((send) => send.text.includes("Run the fallback operator step.")).length;
+      f.wake("first");
+      await Bun.sleep(40);
+      expect(f.sent.filter((send) => send.text.includes("Run the fallback operator step."))).toHaveLength(
+        successfulBaseline,
+      );
+
+      task.generation = 2;
+      f.wake("first");
+      await waitFor(
+        () => f.sent.filter((send) => send.text.includes("Run the fallback operator step.")).length > successfulBaseline,
+      );
+
+      task.humanAction = { requestedAction: "Retry the changed fallback step." };
+      f.sendFailures.add("Retry the changed fallback step.");
+      f.wake("first");
+      await waitFor(
+        () => f.errors.filter((text) => text.includes("Send failed: fixture send unavailable")).length >= 2,
+      );
+      const failedBaseline = f.sent.filter((send) => send.text.includes("Retry the changed fallback step.")).length;
+      f.sendFailures.clear();
+      f.wake("first");
+      await waitFor(
+        () => f.sent.filter((send) => send.text.includes("Retry the changed fallback step.")).length >= failedBaseline + 2,
+      );
+    } finally {
+      await f.close();
     }
   });
 

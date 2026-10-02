@@ -1065,8 +1065,8 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
     const watched = watchedTasks.get(surface);
     const changed = actions.filter(({ task, detail, signature }) => {
       if (watched?.appId === task.appId && watched.taskId === task.taskId) return false;
-      if (!signature.exact) return true;
       if (prior.get(todoTaskKey(task)) === presentedTodoActionRevision(signature)) return false;
+      if (!signature.exact) return true;
       return !hasCompletedHumanActionDelivery(persistDir, coordinates.chatId, coordinates.topicId, {
         appId: detail.appId,
         taskId: detail.taskId,
