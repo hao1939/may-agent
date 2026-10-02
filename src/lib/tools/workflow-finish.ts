@@ -25,7 +25,11 @@ function addRequiredResult(base: TSchema, result: TSchema): TSchema {
  * Apply the caller's completion contract to the existing terminal tool.
  * When supplied, outputSchema becomes the required finish().result.
  */
-export function createWorkflowFinishTool(baseFinish: AgentTool, outputSchema?: TSchema): AgentTool {
+export function createWorkflowFinishTool(
+  baseFinish: AgentTool,
+  outputSchema?: TSchema,
+  validateOutput?: (result: unknown) => string | null,
+): AgentTool {
   const parameters = outputSchema ? addRequiredResult(baseFinish.parameters, outputSchema) : baseFinish.parameters;
 
   return {
@@ -41,6 +45,10 @@ export function createWorkflowFinishTool(baseFinish: AgentTool, outputSchema?: T
           content: [{ type: "text" as const, text: `finish() error: ${semanticAdmission.error}` }],
           details: undefined,
         };
+      }
+      const problem = validateOutput?.((params as { result?: unknown }).result);
+      if (problem) {
+        return { content: [{ type: "text" as const, text: `finish() error: ${problem}` }], details: undefined };
       }
       const result = await baseFinish.execute(toolCallId, params, signal, onUpdate);
       const failed = result.content.some(

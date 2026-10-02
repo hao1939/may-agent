@@ -75,6 +75,10 @@ CREATE INDEX IF NOT EXISTS idx_app_inbox_execution_task
 CREATE INDEX IF NOT EXISTS idx_app_inbox_pending_human_task
   ON app_inbox_items(app_id, execution_task_id)
   WHERE execution_task_id IS NOT NULL AND source_kind = 'human' AND status != 'done';
+CREATE INDEX IF NOT EXISTS idx_app_inbox_conversation_change
+  ON app_inbox_items(app_id, conversation_id, source_kind, input_kind,
+    CAST(json_extract(input_data, '$.appId') AS TEXT), CAST(json_extract(input_data, '$.taskId') AS TEXT),
+    CAST(COALESCE(json_extract(input_data, '$.attemptId'), json_extract(input_data, '$.generation')) AS TEXT));
 CREATE UNIQUE INDEX IF NOT EXISTS idx_app_inbox_idempotency
   ON app_inbox_items(app_id, idempotency_key)
   WHERE idempotency_key IS NOT NULL AND idempotency_key != '';

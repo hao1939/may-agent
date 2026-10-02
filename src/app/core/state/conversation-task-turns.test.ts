@@ -1725,7 +1725,7 @@ test("closure input validates the exact source and rolls admission back without 
   const admitted = admitConversationTaskChange(f.context(), worker, ref);
   expect(admitted.item.input).toEqual({
     kind: "task-closed",
-    data: { appId: source.appId, taskId: "sample", generation: closed.cancellation.generation, closure: closed.cancellation },
+    data: { appId: source.appId, taskId: "sample", generation: closed.cancellation.generation, closure: closed.cancellation, topicIds: [topic.id] },
   });
   expect(admitConversationTaskChange(f.context(), worker, ref).created).toBe(false);
   expect(listPendingConversationTaskChanges(f.db, app.id)).toEqual([]);
@@ -1766,7 +1766,15 @@ test("recovery scopes report lookups to linked Tasks without changing legacy JSO
       JSON.stringify({ ...saved, taskId: `unrelated-${i}`, reportAttemptId: claim.attemptId }));
     f.db.prepare("INSERT INTO app_task_admissions VALUES (?, ?, ?)").run(`unrelated-app-${i}`, "report",
       JSON.stringify({ ...saved, reportAttemptId: claim.attemptId }));
+    createAppInboxItem(f.db, {
+      id: `historical-result-${i}`, appId: app.id, conversationId: "chat",
+      source: { kind: "system", id: `historical-result-${i}` },
+      input: { kind: "task-outcome", data: {
+        appId: app.id, taskId: "7", attemptId: `old-attempt-${i}`, topicIds: [topic.id],
+      } },
+    });
   }
+  f.db.prepare("UPDATE app_inbox_items SET status = 'done' WHERE id LIKE 'historical-result-%'").run();
   f.db.exec("COMMIT");
   f.db.exec("ANALYZE");
   const prepare = f.db.prepare.bind(f.db);
@@ -1799,6 +1807,11 @@ test("recovery scopes report lookups to linked Tasks without changing legacy JSO
       expect.stringContaining("idx_app_task_admissions_target_text (app_id=? AND <expr>=?)"),
     ]);
     expect(plan.some((step) => String(step.detail).startsWith("SCAN admission"))).toBe(false);
+    const receiptLookups = plan.map((step) => String(step.detail)).filter((detail) => detail.startsWith("SEARCH grouped "));
+    expect(receiptLookups.length).toBeGreaterThan(0);
+    for (const lookup of receiptLookups) {
+      expect(lookup).toContain("idx_app_inbox_conversation_change (app_id=? AND conversation_id=? AND source_kind=? AND input_kind=? AND <expr>=? AND <expr>=? AND <expr>=?)");
+    }
     expect(plan.filter((step) => String(step.detail).includes("MATERIALIZE linked_tasks"))).toHaveLength(1);
     expect(plan.filter((step) => String(step.detail).includes("MATERIALIZE selected_reports"))).toHaveLength(1);
     expect(plan.filter((step) => String(step.detail).includes("MATERIALIZE live_conversations"))).toHaveLength(1);
@@ -1809,4 +1822,195 @@ test("recovery scopes report lookups to linked Tasks without changing legacy JSO
   } finally {
     capture.mockRestore();
   }
+});
+
+test("one result reaches all linked Topics once, with late links and independent Requests preserved", () => {
+  const f = fixture();
+  const first = f.admit();
+  completeConversationTaskTurn(f.context(), f.claim(first.taskId), {
+    summary: "Accepted two asks",
+    response: "I'll compare both measurements.",
+    topic: { kind: "new", title: "Measurements" },
+    requestUpdates: [
+      {
+        id: "ask-a",
+        scope: "Explain measurement A",
+        expectedRevision: 0,
+        disposition: "open",
+        reason: "Awaiting evidence",
+      },
+      {
+        id: "ask-b",
+        scope: "Explain measurement B",
+        expectedRevision: 0,
+        disposition: "open",
+        reason: "Awaiting evidence",
+      },
+    ],
+  });
+  observeAppTaskIntent(f.context(), {
+    appAgent: app.id,
+    intent: { id: "measurement", parentId: "root", outcome: "Collect evidence", acceptance: ["Measured"] },
+  });
+  const claim = f.claim("measurement");
+  completeAppTask(f.context(), claim, { summary: "Measured", result: { value: 17 } });
+  const topicIds = Array.from({ length: 15 }, (_, i) => `measurement-topic-${String(i).padStart(2, "0")}`);
+  for (const id of topicIds) {
+    createConversationTopic(f.db, {
+      id,
+      appId: app.id,
+      conversationId: "chat",
+      title: id,
+      openedBy: "system",
+      originMessageId: id,
+    });
+    linkConversationTopicTask(f.db, id, app.id, "measurement");
+  }
+  const ref = { conversationId: "chat", topicId: topicIds[7]!, taskId: "measurement", attemptId: claim.attemptId };
+  const saved = admitConversationTaskChange(f.context(), f.context(), ref);
+  expect(saved.created).toBe(true);
+  expect(saved.item.input.data).toMatchObject({ topicIds, outcome: { result: { value: 17 } } });
+  for (const topicId of topicIds) {
+    const replay = admitConversationTaskChange(f.context(), f.context(), { ...ref, topicId });
+    expect(replay.created).toBe(false);
+    expect(replay.item.id).toBe(saved.item.id);
+  }
+  expect(listPendingConversationTaskChanges(f.db, app.id)).toEqual([]);
+  const inputs = readConversationTaskInputs(f.context(), f.claim(first.taskId));
+  expect(inputs).toHaveLength(1);
+  expect(readConversationRequest(f.db, app.id, "chat", "ask-a")?.status).toBe("open");
+  expect(readConversationRequest(f.db, app.id, "chat", "ask-b")?.status).toBe("open");
+  f.reopen();
+  expect(listPendingConversationTaskChanges(f.db, app.id)).toEqual([]);
+  const late = "late-topic";
+  createConversationTopic(f.db, {
+    id: late,
+    appId: app.id,
+    conversationId: "chat",
+    title: late,
+    openedBy: "system",
+    originMessageId: late,
+  });
+  linkConversationTopicTask(f.db, late, app.id, "measurement");
+  expect(listPendingConversationTaskChanges(f.db, app.id)).toMatchObject([
+    { topicId: late, attemptId: claim.attemptId },
+  ]);
+  const later = admitConversationTaskChange(f.context(), f.context(), { ...ref, topicId: late });
+  expect(later.created).toBe(true);
+  expect(later.item.input.data).toMatchObject({ topicIds: [late] });
+  expect(later.item.id).not.toBe(saved.item.id);
+});
+
+test("legacy per-Topic delivery receipts remain valid alongside new grouped receipts", () => {
+  const f = fixture();
+  const first = f.admit();
+  completeConversationTaskTurn(f.context(), f.claim(first.taskId), decision);
+  observeAppTaskIntent(f.context(), {
+    appAgent: app.id,
+    intent: {
+      id: "measurement",
+      parentId: "root",
+      outcome: "Collect evidence",
+      acceptance: ["Measured"],
+    },
+  });
+  const claim = f.claim("measurement");
+  completeAppTask(f.context(), claim, { summary: "Measured", result: { value: 17 } });
+  for (const id of ["legacy-topic", "new-topic"]) {
+    createConversationTopic(f.db, {
+      id,
+      appId: app.id,
+      conversationId: "chat",
+      title: id,
+      openedBy: "system",
+      originMessageId: id,
+    });
+    linkConversationTopicTask(f.db, id, app.id, "measurement");
+  }
+  const legacyId = `conversation-result:${app.id}:chat:legacy-topic:${app.id}:${claim.attemptId}`;
+  // Seed the old wire format through the existing inbox admission path.
+  const legacy = admitConversationTaskInput(f.context(), {
+    id: legacyId,
+    idempotencyKey: legacyId,
+    appId: app.id,
+    conversationId: "chat",
+    topicId: "legacy-topic",
+    source: { kind: "system", id: legacyId },
+    input: {
+      kind: "task-outcome",
+      data: {
+        appId: app.id,
+        taskId: "measurement",
+        generation: claim.generation,
+        attemptId: claim.attemptId,
+        outcome: f.store.readAttempt(claim.attemptId)!.acceptedResult,
+      },
+    },
+    intent: f.store.readTask(first.taskId)!.spec,
+  });
+  f.reopen();
+  const pending = listPendingConversationTaskChanges(f.db, app.id);
+  expect(pending).toHaveLength(1);
+  expect(pending[0]!.topicId).toBe("new-topic");
+  const replay = admitConversationTaskChange(f.context(), f.context(), {
+    conversationId: "chat",
+    topicId: "legacy-topic",
+    taskId: "measurement",
+    attemptId: claim.attemptId,
+  });
+  expect(replay.created).toBe(false);
+  expect(replay.item.id).toBe(legacy.item.id);
+  const grouped = admitConversationTaskChange(f.context(), f.context(), pending[0]!);
+  expect(grouped.created).toBe(true);
+  expect(grouped.item.input.data.topicIds).toEqual(["new-topic"]);
+  expect(getAppInboxItem(f.db, legacyId)?.input.data).not.toHaveProperty("topicIds");
+  expect(listPendingConversationTaskChanges(f.db, app.id)).toEqual([]);
+});
+
+test("grouped delivery leaves links beyond the admission limit recoverable after restart", () => {
+  const f = fixture();
+  const first = f.admit();
+  completeConversationTaskTurn(f.context(), f.claim(first.taskId), decision);
+  observeAppTaskIntent(f.context(), {
+    appAgent: app.id,
+    intent: {
+      id: "measurement",
+      parentId: "root",
+      outcome: "Collect evidence",
+      acceptance: ["Measured"],
+    },
+  });
+  const claim = f.claim("measurement");
+  completeAppTask(f.context(), claim, { summary: "Measured" });
+  const topics = Array.from({ length: 105 }, (_, i) => `topic-${String(i).padStart(3, "0")}`);
+  for (const id of topics) {
+    createConversationTopic(f.db, {
+      id,
+      appId: app.id,
+      conversationId: "chat",
+      title: id,
+      openedBy: "system",
+      originMessageId: id,
+    });
+    linkConversationTopicTask(f.db, id, app.id, "measurement");
+  }
+  // A direct notification for a link outside the first sorted page must be included.
+  const ref = { conversationId: "chat", topicId: topics[104]!, taskId: "measurement", attemptId: claim.attemptId };
+  const initial = admitConversationTaskChange(f.context(), f.context(), ref);
+  const initialTopics = initial.item.input.data.topicIds as string[];
+  expect(initialTopics).toHaveLength(100);
+  expect(initialTopics).toContain(ref.topicId);
+  f.reopen();
+  const remaining = listPendingConversationTaskChanges(f.db, app.id);
+  expect(remaining.map((entry) => entry.topicId).sort()).toEqual(topics.filter((id) => !initialTopics.includes(id)));
+  const recovered = admitConversationTaskChange(f.context(), f.context(), remaining[0]!);
+  const recoveredTopics = recovered.item.input.data.topicIds as string[];
+  expect(recoveredTopics).toHaveLength(5);
+  expect([...initialTopics, ...recoveredTopics].sort()).toEqual(topics);
+  for (const topicId of topics) {
+    const replay = admitConversationTaskChange(f.context(), f.context(), { ...ref, topicId });
+    expect(replay.created).toBe(false);
+    expect(replay.item.id).toBe(initialTopics.includes(topicId) ? initial.item.id : recovered.item.id);
+  }
+  expect(listPendingConversationTaskChanges(f.db, app.id)).toEqual([]);
 });

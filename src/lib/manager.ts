@@ -131,6 +131,8 @@ export interface RunOptions {
   operationAllowance?: number;
   /** Caller-defined schema for the required finish().result payload. */
   outputSchema?: TSchema;
+  /** Pure current-invocation validation; never serialized as session state. */
+  validateOutput?: (result: unknown) => string | null;
   /** Restrict the supplied capabilities for this session. */
   toolPolicy?: ToolPolicy;
   /** Effective filesystem root supplied by an enclosing workflow/task. */
@@ -153,6 +155,7 @@ export type CallAgentOptions = Pick<
   | "requireFinish"
   | "operationAllowance"
   | "outputSchema"
+  | "validateOutput"
   | "toolPolicy"
   | "executionRoot"
   | "deadlineAt"
@@ -602,7 +605,8 @@ export class SubagentManager {
           `Execution: ${JSON.stringify(sessionId)}. Caller session: ${JSON.stringify(opts?.parentSessionId ?? null)}. Workflow: ${JSON.stringify(opts?.workflowRunId ?? null)}.`,
           `Original assignment and caller links: ${JSON.stringify(join(this._persistDir, "sessions", sessionId, "meta.json"))}. If the assignment was compacted, read its task field before continuing.`,
         ].join("\n");
-    const requestedStructuredCompletion = opts?.requireFinish === true || opts?.outputSchema !== undefined;
+    const requestedStructuredCompletion =
+      opts?.requireFinish === true || opts?.outputSchema !== undefined || opts?.validateOutput !== undefined;
     const operationAllowance = validateOperationAllowance(opts?.operationAllowance);
     const toolPolicy = opts?.toolPolicy ?? "full";
     if (requestedStructuredCompletion && persistentChat) {
@@ -637,6 +641,7 @@ export class SubagentManager {
       skill: opts?.skill,
       requireFinish: opts?.requireFinish,
       outputSchema: opts?.outputSchema,
+      validateOutput: opts?.validateOutput,
       toolPolicy,
       executionRoot: opts?.executionRoot,
       promptTimestamp: this._promptTimestamp,
@@ -1052,6 +1057,7 @@ export class SubagentManager {
       requireFinish: opts?.requireFinish,
       operationAllowance: opts?.operationAllowance,
       outputSchema: opts?.outputSchema,
+      validateOutput: opts?.validateOutput,
       toolPolicy: opts?.toolPolicy,
       executionRoot: opts?.executionRoot,
     });

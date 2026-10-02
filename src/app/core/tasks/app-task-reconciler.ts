@@ -258,22 +258,22 @@ function taskEventIdentity(event: Record<string, unknown>): string {
 }
 
 /**
- * Remove only durable live events explicitly incorporated by this fenced
- * attempt. The caller persists this mutation atomically with the admitted
- * result; an interrupted, failed, or stale attempt therefore cannot lose input.
+ * Advance explicitly incorporated live input and redundant clock wakes when an
+ * attempt settles. A clock wake requests the review already in progress; it
+ * carries no new facts or requirements. Failed/stale execution retains input.
  */
-function consumeAcceptedLiveTaskEvents(
+function consumeSettledTaskEvents(
   tree: TaskTree,
   taskId: string,
   agent: string,
   eventIds: readonly number[] | undefined,
 ): void {
   const accepted = new Set((eventIds ?? []).filter((eventId) => Number.isSafeInteger(eventId) && eventId > 0));
-  if (accepted.size === 0) return;
   const previous = tree.taskTriggers?.[taskId];
   if (!previous) return;
   const pending = taskTriggerEvents(previous);
   const remaining = pending.filter((entry) => {
+    if (entry.event.type === "project.task.tick") return false;
     const eventId = Number(entry.event.eventId);
     return !Number.isSafeInteger(eventId) || !accepted.has(eventId);
   });
@@ -2522,7 +2522,7 @@ export function reportAppTaskFailure(
   // Accepted facts are not a final answer to the original assignment. Exact
   // admitted input remains unresolved through input waits, while notifications
   // this attempt considered advance instead of restoring the same bounded batch.
-  consumeAcceptedLiveTaskEvents(tree, claim.taskId, claim.agent, input.acceptedLiveEventIds);
+  consumeSettledTaskEvents(tree, claim.taskId, claim.agent, input.acceptedLiveEventIds);
   finishAttempt(tree, resource, "completed", summary, now);
   touchResource(resource, {
     phase: "pending",
@@ -3703,7 +3703,7 @@ function recordPendingAppTaskResult(
   inputOutcomeAdmissions(config, tree, claim, {
     acceptedLiveEventIds: input.acceptedLiveEventIds, inputKeys: [],
   }, "retain");
-  consumeAcceptedLiveTaskEvents(tree, claim.taskId, claim.agent, input.acceptedLiveEventIds);
+  consumeSettledTaskEvents(tree, claim.taskId, claim.agent, input.acceptedLiveEventIds);
   finishAttempt(tree, resource, input.reason ? "failed" : "completed", input.summary, new Date().toISOString());
   if (input.reason) attempt.failureReason = input.reason;
   attempt.unacceptedResult = {
@@ -3785,7 +3785,7 @@ export function completeAppTask(
   const actionsApplied = applyTaskActions(tree, claim, actions, config);
   const now = new Date().toISOString();
   match.attempt.acceptedResult = acceptedAttemptResult(tree, claim.taskId, "converged", { ...input, inputKeys: resolvedInputKeys }, acceptanceBasis);
-  consumeAcceptedLiveTaskEvents(tree, claim.taskId, claim.agent, input.acceptedLiveEventIds);
+  consumeSettledTaskEvents(tree, claim.taskId, claim.agent, input.acceptedLiveEventIds);
   unlinkSatisfiedTaskConditions(tree, claim.taskId);
   finishAttempt(tree, resource, "completed", input.summary, now);
   const reconcileActionTaskIds = actions.flatMap((action) => (action.kind === "unblock-task" ? [action.taskId] : []));
@@ -3905,7 +3905,7 @@ export function deferAppTask(
   );
   if (input.report) acceptedResult.report = true;
   if (input.continue) acceptedResult.continue = true;
-  consumeAcceptedLiveTaskEvents(tree, claim.taskId, claim.agent, input.acceptedLiveEventIds);
+  consumeSettledTaskEvents(tree, claim.taskId, claim.agent, input.acceptedLiveEventIds);
   let conditions = input.conditions ?? [];
   const pendingTriggerRecord = tree.taskTriggers?.[claim.taskId];
   const pendingEvents = pendingTriggerRecord ? taskTriggerEvents(pendingTriggerRecord) : [];
