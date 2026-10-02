@@ -131,6 +131,34 @@ Deploy the Host counters before loading this metric definition. Portable tests
 exercise the metric through the existing collector, including restart and stale
 coverage; they do not prove that a live agent has diagnosed or repaired a query.
 
+The October 3 App candidate adds the independent
+`may.daemon-sql-recent-worst-call-ms` gauge without changing the aggregate gauge.
+Its source command reads the existing diagnostic status socket and selects only
+current/previous five-minute rankings. The retained note binds PID, process SQL
+`since`, diagnostic measurement time, window bounds, masked fingerprint/shape,
+call count, total, average and worst milliseconds, plus bounded coverage and
+untracked-call evidence. It retains at most six ranked shapes and rejects notes
+above 4,000 characters. Missing, expired or empty rankings fail collection;
+they never record zero. The scalar is the worst call in those recent windows,
+not the process-lifetime maximum.
+
+Initial May policy collects on the existing five-minute opportunity and breaches
+above 1,000 ms. One synchronous daemon SQLite call above one second can delay the
+control path and is four times the rollout's 250 ms ordinary-read target, so a
+single recent breach is worth Evaluation judgment; it is not a Host timeout,
+restart rule or proof of an incident. The metric service keeps one alert episode,
+so repeated samples do not commission work. A new breach should trigger the
+existing review immediately while non-breaching routine discovery is daily or
+less frequent. Evaluation owns that review cadence and breach deduplication; May
+reuses the existing accountable investigation and verifies a fresh comparable
+observation. Collection still runs every five minutes and adds no scheduler.
+
+The command embeds the script path resolved from `import.meta.dir` while loading
+the App definition. Installed generations therefore retain their pinned release
+script instead of depending on the collector's working directory or mutable
+`/app/projects/may.app`. Activation must still verify the exact installed command,
+a successful diagnostic read and the first retained sample.
+
 The rollout acceptance is a complete example: a real sample and breach reaches
 Evaluation, its exact report reaches May, an accepted owner decision links the
 repair, and a comparable post-application sample verifies the effect. Retain those

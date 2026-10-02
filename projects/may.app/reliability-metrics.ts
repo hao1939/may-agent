@@ -1,4 +1,5 @@
 import type { AppDefinition } from "@may-agent/sdk";
+import { join } from "node:path";
 
 const clock = `CAST(strftime('%s','now') AS INTEGER) * 1000`;
 const recoveries = `WITH clock AS (SELECT ${clock} AS cut), recoveries AS (
@@ -25,6 +26,8 @@ export const REVIEW_LAG_METRIC = "may.evaluation-unfinished-review-age-seconds";
 export const EVALUATION_OPERATION_METRIC =
   "may.evaluation-unsuccessful-task-attempts-6h";
 export const SQL_TIME_METRIC = "may.daemon-sql-time-percent";
+export const SQL_LATENCY_METRIC = "may.daemon-sql-recent-worst-call-ms";
+const sqlLatencySourceCommand = `bun ${JSON.stringify(join(import.meta.dir, "scripts/daemon-sql-latency.ts"))}`;
 // App attention policy; Host samples existing facts and never stops retries from these rules.
 export const reliabilityMetrics: NonNullable<AppDefinition["metrics"]> = [
   {
@@ -67,6 +70,21 @@ export const reliabilityMetrics: NonNullable<AppDefinition["metrics"]> = [
         'lastSampleAt', MAX(lastSampleAt),
         'nextRead', 'Read status with diagnostics:true. diagnostics.sql contains the bounded top query shapes.') AS note
       FROM intervals HAVING MAX(lastSampleAt) >= ${clock} - 180000`,
+  },
+  {
+    id: SQL_LATENCY_METRIC,
+    name: "Worst recent daemon SQLite call",
+    owner: "may",
+    project: "may",
+    type: "gauge",
+    unit: "milliseconds",
+    measureInterval: 300_000,
+    threshold: 1_000,
+    alertOp: ">",
+    priority: "P2",
+    description:
+      "Worst completed daemon SQLite adapter call in the current/previous five-minute diagnostic rankings. One call above one second requests review because synchronous daemon SQL can delay control traffic; this App policy is not a Host timeout or restart rule.",
+    sourceCommand: sqlLatencySourceCommand,
   },
   {
     id: "may.unresolved-input-recovery-count",

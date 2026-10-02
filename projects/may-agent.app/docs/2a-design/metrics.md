@@ -160,7 +160,12 @@ remains supported; a valid top-level `value` takes precedence over an extra
 
 The collector does not perform filename-specific rewriting of `project-metrics.ts` and
 `focus-metric-sample.ts` commands. Existing individual `--json` commands still
-execute as declared, but no longer receive implicit batching. Before adopting
+execute as declared, but no longer receive implicit batching. A command runs in
+the installation root, not its declaring App directory. A command that ships with
+an App generation should therefore embed the path resolved from that loaded
+App release (for example from `import.meta.dir`) when the definition is built;
+it must not assume a mutable source checkout or collector working directory.
+Before adopting
 this collector on an installation with legacy producers, update their App
 definitions and output together, and verify invocation counts/cost. No stored
 commands are rewritten automatically. Source support does not prove that
