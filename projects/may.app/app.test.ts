@@ -66,6 +66,42 @@ describe("canonical May conversation App", () => {
     expect(existsSync(new URL("./inbox.ts", import.meta.url))).toBe(false);
   });
 
+  test("maps App text requests to ordinary work with the original requirements", () => {
+    const input = {
+      kind: "message",
+      data: {
+        message: "Review the design",
+        context: { evidence: "review.md" },
+      },
+    };
+    const admitted = {
+      id: "request-1",
+      source: { kind: "app" as const, id: "evaluation" },
+      input,
+    };
+    const attachment = taskForMayInput(admitted);
+    expect(attachment).toMatchObject({
+      kind: "desired",
+      intent: {
+        id: "request/request-1",
+        agent: "may",
+        outcome: "Review the design",
+        input,
+      },
+    });
+    expect(taskForMayInput(admitted)).toEqual(attachment);
+    if (attachment.kind !== "desired") throw new Error("Expected owned work");
+    expect(attachment.intent.acceptance[0]).toContain(
+      "acknowledgment or handoff alone does not fulfill",
+    );
+    expect(() =>
+      taskForMayInput({
+        ...admitted,
+        input: { kind: "message", data: { message: " " } },
+      }),
+    ).toThrow("non-empty message");
+  });
+
   test("maps durable May goals to ordinary visible goal Tasks", () => {
     expect(
       taskForMayInput({

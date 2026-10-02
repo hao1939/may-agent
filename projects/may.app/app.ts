@@ -159,6 +159,24 @@ function researchMode(
 export function taskForMayInput(
   admitted: Readonly<AppTaskInput>,
 ): AppTaskAttachment {
+  if (admitted.input.kind === "message") {
+    const message = optionalText(record(admitted.input.data).message);
+    if (!message) throw new Error("May message requires non-empty message");
+    return {
+      kind: "desired",
+      intent: {
+        id: `request/${admitted.id.replace(/[^a-zA-Z0-9._-]+/g, "-")}`,
+        parentId: "may",
+        outcome: message,
+        acceptance: [
+          "Address the requested work and return its answer with supporting evidence. An acknowledgment or handoff alone does not fulfill the request; report missing information or blockers while keeping it open.",
+        ],
+        agent: "may",
+        input: { kind: admitted.input.kind, data: admitted.input.data },
+        priority: "P1",
+      },
+    };
+  }
   if (admitted.input.kind !== "goal") {
     throw new Error(
       `Unsupported durable May input kind: ${admitted.input.kind}`,

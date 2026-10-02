@@ -119,6 +119,26 @@ test("May's real input mapper selects the workflow only for an explicit metric p
   expect(app.observers?.some((o) => o.id === "metric-evidence")).toBe(true);
 });
 
+test("a request Condition does not replace a metric observation", () => {
+  const result = review();
+  result.task = {
+    state: "waiting",
+    summary: "Asked for a review",
+    facts: [],
+    requests: [
+      {
+        id: "review",
+        appId: "evaluation",
+        input: { kind: "review", data: {} },
+      },
+    ],
+    conditions: [{ requestId: "review" }],
+  };
+  expect(() => metricReviewResult(reconciliation(), result)).toThrow(
+    "Observe requires a saved or returned Condition for this metric",
+  );
+});
+
 test("a missing wait or fabricated owner cannot be accepted as metric handling", () => {
   const rec = reconciliation();
   const plan = review();

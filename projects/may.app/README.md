@@ -1,7 +1,9 @@
 # May
 
-**Host requirement:** v3.0.0. The App uses `conversation` for human input,
-mode-free Tasks and `facts` for result observations. Retained history stays in
+**Host requirement:** v3.0.0 for the current producer guidance. The App uses
+`conversation` for human input, mode-free Tasks and `facts` for result
+observations. New `requests`/`requestId` producer output requires Host/SDK source
+containing merged PR #285 and is not introduced here. Retained history stays in
 the Host; source compatibility is not deployment proof.
 
 ## Conversation guidance ownership
@@ -80,6 +82,18 @@ available session/report references. This is a request for judgment, not a human
 decision or approval. Runtime retains the original delivery identity; the App
 does not create another correlation or work lifecycle. New producers can supply
 structured message context without adding a new conversational input kind.
+Direct App text is mapped to durable May Task work with the original message and
+context; acknowledgment alone does not settle it.
+
+Roll out the PR285 companion in compatibility order. The text mapper and metric
+reader remain backward-compatible with old-format `state`/`continue` results and
+saved `dependencies`, so activate them first while the current producer guidance
+continues to emit that v1 format. Read the App definition back before activating
+a compatible Host/SDK containing merged PR #285, because the mapper must be
+present before the Host routes App text requests to May Tasks. Only after that
+Host/SDK is active may producer guidance move to current `requests` and
+`{requestId}` Conditions; the old SDK rejects that output. This source change
+does not make that guidance migration or prove activation.
 
 The staged source adds bounded independent Evaluation operation oversight through
 May's existing metric collection, alert episode and `metric-response` path. The

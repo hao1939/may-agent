@@ -344,7 +344,7 @@ test("missing selected work and invalid Conditions never leave accepted metric d
   plan.task.conditions![0].reviewAfterMs = 1;
   await expect(
     f.attach("invalid", { context: { metricResponse: plan } }),
-  ).rejects.toThrow("Metric review requires");
+  ).rejects.toThrow("reviewAfterMs must be an integer of at least 60000");
   expect(f.decisions()).toHaveLength(0);
 });
 
@@ -432,7 +432,8 @@ test("an investigation commissions ordinary dependent work and its result wakes 
     };
   });
   try {
-    const plan: MetricReview = {
+    // Retained reviews may still contain the SDK's supported dependencies spelling.
+    const plan = {
       task: {
         state: "waiting",
         summary: "Commission diagnosis",

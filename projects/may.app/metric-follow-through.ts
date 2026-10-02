@@ -37,12 +37,21 @@ export const metricReviewSchema = Type.Object(
 );
 export type MetricReview = Static<typeof metricReviewSchema>;
 
-export function readMetricReview(value: unknown): MetricReview {
-  if (!Check(metricReviewSchema, value))
+export function readMetricReview(
+  value: unknown,
+): MetricReview & { task: TaskReconcileResult } {
+  // Saved reviews can use dependencies; reuse SDK admission to resolve that spelling.
+  const input = value as { task?: unknown } | null;
+  const admitted = admitTaskReconcileResult(input?.task, {
+    allowNeedsAgent: false,
+  });
+  if (!admitted.ok) throw new Error(admitted.error);
+  const review = { ...input, task: admitted.result };
+  if (!Check(metricReviewSchema, review))
     throw new Error(
       "Metric review requires {task: ordinary Task result, decisions: metric judgments}",
     );
-  return value;
+  return review;
 }
 
 /** App composition: identity comes from the owning attempt, never from model output. */
@@ -51,11 +60,7 @@ export function metricReviewResult(
   value: unknown,
 ): TaskReconcileResult {
   const review = readMetricReview(value);
-  const admission = admitTaskReconcileResult(review.task, {
-    allowNeedsAgent: false,
-  });
-  if (!admission.ok) throw new Error(admission.error);
-  const result = admission.result;
+  const result = review.task;
   const seen = new Set<string>();
   const facts = review.decisions.map((decision) => {
     const key = JSON.stringify([decision.metricId, decision.alertId]);
@@ -94,6 +99,7 @@ export function metricReviewResult(
       );
       const observesMetric = [...open, ...(result.conditions ?? [])].some(
         (c) =>
+          !("requestId" in c) &&
           c.subject === `resource:${decision.metricId}` &&
           c.type === "may.metric.state" &&
           c.owner === "app:may" &&
