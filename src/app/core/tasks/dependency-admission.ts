@@ -2,6 +2,7 @@ import { type Condition as AppTaskConditionSpec, type TaskAppDependency } from "
 import { createHash } from "node:crypto";
 import { isDeepStrictEqual } from "node:util";
 import { assertValidAppInput } from "../apps/definition-validation.js";
+import { assertAppTaskInputRoute } from "../apps/input-routing.js";
 import { getDb } from "../../../lib/db/connection.js";
 import { EVENT_DELIVERY_RESULT, EVENT_ROW_ID } from "../events/bus.js";
 import { appInputFeedbackEvent } from "../inbox/input-result.js";
@@ -313,6 +314,7 @@ function assertInstalledAppDependency(opts: AppTaskRuntimeOptions, dependency: T
     throw new Error(`App dependency ${dependency.id} targets unavailable App ${dependency.appId}`);
   }
   assertValidAppInput(target, dependency.input);
+  assertAppTaskInputRoute(target, dependency.input.kind, dependency.taskId);
 }
 
 export function recoverTaskConditions(

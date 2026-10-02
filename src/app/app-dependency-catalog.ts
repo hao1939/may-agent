@@ -3,6 +3,7 @@
  * Summarizes the supplied registry snapshot; does not load or run Apps.
  */
 import type { AppRegistrySnapshot } from "./core/apps/registry.js";
+import { appInputRoute } from "./core/apps/input-routing.js";
 
 function schemaStringLiterals(value: unknown): string[] {
   if (!value || typeof value !== "object" || Array.isArray(value)) return [];
@@ -182,19 +183,13 @@ function appInputContracts(schema: unknown): AppInputContract[] {
 
 export function appDependencyCatalog(
   entries: AppRegistrySnapshot["entries"],
-  sourceAppId: string,
 ): Array<{ appId: string; description: string; inputs: AppInputContract[] }> {
   return entries
     .filter(({ definition }) => definition.task && definition.tasks)
     .map(({ definition }) => ({
       appId: definition.id,
       description: definition.description?.trim() || "No description declared.",
-      inputs: appInputContracts(definition.inputSchema).filter(
-        (input) =>
-          definition.id !== sourceAppId ||
-          !definition.conversation ||
-          Boolean(definition.conversation.inputKinds && !definition.conversation.inputKinds.includes(input.kind)),
-      ),
+      inputs: appInputContracts(definition.inputSchema).filter((input) => appInputRoute(definition, input.kind) === "task"),
     }))
     .filter((entry) => entry.inputs.length > 0)
     .sort((left, right) => left.appId.localeCompare(right.appId));

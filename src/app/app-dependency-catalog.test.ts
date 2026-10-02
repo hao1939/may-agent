@@ -3,7 +3,7 @@ import { Type, defineApp } from "@may-agent/sdk";
 import { appDependencyCatalog } from "./app-dependency-catalog.js";
 
 describe("App dependency catalog", () => {
-  it("shows only installed accountable Apps and their accepted input contracts", () => {
+  it("shows only durable Task input contracts across installed Apps", () => {
     const target = defineApp({
       id: "evaluation",
       version: 1,
@@ -43,13 +43,10 @@ describe("App dependency catalog", () => {
       ]),
       conversation: { mode: "agent" as const, inputKinds: ["message"] },
     };
-    const catalog = appDependencyCatalog(
-      [
-        { appDir: "/fixtures/may.app", definition: source },
-        { appDir: "/fixtures/evaluation.app", definition: target },
-      ],
-      "may",
-    );
+    const catalog = appDependencyCatalog([
+      { appDir: "/fixtures/may.app", definition: source },
+      { appDir: "/fixtures/evaluation.app", definition: target },
+    ]);
 
     expect(catalog).toEqual([
       {
@@ -77,10 +74,9 @@ describe("App dependency catalog", () => {
       },
     ]);
     expect(
-      appDependencyCatalog(
-        [{ appDir: "/fixtures/may.app", definition: { ...source, conversation: { mode: "agent" } } }],
-        "may",
-      ),
+      appDependencyCatalog([
+        { appDir: "/fixtures/may.app", definition: { ...source, conversation: { mode: "agent" } } },
+      ]),
     ).toEqual([]);
   });
 
@@ -138,7 +134,7 @@ describe("App dependency catalog", () => {
     });
 
     expect(
-      appDependencyCatalog([{ appDir: "/fixtures/operations.app", definition: target }], "may")[0]?.inputs,
+      appDependencyCatalog([{ appDir: "/fixtures/operations.app", definition: target }])[0]?.inputs,
     ).toEqual([
       {
         kind: "general-operation",
@@ -196,6 +192,6 @@ describe("App dependency catalog", () => {
       }),
     });
 
-    expect(appDependencyCatalog([{ appDir: "/fixtures/incomplete.app", definition: target }], "may")).toEqual([]);
+    expect(appDependencyCatalog([{ appDir: "/fixtures/incomplete.app", definition: target }])).toEqual([]);
   });
 });

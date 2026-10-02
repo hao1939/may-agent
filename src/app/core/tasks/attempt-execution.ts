@@ -334,7 +334,7 @@ export async function runTaskAgent(input: TaskHandlerInput): Promise<TaskCapabil
       projectDir: descriptor.projectDir,
       app: descriptor.app,
     },
-    dependencies: appDependencyCatalog(configuredRegistryEntries(opts), descriptor.id),
+    dependencies: appDependencyCatalog(configuredRegistryEntries(opts)),
     sessionStarted: (id) => {
       recordAppTaskAttemptSession(appTaskConfig(descriptor), claim, id);
     },
