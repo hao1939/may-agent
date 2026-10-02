@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, expect, test } from "bun:test";
-import { existsSync, mkdtempSync, rmSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { createServer } from "node:net";
@@ -388,6 +388,77 @@ test("SQL latency source command is pinned to the loaded App release rather than
   expect(existsSync(script)).toBe(true);
 });
 
+test("SQL latency producer command resolves the configured default daemon socket", async () => {
+  const root = mkdtempSync(join(tmpdir(), "may-sql-latency-default-socket-"));
+  const socketPath = join(root, "instances", "background", "may.sock");
+  mkdirSync(join(root, "instances", "background"), { recursive: true });
+  const now = Date.now();
+  const server = createServer((socket) => {
+    socket.setEncoding("utf8");
+    socket.on("data", () => {
+      socket.end(
+        `${JSON.stringify({
+          type: "status",
+          command: "status",
+          diagnostics: {
+            pid: 42,
+            sql: {
+              since: now - 300_000,
+              measuredAt: now,
+              queries: {
+                since: now - 300_000,
+                until: now,
+                trackedQueries: 1,
+                topByTotalTime: [
+                  {
+                    id: "get:defaultsocket",
+                    operation: "get",
+                    sql: "SELECT value FROM configured_socket WHERE id = ?",
+                    calls: 1,
+                    totalMs: 1_250,
+                    averageMs: 1_250,
+                    maxMs: 1_250,
+                  },
+                ],
+                topByWorstTime: [],
+              },
+            },
+          },
+        })}\n`,
+      );
+    });
+  });
+  try {
+    await new Promise<void>((resolve) => server.listen(socketPath, resolve));
+    const metric = reliabilityMetrics.find(
+      (item) => item.id === SQL_LATENCY_METRIC,
+    )!;
+    const env = { ...process.env, MAY_PERSIST_DIR: root };
+    delete env.MAY_CONTROL_SOCKET;
+    delete env.MAY_INSTANCE;
+    delete env.MAY_INTERFACE_AGENT;
+    const producer = Bun.spawn(["/bin/sh", "-lc", metric.sourceCommand!], {
+      env,
+      stdout: "pipe",
+      stderr: "pipe",
+    });
+    const [stdout, stderr, exitCode] = await Promise.all([
+      new Response(producer.stdout).text(),
+      new Response(producer.stderr).text(),
+      producer.exited,
+    ]);
+    expect(exitCode, stderr).toBe(0);
+    expect(JSON.parse(stdout)).toMatchObject({
+      value: 1_250,
+      sampleSize: 1,
+      measuredAt: now,
+    });
+  } finally {
+    await new Promise<void>((resolve) => server.close(() => resolve()));
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
 test("Host source collection retains diagnostic evidence and opens one metric breach episode", async () => {
   const root = mkdtempSync(join(tmpdir(), "may-sql-latency-source-"));
   const socketPath = join(root, "diagnostics.sock");
@@ -503,7 +574,9 @@ test("May schedules one normal collection opportunity every five minutes without
 
 test("declared reliability metrics collect through the Host and retain a real breach and recovery", async () => {
   const root = mkdtempSync(join(tmpdir(), "may-reliability-collection-"));
+  const previousSocket = process.env.MAY_CONTROL_SOCKET;
   try {
+    process.env.MAY_CONTROL_SOCKET = join(root, "missing.sock");
     const store = getDb(root);
     const reporting = createAppReporting(() => store);
     reporting.syncDefinitions([{ definition: app }]);
@@ -566,6 +639,8 @@ test("declared reliability metrics collect through the Host and retain a real br
         .get(alertId),
     ).toMatchObject({ resolved_at: expect.any(Number) });
   } finally {
+    if (previousSocket === undefined) delete process.env.MAY_CONTROL_SOCKET;
+    else process.env.MAY_CONTROL_SOCKET = previousSocket;
     closeDb(root);
     rmSync(root, { recursive: true, force: true });
   }

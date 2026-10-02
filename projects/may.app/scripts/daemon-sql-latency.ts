@@ -192,12 +192,13 @@ export function sqlLatencySample(
 }
 
 export function defaultControlSocket(): string {
-  const stateDir =
-    process.env.STATE_DIR || resolve(process.env.APP_ROOT || "/app", ".state");
-  return (
-    process.env.MAY_CONTROL_SOCKET ||
-    resolve(stateDir, "instances/default/may.sock")
-  );
+  const configured = (value: string | undefined) => value?.trim() || "";
+  const explicit = configured(process.env.MAY_CONTROL_SOCKET);
+  if (explicit) return explicit;
+  const persistDir = configured(process.env.MAY_PERSIST_DIR) || "/app/.state";
+  const instance = configured(process.env.MAY_INSTANCE) || "background";
+  const interfaceAgent = configured(process.env.MAY_INTERFACE_AGENT) || "may";
+  return resolve(persistDir, "instances", instance, `${interfaceAgent}.sock`);
 }
 
 export function readDiagnosticStatus(
