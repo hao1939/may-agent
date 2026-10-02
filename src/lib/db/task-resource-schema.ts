@@ -85,6 +85,8 @@ CREATE TABLE IF NOT EXISTS app_task_condition_routes (
 );
 CREATE INDEX IF NOT EXISTS idx_app_task_condition_routes_task
   ON app_task_condition_routes(app_id, task_id, condition_id);
+CREATE INDEX IF NOT EXISTS idx_app_task_condition_routes_condition
+  ON app_task_condition_routes(condition_id, app_id, task_id);
 CREATE TABLE IF NOT EXISTS app_task_receipts (
   app_id TEXT NOT NULL, receipt_id TEXT NOT NULL, parent_id TEXT NOT NULL,
   completed_at INTEGER NOT NULL, receipt_json TEXT NOT NULL,
