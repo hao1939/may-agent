@@ -1196,10 +1196,18 @@ function recoverInterruptedAppTasks(
       }
     }
     const appDb = opts.persistDir ? getDb(opts.persistDir) : undefined;
-    const orphanedInputRepairs = appDb
-      ? repairOrphanedInboxTaskInputs(
-          config,
-          (appDb.prepare(
+    const orphanedInputPageSize = 512;
+    const orphanedInputPageLimit = appDb
+      ? Math.ceil(
+          ((appDb.prepare(
+            `SELECT COUNT(*) AS count FROM app_inbox_items
+             WHERE app_id = ? AND status = 'handling' AND waiting_on_kind = 'task'
+               AND waiting_on_id IS NOT NULL AND task_admission_key IS NOT NULL`,
+          ).get(descriptor.id) as { count: number }).count) / orphanedInputPageSize,
+        )
+      : 0;
+    for (let page = 0; appDb && page < orphanedInputPageLimit; page += 1) {
+      const candidates = appDb.prepare(
             `SELECT inbox.waiting_on_id AS taskId, inbox.task_admission_key AS admissionKey
              FROM app_inbox_items inbox
              JOIN app_task_admissions admission
@@ -1260,12 +1268,13 @@ function recoverInterruptedAppTasks(
                  )
                )
              ORDER BY inbox.changed_at, inbox.id LIMIT 512`,
-          ).all(descriptor.id) as Array<{ taskId: string; admissionKey: string }>),
-        )
-      : [];
-    for (const repair of orphanedInputRepairs) {
-      if (controller && !descriptor.reconciliationPaused) {
-        enqueueAppTask(controller, config, repair.taskId);
+      ).all(descriptor.id) as Array<{ taskId: string; admissionKey: string }>;
+      if (candidates.length === 0) break;
+      const pageRepairs = repairOrphanedInboxTaskInputs(config, candidates);
+      for (const repair of pageRepairs) {
+        if (controller && !descriptor.reconciliationPaused) {
+          enqueueAppTask(controller, config, repair.taskId);
+        }
       }
     }
     const dependencyRepairs = appDb
