@@ -537,13 +537,16 @@ continuation or explicit `reviewAt`, the worker re-arms the recovery index and
 returns without calling the agent, adding an attempt or changing observation
 timestamps. Storage failures retain retryable recovery work.
 
-Existing saved Condition timers may leave old due index entries. Their next
-check follows the same code-only path and replaces the index date; no migration
-or invented input is needed. Task and input-level explicit review deadlines
-remain effective. Human waits remain visible between checks.
+Startup repairs missing or overly late recovery indexes for existing open
+waits. It schedules a code-only check, respecting execution backoff, so a result
+saved after startup can still be recovered if its notification is lost. The
+worker then restores the normal recovery cadence. Earlier indexed deadlines,
+Task and input-level explicit review decisions, and canonical Task/Condition
+state remain intact. This repairs derived indexes without a manual state
+migration or invented input. Human waits remain visible between checks.
 
 **Source availability:** implemented in Host/SDK
-[`c933c365b`](https://github.com/hao1939/may-agent/commit/c933c365bb01093f67d83e6b1f65a453cd558216).
+[`47aadcfed`](https://github.com/hao1939/may-agent/commit/47aadcfed8254ced9b7e9d46f720c983385c6876).
 Earlier Hosts invoke agents for Condition
 checkpoints and require `reviewAfterMs` on new explicit Conditions. Integrate and
 activate the Host before App producers rely on omitted intervals. This contract
