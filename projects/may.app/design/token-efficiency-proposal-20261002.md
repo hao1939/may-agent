@@ -5,7 +5,7 @@
 **Choice basis:** [Value and cost](../../may-agent.app/docs/1-principles/design-philosophy.md#value-and-cost); [agent decisions and infra execution](../../may-agent.app/docs/1-principles/code-vs-data.md); [safe retry ownership](../../may-agent.app/docs/2a-design/system-boundary.md#retry-and-recovery-ownership).
 
 **Design status:** Proposed efficiency follow-up and retained October 2 audit.
-**Implementation status (2026-10-03):** Mixed; use the disposition below. No deployment or new usage comparison was performed in this review.
+**Implementation status (2026-10-03):** Mixed; use the disposition and dated rollout evidence below. No new usage comparison has established sustained savings.
 
 ## Current disposition
 
@@ -27,7 +27,7 @@ remain separate evidence.
 ## October 3 source follow-up
 
 [Host `7b416af40`](https://github.com/hao1939/may-agent/commit/7b416af40), under
-review in [#295](https://github.com/hao1939/may-agent/pull/295), groups exact result
+merged in [#295](https://github.com/hao1939/may-agent/pull/295), groups exact result
 deliveries, runs pure App validation before terminal finish, and clears redundant
 clock wakes when an attempt settles. The accompanying Apps revision supplies durable GitHub event
 identity, actionable Condition examples, one hygiene timer and the updated
@@ -54,9 +54,35 @@ unseen facts and allowing a later scheduled review. The grouped-delivery fixture
 also covers 105 Topics across the 100-link limit and restart. Validator-only
 callers activate the same correction path without needing an output schema.
 
-These are source and fixture results. They do not measure live token savings,
-prove agent comprehension, or rewrite already pending duplicate inputs. No
-production Task state or deployment changed in this follow-up.
+These source and fixture results do not measure live token savings, prove agent
+comprehension, or rewrite already pending duplicate inputs.
+
+## October 3 rollout verification
+
+After explicit operator authorization, merged Host #295 was deployed at
+07:37 Shanghai. The exact receipt is
+`/app/projects/may-agent/.state/deploy-receipts/merged-295-metric-handoff-20261003.json`:
+source `8fa6eddc2f540ae0bf68ff1327b773397661a986`, phase `succeeded`, healthy,
+and `duplicateDeploy: false`. The receipt, staged provenance and live binary
+agree on SHA-256
+`74057dfb0e6e68478a9db05c23ccd91221c0e75d1d72f4db7f864fe6c51c8f72`.
+All three long-lived services were running and HTTP readiness passed.
+
+The combined #295 App companion and receiving-owner metric fix were merged
+locally as `2b9e2d5b7e1c8740d0de7127748833e454b5c874`. A source-pinned normal
+reload returned that same commit in `runtime.reload.finished` event 6632518;
+the active immutable release manifest and metric workflow bytes match it.
+Evidence is retained under `/app/.state/metric-handoff-rollout-20261003/`.
+
+Before integration the combined May suite passed 176 tests with one optional
+skip and no failures; App type and design checks passed. After merging the
+concurrent equivalent source fix, the 24 affected tests and design checks passed.
+The regressions exercise real Host settlement, same-input recovery, restart and
+quiet samples with scripted owner decisions. They do not prove model quality or
+sustained savings. The original replaying Task had already been moved to an
+agent executor by May; its later convergence cannot be attributed to this
+workflow activation. No synthetic repair event or direct Task-store mutation
+was used to claim live recovery.
 
 ## Proposed outcome
 
@@ -66,7 +92,8 @@ The agent decides what work is useful and what change should invite another judg
 
 Verify the integrated completion and review-clock repairs, then assess tighter review policy, bounded context and reusable consumption monitoring. Keep the current Task and investigation identities; no additional scheduler or issue registry is required.
 
-This document proposes implementation and verification work. It does not claim that the fixes are deployed.
+Deployment claims apply only to the exact slices in the dated rollout record.
+The remaining proposals still require implementation or outcome verification.
 
 ## Evidence and confidence
 

@@ -3,11 +3,13 @@
 **Supports:** [Evidence-driven improvement](../../may-agent.app/docs/2a-design/system-model.md#improve-from-evidence-and-make-problems-actionable).
 **Choice basis:** [Agent decisions and mechanical execution](../../may-agent.app/docs/1-principles/code-vs-data.md).
 
-**Status:** Source implementation with Host integration coverage. The breach-only
-investigation policy requires installation adoption; source checks do not prove
-live retirement of older sample Conditions. The receiving-owner judgment change
-below is a source candidate, tested against merged Host #295, not an activation
-or live recovery claim.
+**Status:** Source implementation with Host integration coverage. The receiving-owner
+judgment and #295 companion changes were activated on October 3 in App release
+`2b9e2d5b7e1c8740d0de7127748833e454b5c874`, paired with Host
+`8fa6eddc2f540ae0bf68ff1327b773397661a986`. See the
+[rollout evidence](token-efficiency-proposal-20261002.md#october-3-rollout-verification).
+Activation does not prove that every older sample Condition was retired or
+establish sustained token savings.
 
 The old helper prepared a metric fact, then asked the agent to save its next
 review time, create work and copy its Task ID separately. The observed failure
