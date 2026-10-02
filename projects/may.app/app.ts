@@ -1,6 +1,7 @@
 import {
   Type,
   defineApp,
+  type AppDefinition,
   type AppEvent,
   type AppInput,
   type AppTaskAttachment,
@@ -16,6 +17,8 @@ import {
   reliabilityMetrics,
   REVIEW_LAG_METRIC,
 } from "./reliability-metrics.js";
+
+import retiredAksMetrics from "./retired-aks-metrics.json" with { type: "json" };
 
 import { createMetricEvidenceObserver } from "./watchers/metric-evidence.js";
 import {
@@ -479,7 +482,10 @@ export function evaluationTaskReportInput(
 
 export default defineApp({
   id: "may",
-  metrics: reliabilityMetrics,
+  metrics: [
+    ...reliabilityMetrics,
+    ...(retiredAksMetrics as NonNullable<AppDefinition["metrics"]>),
+  ],
   version: 1,
   agent: "may",
   workspace: { kind: "git", localPath: ".", branch: "main" },
