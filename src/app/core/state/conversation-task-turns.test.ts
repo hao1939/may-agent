@@ -1752,7 +1752,7 @@ test("recovery indexes the target Task without changing legacy JSON identity com
   const prepare = f.db.prepare.bind(f.db);
   let recoverySql = "";
   const capture = spyOn(f.db, "prepare").mockImplementation((sql) => {
-    if (sql.includes("WITH live_conversations")) recoverySql = sql;
+    if (sql.includes("live_conversations AS MATERIALIZED")) recoverySql = sql;
     return prepare(sql);
   });
   try {
@@ -1768,9 +1768,10 @@ test("recovery indexes the target Task without changing legacy JSON identity com
     }
     const plan = prepare(`EXPLAIN QUERY PLAN ${recoverySql}`).all(app.id, app.id, app.id, 100);
     const admissionLookups = plan.map((step) => String(step.detail)).filter((detail) => detail.startsWith("SEARCH admission "));
-    expect(admissionLookups).toHaveLength(2);
-    for (const lookup of admissionLookups)
-      expect(lookup).toContain("idx_app_task_admissions_target_text (app_id=? AND <expr>=?)");
+    expect(admissionLookups).toEqual([
+      expect.stringContaining("idx_app_task_admissions_target_text (app_id=? AND <expr>=?)"),
+    ]);
+    expect(plan.filter((step) => String(step.detail).includes("MATERIALIZE selected_reports"))).toHaveLength(1);
     expect(plan.filter((step) => String(step.detail).includes("MATERIALIZE live_conversations"))).toHaveLength(1);
     f.db.prepare("UPDATE app_task_admissions SET admission_json = ? WHERE app_id = ? AND task_id = ?")
       .run(admission.admission_json, app.id, admission.task_id);
