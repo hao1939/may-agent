@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it } from "bun:test";
 import { execFile } from "node:child_process";
-import { existsSync, mkdirSync, readFileSync, renameSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, renameSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { promisify } from "node:util";
@@ -227,6 +227,161 @@ describe("App source releases", () => {
     mkdirSync(join(root, "shared", "tools"), { recursive: true });
     writeFileSync(join(root, "shared", "tools", "untracked.ts"), "export const value = 1;\n");
     expect(() => new DefinitionSourceReleaseStore(root, stateDir).stage()).toThrow("untracked executable/config files");
+  });
+
+  it.each(["shared", "agent", "app-agent"])(
+    "requires configured manual skills and references to be committed before reload (%s)",
+    async (scope) => {
+      const { root, stateDir } = await fixture();
+      const skillRoot = scope === "shared" ? "shared/skills"
+        : scope === "agent" ? "agents/worker/skills" : "projects/sample.app/agents/worker/skills";
+      const manualRoot = "projects/sample.app/docs/manual";
+      mkdirSync(join(root, skillRoot), { recursive: true });
+      mkdirSync(join(root, manualRoot, "existing"), { recursive: true });
+      writeFileSync(join(root, manualRoot, "existing/SKILL.md"), "---\nname: existing\ndescription: Existing manual\n---\nExisting guidance");
+      writeFileSync(join(root, skillRoot, "paths.json"), JSON.stringify([
+        scope === "shared" ? "../../projects/sample.app/docs/manual"
+          : scope === "agent" ? "../../../projects/sample.app/docs/manual" : "../../../docs/manual",
+      ]));
+      await git(root, "add", skillRoot, manualRoot);
+      await git(root, "commit", "-qm", "configure manual discovery");
+      const store = new DefinitionSourceReleaseStore(root, stateDir);
+      const active = store.ensureCurrent();
+
+      for (const file of ["new-guide/SKILL.md", "existing/references/使用说明.txt", "contract.md"]) {
+        const pinned = store.stage();
+        const sourcePath = join(manualRoot, file);
+        mkdirSync(join(root, sourcePath, ".."), { recursive: true });
+        writeFileSync(join(root, sourcePath), "New manual source\n");
+        expect(() => store.stage()).toThrow(sourcePath);
+        expect(store.current()?.id).toBe(active.id);
+        // An explicit pin still selects the committed tree, not local additions.
+        expect(store.stage(pinned.sourceCommit).id).toBe(pinned.id);
+        expect(existsSync(join(active.root, sourcePath))).toBeFalse();
+        await git(root, "add", sourcePath);
+        await git(root, "commit", "-qm", "include manual source");
+        const next = store.stage();
+        expect(readFileSync(join(next.root, sourcePath), "utf8")).toBe("New manual source\n");
+      }
+    },
+  );
+
+  it.each([true, false])("rejects skill roots omitted from the snapshot without replacing the active release (git: %s)", async (withGit) => {
+    const { root, stateDir } = await fixture(withGit);
+    const store = new DefinitionSourceReleaseStore(root, stateDir);
+    const active = store.ensureCurrent();
+    const manual = join(root, "docs", "manual", "guide");
+    mkdirSync(manual, { recursive: true });
+    writeFileSync(join(manual, "SKILL.md"), "---\nname: guide\ndescription: Guide\n---\nGuidance");
+    const pathsFile = join(root, "shared", "skills", "paths.json");
+    writeFileSync(pathsFile, JSON.stringify(["../../docs/manual"]));
+    let pin: string | undefined;
+    if (withGit) {
+      await git(root, "add", "docs", "shared/skills/paths.json");
+      await git(root, "commit", "-qm", "configure uncaptured manuals");
+      pin = String((await git(root, "rev-parse", "HEAD")).stdout).trim();
+    }
+    expect(() => store.stage()).toThrow("Invalid skill discovery paths in captured App source");
+    if (pin) {
+      // A valid local edit cannot repair the selected, invalid commit.
+      writeFileSync(pathsFile, "[]");
+      expect(() => store.stage(pin)).toThrow("Invalid skill discovery paths in captured App source");
+    }
+    expect(store.current()?.id).toBe(active.id);
+  });
+
+  it.each([true, false])("rejects configured roots pointing back into mutable source (git: %s)", async (withGit) => {
+    const { root, stateDir } = await fixture(withGit);
+    symlinkSync(join(root, "shared", "skills", "sample"), join(root, "projects", "sample.app", "manual"));
+    writeFileSync(join(root, "shared", "skills", "paths.json"), JSON.stringify(["../../projects/sample.app/manual"]));
+    if (withGit) {
+      await git(root, "add", "projects/sample.app/manual", "shared/skills/paths.json");
+      await git(root, "commit", "-qm", "link mutable manual source");
+    }
+    expect(() => new DefinitionSourceReleaseStore(root, stateDir).stage()).toThrow("escapes captured App source");
+  });
+
+  it.each([true, false])("keeps relative skill links inside the captured tree (git: %s)", async (withGit) => {
+    const { root, stateDir } = await fixture(withGit);
+    const appRoot = join(root, "projects", "sample.app");
+    mkdirSync(join(appRoot, "docs", "manual", "guide"), { recursive: true });
+    writeFileSync(join(appRoot, "docs", "manual", "guide", "SKILL.md"), "Captured guidance");
+    writeFileSync(join(appRoot, "docs", "contract.md"), "Captured contract");
+    symlinkSync("../../contract.md", join(appRoot, "docs", "manual", "guide", "contract.md"));
+    symlinkSync("docs/manual", join(appRoot, "manual"));
+    writeFileSync(join(root, "shared", "skills", "paths.json"), JSON.stringify(["../../projects/sample.app/manual"]));
+    if (withGit) {
+      await git(root, "add", "projects/sample.app", "shared/skills/paths.json");
+      await git(root, "commit", "-qm", "link captured manual source");
+    }
+    const release = new DefinitionSourceReleaseStore(root, stateDir).stage();
+    writeFileSync(join(appRoot, "docs", "manual", "guide", "SKILL.md"), "Changed live guidance");
+    writeFileSync(join(appRoot, "docs", "contract.md"), "Changed live contract");
+    expect(readFileSync(join(release.projectsRoot, "sample.app", "manual", "guide", "SKILL.md"), "utf8")).toBe("Captured guidance");
+    expect(readFileSync(join(release.projectsRoot, "sample.app", "manual", "guide", "contract.md"), "utf8")).toBe("Captured contract");
+  });
+
+  it.each([true, false])("rejects manual references outside the captured tree without replacing the active release (git: %s)", async (withGit) => {
+    const { root, stateDir } = await fixture(withGit);
+    const store = new DefinitionSourceReleaseStore(root, stateDir);
+    const active = store.ensureCurrent();
+    const manual = join(root, "projects", "sample.app", "docs", "manual");
+    mkdirSync(manual, { recursive: true });
+    writeFileSync(join(manual, "SKILL.md"), "Read [contract](contract.md)");
+    const external = join(root, "contract.md");
+    writeFileSync(external, "Mutable source");
+    symlinkSync(external, join(manual, "contract.md"));
+    writeFileSync(join(root, "shared", "skills", "paths.json"), JSON.stringify(["../../projects/sample.app/docs/manual"]));
+    if (withGit) {
+      await git(root, "add", "projects/sample.app/docs", "shared/skills/paths.json");
+      await git(root, "commit", "-qm", "link mutable manual reference");
+    }
+    expect(() => store.stage()).toThrow("escapes captured App source");
+    expect(store.current()?.id).toBe(active.id);
+  });
+
+  it.each([true, false])("rejects path configuration linked to mutable or missing source (git: %s)", async (withGit) => {
+    const { root, stateDir } = await fixture(withGit);
+    const config = join(root, "path-config.json");
+    writeFileSync(config, "[]");
+    symlinkSync(config, join(root, "shared", "skills", "paths.json"));
+    if (withGit) {
+      await git(root, "add", "path-config.json", "shared/skills/paths.json");
+      await git(root, "commit", "-qm", "link mutable configuration");
+    }
+    const store = new DefinitionSourceReleaseStore(root, stateDir);
+    expect(() => store.stage()).toThrow("escapes captured App source");
+    rmSync(config);
+    const pin = withGit ? String((await git(root, "rev-parse", "HEAD")).stdout).trim() : undefined;
+    // Snapshot validation must reject the entry even before its target exists.
+    expect(() => store.stage(pin)).toThrow("Invalid skill discovery paths in captured App source");
+    expect(store.current()).toBeNull();
+  });
+
+  it.each(["configuration", "reference"])("validates cached and activated snapshots independently of mutable %s", async (failure) => {
+    const { root, stateDir } = await fixture();
+    const store = new DefinitionSourceReleaseStore(root, stateDir);
+    const active = store.ensureCurrent();
+    const pathsFile = join(root, "shared", "skills", "paths.json");
+    writeFileSync(pathsFile, "[]");
+    await git(root, "add", "shared/skills/paths.json");
+    await git(root, "commit", "-qm", "valid path configuration");
+    const pin = String((await git(root, "rev-parse", "HEAD")).stdout).trim();
+    writeFileSync(pathsFile, '["../../missing"]');
+    const candidate = store.stage(pin);
+    expect(readFileSync(join(candidate.sharedRoot, "skills", "paths.json"), "utf8")).toBe("[]");
+
+    // Simulate a cached release made by an older Host which accepted bad paths.
+    if (failure === "configuration") {
+      writeFileSync(join(candidate.sharedRoot, "skills", "paths.json"), '["../../missing"]');
+    } else {
+      const external = join(root, "mutable-contract.md");
+      writeFileSync(external, "Mutable contract");
+      symlinkSync(external, join(candidate.sharedRoot, "skills", "sample", "contract.md"));
+    }
+    expect(() => store.stage(pin)).toThrow("Invalid skill discovery paths in captured App source");
+    expect(() => store.activate(candidate)).toThrow("Invalid skill discovery paths in captured App source");
+    expect(store.current()?.id).toBe(active.id);
   });
 
   it("keeps minimal non-git sandboxes valid without inventing shared guidance", async () => {
