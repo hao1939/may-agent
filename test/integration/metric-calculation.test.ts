@@ -171,6 +171,64 @@ describe("sample calculations and alert transitions", () => {
     expect(events.map(({ type }) => type)).toEqual(["metric.breach", "metric.recovered"]);
   });
 
+  it("evaluates no recorded progress independently of value freshness and restarts its clock on change", () => {
+    const { root, service, events, at } = fixture();
+    let metrics = service();
+    const id = "cadenced-counter";
+    metrics.define({
+      id, type: "counter", threshold: 1000, alertOp: ">", measureInterval: 60_000,
+      config: { alert: { mode: "rate", stall_after_ms: 300_000 } },
+    });
+    expect(metrics.evaluate(id)[0]?.status).toBe("unknown");
+    metrics.record(id, 10);
+    at(60_000);
+    metrics.record(id, 10);
+    at(180_001);
+    expect(metrics.evaluate(id)[0]).toMatchObject({ status: "unknown", calculation: { value: null } });
+    expect(events).toEqual([]);
+    // Staleness makes the value unknown, but the no-progress deadline still runs.
+    at(300_001);
+    expect(metrics.evaluate(id)[0]).toMatchObject({ status: "breached", calculation: { value: null } });
+    const opening = events[0];
+    expect(opening.data).toMatchObject({ alertType: "stall", current: null });
+    closeDb(root);
+    metrics = service();
+    metrics.record(id, 12, { measuredAt: 900_000 });
+    expect(metrics.evaluate(id)[0]?.status).toBe("breached");
+    at(330_000);
+    metrics.record(id, 10);
+    expect(metrics.evaluate(id)[0]?.status).toBe("breached");
+    expect(events).toEqual([opening]);
+    at(400_000);
+    metrics.record(id, 11);
+    expect(metrics.evaluate(id)[0]?.status).toBe("recovered");
+    expect(events[1].data?.alertId).toBe(opening.data?.alertId);
+    at(700_000);
+    expect(metrics.evaluate(id)[0]?.status).toBe("unknown");
+    at(700_001);
+    expect(metrics.evaluate(id)[0]?.status).toBe("breached");
+    expect(events.map(({ type }) => type)).toEqual(["metric.breach", "metric.recovered", "metric.breach"]);
+  });
+
+  it("does not use stale numeric evidence to breach a counter's threshold or rate", () => {
+    const { service, events, at } = fixture();
+    const metrics = service();
+    const id = "stale-counter";
+    metrics.define({
+      id, type: "counter", threshold: 100, alertOp: ">", measureInterval: 60_000,
+      config: { alert: { mode: "rate", max_rate: 1, stall_after_ms: 300_000 } },
+    });
+    metrics.record(id, 0);
+    at(60_000);
+    metrics.record(id, 200);
+    at(180_001);
+    expect(metrics.evaluate(id)[0]?.status).toBe("unknown");
+    expect(events).toEqual([]);
+    at(360_001);
+    expect(metrics.evaluate(id)[0]?.status).toBe("breached");
+    expect(events[0].data?.alertType).toBe("stall");
+  });
+
   it("rejects invalid calculation policies before changing a definition", () => {
     const { service } = fixture();
     const metrics = service();
