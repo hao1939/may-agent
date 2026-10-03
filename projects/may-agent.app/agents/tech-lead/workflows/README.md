@@ -7,3 +7,11 @@ is useful enough to outgrow a direct agent attempt.
 explicit App-local workflow or the selected agent. The App owns the Task,
 `tech-lead` is its default execution profile, and May remains the human-facing
 deputy.
+
+`platform-owner-review` uses the SDK's current Task result schema and adds only
+its owner-signal disclosure. It preserves the owner's decision: a request does
+not create a wait unless the owner declares a Condition. Supporting evidence
+belongs in `facts`, including an unsuccessful attempt's partial results.
+
+Each App's `app.test.ts` checks its own schedules and input routing. Apps may
+use different schedules or none; a common owner heartbeat is not a requirement.

@@ -20,9 +20,7 @@ import {
   platformOwnerResultSchema,
 } from "./platform-owner-review.ts";
 
-type OwnerResult = Omit<TaskReconcileResult, "state"> & {
-  state: "converged" | "waiting";
-};
+type OwnerResult = Exclude<TaskReconcileResult, { state: "needs-agent" }>;
 
 describe("platform-owner-review", () => {
   const tempDirs: string[] = [];
@@ -52,7 +50,7 @@ describe("platform-owner-review", () => {
         directOwnerSignalCount: 0,
         directOwnerSignals: [],
       },
-      evidence: ["packet:.state/review-packet.json"],
+      facts: ["packet:.state/review-packet.json"],
       actions: [],
     };
     const observed: { prompt: string; schema?: unknown } = { prompt: "" };
@@ -74,7 +72,6 @@ describe("platform-owner-review", () => {
         generation: 7,
         resourceVersion: 19,
         owner: "tech-lead",
-        mode: "maintain",
         outcome: "Keep platform state reviewed.",
         acceptance: ["A bounded owner judgment is preserved."],
         input: { scope: "may-agent-platform" },
@@ -120,8 +117,12 @@ describe("platform-owner-review", () => {
       agents: {
         call: async (_agent: string, prompt: string, options?: unknown) => {
           observed.prompt = prompt;
-          observed.schema = (options as { schema?: unknown } | undefined)
-            ?.schema;
+          observed.schema = (
+            options as { schema?: unknown } | undefined
+          )?.schema;
+          if (result.status === "done") {
+            expect(Check(platformOwnerResultSchema, result.output)).toBe(true);
+          }
           duringOwnerRun?.(appDir);
           return result;
         },
@@ -135,12 +136,6 @@ describe("platform-owner-review", () => {
         }),
       },
       events: { emit: async () => {} },
-      metrics: {
-        define: () => {},
-        defineMany: () => {},
-        record: () => {},
-        evaluate: () => [],
-      },
       workspace: {
         appRoot: appDir,
         projectRoot: projectDir,
@@ -173,37 +168,43 @@ describe("platform-owner-review", () => {
     }
   });
 
-  it("normalizes contradictory converged child creation to waiting", () => {
-    const result = normalizeOwnerResult({
-      state: "converged",
-      summary: "Acceptance remains unmet; delegate the continuation.",
-      evidence: ["execution:exec_1"],
-      actions: [
-        {
-          kind: "create-task",
-          id: "required-continuation",
-          parentId: "runtime/platform-owner-review",
-          outcome: "Complete and verify the unmet acceptance items.",
-          mode: "achieve",
-          outputs: [],
-          acceptance: ["All remaining acceptance items are verified."],
-          priority: "P1",
-          owner: "dev",
-        },
-      ],
-    });
-
-    expect(result.state).toBe("waiting");
-    expect(result.evidence).toContain(
-      "owner-result-normalized: create-task actions require waiting until delegated work converges",
-    );
+  it("preserves the owner's decision about whether a request needs a wait", () => {
+    const request = {
+      id: "review-result",
+      appId: "evaluation",
+      input: {
+        kind: "review-task-outcome",
+        data: { appId: "may-agent", taskId: "runtime/platform-owner-review" },
+      },
+    };
+    const results: OwnerResult[] = [
+      {
+        state: "converged",
+        summary: "Delivered the repair; request an independent review.",
+        facts: ["artifact:verified-repair"],
+        requests: [request],
+      },
+      {
+        state: "waiting",
+        summary: "The requested review is needed before proceeding.",
+        facts: ["artifact:review-candidate"],
+        requests: [request],
+        conditions: [{ requestId: request.id }],
+        continue: true,
+      },
+    ];
+    for (const ownerResult of results) {
+      const result = normalizeOwnerResult(ownerResult);
+      expect(result).toMatchObject(ownerResult);
+      expect(Check(platformOwnerResultSchema, result)).toBe(true);
+    }
   });
 
   it("always normalizes the direct owner signal disclosure", () => {
     const noSignalResult = normalizeOwnerResult({
       state: "converged",
       summary: "The existing owner lineage already covers the obligation.",
-      evidence: ["receipt:existing-owner-lineage"],
+      facts: ["receipt:existing-owner-lineage"],
       actions: [],
     });
     expect(noSignalResult.result).toMatchObject({
@@ -211,11 +212,16 @@ describe("platform-owner-review", () => {
       directOwnerSignals: [],
     });
     expect(Check(platformOwnerResultSchema, noSignalResult)).toBe(true);
+    const { facts, ...withoutFacts } = noSignalResult;
+    expect(Check(platformOwnerResultSchema, withoutFacts)).toBe(false);
+    expect(
+      Check(platformOwnerResultSchema, { ...withoutFacts, evidence: facts }),
+    ).toBe(false);
     expect(
       Check(platformOwnerResultSchema, {
         state: "converged",
         summary: "Missing the required disclosure.",
-        evidence: [],
+        facts: [],
       }),
     ).toBe(false);
 
@@ -228,7 +234,7 @@ describe("platform-owner-review", () => {
           "recipient:dev; purpose:repair; receipt:message-123",
         ],
       },
-      evidence: ["message:message-123"],
+      facts: ["message:message-123"],
       actions: [],
     });
     expect(signaledResult.result).toMatchObject({
@@ -248,6 +254,7 @@ describe("platform-owner-review", () => {
       summary: harness.ownerResult.summary,
       output: harness.ownerResult,
     });
+    expect(Check(platformOwnerResultSchema, result.output)).toBe(true);
     const resultSchema = JSON.stringify(harness.observed.schema);
     expect(resultSchema).toContain("directOwnerSignalCount");
     expect(resultSchema).toContain("directOwnerSignals");
@@ -321,6 +328,37 @@ describe("platform-owner-review", () => {
     });
   });
 
+  it("retains an unsuccessful attempt through the current result contract", async () => {
+    const ownerResult: OwnerResult = {
+      state: "incomplete",
+      summary: "The inspected repair is still failing verification.",
+      facts: ["check:focused-regression-failed"],
+      result: { directOwnerSignalCount: 0, directOwnerSignals: [] },
+    };
+    const harness = makeHarness({
+      id: "exec_owner_incomplete",
+      kind: "agent",
+      status: "done",
+      summary: ownerResult.summary,
+      output: ownerResult,
+    });
+    const result = await execute(harness.ctx);
+    expect(result).toMatchObject({ status: "done", output: ownerResult });
+    expect(
+      JSON.parse(
+        readFileSync(
+          join(
+            harness.appDir,
+            ".state",
+            "owner-review-artifacts",
+            "event-5030987.json",
+          ),
+          "utf-8",
+        ),
+      ),
+    ).toMatchObject({ status: "incomplete", owner_result: ownerResult });
+  });
+
   it("returns waiting when the owner execution fails on authentication", async () => {
     const authError =
       "AuthenticationError: Github_copilotException unauthorized: token expired";
@@ -332,6 +370,7 @@ describe("platform-owner-review", () => {
     });
 
     const result = await execute(harness.ctx);
+    expect(Check(platformOwnerResultSchema, result.output)).toBe(true);
     expect(result).toMatchObject({
       status: "done",
       output: {

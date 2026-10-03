@@ -1,16 +1,15 @@
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
+import { Check } from "typebox/value";
 import {
   Type,
-  taskOwnerResultSchema,
+  taskAgentResultSchema,
   type ExecutionResult,
   type TaskReconcileResult,
   type WorkflowContext,
 } from "@may-agent/sdk";
 
-type OwnerResult = Omit<TaskReconcileResult, "state"> & {
-  state: "converged" | "waiting";
-};
+type OwnerResult = Exclude<TaskReconcileResult, { state: "needs-agent" }>;
 
 const directOwnerSignalDisclosureSchema = Type.Object(
   {
@@ -20,21 +19,17 @@ const directOwnerSignalDisclosureSchema = Type.Object(
   { additionalProperties: true },
 );
 
-export const platformOwnerResultSchema = Type.Object(
-  {
-    ...taskOwnerResultSchema.properties,
-    result: directOwnerSignalDisclosureSchema,
-  },
-  { additionalProperties: false },
-);
+export const platformOwnerResultSchema = Type.Intersect([
+  taskAgentResultSchema,
+  Type.Object({ result: directOwnerSignalDisclosureSchema }),
+]);
 
 type OwnerAuthFailure = {
   provider: string;
   detail: string;
 };
 
-type OwnerReviewArtifactStatus =
-  "pending" | "blocked" | "waiting" | "converged";
+type OwnerReviewArtifactStatus = "pending" | "blocked" | OwnerResult["state"];
 
 type OwnerReviewArtifact = {
   generated_at: string;
@@ -171,7 +166,6 @@ async function buildReviewPacket(
       generation: reconciliation.generation,
       resource_version: reconciliation.resourceVersion,
       owner: reconciliation.owner,
-      mode: reconciliation.mode,
       outcome: reconciliation.outcome,
       acceptance: reconciliation.acceptance,
       input: reconciliation.input,
@@ -272,10 +266,9 @@ export function buildOwnerPrompt(input: {
     "- If you edit files, run focused checks and cite them before finish.",
     "- The generic reconciler is the sole task-tree mutation authority. Never edit task-tree JSON, call task-tree mutation commands, or write task state through the database.",
     "- Return task-tree changes only as typed actions in finish. Existing-task actions require the exact generation shown in the packet.",
-    "- For an unfinished owner message, create required delegated work as a direct child of runtime/platform-owner-review and return waiting. Routing or task creation is progress, not message completion.",
-    "- Return converged only when the bounded request is handled and no required delegated child remains live.",
+    "- Submit independently owned work through requests. When its answer is needed, return waiting and conditions:[{requestId: id}]. A request alone does not establish a wait or answer unfinished input.",
     "- Never mutate or create task ids beginning with runtime/; those standing responsibilities belong to the reconciler.",
-    "- Use converged after the current bounded actions are declared, and waiting only for a named external fact with an exact Condition that an observer can emit.",
+    "- Use converged when the considered input is answered. Use waiting for unfinished input, with continue:true for useful work or an exact Condition for a needed external fact. Use incomplete with supporting facts when the attempt is unsuccessful.",
     "- Every waiting Condition subject must be typed (for example event:5011463, session:s_123, pull-request:77); bare numeric ids or free-text subjects are rejected by the task-handler contract.",
     "- An evidence-backed no-op is valid; return an empty actions array and explain why existing work already covers the signal.",
     "- In result.directOwnerSignals, list every direct owner signal created through a message or agent-dispatch tool call during this attempt; each entry must identify the recipient, purpose, and receipt or execution id.",
@@ -312,27 +305,13 @@ export function normalizeOwnerResult(ownerResult: OwnerResult): OwnerResult {
           typeof signal === "string" && signal.trim().length > 0,
       )
     : [];
-  const disclosedResult: OwnerResult = {
+  return {
     ...ownerResult,
     result: {
       ...machineResult,
       directOwnerSignalCount: directOwnerSignals.length,
       directOwnerSignals,
     },
-  };
-  const createsRequiredChild = disclosedResult.actions?.some(
-    (action) => action.kind === "create-task",
-  );
-  if (disclosedResult.state !== "converged" || !createsRequiredChild) {
-    return disclosedResult;
-  }
-  return {
-    ...disclosedResult,
-    state: "waiting",
-    evidence: [
-      ...disclosedResult.evidence,
-      "owner-result-normalized: create-task actions require waiting until delegated work converges",
-    ],
   };
 }
 
@@ -351,7 +330,7 @@ function authFailureOwnerResult(input: {
       directOwnerSignalCount: 0,
       directOwnerSignals: [],
     },
-    evidence: [
+    facts: [
       `owner-execution:${input.executionId ?? "unknown"}`,
       `provider-auth:${input.detail}`,
       `artifact:${input.reviewArtifactPath}`,
@@ -371,12 +350,7 @@ function authFailureOwnerResult(input: {
 }
 
 function isOwnerResult(value: unknown): value is OwnerResult {
-  const result = record(value);
-  return (
-    (result.state === "converged" || result.state === "waiting") &&
-    typeof result.summary === "string" &&
-    Array.isArray(result.evidence)
-  );
+  return Check(taskAgentResultSchema, value);
 }
 
 export async function execute(ctx: WorkflowContext): Promise<ExecutionResult> {
