@@ -5,7 +5,7 @@
 **Choice basis:** [Simple first](../1-principles/core-principles.md#simple-first), [agent judgment and infra admission](../2a-design/task-attempts.md#agent-judgment-and-infra-admission), and [input during execution](../2a-design/execution-contributions.md#input-during-execution).
 
 **Design status:** Scoped contribution acceptance and the ordinary-message/control distinction are accepted in the [Task contract](../2a-design/task-attempts.md#accept-work-and-continue-what-remains).
-**Implementation status:** Candidate Host `5f774cb38` implements that rule. The [PoC record](../archive/reviews/burst-input-progress-20261003.md#implementation-candidate-and-poc) contains deterministic results and limits. Review, deployment and observation of real agent behavior remain separate.
+**Implementation status:** Candidate Host `d44c56ff6` implements that rule. The [PoC record](../archive/reviews/burst-input-progress-20261003.md#implementation-candidate-and-poc) contains deterministic results and limits. Review, deployment and observation of real agent behavior remain separate.
 
 ## Remaining work
 

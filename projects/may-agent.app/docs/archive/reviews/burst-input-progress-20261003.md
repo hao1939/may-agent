@@ -336,13 +336,79 @@ cleanup is still not atomic with SQLite. A crash after release can leave recorde
 artifacts for operational cleanup; this change does not add a collector. Accepted
 results stay accepted, and subsequent work never inherits the released namespace.
 
+## Systematic PR review: workspace identity and cleanup evidence
+
+Candidate Host `d44c56ff6` addresses the [remaining private-ref finding](https://github.com/hao1939/may-agent/pull/305#discussion_r4174166731)
+and reviews the full admission, workspace and recovery path against the
+[owning contract](../../2a-design/task-attempts.md#workspace-ownership-and-cleanup).
+The repeated findings came from inferring one fact from another: contribution
+acceptance from queue emptiness, cleanup eligibility from pre-settlement state,
+release from physical removal, or workspace ownership from recent history.
+The correction keeps each decision at its authority instead of adding agent
+bookkeeping or another cleanup controller.
+
+Two concrete defects remained in `5f774cb38`:
+
+- Inspection could report `removed` after the checkout and branch disappeared,
+  while private Git refs remained. The runner skipped the finalizer, leaving
+  those refs pinned. It now calls the existing idempotent finalizer for every
+  released workspace. Runtime cases cover a checkout, branch only, private refs
+  only and complete prior removal. The private-ref case reproduces the leak on
+  `5f774cb38`; the already-removed case also shows the skipped finalizer.
+- Workspace selection sorted the bounded recent-attempt view by wall-clock
+  time. A backward clock step could select an older release record and reuse
+  a lineage released by a newer attempt. The real Git runtime counterexample
+  runs newer work during old cleanup: the old implementation selects one
+  workspace twice; the correction selects two distinct successive lineages.
+
+`workspaceAttemptId` is a Host-private reference on Task status, written with
+workspace metadata through existing fenced mutation. It points to the existing
+attempt record rather than copying its workspace state. Workspace-free attempts
+leave it unchanged; historical cleanup never rewrites it. Recovery reads that
+exact reference even when recent context omits the attempt. For old Tasks with
+no reference, one compatibility lookup uses the old timestamp ordering across
+stored workspace records; successful preparation establishes the reference.
+An invalid explicit reference fails preparation instead of inventing identity.
+No agent schema or new workspace lifecycle is introduced.
+
+| Boundary reviewed | Evidence / result |
+| --- | --- |
+| Scoped acceptance and controls | Existing burst, partial-result, live/final action, Stop, revision and atomic-admission regressions remain. |
+| Release decision | Actual settled Task phase determines release; independent input/waits and unintegrated output retain work. |
+| Physical artifact combinations | Runtime exercises checkout, branch-only, refs-only and already-removed states; adapter cleanup is repeatable. |
+| Partial cleanup | A private-head-ref lock interrupts removal after checkout, branch and base-ref deletion; retry removes the remaining ref. |
+| Concurrent or delayed work | Separate worker and same-Task overlap tests preserve newer lineages; 17 newer attempts cannot hide cleanup's exact record. |
+| Recovery identity | The backward-clock runtime case keeps successive releases distinct. Durable tests use 20 accepted native checks without workspaces, reopen SQLite, and recover both referenced and legacy workspace records outside recent context. |
+| Fencing and damaged references | A stale workspace writer cannot change the reference; an invalid saved reference is reported, and another generation/Task does not inherit the record. |
+| Failure after release | Late dirty edits are preserved. Physical cleanup and cleanup-recording failures retain acceptance, expose diagnostic evidence and schedule no agent retry. |
+
+The focused adapter/store/runtime group passed 60 tests with 567 assertions.
+Full `bun run ci` passed on `d44c56ff6`: 3,563 tests passed, three existing
+installation-dependent skips, zero failures, and 19,246 assertions across 323
+files. Host/SDK types, App-boundary and lint checks passed; browser tests ran.
+GitHub Quality (3m04s) and Container (2m10s) passed on the same revision.
+Design integrity, executable examples and canonical App checks passed with the
+two existing layout warnings (`features` and `reports`).
+
+The Task execution skill remains valid: agents still report useful progress,
+fulfillment and continuation through the existing schema. Workspace identity
+and cleanup are infra responsibilities. This trial uses scripted workers and
+temporary SQLite/Git repositories. It does not measure real-agent quality or
+token savings. This trial did not start May, make model calls or deploy changes.
+
+A process exit or unavailable cleanup bookkeeping can still leave released
+artifacts needing operational inspection. No collector or cross-filesystem/SQL
+atomicity is promised. The legacy lookup cannot repair historical clock ordering
+that was never recorded; updated records no longer depend on that ordering.
+
 ## Reproduction
 
-Use an isolated Host checkout with normal dependencies. At candidate `5f774cb38`:
+Use an isolated Host checkout with normal dependencies. At candidate `d44c56ff6`:
 
 ```sh
 bun test src/app/core/state/conversation-task-progress.test.ts
 bun test src/app/adapters/workspaces/git.test.ts
+bun test src/app/core/state/app-task-resource-store.test.ts
 bun test src/app/core/tasks/app-task-runtime.test.ts --test-name-pattern 'result-scope rejection|partial acceptance retains|final-result retirement plans Git cleanup'
 bun run ci
 ```

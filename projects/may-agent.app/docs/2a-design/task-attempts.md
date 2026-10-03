@@ -5,7 +5,7 @@
 **Choice basis:** [Apps own meaning; the Host owns mechanics](../1-principles/core-principles.md#apps-own-meaning-the-host-owns-mechanics).
 
 **Design status:** Accepted.
-**Implementation status:** The shared attempt interface, result admission and live/final change admission are implemented in Host source, including #285. Scoped acceptance while input remains is implemented in candidate Host `5f774cb38`; see [accept work and continue what remains](#accept-work-and-continue-what-remains) and its validation record. It is not deployed. The proposed `decision` spelling remains deferred. App adoption and deployment remain separate.
+**Implementation status:** The shared attempt interface, result admission and live/final change admission are implemented in Host source, including #285. Scoped acceptance while input remains is implemented in candidate Host `d44c56ff6`; see [accept work and continue what remains](#accept-work-and-continue-what-remains) and its validation record. It is not deployed. The proposed `decision` spelling remains deferred. App adoption and deployment remain separate.
 
 An attempt is one bounded execution of a Task. It can read, act, request help,
 check results and repair several times before returning. Infra supplies current
@@ -67,6 +67,45 @@ checks current authority, attempt identity and affected revisions. Result and
 proposed effects remain atomic where required: a saved draft is progress, but
 a rejected review request cannot be recorded as delivered.
 
+[Workspace ownership and cleanup](#workspace-ownership-and-cleanup) follow the
+settled Task state. Accepting one contribution does not make all artifacts
+disposable.
+
+This follows [agent judgment and explicit infra rules](../1-principles/core-principles.md#code-executes-and-brings-back-evidence-agents-judge):
+neither a new message nor a successful contribution establishes the semantic
+state of all remaining work. The agent makes that judgment; infra keeps the
+records and executes it.
+
+Ordinary messages change the understood requirement when the agent interprets
+and records that change. The next decision considers queued corrections and
+reuses still-valid work. Explicit Stop/cancellation immediately fences its
+execution identity; it is a control, not another ordinary message. An action
+prepared under the previous understood requirement can therefore be admitted
+before a queued correction is read. The Host must not claim that unread input
+was incorporated, or infer meaning from whether its source is human or system.
+Live steering, where supported, lets the agent reconsider at useful boundaries;
+it does not require waiting for all possible later messages before acting.
+
+**Source availability:** Candidate Host `d44c56ff6` applies this rule to final
+completion, partial results, live actions, cross-App requests, Conversation
+Request changes and creator Task revisions. Existing attempt, authority,
+affected-revision and transaction checks remain. Workspace release derives from
+actual settlement; a separate prediction of Task completion is unnecessary.
+The agent result schema is unchanged: `waiting` with `continue: true` accepts progress;
+`converged` fulfills its selected inputs. One result has one disposition for
+its selected set. The [PoC record](../archive/reviews/burst-input-progress-20261003.md#implementation-candidate-and-poc)
+records portable checks and limits; source validation does not establish live
+adoption, agent judgment or token savings.
+
+## Workspace ownership and cleanup
+
+Keep accepted work usable, and remove disposable execution artifacts without
+repeating an agent's work. This supports scoped progress and follows the
+[independent-facts rule](../1-principles/core-principles.md#code-executes-and-brings-back-evidence-agents-judge)
+and [safe retry](../1-principles/core-principles.md#safe-retry-by-default-explicit-exceptions).
+The agent judges its contribution. Infra owns workspace identity, retention and
+cleanup; none requires another agent decision or result field.
+
 Inspect workspace acceptance prerequisites without removing artifacts, then
 admit the result and proposed actions against current authority and revisions.
 A Stop or Condition change during awaited Git checks must leave the workspace
@@ -85,41 +124,47 @@ Retries of unfinished work reuse their retained checkout.
 
 Remove released artifacts after settlement. A cleanup failure cannot undo
 accepted work or rerun its agent; retain the workspace identity and cleanup error
-as operational evidence. If the process exits before removal finishes, the
-released record identifies potentially remaining artifacts. This correction
-adds no background cleanup worker or guarantee of eventual removal. It separates
-acceptance from cleanup without holding a database transaction across Git I/O.
+as operational evidence. This separates acceptance from cleanup without holding
+a database transaction across Git I/O.
 
-This follows [agent judgment and explicit infra rules](../1-principles/core-principles.md#code-executes-and-brings-back-evidence-agents-judge):
-neither a new message nor a successful contribution establishes the semantic
-state of all remaining work. The agent makes that judgment; infra keeps the
-records and executes it.
+Ownership, observed filesystem state and successful cleanup are different facts.
+`released` records that the Task relinquished a workspace. Its physical
+`disposition` is an observation: `removed` can mean the checkout and branch are
+gone while private Git refs still remain. Every released workspace passes through
+the same idempotent finalizer, even when inspection reports `removed`. The adapter
+rechecks the workspace and removes only that lineage's disposable checkout,
+branch and private refs. A late dirty edit or failed Git operation is retained
+and reported; it cannot reverse accepted work.
 
-Ordinary messages change the understood requirement when the agent interprets
-and records that change. The next decision considers queued corrections and
-reuses still-valid work. Explicit Stop/cancellation immediately fences its
-execution identity; it is a control, not another ordinary message. An action
-prepared under the previous understood requirement can therefore be admitted
-before a queued correction is read. The Host must not claim that unread input
-was incorporated, or infer meaning from whether its source is human or system.
-Live steering, where supported, lets the agent reconsider at useful boundaries;
-it does not require waiting for all possible later messages before acting.
+The Task keeps `workspaceAttemptId`, an exact reference to the attempt holding
+its latest workspace record. Recording workspace metadata advances that reference
+under the current claim's existing transaction and revision fence. Attempts that
+use no Git workspace leave it alone. Old cleanup writes only its own attempt;
+it cannot move the Task's reference back. Recovery uses this reference, not a
+bounded recent-history list or wall-clock sorting. No workspace record is copied
+to a second owner.
 
-**Source availability:** Candidate Host `5f774cb38` applies this rule to final
-completion, partial results, live actions, cross-App requests, Conversation
-Request changes and creator Task revisions. Existing attempt, authority,
-affected-revision and transaction checks remain. Workspace release derives from
-actual settlement; a separate prediction of Task completion is unnecessary.
-The Host-only workspace flag `released` records relinquished ownership
-separately from its physical disposition. Historical `removed` metadata without
-that flag still follows existing recovery. Neither is another Task phase or
-agent decision. Source validation and deployment remain
-separate.
-The agent result schema is unchanged: `waiting` with `continue: true` accepts progress;
-`converged` fulfills its selected inputs. One result has one disposition for
-its selected set. The [PoC record](../archive/reviews/burst-input-progress-20261003.md#implementation-candidate-and-poc)
-records portable checks and limits; source validation does not establish live
-adoption, agent judgment or token savings.
+For historical Tasks without that reference, discovery uses their prior timestamp
+ordering over stored workspace records, without the context-window limit; the
+next successful preparation records the exact reference. This compatibility path
+cannot reconstruct ordering that old records never captured. Historical
+`removed` metadata without an explicit release flag still follows ordinary branch
+recovery. An existing but invalid reference is reported as a preparation failure,
+not permission to choose a fresh checkout.
+
+| Situation | Infra behavior |
+| --- | --- |
+| Rejected or stale result | Preserve artifacts as recovery evidence; do not release ownership. |
+| Accepted contribution with input or Conditions left | Retain the workspace for continued work. |
+| Accepted local work not yet integrated | Retain its checkout/branch; acceptance does not imply integration. |
+| Converged Task with disposable Git work | Record release with settlement, then run idempotent cleanup. |
+| New work while old cleanup runs | Use a distinct lineage; old cleanup keeps its original identity. |
+| Cleanup or cleanup-recording failure | Keep acceptance, report the failure, and retain the released identity for operational inspection. Do not rerun the agent. |
+
+Filesystem operations and SQLite are not one atomic transaction. If cleanup
+bookkeeping fails, the durable release still identifies work that may need
+inspection; it does not prove physical removal. Automatic collection after a
+process exit remains outside this change.
 
 ## One attempt interface
 
