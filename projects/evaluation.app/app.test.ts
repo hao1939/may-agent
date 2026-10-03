@@ -145,14 +145,11 @@ describe("canonical evaluation App", () => {
     } as const;
 
     expect(Check(app.inputSchema, input)).toBeTrue();
-    expect(taskIntentForInput(input)).toMatchObject({
-      id: "runtime/task-outcome-selector",
-      workflow: "task-outcome-selector",
-      priority: "P1",
-      input: { reconcileInputKeys: inputKeys },
-    });
-    expect(taskIntentForInput(input)?.acceptance).toContainEqual(
-      expect.stringContaining("same attempt"),
+    expect(taskIntentForInput(input)).toEqual(
+      taskIntentForInput({
+        kind: "automatic-review",
+        data: { reason: "scheduled" },
+      }),
     );
     expect(
       Check(app.inputSchema, {

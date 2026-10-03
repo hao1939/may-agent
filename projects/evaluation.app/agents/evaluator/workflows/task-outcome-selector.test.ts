@@ -1697,7 +1697,7 @@ describe("automatic task outcome selector", () => {
       },
     });
     const ctx = {
-      input: { reconcileInputKeys: requested },
+      input: { reason: "scheduled" },
       reconciliation: {
         appId: "evaluation",
         taskId: "runtime/task-outcome-selector",
@@ -1773,10 +1773,76 @@ describe("automatic task outcome selector", () => {
     expect(emissions).toBe(0);
   });
 
+  test("keeps malformed or ambiguous reconciliation commands open without selector side effects", async () => {
+    const command = (id: string, inputKeys: string[]) => ({
+      observedAt: "2026-10-03T22:11:11.980Z",
+      event: {
+        type: "app.task.requested",
+        data: {
+          appId: "evaluation",
+          taskId: "runtime/task-outcome-selector",
+          idempotencyKey: `task:${id}`,
+          request: {
+            id,
+            input: {
+              kind: "reconcile-automatic-review-inputs",
+              data: { inputKeys },
+            },
+          },
+        },
+      },
+    });
+    for (const items of [
+      [command("app_malformed", [])],
+      [
+        command("app_first_command", ["task:app_first"]),
+        command("app_second_command", ["task:app_second"]),
+      ],
+    ]) {
+      let reads = 0;
+      let emissions = 0;
+      const ctx = {
+        input: { reason: "scheduled" },
+        reconciliation: {
+          appId: "evaluation",
+          taskId: "runtime/task-outcome-selector",
+          events: { items, truncated: false },
+        },
+        read: {
+          tasks: {
+            get: async () => {
+              reads += 1;
+              return {};
+            },
+          },
+        },
+        events: {
+          emit: async () => {
+            emissions += 1;
+          },
+        },
+        done: (_summary: string, result: Record<string, unknown>) => result,
+      } as never;
+
+      const result = (await runSelector(ctx, undefined, {
+        ...config,
+        enabled: false,
+      })) as unknown as Record<string, unknown>;
+      expect(result).toMatchObject({
+        state: "incomplete",
+        report: true,
+        facts: ["selector:exact-input-reconciliation-command-unavailable"],
+      });
+      expect(result).not.toHaveProperty("inputKeys");
+      expect(reads).toBe(0);
+      expect(emissions).toBe(0);
+    }
+  });
+
   test("keeps exact reconciliation open when an original is missing or foreign", async () => {
     const requested = ["task:app_first", "task:app_second"];
     const ctx = {
-      input: { reconcileInputKeys: requested },
+      input: { reason: "scheduled" },
       reconciliation: {
         appId: "evaluation",
         taskId: "runtime/task-outcome-selector",
@@ -1844,7 +1910,7 @@ describe("automatic task outcome selector", () => {
   test("does not treat a later accepted incomplete report as semantic supersession", async () => {
     const requested = ["task:app_first"];
     const ctx = {
-      input: { reconcileInputKeys: requested },
+      input: { reason: "scheduled" },
       reconciliation: {
         appId: "evaluation",
         taskId: "runtime/task-outcome-selector",
@@ -1934,7 +2000,7 @@ describe("automatic task outcome selector", () => {
   test("does not let reconciliation bookkeeping rebind a semantic decision that predates the wake", async () => {
     const requested = ["task:app_newer_wake"];
     const ctx = {
-      input: { reconcileInputKeys: requested },
+      input: { reason: "scheduled" },
       reconciliation: {
         appId: "evaluation",
         taskId: "runtime/task-outcome-selector",

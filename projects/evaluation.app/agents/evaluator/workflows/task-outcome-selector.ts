@@ -37,7 +37,7 @@ const MAX_NAVIGATION_FACTS = 20;
 const OPEN_STATUSES = new Set(["pending", "running", "waiting", "attention"]);
 const OUTCOME_STATUSES = new Set(["up-to-date", "closed", "cancelled", "done"]);
 
-type Input = { reason?: string; reconcileInputKeys?: string[] };
+type Input = { reason?: string };
 type SelectorConfig = {
   enabled: boolean;
   reviewer?: Reviewer;
@@ -109,24 +109,19 @@ function exactReconciliationKeys(value: unknown): string[] {
     : [];
 }
 
-function sameKeys(left: string[], right: string[]): boolean {
-  return (
-    left.length === right.length &&
-    left.every((key, index) => key === right[index])
-  );
-}
+type ReconciliationCommand =
+  | { state: "none" }
+  | { state: "invalid" }
+  | { state: "valid"; requested: string[]; commandKey: string };
 
-function reconciliationCommandKeys(
+function reconciliationCommand(
   ctx: WorkflowContext<Input>,
-  requested: string[],
-): string[] {
+): ReconciliationCommand {
   const reconciliation = ctx.reconciliation;
-  if (!reconciliation) return [];
-  const events = [
-    ...reconciliation.events.items,
-    ...(reconciliation.events.continuedInputs ?? []),
-  ];
-  const keys: string[] = [];
+  const eventPacket = reconciliation?.events;
+  if (!reconciliation || !eventPacket) return { state: "none" };
+  const events = [...eventPacket.items, ...(eventPacket.continuedInputs ?? [])];
+  const commands: Array<{ requested: string[]; commandKey: string }> = [];
   for (const item of events) {
     const event = object(item.event);
     if (text(event.type) !== "app.task.requested") continue;
@@ -134,23 +129,22 @@ function reconciliationCommandKeys(
     const request = object(data.request);
     const input = object(request.input);
     if (text(input.kind) !== "reconcile-automatic-review-inputs") continue;
+    const requested = exactReconciliationKeys(object(input.data).inputKeys);
+    const commandKey = text(data.idempotencyKey);
+    const requestId = text(request.id);
     if (
-      !sameKeys(
-        exactReconciliationKeys(object(input.data).inputKeys),
-        requested,
-      )
-    )
-      continue;
-    const key = text(data.idempotencyKey);
-    if (
+      !requested.length ||
+      !requestId ||
       text(data.appId) !== reconciliation.appId ||
       text(data.taskId) !== reconciliation.taskId ||
-      key !== `task:${text(request.id)}`
+      commandKey !== `task:${requestId}`
     )
-      continue;
-    keys.push(key);
+      return { state: "invalid" };
+    commands.push({ requested, commandKey });
   }
-  return [...new Set(keys)];
+  if (!commands.length) return { state: "none" };
+  if (commands.length !== 1) return { state: "invalid" };
+  return { state: "valid", ...commands[0] };
 }
 
 function automaticReviewInputIssue(
@@ -215,16 +209,12 @@ function acceptedSelectorJudgmentAfter(
 async function reconcileAutomaticReviewInputs(
   ctx: WorkflowContext<Input>,
   requested: string[],
+  commandKey: string,
 ): Promise<ExecutionResult> {
   const reconciliation = ctx.reconciliation;
   const taskId = reconciliation?.taskId;
   const appId = reconciliation?.appId;
-  const commandKeys = reconciliationCommandKeys(ctx, requested);
-  if (
-    taskId !== "runtime/task-outcome-selector" ||
-    appId !== "evaluation" ||
-    commandKeys.length !== 1
-  ) {
+  if (taskId !== "runtime/task-outcome-selector" || appId !== "evaluation") {
     const summary =
       "Exact automatic-review reconciliation remains open because its current command admission could not be identified unambiguously.";
     return ctx.done(summary, {
@@ -283,7 +273,7 @@ async function reconcileAutomaticReviewInputs(
         ],
       });
     }
-    const inputKeys = [...requested, ...commandKeys];
+    const inputKeys = [...requested, commandKey];
     const summary = `Reconciled ${requested.length} exact historical automatic-review wake(s); their trigger-only purpose is superseded by the current selector judgment and no review or publication was replayed.`;
     return ctx.done(summary, {
       state: "converged",
@@ -903,11 +893,24 @@ export async function runTaskOutcomeSelector(
   reportRoot = configuredTaskReportRoot(),
   metricSelector: MetricSelector = selectMetricCandidate,
 ): Promise<ExecutionResult> {
-  const reconcileInputKeys = exactReconciliationKeys(
-    ctx.input?.reconcileInputKeys,
-  );
-  if (reconcileInputKeys.length)
-    return reconcileAutomaticReviewInputs(ctx, reconcileInputKeys);
+  const reconcile = reconciliationCommand(ctx);
+  if (reconcile.state === "invalid") {
+    const summary =
+      "Exact automatic-review reconciliation remains open because its current command admission could not be identified unambiguously.";
+    return ctx.done(summary, {
+      state: "incomplete",
+      report: true,
+      summary,
+      response: summary,
+      facts: ["selector:exact-input-reconciliation-command-unavailable"],
+    });
+  }
+  if (reconcile.state === "valid")
+    return reconcileAutomaticReviewInputs(
+      ctx,
+      reconcile.requested,
+      reconcile.commandKey,
+    );
   if (!config.enabled) {
     const summary = "Automatic task-outcome selection is disabled.";
     return ctx.done(summary, {

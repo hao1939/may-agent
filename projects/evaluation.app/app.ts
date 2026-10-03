@@ -532,11 +532,10 @@ export function taskIntentForInput(input: AppInput): TaskIntent | null {
         acceptance: [
           "Selection uses bounded public App and Task lists and excludes Evaluation.",
           "At most one canonical Task or metric review request is published using the shared allowance.",
-          "Exact automatic-review admissions are settled only after their original events are read and judged by the same attempt, without replaying selector side effects.",
         ],
         workflow: "task-outcome-selector",
-        input: { reconcileInputKeys: inputKeys },
-        priority: "P1",
+        input: { reason: "scheduled" },
+        priority: "P2",
       };
     }
     case "evaluate-session": {
