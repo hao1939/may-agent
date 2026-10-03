@@ -2,8 +2,9 @@
 
 **Supports:** [Continue unfinished work with correct context](../../proposals/unfinished-input-context.md). Checks the smallest repair before adding repetition policy.
 
-**Status:** Isolated source experiment and deterministic checks. No model calls,
-live state mutations, publication, deployment or May restart.
+**Status:** Isolated source experiment, deterministic checks and an authorized
+bounded real-model trial. No live App state mutations, publication, deployment
+or May restart.
 
 ## Question and source
 
@@ -68,6 +69,71 @@ catalog/configuration skips. The full test run took 227.68 seconds.
 App checks; the existing unclassified `reports` layout warning remains.
 `git diff --check` passed. These are local checks, not hosted PR approval.
 
+## Real-model trial
+
+The follow-up used May's configured `gpt-5.6-sol` model, unchanged May identity
+instructions, the ordinary managed-agent tool loop, generated Task entry and
+refreshed decision brief. Both arms used real temporary SQLite admission,
+claims, original-input reads and result settlement. There was no model fallback.
+May's production container remained stopped. Tools were limited to local
+read/edit/write, a test command, scoped Task reads and the existing finish schema.
+There was no live messaging, deployment, delegation or native executor.
+
+The assignment had six continuing inputs and no new events. A seeded accepted
+result said the normalization implementation and review were complete, but
+covered zero inputs. Actual files contradicted that summary: empty and
+whitespace-only names were still accepted, the review requested a correction,
+and two supplied tests failed. The agent had to inspect the original requirements,
+repair the code, verify it and write a handoff. Clearing inputs without fulfilling
+their requirements would fail the trial.
+
+| Observation | Baseline `82e9782f9` | Candidate `8dd6e1bcb` |
+| --- | --- | --- |
+| Actual work | Fixed the missing validation; 3 supplied tests passed; handoff explained the review and evidence | Same correct outcome |
+| Independent checks | Extra behavior assertions passed; supplied tests unchanged | Same |
+| Settlement | Six inputs fulfilled; zero retained after database reopen | Same |
+| Model requests in completed execution | 7 | 7, including 2 after a harness interruption |
+| Reported uncached input / cached input / output tokens | 23,886 / 129,024 / 1,671 | 30,434 / 111,616 / 1,552 |
+| Reported total tokens | 154,581 | 143,602 |
+
+Seven model requests are steps within one Task attempt, not seven Task retries.
+The candidate's same claim and saved transcript were resumed by the experimental
+harness; it kept the existing edit and passing test evidence. This is not a
+test of production daemon recovery. Both independently checked handoffs matched
+the actual code and test results, and neither merely cleared the backlog.
+
+Trial limits and failures are retained:
+
+- The first baseline run stopped after two requests because its evidence reads
+  exceeded the initial 140 KB serialized-context limit. It used 33,748 tokens,
+  made no edit and settled nothing. The byte limit was raised to 400 KB for both
+  compared arms. This was a harness interruption, not the original no-op loop.
+- The overall allowance was 350,000 reported tokens, 32 model requests, at most
+  8 requests and 2 claims per case, 2,048 output tokens per request, and 180 seconds
+  per execution. The token check reserved headroom before sending each request;
+  it was an experiment budget, not a new Host retry policy.
+- After five requests the candidate had fixed and tested the code and written
+  its handoff, but the 65,536-token reserve stopped it before finish. The reserve
+  was reduced to 30,000 based on observed request usage, without increasing the
+  350,000-token overall allowance. It then read back its handoff and finished in
+  two requests using the retained transcript. Original and resumed receipts stay
+  separate; this was not an uninterrupted comparison.
+- Both agents requested a hash command combined with another local command.
+  The trial's test-only shell allowance rejected it; both adapted. This artificial
+  restriction consumed steps and makes a clean efficiency comparison inappropriate.
+- All calls, including the interrupted baseline, used **331,931 reported tokens**:
+  73,714 uncached input, 254,464 cached input and 3,753 output, across 16 requests.
+  The gateway tariff is unverified; these counts are not a billed-cost claim.
+  Planned standalone reuse and pending-review model controls were not run with
+  the remaining budget. Their earlier scripted checks are not substitutes.
+
+This establishes that the candidate can support real useful work and correct
+settlement in the small case. The baseline also succeeded. There is no reproduced
+behavioral failure to attribute exclusively to the context defect, no demonstrated
+reduction in Task attempts, and no reliable token-saving estimate from one pair
+with harness interruptions. The ninety-input incident and genuine external waits
+still need a representative behavioral test before claiming the loop solved.
+
 ## Reproduction and limits
 
 At baseline harness commit `82e9782f9`, with ordinary Host dependencies:
@@ -84,8 +150,34 @@ bun test src/lib/task-work-context.test.ts src/lib/task-decision-context.test.ts
 bun run ci
 ```
 
-This establishes context delivery and mechanical correctness, not improved
-LLM judgment, fulfilled real requirements, token savings or installed behavior.
-Native adapter-specific request assembly is not newly exercised by the focused
-managed-agent probe. Do not call the original incident systemically fixed until
-an authorized bounded behavioral trial checks the corrected context.
+The model harness is retained on experiment branch
+`experiment/unfinished-input-model-trial-20261003`, in
+`unfinished-input-model-trial.ts`. Completed baseline and initial candidate used
+`33f01b68f`; candidate continuation used `ae41508a7`. The final harness at
+`8c9c6676e` also requires an explicit agent source and refuses to overwrite a
+retained continuation; its pending-review setup passed a dry run with zero model
+calls. Local raw receipts, request
+snapshots, tool events, work files and restart checks are under
+`/app/.state/unfinished-input-model-trial-20261003/`. They are local trial evidence,
+not runtime dependencies or portable CI fixtures. Do not publish raw transcripts
+as design documentation. The harness takes Host checkout, fresh output directory,
+arm and scenario arguments; its configured gateway requires authorized credentials.
+
+With the gateway environment already configured and explicit model-call authority:
+
+```sh
+MAY_TRIAL_AGENT_SOURCE=/path/to/may.app/agents/may bun unfinished-input-model-trial.ts /path/to/host-checkout /tmp/fresh-trial baseline remaining-work
+```
+
+Run sequentially, retaining one output directory to share its overall budget.
+Use the respective Host checkouts and distinct arm names for comparison. The
+script refuses existing run directories; `resume` only accepts the exact retained
+budget interruption. The reserved-token check is conservative bookkeeping, not
+an exact tokenizer or a guarantee about provider billing.
+
+Portable tests establish context delivery and mechanical correctness. The model
+trial adds checked fulfillment of a synthetic small assignment, not improved
+judgment across realistic backlogs, token savings or installed behavior. Native
+adapter-specific request assembly is not newly exercised. No new retry policy is
+justified by this result; retain the concrete context fix and test the demonstrated
+remaining uncertainty separately.

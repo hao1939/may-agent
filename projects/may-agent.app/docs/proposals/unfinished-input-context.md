@@ -5,7 +5,7 @@
 **Choice basis:** [Simple first](../1-principles/core-principles.md#simple-first) means repair the existing context path before adding another recovery mechanism. [Code brings back evidence; agents judge](../1-principles/core-principles.md#code-executes-and-brings-back-evidence-agents-judge) keeps fulfillment judgment with the worker. [Context discovery](../1-principles/core-principles.md#context-is-discovered-not-dumped) calls for a small current view with readable detail.
 
 **Design status:** Proposed, refined after an isolated PoC. Focus first on the existing context mechanism; additional repetition policy is deferred pending evidence from corrected context.
-**Implementation status:** Local Host candidate `8dd6e1bcb`, based on `438ad1e38`, passes full portable CI. Deterministic production-path tests only; no model trial, publication or deployment. See [the experiment](../archive/reviews/unfinished-input-context-20261003.md).
+**Implementation status:** Local Host candidate `8dd6e1bcb`, based on `438ad1e38`, passes full portable CI. An isolated real-model trial completed a small assignment correctly on both baseline and candidate; it did not reproduce the large-backlog loop. No publication or deployment. See [the experiment](../archive/reviews/unfinished-input-context-20261003.md).
 
 ## Recommendation
 
@@ -96,6 +96,15 @@ judgment. Likewise, scripted settlement is not evidence that a real model checke
 the original requirements correctly. See the experiment for measured sizes,
 checks, failures and limits.
 
+The subsequent real-model trial used May's configured model and instructions on
+six continuing requirements, with no new events and a misleading previous "done"
+result covering none. Both versions read the requirements, fixed an actual bug,
+verified it, wrote a handoff and settled all six inputs. Independent checks and
+database reopen confirmed the result. The candidate also reused its work after
+a trial-budget interruption. Both needed seven model requests; this small case
+does not establish fewer repetitions or a reliable token saving. Additional
+real-model controls were left unrun when the fixed overall budget was used.
+
 Review refinements kept the candidate small:
 
 - Fix the dropped result fields rather than introduce a new settlement receipt.
@@ -113,12 +122,15 @@ unanswered inputs, and a prior result saying "done" with empty coverage. They
 must also cover scoped settlement, restart, unread original content, independent
 waits, unavailable/truncated context, helper scope and outgoing request assembly.
 
-The next behavioral trial should compare baseline and candidate on the same
-small, isolated assignment with implementation evidence, an outstanding review,
-and a genuinely unfinished test. Measure correct fulfillment, preserved work,
-extra attempts and token use together. A model that simply clears every input
-has failed. Use an explicit finite trial budget; do not restart the stopped May
-installation as part of source validation.
+The small behavioral trial supports keeping this narrow context repair and the
+existing agent/infra boundary. It does not establish that context was the only
+cause of the observed loop. Before claiming that incident fixed, a further
+bounded trial should preserve its harder features: around ninety continuing
+inputs, large detail, mixed completed and unfinished requirements, and real
+external waits. Use independently checked outcomes, not just cleared inputs.
+Repair the trial's restrictive local command access before drawing efficiency
+comparisons; retain interrupted runs as evidence. Do not restart the stopped
+May installation as part of source validation.
 
 If corrected context is still insufficient, use the existing App-owned metrics
 and Evaluation route to investigate the demonstrated residual pattern. New
