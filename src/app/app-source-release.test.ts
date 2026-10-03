@@ -306,6 +306,8 @@ describe("App source releases", () => {
     const appRoot = join(root, "projects", "sample.app");
     mkdirSync(join(appRoot, "docs", "manual", "guide"), { recursive: true });
     writeFileSync(join(appRoot, "docs", "manual", "guide", "SKILL.md"), "Captured guidance");
+    writeFileSync(join(appRoot, "docs", "contract.md"), "Captured contract");
+    symlinkSync("../../contract.md", join(appRoot, "docs", "manual", "guide", "contract.md"));
     symlinkSync("docs/manual", join(appRoot, "manual"));
     writeFileSync(join(root, "shared", "skills", "paths.json"), JSON.stringify(["../../projects/sample.app/manual"]));
     if (withGit) {
@@ -314,7 +316,28 @@ describe("App source releases", () => {
     }
     const release = new DefinitionSourceReleaseStore(root, stateDir).stage();
     writeFileSync(join(appRoot, "docs", "manual", "guide", "SKILL.md"), "Changed live guidance");
+    writeFileSync(join(appRoot, "docs", "contract.md"), "Changed live contract");
     expect(readFileSync(join(release.projectsRoot, "sample.app", "manual", "guide", "SKILL.md"), "utf8")).toBe("Captured guidance");
+    expect(readFileSync(join(release.projectsRoot, "sample.app", "manual", "guide", "contract.md"), "utf8")).toBe("Captured contract");
+  });
+
+  it.each([true, false])("rejects manual references outside the captured tree without replacing the active release (git: %s)", async (withGit) => {
+    const { root, stateDir } = await fixture(withGit);
+    const store = new DefinitionSourceReleaseStore(root, stateDir);
+    const active = store.ensureCurrent();
+    const manual = join(root, "projects", "sample.app", "docs", "manual");
+    mkdirSync(manual, { recursive: true });
+    writeFileSync(join(manual, "SKILL.md"), "Read [contract](contract.md)");
+    const external = join(root, "contract.md");
+    writeFileSync(external, "Mutable source");
+    symlinkSync(external, join(manual, "contract.md"));
+    writeFileSync(join(root, "shared", "skills", "paths.json"), JSON.stringify(["../../projects/sample.app/docs/manual"]));
+    if (withGit) {
+      await git(root, "add", "projects/sample.app/docs", "shared/skills/paths.json");
+      await git(root, "commit", "-qm", "link mutable manual reference");
+    }
+    expect(() => store.stage()).toThrow("escapes captured App source");
+    expect(store.current()?.id).toBe(active.id);
   });
 
   it.each([true, false])("rejects path configuration linked to mutable or missing source (git: %s)", async (withGit) => {
@@ -335,7 +358,7 @@ describe("App source releases", () => {
     expect(store.current()).toBeNull();
   });
 
-  it("validates cached and activated snapshots independently of the mutable path configuration", async () => {
+  it.each(["configuration", "reference"])("validates cached and activated snapshots independently of mutable %s", async (failure) => {
     const { root, stateDir } = await fixture();
     const store = new DefinitionSourceReleaseStore(root, stateDir);
     const active = store.ensureCurrent();
@@ -349,7 +372,13 @@ describe("App source releases", () => {
     expect(readFileSync(join(candidate.sharedRoot, "skills", "paths.json"), "utf8")).toBe("[]");
 
     // Simulate a cached release made by an older Host which accepted bad paths.
-    writeFileSync(join(candidate.sharedRoot, "skills", "paths.json"), '["../../missing"]');
+    if (failure === "configuration") {
+      writeFileSync(join(candidate.sharedRoot, "skills", "paths.json"), '["../../missing"]');
+    } else {
+      const external = join(root, "mutable-contract.md");
+      writeFileSync(external, "Mutable contract");
+      symlinkSync(external, join(candidate.sharedRoot, "skills", "sample", "contract.md"));
+    }
     expect(() => store.stage(pin)).toThrow("Invalid skill discovery paths in captured App source");
     expect(() => store.activate(candidate)).toThrow("Invalid skill discovery paths in captured App source");
     expect(store.current()?.id).toBe(active.id);

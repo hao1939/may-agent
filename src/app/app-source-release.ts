@@ -78,6 +78,27 @@ function agentSkillRoots(agentsRoot: string): string[] {
 function validateCapturedSkillRoots(root: string): void {
   const diagnostics: string[] = [];
   const canonicalRoot = realpathSync(root);
+  const visited = new Set<string>();
+  const validatePath = (path: string): void => {
+    let target: string;
+    try {
+      target = realpathSync(path);
+    } catch (error) {
+      diagnostics.push(`${path}: ${error instanceof Error ? error.message : String(error)}`);
+      return;
+    }
+    if (target !== canonicalRoot && !target.startsWith(`${canonicalRoot}${sep}`)) {
+      diagnostics.push(`${path}: ${target} escapes captured App source`);
+      return;
+    }
+    if (visited.has(target)) return;
+    visited.add(target);
+    // Supporting files and directory links must be as immutable as SKILL.md.
+    // Resolve before walking, and visit canonical directories once for cycles.
+    if (lstatSync(target).isDirectory()) {
+      for (const name of readdirSync(target)) validatePath(join(target, name));
+    }
+  };
   const skillRoots = [
     join(root, "shared", "skills"),
     ...agentSkillRoots(join(root, "agents")),
@@ -89,11 +110,7 @@ function validateCapturedSkillRoots(root: string): void {
     const pathsFile = join(skillRoot, "paths.json");
     const targets = resolveSkillRoots(skillRoot, diagnostics);
     if (existsSync(pathsFile)) targets.push(realpathSync(pathsFile));
-    for (const target of targets) {
-      if (target !== canonicalRoot && !target.startsWith(`${canonicalRoot}${sep}`)) {
-        diagnostics.push(`${skillRoot}: ${target} escapes captured App source`);
-      }
-    }
+    for (const target of targets) validatePath(target);
   }
   if (diagnostics.length) {
     throw new Error(
