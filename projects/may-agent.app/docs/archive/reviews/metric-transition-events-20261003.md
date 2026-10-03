@@ -90,6 +90,29 @@ ordinary retry commits and delivers the transition once. A subsequent repeated
 call stays quiet. The focused metric, Event-writer, evidence and source-collection
 checks passed all 37 tests. The PR records the final source and full-CI result.
 
+## Review correction: serialize the decision too
+
+The next review found that the open-alert lookup still preceded the write lock.
+Two callers could both read no open alert, then each acquire the lock and publish
+a breach. Two recovery callers could likewise publish the same resolution twice.
+Locking only the writes did not protect the decision based on the earlier read.
+
+At Host `9b1c46d01`, the corrected boundary starts before reading current metric evidence and the
+open alert. Each metric evaluation or manual call uses one existing transaction;
+the narrower nested transactions are removed. Collection across multiple metrics
+still commits independently. No uniqueness migration, lock manager or retry
+framework is added. This holds the write lock for the metric's local evidence
+reads as well as its mutation; it does not include external measurement work.
+
+Four regressions use two independent connections to one temporary database. A
+controlled interleaving lets the second connection commit just before the first
+acquires its write lock. The previous revision creates duplicate automatic and
+manual breaches, emits duplicate recovery, and can publish an obsolete breach
+after a newer healthy sample. All four pass after moving the current-state read
+inside the transaction. Existing real EventBus/DbWriter rollback tests also pass.
+These tests exercise a deterministic conflicting schedule, not a load benchmark
+or a live-runtime trial. Full-CI status and the exact revision belong to PR #300.
+
 ## Value and limits
 
 The verified gain is fewer events and unnecessary input admissions. The latest

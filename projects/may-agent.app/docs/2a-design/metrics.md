@@ -102,14 +102,16 @@ rule no longer matches, it resolves that alert and emits `metric.recovered` once
 A later breach opens a new episode with a new `alertId`. Reopening the metric
 service uses that stored state, not an in-memory notification cache.
 
-Each opening or measured recovery saves its alert transition and required Event
-on the same Host database transaction, using the existing `stateTransaction` and
-Event writer. If Event persistence fails, the alert change rolls back so the
-next ordinary evaluation or manual call can retry it. Previously recorded samples
-remain available. The transaction covers one transition, not the whole metric
-collection pass; successful earlier metrics remain committed.
+Each evaluation or manual alert call reads current metric evidence and open-alert
+state under the same database write transaction that saves its transition and
+required Event. The existing `stateTransaction` and Event writer provide this
+boundary. Concurrent callers then see the preceding committed decision instead
+of opening the same episode or publishing its recovery twice. If Event persistence
+fails, the alert change rolls back so the next ordinary call can retry it.
+Previously recorded samples remain available. The transaction covers one metric,
+not the whole collection pass; successful earlier metrics remain committed.
 
-This producer correction is implemented at Host `6aac653d1` in
+This producer correction is implemented at Host `9b1c46d01` in
 [PR #300](https://github.com/hao1939/may-agent/pull/300), pending merge and
 deployment. The [isolated comparison](../archive/reviews/metric-transition-events-20261003.md)
 records the source, regression and App-routing evidence.
