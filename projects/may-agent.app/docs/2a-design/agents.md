@@ -74,7 +74,7 @@ automatically supervise a specialist or contact someone when a result is blocked
 
 **Source availability:** the added owner metadata and execution guidance are in
 [Host PR #314](https://github.com/hao1939/may-agent/pull/314), revision
-`4e83e2876d8e519c73a7412eb644b31880149321`. Integrate that Host change before
+`21570ff54f144be6a598d511734fc09457d1e745`. Integrate that Host change before
 activating instructions that rely on the added fields. Source checks do not
 establish installed availability or improved agent behavior. Existing input
 routing, workspace/knowledge discovery and assignment controls are retained.
