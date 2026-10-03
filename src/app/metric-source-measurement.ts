@@ -41,21 +41,31 @@ WHERE delivery_status = 'unhandled'
   AND timestamp >= (strftime('%s','now') * 1000 - 3600000)
   AND event_type NOT IN (${intentionalObservationSql})`;
 export const STALE_ACTIVE_METRIC_ID = "metric.stale-active-count";
-export const STALE_ACTIVE_SOURCE_QUERY = `SELECT COUNT(*) AS value
-FROM metrics m
-WHERE m.status = 'active'
-  AND m.id != '${STALE_ACTIVE_METRIC_ID}'
-  AND m.measure_interval IS NOT NULL
-  AND m.measure_interval > 0
-  AND NOT EXISTS (
-    SELECT 1
-    FROM metric_snapshots s
-    WHERE s.metric_id = m.id
-      AND s.measured_at > (
-        strftime('%s','now') * 1000
-        - MAX(900000, m.measure_interval * 2)
-      )
-  )`;
+export const STALE_ACTIVE_SOURCE_QUERY = `WITH clock AS (SELECT CAST(ROUND(unixepoch('subsec') * 1000) AS INTEGER) AS cut),
+  cadence AS (
+    SELECT m.id, m.measure_interval,
+      COALESCE(
+        CASE WHEN m.created_at <= (SELECT cut FROM clock) THEN m.created_at END,
+        CASE WHEN m.updated_at <= (SELECT cut FROM clock) THEN m.updated_at END,
+        0
+      ) AS created_at,
+      (SELECT MAX(s.measured_at) FROM metric_snapshots s
+        WHERE s.metric_id = m.id AND s.measured_at <= (SELECT cut FROM clock)) AS last_sample
+    FROM metrics m
+    WHERE m.status = 'active' AND m.id != '${STALE_ACTIVE_METRIC_ID}'
+      AND m.measure_interval > 0
+  ), stale AS (
+    SELECT * FROM cadence
+    WHERE COALESCE(last_sample, created_at) <= (SELECT cut FROM clock) - MAX(900000, measure_interval * 2)
+  )
+SELECT COUNT(*) AS value, (SELECT COUNT(*) FROM cadence) AS sampleSize,
+  (SELECT cut FROM clock) AS measuredAt,
+  json_object('scope', 'Active metrics with a declared cadence; missing first samples receive the same freshness grace.',
+    'examples', json((SELECT json_group_array(json_object('metricId', id,
+      'measureInterval', measure_interval, 'lastSampleAt', last_sample))
+      FROM (SELECT * FROM stale ORDER BY COALESCE(last_sample, created_at), id LIMIT 5))),
+    'examplesTruncated', COUNT(*) > 5) AS note
+FROM stale`;
 
 type SourceMetric = {
   id: string;
@@ -355,7 +365,7 @@ export function attachMetricSourceMeasurement(options: {
       owner: "may",
       type: "health",
       target: 0,
-      threshold: 45,
+      threshold: 0,
       unit: "count",
       priority: "P1",
       status: "active",

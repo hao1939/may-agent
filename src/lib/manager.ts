@@ -64,7 +64,7 @@ import {
   updateWorkflowRun,
 } from "./db/workflows.js";
 import { getDb } from "./db/connection.js";
-import { EVENT_ROW_ID, type EventBus, type EventTrace } from "../app/core/events/bus.js";
+import { EVENT_RECORD_ONLY, EVENT_ROW_ID, type EventBus, type EventTrace } from "../app/core/events/bus.js";
 import type { SubagentDefinition, SessionInfo, TaskResult } from "./types.js";
 import type { SessionKind, PersistedSession, TaskBinding } from "./persistence.js";
 import type { ToolPolicy } from "./session-policy.js";
@@ -2379,6 +2379,7 @@ export class SubagentManager {
     trace?: EventTrace,
   ): void {
     this.bus?.emit({
+      [EVENT_RECORD_ONLY]: true,
       type: "skill.loaded",
       source: `agent:${session.agentName}`,
       owner: normalizeEventOwner(session.agentName),
