@@ -9289,7 +9289,7 @@ describe("canonical App task runtime", () => {
         );
         expect(task.status.conditionIds ?? []).toEqual(scenario === "independent-wait" ? ["independent-review"] : []);
         expect(attempt.workspace?.disposition).toBe(
-          scenario === "cleanup-fails" ? "released" : retained ? "active" : "removed",
+          retained ? "active" : "removed",
         );
         expect(inspections).toEqual([stateBeforeResult]);
         if (scenario === "independent-wait") expect(finalizations).toEqual([]);
@@ -9297,7 +9297,7 @@ describe("canonical App task runtime", () => {
           expect(finalizations[0]).toMatchObject({
             outcome: "accepted",
             requests: 1,
-            state: { attempt: { acceptedResult: { state: "converged" }, workspace: { disposition: "released" } } },
+            state: { attempt: { acceptedResult: { state: "converged" }, workspace: { released: true } } },
           });
         if (scenario === "cleanup-fails") {
           expect(attempt.workspace?.cleanupError).toBe("fixture cleanup failure");

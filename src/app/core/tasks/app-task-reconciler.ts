@@ -3154,7 +3154,7 @@ export function recordReleasedAppTaskWorkspace(
     if (
       !resource ||
       !attempt ||
-      attempt.workspace?.disposition !== "released" ||
+      !attempt.workspace?.released ||
       attempt.workspace.path !== workspace.path ||
       attempt.workspace.branch !== workspace.branch
     )
@@ -3753,7 +3753,7 @@ export function completeAppTask(
     match.attempt.workspace = {
       ...structuredClone(input.workspace.metadata),
       ...(input.workspace.removable && resource.status.phase === "converged"
-        ? { disposition: "released" as const }
+        ? { released: true as const }
         : {}),
     };
   }

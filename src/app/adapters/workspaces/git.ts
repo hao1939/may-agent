@@ -146,7 +146,7 @@ export async function prepareAppTaskWorkspace(
       throw new Error(`Task workspace requires a Git worktree: ${repoDir}`);
     }
 
-    const retained = input.previous && !["released", "removed"].includes(input.previous.disposition)
+    const retained = input.previous && !input.previous.released
       ? input.previous
       : undefined;
     // Derive the next lineage from the released one, not the attempt. A retry

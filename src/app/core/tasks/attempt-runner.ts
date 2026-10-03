@@ -593,7 +593,7 @@ async function runClaimedTask(
   async function cleanupReleasedWorkspace(): Promise<string | undefined> {
     try {
       const workspace = config.resourceStore.readAttempt(claim.attemptId)?.workspace;
-      if (!taskWorkspace || workspace?.disposition !== "released") return;
+      if (!taskWorkspace || !workspace?.released || workspace.disposition === "removed") return;
       // Settlement relinquished this exact workspace. New work uses a different
       // identity, so asynchronous removal cannot delete its files or private refs.
       let metadata = workspace;

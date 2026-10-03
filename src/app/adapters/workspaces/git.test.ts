@@ -336,7 +336,7 @@ describe("project task workspace", () => {
       refreshRemote: false,
     };
     const old = await prepareAppTaskWorkspace(input);
-    const released = { ...old.metadata, disposition: "released" as const };
+    const released = { ...old.metadata, released: true as const };
     const script = `import { prepareAppTaskWorkspace } from ${JSON.stringify(new URL("./git.ts", import.meta.url).href)};
       console.log(JSON.stringify(await prepareAppTaskWorkspace(${JSON.stringify({ ...input, previous: released })})));`;
     const { stdout } = await promisify(execFile)(process.execPath, ["-e", script], { timeout: 10_000 });
