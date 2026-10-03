@@ -219,6 +219,75 @@ test("the direct helper and report Conversation use the same complete result com
   expect(prepared.output).not.toHaveProperty("facts");
 });
 
+test("the recorded reviewAt-only counterexample passes composition, helper, and production workflow", async () => {
+  const recordedReviewAt = 1_791_058_700_000;
+  const timed: MetricReview = {
+    task: {
+      state: "waiting",
+      summary: "Recheck actual outstanding work after backoff",
+      facts: ["accepted-attempt:r_1_1ced50ef-413b-480d-83ab-d07d5e8f323c"],
+      reviewAt: recordedReviewAt,
+    },
+    decisions: [
+      {
+        ...decision,
+        reason: "Post-backoff verification remains",
+        nextAction: "Deliberately reconsider the outstanding verification",
+      },
+    ],
+  };
+  expect(metricReviewResult(reconciliation(), timed)).toMatchObject({
+    state: "waiting",
+    reviewAt: recordedReviewAt,
+  });
+
+  const read = async () => ({
+    available: true as const,
+    metricId: decision.metricId,
+    end: Date.now(),
+    windowMs: 1000,
+    metric: { id: decision.metricId, status: "active" },
+    dispositions: [],
+    freshness: "fresh",
+    latest: { value: 3 },
+  });
+  const direct = await respondToMetric(
+    createTestAppWorkflowContext({
+      input: { review: timed },
+      reconciliation: { ...reconciliation(), input: { review: timed } },
+    }),
+    read,
+  );
+  expect(direct.output).toMatchObject({
+    state: "waiting",
+    reviewAt: recordedReviewAt,
+  });
+
+  let prompt = "";
+  const workflow = await execute(
+    createTestAppWorkflowContext({
+      reconciliation: reconciliation(),
+      callAgent: (async (_agent: string, value: string) => {
+        prompt = value;
+        return {
+          id: "recorded-timed-review",
+          kind: "agent",
+          status: "done",
+          summary: timed.task.summary,
+          output: timed,
+        };
+      }) as never,
+    }),
+  );
+  expect(prompt).toContain("one-time reviewAt");
+  expect(prompt).toContain("not a periodic sample-reading timer");
+  expect(workflow.output).toMatchObject({
+    state: "waiting",
+    reviewAt: recordedReviewAt,
+  });
+  expect(workflow.output).not.toHaveProperty("conditions");
+});
+
 test("mixed new input reaches judgment with the original requirements and existing waits", async () => {
   const rec = reconciliation();
   rec.input = { kind: "goal", data: { context: { metricResponse: review() } } };
@@ -390,26 +459,44 @@ test("an unchanged unsupported saved plan is current context, never a replayed j
             kind: "agent",
             status: "done",
             summary: "Current owner judgment",
-            output: {
-              task: {
-                state: "waiting",
-                continue: true,
-                summary: `Current review ${calls}`,
-                facts: [`owner-call:${calls}`],
-              },
-              decisions: [],
-            },
+            output:
+              calls === 1
+                ? {
+                    task: {
+                      state: "waiting",
+                      continue: true,
+                      summary: "Inspect another bounded evidence slice",
+                      facts: ["owner-call:1"],
+                    },
+                    decisions: [],
+                  }
+                : {
+                    task: {
+                      state: "converged",
+                      summary: "Current evidence does not warrant intervention",
+                      facts: ["owner-call:2", "evidence:current-review"],
+                    },
+                    decisions: [
+                      {
+                        ...decision,
+                        disposition: "no-change",
+                        reason: "Current evidence was inspected",
+                        nextAction: undefined,
+                      },
+                    ],
+                  },
           };
         }) as never,
       }),
     );
   expect((await run()).output).toMatchObject({
     state: "waiting",
-    summary: "Current review 1",
+    continue: true,
+    summary: "Inspect another bounded evidence slice",
   });
   expect((await run()).output).toMatchObject({
-    state: "waiting",
-    summary: "Current review 2",
+    state: "converged",
+    summary: "Current evidence does not warrant intervention",
   });
   expect(calls).toBe(2);
 });
