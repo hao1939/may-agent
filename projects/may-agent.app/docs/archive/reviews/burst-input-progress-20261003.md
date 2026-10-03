@@ -237,13 +237,51 @@ installation-dependent tests skipped, zero failures, and 18,950 assertions acros
 Design integrity, examples and canonical App checks also passed with the same
 two pre-existing layout warnings. No deployment or model trial was performed.
 
+## PR review follow-up: include final-result retirement in cleanup
+
+Host `f2b4e47f9` addresses the [next PR review finding](https://github.com/hao1939/may-agent/pull/305#discussion_r4173850187).
+The last unresolved Condition could be retired by a final-result action. Cleanup
+looked at its pre-action state, retained the worktree, and then settlement removed
+the Condition and closed the Task with no future cleanup attempt.
+
+Before filesystem cleanup, the Host previews the final changes through existing
+shared admission and reads remaining work from that admitted state. It then rolls
+back the preview, including request rows, receipts and after-commit effects.
+Final settlement still admits and commits the changes against current state.
+This reuses policy, authority, exact revision and live-action replay checks instead
+of treating a proposed retirement as already valid or adding a cleanup worker.
+The agent interface and judgment boundary are unchanged.
+
+Six real Git cases cover final-only retirement, an independent remaining wait,
+a repeated live retirement, stale Condition generation, App policy rejection and
+an unauthorized sibling action. They check worktree, branch and private-ref
+cleanup or retention, preserved artifacts and Conditions after rejection, and no
+scheduled recovery after closure. The successful cases also compare Task/attempt
+state before and after the preview and assert no request exists at filesystem
+finalization; actual admission creates one request and publishes it once.
+
+Against `5664ce7b1`, the new group passed three cases and failed three: final-only
+retirement leaked the workspace, and stale/unauthorized actions reached workspace
+finalization before their admission rejection. With the correction, the focused
+workspace/rejection/replay group passed 18 tests with 206 assertions.
+
+Full `bun run ci` passed on `f2b4e47f9`: 3,543 tests passed, three existing
+installation-dependent tests skipped, zero failures, and 19,020 assertions across
+323 files. Host/SDK types, boundary and lint checks passed; the browser test ran.
+GitHub Quality (4m05s) and Container (1m51s) passed on that same revision.
+Design integrity, examples and canonical App checks passed with the two existing
+layout warnings (`features` and `reports`). This is a portable scripted trial,
+with no model calls, production restart or deployment. The preview does not make filesystem cleanup
+and SQLite settlement one atomic operation; the existing final admission fences
+remain necessary after asynchronous filesystem work.
+
 ## Reproduction
 
-Use an isolated Host checkout with normal dependencies. At candidate `5664ce7b1`:
+Use an isolated Host checkout with normal dependencies. At candidate `f2b4e47f9`:
 
 ```sh
 bun test src/app/core/state/conversation-task-progress.test.ts
-bun test src/app/core/tasks/app-task-runtime.test.ts --test-name-pattern 'result-scope rejection|partial acceptance retains'
+bun test src/app/core/tasks/app-task-runtime.test.ts --test-name-pattern 'result-scope rejection|partial acceptance retains|final-result retirement plans Git cleanup'
 bun run ci
 ```
 

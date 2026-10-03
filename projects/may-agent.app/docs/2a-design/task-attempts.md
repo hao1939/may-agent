@@ -5,7 +5,7 @@
 **Choice basis:** [Apps own meaning; the Host owns mechanics](../1-principles/core-principles.md#apps-own-meaning-the-host-owns-mechanics).
 
 **Design status:** Accepted.
-**Implementation status:** The shared attempt interface, result admission and live/final change admission are implemented in Host source, including #285. Scoped acceptance while input remains is implemented in candidate Host `5664ce7b1`; see [accept work and continue what remains](#accept-work-and-continue-what-remains) and its validation record. It is not deployed. The proposed `decision` spelling remains deferred. App adoption and deployment remain separate.
+**Implementation status:** The shared attempt interface, result admission and live/final change admission are implemented in Host source, including #285. Scoped acceptance while input remains is implemented in candidate Host `f2b4e47f9`; see [accept work and continue what remains](#accept-work-and-continue-what-remains) and its validation record. It is not deployed. The proposed `decision` spelling remains deferred. App adoption and deployment remain separate.
 
 An attempt is one bounded execution of a Task. It can read, act, request help,
 check results and repair several times before returning. Infra supplies current
@@ -67,10 +67,10 @@ checks current authority, attempt identity and affected revisions. Result and
 proposed effects remain atomic where required: a saved draft is progress, but
 a rejected review request cannot be recorded as delivered.
 
-Keep early result-scope validation before workspace cleanup, inside the existing
-result-rejection path. If it rejects the result, preserve useful output, facts
-and artifacts as unaccepted recovery evidence,
-while keeping its input unfinished. A returned result with invalid scope is not
+Validate result scope and proposed actions before workspace cleanup, inside
+the existing result-rejection path. If admission rejects the result, preserve
+useful output, facts and artifacts as unaccepted recovery evidence, while keeping
+its input unfinished. A returned result with invalid scope is not
 the same as an executor that produced no result. In-execution preflight lets the
 worker correct a proposal; settlement still validates current state.
 
@@ -89,14 +89,20 @@ was incorporated, or infer meaning from whether its source is human or system.
 Live steering, where supported, lets the agent reconsider at useful boundaries;
 it does not require waiting for all possible later messages before acting.
 
-**Source availability:** Candidate Host `5664ce7b1` applies this rule to final
+**Source availability:** Candidate Host `f2b4e47f9` applies this rule to final
 completion, partial results, live actions, cross-App requests, Conversation
 Request changes and creator Task revisions. Existing attempt, authority,
 affected-revision and transaction checks remain. Workspace finalization also
 retains clean workspaces when scoped completion leaves input or unresolved
 Conditions. Cleanup uses the same satisfaction rule as settlement: a satisfied
 Condition that settlement removes must not retain an otherwise clean, integrated
-worktree. Missing or unrecognized Condition state remains unresolved.
+worktree. Plan retention after admitting final-result actions too: retiring the
+last wait in the final result must allow the same cleanup as retiring it during
+execution. The Host previews shared admission in a rollback transaction before
+filesystem cleanup, retaining its authority, revision and receipt-replay rules.
+Planning saves no changes and dispatches no requests; actual settlement admits
+the changes again against current state. Missing or unrecognized Condition state
+remains unresolved unless an exact retirement is admitted.
 The schema is unchanged: `waiting` with `continue: true` accepts progress;
 `converged` fulfills its selected inputs. One result has one disposition for
 its selected set. The [PoC record](../archive/reviews/burst-input-progress-20261003.md#implementation-candidate-and-poc)
