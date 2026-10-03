@@ -71,6 +71,25 @@ Common design checks use `bun run check:may-design` from the Apps checkout.
 Final full-CI status belongs to the Host PR; the checks above are reproduction
 commands, not a deployment receipt.
 
+## Review correction: persist the transition with its event
+
+PR review identified a failure the initial happy-path comparison did not cover:
+if required Event persistence failed after alert creation, the row stayed open
+and the next attempt suppressed an opening that had never been published. The
+same sequence could lose a recovery after setting `resolved_at`.
+
+The correction at Host `6aac653d1` uses the existing `stateTransaction` around each automatic
+opening, manual opening and measured recovery. `DbWriter` already joins that
+transaction. No new retry state or Event infrastructure is added, and a failure
+does not roll back successful transitions for other metrics.
+
+Three regression cases inject an SQLite insert failure through the real EventBus
+and DbWriter. All three failed against the initial PR. With the correction, the
+alert mutation rolls back, the sample stays stored, no subscriber runs, and the
+ordinary retry commits and delivers the transition once. A subsequent repeated
+call stays quiet. The focused metric, Event-writer, evidence and source-collection
+checks passed all 37 tests. The PR records the final source and full-CI result.
+
 ## Value and limits
 
 The verified gain is fewer events and unnecessary input admissions. The latest
