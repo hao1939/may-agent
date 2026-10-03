@@ -113,6 +113,54 @@ function earlyInputFixture() {
 }
 
 describe("explicit result scope", () => {
+  it.each(["converged", "waiting", "incomplete"] as const)("accepts explicitly considered live input in a %s result without consuming other input", (state) => {
+    const { f, admit } = earlyInputFixture();
+    const claim = f.claim();
+    admit("live-correction");
+    const live = f.config.resourceStore.readTaskContext({ taskIds: [], admissionIds: ["live-correction"] })
+      .appTaskAdmissions!["live-correction"]!.inputEvent!;
+    recordAppTaskTrigger(f.config, "conversation", { ...live, eventId: 9001 });
+    admit("unread-later");
+    const view = readRuntimeTaskView({ taskStateConfig: f.config }, "conversation", { inputKeys: ["live-correction"] });
+    expect(view?.inputEvents?.[0]?.key).toBe("live-correction");
+    expect(f.config.resourceStore.readTask("conversation")?.status.inputWaits?.["live-correction"]).toBeUndefined();
+    const result = { summary: "Considered the correction", facts: ["correction:read"], inputKeys: ["correction", "live-correction"] };
+    if (state === "converged") completeAppTask(f.config, claim, result);
+    else if (state === "waiting") deferAppTask(f.config, claim, { ...result, disposition: "waiting", continue: true });
+    else reportAppTaskFailure(f.config, claim, result);
+    f.reopen();
+    expect(f.config.resourceStore.readAttempt(claim.attemptId)?.acceptedResult?.inputKeys).toEqual(result.inputKeys);
+    expect(f.config.resourceStore.readAttempt(claim.attemptId)?.acceptedResult?.acceptedLiveEventIds).toEqual([9001]);
+    expect(readAppTaskAdmissionOutcome(f.config, "conversation", "live-correction")?.state)
+      .toBe(state === "converged" ? "converged" : undefined);
+    expect(readAppTaskAdmissionOutcome(f.config, "conversation", "unread-later")).toBeNull();
+    const next = f.claim();
+    const pendingKeys = next.events.map(({ event }) => (event.data as Record<string, unknown>)?.idempotencyKey);
+    expect(pendingKeys).toContain("unread-later");
+    expect(pendingKeys).not.toContain("live-correction");
+    if (state !== "converged") expect(next.continuedInputKeys).toContain("live-correction");
+    expect(f.config.resourceStore.readTask("conversation")?.status.conditionIds).toEqual(["approval"]);
+  });
+
+  it("can explicitly settle an older unanswered admission after its notification was superseded", () => {
+    const { f, admit } = earlyInputFixture();
+    admit("old-wake");
+    observeAppTaskIntent(f.config, { intent: { ...f.intent, outcome: "Review using revised requirements" }, appAgent: "owner" });
+    // Historical installations retained the admission after dropping its
+    // notification, without creating an input wait. Seed that retained state.
+    const resource = f.config.resourceStore.readTask("conversation")!;
+    expect(f.config.resourceStore.replaceTask({
+      expectedResourceVersion: resource.metadata.resourceVersion, resource, ready: true,
+    })).toBe(true);
+    const claim = f.claim();
+    expect(claim.events.some(({ event }) => (event.data as Record<string, unknown>)?.idempotencyKey === "old-wake")).toBe(false);
+    expect(f.config.resourceStore.readTask("conversation")?.status.inputWaits?.["old-wake"]).toBeUndefined();
+    completeAppTask(f.config, claim, { summary: "Earlier wake considered under current requirements", inputKeys: ["old-wake"] });
+    f.reopen();
+    expect(readAppTaskAdmissionOutcome(f.config, "conversation", "old-wake")?.attemptId).toBe(claim.attemptId);
+    expect(readAppTaskAdmissionOutcome(f.config, "conversation", "independent")).toBeNull();
+  });
+
   it.each([false, true])("preserves independent waits and exact answer identity with explicit scope=%s", (explicit) => {
     const { f, due, selected } = earlyInputFixture();
     const claim = f.claim();
