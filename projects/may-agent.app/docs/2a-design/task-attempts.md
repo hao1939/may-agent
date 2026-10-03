@@ -321,8 +321,17 @@ future deadline; `continue: true` requests useful work. Failed verification cann
 
 The worker judges which requests its result covers; `inputKeys` names that complete set (up to 64).
 Omission uses the saved assignment and accepted live requests; `[]` covers none. Scheduling never expands that result.
-The Host validates references and saves result links; structural acceptance does not certify the worker's judgment.
+For an explicit scope, the Host checks the canonical admissions: each input must
+belong to this Task, be admitted at or before the executing generation, and
+remain unanswered. Membership in the starting batch or a derived wait record
+is not another requirement. This includes a live correction the worker chose
+to incorporate and an older unanswered request discovered through exact reads.
+Accepted settlement advances notifications for the selected requests and saves
+their result links; structural acceptance does not certify the worker's judgment.
 `converged` answers this set; waiting/incomplete retain it; unselected inputs survive.
+Reading or receiving a notification alone changes neither coverage nor settlement.
+This clarification has an isolated Host candidate on
+`fix/explicit-task-input-scope-20261004`; deployment remains separate.
 
 Earlier unanswered inputs are supplied as `events.continuedInputs`, separately
 from newly considered events. Their age does not change their obligation. The

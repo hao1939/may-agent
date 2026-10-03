@@ -173,6 +173,10 @@ event for consumption with accepted settlement; `ctx.events.onEvent` is only an
 observation API. Reading a refreshed brief also leaves input pending.
 Accepted Task settlement owns consumption. Missed live hints remain available
 for reconciliation; callbacks are a responsiveness aid, not durable state.
+The worker can incorporate a live request by naming its exact `inputKeys` in the
+ordinary result; it needs no separate acknowledgment tool or callback. The Host
+validates that scope against unanswered admissions on the same Task and consumes
+only the accepted contribution's notifications. Unselected requests remain pending.
 
 The active specialist judges updates within its assignment. The caller judges
 whether the overall procedure still fits when control returns. Do not launch a
