@@ -718,32 +718,54 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
       ...(force ? {} : { updatedBefore: currentTime - ADMISSION_RECOVERY_INTERVAL_MS }),
       limit: ADMISSION_RECOVERY_BATCH_SIZE,
     });
+    const plannedIds = new Set(plans.map((plan) => plan.eventId));
+    const prePlanEventIds = options.db.prepare(
+      `SELECT route.event_id
+       FROM event_durable_routes route
+       LEFT JOIN app_event_admission_plans plan ON plan.event_id = route.event_id
+       WHERE route.route_id = 'app-inbox-route' AND route.status = 'pending'
+         AND plan.event_id IS NULL
+         ${force ? "" : "AND route.updated_at <= ?"}
+       ORDER BY route.updated_at, route.event_id
+       LIMIT ?`,
+    )
+      .all(
+        ...(force
+          ? [ADMISSION_RECOVERY_BATCH_SIZE]
+          : [currentTime - ADMISSION_RECOVERY_INTERVAL_MS, ADMISSION_RECOVERY_BATCH_SIZE]),
+      )
+      .map((row) => Number(row.event_id))
+      .filter((eventId) => Number.isSafeInteger(eventId) && eventId > 0 && !plannedIds.has(eventId));
     admissionRecoveryHandle = setTimeout(() => {
       admissionRecoveryHandle = null;
       if (closed) return;
+      const recoveries = [
+        ...prePlanEventIds.map((eventId) => ({ eventId, plan: null })),
+        ...plans.map((plan) => ({ eventId: plan.eventId, plan })),
+      ];
       let index = 0;
       const recoverNext = (): void => {
         admissionRecoveryHandle = null;
         if (closed) return;
-        const plan = plans[index++];
-        if (!plan) return;
-        const event = loadPersistedEvent(options.db, plan.eventId, options.persistDir);
-        if (!event) {
-          for (const command of plan.commands) {
+        const recovery = recoveries[index++];
+        if (!recovery) return;
+        const event = loadPersistedEvent(options.db, recovery.eventId, options.persistDir);
+        if (!event && recovery.plan) {
+          for (const command of recovery.plan.commands) {
             if (command.status !== "pending") continue;
             recordAppEventAdmissionCommandFailure(options.db, {
-              eventId: plan.eventId,
+              eventId: recovery.eventId,
               appId: command.appId,
-              error: new Error(`Frozen App admission event ${plan.eventId} is unavailable`),
+              error: new Error(`Frozen App admission event ${recovery.eventId} is unavailable`),
               now: now(),
             });
           }
-        } else {
+        } else if (event) {
           // EventBus re-runs only idempotent durable routes and records delivery
           // acceptance on the original row; ordinary subscribers never replay.
-          options.bus.redeliverPersisted(event, plan.eventId);
+          options.bus.redeliverPersisted(event, recovery.eventId);
         }
-        if (index < plans.length) admissionRecoveryHandle = setTimeout(recoverNext, 0);
+        if (index < recoveries.length) admissionRecoveryHandle = setTimeout(recoverNext, 0);
       };
       recoverNext();
     }, 0);

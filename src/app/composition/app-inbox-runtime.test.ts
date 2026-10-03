@@ -5,7 +5,9 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { AppDependencyObservation } from "@may-agent/sdk";
 import { openDatabase, type SqliteDb } from "../../lib/db.js";
+import { getDb } from "../../lib/db/connection.js";
 import { applyDbSchema } from "../../lib/db/schema.js";
+import { DbWriter } from "../../lib/db-writer.js";
 import { createAppEventAdmissionPlan, getAppEventAdmissionPlan } from "../core/state/app-event-admission-store.js";
 import { startAppInboxRuntime, type AppInboxRuntime } from "./app-inbox-runtime.js";
 import {
@@ -1213,6 +1215,76 @@ describe("App inbox runtime", () => {
     expect(db.prepare("SELECT status FROM app_event_admission_plans WHERE event_id = 1").get()).toEqual({
       status: "completed",
     });
+  });
+
+  it("recovers a required durable route that failed before its admission plan was created", async () => {
+    db.close();
+    db = getDb(root);
+    const writer = new DbWriter(root, { existingSchemaOnly: true });
+    const locker = openDatabase(join(root, "may.db"));
+    locker.exec("PRAGMA busy_timeout = 0");
+    const bus = new EventBus();
+    let takeLock = true;
+    bus.setPersistenceSubscriber((event) => {
+      const deferred = writer.handler(event);
+      if (takeLock) {
+        locker.exec("BEGIN IMMEDIATE");
+        takeLock = false;
+      }
+      return deferred;
+    });
+    bus.setDeliveryRecorder(writer.recordDelivery);
+    bus.setDurableRouteRecorder(writer.recordDurableRoute);
+    let ordinaryEffects = 0;
+    bus.subscribe((event) => {
+      if (event.type === "provider.changed") ordinaryEffects += 1;
+    });
+    const admissions: Array<{ event: AgentEvent; conditionTaskIds: string[] }> = [];
+    runtime = await startAppInboxRuntime({
+      registry: await loadedRegistry(root),
+      db,
+      bus,
+      admitTaskEvent: ({ event, conditionTaskIds }) => {
+        admissions.push({ event, conditionTaskIds });
+        return { accepted: true, by: "test-task", route: "direct" };
+      },
+      previewTaskEventRoutes: ({ event }) =>
+        event.type === "provider.changed" ? [{ appId: "evaluation", taskIds: ["condition:exact"] }] : [],
+      scanIntervalMs: 60_000,
+    });
+    const input: AgentEvent = {
+      type: "provider.changed",
+      source: "provider",
+      owner: "app:evaluation",
+      target: { project: "evaluation" },
+      data: { project: "evaluation", value: "locked", idempotencyKey: "provider:locked" },
+    };
+
+    const emitted = bus.emit(input);
+    const eventId = emitted[EVENT_ROW_ID]!;
+    expect(getAppEventAdmissionPlan(db, eventId)).toBeNull();
+    expect(db.prepare("SELECT route_id, status FROM event_durable_routes WHERE event_id = ?").get(eventId)).toEqual({
+      route_id: "app-inbox-route",
+      status: "pending",
+    });
+    expect(ordinaryEffects).toBe(1);
+    expect(db.prepare("SELECT COUNT(*) AS count FROM events WHERE id = ?").get(eventId)).toEqual({ count: 1 });
+
+    locker.exec("ROLLBACK");
+    // Let the startup recovery callback release its handle, then force the same
+    // bounded recovery path a runtime reload uses after the route is available.
+    await Bun.sleep(5);
+    await runtime.reload();
+    await waitUntil(() => getAppEventAdmissionPlan(db, eventId)?.status === "completed", 3_000);
+    expect(admissions).toHaveLength(1);
+    expect(admissions[0]!.event).toMatchObject(input);
+    expect(admissions[0]!.conditionTaskIds).toEqual(["condition:exact"]);
+    expect(db.prepare("SELECT status FROM event_durable_routes WHERE event_id = ?").get(eventId)).toEqual({
+      status: "completed",
+    });
+    expect(db.prepare("SELECT COUNT(*) AS count FROM events WHERE id = ?").get(eventId)).toEqual({ count: 1 });
+    expect(ordinaryEffects).toBe(1);
+    locker.close();
   });
 
   it("admits an exact Task wake directly even when an admission worker is configured", async () => {

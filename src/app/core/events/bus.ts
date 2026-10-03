@@ -1073,6 +1073,9 @@ export type SubscribeOptions = { priority?: "first" | "normal"; label?: string }
 export type EventListener = (event: AgentEvent) => void | Promise<void>;
 export type ListenOptions = { label?: string; types?: readonly string[] };
 export type DeliveryRecorder = (event: AgentEvent, result: DeliveryResult) => void;
+export type DurableRouteRecorder = (event: AgentEvent, routeId: string) => void;
+
+type DurableRouteSubscriber = { fn: Subscriber; routeId?: string };
 
 type EventListenerState = {
   listener: EventListener;
@@ -1087,6 +1090,8 @@ type EventListenerState = {
 export const EVENT_ROW_ID = Symbol.for("may-agent.eventRowId");
 export const EVENT_DEDUPLICATED = Symbol.for("may-agent.eventDeduplicated");
 export const EVENT_REDELIVERY_REQUIRED = Symbol.for("may-agent.eventRedeliveryRequired");
+/** Stable route identities persisted with the event before recoverable routes run. */
+export const EVENT_DURABLE_ROUTE_IDS = Symbol.for("may-agent.eventDurableRouteIds");
 
 // One listener notification per turn keeps socket polling responsive even
 // when several independent listeners have accumulated worker Event bursts.
@@ -1144,11 +1149,12 @@ function inheritedEventTrace(event: AgentEvent, parent: AgentEvent | undefined):
  */
 export class EventBus {
   private persistenceSubscriber: PersistenceSubscriber | undefined;
-  private durableRouteSubscribers: Subscriber[] = [];
+  private durableRouteSubscribers: DurableRouteSubscriber[] = [];
   private firstSubscribers: Subscriber[] = [];
   private normalSubscribers: Subscriber[] = [];
   private listeners: EventListenerState[] = [];
   private deliveryRecorder: DeliveryRecorder | undefined;
+  private durableRouteRecorder: DurableRouteRecorder | undefined;
   private emitDepth = 0;
   private reportingFailures = false;
   private failureFlushScheduled = false;
@@ -1203,10 +1209,12 @@ export class EventBus {
    * event persisted before its delivery acceptance was recorded.
    */
   subscribeDurableRoute(fn: Subscriber, opts?: Pick<SubscribeOptions, "label">): () => void {
-    if (opts?.label?.trim()) this.subscriberLabels.set(fn, opts.label.trim());
-    this.durableRouteSubscribers.push(fn);
+    const routeId = opts?.label?.trim() || undefined;
+    if (routeId) this.subscriberLabels.set(fn, routeId);
+    const subscriber = { fn, routeId };
+    this.durableRouteSubscribers.push(subscriber);
     return () => {
-      this.durableRouteSubscribers = this.durableRouteSubscribers.filter((subscriber) => subscriber !== fn);
+      this.durableRouteSubscribers = this.durableRouteSubscribers.filter((candidate) => candidate !== subscriber);
     };
   }
 
@@ -1226,6 +1234,10 @@ export class EventBus {
 
   setDeliveryRecorder(fn: DeliveryRecorder): void {
     this.deliveryRecorder = fn;
+  }
+
+  setDurableRouteRecorder(fn: DurableRouteRecorder): void {
+    this.durableRouteRecorder = fn;
   }
 
   /** Emit an event. Persists first, then runs "first" and "normal" subscribers.
@@ -1298,6 +1310,15 @@ export class EventBus {
     // DbWriter attaches the durable row id to the routed envelope. Frozen
     // producer input must not silently lose delivery and child-trace metadata.
     const event = Object.isExtensible(tracedEvent) ? tracedEvent : ({ ...tracedEvent } as AgentEvent);
+    if (persist) {
+      const routeIds = this.durableRouteSubscribers.flatMap(({ routeId }) => (routeId ? [routeId] : []));
+      if (routeIds.length > 0) {
+        Object.defineProperty(event, EVENT_DURABLE_ROUTE_IDS, {
+          value: Object.freeze(routeIds),
+          configurable: true,
+        });
+      }
+    }
     this.emitDepth++;
     let delivery: DeliveryResult | undefined;
     let durableRouteFailed = false;
@@ -1321,10 +1342,11 @@ export class EventBus {
       if (retry[EVENT_DEDUPLICATED] && !retry[EVENT_REDELIVERY_REQUIRED]) {
         return event as AgentEvent & { [EVENT_ROW_ID]?: number };
       }
-      for (const fn of this.durableRouteSubscribers) {
+      for (const { fn, routeId } of this.durableRouteSubscribers) {
         try {
           const result = normalizeDeliveryResult(this.runSubscriber(event, "first", fn));
           delivery = preferredDelivery(delivery, result);
+          if (routeId) this.durableRouteRecorder?.(event, routeId);
         } catch (err) {
           durableRouteFailed = true;
           this.reportSubscriberFailure(event, "first", err);

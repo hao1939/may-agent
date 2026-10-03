@@ -13,6 +13,7 @@ export function attachEventPersistence(opts: { bus: EventBus; persistDir: string
   const dbWriter = new DbWriter(opts.persistDir);
   opts.bus.setPersistenceSubscriber(dbWriter.handler);
   opts.bus.setDeliveryRecorder(dbWriter.recordDelivery);
+  opts.bus.setDurableRouteRecorder(dbWriter.recordDurableRoute);
 }
 
 const RESTART_HANDLER_RECOVERY_BATCH_SIZE = 500;

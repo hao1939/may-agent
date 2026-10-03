@@ -11,6 +11,7 @@ import { readTaskEventTarget } from "../app/core/events/task-target.js";
 import {
   EVENT_DEDUPLICATED,
   EVENT_DELIVERY_RESULT,
+  EVENT_DURABLE_ROUTE_IDS,
   EVENT_INGRESS_SOURCE,
   EVENT_INTERFACE_INPUT,
   EVENT_REDELIVERY_REQUIRED,
@@ -651,6 +652,22 @@ export class DbWriter {
     }
   };
 
+  recordDurableRoute = (event: AgentEvent, routeId: string): void => {
+    const rowId = (event as AgentEvent & { [EVENT_ROW_ID]?: number })[EVENT_ROW_ID];
+    if (!Number.isSafeInteger(rowId) || Number(rowId) <= 0) return;
+    try {
+      withSqliteBusyRetry(`record durable route ${routeId} for event ${rowId}`, () => {
+        this.db.prepare(
+          `UPDATE event_durable_routes
+           SET status = 'completed', completed_at = COALESCE(completed_at, ?), updated_at = ?
+           WHERE event_id = ? AND route_id = ? AND status = 'pending'`,
+        ).run(Date.now(), Date.now(), rowId, routeId);
+      });
+    } catch (error) {
+      log("warn", `[event-delivery] failed to record durable route ${routeId} for event ${rowId}: ${String(error)}`);
+    }
+  };
+
   recordDelivery = (event: AgentEvent, result: DeliveryResult): void => {
     const rowId = (event as AgentEvent & { [EVENT_ROW_ID]?: number })[EVENT_ROW_ID];
     if (typeof rowId !== "number" || !Number.isFinite(rowId)) return;
@@ -888,6 +905,19 @@ export class DbWriter {
         throw new Error(`Persisted event ${rowId} cannot expose its durable receipt`, { cause: error });
       }
       persistEventTrace(this.db, event, rowId, timestamp);
+      const durableRouteIds = (event as AgentEvent & { [EVENT_DURABLE_ROUTE_IDS]?: readonly string[] })[
+        EVENT_DURABLE_ROUTE_IDS
+      ];
+      if (Array.isArray(durableRouteIds)) {
+        const insertRoute = this.db.prepare(
+          `INSERT OR IGNORE INTO event_durable_routes
+           (event_id, route_id, status, created_at, updated_at)
+           VALUES (?, ?, 'pending', ?, ?)`,
+        );
+        for (const routeId of durableRouteIds) {
+          if (typeof routeId === "string" && routeId) insertRoute.run(rowId, routeId, timestamp, timestamp);
+        }
+      }
       if (emissionFence || event.type === "escalation.resolved" || event.type === "escalation.dismissed")
         this.persistExactTaskWake(event, target, rowId, timestamp);
       this.closePairForFollowup(payload, rowId, timestamp);
