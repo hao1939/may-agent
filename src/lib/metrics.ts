@@ -308,7 +308,6 @@ export function createMetricService(options: MetricServiceOptions): MetricServic
 
   function evaluate(id?: string): MetricEvaluationResult[] {
     const db = options.getDb();
-    const ts = now();
     const configSelect = hasColumn(db, "metrics", "config") ? ", m.config" : "";
     const metricIds = id ? [id] : db
       .prepare("SELECT id FROM metrics WHERE status = 'active' AND current IS NOT NULL AND threshold IS NOT NULL")
@@ -331,6 +330,7 @@ export function createMetricService(options: MetricServiceOptions): MetricServic
     // Serialize the current evidence, episode decision and required Event together.
     // Each metric commits independently; a later failure preserves earlier work.
     for (const metricId of metricIds) stateTransaction(db, () => {
+      const ts = now();
       const row = readMetric.get(metricId) as Record<string, any> | null;
       if (!row) return;
       const current = numberOrNull(row.current);
@@ -526,8 +526,8 @@ export function createMetricService(options: MetricServiceOptions): MetricServic
 
   function alert(id: string, message: string, opts?: ManualAlertOptions): void {
     const db = options.getDb();
-    const ts = now();
     stateTransaction(db, () => {
+      const ts = now();
       const row = db
         .prepare(
           `SELECT m.id, m.name, m.owner as explicitOwner, p.owner as projectOwner, m.project,

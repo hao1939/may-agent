@@ -366,6 +366,63 @@ describe("MetricService", () => {
     },
   );
 
+  it.each(["automatic breach", "manual breach", "recovery"] as const)(
+    "dates %s after acquiring the write lock, separately from sample time",
+    (transition) => {
+      const { root, db, service, emitted } = harness();
+      const id = "sample.queue-depth";
+      service.define({ id, threshold: 0, alertOp: ">" });
+      let clock = 10_000;
+      const otherDb = openDatabase(join(root, "may.db"));
+      const metrics = (connection: typeof db) => createMetricService({
+        getDb: () => connection,
+        now: () => clock,
+        emit: (type, data) => emitted.push({ type, data }),
+      });
+      const waiting = metrics(db);
+      const other = metrics(otherDb);
+      const exec = db.exec.bind(db);
+      let interleaved = false;
+      db.exec = (sql) => {
+        if (sql === "BEGIN IMMEDIATE" && !interleaved) {
+          interleaved = true;
+          clock = 20_000;
+          other.record(id, 1);
+          if (transition !== "automatic breach") {
+            other.evaluate(id);
+            clock = 25_000;
+            other.record(id, 0);
+            if (transition === "manual breach") other.evaluate(id);
+          }
+          clock = 30_000;
+        }
+        exec(sql);
+      };
+      try {
+        if (transition === "manual breach") waiting.alert(id, "New incident");
+        else waiting.evaluate(id);
+        expect(interleaved).toBe(true);
+        const alerts = db.prepare("SELECT created_at, resolved_at FROM metric_alerts ORDER BY id").all();
+        expect(alerts).toEqual(transition === "recovery"
+          ? [{ created_at: 20_000, resolved_at: 30_000 }]
+          : [
+              ...(transition === "manual breach" ? [{ created_at: 20_000, resolved_at: 25_000 }] : []),
+              { created_at: 30_000, resolved_at: null },
+            ]);
+        expect(emitted.at(-1)).toMatchObject({
+          type: transition === "recovery" ? "metric.recovered" : "metric.breach",
+          data: { measuredAt: 30_000 },
+        });
+        expect(waiting.get(id)?.observation?.measuredAt).toBe(
+          transition === "automatic breach" ? 20_000 : 25_000,
+        );
+      } finally {
+        db.exec = exec;
+        otherDb.close();
+      }
+    },
+  );
+
   it("defaults project metric ownership to the project owner and emits routing context", () => {
     const { db, service, emitted } = harness();
     db.prepare("INSERT INTO projects (id, path, name, owner, status, updated_at) VALUES (?, ?, ?, ?, ?, ?)").run(
