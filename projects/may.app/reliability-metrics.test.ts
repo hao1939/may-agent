@@ -715,7 +715,9 @@ test("declared reliability metrics collect through the Host and retain a real br
 });
 
 test("retained Evaluation admission recovery opens one quiet May oversight episode after restart", async () => {
-  const root = mkdtempSync(join(tmpdir(), "may-evaluation-admission-recovery-"));
+  const root = mkdtempSync(
+    join(tmpdir(), "may-evaluation-admission-recovery-"),
+  );
   try {
     const beforeRestart = getDb(root);
     const failedAt = Date.now() - 2 * 86400000;
@@ -804,7 +806,9 @@ test("retained Evaluation admission recovery opens one quiet May oversight episo
     expect(recoveries).toHaveLength(1);
     expect(
       store
-        .prepare("SELECT status, execution_task_id FROM app_inbox_items WHERE id = ?")
+        .prepare(
+          "SELECT status, execution_task_id FROM app_inbox_items WHERE id = ?",
+        )
         .get("retained-evaluation-input"),
     ).toEqual({ status: "pending", execution_task_id: null });
   } finally {
@@ -986,6 +990,17 @@ test("retains failed attempts after later success and calculates the rate from t
     failurePercent: 33.333,
     examples: [{ appId: "sample", taskId: "same-task", attemptId: "failed" }],
   });
+});
+
+test("Evaluation operation metric names the expanded attempt and admission signal unit", () => {
+  const metric = reliabilityMetrics.find(
+    (candidate) => candidate.id === EVALUATION_OPERATION_METRIC,
+  );
+  expect(metric).toMatchObject({
+    name: "Repeated unsuccessful Evaluation operation signals",
+    unit: "signals",
+  });
+  expect(metric?.description).toContain("input-admission recovery");
 });
 
 test("Evaluation oversight groups all supported unsuccessful kinds by Task generation", () => {
