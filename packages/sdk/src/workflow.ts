@@ -496,6 +496,9 @@ export type TaskAttempt = {
     acceptedResult?: {
       state: "converged" | "waiting" | "incomplete";
       reviewAt?: number;
+      /** Exact admitted coverage; absent means unavailable, while [] explicitly covers none. */
+      inputKeys?: string[];
+      continue?: true;
       summary: string;
       response?: string;
       result?: Record<string, unknown>;

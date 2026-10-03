@@ -257,6 +257,34 @@ test("continued transfer input keeps its original request identity and content p
   }
 });
 
+test("work context keeps unknown result scope and incomplete obligation counts explicit", async () => {
+  const root = mkdtempSync(join(tmpdir(), "decision-work-coverage-"));
+  try {
+    const f = fixture(root);
+    f.context.reconciliation.previousAttempt = {
+      attemptId: "previous", generation: 1, state: "completed",
+      acceptedResult: { state: "converged", summary: "Legacy result without scope", facts: [] },
+    };
+    f.setCurrent({ ...f.task, currentObligations: { available: false } });
+    const read = createTaskDecisionContext(f.context);
+    const unknown = packet(await read());
+    expect(unknown.work.retainedInputs).toEqual({ available: false });
+    expect(unknown.work.previousResult.coveredInputs).toBeNull();
+    f.setCurrent({ ...f.task, currentObligations: { available: true, inputWaits: {
+      maxItems: 1, truncated: true, items: [{ key: "old", pending: true, conditionCount: 0,
+        correlation: { input: { available: false }, admission: { available: false } } }],
+    } } });
+    const bounded = packet(await read());
+    expect(bounded.work.retainedInputs).toEqual({ available: true, observed: 1, pendingWork: 1, truncated: true });
+    f.fail();
+    const fallback = packet(await read());
+    expect(fallback.observed.refresh.available).toBe(false);
+    expect(fallback.work).toEqual(bounded.work);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
 test("large Unicode data stays discoverable without displacing current conclusions and approval", async () => {
   const root = mkdtempSync(join(tmpdir(), "decision-bounds-"));
   try {
@@ -288,6 +316,11 @@ test("the production transform restores current facts after compaction without a
   const root = mkdtempSync(join(tmpdir(), "decision-compaction-"));
   try {
     const f = fixture(root);
+    f.context.reconciliation.events.continuedInputs = [inputEvent("original", "Review remains required", 1)];
+    f.context.reconciliation.previousAttempt = {
+      attemptId: "previous", generation: 1, state: "completed",
+      acceptedResult: { state: "converged", summary: "Draft prepared", facts: ["draft:ready"], inputKeys: [] },
+    };
     const task = "Original caller request with full data";
     let supplied: string | undefined;
     const skill = {
@@ -366,6 +399,9 @@ test("the production transform restores current facts after compaction without a
     await agent.prompt("Recheck the review");
     expect(packet(requests[1].messages.at(-1)!).current.result.understanding).toBe("Thursday");
     for (const request of requests) {
+      const current = packet(request.messages.at(-1)!);
+      expect(current.work.assignedAtStart.continuingInputs).toBe(1);
+      expect(current.work.previousResult.coveredInputs).toBe(0);
       expect(request.systemPrompt).toContain("App reviewer: assess evidence quality.");
       expect(request.systemPrompt).toContain("a helper still owes only its assigned contribution");
       expect(request.systemPrompt).toContain(skill.canonicalPath);
