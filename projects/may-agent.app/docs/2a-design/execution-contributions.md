@@ -150,10 +150,11 @@ signal is independent of tool counts and uses the existing completion guidance.
 It does not extend deadlines, introduce an agent-facing timer API, or change Task
 states or result schemas. The existing operation-count guidance still applies.
 
-**Availability:** Source candidate for managed and direct prepared model invocations
-requiring `finish()`; not deployed. The [implementation trial](../archive/reviews/graceful-attempt-finish-20261004.md)
-records exact revisions and tests using the real model/tool loop and Task admission
-with a scripted provider. It does not establish live model judgment or token savings.
+**Availability:** Implemented in Host PR #308 for managed and direct prepared model
+invocations requiring `finish()`. The [implementation and deployment record](../archive/reviews/graceful-attempt-finish-20261004.md)
+records exact revisions, scripted-provider tests through the real model/tool loop
+and Task admission, and the verified local rollout. Deployment health does not
+establish live model judgment or token savings.
 Standalone native Codex execution, arbitrary workflow JavaScript and persistent chat
 turns have no finalization window of their own. Structured agents' scoped tools
 still receive their caller's work-stop signal.

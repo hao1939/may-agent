@@ -2,7 +2,7 @@
 
 **Supports:** [Finishing before the execution deadline](../../2a-design/execution-contributions.md#finish-before-the-execution-deadline).
 **Choice basis:** [Simple first](../../1-principles/core-principles.md#simple-first) and [agents judge; infra executes](../../1-principles/core-principles.md#code-executes-and-brings-back-evidence-agents-judge).
-**Status:** Source candidate, not deployed. Scripted provider decisions; no live model trial or measured token savings.
+**Status:** Merged and locally deployed as Host `e23ed14bc5e103d3e671f88ec379861b8c2d9c75`. Scripted provider decisions; no live finishing-window trial or measured token savings.
 
 ## Question and choice
 
@@ -49,7 +49,7 @@ honors provider cancellation and permits bounded corrective turns. Twelve
 consecutive managed-Task trials passed without retries hiding a failed trial.
 This was a fixture correction, not a reason to impose ordering on the runtime.
 
-No live installation, Task, deployment or native Codex execution was changed.
+The initial trial and review tests changed no live installation, Task, deployment or native Codex execution.
 The owning contract states executor coverage and cancellation limitations.
 
 ## Review follow-up: nested helper evidence
@@ -69,3 +69,17 @@ child startup with a short timer; the existing Task test owns timer coverage.
 The work-stop case fails on the original PR revision while the ordinary Stop
 case passes. Both pass with the correction; the focused suite passes 63 tests
 with 294 assertions. No model judgment is inferred.
+
+## Merge and deployment verification
+
+Host PR #308 merged as `e23ed14bc5e103d3e671f88ec379861b8c2d9c75`, retaining
+the independently merged workspace-retention fix in PR #309. Both Quality and
+Container checks passed on the merged revision. The supported deployment settled
+at `2026-10-03T20:17:54.708Z` with correlation
+`merged-308-e23ed14b-20261004`, healthy status and `duplicateDeploy: false`.
+The receipt, staged provenance and installed binary agreed on SHA-256
+`dc58e0201482dba91ac44f779f64e4bfb0e94a2be080fb30f8314835b65fd72a`.
+Daemon, web and maintenance services were running; HTTP readiness passed; SDK
+and UI links selected the same source revision. The deployment checks passed
+66 tests. This establishes installation and readiness, not that a live agent
+has used the finishing window successfully or that token waste has decreased.
