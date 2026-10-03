@@ -21,6 +21,8 @@ function fixture(root: string) {
     generation: 1,
     resourceVersion: 3,
     status: "running",
+    agent: "task-owner",
+    creator: { appId: "caller", taskId: "requester" },
     outcome: "Review the draft",
     acceptance: ["Keep approval separate"],
     input: { background: "old notes" },
@@ -151,6 +153,8 @@ test("refresh keeps current evidence, independent approval and a scoped last-kno
     const f = fixture(root);
     const read = createTaskDecisionContext(f.context);
     const initial = packet(await read());
+    expect(initial.assignment.agent).toBe("task-owner");
+    expect(initial.assignment.creator).toEqual({ appId: "caller", taskId: "requester" });
     expect(initial.conditions[0].observation.state).toBe("unknown");
     f.setCurrent({ ...f.task, resourceVersion: 4, result: { understanding: "Thursday", version: "v4" } });
     const updated = packet(await read());
@@ -164,6 +168,7 @@ test("refresh keeps current evidence, independent approval and a scoped last-kno
     expect(fallback.observed.snapshot).toBe("last-successful-read");
     expect(fallback.current).toEqual(updated.current);
     expect(fallback.conditions).toEqual(updated.conditions);
+    expect(fallback.assignment).toEqual(updated.assignment);
     expect(fallback.coverage.currentRead.taskId).toBe("review");
     expect(f.context.details?.task.result).toEqual({ understanding: "Wednesday", version: "v3" });
   } finally {
@@ -400,6 +405,8 @@ test("the production transform restores current facts after compaction without a
     expect(packet(requests[1].messages.at(-1)!).current.result.understanding).toBe("Thursday");
     for (const request of requests) {
       const current = packet(request.messages.at(-1)!);
+      expect(current.assignment.agent).toBe("task-owner");
+      expect(current.assignment.creator).toEqual({ appId: "caller", taskId: "requester" });
       expect(current.work.assignedAtStart.continuingInputs).toBe(1);
       expect(current.work.previousResult.coveredInputs).toBe(0);
       expect(request.systemPrompt).toContain("App reviewer: assess evidence quality.");

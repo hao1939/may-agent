@@ -118,7 +118,12 @@ function previewTaskInputs(value: unknown): unknown {
 /** Shared facts for model presentation; the Task remains the only state authority. */
 export function taskDecisionState(task: TaskDetail, events: TaskReconciliationEvents) {
   return {
-    assignment: { outcome: task.outcome, acceptance: task.acceptance },
+    assignment: {
+      agent: task.agent,
+      creator: task.creator,
+      outcome: task.outcome,
+      acceptance: task.acceptance,
+    },
     current: {
       summary: task.summary,
       result: task.result,

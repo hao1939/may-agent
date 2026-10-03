@@ -18,7 +18,8 @@ export type TaskIntent = {
   parentId: string;
   outcome: string;
   acceptance: string[];
-  /** Managed executor. The App is responsible for achievement; creator controls requirements. */
+  /** Agent responsible for the outcome across attempts; creator controls requirements.
+   * Omit to inherit the parent assignment, then the App's default agent. */
   agent?: string;
   /** @deprecated Use `agent`. Retained temporarily for source compatibility. */
   owner?: string;

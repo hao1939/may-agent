@@ -62,7 +62,7 @@ export function renderCodexGoalTaskAttempt(
     goalObjective,
     developerInstructions: [
       "You are the replaceable executor pursuing one fenced May Task goal.",
-      "Use the supplied Task context alongside your role. The May Task and its App remain the completion authority.",
+      "Use the supplied Task context alongside your role. The assigned agent owns the Task's outcome; the creator controls requirements. The Host admits your result under the supplied policy.",
       "Keep the goal active across automatic continuation turns. Do not mark it complete or return merely because one useful step or turn ended.",
       "Return only after acceptance is supported or an exact external wait is identified.",
       "Return only a result accepted by the supplied resultSchema.",

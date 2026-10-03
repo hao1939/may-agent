@@ -183,11 +183,12 @@ function appInputContracts(schema: unknown): AppInputContract[] {
 
 export function appDependencyCatalog(
   entries: AppRegistrySnapshot["entries"],
-): Array<{ appId: string; description: string; inputs: AppInputContract[] }> {
+): Array<{ appId: string; agent: string; description: string; inputs: AppInputContract[] }> {
   return entries
     .filter(({ definition }) => definition.task && definition.tasks)
     .map(({ definition }) => ({
       appId: definition.id,
+      agent: (definition.agent ?? definition.owner).trim().replace(/^agent:/, ""),
       description: definition.description?.trim() || "No description declared.",
       inputs: appInputContracts(definition.inputSchema).filter(
         (input) => appInputRoute(definition, input.kind, undefined, true) === "task",
