@@ -18,6 +18,12 @@ export type UsageIdentity = {
 
 export type UsageOutcome = "done" | "error" | "interrupted" | "preparation-error";
 
+/** Recover the previous process's unfinished measurements without inventing
+ * activity or a duration for time when no worker was observing the session. */
+export function recoverExecutionUsage(db: SqliteDb, sessionId: string, outcome: UsageOutcome): void {
+  db.prepare("UPDATE execution_usage SET outcome = ? WHERE session_id = ? AND outcome IS NULL").run(outcome, sessionId);
+}
+
 /** Replace a cumulative snapshot; repeating a write cannot add spend. */
 export function saveExecutionUsage(
   db: SqliteDb,
