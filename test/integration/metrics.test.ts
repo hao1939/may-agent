@@ -5,6 +5,7 @@ import { tmpdir } from "node:os";
 import { closeDb, getDb } from "../../src/lib/requests.js";
 import { createMetricService } from "../../src/lib/metrics.js";
 import { DbWriter } from "../../src/lib/db-writer.js";
+import { openDatabase } from "../../src/lib/db.js";
 import { EventBus, type AgentEvent } from "../../src/app/core/events/bus.js";
 
 describe("MetricService", () => {
@@ -177,6 +178,61 @@ describe("MetricService", () => {
       );
       expect(delivered).toEqual(expectedTypes);
       expect(alert.resolved_at).toBe(transition === "recovery" ? 10_000 : null);
+    },
+  );
+
+  it.each(["automatic breach", "manual breach", "recovery", "new sample"] as const)(
+    "uses current state when another connection commits %s before the write lock",
+    (transition) => {
+      const { root, db, service, emitted } = harness();
+      const id = "sample.queue-depth";
+      service.define({ id, owner: "sample", threshold: 0, alertOp: ">" });
+      service.record(id, 1);
+      if (transition === "recovery") {
+        service.evaluate(id);
+        service.record(id, 0);
+      }
+      const otherDb = openDatabase(join(root, "may.db"));
+      const other = createMetricService({
+        getDb: () => otherDb,
+        now: () => 10_000,
+        emit: (type, data) => emitted.push({ type, data }),
+      });
+      const attempt = (metrics: typeof service) =>
+        transition === "manual breach" ? metrics.alert(id, "Queue needs attention") : metrics.evaluate(id);
+      const exec = db.exec.bind(db);
+      let interleaved = false;
+      // Deterministically let a second connection commit just before this caller
+      // acquires its write lock. No threads, sleeps, or mocked query results.
+      db.exec = (sql) => {
+        if (sql === "BEGIN IMMEDIATE" && !interleaved) {
+          interleaved = true;
+          if (transition === "new sample") other.record(id, 0);
+          attempt(other);
+        }
+        exec(sql);
+      };
+      try {
+        attempt(service);
+        expect(interleaved).toBe(true);
+        attempt(service);
+        const alerts = db.prepare("SELECT id, resolved_at FROM metric_alerts").all();
+        if (transition === "new sample") {
+          expect(service.get(id)?.current).toBe(0);
+          expect(alerts).toEqual([]);
+          expect(emitted).toEqual([]);
+        } else {
+          expect(alerts).toHaveLength(1);
+          expect(alerts[0].resolved_at).toBe(transition === "recovery" ? 10_000 : null);
+          expect(emitted.map(({ type, data }) => [type, data!.alertId])).toEqual(
+            (transition === "recovery" ? ["metric.breach", "metric.recovered"] : ["metric.breach"])
+              .map((type) => [type, alerts[0].id]),
+          );
+        }
+      } finally {
+        db.exec = exec;
+        otherDb.close();
+      }
     },
   );
 
