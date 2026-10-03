@@ -1838,7 +1838,7 @@ test("recovery scopes report lookups to linked Tasks without changing legacy JSO
   }
 });
 
-test("one result reaches all linked Topics once, with late links and independent Requests preserved", () => {
+test.each(["link", "conversation"] as const)("one result reaches all linked Topics once (%s), preserving late links and Requests", (scope) => {
   const f = fixture();
   const first = f.admit();
   completeConversationTaskTurn(f.context(), f.claim(first.taskId), {
@@ -1880,7 +1880,9 @@ test("one result reaches all linked Topics once, with late links and independent
     });
     linkConversationTopicTask(f.db, id, app.id, "measurement");
   }
-  const ref = { conversationId: "chat", topicId: topicIds[7]!, taskId: "measurement", attemptId: claim.attemptId };
+  const ref = { conversationId: "chat", ...(scope === "link" ? { topicId: topicIds[7]! } : {}),
+    taskId: "measurement", attemptId: claim.attemptId };
+  expect(() => admitConversationTaskChange(f.context(), f.context(), { ...ref, conversationId: "unrelated" })).toThrow("no link");
   const saved = admitConversationTaskChange(f.context(), f.context(), ref);
   expect(saved.created).toBe(true);
   expect(saved.item.input.data).toMatchObject({ topicIds, outcome: { result: { value: 17 } } });
@@ -1909,7 +1911,7 @@ test("one result reaches all linked Topics once, with late links and independent
   expect(listPendingConversationTaskChanges(f.db, app.id)).toMatchObject([
     { topicId: late, attemptId: claim.attemptId },
   ]);
-  const later = admitConversationTaskChange(f.context(), f.context(), { ...ref, topicId: late });
+  const later = admitConversationTaskChange(f.context(), f.context(), { ...ref, ...(scope === "link" ? { topicId: late } : {}) });
   expect(later.created).toBe(true);
   expect(later.item.input.data).toMatchObject({ topicIds: [late] });
   expect(later.item.id).not.toBe(saved.item.id);
@@ -1981,7 +1983,7 @@ test("legacy per-Topic delivery receipts remain valid alongside new grouped rece
   expect(listPendingConversationTaskChanges(f.db, app.id)).toEqual([]);
 });
 
-test("grouped delivery leaves links beyond the admission limit recoverable after restart", () => {
+test.each(["link", "conversation"] as const)("grouped delivery (%s) leaves overflow recoverable after restart", (scope) => {
   const f = fixture();
   const first = f.admit();
   completeConversationTaskTurn(f.context(), f.claim(first.taskId), decision);
@@ -2009,15 +2011,16 @@ test("grouped delivery leaves links beyond the admission limit recoverable after
     linkConversationTopicTask(f.db, id, app.id, "measurement");
   }
   // A direct notification for a link outside the first sorted page must be included.
-  const ref = { conversationId: "chat", topicId: topics[104]!, taskId: "measurement", attemptId: claim.attemptId };
+  const ref = { conversationId: "chat", ...(scope === "link" ? { topicId: topics[104]! } : {}),
+    taskId: "measurement", attemptId: claim.attemptId };
   const initial = admitConversationTaskChange(f.context(), f.context(), ref);
   const initialTopics = initial.item.input.data.topicIds as string[];
   expect(initialTopics).toHaveLength(100);
-  expect(initialTopics).toContain(ref.topicId);
+  if (scope === "link") expect(initialTopics).toContain(ref.topicId);
   f.reopen();
   const remaining = listPendingConversationTaskChanges(f.db, app.id);
   expect(remaining.map((entry) => entry.topicId).sort()).toEqual(topics.filter((id) => !initialTopics.includes(id)));
-  const recovered = admitConversationTaskChange(f.context(), f.context(), remaining[0]!);
+  const recovered = admitConversationTaskChange(f.context(), f.context(), scope === "link" ? remaining[0]! : ref);
   const recoveredTopics = recovered.item.input.data.topicIds as string[];
   expect(recoveredTopics).toHaveLength(5);
   expect([...initialTopics, ...recoveredTopics].sort()).toEqual(topics);
@@ -2086,7 +2089,10 @@ test.each(["answer", "answer-without-request", "error", "closed"] as const)("a h
   expect(pending[0]).toMatchObject({ conversationId: "chat", originInputId: "first", taskId: "measurement" });
   expect(pending[0]).not.toHaveProperty("topicId");
   expect(() => admitConversationTaskChange(f.context(), f.context(), { ...pending[0]!, originInputId: "unrelated" })).toThrow("no link");
-  const returned = admitConversationTaskChange(f.context(), f.context(), pending[0]!);
+  // Conversation-level routing finds the exact caller even without a Topic.
+  const returned = admitConversationTaskChange(f.context(), f.context(), {
+    ...pending[0]!, originInputId: undefined,
+  });
   expect(returned.created).toBe(true);
   expect(returned.item?.input.data).toMatchObject({ originInputIds: ["first"], topicIds: [] });
   expect(readConversationRequest(f.db, app.id, "chat", "comparison")?.status).toBe(outcome === "answer-without-request" ? undefined : "open");

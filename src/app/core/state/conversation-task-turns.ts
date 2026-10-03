@@ -827,7 +827,7 @@ export function admitConversationTaskChange(
           link.conversationId === input.conversationId &&
           (input.originInputId
             ? link.originInputId === input.originInputId
-            : !link.originInputId && !!input.topicId && link.topicId === input.topicId),
+            : !input.topicId || (!link.originInputId && link.topicId === input.topicId)),
       )
     )
       throw new Error("Task result has no link to this Conversation");
@@ -867,7 +867,7 @@ export function admitConversationTaskChange(
         },
       };
     }
-    const linkId = input.originInputId ? `input:${input.originInputId}` : `topic:${input.topicId}`;
+    const linkId = input.originInputId ? `input:${input.originInputId}` : input.topicId ? `topic:${input.topicId}` : null;
     const changesSql = `WITH links AS MATERIALIZED (
       SELECT * FROM (${conversationTaskLinksSql("task")})
       WHERE app_id = ? AND conversation_id = ? AND task_app_id = ? AND task_id = ?
@@ -881,17 +881,21 @@ export function admitConversationTaskChange(
       input.closedGeneration ?? null,
     ];
     const changeFilter = `attemptId IS ? AND closedGeneration IS ?`;
-    const receipt = db
-      .prepare(
-        `${changesSql}
+    // Older per-link notifications retain their exact receipt. Conversation-level
+    // notifications collect any eligible links still missing that saved outcome.
+    if (linkId) {
+      const receipt = db
+        .prepare(
+          `${changesSql}
       SELECT COALESCE((SELECT id FROM app_inbox_items WHERE id = changes.inputId),
         (${groupedChangeReceiptSql} LIMIT 1)) AS receiptId
       FROM changes WHERE ${changeFilter} AND linkId = ?`,
-      )
-      .get(...args, linkId);
-    if (!receipt) return { taskId: task.metadata.id, created: false };
-    if (typeof receipt.receiptId === "string")
-      return { item: getAppInboxItem(db, receipt.receiptId)!, taskId: task.metadata.id, created: false };
+        )
+        .get(...args, linkId);
+      if (!receipt) return { taskId: task.metadata.id, created: false };
+      if (typeof receipt.receiptId === "string")
+        return { item: getAppInboxItem(db, receipt.receiptId)!, taskId: task.metadata.id, created: false };
+    }
     // One result wakes a Conversation once for all currently eligible callers.
     const links = db
       .prepare(
