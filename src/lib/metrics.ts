@@ -282,15 +282,21 @@ export function createMetricService(options: MetricServiceOptions): MetricServic
     );
     const insertColumns = Object.keys(values).filter((key) => metricColumns.has(key));
     const insertValues = insertColumns.map((key) => values[key]);
-    db.run(
-      `INSERT OR IGNORE INTO metrics (${insertColumns.join(", ")}) VALUES (${insertColumns.map(() => "?").join(", ")})`,
-      insertValues,
-    );
+    stateTransaction(db, () => {
+      db.run(
+        `INSERT OR IGNORE INTO metrics (${insertColumns.join(", ")}) VALUES (${insertColumns.map(() => "?").join(", ")})`,
+        insertValues,
+      );
 
-    const updateColumns = insertColumns.filter((key) => key !== "id" && key !== "created_at");
-    const updateValues = updateColumns.map((key) => values[key]);
-    updateValues.push(def.id);
-    db.run(`UPDATE metrics SET ${updateColumns.map((key) => `${key} = ?`).join(", ")} WHERE id = ?`, updateValues);
+      const updateColumns = insertColumns.filter((key) => key !== "id" && key !== "created_at");
+      const updateValues = updateColumns.map((key) => values[key]);
+      updateValues.push(def.id);
+      db.run(`UPDATE metrics SET ${updateColumns.map((key) => `${key} = ?`).join(", ")} WHERE id = ?`, updateValues);
+      // Retirement is administrative closure, not a measured recovery or Task result.
+      if (def.status === "retired" || def.status === "closed") {
+        db.run("UPDATE metric_alerts SET resolved_at = ? WHERE metric_id = ? AND resolved_at IS NULL", [ts, def.id]);
+      }
+    });
   }
 
   function record(id: string, value: number, opts?: MetricRecordOptions): void {
