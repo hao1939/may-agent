@@ -379,7 +379,9 @@ export function createMetricService(options: MetricServiceOptions): MetricServic
       const consecutive = (metricType === "health" && alertConfig?.mode === "consecutive_failures") ||
         (metricType === "gauge" && alertConfig?.mode === "sustained");
       if (consecutive) {
-        const requiredCount = alertConfig.count ?? alertConfig.consecutive ?? 3;
+const configuredCount = alertConfig.count ?? alertConfig.consecutive;
+        const requiredCount =
+          Number.isSafeInteger(configuredCount) && configuredCount > 0 ? configuredCount : 3;
         const snapshots = db.prepare(`SELECT value FROM metric_snapshots WHERE metric_id = ? AND measured_at <= ?
           ORDER BY measured_at DESC, id DESC LIMIT ?`).all(row.id, ts, requiredCount) as Array<{ value: number }>;
         if (thresholdBreached && snapshots.length < requiredCount) {
