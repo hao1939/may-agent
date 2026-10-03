@@ -2,7 +2,9 @@
 
 **Supports:** [Make progress while input keeps arriving](../../proposals/progress-under-burst-input.md). Tests whether inbox growth prevents accepted work and what a narrower admission rule risks.
 
-**Status:** Completed isolated contract experiment; no production change or model trial.
+**Status:** Completed isolated contract experiment, rechecked on current Host
+source during the context-fix merge. No burst-admission production change or
+model trial.
 
 ## Question and revisions
 
@@ -62,6 +64,42 @@ not model reasoning, token cost or semantic fulfillment. Continuous input
 experiments preserve every later input, including across store reopen, and
 drain when arrivals stop. They do not establish every action's liveness, a safe
 arbitrary-input classifier, fairness under overload or provider compatibility.
+
+## Follow-up: locate the rule across execution paths
+
+The same seven baseline characterizations passed on Host `ae781f932` (through
+#301), with 32 assertions, in the isolated review branch
+`review/burst-input-admission-20261003`, harness commit `8db05f740`. Continuous
+human and system arrivals still yielded eight attempts with zero accepted
+answers; seventy inputs still produced accepted counts `0,0,70`. This is
+separate from the unfinished-input context fix: an agent can reach a correct
+judgment and still have admission defer it.
+
+Source review identified one admission convention in several places:
+
+| Path | Current behavior |
+| --- | --- |
+| Ordinary Task completion | `completeAppTask` saves a proposed result without accepting its covered inputs when unacknowledged events remain. Existing work is retained. |
+| Immediate Task actions | `applyRunningTaskChanges` checks `assertAppTaskEffectFresh`; pending input can prevent the action. |
+| Cross-App requests | `admitTaskAppRequests` uses the same freshness check before admission and again at the write boundary. |
+| Final result with actions/requests | Final declarations share `applyTaskChanges` and settlement; result and effects remain atomic. |
+| Workspace finalization | The attempt runner retains the workspace as waiting while newer Task facts are pending. |
+
+Registered executors can call the existing `TaskAttempt.onEvent` acceptance
+callback after deciding they incorporated an event; consumption still waits for
+accepted settlement. Managed-agent hints and native executor steering deliberately
+do not call it. Sending a message or reading a refreshed brief does not establish
+incorporation. Auto-acknowledging delivery would erase that distinction; this is
+not a missing callback to connect blindly.
+
+The smallest design question is therefore the decision boundary: which inputs
+does this judgment cover, and when does newer input invalidate its effects?
+The Host should record a bounded scope around the agent's decision, preserve
+later input for the next decision, and retain explicit cancellation, accepted
+requirement revisions and action-specific authorization checks. Do not ask the
+agent to maintain delivery cursors. A subsequent candidate must apply the same
+rule to immediate and final actions and preserve the unread-correction
+counterexample. No broad fence deletion is being merged with the context fix.
 
 ## Reproduction
 
