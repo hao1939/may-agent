@@ -287,3 +287,47 @@ is required. Keep the platform App paused. Keep effort alerts in calibration
 until an authorized runtime trial compares useful work, review cost and noise.
 Existing investigations retain their work and are reconsidered by their owners;
 retiring a metric does not silently finish them.
+
+### Legacy source cleanup
+
+The follow-up removes the unused 1,653-line platform metric collector, its cron
+entry, its private ownership helper and tests for the deleted implementation.
+Two unreferenced command collectors for historical hypothesis/heartbeat metrics
+are removed as well; neither has an active saved definition.
+It could otherwise reactivate the retired catalog if restored to service. The
+platform App remains paused; May's existing collection schedule still owns
+source collection. The event name `trigger.metrics-snapshot` remains its ordinary
+Host input and does not imply that the old handler is required.
+
+Evaluation's eleven retired metrics now retain only identity/display information
+and retirement intent. Their old session SQL, thresholds and query-only tests
+are removed. May's 39 AKS retirement definitions likewise drop obsolete commands
+and alert policy. The obsolete heartbeat skill that required all red metrics to
+take priority over other work is removed; current metric review and owner judgment
+remain the policy. Old implementations and full definitions remain in Git history.
+
+The 47 newly retired definitions still need normal activation in the stopped
+installation. Removing their IDs now would leave its saved rows active. These
+are upgrade declarations, not additional collectors. A disposable-database
+activation test covers all 97 retirement declarations across May and Evaluation:
+alerts close, queries/commands/thresholds are cleared, and samples remain. No
+production rows or historical records were deleted or moved.
+
+PR review also exposed a missing creation timestamp on legacy definitions:
+future-dated measurements can update the definition timestamp as well as the
+sample. The stale check ignores both future fallbacks and uses millisecond
+precision consistently, preserving the first-sample grace for new collectors.
+The query correction and regression are in Host `d0f8476d8` on PR #306. Testing
+the intermediate review suggestion caught its whole-second cutoff incorrectly
+classifying newly created collectors as overdue; the final check uses the same
+timestamp precision as storage.
+Host full CI passes on that revision (3,527 passed, three deployment-only skips).
+The cleanup also passes May's typecheck and the design integrity/examples checks;
+Evaluation retains the identical baseline SDK narrowing error described above.
+
+The broader App/maintenance check passed 473 tests with one existing skip and
+four pre-existing failures. The same four fail on unchanged Apps `2300003c83`:
+three obsolete heartbeat-manifest expectations and a platform owner-review
+schema assertion. Current May/Evaluation tests and retained maintenance-handler
+tests pass. The paused platform's unrelated workflow failures are not fixed or
+hidden by this cleanup.

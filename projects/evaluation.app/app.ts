@@ -18,288 +18,6 @@ const subjectGenerationSchema = Type.Integer({
   minimum: 1,
   maximum: Number.MAX_SAFE_INTEGER,
 });
-export const AFTERMATH_COVERAGE_METRIC_ID =
-  "evaluator.aftermath-coverage-rate-3h";
-export const LLM_COVERAGE_LAG_METRIC_ID = "eval.llm-coverage-lag-h";
-export const LLM_COVERAGE_LAG_SOURCE_QUERY = `SELECT COALESCE(
-  ROUND(
-    (strftime('%s','now') * 1000 - MAX(createdAt)) / 3600000.0,
-    2
-  ),
-  9999
-) AS value
-FROM evaluations
-WHERE evaluatedByHeuristic = 0
-  AND agent NOT IN ('evaluator', 'evaluator-deepseek', 'judge')`;
-export const LLM_EVALUATIONS_24H_METRIC_ID = "eval.llm-evals-24h";
-export const LLM_EVALUATIONS_24H_SOURCE_QUERY = `SELECT COUNT(*) AS value
-FROM evaluations
-WHERE evaluatedByHeuristic = 0
-  AND createdAt > (strftime('%s','now') * 1000 - 86400000)
-  AND agent NOT IN ('evaluator', 'evaluator-deepseek', 'judge')`;
-export const LOW_QUALITY_RATE_24H_METRIC_ID = "evaluator.low-quality-rate-24h";
-export const LOW_QUALITY_RATE_24H_SOURCE_QUERY = `WITH counts AS (
-  SELECT COUNT(*) AS total,
-         SUM(
-           CASE
-             WHEN verdict IN ('needs_improvement', 'low_quality')
-               OR quality < 0.4
-               OR efficiency < 0.4
-             THEN 1
-             ELSE 0
-           END
-         ) AS low_quality
-  FROM evaluations
-  WHERE createdAt > (strftime('%s','now') * 1000 - 86400000)
-    AND agent NOT IN ('evaluator', 'evaluator-deepseek', 'judge')
-    AND verdict != 'skipped'
-)
-SELECT CASE
-         WHEN total = 0 THEN 0
-         ELSE ROUND(1.0 * low_quality / total, 4)
-       END AS value,
-       total AS sampleSize
-FROM counts`;
-export const SUBSTANTIVE_LOW_QUALITY_RATE_24H_METRIC_ID =
-  "evaluator.substantive-low-quality-rate-24h";
-export const SUBSTANTIVE_LOW_QUALITY_RATE_24H_SOURCE_QUERY = `WITH counts AS (
-  SELECT COUNT(*) AS total,
-         SUM(
-           CASE
-             WHEN lower(COALESCE(issues, '')) LIKE '%tool hallucination%'
-               OR lower(COALESCE(issues, '')) LIKE '%verification failure%'
-               OR lower(COALESCE(issues, '')) LIKE '%blind overwrite%'
-               OR lower(COALESCE(issues, '')) LIKE '%fabricated%'
-               OR lower(COALESCE(issues, '')) LIKE '%hallucinated path%'
-             THEN 1
-             ELSE 0
-           END
-         ) AS substantive_low_quality
-  FROM evaluations
-  WHERE createdAt > (strftime('%s','now') * 1000 - 86400000)
-    AND agent NOT IN ('evaluator', 'evaluator-deepseek', 'judge')
-    AND verdict != 'skipped'
-)
-SELECT CASE
-         WHEN total = 0 THEN 0
-         ELSE ROUND(1.0 * substantive_low_quality / total, 4)
-       END AS value,
-       total AS sampleSize
-FROM counts`;
-export const MEANINGFUL_REVIEW_RATE_24H_METRIC_ID =
-  "evaluator.meaningful-review-rate-24h";
-export const MEANINGFUL_REVIEW_RATE_24H_SOURCE_QUERY = `WITH counts AS (
-  SELECT COALESCE(SUM(
-           CASE
-             WHEN event_type = 'evaluation.routed'
-               AND json_extract(data, '$.lane') IN ('needs_triage', 'success_candidate')
-             THEN 1
-             ELSE 0
-           END
-         ), 0) AS routed,
-         COALESCE(SUM(CASE WHEN event_type = 'evaluation.reviewed' THEN 1 ELSE 0 END), 0) AS reviewed
-  FROM events
-  WHERE timestamp > (strftime('%s','now') * 1000 - 86400000)
-    AND event_type IN ('evaluation.routed', 'evaluation.reviewed')
-)
-SELECT CASE
-         WHEN routed = 0 THEN 0
-         ELSE ROUND(1.0 * MIN(reviewed, routed) / routed, 4)
-       END AS value,
-       routed AS sampleSize
-FROM counts`;
-export const TRIAGE_CLOSURE_RATE_24H_METRIC_ID =
-  "evaluator.triage-closure-rate-24h";
-export const TRIAGE_CLOSURE_RATE_24H_SOURCE_QUERY = `WITH counts AS (
-  SELECT COALESCE(SUM(
-           CASE
-             WHEN event_type = 'evaluation.routed'
-               AND json_extract(data, '$.lane') = 'needs_triage'
-             THEN 1
-             ELSE 0
-           END
-         ), 0) AS routed,
-         COALESCE(SUM(CASE WHEN event_type = 'evaluation.triage_closed' THEN 1 ELSE 0 END), 0) AS closed
-  FROM events
-  WHERE timestamp > (strftime('%s','now') * 1000 - 86400000)
-    AND event_type IN ('evaluation.routed', 'evaluation.triage_closed')
-)
-SELECT CASE
-         WHEN routed = 0 THEN 0
-         ELSE ROUND(1.0 * MIN(closed, routed) / routed, 4)
-       END AS value,
-       routed AS sampleSize
-FROM counts`;
-export const FALSE_GOOD_RATE_SAMPLE_METRIC_ID =
-  "evaluator.false-good-rate-sample";
-export const FALSE_GOOD_RATE_SAMPLE_SOURCE_QUERY = `WITH counts AS (
-  SELECT COALESCE(SUM(
-           CASE
-             WHEN event_type = 'evaluation.reviewed'
-               AND json_extract(data, '$.verdict') = 'good'
-             THEN 1
-             ELSE 0
-           END
-         ), 0) AS reviewed_good,
-         COALESCE(SUM(CASE WHEN event_type = 'evaluation.false_good' THEN 1 ELSE 0 END), 0) AS false_good
-  FROM events
-  WHERE timestamp > (strftime('%s','now') * 1000 - 86400000)
-    AND event_type IN ('evaluation.reviewed', 'evaluation.false_good')
-)
-SELECT CASE
-         WHEN reviewed_good = 0 THEN 0
-         ELSE ROUND(1.0 * false_good / reviewed_good, 4)
-       END AS value,
-       reviewed_good AS sampleSize
-FROM counts`;
-export const PROJECT_FINDING_DELIVERY_RATE_24H_METRIC_ID =
-  "evaluator.project-finding-delivery-rate-24h";
-export const PROJECT_FINDING_DELIVERY_RATE_24H_SOURCE_QUERY = `WITH counts AS (
-  SELECT COUNT(*) AS total,
-         COALESCE(SUM(CASE WHEN delivery_status = 'accepted' THEN 1 ELSE 0 END), 0) AS delivered
-  FROM events
-  WHERE event_type = 'project.owner.requested'
-    AND source = 'evaluation.app'
-    AND timestamp > (strftime('%s','now') * 1000 - 86400000)
-    AND json_extract(data, '$.reason') = 'evaluation-project-health-feedback'
-)
-SELECT CASE
-         WHEN total = 0 THEN 0
-         ELSE ROUND(1.0 * delivered / total, 4)
-       END AS value,
-       total AS sampleSize
-FROM counts`;
-export const PROJECT_FEEDBACK_PENDING_AGE_METRIC_ID =
-  "evaluator.project-feedback-pending-age-h";
-export const PROJECT_FEEDBACK_PENDING_AGE_SOURCE_QUERY = `WITH counts AS (
-  SELECT COUNT(*) AS total,
-         COALESCE(SUM(CASE WHEN delivery_status = 'accepted' THEN 1 ELSE 0 END), 0) AS delivered,
-         MIN(
-           CASE
-             WHEN delivery_status IN ('pending', 'unhandled') THEN timestamp
-             ELSE NULL
-           END
-         ) AS oldest_pending
-  FROM events
-  WHERE event_type = 'project.owner.requested'
-    AND source = 'evaluation.app'
-    AND timestamp > (strftime('%s','now') * 1000 - 86400000)
-    AND json_extract(data, '$.reason') = 'evaluation-project-health-feedback'
-)
-SELECT CASE
-         WHEN oldest_pending IS NULL THEN 0
-         ELSE ROUND((strftime('%s','now') * 1000 - oldest_pending) / 3600000.0, 2)
-       END AS value,
-       total - delivered AS sampleSize
-FROM counts`;
-export const FAILED_TRIAGE_RATE_3H_METRIC_ID = "session.failed-triage-rate-3h";
-export const FAILED_TRIAGE_RATE_3H_SOURCE_QUERY = `WITH bounds AS (
-  SELECT (strftime('%s','now') * 1000) AS measured_at
-), failed_rows AS (
-  SELECT s.sessionId,
-         CASE
-           WHEN EXISTS (
-             SELECT 1
-             FROM evaluations e
-             WHERE e.sessionId = s.sessionId
-           ) THEN 1
-           ELSE 0
-         END AS triaged
-  FROM sessions s
-  CROSS JOIN bounds b
-  WHERE s.agent NOT IN ('evaluator', 'evaluator-deepseek', 'judge')
-    AND COALESCE(s.endedAt, s.startedAt) > b.measured_at - 10800000
-    AND COALESCE(s.endedAt, s.startedAt) <= b.measured_at - 420000
-    AND COALESCE(s.error, '') != 'Clean start (fresh)'
-    AND COALESCE(s.error, '') NOT IN (
-      'Task-bound project session recovery is owned by the app task reconciler',
-      'Task-bound execution is recovered through its Task, not by resuming the old session'
-    )
-    AND COALESCE(s.error, '') NOT LIKE 'Recovered task % interrupted an orphaned owner session from a previous runtime'
-    AND COALESCE(s.error, '') NOT LIKE 'Recovered task % interrupted an orphaned agent session from a previous runtime'
-    AND NOT (
-      s.status = 'done'
-      AND COALESCE(s.outcome, '') = 'done'
-      AND COALESCE(s.error, '') = 'Cancelled'
-    )
-    AND (s.status IN ('error', 'interrupted') OR s.error IS NOT NULL)
-    AND NOT (s.status = 'interrupted' AND s.error IS NULL)
-), counts AS (
-  SELECT COUNT(*) AS failed,
-         COALESCE(SUM(triaged), 0) AS triaged
-  FROM failed_rows
-)
-SELECT CASE
-         WHEN counts.failed = 0 THEN 0
-         ELSE ROUND(1.0 * counts.triaged / counts.failed, 4)
-       END AS value,
-       counts.failed AS sampleSize,
-       bounds.measured_at AS measuredAt,
-       json_object(
-         'failed', counts.failed,
-         'triaged', counts.triaged,
-         'failedIds', json(COALESCE((
-           SELECT json_group_array(sessionId)
-           FROM (
-             SELECT sessionId
-             FROM failed_rows
-             ORDER BY sessionId
-             LIMIT 20
-           )
-         ), '[]'))
-       ) AS note
-FROM counts
-CROSS JOIN bounds`;
-export const AFTERMATH_COVERAGE_SOURCE_QUERY = `WITH bounds AS (
-  SELECT (strftime('%s','now') * 1000 - 420000) AS window_end
-), eligible AS (
-  SELECT DISTINCT s.sessionId
-  FROM sessions s
-  CROSS JOIN bounds b
-  WHERE s.status IN ('done', 'error', 'interrupted')
-    AND s.agent NOT IN ('evaluator', 'evaluator-deepseek', 'judge')
-    AND COALESCE(s.endedAt, s.startedAt) > b.window_end - 10800000
-    AND COALESCE(s.endedAt, s.startedAt) <= b.window_end
-    AND NOT (
-      s.status = 'done'
-      AND s.agent != 'may'
-      AND COALESCE(s.workflowRunId, '') != ''
-    )
-    AND NOT EXISTS (
-      SELECT 1
-      FROM events latest
-      WHERE latest.id = (
-        SELECT MAX(candidate.id)
-        FROM events candidate
-        WHERE candidate.event_type = 'session.end'
-          AND candidate.session_id = s.sessionId
-      )
-        AND s.status = 'interrupted'
-        AND COALESCE(latest.source, '') != 'runtime:auto-resume'
-        AND json_extract(latest.data, '$.interruptionKind') = 'observation-timeout'
-    )
-), counts AS (
-  SELECT COUNT(*) AS eligible,
-         COUNT(DISTINCT e.sessionId) AS evaluated
-  FROM eligible x
-  LEFT JOIN evaluations e ON e.sessionId = x.sessionId
-)
-SELECT CASE
-         WHEN counts.eligible = 0 THEN 0.0
-         ELSE ROUND(1.0 * counts.evaluated / counts.eligible, 4)
-       END AS value,
-       counts.eligible AS sampleSize,
-       bounds.window_end AS measuredAt,
-       json_object(
-         'source', 'canonical-terminal-sessions+evaluations',
-         'eligible', counts.eligible,
-         'evaluated', counts.evaluated,
-         'windowStart', bounds.window_end - 10800000,
-         'windowEnd', bounds.window_end,
-         'graceMs', 420000
-       ) AS note
-FROM counts
-CROSS JOIN bounds`;
 const detailsSchema = Type.Record(Type.String(), Type.Unknown());
 const metricReviewDataSchema = Type.Object(
   {
@@ -1166,223 +884,65 @@ export function taskIntentForEvent(
 // Legacy session/deep/project metric definitions remain declared so normal App
 // activation can retire their persisted Host rows while preserving historical
 // measurements. They have no breach/recovery wake lane.
-export const retiredLegacyEvaluationMetricDefinitions = [
-  {
-    id: FAILED_TRIAGE_RATE_3H_METRIC_ID,
-    name: "Failed session triage rate (3h)",
-    owner: "evaluator",
-    project: projectId,
-    type: "gauge" as const,
-    target: 1,
-    threshold: 0.8,
-    unit: "ratio",
-    priority: "P1" as const,
-    status: "active",
-    source: "recent failed sessions and evaluations",
-    sourceQuery: FAILED_TRIAGE_RATE_3H_SOURCE_QUERY,
-    measureInterval: 300_000,
-    alertOp: "<" as const,
-    speed: "fast",
-    description:
-      "Share of failed non-evaluator sessions outside the seven-minute grace period that have any durable evaluation; windows below five failures remain neutral.",
-  },
-  {
-    id: PROJECT_FEEDBACK_PENDING_AGE_METRIC_ID,
-    name: "Oldest pending evaluation finding delivery (hours)",
-    owner: "evaluator",
-    project: projectId,
-    type: "gauge" as const,
-    target: 0,
-    threshold: 12,
-    unit: "hours",
-    priority: "P1" as const,
-    status: "active",
-    source: "Evaluation project-owner request events",
-    sourceQuery: PROJECT_FEEDBACK_PENDING_AGE_SOURCE_QUERY,
-    measureInterval: 300_000,
-    alertOp: ">" as const,
-    speed: "fast",
-    description:
-      "Age in hours of the oldest recent pending or unhandled Evaluation project-health finding delivery.",
-  },
-  {
-    id: PROJECT_FINDING_DELIVERY_RATE_24H_METRIC_ID,
-    name: "Evaluation findings handled by target owner workflows (24h)",
-    owner: "evaluator",
-    project: projectId,
-    type: "gauge" as const,
-    target: 0.8,
-    threshold: 0.5,
-    unit: "ratio",
-    priority: "P1" as const,
-    status: "active",
-    source: "Evaluation project-owner request events",
-    sourceQuery: PROJECT_FINDING_DELIVERY_RATE_24H_SOURCE_QUERY,
-    measureInterval: 300_000,
-    alertOp: "<" as const,
-    speed: "fast",
-    description:
-      "Share of recent Evaluation project-health finding requests accepted by target owner workflows.",
-  },
-  {
-    id: FALSE_GOOD_RATE_SAMPLE_METRIC_ID,
-    name: "Reviewed good sessions overturned (24h)",
-    owner: "evaluator",
-    project: projectId,
-    type: "gauge" as const,
-    target: 0.05,
-    threshold: 0.6,
-    unit: "ratio",
-    priority: "P2" as const,
-    status: "active",
-    source: "evaluation review and false-good events",
-    sourceQuery: FALSE_GOOD_RATE_SAMPLE_SOURCE_QUERY,
-    measureInterval: 300_000,
-    alertOp: ">" as const,
-    speed: "fast",
-    description:
-      "Ratio of recent false-good overturn events to review events whose verdict was good.",
-  },
-  {
-    id: TRIAGE_CLOSURE_RATE_24H_METRIC_ID,
-    name: "Evaluator triage closure rate (24h)",
-    owner: "evaluator",
-    project: projectId,
-    type: "gauge" as const,
-    target: 0.9,
-    threshold: 0.7,
-    unit: "ratio",
-    priority: "P2" as const,
-    status: "active",
-    source: "evaluation triage route and closure events",
-    sourceQuery: TRIAGE_CLOSURE_RATE_24H_SOURCE_QUERY,
-    measureInterval: 300_000,
-    alertOp: "<" as const,
-    speed: "fast",
-    description:
-      "Share of recent needs-triage routes covered by triage-closure events, capped at the routed count.",
-  },
-  {
-    id: MEANINGFUL_REVIEW_RATE_24H_METRIC_ID,
-    name: "Evaluator meaningful review rate (24h)",
-    owner: "evaluator",
-    project: projectId,
-    type: "gauge" as const,
-    target: 0.9,
-    threshold: 0.7,
-    unit: "ratio",
-    priority: "P2" as const,
-    status: "active",
-    source: "evaluation routing and review events",
-    sourceQuery: MEANINGFUL_REVIEW_RATE_24H_SOURCE_QUERY,
-    measureInterval: 300_000,
-    alertOp: "<" as const,
-    speed: "fast",
-    description:
-      "Share of recent needs-triage and success-candidate routes covered by evaluation review events, capped at the routed count.",
-  },
-  {
-    id: SUBSTANTIVE_LOW_QUALITY_RATE_24H_METRIC_ID,
-    name: "Substantive evaluator quality failures (24h)",
-    owner: "evaluator",
-    project: projectId,
-    type: "gauge" as const,
-    target: 0.1,
-    threshold: 0.3,
-    unit: "ratio",
-    priority: "P1" as const,
-    status: "active",
-    source: "recent non-skipped evaluation issues",
-    sourceQuery: SUBSTANTIVE_LOW_QUALITY_RATE_24H_SOURCE_QUERY,
-    measureInterval: 300_000,
-    alertOp: ">" as const,
-    speed: "fast",
-    description:
-      "Share of recent non-skipped evaluations whose issues name a substantive hallucination, verification, fabrication, or overwrite failure.",
-  },
-  {
-    id: LOW_QUALITY_RATE_24H_METRIC_ID,
-    name: "Broad needs-improvement/low-score evaluated sessions (24h, dashboard only)",
-    owner: "evaluator",
-    project: projectId,
-    type: "gauge" as const,
-    target: 0.1,
-    threshold: 0.8,
-    unit: "ratio",
-    priority: "P3" as const,
-    status: "active",
-    source: "recent non-skipped evaluations",
-    sourceQuery: LOW_QUALITY_RATE_24H_SOURCE_QUERY,
-    measureInterval: 300_000,
-    alertOp: ">" as const,
-    speed: "fast",
-    description:
-      "Dashboard share of recent non-skipped evaluations with a needs-improvement verdict or quality or efficiency below 0.4.",
-  },
-  {
-    id: LLM_EVALUATIONS_24H_METRIC_ID,
-    name: "LLM-evaluated sessions (24h)",
-    owner: "evaluator",
-    project: projectId,
-    type: "gauge" as const,
-    target: 4,
-    threshold: 1,
-    unit: "count",
-    priority: "P2" as const,
-    status: "active",
-    source: "non-heuristic evaluations",
-    sourceQuery: LLM_EVALUATIONS_24H_SOURCE_QUERY,
-    measureInterval: 300_000,
-    alertOp: "<" as const,
-    speed: "fast",
-    description:
-      "Count of durable non-heuristic evaluations for non-evaluator sessions in the trailing 24 hours.",
-  },
-  {
-    id: LLM_COVERAGE_LAG_METRIC_ID,
-    name: "LLM evaluation lag (hours since last non-heuristic eval)",
-    owner: "evaluator",
-    project: projectId,
-    type: "gauge" as const,
-    target: 1,
-    threshold: 4,
-    unit: "hours",
-    priority: "P0" as const,
-    status: "active",
-    source: "non-heuristic evaluations",
-    sourceQuery: LLM_COVERAGE_LAG_SOURCE_QUERY,
-    measureInterval: 300_000,
-    alertOp: ">" as const,
-    speed: "fast",
-    description:
-      "Hours since the newest durable non-heuristic evaluation, or 9999 when no such evaluation exists.",
-  },
-  {
-    id: AFTERMATH_COVERAGE_METRIC_ID,
-    name: "Evaluator aftermath liveness (3h)",
-    owner: "evaluator",
-    project: projectId,
-    type: "gauge" as const,
-    target: 0.8,
-    threshold: 0.2,
-    unit: "ratio",
-    priority: "P3" as const,
-    status: "active",
-    source: "canonical terminal sessions and evaluations",
-    sourceQuery: AFTERMATH_COVERAGE_SOURCE_QUERY,
-    measureInterval: 300_000,
-    alertOp: "<" as const,
-    speed: "fast",
-    description:
-      "Share of canonical terminal non-evaluator sessions in the trailing three-hour window, after a seven-minute evaluation grace period, that have a durable evaluation.",
-  },
-];
-
-export const evaluationMetricDefinitions =
-  retiredLegacyEvaluationMetricDefinitions.map((definition) => ({
-    ...definition,
-    status: "retired" as const,
-  }));
+// Upgrade declarations only: obsolete calculation and alert policy live in Git history.
+const evaluationMetricDefinitions = [
+  ["session.failed-triage-rate-3h", "Failed session triage rate (3h)", "ratio"],
+  [
+    "evaluator.project-feedback-pending-age-h",
+    "Oldest pending evaluation finding delivery (hours)",
+    "hours",
+  ],
+  [
+    "evaluator.project-finding-delivery-rate-24h",
+    "Evaluation findings handled by target owner workflows (24h)",
+    "ratio",
+  ],
+  [
+    "evaluator.false-good-rate-sample",
+    "Reviewed good sessions overturned (24h)",
+    "ratio",
+  ],
+  [
+    "evaluator.triage-closure-rate-24h",
+    "Evaluator triage closure rate (24h)",
+    "ratio",
+  ],
+  [
+    "evaluator.meaningful-review-rate-24h",
+    "Evaluator meaningful review rate (24h)",
+    "ratio",
+  ],
+  [
+    "evaluator.substantive-low-quality-rate-24h",
+    "Substantive evaluator quality failures (24h)",
+    "ratio",
+  ],
+  [
+    "evaluator.low-quality-rate-24h",
+    "Broad needs-improvement/low-score evaluated sessions (24h, dashboard only)",
+    "ratio",
+  ],
+  ["eval.llm-evals-24h", "LLM-evaluated sessions (24h)", "count"],
+  [
+    "eval.llm-coverage-lag-h",
+    "LLM evaluation lag (hours since last non-heuristic eval)",
+    "hours",
+  ],
+  [
+    "evaluator.aftermath-coverage-rate-3h",
+    "Evaluator aftermath liveness (3h)",
+    "ratio",
+  ],
+].map(([id, name, unit]) => ({
+  id,
+  name,
+  unit,
+  owner: "evaluator",
+  project: projectId,
+  status: "retired" as const,
+  description:
+    "Retired session-era evaluation metric; current Task and metric reviews use App-owned evidence.",
+}));
 
 const automaticReview = automaticReviewConfig();
 

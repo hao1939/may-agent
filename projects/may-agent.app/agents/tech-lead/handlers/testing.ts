@@ -1,11 +1,10 @@
 /** Test-only adapter for host-private handlers.
  *
- * The Runtime owns SQLite, query, and metric implementations. Handler tests
+ * The Runtime owns SQLite and query implementations. Handler tests
  * compose those host services directly instead of restoring them to the
  * public Agent App SDK.
  */
 
-import { createMetricService } from "../../../../may-agent/src/lib/metrics.js";
 import { createQueryService } from "../../../../may-agent/src/lib/query-service.js";
 import { closeDb, getDb } from "../../../../may-agent/src/lib/requests.js";
 
@@ -15,7 +14,6 @@ export function createHostTestRuntime(options: {
   agents?: string;
   shared?: string;
   projects?: string;
-  measuredBy?: string;
   emit?: (
     type: string,
     data?: Record<string, unknown>,
@@ -32,11 +30,6 @@ export function createHostTestRuntime(options: {
     emit,
     getDb: () => db,
     query: createQueryService({ getDb: () => db }),
-    metrics: createMetricService({
-      getDb: () => db,
-      emit,
-      measuredBy: options.measuredBy ?? "handler-test",
-    }),
     log: () => undefined,
     message: () => undefined,
     paths: {

@@ -26,7 +26,7 @@ and their linked owners.
 | HTTP embeds session-evaluation policy and directly writes human annotation | `src/app/http/server.ts`; [HTTP boundary](../2a-design/http-boundary.md), [Session trail](../2a-design/session-eval-trail.md) | Preserve the current API while routing the requested judgment/write to its owner; prove exact session/line/input correlation |
 | Requested session line/instructions are lost at the Evaluation mapping | `evaluation.app/app.ts`, `evaluate-session` mapping and `evaluator-aftermath`; [Session trail](../2a-design/session-eval-trail.md) | Either implement the accepted annotation capability end to end or explicitly revise/remove that advertised capability; do not claim a whole-session assessment answered the line request |
 | Some Task-board text equates convergence with recurring work | `packages/webui/static/pages/project-kanban.js`; [Default UI](../2a-design/default-project-ui.md) | Explain open accepted outcomes independently of recurrence and closure; check the rendered board |
-| Domain metrics and reports remain partly centralized | Maintenance App `ALL_METRICS` and named-agent HTTP report filters; [Metrics](../2a-design/metrics.md) | Move demonstrated domain meaning to its App while retaining factual Host measurement and existing readers |
+| Some domain reports remain centralized | Named-agent HTTP report filters; [Metrics](../2a-design/metrics.md) | Move demonstrated domain meaning to its App while retaining factual Host measurement and existing readers |
 
 ## Intentional limits and evidence still needed
 
@@ -58,11 +58,13 @@ contracts. Their dated proposals remain evidence, not a current backlog.
 
 ## Remaining metric ownership migration
 
-The maintenance App source retains `ALL_METRICS`. App declarations can own
-`sourceQuery`/`sourceCommand` measurements on the existing cadence. Preserve the
-question, source, denominator, evidence and interval when moving an entry.
-Do not introduce another scheduler or remove a historical sample to change
-ownership. The installed App definitions determine which measurements run.
+The [October 4 metric cleanup](../../../may.app/design/metric-coverage-audit-20261003.md#legacy-source-cleanup)
+removes the unused maintenance `ALL_METRICS` collector and retired Evaluation
+queries. App declarations own current `sourceQuery`/`sourceCommand` measurements
+on the existing cadence. Compact retirement declarations remain for installations
+that have not applied the cleanup; historical samples stay in place. This closes
+the legacy catalog source gap, not the separately listed report-ownership gap or
+the pending runtime activation.
 
 ## Maintaining this index
 

@@ -284,10 +284,10 @@ ctx.metrics.record("scout.source-check-failures", failures, {
 ctx.metrics.evaluate("scout.source-check-failures");
 ```
 
-In the accepted model there is no global `ALL_METRICS` catalog or special
-metrics-snapshot owner. Definitions live with the App code that understands
-their meaning. The current legacy catalog is a migration gap, not a second
-accepted authority. Current definitions and values live in `metrics`;
+Definitions live with the App code that understands their meaning. The obsolete
+central `ALL_METRICS` collector and its schedule have been removed from source;
+the ordinary App collection schedule and Host source reader remain. Current
+definitions and values live in `metrics`;
 historical samples live in `metric_snapshots`; unresolved alert state lives in
 `metric_alerts`.
 
@@ -322,6 +322,13 @@ This administrative closure emits no measured recovery and does not settle
 related Tasks. Existing `resolveAlert()` remains available for other deliberate
 administrative closure; its optional reason argument is not persisted. Keep
 the reason in normal definition/change or Task evidence.
+
+Upgrade declarations for retired metrics retain identity, useful display fields
+and retirement intent. Remove their obsolete source commands, queries, thresholds
+and tests of those retired calculations. Deleting a declaration alone does not
+retire an installed database row, so keep this small upgrade list until the
+affected installations have applied it. Samples, alert history and linked Task
+evidence remain in place; they do not require keeping the old collector executable.
 
 The same source correction changes `metric.stale-active-count` to request
 attention when any cadence-bound collector is overdue. Both a missing first

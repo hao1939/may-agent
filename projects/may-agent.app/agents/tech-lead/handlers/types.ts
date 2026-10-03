@@ -25,16 +25,6 @@ export type CronEntry = {
   handlerConfig?: Record<string, unknown>;
 };
 
-type HostMetricService = {
-  defineMany(definitions: unknown[]): void;
-  record(
-    id: string,
-    value: number,
-    options?: string | Record<string, unknown>,
-  ): Promise<void> | void;
-  evaluate(id?: string): unknown[];
-};
-
 type HostQuery = {
   sql(
     sql: string,
@@ -69,7 +59,6 @@ type HostSdk = {
   log(level: "info" | "warn" | "error", message: string): void;
   message(target: string, content: string): void;
   query: HostQuery;
-  metrics: HostMetricService;
   paths: {
     persist: string;
     root: string;

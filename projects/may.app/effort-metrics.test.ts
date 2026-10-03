@@ -11,7 +11,7 @@ import { createExecutionUsage } from "../may-agent/src/lib/execution-usage.js";
 import { createMetricService } from "../may-agent/src/lib/metrics.js";
 import { createAppReporting } from "../may-agent/src/app/composition/reporting.js";
 import { readMetricEvidence } from "../may-agent/src/app/adapters/reporting/metric-evidence.js";
-import { taskInputForEvent } from "../evaluation.app/app.js";
+import evaluationApp, { taskInputForEvent } from "../evaluation.app/app.js";
 import { reviewMetric } from "../evaluation.app/agents/evaluator/workflows/metric-review.js";
 import { intakeEvaluationReport } from "./agents/may/workflows/evaluation-report-intake.js";
 import {
@@ -29,7 +29,6 @@ import {
   EVALUATION_EFFORT_METRIC,
   EFFORT_REVIEW_THRESHOLD,
 } from "./effort-metrics.js";
-import { retiredLegacyMetrics } from "./retired-legacy-metrics.js";
 
 let db: SqliteDb;
 beforeEach(() => {
@@ -143,13 +142,19 @@ test("missing reply accounting is unavailable; calibration does not open alerts"
 
 test("normal definition activation retires the reviewed catalog and its alerts while preserving history", () => {
   const metrics = createMetricService({ getDb: () => db });
-  for (const metric of retiredLegacyMetrics) {
+  const retired = [...app.metrics!, ...evaluationApp.metrics!].filter(
+    (metric) => metric.status === "retired",
+  );
+  for (const metric of retired) {
     metrics.define({ id: metric.id, threshold: 0, alertOp: ">" });
     metrics.record(metric.id, 2);
     metrics.evaluate(metric.id);
   }
-  createAppReporting(() => db).syncDefinitions([{ definition: app }]);
-  expect(retiredLegacyMetrics).toHaveLength(47);
+  createAppReporting(() => db).syncDefinitions([
+    { definition: app },
+    { definition: evaluationApp },
+  ]);
+  expect(retired).toHaveLength(97);
   expect(
     db
       .prepare(
@@ -159,9 +164,17 @@ test("normal definition activation retires the reviewed catalog and its alerts w
   ).toBe(0);
   expect(
     db.prepare("SELECT COUNT(*) AS n FROM metric_snapshots").get()!.n,
-  ).toBe(47);
-  for (const metric of retiredLegacyMetrics)
+  ).toBe(97);
+  for (const metric of retired) {
     expect(metrics.get(metric.id)?.status).toBe("retired");
+    expect(
+      db
+        .prepare(
+          "SELECT source_query, source_command, threshold FROM metrics WHERE id = ?",
+        )
+        .get(metric.id),
+    ).toEqual({ source_query: null, source_command: null, threshold: null });
+  }
 });
 
 test("effort review publishes evidence and reaches an accepted May decision without forcing expensive work to fail", async () => {
