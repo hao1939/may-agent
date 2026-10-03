@@ -121,6 +121,19 @@ another investigation. The agent judges useful work or no change; App code binds
 that judgment to its actual owning Task. When only collection remains, finish
 the review rather than installing a sample-driven wait.
 
+A metric source can also discover durable pre-attempt recovery state. May's
+Evaluation operation metric combines retained unsuccessful Task-attempt groups
+with unresolved Evaluation `input-admission` recovery counters. This is needed
+because semantic Evaluation correctly excludes Evaluation-owned work, while
+operational oversight still needs to see an input that never reached a Task.
+The collector reads persisted inbox recovery state after installation or restart;
+it does not depend on the original failure event, subscribe to a first failure,
+or create another registry or monitor. The same breach/recovery episode rules
+apply: one opening breach commissions May review, samples in that episode remain
+quiet, and resolution emits recovery. Recovery of the admission boundary is not
+input fulfillment; the retained input, requester return and original requirements
+remain independently accountable.
+
 The producer emits `metric.breach` when an alert episode opens. While it stays
 open, measurements still update the current value and retained samples;
 evaluation refreshes the alert message without another breach event.

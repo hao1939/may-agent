@@ -23,17 +23,23 @@ Legacy session-aftermath, deep-evaluation, project-health, and executable Tasks 
 
 Evaluation's local owner still retains ordinary operational failures and retries.
 The staged May source independently samples retained Evaluation terminal attempts
-with its existing metrics and opens one alert episode when one Task generation
-has three unsuccessful attempts in six hours. Coverage includes
+with its existing metrics and also discovers unresolved pre-attempt
+`input-admission` recovery from durable inbox state. One Task generation with
+three unsuccessful attempts in six hours, or one admission boundary with three
+retries, opens the existing alert episode. Coverage includes
 `runtime/compat/owner-review`, failed/rejected attempts, accepted-incomplete
-results and stale/requeued interruptions; user cancellation is excluded. The
-sample discloses its denominator, cut and limits. May uses the existing alert
-identity and metric follow-through, rather than receiving every
-`project.task.reconciled` fact as a Conversation/model call. This is operational
-oversight, not Evaluation semantic self-review: original retries and caller
-links continue, and notification or aggregate recovery cannot fulfill the
-original Evaluation input. It adds neither generic supervisor fallback nor May
-control of Evaluation Tasks.
+results, stale/requeued interruptions, and inputs that have not yet produced an
+attempt; user cancellation is excluded. Because collection reads retained state,
+a 58-retry admission boundary remains discoverable after installation or restart
+without replaying a failure event. The sample discloses its denominator, cut and
+limits. May uses the existing alert identity and metric follow-through, rather
+than receiving every `project.task.reconciled`, `handler.failed`, or first
+admission-failure fact as a Conversation/model call. Repeat samples in an open
+episode remain quiet. This is operational oversight, not Evaluation semantic
+self-review: original retries and caller links continue, and admission recovery,
+notification or aggregate recovery cannot fulfill the original Evaluation input.
+It adds neither an event registry, generic supervisor fallback nor May control
+of Evaluation Tasks.
 
 That oversight is a source candidate, not an installed claim. It becomes current
 behavior only after separate review, activation and installed-definition

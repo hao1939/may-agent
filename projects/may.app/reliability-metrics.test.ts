@@ -714,6 +714,105 @@ test("declared reliability metrics collect through the Host and retain a real br
   }
 });
 
+test("retained Evaluation admission recovery opens one quiet May oversight episode after restart", async () => {
+  const root = mkdtempSync(join(tmpdir(), "may-evaluation-admission-recovery-"));
+  try {
+    const beforeRestart = getDb(root);
+    const failedAt = Date.now() - 2 * 86400000;
+    createAppInboxItem(beforeRestart, {
+      id: "retained-evaluation-input",
+      appId: "evaluation",
+      source: { kind: "app", id: "gym" },
+      input: { kind: "read-reports", data: { operation: "list", limit: 2 } },
+      now: failedAt,
+    });
+    for (let attempt = 0; attempt < 58; attempt++) {
+      recordAppInboxRecoveryFailure(
+        beforeRestart,
+        "retained-evaluation-input",
+        "input-admission",
+        "Only the recorded creator may change this resource spec",
+        failedAt + attempt,
+      );
+    }
+    closeDb(root);
+
+    // Definition installation and collection happen only after reopening the
+    // durable store. Discovery therefore does not depend on the failure event
+    // still being in memory or on a first-failure subscription.
+    const store = getDb(root);
+    createAppReporting(() => store).syncDefinitions([{ definition: app }]);
+    const bus = new EventBus();
+    const breaches: any[] = [];
+    const recoveries: any[] = [];
+    bus.subscribe((event) => {
+      if (event.data.metricId !== EVALUATION_OPERATION_METRIC) return;
+      if (event.type === "metric.breach") breaches.push(event);
+      if (event.type === "metric.recovered") recoveries.push(event);
+    });
+    const collect = async () => {
+      await measureSourceMetrics({
+        bus,
+        persistDir: root,
+        isDue: (metric) => metric.id === EVALUATION_OPERATION_METRIC,
+      });
+      await evaluateMetrics({ bus, persistDir: root });
+    };
+
+    await collect();
+    expect(breaches).toHaveLength(1);
+    expect(breaches[0]!.data).toMatchObject({
+      metricId: EVALUATION_OPERATION_METRIC,
+      current: 58,
+      alertId: expect.any(Number),
+    });
+    expect(
+      evaluationOperationAlertInput(JSON.parse(JSON.stringify(breaches[0]!))),
+    ).not.toBeNull();
+    const retained = await createAppReporting(() => store).readMetric(
+      EVALUATION_OPERATION_METRIC,
+    );
+    expect(retained).toMatchObject({ value: 58, sampleSize: 1 });
+    expect(JSON.parse(retained!.note!)).toMatchObject({
+      groups: [
+        {
+          kind: "input-admission-recovery",
+          inputId: "retained-evaluation-input",
+          signals: 58,
+        },
+      ],
+    });
+
+    await collect();
+    await collect();
+    expect(breaches).toHaveLength(1); // Repeat samples update evidence quietly.
+    expect(
+      store
+        .prepare(
+          "SELECT COUNT(*) AS count FROM metric_alerts WHERE metric_id = ?",
+        )
+        .get(EVALUATION_OPERATION_METRIC),
+    ).toEqual({ count: 1 });
+
+    resolveAppInboxRecovery(
+      store,
+      "retained-evaluation-input",
+      "input-admission",
+      Date.now(),
+    );
+    await collect();
+    expect(recoveries).toHaveLength(1);
+    expect(
+      store
+        .prepare("SELECT status, execution_task_id FROM app_inbox_items WHERE id = ?")
+        .get("retained-evaluation-input"),
+    ).toEqual({ status: "pending", execution_task_id: null });
+  } finally {
+    closeDb(root);
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
 test("real Host collection maps one May review input per Evaluation breach episode", async () => {
   const root = mkdtempSync(join(tmpdir(), "may-evaluation-episode-"));
   try {

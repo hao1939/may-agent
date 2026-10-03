@@ -406,7 +406,7 @@ export function evaluationOperationAlertInput(
   return {
     kind: "message",
     data: {
-      message: `Independently review this Evaluation operation alert episode through the existing metric-response path. Read its exact evidence, alertId, cohort and accounting limits, then the named Tasks, accepted results and remaining requirements. Judge whether repeated effort or unsuccessful attempts warrant a useful correction; high effort can produce valuable partial work. Reuse a fitting investigation and bind the disposition to this episode. Preserve retries, inputs, caller links and Conditions. A quieter metric, notification or new investigation does not fulfill the original input.`,
+      message: `Independently review this Evaluation operation alert episode through the existing metric-response path. Read its exact evidence, alertId, cohort and accounting limits, then the named Tasks or pre-attempt inputs, accepted results and remaining requirements. Judge whether repeated effort, unsuccessful attempts or retained input-admission recovery warrant a useful correction; high effort can produce valuable partial work. Reuse a fitting investigation and bind the disposition to this episode. Preserve retries, inputs, caller links and Conditions. Operational recovery, a quieter metric, notification or new investigation does not fulfill the original input.`,
       context: { event: structuredClone(event) },
     },
   };

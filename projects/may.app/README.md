@@ -98,21 +98,34 @@ does not make that guidance migration or prove activation.
 The staged source adds bounded independent Evaluation operation oversight through
 May's existing metric collection, alert episode and `metric-response` path. The
 six-hour metric groups retained terminal attempts by exact Evaluation Task and
-generation; three failed/rejected, accepted-incomplete or stale/requeued
-interruptions open one alert episode. Ordinary identity includes
+generation; it also reads unresolved pre-attempt Evaluation `input-admission`
+recovery counters directly from durable inbox state. This makes a retained input
+with repeated mapping/admission failures discoverable after definition install or
+process restart, even though it never produced a Task attempt and Evaluation's
+semantic path correctly excludes Evaluation-owned subjects. Three failed/rejected,
+accepted-incomplete or stale/requeued interruptions—or three retries on one such
+admission boundary—open one alert episode. Ordinary identity includes
 `runtime/compat/owner-review`; user cancellation is excluded. Each sample states
-its terminal-attempt denominator, time cut and retained-history/example limits.
+its mixed denominator, time cut and retained-history/example limits.
 May handles only the episode-opening breach, binds its disposition and linked
-work to that `alertId`, and reuses a fitting investigation. It does not create a
-Conversation/model call, repair or human message for each failure or repeated
-sample. This is a trial App attention policy, not a retry cap, proof of waste,
-input fulfillment, semantic Evaluation self-review, or the deferred generic
-supervisor fallback.
+work to that `alertId`, and reuses a fitting investigation. Repeat samples in the
+same episode update durable evidence without another May review. It does not add
+a direct first-failure/`handler.failed` subscription, registry, monitor,
+Conversation/model call, repair or human message for each failure. Recovery
+closes the operational episode but does not fulfill the input, settle its caller
+return or erase its requirements. This is a trial App attention policy, not a
+retry cap, proof of waste, semantic Evaluation self-review, or the deferred
+generic supervisor fallback.
 
 This paragraph describes the candidate in this checkout. It is not installed
 behavior until the compatible May definition is separately reviewed, activated
 and read back. The currently loaded definition may still differ; source checks
-and a commit do not prove activation.
+and a commit do not prove activation. In particular, correcting interpretation
+of an old workflow-reference string makes that retained input admissible; it does
+not semantically deduplicate a separately submitted replacement. Before rollout,
+the owner must compare the original and replacement, follow the supported exact
+disposition available for each, and prove consequential work is not repeated.
+A newly pending Task is admission evidence, not safe settlement or fulfillment.
 
 Messages retain the discussion. Topics group related messages and reference
 exact Tasks. Neither owns execution or copies Task state. Later human feedback

@@ -586,6 +586,12 @@ describe("canonical May conversation App", () => {
     );
     if (!subscription)
       throw new Error("missing Evaluation operation subscription");
+    expect(subscription.event).toEqual({ type: "metric.breach" });
+    expect(
+      app.subscriptions?.some(({ event }) =>
+        JSON.stringify(event).includes("handler.failed"),
+      ),
+    ).toBeFalse();
     const event: AppEvent<Record<string, unknown>> = {
       type: "metric.breach",
       source: "metric-service",
@@ -606,7 +612,10 @@ describe("canonical May conversation App", () => {
     });
     expect(String(input.data.message)).toContain("metric-response");
     expect(String(input.data.message)).toContain("accepted results");
+    expect(String(input.data.message)).toContain("pre-attempt inputs");
+    expect(String(input.data.message)).toContain("input-admission recovery");
     expect(String(input.data.message)).toContain("valuable partial work");
+    expect(String(input.data.message)).toContain("Operational recovery");
     expect(String(input.data.message)).toContain("Preserve retries");
     expect(Check(app.inputSchema, input)).toBeTrue();
     for (const type of [

@@ -159,16 +159,16 @@ export const reliabilityMetrics: NonNullable<AppDefinition["metrics"]> = [
   },
   {
     id: EVALUATION_OPERATION_METRIC,
-    name: "Repeated unsuccessful Evaluation Task attempts",
+    name: "Repeated unsuccessful Evaluation operation signals",
     owner: "may",
     project: "evaluation",
     type: "gauge",
-    unit: "attempts",
+    unit: "signals",
     measureInterval: 300_000,
     threshold: 2,
     alertOp: ">",
     description:
-      "Largest retained unsuccessful-attempt count for one Evaluation Task generation in the last six hours. Three attempts opens one alert episode for independent May review; it is an App trial policy, not a retry cap or proof of waste.",
+      "Largest retained unsuccessful-attempt count for one Evaluation Task generation in the last six hours, or retry count for one unresolved pre-attempt Evaluation input-admission recovery. Three signals open one alert episode for independent May review; this is an App attention policy, not a retry cap or proof of waste.",
     sourceQuery: `WITH clock AS (SELECT ${clock} AS cut), terminal AS (
       SELECT task_id, task_generation AS generation, attempt_id, state, started_at,
         json_extract(attempt_json, '$.finishedAt') AS finishedAt,
@@ -185,26 +185,49 @@ export const reliabilityMetrics: NonNullable<AppDefinition["metrics"]> = [
         WHEN state = 'interrupted' AND (failureReason = 'stale-reconciliation-result' OR failureReason LIKE '%-requeued') THEN 'stale-interrupted'
         ELSE NULL END AS unsuccessfulKind
       FROM terminal
-    ), groups AS (
+    ), attemptGroups AS (
       SELECT task_id, generation, COUNT(*) AS terminalCount,
-        COALESCE(SUM(unsuccessfulKind IS NOT NULL), 0) AS unsuccessfulCount,
+        COALESCE(SUM(unsuccessfulKind IS NOT NULL), 0) AS signalCount,
         COALESCE(SUM(unsuccessfulKind = 'failed-or-rejected'), 0) AS failedOrRejected,
         COALESCE(SUM(unsuccessfulKind = 'accepted-incomplete'), 0) AS acceptedIncomplete,
         COALESCE(SUM(unsuccessfulKind = 'stale-interrupted'), 0) AS staleInterrupted
       FROM classified GROUP BY task_id, generation
+    ), admissionRecoveries AS (
+      SELECT i.id AS inputId,
+        json_extract(i.recovery_json, '$."input-admission".failures') AS signalCount,
+        json_extract(i.recovery_json, '$."input-admission".firstFailedAt') AS firstFailedAt,
+        json_extract(i.recovery_json, '$."input-admission".lastFailedAt') AS lastFailedAt,
+        substr(json_extract(i.recovery_json, '$."input-admission".error'), 1, 400) AS error
+      FROM app_inbox_items i
+      WHERE i.app_id = 'evaluation' AND i.status != 'done' AND i.execution_task_id IS NULL
+        AND json_extract(i.recovery_json, '$."input-admission".recoveredAt') IS NULL
+        AND json_extract(i.recovery_json, '$."input-admission".failures') > 0
+    ), signals AS (
+      SELECT 'task-attempts' AS kind, task_id AS subjectId, generation,
+        signalCount, terminalCount, failedOrRejected, acceptedIncomplete, staleInterrupted,
+        NULL AS firstFailedAt, NULL AS lastFailedAt, NULL AS error
+      FROM attemptGroups WHERE signalCount > 0
+      UNION ALL
+      SELECT 'input-admission-recovery', inputId, NULL, signalCount, 0, 0, 0, 0,
+        firstFailedAt, lastFailedAt, error FROM admissionRecoveries
     )
-    SELECT COALESCE(MAX(unsuccessfulCount), 0) AS value,
-      COALESCE(SUM(terminalCount), 0) AS sampleSize, (SELECT cut FROM clock) AS measuredAt,
+    SELECT COALESCE(MAX(signalCount), 0) AS value,
+      (SELECT COUNT(*) FROM terminal) + (SELECT COUNT(*) FROM admissionRecoveries) AS sampleSize,
+      (SELECT cut FROM clock) AS measuredAt,
       json_object('start', (SELECT cut - 21600000 FROM clock), 'end', (SELECT cut FROM clock),
-        'policy', 'Alert when one Evaluation Task generation has at least 3 retained unsuccessful attempts in 6 hours. Review does not stop retries.',
-        'denominator', 'All retained terminal Evaluation attempts started in the same six-hour cohort and finished before the sample cut.',
-        'coverage', 'Unsuccessful includes failed/rejected attempts, accepted incomplete results, and stale/requeued interruptions. Owner-review is included by ordinary Evaluation task identity. User cancellation and other interruptions are excluded.',
-        'groups', json((SELECT json_group_array(json_object('taskId', task_id, 'generation', generation,
-          'terminal', terminalCount, 'unsuccessful', unsuccessfulCount, 'failedOrRejected', failedOrRejected,
-          'acceptedIncomplete', acceptedIncomplete, 'staleInterrupted', staleInterrupted))
-          FROM (SELECT * FROM groups WHERE unsuccessfulCount > 0 ORDER BY unsuccessfulCount DESC, task_id, generation LIMIT 5))),
-        'limits', 'Retained history only. Examples are capped at five Task generations. Missing or malformed finish times are excluded. Later success, cause, cost, waste, input fulfillment and repair effectiveness are not established.') AS note
-    FROM groups`,
+        'policy', 'Alert when one Evaluation Task generation has at least 3 retained unsuccessful attempts in 6 hours or one unresolved pre-attempt input-admission recovery has at least 3 retries. Review does not stop retries.',
+        'denominator', 'Retained terminal Evaluation attempts in the six-hour cohort plus current unresolved pre-attempt Evaluation input-admission recovery boundaries.',
+        'coverage', 'Unsuccessful attempts include failed/rejected attempts, accepted incomplete results, and stale/requeued interruptions. Admission recovery is read from durable inbox recovery state, including state retained across installation or restart. Owner-review is included by ordinary Evaluation task identity. User cancellation and other interruptions are excluded.',
+        'groups', json((SELECT json_group_array(json_object('kind', kind,
+          'taskId', CASE WHEN kind = 'task-attempts' THEN subjectId END,
+          'inputId', CASE WHEN kind = 'input-admission-recovery' THEN subjectId END,
+          'generation', generation, 'signals', signalCount, 'terminal', terminalCount,
+          'unsuccessful', signalCount, 'failedOrRejected', failedOrRejected,
+          'acceptedIncomplete', acceptedIncomplete, 'staleInterrupted', staleInterrupted,
+          'firstFailedAt', firstFailedAt, 'lastFailedAt', lastFailedAt, 'error', error))
+          FROM (SELECT * FROM signals ORDER BY signalCount DESC, kind, subjectId LIMIT 5))),
+        'limits', 'Retained history only. Examples are capped at five Task generations or admission boundaries. Missing or malformed finish times are excluded. Recovery closes the operational alert but does not establish input fulfillment. Later success, cause, cost, waste and repair effectiveness are not established.') AS note
+    FROM signals`,
   },
   {
     id: REVIEW_LAG_METRIC,
