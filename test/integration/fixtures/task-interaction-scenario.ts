@@ -16,7 +16,7 @@ import { readConversationRequest } from "../../../src/app/core/state/conversatio
 import { fixture, run, cleanup } from "./task-worker-scenario.js";
 import { closeDb, getDb } from "../../../src/lib/requests.js";
 import { AppTaskResourceStore } from "../../../src/app/core/state/app-task-resource-store.js";
-import { EventBus, type AgentEvent } from "../../../src/app/core/events/bus.js";
+import { EVENT_ROW_ID, EventBus, type AgentEvent } from "../../../src/app/core/events/bus.js";
 import { attachEventPersistence } from "../../../src/app/daemon-events.js";
 import { appTaskContext } from "../../../src/app/core/tasks/app-task-reconciler.js";
 import {
@@ -337,15 +337,23 @@ async function delegation(nested = false, contendAdmission = false) {
   let contended = false;
   let admissionFailed = false;
   let writerLocked = false;
+  let originalInputEvent: AgentEvent | undefined;
+  let originalInputEventId: number | undefined;
+  let originalDurableRoutes: Array<{ route_id: string; status: string }> | undefined;
   // The worker has already persisted this input. Contend only its parent-side
   // admission, just as another SQLite writer can after the IPC event arrives.
   if (competingWriter) {
     f.bus.subscribeDurableRoute((event) => {
       if (contended || event.type !== "app.input.requested" || event.data.input?.kind !== "sample") return;
       contended = true;
+      originalInputEvent = event;
+      originalInputEventId = Number(event[EVENT_ROW_ID]);
+      originalDurableRoutes = f.db
+        .prepare("SELECT route_id, status FROM event_durable_routes WHERE event_id = ? ORDER BY route_id")
+        .all(originalInputEventId) as Array<{ route_id: string; status: string }>;
       competingWriter.exec("BEGIN IMMEDIATE");
       writerLocked = true;
-    });
+    }, { label: "fixture-contention-lock" });
     f.bus.listen((event) => {
       if (
         event.type === "subscriber.failed" &&
@@ -483,13 +491,31 @@ async function delegation(nested = false, contendAdmission = false) {
               if (!writerLocked) return;
               competingWriter.exec("ROLLBACK");
               writerLocked = false;
-            });
+            }, { label: "fixture-contention-unlock" });
           const started = eventAfter(f.bus, (event) => event.type === "measurement.started");
           publish("measure", "Measure the sample and bring back the result.");
           await started;
           if (competingWriter) {
             assert(contended, "The recovery case must encounter a real competing writer");
             assert(admissionFailed, "The input must recover after a confirmed SQLite admission failure");
+            assert(Number.isSafeInteger(originalInputEventId) && originalInputEventId! > 0);
+            const persisted = f.db.prepare(
+              "SELECT id, data FROM events WHERE event_type = 'app.input.requested' AND json_extract(data, '$.input.kind') = 'sample'",
+            ).all() as Array<{ id: number; data: string }>;
+            assert.equal(persisted.length, 1, "The real worker must append the original input exactly once");
+            assert.equal(persisted[0]!.id, originalInputEventId);
+            assert.deepEqual(JSON.parse(persisted[0]!.data), originalInputEvent!.data);
+            assert.deepEqual(
+              originalDurableRoutes,
+              [
+                { route_id: "app-inbox-route", status: "pending" },
+                { route_id: "fixture-contention-lock", status: "pending" },
+                { route_id: "fixture-contention-unlock", status: "pending" },
+              ],
+              "The worker must persist the parent Host route snapshot before parent admission",
+            );
+            const conditionIds = f.store.readTask("measurement")!.status.conditionIds;
+            assert.equal(conditionIds?.length, 1, "The exact nested dependency Condition must survive recovery");
           }
           assert.equal(readConversationRequest(f.db, "sample", "primary", "measurement")?.status, "open");
           const discussion = replyAfter("We can keep discussing while it runs.");
@@ -524,6 +550,26 @@ async function delegation(nested = false, contendAdmission = false) {
             ),
             false,
           );
+          if (competingWriter) {
+            await runtime!.reload();
+            const recoveryDeadline = Date.now() + 2_000;
+            while (f.db.prepare("SELECT status FROM event_durable_routes WHERE event_id = ? AND route_id = 'app-inbox-route'").get(originalInputEventId)?.status !== "completed" && Date.now() < recoveryDeadline) {
+              await new Promise((resolve) => setTimeout(resolve, 10));
+            }
+            assert.equal(
+              f.db.prepare("SELECT COUNT(*) AS count FROM events WHERE id = ?").get(originalInputEventId).count,
+              1,
+            );
+            assert.equal(
+              f.db.prepare("SELECT COUNT(*) AS count FROM events WHERE event_type = 'measurement.started'").get().count,
+              1,
+              "Recovery must not replay the already successful worker effect",
+            );
+            assert.equal(
+              f.db.prepare("SELECT status FROM event_durable_routes WHERE event_id = ? AND route_id = 'app-inbox-route'").get(originalInputEventId).status,
+              "completed",
+            );
+          }
           runtime!.close();
           await closeInstalledAppTaskRuntimes(f.bus);
           closeDb(f.persistDir);

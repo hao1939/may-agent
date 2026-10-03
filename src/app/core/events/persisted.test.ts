@@ -19,11 +19,12 @@ test.each([undefined, "default", "detail"] as const)(
       const writer = new DbWriter(root);
       bus.setPersistenceSubscriber(writer.handler);
       bus.setDeliveryRecorder(writer.recordDelivery);
+      bus.setDurableRouteRecorder(writer.recordDurableRoute);
       let deliveries = 0;
       bus.subscribeDurableRoute(() => {
         deliveries++;
         return { accepted: true, by: "fixture", route: "direct" };
-      });
+      }, { label: "test-durable-route-101" });
       const event = bus.emit({
         type: "fixture.observed", source: "fixture", owner: "app:producer",
         ...(visibility ? { visibility } : {}),
@@ -164,7 +165,7 @@ test("reopening preserves the complete App event and causal context for recovere
       if (event.type !== "fixture.observed") return;
       bus.emit({ type: "fixture.child", source: "fixture", owner: "app:consumer", data: {} });
       return { accepted: true, by: "fixture", route: "direct" };
-    });
+    }, { label: "test-durable-route-102" });
     const trace = { traceId: "original-chain", parentEventId: referenceId,
       links: [{ eventId: referenceId, type: "reference" as const, label: "support" }] };
     const original = bus.emit({

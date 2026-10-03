@@ -68,6 +68,7 @@ for (const failure of ["mapping", "link-write", "report-write"] as const) {
       if (event.type === "app.dependency.updated") feedback.push(event);
       return writer.handler(event);
     });
+    bus.setDurableRouteRecorder(writer.recordDurableRoute);
     bus.setDeliveryRecorder(writer.recordDelivery);
     if (failure === "link-write")
       db.exec(`CREATE TRIGGER fail_link BEFORE UPDATE ON app_inbox_items
@@ -183,6 +184,7 @@ test("deduplicates accepted pre-Task feedback and heals its reported marker afte
   let writer = new DbWriter(root);
   const attachWriter = () => {
     bus.setPersistenceSubscriber(writer.handler);
+    bus.setDurableRouteRecorder(writer.recordDurableRoute);
     bus.setDeliveryRecorder(writer.recordDelivery);
   };
   const attachCallerRoute = () =>
@@ -190,7 +192,7 @@ test("deduplicates accepted pre-Task feedback and heals its reported marker afte
       event.type === "app.dependency.updated"
         ? { accepted: true, by: "may-fixture", route: "direct" }
         : undefined,
-    );
+    { label: "may-fixture" });
   attachWriter();
   db.exec(`CREATE TRIGGER fail_reported_marker BEFORE UPDATE OF recovery_json ON app_inbox_items
     WHEN NEW.id = 'first'

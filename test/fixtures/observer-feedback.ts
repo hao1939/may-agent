@@ -43,6 +43,7 @@ export async function observerFeedbackFixture(definition: AppDefinition, observe
     if (failPublication && event.type !== "app.observer.failed") throw new Error("fixture persistence unavailable");
     writer.handler(event);
   });
+  bus.setDurableRouteRecorder(writer.recordDurableRoute);
   bus.setDeliveryRecorder(writer.recordDelivery);
   const app = { ...definition, observers: [], schedules: [], workspace: { kind: "local" as const, localPath: "." } };
   const registry = new AppRegistry(async () => [{ appDir, definition: app }]);

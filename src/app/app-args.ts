@@ -30,6 +30,8 @@ export interface AppArgs {
   taskRecoveryWorker: boolean;
   /** Pinned definition generation for private recovery/admission workers. */
   taskWorkerSource?: string;
+  /** Parent Host durable-route identities for a private recovery worker. */
+  taskWorkerRoutes?: string;
   /** Private persistent canonical Task admission worker. */
   taskAdmissionWorker: boolean;
 }
@@ -56,6 +58,11 @@ export function parseAppArgs(argv: string[] = process.argv, env: NodeJS.ProcessE
   const taskWorkerSource = sourceIndex >= 0 ? argv[sourceIndex + 1] : undefined;
   if (sourceIndex >= 0 && (!taskWorkerSource || taskWorkerSource.startsWith("--"))) {
     throw new Error("--task-worker-source requires one source payload");
+  }
+  const routesIndex = argv.indexOf("--task-worker-routes");
+  const taskWorkerRoutes = routesIndex >= 0 ? argv[routesIndex + 1] : undefined;
+  if (routesIndex >= 0 && (!taskWorkerRoutes || taskWorkerRoutes.startsWith("--"))) {
+    throw new Error("--task-worker-routes requires one route payload");
   }
   const taskAdmissionWorker = argv.includes("--task-admission-worker");
   if (taskWorkerIndex >= 0 && !taskWorkerRequest) {
@@ -96,6 +103,7 @@ export function parseAppArgs(argv: string[] = process.argv, env: NodeJS.ProcessE
     ...(taskWorkerRequest ? { taskWorkerRequest } : {}),
     taskRecoveryWorker,
     ...(taskWorkerSource ? { taskWorkerSource } : {}),
+    ...(taskWorkerRoutes ? { taskWorkerRoutes } : {}),
     taskAdmissionWorker,
   };
 }

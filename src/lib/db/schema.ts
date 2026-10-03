@@ -209,6 +209,23 @@ CREATE INDEX IF NOT EXISTS idx_events_telegram_input ON events(event_type, idemp
   WHERE source = 'telegram' AND idempotency_key IS NOT NULL;
 CREATE INDEX IF NOT EXISTS idx_events_timestamp ON events(timestamp, id);
 CREATE INDEX IF NOT EXISTS idx_events_delivery ON events(delivery_status, delivery_route, timestamp);
+
+CREATE TABLE IF NOT EXISTS event_durable_routes (
+  event_id     INTEGER NOT NULL,
+  route_id     TEXT NOT NULL,
+  status       TEXT NOT NULL DEFAULT 'pending' CHECK(status IN ('pending', 'completed')),
+  created_at   INTEGER NOT NULL,
+  updated_at     INTEGER NOT NULL,
+  completed_at   INTEGER,
+  accepted_by    TEXT,
+  delivery_route TEXT,
+  delivery_note  TEXT,
+  PRIMARY KEY(event_id, route_id),
+  FOREIGN KEY(event_id) REFERENCES events(id) ON DELETE CASCADE
+);
+CREATE INDEX IF NOT EXISTS idx_event_durable_routes_pending
+  ON event_durable_routes(route_id, status, updated_at, event_id);
+
 CREATE INDEX IF NOT EXISTS idx_events_session ON events(session_id, timestamp);
 CREATE INDEX IF NOT EXISTS idx_events_workflow ON events(workflow_run_id, timestamp);
 CREATE INDEX IF NOT EXISTS idx_events_project ON events(project_id, timestamp);
@@ -401,6 +418,10 @@ WHEN
   OR EXISTS (
     SELECT 1 FROM app_event_admission_plans p
     WHERE p.event_id = OLD.id AND p.status = 'pending'
+  )
+  OR EXISTS (
+    SELECT 1 FROM event_durable_routes route
+    WHERE route.event_id = OLD.id AND route.status = 'pending'
   )
   OR EXISTS (
     SELECT 1 FROM app_inbox_items i

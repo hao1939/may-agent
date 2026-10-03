@@ -23,6 +23,7 @@ import { runRequestedControlExitMode } from "./runtime-exit-modes.js";
 import {
   parseTaskAttemptProcessRequest,
   parseTaskWorkerDefinitionSource,
+  parseTaskWorkerDurableRouteIds,
   runTaskAttemptWorker,
   runTaskRecoveryWorker,
 } from "./composition/workers/task-attempt-process.js";
@@ -166,6 +167,9 @@ if (taskWorkerMode) {
       models,
       ...(appArgs.taskWorkerSource
         ? { definitionSource: parseTaskWorkerDefinitionSource(appArgs.taskWorkerSource) }
+        : {}),
+      ...(appArgs.taskWorkerRoutes
+        ? { durableRouteIds: parseTaskWorkerDurableRouteIds(JSON.parse(appArgs.taskWorkerRoutes)) }
         : {}),
     };
     if (appArgs.taskAdmissionWorker) {

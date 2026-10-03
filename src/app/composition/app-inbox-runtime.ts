@@ -718,32 +718,71 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
       ...(force ? {} : { updatedBefore: currentTime - ADMISSION_RECOVERY_INTERVAL_MS }),
       limit: ADMISSION_RECOVERY_BATCH_SIZE,
     });
+    // Released databases can already contain a frozen pending plan from before
+    // the durable-route ledger existed. Materialize only that accountable
+    // obligation; unplanned historical events remain unknown.
+    const ensurePlannedRoute = options.db.prepare(
+      `INSERT OR IGNORE INTO event_durable_routes
+       (event_id, route_id, status, created_at, updated_at)
+       VALUES (?, 'app-inbox-route', 'pending', ?, ?)`,
+    );
+    for (const plan of plans) ensurePlannedRoute.run(plan.eventId, plan.createdAt, currentTime);
+    const plannedIds = new Set(plans.map((plan) => plan.eventId));
+    const prePlanEventIds = options.db.prepare(
+      `SELECT route.event_id
+       FROM event_durable_routes route
+       LEFT JOIN app_event_admission_plans plan ON plan.event_id = route.event_id
+       WHERE route.route_id = 'app-inbox-route' AND route.status = 'pending'
+         AND (plan.event_id IS NULL OR plan.status = 'completed')
+         ${force ? "" : "AND route.updated_at <= ?"}
+       ORDER BY route.updated_at, route.event_id
+       LIMIT ?`,
+    )
+      .all(
+        ...(force
+          ? [ADMISSION_RECOVERY_BATCH_SIZE]
+          : [currentTime - ADMISSION_RECOVERY_INTERVAL_MS, ADMISSION_RECOVERY_BATCH_SIZE]),
+      )
+      .map((row) => Number(row.event_id))
+      .filter((eventId) => Number.isSafeInteger(eventId) && eventId > 0 && !plannedIds.has(eventId));
+    if (prePlanEventIds.length > 0) {
+      const recordAttempt = options.db.prepare(
+        `UPDATE event_durable_routes
+         SET updated_at = MAX(updated_at + 1, ?)
+         WHERE event_id = ? AND route_id = 'app-inbox-route' AND status = 'pending'`,
+      );
+      for (const eventId of prePlanEventIds) recordAttempt.run(currentTime, eventId);
+    }
     admissionRecoveryHandle = setTimeout(() => {
       admissionRecoveryHandle = null;
       if (closed) return;
+      const recoveries = [
+        ...prePlanEventIds.map((eventId) => ({ eventId, plan: null })),
+        ...plans.map((plan) => ({ eventId: plan.eventId, plan })),
+      ];
       let index = 0;
       const recoverNext = (): void => {
         admissionRecoveryHandle = null;
         if (closed) return;
-        const plan = plans[index++];
-        if (!plan) return;
-        const event = loadPersistedEvent(options.db, plan.eventId, options.persistDir);
-        if (!event) {
-          for (const command of plan.commands) {
+        const recovery = recoveries[index++];
+        if (!recovery) return;
+        const event = loadPersistedEvent(options.db, recovery.eventId, options.persistDir);
+        if (!event && recovery.plan) {
+          for (const command of recovery.plan.commands) {
             if (command.status !== "pending") continue;
             recordAppEventAdmissionCommandFailure(options.db, {
-              eventId: plan.eventId,
+              eventId: recovery.eventId,
               appId: command.appId,
-              error: new Error(`Frozen App admission event ${plan.eventId} is unavailable`),
+              error: new Error(`Frozen App admission event ${recovery.eventId} is unavailable`),
               now: now(),
             });
           }
-        } else {
-          // EventBus re-runs only idempotent durable routes and records delivery
-          // acceptance on the original row; ordinary subscribers never replay.
-          options.bus.redeliverPersisted(event, plan.eventId);
+        } else if (event) {
+          // Retry only this pending route. Other durable subscribers may already
+          // have completed consequential effects before this marker failed.
+          options.bus.redeliverPersistedRoute(event, recovery.eventId, "app-inbox-route");
         }
-        if (index < plans.length) admissionRecoveryHandle = setTimeout(recoverNext, 0);
+        if (index < recoveries.length) admissionRecoveryHandle = setTimeout(recoverNext, 0);
       };
       recoverNext();
     }, 0);
@@ -1160,7 +1199,13 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
       // Recovery is scheduled behind admission. It must not delay the caller
       // that opens the human interface or activates this message handler.
       void recoverInputs();
-      recoverAdmissionPlans(true);
+      try {
+        recoverAdmissionPlans(true);
+      } catch (error) {
+        // Startup must remain available while SQLite is contended. The route
+        // ledger retains this slice for the recurring recovery scan.
+        reportRuntimeFailure("admission-recovery", error);
+      }
       timer.every(scanIntervalMs, scanFromTimer);
       initialRecovery.after(0, scanFromTimer);
       scheduleProducer.start(scanIntervalMs);

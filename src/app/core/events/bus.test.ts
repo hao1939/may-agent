@@ -25,7 +25,7 @@ describe("EventBus subscriber priority", () => {
     bus.subscribeDurableRoute(() => {
       calls.push("durable");
       return { accepted: true, by: "durable" };
-    });
+    }, { label: "test-durable-route-101" });
     bus.subscribe(() => calls.push("ordinary"));
     bus.listen(() => calls.push("listener"));
 
@@ -41,7 +41,7 @@ describe("EventBus subscriber priority", () => {
     bus.subscribeDurableRoute(() => {
       calls.push("durable");
       return { accepted: true, by: "durable-recovery" };
-    });
+    }, { label: "test-durable-route-102" });
     bus.subscribe(() => calls.push("ordinary"));
     bus.listen(() => calls.push("listener"));
     bus.setDeliveryRecorder((event) => calls.push(`receipt:${event[EVENT_ROW_ID]}`));
@@ -53,6 +53,30 @@ describe("EventBus subscriber priority", () => {
     expect(recovered[EVENT_DELIVERY_RESULT]).toMatchObject({ accepted: true, by: "durable-recovery" });
   });
 
+  it("redelivers only the identified durable route", () => {
+    const bus = new EventBus();
+    const calls: string[] = [];
+    bus.subscribeDurableRoute(() => calls.push("app-inbox"), { label: "app-inbox-route" });
+    bus.subscribeDurableRoute(() => calls.push("command-send"), { label: "command-router" });
+
+    bus.redeliverPersistedRoute({ type: "info", message: "recover" }, 92, "app-inbox-route");
+
+    expect(calls).toEqual(["app-inbox"]);
+  });
+
+  it("requires stable non-empty unique labels for durable routes", () => {
+    const bus = new EventBus();
+    expect(() => bus.subscribeDurableRoute(() => {}, { label: "  " })).toThrow(
+      "Durable event routes require a stable non-empty label",
+    );
+    const unsubscribe = bus.subscribeDurableRoute(() => {}, { label: "stable-route" });
+    expect(() => bus.subscribeDurableRoute(() => {}, { label: "stable-route" })).toThrow(
+      "Durable event route label 'stable-route' is already registered",
+    );
+    unsubscribe();
+    expect(() => bus.subscribeDurableRoute(() => {}, { label: "stable-route" })).not.toThrow();
+  });
+
   it("fans out a worker-persisted event without appending it twice", async () => {
     const bus = new EventBus();
     const calls: string[] = [];
@@ -60,7 +84,7 @@ describe("EventBus subscriber priority", () => {
     bus.subscribeDurableRoute(() => {
       calls.push("durable");
       return { accepted: true, by: "worker-route" };
-    });
+    }, { label: "test-durable-route-103" });
     bus.subscribe(() => calls.push("ordinary"));
     bus.listen(() => calls.push("listener"));
     bus.setDeliveryRecorder((event) => calls.push(`receipt:${event[EVENT_ROW_ID]}`));
@@ -236,7 +260,7 @@ describe("EventBus subscriber priority", () => {
     let ordinaryCalls = 0;
     bus.subscribeDurableRoute((event) => {
       if (event.type === "info") throw new Error("durable admission failed");
-    });
+    }, { label: "test-durable-route-1" });
     bus.subscribe((event) => {
       if (event.type !== "info") return;
       ordinaryCalls += 1;

@@ -1073,6 +1073,14 @@ export type SubscribeOptions = { priority?: "first" | "normal"; label?: string }
 export type EventListener = (event: AgentEvent) => void | Promise<void>;
 export type ListenOptions = { label?: string; types?: readonly string[] };
 export type DeliveryRecorder = (event: AgentEvent, result: DeliveryResult) => void;
+export type DurableRouteState = { settled: boolean; delivery?: DeliveryResult };
+export type DurableRouteRecorder = (
+  event: AgentEvent,
+  routeId: string,
+  result?: DeliveryResult,
+) => DurableRouteState;
+
+type DurableRouteSubscriber = { fn: Subscriber; routeId: string };
 
 type EventListenerState = {
   listener: EventListener;
@@ -1087,6 +1095,8 @@ type EventListenerState = {
 export const EVENT_ROW_ID = Symbol.for("may-agent.eventRowId");
 export const EVENT_DEDUPLICATED = Symbol.for("may-agent.eventDeduplicated");
 export const EVENT_REDELIVERY_REQUIRED = Symbol.for("may-agent.eventRedeliveryRequired");
+/** Stable route identities persisted with the event before recoverable routes run. */
+export const EVENT_DURABLE_ROUTE_IDS = Symbol.for("may-agent.eventDurableRouteIds");
 
 // One listener notification per turn keeps socket polling responsive even
 // when several independent listeners have accumulated worker Event bursts.
@@ -1144,11 +1154,28 @@ function inheritedEventTrace(event: AgentEvent, parent: AgentEvent | undefined):
  */
 export class EventBus {
   private persistenceSubscriber: PersistenceSubscriber | undefined;
-  private durableRouteSubscribers: Subscriber[] = [];
+  private durableRouteSubscribers: DurableRouteSubscriber[] = [];
+  private readonly persistedDurableRouteIds: readonly string[];
+
+  constructor(options: { persistedDurableRouteIds?: readonly string[] } = {}) {
+    const routeIds = options.persistedDurableRouteIds?.map((routeId) => routeId.trim()) ?? [];
+    if (routeIds.some((routeId) => !routeId) || new Set(routeIds).size !== routeIds.length) {
+      throw new Error("Persisted durable event routes require stable non-empty unique labels");
+    }
+    this.persistedDurableRouteIds = Object.freeze(routeIds);
+  }
+
+  /** Host-owned route identities that another process must persist with an event before relay. */
+  snapshotDurableRouteIds(): readonly string[] {
+    return Object.freeze([
+      ...new Set([...this.persistedDurableRouteIds, ...this.durableRouteSubscribers.map(({ routeId }) => routeId)]),
+    ]);
+  }
   private firstSubscribers: Subscriber[] = [];
   private normalSubscribers: Subscriber[] = [];
   private listeners: EventListenerState[] = [];
   private deliveryRecorder: DeliveryRecorder | undefined;
+  private durableRouteRecorder: DurableRouteRecorder | undefined;
   private emitDepth = 0;
   private reportingFailures = false;
   private failureFlushScheduled = false;
@@ -1202,11 +1229,17 @@ export class EventBus {
    * Register an idempotent admission route that must also run when retrying an
    * event persisted before its delivery acceptance was recorded.
    */
-  subscribeDurableRoute(fn: Subscriber, opts?: Pick<SubscribeOptions, "label">): () => void {
-    if (opts?.label?.trim()) this.subscriberLabels.set(fn, opts.label.trim());
-    this.durableRouteSubscribers.push(fn);
+  subscribeDurableRoute(fn: Subscriber, opts: Pick<SubscribeOptions, "label">): () => void {
+    const routeId = opts?.label?.trim();
+    if (!routeId) throw new Error("Durable event routes require a stable non-empty label");
+    if (this.durableRouteSubscribers.some((candidate) => candidate.routeId === routeId)) {
+      throw new Error(`Durable event route label '${routeId}' is already registered`);
+    }
+    this.subscriberLabels.set(fn, routeId);
+    const subscriber = { fn, routeId };
+    this.durableRouteSubscribers.push(subscriber);
     return () => {
-      this.durableRouteSubscribers = this.durableRouteSubscribers.filter((subscriber) => subscriber !== fn);
+      this.durableRouteSubscribers = this.durableRouteSubscribers.filter((candidate) => candidate !== subscriber);
     };
   }
 
@@ -1226,6 +1259,10 @@ export class EventBus {
 
   setDeliveryRecorder(fn: DeliveryRecorder): void {
     this.deliveryRecorder = fn;
+  }
+
+  setDurableRouteRecorder(fn: DurableRouteRecorder): void {
+    this.durableRouteRecorder = fn;
   }
 
   /** Emit an event. Persists first, then runs "first" and "normal" subscribers.
@@ -1255,14 +1292,29 @@ export class EventBus {
     [EVENT_ROW_ID]?: number;
     [EVENT_DELIVERY_RESULT]?: DeliveryResult;
   } {
+    return this.redeliverPersistedRoute(input, eventId);
+  }
+
+  /** Retry one identified durable route without replaying other durable effects. */
+  redeliverPersistedRoute(
+    input: AgentEvent,
+    eventId: number,
+    routeId?: string,
+  ): AgentEvent & {
+    [EVENT_ROW_ID]?: number;
+    [EVENT_DELIVERY_RESULT]?: DeliveryResult;
+  } {
     if (!Number.isSafeInteger(eventId) || eventId <= 0) {
       throw new Error("Persisted event redelivery requires a positive event id");
+    }
+    if (routeId !== undefined && !routeId.trim()) {
+      throw new Error("Persisted event route redelivery requires a non-empty route id");
     }
     const event = Object.isExtensible(input) ? input : ({ ...input } as AgentEvent);
     Object.defineProperty(event, EVENT_ROW_ID, { value: eventId, configurable: true });
     Object.defineProperty(event, EVENT_DEDUPLICATED, { value: true, configurable: true });
     Object.defineProperty(event, EVENT_REDELIVERY_REQUIRED, { value: true, configurable: true });
-    return this.dispatch(event, false);
+    return this.dispatch(event, false, routeId);
   }
 
   /**
@@ -1290,6 +1342,7 @@ export class EventBus {
   private dispatch(
     input: AgentEvent,
     persist: boolean,
+    durableRouteId?: string,
   ): AgentEvent & {
     [EVENT_ROW_ID]?: number;
     [EVENT_DELIVERY_RESULT]?: DeliveryResult;
@@ -1298,9 +1351,19 @@ export class EventBus {
     // DbWriter attaches the durable row id to the routed envelope. Frozen
     // producer input must not silently lose delivery and child-trace metadata.
     const event = Object.isExtensible(tracedEvent) ? tracedEvent : ({ ...tracedEvent } as AgentEvent);
+    if (persist) {
+      const routeIds = this.snapshotDurableRouteIds();
+      if (routeIds.length > 0) {
+        Object.defineProperty(event, EVENT_DURABLE_ROUTE_IDS, {
+          value: routeIds,
+          configurable: true,
+        });
+      }
+    }
     this.emitDepth++;
     let delivery: DeliveryResult | undefined;
     let durableRouteFailed = false;
+    let durableRoutesSettled = true;
     try {
       // Required durability is deliberately outside subscriber error
       // isolation. If persistence fails, no side-effect handler may run.
@@ -1321,10 +1384,17 @@ export class EventBus {
       if (retry[EVENT_DEDUPLICATED] && !retry[EVENT_REDELIVERY_REQUIRED]) {
         return event as AgentEvent & { [EVENT_ROW_ID]?: number };
       }
-      for (const fn of this.durableRouteSubscribers) {
+      for (const { fn, routeId } of this.durableRouteSubscribers) {
+        if (durableRouteId !== undefined && routeId !== durableRouteId) continue;
         try {
           const result = normalizeDeliveryResult(this.runSubscriber(event, "first", fn));
-          delivery = preferredDelivery(delivery, result);
+          if (this.durableRouteRecorder) {
+            const state = this.durableRouteRecorder(event, routeId, result);
+            durableRoutesSettled = state.settled;
+            delivery = preferredDelivery(delivery, state.delivery);
+          } else {
+            delivery = preferredDelivery(delivery, result);
+          }
         } catch (err) {
           durableRouteFailed = true;
           this.reportSubscriberFailure(event, "first", err);
@@ -1352,7 +1422,7 @@ export class EventBus {
           }
         }
       }
-      if (!durableRouteFailed) {
+      if (!durableRouteFailed && durableRoutesSettled) {
         delivery ??= pairTrackerFallback(event);
         if (!delivery && (event as AgentEvent & { [EVENT_RECORD_ONLY]?: boolean })[EVENT_RECORD_ONLY]) {
           delivery = {

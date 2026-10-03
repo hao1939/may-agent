@@ -146,6 +146,33 @@ describe("bounded DB maintenance", () => {
     }
   });
 
+  it("retains an old event while a required durable route is pending", () => {
+    const persistDir = mkdtempSync(join(tmpdir(), "may-maintenance-pending-route-"));
+    const now = 10 * 86_400_000;
+    try {
+      const db = getDb(persistDir);
+      const inserted = db.prepare(
+        `INSERT INTO events (event_type, source, owner, data, timestamp)
+         VALUES ('provider.changed', 'provider', 'app:evaluation', '{}', ?)`,
+      ).run(now - 6 * 86_400_000);
+      const eventId = Number(inserted.lastInsertRowid);
+      db.prepare(
+        `INSERT INTO event_durable_routes (event_id, route_id, status, created_at, updated_at)
+         VALUES (?, 'app-inbox-route', 'pending', ?, ?)`,
+      ).run(eventId, now - 6 * 86_400_000, now - 6 * 86_400_000);
+
+      const result = runDbMaintenancePass(persistDir, { now, batchSize: 100 });
+
+      expect(result.deleted.events).toBe(0);
+      expect(db.prepare("SELECT id FROM events WHERE id = ?").get(eventId)).toEqual({ id: eventId });
+      expect(db.prepare("SELECT status FROM event_durable_routes WHERE event_id = ?").get(eventId)).toEqual({
+        status: "pending",
+      });
+    } finally {
+      closeDb(persistDir);
+    }
+  });
+
   it("retains handled approval identity after the general event window", () => {
     const persistDir = mkdtempSync(join(tmpdir(), "may-maintenance-approval-"));
     const now = 10 * 86_400_000;

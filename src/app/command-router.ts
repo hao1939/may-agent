@@ -265,7 +265,7 @@ export function attachCommandRouter(options: CommandRouterOptions): CommandRoute
         options.shutdown();
         return accepted("runtime-shutdown");
     }
-  });
+  }, { label: "command-router" });
 
   return {
     handleInput,

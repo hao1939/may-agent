@@ -30,6 +30,7 @@ function fixture(conversationAppId?: string) {
   const writer = new DbWriter(root);
   bus.setPersistenceSubscriber(writer.handler);
   bus.setDeliveryRecorder(writer.recordDelivery);
+  bus.setDurableRouteRecorder(writer.recordDurableRoute);
   const db = getDb(root);
   const events = createEventInterface({
     bus,
@@ -151,6 +152,7 @@ describe("simple event interface", () => {
     const writer = new DbWriter(root);
     bus.setPersistenceSubscriber(writer.handler);
     bus.setDeliveryRecorder(writer.recordDelivery);
+    bus.setDurableRouteRecorder(writer.recordDurableRoute);
     const db = getDb(root);
     const app = defineApp({
       id: "evaluation",
@@ -189,7 +191,7 @@ describe("simple event interface", () => {
         idempotencyKey: String(data.idempotencyKey),
       });
       return { accepted: true, by: `app-inbox:${created.item.id}`, route: "direct" };
-    });
+    }, { label: "test-durable-route-101" });
 
     const publish = (data: { assessmentPurpose: string; subjectGeneration: number }) =>
       events.publish(
@@ -442,8 +444,12 @@ describe("simple event interface", () => {
 
   it("admits only exact fenced Task control Events", () => {
     const { bus, events } = fixture();
-    bus.subscribeDurableRoute((event) =>
-      event.type === "app.task.retry.requested" ? { accepted: true, by: "task-control", route: "direct" } : undefined,
+    bus.subscribeDurableRoute(
+      (event) =>
+        event.type === "app.task.retry.requested"
+          ? { accepted: true, by: "task-control", route: "direct" }
+          : undefined,
+      { label: "test-task-control-route" },
     );
     expect(
       events.publish(
@@ -512,7 +518,7 @@ describe("simple event interface", () => {
         idempotencyKey: String(data.idempotencyKey),
       });
       return { accepted: true, by: `app-inbox:${created.item.id}`, route: "direct" };
-    });
+    }, { label: "test-durable-route-102" });
 
     const input = {
       type: "app.input.requested",
@@ -559,7 +565,7 @@ describe("simple event interface", () => {
         trace: childEventTrace(event),
       });
       return { accepted: true, by: "command-router:runtime-reload", route: "direct" };
-    });
+    }, { label: "test-durable-route-103" });
     const recovered = events.publish(input, { source: "control-socket" });
     expect(recovered).toMatchObject({ eventId: receipt.eventId, delivery: "accepted" });
     expect(events.get(receipt.eventId)?.delivery).toMatchObject({
@@ -578,10 +584,12 @@ describe("simple event interface", () => {
 
   it("keeps record-only delivery recorded even when a declared route reacts", () => {
     const { bus, events } = fixture();
-    bus.subscribeDurableRoute((event) =>
-      event.type === "project.owner.requested"
-        ? { accepted: true, by: "app-runtime:events:sample", route: "direct" }
-        : undefined,
+    bus.subscribeDurableRoute(
+      (event) =>
+        event.type === "project.owner.requested"
+          ? { accepted: true, by: "app-runtime:events:sample", route: "direct" }
+          : undefined,
+      { label: "test-owner-request-route" },
     );
     const receipt = events.publish(
       {
