@@ -185,10 +185,12 @@ test("reconcile existing evidence for a subset; unfinished work and accepted par
 
 test("a waiting result's scope is not completion; genuine waits do not keep the owner runnable", async () => {
   const f = fixture(2);
+  const reviewAt = Date.now() + 300_000;
   deferAppTask(f.config, f.claim(), {
     disposition: "waiting",
     summary: "Prepare independent work while review runs",
     continue: true,
+    reviewAt,
     conditions: [
       {
         id: "review",
@@ -202,9 +204,10 @@ test("a waiting result's scope is not completion; genuine waits do not keep the 
   });
   f.reopen();
   const c = f.claim();
+  expect(c.previousAttempt?.acceptedResult?.reviewAt).toBe(reviewAt);
   const p = await f.brief(c);
   expect(p.packet.work?.previousResult.state).toBe("waiting");
-  expect(p.packet.work.previousResult).toMatchObject({ coveredInputs: 2, continue: true });
+  expect(p.packet.work.previousResult).toMatchObject({ coveredInputs: 2, continue: true, reviewAt });
   for (const key of f.keys) expect(readAppTaskAdmissionOutcome(f.config, "work", key)).toBeNull();
   deferAppTask(f.config, c, { disposition: "waiting", summary: "Independent work ready; only review remains" });
   expect(claimObservedAppTask(f.config, { taskId: "work", appAgent: "owner", handler: "agent" }).kind).toBe("waiting");
