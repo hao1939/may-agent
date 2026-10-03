@@ -95,6 +95,7 @@ function conversationInputPrompt(
   return [
     `Consider the admitted inputs for App ${app.id} together, in order, using its Conversation result contract.`,
     "The inputs are the whole current batch. replyTo identifies the response destination; every input still needs consideration.",
+    "Topics only organize this Conversation's discussion and Requests. Omit topic to keep the input's existing grouping, or leave it ungrouped when none exists. Choose a Topic only when changing the grouping is useful. A followUp needs no Topic: infra retains the caller input and returns the selected result; the worker manages no Topic bookkeeping.",
     "A Request is an accepted conversational promise to the human. The App recognizes these promises and judges scope and fulfillment. Routine automated handling belongs in turn/Task evidence; an automated result can also advance an existing human promise. Several inputs can belong to one Request; several Requests can share this turn.",
     "Use conversation_request before working on an accepted Request to preserve its requirements and current input associations, even when scope is unchanged. assignedRequests contains full current requirements for this turn. Every assigned Request and every Request saved during the turn needs a final requestUpdates entry with its own reason. An open disposition must explain what remains; a reply about another Request does not supply that explanation.",
     "Selection identities are explicit in selectableConversationIdentities. topic.kind=existing must use one of its topicIds or an exact Topic successfully returned by conversation_context in this turn; Topic IDs elsewhere in messages or previousAttempt are context only and may be stale. followUp.requestId must exactly match one of its assignedOpenRequestIds or an open Request successfully saved by conversation_request in this turn; otherwise omit requestId. Never select an unavailable Topic or a closed or unassigned Request from Conversation history or previousAttempt.",
@@ -147,6 +148,7 @@ export function createConversationAgentResolver(options: {
         taskContext: options.taskContext,
         requireFinish: true,
         outputSchema: binding.outputSchema,
+        validateOutput: binding.validateOutput,
         // Reuse bounded App execution, without detached lifecycle tools.
         toolPolicy: "app-agent-full",
         timeout: APP_REQUEST_AGENT_TIMEOUT_MS,

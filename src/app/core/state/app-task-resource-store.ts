@@ -207,6 +207,13 @@ export class AppTaskResourceStore {
     return new AppTaskResourceStore(db, normalized, false);
   }
 
+  /** Inspect an installed Host database without creating App metadata or activating its seed. */
+  static inspectFromDb(db: SqliteDb, appId: string): AppTaskResourceStore {
+    const normalized = appId.trim().replace(/\.app$/, "");
+    if (!normalized) throw new Error("Task resource store requires an App id");
+    return new AppTaskResourceStore(db, normalized, false);
+  }
+
   /** Discover an active App without creating or activating state. */
   static activeFromDb(db: SqliteDb, appId: string): AppTaskResourceStore | null {
     const normalized = appId.trim().replace(/\.app$/, "");

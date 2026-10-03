@@ -13,8 +13,7 @@ import type { SqliteDb } from "../../lib/db.js";
 import type { AppInboxItem } from "../core/state/app-inbox-store.js";
 import {
   readAppConversationResource,
-  readConversationMessageTopicId,
-  readConversationTopic,
+  readConversationInputTopicId,
 } from "../core/state/conversations.js";
 import { observeTaskDependency, readInputContext, type AppDependencyReader } from "../core/inbox/input-context.js";
 
@@ -153,21 +152,27 @@ export async function prepareConversationInput(
     };
   }
   if (item.conversationId) {
-    const hintedTopic =
-      typeof context.conversationTopicId === "string" && context.conversationTopicId.trim()
-        ? readConversationTopic(db, item.appId, item.conversationId, context.conversationTopicId)
-        : null;
-    const repliedTopicId = item.replyToSourceId
-      ? readConversationMessageTopicId(db, item.appId, item.conversationId, item.replyToSourceId)
-      : undefined;
-    const contextTopicId = item.topicId ?? repliedTopicId ?? hintedTopic?.id;
+    const contextTopicId = readConversationInputTopicId(db, item);
     const conversation = readAppConversationResource(db, item.appId, item.conversationId, {
       limit: 40,
       ...(contextTopicId ? { topicId: contextTopicId } : {}),
     });
+    // Results bring their callers' asks back into bounded context even after
+    // regrouping or a long discussion. The agent still judges which to address;
+    // receiving evidence alone does not assign or reopen every related Request.
+    const data = item.input.data as Record<string, unknown> | null;
+    const originInputIds = item.source.kind === "system" &&
+      ["task-outcome", "task-closed"].includes(item.input.kind) && Array.isArray(data?.originInputIds)
+      ? data.originInputIds.filter((id): id is string => typeof id === "string").slice(0, 100) : [];
+    const callerRequests = listConversationInputRequests(db, item.appId, item.conversationId, originInputIds);
+    const callerRequestIds = new Set(callerRequests.map(({ id }) => id));
     const boundedConversation = boundedAppRequestConversation(
       {
         ...conversation,
+        requests: [
+          ...callerRequests.map(({ inputIds: _inputIds, ...request }) => request),
+          ...(conversation.requests ?? []).filter(({ id }) => !callerRequestIds.has(id)),
+        ],
         current: {
           messageId: item.source.id,
           ...(item.replyToSourceId ? { replyTo: item.replyToSourceId } : {}),

@@ -122,64 +122,61 @@ export function pageOpenConversationRequests(
   ).all(appId, conversationId, afterId) as Array<{ id: string; revision: number; scopePreview: string; status: "open" }>;
 }
 
-/** Closure includes its explanation in this transaction; open updates can be saved before execution. */
-export function applyConversationRequestUpdates(
-  db: SqliteDb,
-  input: {
-    appId: string;
-    conversationId: string;
-    topicId?: string;
-    updates: AppConversationRequestUpdate[];
-    updateKey: string;
-    messageId?: string;
-    now: number;
-    /** Trusted live Conversation context. Old internal callers supply the same scoped identity. */
-    actor?: ResourceCreator;
-  },
-): void {
+type ConversationRequestUpdatesInput = {
+  appId: string;
+  conversationId: string;
+  topicId?: string;
+  updates: AppConversationRequestUpdate[];
+  updateKey: string;
+  messageId?: string;
+  /** Trusted live Conversation context. Old internal callers supply the same scoped identity. */
+  actor?: ResourceCreator;
+};
+
+/** Read-only preparation, shared by finish feedback and transactional application. */
+export function prepareConversationRequestUpdates(db: SqliteDb, input: ConversationRequestUpdatesInput) {
   if (!Check(conversationRequestUpdatesSchema, input.updates)) throw new Error("Invalid accepted Request updates");
   const ids = new Set<string>();
-  stateTransaction(db, () => {
-    if (input.actor) {
-      const ownsConversation =
-        input.actor.appId === input.appId &&
-        typeof input.actor.taskId === "string" &&
-        db
-          .prepare(
-            `SELECT 1 FROM app_inbox_items
-             WHERE app_id = ? AND conversation_id = ? AND execution_task_id = ? LIMIT 1`,
-          )
-          .get(input.appId, input.conversationId, input.actor.taskId);
-      if (!ownsConversation) throw new Error("Conversation Request actor does not own this Conversation");
-    }
-    for (const update of input.updates) {
-      if (ids.has(update.id)) throw new Error("Repeated accepted Request update");
-      ids.add(update.id);
-      const row = db
-        .prepare("SELECT * FROM conversation_requests WHERE app_id = ? AND conversation_id = ? AND id = ?")
-        .get(input.appId, input.conversationId, update.id) as Row | undefined;
-      const current = row ? view(row) : null;
-      const scope = update.scope ?? current?.scope;
-      if (!scope?.trim()) throw new ConversationRequestConflict(`New Request ${update.id} requires a scope`);
-      const closed = update.disposition !== "open";
-      if (closed && (!update.reason?.trim() || !input.messageId))
-        throw new Error("Request closure requires a reason and Conversation explanation");
-      const closure = closed
+  if (input.actor) {
+    const ownsConversation =
+      input.actor.appId === input.appId &&
+      typeof input.actor.taskId === "string" &&
+      db
+        .prepare(
+          `SELECT 1 FROM app_inbox_items
+        WHERE app_id = ? AND conversation_id = ? AND execution_task_id = ? LIMIT 1`,
+        )
+        .get(input.appId, input.conversationId, input.actor.taskId);
+    if (!ownsConversation) throw new Error("Conversation Request actor does not own this Conversation");
+  }
+  return input.updates.map((update) => {
+    if (ids.has(update.id)) throw new Error("Repeated accepted Request update");
+    ids.add(update.id);
+    const row = db
+      .prepare("SELECT * FROM conversation_requests WHERE app_id = ? AND conversation_id = ? AND id = ?")
+      .get(input.appId, input.conversationId, update.id) as Row | undefined;
+    const current = row ? view(row) : null;
+    const scope = update.scope ?? current?.scope;
+    if (!scope?.trim()) throw new ConversationRequestConflict(`New Request ${update.id} requires a scope`);
+    const closed = update.disposition !== "open";
+    if (closed && (!update.reason?.trim() || !input.messageId))
+      throw new Error("Request closure requires a reason and Conversation explanation");
+    const closure =
+      update.disposition !== "open"
         ? { disposition: update.disposition, reason: update.reason!, messageId: input.messageId! }
         : undefined;
-      const refs = [...(current?.taskRefs ?? [])];
-      for (const ref of update.taskRefs ?? []) {
-        if (!refs.some((existing) => existing.appId === ref.appId && existing.taskId === ref.taskId)) refs.push(ref);
-      }
-      if (refs.length > 32) throw new Error("Accepted Request Task link limit reached");
-      if (
-        row?.update_key === input.updateKey &&
-        current?.revision === update.expectedRevision + 1 &&
-        current.scope === scope &&
-        JSON.stringify(current.closure) === JSON.stringify(closure) &&
-        JSON.stringify(current.taskRefs) === JSON.stringify(refs)
-      )
-        continue;
+    const refs = [...(current?.taskRefs ?? [])];
+    for (const ref of update.taskRefs ?? []) {
+      if (!refs.some((existing) => existing.appId === ref.appId && existing.taskId === ref.taskId)) refs.push(ref);
+    }
+    if (refs.length > 32) throw new Error("Accepted Request Task link limit reached");
+    const replayed =
+      row?.update_key === input.updateKey &&
+      current?.revision === update.expectedRevision + 1 &&
+      current.scope === scope &&
+      JSON.stringify(current.closure) === JSON.stringify(closure) &&
+      JSON.stringify(current.taskRefs) === JSON.stringify(refs);
+    if (!replayed) {
       if ((current?.revision ?? 0) !== update.expectedRevision)
         throw new ConversationRequestConflict(
           `Accepted Request ${update.id} revision changed: expected ${update.expectedRevision}, current ${current?.revision ?? 0}; review its current scope and revision`,
@@ -188,6 +185,29 @@ export function applyConversationRequestUpdates(
         throw new ConversationRequestConflict(
           `Request ${update.id} closure changes scope; save the authorized correction as open first, then close the returned revision without changing scope`,
         );
+    }
+    const topicId = input.topicId ?? current?.topicId;
+    const request: AppConversationRequest = {
+      id: update.id,
+      revision: update.expectedRevision + 1,
+      scope,
+      status: closed ? "closed" : "open",
+      taskRefs: refs,
+      ...(topicId ? { topicId } : {}),
+      ...(closure ? { closure } : {}),
+    };
+    return { request, replayed };
+  });
+}
+
+/** Closure includes its explanation in this transaction; open updates can be saved before execution. */
+export function applyConversationRequestUpdates(
+  db: SqliteDb,
+  input: ConversationRequestUpdatesInput & { now: number },
+): void {
+  stateTransaction(db, () => {
+    for (const { request, replayed } of prepareConversationRequestUpdates(db, input)) {
+      if (replayed) continue;
       db.run(
         `INSERT INTO conversation_requests (app_id, conversation_id, id, revision, scope, status, topic_id, task_refs, closure, update_key, updated_at)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
@@ -197,13 +217,13 @@ export function applyConversationRequestUpdates(
         [
           input.appId,
           input.conversationId,
-          update.id,
-          update.expectedRevision + 1,
-          scope,
-          closed ? "closed" : "open",
-          input.topicId ?? current?.topicId ?? null,
-          JSON.stringify(refs),
-          closure ? JSON.stringify(closure) : null,
+          request.id,
+          request.revision,
+          request.scope,
+          request.status,
+          request.topicId ?? null,
+          JSON.stringify(request.taskRefs),
+          request.closure ? JSON.stringify(request.closure) : null,
           input.updateKey,
           input.now,
         ],

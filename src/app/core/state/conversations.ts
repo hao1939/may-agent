@@ -6,7 +6,8 @@ import type {
   AppInput,
 } from "@may-agent/sdk";
 import type { SqliteDb } from "../../../lib/db.js";
-import { listAppInboxConversationItems, readActiveAppTurn } from "./app-inbox-store.js";
+import { listAppInboxConversationItems, readActiveAppTurn, type AppInboxItem } from "./app-inbox-store.js";
+import { conversationTaskLinksSql } from "./conversation-task-links.js";
 import { displayTaskReferences } from "./task-reference-index.js";
 import {
   listConversationRequests,
@@ -382,10 +383,11 @@ function hydrateConversationTopics(db: SqliteDb, rows: ConversationTopicRow[]): 
   const taskRows = rows.length
     ? (db
         .prepare(
-          `SELECT topic_id, app_id, task_id
-           FROM conversation_topic_tasks
+          `SELECT topic_id, task_app_id AS app_id, task_id
+           FROM (${conversationTaskLinksSql()})
            WHERE topic_id IN (${rows.map(() => "?").join(",")})
-           ORDER BY linked_at, app_id, task_id`,
+           GROUP BY topic_id, task_app_id, task_id
+           ORDER BY MIN(linked_at), task_app_id, task_id`,
         )
         .all(...rows.map((row) => requiredText(row.id, "topic id"))) as Array<Record<string, unknown>>)
     : [];
@@ -564,6 +566,27 @@ export function readConversationMessageTopicId(
   } catch {
     return null;
   }
+}
+
+/** Retain explicit Conversation context without asking the agent to repeat its identity. */
+export function readConversationInputTopicId(db: SqliteDb, item: AppInboxItem): string | undefined {
+  if (!item.conversationId) return undefined;
+  const data = item.input.data;
+  const raw =
+    data && typeof data === "object" && !Array.isArray(data) ? (data as Record<string, unknown>).context : undefined;
+  const hint =
+    raw && typeof raw === "object" && !Array.isArray(raw)
+      ? (raw as Record<string, unknown>).conversationTopicId
+      : undefined;
+  const replied = item.replyToSourceId
+    ? readConversationMessageTopicId(db, item.appId, item.conversationId, item.replyToSourceId)
+    : undefined;
+  for (const candidate of [item.topicId, replied, hint]) {
+    if (typeof candidate !== "string" || !candidate.trim()) continue;
+    const topic = readConversationTopic(db, item.appId, item.conversationId, candidate);
+    if (topic) return topic.id;
+  }
+  return undefined;
 }
 
 export function createConversationTopic(db: SqliteDb, input: CreateConversationTopic): AppConversationTopic {
