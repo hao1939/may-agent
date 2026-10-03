@@ -337,7 +337,7 @@ export function shouldRetainAppTaskWorkspace(
   return hasUnacceptedLiveEvents(tree.taskTriggers?.[claim.taskId], input.acceptedLiveEventIds) ||
     assigned.some((key) => !answered.has(key)) ||
     Object.keys(status?.inputWaits ?? {}).some((key) => !answered.has(key)) ||
-    Boolean(status?.conditionIds?.length);
+    Boolean(status?.conditionIds?.some((id) => !isSatisfiedCondition(tree.conditions?.[id])));
 }
 
 export function appendTaskTriggerEvent(
@@ -826,6 +826,10 @@ function isOpenCondition(value: unknown): value is AppTaskCondition {
   return isAppTaskCondition(value) && value.status.state !== "true";
 }
 
+function isSatisfiedCondition(value: unknown): value is AppTaskCondition {
+  return isAppTaskCondition(value) && value.status.state === "true";
+}
+
 function conditionRegistry(tree: TaskTree): Record<string, AppTaskCondition> {
   tree.conditions = tree.conditions ?? {};
   return tree.conditions;
@@ -854,9 +858,7 @@ function openTaskConditionIds(tree: TaskTree, taskId: string): string[] {
 }
 
 function hasSatisfiedTaskCondition(tree: TaskTree, taskId: string): boolean {
-  return taskConditionEntries(tree, taskId).some(
-    ([, condition]) => isAppTaskCondition(condition) && condition.status.state === "true",
-  );
+  return taskConditionEntries(tree, taskId).some(([, condition]) => isSatisfiedCondition(condition));
 }
 
 function pruneUnlinkedConditions(tree: TaskTree): void {
@@ -882,10 +884,7 @@ function unlinkExactTaskCondition(tree: TaskTree, taskId: string, conditionId: s
 function unlinkSatisfiedTaskConditions(tree: TaskTree, taskId: string): void {
   const resource = tree.resources?.[taskId];
   if (!resource?.status.conditionIds?.length) return;
-  const remaining = resource.status.conditionIds.filter((id) => {
-    const condition = tree.conditions?.[id];
-    return !isAppTaskCondition(condition) || condition.status.state !== "true";
-  });
+  const remaining = resource.status.conditionIds.filter((id) => !isSatisfiedCondition(tree.conditions?.[id]));
   if (remaining.length === resource.status.conditionIds.length) return;
   touchResource(resource, { conditionIds: remaining });
   pruneUnlinkedConditions(tree);

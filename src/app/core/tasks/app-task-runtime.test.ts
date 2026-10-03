@@ -8892,18 +8892,24 @@ describe("canonical App task runtime", () => {
   );
 
   it.each(["input", "condition"] as const)(
-    "partial acceptance preserves reusable workspace with remaining %s",
+    "partial acceptance retains its workspace until remaining %s is settled",
     async (remaining) => {
       const f = fixture();
       const bus = eventBus();
       const git = (cwd: string, ...args: string[]) =>
         promisify(execFile)("git", ["-C", cwd, ...args], { timeout: 10_000 });
+      const privateRefs = async () =>
+        (await git(f.appDir, "for-each-ref", "--format=%(refname)", "refs/may/workspaces/")).stdout.trim();
       writeFileSync(join(f.appDir, ".gitignore"), ".local-proof\n");
       await git(f.appDir, "init", "-b", "main");
       await git(f.appDir, "config", "user.email", "test@example.com");
       await git(f.appDir, "config", "user.name", "Test");
       await git(f.appDir, "add", ".");
       await git(f.appDir, "commit", "-m", "fixture baseline");
+      const remotePath = join(f.root, "origin.git");
+      await git(f.root, "init", "--bare", remotePath);
+      await git(f.appDir, "remote", "add", "origin", remotePath);
+      await git(f.appDir, "push", "-u", "origin", "main");
       let calls = 0;
       let workspacePath = "";
       await installAppTaskRuntimes({
@@ -8917,15 +8923,13 @@ describe("canonical App task runtime", () => {
               writeFileSync(join(attempt.cwd, ".local-proof"), "reuse this expensive check");
               if (remaining === "condition")
                 await attempt.apply({
-                  conditions: [
-                    {
-                      id: "review",
-                      type: "review.done",
-                      subject: "id:review",
-                      expected: true,
-                      owner: "app:sample",
-                    },
-                  ],
+                  conditions: ["review", "independent-review"].map((id) => ({
+                    id,
+                    type: "review.done",
+                    subject: `id:${id}`,
+                    expected: true,
+                    owner: "app:sample",
+                  })),
                 });
               return {
                 state: "converged",
@@ -8983,13 +8987,43 @@ describe("canonical App task runtime", () => {
       expect(accepted.acceptedResult?.summary).toBe("Accepted useful contribution");
       expect(accepted.workspace?.disposition).toBe("active");
       expect(existsSync(workspacePath)).toBe(true);
+      expect(await privateRefs()).not.toBe("");
       expect(config.resourceStore.readTask(taskId)?.status.phase).toBe(remaining === "input" ? "pending" : "waiting");
-      if (remaining === "condition") recordAppTaskTrigger(config, taskId, { type: "review.follow-up", eventId: 101 });
+      const satisfyReview = (id: string) =>
+        trackAppTaskConditionEventForTasks(
+          config,
+          {
+            type: "review.done",
+            data: { id, state: true },
+          },
+          [taskId],
+        );
+      if (remaining === "condition") satisfyReview("review");
       await run();
       expect(calls).toBe(2);
       expect(readAppTaskAdmissionOutcome(config, taskId, "ask:verified-change")?.summary).toBe(
         remaining === "input" ? "Continued using accepted work" : "Accepted useful contribution",
       );
+      if (remaining === "condition") {
+        // Settling one wait must preserve the workspace for the independent wait.
+        expect(config.resourceStore.readTask(taskId)?.status).toMatchObject({
+          phase: "waiting",
+          conditionIds: ["independent-review"],
+        });
+        expect(acceptedTaskAttempt(config, taskId)?.workspace?.disposition).toBe("active");
+        expect(existsSync(workspacePath)).toBe(true);
+        expect(await privateRefs()).not.toBe("");
+        satisfyReview("independent-review");
+        await run();
+        expect(calls).toBe(3);
+      }
+      expect(config.resourceStore.readTask(taskId)?.status.phase).toBe("converged");
+      expect(config.resourceStore.readTask(taskId)?.status.conditionIds ?? []).toEqual([]);
+      expect(acceptedTaskAttempt(config, taskId)?.workspace?.disposition).toBe("removed");
+      expect(existsSync(workspacePath)).toBe(false);
+      expect((await git(f.appDir, "branch", "--list", accepted.workspace!.branch)).stdout.trim()).toBe("");
+      expect(await privateRefs()).toBe("");
+      expect(config.resourceStore.listRecoveryCandidates().items).toEqual([]);
     },
   );
 
