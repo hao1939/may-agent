@@ -33,6 +33,7 @@ function fixture(additionalExpected: Record<string, unknown> = {}) {
   const bus = new EventBus();
   const writer = new DbWriter(root);
   bus.setPersistenceSubscriber(writer.handler);
+  bus.setDurableRouteRecorder(writer.recordDurableRoute);
   bus.setDeliveryRecorder(writer.recordDelivery);
   const condition = {
     metadata: { id: "release", generation: 1, resourceVersion: 1 },
@@ -453,9 +454,11 @@ for (const crash of [
     }
     if (crash === "after-decision") {
       runtime = await inputRuntime(f);
-      // Lose the final input acknowledgement after its decision was saved.
-      f.bus.setDeliveryRecorder((event, result) => {
-        if (event.type !== "conversation.message.created") f.writer.recordDelivery(event, result);
+      // Fail after the decision commits but before the input route and its
+      // acceptance receipt settle in their durable-route transaction.
+      f.bus.setDurableRouteRecorder((event, routeId, result) => {
+        if (event.type === "conversation.message.created") throw new Error("fixture input route settlement interrupted");
+        return f.writer.recordDurableRoute(event, routeId, result);
       });
     }
     const original = f.events.publish(humanReply(f), context);
@@ -467,6 +470,7 @@ for (const crash of [
     const bus = new EventBus();
     const writer = new DbWriter(f.root);
     bus.setPersistenceSubscriber(writer.handler);
+    bus.setDurableRouteRecorder(writer.recordDurableRoute);
     bus.setDeliveryRecorder(writer.recordDelivery);
     const store = AppTaskResourceStore.fromDb(db, "sample");
     f = { ...f, db, bus, writer, store };

@@ -84,6 +84,7 @@ async function fixture(controlFirst?: boolean) {
     bus = new EventBus();
     const writer = new DbWriter(root);
     bus.setPersistenceSubscriber(writer.handler);
+    bus.setDurableRouteRecorder(writer.recordDurableRoute);
     bus.setDeliveryRecorder(writer.recordDelivery);
     const controls = () =>
       attachTaskControlEventRoute(bus, {

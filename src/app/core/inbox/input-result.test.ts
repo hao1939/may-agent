@@ -27,6 +27,7 @@ function connect() {
   bus = new EventBus();
   const writer = new DbWriter(root);
   bus.setPersistenceSubscriber(writer.handler);
+  bus.setDurableRouteRecorder(writer.recordDurableRoute);
   bus.setDeliveryRecorder(writer.recordDelivery);
   bus.subscribeDurableRoute(() => {
     routed++;

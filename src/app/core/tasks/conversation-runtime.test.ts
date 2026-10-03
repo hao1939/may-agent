@@ -847,6 +847,7 @@ async function startConversationIngress(f: Awaited<ReturnType<typeof fixture>>) 
   await registry.reload();
   const writer = new DbWriter(f.root);
   f.bus.setPersistenceSubscriber(writer.handler);
+  f.bus.setDurableRouteRecorder(writer.recordDurableRoute);
   f.bus.setDeliveryRecorder(writer.recordDelivery);
   const tasks = createAppTaskCapability({ bus: f.bus });
   const runtime = await startAppInboxRuntime({
@@ -1212,6 +1213,7 @@ test.each(["live", "restart", "admission-write-failure"])(
       const unknown = f.bus.emit({
         type: "conversation.task.changed",
         source: "fixture",
+        owner: `app:${app.id}`,
         data: {
           appId: app.id,
           conversationId: "primary",
@@ -1263,6 +1265,7 @@ test.each(["live", "restart", "admission-write-failure"])(
       const replay = f.bus.emit({
         type: "conversation.task.changed",
         source: "fixture",
+        owner: `app:${app.id}`,
         data: {
           appId: app.id,
           conversationId: "primary",

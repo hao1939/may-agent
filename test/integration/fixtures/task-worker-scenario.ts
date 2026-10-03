@@ -156,6 +156,7 @@ export function run(f: ReturnType<typeof fixture>, recovery = false): Promise<un
   const workerOptions = {
     bus: f.bus,
     timeoutMs: 5_000,
+    ...(f.request.definitionSource ? { definitionSource: () => f.request.definitionSource! } : {}),
     spawnWorker: (requestOrSource?: TaskAttemptProcessRequest | TaskWorkerDefinitionSource, durableRouteIds?: readonly string[]) => {
       const request = recovery ? undefined : (requestOrSource as TaskAttemptProcessRequest);
       const definitionSource = recovery
