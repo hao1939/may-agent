@@ -717,7 +717,9 @@ describe("App inbox runtime", () => {
     publish("probe/current");
     expect(admitted).toEqual([]);
     publish("probe/current", "accepted-attempt");
-    expect(admitted).toEqual([
+    // Distinct Conversations have no delivery-order contract. Links can share
+    // a timestamp, so their generated identities may decide traversal order.
+    expect(new Set(admitted)).toEqual(new Set([
       {
         appId: "evaluation",
         conversationId: "chat",
@@ -732,7 +734,7 @@ describe("App inbox runtime", () => {
         taskId: "probe/current",
         attemptId: "accepted-attempt",
       },
-    ]);
+    ]));
     expect(changes).toEqual([]);
     publish(executionTaskId, "own-attempt");
     expect(admitted).toHaveLength(2);
@@ -742,13 +744,10 @@ describe("App inbox runtime", () => {
       data: { appId: "evaluation", taskId: "probe/current", generation: 1 },
     });
     expect(admitted).toHaveLength(4);
-    expect(admitted.at(-2)).toEqual({
-      appId: "evaluation",
-      conversationId: "chat",
-      taskAppId: "evaluation",
-      taskId: "probe/current",
-      closedGeneration: 1,
-    });
+    expect(new Set(admitted.slice(2))).toEqual(new Set(["chat", "other-chat"].map((conversationId) => ({
+      appId: "evaluation", conversationId, taskAppId: "evaluation",
+      taskId: "probe/current", closedGeneration: 1,
+    }))));
     expect(changes).toEqual([]);
     // Presentation and judgment happen only when the real Task accepts a reply.
     expect(messages).toEqual([]);
