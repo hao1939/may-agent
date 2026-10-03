@@ -127,6 +127,16 @@ remains. When some inputs are fully fulfilled, use `converged` with their exact
 `inputKeys`; other requirements remain outstanding. Several related inputs can
 be fulfilled together. These use the supplied schema, not a new partial state.
 
+When Host asks you to wrap up, use the facts already gathered and call `finish()`.
+State what is confirmed, what remains, and any uncertain effects from interrupted
+tools or helpers. If a patch is ready but its review was interrupted, record the
+patch as progress and return `waiting` with `continue: true` for the remaining
+review. Use `incomplete` if you cannot support a useful accepted contribution.
+Correct a rejected result through `finish()`; do not launch more work. Infra owns
+the timer, cancellation and continuation scheduling. See [finishing before the
+deadline](../../2a-design/execution-contributions.md#finish-before-the-execution-deadline)
+for candidate availability; there is no extension request or new result schema.
+
 The [acceptance rule](../../2a-design/task-attempts.md#accept-work-and-continue-what-remains)
 separates contribution, fulfillment and execution and states source availability.
 Pending messages alone do not invalidate your considered work under that rule.

@@ -116,6 +116,48 @@ attempt releases execution capacity. Arbitrary synchronous JavaScript cannot be
 preempted; long I/O must accept cancellation or provide bounded observation
 opportunities. Cancellation does not undo completed external effects.
 
+### Finish before the execution deadline
+
+Give a worker an opportunity to return useful progress before forcibly ending
+its execution. This supports [accepted progress and continuation](task-attempts.md#accept-work-and-continue-what-remains)
+and avoids reconstructing work merely because a helper consumed the entire
+allowance. Following [agents judge; infra executes](../1-principles/core-principles.md#code-executes-and-brings-back-evidence-agents-judge),
+infra controls when execution ends; the agent judges what was accomplished and
+what remains. A timeout does not establish either completion or partial success.
+
+For Host-managed model invocations that require `finish()`, reserve a finalization
+window inside the existing hard deadline. At the work deadline, signal cooperative
+tools and helpers to stop, retain their returned evidence, and give the model one
+wrap-up instruction. Only `finish()` remains executable; rejected proposals can
+still be corrected through that same tool. A helper is joined before its caller
+receives its result, and outstanding helpers are drained before execution capacity
+is released. Explicit Stop and the hard deadline still cancel the invocation.
+
+For example, a review exceeds its work allowance after a patch is prepared.
+The parent receives the interrupted review's execution reference and available
+evidence. It can return `waiting` with `continue: true`, recording the patch and
+the unfinished review. Ordinary result admission accepts that scoped contribution,
+retains its input and artifacts under existing rules, and supplies the result to
+the next attempt. Infra does not fabricate acceptance or satisfy a Condition.
+
+The source implementation reserves up to **60 seconds**, capped at **one fifth**
+of the invocation's admitted allowance. Helpers inherit the caller's work
+deadline; any finishing window of their own fits inside that bound. The time
+signal is independent of tool counts and uses the existing completion guidance.
+It does not extend deadlines, introduce an agent-facing timer API, or change Task
+states or result schemas. The existing operation-count guidance still applies.
+
+**Availability:** Source candidate for managed and direct prepared model invocations
+requiring `finish()`; not deployed. The [implementation trial](../archive/reviews/graceful-attempt-finish-20261004.md)
+records exact revisions and tests using the real model/tool loop and Task admission
+with a scripted provider. It does not establish live model judgment or token savings.
+Standalone native Codex execution, arbitrary workflow JavaScript and persistent chat
+turns have no finalization window of their own. Structured agents' scoped tools
+still receive their caller's work-stop signal.
+A stalled model request or non-cooperative I/O may still consume the finalization
+window; the hard timeout remains a failure if no valid result is returned. Cancelling
+an operation does not prove its external effects were rolled back.
+
 ### Input during execution
 
 New input is saved durably against its owning Task. Shared managed-agent execution
