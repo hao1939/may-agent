@@ -18,6 +18,8 @@ export type {
   ExecutionView,
   Logger,
   MetricDefinition,
+  MetricCalculation,
+  MetricCalculationOptions,
   MetricRecordOptions,
   MetricView,
   ObserverContext,

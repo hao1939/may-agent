@@ -222,6 +222,27 @@ export type ExecutionView = {
   summary?: string;
 };
 
+/** Optional calculation over retained samples; omission uses the latest sample. */
+export type MetricCalculationOptions = {
+  method: "latest" | "mean";
+  /** Required for mean. Samples in (now - windowMs, now] have equal weight. */
+  windowMs?: number;
+  /** Mean requires at least this many samples; defaults to 2. */
+  minSamples?: number;
+  /** Defaults to twice measureInterval when declared, otherwise the mean window. */
+  maxAgeMs?: number;
+};
+
+export type MetricCalculation = {
+  method: "latest" | "mean";
+  value: number | null;
+  calculatedAt: number;
+  measuredAt: number | null;
+  sampleCount: number;
+  windowMs?: number;
+  reason?: string;
+};
+
 export type MetricView = {
   id: string;
   value: number | null;
@@ -234,6 +255,8 @@ export type MetricView = {
   sampleSize?: number | null;
   note?: string | null;
   measureInterval?: number | null;
+  /** Read-only calculation from retained samples; does not change alert state. */
+  calculation?: MetricCalculation;
 };
 
 export type MetricDefinition = {
@@ -254,7 +277,7 @@ export type MetricDefinition = {
   alertOp?: "<" | ">" | "above" | "below";
   speed?: string;
   description?: string;
-  config?: Record<string, unknown>;
+  config?: Record<string, unknown> & { calculation?: MetricCalculationOptions };
 };
 
 export type MetricRecordOptions = {

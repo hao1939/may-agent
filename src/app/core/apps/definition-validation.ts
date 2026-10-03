@@ -1,5 +1,6 @@
 import type { AppDefinition, AppInput, EventSelector, TSchema } from "@may-agent/sdk";
 import { Check, Errors } from "typebox/value";
+import { metricCalculationOptions } from "../../../lib/metric-calculation.js";
 
 function record(value: unknown): Record<string, unknown> | null {
   return value && typeof value === "object" && !Array.isArray(value) ? (value as Record<string, unknown>) : null;
@@ -181,6 +182,8 @@ export function validateAppDefinition(definition: unknown): string[] {
         if (metric.measureInterval !== undefined && !positiveFinite(metric.measureInterval)) {
           errors.push(`App ${appId} metric ${String(metric.id)} measureInterval must be positive`);
         }
+        try { metricCalculationOptions(metric.config); }
+        catch (error) { errors.push(`App ${appId} metric ${String(metric.id)}: ${error instanceof Error ? error.message : String(error)}`); }
       }
     }
   }

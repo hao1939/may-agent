@@ -181,6 +181,7 @@ describe("canonical App definition validation", () => {
           id: "evaluation.coverage",
           sourceQuery: "SELECT 1 AS value",
           measureInterval: 60_000,
+          config: { calculation: { method: "mean", windowMs: 300_000, minSamples: 3 } },
         },
       ],
       actions: {
@@ -251,7 +252,7 @@ describe("canonical App definition validation", () => {
           },
         ],
         metrics: [
-          { id: "same", sourceQuery: "", measureInterval: 0 },
+          { id: "same", sourceQuery: "", measureInterval: 0, config: { calculation: { method: "mean" } } },
           { id: "same", sourceQuery: "SELECT 1", sourceCommand: "echo 1" },
         ],
         tasks: { subscriptions: ["task.requested"] },
@@ -275,6 +276,7 @@ describe("canonical App definition validation", () => {
         "App broken metric id is duplicated: same",
         "App broken metric same sourceQuery must be non-empty",
         "App broken metric same measureInterval must be positive",
+        "App broken metric same: mean calculation requires windowMs",
         "App broken metric same cannot declare both sourceQuery and sourceCommand",
         "App broken task subscriptions require resolve",
       ]),

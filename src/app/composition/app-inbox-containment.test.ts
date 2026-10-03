@@ -86,6 +86,9 @@ for (const failure of ["mapping", "link-write", "report-write"] as const) {
       bus,
       registry,
       deferStart: true,
+      // Keep recurring recovery active: a scan requested during the startup
+      // sweep can join that sweep after it already read a pending result.
+      scanIntervalMs: 10,
       now: () => now,
       attachTask: (input) => admitTaskInput(config, input),
       readDependency: async ({ dependency, admissionKey }) => {

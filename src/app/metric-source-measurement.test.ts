@@ -11,7 +11,8 @@ import { WORKFLOW_OUTCOME_METRICS } from "./adapters/reporting/workflow-metrics.
 import {
   attachMetricSourceMeasurement,
   measureSourceMetrics,
-  type MetricSourceMeasurementRuntime,
+  evaluateMetrics,
+  type MetricPassRuntime,
   INTENTIONAL_OBSERVATION_EVENT_TYPES,
   STALE_ACTIVE_SOURCE_QUERY,
   SUBSCRIBER_FAILED_COUNT_METRIC_ID,
@@ -23,7 +24,7 @@ import {
 describe("source-query metric measurement", () => {
   let persistDir: string;
   let bus: EventBus;
-  let measurement: MetricSourceMeasurementRuntime;
+  let measurement: MetricPassRuntime;
   const originalAppRoot = process.env.APP_ROOT;
 
   beforeEach(() => {
@@ -251,6 +252,8 @@ describe("source-query metric measurement", () => {
     });
     const triggerEventId = trigger[EVENT_ROW_ID]!;
     await measurement.idle();
+    await evaluateMetrics({ bus, persistDir });
+
 
     expect(db.prepare("SELECT current FROM metrics WHERE id = ?").get(SUBSCRIBER_FAILED_COUNT_METRIC_ID)).toEqual({
       current: 4,
@@ -309,6 +312,8 @@ describe("source-query metric measurement", () => {
     });
     const triggerEventId = trigger[EVENT_ROW_ID]!;
     await measurement.idle();
+    await evaluateMetrics({ bus, persistDir });
+
 
     const metric = db
       .prepare("SELECT current, updated_at FROM metrics WHERE id = ?")
@@ -424,6 +429,8 @@ describe("source-query metric measurement", () => {
       note: "first; second",
     });
     expect(metrics.get("boundary.observes-writer")!.observation?.value).toBe(1);
+
+    await evaluateMetrics({ bus, persistDir });
     expect(
       db.prepare("SELECT metric_id FROM metric_alerts WHERE metric_id LIKE 'boundary.%' ORDER BY metric_id").all(),
     ).toEqual([
@@ -514,6 +521,8 @@ describe("source-query metric measurement", () => {
     const recovered = await measureSourceMetrics({ bus, persistDir, isDue: ({ id }) => id === "reader.reopened" });
     expect(recovered).toEqual({ measured: ["reader.reopened"], skipped: [], failures: [] });
     expect(metrics.get("reader.reopened")!.observation?.value).toBe(7);
+
+    await evaluateMetrics({ bus, persistDir });
     expect(db.prepare("SELECT metric_id FROM metric_alerts WHERE metric_id = 'reader.reopened'").get()).toEqual({
       metric_id: "reader.reopened",
     });
@@ -809,7 +818,7 @@ describe("source-query metric measurement", () => {
     await measurement.idle();
   });
 
-  it("yields control traffic between synchronously persisted metric observations", async () => {
+  it("yields control traffic between independently evaluated metrics", async () => {
     const db = getDb(persistDir);
     for (const id of ["yield.metric.1", "yield.metric.2"]) {
       db.run(
@@ -842,6 +851,8 @@ describe("source-query metric measurement", () => {
       data: { reason: "yield-between-observations" },
     });
     await measurement.idle();
+    expect(breachCount).toBe(0);
+    await evaluateMetrics({ bus, persistDir });
 
     expect(breachCount).toBe(2);
     expect(secondBreachSawControlTurn).toBe(true);
