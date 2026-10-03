@@ -280,16 +280,18 @@ event text cannot grant authority or replace the latest accepted ask.
 | Linked Task change | Resolve saved links; admit a system input; review current evidence and return a useful outcome |
 | Timer review | Query bounded pending follow-up; admit the same system input only when a relevant change remains unhandled |
 
-Reuse `conversation.task.changed` for linked work, with a typed App input
-selected by an explicit route. No additional `conversation.wake` wrapper is
-needed. The timer can keep `conversation.supervision.review` as its existing
-publication name during migration; that name does not require a supervision
-Task. Public event renaming is not a prerequisite for this simplification.
+The Host subscribes to committed Task result and closure events, resolves the
+saved Conversation links, and directly admits the grouped system input. It does
+not republish the same outcome as an event for every Topic or caller link.
+Previously saved `conversation.task.changed` events remain readable through
+the same admission function. The existing `conversation.supervision.review`
+timer reads missing deliveries and uses that function too; it needs no separate
+supervision Task or notification queue.
 
 ### Routing and authority
 
 A small composition function connects Task facts to the conversation inbox.
-The durable Topic-to-Task link acts as the subscription. Runtime publishes Task
+Durable caller and Topic-to-Task links act as subscriptions. Runtime publishes Task
 facts independently of Conversation; routing finds the exact interested links.
 No per-Task watcher, adapter framework or App-owned queue is required. Creating
 a link also checks current Task evidence, covering work that finished before
@@ -297,9 +299,14 @@ the link was saved. Multiple linked Conversations retain separate input and
 response identities.
 
 Within one Conversation, one exact Task result or closure is delivered once with
-its currently eligible `topicIds` (up to 100 per admission). The inbox retains
-that grouped delivery receipt. Additional Topics linked later receive the same
-saved evidence only for their missing links. Existing per-Topic receipts remain
+its currently eligible `originInputIds` and `topicIds` (up to 100 links per
+admission). The subscriber calls admission once per Conversation and outcome;
+admission discovers eligible links from saved state, without selecting a
+representative Topic. The inbox retains that grouped delivery receipt.
+Overflow and links added later remain discoverable by the existing bounded
+recovery scan. Failed admission records a diagnostic and leaves the saved
+outcome and missing links available for recovery; independent Conversations
+can still receive the outcome. Existing per-Topic receipts remain
 valid, including across restart. Selected reports still reach only the Topics
 whose caller inputs selected that report; grouping never broadens eligibility.
 
