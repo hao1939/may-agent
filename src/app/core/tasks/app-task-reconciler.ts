@@ -3121,22 +3121,14 @@ export function recordAppTaskAttemptWorkspace(
   workspace: AppTaskWorkspace,
 ): boolean {
   const tree = config.resourceStore.readTaskContext({ taskIds: [claim.taskId] });
-  const match = matchingClaimAttempt(tree.resources?.[claim.taskId], tree.attempts?.[claim.attemptId], claim);
+  const match = matchingTaskAttempt(tree, claim);
   if (!match) return false;
+  const scope = beginResourceMutationScopeForTasks(tree, [claim.taskId]);
   match.attempt.metadata.resourceVersion += 1;
   match.attempt.workspace = structuredClone(workspace);
+  touchResource(match.resource, { workspaceAttemptId: claim.attemptId });
   commitTaskMutation(config, tree, {
-    resourceMutation: {
-      fences: [
-        {
-          taskId: claim.taskId,
-          resourceVersion: match.resource.metadata.resourceVersion,
-          generation: match.resource.metadata.generation,
-          currentAttemptId: claim.attemptId,
-        },
-      ],
-      attempts: [match.attempt],
-    },
+    resourceMutation: finishResourceMutationScope(scope, tree),
   });
   return true;
 }

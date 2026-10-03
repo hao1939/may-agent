@@ -210,14 +210,7 @@ async function runClaimedTask(
           throw new Error(`Workflow ${workflowKey} requires a task worktree but app workspace is not Git`);
         }
         if (!opts.workspaces) throw new Error("Task workspace backend is not installed");
-        const previous = Object.values(config.resourceStore.readTaskContext({ taskIds: [claim.taskId] }).attempts ?? {})
-          .filter(
-            (attempt) =>
-              attempt.taskId === claim.taskId &&
-              attempt.taskGeneration === claim.generation &&
-              attempt.workspace?.kind === "task-worktree",
-          )
-          .sort((left, right) => right.startedAt.localeCompare(left.startedAt))[0]?.workspace;
+        const previous = config.resourceStore.readTaskWorkspace(claim.taskId, claim.generation);
         taskWorkspace = await opts.workspaces.prepare({
           repoDir: descriptor.projectDir,
           workspaceRoot: join(opts.projectRoot, "worktrees", descriptor.id),
@@ -593,9 +586,11 @@ async function runClaimedTask(
   async function cleanupReleasedWorkspace(): Promise<string | undefined> {
     try {
       const workspace = config.resourceStore.readAttempt(claim.attemptId)?.workspace;
-      if (!taskWorkspace || !workspace?.released || workspace.disposition === "removed") return;
+      if (!taskWorkspace || !workspace?.released) return;
       // Settlement relinquished this exact workspace. New work uses a different
       // identity, so asynchronous removal cannot delete its files or private refs.
+      // A missing checkout/branch can still leave private refs. Always run the
+      // adapter's idempotent finalizer; disposition alone is not cleanup proof.
       let metadata = workspace;
       try {
         const finalized = await opts.workspaces!.finalize({ ...taskWorkspace, metadata: workspace }, "accepted");

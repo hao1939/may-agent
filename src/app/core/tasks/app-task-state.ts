@@ -49,6 +49,7 @@ export type AppTaskWorkspace = {
   headCommit: string;
   /** Released workspaces are no longer reusable, even if physical cleanup is pending. */
   released?: true;
+  /** Checkout/branch observation; even `removed` may still need private-ref cleanup. */
   disposition: "active" | "retained-for-recovery" | "branch-retained" | "removed";
   cleanupError?: string;
 };
@@ -72,6 +73,8 @@ export type AppTaskResource = {
     currentAttemptId?: string;
     /** Exact attempt that produced the accepted summary/result observation. */
     observedAttemptId?: string;
+    /** Exact workspace record; execution history and wall-clock order are not ownership. */
+    workspaceAttemptId?: string;
     /** Consecutive unsuccessful attempts in this generation, cleared by progress or owner retry. */
     executionFailures?: number;
     /** Earliest next attempt after execution failure; ordinary wakes do not waive it. */

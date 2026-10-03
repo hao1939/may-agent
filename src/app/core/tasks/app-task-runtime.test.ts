@@ -9041,6 +9041,12 @@ describe("canonical App task runtime", () => {
     "new-work-during-cleanup",
     "cleanup-fails",
     "cleanup-fails-after-history",
+    "branch-only",
+    "private-refs-only",
+    "already-removed",
+    "clock-reversed",
+    "dirty-after-release",
+    "cleanup-recording-fails",
   ] as const)(
     "final-result retirement plans Git cleanup after admission: %s",
     async (scenario) => {
@@ -9055,8 +9061,8 @@ describe("canonical App task runtime", () => {
         "revision-during-validation",
       ].includes(scenario);
       const cleanupFails = scenario === "cleanup-fails" || scenario === "cleanup-fails-after-history";
-      const newWork = scenario === "new-work-during-cleanup" || scenario === "cleanup-fails-after-history";
-      const retained = rejected || scenario === "independent-wait" || cleanupFails;
+      const newWork = scenario === "new-work-during-cleanup" || scenario === "cleanup-fails-after-history" || scenario === "clock-reversed";
+      const retained = rejected || scenario === "independent-wait" || cleanupFails || scenario === "dirty-after-release";
       const git = (cwd: string, ...args: string[]) =>
         promisify(execFile)("git", ["-C", cwd, ...args], { timeout: 10_000 });
       writeFileSync(join(f.appDir, ".gitignore"), ".local-proof\n");
@@ -9073,11 +9079,14 @@ describe("canonical App task runtime", () => {
       let stateBeforeResult: unknown;
       let firstAttemptId = "";
       let nextWorkspacePath = "";
+      const newerWorkspacePaths: string[] = [];
       const inspections: unknown[] = [];
       const finalizations: Array<{ outcome: string; state: unknown; requests: number }> = [];
       const publications: AgentEvent[] = [];
+      const reconciliationEvents: AgentEvent[] = [];
       bus.subscribe((event) => {
         if (event.type === "app.input.requested") publications.push(event);
+        if (event.type === "project.task.reconciled") reconciliationEvents.push(event);
       });
       const readState = () => {
         const config = loadedTaskConfig(f);
@@ -9119,7 +9128,7 @@ describe("canonical App task runtime", () => {
           ...gitTaskWorkspaces,
           inspect: async (prepared) => {
             const inspected = await gitTaskWorkspaces.inspect(prepared);
-            inspections.push(readState());
+            if (prepared.metadata.path === workspacePath) inspections.push(readState());
             interruptValidation();
             return inspected;
           },
@@ -9127,8 +9136,9 @@ describe("canonical App task runtime", () => {
             finalizations.push({ outcome, state: readState(), requests: readRequests().length });
             // The old implementation enters destructive finalization before admission.
             if (!loadedTaskConfig(f).resourceStore.readAttempt(firstAttemptId)?.acceptedResult) interruptValidation();
-            if (outcome === "accepted" && newWork) {
-              for (let index = 0; index < 17; index++) {
+            if (outcome === "accepted" && newWork && prepared.metadata.path === workspacePath) {
+              if (scenario === "clock-reversed") setSystemTime(Date.now() - 60_000);
+              for (let index = 0; index < (scenario === "clock-reversed" ? 2 : 17); index++) {
                 admitTaskInput(loadedTaskConfig(f), {
                   appId: "sample",
                   attachment: { kind: "existing", taskId },
@@ -9147,9 +9157,17 @@ describe("canonical App task runtime", () => {
                 });
               }
               const history = loadedTaskConfig(f).resourceStore.readTaskContext({ taskIds: [taskId] });
-              expect(history.attempts?.[firstAttemptId]).toBeUndefined();
+              if (scenario !== "clock-reversed") expect(history.attempts?.[firstAttemptId]).toBeUndefined();
             }
             if (outcome === "accepted" && cleanupFails) throw new Error("fixture cleanup failure");
+            if (outcome === "accepted" && scenario === "dirty-after-release")
+              writeFileSync(join(prepared.metadata.path, "late-edit.txt"), "preserve late edit");
+            if (outcome === "accepted" && scenario === "cleanup-recording-fails")
+              loadedTaskConfig(f).resourceStore.db.exec(`
+                CREATE TEMP TRIGGER reject_cleanup_record BEFORE UPDATE ON app_task_attempts
+                WHEN json_extract(NEW.attempt_json, '$.workspace.disposition') = 'removed'
+                BEGIN SELECT RAISE(ABORT, 'fixture cleanup bookkeeping failure'); END;
+              `);
             return gitTaskWorkspaces.finalize(prepared, outcome);
           },
         },
@@ -9157,12 +9175,26 @@ describe("canonical App task runtime", () => {
           worker: async (attempt) => {
             if (firstAttemptId) {
               nextWorkspacePath = attempt.cwd;
+              newerWorkspacePaths.push(attempt.cwd);
               writeFileSync(join(attempt.cwd, ".local-proof"), "new work must survive old cleanup");
+              if (scenario === "clock-reversed" && newerWorkspacePaths.length === 1)
+                return { state: "converged", summary: "First new request fulfilled", facts: [] };
               return { state: "waiting", summary: "New work in progress", facts: [], reviewAt: Date.now() + 60_000 };
             }
             firstAttemptId = attempt.attemptId;
             workspacePath = attempt.cwd;
             writeFileSync(join(attempt.cwd, ".local-proof"), "reuse this expensive check");
+            if (["branch-only", "private-refs-only", "already-removed"].includes(scenario)) {
+              const workspace = readState().attempt!.workspace!;
+              const headRef = workspace.baseRef.replace(/\/base$/, "/head");
+              await git(f.appDir, "update-ref", headRef, workspace.headCommit);
+              await git(f.appDir, "worktree", "remove", workspace.path);
+              if (scenario !== "branch-only") await git(f.appDir, "branch", "-D", workspace.branch);
+              if (scenario === "already-removed") {
+                await git(f.appDir, "update-ref", "-d", workspace.baseRef);
+                await git(f.appDir, "update-ref", "-d", headRef);
+              }
+            }
             await attempt.apply({
               conditions: (scenario === "independent-wait" ? ["review", "independent-review"] : ["review"]).map((id) => ({
                 id,
@@ -9271,7 +9303,7 @@ describe("canonical App task runtime", () => {
       expect(existsSync(workspacePath)).toBe(retained);
       expect((await git(f.appDir, "branch", "--list", attempt.workspace!.branch)).stdout.trim() !== "").toBe(retained);
       expect(
-        (await git(f.appDir, "for-each-ref", "--format=%(refname)", attempt.workspace!.baseRef)).stdout.trim() !== "",
+        (await git(f.appDir, "for-each-ref", "--format=%(refname)", attempt.workspace!.baseRef.replace(/\/base$/, "/"))).stdout.trim() !== "",
       ).toBe(retained);
       expect(readRequests()).toHaveLength(rejected ? 0 : 1);
       expect(publications).toHaveLength(rejected ? 0 : 1);
@@ -9296,7 +9328,7 @@ describe("canonical App task runtime", () => {
         );
         expect(task.status.conditionIds ?? []).toEqual(scenario === "independent-wait" ? ["independent-review"] : []);
         expect(attempt.workspace?.disposition).toBe(
-          retained ? "active" : "removed",
+          retained || scenario === "cleanup-recording-fails" ? "active" : "removed",
         );
         expect(inspections).toEqual([stateBeforeResult]);
         if (scenario === "independent-wait") expect(finalizations).toEqual([]);
@@ -9310,7 +9342,21 @@ describe("canonical App task runtime", () => {
           expect(attempt.workspace?.cleanupError).toBe("fixture cleanup failure");
           expect(attempt.unacceptedResult).toBeUndefined();
         }
+        if (scenario === "dirty-after-release") {
+          expect(attempt.workspace?.cleanupError).toContain("dirty");
+          expect(readFileSync(join(workspacePath, "late-edit.txt"), "utf8")).toBe("preserve late edit");
+        }
+        if (scenario === "cleanup-recording-fails") {
+          expect(attempt.workspace?.released).toBe(true);
+          expect(attempt.unacceptedResult).toBeUndefined();
+          expect(reconciliationEvents).toEqual(expect.arrayContaining([
+            expect.objectContaining({ data: expect.objectContaining({
+              disposition: "converged", workspaceCleanupError: expect.stringContaining("cleanup bookkeeping failure"),
+            }) }),
+          ]));
+        }
         if (newWork) {
+          if (scenario === "clock-reversed") expect(new Set(newerWorkspacePaths).size).toBe(2);
           expect(nextWorkspacePath).not.toBe(workspacePath);
           expect(readFileSync(join(nextWorkspacePath, ".local-proof"), "utf8")).toBe("new work must survive old cleanup");
           expect(acceptedTaskAttempt(config, taskId)?.workspace?.disposition).toBe("active");
@@ -9324,7 +9370,7 @@ describe("canonical App task runtime", () => {
               )
             ).stdout.trim(),
           ).not.toBe("");
-        } else if (!retained || cleanupFails)
+        } else if (scenario !== "independent-wait")
           expect(config.resourceStore.listRecoveryCandidates().items).toEqual([]);
       }
     },

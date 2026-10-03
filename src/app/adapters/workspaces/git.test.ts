@@ -605,6 +605,28 @@ describe("project task workspace", () => {
     expect(await git(f.repo, "for-each-ref", "--format=%(refname)", "refs/may/workspaces/")).toBe("");
   });
 
+  it("retries interrupted cleanup after only a private head ref remains", async () => {
+    const f = await fixture();
+    const prepared = await prepareAppTaskWorkspace({
+      repoDir: f.repo, workspaceRoot: f.worktrees, taskId: "partial-cleanup", generation: 1,
+      baseBranch: "dev", refreshRemote: false,
+    });
+    const leaf = prepared.metadata.branch.slice("task/".length);
+    const baseRef = `refs/may/workspaces/${leaf}/base`;
+    const headRef = `refs/may/workspaces/${leaf}/head`;
+    await git(f.repo, "update-ref", baseRef, prepared.metadata.baseCommit);
+    await git(f.repo, "update-ref", headRef, prepared.metadata.headCommit);
+    const lock = join(f.repo, ".git", `${headRef}.lock`);
+    writeFileSync(lock, "fixture-owned lock");
+    await expect(finalizeAppTaskWorkspace(prepared, "accepted")).rejects.toThrow();
+    expect(existsSync(prepared.metadata.path)).toBe(false);
+    expect(await git(f.repo, "branch", "--list", prepared.metadata.branch)).toBe("");
+    expect(await git(f.repo, "for-each-ref", "--format=%(refname)", `refs/may/workspaces/${leaf}/`)).toBe(headRef);
+    rmSync(lock);
+    expect(await finalizeAppTaskWorkspace(prepared, "accepted")).toMatchObject({ ok: true, metadata: { disposition: "removed" } });
+    expect(await git(f.repo, "for-each-ref", "--format=%(refname)", `refs/may/workspaces/${leaf}/`)).toBe("");
+  });
+
   it("removes the task branch after its commit reaches the base branch", async () => {
     const f = await fixture();
     const prepared = await prepareAppTaskWorkspace({
