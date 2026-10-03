@@ -8902,7 +8902,7 @@ describe("canonical App task runtime", () => {
         promisify(execFile)("git", ["-C", cwd, ...args], { timeout: 10_000 });
       const privateRefs = async () =>
         (await git(f.appDir, "for-each-ref", "--format=%(refname)", "refs/may/workspaces/")).stdout.trim();
-      writeFileSync(join(f.appDir, ".gitignore"), ".local-proof\n");
+      writeFileSync(join(f.appDir, ".gitignore"), "node_modules/\n");
       await git(f.appDir, "init", "-b", "main");
       await git(f.appDir, "config", "user.email", "test@example.com");
       await git(f.appDir, "config", "user.name", "Test");
@@ -8987,7 +8987,10 @@ describe("canonical App task runtime", () => {
       await run();
       const accepted = acceptedTaskAttempt(config, taskId)!;
       expect(accepted.acceptedResult?.summary).toBe("Accepted useful contribution");
-      expect(accepted.workspace?.disposition).toBe("active");
+      expect(accepted.workspace).toMatchObject({
+        disposition: "retained-for-recovery",
+        dirtyObservation: { status: "?? .local-proof", truncated: false },
+      });
       expect(existsSync(workspacePath)).toBe(true);
       expect(await privateRefs()).not.toBe("");
       expect(config.resourceStore.readTask(taskId)?.status.phase).toBe(remaining === "input" ? "pending" : "waiting");
@@ -9012,7 +9015,7 @@ describe("canonical App task runtime", () => {
           phase: "waiting",
           conditionIds: ["independent-review"],
         });
-        expect(acceptedTaskAttempt(config, taskId)?.workspace?.disposition).toBe("active");
+        expect(acceptedTaskAttempt(config, taskId)?.workspace?.disposition).toBe("retained-for-recovery");
         expect(existsSync(workspacePath)).toBe(true);
         expect(await privateRefs()).not.toBe("");
         satisfyReview("independent-review");
@@ -9021,10 +9024,11 @@ describe("canonical App task runtime", () => {
       }
       expect(config.resourceStore.readTask(taskId)?.status.phase).toBe("converged");
       expect(config.resourceStore.readTask(taskId)?.status.conditionIds ?? []).toEqual([]);
-      expect(acceptedTaskAttempt(config, taskId)?.workspace?.disposition).toBe("removed");
-      expect(existsSync(workspacePath)).toBe(false);
-      expect((await git(f.appDir, "branch", "--list", accepted.workspace!.branch)).stdout.trim()).toBe("");
-      expect(await privateRefs()).toBe("");
+      expect(acceptedTaskAttempt(config, taskId)?.workspace?.disposition).toBe("retained-for-recovery");
+      expect(existsSync(workspacePath)).toBe(true);
+      expect(readFileSync(join(workspacePath, ".local-proof"), "utf8")).toBe("reuse this expensive check");
+      expect((await git(f.appDir, "branch", "--list", accepted.workspace!.branch)).stdout.trim()).not.toBe("");
+      expect(await privateRefs()).not.toBe("");
       expect(config.resourceStore.listRecoveryCandidates().items).toEqual([]);
     },
   );
@@ -9395,6 +9399,7 @@ describe("canonical App task runtime", () => {
     await git(f.appDir, "add", ".");
     await git(f.appDir, "commit", "-m", "fixture baseline");
     let calls = 0;
+    let workspacePath = "";
     await installAppTaskRuntimes({
       ...options(f, bus),
       installControllers: false,
@@ -9402,25 +9407,49 @@ describe("canonical App task runtime", () => {
         residue: async (attempt) => {
           calls++;
           if (calls === 1) {
+            workspacePath = attempt.cwd;
             writeFileSync(join(attempt.cwd, "retained.txt"), "unfinished source\n");
             if (scenario.committed) {
               await git(attempt.cwd, "add", "retained.txt");
               await git(attempt.cwd, "commit", "-m", "retained change");
             }
+          } else {
+            expect(attempt.cwd).toBe(workspacePath);
+            expect(readFileSync(join(attempt.cwd, "retained.txt"), "utf8")).toBe("unfinished source\n");
           }
+          if (calls === 1 && "actions" in scenario) await attempt.apply({
+            conditions: [{
+              id: "obsolete",
+              type: "review.done",
+              subject: "id:obsolete",
+              expected: true,
+              owner: "app:sample",
+            }],
+          });
           return {
             state: calls === 1 ? scenario.state : "converged",
             summary: "Claimed handler outcome",
             facts: ["provider:facts"],
+            ...(calls === 1 && scenario.state === "waiting"
+              ? {
+                  conditions: [{
+                    id: "resume",
+                    type: "review.done",
+                    subject: "id:resume",
+                    expected: true,
+                    owner: "app:sample" as const,
+                  }],
+                }
+              : {}),
             ...("actions" in scenario && calls === 1
               ? {
-                  result: { updatedTask: "work/existing-target" },
+                  result: { retiredCondition: "obsolete" },
                   actions: [
                     {
-                      kind: "unblock-task" as const,
-                      taskId: "work/existing-target",
-                      expectedGeneration: 1,
-                      reason: "Must not be reported as applied",
+                      kind: "retire-condition" as const,
+                      conditionId: "obsolete",
+                      expectedConditionGeneration: 1,
+                      reason: "The independent observation is no longer required",
                     },
                   ],
                 }
@@ -9468,12 +9497,21 @@ describe("canonical App task runtime", () => {
       });
     setSystemTime(new Date());
     await run();
-    if (scenario.state === "converged" && scenario.committed) {
+    if (scenario.state === "converged") {
       const accepted = acceptedTaskAttempt(config, taskId)!;
       expect(accepted).toMatchObject({
         taskGeneration: 1,
         acceptedResult: { state: "converged", summary: "Claimed handler outcome" },
-        workspace: { disposition: "active" },
+        workspace: {
+          disposition: scenario.committed ? "active" : "retained-for-recovery",
+          ...(!scenario.committed
+            ? { dirtyObservation: { status: "?? retained.txt", truncated: false } }
+            : {}),
+        },
+      });
+      expect(readLoadedAppTaskView({ bus, appDir: f.appDir, taskId })).toMatchObject({
+        status: "done",
+        facts: expect.arrayContaining(["provider:facts"]),
       });
       expect(readFileSync(join(accepted.workspace!.path, "retained.txt"), "utf8")).toBe("unfinished source\n");
       expect(existsSync(join(f.appDir, "retained.txt"))).toBe(false);
@@ -9483,11 +9521,52 @@ describe("canonical App task runtime", () => {
       expect(config.resourceStore.listRecoveryCandidates().items.map(({ taskId }) => taskId)).not.toContain(taskId);
       return;
     }
+    if (scenario.state === "waiting") {
+      const accepted = acceptedTaskAttempt(config, taskId)!;
+      expect(accepted).toMatchObject({
+        taskGeneration: 1,
+        acceptedResult: { state: "waiting", summary: "Claimed handler outcome" },
+        workspace: {
+          disposition: scenario.committed ? "active" : "retained-for-recovery",
+          ...(!scenario.committed
+            ? { dirtyObservation: { status: "?? retained.txt", truncated: false } }
+            : {}),
+        },
+      });
+      expect(config.resourceStore.readTask(taskId)?.status).toMatchObject({
+        phase: "waiting",
+        conditionIds: ["resume"],
+        workspaceAttemptId: accepted.metadata.id,
+      });
+      expect(config.resourceStore.readTaskConditions(taskId)).toHaveLength(1);
+      if ("actions" in scenario) {
+        expect(config.resourceStore.readTaskConditions(taskId).map(({ metadata }) => metadata.id)).toEqual(["resume"]);
+        expect(accepted.acceptedResult?.result).toEqual({ retiredCondition: "obsolete" });
+      }
+      // Reopen file-backed state before recovery: exact workspaceAttemptId, path,
+      // index and untracked bytes must remain reusable while the Condition waits.
+      const restarted = loadedTaskConfig(f);
+      expect(restarted.resourceStore.readTaskWorkspace(taskId, 1)?.path).toBe(workspacePath);
+      expect(readFileSync(join(workspacePath, "retained.txt"), "utf8")).toBe("unfinished source\n");
+      for (let index = 0; index < 3; index++) await recoverInstalledAppTasks(bus);
+      await run();
+      expect(calls).toBe(1);
+      trackAppTaskConditionEventForTasks(restarted, {
+        type: "review.done",
+        data: { id: "resume", state: true },
+      }, [taskId]);
+      await run();
+      expect(calls).toBe(2);
+      expect(acceptedTaskAttempt(config, taskId)).toMatchObject({
+        acceptedResult: { state: "converged", summary: "Claimed handler outcome" },
+        workspace: { disposition: scenario.committed ? "active" : "retained-for-recovery" },
+      });
+      expect(readFileSync(join(workspacePath, "retained.txt"), "utf8")).toBe("unfinished source\n");
+      return;
+    }
     expect(readLoadedAppTaskView({ bus, appDir: f.appDir, taskId })).toMatchObject({
       status: "pending",
-      summary: expect.stringContaining(
-        scenario.state === "incomplete" ? "Outcome not achieved" : "dirty",
-      ),
+      summary: expect.stringContaining("Outcome not achieved"),
       facts: expect.arrayContaining(["provider:facts"]),
     });
     for (let index = 0; index < 3; index++) await recoverInstalledAppTasks(bus);
@@ -9500,9 +9579,8 @@ describe("canonical App task runtime", () => {
     expect(tree.resources?.["work/existing-target"]?.metadata.generation).toBe(1);
     expect(Object.values(tree.attempts ?? {})).toEqual([
       expect.objectContaining({
-        ...(scenario.state === "incomplete"
-          ? { state: "completed", acceptedResult: expect.objectContaining({ state: "incomplete" }) }
-          : { state: "failed", failureReason: "handler-blocked" }),
+        state: "completed",
+        acceptedResult: expect.objectContaining({ state: "incomplete" }),
         workspace: expect.objectContaining({
           disposition: "retained-for-recovery",
         }),

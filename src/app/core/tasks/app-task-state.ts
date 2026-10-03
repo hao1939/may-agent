@@ -51,6 +51,12 @@ export type AppTaskWorkspace = {
   released?: true;
   /** Checkout/branch observation; even `removed` may still need private-ref cleanup. */
   disposition: "active" | "retained-for-recovery" | "branch-retained" | "removed";
+  /** Bounded Git status observation. It identifies dirtiness, not the exact file contents. */
+  dirtyObservation?: {
+    observedAt: string;
+    status: string;
+    truncated: boolean;
+  };
   cleanupError?: string;
 };
 

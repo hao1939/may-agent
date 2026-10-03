@@ -26,7 +26,8 @@ function git(repoDir: string, args: string[], allowFailure = false): Promise<Git
         const status = error ? (typeof error.code === "number" ? error.code : 1) : 0;
         const output = {
           status,
-          stdout: stdout.trim(),
+          // Porcelain status uses its leading columns as data; remove only line endings.
+          stdout: stdout.trimEnd(),
           stderr: (stderr || error?.message || "").trim(),
         };
         if (!allowFailure && status !== 0) {
@@ -330,6 +331,7 @@ async function inspectWorkspace(
 ): Promise<InspectedTaskWorkspace> {
   const { repoDir } = prepared;
   const metadata = { ...prepared.metadata };
+  delete metadata.dirtyObservation;
   if (!existsSync(metadata.path)) {
     if (!(await refExists(repoDir, `refs/heads/${metadata.branch}`))) {
       metadata.disposition = "removed";
@@ -343,9 +345,16 @@ async function inspectWorkspace(
   const dirty = (await git(metadata.path, ["status", "--porcelain=v1", "--untracked-files=all"])).stdout;
   if (dirty) {
     metadata.disposition = "retained-for-recovery";
-    const status = dirty.split("\n").slice(0, 20).join("\n").slice(0, 2_048);
+    const lines = dirty.split("\n");
+    const lineBounded = lines.slice(0, 20).join("\n");
+    const status = lineBounded.slice(0, 2_048);
+    metadata.dirtyObservation = {
+      observedAt: new Date().toISOString(),
+      status,
+      truncated: lines.length > 20 || lineBounded.length > status.length,
+    };
     return {
-      ok: false, metadata, removable: false,
+      ok: true, metadata, removable: false,
       reason: `Task worktree is dirty and was retained for recovery: ${metadata.path}\nBounded git status:\n${status}`,
     };
   }
