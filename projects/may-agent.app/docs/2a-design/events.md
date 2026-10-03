@@ -503,8 +503,17 @@ not complete the request.
 The existing event journal owns persistence and delivery receipts. An accepted
 delivery is reused across recovery scans and restart. Pending or no-op delivery
 can retry the existing durable routes without appending another event or
-repeating ordinary fanout. Failed persistence remains retryable. Agents decide
-what new evidence means; publication identity requires no semantic text matching.
+repeating ordinary fanout. PR #312 proposes that each durable route have a
+stable identity recorded with the original event before its handler runs. A
+private worker would receive the parent Host's current route-identity snapshot
+and persist that same ledger with worker-origin events before relaying them,
+including startup recovery workers. Completing one route would record its
+evidence transactionally; whole-event acceptance would be projected only after
+every recorded route is settled and at least one route supplies actual consumer
+acceptance. Void completions alone are not acceptance. An explicit direct
+acceptance outranks no-op evidence, while a handler returning no receipt does not
+erase earlier evidence. Failed persistence remains retryable. Agents decide what
+new evidence means; publication identity requires no semantic text matching.
 
 Closure is an authorized state operation whose consequences may publish facts;
 a late fact cannot reopen the closed Task. System origin, exact saved
