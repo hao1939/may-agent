@@ -41,7 +41,7 @@ WHERE delivery_status = 'unhandled'
   AND timestamp >= (strftime('%s','now') * 1000 - 3600000)
   AND event_type NOT IN (${intentionalObservationSql})`;
 export const STALE_ACTIVE_METRIC_ID = "metric.stale-active-count";
-export const STALE_ACTIVE_SOURCE_QUERY = `WITH clock AS (SELECT strftime('%s','now') * 1000 AS cut),
+export const STALE_ACTIVE_SOURCE_QUERY = `WITH clock AS (SELECT CAST(ROUND(unixepoch('subsec') * 1000) AS INTEGER) AS cut),
   cadence AS (
     SELECT m.id, m.measure_interval,
       COALESCE(

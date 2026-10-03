@@ -928,6 +928,10 @@ describe("source-query metric measurement", () => {
     metrics.record("sample.collector", 0, { measuredAt: Date.now() + 60_000 });
     const sample = db.prepare(STALE_ACTIVE_SOURCE_QUERY).get()!;
     expect(sample).toMatchObject({ value: 1 });
+    // Migrated definitions may have no creation time. record() also writes the
+    // future measurement time into updated_at; neither is current evidence.
+    db.run("UPDATE metrics SET created_at = NULL WHERE id = 'sample.collector'");
+    expect(db.prepare(STALE_ACTIVE_SOURCE_QUERY).get()).toMatchObject({ value: 1 });
     metrics.record(STALE_ACTIVE_METRIC_ID, Number(sample.value));
     expect(metrics.evaluate(STALE_ACTIVE_METRIC_ID)[0]?.status).toBe("breached");
     metrics.record("sample.collector", 0, { measuredAt: Date.now() - 1_000 });
