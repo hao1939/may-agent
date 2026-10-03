@@ -680,10 +680,17 @@ const materializedSelectedReportSql = `SELECT 1 FROM selected_reports report
     AND report.origin_conversation_id = link.conversation_id
     AND report.origin_topic_id = link.topic_id`;
 
+// Reopening starts fresh work. Creator corrections can continue outstanding
+// input, but input from a cancelled generation must not resume delivering facts.
+const continuedCallerSql = `NOT EXISTS (SELECT 1 FROM app_task_control_receipts reopened
+  WHERE reopened.app_id = link.task_app_id AND reopened.task_id = link.task_id
+    AND reopened.action = 'reopen' AND reopened.expected_generation >= link.task_generation)`;
+
 /** Return only the selected answer/report. An outstanding input can survive a creator revision. */
 function returnedLinkAttemptSql(selectedReportSql: string): string {
   return `((link.origin_input_id IS NULL AND ${returnedAttemptSql(selectedReportSql)})
-    OR (link.origin_input_id IS NOT NULL AND link.task_generation <= attempt.task_generation
+    OR (link.origin_input_id IS NOT NULL AND ${continuedCallerSql}
+      AND link.task_generation <= attempt.task_generation
       AND (link.result_attempt_id = attempt.attempt_id
         OR (link.result_attempt_id IS NULL AND link.report_attempt_id = attempt.attempt_id
           AND NOT EXISTS (SELECT 1 FROM app_task_cancellations closed
@@ -733,7 +740,7 @@ function conversationChangesSql(selectedReportSql: string): string {
     ELSE 'conversation-input-closure:' || link.origin_input_id || ':' || link.task_app_id || ':' || link.task_id || ':' || json_extract(closed.cancellation_json, '$.generation') END
   FROM links link
   JOIN app_task_cancellations closed ON closed.app_id = link.task_app_id AND closed.task_id = link.task_id
-  WHERE link.origin_input_id IS NULL OR (link.result_attempt_id IS NULL
+  WHERE link.origin_input_id IS NULL OR (link.result_attempt_id IS NULL AND ${continuedCallerSql}
     AND link.task_generation <= json_extract(closed.cancellation_json, '$.generation'))`;
 }
 

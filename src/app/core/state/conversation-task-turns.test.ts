@@ -16,6 +16,7 @@ import {
   failAppTaskAttempt,
   recordAppTaskTrigger,
   readAppTaskAdmissionOutcome,
+  reopenAppTask,
   observeAppTaskIntent,
 } from "../tasks/app-task-reconciler.js";
 import { AppTaskController } from "../tasks/controller.js";
@@ -2092,6 +2093,48 @@ test.each(["answer", "answer-without-request", "error", "closed"] as const)("a h
   f.reopen();
   expect(listPendingConversationTaskChanges(f.db, app.id)).toEqual([]);
   expect(admitConversationTaskChange(f.context(), f.context(), pending[0]!).created).toBe(false);
+});
+
+test("reopening a worker does not revive reports or closures for its cancelled caller input", () => {
+  const f = handoffFixture();
+  delete f.handoff.topic;
+  completeConversationTaskTurn(f.context(), f.claim, f.handoff, { getTaskApp: f.getTaskApp });
+  const worker = claimObservedAppTask(f.context(), { taskId: "measurement", appAgent: app.id, handler: "executor:fixture" });
+  if (worker.kind !== "claimed") throw new Error("Expected worker claim");
+  failAppTaskAttempt(f.context(), worker, "Source unavailable");
+  const close = () => {
+    const task = f.store.readTask("measurement")!;
+    return cancelAppTask(f.context(), {
+      appId: app.id, taskId: "measurement", expectedGeneration: task.metadata.generation,
+      expectedResourceVersion: task.metadata.resourceVersion,
+      reason: "Owner withdrew this work", decision: "app-policy",
+    });
+  };
+  close();
+  const original = listPendingConversationTaskChanges(f.db, app.id)[0]!;
+  expect(original.closedGeneration).toBe(1);
+  admitConversationTaskChange(f.context(), f.context(), original);
+  const closed = f.store.readTask("measurement")!;
+  reopenAppTask(f.context(), {
+    appId: app.id, taskId: "measurement", expectedGeneration: closed.metadata.generation,
+    expectedResourceVersion: closed.metadata.resourceVersion, controlKey: "fresh-work", reason: "Human requested new work",
+  });
+  f.reopen();
+  expect(listPendingConversationTaskChanges(f.db, app.id)).toEqual([]);
+  expect(admitConversationTaskChange(f.context(), f.context(), {
+    conversationId: "chat", originInputId: "first", taskId: "measurement", attemptId: worker.attemptId,
+  }).created).toBe(false);
+  const fresh = f.admit("fresh", 2);
+  const caller = claimObservedAppTask(f.context(), { taskId: fresh.taskId, appAgent: app.id, handler: "executor:conversation" });
+  if (caller.kind !== "claimed") throw new Error("Expected Conversation claim");
+  completeConversationTaskTurn(f.context(), caller, {
+    summary: "Accepted new work", response: "I will get a fresh measurement.",
+    followUp: { ...f.handoff.followUp!, requestId: undefined },
+  }, { getTaskApp: f.getTaskApp });
+  close();
+  expect(listPendingConversationTaskChanges(f.db, app.id)).toEqual([
+    { appId: app.id, conversationId: "chat", originInputId: "fresh", taskAppId: app.id, taskId: "measurement", closedGeneration: 2 },
+  ]);
 });
 
 test.each(["open", "closed"] as const)("a returned result restores an older %s ask to context without assigning it again", async (status) => {
