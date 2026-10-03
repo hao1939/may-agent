@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it } from "bun:test";
+import { afterEach, beforeEach, describe, expect, it, spyOn } from "bun:test";
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -281,9 +281,33 @@ describe("App read projections", () => {
       }),
     );
 
-    const exact = (await createRuntimeAppRead({ getDb: () => db, taskStateConfig: config }).tasks.get(
-      "review/standing",
-    ))!;
+    const inboxQueries: Array<{ sql: string; params: unknown[] }> = [];
+    const prepare = db.prepare.bind(db);
+    const prepareSpy = spyOn(db, "prepare").mockImplementation((sql) => {
+      const statement = prepare(sql);
+      if (!/\bFROM\s+app_inbox_items\b/i.test(sql)) return statement;
+      return {
+        ...statement,
+        all(...params: unknown[]) {
+          inboxQueries.push({ sql, params });
+          return statement.all(...params);
+        },
+      };
+    });
+    let exact;
+    try {
+      exact = (await createRuntimeAppRead({ getDb: () => db, taskStateConfig: config }).tasks.get(
+        "review/standing",
+      ))!;
+    } finally {
+      prepareSpy.mockRestore();
+    }
+    expect(inboxQueries).toHaveLength(1);
+    const { sql, params } = inboxQueries[0]!;
+    const obligationPlan = db.prepare(`EXPLAIN QUERY PLAN ${sql}`).all(...params);
+    expect(obligationPlan.map(({ detail }) => detail).join("\n")).toContain(
+      "SEARCH app_inbox_items USING INDEX idx_app_inbox_task_admission (app_id=? AND task_admission_key=?)",
+    );
     expect(exact.currentObligations).toEqual({
       available: true,
       reviewAt: 9_000,

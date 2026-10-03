@@ -73,7 +73,7 @@ CREATE INDEX IF NOT EXISTS idx_app_inbox_conversation
 CREATE INDEX IF NOT EXISTS idx_app_inbox_execution_task
   ON app_inbox_items(app_id, execution_task_id) WHERE execution_task_id IS NOT NULL;
 CREATE INDEX IF NOT EXISTS idx_app_inbox_task_admission
-  ON app_inbox_items(app_id, task_admission_key);
+  ON app_inbox_items(app_id, task_admission_key) WHERE task_admission_key IS NOT NULL;
 CREATE INDEX IF NOT EXISTS idx_app_inbox_pending_human_task
   ON app_inbox_items(app_id, execution_task_id)
   WHERE execution_task_id IS NOT NULL AND source_kind = 'human' AND status != 'done';
