@@ -180,18 +180,36 @@ IDs alongside their claims. Their stale markers were removed from `INDEX.md`,
 reducing the exact marker count from 200 to 195. This is a metadata correction,
 not a claim that every source was freshly retrieved during this review.
 
+## Targeted recurrence — 2026-10-03 (`agent-runtime-hardening.md`)
+
+The observer reported 1,037 physical lines; direct `wc -l` measured 1,036
+newline-counted lines. The prior review explicitly called for reconsideration
+once the note materially exceeded 1,000 lines or a coherent multi-pattern
+cluster emerged. Both conditions now hold.
+
+Five adjacent patterns (Bunker, Agent Harness, domain-native mutation, Mati, and
+SafeHarness) form a 225-line enforcement-observability cluster: each separates a
+configured or stated control from the execution surface and evidence needed to
+show that it actually operated. They moved intact to
+[Agent Runtime Enforcement Observability](../../knowledge/agent-runtime-enforcement-observability.md).
+The parent retains each original level-two heading as an exact forwarding anchor;
+the one editable knowledge-note deep link now targets the companion directly,
+while six retained digest fragments continue to resolve through the parent.
+The split reduces the parent to 832 newline-counted lines without changing the
+source claims or their evidence limitations.
+
+**Disposition:** split the verified cluster; retain the broader runtime catalog
+and its published path. No child task is warranted.
+
 ## Current summary
 
-The previously recommended diagnostic-layers split is complete.
-`agent-evaluation.md` remains the next split candidate, but the September 26
-recurrence confirms that source intake is still active: four publications added
-199 net lines after the prior review, including one about ten minutes before the
-new signal. Its proposed boundary still needs explicit heading-forwarding and
-digest-link preservation after intake settles. `agent-runtime-hardening.md`
-remains a broad pattern catalog without a newly verified reusable split boundary.
-The enforcement-evidence companion also remains in active intake: three
-September 26 publications added 186 net lines at distributed positions, with
-the latest only about five minutes before its recurrence signal, so no stable
-second split is yet evidenced. Other oversized signals are format-appropriate
-logs/ledgers or previously reviewed notes. The unsourced backlog received a
-small evidence-checked batch rather than a bulk metric edit.
+The previously recommended diagnostic-layers split is complete. The runtime
+hardening recurrence now also has a verified disposition: a coherent
+five-pattern enforcement-observability cluster moved intact to a dedicated
+companion, while exact forwarding headings preserve published links and the
+parent returned below the review threshold. `agent-evaluation.md` remains a
+future split candidate after its source intake settles. The enforcement-evidence
+companion remains a separate catalog whose September 26 growth was distributed
+rather than a stable second-split boundary. Other oversized signals are
+format-appropriate logs/ledgers or previously reviewed notes. The unsourced
+backlog received a small evidence-checked batch rather than a bulk metric edit.

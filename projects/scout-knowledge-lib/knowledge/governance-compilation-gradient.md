@@ -120,7 +120,7 @@ The article also separates three control semantics that should not be collapsed:
 a prompt advises, a sandbox denies, and a hook can deny **and return a structured
 reason or safer substitute to the agent's context**. That feedback can prevent a
 blind retry, but only for effects visible at the hooked interface; the Mati
-results in [Agent Runtime Hardening](./agent-runtime-hardening.md#knowledge-guardrails-are-only-as-complete-as-their-observed-interface--mati-hngithub-september-2026)
+results in [Agent Runtime Enforcement Observability](./agent-runtime-enforcement-observability.md#knowledge-guardrails-are-only-as-complete-as-their-observed-interface--mati-hngithub-september-2026)
 show why hook coverage must still be measured against alternate access paths.
 Stop hooks that require changed files to be reread after the last edit and
 signals that nudge an agent away from repeatedly running a large failing test

@@ -1,8 +1,8 @@
 <ai_context>
 summary: "Entry point for Scout's project-owned knowledge library. Use this before creating or updating Scout-local knowledge notes."
 triggers: ["scout knowledge", "agent architecture research", "multi-agent trends", "XHS trends", "knowledge library maintenance"]
-last_updated: "2026-09-28"
-source_basis: "Maintained index of Scout canonical notes, companion notes, findings, and durable reports. Current navigation includes source-grounded finding batches through 2026-09-27 and the §37–§40 Agent Evaluation Research: Diagnostic Layers companion without duplicating the full index. Runtime task, credential, backlog, and health status belongs in the project UI or dated reports."
+last_updated: "2026-10-03"
+source_basis: "Maintained index of Scout canonical notes, companion notes, findings, and durable reports. Current navigation includes source-grounded finding batches through 2026-09-27, the §37–§40 Agent Evaluation Research: Diagnostic Layers companion, and the Agent Runtime Enforcement Observability companion without duplicating the full index. Runtime task, credential, backlog, and health status belongs in the project UI or dated reports."
 findings_date_convention: "Use the actual observation date in YYYY-MM-DD filenames; never create a future-dated finding."
 </ai_context>
 
@@ -448,6 +448,7 @@ tracked as task `triage-inbox-imports` in the project task tree.
 - [Agent Architectures](./agent-architectures.md) ← canonical architecture reference (743 lines, split 2026-07-08)
 - [Agent Architectures — Research Catalog](./agent-architectures-research.md) — **companion research catalog**: 12 arXiv paper summaries on agent lifecycle, memory, state, and failure detection (Intelligence Entropy, Strained Coherence, Cold-Start Safety Gap, Decision-Aware Memory Cards, IntentKV, MemoPilot, Bayesian-Agent, Verified Concurrency Anomalies, TokenPilot, CacheWise, Insight Governance, SaliMory). Extracted from canonical note 2026-07-08
 - [Agent Runtime Hardening](./agent-runtime-hardening.md) — **companion runtime catalog**: 16+ named patterns spanning lifecycle adaptation, bounded recovery, typed safety, semantic transactions, deterministic admission, run compilation, and the Runtime Trust Gap 5-layer vulnerability stack.
+- [Agent Runtime Enforcement Observability](./agent-runtime-enforcement-observability.md) — **enforcement-observability companion**: effective-isolation reporting, rule-measurement contracts, domain-native mutation, guardrail coverage, and phase-specific safety gates. Extracted intact from Runtime Hardening during the 2026-10-03 oversized-note review.
 - [Agent Runtime Effect Integrity](./agent-runtime-effect-integrity.md) — **effect-boundary companion**: revision-bound workspace admission, guarded writes, ambiguous-delivery recovery, resource quarantine, and effect closure. Extracted intact from Runtime Hardening during the 2026-08-10 oversized-note review.
 - [Agent Runtime Operation Admission and Identity](./agent-runtime-operation-admission-and-identity.md) — **operation-admission companion**: deterministic business-operation boundaries, approval response races, ownership claims, mutation review, centralized effect modes, attempt journals, feedback binding, and durable receipt identity. Extracted from Effect Integrity during the 2026-09-28 oversized-note review.
 - [Agent Runtime Unattended Execution and Replay](./agent-runtime-unattended-execution-and-replay.md) — **unattended-execution companion**: lifecycle-bound resume, infrastructure trust boundaries, clone identity, approval resume, external-effect settlement, and accountable writes. Extracted from Effect Integrity during the 2026-09-21 oversized-note review.

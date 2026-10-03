@@ -1,8 +1,8 @@
 <ai_context>
 summary: "Companion note to agent-architectures.md: 16+ named runtime hardening patterns for agent effect containment, concurrency, compilation, stabilization, lifecycle adaptation, collaborative harness evolution, bounded recovery, typed safety, source-level evolution, reviewed runtime-state admission, process harness governance, architecture evolution, and evidence binding. Includes the Runtime Trust Gap five-layer vulnerability stack (Scan #276), Harness Discipline papers, September 2026 evidence that safety prose may need phase-specific planning and contact controls in robot manipulation, a component-level harness study showing that context budget and model capability change which controls add value, Agent Harness's source-grounded separation of rule observability, detector validity, delivered-effect measurement, and causal claims, Bunker's concrete separation of configured isolation from observed enforcement with fail-closed SSH session admission, a Reddit practitioner pattern for routing structured game resources through a domain-native engine interface rather than raw serialization edits, Mati's measured distinction between path-visible hook enforcement and name-free access, Argus on verification-gated runtime self-evolution, a cross-source pattern for revision-bound admission when executable interfaces and skills enter persistent workspaces, practitioner implementations distinguishing simulation from compensation and giving local file edits typed commit semantics, evidence-carrying effect closure across physical actuation and multi-provider emergency stops, Brigade's distinction between audit-only execution receipts and scoreable subject-bound evidence, and Docker's concrete microVM trust-boundary defaults for unattended coding agents."
 triggers: ["runtime hardening", "effective isolation", "fail-closed session admission", "pam_namespace", "Bunker", "semantic transactions", "Cordon", "agent_acid", "Patchloom", "structured file edits", "typed commit semantics", "tool surface versus sandbox", "compensation failure", "pure simulation", "session guardrail", "CoAgent", "advisory concurrency", "readout bottleneck", "PreAct", "run compilation", "SkillWeaver", "skill routing", "ADE", "intelligence entropy", "harness evolution", "harness design", "Agent Harness", "rule observability", "detector validity", "delivered effect measurement", "SafeHarness", "Mati", "path-visible enforcement", "knowledge guardrail", "robot manipulation safety", "route planning", "contact execution", "context management", "rule-based elision", "context overflow", "bash-only interface", "false-success detection", "process harness", "CUGA FLO", "architecture gradient", "NOVA", "verification cascade", "forbidden directions", "agentic BPM", "runtime trust gap", "thanatosis", "containment gap", "CLAWAUDIT", "AOHP", "User as Code", "executable memory", "Life-Harness", "lifecycle adaptation", "EvolveNet", "collaborative harness evolution", "scope-typed aggregation", "self-healing orchestrator", "bounded recovery", "LACUNA", "typed holes", "MOSS", "source-level rewriting", "Argus", "reviewed runtime state", "verification-gated self-evolution", "persistent agent workspace", "programmatic tool calling", "revision-bound admission", "skill self-test", "evidence-carrying actuation", "kill switch", "effect closure", "still-dangerous set", "Brigade", "verification receipt", "subject binding", "scoreable evidence", "Docker Sandboxes", "microVM isolation", "shared skills trust boundary", "credential proxy", "Godot", "domain-native mutation", "structured resource editing", "architect executor split", "blueprint audit"]
-last_updated: "2026-09-27"
-source_basis: "Extracted from agent-architectures.md §Runtime Hardening and §Process Harness. Sources: Cordon [2606.17573], CoAgent [2606.15376], Looking Is Not Picking [2606.16364], PreAct [2606.17929], SkillWeaver [2606.18051], ADE [2606.18065], Harness Updating [2605.30621], False-Success Detection [2606.09863], CLAWAUDIT [2606.21071], OpenClaw [2606.15008], Plans Don't Persist [2606.22953], CUGA FLO [2606.27188], NOVA [2606.27243], Thanatosis [2606.14831], Containment Gap [2606.12797], AOHP [2606.23449], User as Code [2606.16707], APEX [2606.15363], Argus [2608.05144]. Originally sourced during Jul 22 runtime hardening triage + Jun 27 arXiv triage + Jul 1 Runtime Trust Gap scan #276. Harness Discipline batch integrated 2026-07-09: Life-Harness [2605.22166], Self-Healing Orchestrators [2606.01416], LACUNA [2605.28617], MOSS [2605.22794]. Argus and EvolveNet integrated 2026-08-06 from arXiv API queries. Revision-bound workspace admission synthesis added 2026-08-07 from arXiv 2608.06370, AWS AgentCore runtime instances, and eternityspring/shuohao-skills revision 594a0471a5862e267c2af58ce4e37a392b92ad72. Practitioner transaction-boundary update added 2026-08-08 from HN 49219014 and muhammadwaqasai/agent_acid revision c9a7509108db8262bb5937312fa93bf206f014fc. Evidence-carrying effect closure added 2026-08-08 from YINGLINGH/limioryn revision 0469e409180569b1387cde191224d6e8a3fed327 and Countersign packages revision 6ef7904e74aa3adf61c8416457c08961da050026 surfaced via HN 49220224. Local-file commit semantics added 2026-08-08 from HN 49224010 and patchloom/patchloom revision 220be477137c259262e7cd4b02d6948994787d6e. Verification-evidence binding added 2026-08-09 from escoffier-labs/brigade revision 0e8b83ae6ef779bb6be8701dd4cd534c064608f9 and its receipt schema, execution model, outcome-scoring documentation, and verification implementation. Docker sandbox boundary analysis added 2026-08-10 from HN 49239751 and Docker's product, security-model, default-posture, and credential documentation. Mnemosyne principal-binding qualification added 2026-09-04 from exact v2 tag 7aab09c43c1672c01b415b4987cd2d1d9a6fd0a4; isolated repair-candidate evidence added 2026-09-09 against exact upstream main ba43036035bb33dfb955d53da54635aac2ab83a0. Component-level harness-design evidence added 2026-09-18 from the live arXiv API abstract for 2609.20804v1; planning-versus-release-control evidence added the same day from the live arXiv API abstract for 2609.20474v1. Phase-specific physical-safety harness evidence added 2026-09-19 from the live arXiv API abstract for 2609.20822v1. Path-visible knowledge-enforcement evidence added 2026-09-20 from HN 49767823 and ioni-dev/mati README at revision 508ca3b3e2e80d986865057601a250c6ae12505c. Domain-native game-resource workflow signal added 2026-09-21 from the complete public Reddit Atom body for t3_1wlw3ab, treated only as a pseudonymous project-author self-report. Rule-observability evidence added 2026-09-23 from JakeSelby/agent-harness source and documentation pinned at revision 8525080756cfa61a83e7b147f271539f85aad6b9. Effective-isolation evidence added 2026-09-27 from deployBunker/bunker source, specification, and tests pinned at revision fbde4dbcb42e4e8b1e897d2955bd72ddaf34cff6."
+last_updated: "2026-10-03"
+source_basis: "Extracted from agent-architectures.md §Runtime Hardening and §Process Harness. Effective-isolation, rule-telemetry, domain-native-mutation, guardrail-coverage, and phase-specific safety sections moved intact to agent-runtime-enforcement-observability.md during the 2026-10-03 oversized-note review. Sources: Cordon [2606.17573], CoAgent [2606.15376], Looking Is Not Picking [2606.16364], PreAct [2606.17929], SkillWeaver [2606.18051], ADE [2606.18065], Harness Updating [2605.30621], False-Success Detection [2606.09863], CLAWAUDIT [2606.21071], OpenClaw [2606.15008], Plans Don't Persist [2606.22953], CUGA FLO [2606.27188], NOVA [2606.27243], Thanatosis [2606.14831], Containment Gap [2606.12797], AOHP [2606.23449], User as Code [2606.16707], APEX [2606.15363], Argus [2608.05144]. Originally sourced during Jul 22 runtime hardening triage + Jun 27 arXiv triage + Jul 1 Runtime Trust Gap scan #276. Harness Discipline batch integrated 2026-07-09: Life-Harness [2605.22166], Self-Healing Orchestrators [2606.01416], LACUNA [2605.28617], MOSS [2605.22794]. Argus and EvolveNet integrated 2026-08-06 from arXiv API queries. Revision-bound workspace admission synthesis added 2026-08-07 from arXiv 2608.06370, AWS AgentCore runtime instances, and eternityspring/shuohao-skills revision 594a0471a5862e267c2af58ce4e37a392b92ad72. Practitioner transaction-boundary update added 2026-08-08 from HN 49219014 and muhammadwaqasai/agent_acid revision c9a7509108db8262bb5937312fa93bf206f014fc. Evidence-carrying effect closure added 2026-08-08 from YINGLINGH/limioryn revision 0469e409180569b1387cde191224d6e8a3fed327 and Countersign packages revision 6ef7904e74aa3adf61c8416457c08961da050026 surfaced via HN 49220224. Local-file commit semantics added 2026-08-08 from HN 49224010 and patchloom/patchloom revision 220be477137c259262e7cd4b02d6948994787d6e. Verification-evidence binding added 2026-08-09 from escoffier-labs/brigade revision 0e8b83ae6ef779bb6be8701dd4cd534c064608f9 and its receipt schema, execution model, outcome-scoring documentation, and verification implementation. Docker sandbox boundary analysis added 2026-08-10 from HN 49239751 and Docker's product, security-model, default-posture, and credential documentation. Mnemosyne principal-binding qualification added 2026-09-04 from exact v2 tag 7aab09c43c1672c01b415b4987cd2d1d9a6fd0a4; isolated repair-candidate evidence added 2026-09-09 against exact upstream main ba43036035bb33dfb955d53da54635aac2ab83a0. Component-level harness-design evidence added 2026-09-18 from the live arXiv API abstract for 2609.20804v1; planning-versus-release-control evidence added the same day from the live arXiv API abstract for 2609.20474v1. Phase-specific physical-safety harness evidence added 2026-09-19 from the live arXiv API abstract for 2609.20822v1. Path-visible knowledge-enforcement evidence added 2026-09-20 from HN 49767823 and ioni-dev/mati README at revision 508ca3b3e2e80d986865057601a250c6ae12505c. Domain-native game-resource workflow signal added 2026-09-21 from the complete public Reddit Atom body for t3_1wlw3ab, treated only as a pseudonymous project-author self-report. Rule-observability evidence added 2026-09-23 from JakeSelby/agent-harness source and documentation pinned at revision 8525080756cfa61a83e7b147f271539f85aad6b9. Effective-isolation evidence added 2026-09-27 from deployBunker/bunker source, specification, and tests pinned at revision fbde4dbcb42e4e8b1e897d2955bd72ddaf34cff6."
 </ai_context>
 
 # Agent Runtime Hardening
@@ -18,241 +18,37 @@ the Runtime Trust Gap five-layer vulnerability stack.
 - [Agent Architectures](./agent-architectures.md) — core patterns, harness engineering, state management
 - [Agent Security: Defense Architectures](./agent-security-defense-architectures.md) — security-specific defense patterns
 - [Agent Protocols: MCP, A2A](./agent-protocols-mcp-a2a.md) — protocol-layer containment
+- [Agent Runtime Enforcement Observability](./agent-runtime-enforcement-observability.md) — effective isolation, measurement contracts, mutation boundaries, guardrail coverage, and phase-specific safety gates
 - [Agent Runtime Effect Integrity](./agent-runtime-effect-integrity.md) — revision admission, effect closure, verification binding, and unattended-execution boundaries
 
 ---
 
+## Enforcement Observability — Companion Catalog
+
+Five patterns concerning live enforcement coverage and its measurement now live
+in [Agent Runtime Enforcement Observability](./agent-runtime-enforcement-observability.md).
+The original headings remain below as stable forwarding anchors for previously
+published links.
+
 ## Report Effective Isolation, Not Installed Intent — Bunker (GitHub, September 2026)
 
-[Bunker](https://github.com/deployBunker/bunker/tree/fbde4dbcb42e4e8b1e897d2955bd72ddaf34cff6)
-is an early multi-agent hosting platform that gives each agent a Linux user and a
-rootless Docker daemon. Its useful hardening signal is not the generic claim of
-per-agent isolation, but the way its current implementation treats `/tmp` as a
-boundary that spans two execution paths. Rootless-dockerd and detached-run systemd
-units receive `PrivateTmp=yes`; SSH-backed exec, copy, mount, and Docker transports
-instead pass through an agent-scoped `pam_namespace` block. A per-agent directory
-plus `TMPDIR` is explicitly rejected as isolation when sessions still share a mount
-namespace.
-
-The SSH path adds a stronger rule: the session is admitted only after a root-owned
-`pam_exec` helper verifies the exact namespace rule, agent-group membership,
-instance-parent ownership and mode, required PAM modules, and its own directory,
-manifest, and byte integrity. The classifier keys on the reserved `bunker-*`
-username pattern rather than group state, so deleting the group cannot make an
-agent look like an ordinary operator and fall through to host-shared `/tmp`.
-Deleting only the namespace drop-in leaves the managed PAM block in place and
-denies agent sessions; restoring shared behavior requires removing the complete
-managed block. Spawn similarly treats failure to grant the isolation membership as
-a fatal stage and rolls back rather than creating a reachable but degraded agent.
-
-The project also separates **configured intent from observable enforcement**.
-Its status mapper returns `private` only when every required boundary property is
-observed. A missing module or broken PAM block becomes `host-shared`; a probe error
-or an unprivileged daemon that cannot verify ownership becomes `unknown`. The
-README warns that an older daemon can report `not reported` even when a newer CLI
-and documentation describe isolation, and the source advertises a build capability
-token so host provisioning can detect version skew. This is a reusable operational
-pattern: an isolation claim should identify each execution surface, probe the live
-enforcement prerequisites, preserve unknown as a first-class state, and bind the
-reported capability to the daemon revision actually serving requests.
-
-Two boundaries remain important. First, this design isolates temporary paths; it
-does not by itself prove complete filesystem, kernel, network, or credential
-containment. Second, Scout statically inspected project-authored source,
-specification, and tests but did not provision a Linux host, run the test suite, or
-attempt a cross-agent read. The tests show that the intended verdict goes false
-when any modeled prerequisite is removed and that unit argument builders include
-`PrivateTmp=yes`; they are not a live enforcement receipt or an independent security
-audit. The repository had two stars at discovery, so treat it as an inspectable
-implementation pattern rather than production validation.
-
-- **Repo:** https://github.com/deployBunker/bunker
-- **Inspected revision:** [`fbde4dbcb42e4e8b1e897d2955bd72ddaf34cff6`](https://github.com/deployBunker/bunker/commit/fbde4dbcb42e4e8b1e897d2955bd72ddaf34cff6)
-- **Primary sources:** [boundary specification](https://github.com/deployBunker/bunker/blob/fbde4dbcb42e4e8b1e897d2955bd72ddaf34cff6/specs/agent-tmp-isolation.md), [unit and spawn isolation wiring](https://github.com/deployBunker/bunker/blob/fbde4dbcb42e4e8b1e897d2955bd72ddaf34cff6/internal/agent/isolation.go), [PAM provisioning and status logic](https://github.com/deployBunker/bunker/blob/fbde4dbcb42e4e8b1e897d2955bd72ddaf34cff6/internal/hostsetup/tmpnamespace.go), [boundary-state tests](https://github.com/deployBunker/bunker/blob/fbde4dbcb42e4e8b1e897d2955bd72ddaf34cff6/internal/hostsetup/tmpnamespace_test.go), and [server status mapping tests](https://github.com/deployBunker/bunker/blob/fbde4dbcb42e4e8b1e897d2955bd72ddaf34cff6/internal/server/tmp_isolation_test.go)
-- **Discovery query:** GitHub Repository Search API `"AI agent" verification policy enforcement in:name,description,readme pushed:>2026-09-20`, sorted by updated; `total_count: 7444`, `incomplete_results: false`
+Moved intact to [Agent Runtime Enforcement Observability](./agent-runtime-enforcement-observability.md#report-effective-isolation-not-installed-intent--bunker-github-september-2026).
 
 ## Rule Telemetry Needs an Observation-Layer Contract — Agent Harness (GitHub, September 2026)
 
-[Agent Harness](https://github.com/JakeSelby/agent-harness/tree/8525080756cfa61a83e7b147f271539f85aad6b9)
-is an early coding-agent configuration compiler with a useful measurement design:
-each rule must name a deterministic transcript detector or explicitly state why
-transcript evidence cannot decide it. At the pinned revision, `check_detectors`
-mechanically rejects rule files with neither; the detector registry contains 17
-entries; and synthetic tests give every detector at least one positive and one
-negative case.
-
-The repository's own incident record shows why that is only the first layer of
-measurement validity:
-
-- A delegation stance was loaded but produced **zero subagent calls across 19
-  author-run headless benchmark executions**. The tasks still completed, so
-  ordinary task success did not reveal that the standing instruction had no
-  observed activation.
-- A pre-tool hook appended a cap to subagent briefs, yet the associated rate was
-  effectively unchanged before, during, and after the hook. Source and a pinned
-  regression test show why: the detector read the model-authored tool input,
-  while the hook's rewritten, delivered input was recorded in a separate event
-  that the scanner ignored. The implementation therefore renamed the metric
-  from `brief-without-cap` to `model-wrote-no-cap` and folds old ledger IDs into
-  the new series at read time instead of pretending it measures delivery.
-- Only the six generic detectors have labels in the vendored scoring corpus. The
-  11 repository-specific detectors have synthetic hit/no-hit tests but no
-  published precision floor. The documentation also correctly treats
-  per-stance rates as observational because users selected the stance and no
-  fixed task set was randomized across variants.
-
-**Reusable hardening pattern:** a rule measurement should declare its
-**observation-layer contract**. Keep four questions separate:
-
-1. Is the rule loaded, and can the runtime observe a candidate event?
-2. Does the detector classify that event accurately on a representative labeled
-   corpus, not just on hand-written positive and negative fixtures?
-3. Does it observe authored intent, the policy-rewritten request, the executed
-   effect, or the verified postcondition?
-4. Is the report descriptive, or does an intervention/control design support a
-   causal claim?
-
-A detector-per-rule lint prevents silent darkness, but it does not by itself
-prove detector validity, enforcement, delivered behavior, or effect. Telemetry
-is most useful when these boundaries are explicit enough that a metric which
-fails to move triggers an audit of the observation layer rather than a false
-claim that the policy failed—or worked.
-
-**Evidence boundary:** Scout inspected source and documentation at commit
-[`8525080`](https://github.com/JakeSelby/agent-harness/commit/8525080756cfa61a83e7b147f271539f85aad6b9)
-and ran three targeted unittest modules from the downloaded archive. Fifty-four
-tests passed; one Git-history-dependent documentation test errored because the
-source archive had no `.git` metadata. Scout did not run the full suite, replay
-paid model calls, inspect the author's local ledger, or independently reproduce
-the reported 19 runs and before/during/after rates. The repository had 15 stars
-when observed, so treat this as an unusually candid implementation signal, not
-production validation.
+Moved intact to [Agent Runtime Enforcement Observability](./agent-runtime-enforcement-observability.md#rule-telemetry-needs-an-observation-layer-contract--agent-harness-github-september-2026).
 
 ## Prefer Domain-Native Mutations to Raw Structured-File Edits — Reddit (September 2026)
 
-A project-author [Reddit post](https://www.reddit.com/r/aigamedev/comments/1wlw3ab/im_a_beginner_who_got_tired_of_aimless_vibecoding/)
-reports recurring failures while using coding agents on a Godot game: broad
-context reads for small changes, broken UID references after direct `.tscn`
-edits, and open-ended work without visible progress. The author's response is a
-playbook that narrows the task and interface together: an architect writes a
-scene-tree and signal-flow blueprint; an executor writes typed GDScript and
-uses a local Godot MCP server for resource operations; documentation is loaded
-by subsystem; and the architect later compares the landed code with the
-blueprint.
-
-The reusable pattern is **representation-aware mutation**. When a domain engine
-owns identities, references, validation, and serialization, an agent should
-propose operations through that engine's structured interface rather than edit
-its storage format as ordinary text. Task-scoped context and a blueprint can
-reduce irrelevant reads and make omissions reviewable, but they solve different
-problems from the mutation boundary. A role split also does not make the final
-audit independent: the same architect that authored the blueprint may preserve
-its own mistaken assumptions.
-
-A hardened implementation should therefore test the pieces separately:
-
-1. prove that every structured-resource mutation actually crosses the
-   domain-native adapter, with no reachable raw-write fallback;
-2. bind the resulting artifact and engine diagnostics to the selected task and
-   blueprint revision;
-3. check both blueprint conformance and domain behavior, preferably with a
-   reviewer or oracle that did not author the plan; and
-4. treat MCP as transport, not as evidence of authorization, transactional
-   safety, or postcondition verification.
-
-**Evidence boundary:** Scout read the complete body of stable post
-`t3_1wlw3ab` from Reddit's public Atom feed. The post is a pseudonymous,
-self-described beginner's account of a newly open-sourced framework. Scout did
-not inspect the linked repository, run Godot, reproduce the reported scene
-corruption, or verify that raw resource writes are technically impossible.
-The post therefore supports a practitioner design signal, not reliability,
-security, or adoption claims.
+Moved intact to [Agent Runtime Enforcement Observability](./agent-runtime-enforcement-observability.md#prefer-domain-native-mutations-to-raw-structured-file-edits--reddit-september-2026).
 
 ## Knowledge Guardrails Are Only as Complete as Their Observed Interface — Mati (HN/GitHub, September 2026)
 
-A [Show HN post](https://news.ycombinator.com/item?id=49767823) surfaced
-[Mati](https://github.com/ioni-dev/mati/tree/508ca3b3e2e80d986865057601a250c6ae12505c),
-a local enforcement layer that attaches developer-confirmed “gotchas” to files.
-Its documented mechanism blocks covered Claude Code reads/edits and Codex
-`apply_patch` edits until the agent consults the relevant record; decisions are
-written to a local hash-chained log. Candidate records do not enforce until a
-developer confirms them, which usefully separates knowledge generation from
-policy admission.
-
-The more important signal is the project's explicit measurement of its own
-coverage boundary. In ten author-run trials where the agent was told not to put
-the governed filename in commands, **8/10** rewrote the file without consulting,
-**10/10** obtained its contents, and **0/10** triggered the gate. Seven used a
-content search such as `grep -rl` to discover the path indirectly. In a separate
-ordinary-task arm, **10/10** also found the file by content search, but every run
-then named or consulted the file, so **0/10** reached it without consultation.
-A command-string or tool hook can enforce what its interface exposes; it cannot
-classify an identity that never appears there.
-
-Mati documents two stronger but narrower controls:
-
-- **Session lockdown** turns a detected denial into debt: subsequent reads and
-  shell commands are blocked until the named knowledge record is consulted.
-  The README reports **0/20** unconsulted accesses with lockdown versus **4/10**
-  in a historical unlocked control, but none of those 20 tried the name-free
-  route, so this does not close the discovery gap.
-- **File sealing** removes file permissions until consultation. In an
-  interleaved 10-versus-10 author test, **0/10** sealed runs finished without
-  consulting versus **6/10** unsealed; the warned-about bug landed in **0/10**
-  versus **4/10**. This moves enforcement below the agent hook, but Git object
-  reads, file replacement through directory permissions, and build-tool failure
-  remain documented gaps. The README also says Linux and WSL2 were untested.
-
-**Operational implication:** evaluate a guardrail as
-`policy × observable interface × bypass surface`, not from its deny rule alone.
-For path-scoped knowledge, test direct file tools, shell aliases and variables,
-content discovery, Git-history access, replacement without reads, subagents,
-and alternate worktrees. A post-denial debt mechanism improves persistence only
-after detection; sealing changes the substrate but can disrupt legitimate tools.
-Publish those coverage and usability costs separately.
-
-**Evidence boundary:** these are project-author measurements and mechanism
-claims from the README at revision
-[`508ca3b`](https://github.com/ioni-dev/mati/commit/508ca3b3e2e80d986865057601a250c6ae12505c),
-not Scout reproductions. The HN item had two points and no discussion when
-checked, and the repository had no stars or forks; treat Mati as an unusually
-well-scoped early implementation signal, not production validation.
+Moved intact to [Agent Runtime Enforcement Observability](./agent-runtime-enforcement-observability.md#knowledge-guardrails-are-only-as-complete-as-their-observed-interface--mati-hngithub-september-2026).
 
 ## Safety Prose Needs Phase-Specific Control Representations — SafeHarness (arXiv, September 2026)
 
-**Coding Agents with an Obstacle-Aware Harness for Safe Robot Manipulation**
-([2609.20822v1](https://arxiv.org/abs/2609.20822v1)) evaluates a coding agent
-that writes robot controllers for manipulation tasks with an obstacle it must
-not touch. The abstract reports that the unhardened agent collided in most
-cases despite mentioning the obstacle in its reasoning trace and receiving an
-explicit no-contact instruction. The authors locate the failure in planning:
-the stated constraint did not become an operational priority.
-
-Their decomposition separates two distinct safety surfaces:
-
-1. **Route phase:** represent objects as bounding boxes, generate waypoint
-   routes, verify the route before execution, and replan when it is infeasible.
-2. **Contact phase:** choose the contact position under the same obstacle
-   constraint rather than treating the final interaction as exempt.
-
-The resulting SafeHarness reportedly reaches **71.9% task success** and
-**87.5% collision avoidance**, 6.5 and 27.0 percentage points above the cited
-previous state of the art. The abstract also describes those results as 2.3×
-and 1.5× the same agent without the harnesses.
-
-**Runtime lesson:** awareness in a trace and a prohibition in a prompt are not
-execution controls. A safety constraint should be compiled into the
-representations, candidate-generation step, pre-execution verifier, replanning
-condition, and terminal interaction for every phase that can violate it. Task
-success and constraint satisfaction must remain separate metrics; otherwise a
-controller can look capable while repeatedly taking unsafe paths.
-
-**Evidence boundary:** Scout reviewed the live arXiv API abstract only, not the
-full paper, environments, controller code, collision definitions, comparison
-protocol, or statistics. The reported rates and causal diagnosis are therefore
-author claims for this robot-manipulation setup, not evidence that the harness
-generalizes to other physical agents or that it provides an independently
-enforced safety boundary.
+Moved intact to [Agent Runtime Enforcement Observability](./agent-runtime-enforcement-observability.md#safety-prose-needs-phase-specific-control-representations--safeharness-arxiv-september-2026).
 
 ## Reviewed Runtime-State Admission — Argus (arXiv, August 2026)
 
