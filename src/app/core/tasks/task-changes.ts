@@ -25,6 +25,28 @@ function changeKey(value: unknown): string {
   return createHash("sha256").update(encoded).digest("hex");
 }
 
+/** Read the admitted state for cleanup planning, then roll back before any publication. */
+export function previewTaskChanges<T>(
+  input: Omit<Parameters<typeof applyTaskChanges>[0], "settle">,
+  read: () => T,
+): T {
+  const rollback = new Error("Task change preview completed");
+  let result!: T;
+  try {
+    applyTaskChanges({
+      ...input,
+      settle: () => {
+        result = read();
+        // Throw inside admission so SQL, receipts and after-commit effects roll back.
+        throw rollback;
+      },
+    });
+  } catch (error) {
+    if (error !== rollback) throw error;
+  }
+  return result;
+}
+
 /** One admission path for tool calls and final declarations. Dispatch follows durable caller bookkeeping. */
 export function applyTaskChanges(input: {
   opts: AppTaskRuntimeOptions;

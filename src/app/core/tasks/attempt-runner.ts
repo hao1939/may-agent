@@ -42,7 +42,7 @@ import {
 } from "./attempt-execution.js";
 import { type AppTaskDispatch } from "./controller.js";
 import { recoverTaskConditions } from "./dependency-admission.js";
-import { applyTaskChanges } from "./task-changes.js";
+import { applyTaskChanges, previewTaskChanges } from "./task-changes.js";
 import { type TaskCapabilityRun } from "./result.js";
 import {
   appTaskConfig,
@@ -339,16 +339,27 @@ async function runClaimedTask(
       try {
         const staleWorkspace = await fenceWorkspaceFinalization(report);
         if (staleWorkspace) return staleWorkspace.reconcileTaskIds;
-        // Validate scope before cleanup, within the boundary that preserves rejected output.
-        // Accepting a contribution does not finish the Task's remaining work.
-        const finalized = await finalizeWorkspace(
+        const changeInput = {
+          opts,
+          descriptor,
+          claim,
+          changes: {
+            requests: result.requests,
+            actions: result.actions,
+            facts: result.facts,
+            inputKeys: result.inputKeys,
+          },
+          acceptedLiveEventIds: report.acceptedLiveEventIds,
+        };
+        // Plan from admitted final changes, not pre-action Conditions. The preview
+        // rolls back; rejection preserves artifacts and settlement rechecks authority.
+        const retainWorkspace = taskWorkspace && previewTaskChanges(changeInput, () =>
           shouldRetainAppTaskWorkspace(config, claim, {
             inputKeys: result.inputKeys,
             acceptedLiveEventIds: report.acceptedLiveEventIds,
-          })
-            ? "waiting"
-            : "accepted",
+          }),
         );
+        const finalized = await finalizeWorkspace(retainWorkspace ? "waiting" : "accepted");
         if (!finalized.ok) {
           return await rejectResult(
             finalized.reason ?? "Task workspace finalization failed",
@@ -359,16 +370,7 @@ async function runClaimedTask(
         let apply!: ReturnType<typeof completeConversationTaskTurn>;
         const changes = persistResult(() =>
           applyTaskChanges({
-            opts,
-            descriptor,
-            claim,
-            changes: {
-              requests: result.requests,
-              actions: result.actions,
-              facts: result.facts,
-              inputKeys: result.inputKeys,
-            },
-            acceptedLiveEventIds: report.acceptedLiveEventIds,
+            ...changeInput,
             settle: () => {
               apply = report.conversation
                 ? completeConversationTaskTurn(config, claim, report.conversation.decision, {
