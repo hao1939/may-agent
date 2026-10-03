@@ -15,7 +15,7 @@
 | Review clock | Apps `95e142b3d0` and current `metric-review.ts` use the immutable report completion time (`payload.createdAt`) plus the interval. Reused publication keeps that time. No new `reviewedAt` field is needed. A long publication delay can legitimately leave the next review due. |
 | Meaningful reconsideration | Conditions and retained investigation identity exist. Better choice of wake predicates and measured review eligibility remain App policy and trial work. |
 | Context size | Host [#288](https://github.com/hao1939/may-agent/pull/288) fixes a separate full-history Codex resume cost. It does not prove that optional Conversation reference enrichment is bounded or cheaper. Assess that path separately. |
-| Continuing detection | Invocation anomaly counters and an independently delivered review need an implementation inventory and connected trial. A proposed metric is not evidence that monitoring is installed. |
+| Continuing detection | The [October 3 inventory](metric-coverage-audit-20261003.md) found existing invocation usage but no effort metric. Section 5 proposes a bounded observation and the existing independent review routes. Catalog/threshold cleanup comes first; new lifecycle counters are deferred. Nothing in this audit was activated. |
 | Repeated delivery and correctable output | [Host `7b416af40`](https://github.com/hao1939/may-agent/commit/7b416af40) and this Apps companion add durable GitHub fact identity, groups same-result Topic returns, and validates direct-agent results before terminal finish. The owning [observer contract](github-pull-request-observation.md), [Conversation contract](../../may-agent.app/docs/2a-design/conversation-execution.md#routing-and-authority), and [completion contract](../../may-agent.app/docs/2a-design/execution-contributions.md) describe behavior and limits. |
 | Duplicate hygiene timers | The companion removes the hard-coded App timer for the standing hygiene Task. Its already chosen `reviewAt` owns the cycle; the agent explicitly selects the next review. This preserves the existing Task and deadline without a state migration. |
 
@@ -220,23 +220,131 @@ Treat required current input, acceptance criteria and obligation identities sepa
 
 ## 5. Detect recurrence through existing metrics
 
-Extend the existing execution-usage record with objective lifecycle observations. Record them during execution, including while a loop is still running; detection must not depend on the invocation eventually ending. Reuse the current persistence/update cadence without a transcript-scanning service.
+**Status:** Proposed after the [October 3 audit](metric-coverage-audit-20261003.md).
+No new metric or review was installed. Existing terminal-completion repairs stay
+regression requirements; do not add completion-lifecycle counters before trying
+the available usage data.
 
-Proposed facts, scoped to an invocation rather than a lifetime session:
+Start with an ordinary question: **which Task is using enough model effort to
+deserve a closer look?** Host already retains cumulative usage for each managed
+invocation, including updates while it runs. Apps can measure that evidence and
+ask for review. The reviewer decides whether the effort is producing value.
 
-- First validated finish and count of validated finishes.
-- Model requests started after terminal completion.
-- Existing input/cache/output token counts, elapsed time and correlated App/Task/attempt identity.
+### Observation definition
 
-A subsequent admitted invocation starts a new accounting scope. Keep valid output even when an anomaly is present. Exact field names and any existing equivalent counters should be resolved during the implementation inventory; avoid duplicate counters.
+Proposed name: **maximum observed model replies for a Task's recently active
+invocations**. This deliberately measures effort, not progress or failure.
 
-The first App metric can be simple: **one model request after accepted terminal completion is a breach**. Link the affected invocation and current owner to the existing concern/Task mechanism. Repeated observations update that concern rather than creating an investigation for each sample.
+| Property | Proposed first implementation |
+| --- | --- |
+| Source | Existing `execution_usage`, one cumulative row per invocation. |
+| Cohort | Rows with `updated_at` in `[cut - 1 hour, cut)`, including unfinished invocations. Read at one fixed cut. |
+| Calculation | Sum `data.totals.replies` by exact `(app_id, task_id)`; take the maximum in the declared responsibility scope. Count each invocation once. |
+| Unit/type | Observed assistant replies; gauge. These are not provider-request counts or exact within-hour consumption. |
+| Scopes | Two App-defined metrics: non-Evaluation Apps, and Evaluation only. Follow the existing failure-metric responsibility split. |
+| Cadence | Existing five-minute source collection and decoupled rule evaluation. No model call to collect or calculate. |
+| Trial threshold | Observe without an alert first. Candidate attention rule: at least 100 replies (`> 99`) in the defined cohort. The audit cut selected two May Tasks; one is a human Conversation. Calibrate with useful-work examples before adoption. |
+| Sample evidence | Fixed cut and cohort definition, represented invocation count, number of qualifying Tasks, top five Task groups with exact read references, token/pricing coverage, and unsupported paths. Report truncation. |
+| Missing evidence | Read/parse failures are unavailable; they are not zero. A successful empty cohort means zero **observed** replies, not proof of no work or universal accounting coverage. |
 
-Then use existing rolling per-Task consumption to identify expensive unchanged waits. Present actual fulfilled inputs, accepted deliverables and relevant dependency/Condition changes alongside usage. Resource versions, fresh timestamps and rewritten summaries alone are not progress. High usage is a reason to inspect, not an automatic waste verdict. Select attention thresholds from measured workload and keep them in App policy.
+A long-running invocation contributes its whole saved total while it remains
+recently active. This catches effort accumulated before the hour boundary, but
+can keep an expensive productive run above the threshold. An invocation ages
+out an hour after its last update. The calculation is a review heuristic; do not
+label it “hourly spend,” sum successive values, or infer exact historical rates
+from overwritten cumulative rows.
 
-The detector follows the same review discipline as other metrics: retain coverage gaps, coalesce an existing unresolved concern, and reassess on useful change or a deliberate deadline. Suspected Evaluation defects should use the established independent owner-review path.
+Use the latest calculated gauge initially: its cohort already collects effort
+over a window. If trials demonstrate noisy transitions, use the existing
+calculation/sustained-condition configuration. Do not add another smoothing
+engine. Capture the evidence with the sample so a later review does not silently
+recompute a different cohort.
 
-**Acceptance:** the two recorded finish loops produce an actionable concern before completion; duplicate samples reuse it; genuine later invocations do not breach; a productive expensive run is presented for judgment without automatic cancellation. Unknown pricing remains unknown.
+Keep metric identities few: two scopes, with Task identities in bounded evidence,
+not a new series for every Task. Multiple causes can coexist in one scope. A new
+expensive Task during an open breach updates evidence without another breach;
+routine daily review or an already justified investigation checkpoint examines
+changed membership. This first version does not promise immediate independent
+notification for each Task. Trial that delay before deciding whether finer App
+scopes are worth their review cost.
+
+### Review and follow-through
+
+The existing transition path remains:
+
+```text
+usage facts -> periodic sample -> metric condition -> breach/recovery
+             -> Evaluation review (or May for Evaluation's work)
+             -> May disposition -> existing accountable improvement work
+```
+
+The non-Evaluation signal uses Evaluation's existing metric-review subscription.
+Declare the Evaluation signal with explicit responsibility and add it to May's
+existing direct operational route; it must not depend on Evaluation assessing
+itself. A breach supplies the existing `metricId`, `alertId` and observation cut.
+Repeated samples stay quiet. Routine metric reconsideration remains daily.
+
+The review starts with the bounded effort summary and exact Task references,
+then reads current requirements, accepted results and linked evidence as needed.
+Include covered inputs, intermediate artifacts, unanswered requirements, waits,
+failures and relevant new input independently. A new Task version or rewritten
+summary is not itself evidence of progress. Conversely, no newly fulfilled input
+does not invalidate useful partial work. A busy Conversation can be worthwhile.
+
+Evaluation proposes an evidence-backed explanation and smallest worthwhile next
+action. May decides whether to pursue it, reuse a fitting investigation, record
+no change, or request human approval under the existing improvement policy.
+The accepted disposition retains that decision and its exact linked work.
+Useful outcomes per review cost matter as well as detecting repetition.
+
+Recovery means the attention rule cleared. A completed invocation aging out,
+paused execution, or administrative alert resolution cannot prove the original
+request is fulfilled or the cause is fixed. Validate actual useful work after a
+change; preserve remaining requirements and independent Conditions.
+
+### Responsibility and implementation cost
+
+- **Host:** retain factual usage and expose normal evidence reads. Add an ordinary
+  `updated_at` index for the selected usage query and verify its plan before
+  scheduling collection. The audit query scans the table today. No new usage
+  table, transcript scanner or rollup service is proposed.
+- **May App:** declare the two scoped source queries, candidate thresholds and
+  independent Evaluation route, alongside existing reliability metrics. Keep
+  the metric semantics and selected examples explicit in the source result.
+- **Evaluation App:** reuse metric selection, immutable evidence/report storage
+  and publication. Add concise review guidance about effort versus useful work;
+  preserve the separate reviewer budget and daily routine cadence.
+
+The first scope is limited to measured managed invocations. Native `codex-goal`
+attempts and persistent chat are not established as covered. Report that gap;
+extend the existing Host usage adapter separately when trustworthy native usage
+is available. Missing prices are unknown, and zero estimates do not mean free
+work. Failed/code-only attempts remain visible through existing outcome metrics.
+
+This costs two metric definitions, bounded periodic reads, one appropriate index
+and review capacity. It gains attention to expensive accepted work without
+changing Task admission, retries or what counts as a valid contribution. It will
+miss cheap semantic failures, some unsupported executors, and hangs before any
+reply; the existing failure, age and periodic Task reviews remain necessary.
+
+### Trial and acceptance
+
+First correct the existing stale threshold and obsolete catalog entries identified
+by the audit. Then measure in calibration mode before enabling the candidate
+threshold during a separately authorized runtime trial.
+
+Use four cases: repeated accepted work with little useful change; productive
+expensive partial work; an expensive long-running invocation crossing the hour
+boundary; and a quiet legitimate wait. Include Evaluation as a subject for the
+independent May route. Verify exact effort accounting, unchanged-sample silence,
+one retained alert episode, and explicit unknown coverage. Reopen storage and
+check that collection continues without duplicate usage or investigation.
+
+The connected trial must reach a published review and accepted owner decision,
+with linked follow-through when worthwhile. Compare the quality and cost of
+those decisions, not just the number of alerts. A useful expensive run must
+remain valid, and a cheaper stalled run must not count as an improvement. The
+single historical calibration cut establishes neither precision nor savings.
 
 ## Delivery plan
 
@@ -246,7 +354,7 @@ The detector follows the same review discipline as other metrics: retain coverag
 | B — Evaluation clock | Completion-based next-review time and idempotent publication recovery | Old-cutoff/delayed-review fixtures and observed future deadlines |
 | C — App reconsideration | Condition selection and coordinated review eligibility | Retained-trace replay, meaningful-change fixtures and bounded agent trial |
 | D — Host context | Compact optional references and final presentation budget | Context composition checks, targeted-read correctness and measured size comparison |
-| E — Continuing detection | Invocation facts and App metrics/owner follow-up | Live-invocation anomaly detection, correlation/deduplication checks and a controlled trial |
+| E — Continuing detection | Catalog cleanup, existing invocation usage and App attention policy | Bounded accounting, useful-work comparison, independent routing and accepted follow-through; then a controlled runtime trial |
 
 A and B address the confirmed bugs and should be reviewed first. Keep each slice independently reviewable and use the existing candidate, review and deployment process. During rollout, compare the same Task/trigger populations over at least a full chosen review interval; raw lower token totals alone do not prove preserved functionality.
 

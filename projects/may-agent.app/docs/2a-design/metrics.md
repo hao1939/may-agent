@@ -103,12 +103,14 @@ The [connected trial](../../../evaluation.app/experiments/systemic-pattern-revie
 records local deployment and the first recurrence finding. Default workflow-run
 measurements alone still do not cover every native agent or Conversation attempt.
 
-The separate [metric-review source candidate](../../../evaluation.app/design/metric-pattern-review.md)
+The [metric-review implementation](../../../evaluation.app/design/metric-pattern-review.md)
 extends the same review loop to metric subjects without requiring a Task. Its
 optional Host evidence read calculates fixed-window comparisons and preserves
 old/missing observations; App declarations own attention thresholds, Evaluation
 owns interpretation, and May owns follow-through. It does not add a retry-count
-limit. This is a paired source change, not a claim of installed review coverage.
+limit. Its owning document links the deployment trial; that trial does not
+establish complete ongoing review coverage. The [October 3 catalog audit](../../../may.app/design/metric-coverage-audit-20261003.md)
+records calibration, obsolete-definition and effort-coverage gaps.
 
 May's [metric follow-through](../../../may.app/design/metric-condition-follow-through.md)
 uses the existing Task/Condition contract. Sampling updates evidence without
@@ -159,9 +161,11 @@ commits. A rollback also discards pending delivery; a crash after commit leaves
 the saved Event available to existing journal recovery. These are shared
 [Event persistence rules](events.md), not a metric-specific retry loop.
 
-This producer correction is implemented at Host `4205f5397` in
-[PR #300](https://github.com/hao1939/may-agent/pull/300), pending merge and
-deployment. The [isolated comparison](../archive/reviews/metric-transition-events-20261003.md)
+This producer correction is merged in
+[PR #300](https://github.com/hao1939/may-agent/pull/300); separate calculation is
+merged in [PR #301](https://github.com/hao1939/may-agent/pull/301).
+Deployment of these revisions was not verified by the stopped-runtime audit.
+The [isolated comparison](../archive/reviews/metric-transition-events-20261003.md)
 records the source, regression and App-routing evidence.
 Older producers may still emit breaches marked `repeat:true`; existing consumer
 filters remain useful for those retained events. Explicit `resolveAlert()` and
@@ -216,11 +220,10 @@ snapshot event. This path creates no Task and calls no agent. A query may return
 `value` plus optional `sampleSize`, `measuredAt`, and `note` columns so the
 sample retains its evidence.
 
-The separate read-only SQLite connection described next is the intended source
-contract and is implemented by Host PR #286; it is still a candidate until that
-exact source is merged and deployed. The currently installed collector must not
-be assumed to enforce this boundary from this document alone. Under the
-candidate, Runtime opens a separate read-only SQLite connection for each source
+The separate read-only SQLite connection described next is implemented in merged
+[Host PR #286](https://github.com/hao1939/may-agent/pull/286).
+The currently installed collector must not be assumed to enforce this boundary
+from source status alone. Runtime opens a separate read-only SQLite connection for each source
 query and closes it before using the writable metrics connection to record
 samples, alerts, or measurement failures. A failed query cannot leave connection
 state that affects the next metric. SQLite preparation executes the first
@@ -311,6 +314,12 @@ typed configuration and is evaluated by the same service.
 A change in meaning requires a new metric ID or an explicit cutover. Retiring
 a metric preserves its history, stops new measurement, and resolves or
 explains its open alerts.
+
+Currently changing a definition's status does not close its alerts: evaluation
+skips inactive definitions. The retiring caller explicitly uses `resolveAlert()`
+for administrative closure and records the reason in its normal change/Task
+evidence. That method's optional reason argument is not persisted. Administrative
+closure emits no measured recovery and does not settle related Tasks.
 
 ## Metric semantics and persistence
 
