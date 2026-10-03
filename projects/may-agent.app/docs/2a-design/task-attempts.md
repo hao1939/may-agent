@@ -330,8 +330,8 @@ Accepted settlement advances notifications for the selected requests and saves
 their result links; structural acceptance does not certify the worker's judgment.
 `converged` answers this set; waiting/incomplete retain it; unselected inputs survive.
 Reading or receiving a notification alone changes neither coverage nor settlement.
-This clarification has an isolated Host candidate on
-`fix/explicit-task-input-scope-20261004`; deployment remains separate.
+Implemented in Host [#313](https://github.com/hao1939/may-agent/pull/313);
+deployment and owner settlement of historical requests remain separate.
 
 Earlier unanswered inputs are supplied as `events.continuedInputs`, separately
 from newly considered events. Their age does not change their obligation. The
