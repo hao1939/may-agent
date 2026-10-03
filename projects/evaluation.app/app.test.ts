@@ -1125,6 +1125,25 @@ describe("evaluation task policy", () => {
     for (const intent of intents.slice(3)) {
       expect(intent?.id).toStartWith("runtime/compat/");
     }
+    const firstReader = taskForEvaluationInput({
+      id: "reader-one",
+      source: { kind: "app", id: "may" },
+      input: { kind: "read-reports", data: { operation: "list", limit: 1 } },
+    } as AppTaskInput);
+    const secondReader = taskForEvaluationInput({
+      id: "reader-two",
+      source: { kind: "app", id: "gym" },
+      input: { kind: "read-reports", data: { operation: "list", limit: 2 } },
+    } as AppTaskInput);
+    expect(firstReader.intent.id).toBe("runtime/report-reader/latest/request-reader-one");
+    expect(secondReader.intent.id).toBe("runtime/report-reader/latest/request-reader-two");
+    expect(firstReader.intent.id).not.toBe(secondReader.intent.id);
+    expect(taskForEvaluationInput({
+      id: "reader-one",
+      source: { kind: "app", id: "may" },
+      input: { kind: "read-reports", data: { operation: "list", limit: 1 } },
+    } as AppTaskInput)).toEqual(firstReader);
+
     expect(
       taskForEvaluationInput({
         id: "app_message",

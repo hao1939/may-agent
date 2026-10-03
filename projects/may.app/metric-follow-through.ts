@@ -209,7 +209,13 @@ export function metricReviewInput(input: unknown): unknown {
     kind?: string;
     data?: { context?: { metricResponse?: unknown } };
   } | null;
-  return value?.kind === "goal"
+  const candidate = value?.kind === "goal"
     ? value.data?.context?.metricResponse
+    : undefined;
+  // Older ordinary goals used this context field for a workflow reference.
+  // Only the structured review packet owned by this module selects the metric
+  // workflow; malformed structured packets still fail visibly at admission.
+  return candidate && typeof candidate === "object" && !Array.isArray(candidate)
+    ? candidate
     : undefined;
 }

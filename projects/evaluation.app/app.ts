@@ -674,7 +674,18 @@ export function taskForEvaluationInput(
 ): AppTaskAttachment {
   const configured = taskIntentForInput(admitted.input);
   if (configured) {
-    return { kind: "desired", intent: configured };
+    // Report reads are caller-scoped operations. Reusing one desired Task for
+    // different inbox rows lets a later caller appear to revise the first
+    // caller's creator-owned spec when list limits differ. The durable input id
+    // is stable across retry and keeps creator authority exact.
+    const intent =
+      admitted.input.kind === "read-reports"
+        ? {
+            ...configured,
+            id: `${configured.id}/request-${safeTaskIdPart(admitted.id)}`,
+          }
+        : configured;
+    return { kind: "desired", intent };
   }
   if (admitted.input.kind !== "message") {
     throw new Error(

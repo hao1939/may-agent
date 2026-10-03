@@ -125,6 +125,41 @@ describe("canonical May conversation App", () => {
     });
   });
 
+  test("keeps ordinary workflow references out of structured metric review parsing", () => {
+    const attachment = taskForMayInput({
+      id: "generic-reference",
+      source: { kind: "app", id: "may" },
+      input: {
+        kind: "goal",
+        data: {
+          outcome: "Review a retained workflow reference",
+          acceptance: ["Return the evidence-based decision"],
+          context: { metricResponse: "wr_fixture_reference" },
+        },
+      },
+    });
+    expect(attachment).toMatchObject({
+      kind: "desired",
+      intent: { id: "goal/generic-reference" },
+    });
+    if (attachment.kind !== "desired") throw new Error("Expected desired Task");
+    expect(attachment.intent).not.toHaveProperty("workflow");
+    expect(() =>
+      taskForMayInput({
+        id: "malformed-structured-review",
+        source: { kind: "app", id: "may" },
+        input: {
+          kind: "goal",
+          data: {
+            outcome: "Review malformed structured input",
+            acceptance: ["Reject malformed structured review"],
+            context: { metricResponse: {} },
+          },
+        },
+      }),
+    ).toThrow();
+  });
+
   test("deliberately maps a generation-fenced revision to one exact existing goal", () => {
     const revised = taskForMayInput({
       id: "revision-request",
