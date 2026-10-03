@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
 import { existsSync, readFileSync, readdirSync, realpathSync, statSync } from "node:fs";
 import { isAbsolute, join, relative } from "node:path";
+import { resolveSkillRoots } from "./skill-paths.js";
 import { BACKGROUND_CONTEXT } from "@earendil-works/pi-agent-core/harness/context";
 import {
   formatSkillInvocation,
@@ -53,6 +54,7 @@ export async function discoverAgentSkills(opts: {
   globalAgentDir?: string;
   sharedRoot?: string;
 }): Promise<SkillCatalog> {
+  const diagnostics: string[] = [];
   const addressedRoots = [
     {
       path: join(opts.agentDir, "skills"),
@@ -63,8 +65,13 @@ export async function discoverAgentSkills(opts: {
       ? [{ path: join(opts.globalAgentDir, "skills"), scope: "agent" as const, priority: 2 }]
       : []),
     ...(opts.sharedRoot ? [{ path: join(opts.sharedRoot, "skills"), scope: "shared" as const, priority: 3 }] : []),
-  ];
-  const trustedRoots = addressedRoots.filter((root) => existsSync(root.path)).map((root) => realpathSync(root.path));
+  ].flatMap((root) => {
+    const errors: string[] = [];
+    const paths = resolveSkillRoots(root.path, errors);
+    diagnostics.push(...errors.map((error) => `${root.scope}:${error}`));
+    return paths.map((path) => ({ ...root, path }));
+  });
+  const trustedRoots = addressedRoots.map((root) => root.path);
   const sources = addressedRoots.flatMap((root) => immediateSkillPackages(root.path, root.scope, root.priority));
   const env = new NodeExecutionEnv({ cwd: opts.agentDir });
   const loaded = await loadSourcedSkills(
@@ -73,8 +80,8 @@ export async function discoverAgentSkills(opts: {
     undefined,
     BACKGROUND_CONTEXT,
   );
-  const diagnostics = loaded.diagnostics.map(
-    (diagnostic) => `${diagnostic.source.scope}:${diagnostic.path}: ${diagnostic.message}`,
+  diagnostics.push(
+    ...loaded.diagnostics.map((diagnostic) => `${diagnostic.source.scope}:${diagnostic.path}: ${diagnostic.message}`),
   );
   const invalidPackages = new Set(loaded.diagnostics.map((diagnostic) => diagnostic.source.packagePath));
   const grouped = new Map<string, MaySkill[]>();
@@ -102,11 +109,13 @@ export async function discoverAgentSkills(opts: {
     }
     const skill: MaySkill = {
       ...item.skill,
+      filePath: canonicalPath,
       scope: item.source.scope,
       canonicalPath,
       contentHash: createHash("sha256").update(readFileSync(canonicalPath)).digest("hex"),
     };
     const matches = grouped.get(skill.name) ?? [];
+    if (matches.some((match) => match.scope === skill.scope && match.canonicalPath === canonicalPath)) continue;
     matches.push(skill);
     grouped.set(skill.name, matches);
   }
