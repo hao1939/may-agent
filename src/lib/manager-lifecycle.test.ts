@@ -192,6 +192,34 @@ describe("manager session lifecycle", () => {
     ).toEqual([{ task_id: null, outcome: "error", replies: 1 }]);
   });
 
+  it("recovers chat usage after restart without adding activity or recounting completed invocations", async () => {
+    const sessionId = manager.run("worker", "Chat before restart", { kind: "chat", autoClose: "never" });
+    await manager.waitForIdle(sessionId);
+    manager.close(sessionId);
+    manager.resumeSession(sessionId, "Another invocation before restart");
+    await manager.waitForIdle(sessionId);
+    const rows = () =>
+      getDb(persistDir)
+        .prepare("SELECT id, outcome, duration_ms, updated_at, data FROM execution_usage ORDER BY started_at, rowid")
+        .all();
+    const before = rows();
+    expect(before).toHaveLength(2);
+    expect(before[0].outcome).toBe("interrupted");
+    expect(before[1].outcome).toBeNull();
+    expect(manager.resumeStaleSessions({ abort: true, kinds: ["chat"] }).interrupted).toHaveLength(0);
+    expect(rows()).toEqual(before);
+
+    // A new manager has no in-memory usage observer from the previous process.
+    closeDb(persistDir);
+    const recovered = new SubagentManager({ persistDir });
+    expect(recovered.resumeStaleSessions({ abort: true, kinds: ["chat"] }).interrupted).toHaveLength(1);
+    expect(rows()).toEqual([before[0], { ...before[1], outcome: "interrupted" }]);
+    expect(before[1].duration_ms).toBeNull();
+    expect(JSON.parse(before[1].data as string).totals.replies).toBe(1);
+    recovered.resumeStaleSessions({ abort: true, kinds: ["chat"] });
+    expect(rows()).toEqual([before[0], { ...before[1], outcome: "interrupted" }]);
+  });
+
   it("returns no progress when the requested limit is zero", async () => {
     const sessionId = manager.run("worker", "Produce progress");
     await manager.waitFor(sessionId);

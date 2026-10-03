@@ -15,7 +15,7 @@ import type { AgentTool, AgentMessage } from "@earendil-works/pi-agent-core";
 import { readWorkflowFacts } from "./workflow-facts.js";
 import { createAgentRun, type AgentRun } from "./agent-runner.js";
 import { bindToolsToExecutionScope, prepareAgentExecution } from "./agent-execution.js";
-import { observeExecutionUsage } from "./db/execution-usage.js";
+import { observeExecutionUsage, recoverExecutionUsage, type UsageOutcome } from "./db/execution-usage.js";
 import { extractFinishParams } from "./agent-result.js";
 import type { TSchema } from "@earendil-works/pi-ai";
 import { existsSync, mkdirSync, readFileSync, realpathSync, statSync, unlinkSync, writeFileSync } from "node:fs";
@@ -1150,12 +1150,20 @@ export class SubagentManager {
     const activeSessions = loadActiveSessionMetas(this._persistDir);
     const kindFilter = opts?.kinds ? new Set(opts.kinds) : null;
     const stale = new Map<string, (typeof activeSessions)[string]>();
+    const recoverUsage = (sessionId: string, outcome: UsageOutcome) => {
+      try {
+        recoverExecutionUsage(getDb(this._persistDir), sessionId, outcome);
+      } catch (error) {
+        log("warn", `[usage] Could not recover execution measurements for ${sessionId}: ${String(error)}`);
+      }
+    };
 
     // meta.json is the session source of truth. Reconcile SQL rows on boot so
     // cancelled/interrupted sessions do not remain visible as running after a
     // process restart or older cancel path.
     for (const [sessionId, persisted] of Object.entries(activeSessions)) {
       if (persisted.status === "done" || persisted.status === "error" || persisted.status === "interrupted") {
+        recoverUsage(sessionId, persisted.status);
         updateSessionDb(this._persistDir, sessionId, {
           status: persisted.status,
           endedAt: persisted.endedAt ?? Date.now(),
@@ -1223,6 +1231,10 @@ export class SubagentManager {
       if (isHeartbeatSession(persisted) && releaseStaleHeartbeatDispatchLease(this._persistDir, persisted.agent)) {
         log("info", `[manager] Released stale heartbeat dispatch lease for ${persisted.agent} from ${sessionId}`);
       }
+
+      // The old invocation ended even if recovery starts a new one in the same
+      // session. Preserve its saved counters; a resume gets its own usage row.
+      recoverUsage(sessionId, "interrupted");
 
       if (opts?.abort) {
         const error = "Clean start (fresh)";
