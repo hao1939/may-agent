@@ -177,6 +177,33 @@ function automaticReviewInputIssue(
   return null;
 }
 
+function acceptedSelectorJudgmentAfter(
+  detail: Record<string, unknown>,
+  admittedAfter: number,
+): string {
+  const page = object(object(detail.acceptedEvidence).page);
+  const items = Array.isArray(page.items) ? page.items : [];
+  for (const value of items) {
+    const item = object(value);
+    const result = object(item.acceptedResult);
+    const facts = strings(result.facts);
+    const startedAt = Date.parse(text(item.startedAt));
+    const hasSelectorDecision = facts.some(
+      (fact) =>
+        (fact.startsWith("selector:") && !fact.startsWith("selector-state:")) ||
+        fact.startsWith("selected:"),
+    );
+    if (
+      result.state === "converged" &&
+      Number.isFinite(startedAt) &&
+      startedAt > admittedAfter &&
+      hasSelectorDecision
+    )
+      return text(item.attemptId);
+  }
+  return "";
+}
+
 async function reconcileAutomaticReviewInputs(
   ctx: WorkflowContext<Input>,
   requested: string[],
@@ -202,13 +229,14 @@ async function reconcileAutomaticReviewInputs(
   }
   try {
     const detail = object(
-      await ctx.read.tasks.get(taskId, { inputKeys: requested }),
+      await ctx.read.tasks.get(taskId, {
+        inputKeys: requested,
+        acceptedEvidence: { limit: 8 },
+      }),
     );
     const inputEvents = Array.isArray(detail.inputEvents)
       ? detail.inputEvents
       : [];
-    const acceptedAttempt = object(detail.acceptedAttempt);
-    const acceptedAt = Date.parse(text(acceptedAttempt.finishedAt));
     const byKey = new Map(
       inputEvents.map((item) => [text(object(item).key), item] as const),
     );
@@ -217,17 +245,22 @@ async function reconcileAutomaticReviewInputs(
       const issue = item
         ? automaticReviewInputIssue(item, key, appId, taskId)
         : "original-event-unavailable";
-      if (issue) return [`${key}:${issue}`];
-      const observedAt = Date.parse(text(object(item).observedAt));
-      return Number.isFinite(acceptedAt) &&
-        Number.isFinite(observedAt) &&
-        acceptedAt > observedAt
-        ? []
-        : [`${key}:later-accepted-selector-result-unavailable`];
+      return issue ? [`${key}:${issue}`] : [];
     });
-    if (issues.length || inputEvents.length !== requested.length) {
+    const latestAdmission = Math.max(
+      ...inputEvents.map((item) => Date.parse(text(object(item).observedAt))),
+    );
+    const semanticAttempt =
+      issues.length || !Number.isFinite(latestAdmission)
+        ? ""
+        : acceptedSelectorJudgmentAfter(detail, latestAdmission);
+    if (
+      issues.length ||
+      inputEvents.length !== requested.length ||
+      !semanticAttempt
+    ) {
       const summary =
-        "Exact automatic-review reconciliation remains open because every requested canonical original could not be verified.";
+        "Exact automatic-review reconciliation remains open because every canonical original and a later accepted converged selector judgment could not be verified.";
       return ctx.done(summary, {
         state: "incomplete",
         report: true,
@@ -236,6 +269,9 @@ async function reconcileAutomaticReviewInputs(
         facts: [
           `selector:exact-input-reconciliation-invalid:${issues.length || 1}`,
           ...issues.slice(0, 8),
+          ...(!semanticAttempt
+            ? ["selector:exact-input-semantic-supersession-unavailable"]
+            : []),
         ],
       });
     }
@@ -249,7 +285,7 @@ async function reconcileAutomaticReviewInputs(
       facts: [
         `selector:exact-input-reconciliation:${requested.length}`,
         ...requested.map((key) => `selector:exact-input-considered:${key}`),
-        `selector:exact-input-superseded-by-attempt:${text(acceptedAttempt.id)}`,
+        `selector:exact-input-superseded-by-attempt:${semanticAttempt}`,
         "selector:exact-input-side-effects:none",
       ],
       actions: [],

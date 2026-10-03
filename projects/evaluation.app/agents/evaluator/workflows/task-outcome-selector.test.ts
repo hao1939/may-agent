@@ -1731,9 +1731,19 @@ describe("automatic task outcome selector", () => {
             readOptions = options;
             return {
               inputEvents: requested.map(original),
-              acceptedAttempt: {
-                id: "r_1074_current",
-                finishedAt: "2026-10-03T22:07:25.098Z",
+              acceptedEvidence: {
+                page: {
+                  items: [
+                    {
+                      attemptId: "r_1074_current",
+                      startedAt: "2026-10-03T22:07:24.569Z",
+                      acceptedResult: {
+                        state: "converged",
+                        facts: ["selector:requested-reviews-first:2"],
+                      },
+                    },
+                  ],
+                },
               },
             };
           },
@@ -1751,7 +1761,10 @@ describe("automatic task outcome selector", () => {
       ...config,
       enabled: false,
     })) as unknown as Record<string, unknown>;
-    expect(readOptions).toEqual({ inputKeys: requested });
+    expect(readOptions).toEqual({
+      inputKeys: requested,
+      acceptedEvidence: { limit: 8 },
+    });
     expect(result).toMatchObject({
       state: "converged",
       inputKeys: [...requested, commandKey],
@@ -1826,5 +1839,95 @@ describe("automatic task outcome selector", () => {
     expect(result.state).toBe("incomplete");
     expect(result.report).toBe(true);
     expect(result).not.toHaveProperty("inputKeys");
+  });
+
+  test("does not treat a later accepted incomplete report as semantic supersession", async () => {
+    const requested = ["task:app_first"];
+    const ctx = {
+      input: { reconcileInputKeys: requested },
+      reconciliation: {
+        appId: "evaluation",
+        taskId: "runtime/task-outcome-selector",
+        events: {
+          items: [
+            {
+              observedAt: "2026-10-03T22:11:11.980Z",
+              event: {
+                type: "app.task.requested",
+                data: {
+                  appId: "evaluation",
+                  taskId: "runtime/task-outcome-selector",
+                  idempotencyKey: "task:app_reconcile",
+                  request: {
+                    id: "app_reconcile",
+                    input: {
+                      kind: "reconcile-automatic-review-inputs",
+                      data: { inputKeys: requested },
+                    },
+                  },
+                },
+              },
+            },
+          ],
+          truncated: false,
+        },
+      },
+      read: {
+        tasks: {
+          get: async () => ({
+            inputEvents: [
+              {
+                key: requested[0],
+                observedAt: "2026-09-30T16:09:40.223Z",
+                event: {
+                  type: "app.task.requested",
+                  data: {
+                    appId: "evaluation",
+                    taskId: "runtime/task-outcome-selector",
+                    idempotencyKey: requested[0],
+                    request: {
+                      id: "app_first",
+                      input: { kind: "automatic-review", data: {} },
+                    },
+                  },
+                },
+              },
+            ],
+            acceptedAttempt: {
+              id: "r_incomplete",
+              finishedAt: "2026-10-03T22:07:25.098Z",
+            },
+            acceptedEvidence: {
+              page: {
+                items: [
+                  {
+                    attemptId: "r_incomplete",
+                    startedAt: "2026-10-03T22:07:24.569Z",
+                    acceptedResult: {
+                      state: "incomplete",
+                      report: true,
+                      facts: ["selector:no-candidate"],
+                    },
+                  },
+                ],
+              },
+            },
+          }),
+        },
+      },
+      events: { emit: async () => undefined },
+      done: (_summary: string, result: Record<string, unknown>) => result,
+    } as never;
+
+    const result = (await runSelector(
+      ctx,
+      undefined,
+      config,
+    )) as unknown as Record<string, unknown>;
+    expect(result).toMatchObject({ state: "incomplete", report: true });
+    expect(result).not.toHaveProperty("inputKeys");
+    expect(result.facts).toContain(
+      "selector:exact-input-semantic-supersession-unavailable",
+    );
   });
 });
