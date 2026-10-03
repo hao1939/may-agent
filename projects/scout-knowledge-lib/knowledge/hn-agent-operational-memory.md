@@ -1,8 +1,8 @@
 <ai_context>
 summary: "Insights on Operational Memory (Agent Experience Cache) from Hacker News — infrastructure patterns, sovereignty stack, agent sandbox convergence, model commoditization, and practitioner discourse."
 triggers: "operational memory, architecture, cache, lessons, context, sovereignty stack, agent sandbox, harness-as-moat"
-last_updated: "2026-09-21"
-source_basis: "Hacker News discussions on agent architectures, including HN 49376500 / tenequm/pond, HN 49394827 / OzBrain, HN 49428882 / laude-institute/headlong, HN 49433217 / wisplu state-file incident, and HN 49784563 / manuelcecchetto/codex-context-gc; arXiv 2606.20512 (Probe-and-Refine guidance tuning), arXiv 2607.00685 (M2Note mistake notebooks), arXiv 2607.00910 (SIVE instrument validation); GitHub brain.md/agent-memory-wiki, lohoz/agenthist, x96x64/ctxjev, and manuelcecchetto/codex-context-gc"
+last_updated: "2026-10-03"
+source_basis: "Hacker News discussions on agent architectures, including HN 49376500 / tenequm/pond, HN 49394827 / OzBrain, HN 49428882 / laude-institute/headlong, HN 49433217 / wisplu state-file incident, and HN 49784563 / manuelcecchetto/codex-context-gc; arXiv 2606.20512 (Probe-and-Refine guidance tuning), arXiv 2607.00685 (M2Note mistake notebooks), arXiv 2607.00910 (SIVE instrument validation); GitHub brain.md/agent-memory-wiki, lohoz/agenthist, x96x64/ctxjev, manuelcecchetto/codex-context-gc, hyperb1iss/sibyl at 69b60fe41a86d64efba7eed3092dba8cb90923d3, and dctanner/jelly at fa92c032ea618239c85b388c5fee831c237b695a"
 companion_notes: ["hn-comprehension-cliff-discourse.md"]
 extraction_log: "2026-06-29: Extracted Comprehension Cliff / Reviews Expensive / Skill Atrophy discourse arc (396 lines, 8 sections) into hn-comprehension-cliff-discourse.md. Parent reduced from 1,303 to 913 lines. 2026-08-06 maintenance removed future-dated extraction metadata and unverifiable future-dated tracker links."
 </ai_context>
@@ -97,6 +97,50 @@ state is portable or independently auditable.
 
 - **HN:** https://news.ycombinator.com/item?id=49394827
 - **Source:** https://ozbrain.com
+
+## Operational memory has two independent freshness clocks (Oct 2026)
+
+Recent source inspections sharpen the archive/admission split above. A memory can
+be stale for either of two reasons: the evidence it was derived from changed, or
+the run that tried to advance working context never reached a trustworthy terminal
+boundary. Treating both as a generic `updated_at` problem hides different recovery
+actions.
+
+At pinned revision `69b60fe41a86d64efba7eed3092dba8cb90923d3`, **Sibyl** binds
+a promoted memory to source fingerprints and a snapshot identity. Its
+repository-authored tests cover an important edge case: a source changes and then
+returns to its old bytes while promotion is in flight. The promotion is still
+rejected because the intervening correction created a new evidence epoch. Old
+derivatives remain available for lineage but become non-recallable, while
+re-extraction can publish a new derivative against current evidence. Correction
+results also expose incomplete propagation instead of implying that every graph
+projection was updated.
+
+At pinned revision `fa92c032ea618239c85b388c5fee831c237b695a`, **Jelly** uses a
+different clock for model context. It retains raw messages, activity, and
+interrupted runs, but replaces an agent's working-context checkpoint only with a
+successful terminal run. After a crash, active work is marked interrupted and is
+not replayed into future model context as though its tool effects settled. The
+previous successful checkpoint remains the continuation base.
+
+Together these mechanisms imply that an operational-memory reader should require
+both **source validity** and **admission validity**:
+
+1. Does this derivative still name the current evidence epoch, and did correction
+   reach every projection from which it can be recalled?
+2. Was it admitted from a successful, settled run rather than merely preserved in
+   the raw audit record?
+
+A crash-safe archive does not answer the first question, and source-versioned
+lineage does not answer the second. Systems should retain the two clocks, report
+partial invalidation or interruption as unfinished reconciliation, and keep stale
+or ambiguous records auditable but outside authoritative retrieval.
+
+This is static repository evidence, not independent runtime validation. Scout did
+not execute either project, reproduce the races, kill a live process, or verify
+all retrieval paths. See the detailed source records for coverage and limits:
+[derived memory validity](./findings/2026-10-02-sibyl-source-versioned-memory-validity.md)
+and [successful-context interruption](./findings/2026-10-02-jelly-successful-context-interruption-boundary.md).
 
 ## Practitioner Evidence: Homelab CI-Agent Context Gap (Jun 2026)
 
