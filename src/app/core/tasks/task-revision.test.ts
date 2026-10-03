@@ -19,7 +19,7 @@ import {
   recordAppTaskAttemptSession,
   renewAppTaskAttemptLease,
   releaseStaleAppTaskResult,
-  assertAppTaskEffectFresh,
+  assertAppTaskClaimCurrent,
   recoverableAppTaskAttempts,
   releaseInterruptedAppTaskAttempt,
   stopAppTaskAttempt,
@@ -357,7 +357,7 @@ test.each([false, true])("spec save preserves running execution (session: %s), l
   expect(renewAppTaskAttemptLease(target, old)).toBe(true);
   expect(recordAppTaskAttemptSession(target, old, "old-session")).toBe(true);
   expect(claimObservedAppTask(target, { taskId: "child", appAgent: "worker", handler: "auto" }).kind).toBe("busy");
-  expect(() => assertAppTaskEffectFresh(target, old)).toThrow("stale");
+  expect(() => assertAppTaskClaimCurrent(target, old)).toThrow("stale");
   expect(completeAppTask(target, old, { summary: "Old result" }).status).toBe("stale");
   expect(releaseStaleAppTaskResult(target, old).status).toBe("released");
   expect(f.claim("worker", "child").generation).toBe(2);
@@ -418,7 +418,7 @@ test("explicit Stop still controls the exact running attempt after a spec update
   expect(task.status.currentAttemptId).toBeUndefined();
 });
 
-test("creator, caller freshness and App input validation protect requirements", () => {
+test("creator and App input validation protect revisions while later caller input stays queued", () => {
   const f = fixture();
   const sibling = f.claim("creator", "sibling");
   const invoke = (actor = f.actor, change = f.change) =>
@@ -434,8 +434,9 @@ test("creator, caller freshness and App input validation protect requirements", 
     "Invalid input for App worker at /kind",
   );
   recordAppTaskTrigger(f.context("creator"), "parent", { type: "human.correction", source: "human", data: {} });
-  expect(() => invoke()).toThrow("New caller input");
-  expect(f.context("worker").resourceStore.readTask("child")?.metadata.generation).toBe(1);
+  expect(invoke().generation).toBe(2);
+  expect(f.context("creator").resourceStore.readTrigger("parent")?.event.type).toBe("human.correction");
+  expect(() => invoke()).toThrow("requirements changed");
 });
 
 test("a revision reports its invalid field without changing the assignment, then accepts a correction", () => {

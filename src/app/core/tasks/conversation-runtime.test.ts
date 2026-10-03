@@ -2882,13 +2882,15 @@ test("an omitted accepted Request fails settlement and recovers in the same Conv
       });
       verificationCalls++;
       f.admit("news", "An unrelated announcement arrived", 2);
-      return { status: "done", structuredResult: complete };
+      const { requestUpdates: _omitted, ...unscoped } = complete;
+      return { status: "done", structuredResult: unscoped };
     }
     expect(context.assignedRequests).toEqual([{
       id: "review", revision: 1, scope: "Verify the report and explain the disposition", status: "open", inputIds: ["report"],
     }]);
     if (contexts.length === 2) {
-      expect(context.previousAttempt?.unacceptedResult?.result?.conversation).toEqual(complete);
+      expect(context.previousAttempt?.unacceptedResult?.result?.conversation).toMatchObject({ summary: complete.summary });
+      expect(context.previousAttempt?.unacceptedResult?.settlementError).toContain("Request review was not addressed");
       // Reproduce the actual failure: the agent addresses only the newer input.
       return { status: "done", structuredResult: { summary: "Announcement noted", response: "Noted.", topic: { kind: "none" } } };
     }

@@ -19,12 +19,12 @@ import {
   deferAppTask,
   expiredAgentSessionAppTaskAttempt,
   failAppTaskAttempt,
-  hasPendingAppTaskFacts,
   isAppTaskActionStaleError,
   readAppTaskChildContext,
   readAppTaskLiveSnapshot,
   readPendingAppTaskTrigger,
   recordAppTaskAttemptWorkspace,
+  recordReleasedAppTaskWorkspace,
   releaseStaleAppTaskResult,
   releaseTerminalSessionExpiredAppTaskAttempt,
   reportAppTaskFailure,
@@ -210,14 +210,7 @@ async function runClaimedTask(
           throw new Error(`Workflow ${workflowKey} requires a task worktree but app workspace is not Git`);
         }
         if (!opts.workspaces) throw new Error("Task workspace backend is not installed");
-        const previous = Object.values(config.resourceStore.readTaskContext({ taskIds: [claim.taskId] }).attempts ?? {})
-          .filter(
-            (attempt) =>
-              attempt.taskId === claim.taskId &&
-              attempt.taskGeneration === claim.generation &&
-              attempt.workspace?.kind === "task-worktree",
-          )
-          .sort((left, right) => right.startedAt.localeCompare(left.startedAt))[0]?.workspace;
+        const previous = config.resourceStore.readTaskWorkspace(claim.taskId, claim.generation);
         taskWorkspace = await opts.workspaces.prepare({
           repoDir: descriptor.projectDir,
           workspaceRoot: join(opts.projectRoot, "worktrees", descriptor.id),
@@ -335,33 +328,36 @@ async function runClaimedTask(
         });
         return await rejectResult(accepted.summary, { handlerBlocked: true }, accepted.facts);
       }
-      const stale = await fenceWorkspaceFinalization(report);
-      if (stale) return stale.reconcileTaskIds;
-      // Pending input retains useful work; completion records progress until it is considered.
-      const finalized = await finalizeWorkspace(
-        hasPendingAppTaskFacts(config, claim, report.acceptedLiveEventIds) ? "waiting" : "accepted",
-      );
-      if (!finalized.ok) {
-        return await rejectResult(finalized.reason ?? "Task workspace finalization failed", { handlerBlocked: true }, [
-          ...result.facts,
-          taskWorkspace?.metadata.path ?? executionPaths.workspaceDir,
-        ]);
-      }
       const { acceptanceBasis } = accepted;
       try {
+        const staleWorkspace = await fenceWorkspaceFinalization(report);
+        if (staleWorkspace) return staleWorkspace.reconcileTaskIds;
+        const changeInput = {
+          opts,
+          descriptor,
+          claim,
+          changes: {
+            requests: result.requests,
+            actions: result.actions,
+            facts: result.facts,
+            inputKeys: result.inputKeys,
+          },
+          acceptedLiveEventIds: report.acceptedLiveEventIds,
+        };
+        // Validation is non-destructive. Final admission still checks authority
+        // and revisions after the awaited Git reads, before any removal is allowed.
+        const inspected = taskWorkspace ? await opts.workspaces!.inspect(taskWorkspace) : undefined;
+        if (inspected && !inspected.ok) {
+          return await rejectResult(
+            inspected.reason ?? "Task workspace validation failed",
+            { handlerBlocked: true },
+            [...result.facts, taskWorkspace!.metadata.path],
+          );
+        }
         let apply!: ReturnType<typeof completeConversationTaskTurn>;
         const changes = persistResult(() =>
           applyTaskChanges({
-            opts,
-            descriptor,
-            claim,
-            changes: {
-              requests: result.requests,
-              actions: result.actions,
-              facts: result.facts,
-              inputKeys: result.inputKeys,
-            },
-            acceptedLiveEventIds: report.acceptedLiveEventIds,
+            ...changeInput,
             settle: () => {
               apply = report.conversation
                 ? completeConversationTaskTurn(config, claim, report.conversation.decision, {
@@ -376,15 +372,19 @@ async function runClaimedTask(
                     facts: result.facts,
                     inputKeys: result.inputKeys,
                     acceptanceBasis,
+                    workspace: inspected,
                     acceptedLiveEventIds: report.acceptedLiveEventIds,
                   });
             },
           }),
         );
+        workspaceFinalized = true;
+        const workspaceCleanupError = await cleanupReleasedWorkspace();
         const appliedDisposition = apply.taskContinues ? "progress" : "converged";
         const stale = apply.status === "stale" ? recoverStaleTaskResult(config, claim) : null;
         emit("project.task.reconciled", {
           disposition: apply.status === "applied" ? appliedDisposition : "stale",
+          ...(workspaceCleanupError ? { workspaceCleanupError } : {}),
           outcome: intent.outcome,
 
           owner: intent.owner ?? descriptor.agent,
@@ -580,6 +580,32 @@ async function runClaimedTask(
           error instanceof Error ? error.message : String(error)
         }`,
       };
+    }
+  }
+
+  async function cleanupReleasedWorkspace(): Promise<string | undefined> {
+    try {
+      const workspace = config.resourceStore.readAttempt(claim.attemptId)?.workspace;
+      if (!taskWorkspace || !workspace?.released) return;
+      // Settlement relinquished this exact workspace. New work uses a different
+      // identity, so asynchronous removal cannot delete its files or private refs.
+      // A missing checkout/branch can still leave private refs. Always run the
+      // adapter's idempotent finalizer; disposition alone is not cleanup proof.
+      let metadata = workspace;
+      try {
+        const finalized = await opts.workspaces!.finalize({ ...taskWorkspace, metadata: workspace }, "accepted");
+        metadata =
+          finalized.ok && finalized.metadata.disposition === "removed"
+            ? finalized.metadata
+            : { ...workspace, cleanupError: finalized.reason ?? "Released workspace was retained during cleanup" };
+      } catch (error) {
+        metadata = { ...workspace, cleanupError: error instanceof Error ? error.message : String(error) };
+      }
+      recordReleasedAppTaskWorkspace(config, claim, metadata);
+      return metadata.cleanupError;
+    } catch (error) {
+      // Cleanup, including its bookkeeping, cannot reject committed work.
+      return error instanceof Error ? error.message : String(error);
     }
   }
 

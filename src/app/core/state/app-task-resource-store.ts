@@ -17,6 +17,7 @@ import type {
   AppTaskCondition,
   AppTaskResource,
   AppTaskTrigger,
+  AppTaskWorkspace,
 } from "../tasks/app-task-state.js";
 import {
   normalizeTaskStateInPlace,
@@ -605,6 +606,27 @@ export class AppTaskResourceStore {
       .prepare("SELECT attempt_json FROM app_task_attempts WHERE app_id = ? AND attempt_id = ?")
       .get(this.appId, attemptId) as { attempt_json?: string } | null;
     return row?.attempt_json ? parseTaskAttempt(row.attempt_json) : null;
+  }
+
+  /** Workspace ownership survives bounded context, non-workspace attempts and clock changes. */
+  readTaskWorkspace(taskId: string, generation: number): AppTaskWorkspace | undefined {
+    const reference = this.readTask(taskId)?.status.workspaceAttemptId;
+    if (reference) {
+      const attempt = this.readAttempt(reference);
+      if (!attempt || attempt.taskId !== taskId || !attempt.workspace)
+        throw new Error(`Task ${taskId} has an invalid workspace attempt reference: ${reference}`);
+      return attempt.taskGeneration === generation ? attempt.workspace : undefined;
+    }
+    // Historical Tasks have no reference. Discover their last recorded workspace
+    // once using the old ordering, without the prompt's bounded history window.
+    // Preparation records the exact reference before another executor can run.
+    const row = this.db.prepare(`
+      SELECT attempt_json FROM app_task_attempts
+      WHERE app_id = ? AND task_id = ? AND task_generation = ?
+        AND json_extract(attempt_json, '$.workspace.kind') = 'task-worktree'
+      ORDER BY started_at DESC, attempt_id DESC LIMIT 1
+    `).get(this.appId, taskId, generation) as { attempt_json: string } | null;
+    return row ? parseTaskAttempt(row.attempt_json).workspace : undefined;
   }
 
   /** Exact same changes are reusable after a lost tool response or replacement attempt. */

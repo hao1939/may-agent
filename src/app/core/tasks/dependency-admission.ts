@@ -19,7 +19,7 @@ import {
   matchingAppTaskConditionTaskIds,
   trackAppTaskConditionEventForTasks,
 } from "./app-task-condition-tracker.js";
-import { assertAppTaskEffectFresh, readAppTaskAdmissionOutcome, type AppTaskClaim } from "./app-task-reconciler.js";
+import { assertAppTaskClaimCurrent, readAppTaskAdmissionOutcome, type AppTaskClaim } from "./app-task-reconciler.js";
 import { type AppTaskContext } from "./app-task-store.js";
 import { appTaskConfig, configuredRegistryEntries, type AppTaskRuntimeDescriptor } from "./runtime-definition.js";
 import type { AppTaskRuntimeOptions } from "./runtime-options.js";
@@ -259,7 +259,7 @@ export function admitTaskAppRequests(input: {
     }
   }
   if (newDependencies.length > 0) {
-    assertAppTaskEffectFresh(appTaskConfig(input.descriptor), input.claim, input.acceptedLiveEventIds);
+    assertAppTaskClaimCurrent(appTaskConfig(input.descriptor), input.claim);
   }
 
   const admitted = new Map<string, AppTaskConditionSpec>();
@@ -271,7 +271,7 @@ export function admitTaskAppRequests(input: {
     // Persist provenance from the live claim, never reconstruct it from event text.
     const config = appTaskConfig(input.descriptor);
     stateTransaction(config.resourceStore.db, () => {
-      assertAppTaskEffectFresh(config, input.claim, input.acceptedLiveEventIds);
+      assertAppTaskClaimCurrent(config, input.claim);
       createAppInboxItem(config.resourceStore.db, {
         id: requestId,
         appId: dependency.appId,

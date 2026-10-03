@@ -4,7 +4,7 @@ import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { promisify } from "node:util";
-import { finalizeAppTaskWorkspace, prepareAppTaskWorkspace } from "./git.js";
+import { finalizeAppTaskWorkspace, inspectAppTaskWorkspace, prepareAppTaskWorkspace } from "./git.js";
 
 const roots: string[] = [];
 const execGit = promisify(execFile);
@@ -299,6 +299,63 @@ describe("project task workspace", () => {
     });
   });
 
+  it.each([false, true])(
+    "inspection and retained finalization preserve artifacts (branch only: %s)",
+    async (branchOnly) => {
+      const f = await fixture();
+      const remote = join(f.root, "remote.git");
+      await git(f.root, "init", "--bare", remote);
+      await git(f.repo, "remote", "add", "origin", remote);
+      await git(f.repo, "push", "-u", "origin", "dev");
+      const prepared = await prepareAppTaskWorkspace({
+        repoDir: f.repo,
+        workspaceRoot: f.worktrees,
+        taskId: "inspection",
+        generation: 1,
+        baseBranch: "dev",
+      });
+      if (branchOnly) await git(f.repo, "worktree", "remove", prepared.metadata.path);
+      expect(await inspectAppTaskWorkspace(prepared)).toMatchObject({ ok: true, removable: true });
+      for (const outcome of ["waiting", "failed"] as const) {
+        expect((await finalizeAppTaskWorkspace(prepared, outcome)).ok).toBe(true);
+        expect(existsSync(prepared.metadata.path)).toBe(!branchOnly);
+        expect(await git(f.repo, "branch", "--list", prepared.metadata.branch)).not.toBe("");
+        expect(await git(f.repo, "rev-parse", prepared.metadata.baseRef)).toBe(prepared.metadata.baseCommit);
+      }
+    },
+  );
+
+  it("a separate worker preserves retained work and uses a fresh lineage after release", async () => {
+    const f = await fixture();
+    const input = {
+      repoDir: f.repo,
+      workspaceRoot: f.worktrees,
+      taskId: "released",
+      generation: 1,
+      baseBranch: "dev",
+      refreshRemote: false,
+    };
+    const old = await prepareAppTaskWorkspace(input);
+    const released = { ...old.metadata, released: true as const };
+    const script = `import { prepareAppTaskWorkspace } from ${JSON.stringify(new URL("./git.ts", import.meta.url).href)};
+      console.log(JSON.stringify(await prepareAppTaskWorkspace(${JSON.stringify({ ...input, previous: released })})));`;
+    const { stdout } = await promisify(execFile)(process.execPath, ["-e", script], { timeout: 10_000 });
+    const current = JSON.parse(stdout) as Awaited<ReturnType<typeof prepareAppTaskWorkspace>>;
+    expect(current.metadata.path).not.toBe(old.metadata.path);
+    expect(current.metadata.branch).not.toBe(old.metadata.branch);
+    writeFileSync(join(current.metadata.path, "proof.txt"), "newer work");
+    // A process may stop after preparation but before it records the new lineage.
+    expect((await prepareAppTaskWorkspace({ ...input, previous: released })).metadata.path).toBe(current.metadata.path);
+    expect((await prepareAppTaskWorkspace({ ...input, previous: current.metadata })).metadata.path).toBe(
+      current.metadata.path,
+    );
+    expect((await finalizeAppTaskWorkspace({ ...old, metadata: released }, "accepted")).metadata.disposition).toBe(
+      "removed",
+    );
+    expect(readFileSync(join(current.metadata.path, "proof.txt"), "utf8")).toBe("newer work");
+    expect(await git(f.repo, "branch", "--list", current.metadata.branch)).not.toBe("");
+  });
+
   it("removes a clean no-change worktree and its empty task branch", async () => {
     const f = await fixture();
     const prepared = await prepareAppTaskWorkspace({
@@ -546,6 +603,28 @@ describe("project task workspace", () => {
     await git(f.repo, "branch", "-D", prepared.metadata.branch);
     expect((await finalizeAppTaskWorkspace(prepared, "accepted")).ok).toBe(true);
     expect(await git(f.repo, "for-each-ref", "--format=%(refname)", "refs/may/workspaces/")).toBe("");
+  });
+
+  it("retries interrupted cleanup after only a private head ref remains", async () => {
+    const f = await fixture();
+    const prepared = await prepareAppTaskWorkspace({
+      repoDir: f.repo, workspaceRoot: f.worktrees, taskId: "partial-cleanup", generation: 1,
+      baseBranch: "dev", refreshRemote: false,
+    });
+    const leaf = prepared.metadata.branch.slice("task/".length);
+    const baseRef = `refs/may/workspaces/${leaf}/base`;
+    const headRef = `refs/may/workspaces/${leaf}/head`;
+    await git(f.repo, "update-ref", baseRef, prepared.metadata.baseCommit);
+    await git(f.repo, "update-ref", headRef, prepared.metadata.headCommit);
+    const lock = join(f.repo, ".git", `${headRef}.lock`);
+    writeFileSync(lock, "fixture-owned lock");
+    await expect(finalizeAppTaskWorkspace(prepared, "accepted")).rejects.toThrow();
+    expect(existsSync(prepared.metadata.path)).toBe(false);
+    expect(await git(f.repo, "branch", "--list", prepared.metadata.branch)).toBe("");
+    expect(await git(f.repo, "for-each-ref", "--format=%(refname)", `refs/may/workspaces/${leaf}/`)).toBe(headRef);
+    rmSync(lock);
+    expect(await finalizeAppTaskWorkspace(prepared, "accepted")).toMatchObject({ ok: true, metadata: { disposition: "removed" } });
+    expect(await git(f.repo, "for-each-ref", "--format=%(refname)", `refs/may/workspaces/${leaf}/`)).toBe("");
   });
 
   it("removes the task branch after its commit reaches the base branch", async () => {

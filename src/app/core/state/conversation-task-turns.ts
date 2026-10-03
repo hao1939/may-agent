@@ -18,7 +18,6 @@ import { stateTransaction } from "../../../lib/db/transaction.js";
 import type { AppTaskContext } from "../tasks/app-task-store.js";
 import {
   assertAppTaskClaimCurrent,
-  assertAppTaskEffectFresh,
   appTaskAttemptReport,
   cancelAppTask,
   completeAppTask,
@@ -473,7 +472,7 @@ export function updateConversationTaskRequest(
   operationId: string,
 ): AppConversationRequest {
   return stateTransaction(config.resourceStore.db, () => {
-    assertAppTaskEffectFresh(config, claim);
+    assertAppTaskClaimCurrent(config, claim);
     const { items, replyInput: item } = readConversationTaskTurn(config, claim);
     const inputIds = requestInputIds(config, items, change);
     applyConversationRequestUpdates(config.resourceStore.db, {
@@ -528,8 +527,8 @@ export function completeConversationTaskTurn(
       facts: decision.facts,
       acceptanceBasis: options.acceptanceBasis,
     });
-    // New, unreviewed facts may retain this as progress. Such an attempt
-    // must not publish a final answer or apply its proposed Request closure.
+    // Only an admitted result may publish this batch's reply and Request decisions.
+    // Later messages remain queued for the next turn.
     if (accepted.status !== "applied" || !config.resourceStore.readAttempt(claim.attemptId)?.acceptedResult)
       return accepted;
     const conversationId = item.conversationId!;

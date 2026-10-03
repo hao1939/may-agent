@@ -370,15 +370,19 @@ test("fresh human input creates a linked successor without rebinding replay or s
   expect(f.store.readTask(`${input.taskId}_successor_3`)).toBeNull();
 });
 
-test("unreviewed input prevents proposed Conversation effects from escaping as an accepted answer", () => {
+test("Conversation accepts its considered answer while later input remains pending", () => {
   const f = fixture();
   const input = f.admit();
   const claim = f.claim(input.taskId);
   f.admit("correction", 2);
   expect(completeConversationTaskTurn(f.context(), claim, decision).taskContinues).toBe(true);
-  expect(f.store.readAttempt(claim.attemptId)?.acceptedResult).toBeUndefined();
-  expect(readConversationRequest(f.db, app.id, "chat", "comparison")).toBeNull();
-  expect(getAppInboxItem(f.db, input.item.id)?.result).toBeUndefined();
+  expect(f.store.readAttempt(claim.attemptId)?.acceptedResult).toMatchObject({
+    response: decision.response, inputKeys: [input.item.taskAdmissionKey!],
+  });
+  expect(readConversationRequest(f.db, app.id, "chat", "comparison")?.status).toBe("closed");
+  expect(getAppInboxItem(f.db, input.item.id)?.result?.response).toBe(decision.response);
+  expect(getAppInboxItem(f.db, "correction")?.status).not.toBe("done");
+
 });
 
 test("a fresh attempt considers retained and newer input together and publishes one answer", async () => {
@@ -390,7 +394,8 @@ test("a fresh attempt considers retained and newer input together and publishes 
     ...f.input("review", 3, "A linked Task returned facts"),
     source: { kind: "system", id: "review" },
   });
-  completeConversationTaskTurn(f.context(), obsolete, decision);
+  deferAppTask(f.context(), obsolete, { disposition: "waiting", continue: true,
+    summary: "Draft prepared; comparison still needs verification", facts: ["draft:saved"] });
   const claim = f.claim(first.taskId);
   await executeConversationTaskTurn({
     config: f.context(),
@@ -415,7 +420,7 @@ test("a fresh attempt considers retained and newer input together and publishes 
       claim.attemptId,
     );
   }
-  expect(f.store.readAttempt(obsolete.attemptId)?.acceptedResult).toBeUndefined();
+  expect(f.store.readAttempt(obsolete.attemptId)?.acceptedResult?.state).toBe("waiting");
   expect(getAppInboxItem(f.db, correction.item.id)?.result?.response).toBe(decision.response);
   expect(getAppInboxItem(f.db, system.item.id)?.result).toBeUndefined();
   expect(
@@ -432,7 +437,8 @@ test("Stop responds to the latest considered human input after a mixed-input ret
     ...f.input("review", 3, "A linked Task returned facts"),
     source: { kind: "system", id: "review" },
   });
-  completeConversationTaskTurn(f.context(), obsolete, decision);
+  deferAppTask(f.context(), obsolete, { disposition: "waiting", continue: true,
+    summary: "Draft prepared; comparison still needs verification", facts: ["draft:saved"] });
   const claim = f.claim(first.taskId);
   expect(claim.continuedInputKeys).toContain(first.item.taskAdmissionKey!);
   const newer = f.admit("newer", 4);
@@ -658,14 +664,15 @@ test.each(["generation", "resource version"])(
   },
 );
 
-test("a newer human input prevents the old Turn from applying cancellation", async () => {
+test("an unread ordinary correction remains pending after an authorized cancellation", async () => {
   const c = cancellationFixture();
   const proposal = await c.prepare();
   c.f.admit("correction", 2, "Keep it running");
   completeConversationTaskTurn(c.f.context(), c.claim, proposal.decision, { ...proposal, getTaskApp: c.getTaskApp });
-  expect(c.store.isCancelled("job")).toBe(false);
-  expect(c.f.store.readAttempt(c.claim.attemptId)?.acceptedResult).toBeUndefined();
-  expect(getAppInboxItem(c.f.db, "first")?.status).not.toBe("done");
+  expect(c.store.isCancelled("job")).toBe(true);
+  expect(c.f.store.readAttempt(c.claim.attemptId)?.acceptedResult).toBeDefined();
+  expect(getAppInboxItem(c.f.db, "first")?.status).toBe("done");
+  expect(getAppInboxItem(c.f.db, "correction")?.status).not.toBe("done");
 });
 
 test("a creator can cancel its Task during a system review without another human turn", async () => {

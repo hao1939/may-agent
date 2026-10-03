@@ -51,6 +51,7 @@ import {
 import { createTaskAttemptProcessExecutor } from "../../composition/workers/task-attempt-process.js";
 import { admitTaskAppRequests, recoverTaskConditions } from "./dependency-admission.js";
 import { createTaskExecutionBackends } from "../../composition/task-execution.js";
+import { gitTaskWorkspaces } from "../../adapters/workspaces/git.js";
 import { createTaskSessionRecovery } from "../../adapters/executors/session-recovery.js";
 import { createTaskAgentRunner } from "../../adapters/executors/managed-agent.js";
 import { createAppTaskReadTool } from "../../app-task-read-tool.js";
@@ -97,6 +98,7 @@ import {
   recordAppTaskTrigger,
   recordAppTaskAttemptSession,
   releaseStaleAppTaskResult,
+  stopAppTaskAttempt,
   appTaskContext,
 } from "./app-task-reconciler.js";
 import { readTaskSnapshot, type AppTaskContext } from "./app-task-store.js";
@@ -2726,6 +2728,10 @@ describe("canonical App task runtime", () => {
       data: { kind: "app", id: "earlier-review" },
     });
 
+    observeAppTaskIntent(config, {
+      intent: { ...claim.intent, outcome: "Use the revised requirements" },
+      appAgent: "sample-owner",
+    });
     const emitted: AgentEvent[] = [];
     bus.subscribe((event) => emitted.push(event));
     expect(() =>
@@ -2749,7 +2755,7 @@ describe("canonical App task runtime", () => {
           },
         ],
       }),
-    ).toThrow("newer Task facts are pending");
+    ).toThrow("stale");
     expect(emitted.filter((event) => event.type === "app.input.requested")).toEqual([]);
     expect(readTaskSnapshot(config).taskTriggers?.[claim.taskId]?.event).toMatchObject({ eventId: 42 });
   });
@@ -3908,12 +3914,10 @@ describe("canonical App task runtime", () => {
       dispatch: { enqueuedAt: 1, startedAt: 2, readyWaitMs: 1, lane: "normal" },
     });
     if (assertionFailure) throw assertionFailure;
-    expect(acceptedTaskAttempt(config, "work/custom-condition")?.acceptedResult?.state).toBe(
-      satisfied ? undefined : "converged",
-    );
+    expect(acceptedTaskAttempt(config, "work/custom-condition")?.acceptedResult?.state).toBe("converged");
     expect(config.resourceStore.readTask("work/custom-condition")?.status).toMatchObject({
       phase: satisfied ? "pending" : "waiting",
-      conditionIds: [expect.stringContaining("app-request:")],
+      conditionIds: satisfied ? [] : [expect.stringContaining("app-request:")],
     });
     if (satisfied) {
       await reconcileLoadedAppTaskOnce({
@@ -6329,12 +6333,13 @@ describe("canonical App task runtime", () => {
     expect(calls).toBe(1);
     const tree = readTaskSnapshot(config);
     expect(tree.receipts?.[taskId]).toBeUndefined();
-    if (change === "fact") {
+    if (change === "fact" || change === "action") {
       expect(tree.resources?.[taskId]?.status.result).toEqual({ runId: 42 });
       expect(tree.conditions?.["run:42"]?.spec.subject).toBe("run:42");
       expect(tree.taskTriggers?.[taskId]?.events?.map((row) => row.event.eventId)).toEqual([101]);
       expect(Object.values(tree.attempts ?? {})[0]?.state).toBe("completed");
       expect(saveAttempts).toBe(1);
+      if (change === "action") expect(tree.resources?.["work/persistence-target"]?.status.phase).toBe("pending");
     } else if (change === "intent") {
       expect(tree.resources?.[taskId]?.metadata.generation).toBe(2);
       expect(tree.resources?.[taskId]?.spec.outcome).toBe("Replacement intent");
@@ -6344,9 +6349,7 @@ describe("canonical App task runtime", () => {
       expect(tree.resources?.["work/persistence-target"]?.spec.outcome).toBe("Original assignment");
       expect(tree.resources?.["work/persistence-target"]?.metadata.generation).toBe(1);
       expect(Object.values(tree.attempts ?? {})[0]?.state).toBe("interrupted");
-      expect(saveAttempts).toBe(change === "persistent" ? 2 : 0);
-      if (change === "action")
-        expect(tree.taskTriggers?.[taskId]?.events?.map((row) => row.event.eventId)).toContain(101);
+      expect(saveAttempts).toBe(2);
     }
   });
 
@@ -7070,7 +7073,7 @@ describe("canonical App task runtime", () => {
     },
   );
 
-  it("admits acknowledged live input through apply while fencing unacknowledged input", async () => {
+  it.each([false, true])("live apply preserves input until incorporated (%s)", async (incorporated) => {
     const f = fixture();
     const bus = eventBus();
     const persistDir = join(f.root, "state");
@@ -7091,7 +7094,6 @@ describe("canonical App task runtime", () => {
     let release = () => {};
     let fail = (_error: unknown) => {};
     const finished = new Promise<void>((resolve, reject) => { release = resolve; fail = reject; });
-    let rejected = "";
     const { installed } = await installCoreTaskRuntimes({
       ...options(f, bus),
       installControllers: false,
@@ -7102,14 +7104,12 @@ describe("canonical App task runtime", () => {
               const deadline = performance.now() + 2_000;
               while (!loadedTaskConfig(f).resourceStore.readTrigger(taskId) && performance.now() < deadline)
                 await Bun.sleep(5);
-              try {
-                await attempt.apply({ requests: [request], conditions: [{ requestId: "review" }] });
-              } catch (error) {
-                rejected = (error as Error).message;
-              }
-              expect(listAppInboxItems(getDb(persistDir))).toHaveLength(0);
-              accept();
-              await attempt.apply({ requests: [request], conditions: [{ requestId: "review" }] });
+              const receipt = await attempt.apply({ requests: [request], conditions: [{ requestId: "review" }] });
+              expect(listAppInboxItems(getDb(persistDir))).toHaveLength(1);
+              if (incorporated) accept();
+              expect(await attempt.apply({ requests: [request], conditions: [{ requestId: "review" }] }))
+                .toEqual(receipt);
+
             })().then(release, fail);
           });
           ready();
@@ -7143,13 +7143,13 @@ describe("canonical App task runtime", () => {
       target: { appId: "sample", taskId }, data: { verdict: "continue" },
     } as AgentEvent);
     await run;
-    expect(rejected).toContain("newer Task facts are pending");
     expect(listAppInboxItems(getDb(persistDir))).toEqual([
       expect.objectContaining({ appId: "sample", status: "pending", input: request.input }),
     ]);
     expect(config.resourceStore.readTask(taskId)?.status).toMatchObject({
-      phase: "waiting", conditionIds: [expect.stringContaining("app-request:")],
+      phase: incorporated ? "waiting" : "pending", conditionIds: [expect.stringContaining("app-request:")],
     });
+    expect(config.resourceStore.readTrigger(taskId) === null).toBe(incorporated);
   });
 
   it.each(["executor", "tasks tool"] as const)(
@@ -7684,7 +7684,9 @@ describe("canonical App task runtime", () => {
         });
       await run();
       expect(calls).toBe(1);
-      expect(acceptedTaskAttempt(config, taskId)?.acceptedResult).toBeUndefined();
+      if (scenario === "external input")
+        expect(acceptedTaskAttempt(config, taskId)?.acceptedResult?.summary).toBe("First result");
+      else expect(acceptedTaskAttempt(config, taskId)?.acceptedResult).toBeUndefined();
       expect(config.resourceStore.readTrigger(peerId)?.event.eventId).toBe(otherFact);
       const pending = config.resourceStore.readTrigger(taskId);
       if (scenario === "superseded") {
@@ -8803,6 +8805,578 @@ describe("canonical App task runtime", () => {
     });
   });
 
+  it.each([false, true])(
+    "result-scope rejection preserves useful evidence before cleanup (Git: %s)",
+    async (useGit) => {
+      const f = fixture();
+      const bus = eventBus();
+      if (useGit) {
+        const git = (...args: string[]) => promisify(execFile)("git", ["-C", f.appDir, ...args], { timeout: 10_000 });
+        writeFileSync(join(f.appDir, ".gitignore"), ".local-proof\n");
+        await git("init", "-b", "main");
+        await git("config", "user.email", "test@example.com");
+        await git("config", "user.name", "Test");
+        await git("add", ".");
+        await git("commit", "-m", "fixture baseline");
+      }
+      let artifactPath = "";
+      await installAppTaskRuntimes({
+        ...options(f, bus),
+        installControllers: false,
+        executors: {
+          worker: async (attempt) => {
+            artifactPath = join(attempt.cwd, ".local-proof");
+            writeFileSync(artifactPath, "reuse this expensive check");
+            return {
+              state: "converged",
+              summary: "The expensive check succeeded",
+              facts: ["check:verified"],
+              result: { artifact: artifactPath },
+              inputKeys: ["not-an-assigned-input"],
+            };
+          },
+        },
+        appRegistrySnapshot: {
+          id: "rejected-scope",
+          generation: 1,
+          entries: [
+            {
+              appDir: f.appDir,
+              definition: {
+                ...definition(),
+                ...(useGit ? { workspace: { kind: "git", localPath: ".", branch: "main" } } : {}),
+              },
+            },
+          ],
+        },
+      });
+      const config = loadedTaskConfig(f);
+      const taskId = "work/rejected-scope";
+      admitTaskInput(config, {
+        appId: "sample",
+        idempotencyKey: "ask:verification",
+        attachment: {
+          kind: "desired",
+          intent: {
+            id: taskId,
+            parentId: "operations",
+            executor: "worker",
+            outcome: "Verify the source",
+            acceptance: ["Return the verification evidence"],
+          },
+        },
+        inputContext: {
+          id: "ask:verification",
+          source: { kind: "human", id: "requester" },
+          input: { kind: "review", data: {} },
+        },
+      });
+      await reconcileLoadedAppTaskOnce({
+        bus,
+        appId: "sample",
+        taskId,
+        dispatch: { enqueuedAt: 1, startedAt: 2, readyWaitMs: 1, lane: "normal" },
+      });
+      const attempts = Object.values(readTaskSnapshot(config).attempts ?? {});
+      expect(attempts).toHaveLength(1);
+      const attempt = attempts[0]!;
+      expect(attempt.acceptedResult).toBeUndefined();
+      expect(attempt.unacceptedResult).toMatchObject({
+        summary: "The expensive check succeeded",
+        facts: ["check:verified"],
+        result: { artifact: artifactPath },
+        settlementError: expect.stringContaining("inputKeys"),
+      });
+      expect(readAppTaskAdmissionOutcome(config, taskId, "ask:verification")).toBeNull();
+      expect(readFileSync(artifactPath, "utf8")).toBe("reuse this expensive check");
+      if (useGit) expect(attempt.workspace?.disposition).toBe("retained-for-recovery");
+    },
+  );
+
+  it.each(["input", "condition"] as const)(
+    "partial acceptance retains its workspace until remaining %s is settled",
+    async (remaining) => {
+      const f = fixture();
+      const bus = eventBus();
+      const git = (cwd: string, ...args: string[]) =>
+        promisify(execFile)("git", ["-C", cwd, ...args], { timeout: 10_000 });
+      const privateRefs = async () =>
+        (await git(f.appDir, "for-each-ref", "--format=%(refname)", "refs/may/workspaces/")).stdout.trim();
+      writeFileSync(join(f.appDir, ".gitignore"), ".local-proof\n");
+      await git(f.appDir, "init", "-b", "main");
+      await git(f.appDir, "config", "user.email", "test@example.com");
+      await git(f.appDir, "config", "user.name", "Test");
+      await git(f.appDir, "add", ".");
+      await git(f.appDir, "commit", "-m", "fixture baseline");
+      const remotePath = join(f.root, "origin.git");
+      await git(f.root, "init", "--bare", remotePath);
+      await git(f.appDir, "remote", "add", "origin", remotePath);
+      await git(f.appDir, "push", "-u", "origin", "main");
+      let calls = 0;
+      let workspacePath = "";
+      await installAppTaskRuntimes({
+        ...options(f, bus),
+        installControllers: false,
+        executors: {
+          worker: async (attempt) => {
+            calls++;
+            if (calls === 1) {
+              workspacePath = attempt.cwd;
+              writeFileSync(join(attempt.cwd, ".local-proof"), "reuse this expensive check");
+              if (remaining === "condition")
+                await attempt.apply({
+                  conditions: ["review", "independent-review"].map((id) => ({
+                    id,
+                    type: "review.done",
+                    subject: `id:${id}`,
+                    expected: true,
+                    owner: "app:sample",
+                  })),
+                });
+              return {
+                state: "converged",
+                summary: "Accepted useful contribution",
+                facts: ["check:performed"],
+                ...(remaining === "input" ? { inputKeys: [] } : {}),
+              };
+            }
+            expect(attempt.cwd).toBe(workspacePath);
+            expect(readFileSync(join(attempt.cwd, ".local-proof"), "utf8")).toBe("reuse this expensive check");
+            return { state: "converged", summary: "Continued using accepted work", facts: ["check:reused"] };
+          },
+        },
+        appRegistrySnapshot: {
+          id: "partial-workspace",
+          generation: 1,
+          entries: [
+            {
+              appDir: f.appDir,
+              definition: { ...definition(), workspace: { kind: "git", localPath: ".", branch: "main" } },
+            },
+          ],
+        },
+      });
+      const config = loadedTaskConfig(f);
+      const taskId = "work/partial-workspace";
+      admitTaskInput(config, {
+        appId: "sample",
+        idempotencyKey: "ask:verified-change",
+        attachment: {
+          kind: "desired",
+          intent: {
+            id: taskId,
+            parentId: "operations",
+            executor: "worker",
+            outcome: "Implement and verify",
+            acceptance: ["Verification complete"],
+          },
+        },
+        inputContext: {
+          id: "ask:verified-change",
+          source: { kind: "human", id: "requester" },
+          input: { kind: "review", data: {} },
+        },
+      });
+      const run = () =>
+        reconcileLoadedAppTaskOnce({
+          bus,
+          appId: "sample",
+          taskId,
+          dispatch: { enqueuedAt: 1, startedAt: 2, readyWaitMs: 1, lane: "normal" },
+        });
+      await run();
+      const accepted = acceptedTaskAttempt(config, taskId)!;
+      expect(accepted.acceptedResult?.summary).toBe("Accepted useful contribution");
+      expect(accepted.workspace?.disposition).toBe("active");
+      expect(existsSync(workspacePath)).toBe(true);
+      expect(await privateRefs()).not.toBe("");
+      expect(config.resourceStore.readTask(taskId)?.status.phase).toBe(remaining === "input" ? "pending" : "waiting");
+      const satisfyReview = (id: string) =>
+        trackAppTaskConditionEventForTasks(
+          config,
+          {
+            type: "review.done",
+            data: { id, state: true },
+          },
+          [taskId],
+        );
+      if (remaining === "condition") satisfyReview("review");
+      await run();
+      expect(calls).toBe(2);
+      expect(readAppTaskAdmissionOutcome(config, taskId, "ask:verified-change")?.summary).toBe(
+        remaining === "input" ? "Continued using accepted work" : "Accepted useful contribution",
+      );
+      if (remaining === "condition") {
+        // Settling one wait must preserve the workspace for the independent wait.
+        expect(config.resourceStore.readTask(taskId)?.status).toMatchObject({
+          phase: "waiting",
+          conditionIds: ["independent-review"],
+        });
+        expect(acceptedTaskAttempt(config, taskId)?.workspace?.disposition).toBe("active");
+        expect(existsSync(workspacePath)).toBe(true);
+        expect(await privateRefs()).not.toBe("");
+        satisfyReview("independent-review");
+        await run();
+        expect(calls).toBe(3);
+      }
+      expect(config.resourceStore.readTask(taskId)?.status.phase).toBe("converged");
+      expect(config.resourceStore.readTask(taskId)?.status.conditionIds ?? []).toEqual([]);
+      expect(acceptedTaskAttempt(config, taskId)?.workspace?.disposition).toBe("removed");
+      expect(existsSync(workspacePath)).toBe(false);
+      expect((await git(f.appDir, "branch", "--list", accepted.workspace!.branch)).stdout.trim()).toBe("");
+      expect(await privateRefs()).toBe("");
+      expect(config.resourceStore.listRecoveryCandidates().items).toEqual([]);
+    },
+  );
+
+  it.each([
+    "last-wait",
+    "independent-wait",
+    "live-replay",
+    "stale",
+    "policy-rejected",
+    "unauthorized",
+    "stop-during-validation",
+    "revision-during-validation",
+    "new-work-during-cleanup",
+    "cleanup-fails",
+    "cleanup-fails-after-history",
+    "branch-only",
+    "private-refs-only",
+    "already-removed",
+    "clock-reversed",
+    "dirty-after-release",
+    "cleanup-recording-fails",
+  ] as const)(
+    "final-result retirement plans Git cleanup after admission: %s",
+    async (scenario) => {
+      const f = fixture();
+      const bus = eventBus();
+      const taskId = "work/final-retirement";
+      const rejected = [
+        "stale",
+        "policy-rejected",
+        "unauthorized",
+        "stop-during-validation",
+        "revision-during-validation",
+      ].includes(scenario);
+      const cleanupFails = scenario === "cleanup-fails" || scenario === "cleanup-fails-after-history";
+      const newWork = scenario === "new-work-during-cleanup" || scenario === "cleanup-fails-after-history" || scenario === "clock-reversed";
+      const retained = rejected || scenario === "independent-wait" || cleanupFails || scenario === "dirty-after-release";
+      const git = (cwd: string, ...args: string[]) =>
+        promisify(execFile)("git", ["-C", cwd, ...args], { timeout: 10_000 });
+      writeFileSync(join(f.appDir, ".gitignore"), ".local-proof\n");
+      await git(f.appDir, "init", "-b", "main");
+      await git(f.appDir, "config", "user.email", "test@example.com");
+      await git(f.appDir, "config", "user.name", "Test");
+      await git(f.appDir, "add", ".");
+      await git(f.appDir, "commit", "-m", "fixture baseline");
+      const remotePath = join(f.root, "origin.git");
+      await git(f.root, "init", "--bare", remotePath);
+      await git(f.appDir, "remote", "add", "origin", remotePath);
+      await git(f.appDir, "push", "-u", "origin", "main");
+      let workspacePath = "";
+      let stateBeforeResult: unknown;
+      let firstAttemptId = "";
+      let nextWorkspacePath = "";
+      const newerWorkspacePaths: string[] = [];
+      const inspections: unknown[] = [];
+      const finalizations: Array<{ outcome: string; state: unknown; requests: number }> = [];
+      const publications: AgentEvent[] = [];
+      const reconciliationEvents: AgentEvent[] = [];
+      bus.subscribe((event) => {
+        if (event.type === "app.input.requested") publications.push(event);
+        if (event.type === "project.task.reconciled") reconciliationEvents.push(event);
+      });
+      const readState = () => {
+        const config = loadedTaskConfig(f);
+        const task = config.resourceStore.readTask(taskId)!;
+        return { task, attempt: config.resourceStore.readAttempt(firstAttemptId) };
+      };
+      const readRequests = () => listAppInboxItems(loadedTaskConfig(f).resourceStore.db);
+      let interrupted = false;
+      const interruptValidation = () => {
+        if (interrupted) return;
+        interrupted = true;
+        const config = loadedTaskConfig(f);
+        if (scenario === "stop-during-validation") {
+          stopAppTaskAttempt(config, {
+            taskId,
+            attemptId: firstAttemptId,
+            expectedGeneration: 1,
+            reason: "Owner stopped during validation",
+          });
+        } else if (scenario === "revision-during-validation") {
+          const tree = config.resourceStore.readTaskContext({ taskIds: [taskId] });
+          const condition = tree.conditions!.review!;
+          condition.metadata.generation++;
+          condition.metadata.resourceVersion++;
+          if (
+            !config.resourceStore.commit({
+              fences: [{ taskId, resourceVersion: tree.resources![taskId]!.metadata.resourceVersion }],
+              conditions: [condition],
+            })
+          )
+            throw new Error("Expected concurrent Condition revision");
+        }
+      };
+      const app = definition();
+      await installAppTaskRuntimes({
+        ...options(f, bus),
+        installControllers: false,
+        workspaces: {
+          ...gitTaskWorkspaces,
+          inspect: async (prepared) => {
+            const inspected = await gitTaskWorkspaces.inspect(prepared);
+            if (prepared.metadata.path === workspacePath) inspections.push(readState());
+            interruptValidation();
+            return inspected;
+          },
+          finalize: async (prepared, outcome) => {
+            finalizations.push({ outcome, state: readState(), requests: readRequests().length });
+            // The old implementation enters destructive finalization before admission.
+            if (!loadedTaskConfig(f).resourceStore.readAttempt(firstAttemptId)?.acceptedResult) interruptValidation();
+            if (outcome === "accepted" && newWork && prepared.metadata.path === workspacePath) {
+              if (scenario === "clock-reversed") setSystemTime(Date.now() - 60_000);
+              for (let index = 0; index < (scenario === "clock-reversed" ? 2 : 17); index++) {
+                admitTaskInput(loadedTaskConfig(f), {
+                  appId: "sample",
+                  attachment: { kind: "existing", taskId },
+                  idempotencyKey: `new-work:${index}`,
+                  inputContext: {
+                    id: `new-work:${index}`,
+                    source: { kind: "human", id: "requester" },
+                    input: { kind: "notice", data: {} },
+                  },
+                });
+                await reconcileLoadedAppTaskOnce({
+                  bus,
+                  appId: "sample",
+                  taskId,
+                  dispatch: { enqueuedAt: 1, startedAt: 2, readyWaitMs: 1, lane: "normal" },
+                });
+              }
+              const history = loadedTaskConfig(f).resourceStore.readTaskContext({ taskIds: [taskId] });
+              if (scenario !== "clock-reversed") expect(history.attempts?.[firstAttemptId]).toBeUndefined();
+            }
+            if (outcome === "accepted" && cleanupFails) throw new Error("fixture cleanup failure");
+            if (outcome === "accepted" && scenario === "dirty-after-release")
+              writeFileSync(join(prepared.metadata.path, "late-edit.txt"), "preserve late edit");
+            if (outcome === "accepted" && scenario === "cleanup-recording-fails")
+              loadedTaskConfig(f).resourceStore.db.exec(`
+                CREATE TEMP TRIGGER reject_cleanup_record BEFORE UPDATE ON app_task_attempts
+                WHEN json_extract(NEW.attempt_json, '$.workspace.disposition') = 'removed'
+                BEGIN SELECT RAISE(ABORT, 'fixture cleanup bookkeeping failure'); END;
+              `);
+            return gitTaskWorkspaces.finalize(prepared, outcome);
+          },
+        },
+        executors: {
+          worker: async (attempt) => {
+            if (firstAttemptId) {
+              nextWorkspacePath = attempt.cwd;
+              newerWorkspacePaths.push(attempt.cwd);
+              writeFileSync(join(attempt.cwd, ".local-proof"), "new work must survive old cleanup");
+              if (scenario === "clock-reversed" && newerWorkspacePaths.length === 1)
+                return { state: "converged", summary: "First new request fulfilled", facts: [] };
+              return { state: "waiting", summary: "New work in progress", facts: [], reviewAt: Date.now() + 60_000 };
+            }
+            firstAttemptId = attempt.attemptId;
+            workspacePath = attempt.cwd;
+            writeFileSync(join(attempt.cwd, ".local-proof"), "reuse this expensive check");
+            if (["branch-only", "private-refs-only", "already-removed"].includes(scenario)) {
+              const workspace = readState().attempt!.workspace!;
+              const headRef = workspace.baseRef.replace(/\/base$/, "/head");
+              await git(f.appDir, "update-ref", headRef, workspace.headCommit);
+              await git(f.appDir, "worktree", "remove", workspace.path);
+              if (scenario !== "branch-only") await git(f.appDir, "branch", "-D", workspace.branch);
+              if (scenario === "already-removed") {
+                await git(f.appDir, "update-ref", "-d", workspace.baseRef);
+                await git(f.appDir, "update-ref", "-d", headRef);
+              }
+            }
+            await attempt.apply({
+              conditions: (scenario === "independent-wait" ? ["review", "independent-review"] : ["review"]).map((id) => ({
+                id,
+                type: "review.done",
+                subject: `id:${id}`,
+                expected: true,
+                owner: "human",
+              })),
+            });
+            const retirement = {
+              kind: "retire-condition" as const,
+              conditionId: "review",
+              expectedConditionGeneration: scenario === "stale" ? 2 : 1,
+              reason: "Owner no longer requires this observation",
+            };
+            if (scenario === "live-replay") await attempt.apply({ actions: [retirement], facts: ["scope:reviewed"] });
+            stateBeforeResult = readState();
+            return {
+              state: "converged",
+              summary: "Requested work is fulfilled",
+              facts: ["scope:reviewed"],
+              result: { artifact: join(attempt.cwd, ".local-proof") },
+              requests: [{ id: "notify", appId: "sample", input: { kind: "notice", data: { text: "Work complete" } } }],
+              actions: [
+                retirement,
+                ...(scenario === "unauthorized"
+                  ? [
+                      {
+                        kind: "unblock-task" as const,
+                        taskId: "work/sibling",
+                        expectedGeneration: 1,
+                        reason: "Try to resume another owner's work",
+                      },
+                    ]
+                  : []),
+              ],
+            };
+          },
+        },
+        appRegistrySnapshot: {
+          id: "final-retirement",
+          generation: 1,
+          entries: [
+            {
+              appDir: f.appDir,
+              definition: {
+                ...app,
+                workspace: { kind: "git", localPath: ".", branch: "main" },
+                task: () => ({
+                  kind: "desired",
+                  intent: {
+                    id: "work/notice",
+                    parentId: "operations",
+                    outcome: "Handle notice",
+                    acceptance: ["Handled"],
+                  },
+                }),
+                tasks: {
+                  ...app.tasks!,
+                  validateAction: () => (scenario === "policy-rejected" ? "Review is required by App policy" : null),
+                },
+              },
+            },
+          ],
+        },
+      });
+      const config = loadedTaskConfig(f);
+      if (scenario === "unauthorized") {
+        observeAppTaskIntent(config, {
+          appAgent: "sample-owner",
+          intent: { id: "work/sibling", parentId: "operations", outcome: "Independent work", acceptance: ["Done"] },
+        });
+        const sibling = claimObservedAppTask(config, {
+          taskId: "work/sibling",
+          appAgent: "sample-owner",
+          handler: "agent:sample-owner",
+          reason: "fixture",
+        });
+        if (sibling.kind !== "claimed") throw new Error("Expected sibling claim");
+        deferAppTask(config, sibling, {
+          disposition: "waiting",
+          summary: "Wait for its owner",
+          facts: [],
+          reviewAt: Date.now() + 60_000,
+        });
+      }
+      observeAppTaskIntent(config, {
+        appAgent: "sample-owner",
+        intent: {
+          id: taskId,
+          parentId: "operations",
+          executor: "worker",
+          outcome: "Finish work",
+          acceptance: ["Done"],
+        },
+      });
+      await reconcileLoadedAppTaskOnce({
+        bus,
+        appId: "sample",
+        taskId,
+        dispatch: { enqueuedAt: 1, startedAt: 2, readyWaitMs: 1, lane: "normal" },
+      });
+      const task = config.resourceStore.readTask(taskId)!;
+      const attempt = config.resourceStore.readAttempt(firstAttemptId)!;
+      expect(attempt).toBeDefined();
+      expect(existsSync(workspacePath)).toBe(retained);
+      expect((await git(f.appDir, "branch", "--list", attempt.workspace!.branch)).stdout.trim() !== "").toBe(retained);
+      expect(
+        (await git(f.appDir, "for-each-ref", "--format=%(refname)", attempt.workspace!.baseRef.replace(/\/base$/, "/"))).stdout.trim() !== "",
+      ).toBe(retained);
+      expect(readRequests()).toHaveLength(rejected ? 0 : 1);
+      expect(publications).toHaveLength(rejected ? 0 : 1);
+      if (retained) expect(readFileSync(join(workspacePath, ".local-proof"), "utf8")).toBe("reuse this expensive check");
+      if (rejected) {
+        expect(attempt.acceptedResult).toBeUndefined();
+        expect(task.status.conditionIds).toEqual(["review"]);
+        expect(finalizations.every(({ outcome }) => outcome === "failed")).toBe(true);
+        if (scenario === "unauthorized")
+          expect(attempt.unacceptedResult).toMatchObject({
+            summary: "Requested work is fulfilled",
+            result: { artifact: join(workspacePath, ".local-proof") },
+            settlementError: expect.stringContaining("creator"),
+          });
+        if (scenario === "unauthorized")
+          expect(config.resourceStore.readTask("work/sibling")?.status.phase).toBe("waiting");
+        if (scenario === "policy-rejected") expect(attempt.summary).toContain("App policy");
+      } else {
+        expect(attempt.acceptedResult?.summary).toBe("Requested work is fulfilled");
+        expect(task.status.phase).toBe(
+          scenario === "independent-wait" || newWork ? "waiting" : "converged",
+        );
+        expect(task.status.conditionIds ?? []).toEqual(scenario === "independent-wait" ? ["independent-review"] : []);
+        expect(attempt.workspace?.disposition).toBe(
+          retained || scenario === "cleanup-recording-fails" ? "active" : "removed",
+        );
+        expect(inspections).toEqual([stateBeforeResult]);
+        if (scenario === "independent-wait") expect(finalizations).toEqual([]);
+        else
+          expect(finalizations[0]).toMatchObject({
+            outcome: "accepted",
+            requests: 1,
+            state: { attempt: { acceptedResult: { state: "converged" }, workspace: { released: true } } },
+          });
+        if (cleanupFails) {
+          expect(attempt.workspace?.cleanupError).toBe("fixture cleanup failure");
+          expect(attempt.unacceptedResult).toBeUndefined();
+        }
+        if (scenario === "dirty-after-release") {
+          expect(attempt.workspace?.cleanupError).toContain("dirty");
+          expect(readFileSync(join(workspacePath, "late-edit.txt"), "utf8")).toBe("preserve late edit");
+        }
+        if (scenario === "cleanup-recording-fails") {
+          expect(attempt.workspace?.released).toBe(true);
+          expect(attempt.unacceptedResult).toBeUndefined();
+          expect(reconciliationEvents).toEqual(expect.arrayContaining([
+            expect.objectContaining({ data: expect.objectContaining({
+              disposition: "converged", workspaceCleanupError: expect.stringContaining("cleanup bookkeeping failure"),
+            }) }),
+          ]));
+        }
+        if (newWork) {
+          if (scenario === "clock-reversed") expect(new Set(newerWorkspacePaths).size).toBe(2);
+          expect(nextWorkspacePath).not.toBe(workspacePath);
+          expect(readFileSync(join(nextWorkspacePath, ".local-proof"), "utf8")).toBe("new work must survive old cleanup");
+          expect(acceptedTaskAttempt(config, taskId)?.workspace?.disposition).toBe("active");
+          expect(
+            (
+              await git(
+                f.appDir,
+                "for-each-ref",
+                "--format=%(refname)",
+                acceptedTaskAttempt(config, taskId)!.workspace!.baseRef,
+              )
+            ).stdout.trim(),
+          ).not.toBe("");
+        } else if (scenario !== "independent-wait")
+          expect(config.resourceStore.listRecoveryCandidates().items).toEqual([]);
+      }
+    },
+    15_000,
+  );
+
   it.each([
     { state: "converged", committed: false },
     { state: "converged", committed: true },
@@ -9770,7 +10344,7 @@ describe("canonical App task runtime", () => {
 
     const config = loadedTaskConfig(f);
     const deadline = performance.now() + 3_000;
-    while (!readAcceptedRuntimeAttempt(config, "work/event-storm")?.acceptedResult && performance.now() < deadline)
+    while (config.resourceStore.readTask("work/event-storm")?.status.phase !== "converged" && performance.now() < deadline)
       await Bun.sleep(5);
 
     expect(calls).toBe(3);
