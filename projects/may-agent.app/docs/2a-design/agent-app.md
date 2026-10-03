@@ -11,9 +11,12 @@ Task reads are exposed through the SDK, tools, control socket and HTTP. Pure
 translators perform no work. App-specific behavior and installation state need
 their own evidence; Host source checks do not certify every App.
 
-An App is one durable address with one accountable responsibility. It declares
-inputs, Task mapping, execution selection and acceptance. Agents, workflows and
-native executors perform bounded work; they never own the Task.
+An App is an organized extension of its owner agent, with one durable address
+for its domain scope. It declares input policy, Task mapping, shared context
+and knowledge, capabilities and acceptance conventions. The assigned agent owns
+each Task; workflows and native executors perform work for that agent.
+The App's owner agent represents it for default assignment and escalation.
+See [Task ownership and App scope](agents.md#task-ownership-and-app-scope).
 
 See [System Model](system-model.md) for the whole model,
 [Task Resource Engine](task-resource-engine.md) for reconciliation, and
@@ -39,7 +42,7 @@ Use this plain rule:
 
 ```text
 someone expects one answer            -> Host request; link a Task for durable work
-an App must make an outcome true       -> task
+an agent must make an outcome true    -> task
 something happened but creates no work -> fact
 ```
 
@@ -142,7 +145,7 @@ for checked source:
 export default defineApp({
   id: "sample",
   version: 1,
-  agent: "sample-agent", // default agent for bounded attempts
+  agent: "sample-agent", // represents the App; default Task owner
   inputSchema,
 
   // Pure mapping from admitted domain input to existing or desired task state.
@@ -184,16 +187,17 @@ export default defineApp({
 });
 ```
 
-The public field is named `agent`. It selects the App's default agent for a
-bounded attempt; it does not make the agent the App or the Task owner. The Host
+The public field is named `agent`. It names the agent representing the App and
+receiving Tasks without a more specific assignment. Each Task's resolved agent
+owns its outcome; an App address selects shared scope and policy. The Host
 temporarily accepts the old `owner` spelling only at compatibility boundaries
 for retained state and older App definitions.
 
 Identity, default agent, version, input schema, and Task resolution form the
 App contract. Subscriptions, observation-only selectors, schedules, observers,
 commands, workspace policy, agents, and workflows are optional capabilities
-hosted by the runtime. The default agent is only the fallback attempt handler;
-it is not the App identity. These capabilities feed or help reconcile tasks;
+hosted by the runtime. The default agent and App have distinct identities;
+representing an App does not automatically supervise every specialist. These capabilities feed or help reconcile tasks;
 they do not add App work loops.
 
 `app.ts` is also the sole App composition boundary. App-local modules may be
@@ -266,7 +270,7 @@ language and cannot encode every conditional, enum, length, or numeric constrain
 When exact construction or diagnosis needs those details, the existing `tasks`
 inspection surface returns the complete loaded App input schema with
 `tasks({ action: "contract", target: { appId } })`; omitting `target` selects the
-current App. The result is `{ appId, inputSchema }`, preserving root constraints
+current App. The result includes `{ appId, agent, inputSchema, observations }`, preserving root constraints
 and references without branch extraction. Callers inspect that authoritative
 schema rather than growing `dataTypes`, guessing from a rejection, or treating
 an App action schema as a universal substitute for the App input contract.
@@ -337,7 +341,7 @@ needs the result:
 }
 ```
 
-The receiving App owns interpreting and fulfilling the request. The Condition
+The receiving agent owns fulfilling the request under the App's input policy. The Condition
 belongs to the caller. Omitting that Condition submits identical work without
 adding a caller wait; such submission may accompany `converged`. A caller may
 use `tasks apply` to submit while continuing this attempt, or return
@@ -650,8 +654,9 @@ The host owns:
 - workspace allocation and portable path resolution; and
 - generic operational metrics and traces.
 
-Apps own domain meaning, input schemas, pure task resolution, reconciliation,
-acceptance, observer interpretation, workflows, and domain metrics. Apps never
+Apps package domain meaning, input schemas, pure task resolution, acceptance
+conventions, observer interpretation, workflows and domain metrics for their
+owner agents. Assigned agents own Tasks and judge progress under that policy. Apps never
 receive raw SQL, request or adapter state, unrestricted task storage, global
 runtime paths, scheduler handles, or recovery APIs.
 
@@ -700,7 +705,7 @@ removing compatibility; new declarations use the current SDK.
    correlated handling result. Task-based input links its responsible Task;
    a conversational answer need not create one. Handling completion alone
    does not close an outstanding conversational Request.
-3. Every App-owned outcome has one authoritative task identity.
+3. Every durable assigned outcome has one authoritative Task identity and a responsible agent.
 4. Events, metrics, logs, and projections never become work authorities.
 5. Every actionable fact has exactly one canonical route unless two distinct
    durable obligations are explicitly declared and tested.

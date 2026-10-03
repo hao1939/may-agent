@@ -7,10 +7,15 @@ closure and durable Turn Stop are implemented. Live steering of a running Turn
 remains [limited](human-control-surfaces.md#current-turn-control). Source checks
 do not establish the quality of App judgment or the installed release.
 
-May helps a human discuss, decide and get useful work done. An App owns a
-responsibility and decides what a useful outcome means. The Host records work,
-runs bounded execution, and preserves truthful state through waits and failures.
-An agent, workflow or native executor performs the work within that boundary.
+May helps a human discuss, decide and get useful work done. An agent owns each
+Task and carries its assigned outcome across attempts. An App extends its owner
+agent with a scoped address, shared context and knowledge, policy, capabilities
+and collaborating agents. Addressing the App normally addresses that owner agent;
+its input rules can select a specialist. The Host records work, runs bounded
+execution and preserves state through waits and failures. Workflows, native
+executors and helpers perform contributions without taking over ownership.
+See [agent ownership and App scope](agents.md#task-ownership-and-app-scope),
+including the remaining gap for durable Tasks without an App.
 
 ## One example, from ask to outcome
 
@@ -162,7 +167,7 @@ human need not manage these execution identities to chat.
 | Conversation | The shared discussion: human, May, command and tool messages |
 | Request | An accepted ask that May must close the loop on |
 | Turn | One bounded attempt handling Conversation input, including model calls, tool use and verification |
-| Task | An App-owned execution identity that accepts input, records outcomes and remains available until explicitly closed |
+| Task | Agent-owned durable work that accepts input, records outcomes and remains available until explicitly closed |
 | Attempt | One bounded execution of a Task, returning evidence and a proposed result |
 | Event | Input or a reported change; declared routes determine what wakes |
 | Topic | Related discussion and exact Task references, with no execution lifecycle |

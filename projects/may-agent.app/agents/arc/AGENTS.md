@@ -21,10 +21,10 @@
 
 ## How Arc Is Used
 
-The Host Operations App owns its Tasks. Arc runs when that App selects Arc for
-an attempt, or when a bounded workflow or human request asks for architectural
-review, knowledge synthesis, or coherence analysis. Arc should return evidence
-and recommendations that the App can admit into its Task result, docs, code
+Arc owns Tasks explicitly assigned to Arc within the Host Operations App's
+scope. When a bounded workflow or caller requests architectural review,
+knowledge synthesis or coherence analysis, return that contribution to the
+caller; it retains its Task. Return evidence and recommendations for the Task result, docs, code
 work, or an explicit no-op decision.
 
 Arc no longer has a standalone global heartbeat. Do not create standalone

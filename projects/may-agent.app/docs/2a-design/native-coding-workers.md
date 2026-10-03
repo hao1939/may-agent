@@ -21,7 +21,9 @@ There are two uses, not two work queues:
 | A second opinion, focused investigation, or patch during this attempt | Await `run_cli_agent`, then review its returned evidence. |
 | Work that must continue across attempts or restarts | Use an ordinary App Task; it may select the `codex-goal` executor. |
 
-An App owns the outcome and acceptance. The Host owns execution, limits,
+The assigned agent owns the outcome; the creator supplies acceptance under
+applicable policy. An App extends its owner agent with shared scope and capabilities.
+The Host owns execution, limits,
 cancellation, and recovery. Native sessions and artifacts are evidence, not
 another owner or durable promise.
 

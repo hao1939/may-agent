@@ -58,7 +58,7 @@ extra object the human must manage. The vocabulary is:
 | Turn | One bounded attempt of the Conversation's Task handling human input or a routed system fact, including repeated model calls and tool use |
 | Request | An accepted promise to the human; it can span Turns and link Tasks |
 | Topic | Related discussion and exact Task links, with no execution lifecycle |
-| Task | An App-owned execution identity that handles inputs, records outcomes and stays available until its owner closes it |
+| Task | Agent-owned durable work that handles inputs, records outcomes and stays available until explicitly closed |
 | Model step | One internal model/tool cycle inside a Turn or Task attempt |
 | Event | Input or a fact; an explicit route determines what acts on it |
 

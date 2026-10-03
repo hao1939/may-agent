@@ -1,8 +1,8 @@
-# Agent Cooperation
+# Agent Responsibilities and Cooperation
 
-**Supports:** [System Model](system-model.md#enable-useful-action-within-authority). Gives workers usable context and ways to cooperate within the caller's scope.
+**Supports:** [System Model](system-model.md#enable-useful-action-within-authority). Keeps one agent accountable for useful outcomes across executions, with optional App scope and bounded cooperation.
 
-**Choice basis:** [Core Principles](../1-principles/core-principles.md#context-is-discovered-not-dumped).
+**Choice basis:** [One authority for each resource](../1-principles/core-principles.md#one-authority-for-each-resource) and [context discovery](../1-principles/core-principles.md#context-is-discovered-not-dumped). Separating the durable owner from its executions prevents lost responsibility; an App adds useful scope without becoming a second Task owner.
 
 **Design status:** Accepted.
 **Implementation status:** Bounded calls/forks and durable cross-App Task
@@ -18,8 +18,73 @@ Agent registration has two scopes:
 2. **App-local agents** — `projects/<name>.app/agents/<agent>/agent.json`,
    registered with the owning App.
 
-App-local registration is the convention for App-owned work. The App packages,
-not a duplicated design-time roster, are the current inventory.
+App-local registration groups agents with their team's policy and knowledge.
+The packages, not a duplicated design-time roster, are the current inventory.
+
+## Task ownership and App scope
+
+**An agent owns a Task. An App is an organized extension of its owner agent.**
+The agent is a durable role with capabilities, knowledge and obligations; a
+session or attempt is one execution of that role. Replacing an execution does
+not replace the Task or its responsible agent.
+
+| Concept | Responsibility |
+| --- | --- |
+| Task owner agent | Carry the assigned outcome through useful work, verification, reporting and unresolved blockers |
+| Creator/caller | Define the requested scope and acceptance; revise the assignment through the authorized path |
+| App | Extend its owner agent with a scoped address, policy, shared context and knowledge, capabilities and collaborating agents |
+| Helper, workflow or executor | Perform the supplied contribution or procedure within the Task's authority |
+| Host | Retain Tasks and decisions, execute admitted actions, deliver feedback and recover execution |
+
+For example, the May App extends May. Work addressed to it normally goes to May.
+A review explicitly assigned to Bob is Bob's Task, within the May App's scope. If May
+instead calls Bob for a bounded review inside her own attempt, May keeps her
+Task and Bob returns his contribution. A workflow or native executor can carry
+out either Task without requiring the owner to make a model call at every step.
+
+The App address remains a useful interface: callers can choose domain scope
+without choosing a specialist. App input policy maps the request to its
+owner agent or an explicitly selected specialist. The owner agent coordinates
+that App's responsibility and unresolved blockers. Delegating a contribution
+does not settle any broader commitment it made to the caller. Shared knowledge is
+discoverable context, not a requirement to copy the whole App into every prompt.
+An App address, membership or owner label never grants additional authority.
+
+The owning agent decides how to make progress under the assignment and domain
+rules. The creator's authority over requirements remains distinct. A helper
+does not take ownership just by running; a help request creates or addresses a
+separate Task for the requested contribution. The original owner keeps the
+original obligation and applies the returned evidence.
+
+### Current implementation and next change
+
+`TaskIntent.agent` names the responsible agent. Current resolution uses an
+explicit Task assignment, then the nearest parent assignment, then
+`AppDefinition.agent`. The latter is the App's owner agent. `workflow` and
+`executor` select how an attempt runs, independently of who owns the outcome.
+The old `owner` spelling remains a compatibility alias; no new field is needed
+to express Task ownership. An omitted assignment still inherits current
+configuration; pin `agent` when a fixed assignment is required. This clarification
+does not change assignment, creator authority or closure permissions.
+
+Task detail reads expose the resolved agent; execution briefs distinguish it from the
+creator. App contract/catalog discovery exposes the owner agent alongside
+the input schema. These facts make responsibility discoverable; they do not
+automatically supervise a specialist or contact someone when a result is blocked.
+
+**Source availability:** the added owner metadata and execution guidance are in
+[Host PR #314](https://github.com/hao1939/may-agent/pull/314), revision
+`4e83e2876d8e519c73a7412eb644b31880149321`. Integrate that Host change before
+activating instructions that rely on the added fields. Source checks do not
+establish installed availability or improved agent behavior. Existing input
+routing, workspace/knowledge discovery and assignment controls are retained.
+
+**Accepted direction, not yet implemented:** an agent can own durable Tasks
+without an App. Global agents already support bounded calls, but durable
+admission, identity and recovery still require an App scope. The
+[standalone Task follow-up](../proposals/standalone-agent-tasks.md) owns that
+remaining change. Do not invent an App wrapper or a callable standalone API
+in agent instructions. Use current declared App routes until that path exists.
 
 ## Definition sources
 
@@ -145,9 +210,10 @@ Use it for optional FYI communication when no result, retry, or eventual
 handling guarantee is required. A notification must not be the only record of
 unfinished durable work.
 
-If a message actually asks another owner to act and report back, address that
-owner's App instead. If no App exists for that responsibility, create or extend
-the appropriate App contract rather than relying on a generic owner inbox.
+If a message asks another owner to act and report back durably, use a Task
+request. Current admission requires a declared App route. A missing route is
+a capability gap to report; standalone Task support is the follow-up above.
+Do not use a generic notification as a durable owner inbox.
 
 ## Context passing
 
@@ -269,5 +335,5 @@ Provider-specific helpers and direct CLI calls follow the same
 - Durable cross-owner obligations use task dependencies, not messages or events.
 - Child execution results remain evidence until admitted by the owning
   workflow/App/task.
-- App-local agents and workflows remain inside their App's ownership boundary.
+- App-local agents and workflows retain their App's scope and policy; the assigned agent owns the Task.
 - No agent notification becomes a hidden retry queue or owner inbox.

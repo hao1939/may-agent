@@ -51,7 +51,7 @@ contracts and guides. [Proposals](proposals/README.md) contain remaining choices
 
 | Document                                                       | Purpose                                                       |
 | -------------------------------------------------------------- | ------------------------------------------------------------- |
-| [agents.md](2a-design/agents.md)                               | Agent identity, cooperation, and app-local registration.      |
+| [agents.md](2a-design/agents.md)                               | Agent Task ownership, App scope, cooperation and registration. |
 | [runtime.md](2a-design/runtime.md)                             | Host process modes, startup, capacity, reload and recovery.   |
 | [sessions.md](2a-design/sessions.md)                           | Bounded execution, continuity and retained evidence.           |
 | [execution-contributions.md](2a-design/execution-contributions.md) | Agent/workflow helper scope, results, repair and retained evidence. |

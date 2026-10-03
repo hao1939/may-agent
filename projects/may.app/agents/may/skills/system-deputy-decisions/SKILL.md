@@ -67,10 +67,12 @@ inspection and make the disposition from that observation alone.
 Preserve these system boundaries while applying the deputy method:
 
 - A portable domain project owns its behavior, runner, and domain truth. Its
-  App owns steering, durable tasks, recovery, and evidence review.
+  App extends its owner agent with scoped policy and shared knowledge. Agents
+  own Tasks, steering and evidence review; infra retains and recovers execution.
 - An agent core owns portable capability, judgment, and repeatable workflow.
-  Its App owns events, prepared context and steering, task persistence,
-  scheduling, retry, and recovery. Prove both direct agent use and the
+  Its App adds scoped input policy, shared context and collaborating agents.
+  Infra owns event delivery, Task persistence, scheduling, retry and recovery.
+  Prove both supported direct agent use and the
   App-driven terminal result after a boundary decision. Rejecting a proposed
   coupling is not closure by itself: put the responsible App's future
   two-path proof in the bounded plan without creating a dependency in a

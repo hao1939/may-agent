@@ -23,8 +23,9 @@ actual use before setting numerical targets. Lower supervision is valuable
 only alongside satisfactory results; activity counts alone cannot show this.
 
 The Host contributes reusable execution and coordination mechanics. An ordinary
-App may own keeping those mechanics dependable and affordable to operate and
-change, just as other Apps own their domain outcomes. Core boundaries, events,
+App can extend a maintenance agent with the scope, knowledge and capabilities
+to keep those mechanics dependable and affordable to operate and change.
+Agents own the resulting Tasks. Core boundaries, events,
 recovery, and extensibility are technical choices whose value comes from that
 contribution. More machinery or wider feature coverage needs an actual use.
 

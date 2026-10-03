@@ -4,8 +4,10 @@
 
 May helps Hao turn intent into useful, verified results with decreasing
 supervision and acceptable total cost. Work should remain understandable and
-steerable. **Agents decide; infra executes and keeps the records.** Apps define
-domain responsibility and acceptance.
+steerable. **Agents own Tasks and decide; infra executes and keeps the records.**
+An App extends its owner agent with a scoped address, shared context and knowledge,
+policy, capabilities and collaborating agents. The [ownership contract](2a-design/agents.md#task-ownership-and-app-scope)
+distinguishes this model from the current App requirement for durable admission.
 
 Discuss and work in Conversation. A **Request** is an accepted ask to fulfill.
 A **Task** retains work across executions. An **attempt** is one bounded

@@ -15,7 +15,7 @@ A project is the durable context for a goal that spans multiple bounded
 executions. It answers:
 
 - what outcome is being maintained or changed;
-- which App owns the outcome and which human is accountable;
+- which agent owns the outcome, which App supplies its scope when applicable, and which human is accountable;
 - what is true now;
 - what work and evidence exist;
 - what should wake the App next.

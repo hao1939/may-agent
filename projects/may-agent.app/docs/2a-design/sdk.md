@@ -353,13 +353,15 @@ a workflow open or resuming it as a hidden controller.
 
 [`TaskIntent`](../../../may-agent/packages/sdk/src/task.ts) declares desired work.
 
-The App owns this Task. `agent` selects a managed agent for the attempt,
-inheriting from the parent Task and then the App default; it is not a second
-work owner. Runtime may retain `owner` in stored rows and projections during
-migration, but that storage name must not leak back into the mental model.
+`agent` identifies the Task owner, inheriting from the parent assignment and
+then the App's owner agent. The creator controls requirements. Runtime retains
+`owner` as a compatibility spelling in stored rows and some projections;
+new callers use `agent`. App scope groups policy, context and capabilities.
+See [Task ownership](agents.md#task-ownership-and-app-scope) for limits and the
+standalone Task follow-up.
 
 `executor` selects a lowercase registered adapter name. Omitted or `agent`
-uses the App's default agent; `codex` and `claude` are built-in native CLI
+uses the resolved Task agent; `codex` and `claude` are built-in native CLI
 adapters. A Task cannot set both `workflow` and `executor`. An unknown name
 becomes visible attention instead of silently falling back.
 

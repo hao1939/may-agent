@@ -186,8 +186,16 @@ for normal handling, fallback, and the current implementation limits.
 
 ## Apps own meaning; the Host owns mechanics
 
-An App decides what an input means, what outcome it owns, and whether one
-bounded attempt completed that outcome. The Host validates and admits input,
+Agents own Tasks and judge progress against their assignments. An App extends
+its owner agent with domain scope, shared context, capabilities and policy.
+Apps are useful addresses,
+not another thinking actor. "App decides" means its agent judges or its declared
+procedure applies domain rules. An agent's ability to own work should not depend
+on belonging to an App. See [Task ownership](../2a-design/agents.md#task-ownership-and-app-scope)
+for the current implementation and standalone-Task gap.
+
+An App's input policy defines what addressed work means. The creator controls
+the requested scope; the responsible agent carries the outcome. The Host validates and admits input,
 persists state, schedules attempts, limits concurrency, recovers after restart,
 and exposes observations.
 

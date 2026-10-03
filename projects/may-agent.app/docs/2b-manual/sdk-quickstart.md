@@ -140,7 +140,9 @@ shows why delivery, evidence accessibility and review quality need separate chec
 
 This App needs no workflow: its selected agent performs the review. Importing
 `app.ts` declares policy; execution starts when the Host admits and schedules
-work. The App owns the Task; selecting an agent chooses its worker.
+work. The resolved agent owns the Task; the App extends its owner agent with
+the address, scope, policy and shared knowledge. A workflow or executor changes
+how an attempt runs, not who carries the outcome. See [Task ownership](../2a-design/agents.md#task-ownership-and-app-scope).
 
 At an attempt's start, the Host supplies current Task identity, outcome, input,
 acceptance, pending updates and links to retained context. The worker follows

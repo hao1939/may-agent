@@ -610,9 +610,9 @@ is satisfied, so it is not a substitute for a caller that must review failures.
 Same-App and cross-App work use typed dependencies. The target App validates
 the requested input and chooses its Task, specification and executor; callers
 do not return raw `create-task` actions. Runtime correlates the exact input,
-not the worker's latest unrelated result. The target App owns and reconciles
-its Task; the requesting App owns its caller Task and final
-acceptance decision. Open child-request Conditions survive later parent
+not the worker's latest unrelated result. The destination agent owns its Task;
+the requesting agent keeps its caller Task and judges the contribution against
+that assignment. App scope supplies policy and shared context. Open child-request Conditions survive later parent
 attempts. A later result can reuse the durable request ID or declare the exact
 same target input; Runtime never turns a changed redeclaration into silent
 duplicate work. Conflicting replacement fails admission before publication.

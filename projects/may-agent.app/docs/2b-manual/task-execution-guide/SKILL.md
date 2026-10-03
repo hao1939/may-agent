@@ -18,8 +18,19 @@ The proposed unified capability catalog and `decision` spelling
 are not available merely because they appear in a proposal.
 
 **You decide what useful work to do. Infra executes admitted actions, retains
-requirements and results, delivers feedback, and schedules later work.** The App
-defines the assignment, authority and any required acceptance checks.
+requirements and results, delivers feedback, and schedules later work.** The
+assigned agent owns the Task across attempts; its creator controls requirements.
+An App extends its owner agent with scoped policy, shared knowledge and
+capabilities. A bounded helper owes its contribution, without acquiring the
+caller's Task. See [Task ownership](../../2a-design/agents.md#task-ownership-and-app-scope).
+
+Read `agent` on the current Task for its resolved owner and `creator` for the
+source of requirement authority. The installed App contract and catalog expose
+`agent` as the App's owner agent. Use the App's declared input to ask it for help;
+agent discovery alone grants no permission or standalone durable route.
+These owner fields require the [Host source update](../../2a-design/agents.md#current-implementation-and-next-change);
+older installed versions may omit them. Use the supplied capabilities and
+report missing context instead of guessing another owner.
 
 ## A complete example
 
@@ -259,19 +270,26 @@ until acceptance is known. See [retry ownership](../../2a-design/system-boundary
 
 ### Escalate an unresolved blocker
 
-**Agent → owning App → May → Hao.**
+**Helper → Task owner agent → App owner agent, when applicable → May → Hao.**
 
-1. **Agent cannot proceed:** return the blocker to the App's owning Task through
-   the supplied caller-feedback/result contract. A workflow's `ctx.blocked(...)`
-   returns evidence to that owner; it does not contact May or Hao itself.
-2. **App cannot resolve it:** use an ordinary Task request to the installed May
-   App, with a caller Condition for the answer. Follow May's supplied input schema.
-3. **May cannot resolve it:** May asks Hao for the missing help through the
+1. **Bounded helper cannot proceed:** return evidence through the supplied
+   caller-feedback/result contract. A workflow's `ctx.blocked(...)` returns
+   evidence to the Task boundary; it does not contact another owner itself.
+2. **Task owner cannot resolve it:** ask the App's owner agent through its
+   declared input route. Preserve feedback to the assigning caller when its
+   clarification or authority is needed. Skip the App step when you are already
+   that agent or there is no App.
+3. **App owner cannot resolve it:** request help from the installed May App,
+   with a caller Condition when the answer is needed. Follow its input schema.
+4. **May cannot resolve it:** May asks Hao for the missing help through the
    supported human Condition/Conversation path. Put the short ask in
    `Condition.requestedAction`. May does not need another May Task to ask Hao.
 
-These are responsibilities, not extra Tasks. If you already decide for the
-owning App's Task, take the App step directly.
+These are responsibilities, not required extra Tasks or model calls. Skip any
+step already filled by the same agent. For example, Bob's independent Task in
+the May App can ask May through the ordinary `goal` input without a specialist
+assignment. May handles the need in her current Task, acting or asking Hao;
+she does not request another May Task merely to repeat the same blocker.
 
 Each handoff says **what is blocked, what work is ready, and what help is needed**,
 with useful evidence references. An unknown cause can require diagnostic help;

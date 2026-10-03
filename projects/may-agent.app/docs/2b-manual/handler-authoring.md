@@ -51,7 +51,7 @@ Return the existing attempt `state`:
   to schedule another attempt for useful independent work.
 - `incomplete` retains failure evidence and unfinished work for recovery.
 - Workflows can use `needs-agent` for exceptional bounded judgment from the
-  same App's selected agent; it does not transfer ownership.
+  Task's responsible agent; it does not transfer ownership.
 
 The [checked `waitingResult`](../examples/app.ts) illustrates an exact fact contract
 and canonical owner. Replace its illustrative pipeline identity with your actual

@@ -20,13 +20,17 @@ The responsibility split is:
 
 ```text
 Host = persist, schedule, run, recover, validate controls, expose results
-App  = define meaning, policy, desired outcomes, acceptance and closure convention
+Agent = own Task outcomes, judge progress, use capabilities and request help
+App = extend its owner agent with a scoped address, policy, context and capabilities
 ```
 
 Infrastructure and runtime are both part of the Host. Infrastructure is what
 the Host uses—storage, timers, model providers, processes, and transports.
 Runtime is the code that connects and operates those things. Neither is a
-third owner or something an App composes.
+third work owner or something an App composes. The creator controls the requested
+scope. [Agent ownership and App scope](agents.md#task-ownership-and-app-scope)
+distinguishes that authority from carrying the Task's outcome. Current durable
+admission remains App-scoped; standalone Tasks are an explicit follow-up.
 
 ## The boundary in one flow
 
@@ -34,9 +38,9 @@ third owner or something an App composes.
 event
   -> Host validates and stores it
   -> explicit event route creates any linked responsibility
-  -> App decides what domain work means
-  -> Host runs bounded work when the App asks
-  -> App decides whether the result is enough
+  -> App input policy selects scoped work and its responsible agent
+  -> Host runs the agent's work through the selected execution capability
+  -> agent judges whether the result satisfies the assignment and policy
   -> Host stores, recovers, and exposes the result
 ```
 
@@ -104,11 +108,12 @@ Use the same division of responsibility for normal results and difficult cases:
 | --- | --- |
 | Preserve accepted work, schedule attempts, validate identity and controls, recover execution, expose truthful state | Host core |
 | Perform external I/O, translate a provider protocol, bound operations and report observations | Executor or source adapter |
-| Judge progress and choose how to continue, wait, steer, or report a result within the assignment | Task's worker, under App policy |
-| Judge scope, coordinate help, accept an outcome, revise or close the assignment | Assigning App, parent agent, or human |
+| Own the outcome; judge progress, continue, wait, request help or report a result | Task's assigned agent, under applicable policy |
+| Define or revise requested scope and acceptance; apply authorized assignment controls | Creator/caller, often a parent agent or human |
+| Coordinate an App's unresolved blockers and default assignments | App's owner agent |
 | Review a problem the normal owner cannot handle | Installation-selected supervisor, within granted scope |
 
-These are responsibilities, not five new services or a required agent hierarchy.
+These are responsibilities, not new services or a required agent hierarchy.
 The same App or agent can perform more than one role. A Task is the durable
 identity when work needs to survive its caller's execution; a direct invocation
 need not create one. A supervisor uses existing App inputs and exact
@@ -149,8 +154,8 @@ current facts and act through the existing owner. It is not another lifecycle.
 | Execution disappeared | Fence it and recover the same Task under existing policy. |
 | Worker cannot progress within scope | Report the blocker, attempted alternatives and useful remaining work to its assigning owner. |
 | Task was closed or cancelled | The App/agent distinguishes observations from new requirements. Observation routes retain late evidence. Explicit user-authorized operator control reopens the same Task with its new App input atomically; notifications do not authorize it. |
-| Task is unexpectedly missing | Report to its owning App; do not guess a replacement Task. |
-| Owning App cannot accept feedback | Preserve the delivery problem; use one explicit supervisor route if installed. |
+| Task is unexpectedly missing | Report to the known owner through its existing route; do not guess a replacement Task. |
+| Owner's App address cannot accept feedback | Preserve the delivery problem; use one explicit supervisor route if installed. |
 | Supervisor is unavailable | Expose the unresolved problem for human attention; stop fallback traversal. |
 
 Fallback reports a problem with references to the original work. It does not
@@ -285,7 +290,7 @@ core mechanics and optional adapters can live in Host code. See
 These record names are useful:
 
 - **Request** — an accepted ask whose outcome must be returned to the caller;
-- **task** — the App-owned execution identity that records outcomes and remains available until explicitly closed;
+- **task** — agent-owned durable work that records outcomes and remains available until explicitly closed; current storage and routing use an App scope;
 - **fact** — something observed or reported; and
 - **attempt** — one bounded agent or workflow run.
 
@@ -362,7 +367,7 @@ Topic-linked follow-up through the same conversation handler; it does not add
 another Task lifecycle. The accepted [baseline](../archive/reviews/conversation-input-unification.md)
 makes one stable Task the Conversation's actual execution owner, with no second
 executing inbox handler. Outcomes can be accepted while the Task stays open;
-an App, parent agent or human decides when to close it. The Host enforces that
+an authorized agent or human decides when to close it under applicable policy. The Host enforces that
 decision and preserves evidence without inferring responsibility lifetime.
 This lifecycle and the shared-input route are implemented in merged
 [Host PR #158](https://github.com/hao1939/may-agent/pull/158), source `f5d5a535`.

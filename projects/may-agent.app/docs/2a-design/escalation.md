@@ -13,11 +13,19 @@ as unresolved. It does not resume a session or infer a supervisor. See
 
 ## Purpose
 
-**Agent → owning App → May → Hao.** Return an unresolved blocker to the level
-that can help. The agent reports to its App's owning Task; when the App cannot
-resolve it, the App requests May's help. May resolves it within her available
-capabilities and authority, or asks Hao. May does not recursively delegate the
-same unresolved gap to another May Task.
+**Helper → Task owner agent → App owner agent, when applicable → May → Hao.**
+Skip roles already filled by the same agent. A bounded helper returns its blocker
+to the caller. The Task owner tries useful authorized recovery, then asks the
+App's owner agent for help within that scope. That agent coordinates its App's
+capabilities and, if still blocked, asks May. May acts or asks Hao. An agent
+without an App has no App step; durable standalone admission remains a
+[follow-up](../proposals/standalone-agent-tasks.md).
+
+The App is an extension of its owner agent, not another decision-maker or a
+mandatory escalation Task. Its address selects shared scope and routes the ask
+to that agent under declared input policy. A separate specialist Task retains
+its own owner and original work. May does not recursively delegate the same
+unresolved gap to another May Task.
 
 Escalation requests help; it is not a new resource or the response to every
 failed operation. Useful authorized recovery can proceed locally. Once the
@@ -39,11 +47,12 @@ original outcome. Runtime request records correlate the dependency and result.
 | Bounded execution cannot continue safely                    | Return `blocked` evidence; owning boundary decides next state |
 | Known external fact will change later                       | Persist an exact task Condition                               |
 | Another App must decide or act                              | Create a typed cross-App task dependency                      |
-| App cannot resolve its blocker                              | Task request to May with a return Condition                    |
+| Task owner needs its App's help                             | Request the App owner agent through the declared App input     |
+| App owner agent cannot resolve the blocker                  | Task request to May with a return Condition                    |
 | May cannot resolve the blocker                              | May asks Hao through a human Condition/Conversation            |
 | Agent attempt was incomplete                                | Honest execution result; not escalation by itself             |
 
-The App agent decides when local recovery is insufficient and asks the next
+The responsible agent decides when local recovery is insufficient and asks the next
 owner in this chain. The Host does not make that judgment.
 
 The agent judges whether recovery can make progress and what help is missing.
@@ -58,7 +67,7 @@ not a guarantee that every blocked result reaches a human.
 
 ## App-to-App escalation
 
-When an App cannot resolve a blocker, request help from the installed May App
+When the App owner agent cannot resolve a blocker, request help from the installed May App
 using the existing Task dependency path. The checked
 [`dependencyResult`](../examples/app.ts) names `release-governance`, a stable
 dependency ID, and the destination's illustrative `approval-request` input.
@@ -205,9 +214,10 @@ permission to start an unrelated agent or resume historical execution.
 
 ## Integrity checklist
 
-- An unresolved blocker follows agent → owning App → May → Hao; the original
-  Task keeps its work and receives the result.
-- The destination is an App address, not an owner string fallback.
+- An unresolved blocker follows helper → Task owner → App owner when applicable
+  → May → Hao, skipping the same agent; the original Task keeps its work.
+- Current durable requests use a declared App address and input; discovering
+  its owner agent does not create a new routing or permission fallback.
 - The child request states one exact action/decision and compact evidence.
 - A source wait names a durably admitted destination request; interrupted
   linkage can recover that same request.

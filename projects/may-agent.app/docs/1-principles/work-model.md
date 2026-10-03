@@ -15,7 +15,7 @@ behavior. [Working on a Task](../2b-manual/task-execution-guide/SKILL.md) explai
 | Need | Start with | Why it earns its place |
 | --- | --- | --- |
 | Discuss, investigate or complete a bounded ask with the human | Conversation | Keeps joint work interactive without unnecessary handoff |
-| Preserve independent work across executions | An App-owned Task | Retains requirements, accepted outcomes and continuation |
+| Preserve independent work across executions | An agent-owned Task (currently admitted through an App) | Retains requirements, accepted outcomes and continuation |
 | Make an uncertain decision or perform novel work | An agent within the current execution | Applies judgment without prescribing a procedure prematurely |
 | Reuse situational judgment guidance | A skill | Makes a method discoverable when relevant |
 | Preserve a useful ordered procedure | A workflow | Executes explicit steps and checks while asking an agent where needed |

@@ -40,6 +40,7 @@ before acting on an old checklist.
 
 | Proposal | Owning need or contract | Remaining review scope |
 | --- | --- | --- |
+| [Durable Tasks for agents without an App](standalone-agent-tasks.md) | [Agent ownership and App scope](../2a-design/agents.md#task-ownership-and-app-scope) | Accepted direction; direct admission, identity compatibility, authority and restart proof remain unimplemented. App addressing stays supported. |
 | [Keep domain policy in Apps, keep the Host generic](app-policy-and-host-boundary-cleanup.md) | [Host And App Boundary](../2a-design/system-boundary.md) | Broader App-policy cleanup beyond the recorded implemented slices. |
 | [Simplify the system: fewer paths, clear owners](authority-boundary-simplification.md) | [Host And App Boundary](../2a-design/system-boundary.md) | Remaining simplification decisions; completed slices are context, not a second current contract. |
 | [External components: simple, solid, and clearly organized](external-components-simplification.md) | [Host And App Boundary](../2a-design/system-boundary.md) | Follow-up component boundaries beyond the accepted first milestone. |

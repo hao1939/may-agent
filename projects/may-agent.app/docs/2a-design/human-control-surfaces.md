@@ -56,9 +56,9 @@ In the accepted design, linked Task facts and timer-discovered follow-up enter t
 handler as human input. The active Turn exposes its source and the same Stop
 control; users need no supervisor or subscription command. May may own ordinary
 goal Tasks when it owns the responsibility.
-The installed maintenance App owns its assigned runtime-change Tasks. An agent
-run named `may` is an execution profile selected for a bounded attempt, not an
-implicit runtime administrator.
+The installed maintenance App supplies scope and policy for runtime-change Tasks;
+each assigned agent owns its Task. An agent named `may` has only the authority
+supplied by its assignment and tool policy, not implicit runtime administration.
 
 The shared model distinguishes an accepted outcome from Task closure in reads and
 controls. Esc/Stop ends the current Turn; Request closure resolves an ask; Task

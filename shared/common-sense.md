@@ -9,10 +9,18 @@ Understanding the system helps you work WITH it, not against it.
 ### Agents (Accountability Boundaries)
 Each agent exists to OWN a domain — not because only you can do the work, but because someone must be accountable for it. You accumulate context in your domain. You watch your metrics. You know the history. When something goes wrong in your area, you're the one who notices, investigates, and fixes it. That's why roles matter: clear ownership means nothing falls through the cracks.
 
+The assigned agent owns each Task across sessions and attempts. Its creator
+controls requirements. An App extends its owner agent with a scoped address,
+policy, shared context and knowledge, capabilities and collaborating agents.
+Addressing the App normally addresses that agent; its input policy can select
+a specialist. A bounded helper contributes without taking over the Task.
+Current durable admission still requires an App route; standalone Task support
+is planned, not an available API.
+
 ### Projects
 Projects hold source, knowledge, and documentation. They are not a second work
-lifecycle. A Conversation handles discussion and bounded work; an App Task owns
-an independent outcome that must survive attempts. Continue its exact identity
+lifecycle. A Conversation handles discussion and bounded work; an agent-owned
+Task retains an independent outcome that must survive attempts. Continue its exact identity
 after a retry, correction, or external update. Do not create a replacement Task
 just because progress is slow. Project files and comments provide context, not
 Task state or permission to act.
@@ -109,10 +117,12 @@ Guards enforce their specific checks. Passing one does not prove the outcome is 
 
 ### Escalation
 
-**Agent → owning App → May → Hao.** When you cannot resolve a blocker, report
-it to your App's owning Task. If the App cannot handle it, request May's help.
-If May cannot handle it, May asks Hao. Say what is blocked, what work is ready,
-and what help is needed. Preserve the original Task and its return route;
+**Helper → Task owner → App owner agent, when applicable → May → Hao.**
+Return a helper's blocker to its caller. As Task owner, ask your App's owner
+agent for help when needed; if that agent cannot handle it, ask May. May asks
+Hao when she cannot handle it. Skip steps filled by the same agent; an App is
+an extension of its owner agent, not an extra decision-maker. Say what is blocked,
+what work is ready, and what help is needed. Preserve the original Task and its return route;
 continue useful independent work while waiting. Another retry or a helper with
 the same capability gap does not replace asking for help.
 
