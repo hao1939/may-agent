@@ -10,7 +10,7 @@
  */
 
 import { AsyncLocalStorage } from "node:async_hooks";
-import type { AppEventTarget } from "@may-agent/sdk";
+import type { AppEventTarget, MetricCalculation } from "@may-agent/sdk";
 import { log } from "../../../lib/log.js";
 
 // ── Event Types ────────────────────────────────────────────────────────
@@ -217,6 +217,7 @@ type MetricTrendPoint = {
 };
 type MetricEventData = {
   metricId: string;
+  calculation?: MetricCalculation;
   metricName?: string;
   project?: string;
   alertId?: string | number | null;

@@ -12,7 +12,7 @@ import {
   attachMetricSourceMeasurement,
   measureSourceMetrics,
   evaluateMetrics,
-  type MetricSourceMeasurementRuntime,
+  type MetricPassRuntime,
   INTENTIONAL_OBSERVATION_EVENT_TYPES,
   STALE_ACTIVE_SOURCE_QUERY,
   SUBSCRIBER_FAILED_COUNT_METRIC_ID,
@@ -24,7 +24,7 @@ import {
 describe("source-query metric measurement", () => {
   let persistDir: string;
   let bus: EventBus;
-  let measurement: MetricSourceMeasurementRuntime;
+  let measurement: MetricPassRuntime;
   const originalAppRoot = process.env.APP_ROOT;
 
   beforeEach(() => {

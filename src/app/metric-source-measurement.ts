@@ -253,14 +253,14 @@ export async function measureSourceMetrics(options: {
   return { measured, skipped, failures };
 }
 
-export type MetricSourceMeasurementRuntime = {
+export type MetricPassRuntime = {
   idle(): Promise<void>;
 };
 
 export function attachMetricSourceMeasurement(options: {
   bus: EventBus;
   persistDir: string;
-}): MetricSourceMeasurementRuntime {
+}): MetricPassRuntime {
   const db = getDb(options.persistDir);
   const metricService = createMetricService({ getDb: () => db });
   // Startup registrations are repeatable definition writes, not observations.
@@ -410,7 +410,7 @@ export async function evaluateMetrics(options: { bus: EventBus; persistDir: stri
   return results;
 }
 
-export function attachMetricEvaluation(options: { bus: EventBus; persistDir: string }): MetricSourceMeasurementRuntime {
+export function attachMetricEvaluation(options: { bus: EventBus; persistDir: string }): MetricPassRuntime {
   return attachMetricPass(options.bus, METRIC_EVALUATION_EVENT, "metric-evaluation", async () => {
     await evaluateMetrics(options);
   });
@@ -419,7 +419,7 @@ export function attachMetricEvaluation(options: { bus: EventBus; persistDir: str
 type MetricPass = { triggerEventId?: number; measuredAt: number; forced: boolean };
 
 /** Each pass has independent progress; repeated wakes coalesce while it is busy. */
-function attachMetricPass(bus: EventBus, type: string, label: string, run: (pass: MetricPass) => Promise<void>): MetricSourceMeasurementRuntime {
+function attachMetricPass(bus: EventBus, type: string, label: string, run: (pass: MetricPass) => Promise<void>): MetricPassRuntime {
   let pending: MetricPass | undefined;
   let drain: Promise<void> | undefined;
   const schedule = (request: MetricPass) => {
