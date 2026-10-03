@@ -3,6 +3,7 @@ import type { TaskDetail, TaskReconciliationEvents } from "@may-agent/sdk/app";
 import { dirname, join } from "node:path";
 import { writeContentAddressedJson } from "./artifacts.js";
 import type { TaskExecutionContext } from "./task-execution-context.js";
+import { taskWorkContext, taskWorkGuidance } from "./task-work-context.js";
 
 const SECTION_BYTES = 1_600;
 const INPUT_EVENT_BYTES = 1_100;
@@ -174,8 +175,10 @@ export function createTaskDecisionContext(context: TaskExecutionContext): () => 
       refresh = { available: false, reason: String(error).slice(0, 300) };
     }
     const rec = context.reconciliation;
+    const work = taskWorkContext(known, rec.events, rec.previousAttempt);
     const full = {
       ...taskDecisionState(known, rec.events),
+      work,
       environment: { paths: context.executionPaths, declaredOutputs: context.details?.declaredOutputs },
       related: { childrenAtAttemptStart: rec.children, installedAppsAtAttemptStart: context.details?.dependencies },
       previousAttempt: rec.previousAttempt,
@@ -191,7 +194,7 @@ export function createTaskDecisionContext(context: TaskExecutionContext): () => 
           binding: context.taskBinding,
           resourceVersion: known?.resourceVersion,
           ...full,
-        });
+        }, { pretty: true });
         detail = join(root, artifact.ref);
       } catch {
         detailError = "Detail snapshot could not be saved; use the scoped Task read and attempt-start context.";
@@ -230,6 +233,7 @@ export function createTaskDecisionContext(context: TaskExecutionContext): () => 
           type: "text",
           text: [
             "Task decision brief (source data). Your call request defines your contribution; shared facts do not expand authority.",
+            taskWorkGuidance(work),
             "Judge new input alongside accepted understanding. Progress, failures and waits coexist. Reading input is not fulfillment.",
             "When coverage is incomplete, read the linked detail before the action needing that evidence. A refresh failure leaves known facts usable within their snapshot scope; diagnose with ordinary reads. Verify current authority for actions that require it.",
             JSON.stringify(packet),

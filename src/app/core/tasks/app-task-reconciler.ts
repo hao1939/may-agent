@@ -568,6 +568,9 @@ function previousAttemptFacts(attempt: AppTaskAttempt): NonNullable<TaskAttempt[
           acceptedResult: {
             state: result.state,
             summary: result.summary,
+            ...(result.inputKeys !== undefined ? { inputKeys: [...result.inputKeys] } : {}),
+            ...(result.continue ? { continue: result.continue } : {}),
+            ...(result.reviewAt !== undefined ? { reviewAt: result.reviewAt } : {}),
             ...(result.response ? { response: result.response } : {}),
             ...(result.result ? { result: structuredClone(result.result) } : {}),
             facts: [...result.facts],

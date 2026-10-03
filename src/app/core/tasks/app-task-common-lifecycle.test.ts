@@ -191,6 +191,7 @@ describe("explicit result scope", () => {
     expect(f.config.resourceStore.readTask("conversation")?.status.inputWaits?.correction?.pending).toBe(true);
     const next = f.claim();
     expect(next.continuedInputKeys).toContain("correction");
+    expect(next.previousAttempt?.acceptedResult?.inputKeys).toEqual([]);
     completeAppTask(f.config, next, { summary: "Correction answered", inputKeys: ["correction"] });
     expect(readAppTaskAdmissionOutcome(f.config, "conversation", "correction")?.attemptId).toBe(next.attemptId);
     expect(readAppTaskAdmissionOutcome(f.config, "conversation", "refresh")).toBeNull();

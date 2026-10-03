@@ -4,6 +4,7 @@ import { join } from "node:path";
 import { writeJsonArtifact } from "./artifacts.js";
 import type { TaskExecutionContext } from "./task-execution-context.js";
 import type { SubagentDefinition } from "./types.js";
+import { taskWorkContext, taskWorkGuidance } from "./task-work-context.js";
 
 export type TaskWorkspaceBrief = { taskFile: string } | { error: string };
 
@@ -50,6 +51,7 @@ export function prepareTaskWorkspaceContext(
     const currentRead = JSON.stringify({ action: "get", taskId: binding.taskId, target: { appId: binding.appId } });
     const previousSession = rec.previousAttempt?.sessionId;
     const selected = catalog.find((definition) => definition.name === rec.agent);
+    const work = taskWorkContext(rec.task, rec.events, rec.previousAttempt);
     const brief = [
       "# Task context",
       "",
@@ -59,6 +61,10 @@ export function prepareTaskWorkspaceContext(
       "## Task outcome and acceptance",
       String(rec.outcome ?? "Read context.json for the assignment."),
       ...(rec.acceptance ?? []).map((item) => `- ${item}`),
+      "",
+      "## Current work at attempt start",
+      taskWorkGuidance(work),
+      JSON.stringify(work, null, 2),
       "",
       "## Full context and discovery",
       "- Read context.json beside this file for full supplied input, references/attachments, pending events, waits, children, prior attempt and accepted result references. Fields omitted here remain there; inspect input/context references even when they are not named in this brief.",
@@ -74,7 +80,7 @@ export function prepareTaskWorkspaceContext(
       `- Earlier context snapshots for this Task: ${pathRef(taskRoot)}. List its attempt directories; their files are historical views, not current accepted state.`,
       "",
       "## Diagnosis and working notes",
-      "Start with previousAttempt in context.json and the current Task's result/facts. Follow retained report and command-receipt references; inspect failures and unfinished work before repeating operations.",
+      "Start with unfinished input and the current Task's result/facts. Use previousAttempt as scoped execution evidence, not a conclusion that all work is complete. Follow retained report and command-receipt references before repeating operations.",
       ...(previousSession ? [`Previous execution evidence: ${pathRef(join(persistDir, "sessions", previousSession))}. Read meta.json/result.json and output first; transcripts are optional deeper evidence.`] : []),
       "For other execution IDs in retained evidence, session artifacts are under the sessions directory and workflow artifacts under workflow-runs in the runtime evidence root below. Use exact referenced IDs; missing evidence is unavailable, not a successful check.",
       `Runtime evidence root: ${JSON.stringify(persistDir)}. Session/workflow artifacts retain their existing locations; no histories are copied into this directory.`,

@@ -66,8 +66,9 @@ export function writeContentAddressedJson(
   persistDir: string,
   directory: string,
   value: unknown,
+  options: { pretty?: boolean } = {},
 ): ArtifactDescriptor {
-  const content = `${JSON.stringify(value)}\n`;
+  const content = `${JSON.stringify(value, null, options.pretty ? 2 : undefined)}\n`;
   const metadata = digest(content);
   const ref = `${directory}/${metadata.sha256}.json`;
   const filePath = join(persistDir, ref);
