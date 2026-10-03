@@ -203,14 +203,16 @@ than adding a second source-copying mechanism. Filesystem snapshots also omit
 runtime/generated directories under the existing release policy.
 
 Validate paths against the actual snapshot before caching it, and again when
-reusing or activating it. Missing targets and canonical roots/configuration
-files escaping the snapshot reject the release without replacing the active
-one. Explicitly pinned Git releases validate the selected commit's captured
+reusing or activating it. Check the configured roots, configuration files and
+filesystem symlinks within those roots, including manuals' supporting files.
+Missing targets and links escaping the snapshot reject the release without
+replacing the active one; relative links contained in the snapshot remain valid.
+Explicitly pinned Git releases validate the selected commit's captured
 configuration, not later working-tree edits. Ordinary Git reloads additionally
 require manuals and supporting files in configured roots to be committed.
 Relative paths then resolve inside the captured release; live source edits do
 not change its cataloged skill bodies or captured references. This does not
-validate every link inside a manual; authors must check those references.
+parse Markdown links or validate external URLs; authors must check those references.
 
 **Availability:** Implemented in companion Host source on
 `feat/skill-discovery-paths`; merge and deployment remain pending. Older Hosts
