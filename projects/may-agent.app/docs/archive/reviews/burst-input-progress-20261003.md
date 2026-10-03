@@ -272,15 +272,77 @@ GitHub Quality (4m05s) and Container (1m51s) passed on that same revision.
 Design integrity, examples and canonical App checks passed with the two existing
 layout warnings (`features` and `reports`). This is a portable scripted trial,
 with no model calls, production restart or deployment. The preview does not make filesystem cleanup
-and SQLite settlement one atomic operation; the existing final admission fences
-remain necessary after asynchronous filesystem work.
+and SQLite settlement one atomic operation. The subsequent review below
+demonstrates why validation alone was insufficient and replaces that ordering.
+
+## PR review follow-up: settle before destructive cleanup
+
+Host `5f774cb38` (implementation `f2beb6c4e`, subsequent corrections and current `main`) addresses the [cleanup race found in review](https://github.com/hao1939/may-agent/pull/305#discussion_r4174075936).
+The rollback preview in `f2b4e47f9` validated a snapshot, but awaited Git removal
+still ran before real admission. Stop or a Condition revision during that wait
+could delete the worktree, branch and private refs before admission rejected the
+result. Later validation cannot recover deleted artifacts.
+
+The runner now inspects Git state without deletion, then admits final changes and
+settles the result through the existing transaction. Only a clean, integrated
+workspace whose Task actually converges becomes `released` in that same commit.
+Cleanup follows commit and records its outcome on the originating attempt.
+Pending work keeps its checkout, and final-only retirement uses actual settlement
+rather than a second prediction of remaining work. The rollback preview and its
+retention predicate were removed.
+
+Released workspaces are never reused by a newer attempt. A fresh lineage is derived
+from the previous released branch; retries before preparation metadata is saved
+find that same new lineage. Active and recovery workspaces remain reusable.
+Distinct paths, branches and private refs protect newer work even across worker
+processes; no process-local mutex is being treated as cross-process authority.
+Cleanup errors remain recorded and appear in reconciliation evidence without
+rejecting an accepted result or causing another agent attempt.
+
+Four new runtime cases fail on `f2b4e47f9` and pass with the correction: Stop during
+Git finalization, a concurrent Condition generation change, new same-generation
+work during cleanup, and physical cleanup failure. The first two directly
+reproduce deletion of rejected-result artifacts. Additional Git tests verify that
+inspection and waiting/failed finalization preserve worktrees or retained branches
+and refs, and that a separate worker prepares an independent lineage while the
+released workspace still exists. Preparation retry preserves that new work.
+
+The initial focused group passed 25 tests with 286 assertions. Full CI then
+exposed a legacy recovery case: older Hosts removed some waiting workspaces.
+Physical `removed` metadata alone must not abandon that recorded lineage. The
+correction records release as a separate flag and preserves legacy recovery
+without it. The expanded Git/runtime group passed 50 tests with 435 assertions.
+A [further review](https://github.com/hao1939/may-agent/pull/305#discussion_r4174125616)
+found that cleanup bookkeeping used the 16-attempt context window. After 17 newer
+attempts, it could silently miss its original attempt. Cleanup now reads that
+exact attempt by ID in the existing transaction, fences its Task and writes only
+the historical attempt. Both delayed success and delayed failure cases fail on
+`a9383b54c` and pass on `5f774cb38`; newer work remains untouched. The full focused
+Git/runtime group passed 51 tests with 456 assertions. The
+[legacy recovery review](https://github.com/hao1939/may-agent/pull/305#discussion_r4174125586)
+is covered by the retained existing regression and explicit release flag.
+
+Full `bun run ci` passed on `5f774cb38`: 3,554 tests passed, three existing
+installation-dependent tests skipped, zero failures, and 19,136 assertions across
+323 files. Host/SDK types, App-boundary and lint checks passed; the browser test
+ran. GitHub Quality (4m08s) and Container (2m09s) passed on that same revision.
+Design integrity, examples and canonical App checks passed with the two existing
+layout warnings (`features` and `reports`).
+Local CI caught an unused helper, then its unused type import, after deleting
+the retention predicate. Both were removed before the complete validation run.
+
+No deployment, production restart or model calls were performed. Filesystem
+cleanup is still not atomic with SQLite. A crash after release can leave recorded
+artifacts for operational cleanup; this change does not add a collector. Accepted
+results stay accepted, and subsequent work never inherits the released namespace.
 
 ## Reproduction
 
-Use an isolated Host checkout with normal dependencies. At candidate `f2b4e47f9`:
+Use an isolated Host checkout with normal dependencies. At candidate `5f774cb38`:
 
 ```sh
 bun test src/app/core/state/conversation-task-progress.test.ts
+bun test src/app/adapters/workspaces/git.test.ts
 bun test src/app/core/tasks/app-task-runtime.test.ts --test-name-pattern 'result-scope rejection|partial acceptance retains|final-result retirement plans Git cleanup'
 bun run ci
 ```
