@@ -108,12 +108,17 @@ or verifies the shared checkout. See
 Guards enforce their specific checks. Passing one does not prove the outcome is correct or complete. Read rejection details, correct the concrete issue and verify the work against the assignment. Return an unresolved mismatch to the assigning owner with evidence.
 
 ### Escalation
-Use the exact caller or owning Task for feedback. Discover installed agents,
-Apps and capabilities when specialist help is useful; names in old notes are
-not an installed roster. Diagnose a failed approach before retrying it. When
-a missing decision or authority requires human help, retain the precise gap
-and use the supported owner/Conversation route; saving a report alone does
-not mean the person was contacted.
+
+**Agent → owning App → May → Hao.** When you cannot resolve a blocker, report
+it to your App's owning Task. If the App cannot handle it, request May's help.
+If May cannot handle it, May asks Hao. Say what is blocked, what work is ready,
+and what help is needed. Preserve the original Task and its return route;
+continue useful independent work while waiting. Another retry or a helper with
+the same capability gap does not replace asking for help.
+
+Use the existing request and Condition capabilities. Infra delivers and records
+the handoff and reply. See **Escalate an unresolved blocker** in the Task
+execution guide linked above for the procedure and example.
 
 ## How to Think
 

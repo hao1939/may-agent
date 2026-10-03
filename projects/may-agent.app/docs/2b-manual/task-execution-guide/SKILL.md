@@ -1,6 +1,6 @@
 ---
 name: task-execution-guide
-description: Start, continue or recover a May Task using its assignment, scoped capabilities, Conditions and attempt result schema. Use for agent or workflow work under the May Task contract.
+description: Start, continue, recover or escalate a blocked May Task using its assignment, scoped capabilities, Conditions and attempt result schema. Use for agent or workflow work under the May Task contract.
 ---
 
 # Working on a Task
@@ -256,6 +256,40 @@ Retries use bounded attempts and backoff; there is no universal failure-count
 stop. Where an operation cannot make repeat delivery safe, its contract must
 expose that exception. Follow its reconciliation path and preserve uncertainty
 until acceptance is known. See [retry ownership](../../2a-design/system-boundary.md#retry-and-recovery-ownership).
+
+### Escalate an unresolved blocker
+
+**Agent → owning App → May → Hao.**
+
+1. **Agent cannot proceed:** return the blocker to the App's owning Task through
+   the supplied caller-feedback/result contract. A workflow's `ctx.blocked(...)`
+   returns evidence to that owner; it does not contact May or Hao itself.
+2. **App cannot resolve it:** use an ordinary Task request to the installed May
+   App, with a caller Condition for the answer. Follow May's supplied input schema.
+3. **May cannot resolve it:** May asks Hao for the missing help through the
+   supported human Condition/Conversation path. Put the short ask in
+   `Condition.requestedAction`. May does not need another May Task to ask Hao.
+
+These are responsibilities, not extra Tasks. If you already decide for the
+owning App's Task, take the App step directly.
+
+Each handoff says **what is blocked, what work is ready, and what help is needed**,
+with useful evidence references. An unknown cause can require diagnostic help;
+a complete root-cause analysis is not a prerequisite to asking. A helper should
+add a missing capability, authority or knowledge. If it has the same unresolved
+gap, pass that need up instead of delegating it around again.
+
+Keep the original Task and its prepared work. Infra delivers the admitted request
+and returns the reply; apply it to the original assignment. Continue independent
+work, otherwise wait on the saved Condition. Reuse an unchanged ask. A retry or
+future `reviewAt` alone does not ask anyone for help. See the [escalation contract](../../2a-design/escalation.md)
+for ownership and delivery details; guidance does not guarantee an agent's judgment.
+
+For example, another App has a reviewed branch but cannot publish its PR. It
+asks May with the branch, commit, proposed PR text and checks. May publishes it
+if she can; otherwise she asks Hao to arrange publication. The verified PR link
+returns to the original Task, which continues review and delivery. Publishing
+through another environment does not prove the original capability was repaired.
 
 ## For workflow and executor authors
 

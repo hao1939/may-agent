@@ -13,20 +13,17 @@ as unresolved. It does not resume a session or infer a supervisor. See
 
 ## Purpose
 
-Return problems to the exact caller, who can decide what to do next.
-"Escalation" describes asking someone with different authority to decide or
-act; it is not a resource or a required response to failure. Different authority
-can exist within one App. Ordinary cross-App delegation is not automatically
-an escalation. The [caller-feedback contract](../archive/reviews/caller-feedback-and-waiting.md)
-owns reporting during waits and unsuccessful attempts.
+**Agent → owning App → May → Hao.** Return an unresolved blocker to the level
+that can help. The agent reports to its App's owning Task; when the App cannot
+resolve it, the App requests May's help. May resolves it within her available
+capabilities and authority, or asks Hao. May does not recursively delegate the
+same unresolved gap to another May Task.
 
-```text
-source assignment
-  -> do safe in-scope work; report facts and any needed decision to the caller
-  -> caller decides whether to continue, revise, wait or seek other authority
-  -> any required delegation uses an ordinary exact Task dependency
-  -> the source keeps its identity and applies the returned result
-```
+Escalation requests help; it is not a new resource or the response to every
+failed operation. Useful authorized recovery can proceed locally. Once the
+owner cannot resolve the blocker, another retry does not replace the duty to
+ask for help. The [caller-feedback contract](../archive/reviews/caller-feedback-and-waiting.md)
+owns reporting during waits and unsuccessful attempts.
 
 Escalation is not a synonym for failure, waiting, retry, attention, or workflow
 blocking. It does not create a special work authority. The destination task
@@ -42,19 +39,31 @@ original outcome. Runtime request records correlate the dependency and result.
 | Bounded execution cannot continue safely                    | Return `blocked` evidence; owning boundary decides next state |
 | Known external fact will change later                       | Persist an exact task Condition                               |
 | Another App must decide or act                              | Create a typed cross-App task dependency                      |
-| Human approval or private judgment is required              | Exact human Condition or May conversational request           |
+| App cannot resolve its blocker                              | Task request to May with a return Condition                    |
+| May cannot resolve the blocker                              | May asks Hao through a human Condition/Conversation            |
 | Agent attempt was incomplete                                | Honest execution result; not escalation by itself             |
 
-The current App, not the Host, decides that a blocker crosses an
-ownership boundary.
+The App agent decides when local recovery is insufficient and asks the next
+owner in this chain. The Host does not make that judgment.
+
+The agent judges whether recovery can make progress and what help is missing.
+Infra admits and delivers the request, preserves its exact return route and
+retains the original work. Neither a retry timer nor delegation to a worker with
+the same unresolved capability gap replaces that request. Continue useful
+independent work while help is pending, and reuse an unchanged ask rather than
+repeatedly notifying the human. The [Task execution guide](../2b-manual/task-execution-guide/SKILL.md#escalate-an-unresolved-blocker)
+owns the practical procedure and example. This is an agent responsibility;
+automatic supervisor fallback remains an [implementation limit](system-boundary.md#ownership-and-intervention),
+not a guarantee that every blocked result reaches a human.
 
 ## App-to-App escalation
 
-When a task discovers that another App owns the next action, its reconciliation
-result requests one typed Runtime-managed dependency. The checked
+When an App cannot resolve a blocker, request help from the installed May App
+using the existing Task dependency path. The checked
 [`dependencyResult`](../examples/app.ts) names `release-governance`, a stable
 dependency ID, and the destination's illustrative `approval-request` input.
-Use the actual installed App's input schema. A workflow returns that result as:
+It illustrates dependency mechanics; use May's actual installed input schema
+for blocker escalation. A workflow returns a dependency result as:
 
 ```ts
 return ctx.done(dependencyResult.summary, dependencyResult);
@@ -93,26 +102,17 @@ source-session resume record, or generic event owner field.
 
 ## Human attention
 
-Straightforward human judgment stays on the source Task as one exact
-human-owned Condition. The shared human adapters derive `/todo` from that
-Condition and return the reply as evidence. The App never calls Telegram or a
-browser directly, and adapter delivery never becomes Task state.
+May owns the human-facing step of blocker escalation. If she cannot resolve
+the App's request, she asks Hao using an exact human-owned Condition and the
+supported Conversation path. Existing May work uses its current Task. The shared
+human adapters present the ask and return the reply as evidence; agents do not
+choose Telegram or browser delivery details.
 
-Use a typed child request to the May App only when clarification, sensitive
-channel policy, deduplication, or a multi-turn human conversation is itself a
-separate outcome:
-
-```text
-domain App/task
-  -> direct human Condition, or typed child request to May
-  -> Console/Telegram present the same Task identity
-  -> exact human reply becomes evidence
-  -> source task reconciles and resumes
-```
-
-Naming a human role grants neither transport access nor automatic completion.
-May may clarify, reject, deduplicate, or deliver according to human preferences
-when it owns a child request, but the source still applies the exact result.
+May applies the human answer and returns the contribution to the source Task.
+The source owner judges what remains and continues the original work. Request
+admission, human presentation, returned help and source completion remain
+separate facts. Ordinary approval Conditions already owned by another Task
+keep their existing contract; this chain governs unresolved-blocker escalation.
 
 An actionable human ask includes:
 
@@ -205,7 +205,8 @@ permission to start an unrelated agent or resume historical execution.
 
 ## Integrity checklist
 
-- The escalation crosses a real ownership boundary.
+- An unresolved blocker follows agent → owning App → May → Hao; the original
+  Task keeps its work and receives the result.
 - The destination is an App address, not an owner string fallback.
 - The child request states one exact action/decision and compact evidence.
 - A source wait names a durably admitted destination request; interrupted
