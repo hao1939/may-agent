@@ -9040,6 +9040,7 @@ describe("canonical App task runtime", () => {
     "revision-during-validation",
     "new-work-during-cleanup",
     "cleanup-fails",
+    "cleanup-fails-after-history",
   ] as const)(
     "final-result retirement plans Git cleanup after admission: %s",
     async (scenario) => {
@@ -9053,7 +9054,9 @@ describe("canonical App task runtime", () => {
         "stop-during-validation",
         "revision-during-validation",
       ].includes(scenario);
-      const retained = rejected || scenario === "independent-wait" || scenario === "cleanup-fails";
+      const cleanupFails = scenario === "cleanup-fails" || scenario === "cleanup-fails-after-history";
+      const newWork = scenario === "new-work-during-cleanup" || scenario === "cleanup-fails-after-history";
+      const retained = rejected || scenario === "independent-wait" || cleanupFails;
       const git = (cwd: string, ...args: string[]) =>
         promisify(execFile)("git", ["-C", cwd, ...args], { timeout: 10_000 });
       writeFileSync(join(f.appDir, ".gitignore"), ".local-proof\n");
@@ -9124,25 +9127,29 @@ describe("canonical App task runtime", () => {
             finalizations.push({ outcome, state: readState(), requests: readRequests().length });
             // The old implementation enters destructive finalization before admission.
             if (!loadedTaskConfig(f).resourceStore.readAttempt(firstAttemptId)?.acceptedResult) interruptValidation();
-            if (outcome === "accepted" && scenario === "cleanup-fails") throw new Error("fixture cleanup failure");
-            if (outcome === "accepted" && scenario === "new-work-during-cleanup") {
-              admitTaskInput(loadedTaskConfig(f), {
-                appId: "sample",
-                attachment: { kind: "existing", taskId },
-                idempotencyKey: "new-work",
-                inputContext: {
-                  id: "new-work",
-                  source: { kind: "human", id: "requester" },
-                  input: { kind: "notice", data: {} },
-                },
-              });
-              await reconcileLoadedAppTaskOnce({
-                bus,
-                appId: "sample",
-                taskId,
-                dispatch: { enqueuedAt: 1, startedAt: 2, readyWaitMs: 1, lane: "normal" },
-              });
+            if (outcome === "accepted" && newWork) {
+              for (let index = 0; index < 17; index++) {
+                admitTaskInput(loadedTaskConfig(f), {
+                  appId: "sample",
+                  attachment: { kind: "existing", taskId },
+                  idempotencyKey: `new-work:${index}`,
+                  inputContext: {
+                    id: `new-work:${index}`,
+                    source: { kind: "human", id: "requester" },
+                    input: { kind: "notice", data: {} },
+                  },
+                });
+                await reconcileLoadedAppTaskOnce({
+                  bus,
+                  appId: "sample",
+                  taskId,
+                  dispatch: { enqueuedAt: 1, startedAt: 2, readyWaitMs: 1, lane: "normal" },
+                });
+              }
+              const history = loadedTaskConfig(f).resourceStore.readTaskContext({ taskIds: [taskId] });
+              expect(history.attempts?.[firstAttemptId]).toBeUndefined();
             }
+            if (outcome === "accepted" && cleanupFails) throw new Error("fixture cleanup failure");
             return gitTaskWorkspaces.finalize(prepared, outcome);
           },
         },
@@ -9285,7 +9292,7 @@ describe("canonical App task runtime", () => {
       } else {
         expect(attempt.acceptedResult?.summary).toBe("Requested work is fulfilled");
         expect(task.status.phase).toBe(
-          scenario === "independent-wait" || scenario === "new-work-during-cleanup" ? "waiting" : "converged",
+          scenario === "independent-wait" || newWork ? "waiting" : "converged",
         );
         expect(task.status.conditionIds ?? []).toEqual(scenario === "independent-wait" ? ["independent-review"] : []);
         expect(attempt.workspace?.disposition).toBe(
@@ -9299,11 +9306,11 @@ describe("canonical App task runtime", () => {
             requests: 1,
             state: { attempt: { acceptedResult: { state: "converged" }, workspace: { released: true } } },
           });
-        if (scenario === "cleanup-fails") {
+        if (cleanupFails) {
           expect(attempt.workspace?.cleanupError).toBe("fixture cleanup failure");
           expect(attempt.unacceptedResult).toBeUndefined();
         }
-        if (scenario === "new-work-during-cleanup") {
+        if (newWork) {
           expect(nextWorkspacePath).not.toBe(workspacePath);
           expect(readFileSync(join(nextWorkspacePath, ".local-proof"), "utf8")).toBe("new work must survive old cleanup");
           expect(acceptedTaskAttempt(config, taskId)?.workspace?.disposition).toBe("active");
@@ -9317,10 +9324,11 @@ describe("canonical App task runtime", () => {
               )
             ).stdout.trim(),
           ).not.toBe("");
-        } else if (!retained || scenario === "cleanup-fails")
+        } else if (!retained || cleanupFails)
           expect(config.resourceStore.listRecoveryCandidates().items).toEqual([]);
       }
     },
+    15_000,
   );
 
   it.each([

@@ -3148,12 +3148,14 @@ export function recordReleasedAppTaskWorkspace(
   workspace: AppTaskWorkspace,
 ): void {
   stateTransaction(config.resourceStore.db, () => {
-    const tree = config.resourceStore.readTaskContext({ taskIds: [claim.taskId] });
+    const tree = config.resourceStore.readTaskContext({ taskIds: [claim.taskId] }, { includeHistory: false, childLimit: 0 });
     const resource = tree.resources?.[claim.taskId];
-    const attempt = tree.attempts?.[claim.attemptId];
+    const attempt = config.resourceStore.readAttempt(claim.attemptId);
     if (
       !resource ||
       !attempt ||
+      attempt.taskId !== claim.taskId ||
+      attempt.taskGeneration !== claim.generation ||
       !attempt.workspace?.released ||
       attempt.workspace.path !== workspace.path ||
       attempt.workspace.branch !== workspace.branch
