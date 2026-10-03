@@ -91,11 +91,11 @@ describe("replaceable workflow reporting", () => {
     expect(failed.skipped).toEqual([id]);
     expect(failed.failures).toEqual([{ id, reason: expect.stringContaining("missing_fixture_table") }]);
     expect(failed.measured).toHaveLength(3);
-    expect(await read(id)).toEqual(empty);
+    expect(await read(id)).toEqual({ ...empty, calculation: { ...empty!.calculation, calculatedAt: expect.any(Number) } });
     // Definition changes and late-arriving old samples do not refresh the latest observation.
     service.define(WORKFLOW_OUTCOME_METRICS[0]!);
     service.record(id, 99, { measuredAt: empty!.measuredAt! - 1_000, sampleSize: 99, note: "late old sample" });
-    expect(await read(id)).toEqual(empty);
+    expect(await read(id)).toEqual({ ...empty, calculation: { ...empty!.calculation, calculatedAt: expect.any(Number) } });
     await expect(createRuntimeAppRead({ getDb: () => db }).metric(id)).rejects.toThrow(
       "Metric reporting is unavailable",
     );

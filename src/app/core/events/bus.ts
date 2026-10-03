@@ -803,7 +803,7 @@ export type SystemEvent =
   | { type: "metric.recovered"; source?: string; owner: string; urgency?: EventUrgency; data: MetricEventData }
   | {
       /** Diagnostic fact; not a sample, alert, or automatic request for work. */
-      type: "metric.measurement.failed";
+      type: "metric.measurement.failed" | "metric.evaluation.failed";
       source: string;
       owner: string;
       data: { metricId: string; reason: string; triggerEventId?: number };

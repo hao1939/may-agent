@@ -11,6 +11,7 @@ import { WORKFLOW_OUTCOME_METRICS } from "./adapters/reporting/workflow-metrics.
 import { redactTranscriptSecrets } from "../lib/persistence.js";
 
 export const METRIC_SOURCE_MEASUREMENT_EVENT = "trigger.metrics-snapshot";
+export const METRIC_EVALUATION_EVENT = "trigger.metrics-evaluate";
 export const SUBSCRIBER_FAILED_COUNT_METRIC_ID = "infra.bus.subscriber-failed-count-1h";
 export const SUBSCRIBER_FAILED_COUNT_SOURCE_QUERY = `SELECT COUNT(*) AS value
 FROM events
@@ -26,6 +27,7 @@ export const INTENTIONAL_OBSERVATION_EVENT_TYPES = [
   "handler.routed",
   "metric.breach",
   "metric.measurement.failed",
+  "metric.evaluation.failed",
   "conversation.updated",
   "gym.review.filtered",
   "project.approval.resolved",
@@ -142,8 +144,7 @@ function measurementError(error: unknown): string {
  * Measure active metrics backed by a persisted source query or source command.
  *
  * The metric definition remains the domain authority. This Host consumer only
- * executes that accepted definition, records the correlated real observation,
- * and asks MetricService to apply the existing alert lifecycle. Each source
+ * executes that accepted definition and records the correlated observation. Each source
  * query owns a read-only connection that closes before writer-side recording.
  */
 export async function measureSourceMetrics(options: {
@@ -158,9 +159,6 @@ export async function measureSourceMetrics(options: {
   const metrics = createMetricService({
     getDb: () => db,
     measuredBy: "runtime:metric-source-measurement",
-    emit: (type, data, envelope) => {
-      options.bus.emit({ type, data: data ?? {}, ...envelope } as AgentEvent);
-    },
   });
   const rows = db
     .prepare(
@@ -241,13 +239,11 @@ export async function measureSourceMetrics(options: {
         sampleSize: sample.sampleSize,
         note: sample.note ?? note,
       });
-      metrics.evaluate(row.id);
       measured.push(row.id);
     } catch (error) {
       failed(row.id, measurementError(error));
     } finally {
-      // Recording and evaluating one observation remains a synchronous durable
-      // boundary. Yield before the next metric so a large snapshot cannot keep
+      // Yield before the next metric so a large snapshot cannot keep
       // control traffic, including readiness, off the daemon event loop for the
       // duration of the complete metric collection.
       await new Promise<void>((resolve) => setTimeout(resolve, 0));
@@ -373,63 +369,85 @@ export function attachMetricSourceMeasurement(options: {
     });
   });
 
-  let pending: { triggerEventId?: number; measuredAt: number; forced: boolean } | undefined;
-  let drain: Promise<void> | undefined;
   const nextDueAt = new Map<string, number>();
+  return attachMetricPass(options.bus, METRIC_SOURCE_MEASUREMENT_EVENT, "metric-source-measurement", async (current) => {
+    await measureSourceMetrics({
+      ...options,
+      ...current,
+      isDue: (metric) => current.forced || current.measuredAt >= (nextDueAt.get(metric.id) ?? 0),
+      onAttempt: (metric) => {
+        const interval = metric.measure_interval;
+        nextDueAt.set(metric.id, current.measuredAt + (typeof interval === "number" && interval > 0 ? interval : 0));
+      },
+    });
+  });
+}
 
-  const schedule = (request: { triggerEventId?: number; measuredAt: number; forced: boolean }) => {
-    // Metrics are observations. If snapshots arrive faster than their source
-    // commands finish, one latest observation is sufficient.
+/** Recalculate retained evidence without running any collectors. */
+export async function evaluateMetrics(options: { bus: EventBus; persistDir: string }) {
+  const db = getDb(options.persistDir);
+  const metrics = createMetricService({
+    getDb: () => db,
+    emit: (type, data, envelope) => options.bus.emit({ type, data: data ?? {}, ...envelope } as AgentEvent),
+  });
+  const ids = db.prepare("SELECT id FROM metrics WHERE status = 'active' AND threshold IS NOT NULL ORDER BY id").all();
+  const results = [];
+  for (const { id } of ids) {
+    try {
+      results.push(...metrics.evaluate(String(id)));
+    } catch (error) {
+      const reason = measurementError(error);
+      log("warn", `[metrics:${id}] Evaluation failed: ${reason}`);
+      try {
+        options.bus.emit({ type: "metric.evaluation.failed", source: "runtime:metric-evaluation",
+          owner: "agent:may", data: { metricId: String(id), reason } });
+      } catch (error) {
+        log("warn", `[metrics:${id}] Could not retain evaluation diagnostic: ${measurementError(error)}`);
+      }
+    }
+    await new Promise<void>((resolve) => setTimeout(resolve, 0));
+  }
+  return results;
+}
+
+export function attachMetricEvaluation(options: { bus: EventBus; persistDir: string }): MetricSourceMeasurementRuntime {
+  return attachMetricPass(options.bus, METRIC_EVALUATION_EVENT, "metric-evaluation", async () => {
+    await evaluateMetrics(options);
+  });
+}
+
+type MetricPass = { triggerEventId?: number; measuredAt: number; forced: boolean };
+
+/** Each pass has independent progress; repeated wakes coalesce while it is busy. */
+function attachMetricPass(bus: EventBus, type: string, label: string, run: (pass: MetricPass) => Promise<void>): MetricSourceMeasurementRuntime {
+  let pending: MetricPass | undefined;
+  let drain: Promise<void> | undefined;
+  const schedule = (request: MetricPass) => {
     pending = request;
     if (drain) return;
-    // Calling an async function does not defer its synchronous prefix. Start
-    // on the next event-loop turn so opening the DB and discovering sources
-    // can never extend EventBus.emit()/EventInterface.publish() latency.
     drain = new Promise<void>((resolve) => setTimeout(resolve, 0))
       .then(async () => {
         while (pending) {
           const current = pending;
           pending = undefined;
-          await measureSourceMetrics({
-            ...options,
-            ...current,
-            isDue: (metric) => current.forced || current.measuredAt >= (nextDueAt.get(metric.id) ?? 0),
-            onAttempt: (metric) => {
-              const interval = metric.measure_interval;
-              nextDueAt.set(
-                metric.id,
-                current.measuredAt + (typeof interval === "number" && interval > 0 ? interval : 0),
-              );
-            },
-          });
+          await run(current);
         }
       })
-      .catch((error) => {
-        log("warn", `[metrics] source measurement failed: ${error instanceof Error ? error.message : String(error)}`);
-      })
+      .catch((error) => log("warn", `[${label}] ${measurementError(error)}`))
       .finally(() => {
         drain = undefined;
         if (pending) schedule(pending);
       });
   };
-
-  options.bus.listen(
-    (event): void => {
-      const triggerEventId = (event as AgentEvent & { [EVENT_ROW_ID]?: number })[EVENT_ROW_ID];
-      const data = eventData(event);
-      schedule({
-        triggerEventId,
-        measuredAt: Date.now(),
-        forced: (event as AgentEvent & { forced?: unknown }).forced === true || data.forced === true,
-      });
-    },
-    { label: "metric-source-measurement", types: [METRIC_SOURCE_MEASUREMENT_EVENT] },
-  );
-
+  bus.listen((event): void => {
+    schedule({
+      triggerEventId: (event as AgentEvent & { [EVENT_ROW_ID]?: number })[EVENT_ROW_ID],
+      measuredAt: Date.now(),
+      forced: (event as AgentEvent & { forced?: unknown }).forced === true || eventData(event).forced === true,
+    });
+  }, { label, types: [type] });
   return {
     async idle() {
-      // Let the EventBus listener consume a just-published wake before
-      // inspecting the measurement drain.
       await new Promise<void>((resolve) => setTimeout(resolve, 0));
       while (drain) await drain;
     },
