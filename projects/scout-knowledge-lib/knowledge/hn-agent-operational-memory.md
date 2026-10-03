@@ -2,7 +2,7 @@
 summary: "Insights on Operational Memory (Agent Experience Cache) from Hacker News — infrastructure patterns, sovereignty stack, agent sandbox convergence, model commoditization, and practitioner discourse."
 triggers: "operational memory, architecture, cache, lessons, context, sovereignty stack, agent sandbox, harness-as-moat"
 last_updated: "2026-10-03"
-source_basis: "Hacker News discussions on agent architectures, including HN 49376500 / tenequm/pond, HN 49394827 / OzBrain, HN 49428882 / laude-institute/headlong, HN 49433217 / wisplu state-file incident, and HN 49784563 / manuelcecchetto/codex-context-gc; arXiv 2606.20512 (Probe-and-Refine guidance tuning), arXiv 2607.00685 (M2Note mistake notebooks), arXiv 2607.00910 (SIVE instrument validation); GitHub brain.md/agent-memory-wiki, lohoz/agenthist, x96x64/ctxjev, manuelcecchetto/codex-context-gc, hyperb1iss/sibyl at 69b60fe41a86d64efba7eed3092dba8cb90923d3, and dctanner/jelly at fa92c032ea618239c85b388c5fee831c237b695a"
+source_basis: "Hacker News discussions on agent architectures, including HN 49376500 / tenequm/pond, HN 49394827 / OzBrain, HN 49428882 / laude-institute/headlong, HN 49433217 / wisplu state-file incident, HN 49784563 / manuelcecchetto/codex-context-gc, and HN 49945933 / Kevin Liao's document-based-memory argument; arXiv 2606.20512 (Probe-and-Refine guidance tuning), arXiv 2607.00685 (M2Note mistake notebooks), arXiv 2607.00910 (SIVE instrument validation); GitHub brain.md/agent-memory-wiki, lohoz/agenthist, x96x64/ctxjev, manuelcecchetto/codex-context-gc, hyperb1iss/sibyl at 69b60fe41a86d64efba7eed3092dba8cb90923d3, dctanner/jelly at fa92c032ea618239c85b388c5fee831c237b695a, and aerovato/operator-memory at 6429dcde180bcf9ba8c425248df7d030e2ad1885"
 companion_notes: ["hn-comprehension-cliff-discourse.md"]
 extraction_log: "2026-06-29: Extracted Comprehension Cliff / Reviews Expensive / Skill Atrophy discourse arc (396 lines, 8 sections) into hn-comprehension-cliff-discourse.md. Parent reduced from 1,303 to 913 lines. 2026-08-06 maintenance removed future-dated extraction metadata and unverifiable future-dated tracker links."
 </ai_context>
@@ -26,6 +26,54 @@ This is distinct from general user memory or static documentation retrieval. It 
 Our system already implements a basic version of this via the `lessons` array in the `finish` tool (which updates `context.md` for agents). 
 *   **Current State**: We have `context_updates` for durable facts and `lessons` for actionable learnings.
 *   **Opportunity**: We could formalize this into a structured "Agent Experience Cache" that tracks historical tool success/failure rates and contextually surfaces past failure modes when an agent attempts a similar action.
+
+## Documents are an auditable memory layer, not a complete memory replacement (Oct 2026)
+
+HN item 49945933 links Kevin Liao's argument that coding agents need maintained
+project documentation rather than automatic replay of conversation snippets. The
+linked **Operator Memory** repository makes the proposal concrete at pinned
+revision `6429dcde180bcf9ba8c425248df7d030e2ad1885`: Markdown specifications,
+decisions, research, lessons, and code indexes live in private, shared, and
+user-level partitions. Small catalogs and a main project index are loaded as
+orientation; agents deliberately open deeper documents, then update the
+canonical document after work. Shared material can be reviewed through ordinary
+Git diffs.
+
+This is a useful correction to treating top-k similarity as authority. Similarity
+does not establish which decision is current, which constraint is mandatory, or
+whether the retrieved set is complete. Coherent files with explicit maps make
+knowledge inspectable and give corrections a named location. The design also
+separates code navigation from durable project understanding: project indexes
+map source structure, while catalogs map specifications, rationale, and lessons.
+
+The stronger headline—agents do not need memory—is not supported by the supplied
+evidence. The blog groups a broad and unspecified set of memory products under
+one architecture, reports the author's own year of use without measurements,
+and promotes the author's project. The repository documentation itself admits
+that its Brain can become stale and says agents may hesitate to create,
+consolidate, split, or trim documents without human steering. It also places
+"reliable Brain updates" on the roadmap. A transparent file can still be wrong,
+omit an unanticipated fact, leak private material when promoted, or go unread
+when its catalog route is weak.
+
+This note's archive/admission model therefore remains broader than a
+document-versus-RAG choice. Raw sessions preserve reconstructible evidence;
+maintained documents carry reviewed working truth; indexes and retrieval route a
+bounded task to relevant material; source and admission validity decide whether
+that material is authoritative. Documentation should replace unreviewable
+snippet injection as *canon*, not eliminate source archives or every retrieval
+mechanism.
+
+**Reusable rule:** store durable project truth in human-readable, reviewable
+artifacts with an owner, scope, and correction path. Keep raw evidence separately
+for audit and re-derivation, and treat routing as a fallible discovery aid rather
+than proof of authority or completeness.
+
+- **HN:** https://news.ycombinator.com/item?id=49945933
+- **Source:** https://liao.gg/blog/agents-dont-need-memory
+- **Repo:** https://github.com/aerovato/operator-memory
+- **Pinned architecture:** https://github.com/aerovato/operator-memory/blob/6429dcde180bcf9ba8c425248df7d030e2ad1885/docs/architecture.md
+- **Pinned workflow:** https://github.com/aerovato/operator-memory/blob/6429dcde180bcf9ba8c425248df7d030e2ad1885/docs/workflow.md
 
 ## The session archive is below the memory layer (Aug 2026)
 
