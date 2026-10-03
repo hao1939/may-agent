@@ -120,6 +120,16 @@ Use the full supplied schema for required fields and permitted combinations.
 saved assignment plus accepted live inputs; `[]` covers none. One result has one
 disposition for that selected set. Unselected requirements remain outstanding.
 
+`events.continuedInputs` contains earlier unanswered requests assigned to this
+attempt. Empty new-event lists do not make those requests history-only. Read
+their exact content and compare it with the delivered result: fulfill remaining
+work, settle requests already covered by verified work, or retain the actual
+wait. Explain when a later authorized correction supersedes an earlier request.
+Settling a covered request preserves its history; it does not require repeating
+the work. Use explicit keys for a partial result. Returning `converged` with
+`inputKeys: []` leaves pending requests runnable, so repeating that unchanged
+decision can immediately schedule another attempt.
+
 Completion of an input, ending an attempt and owner closure of a Task are
 different actions. A pending Condition is context for judgment; it does not
 give infra authority to invent a semantic veto or to fabricate satisfaction.

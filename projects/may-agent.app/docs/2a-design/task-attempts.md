@@ -188,6 +188,13 @@ The worker judges which requests its result covers; `inputKeys` names that compl
 Omission uses the saved assignment and accepted live requests; `[]` covers none. Scheduling never expands that result.
 The Host validates references and saves result links; structural acceptance does not certify the worker's judgment.
 `converged` answers this set; waiting/incomplete retain it; unselected inputs survive.
+
+Earlier unanswered inputs are supplied as `events.continuedInputs`, separately
+from newly considered events. Their age does not change their obligation. The
+worker may use verified earlier work to answer them without repeating its effects,
+or explain how a later authorized requirement superseded them. Settlement keeps
+the input and result history. Empty new-event lists do not establish that the
+assignment is empty; an empty result scope preserves runnable pending inputs.
 The Host maintains `inputWaits[key].pending`, waits/deadlines and continuation; workers read this current state without maintaining the ledger.
 
 `incomplete` requires a summary and non-empty facts; it cannot include actions, Conditions
