@@ -26,11 +26,11 @@ describe("MetricService", () => {
       measuredBy: "test",
       now: () => 10_000,
     });
-    return { db, service, emitted };
+    return { root, db, service, emitted };
   }
 
-  it("re-emits breach when an open alert changes", () => {
-    const { service, emitted } = harness();
+  it("emits only breach and recovery transitions while retaining every sample", () => {
+    const { root, db, service, emitted } = harness();
     service.define({
       id: "process.unowned-work-count",
       name: "Unowned work",
@@ -42,20 +42,48 @@ describe("MetricService", () => {
       status: "active",
     });
 
-    service.record("process.unowned-work-count", 2);
-    service.evaluate("process.unowned-work-count");
-    service.record("process.unowned-work-count", 15);
-    service.evaluate("process.unowned-work-count");
+    const id = "process.unowned-work-count";
+    for (const value of [0, 1, 2, 3, 3]) {
+      const before = emitted.length;
+      service.record(id, value);
+      expect(emitted).toHaveLength(before); // Recording evidence alone never emits a breach.
+      expect(service.evaluate(id)[0]?.status).toBe(value === 0 ? "ok" : "breached");
+    }
+    expect(emitted).toHaveLength(1);
+    const firstAlertId = emitted[0].data!.alertId;
+    expect(db.prepare("SELECT id, message, resolved_at FROM metric_alerts").all()).toEqual([
+      { id: firstAlertId, message: expect.stringContaining("current=3"), resolved_at: null },
+    ]);
 
-    const breaches = emitted.filter((event) => event.type === "metric.breach");
-    expect(breaches).toHaveLength(2);
-    expect(breaches[1].data).toMatchObject({
-      metricId: "process.unowned-work-count",
-      current: 15,
-      repeat: true,
-      reason: "open-alert-updated",
+    // Recreate both the service and database connection: suppression comes from stored state.
+    closeDb(root);
+    const restarted = createMetricService({
+      getDb: () => getDb(root),
+      emit: (type, data) => emitted.push({ type, data }),
+      now: () => 10_000,
     });
-
+    expect(restarted.evaluate(id)[0]).toMatchObject({ status: "breached", alertId: firstAlertId });
+    expect(emitted).toHaveLength(1);
+    restarted.record(id, 0);
+    expect(restarted.evaluate(id)[0]).toMatchObject({ status: "recovered", alertId: firstAlertId });
+    expect(restarted.evaluate(id)[0]?.status).toBe("ok");
+    restarted.record(id, 4);
+    const nextAlertId = restarted.evaluate(id)[0]!.alertId;
+    expect(nextAlertId).toBeDefined();
+    expect(nextAlertId).not.toBe(firstAlertId);
+    expect(emitted.map(({ type, data }) => [type, data!.alertId, data!.current])).toEqual([
+      ["metric.breach", firstAlertId, 1],
+      ["metric.recovered", firstAlertId, 0],
+      ["metric.breach", nextAlertId, 4],
+    ]);
+    expect(getDb(root).prepare("SELECT value FROM metric_snapshots ORDER BY id").all()).toEqual(
+      [0, 1, 2, 3, 3, 0, 4].map((value) => ({ value })),
+    );
+    expect(restarted.get(id)?.current).toBe(4);
+    expect(getDb(root).prepare("SELECT id, resolved_at FROM metric_alerts ORDER BY id").all()).toEqual([
+      { id: firstAlertId, resolved_at: 10_000 },
+      { id: nextAlertId, resolved_at: null },
+    ]);
   });
 
   it("defines, records, opens, and recovers threshold alerts", () => {
@@ -199,7 +227,7 @@ describe("MetricService", () => {
     ]);
   });
 
-  it("supports source-defined metrics and manual alerts", () => {
+  it("shares one alert episode across manual reports and source measurements", () => {
     const { db, service, emitted } = harness();
 
     service.define({
@@ -225,6 +253,28 @@ describe("MetricService", () => {
       },
     });
     expect(emitted[0].data).not.toHaveProperty("owner");
+
+    const firstAlertId = emitted[0].data!.alertId as number;
+    service.alert("custom.queue-depth", "Queue depth needs attention", { priority: "P1", facts: "manual test" });
+    service.alert("custom.queue-depth", "Queue is still growing", { facts: "updated evidence" });
+    expect(emitted).toHaveLength(1);
+    expect(db.prepare("SELECT id, message, resolved_at FROM metric_alerts").all()).toEqual([
+      { id: firstAlertId, message: "Queue is still growing\n\nFacts: updated evidence", resolved_at: null },
+    ]);
+
+    service.record("custom.queue-depth", 12);
+    expect(service.evaluate("custom.queue-depth")[0]).toMatchObject({ status: "breached", alertId: firstAlertId });
+    service.alert("custom.queue-depth", "Confirmed by owner", { facts: "source and manual evidence agree" });
+    expect(emitted).toHaveLength(1);
+    expect(db.prepare("SELECT id, message FROM metric_alerts").all()).toEqual([
+      { id: firstAlertId, message: "Confirmed by owner\n\nFacts: source and manual evidence agree" },
+    ]);
+
+    service.resolveAlert(firstAlertId);
+    service.alert("custom.queue-depth", "A new incident");
+    expect(emitted).toHaveLength(2);
+    expect(emitted[1].type).toBe("metric.breach");
+    expect(emitted[1].data!.alertId).not.toBe(firstAlertId);
   });
 
   it("suppresses alert lifecycle for metrics with disabled alert config", () => {

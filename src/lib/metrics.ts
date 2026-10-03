@@ -483,26 +483,7 @@ export function createMetricService(options: MetricServiceOptions): MetricServic
           });
           results.push({ metricId: row.id, status: "breached", alertId, message });
         } else {
-          if (openAlertChanged) {
-            emitMetricEvent("metric.breach", owner, {
-              metricId: row.id,
-              metricName: row.name,
-              project: row.project ?? undefined,
-              alertId: openAlert.id,
-              alertType,
-              current,
-              threshold,
-              target: row.target,
-              alertOp: row.alert_op,
-              direction: thresholdDirection,
-              measuredAt: ts,
-              trend: recentTrend(db, row.id),
-              message,
-              priority: row.priority ?? "P2",
-              repeat: true,
-              reason: "open-alert-updated",
-            });
-          }
+          // The episode is already open. Changed readings update evidence, not the breach signal.
           results.push({ metricId: row.id, status: "breached", alertId: openAlert.id, message });
         }
       } else if (openAlert) {
@@ -574,14 +555,14 @@ export function createMetricService(options: MetricServiceOptions): MetricServic
         finalMessage,
         openAlert.id,
       ]);
-    } else {
-      db.run("INSERT INTO metric_alerts (metric_id, alert_type, message, created_at) VALUES (?, ?, ?, ?)", [
-        id,
-        alertType,
-        finalMessage,
-        ts,
-      ]);
+      return;
     }
+    db.run("INSERT INTO metric_alerts (metric_id, alert_type, message, created_at) VALUES (?, ?, ?, ?)", [
+      id,
+      alertType,
+      finalMessage,
+      ts,
+    ]);
     const alertId = latestAlertId(db, id);
     const owner = resolveOwner({
       id,
