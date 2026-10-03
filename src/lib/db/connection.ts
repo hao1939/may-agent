@@ -64,15 +64,13 @@ export function getDb(persistDir: string, options: DatabaseConnectionOptions = {
       if (existsSync(backupPath)) {
         db.close();
         copyFileSync(backupPath, dbPath);
-        const restored = openDatabase(dbPath);
-        const check = restored.prepare("SELECT COUNT(*) as c FROM sessions").get() as any;
+        db = openDatabase(dbPath);
+        const check = db.prepare("SELECT COUNT(*) as c FROM sessions").get() as any;
         if (check?.c > 0) {
           console.log(`[db] Restored from backup (${check.c} sessions)`);
-          dbCache.set(persistDir, restored);
-          return restored;
         }
-        restored.close();
-        db = openDatabase(dbPath);
+        // Restored databases need the same connection settings and schema
+        // upgrade as every other Host open; only cache them after that succeeds.
       }
     }
   } catch {

@@ -103,8 +103,8 @@ test("breach updates retain one alert identity and historical cuts do not leak l
   // An exact old breach remains readable independently of the recent list.
   for (let n = 0; n < 15; n++)
     db.prepare(
-      "INSERT INTO metric_alerts(metric_id, alert_type, message, created_at) VALUES ('admission.failures', 'threshold', 'later', ?)",
-    ).run(end - 15 + n);
+      "INSERT INTO metric_alerts(metric_id, alert_type, message, created_at, resolved_at) VALUES ('admission.failures', 'threshold', 'later', ?, ?)",
+    ).run(end - 15 + n, end - 15 + n);
   expect(readMetricEvidence(db, "admission.failures", { end, windowMs, alertId: first.alertId }).alerts).toHaveLength(
     1,
   );

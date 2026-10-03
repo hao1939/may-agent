@@ -108,7 +108,7 @@ describe("served workflow and metric health pages", () => {
     const times = [now - 3600000, now - 3300000, now - 900000];
     for (const [i, at] of times.entries())
       metrics.record("workflow.error-count-24h", i + 1, { measuredAt: at, sampleSize: 10, note: markup });
-    // A late arrival changes the old cache but must not become the displayed current.
+    // A late arrival must not become the current observation.
     metrics.record("workflow.error-count-24h", 999, { measuredAt: now - 7200000 });
     metrics.define({
       id: "runtime.daemon-heartbeat-stale",
@@ -289,10 +289,11 @@ describe("served workflow and metric health pages", () => {
     }
     try {
       await liveAlerts(0, false);
-      insert.run(target, "synthetic oldest alert", now - 3000);
+      insert.run("workflow.error-count-24h", "synthetic oldest alert", now - 3000);
       insert.run(target, "synthetic latest alert", now - 2000);
       for (let i = 0; i < 501; i++) {
-        insert.run("workflow.error-count-24h", "synthetic alert flood", now - 1000 + i);
+        db.run("INSERT INTO metrics (id, status, owner) VALUES (?, 'active', 'zz-fixture')", [`sample.flood-${i}`]);
+        insert.run(`sample.flood-${i}`, "synthetic alert flood", now - 1000 + i);
         if (i === 17) await liveAlerts(20, false);
         if (i === 18) await liveAlerts(20, true);
       }
@@ -308,7 +309,7 @@ describe("served workflow and metric health pages", () => {
       const detail = await detailResponse.json();
       expect(detail.metrics[0]).toMatchObject({ alertOpen: true, alertMessage: "synthetic latest alert" });
       expect(detail.alertsTruncated).toBe(false);
-      expect(detail.alerts).toHaveLength(2);
+      expect(detail.alerts).toHaveLength(1);
     } finally {
       db.prepare("DELETE FROM metric_alerts WHERE message IN ('synthetic oldest alert', 'synthetic latest alert', 'synthetic alert flood')").run();
     }
@@ -567,9 +568,13 @@ describe("served workflow and metric health pages", () => {
         expect(await page.$eval("#liveness-panel", (el) => el.textContent)).not.toContain("✓ healthy");
         expect(await page.$eval("#liveness-panel .breach-badge", (el) => el.textContent)).toBe("No open alerts");
         const db = getDb(root);
-        const alert = db.prepare("INSERT INTO metric_alerts(metric_id, message, created_at) VALUES ('workflow.error-count-24h', 'synthetic browser alert boundary', ?)");
+        const alert = (i: number) => {
+          const id = `zz-fixture.alert-${i}`;
+          db.run("INSERT INTO metrics (id, status, owner) VALUES (?, 'active', 'zz-fixture')", [id]);
+          db.run("INSERT INTO metric_alerts(metric_id, message, created_at) VALUES (?, 'synthetic browser alert boundary', ?)", [id, now + i]);
+        };
         for (let i = 0; i < 21; i++) {
-          alert.run(now + i);
+          alert(i);
           if (![3, 4, 19, 20].includes(i)) continue;
           await page.reload({ waitUntil: "domcontentloaded" });
           await page.waitForSelector("#liveness-panel .breach-badge");
@@ -620,10 +625,10 @@ describe("served workflow and metric health pages", () => {
         await page.goto(selected, { waitUntil: "domcontentloaded" });
         await page.waitForSelector("#metrics-workflows [data-workflow-outcomes]");
         stateTransaction(db, () => {
-          for (let i = 21; i < 500; i++) alert.run(now + i);
+          for (let i = 21; i < 500; i++) alert(i);
         });
         for (const count of [500, 501]) {
-          if (count === 501) alert.run(now + 500);
+          if (count === 501) alert(500);
           await page.reload({ waitUntil: "domcontentloaded" });
           await page.waitForSelector("#metrics-alerts p");
           expect(await page.$eval("#metrics-alerts p", (el) => el.textContent))

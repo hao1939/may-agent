@@ -539,6 +539,7 @@ export function applyDbSchema(db: SqliteDb): void {
     // reference added to the canonical schema.
     db.exec("DROP TRIGGER IF EXISTS trg_events_referential_retention");
     db.exec(SCHEMA);
+    ensureSingleOpenMetricAlert(db);
     if (needsEventTraceBackfill) {
       db.exec(`
         INSERT OR IGNORE INTO event_traces (event_id, trace_id, parent_event_id, visibility)
@@ -574,6 +575,28 @@ export function applyDbSchema(db: SqliteDb): void {
     }
     throw error;
   }
+}
+
+/** Repair the old race once, then let SQLite enforce the episode invariant. */
+function ensureSingleOpenMetricAlert(db: SqliteDb): void {
+  if (db.prepare("SELECT 1 FROM sqlite_master WHERE type = 'index' AND name = 'idx_ma_one_open_metric'").get()) return;
+  // Keep the earliest inserted open ID: historical Events may already refer to
+  // it. Administrative closure of duplicates is not a measured recovery.
+  db.prepare(`
+    WITH episodes AS (
+      SELECT metric_id, MIN(id) AS episode_id FROM metric_alerts
+      WHERE resolved_at IS NULL GROUP BY metric_id HAVING COUNT(*) > 1
+    )
+    UPDATE metric_alerts AS a SET resolved_at = ?,
+      message = COALESCE(message, '') || char(10) ||
+        '[Duplicate open alert closed during upgrade; episode continues as alert ' ||
+        (SELECT episode_id FROM episodes WHERE metric_id = a.metric_id) || '.]'
+    WHERE resolved_at IS NULL AND id > (
+      SELECT episode_id FROM episodes WHERE metric_id = a.metric_id
+    )
+  `).run(Date.now());
+  db.exec(`CREATE UNIQUE INDEX idx_ma_one_open_metric
+    ON metric_alerts(metric_id) WHERE resolved_at IS NULL`);
 }
 
 /** Progress and final replies are separate durable operations for one request. */

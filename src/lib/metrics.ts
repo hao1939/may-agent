@@ -1,4 +1,5 @@
 import type { SqliteDb } from "./db.js";
+import { stateTransaction } from "./db/transaction.js";
 import { normalizeEventOwner } from "../../packages/control/src/event-envelope.js";
 
 export type MetricType = "gauge" | "counter" | "health" | "derived";
@@ -200,13 +201,6 @@ function evaluateThreshold(metric: { current: number; threshold: number; alert_o
     : metric.current < metric.threshold;
 }
 
-function latestAlertId(db: SqliteDb, metricId: string): number | undefined {
-  const row = db
-    .prepare("SELECT id FROM metric_alerts WHERE metric_id = ? AND resolved_at IS NULL LIMIT 1")
-    .get(metricId) as { id?: number } | null;
-  return typeof row?.id === "number" ? row.id : undefined;
-}
-
 function recentTrend(db: SqliteDb, metricId: string): Array<{ value: number; measuredAt: number }> {
   try {
     return (
@@ -215,7 +209,7 @@ function recentTrend(db: SqliteDb, metricId: string): Array<{ value: number; mea
           `SELECT value, measured_at
        FROM metric_snapshots
        WHERE metric_id = ?
-       ORDER BY measured_at DESC
+       ORDER BY measured_at DESC, id DESC
        LIMIT 5`,
         )
         .all(metricId) as Array<{ value: number; measured_at: number }>
@@ -299,29 +293,27 @@ export function createMetricService(options: MetricServiceOptions): MetricServic
     const db = options.getDb();
     const measuredAt = opts?.measuredAt ?? now();
     const measuredBy = opts?.measuredBy ?? options.measuredBy ?? "metric-service";
-    db.run("UPDATE metrics SET current = ?, updated_at = ? WHERE id = ?", [value, measuredAt, id]);
-    if (opts?.sampleSize != null || opts?.note != null) {
+    stateTransaction(db, () => {
       db.run(
         "INSERT INTO metric_snapshots (metric_id, value, sample_size, measured_at, measured_by, note) VALUES (?, ?, ?, ?, ?, ?)",
         [id, value, opts?.sampleSize ?? null, measuredAt, measuredBy, opts?.note ?? null],
       );
-    } else {
-      db.run("INSERT INTO metric_snapshots (metric_id, value, measured_at, measured_by) VALUES (?, ?, ?, ?)", [
-        id,
-        value,
-        measuredAt,
-        measuredBy,
-      ]);
-    }
+      // Use the same latest observation as readers, including late arrivals.
+      db.run(`UPDATE metrics SET (current, updated_at) = (
+        SELECT value, measured_at FROM metric_snapshots WHERE metric_id = ?
+        ORDER BY measured_at DESC, id DESC LIMIT 1
+      ) WHERE id = ?`, [id, id]);
+    });
   }
 
   function evaluate(id?: string): MetricEvaluationResult[] {
     const db = options.getDb();
-    const ts = now();
     const configSelect = hasColumn(db, "metrics", "config") ? ", m.config" : "";
-    const rows = db
-      .prepare(
-        `SELECT m.id, m.name,
+    const metricIds = id ? [id] : db
+      .prepare("SELECT id FROM metrics WHERE status = 'active' AND current IS NOT NULL AND threshold IS NOT NULL")
+      .all().map((row) => String(row.id));
+    const readMetric = db.prepare(
+      `SELECT m.id, m.name,
               m.owner as explicitOwner, p.owner as projectOwner, m.project,
               m.current, m.target, m.threshold, m.alert_op, m.type,
               COALESCE(m.priority, 'P2') as priority${configSelect}
@@ -331,15 +323,19 @@ export function createMetricService(options: MetricServiceOptions): MetricServic
        WHERE m.status = 'active'
          AND m.current IS NOT NULL
          AND m.threshold IS NOT NULL
-         ${id ? "AND m.id = ?" : ""}`,
-      )
-      .all(...(id ? [id] : [])) as Array<Record<string, any>>;
+         AND m.id = ?`,
+    );
 
     const results: MetricEvaluationResult[] = [];
-    for (const row of rows) {
+    // Serialize the current evidence, episode decision and required Event together.
+    // Each metric commits independently; a later failure preserves earlier work.
+    for (const metricId of metricIds) stateTransaction(db, () => {
+      const ts = now();
+      const row = readMetric.get(metricId) as Record<string, any> | null;
+      if (!row) return;
       const current = numberOrNull(row.current);
       const threshold = numberOrNull(row.threshold);
-      if (current == null || threshold == null) continue;
+      if (current == null || threshold == null) return;
 
       const owner = resolveOwner({
         id: row.id,
@@ -364,7 +360,7 @@ export function createMetricService(options: MetricServiceOptions): MetricServic
       if (metricType === "health" && alertConfig?.mode === "consecutive_failures") {
         const requiredCount = alertConfig.count || 3;
         const snapshots = db
-          .prepare("SELECT value FROM metric_snapshots WHERE metric_id = ? ORDER BY measured_at DESC LIMIT ?")
+          .prepare("SELECT value FROM metric_snapshots WHERE metric_id = ? ORDER BY measured_at DESC, id DESC LIMIT ?")
           .all(row.id, requiredCount) as Array<{ value: number }>;
         breached =
           snapshots.length >= requiredCount &&
@@ -373,7 +369,7 @@ export function createMetricService(options: MetricServiceOptions): MetricServic
       } else if (metricType === "counter" && alertConfig?.mode === "rate") {
         const lastTwo = db
           .prepare(
-            "SELECT value, measured_at FROM metric_snapshots WHERE metric_id = ? ORDER BY measured_at DESC LIMIT 2",
+            "SELECT value, measured_at FROM metric_snapshots WHERE metric_id = ? ORDER BY measured_at DESC, id DESC LIMIT 2",
           )
           .all(row.id) as Array<{ value: number; measured_at: number }>;
         if (lastTwo.length === 2) {
@@ -397,7 +393,7 @@ export function createMetricService(options: MetricServiceOptions): MetricServic
             const latest = lastTwo[0];
             const changed = db
               .prepare(
-                "SELECT measured_at FROM metric_snapshots WHERE metric_id = ? AND value != ? ORDER BY measured_at DESC LIMIT 1",
+                "SELECT measured_at FROM metric_snapshots WHERE metric_id = ? AND value != ? ORDER BY measured_at DESC, id DESC LIMIT 1",
               )
               .get(row.id, latest.value) as { measured_at?: number } | null;
             if (ts - (changed?.measured_at ?? 0) > alertConfig.stall_after_ms) {
@@ -415,7 +411,7 @@ export function createMetricService(options: MetricServiceOptions): MetricServic
       } else if (metricType === "gauge" && alertConfig?.mode === "sustained") {
         const requiredCount = alertConfig.consecutive || 3;
         const snapshots = db
-          .prepare("SELECT value FROM metric_snapshots WHERE metric_id = ? ORDER BY measured_at DESC LIMIT ?")
+          .prepare("SELECT value FROM metric_snapshots WHERE metric_id = ? ORDER BY measured_at DESC, id DESC LIMIT ?")
           .all(row.id, requiredCount) as Array<{ value: number }>;
         breached =
           snapshots.length >= requiredCount &&
@@ -436,7 +432,7 @@ export function createMetricService(options: MetricServiceOptions): MetricServic
           db.run("UPDATE metric_alerts SET resolved_at = ? WHERE id = ?", [ts, openAlert.id]);
         }
         results.push({ metricId: row.id, status: "ok" });
-        continue;
+        return;
       }
 
       if (breached) {
@@ -458,13 +454,13 @@ export function createMetricService(options: MetricServiceOptions): MetricServic
           ]);
         }
         if (!openAlert) {
-          db.run("INSERT INTO metric_alerts (metric_id, alert_type, message, created_at) VALUES (?, ?, ?, ?)", [
+          const inserted = db.run("INSERT INTO metric_alerts (metric_id, alert_type, message, created_at) VALUES (?, ?, ?, ?)", [
             row.id,
             alertType,
             message,
             ts,
           ]);
-          const alertId = latestAlertId(db, row.id);
+          const alertId = Number(inserted.lastInsertRowid);
           emitMetricEvent("metric.breach", owner, {
             metricId: row.id,
             metricName: row.name,
@@ -483,26 +479,7 @@ export function createMetricService(options: MetricServiceOptions): MetricServic
           });
           results.push({ metricId: row.id, status: "breached", alertId, message });
         } else {
-          if (openAlertChanged) {
-            emitMetricEvent("metric.breach", owner, {
-              metricId: row.id,
-              metricName: row.name,
-              project: row.project ?? undefined,
-              alertId: openAlert.id,
-              alertType,
-              current,
-              threshold,
-              target: row.target,
-              alertOp: row.alert_op,
-              direction: thresholdDirection,
-              measuredAt: ts,
-              trend: recentTrend(db, row.id),
-              message,
-              priority: row.priority ?? "P2",
-              repeat: true,
-              reason: "open-alert-updated",
-            });
-          }
+          // The episode is already open. Changed readings update evidence, not the breach signal.
           results.push({ metricId: row.id, status: "breached", alertId: openAlert.id, message });
         }
       } else if (openAlert) {
@@ -542,72 +519,74 @@ export function createMetricService(options: MetricServiceOptions): MetricServic
         });
         results.push({ metricId: row.id, status: "stalled", message });
       }
-    }
+    });
 
     return results;
   }
 
   function alert(id: string, message: string, opts?: ManualAlertOptions): void {
     const db = options.getDb();
-    const ts = now();
-    const row = db
-      .prepare(
-        `SELECT m.id, m.name, m.owner as explicitOwner, p.owner as projectOwner, m.project,
-              m.current, m.threshold, m.target, m.alert_op,
-              COALESCE(m.priority, 'P2') as priority
-       FROM metrics m
-       LEFT JOIN projects p ON m.project IS NOT NULL AND trim(m.project) != ''
-         AND (p.id = m.project OR p.path = m.project OR p.name = m.project)
-       WHERE m.id = ?`,
-      )
-      .get(id) as Record<string, any> | null;
-    if (!row) throw new Error(`metric not found: ${id}`);
+    stateTransaction(db, () => {
+      const ts = now();
+      const row = db
+        .prepare(
+          `SELECT m.id, m.name, m.owner as explicitOwner, p.owner as projectOwner, m.project,
+                m.current, m.threshold, m.target, m.alert_op,
+                COALESCE(m.priority, 'P2') as priority
+         FROM metrics m
+         LEFT JOIN projects p ON m.project IS NOT NULL AND trim(m.project) != ''
+           AND (p.id = m.project OR p.path = m.project OR p.name = m.project)
+         WHERE m.id = ?`,
+        )
+        .get(id) as Record<string, any> | null;
+      if (!row) throw new Error(`metric not found: ${id}`);
 
-    const openAlert = db
-      .prepare("SELECT id FROM metric_alerts WHERE metric_id = ? AND resolved_at IS NULL LIMIT 1")
-      .get(id) as { id: number } | null;
-    const alertType = opts?.alertType ?? "manual";
-    const finalMessage = opts?.facts ? `${message}\n\nFacts: ${opts.facts}` : message;
-    if (openAlert) {
-      db.run("UPDATE metric_alerts SET alert_type = ?, message = ? WHERE id = ?", [
-        alertType,
-        finalMessage,
-        openAlert.id,
-      ]);
-    } else {
-      db.run("INSERT INTO metric_alerts (metric_id, alert_type, message, created_at) VALUES (?, ?, ?, ?)", [
+      const openAlert = db
+        .prepare("SELECT id FROM metric_alerts WHERE metric_id = ? AND resolved_at IS NULL LIMIT 1")
+        .get(id) as { id: number } | null;
+      const alertType = opts?.alertType ?? "manual";
+      const finalMessage = opts?.facts ? `${message}\n\nFacts: ${opts.facts}` : message;
+      if (openAlert) {
+        db.run("UPDATE metric_alerts SET alert_type = ?, message = ? WHERE id = ?", [
+          alertType,
+          finalMessage,
+          openAlert.id,
+        ]);
+        return;
+      }
+      const inserted = db.run("INSERT INTO metric_alerts (metric_id, alert_type, message, created_at) VALUES (?, ?, ?, ?)", [
         id,
         alertType,
         finalMessage,
         ts,
       ]);
-    }
-    const alertId = latestAlertId(db, id);
-    const owner = resolveOwner({
-      id,
-      explicitOwner: row.explicitOwner,
-      projectOwner: row.projectOwner,
-      project: row.project,
-    });
-    emitMetricEvent("metric.breach", owner, {
-      metricId: id,
-      metricName: row.name,
-      project: row.project ?? undefined,
-      alertId,
-      alertType,
-      current: row.current,
-      threshold: row.threshold,
-      target: row.target,
-      alertOp: row.alert_op,
-      measuredAt: ts,
-      trend: recentTrend(db, id),
-      message: finalMessage,
-      priority: opts?.priority ?? row.priority ?? "P2",
+      const alertId = Number(inserted.lastInsertRowid);
+      const owner = resolveOwner({
+        id,
+        explicitOwner: row.explicitOwner,
+        projectOwner: row.projectOwner,
+        project: row.project,
+      });
+      emitMetricEvent("metric.breach", owner, {
+        metricId: id,
+        metricName: row.name,
+        project: row.project ?? undefined,
+        alertId,
+        alertType,
+        current: row.current,
+        threshold: row.threshold,
+        target: row.target,
+        alertOp: row.alert_op,
+        measuredAt: ts,
+        trend: recentTrend(db, id),
+        message: finalMessage,
+        priority: opts?.priority ?? row.priority ?? "P2",
+      });
     });
   }
 
   function resolveAlert(alertId: number, _reason?: string): void {
-    options.getDb().run("UPDATE metric_alerts SET resolved_at = ? WHERE id = ?", [now(), alertId]);
+    options.getDb().run("UPDATE metric_alerts SET resolved_at = COALESCE(resolved_at, ?) WHERE id = ?", [now(), alertId]);
   }
 
   function get(id: string): Metric | null {
