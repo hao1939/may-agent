@@ -34,7 +34,7 @@ import {
   type AppInboxHostOptions,
 } from "../core/inbox/app-inbox-host.js";
 import { hasConversationExecutionTask } from "../core/state/app-inbox-store.js";
-import { listConversationTopicLinksForTask } from "../core/state/conversations.js";
+import { listConversationTaskLinks, type ConversationTaskLink } from "../core/state/conversation-task-links.js";
 import type {
   AppDefinitionSource,
   AppRegistry,
@@ -304,7 +304,7 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
   };
 
   const emitConversationTaskChanged = (
-    link: { appId: string; conversationId: string; topicId: string },
+    link: ConversationTaskLink,
     taskRef: { appId: string; taskId: string },
     change: {
       idempotencyKey: string;
@@ -324,7 +324,8 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
       data: {
         appId: link.appId,
         conversationId: link.conversationId,
-        topicId: link.topicId,
+        ...(link.topicId ? { topicId: link.topicId } : {}),
+        ...(link.originInputId ? { originInputId: link.originInputId } : {}),
         taskRef,
         ...(change.attemptId ? { attemptId: change.attemptId } : {}),
         ...(change.closedGeneration !== undefined ? { closedGeneration: change.closedGeneration } : {}),
@@ -899,7 +900,7 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
               { appId: change.taskAppId, taskId: change.taskId },
               {
                 ...change,
-                idempotencyKey: `conversation-change-review:${eventRowId(event)}:${change.topicId}:${change.taskAppId}:${change.taskId}:${change.attemptId ?? `closed:${change.closedGeneration}`}`,
+                idempotencyKey: `conversation-change-review:${eventRowId(event)}:${change.conversationId}:${change.originInputId ?? change.topicId}:${change.taskAppId}:${change.taskId}:${change.attemptId ?? `closed:${change.closedGeneration}`}`,
               },
             );
           }
@@ -916,14 +917,15 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
         if (!options.admitConversationChange) throw new Error("Conversation Task change admission is not configured");
         const ref = record(data.taskRef);
         if (
-          [data.appId, data.conversationId, data.topicId, ref.appId, ref.taskId].every(
+          [data.appId, data.conversationId, data.originInputId ?? data.topicId, ref.appId, ref.taskId].every(
             (value) => typeof value === "string" && value.trim(),
           )
         ) {
           const admitted = options.admitConversationChange({
             appId: String(data.appId),
             conversationId: String(data.conversationId),
-            topicId: String(data.topicId),
+            ...(typeof data.topicId === "string" ? { topicId: data.topicId } : {}),
+            ...(typeof data.originInputId === "string" ? { originInputId: data.originInputId } : {}),
             taskAppId: String(ref.appId),
             taskId: String(ref.taskId),
             ...(typeof data.closedGeneration === "number" &&
@@ -992,7 +994,7 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
           void host
             .refreshTaskResults(appId, taskId)
             .catch((error) => reportRuntimeFailure("input-result", error, appId));
-          for (const link of listConversationTopicLinksForTask(options.db, appId, taskId)) {
+          for (const link of listConversationTaskLinks(options.db, appId, taskId)) {
             emitConversationTaskChanged(
               link,
               { appId, taskId },
@@ -1002,7 +1004,7 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
                   : typeof data.attemptId === "string"
                     ? { attemptId: data.attemptId }
                     : {}),
-                idempotencyKey: `conversation-task-changed:${link.topicId}:${appId}:${taskId}:${eventRowId(event) ?? data.generation ?? "unknown"}`,
+                idempotencyKey: `conversation-task-changed:${link.conversationId}:${link.originInputId ?? link.topicId}:${appId}:${taskId}:${eventRowId(event) ?? data.generation ?? "unknown"}`,
               },
             );
           }

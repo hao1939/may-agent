@@ -25,6 +25,7 @@ import {
   readConversationTopic,
 } from "./conversations.js";
 import { readConversationRequest, applyConversationRequestUpdates, listConversationInputRequests } from "./conversation-requests.js";
+import { listConversationTaskLinks } from "./conversation-task-links.js";
 import { reviseAppTask } from "../tasks/task-revision.js";
 import {
   admitConversationTaskInput,
@@ -178,7 +179,7 @@ function fixture() {
 
 test("missed worker feedback uses ordinary recovery, creator correction and the same worker reconciliation", async () => {
   const f = fixture();
-  await f.turn({ ...handoff, requestUpdates: [ask] });
+  await f.turn({ ...handoff, topic: undefined, requestUpdates: [ask] });
   const originalRequest = readConversationRequest(f.db, app.id, "chat", ask.id)!;
   const worker = f.context(owner.id);
   const claim = claimObservedAppTask(worker, { taskId: "work", appAgent: owner.id, handler: "agent:owner" });
@@ -212,12 +213,13 @@ test("missed worker feedback uses ordinary recovery, creator correction and the 
     return {
       summary: "Use the authorized alternative",
       response: "I switched the measurement to source beta.",
-      topic: { kind: "existing", id: change.topicId },
+      requestUpdates: [{ id: ask.id, expectedRevision: originalRequest.revision, disposition: "open", reason: "Waiting for corrected measurements" }],
     };
   }, false);
   expect(f.context(owner.id).resourceStore.readTask("work")?.spec.input).toEqual({ source: "beta" });
   review.settle();
-  expect(readConversationRequest(f.db, app.id, "chat", ask.id)).toEqual(originalRequest);
+  const revisedRequest = readConversationRequest(f.db, app.id, "chat", ask.id)!;
+  expect(revisedRequest).toMatchObject({ scope: originalRequest.scope, status: "open", revision: originalRequest.revision + 1 });
   f.reopen();
   setSystemTime(f.context(owner.id).resourceStore.readTask("work")!.status.executionRetryAt! + 1);
   const next = claimObservedAppTask(f.context(owner.id), { taskId: "work", appAgent: owner.id, handler: "agent:owner" });
@@ -229,8 +231,8 @@ test("missed worker feedback uses ordinary recovery, creator correction and the 
   const returned = listPendingConversationTaskChanges(f.db, app.id).find((item) => item.attemptId === next.attemptId)!;
   expect(returned).toBeDefined();
   admitConversationTaskChange(f.context(), f.context(owner.id), returned);
-  const acceptance = await f.prepare({ ...answer, topic: { kind: "existing", id: returned.topicId },
-    requestUpdates: [{ id: ask.id, expectedRevision: originalRequest.revision, disposition: "fulfilled", reason: "Verified beta facts satisfy the comparison" }] }, false);
+  const acceptance = await f.prepare({ ...answer,
+    requestUpdates: [{ id: ask.id, expectedRevision: revisedRequest.revision, disposition: "fulfilled", reason: "Verified beta facts satisfy the comparison" }] }, false);
   acceptance.settle();
   expect(readConversationRequest(f.db, app.id, "chat", ask.id)?.status).toBe("closed");
   expect(f.context(owner.id).resourceStore.readTask("work")?.metadata.creator).toEqual({ appId: app.id, taskId: f.taskId });
@@ -625,8 +627,9 @@ test("a reference can accompany the handoff that creates its Task", async () => 
   expect(result.admittedTasks).toEqual([ref]);
   const request = readConversationRequest(f.db, app.id, "chat", ask.id)!;
   expect(request.taskRefs).toEqual([ref]);
-  expect(listConversationTopicLinksForTask(f.db, ref.appId, ref.taskId)).toEqual([
-    { appId: app.id, conversationId: "chat", topicId: request.topicId! },
+  expect(listConversationTopicLinksForTask(f.db, ref.appId, ref.taskId)).toEqual([]);
+  expect(listConversationTaskLinks(f.db, ref.appId, ref.taskId)).toEqual([
+    { appId: app.id, conversationId: "chat", topicId: request.topicId!, originInputId: "turn-1" },
   ]);
 });
 
