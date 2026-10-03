@@ -137,6 +137,40 @@ describe("canonical evaluation App", () => {
     }
   });
 
+  test("routes bounded exact automatic-review reconciliation to the selector", () => {
+    const inputKeys = ["task:app_first", "task:app_second", "task:app_third"];
+    const input = {
+      kind: "reconcile-automatic-review-inputs",
+      data: { inputKeys },
+    } as const;
+
+    expect(Check(app.inputSchema, input)).toBeTrue();
+    expect(taskIntentForInput(input)).toMatchObject({
+      id: "runtime/task-outcome-selector",
+      workflow: "task-outcome-selector",
+      priority: "P1",
+      input: { reconcileInputKeys: inputKeys },
+    });
+    expect(taskIntentForInput(input)?.acceptance).toContainEqual(
+      expect.stringContaining("same attempt"),
+    );
+    expect(
+      Check(app.inputSchema, {
+        ...input,
+        data: { inputKeys: [inputKeys[0], inputKeys[0]] },
+      }),
+    ).toBeFalse();
+    expect(
+      Check(app.inputSchema, { ...input, data: { inputKeys: [] } }),
+    ).toBeFalse();
+    expect(
+      Check(app.inputSchema, {
+        ...input,
+        data: { inputKeys: [" task:app_first"] },
+      }),
+    ).toBeFalse();
+  });
+
   test("keeps canonical App-input actions without a legacy project-review alias", () => {
     expect(
       app.actions?.["evaluate-session"]?.toInput?.({ sessionId: "s-1" }),

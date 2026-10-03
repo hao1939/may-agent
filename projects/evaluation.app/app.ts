@@ -53,6 +53,10 @@ const evaluationFeedbackSchema = Type.Object(
   },
   { additionalProperties: true },
 );
+const exactAutomaticReviewInputKeysSchema = Type.Array(
+  Type.String({ minLength: 1, maxLength: 512, pattern: "^\\S+$" }),
+  { minItems: 1, maxItems: 8, uniqueItems: true },
+);
 
 // Legacy exports remain readable for old tooling, but production selection is
 // deliberately not a fixed allow-list. The owner review discovers loaded Apps
@@ -179,6 +183,16 @@ const evaluationInputSchema = Type.Union([
   ),
   Type.Object(
     { kind: Type.Literal("automatic-review"), data: detailsSchema },
+    { additionalProperties: false },
+  ),
+  Type.Object(
+    {
+      kind: Type.Literal("reconcile-automatic-review-inputs"),
+      data: Type.Object(
+        { inputKeys: exactAutomaticReviewInputKeysSchema },
+        { additionalProperties: false },
+      ),
+    },
     { additionalProperties: false },
   ),
   Type.Object(
@@ -495,6 +509,36 @@ export function taskIntentForInput(input: AppInput): TaskIntent | null {
         input: { reason: stringValue(data.reason) || "scheduled" },
         priority: "P2",
       };
+    case "reconcile-automatic-review-inputs": {
+      const rawInputKeys = Array.isArray(data.inputKeys) ? data.inputKeys : [];
+      const inputKeys = rawInputKeys.map(stringValue);
+      if (
+        inputKeys.length < 1 ||
+        inputKeys.length > 8 ||
+        rawInputKeys.some(
+          (key, index) =>
+            typeof key !== "string" ||
+            key !== inputKeys[index] ||
+            !/^\S+$/.test(key),
+        ) ||
+        new Set(inputKeys).size !== inputKeys.length
+      )
+        return null;
+      return {
+        id: "runtime/task-outcome-selector",
+        parentId: "evaluation-system",
+        outcome:
+          "Select at most one external Task or metric observation for review.",
+        acceptance: [
+          "Selection uses bounded public App and Task lists and excludes Evaluation.",
+          "At most one canonical Task or metric review request is published using the shared allowance.",
+          "Exact automatic-review admissions are settled only after their original events are read and judged by the same attempt, without replaying selector side effects.",
+        ],
+        workflow: "task-outcome-selector",
+        input: { reconcileInputKeys: inputKeys },
+        priority: "P1",
+      };
+    }
     case "evaluate-session": {
       const sessionId = stringValue(data.sessionId);
       if (!sessionId) return null;

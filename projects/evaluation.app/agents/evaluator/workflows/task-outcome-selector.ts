@@ -37,7 +37,7 @@ const MAX_NAVIGATION_FACTS = 20;
 const OPEN_STATUSES = new Set(["pending", "running", "waiting", "attention"]);
 const OUTCOME_STATUSES = new Set(["up-to-date", "closed", "cancelled", "done"]);
 
-type Input = { reason?: string };
+type Input = { reason?: string; reconcileInputKeys?: string[] };
 type SelectorConfig = {
   enabled: boolean;
   reviewer?: Reviewer;
@@ -93,6 +93,182 @@ function object(value: unknown): Record<string, unknown> {
 }
 function strings(value: unknown): string[] {
   return Array.isArray(value) ? value.map(text).filter(Boolean) : [];
+}
+
+function exactReconciliationKeys(value: unknown): string[] {
+  if (!Array.isArray(value)) return [];
+  const keys = value.map(text);
+  return keys.length >= 1 &&
+    keys.length <= 8 &&
+    value.every(
+      (key, index) =>
+        typeof key === "string" && key === keys[index] && /^\S+$/.test(key),
+    ) &&
+    new Set(keys).size === keys.length
+    ? keys
+    : [];
+}
+
+function sameKeys(left: string[], right: string[]): boolean {
+  return (
+    left.length === right.length &&
+    left.every((key, index) => key === right[index])
+  );
+}
+
+function reconciliationCommandKeys(
+  ctx: WorkflowContext<Input>,
+  requested: string[],
+): string[] {
+  const reconciliation = ctx.reconciliation;
+  if (!reconciliation) return [];
+  const events = [
+    ...reconciliation.events.items,
+    ...(reconciliation.events.continuedInputs ?? []),
+  ];
+  const keys: string[] = [];
+  for (const item of events) {
+    const event = object(item.event);
+    if (text(event.type) !== "app.task.requested") continue;
+    const data = object(event.data);
+    const request = object(data.request);
+    const input = object(request.input);
+    if (text(input.kind) !== "reconcile-automatic-review-inputs") continue;
+    if (
+      !sameKeys(
+        exactReconciliationKeys(object(input.data).inputKeys),
+        requested,
+      )
+    )
+      continue;
+    const key = text(data.idempotencyKey);
+    if (
+      text(data.appId) !== reconciliation.appId ||
+      text(data.taskId) !== reconciliation.taskId ||
+      key !== `task:${text(request.id)}`
+    )
+      continue;
+    keys.push(key);
+  }
+  return [...new Set(keys)];
+}
+
+function automaticReviewInputIssue(
+  item: unknown,
+  expectedKey: string,
+  appId: string,
+  taskId: string,
+): string | null {
+  const inputEvent = object(item);
+  if (text(inputEvent.key) !== expectedKey) return "input-key-mismatch";
+  const event = object(inputEvent.event);
+  if (text(event.type) !== "app.task.requested") return "event-type-mismatch";
+  const data = object(event.data);
+  const request = object(data.request);
+  const input = object(request.input);
+  if (
+    text(data.appId) !== appId ||
+    text(data.taskId) !== taskId ||
+    text(data.idempotencyKey) !== expectedKey ||
+    expectedKey !== `task:${text(request.id)}`
+  )
+    return "admission-identity-mismatch";
+  if (text(input.kind) !== "automatic-review") return "input-kind-mismatch";
+  return null;
+}
+
+async function reconcileAutomaticReviewInputs(
+  ctx: WorkflowContext<Input>,
+  requested: string[],
+): Promise<ExecutionResult> {
+  const reconciliation = ctx.reconciliation;
+  const taskId = reconciliation?.taskId;
+  const appId = reconciliation?.appId;
+  const commandKeys = reconciliationCommandKeys(ctx, requested);
+  if (
+    taskId !== "runtime/task-outcome-selector" ||
+    appId !== "evaluation" ||
+    commandKeys.length !== 1
+  ) {
+    const summary =
+      "Exact automatic-review reconciliation remains open because its current command admission could not be identified unambiguously.";
+    return ctx.done(summary, {
+      state: "incomplete",
+      report: true,
+      summary,
+      response: summary,
+      facts: ["selector:exact-input-reconciliation-command-unavailable"],
+    });
+  }
+  try {
+    const detail = object(
+      await ctx.read.tasks.get(taskId, { inputKeys: requested }),
+    );
+    const inputEvents = Array.isArray(detail.inputEvents)
+      ? detail.inputEvents
+      : [];
+    const acceptedAttempt = object(detail.acceptedAttempt);
+    const acceptedAt = Date.parse(text(acceptedAttempt.finishedAt));
+    const byKey = new Map(
+      inputEvents.map((item) => [text(object(item).key), item] as const),
+    );
+    const issues = requested.flatMap((key) => {
+      const item = byKey.get(key);
+      const issue = item
+        ? automaticReviewInputIssue(item, key, appId, taskId)
+        : "original-event-unavailable";
+      if (issue) return [`${key}:${issue}`];
+      const observedAt = Date.parse(text(object(item).observedAt));
+      return Number.isFinite(acceptedAt) &&
+        Number.isFinite(observedAt) &&
+        acceptedAt > observedAt
+        ? []
+        : [`${key}:later-accepted-selector-result-unavailable`];
+    });
+    if (issues.length || inputEvents.length !== requested.length) {
+      const summary =
+        "Exact automatic-review reconciliation remains open because every requested canonical original could not be verified.";
+      return ctx.done(summary, {
+        state: "incomplete",
+        report: true,
+        summary,
+        response: summary,
+        facts: [
+          `selector:exact-input-reconciliation-invalid:${issues.length || 1}`,
+          ...issues.slice(0, 8),
+        ],
+      });
+    }
+    const inputKeys = [...requested, ...commandKeys];
+    const summary = `Reconciled ${requested.length} exact historical automatic-review wake(s); their trigger-only purpose is superseded by the current selector judgment and no review or publication was replayed.`;
+    return ctx.done(summary, {
+      state: "converged",
+      summary,
+      response: summary,
+      inputKeys,
+      facts: [
+        `selector:exact-input-reconciliation:${requested.length}`,
+        ...requested.map((key) => `selector:exact-input-considered:${key}`),
+        `selector:exact-input-superseded-by-attempt:${text(acceptedAttempt.id)}`,
+        "selector:exact-input-side-effects:none",
+      ],
+      actions: [],
+    });
+  } catch (error) {
+    const reason =
+      error instanceof Error ? error.message : text(error) || "unknown failure";
+    const summary =
+      "Exact automatic-review reconciliation remains open because the canonical originals could not be read.";
+    return ctx.done(summary, {
+      state: "incomplete",
+      report: true,
+      summary,
+      response: summary,
+      facts: [
+        `selector:exact-input-read-failed:${reason.replace(/\s+/g, " ").slice(0, 180)}`,
+      ],
+    });
+  }
 }
 function bounded(value: unknown, fallback: number, maximum: number): number {
   const parsed = Number(value);
@@ -683,6 +859,11 @@ export async function runTaskOutcomeSelector(
   reportRoot = configuredTaskReportRoot(),
   metricSelector: MetricSelector = selectMetricCandidate,
 ): Promise<ExecutionResult> {
+  const reconcileInputKeys = exactReconciliationKeys(
+    ctx.input?.reconcileInputKeys,
+  );
+  if (reconcileInputKeys.length)
+    return reconcileAutomaticReviewInputs(ctx, reconcileInputKeys);
   if (!config.enabled) {
     const summary = "Automatic task-outcome selection is disabled.";
     return ctx.done(summary, {

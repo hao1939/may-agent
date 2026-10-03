@@ -1671,4 +1671,160 @@ describe("automatic task outcome selector", () => {
     expect(result.candidate).toBeNull();
     expect(reads).toBe(0);
   });
+
+  test("settles only exact canonical automatic-review originals considered by the same attempt", async () => {
+    const requested = ["task:app_first", "task:app_second"];
+    const commandKey = "task:app_reconcile";
+    let readOptions: unknown;
+    let emissions = 0;
+    const original = (key: string) => ({
+      key,
+      observedAt: "2026-09-30T16:09:40.223Z",
+      event: {
+        type: "app.task.requested",
+        data: {
+          appId: "evaluation",
+          taskId: "runtime/task-outcome-selector",
+          idempotencyKey: key,
+          request: {
+            id: key.slice("task:".length),
+            input: {
+              kind: "automatic-review",
+              data: { reason: "metric.measurement.failed" },
+            },
+          },
+        },
+      },
+    });
+    const ctx = {
+      input: { reconcileInputKeys: requested },
+      reconciliation: {
+        appId: "evaluation",
+        taskId: "runtime/task-outcome-selector",
+        events: {
+          items: [
+            {
+              observedAt: "2026-10-03T22:11:11.980Z",
+              event: {
+                type: "app.task.requested",
+                data: {
+                  appId: "evaluation",
+                  taskId: "runtime/task-outcome-selector",
+                  idempotencyKey: commandKey,
+                  request: {
+                    id: "app_reconcile",
+                    input: {
+                      kind: "reconcile-automatic-review-inputs",
+                      data: { inputKeys: requested },
+                    },
+                  },
+                },
+              },
+            },
+          ],
+          truncated: false,
+        },
+      },
+      read: {
+        tasks: {
+          get: async (_taskId: string, options: unknown) => {
+            readOptions = options;
+            return {
+              inputEvents: requested.map(original),
+              acceptedAttempt: {
+                id: "r_1074_current",
+                finishedAt: "2026-10-03T22:07:25.098Z",
+              },
+            };
+          },
+        },
+      },
+      events: {
+        emit: async () => {
+          emissions += 1;
+        },
+      },
+      done: (_summary: string, result: Record<string, unknown>) => result,
+    } as never;
+
+    const result = (await runSelector(ctx, undefined, {
+      ...config,
+      enabled: false,
+    })) as unknown as Record<string, unknown>;
+    expect(readOptions).toEqual({ inputKeys: requested });
+    expect(result).toMatchObject({
+      state: "converged",
+      inputKeys: [...requested, commandKey],
+      actions: [],
+    });
+    expect(emissions).toBe(0);
+  });
+
+  test("keeps exact reconciliation open when an original is missing or foreign", async () => {
+    const requested = ["task:app_first", "task:app_second"];
+    const ctx = {
+      input: { reconcileInputKeys: requested },
+      reconciliation: {
+        appId: "evaluation",
+        taskId: "runtime/task-outcome-selector",
+        events: {
+          items: [
+            {
+              observedAt: "2026-10-03T22:11:11.980Z",
+              event: {
+                type: "app.task.requested",
+                data: {
+                  appId: "evaluation",
+                  taskId: "runtime/task-outcome-selector",
+                  idempotencyKey: "task:app_reconcile",
+                  request: {
+                    id: "app_reconcile",
+                    input: {
+                      kind: "reconcile-automatic-review-inputs",
+                      data: { inputKeys: requested },
+                    },
+                  },
+                },
+              },
+            },
+          ],
+          truncated: false,
+        },
+      },
+      read: {
+        tasks: {
+          get: async () => ({
+            inputEvents: [
+              {
+                key: requested[0],
+                event: {
+                  type: "app.task.requested",
+                  data: {
+                    appId: "foreign",
+                    taskId: "runtime/task-outcome-selector",
+                    idempotencyKey: requested[0],
+                    request: {
+                      id: "app_first",
+                      input: { kind: "automatic-review", data: {} },
+                    },
+                  },
+                },
+              },
+            ],
+          }),
+        },
+      },
+      events: { emit: async () => undefined },
+      done: (_summary: string, result: Record<string, unknown>) => result,
+    } as never;
+
+    const result = (await runSelector(
+      ctx,
+      undefined,
+      config,
+    )) as unknown as Record<string, unknown>;
+    expect(result.state).toBe("incomplete");
+    expect(result.report).toBe(true);
+    expect(result).not.toHaveProperty("inputKeys");
+  });
 });
