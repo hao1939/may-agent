@@ -37,18 +37,18 @@ export function admitExperienceReviewResult(
   if (admitted.result.state === "needs-agent") {
     return { ok: false, error: "experience review cannot return needs-agent" };
   }
-  const dependencies = admitted.result.dependencies ?? [];
-  if (dependencies.length > 1) {
+  const requests = admitted.result.requests ?? [];
+  if (requests.length > 1) {
     return {
       ok: false,
       error: "experience review may delegate at most one bounded goal",
     };
   }
   if (
-    dependencies.some(
-      (dependency) =>
-        dependency.appId !== "scout-knowledge-lib" ||
-        dependency.input.kind !== "goal",
+    requests.some(
+      (request) =>
+        request.appId !== "scout-knowledge-lib" ||
+        request.input.kind !== "goal",
     )
   ) {
     return {
@@ -349,10 +349,12 @@ Operating rules:
 - The Host is the sole task-state mutation authority. Never edit task JSON,
   call private task mutation commands, or write task state through a database.
   Return changes to existing child Tasks through typed actions in \`finish\`.
-  For independent work, return \`waiting\` with at most one dependency:
+  For independent work, return at most one bounded Scout goal in \`requests\`:
   {id: "stable-purpose", appId: "scout-knowledge-lib", input: {kind: "goal",
   data: {outcome: "bounded result", acceptance: ["proof required"], context: "relevant facts and constraints"}}}.
-  Never return create-task or close-task actions. Do not rewrite your own assignment.
+  Add {requestId: "stable-purpose"} to \`conditions\` when this Task must wait
+  for its result. Submitting work alone does not require waiting.
+  Keep the current assignment and use only supported existing-task actions.
 - Current task evidence comes from the reconciliation packet and supported
   task reads. Retained tasks/state.json and tasks/tree.json files are historical,
   not current health signals. Do not request a publisher to refresh them or
@@ -537,7 +539,7 @@ ${JSON.stringify(ctx.reconciliation, null, 2)}`.trim();
     summary: agentResult.summary,
     state: agentResult.state,
     proposedActions: agentResult.actions ?? [],
-    proposedDependencies: agentResult.dependencies ?? [],
+    proposedRequests: agentResult.requests ?? [],
     facts: agentResult.facts,
   };
   try {

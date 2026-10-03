@@ -1,5 +1,8 @@
 import { describe, expect, it } from "bun:test";
-import type { TaskReconcileResult } from "@may-agent/sdk";
+import {
+  admitTaskReconcileResult,
+  type TaskReconcileResult,
+} from "@may-agent/sdk";
 import { KnowledgePublicationError } from "./knowledge-publication";
 import { retainAcceptedPublication } from "./accepted-publication";
 
@@ -38,7 +41,7 @@ describe("accepted publication ownership", () => {
       state: "waiting",
       summary: "Useful work and independent wait",
       facts: ["source:arxiv"],
-      dependencies: [existing],
+      requests: [existing],
       conditions: [condition],
       actions: [
         {
@@ -64,13 +67,24 @@ describe("accepted publication ownership", () => {
       acceptedWaiting: first,
     });
 
+    const admitted = admitTaskReconcileResult(first, {
+      allowNeedsAgent: false,
+    });
+    if (!admitted.ok) throw new Error(admitted.error);
+    expect(admitted.result.requests).toEqual(first?.requests);
+    expect(admitted.result.conditions).toEqual(first?.conditions);
+
     expect(first).toMatchObject({
       ...waiting,
       facts: expect.arrayContaining([
         "source:arxiv",
         `accepted-publication:pending:${"b".repeat(40)}`,
       ]),
-      dependencies: [
+      conditions: [
+        condition,
+        { requestId: `accepted-publication-${"b".repeat(40)}` },
+      ],
+      requests: [
         existing,
         {
           id: `accepted-publication-${"b".repeat(40)}`,
@@ -88,7 +102,8 @@ describe("accepted publication ownership", () => {
         },
       ],
     });
-    expect(duplicate?.dependencies).toHaveLength(2);
+    expect(duplicate?.requests).toHaveLength(2);
+    expect(duplicate?.conditions).toEqual(first?.conditions);
     expect(duplicate?.actions).toEqual(waiting.actions);
     expect(duplicate?.result).toEqual(waiting.result);
   });
@@ -124,7 +139,7 @@ describe("accepted publication ownership", () => {
       ...waiting,
       facts: expect.arrayContaining(waiting.facts),
     });
-    expect(retained?.dependencies).toBeUndefined();
+    expect(retained?.requests).toBeUndefined();
   });
 
   it("does not turn an unarchived or unchanged draft into publication work", () => {

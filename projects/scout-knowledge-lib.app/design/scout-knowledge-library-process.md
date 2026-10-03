@@ -668,8 +668,12 @@ One daily owner review may receive a bounded, redacted 36-hour reconciliation
 packet prepared before `runAgent`. Only complete, correctly scoped history is
 learning evidence. Unavailable, truncated, or scope-mismatched history is
 withheld and the planner continues as an ordinary current-state owner review.
-An experience review may create at most one finite `achieve` task; omitted mode
-uses May's normal `achieve` default. It cannot create standing maintain work.
+An experience review may submit at most one bounded Scout `goal` in `requests`.
+The planner validates the SDK-normalized request list and includes it as
+`proposedRequests` in its maintenance fact. Whether to await its result is an
+independent decision expressed by a `conditions` entry with that `requestId`.
+Publication recovery likewise retains all existing requests and Conditions,
+adding its exact recovery request and wait without replacing independent work.
 The optional synthesis checklist helps Scout connect recent findings when that
 is useful; it does not require a synthesis on every review. No task archive,
 learning agent, or experience database is needed.

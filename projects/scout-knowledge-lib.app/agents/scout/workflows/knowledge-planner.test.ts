@@ -446,7 +446,7 @@ describe("Scout owner reconciliation boundary", () => {
       expect(evidence).toContain("unaccepted-workflow-result:");
       expect(evidence).toContain('"state":"converged"');
       expect(result.output).not.toHaveProperty("conditions");
-      expect(result.output).not.toHaveProperty("dependencies");
+      expect(result.output).not.toHaveProperty("requests");
     } finally {
       rmSync(lock, { force: true });
       rmSync(fixture.repositoryRoot, { recursive: true, force: true });
@@ -624,7 +624,7 @@ describe("Scout owner reconciliation boundary", () => {
         status: "done",
         output: {
           state: "waiting",
-          dependencies: [
+          requests: [
             {
               appId: "scout-knowledge-lib",
               input: {
@@ -642,7 +642,7 @@ describe("Scout owner reconciliation boundary", () => {
           ],
         },
       });
-      const recovery = result.output?.dependencies?.[0];
+      const recovery = result.output?.requests?.[0];
       expect(recovery?.input.data.context.candidateRef).toStartWith(
         "refs/archive/scout-publication/",
       );
@@ -702,7 +702,7 @@ describe("Scout owner reconciliation boundary", () => {
         }),
       );
       expect(result.status).toBe("blocked");
-      expect(result).not.toHaveProperty("output.dependencies");
+      expect(result).not.toHaveProperty("output.requests");
       expect(result).not.toHaveProperty("output.state", "waiting");
     } finally {
       rmSync(lock, { force: true });
@@ -756,7 +756,8 @@ describe("Scout owner reconciliation boundary", () => {
                 state: "waiting",
                 summary: "Accepted content with independent work",
                 facts: ["source:accepted", `output:${output}`],
-                dependencies: [independent],
+                requests: [independent],
+                conditions: [{ requestId: independent.id }],
                 result: { retained: "evidence" },
                 report: true,
                 continue: true,
@@ -769,7 +770,8 @@ describe("Scout owner reconciliation boundary", () => {
         status: "done",
         output: {
           state: "waiting",
-          dependencies: [independent],
+          requests: [independent],
+          conditions: [{ requestId: independent.id }],
           result: { retained: "evidence" },
           report: true,
           continue: true,
@@ -779,7 +781,7 @@ describe("Scout owner reconciliation boundary", () => {
           ]),
         },
       });
-      expect(result.output?.dependencies).toHaveLength(1);
+      expect(result.output?.requests).toHaveLength(1);
       expect(JSON.stringify(result)).not.toContain("candidate-ref:");
     } finally {
       rmSync(lock, { force: true });
@@ -926,10 +928,10 @@ describe("Scout owner reconciliation boundary", () => {
       },
     };
     const result = {
-      state: "waiting",
+      state: "converged",
       summary: "Delegated repair",
       facts: ["broken link"],
-      dependencies: [dependency],
+      requests: [dependency],
     };
     expect(admitExperienceReviewResult(result)).toMatchObject({
       ok: true,
@@ -938,7 +940,7 @@ describe("Scout owner reconciliation boundary", () => {
     expect(
       admitExperienceReviewResult({
         ...result,
-        dependencies: [dependency, { ...dependency, id: "second" }],
+        requests: [dependency, { ...dependency, id: "second" }],
       }),
     ).toMatchObject({
       ok: false,
@@ -947,7 +949,7 @@ describe("Scout owner reconciliation boundary", () => {
     expect(
       admitExperienceReviewResult({
         ...result,
-        dependencies: [
+        requests: [
           { ...dependency, input: { kind: "owner-review", data: {} } },
         ],
       }),
@@ -1007,8 +1009,9 @@ describe("Scout owner reconciliation boundary", () => {
             output: {
               state: "waiting",
               summary: "Proposed one bounded maintenance task.",
+              conditions: [{ requestId: "repair-navigation" }],
               facts: ["library packet identifies the gap"],
-              dependencies: [
+              requests: [
                 {
                   id: "repair-navigation",
                   appId: "scout-knowledge-lib",
@@ -1078,6 +1081,7 @@ describe("Scout owner reconciliation boundary", () => {
     expect(prompt).toMatch(
       /Open\s+.*scout-knowledge-candidate-[^/]+\/projects\/scout-knowledge-lib\/knowledge\/xhs-topic-map\.md only when/u,
     );
+    expect(prompt).toContain("Submitting work alone does not require waiting");
     expect(runOptions?.schema).toBeDefined();
     expect(emitted.at(-1)).toMatchObject({
       type: "project.knowledge.maintained",
@@ -1086,7 +1090,7 @@ describe("Scout owner reconciliation boundary", () => {
       ),
       data: {
         proposedActions: [],
-        proposedDependencies: [
+        proposedRequests: [
           { id: "repair-navigation", appId: "scout-knowledge-lib" },
         ],
       },
@@ -1095,16 +1099,15 @@ describe("Scout owner reconciliation boundary", () => {
       status: "done",
       output: {
         state: "waiting",
-        dependencies: [
-          { id: "repair-navigation", appId: "scout-knowledge-lib" },
-        ],
+        conditions: [{ requestId: "repair-navigation" }],
+        requests: [{ id: "repair-navigation", appId: "scout-knowledge-lib" }],
       },
     });
     const admitted = admitTaskReconcileResult(
       result.status === "done" ? result.output : undefined,
       { allowNeedsAgent: true },
     );
-    expect(admitted.ok && admitted.result.dependencies?.[0]).toMatchObject({
+    expect(admitted.ok && admitted.result.requests?.[0]).toMatchObject({
       id: "repair-navigation",
       appId: "scout-knowledge-lib",
       input: { kind: "goal", data: { outcome: "Repair library navigation" } },

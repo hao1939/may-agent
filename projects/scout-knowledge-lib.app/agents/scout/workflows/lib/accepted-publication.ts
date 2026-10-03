@@ -1,4 +1,4 @@
-import type { TaskAppDependency, TaskReconcileResult } from "@may-agent/sdk";
+import type { TaskAppRequest, TaskReconcileResult } from "@may-agent/sdk";
 import { KnowledgePublicationError } from "./knowledge-publication.js";
 
 export type AcceptedPublicationRecovery = {
@@ -76,7 +76,7 @@ export function retainAcceptedPublication(
   ].filter((fact) => !fact.startsWith("output:")) as [string, ...string[]];
 
   // A recovery Task already owns this exact obligation. Keep its ordinary
-  // waiting result, but never recursively create another recovery dependency.
+  // waiting result, but never recursively create another recovery request.
   if (context.recovery || !error.candidateRef) {
     if (!context.acceptedWaiting) return undefined;
     return {
@@ -85,7 +85,7 @@ export function retainAcceptedPublication(
     };
   }
 
-  const recoveryDependency: TaskAppDependency = {
+  const recoveryRequest: TaskAppRequest = {
     id: `accepted-publication-${error.candidateRef.slice(error.candidateRef.lastIndexOf("/") + 1)}`,
     appId: "scout-knowledge-lib",
     input: {
@@ -111,11 +111,17 @@ export function retainAcceptedPublication(
       },
     },
   };
-  const dependencies = [...(context.acceptedWaiting?.dependencies ?? [])];
+  const requests = [...(context.acceptedWaiting?.requests ?? [])];
+  if (!requests.some((request) => request.id === recoveryRequest.id))
+    requests.push(recoveryRequest);
+  const conditions = [...(context.acceptedWaiting?.conditions ?? [])];
   if (
-    !dependencies.some((dependency) => dependency.id === recoveryDependency.id)
+    !conditions.some(
+      (condition) =>
+        "requestId" in condition && condition.requestId === recoveryRequest.id,
+    )
   )
-    dependencies.push(recoveryDependency);
+    conditions.push({ requestId: recoveryRequest.id });
 
   return {
     ...(context.acceptedWaiting ?? {
@@ -123,6 +129,7 @@ export function retainAcceptedPublication(
       summary: context.summary,
     }),
     facts,
-    dependencies,
+    requests,
+    conditions,
   };
 }
