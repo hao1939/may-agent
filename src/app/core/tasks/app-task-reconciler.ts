@@ -32,7 +32,6 @@ import type {
   AppTaskAttempt as AppTaskAttempt,
   AppTaskCancellation,
   AppTaskResource as AppTaskResource,
-  AppTaskTrigger as AppTaskTrigger,
   AppTaskTriggerEvent,
   AppTaskWorkspace as AppTaskWorkspace,
 } from "./app-task-state.js";
