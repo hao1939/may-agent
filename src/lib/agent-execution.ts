@@ -660,6 +660,7 @@ export async function executePreparedAgent(
           !shouldRequestBoundedWorkflowFinish(true, toolCalls, boundedFinishRequested, {
             admittedTimeoutMs: options.timeoutMs,
             elapsedMs: Date.now() - startedAt,
+            activeToolName: event.toolName,
           })
         )
           return;

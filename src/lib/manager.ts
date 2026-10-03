@@ -2481,6 +2481,7 @@ export class SubagentManager {
                 admittedTimeoutMs: session.admittedTimeoutMs,
                 elapsedMs: Date.now() - session.startedAt,
                 operationAllowance: session.operationAllowance,
+                activeToolName: (event as any).toolName,
               },
             )
           ) {
