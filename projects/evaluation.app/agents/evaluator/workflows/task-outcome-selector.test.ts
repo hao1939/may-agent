@@ -1839,6 +1839,227 @@ describe("automatic task outcome selector", () => {
     }
   });
 
+  test("withdraws only an exact later Evaluation-owned duplicate while preserving the earlier command", async () => {
+    const requested = ["task:app_first", "task:app_second"];
+    const command = (id: string, sourceId: string, observedAt: string) => ({
+      observedAt,
+      event: {
+        type: "app.task.requested",
+        data: {
+          appId: "evaluation",
+          taskId: "runtime/task-outcome-selector",
+          idempotencyKey: `task:${id}`,
+          request: {
+            id,
+            input: {
+              kind: "reconcile-automatic-review-inputs",
+              data: { inputKeys: requested },
+            },
+            source: { kind: "app", id: sourceId },
+          },
+        },
+      },
+    });
+    const survivorInputKey = "task:app_survivor";
+    const duplicateInputKey = "task:app_duplicate";
+    const withdrawalInputKey = "task:app_withdrawal";
+    const withdrawal = {
+      observedAt: "2026-10-03T23:05:00.000Z",
+      event: {
+        type: "app.task.requested",
+        data: {
+          appId: "evaluation",
+          taskId: "runtime/task-outcome-selector",
+          idempotencyKey: withdrawalInputKey,
+          request: {
+            id: "app_withdrawal",
+            input: {
+              kind: "withdraw-reconciliation-command",
+              data: { duplicateInputKey, survivorInputKey },
+            },
+            source: { kind: "app", id: "evaluation" },
+          },
+        },
+      },
+    };
+    let reads = 0;
+    let emissions = 0;
+    const ctx = {
+      input: { reason: "scheduled" },
+      reconciliation: {
+        appId: "evaluation",
+        taskId: "runtime/task-outcome-selector",
+        events: {
+          items: [
+            command("app_survivor", "may", "2026-10-03T22:56:26.044Z"),
+            command("app_duplicate", "evaluation", "2026-10-03T22:57:02.534Z"),
+            withdrawal,
+          ],
+          continuedInputs: [withdrawal],
+          truncated: false,
+        },
+      },
+      read: {
+        tasks: {
+          get: async () => {
+            reads += 1;
+            return {};
+          },
+        },
+      },
+      events: {
+        emit: async () => {
+          emissions += 1;
+        },
+      },
+      done: (_summary: string, result: Record<string, unknown>) => result,
+    } as never;
+
+    const result = (await runSelector(ctx, undefined, {
+      ...config,
+      enabled: false,
+    })) as unknown as Record<string, unknown>;
+    expect(result).toMatchObject({
+      state: "converged",
+      inputKeys: [duplicateInputKey, withdrawalInputKey],
+      facts: [
+        `selector:exact-input-reconciliation-command-withdrawn:${duplicateInputKey}`,
+        `selector:exact-input-reconciliation-command-preserved:${survivorInputKey}`,
+        "selector:exact-input-side-effects:none",
+      ],
+      actions: [],
+    });
+    expect(result).not.toHaveProperty("report");
+    expect(reads).toBe(0);
+    expect(emissions).toBe(0);
+  });
+
+  test("does not use withdrawal to choose between genuinely distinct or wrongly owned commands", async () => {
+    const command = (
+      id: string,
+      sourceId: string,
+      observedAt: string,
+      inputKeys: string[],
+    ) => ({
+      observedAt,
+      event: {
+        type: "app.task.requested",
+        data: {
+          appId: "evaluation",
+          taskId: "runtime/task-outcome-selector",
+          idempotencyKey: `task:${id}`,
+          request: {
+            id,
+            input: {
+              kind: "reconcile-automatic-review-inputs",
+              data: { inputKeys },
+            },
+            source: { kind: "app", id: sourceId },
+          },
+        },
+      },
+    });
+    const withdrawal = {
+      observedAt: "2026-10-03T23:05:00.000Z",
+      event: {
+        type: "app.task.requested",
+        data: {
+          appId: "evaluation",
+          taskId: "runtime/task-outcome-selector",
+          idempotencyKey: "task:app_withdrawal",
+          request: {
+            id: "app_withdrawal",
+            input: {
+              kind: "withdraw-reconciliation-command",
+              data: {
+                duplicateInputKey: "task:app_duplicate",
+                survivorInputKey: "task:app_survivor",
+              },
+            },
+            source: { kind: "app", id: "evaluation" },
+          },
+        },
+      },
+    };
+    const cases = [
+      [
+        command("app_survivor", "may", "2026-10-03T22:56:26.044Z", [
+          "task:app_first",
+        ]),
+        command("app_duplicate", "evaluation", "2026-10-03T22:57:02.534Z", [
+          "task:app_second",
+        ]),
+      ],
+      [
+        command("app_survivor", "may", "2026-10-03T22:56:26.044Z", [
+          "task:app_first",
+        ]),
+        command("app_duplicate", "may", "2026-10-03T22:57:02.534Z", [
+          "task:app_first",
+        ]),
+      ],
+      [
+        command("app_survivor", "evaluation", "2026-10-03T22:56:26.044Z", [
+          "task:app_first",
+        ]),
+        command("app_duplicate", "evaluation", "2026-10-03T22:57:02.534Z", [
+          "task:app_first",
+        ]),
+      ],
+      [
+        command("app_survivor", "may", "2026-10-03T22:57:02.534Z", [
+          "task:app_first",
+        ]),
+        command("app_duplicate", "evaluation", "2026-10-03T22:56:26.044Z", [
+          "task:app_first",
+        ]),
+      ],
+    ];
+
+    for (const commands of cases) {
+      let reads = 0;
+      let emissions = 0;
+      const ctx = {
+        input: { reason: "scheduled" },
+        reconciliation: {
+          appId: "evaluation",
+          taskId: "runtime/task-outcome-selector",
+          events: {
+            items: [...commands, withdrawal],
+            truncated: false,
+          },
+        },
+        read: {
+          tasks: {
+            get: async () => {
+              reads += 1;
+              return {};
+            },
+          },
+        },
+        events: {
+          emit: async () => {
+            emissions += 1;
+          },
+        },
+        done: (_summary: string, result: Record<string, unknown>) => result,
+      } as never;
+
+      const result = (await runSelector(ctx, undefined, {
+        ...config,
+        enabled: false,
+      })) as unknown as Record<string, unknown>;
+      expect(result).toMatchObject({
+        state: "incomplete",
+        report: true,
+        facts: ["selector:exact-input-reconciliation-command-unavailable"],
+      });
+      expect(result).not.toHaveProperty("inputKeys");
+      expect(reads).toBe(0);
+      expect(emissions).toBe(0);
+    }
+  });
+
   test("keeps exact reconciliation open when an original is missing or foreign", async () => {
     const requested = ["task:app_first", "task:app_second"];
     const ctx = {

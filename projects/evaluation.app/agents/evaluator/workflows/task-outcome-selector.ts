@@ -112,7 +112,20 @@ function exactReconciliationKeys(value: unknown): string[] {
 type ReconciliationCommand =
   | { state: "none" }
   | { state: "invalid" }
-  | { state: "valid"; requested: string[]; commandKey: string };
+  | { state: "valid"; requested: string[]; commandKey: string }
+  | {
+      state: "withdraw";
+      duplicateInputKey: string;
+      survivorInputKey: string;
+      withdrawalInputKey: string;
+    };
+
+type ParsedReconciliationCommand = {
+  requested: string[];
+  observedAt: number;
+  sourceAppId: string;
+  sourceKind: string;
+};
 
 function reconciliationCommand(
   ctx: WorkflowContext<Input>,
@@ -122,25 +135,103 @@ function reconciliationCommand(
   if (!reconciliation || !eventPacket) return { state: "none" };
   const events = [...eventPacket.items, ...(eventPacket.continuedInputs ?? [])];
   const commands: Array<{ requested: string[]; commandKey: string }> = [];
+  const commandByKey = new Map<string, ParsedReconciliationCommand>();
+  const withdrawals = new Map<
+    string,
+    { duplicateInputKey: string; survivorInputKey: string }
+  >();
   for (const item of events) {
     const event = object(item.event);
     if (text(event.type) !== "app.task.requested") continue;
     const data = object(event.data);
     const request = object(data.request);
     const input = object(request.input);
-    if (text(input.kind) !== "reconcile-automatic-review-inputs") continue;
-    const requested = exactReconciliationKeys(object(input.data).inputKeys);
     const commandKey = text(data.idempotencyKey);
     const requestId = text(request.id);
+    const inputKind = text(input.kind);
     if (
-      !requested.length ||
+      inputKind !== "reconcile-automatic-review-inputs" &&
+      inputKind !== "withdraw-reconciliation-command"
+    )
+      continue;
+    if (
       !requestId ||
       text(data.appId) !== reconciliation.appId ||
       text(data.taskId) !== reconciliation.taskId ||
       commandKey !== `task:${requestId}`
     )
       return { state: "invalid" };
+    const requestSource = object(request.source);
+    if (inputKind === "withdraw-reconciliation-command") {
+      const inputData = object(input.data);
+      const duplicateInputKey = text(inputData.duplicateInputKey);
+      const survivorInputKey = text(inputData.survivorInputKey);
+      if (
+        text(requestSource.kind) !== "app" ||
+        text(requestSource.id) !== reconciliation.appId ||
+        !/^task:\S+$/.test(duplicateInputKey) ||
+        !/^task:\S+$/.test(survivorInputKey) ||
+        duplicateInputKey === survivorInputKey
+      )
+        return { state: "invalid" };
+      const existing = withdrawals.get(commandKey);
+      if (
+        existing &&
+        (existing.duplicateInputKey !== duplicateInputKey ||
+          existing.survivorInputKey !== survivorInputKey)
+      )
+        return { state: "invalid" };
+      withdrawals.set(commandKey, {
+        duplicateInputKey,
+        survivorInputKey,
+      });
+      continue;
+    }
+    const requested = exactReconciliationKeys(object(input.data).inputKeys);
+    const observedAt = Date.parse(text(object(item).observedAt));
+    if (!requested.length || !Number.isFinite(observedAt))
+      return { state: "invalid" };
+    const parsed = {
+      requested,
+      observedAt,
+      sourceAppId: text(requestSource.id),
+      sourceKind: text(requestSource.kind),
+    };
+    const existing = commandByKey.get(commandKey);
+    if (
+      existing &&
+      (existing.observedAt !== parsed.observedAt ||
+        existing.sourceAppId !== parsed.sourceAppId ||
+        existing.sourceKind !== parsed.sourceKind ||
+        existing.requested.length !== requested.length ||
+        existing.requested.some((key, index) => key !== requested[index]))
+    )
+      return { state: "invalid" };
+    commandByKey.set(commandKey, parsed);
     commands.push({ requested, commandKey });
+  }
+  if (withdrawals.size) {
+    if (withdrawals.size !== 1 || commandByKey.size !== 2)
+      return { state: "invalid" };
+    const [withdrawalInputKey, withdrawal] = [...withdrawals.entries()][0]!;
+    const duplicate = commandByKey.get(withdrawal.duplicateInputKey);
+    const survivor = commandByKey.get(withdrawal.survivorInputKey);
+    if (
+      !duplicate ||
+      !survivor ||
+      duplicate.sourceKind !== "app" ||
+      duplicate.sourceAppId !== reconciliation.appId ||
+      survivor.sourceKind !== "app" ||
+      !survivor.sourceAppId ||
+      survivor.sourceAppId === reconciliation.appId ||
+      survivor.observedAt >= duplicate.observedAt ||
+      duplicate.requested.length !== survivor.requested.length ||
+      duplicate.requested.some(
+        (key, index) => key !== survivor.requested[index],
+      )
+    )
+      return { state: "invalid" };
+    return { state: "withdraw", withdrawalInputKey, ...withdrawal };
   }
   if (!commands.length) return { state: "none" };
   if (commands.length !== 1) return { state: "invalid" };
@@ -903,6 +994,22 @@ export async function runTaskOutcomeSelector(
       summary,
       response: summary,
       facts: ["selector:exact-input-reconciliation-command-unavailable"],
+    });
+  }
+  if (reconcile.state === "withdraw") {
+    const summary =
+      "Withdrew the later duplicate exact-input reconciliation command; the earlier command and every original input remain open for ordinary guarded retry.";
+    return ctx.done(summary, {
+      state: "converged",
+      summary,
+      response: summary,
+      inputKeys: [reconcile.duplicateInputKey, reconcile.withdrawalInputKey],
+      facts: [
+        `selector:exact-input-reconciliation-command-withdrawn:${reconcile.duplicateInputKey}`,
+        `selector:exact-input-reconciliation-command-preserved:${reconcile.survivorInputKey}`,
+        "selector:exact-input-side-effects:none",
+      ],
+      actions: [],
     });
   }
   if (reconcile.state === "valid")

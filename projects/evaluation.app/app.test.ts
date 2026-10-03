@@ -168,6 +168,42 @@ describe("canonical evaluation App", () => {
     ).toBeFalse();
   });
 
+  test("routes an exact duplicate-command withdrawal to the selector", () => {
+    const input = {
+      kind: "withdraw-reconciliation-command",
+      data: {
+        duplicateInputKey: "task:app_duplicate",
+        survivorInputKey: "task:app_survivor",
+      },
+    } as const;
+
+    expect(Check(app.inputSchema, input)).toBeTrue();
+    expect(taskIntentForInput(input)).toEqual(
+      taskIntentForInput({
+        kind: "automatic-review",
+        data: { reason: "scheduled" },
+      }),
+    );
+    expect(
+      Check(app.inputSchema, {
+        ...input,
+        data: {
+          duplicateInputKey: input.data.survivorInputKey,
+          survivorInputKey: input.data.survivorInputKey,
+        },
+      }),
+    ).toBeTrue();
+    expect(
+      taskIntentForInput({
+        ...input,
+        data: {
+          duplicateInputKey: input.data.survivorInputKey,
+          survivorInputKey: input.data.survivorInputKey,
+        },
+      }),
+    ).toBeNull();
+  });
+
   test("keeps canonical App-input actions without a legacy project-review alias", () => {
     expect(
       app.actions?.["evaluate-session"]?.toInput?.({ sessionId: "s-1" }),

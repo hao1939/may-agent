@@ -196,6 +196,27 @@ const evaluationInputSchema = Type.Union([
     { additionalProperties: false },
   ),
   Type.Object(
+    {
+      kind: Type.Literal("withdraw-reconciliation-command"),
+      data: Type.Object(
+        {
+          duplicateInputKey: Type.String({
+            minLength: 1,
+            maxLength: 512,
+            pattern: "^task:\\S+$",
+          }),
+          survivorInputKey: Type.String({
+            minLength: 1,
+            maxLength: 512,
+            pattern: "^task:\\S+$",
+          }),
+        },
+        { additionalProperties: false },
+      ),
+    },
+    { additionalProperties: false },
+  ),
+  Type.Object(
     { kind: Type.Literal("deep-eval"), data: sessionSchema },
     { additionalProperties: false },
   ),
@@ -522,6 +543,29 @@ export function taskIntentForInput(input: AppInput): TaskIntent | null {
             !/^\S+$/.test(key),
         ) ||
         new Set(inputKeys).size !== inputKeys.length
+      )
+        return null;
+      return {
+        id: "runtime/task-outcome-selector",
+        parentId: "evaluation-system",
+        outcome:
+          "Select at most one external Task or metric observation for review.",
+        acceptance: [
+          "Selection uses bounded public App and Task lists and excludes Evaluation.",
+          "At most one canonical Task or metric review request is published using the shared allowance.",
+        ],
+        workflow: "task-outcome-selector",
+        input: { reason: "scheduled" },
+        priority: "P2",
+      };
+    }
+    case "withdraw-reconciliation-command": {
+      const duplicateInputKey = stringValue(data.duplicateInputKey);
+      const survivorInputKey = stringValue(data.survivorInputKey);
+      if (
+        !/^task:\S+$/.test(duplicateInputKey) ||
+        !/^task:\S+$/.test(survivorInputKey) ||
+        duplicateInputKey === survivorInputKey
       )
         return null;
       return {
