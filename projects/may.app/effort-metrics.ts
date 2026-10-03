@@ -44,7 +44,7 @@ SELECT CASE WHEN EXISTS (
       'pricedReplies', priced_replies, 'earliestInvocationStart', earliest_start, 'lastUsageUpdate', last_update))
       FROM (SELECT * FROM groups ORDER BY replies DESC, app_id, task_id LIMIT 5))),
     'groupsTruncated', COUNT(*) > 5,
-    'coverage', 'Managed invocation accounting only. Native codex-goal and persistent chat are not covered. Missing usage/pricing is unknown; zero estimated prices do not prove free work.',
+    'coverage', 'Managed invocation accounting only. Older Host versions omit persistent chat; native codex-goal is not covered. Missing usage/pricing is unknown; zero estimated prices do not prove free work.',
     'nextRead', 'Read the exact App/Task, accepted attempt evidence and remaining requirements. Inspect artifacts, new input and Conditions before judging effort. Aging out does not prove recovery.') AS note
 FROM groups`;
 }

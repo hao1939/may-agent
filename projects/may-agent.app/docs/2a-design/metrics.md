@@ -549,6 +549,22 @@ uses the same linked-work reader for direct alerts and Evaluation intake. See
 [metric pattern review](../../../evaluation.app/design/metric-pattern-review.md#breach-identity-and-retained-response)
 for the fact contract, bounded history and responsibility rules.
 
+### Execution usage
+
+The Host's `execution_usage` records cumulative observations from each managed
+invocation. Persistent chat uses the same recorder as a bounded worker: new
+assistant replies update its row, idle time leaves it open, and cancellation or
+failure retains the terminal outcome. Resuming creates a new invocation record;
+retained transcript messages are not new usage. Preserve known App/Task/attempt
+links and leave absent identity unknown. Recording is quiet and best-effort;
+the existing metric calculation and App review decide whether attention is due.
+
+Model reply counts, native turns and native thread token totals are different
+measurements. Keep their scope explicit before aggregating them. The native
+`codex-goal` adapter does not yet populate this managed-invocation store. Neither
+missing usage nor missing prices proves free execution. App observations expose
+these limits and calibrate attention policy separately from the Host recorder.
+
 ### Task-attempt public reporting
 
 `GET /api/task-attempts?appId=example&end=<epoch-ms>` reads two adjacent

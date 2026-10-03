@@ -331,3 +331,41 @@ three obsolete heartbeat-manifest expectations and a platform owner-review
 schema assertion. Current May/Evaluation tests and retained maintenance-handler
 tests pass. The paused platform's unrelated workflow failures are not fixed or
 hidden by this cleanup.
+
+### Persistent-chat usage follow-up
+
+Source cleanup `9bbab4a0e5` removed the obsolete shared App expectations and
+aligned the callable owner-review helper with the SDK result contract. Its
+broader App check passed 463 tests against the Host correction in PR #306.
+
+Host [PR #307](https://github.com/hao1939/may-agent/pull/307), source `9ee00aa6f`,
+removes the explicit persistent-chat exclusion from the existing usage recorder.
+It also saves usage at the chat cancellation and
+failure boundaries. One live invocation retains cumulative replies across idle
+turns; resume creates a separate record containing only new replies. Missing
+Task identity remains unattributed. The same store, query and review route are
+used, with no new collector, schedule, event, threshold or cancellation policy.
+This is source verification; May remains stopped and older usage is not backfilled.
+
+The focused trial uses the actual manager, scripted local model replies and
+temporary SQLite. It verifies two chat turns in one record, retained usage on
+close/failure, and one new reply after resume without recounting old messages.
+The 19 focused Host tests pass. Full `bun run ci` passes: 3,529 tests, zero
+failures and three deployment-only skips. The four App effort-metric tests pass;
+design integrity/examples checks pass with two existing root-layout warnings.
+Reproduce the focused checks with `bun test src/lib/manager-lifecycle.test.ts
+src/lib/chat-runtime-policy.test.ts src/app/adapters/reporting/context-usage.test.ts
+src/lib/execution-usage.test.ts` from the Host checkout. From the App checkout,
+run `bun test ./projects/may.app/effort-metrics.test.ts` and
+`bun run check:may-design`. All trial replies are scripted locally; these checks
+do not establish native usage coverage or live deployment behavior.
+
+Native usage remains a separate next step. Official [app-server turn events](https://learn.chatgpt.com/docs/app-server#turn-events)
+include `thread/tokenUsage/updated`; the installed CLI 0.159.2 schema exposes
+`tokenUsage.total` and `tokenUsage.last` per thread. These are not the managed
+assistant-reply counter, and a resumed thread spans multiple May attempts. The
+container still pins 0.156.1; this schema inspection is not compatibility proof
+for that pinned version. Before extending accounting, verify that version with
+the existing local protocol fixture, then preserve the native counter's exact
+scope and demonstrate that resume does not duplicate prior consumption. Do not
+make an uncertain conversion merely to fill the coverage gap.
