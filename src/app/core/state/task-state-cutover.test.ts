@@ -656,17 +656,17 @@ test("structural-wait replay keeps admission order across bounded claims and res
   expect(
     completeAppTask(f.config, first, { summary: "Reviewed first batch", result: { batch: 1 } }).taskContinues,
   ).toBe(true);
-  expect(readAppTaskAdmissionOutcome(f.config, "work", "task:original")).toBeNull();
+  expect(readAppTaskAdmissionOutcome(f.config, "work", "task:original")?.result).toEqual({ batch: 1 });
   expect(readAppTaskAdmissionOutcome(f.config, "work", "task:newer-30")).toBeNull();
   f.reopen();
   const second = f.claim();
   expect(taskInputAdmissionKeys(second.events)).toEqual(newer.slice(30).map((id) => `task:${id}`));
-  expect(new Set(second.continuedInputKeys)).toEqual(new Set(firstKeys));
+  expect(second.continuedInputKeys ?? []).toEqual([]);
   expect(second.events.at(-1)?.event.type).toBe("app.task.coordination-retired");
   completeAppTask(f.config, second, { summary: "Answered remaining batch", result: { batch: 2 } });
-  expect(readAppTaskAdmissionOutcome(f.config, "work", "task:original")?.result).toEqual({ batch: 2 });
+  expect(readAppTaskAdmissionOutcome(f.config, "work", "task:original")?.result).toEqual({ batch: 1 });
   expect(readAppTaskAdmissionOutcome(f.config, "work", "task:newer-33")?.result).toEqual({ batch: 2 });
   f.ask("later");
   completeAppTask(f.config, f.claim(), { summary: "Separate later answer", result: { batch: 3 } });
-  expect(readAppTaskAdmissionOutcome(f.config, "work", "task:original")?.result).toEqual({ batch: 2 });
+  expect(readAppTaskAdmissionOutcome(f.config, "work", "task:original")?.result).toEqual({ batch: 1 });
 });

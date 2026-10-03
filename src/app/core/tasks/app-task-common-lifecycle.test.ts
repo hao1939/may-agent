@@ -197,7 +197,7 @@ describe("explicit result scope", () => {
     expect(readAppTaskAdmissionOutcome(f.config, "conversation", "refresh")).toBeNull();
   });
 
-  it("rejects foreign, missing and answered selections atomically; newer input and stale attempts retain their fences", () => {
+  it("rejects invalid scope and stale attempts while accepting valid scope beside newer input", () => {
     const { f, admit } = earlyInputFixture();
     observeAppTaskIntent(f.config, { intent: { ...f.intent, id: "foreign" }, appAgent: "owner" });
     admit("foreign-input", "foreign");
@@ -217,13 +217,13 @@ describe("explicit result scope", () => {
       .toThrow("at most 8");
     admit("newer");
     expect(completeAppTask(f.config, claim, { summary: "Old view", inputKeys: ["refresh"] }).taskContinues).toBe(true);
-    expect(readAppTaskAdmissionOutcome(f.config, "conversation", "refresh")).toBeNull();
+    expect(readAppTaskAdmissionOutcome(f.config, "conversation", "refresh")?.attemptId).toBe(claim.attemptId);
     const current = f.claim();
     expect(completeAppTask(f.config, claim, { summary: "Late result", inputKeys: ["refresh"] }).status).toBe("stale");
-    completeAppTask(f.config, current, { summary: "Current answer", inputKeys: ["refresh"] });
+    completeAppTask(f.config, current, { summary: "Current answer", inputKeys: ["newer"] });
     admit("later");
     expect(() => completeAppTask(f.config, f.claim(), { summary: "Overwrite", inputKeys: ["refresh"] })).toThrow("not outstanding");
-    expect(readAppTaskAdmissionOutcome(f.config, "conversation", "refresh")?.attemptId).toBe(current.attemptId);
+    expect(readAppTaskAdmissionOutcome(f.config, "conversation", "refresh")?.attemptId).toBe(claim.attemptId);
   });
 
   it.each(["waiting", "incomplete"] as const)("%s applies only a report to selected earlier input", (state) => {
@@ -259,7 +259,7 @@ describe("explicit result scope", () => {
     expect(readAppTaskAdmissionOutcome(f.config, "conversation", "independent")).toBeNull();
   });
 
-  it("new input retains the current wait and useful work when an earlier result cannot be accepted", () => {
+  it("accepted partial work preserves its input wait when newer input arrives", () => {
     const { f, admit } = earlyInputFixture();
     deferAppTask(f.config, f.claim(), { disposition: "waiting", continue: true, summary: "Investigating refresh", inputKeys: ["refresh", "correction"] });
     const claim = f.claim();
@@ -267,7 +267,8 @@ describe("explicit result scope", () => {
     expect(before.reviewAt).toBeGreaterThan(Date.now());
     expect(before.pending).toBe(true);
     admit("newer");
-    expect(completeAppTask(f.config, claim, { summary: "Older view", inputKeys: ["refresh"] }).taskContinues).toBe(true);
+    expect(deferAppTask(f.config, claim, { disposition: "waiting", continue: true,
+      summary: "Refresh partly investigated", inputKeys: ["refresh"] }).status).toBe("applied");
     f.reopen();
     expect(f.config.resourceStore.readTask("conversation")!.status.inputWaits!.refresh).toEqual(before);
     expect(readAppTaskAdmissionOutcome(f.config, "conversation", "refresh")).toBeNull();
@@ -532,7 +533,8 @@ describe("common Task lifecycle", () => {
     };
     if (!acceptLive) {
       completeAppTask(f.config, claim, result);
-      expect(readAppTaskAdmissionOutcome(f.config, "conversation", "task:explanation")).toBeNull();
+      expect(readAppTaskAdmissionOutcome(f.config, "conversation", "task:explanation")?.attemptId).toBe(claim.attemptId);
+      expect(readAppTaskAdmissionOutcome(f.config, "conversation", "task:measurement")).toBeNull();
       f.reopen();
       claim = f.claim();
       const inputs = readAppTaskReconciliationEvents(f.config.resourceStore, claim);
@@ -540,13 +542,12 @@ describe("common Task lifecycle", () => {
         inputs.continuedInputs?.some(
           ({ event }) => (event.data.request as { id?: string } | undefined)?.id === "explanation",
         ),
-      ).toBe(true);
+      ).toBe(false);
       expect(inputs.continuedInputs?.map(({ event }) => (event.data.request as { id: string }).id).sort()).toEqual([
-        "explanation",
         "measurement",
       ]);
     }
-    completeAppTask(f.config, claim, { ...result, inputKeys: ["task:measurement", "task:explanation"],
+    completeAppTask(f.config, claim, { ...result, inputKeys: acceptLive ? ["task:measurement", "task:explanation"] : ["task:measurement"],
       ...(acceptLive ? { acceptedLiveEventIds: [500] } : {}) });
     f.reopen();
     for (const id of ["measurement", "explanation"]) {
@@ -925,7 +926,7 @@ describe("common Task lifecycle", () => {
     expect(tree.conditions?.obsolete).toBeUndefined();
   });
 
-  it("rejects stale and pending-input condition retirement without clearing waits", () => {
+  it("retirement checks the Condition revision while retaining unrelated pending input", () => {
     for (const variant of ["stale", "pending"] as const) {
       const f = fixture();
       deferAppTask(f.config, f.claim(), {
@@ -956,7 +957,7 @@ describe("common Task lifecycle", () => {
           data: { text: "Newer correction" },
         });
       }
-      expect(() =>
+      const retire = () =>
         completeAppTask(f.config, claim, {
           summary: "Proposed retirement",
           facts: ["evidence:receipt"],
@@ -969,9 +970,15 @@ describe("common Task lifecycle", () => {
             },
           ],
           acceptedLiveEventIds: [2],
-        }),
-      ).toThrow();
-      expect(f.config.resourceStore.readTask("conversation")?.status.conditionIds).toEqual(["approval"]);
+        });
+      if (variant === "stale") {
+        expect(retire).toThrow();
+        expect(f.config.resourceStore.readTask("conversation")?.status.conditionIds).toEqual(["approval"]);
+      } else {
+        expect(retire()).toMatchObject({ status: "applied", taskContinues: true });
+        expect(f.config.resourceStore.readTask("conversation")?.status.conditionIds).toEqual([]);
+        expect(f.config.resourceStore.readTrigger("conversation")?.event.eventId).toBe(3);
+      }
     }
   });
 

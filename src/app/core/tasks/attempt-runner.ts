@@ -335,22 +335,27 @@ async function runClaimedTask(
         });
         return await rejectResult(accepted.summary, { handlerBlocked: true }, accepted.facts);
       }
-      const stale = await fenceWorkspaceFinalization(report);
-      if (stale) return stale.reconcileTaskIds;
-      // Accepting a contribution does not finish the Task's remaining work.
-      const finalized = await finalizeWorkspace(
-        shouldRetainAppTaskWorkspace(config, claim, {
-          inputKeys: result.inputKeys, acceptedLiveEventIds: report.acceptedLiveEventIds,
-        }) ? "waiting" : "accepted",
-      );
-      if (!finalized.ok) {
-        return await rejectResult(finalized.reason ?? "Task workspace finalization failed", { handlerBlocked: true }, [
-          ...result.facts,
-          taskWorkspace?.metadata.path ?? executionPaths.workspaceDir,
-        ]);
-      }
       const { acceptanceBasis } = accepted;
       try {
+        const staleWorkspace = await fenceWorkspaceFinalization(report);
+        if (staleWorkspace) return staleWorkspace.reconcileTaskIds;
+        // Validate scope before cleanup, within the boundary that preserves rejected output.
+        // Accepting a contribution does not finish the Task's remaining work.
+        const finalized = await finalizeWorkspace(
+          shouldRetainAppTaskWorkspace(config, claim, {
+            inputKeys: result.inputKeys,
+            acceptedLiveEventIds: report.acceptedLiveEventIds,
+          })
+            ? "waiting"
+            : "accepted",
+        );
+        if (!finalized.ok) {
+          return await rejectResult(
+            finalized.reason ?? "Task workspace finalization failed",
+            { handlerBlocked: true },
+            [...result.facts, taskWorkspace?.metadata.path ?? executionPaths.workspaceDir],
+          );
+        }
         let apply!: ReturnType<typeof completeConversationTaskTurn>;
         const changes = persistResult(() =>
           applyTaskChanges({
