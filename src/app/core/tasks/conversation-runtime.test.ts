@@ -781,6 +781,41 @@ test.each(["available", "removed"] as const)(
   },
 );
 
+test.each(["drop", "keep"] as const)("finish validation leaves an uninitialized target unchanged before a %s correction", async (correction) => {
+  let judgments = 0;
+  const f = await fixture(async (_definition, _prompt, options) => {
+    judgments++;
+    const writes = () => f.db.prepare("SELECT total_changes() AS count").get()!.count;
+    const before = writes();
+    const invalid = { ...delegated, requestUpdates: undefined,
+      followUp: { ...delegated.followUp!, requestId: "closed" } };
+    expect(options.validateOutput?.(invalid)).toContain("open accepted Request");
+    expect(AppTaskResourceStore.activeFromDb(f.db, background.id)).toBeNull();
+    expect(writes()).toBe(before);
+    const corrected = correction === "keep" ? delegated : {
+      summary: "Answered here", response: "No follow-up is needed.", topic: { kind: "none" as const },
+    };
+    expect(options.validateOutput?.(corrected)).toBeNull();
+    expect(AppTaskResourceStore.activeFromDb(f.db, background.id)).toBeNull();
+    expect(writes()).toBe(before);
+    return { status: "done", structuredResult: corrected };
+  }, (root, appDir) => ({
+    ...withBackground(root, appDir), installControllers: false, taskAppIds: [app.id],
+  }));
+  applyConversationRequestUpdates(f.db, {
+    appId: app.id, conversationId: "primary", now: Date.now(), updateKey: "prior-answer", messageId: "prior-answer",
+    updates: [{ id: "closed", expectedRevision: 0, scope: "An earlier ask", disposition: "fulfilled", reason: "Already answered" }],
+  });
+  expect(AppTaskResourceStore.activeFromDb(f.db, background.id)).toBeNull();
+  const admitted = f.admit();
+  await f.run(admitted.taskId);
+  expect(judgments).toBe(1);
+  expect(getAppInboxItem(f.db, admitted.item.id)?.status).toBe("done");
+  const target = AppTaskResourceStore.activeFromDb(f.db, background.id);
+  if (correction === "keep") expect(target?.readTask("sample")?.spec.outcome).toBe("Get the sample measurement");
+  else expect(target).toBeNull();
+});
+
 test("one-App worker resolves follow-up from its pinned registry and emits a post-commit wake", async () => {
   const f = await fixture(
     async () => ({ status: "done", structuredResult: delegated }),
