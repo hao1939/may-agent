@@ -19,7 +19,7 @@ import {
   deferAppTask,
   expiredAgentSessionAppTaskAttempt,
   failAppTaskAttempt,
-  hasPendingAppTaskFacts,
+  shouldRetainAppTaskWorkspace,
   isAppTaskActionStaleError,
   readAppTaskChildContext,
   readAppTaskLiveSnapshot,
@@ -337,9 +337,11 @@ async function runClaimedTask(
       }
       const stale = await fenceWorkspaceFinalization(report);
       if (stale) return stale.reconcileTaskIds;
-      // Pending input retains useful work; completion records progress until it is considered.
+      // Accepting a contribution does not finish the Task's remaining work.
       const finalized = await finalizeWorkspace(
-        hasPendingAppTaskFacts(config, claim, report.acceptedLiveEventIds) ? "waiting" : "accepted",
+        shouldRetainAppTaskWorkspace(config, claim, {
+          inputKeys: result.inputKeys, acceptedLiveEventIds: report.acceptedLiveEventIds,
+        }) ? "waiting" : "accepted",
       );
       if (!finalized.ok) {
         return await rejectResult(finalized.reason ?? "Task workspace finalization failed", { handlerBlocked: true }, [

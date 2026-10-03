@@ -2726,6 +2726,10 @@ describe("canonical App task runtime", () => {
       data: { kind: "app", id: "earlier-review" },
     });
 
+    observeAppTaskIntent(config, {
+      intent: { ...claim.intent, outcome: "Use the revised requirements" },
+      appAgent: "sample-owner",
+    });
     const emitted: AgentEvent[] = [];
     bus.subscribe((event) => emitted.push(event));
     expect(() =>
@@ -2749,7 +2753,7 @@ describe("canonical App task runtime", () => {
           },
         ],
       }),
-    ).toThrow("newer Task facts are pending");
+    ).toThrow("stale");
     expect(emitted.filter((event) => event.type === "app.input.requested")).toEqual([]);
     expect(readTaskSnapshot(config).taskTriggers?.[claim.taskId]?.event).toMatchObject({ eventId: 42 });
   });
@@ -3908,12 +3912,10 @@ describe("canonical App task runtime", () => {
       dispatch: { enqueuedAt: 1, startedAt: 2, readyWaitMs: 1, lane: "normal" },
     });
     if (assertionFailure) throw assertionFailure;
-    expect(acceptedTaskAttempt(config, "work/custom-condition")?.acceptedResult?.state).toBe(
-      satisfied ? undefined : "converged",
-    );
+    expect(acceptedTaskAttempt(config, "work/custom-condition")?.acceptedResult?.state).toBe("converged");
     expect(config.resourceStore.readTask("work/custom-condition")?.status).toMatchObject({
       phase: satisfied ? "pending" : "waiting",
-      conditionIds: [expect.stringContaining("app-request:")],
+      conditionIds: satisfied ? [] : [expect.stringContaining("app-request:")],
     });
     if (satisfied) {
       await reconcileLoadedAppTaskOnce({
@@ -6329,12 +6331,13 @@ describe("canonical App task runtime", () => {
     expect(calls).toBe(1);
     const tree = readTaskSnapshot(config);
     expect(tree.receipts?.[taskId]).toBeUndefined();
-    if (change === "fact") {
+    if (change === "fact" || change === "action") {
       expect(tree.resources?.[taskId]?.status.result).toEqual({ runId: 42 });
       expect(tree.conditions?.["run:42"]?.spec.subject).toBe("run:42");
       expect(tree.taskTriggers?.[taskId]?.events?.map((row) => row.event.eventId)).toEqual([101]);
       expect(Object.values(tree.attempts ?? {})[0]?.state).toBe("completed");
       expect(saveAttempts).toBe(1);
+      if (change === "action") expect(tree.resources?.["work/persistence-target"]?.status.phase).toBe("pending");
     } else if (change === "intent") {
       expect(tree.resources?.[taskId]?.metadata.generation).toBe(2);
       expect(tree.resources?.[taskId]?.spec.outcome).toBe("Replacement intent");
@@ -6344,9 +6347,7 @@ describe("canonical App task runtime", () => {
       expect(tree.resources?.["work/persistence-target"]?.spec.outcome).toBe("Original assignment");
       expect(tree.resources?.["work/persistence-target"]?.metadata.generation).toBe(1);
       expect(Object.values(tree.attempts ?? {})[0]?.state).toBe("interrupted");
-      expect(saveAttempts).toBe(change === "persistent" ? 2 : 0);
-      if (change === "action")
-        expect(tree.taskTriggers?.[taskId]?.events?.map((row) => row.event.eventId)).toContain(101);
+      expect(saveAttempts).toBe(2);
     }
   });
 
@@ -7070,7 +7071,7 @@ describe("canonical App task runtime", () => {
     },
   );
 
-  it("admits acknowledged live input through apply while fencing unacknowledged input", async () => {
+  it.each([false, true])("live apply preserves input until incorporated (%s)", async (incorporated) => {
     const f = fixture();
     const bus = eventBus();
     const persistDir = join(f.root, "state");
@@ -7091,7 +7092,6 @@ describe("canonical App task runtime", () => {
     let release = () => {};
     let fail = (_error: unknown) => {};
     const finished = new Promise<void>((resolve, reject) => { release = resolve; fail = reject; });
-    let rejected = "";
     const { installed } = await installCoreTaskRuntimes({
       ...options(f, bus),
       installControllers: false,
@@ -7102,14 +7102,12 @@ describe("canonical App task runtime", () => {
               const deadline = performance.now() + 2_000;
               while (!loadedTaskConfig(f).resourceStore.readTrigger(taskId) && performance.now() < deadline)
                 await Bun.sleep(5);
-              try {
-                await attempt.apply({ requests: [request], conditions: [{ requestId: "review" }] });
-              } catch (error) {
-                rejected = (error as Error).message;
-              }
-              expect(listAppInboxItems(getDb(persistDir))).toHaveLength(0);
-              accept();
-              await attempt.apply({ requests: [request], conditions: [{ requestId: "review" }] });
+              const receipt = await attempt.apply({ requests: [request], conditions: [{ requestId: "review" }] });
+              expect(listAppInboxItems(getDb(persistDir))).toHaveLength(1);
+              if (incorporated) accept();
+              expect(await attempt.apply({ requests: [request], conditions: [{ requestId: "review" }] }))
+                .toEqual(receipt);
+
             })().then(release, fail);
           });
           ready();
@@ -7143,13 +7141,13 @@ describe("canonical App task runtime", () => {
       target: { appId: "sample", taskId }, data: { verdict: "continue" },
     } as AgentEvent);
     await run;
-    expect(rejected).toContain("newer Task facts are pending");
     expect(listAppInboxItems(getDb(persistDir))).toEqual([
       expect.objectContaining({ appId: "sample", status: "pending", input: request.input }),
     ]);
     expect(config.resourceStore.readTask(taskId)?.status).toMatchObject({
-      phase: "waiting", conditionIds: [expect.stringContaining("app-request:")],
+      phase: incorporated ? "waiting" : "pending", conditionIds: [expect.stringContaining("app-request:")],
     });
+    expect(config.resourceStore.readTrigger(taskId) === null).toBe(incorporated);
   });
 
   it.each(["executor", "tasks tool"] as const)(
@@ -7684,7 +7682,9 @@ describe("canonical App task runtime", () => {
         });
       await run();
       expect(calls).toBe(1);
-      expect(acceptedTaskAttempt(config, taskId)?.acceptedResult).toBeUndefined();
+      if (scenario === "external input")
+        expect(acceptedTaskAttempt(config, taskId)?.acceptedResult?.summary).toBe("First result");
+      else expect(acceptedTaskAttempt(config, taskId)?.acceptedResult).toBeUndefined();
       expect(config.resourceStore.readTrigger(peerId)?.event.eventId).toBe(otherFact);
       const pending = config.resourceStore.readTrigger(taskId);
       if (scenario === "superseded") {
@@ -8803,6 +8803,64 @@ describe("canonical App task runtime", () => {
     });
   });
 
+  it.each(["input", "condition"] as const)("partial acceptance preserves reusable workspace with remaining %s", async (remaining) => {
+    const f = fixture();
+    const bus = eventBus();
+    const git = (cwd: string, ...args: string[]) =>
+      promisify(execFile)("git", ["-C", cwd, ...args], { timeout: 10_000 });
+    writeFileSync(join(f.appDir, ".gitignore"), ".local-proof\n");
+    await git(f.appDir, "init", "-b", "main");
+    await git(f.appDir, "config", "user.email", "test@example.com");
+    await git(f.appDir, "config", "user.name", "Test");
+    await git(f.appDir, "add", ".");
+    await git(f.appDir, "commit", "-m", "fixture baseline");
+    let calls = 0;
+    let workspacePath = "";
+    await installAppTaskRuntimes({
+      ...options(f, bus), installControllers: false,
+      executors: { worker: async (attempt) => {
+        calls++;
+        if (calls === 1) {
+          workspacePath = attempt.cwd;
+          writeFileSync(join(attempt.cwd, ".local-proof"), "reuse this expensive check");
+          if (remaining === "condition") await attempt.apply({ conditions: [{
+            id: "review", type: "review.done", subject: "id:review", expected: true, owner: "app:sample",
+          }] });
+          return { state: "converged", summary: "Accepted useful contribution", facts: ["check:performed"],
+            ...(remaining === "input" ? { inputKeys: [] } : {}) };
+        }
+        expect(attempt.cwd).toBe(workspacePath);
+        expect(readFileSync(join(attempt.cwd, ".local-proof"), "utf8")).toBe("reuse this expensive check");
+        return { state: "converged", summary: "Continued using accepted work", facts: ["check:reused"] };
+      } },
+      appRegistrySnapshot: { id: "partial-workspace", generation: 1, entries: [{ appDir: f.appDir,
+        definition: { ...definition(), workspace: { kind: "git", localPath: ".", branch: "main" } },
+      }] },
+    });
+    const config = loadedTaskConfig(f);
+    const taskId = "work/partial-workspace";
+    admitTaskInput(config, {
+      appId: "sample", idempotencyKey: "ask:verified-change",
+      attachment: { kind: "desired", intent: { id: taskId, parentId: "operations", executor: "worker",
+        outcome: "Implement and verify", acceptance: ["Verification complete"] } },
+      inputContext: { id: "ask:verified-change", source: { kind: "human", id: "requester" },
+        input: { kind: "review", data: {} } },
+    });
+    const run = () => reconcileLoadedAppTaskOnce({ bus, appId: "sample", taskId,
+      dispatch: { enqueuedAt: 1, startedAt: 2, readyWaitMs: 1, lane: "normal" } });
+    await run();
+    const accepted = acceptedTaskAttempt(config, taskId)!;
+    expect(accepted.acceptedResult?.summary).toBe("Accepted useful contribution");
+    expect(accepted.workspace?.disposition).toBe("active");
+    expect(existsSync(workspacePath)).toBe(true);
+    expect(config.resourceStore.readTask(taskId)?.status.phase).toBe(remaining === "input" ? "pending" : "waiting");
+    if (remaining === "condition") recordAppTaskTrigger(config, taskId, { type: "review.follow-up", eventId: 101 });
+    await run();
+    expect(calls).toBe(2);
+    expect(readAppTaskAdmissionOutcome(config, taskId, "ask:verified-change")?.summary)
+      .toBe(remaining === "input" ? "Continued using accepted work" : "Accepted useful contribution");
+  });
+
   it.each([
     { state: "converged", committed: false },
     { state: "converged", committed: true },
@@ -9770,7 +9828,7 @@ describe("canonical App task runtime", () => {
 
     const config = loadedTaskConfig(f);
     const deadline = performance.now() + 3_000;
-    while (!readAcceptedRuntimeAttempt(config, "work/event-storm")?.acceptedResult && performance.now() < deadline)
+    while (config.resourceStore.readTask("work/event-storm")?.status.phase !== "converged" && performance.now() < deadline)
       await Bun.sleep(5);
 
     expect(calls).toBe(3);

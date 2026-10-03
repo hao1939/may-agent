@@ -485,7 +485,7 @@ test.each(["stop", "failure", "completion"] as const)(
   },
 );
 
-test("new input fences an old requirement save until the same Conversation reviews it", async () => {
+test("requirement saves accept considered scope and leave later corrections for the next turn", async () => {
   const f = fixture();
   await f.turn({ ...answer, requestUpdates: [ask] });
   const turn = await f.prepare(async ({ execution }) => {
@@ -498,19 +498,19 @@ test("new input fences an old requirement save until the same Conversation revie
       input: { kind: "message", data: { text: "Include costs as well" } },
       intent: conversationTaskIntent(f.context()),
     });
-    expect(() => execution.updateRequest!({ id: ask.id, expectedRevision: 1, scope: "Old interpretation" }, "old"))
-      .toThrow("newer Task facts are pending");
-    expect(readConversationRequest(f.db, app.id, "chat", ask.id)).toMatchObject({ revision: 1, scope: ask.scope });
-    return answer;
+    expect(execution.updateRequest!({ id: ask.id, expectedRevision: 1, scope: "Old interpretation" }, "old"))
+      .toMatchObject({ revision: 2, scope: "Old interpretation" });
+    expect(readConversationRequest(f.db, app.id, "chat", ask.id)).toMatchObject({ revision: 2, scope: "Old interpretation" });
+    return { ...answer, requestUpdates: [{ id: ask.id, expectedRevision: 2, disposition: "open", reason: "Measurements remain" }] };
   });
   turn.settle();
   f.reopen();
   const next = await f.prepare(async ({ inputContext, execution }) => {
     expect(inputContext.inputs?.some(({ id }) => id === "newer-correction")).toBe(true);
-    expect(execution.updateRequest!({ id: ask.id, expectedRevision: 1, scope: "Compare both options including costs",
+    expect(execution.updateRequest!({ id: ask.id, expectedRevision: 3, scope: "Compare both options including costs",
       inputIds: inputContext.inputs!.map(({ id }) => id) }, "reviewed"))
-      .toMatchObject({ revision: 2, scope: "Compare both options including costs" });
-    return { ...answer, requestUpdates: [{ id: ask.id, expectedRevision: 2, disposition: "fulfilled", reason: "Compared both including costs" }] };
+      .toMatchObject({ revision: 4, scope: "Compare both options including costs" });
+    return { ...answer, requestUpdates: [{ id: ask.id, expectedRevision: 4, disposition: "fulfilled", reason: "Compared both including costs" }] };
   }, false);
   expect(next.claim.taskId).toBe(turn.claim.taskId);
   expect(next.settle().status).toBe("applied");

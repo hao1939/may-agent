@@ -18,7 +18,7 @@ import { matchingAppTaskConditionTaskIds, trackAppTaskConditionEventForTasks } f
 import { AppTaskQueue } from "./queue.js";
 import {
   associateAppTaskSession,
-  assertAppTaskEffectFresh,
+  assertAppTaskClaimCurrent,
   cancelAppTask,
   closeAppTask,
   reportAppTaskFailure,
@@ -1061,7 +1061,7 @@ describe("App task reconciler state", () => {
     ]);
   });
 
-  it.each(["waiting", "converged"] as const)("keeps %s result and actions atomic across unaccepted input", (state) => {
+  it.each(["waiting", "converged"] as const)("accepts %s result and actions together while later input stays queued", (state) => {
     const fixtureState = fixture();
     const { config } = fixtureState;
     waitCategorizedTask(config);
@@ -1084,23 +1084,19 @@ describe("App task reconciler state", () => {
       summary: "Act on the older snapshot", facts: ["snapshot:old"],
       result: { inventory: [action.taskId] }, actions: [action],
     };
-    expect(() => state === "waiting"
-      ? deferAppTask(config, claim, { ...output, disposition: "waiting" })
+    expect(state === "waiting"
+      ? deferAppTask(config, claim, { ...output, disposition: "waiting", continue: true })
       : completeAppTask(config, claim, output)
-    ).toThrow("newer Task facts are pending");
-    expect(readTaskSnapshot(config).resources?.[action.taskId]?.spec.outcome).toBe("Categorized bounded work");
-    expect(readTaskSnapshot(config).resources?.[claim.taskId]?.status.result).toBeUndefined();
-    expect(readTaskSnapshot(config).attempts?.[claim.attemptId]?.state).toBe("running");
-    expect(readTaskSnapshot(config).taskTriggers?.[claim.taskId]?.events?.map((row) => row.event.eventId)).toEqual([101]);
-
-    expect(
-      completeAppTask(config, claim, {
-        summary: "Act on the accepted correction",
-        facts: ["event:101"],
-        actions: [action],
-        acceptedLiveEventIds: [101],
-      }),
     ).toMatchObject({ status: "applied", actionsApplied: [`unblocked ${action.taskId}`] });
+    const tree = readTaskSnapshot(config);
+    expect(tree.resources?.[action.taskId]?.status.summary).toBe(action.reason);
+    expect(tree.resources?.[claim.taskId]?.status.result).toEqual(output.result);
+    expect(tree.attempts?.[claim.attemptId]?.acceptedResult).toMatchObject({ state, result: output.result });
+    expect(tree.taskTriggers?.[claim.taskId]?.events?.map((row) => row.event.eventId)).toEqual([101]);
+    expect(claimObservedAppTask(config, {
+      taskId: claim.taskId, appAgent: "app-owner", handler: "executor:reviewer",
+    })).toMatchObject({ kind: "claimed", events: [{ event: { eventId: 101 } }] });
+
   });
 
   it.each(["converged", "attention"] as const)("preserves open waits and %s findings for reevaluation", (state) => {
@@ -1167,7 +1163,7 @@ describe("App task reconciler state", () => {
     });
     if (claim.kind !== "claimed") throw new Error("expected claim");
     recordAppTaskTrigger(config, claim.taskId, { type: "project.task.tick", eventId: 101 });
-    expect(() => assertAppTaskEffectFresh(config, claim)).not.toThrow();
+    expect(() => assertAppTaskClaimCurrent(config, claim)).not.toThrow();
     const result = {
       summary: "Update the existing assignment",
       facts: ["inventory:current"],
@@ -1194,7 +1190,7 @@ describe("App task reconciler state", () => {
     })).toMatchObject({ kind: "claimed", events: [{ event: { eventId: 102 } }] });
   });
 
-  it("releases a rejected parent from current state while preserving new human input", () => {
+  it("releases a current parent while preserving new human input", () => {
     const { config } = fixture();
     const claim = declareAndClaimTask(config, {
       intent: intent("monitor"),
@@ -1207,7 +1203,7 @@ describe("App task reconciler state", () => {
       type: "project.comment.created", eventId: 101, data: { content: "Change scope before admitting more work" },
     });
     recordAppTaskTrigger(config, claim.taskId, { type: "project.task.tick", eventId: 102 });
-    expect(() => assertAppTaskEffectFresh(config, claim)).toThrow("newer Task facts are pending");
+    expect(() => assertAppTaskClaimCurrent(config, claim)).not.toThrow();
     expect(config.resourceStore.readTask(claim.taskId)!.metadata.resourceVersion).toBeGreaterThan(claim.resourceVersion);
     expect(releaseStaleAppTaskResult(config, claim)).toEqual({ status: "released", taskId: claim.taskId });
     const next = claimObservedAppTask(config, {
@@ -1392,14 +1388,15 @@ describe("App task reconciler state", () => {
     recordAppTaskTrigger(config, first.taskId, { type: "sample.concurrent", eventId: 37 });
     expect(() =>
       completeAppTask(config, fenced, {
-        summary: "Attempted an action from the older snapshot",
+        summary: "Attempted an action on a missing target",
+        facts: ["target:missing"],
         actions: [{ kind: "unblock-task", taskId: "missing", expectedGeneration: 1, reason: "test fence" }],
       }),
-    ).toThrow("newer Task facts are pending");
+    ).toThrow("missing");
 
     expect(completeAppTask(config, fenced, { summary: "Original prerequisite restored", inputKeys: ["ask:original"] }))
       .toMatchObject({ status: "applied", taskContinues: true });
-    expect(readAppTaskAdmissionOutcome(config, first.taskId, "ask:original")).toBeNull();
+    expect(readAppTaskAdmissionOutcome(config, first.taskId, "ask:original")?.attemptId).toBe(fenced.attemptId);
 
     const final = claimObservedAppTask(config, {
       taskId: first.taskId,
@@ -1408,10 +1405,11 @@ describe("App task reconciler state", () => {
       reason: "event",
     });
     if (final.kind !== "claimed") throw new Error("expected final claim");
-    expect(final.continuedInputKeys).toContain("ask:original");
-    expect(completeAppTask(config, final, { summary: "Original request answered", inputKeys: ["ask:original"] }))
+    expect(final.continuedInputKeys).not.toContain("ask:original");
+    expect(final.continuedInputKeys).toContain("ask:backlog-1");
+    expect(completeAppTask(config, final, { summary: "Another request answered", inputKeys: ["ask:backlog-1"] }))
       .toMatchObject({ status: "applied", taskContinues: true });
-    expect(readAppTaskAdmissionOutcome(config, first.taskId, "ask:original")?.attemptId).toBe(final.attemptId);
+    expect(readAppTaskAdmissionOutcome(config, first.taskId, "ask:original")?.attemptId).toBe(fenced.attemptId);
     expect(readAppTaskAdmissionOutcome(config, first.taskId, "ask:repair")?.attemptId).toBe(next.attemptId);
   });
 
