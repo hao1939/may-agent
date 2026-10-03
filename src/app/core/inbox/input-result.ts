@@ -36,14 +36,21 @@ export function appInputFeedbackEvent(item: AppInboxItem, result: AppResult & { 
   if (item.source.kind !== "app") return null;
   const recoveryFingerprint = result.facts?.find((fact) => fact.startsWith("recovery-fingerprint:"))
     ?.slice("recovery-fingerprint:".length);
+  // Re-reading saved evidence retries its publication; it does not create a new fact.
+  // Keep recovery identities stable for receipts written by earlier Hosts.
+  let idempotencyKey: string | undefined;
+  if (recoveryFingerprint)
+    idempotencyKey = `app-input-recovery:${item.appId}:${item.id}:${recoveryFingerprint}${status === "done" ? ":rejected" : ""}`;
+  else if (status === "done")
+    idempotencyKey = `app-input-answer:${item.appId}:${item.id}`;
+  else if (result.attemptId)
+    idempotencyKey = `app-input-report:${item.appId}:${item.id}:${result.attemptId}:${result.reportRevision ?? 1}`;
   return {
     type: "app.dependency.updated",
     source: `app-inbox:${item.appId}`,
     owner: `app:${item.source.id}`,
     data: {
-      ...(recoveryFingerprint
-        ? { idempotencyKey: `app-input-recovery:${item.appId}:${item.id}:${recoveryFingerprint}${status === "done" ? ":rejected" : ""}` }
-        : {}),
+      ...(idempotencyKey ? { idempotencyKey } : {}),
       kind: "app",
       id: item.id,
       status,
