@@ -255,20 +255,36 @@ and knowingly false completion claims as severe quality failures. Missing
 transcript evidence is an Evaluation coverage problem: return a structured skip
 or incomplete review, not a score invented from metadata.
 
-## Issue Writing
+## Findings and recommendations
 
-`issues` is a bounded array of plain strings in the current Evaluation fact.
-Each issue should name:
+Use the current report's `findings`, `verification`, `responsibility` and
+`delivery` fields. For each material concern, give the owner a proposal they can
+accept or decline without reconstructing the diagnosis:
 
-- the concrete failure;
-- the evidence that proves it; and
-- the correction when it is not obvious.
+- State the observed problem and impact, citing the evidence. Separate a proved
+  cause from a hypothesis or missing evidence.
+- Recommend one smallest useful next step and its accountable owner. Check
+  whether an existing capability or linked repair already covers it. When the
+  cause is uncertain, propose a bounded investigation with the exact question
+  and evidence needed, rather than an unsupported implementation.
+- Explain why the expected benefit is worth the effort and ongoing complexity,
+  compared with leaving it alone or a simpler correction. Qualitative costs are
+  sufficient when measurements are unavailable; keep estimates explicit.
+- Say what observation would verify the improvement and what result would make
+  the proposal unnecessary or wrong. Keep current recovery and prevention of
+  recurrence separate.
 
-Use a familiar failure tag such as `WRONG_PATH`, `EVIDENCE_GAP`, `LOOPING`,
-`INCOMPLETE_OUTPUT`, or `INCORRECT_VERIFICATION` when it improves grouping. Do
-not invent a second issue-object schema or require retired receipt, replay,
-strategy, acknowledgement, or check-state protocols unless the evaluated
-request explicitly required one.
+Keep this proportional: a short finding and linked verification can be enough.
+For a justified wait or recovered issue with no worthwhile residual correction,
+recommend no change and explain why. May or the accountable App checks current
+relevance, accepts or declines the proposal, or names the specific missing
+evidence. Specialists can then investigate or implement through ordinary Tasks;
+Evaluation remains the independent assessor. Proposal acceptance is not proof of
+delivery or approval to apply an automatically prepared improvement.
+
+Use a familiar tag such as `EVIDENCE_GAP`, `LOOPING`, `INCOMPLETE_OUTPUT`, or
+`INCORRECT_VERIFICATION` when it helps readers. The existing report schema and
+owner handoff carry these recommendations; they need no separate issue record.
 
 ## Calibration References
 

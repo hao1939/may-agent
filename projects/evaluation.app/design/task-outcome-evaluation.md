@@ -311,6 +311,19 @@ Each successful review stages an immutable Markdown report and JSON facts sideca
 
 Reports are evidence, not commands or issue state. May should discover Evaluation through the normal App catalog and bounded Task list, inspect accepted review Task facts, and read the referenced report and sidecar. A human answer should state the covered subjects/time, a few material findings, missing evidence, exact report/evidence paths, and whether remediation is only delivered/acknowledged, claimed complete, or independently rechecked. Repeating a query reuses published reports; it does not automatically launch another evaluation. Responsible Apps receive exact findings through ordinary App inputs/Tasks and retain remediation results there.
 
+An actionable finding includes a recommendation ready for owner judgment:
+observed impact and evidence, supported cause or exact uncertainty, the smallest
+useful correction or investigation, its owner, benefit versus cost, and how to
+verify the result. A no-change recommendation is valid. The shared
+[report criteria](../criteria/criteria.md#findings-and-recommendations) apply to
+both Task and metric reviews through their existing report fields; no schema,
+queue or automatic repair authority is added. May checks current relevance and
+accepts or declines the proposal, or requests specific missing evidence.
+Technical investigation and implementation remain ordinary work for the
+accountable App and its specialists. Evaluation later assesses the resulting
+work independently; accepting a proposal does not establish success or replace
+the existing human approval required for applying an automatic improvement.
+
 May's intake rereads its current owner's accepted result through `ctx.read.tasks.get`.
 An exact prior `evaluation-report-intake` result (including identical publication
 hashes and subject) reuses its handoff or no-change disposition. If it carries a
