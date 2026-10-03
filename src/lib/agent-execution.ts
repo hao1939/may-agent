@@ -396,6 +396,20 @@ function bindToolsToSession(tools: AgentTool[], agentName: string, sessionId: st
   });
 }
 
+/** Stop cooperative work without cancelling the model's opportunity to finish. */
+export function bindToolsToExecutionScope(tools: AgentTool[], getScope: () => ExecutionScope | undefined): AgentTool[] {
+  return tools.map((tool) => ({
+    ...tool,
+    execute: (id, params, signal, onUpdate) => {
+      const scope = getScope();
+      const limit = tool.name === "finish" ? scope?.signal : scope?.workSignal;
+      const combined = limit && signal ? AbortSignal.any([signal, limit]) : limit ?? signal;
+      combined?.throwIfAborted();
+      return tool.execute(id, params, combined, onUpdate);
+    },
+  }));
+}
+
 function buildGuards(definition: SubagentDefinition, projectRoot: string): BeforeToolCallHook[] {
   const named =
     (guardName: string, guard: BeforeToolCallHook): BeforeToolCallHook =>
@@ -618,12 +632,25 @@ export async function executePreparedAgent(
   options: DirectAgentExecutionOptions = {},
 ): Promise<DirectAgentExecutionResult> {
   const startedAt = Date.now();
-  const agent = createAgentRun(prepared.runner);
+  let scope: ExecutionScope | undefined;
+  const tools = bindToolsToExecutionScope(prepared.tools, () => scope);
+  const agent = createAgentRun({
+    ...prepared.runner,
+    initialState: { ...prepared.runner.initialState, tools },
+  });
   const usage = createExecutionUsage(prepared.preparation);
   const unsubscribeUsage = agent.subscribe(usage.observe);
   if (options.initialMessages) agent.state.messages = [...options.initialMessages] as any;
   const unsubscribe = options.onObservation ? agent.subscribe(options.onObservation) : undefined;
   let boundedFinishRequested = false;
+  const requestFinish = () => {
+    if (boundedFinishRequested || extractFinishParams(agent.state.messages as any[])) return;
+    boundedFinishRequested = true;
+    agent.steer({
+      role: "user",
+      content: [{ type: "text", text: boundedWorkflowFinishPrompt(prepared.outputSchema) }],
+    } as any);
+  };
   let toolCalls = 0;
   const unsubscribeBoundedFinish = prepared.requireFinish
     ? agent.subscribe((event) => {
@@ -636,21 +663,23 @@ export async function executePreparedAgent(
           })
         )
           return;
-        boundedFinishRequested = true;
-        agent.steer({
-          role: "user",
-          content: [{ type: "text", text: boundedWorkflowFinishPrompt(prepared.outputSchema) }],
-        } as any);
+        requestFinish();
       })
     : undefined;
   let timedOut = false;
   let interrupted = false;
   let error: string | undefined;
-  const scope = new ExecutionScope(options.timeoutMs ?? prepared.definition.timeoutMs, options.signal, options.deadlineAt, () => {
-    timedOut = scope.timedOut;
-    interrupted = true;
-    agent.cancel();
-  });
+  scope = new ExecutionScope(
+    options.timeoutMs ?? prepared.definition.timeoutMs,
+    options.signal,
+    options.deadlineAt,
+    () => {
+      timedOut = scope!.timedOut;
+      interrupted = true;
+      agent.cancel();
+    },
+    prepared.requireFinish ? requestFinish : undefined,
+  );
 
   try {
     let recoveredThrownFailure = false;
@@ -665,7 +694,7 @@ export async function executePreparedAgent(
         ? await recoverCapturedWorkflowFinish({
             sessionId: prepared.sessionId,
             messages,
-            tools: prepared.tools,
+            tools,
             reason: initialError,
           })
         : { disposition: "ineligible" as const };

@@ -14,7 +14,7 @@ import { prepareTaskWorkspaceContext, taskWorkspacePrompt } from "./task-workspa
 import type { AgentTool, AgentMessage } from "@earendil-works/pi-agent-core";
 import { readWorkflowFacts } from "./workflow-facts.js";
 import { createAgentRun, type AgentRun } from "./agent-runner.js";
-import { prepareAgentExecution } from "./agent-execution.js";
+import { bindToolsToExecutionScope, prepareAgentExecution } from "./agent-execution.js";
 import { observeExecutionUsage } from "./db/execution-usage.js";
 import { extractFinishParams } from "./agent-result.js";
 import type { TSchema } from "@earendil-works/pi-ai";
@@ -90,7 +90,7 @@ export { classifyError } from "./classify-error.js";
 export { extractFinishParams } from "./agent-result.js";
 export type { SubagentDefinition, SessionInfo, TaskResult } from "./types.js";
 export type { RegisteredAgent } from "./manager-utils.js";
-import { ExecutionScope, executionTimeout } from "./execution-scope.js";
+import { ExecutionScope, ExecutionWorkEnded, executionTimeout } from "./execution-scope.js";
 
 // ── Types ─────────────────────────────────────────────────────────────
 
@@ -561,7 +561,7 @@ export class SubagentManager {
     const parent = opts?.parentSessionId ? this._sessions.get(opts.parentSessionId) : undefined;
     if (parent) {
       if (parent.status !== "running" || !parent.executionScope) throw new Error("Caller is not executing");
-      parent.executionScope.signal.throwIfAborted();
+      parent.executionScope.workSignal.throwIfAborted();
       if (opts?.toolPolicy && parent.toolPolicy !== "full" && opts.toolPolicy !== parent.toolPolicy) {
         throw new Error("Helper tool policy must retain the caller restriction");
       }
@@ -573,9 +573,9 @@ export class SubagentManager {
         executionRoot: parent.executionRoot ?? opts?.executionRoot,
         toolPolicy: opts?.toolPolicy ?? parent.toolPolicy,
         signal: opts?.signal
-          ? AbortSignal.any([opts.signal, parent.executionScope.signal])
-          : parent.executionScope.signal,
-        deadlineAt: Math.min(opts?.deadlineAt ?? Infinity, parent.executionScope.deadlineAt),
+          ? AbortSignal.any([opts.signal, parent.executionScope.workSignal])
+          : parent.executionScope.workSignal,
+        deadlineAt: Math.min(opts?.deadlineAt ?? Infinity, parent.executionScope.workDeadlineAt),
       };
     }
     opts?.signal?.throwIfAborted();
@@ -710,7 +710,11 @@ export class SubagentManager {
 
     // Create the same prepared model/tool loop used by direct callers. The
     // durable manager only adds persistence and system-event adapters around it.
-    const agent = this._agentRunFactory(prepared.runner);
+    const tools = bindToolsToExecutionScope(prepared.tools, () => this._sessions.get(sessionId)?.executionScope);
+    const agent = this._agentRunFactory({
+      ...prepared.runner,
+      initialState: { ...prepared.runner.initialState, tools },
+    });
     if (usage) agent.subscribe(usage.observe);
 
     // JSONL persistence
@@ -756,7 +760,7 @@ export class SubagentManager {
       requireFinish,
       operationAllowance,
       outputSchema,
-      tools: prepared.tools,
+      tools,
       toolPolicy,
       executionRoot: opts?.executionRoot,
     };
@@ -1080,7 +1084,9 @@ export class SubagentManager {
       throw error;
     }
     const result = await this.waitFor(sessionId);
-    opts?.signal?.throwIfAborted();
+    // A graceful work stop must return the joined helper's evidence to the
+    // parent. Explicit cancellation still interrupts the caller normally.
+    if (!(opts?.signal?.reason instanceof ExecutionWorkEnded)) opts?.signal?.throwIfAborted();
     return { ...result, messages: this.progress(sessionId, 1000) };
   }
 
@@ -1876,6 +1882,7 @@ export class SubagentManager {
         session.interruptionKind = scope.timedOut ? "execution-timeout" : "cancelled";
         session.agent.cancel();
       },
+      session.requireFinish ? () => this.requestBoundedFinish(session) : undefined,
     );
     session.executionScope = scope;
     let unsubscribe = () => {};
@@ -1888,6 +1895,15 @@ export class SubagentManager {
       unsubscribe();
       await this.closeExecutionScope(session, scope);
     }
+  }
+
+  private requestBoundedFinish(session: ActiveSession): void {
+    if (session.boundedFinishRequested || extractFinishParams(session.agent.state.messages as any[])) return;
+    session.boundedFinishRequested = true;
+    session.agent.steer({
+      role: "user",
+      content: [{ type: "text", text: boundedWorkflowFinishPrompt(session.outputSchema) }],
+    } as any);
   }
 
   private async closeExecutionScope(session: ActiveSession, scope = session.executionScope): Promise<void> {
@@ -2468,11 +2484,7 @@ export class SubagentManager {
               },
             )
           ) {
-            session.boundedFinishRequested = true;
-            agent.steer({
-              role: "user",
-              content: [{ type: "text", text: boundedWorkflowFinishPrompt(session.outputSchema) }],
-            } as any);
+            this.requestBoundedFinish(session);
           }
           persistProgress();
           bus.emit({
