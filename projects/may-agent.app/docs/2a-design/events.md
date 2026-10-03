@@ -485,6 +485,21 @@ that input wakes the Conversation's execution Task, not a separate supervision
 Task. These changes are implemented in Host #158; deployment is a separate check.
 An accepted child outcome can wake a caller while the child remains open;
 correlate the exact assignment/result, not resource closure or an old success.
+
+Repeated reads of a saved caller report retry the same publication. For
+`app.dependency.updated`, the producer identifies a report by destination App,
+caller request, selected attempt and report revision; a final answer has its
+own identity scoped to the App and request. Recovery-failure publications retain
+their saved fingerprint identity. A newer report revision or separate request
+remains distinct even when its wording is identical. Intermediate reports do
+not complete the request.
+
+The existing event journal owns persistence and delivery receipts. An accepted
+delivery is reused across recovery scans and restart. Pending or no-op delivery
+can retry the existing durable routes without appending another event or
+repeating ordinary fanout. Failed persistence remains retryable. Agents decide
+what new evidence means; publication identity requires no semantic text matching.
+
 Closure is an authorized state operation whose consequences may publish facts;
 a late fact cannot reopen the closed Task. System origin, exact saved
 links and change identity must survive admission. Reuse the meaningful Task
