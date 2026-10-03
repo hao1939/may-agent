@@ -318,8 +318,10 @@ answers. Separate Conversations still receive separate inputs. Already pending
 legacy inputs remain accountable and are not rewritten or silently consumed.
 
 **Availability:** grouped return admission is implemented in [Host `7b416af40`](https://github.com/hao1939/may-agent/commit/7b416af40).
-Activate that Host revision before relying on grouped input. Source validation
-and App integration are recorded in the [repeat-pattern follow-up](../../../may.app/design/token-efficiency-proposal-20261002.md#october-3-source-follow-up).
+Direct admission from the original Task event, replacing intermediate
+`conversation.task.changed` publication, is in [PR #304](https://github.com/hao1939/may-agent/pull/304)
+and requires deployment of that change. Older saved events remain readable.
+Source validation and App integration are recorded in the [repeat-pattern follow-up](../../../may.app/design/token-efficiency-proposal-20261002.md#october-3-source-follow-up).
 
 Start with accepted results, cancellation, and states needing a human decision,
 including an explicit wait or exhausted failure. Any open Task can report
