@@ -91,6 +91,28 @@ another investigation. The agent judges useful work or no change; App code binds
 that judgment to its actual owning Task. When only collection remains, finish
 the review rather than installing a sample-driven wait.
 
+The producer emits `metric.breach` when an alert episode opens. While it stays
+open, measurements still update the current value and retained samples;
+evaluation refreshes the alert message without another breach event.
+A repeated `alert()` call also updates the same
+open alert quietly, including its latest message and facts. This does not retain
+a separate history of every manual message; durable new requirements or requests
+for another investigation use ordinary App input. When evaluation finds that the
+rule no longer matches, it resolves that alert and emits `metric.recovered` once.
+A later breach opens a new episode with a new `alertId`. Reopening the metric
+service uses that stored state, not an in-memory notification cache.
+
+This producer correction is implemented at Host `bdc4d9023` in
+[PR #300](https://github.com/hao1939/may-agent/pull/300), pending merge and
+deployment. The [isolated comparison](../archive/reviews/metric-transition-events-20261003.md)
+records the source, regression and App-routing evidence.
+Older producers may still emit breaches marked `repeat:true`; existing consumer
+filters remain useful for those retained events. Explicit `resolveAlert()` and
+disabled-alert handling keep their existing quiet resolution behavior; resolving
+an alert administratively is not a new measured recovery. Routine review and
+explicit owner requests remain available for ongoing concerns. No Task admission,
+Condition settlement or general Event classification rule changes here.
+
 Requests commission work; caller Conditions observe repair results, human
 decisions or a relevant status change. Host retains and delivers these facts.
 An existing sample wait is retired through an explicit owner result, preserving
