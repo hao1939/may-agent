@@ -29,6 +29,34 @@ App declaration, observer, or workflow
 A breach means “inspect this evidence,” not “the project failed.” A recovery
 means the alert rule no longer matches, not “all related work is complete.”
 
+### Sample, metric, and transition
+
+Keep three responsibilities distinct:
+
+1. **Sample:** retain an observation, including its measurement time and source.
+   Recording it does not request work or publish an alert.
+2. **Metric:** calculate the value from the relevant observations using its
+   declared meaning. A gauge may use the latest sample; a rate or a sustained
+   condition needs several. A source query may already calculate a count or
+   percentage from raw execution evidence before recording its result. The
+   stored current value is a projection for reading, not a second source of truth.
+3. **Transition:** compare the calculated condition with the retained alert
+   state. Entering breach publishes `metric.breach`; leaving it publishes
+   `metric.recovered`. An unchanged condition updates evidence quietly.
+
+These are responsibility boundaries, not three new services or queues. The
+existing source calculation, `record()`, and `evaluate()` implement the ordinary
+measurement path. A thousand samples during one continuous breach still mean
+one opening transition, followed by one recovery when the condition clears.
+Manual alerts and administrative closure are explicit operations, described
+below, rather than samples disguised as state changes.
+
+Sample time and transition time have different meanings. A late observation
+keeps its original measurement time. Evaluation captures its decision time only
+after acquiring the write transaction, alongside the current evidence and alert
+state; time spent waiting for that lock must not backdate the decision. Save
+the transition and its Event together, then notify after commit.
+
 ## Default failure visibility
 
 The merged source keeps measurements outside core execution: the optional source
@@ -131,7 +159,7 @@ commits. A rollback also discards pending delivery; a crash after commit leaves
 the saved Event available to existing journal recovery. These are shared
 [Event persistence rules](events.md), not a metric-specific retry loop.
 
-This producer correction is implemented at Host `868d387e8` in
+This producer correction is implemented at Host `4205f5397` in
 [PR #300](https://github.com/hao1939/may-agent/pull/300), pending merge and
 deployment. The [isolated comparison](../archive/reviews/metric-transition-events-20261003.md)
 records the source, regression and App-routing evidence.

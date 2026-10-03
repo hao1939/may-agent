@@ -163,6 +163,27 @@ run was additionally invalidated by temporary database debug output entering a
 command fixture's JSON output; that instrumentation was removed. The final PR
 status distinguishes these runs from clean validation of the committed source.
 
+The clean full local CI on `868d387e8` passed 3,499 tests with three explicitly
+skipped installation checks, and both GitHub checks passed on that revision.
+
+## Review correction: sample time and transition time
+
+The next comment identified transition time captured before acquiring the write
+lock. A second connection could open an alert while the evaluator waited, so
+recovery was recorded earlier than its opening. Three deterministic regressions
+on independent database connections reproduce backdated automatic opening,
+manual reopening, and recovery on `868d387e8`. At Host `4205f5397`, `evaluate()`
+and `alert()` capture their decision time inside their existing transaction.
+The source correction moves two assignments; it adds no state or new mechanism.
+The same tests preserve the earlier sample measurement time. All 50 focused
+metric, source-measurement, connection and transaction checks pass. Final full CI
+and GitHub results are recorded on PR #300.
+
+The design now states the three responsibilities directly: samples retain
+observations, metrics calculate their declared meaning, and alert Events record
+breach/recovery transitions. Source queries can calculate aggregates before
+recording a sample; this does not introduce a second calculation framework.
+
 ## Value and limits
 
 The verified gain is fewer events and unnecessary input admissions. The latest
