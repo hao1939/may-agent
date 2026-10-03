@@ -75,6 +75,19 @@ answers; seventy inputs still produced accepted counts `0,0,70`. This is
 separate from the unfinished-input context fix: an agent can reach a correct
 judgment and still have admission defer it.
 
+The seventy-input case adds no input during execution. The check also treats
+overflow left by the bounded claim as unaccepted input, so even a quiet large
+backlog requires repeated consideration before the first result is accepted.
+This is not solely a wake-frequency or concurrent-arrival problem.
+
+Rebasing the same harness onto the final context-fix PR revision `3a2e8d2d9`
+(including #302) produced the same results: seven tests and 32 assertions passed
+at review commit `1227b2496`. Thus the context fix does not remove this separate
+admission barrier. Two existing focused checks also passed: native steering
+does not acknowledge incorporation (10 assertions), and the registered executor
+can admit a request after explicitly incorporating live input (4 assertions).
+These checks use scripted decisions and a fake native client, not model calls.
+
 Source review identified one admission convention in several places:
 
 | Path | Current behavior |

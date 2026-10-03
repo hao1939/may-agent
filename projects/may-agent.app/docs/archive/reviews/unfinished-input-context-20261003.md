@@ -1,10 +1,21 @@
 # Unfinished-input context experiment — October 3, 2026
 
-**Supports:** [Continue unfinished work with correct context](../../proposals/unfinished-input-context.md). Checks the smallest repair before adding repetition policy.
+**Supports:** [Task attempts and results](../../2a-design/task-attempts.md#result-contract). Checks the smallest context repair before adding repetition policy. The accepted design is integrated into that contract and the Task execution manual; this record retains trial findings and limitations.
 
 **Status:** Isolated source experiment, deterministic checks and an authorized
-bounded real-model trial. No live App state mutations, publication, deployment
-or May restart.
+bounded real-model trial. The trials did not change live App state, publish
+deliverables, deploy or restart May.
+
+**Source integration:** Host [#303](https://github.com/hao1939/may-agent/pull/303)
+merged as `28726352201f52abc32bd0ac9337f7aaf1296944`. The burst-input fence
+experiment and model harness are excluded. Final PR head `3a2e8d2d9` includes
+current `main` and resolves the review finding with an exact `reviewAt`
+assertion across database reopen. Local `bun run ci` passed 3,521 tests and
+18,568 assertions, with zero failures and three existing installation-dependent
+skips. GitHub Quality and Container both passed on that head. The user's merge
+approval was applied through the existing administrator merge option because
+the formal GitHub approval gate remained unsatisfied; no repository rule was
+changed. Source merge is not deployment or proof of production recovery.
 
 ## Question and source
 

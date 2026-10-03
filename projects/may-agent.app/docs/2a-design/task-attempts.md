@@ -204,12 +204,26 @@ the input and result history. Empty new-event lists do not establish that the
 assignment is empty; an empty result scope preserves runnable pending inputs.
 The Host maintains `inputWaits[key].pending`, waits/deadlines and continuation; workers read this current state without maintaining the ledger.
 
-**Context delivery gap:** the current previous-attempt projection omits the
-accepted result's input coverage even though storage retains it. The
-[unfinished-input context proposal](../proposals/unfinished-input-context.md)
-has an isolated candidate to preserve that scope and expose continuing work
-clearly. This is a presentation/read repair, not a new completion or retry rule;
-source and model-behavior verification remain distinct.
+**Unfinished-work context:** `previousAttempt.acceptedResult` carries the saved
+input scope, continuation decision and review deadline. Missing scope is unknown;
+`[]` explicitly covers none. The Task entry and refreshed decision brief show
+the starting assignment, currently observed retained inputs and previous result
+coverage together. Detailed decision JSON is readable through ordinary file
+reads; exact original-input reads remain the source for individual requirements.
+
+These are disposable views of existing records, not another obligation ledger
+or progress score. Counts preserve read failures and truncation; retained-input
+counts do not include unclaimed events. A helper's call still defines its narrow
+contribution even when it sees the owning Task's unfinished work. Empty-scope
+partial results and genuine waits remain valid.
+
+This follows [simple first](../1-principles/core-principles.md#simple-first): fix
+the existing context path before adding repetition policy, while leaving
+fulfillment judgment with the agent. Host [#303](https://github.com/hao1939/may-agent/pull/303)
+merged the source fix at `287263522`. The
+[trial record](../archive/reviews/unfinished-input-context-20261003.md) documents
+portable checks and a small real-model comparison. Both versions completed that
+assignment; the original large-backlog behavior and deployment remain unverified.
 
 `incomplete` requires a summary and non-empty facts; it cannot include actions, Conditions
 or child App requests. The Host checks eligibility inside the fenced transaction.

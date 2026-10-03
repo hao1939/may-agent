@@ -83,13 +83,14 @@ instructions. A blanket deletion of the existing fence is not the proposed fix.
 
 ### Repeated “done” with outstanding inputs
 
-This has a separate cause from arrival-based rejection. The focused
-[unfinished-input context proposal](unfinished-input-context.md) repairs dropped
-previous-result coverage, makes earlier unanswered work visible, and tests the
-existing settlement path. It keeps `inputKeys: []` valid for useful partial work.
-First test whether correct context lets the agent reconcile the requirements;
-additional repetition policy remains deferred. This does not depend on changing
-the unseen-input fence below.
+This has a separate cause from arrival-based rejection. The
+[Task context contract](../2a-design/task-attempts.md#result-contract) preserves
+previous-result coverage and makes earlier unanswered work visible. It keeps
+`inputKeys: []` valid for useful partial work. A small real-model trial completed
+the requirements on both baseline and candidate; see the
+[evidence and remaining limits](../archive/reviews/unfinished-input-context-20261003.md).
+The large-backlog case remains unverified, and additional repetition policy is
+deferred. This context repair does not change the unseen-input fence below.
 
 ### Repeated proposals rejected by fresh input
 

@@ -71,8 +71,9 @@ read; treat missing scope as unknown, not as zero or all inputs. Read originals
 using the Task read's `inputKeys` option, up to eight keys per call when needed.
 An earlier implementation may satisfy several requests without another edit,
 while an added test or review requirement can still need real work.
-The [context repair proposal](../../proposals/unfinished-input-context.md)
-improves this existing path; its new presentation is not yet an installed promise.
+The [Task context contract](../../2a-design/task-attempts.md#result-contract)
+defines the previous-result scope and unfinished-work view. Use the context
+actually supplied by the installed Host; a source merge does not update it.
 
 ## Find the capability by its purpose
 
