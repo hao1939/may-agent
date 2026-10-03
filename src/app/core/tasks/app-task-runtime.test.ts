@@ -98,6 +98,7 @@ import {
   recordAppTaskTrigger,
   recordAppTaskAttemptSession,
   releaseStaleAppTaskResult,
+  stopAppTaskAttempt,
   appTaskContext,
 } from "./app-task-reconciler.js";
 import { readTaskSnapshot, type AppTaskContext } from "./app-task-store.js";
@@ -9028,14 +9029,31 @@ describe("canonical App task runtime", () => {
     },
   );
 
-  it.each(["last-wait", "independent-wait", "live-replay", "stale", "policy-rejected", "unauthorized"] as const)(
+  it.each([
+    "last-wait",
+    "independent-wait",
+    "live-replay",
+    "stale",
+    "policy-rejected",
+    "unauthorized",
+    "stop-during-validation",
+    "revision-during-validation",
+    "new-work-during-cleanup",
+    "cleanup-fails",
+  ] as const)(
     "final-result retirement plans Git cleanup after admission: %s",
     async (scenario) => {
       const f = fixture();
       const bus = eventBus();
       const taskId = "work/final-retirement";
-      const rejected = ["stale", "policy-rejected", "unauthorized"].includes(scenario);
-      const retained = rejected || scenario === "independent-wait";
+      const rejected = [
+        "stale",
+        "policy-rejected",
+        "unauthorized",
+        "stop-during-validation",
+        "revision-during-validation",
+      ].includes(scenario);
+      const retained = rejected || scenario === "independent-wait" || scenario === "cleanup-fails";
       const git = (cwd: string, ...args: string[]) =>
         promisify(execFile)("git", ["-C", cwd, ...args], { timeout: 10_000 });
       writeFileSync(join(f.appDir, ".gitignore"), ".local-proof\n");
@@ -9050,6 +9068,9 @@ describe("canonical App task runtime", () => {
       await git(f.appDir, "push", "-u", "origin", "main");
       let workspacePath = "";
       let stateBeforeResult: unknown;
+      let firstAttemptId = "";
+      let nextWorkspacePath = "";
+      const inspections: unknown[] = [];
       const finalizations: Array<{ outcome: string; state: unknown; requests: number }> = [];
       const publications: AgentEvent[] = [];
       bus.subscribe((event) => {
@@ -9058,28 +9079,91 @@ describe("canonical App task runtime", () => {
       const readState = () => {
         const config = loadedTaskConfig(f);
         const task = config.resourceStore.readTask(taskId)!;
-        return { task, attempt: config.resourceStore.readAttempt(task.status.currentAttemptId!) };
+        return { task, attempt: config.resourceStore.readAttempt(firstAttemptId) };
       };
       const readRequests = () => listAppInboxItems(loadedTaskConfig(f).resourceStore.db);
+      let interrupted = false;
+      const interruptValidation = () => {
+        if (interrupted) return;
+        interrupted = true;
+        const config = loadedTaskConfig(f);
+        if (scenario === "stop-during-validation") {
+          stopAppTaskAttempt(config, {
+            taskId,
+            attemptId: firstAttemptId,
+            expectedGeneration: 1,
+            reason: "Owner stopped during validation",
+          });
+        } else if (scenario === "revision-during-validation") {
+          const tree = config.resourceStore.readTaskContext({ taskIds: [taskId] });
+          const condition = tree.conditions!.review!;
+          condition.metadata.generation++;
+          condition.metadata.resourceVersion++;
+          if (
+            !config.resourceStore.commit({
+              fences: [{ taskId, resourceVersion: tree.resources![taskId]!.metadata.resourceVersion }],
+              conditions: [condition],
+            })
+          )
+            throw new Error("Expected concurrent Condition revision");
+        }
+      };
       const app = definition();
       await installAppTaskRuntimes({
         ...options(f, bus),
         installControllers: false,
         workspaces: {
           ...gitTaskWorkspaces,
+          inspect: async (prepared) => {
+            const inspected = await gitTaskWorkspaces.inspect(prepared);
+            inspections.push(readState());
+            interruptValidation();
+            return inspected;
+          },
           finalize: async (prepared, outcome) => {
             finalizations.push({ outcome, state: readState(), requests: readRequests().length });
+            // The old implementation enters destructive finalization before admission.
+            if (!loadedTaskConfig(f).resourceStore.readAttempt(firstAttemptId)?.acceptedResult) interruptValidation();
+            if (outcome === "accepted" && scenario === "cleanup-fails") throw new Error("fixture cleanup failure");
+            if (outcome === "accepted" && scenario === "new-work-during-cleanup") {
+              admitTaskInput(loadedTaskConfig(f), {
+                appId: "sample",
+                attachment: { kind: "existing", taskId },
+                idempotencyKey: "new-work",
+                inputContext: {
+                  id: "new-work",
+                  source: { kind: "human", id: "requester" },
+                  input: { kind: "notice", data: {} },
+                },
+              });
+              await reconcileLoadedAppTaskOnce({
+                bus,
+                appId: "sample",
+                taskId,
+                dispatch: { enqueuedAt: 1, startedAt: 2, readyWaitMs: 1, lane: "normal" },
+              });
+            }
             return gitTaskWorkspaces.finalize(prepared, outcome);
           },
         },
         executors: {
           worker: async (attempt) => {
+            if (firstAttemptId) {
+              nextWorkspacePath = attempt.cwd;
+              writeFileSync(join(attempt.cwd, ".local-proof"), "new work must survive old cleanup");
+              return { state: "waiting", summary: "New work in progress", facts: [], reviewAt: Date.now() + 60_000 };
+            }
+            firstAttemptId = attempt.attemptId;
             workspacePath = attempt.cwd;
             writeFileSync(join(attempt.cwd, ".local-proof"), "reuse this expensive check");
             await attempt.apply({
-              conditions: (scenario === "independent-wait" ? ["review", "independent-review"] : ["review"]).map(
-                (id) => ({ id, type: "review.done", subject: `id:${id}`, expected: true, owner: "human" }),
-              ),
+              conditions: (scenario === "independent-wait" ? ["review", "independent-review"] : ["review"]).map((id) => ({
+                id,
+                type: "review.done",
+                subject: `id:${id}`,
+                expected: true,
+                owner: "human",
+              })),
             });
             const retirement = {
               kind: "retire-condition" as const,
@@ -9175,17 +9259,16 @@ describe("canonical App task runtime", () => {
         dispatch: { enqueuedAt: 1, startedAt: 2, readyWaitMs: 1, lane: "normal" },
       });
       const task = config.resourceStore.readTask(taskId)!;
-      const attempt = Object.values(readTaskSnapshot(config).attempts ?? {}).find((item) => item.taskId === taskId)!;
+      const attempt = config.resourceStore.readAttempt(firstAttemptId)!;
       expect(attempt).toBeDefined();
       expect(existsSync(workspacePath)).toBe(retained);
       expect((await git(f.appDir, "branch", "--list", attempt.workspace!.branch)).stdout.trim() !== "").toBe(retained);
       expect(
-        (await git(f.appDir, "for-each-ref", "--format=%(refname)", "refs/may/workspaces/")).stdout.trim() !== "",
+        (await git(f.appDir, "for-each-ref", "--format=%(refname)", attempt.workspace!.baseRef)).stdout.trim() !== "",
       ).toBe(retained);
       expect(readRequests()).toHaveLength(rejected ? 0 : 1);
       expect(publications).toHaveLength(rejected ? 0 : 1);
-      if (retained)
-        expect(readFileSync(join(workspacePath, ".local-proof"), "utf8")).toBe("reuse this expensive check");
+      if (retained) expect(readFileSync(join(workspacePath, ".local-proof"), "utf8")).toBe("reuse this expensive check");
       if (rejected) {
         expect(attempt.acceptedResult).toBeUndefined();
         expect(task.status.conditionIds).toEqual(["review"]);
@@ -9201,14 +9284,41 @@ describe("canonical App task runtime", () => {
         if (scenario === "policy-rejected") expect(attempt.summary).toContain("App policy");
       } else {
         expect(attempt.acceptedResult?.summary).toBe("Requested work is fulfilled");
-        expect(task.status.phase).toBe(retained ? "waiting" : "converged");
-        expect(task.status.conditionIds ?? []).toEqual(retained ? ["independent-review"] : []);
-        expect(attempt.workspace?.disposition).toBe(retained ? "active" : "removed");
-        // Planning must leave no receipts, state changes or requests before filesystem work.
-        expect(finalizations).toEqual([
-          { outcome: retained ? "waiting" : "accepted", state: stateBeforeResult, requests: 0 },
-        ]);
-        if (!retained) expect(config.resourceStore.listRecoveryCandidates().items).toEqual([]);
+        expect(task.status.phase).toBe(
+          scenario === "independent-wait" || scenario === "new-work-during-cleanup" ? "waiting" : "converged",
+        );
+        expect(task.status.conditionIds ?? []).toEqual(scenario === "independent-wait" ? ["independent-review"] : []);
+        expect(attempt.workspace?.disposition).toBe(
+          scenario === "cleanup-fails" ? "released" : retained ? "active" : "removed",
+        );
+        expect(inspections).toEqual([stateBeforeResult]);
+        if (scenario === "independent-wait") expect(finalizations).toEqual([]);
+        else
+          expect(finalizations[0]).toMatchObject({
+            outcome: "accepted",
+            requests: 1,
+            state: { attempt: { acceptedResult: { state: "converged" }, workspace: { disposition: "released" } } },
+          });
+        if (scenario === "cleanup-fails") {
+          expect(attempt.workspace?.cleanupError).toBe("fixture cleanup failure");
+          expect(attempt.unacceptedResult).toBeUndefined();
+        }
+        if (scenario === "new-work-during-cleanup") {
+          expect(nextWorkspacePath).not.toBe(workspacePath);
+          expect(readFileSync(join(nextWorkspacePath, ".local-proof"), "utf8")).toBe("new work must survive old cleanup");
+          expect(acceptedTaskAttempt(config, taskId)?.workspace?.disposition).toBe("active");
+          expect(
+            (
+              await git(
+                f.appDir,
+                "for-each-ref",
+                "--format=%(refname)",
+                acceptedTaskAttempt(config, taskId)!.workspace!.baseRef,
+              )
+            ).stdout.trim(),
+          ).not.toBe("");
+        } else if (!retained || scenario === "cleanup-fails")
+          expect(config.resourceStore.listRecoveryCandidates().items).toEqual([]);
       }
     },
   );

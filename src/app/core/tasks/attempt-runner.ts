@@ -19,12 +19,12 @@ import {
   deferAppTask,
   expiredAgentSessionAppTaskAttempt,
   failAppTaskAttempt,
-  shouldRetainAppTaskWorkspace,
   isAppTaskActionStaleError,
   readAppTaskChildContext,
   readAppTaskLiveSnapshot,
   readPendingAppTaskTrigger,
   recordAppTaskAttemptWorkspace,
+  recordReleasedAppTaskWorkspace,
   releaseStaleAppTaskResult,
   releaseTerminalSessionExpiredAppTaskAttempt,
   reportAppTaskFailure,
@@ -42,7 +42,7 @@ import {
 } from "./attempt-execution.js";
 import { type AppTaskDispatch } from "./controller.js";
 import { recoverTaskConditions } from "./dependency-admission.js";
-import { applyTaskChanges, previewTaskChanges } from "./task-changes.js";
+import { applyTaskChanges } from "./task-changes.js";
 import { type TaskCapabilityRun } from "./result.js";
 import {
   appTaskConfig,
@@ -351,20 +351,14 @@ async function runClaimedTask(
           },
           acceptedLiveEventIds: report.acceptedLiveEventIds,
         };
-        // Plan from admitted final changes, not pre-action Conditions. The preview
-        // rolls back; rejection preserves artifacts and settlement rechecks authority.
-        const retainWorkspace = taskWorkspace && previewTaskChanges(changeInput, () =>
-          shouldRetainAppTaskWorkspace(config, claim, {
-            inputKeys: result.inputKeys,
-            acceptedLiveEventIds: report.acceptedLiveEventIds,
-          }),
-        );
-        const finalized = await finalizeWorkspace(retainWorkspace ? "waiting" : "accepted");
-        if (!finalized.ok) {
+        // Validation is non-destructive. Final admission still checks authority
+        // and revisions after the awaited Git reads, before any removal is allowed.
+        const inspected = taskWorkspace ? await opts.workspaces!.inspect(taskWorkspace) : undefined;
+        if (inspected && !inspected.ok) {
           return await rejectResult(
-            finalized.reason ?? "Task workspace finalization failed",
+            inspected.reason ?? "Task workspace validation failed",
             { handlerBlocked: true },
-            [...result.facts, taskWorkspace?.metadata.path ?? executionPaths.workspaceDir],
+            [...result.facts, taskWorkspace!.metadata.path],
           );
         }
         let apply!: ReturnType<typeof completeConversationTaskTurn>;
@@ -385,15 +379,19 @@ async function runClaimedTask(
                     facts: result.facts,
                     inputKeys: result.inputKeys,
                     acceptanceBasis,
+                    workspace: inspected,
                     acceptedLiveEventIds: report.acceptedLiveEventIds,
                   });
             },
           }),
         );
+        workspaceFinalized = true;
+        const workspaceCleanupError = await cleanupReleasedWorkspace();
         const appliedDisposition = apply.taskContinues ? "progress" : "converged";
         const stale = apply.status === "stale" ? recoverStaleTaskResult(config, claim) : null;
         emit("project.task.reconciled", {
           disposition: apply.status === "applied" ? appliedDisposition : "stale",
+          ...(workspaceCleanupError ? { workspaceCleanupError } : {}),
           outcome: intent.outcome,
 
           owner: intent.owner ?? descriptor.agent,
@@ -589,6 +587,30 @@ async function runClaimedTask(
           error instanceof Error ? error.message : String(error)
         }`,
       };
+    }
+  }
+
+  async function cleanupReleasedWorkspace(): Promise<string | undefined> {
+    try {
+      const workspace = config.resourceStore.readAttempt(claim.attemptId)?.workspace;
+      if (!taskWorkspace || workspace?.disposition !== "released") return;
+      // Settlement relinquished this exact workspace. New work uses a different
+      // identity, so asynchronous removal cannot delete its files or private refs.
+      let metadata = workspace;
+      try {
+        const finalized = await opts.workspaces!.finalize({ ...taskWorkspace, metadata: workspace }, "accepted");
+        metadata =
+          finalized.ok && finalized.metadata.disposition === "removed"
+            ? finalized.metadata
+            : { ...workspace, cleanupError: finalized.reason ?? "Released workspace was retained during cleanup" };
+      } catch (error) {
+        metadata = { ...workspace, cleanupError: error instanceof Error ? error.message : String(error) };
+      }
+      recordReleasedAppTaskWorkspace(config, claim, metadata);
+      return metadata.cleanupError;
+    } catch (error) {
+      // Cleanup, including its bookkeeping, cannot reject committed work.
+      return error instanceof Error ? error.message : String(error);
     }
   }
 

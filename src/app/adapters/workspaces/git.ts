@@ -4,13 +4,16 @@ import { mkdir, readFile, realpath } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 import { execFile } from "node:child_process";
 import type { AppTaskWorkspace } from "../../core/tasks/app-task-state.js";
-import type { TaskWorkspaces, PreparedTaskWorkspace, FinalizedTaskWorkspace } from "../../core/tasks/workspace.js";
+import type {
+  TaskWorkspaces, PreparedTaskWorkspace, FinalizedTaskWorkspace, InspectedTaskWorkspace,
+} from "../../core/tasks/workspace.js";
 
 type GitResult = { status: number; stdout: string; stderr: string };
 
 export const gitTaskWorkspaces: TaskWorkspaces = {
   prepare: prepareAppTaskWorkspace,
   finalize: finalizeAppTaskWorkspace,
+  inspect: inspectAppTaskWorkspace,
 };
 
 function git(repoDir: string, args: string[], allowFailure = false): Promise<GitResult> {
@@ -63,8 +66,10 @@ function safePart(value: string): string {
   );
 }
 
-function identity(taskId: string, generation: number): { leaf: string; branch: string } {
-  const hash = createHash("sha256").update(`${taskId}@${generation}`).digest("hex").slice(0, 10);
+function identity(taskId: string, generation: number, workspaceId?: string): { leaf: string; branch: string } {
+  const hash = createHash("sha256")
+    .update(`${taskId}@${generation}${workspaceId ? `@${workspaceId}` : ""}`)
+    .digest("hex").slice(0, 10);
   const leaf = `${safePart(taskId)}-${hash}`;
   return { leaf, branch: `task/${leaf}` };
 }
@@ -141,8 +146,15 @@ export async function prepareAppTaskWorkspace(
       throw new Error(`Task workspace requires a Git worktree: ${repoDir}`);
     }
 
-    const { leaf, branch } = identity(input.taskId, input.generation);
-    const path = resolve(join(input.workspaceRoot, leaf));
+    const retained = input.previous && !["released", "removed"].includes(input.previous.disposition)
+      ? input.previous
+      : undefined;
+    // Derive the next lineage from the released one, not the attempt. A retry
+    // after preparation failed before recording metadata still finds the same path.
+    const fresh = identity(input.taskId, input.generation, retained ? undefined : input.previous?.branch);
+    const branch = retained?.branch ?? fresh.branch;
+    const leaf = branch.slice("task/".length);
+    const path = retained?.path ?? resolve(join(input.workspaceRoot, leaf));
     const remote = "origin";
     const hasRemote = await remoteExists(repoDir, remote);
     const refUpdates: Array<{ ref: string; before: string; fetched: string }> = [];
@@ -307,65 +319,56 @@ export async function prepareAppTaskWorkspace(
   });
 }
 
+/** Non-destructive Git checks; callers must settle before requesting removal. */
+export async function inspectAppTaskWorkspace(prepared: PreparedTaskWorkspace): Promise<InspectedTaskWorkspace> {
+  return withRepoOperation(prepared.repoDir, () => inspectWorkspace(prepared));
+}
+
+async function inspectWorkspace(
+  prepared: PreparedTaskWorkspace,
+  checkIntegration = true,
+): Promise<InspectedTaskWorkspace> {
+  const { repoDir } = prepared;
+  const metadata = { ...prepared.metadata };
+  if (!existsSync(metadata.path)) {
+    if (!(await refExists(repoDir, `refs/heads/${metadata.branch}`))) {
+      metadata.disposition = "removed";
+      return { ok: true, metadata, removable: true };
+    }
+    metadata.headCommit = (await git(repoDir, ["rev-parse", `refs/heads/${metadata.branch}`])).stdout;
+    metadata.disposition = "branch-retained";
+    return { ok: true, metadata, removable: checkIntegration && await isIntegrated(repoDir, metadata) };
+  }
+  metadata.headCommit = await headAt(metadata.path);
+  const dirty = (await git(metadata.path, ["status", "--porcelain=v1", "--untracked-files=all"])).stdout;
+  if (dirty) {
+    metadata.disposition = "retained-for-recovery";
+    const status = dirty.split("\n").slice(0, 20).join("\n").slice(0, 2_048);
+    return {
+      ok: false, metadata, removable: false,
+      reason: `Task worktree is dirty and was retained for recovery: ${metadata.path}\nBounded git status:\n${status}`,
+    };
+  }
+  metadata.disposition = "active";
+  return { ok: true, metadata, removable: checkIntegration && await isIntegrated(repoDir, metadata) };
+}
+
 export async function finalizeAppTaskWorkspace(
   prepared: PreparedTaskWorkspace,
   outcome: "accepted" | "waiting" | "failed",
 ): Promise<FinalizedTaskWorkspace> {
   const { repoDir } = prepared;
   return withRepoOperation(repoDir, async () => {
-    const metadata = { ...prepared.metadata };
-    if (!existsSync(metadata.path)) {
-      const branchRef = `refs/heads/${metadata.branch}`;
-      if (!(await refExists(repoDir, branchRef))) {
-        await removeWorkspaceRefs(repoDir, metadata);
-        metadata.disposition = "removed";
-        return { ok: true, metadata };
-      }
-      metadata.headCommit = (await git(repoDir, ["rev-parse", branchRef])).stdout;
-      if (await isIntegrated(repoDir, metadata)) {
-        await git(repoDir, ["branch", "-D", metadata.branch]);
-        await removeWorkspaceRefs(repoDir, metadata);
-        metadata.disposition = "removed";
-        return { ok: true, metadata };
-      }
-      metadata.disposition = "branch-retained";
-      return { ok: true, metadata };
-    }
-
-    metadata.headCommit = await headAt(metadata.path);
-    const dirty = (await git(metadata.path, ["status", "--porcelain=v1", "--untracked-files=all"])).stdout;
-    if (dirty) {
-      metadata.disposition = "retained-for-recovery";
-      const status = dirty.split("\n").slice(0, 20).join("\n").slice(0, 2_048);
-      return {
-        ok: outcome === "failed",
-        metadata,
-        reason: `Task worktree is dirty and was retained for recovery: ${metadata.path}\nBounded git status:\n${status}`,
-      };
-    }
+    const inspected = await inspectWorkspace(prepared, outcome === "accepted");
+    const { metadata } = inspected;
     if (outcome === "failed") {
-      metadata.disposition = "retained-for-recovery";
-      return { ok: true, metadata };
+      if (existsSync(metadata.path)) metadata.disposition = "retained-for-recovery";
+      return { ...inspected, ok: true };
     }
-    if (outcome === "waiting") {
-      // Waiting releases execution, not unfinished work. Recreating this
-      // checkout on every wake discards ignored dependencies and local
-      // facts, turning observation into repeated setup/repair work.
-      metadata.disposition = "active";
-      return { ok: true, metadata };
-    }
-
-    const integrated = await isIntegrated(repoDir, metadata);
-    if (!integrated) {
-      // A reviewed branch or report can be the accepted deliverable. The App
-      // decides whether integration is required; cleanup must preserve it.
-      metadata.disposition = "active";
-      return { ok: true, metadata };
-    }
-    await git(repoDir, ["worktree", "remove", metadata.path]);
-    if (await refExists(repoDir, `refs/heads/${metadata.branch}`)) {
+    if (!inspected.ok || outcome === "waiting" || !inspected.removable) return inspected;
+    if (existsSync(metadata.path)) await git(repoDir, ["worktree", "remove", metadata.path]);
+    if (await refExists(repoDir, `refs/heads/${metadata.branch}`))
       await git(repoDir, ["branch", "-D", metadata.branch]);
-    }
     await removeWorkspaceRefs(repoDir, metadata);
     metadata.disposition = "removed";
     return { ok: true, metadata };

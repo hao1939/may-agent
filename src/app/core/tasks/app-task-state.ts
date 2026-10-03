@@ -47,7 +47,9 @@ export type AppTaskWorkspace = {
   baseCommit: string;
   branch: string;
   headCommit: string;
-  disposition: "active" | "retained-for-recovery" | "branch-retained" | "removed";
+  /** Released workspaces are no longer reusable, even if physical cleanup is pending. */
+  disposition: "active" | "retained-for-recovery" | "branch-retained" | "released" | "removed";
+  cleanupError?: string;
 };
 
 export type AppTaskResource = {

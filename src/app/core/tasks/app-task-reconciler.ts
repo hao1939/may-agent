@@ -294,21 +294,6 @@ function consumeSettledTaskEvents(
   };
 }
 
-function hasUnacceptedLiveEvents(
-  pending: AppTaskTrigger | undefined,
-  eventIds: readonly number[] | undefined,
-): boolean {
-  if (!pending) return false;
-  const accepted = new Set((eventIds ?? []).filter((eventId) => Number.isSafeInteger(eventId) && eventId > 0));
-  return taskTriggerEvents(pending).some(({ event }) => {
-    // A clock wake carries no new facts or intent. Normal settlement still
-    // handles the wake; passing time alone does not invalidate useful work.
-    if (event.type === "project.task.tick") return false;
-    const eventId = Number(event.eventId);
-    return !Number.isSafeInteger(eventId) || eventId <= 0 || !accepted.has(eventId);
-  });
-}
-
 /** A new observation does not supersede the executing attempt or its output. */
 export function assertAppTaskClaimCurrent(config: AppTaskContext, claim: AppTaskClaim): void {
   const resource = config.resourceStore.readTask(claim.taskId);
@@ -322,22 +307,6 @@ export function assertAppTaskClaimCurrent(config: AppTaskContext, claim: AppTask
       currentPhase: resource?.status.phase,
     });
   }
-}
-
-/** Workspace cleanup must account for unfinished work, independently of result acceptance. */
-export function shouldRetainAppTaskWorkspace(
-  config: AppTaskContext,
-  claim: AppTaskClaim,
-  input: { acceptedLiveEventIds?: number[]; inputKeys?: string[] },
-): boolean {
-  const tree = config.resourceStore.readTaskContext({ taskIds: [claim.taskId] });
-  const answered = new Set(resultInputKeys(config, tree, claim, input));
-  const assigned = resultInputKeys(config, tree, claim, { acceptedLiveEventIds: input.acceptedLiveEventIds });
-  const status = tree.resources?.[claim.taskId]?.status;
-  return hasUnacceptedLiveEvents(tree.taskTriggers?.[claim.taskId], input.acceptedLiveEventIds) ||
-    assigned.some((key) => !answered.has(key)) ||
-    Object.keys(status?.inputWaits ?? {}).some((key) => !answered.has(key)) ||
-    Boolean(status?.conditionIds?.some((id) => !isSatisfiedCondition(tree.conditions?.[id])));
 }
 
 export function appendTaskTriggerEvent(
@@ -3173,6 +3142,35 @@ export function recordAppTaskAttemptWorkspace(
   return true;
 }
 
+/** Record cleanup on its historical attempt; never overwrite newer Task work. */
+export function recordReleasedAppTaskWorkspace(
+  config: AppTaskContext,
+  claim: AppTaskClaim,
+  workspace: AppTaskWorkspace,
+): void {
+  stateTransaction(config.resourceStore.db, () => {
+    const tree = config.resourceStore.readTaskContext({ taskIds: [claim.taskId] });
+    const resource = tree.resources?.[claim.taskId];
+    const attempt = tree.attempts?.[claim.attemptId];
+    if (
+      !resource ||
+      !attempt ||
+      attempt.workspace?.disposition !== "released" ||
+      attempt.workspace.path !== workspace.path ||
+      attempt.workspace.branch !== workspace.branch
+    )
+      return;
+    attempt.metadata.resourceVersion++;
+    attempt.workspace = structuredClone(workspace);
+    commitTaskMutation(config, tree, {
+      resourceMutation: {
+        fences: [{ taskId: claim.taskId, resourceVersion: resource.metadata.resourceVersion }],
+        attempts: [attempt],
+      },
+    });
+  });
+}
+
 function refreshAttemptLease(attempt: AppTaskAttempt, sessionId?: string, nowMs = Date.now()): void {
   const times = boundedLeaseTimes(nowMs);
   const existing = attempt.lease;
@@ -3677,6 +3675,7 @@ export function completeAppTask(
     facts?: string[];
     actions?: AppTaskAction[];
     acceptanceBasis?: AppTaskAcceptanceBasis;
+    workspace?: { metadata: AppTaskWorkspace; removable: boolean };
     acceptedLiveEventIds?: number[];
     inputKeys?: string[];
   },
@@ -3751,6 +3750,14 @@ export function completeAppTask(
     result: input.result ? structuredClone(input.result) : undefined,
     facts: [...(input.facts ?? [])],
   });
+  if (input.workspace) {
+    match.attempt.workspace = {
+      ...structuredClone(input.workspace.metadata),
+      ...(input.workspace.removable && resource.status.phase === "converged"
+        ? { disposition: "released" as const }
+        : {}),
+    };
+  }
   const resourceMutation = finishResourceMutationScope(mutationScope, tree);
   commitTaskMutation(config, tree, { resourceMutation: { ...resourceMutation, admissions } });
   return {
