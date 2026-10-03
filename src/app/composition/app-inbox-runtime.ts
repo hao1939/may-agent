@@ -718,6 +718,15 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
       ...(force ? {} : { updatedBefore: currentTime - ADMISSION_RECOVERY_INTERVAL_MS }),
       limit: ADMISSION_RECOVERY_BATCH_SIZE,
     });
+    // Released databases can already contain a frozen pending plan from before
+    // the durable-route ledger existed. Materialize only that accountable
+    // obligation; unplanned historical events remain unknown.
+    const ensurePlannedRoute = options.db.prepare(
+      `INSERT OR IGNORE INTO event_durable_routes
+       (event_id, route_id, status, created_at, updated_at)
+       VALUES (?, 'app-inbox-route', 'pending', ?, ?)`,
+    );
+    for (const plan of plans) ensurePlannedRoute.run(plan.eventId, plan.createdAt, currentTime);
     const plannedIds = new Set(plans.map((plan) => plan.eventId));
     const prePlanEventIds = options.db.prepare(
       `SELECT route.event_id
@@ -1190,7 +1199,13 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
       // Recovery is scheduled behind admission. It must not delay the caller
       // that opens the human interface or activates this message handler.
       void recoverInputs();
-      recoverAdmissionPlans(true);
+      try {
+        recoverAdmissionPlans(true);
+      } catch (error) {
+        // Startup must remain available while SQLite is contended. The route
+        // ledger retains this slice for the recurring recovery scan.
+        reportRuntimeFailure("admission-recovery", error);
+      }
       timer.every(scanIntervalMs, scanFromTimer);
       initialRecovery.after(0, scanFromTimer);
       scheduleProducer.start(scanIntervalMs);

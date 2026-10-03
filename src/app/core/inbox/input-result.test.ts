@@ -31,7 +31,7 @@ function connect() {
   bus.subscribeDurableRoute(() => {
     routed++;
     return route ? { accepted: true, by: "caller", route } : undefined;
-  });
+  }, { label: "test-durable-route-101" });
   bus.subscribe(() => { published++; });
 }
 

@@ -56,6 +56,49 @@ const DURABLE_COMMAND_EVENTS = new Set([
 const DEFAULT_UNACCEPTED_TTL_MS = 2 * 60 * 1000;
 const DEFAULT_PAIR_TTL_MS = 45 * 60 * 1000;
 export const EVENT_DELIVERY_HOUSEKEEPING_INTERVAL_MS = 30_000;
+
+/** Project whole-event acceptance after the final durable route settles. */
+function settleEventDelivery(db: SqliteDb, eventId: number, now: number): DeliveryResult | undefined {
+  const accepted = db.prepare(
+    `SELECT accepted_by, delivery_route, delivery_note
+     FROM event_durable_routes accepted
+     WHERE accepted.event_id = ? AND accepted.accepted_by IS NOT NULL
+       AND NOT EXISTS (
+         SELECT 1 FROM event_durable_routes pending
+         WHERE pending.event_id = accepted.event_id AND pending.status = 'pending'
+       )
+     ORDER BY CASE WHEN accepted.delivery_route = 'noop' THEN 1 ELSE 0 END, accepted.route_id
+     LIMIT 1`,
+  ).get(eventId) as { accepted_by?: unknown; delivery_route?: unknown; delivery_note?: unknown } | null;
+  if (typeof accepted?.accepted_by !== "string" || !accepted.accepted_by) return undefined;
+  db.run(
+    `UPDATE events
+     SET delivery_status = 'accepted', accepted_by = ?, accepted_at = COALESCE(accepted_at, ?),
+         delivery_route = ?, delivery_note = ?
+     WHERE id = ? AND (
+       delivery_status != 'accepted'
+       OR (delivery_route = 'noop' AND COALESCE(?, 'direct') != 'noop')
+     )`,
+    [
+      accepted.accepted_by,
+      now,
+      accepted.delivery_route ?? "direct",
+      accepted.delivery_note ?? null,
+      eventId,
+      accepted.delivery_route,
+    ],
+  );
+  const route = accepted.delivery_route === "noop" ? "noop" : "direct";
+  return {
+    accepted: true,
+    by: accepted.accepted_by,
+    route,
+    ...(typeof accepted.delivery_note === "string" && accepted.delivery_note
+      ? { note: accepted.delivery_note }
+      : {}),
+  };
+}
+
 // Task assignment pairs use a longer TTL because project tasks legitimately
 // take 2-4 hours to complete. The default 45min TTL caused bulk-assignment
 // batches (e.g. 150 alpha-project tasks) to orphan simultaneously and breach
@@ -652,20 +695,35 @@ export class DbWriter {
     }
   };
 
-  recordDurableRoute = (event: AgentEvent, routeId: string): void => {
+  recordDurableRoute = (event: AgentEvent, routeId: string, result?: DeliveryResult) => {
     const rowId = (event as AgentEvent & { [EVENT_ROW_ID]?: number })[EVENT_ROW_ID];
-    if (!Number.isSafeInteger(rowId) || Number(rowId) <= 0) return;
-    try {
-      withSqliteBusyRetry(`record durable route ${routeId} for event ${rowId}`, () => {
+    if (!Number.isSafeInteger(rowId) || Number(rowId) <= 0) return { settled: false };
+    return withSqliteBusyRetry(`record durable route ${routeId} for event ${rowId}`, () => {
+      const now = Date.now();
+      return stateTransaction(this.db, () => {
         this.db.prepare(
-          `UPDATE event_durable_routes
-           SET status = 'completed', completed_at = COALESCE(completed_at, ?), updated_at = ?
-           WHERE event_id = ? AND route_id = ? AND status = 'pending'`,
-        ).run(Date.now(), Date.now(), rowId, routeId);
+          `INSERT INTO event_durable_routes
+             (event_id, route_id, status, created_at, updated_at, completed_at)
+           VALUES (?, ?, 'completed', ?, ?, ?)
+           ON CONFLICT(event_id, route_id) DO UPDATE SET
+             status = 'completed', completed_at = COALESCE(event_durable_routes.completed_at, excluded.completed_at),
+             updated_at = excluded.updated_at`,
+        ).run(rowId, routeId, now, now, now);
+        if (result) {
+          this.db.prepare(
+            `UPDATE event_durable_routes
+             SET accepted_by = ?, delivery_route = ?, delivery_note = ?
+             WHERE event_id = ? AND route_id = ?
+               AND (accepted_by IS NULL OR (delivery_route = 'noop' AND ? != 'noop'))`,
+          ).run(result.by, result.route ?? "direct", result.note ?? null, rowId, routeId, result.route ?? "direct");
+        }
+        const delivery = settleEventDelivery(this.db, Number(rowId), now);
+        const pending = this.db.prepare(
+          `SELECT 1 FROM event_durable_routes WHERE event_id = ? AND status = 'pending' LIMIT 1`,
+        ).get(rowId);
+        return { settled: !pending, ...(delivery ? { delivery } : {}) };
       });
-    } catch (error) {
-      log("warn", `[event-delivery] failed to record durable route ${routeId} for event ${rowId}: ${String(error)}`);
-    }
+    });
   };
 
   recordDelivery = (event: AgentEvent, result: DeliveryResult): void => {
@@ -682,7 +740,11 @@ export class DbWriter {
                  accepted_at = ?,
                  delivery_route = ?,
                  delivery_note = ?
-             WHERE id = ?`,
+             WHERE id = ?
+               AND NOT EXISTS (
+                 SELECT 1 FROM event_durable_routes route
+                 WHERE route.event_id = events.id AND route.status != 'completed'
+               )`,
             [result.by, now, result.route ?? "direct", result.note ?? null, rowId],
           );
         });

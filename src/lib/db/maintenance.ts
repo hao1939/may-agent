@@ -182,6 +182,10 @@ export function runDbMaintenancePass(
            WHERE s.status IN ('running', 'idle')
              AND e.session_id = s.sessionId
          )
+         AND NOT EXISTS (
+           SELECT 1 FROM event_durable_routes route
+           WHERE route.event_id = e.id AND route.status = 'pending'
+         )
        ORDER BY e.timestamp LIMIT ?
      )`,
     [now - 5 * DAY_MS, batchSize],

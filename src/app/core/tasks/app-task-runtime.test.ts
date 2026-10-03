@@ -216,11 +216,12 @@ it("publishes one reopening fact despite a lost publication and operator replay 
     const writer = new DbWriter(persistDir);
     bus.setPersistenceSubscriber(writer.handler);
     bus.setDeliveryRecorder(writer.recordDelivery);
+    bus.setDurableRouteRecorder(writer.recordDurableRoute);
     bus.subscribeDurableRoute((event) => {
       if (event.type !== "app.task.reopened") return;
       notifications++;
       return { accepted: true, by: "fixture:reopening", route: "direct" };
-    });
+    }, { label: "test-durable-route-101" });
     await installCoreTaskRuntimes({
       ...options(f, bus),
       installControllers: false,
@@ -428,7 +429,7 @@ it("retains closed-Task observations as history without treating desired work as
     expect(admitted.taskIds).toEqual([]);
     expect(admitted.delivery).toMatchObject({ accepted: true });
     return admitted.delivery;
-  });
+  }, { label: "test-durable-route-1" });
   const event = bus.emit({
     type: "sample.observed",
     source: "fixture",
@@ -3814,7 +3815,7 @@ describe("canonical App task runtime", () => {
       if (conditionTaskIds.length === 0) return;
       trackAppTaskConditionEventForTasks(loadedTaskConfig(f), event, conditionTaskIds);
       return { accepted: true, by: "fixture-condition-observer", route: "direct" };
-    });
+    }, { label: "test-durable-route-102" });
     let assertionFailure: unknown;
     let workerCalls = 0;
     const request = {
@@ -7023,7 +7024,7 @@ describe("canonical App task runtime", () => {
           targetedTaskId: taskId,
           conditionTaskIds: [taskId],
         }).delivery;
-      });
+      }, { label: "test-durable-route-2" });
       const config = loadedTaskConfig(f);
       observeAppTaskIntent(config, {
         appAgent: "sample-owner",
@@ -7127,7 +7128,7 @@ describe("canonical App task runtime", () => {
       return admitStandaloneCanonicalAppTaskEvent({
         descriptor: installed[0]!, event, intent: null, targetedTaskId: taskId,
       }).delivery;
-    });
+    }, { label: "test-durable-route-3" });
     const config = loadedTaskConfig(f);
     observeAppTaskIntent(config, {
       appAgent: "sample-owner",
@@ -7304,7 +7305,7 @@ describe("canonical App task runtime", () => {
         intent: null,
         conditionTaskIds: [taskId],
       }).delivery;
-    });
+    }, { label: "test-durable-route-4" });
     const run = () =>
       reconcileLoadedAppTaskOnce({
         bus,
@@ -7385,7 +7386,7 @@ describe("canonical App task runtime", () => {
       });
       woken.push(admitted.taskIds);
       return admitted.delivery;
-    });
+    }, { label: "test-durable-route-5" });
     const execute = createTaskAttemptProcessExecutor({
       bus,
       timeoutMs: 10_000,
@@ -7499,7 +7500,7 @@ describe("canonical App task runtime", () => {
                   },
                 }),
           }).delivery;
-        });
+        }, { label: "test-durable-route-6" });
       };
       await install();
       observeAppTaskIntent(loadedTaskConfig(f), {
@@ -7669,7 +7670,7 @@ describe("canonical App task runtime", () => {
             intent: null,
             targetedTaskId: String((event as AgentEvent & { target: { taskId: string } }).target.taskId),
           }).delivery;
-        });
+        }, { label: "test-durable-route-7" });
       };
       await install();
       let config = loadedTaskConfig(f);
@@ -8282,7 +8283,7 @@ describe("canonical App task runtime", () => {
         if (event.type !== "cli.task.requested") return;
         cliRequests += 1;
         return { accepted: true, by: "unexpected-cli-runner", route: "direct" };
-      });
+      }, { label: "test-durable-route-103" });
       let calls = 0;
       const runtimeOptions = options(f, bus);
       Object.assign(runtimeOptions.manager, {

@@ -5,7 +5,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { AppDependencyObservation } from "@may-agent/sdk";
 import { openDatabase, type SqliteDb } from "../../lib/db.js";
-import { getDb } from "../../lib/db/connection.js";
+import { closeDb, getDb } from "../../lib/db/connection.js";
 import { applyDbSchema } from "../../lib/db/schema.js";
 import { DbWriter } from "../../lib/db-writer.js";
 import { createAppEventAdmissionPlan, getAppEventAdmissionPlan } from "../core/state/app-event-admission-store.js";
@@ -1216,7 +1216,7 @@ describe("App inbox runtime", () => {
     });
   });
 
-  it("recovers a required durable route that failed before its admission plan was created", async () => {
+  it("recovers the whole durable-route ledger across contention", async () => {
     db.close();
     db = getDb(root);
     const writer = new DbWriter(root, { existingSchemaOnly: true });
@@ -1257,6 +1257,7 @@ describe("App inbox runtime", () => {
       previewTaskEventRoutes: ({ event }) =>
         event.type === "provider.changed" ? [{ appId: "evaluation", taskIds: ["condition:exact"] }] : [],
       scanIntervalMs: 60_000,
+      deferStart: true,
     });
     const input: AgentEvent = {
       type: "provider.changed",
@@ -1277,6 +1278,13 @@ describe("App inbox runtime", () => {
     expect(commandSends).toBe(1);
     expect(db.prepare("SELECT COUNT(*) AS count FROM events WHERE id = ?").get(eventId)).toEqual({ count: 1 });
 
+    // Initial recovery must not make runtime startup depend on obtaining the
+    // SQLite writer lock. The pending route remains durable for a later scan.
+    await runtime.start();
+    expect(db.prepare("SELECT delivery_status FROM events WHERE id = ?").get(eventId)).toEqual({
+      delivery_status: "pending",
+    });
+
     locker.exec("ROLLBACK");
     // Let the startup recovery callback release its handle, then force the same
     // bounded recovery path a runtime reload uses after the route is available.
@@ -1286,35 +1294,33 @@ describe("App inbox runtime", () => {
     expect(admissions).toHaveLength(1);
     expect(admissions[0]!.event).toMatchObject(input);
     expect(admissions[0]!.conditionTaskIds).toEqual(["condition:exact"]);
-    expect(db.prepare("SELECT status FROM event_durable_routes WHERE event_id = ?").get(eventId)).toEqual({
-      status: "completed",
-    });
+    expect(
+      db.prepare("SELECT status FROM event_durable_routes WHERE event_id = ? AND route_id = ?").get(
+        eventId,
+        "app-inbox-route",
+      ),
+    ).toEqual({ status: "completed" });
+    expect(
+      db.prepare("SELECT status FROM event_durable_routes WHERE event_id = ? AND route_id = ?").get(
+        eventId,
+        "command-router",
+      ),
+    ).toEqual({ status: "pending" });
     expect(db.prepare("SELECT COUNT(*) AS count FROM events WHERE id = ?").get(eventId)).toEqual({ count: 1 });
     expect(db.prepare("SELECT delivery_status FROM events WHERE id = ?").get(eventId)).toEqual({
-      delivery_status: "accepted",
+      delivery_status: "pending",
     });
     expect(ordinaryEffects).toBe(1);
     expect(commandSends).toBe(1);
 
-    // Simulate a crash after the durable plan completed but before route and
-    // delivery recording. Recovery reconciles the terminal plan without
-    // repeating either admission or the other durable command route.
-    db.prepare(
-      `UPDATE event_durable_routes SET status = 'pending', completed_at = NULL, updated_at = 0
-       WHERE event_id = ? AND route_id = 'app-inbox-route'`,
-    ).run(eventId);
-    db.prepare(`UPDATE events SET delivery_status = 'pending', accepted_by = NULL, accepted_at = NULL WHERE id = ?`).run(
-      eventId,
-    );
-    await runtime.reload();
-    await waitUntil(
-      () => db.prepare("SELECT status FROM event_durable_routes WHERE event_id = ?").get(eventId)?.status === "completed",
-    );
-    expect(admissions).toHaveLength(1);
+    // Settling the other persisted obligation does not replay its effect and
+    // atomically projects whole-event acceptance.
+    writer.recordDurableRoute(emitted, "command-router");
     expect(commandSends).toBe(1);
     expect(db.prepare("SELECT delivery_status FROM events WHERE id = ?").get(eventId)).toEqual({
       delivery_status: "accepted",
     });
+
     locker.close();
   });
 
@@ -1585,6 +1591,8 @@ describe("App inbox runtime", () => {
   });
 
   it("resumes a legacy frozen plan without inventing an event target or admitting it twice", async () => {
+    db.close();
+    db = getDb(root);
     const eventId = Number(
       db
         .prepare(
@@ -1612,7 +1620,6 @@ describe("App inbox runtime", () => {
     let admitted = 0;
     const options = {
       registry,
-      db,
       admitTaskEvent: ({ appId, conditionTaskIds, event }: any) => {
         admitted += 1;
         expect(appId).toBe("evaluation");
@@ -1625,27 +1632,54 @@ describe("App inbox runtime", () => {
       previewTaskEvent: () => [],
       scanIntervalMs: 10_000,
     };
-
     const receipts: number[] = [];
-    const firstBus = persistentBus();
-    firstBus.setDeliveryRecorder((event) => {
-      const id = Number(event[EVENT_ROW_ID]);
-      if (Number.isSafeInteger(id)) receipts.push(id);
-    });
-    runtime = await startAppInboxRuntime({ ...options, bus: firstBus });
+    const storageBus = (writer: DbWriter) => {
+      const bus = new EventBus();
+      bus.setPersistenceSubscriber(writer.handler);
+      bus.setDurableRouteRecorder(writer.recordDurableRoute);
+      bus.setDeliveryRecorder((event, result) => {
+        const id = Number(event[EVENT_ROW_ID]);
+        if (Number.isSafeInteger(id)) receipts.push(id);
+        writer.recordDelivery(event, result);
+      });
+      return bus;
+    };
+
+    runtime = await startAppInboxRuntime({ ...options, db, bus: storageBus(new DbWriter(root, { existingSchemaOnly: true })) });
     await waitUntil(() => getAppEventAdmissionPlan(db, eventId)?.status === "completed");
     expect(admitted).toBe(1);
     expect(receipts).toEqual([eventId]);
-    runtime.close();
-    const secondBus = persistentBus();
-    secondBus.setDeliveryRecorder((event) => {
-      const id = Number(event[EVENT_ROW_ID]);
-      if (Number.isSafeInteger(id)) receipts.push(id);
+    expect(db.prepare(
+      "SELECT route_id, status, accepted_by FROM event_durable_routes WHERE event_id = ?",
+    ).all(eventId)).toEqual([{
+      route_id: "app-inbox-route",
+      status: "completed",
+      accepted_by: "app-runtime:events:task:evaluation/restart-task",
+    }]);
+    expect(db.prepare("SELECT delivery_status, accepted_by FROM events WHERE id = ?").get(eventId)).toEqual({
+      delivery_status: "accepted",
+      accepted_by: "app-runtime:events:task:evaluation/restart-task",
     });
-    runtime = await startAppInboxRuntime({ ...options, bus: secondBus });
+
+    runtime.close();
+    runtime = null;
+    closeDb(root);
+    db = getDb(root);
+    runtime = await startAppInboxRuntime({ ...options, db, bus: storageBus(new DbWriter(root, { existingSchemaOnly: true })) });
     await Bun.sleep(20);
     expect(admitted).toBe(1);
     expect(receipts).toEqual([eventId]);
+    expect(db.prepare(
+      "SELECT route_id, status, accepted_by FROM event_durable_routes WHERE event_id = ?",
+    ).all(eventId)).toEqual([{
+      route_id: "app-inbox-route",
+      status: "completed",
+      accepted_by: "app-runtime:events:task:evaluation/restart-task",
+    }]);
+    expect(db.prepare("SELECT delivery_status, accepted_by FROM events WHERE id = ?").get(eventId)).toEqual({
+      delivery_status: "accepted",
+      accepted_by: "app-runtime:events:task:evaluation/restart-task",
+    });
   });
 
   it("keeps an explicit malformed exact-task target visible as subscriber failure", async () => {

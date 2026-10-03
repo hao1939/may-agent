@@ -280,7 +280,7 @@ describe("Host verified approval contract", () => {
       if (interrupted) throw new Error("fixture decision route interrupted");
       delivered++;
       return { accepted: true, by: "fixture-decision-route", route: "direct" };
-    });
+    }, { label: "test-durable-route-101" });
     const first = events.publish(input, context);
     expect(first.delivery).toBe("recorded");
     interrupted = false;

@@ -74,6 +74,8 @@ export type TaskAttemptProcessRequest = {
   taskId: string;
   dispatch: AppTaskDispatch;
   definitionSource?: TaskWorkerDefinitionSource;
+  /** Parent Host route identities persisted atomically with worker-origin events. */
+  durableRouteIds?: readonly string[];
 };
 
 export type TaskWorkerDefinitionSource = Pick<DefinitionSourceRelease, "agentsRoot" | "projectsRoot" | "sharedRoot"> & {
@@ -92,6 +94,15 @@ function required(value: string, label: string): string {
   const normalized = value.trim();
   if (!normalized) throw new Error(`${label} must be non-empty`);
   return normalized;
+}
+
+export function parseTaskWorkerDurableRouteIds(value: unknown): string[] {
+  if (!Array.isArray(value)) throw new Error("Task worker durable route IDs must be an array");
+  const routeIds = value.map((routeId) => required(String(routeId), "Task worker durable route ID"));
+  if (new Set(routeIds).size !== routeIds.length) {
+    throw new Error("Task worker durable route IDs must be unique");
+  }
+  return routeIds;
 }
 
 function parseWorkerFrame(value: unknown): WorkerFrame {
@@ -168,17 +179,21 @@ export function createTaskAttemptProcessExecutor(input: {
   return (request) => {
     const source = input.definitionSource?.();
     if (input.definitionSource && !source) throw new Error("No published Task worker definition source");
-    const workerRequest: TaskAttemptProcessRequest = source
-      ? {
-          ...request,
-          definitionSource: {
-            agentsRoot: source.agentsRoot,
-            projectsRoot: source.projectsRoot,
-            sharedRoot: source.sharedRoot,
-            ...(source.appDirectories ? { appDirectories: [...source.appDirectories] } : {}),
-          },
-        }
-      : request;
+    const durableRouteIds = [...input.bus.snapshotDurableRouteIds()];
+    const workerRequest: TaskAttemptProcessRequest = {
+      ...request,
+      ...(source
+        ? {
+            definitionSource: {
+              agentsRoot: source.agentsRoot,
+              projectsRoot: source.projectsRoot,
+              sharedRoot: source.sharedRoot,
+              ...(source.appDirectories ? { appDirectories: [...source.appDirectories] } : {}),
+            },
+          }
+        : {}),
+      ...(durableRouteIds.length > 0 ? { durableRouteIds } : {}),
+    };
     return runWorkerProcess(
       input.bus,
       input.spawnWorker?.(workerRequest) ?? spawnPrivateWorker(workerArguments(workerRequest)),
@@ -194,17 +209,21 @@ export function createTaskRecoveryProcessExecutor(input: {
   timeoutMs?: number;
   definitionSource?: () => TaskWorkerDefinitionSource | null;
   /** Test seam; production always uses the private current-binary worker. */
-  spawnWorker?: (source?: TaskWorkerDefinitionSource) => ChildProcess;
+  spawnWorker?: (source?: TaskWorkerDefinitionSource, durableRouteIds?: readonly string[]) => ChildProcess;
 }): NonNullable<AppTaskRuntimeOptions["executeRecovery"]> {
   return async () => {
     const source = input.definitionSource?.();
     if (input.definitionSource && !source) throw new Error("No published Task worker definition source");
+    const durableRouteIds = [...input.bus.snapshotDurableRouteIds()];
     await runWorkerProcess(
       input.bus,
-      input.spawnWorker?.(source ?? undefined) ??
+      input.spawnWorker?.(source ?? undefined, durableRouteIds) ??
         spawnPrivateWorker([
           "--task-recovery-once",
           ...(source ? ["--task-worker-source", JSON.stringify(source)] : []),
+          ...(durableRouteIds.length > 0
+            ? ["--task-worker-routes", JSON.stringify(durableRouteIds)]
+            : []),
         ]),
       input.timeoutMs,
     );
@@ -402,6 +421,9 @@ export function parseTaskAttemptProcessRequest(raw: string): TaskAttemptProcessR
           definitionSource: parseTaskWorkerDefinitionSource(JSON.stringify(parsed.definitionSource)),
         }
       : {}),
+    ...(parsed.durableRouteIds !== undefined
+      ? { durableRouteIds: parseTaskWorkerDurableRouteIds(parsed.durableRouteIds) }
+      : {}),
   };
 }
 
@@ -426,6 +448,7 @@ export async function runTaskRecoveryWorker(input: {
   roots: TaskAttemptWorkerRoots;
   models: ModelRegistry;
   definitionSource?: TaskWorkerDefinitionSource;
+  durableRouteIds?: readonly string[];
 }): Promise<void> {
   return runTaskWorker({
     ...input,
@@ -441,13 +464,16 @@ async function runTaskWorker(input: {
   models: ModelRegistry;
   appIds?: readonly string[];
   task?: TaskAttemptProcessRequest;
+  durableRouteIds?: readonly string[];
   definitionSource?: TaskAttemptProcessRequest["definitionSource"];
   run(bus: EventBus, isDefinitionCurrent: () => boolean): Promise<string[]>;
 }): Promise<void> {
   enterTaskWorkerProcess();
   const stopWithParent = () => process.exit(143);
   process.once("disconnect", stopWithParent);
-  const bus = new EventBus();
+  const bus = new EventBus({
+    persistedDurableRouteIds: input.task?.durableRouteIds ?? input.durableRouteIds,
+  });
   attachEventPersistence({ bus, persistDir: input.roots.persistDir });
   const receivedEvents = new WeakSet<AgentEvent>();
   const incoming = (message: unknown) => {

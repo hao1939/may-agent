@@ -118,7 +118,7 @@ function durableTelegramFixture() {
       admitted.push(data.text);
     }
     return { accepted: true, by: "fixture-input", route: "direct" };
-  });
+  }, { label: "test-durable-route-101" });
   globalThis.fetch = (async (url, init) => {
     const method = String(url).split("/").at(-1)!;
     const body = JSON.parse(String(init?.body ?? "{}"));
@@ -144,6 +144,7 @@ function durableTelegramFixture() {
     const writer = new DbWriter(root);
     bus.setPersistenceSubscriber(writer.handler);
     bus.setDeliveryRecorder(writer.recordDelivery);
+    bus.setDurableRouteRecorder(writer.recordDurableRoute);
     const events = createEventInterface({ bus, db: getDb(root), validateAppInput: () => {},
       hasApp: () => true, hasAgent: () => true, hasSession: () => false });
     publish = (input, approvalAuthorization) => events.publish(input, { source: "telegram", approvalAuthorization });
@@ -816,7 +817,7 @@ describe("Telegram durable input and natural follow-up", () => {
           // Model the crash boundary: acceptance is durable, but the queued
           // asynchronous reload never executes or records a completion.
           interruptedRoute = f.bus.subscribeDurableRoute((event) => event.type === "runtime.reload.requested"
-            ? { accepted: true, by: "command-router:runtime-reload", route: "direct" } : undefined);
+            ? { accepted: true, by: "command-router:runtime-reload", route: "direct" } : undefined, { label: "test-durable-route-102" });
         }
         if (loseAcceptance) {
           // Exercise the real writer's swallowed acceptance failure. This

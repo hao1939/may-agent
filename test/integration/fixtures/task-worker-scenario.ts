@@ -14,7 +14,7 @@ import {
 } from "../../../src/app/core/tasks/app-task-reconciler.js";
 import { admitTaskInput } from "../../../src/app/core/state/inbox.js";
 import { attachEventPersistence } from "../../../src/app/daemon-events.js";
-import { EventBus } from "../../../src/app/core/events/bus.js";
+import { EventBus, EVENT_ROW_ID } from "../../../src/app/core/events/bus.js";
 import { AppRegistry } from "../../../src/app/core/apps/registry.js";
 import { discoverAppDefinitions } from "../../../src/app/adapters/discovery/app-definitions.js";
 import { installAppTaskRuntimes, closeInstalledAppTaskRuntimes } from "../../../src/app/core/tasks/app-task-runtime.js";
@@ -28,6 +28,7 @@ import {
   parseTaskAttemptProcessRequest,
   runTaskAttemptWorker,
   type TaskAttemptProcessRequest,
+  type TaskWorkerDefinitionSource,
 } from "../../../src/app/composition/workers/task-attempt-process.js";
 
 const roots: string[] = [];
@@ -155,7 +156,11 @@ export function run(f: ReturnType<typeof fixture>, recovery = false): Promise<un
   const workerOptions = {
     bus: f.bus,
     timeoutMs: 5_000,
-    spawnWorker: () => {
+    spawnWorker: (requestOrSource?: TaskAttemptProcessRequest | TaskWorkerDefinitionSource, durableRouteIds?: readonly string[]) => {
+      const request = recovery ? undefined : (requestOrSource as TaskAttemptProcessRequest);
+      const definitionSource = recovery
+        ? (requestOrSource as TaskWorkerDefinitionSource | undefined)
+        : request?.definitionSource;
       const child = spawn(
         process.execPath,
         [
@@ -163,8 +168,8 @@ export function run(f: ReturnType<typeof fixture>, recovery = false): Promise<un
           `
         const { ${worker} } = await import(${JSON.stringify(new URL("../../../src/app/composition/workers/task-attempt-process.ts", import.meta.url).href)});
         await ${worker}({
-          request: ${JSON.stringify(f.request)},
-          definitionSource: ${JSON.stringify(f.request.definitionSource)},
+          ${recovery ? `durableRouteIds: ${JSON.stringify(durableRouteIds)},` : `request: ${JSON.stringify(request)},`}
+          definitionSource: ${JSON.stringify(definitionSource)},
           roots: ${JSON.stringify({ projectRoot: f.root, projectsRoot: join(f.root, "projects"), sharedRoot: join(f.root, "shared"), persistDir: f.persistDir })},
           models: { test: { id: "test", name: "test", provider: "test", api: "openai-completions", apiKey: "fixture-only", baseUrl: ${JSON.stringify(f.modelBaseUrl)}, contextWindow: 8192, maxTokens: 1024, input: ["text"], cost: {} } }
         });
@@ -454,11 +459,35 @@ export async function execute(ctx) {
     await assert.rejects(run(f), /code 143/);
     const attemptId = f.store.readTask("work/one")!.status.currentAttemptId!;
     assert.equal(f.store.readReceipt("work/one"), null);
+    const recoverySnapshots: unknown[] = [];
+    f.bus.subscribeDurableRoute((event) => {
+      const eventId = event[EVENT_ROW_ID];
+      if (eventId) recoverySnapshots.push({
+        type: event.type,
+        route: f.db.prepare("SELECT status FROM event_durable_routes WHERE event_id = ? AND route_id = 'recovery-proof'").get(eventId),
+      });
+    }, { label: "recovery-proof" });
     await run(f, true);
     assert.equal(f.store.readTask("work/one")?.status.phase, "pending");
     assert.equal(f.store.readAttempt(attemptId)?.state, "interrupted");
     assert.deepEqual(readExecutionStatus(f.persistDir), { sessions: [], activeWork: false });
     assert(f.store.listRecoveryCandidates().items.some(({ taskId }) => taskId === "work/one"));
+    // A retained legacy attention record is a recovery path that publishes evidence.
+    const resource = f.store.readTask("work/one")!;
+    const attempt = f.store.readAttempt(attemptId)!;
+    const resourceVersion = resource.metadata.resourceVersion;
+    resource.metadata.resourceVersion += 1;
+    resource.status.phase = "attention";
+    delete resource.status.executionRetryAt;
+    attempt.metadata.resourceVersion += 1;
+    attempt.failureReason = "previous-runtime-attempt-not-recoverable";
+    assert(f.store.commit({
+      fences: [{taskId:"work/one",resourceVersion,generation:resource.metadata.generation}],
+      tasks: [{resource,ready:false}], attempts:[attempt],
+    }));
+    await run(f, true);
+    assert(recoverySnapshots.length > 0, "Recovery must emit persisted evidence");
+    for (const snapshot of recoverySnapshots as Array<{route:unknown}>) assert.deepEqual(snapshot.route, {status:"pending"});
   },
 
   async redoAfterParentLoss() {

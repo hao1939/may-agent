@@ -66,8 +66,10 @@ const scenarios: Record<string, () => void | Promise<void>> = {
       appDirectories: ["sample.app"],
     };
     let dispatched: TaskAttemptProcessRequest | undefined;
+    const bus = new EventBus();
+    bus.subscribeDurableRoute(() => undefined, { label: "app-inbox-route" });
     const execute = createTaskAttemptProcessExecutor({
-      bus: new EventBus(),
+      bus,
       definitionSource: () => source,
       spawnWorker: (work) => {
         dispatched = work;

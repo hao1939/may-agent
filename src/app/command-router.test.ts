@@ -23,6 +23,7 @@ function fixture(
   const writer = new DbWriter(root);
   bus.setPersistenceSubscriber(writer.handler);
   bus.setDeliveryRecorder(writer.recordDelivery);
+  bus.setDurableRouteRecorder(writer.recordDurableRoute);
   const sent: Array<{ sessionId: string; text: string; opts?: Record<string, unknown> }> = [];
   const runs: Array<{ agent: string; text: string; opts?: Record<string, unknown> }> = [];
   const cancelled: string[] = [];
