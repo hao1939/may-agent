@@ -43,6 +43,13 @@ worth its cost. Progress should remain visible and Stop available while work
 runs. Current ordinary input queues behind the active Turn; admission remaining
 responsive is not a claim of seamless steering or concurrent conversation.
 
+A turn may publish an accepted answer for its considered batch while later
+messages remain queued. Processing that batch does not imply its Requests are
+all fulfilled: the agent returns their open or fulfilled dispositions. An
+ordinary queued correction is interpreted at the next turn; explicit Stop
+fences the active execution. The [scoped acceptance contract](task-attempts.md#accept-work-and-continue-what-remains)
+states source availability and the consequence for already prepared actions.
+
 Every human surface publishes the same event:
 
 ```text

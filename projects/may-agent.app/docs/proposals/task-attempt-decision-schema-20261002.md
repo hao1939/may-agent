@@ -352,8 +352,9 @@ After reviewing the returned evidence and making any necessary corrections:
 }
 ```
 
-Subject to App acceptance and current-input fences, infra accepts exactly
-those inputs. Other work survives and the Task stays open.
+Subject to App acceptance, current-attempt authority and valid input scope,
+infra accepts exactly those inputs. Other work survives and the Task stays open;
+see [scoped acceptance](../2a-design/task-attempts.md#accept-work-and-continue-what-remains).
 
 ### Record an unsuccessful attempt
 

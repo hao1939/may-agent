@@ -491,16 +491,17 @@ Each task retains ordered links to actionable events until an accepted
 reconciliation has observed them. Claiming a task moves only a bounded prefix
 into the attempt; it does not acknowledge that prefix. Result admission records
 the attempt result and advances the task event checkpoint atomically. Events
-linked during the attempt remain pending. A useful waiting result can retain
-its output and exact Conditions alongside that input. A no-action completion
-proposal or diagnosis retains its bounded output as progress, with the existing
-waits intact, without issuing a completion receipt or parking the Task. The
-next pass reads that result and the pending input. Results proposing Task actions
-remain fenced as an atomic batch: saving a result that reports admission while
-withholding its actions would falsely record work as admitted. Rejected batches
-remain execution evidence, not accepted Task result or a replay queue.
-Failure findings remain failed-attempt evidence, not stale-result interruptions.
-A new cross-App request remains effect-fenced separately.
+linked during the attempt remain pending unless explicitly incorporated into the
+accepted settlement. A useful result can be accepted while other work remains:
+scoped completion fulfills only its selected inputs, and partial progress retains
+its unfinished requirements. Infra then derives continuation or waiting from
+the remaining input and Conditions. See [accept work and continue what remains](task-attempts.md#accept-work-and-continue-what-remains)
+for the ordinary-message and explicit-control boundary and source availability.
+
+Result and proposed actions remain an atomic batch: do not save a result claiming
+an action was admitted while withholding that action. Immediate actions and new
+cross-App requests retain the same attempt/authority checks. Rejected results
+remain recovery evidence; failure findings remain failed-attempt evidence.
 
 Delivery identity survives claim, settlement and late relay; receipt is not outcome acceptance.
 See [duplicate handling](execution-feedback.md#duplicate-delivery-and-safe-reconsideration) for Host/App duties and Host #175.
@@ -512,7 +513,7 @@ No universal invalidation table or new workflow state machine is needed.
 A storage compare-and-swap collision is not a domain failure. Result and
 workspace-metadata persistence may reread current resources and retry the
 fenced transaction once. This repeats neither the handler nor provider effects;
-all generation, action, and pending-input checks run again. Another collision
+all generation, action, and scoped-input checks run again. Another collision
 or a now-invalid claim uses normal recovery. Never retry an old write set or
 treat semantic staleness as a transient database collision.
 

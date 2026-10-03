@@ -114,9 +114,116 @@ agent to maintain delivery cursors. A subsequent candidate must apply the same
 rule to immediate and final actions and preserve the unread-correction
 counterexample. No broad fence deletion is being merged with the context fix.
 
+## Review after separating acceptance from completion
+
+Source review on Host `287263522` confirmed that the existing result paths
+already distinguish accepted progress, input fulfillment and Task continuation.
+`deferAppTask` saves an accepted waiting result while retaining input.
+`completeAppTask` uses `inputOutcomeAdmissions` for its selected inputs, then
+derives pending/waiting/converged state from remaining work. Its earlier
+queue-wide check prevents this path from recording scoped completion.
+
+Two additional paths use the same assumption: `updateConversationTaskRequest`
+calls `assertAppTaskEffectFresh`, and `reviseAppTask` checks
+`hasPendingAppTaskFacts` independently. Thus caller backlog can also block
+interpreted requirement changes. The latter path retains separate checks for
+creator authority, caller validity, input shape and the target's generation/spec;
+these must survive the admission change.
+
+Five existing targeted revision tests passed with 32 assertions: caller/input
+validation including the current backlog rejection, changed-generation fencing
+with and without a session, status changes during mapping, and explicit Stop.
+This characterizes current behavior; it does not validate a replacement.
+
+Workspace cleanup needs coverage too. The runner currently selects waiting
+finalization from pending trigger events, while the Git adapter can remove an
+integrated clean workspace on accepted finalization. A scoped result may still
+leave retained requirements or Conditions. Review cleanup against that remaining
+work rather than equating contribution acceptance with completion of the Task.
+This is a source-review finding, not a new workspace reproduction.
+
+The [implementation plan](../../proposals/progress-under-burst-input.md#smallest-implementation-change)
+keeps existing result and input records. There is no new runtime change, model
+trial or deployment in this review. The unread-correction counterexample remains
+part of the required contract decision and coverage.
+
+## Implementation candidate and PoC
+
+Candidate Host [#305](https://github.com/hao1939/may-agent/pull/305) at
+`6358142bb`, based on merged #304 (`e2486a6c7`), implements
+scoped acceptance across completion, waiting results, immediate actions, new
+App requests, Conversation Request updates and creator Task revisions. It removes
+the shared queue-wide veto and its separate revision-path copy. Existing
+current-attempt checks, creator authority, target revisions, input validation,
+result/action transactions and idempotent receipts remain in place.
+
+The regression harness was promoted to
+`src/app/core/state/conversation-task-progress.test.ts`. It invokes production
+admission and SQLite reopen with scripted worker decisions. Additional runtime
+tests exercise live apply and actual Git workspace retention.
+
+| Case | Candidate observation |
+| --- | --- |
+| One new human/system input before every finish | Each of eight attempts accepts its considered work; cumulative counts are 1 through 8, with later input retained across reopen. |
+| 70 inputs queued before execution | Three batches of 32, 32 and 6; cumulative accepted counts 32, 64 and 70. |
+| Partial patch with verification still needed | Accepted waiting result survives reopen; both earlier and later requirements remain answerable. |
+| Ordinary correction arrives before handoff | Earlier scoped handoff is accepted; the next turn updates the same Request without replaying the handoff. Another later input stays queued. |
+| Explicit Stop or actual Request revision change | Stale completion/handoff remains rejected. |
+| Live apply before/after explicit incorporation | Work is admitted in both cases; input is consumed only if incorporated, and replay returns the saved request receipt. |
+| Scoped completion leaves input or a Condition | The clean Git workspace and its ignored local evidence survive for reuse in the next attempt. |
+| Invalid result input selection, local and Git workspace | Reject completion before cleanup, retain output/facts/artifact as unaccepted evidence, and leave the actual input unanswered. |
+
+The focused PoC/runtime group passed 13 tests with 74 assertions. A second
+13-test group passed with 128 assertions covering concurrent persistence,
+self-publication, event storms, requirement updates and omitted-Request recovery.
+The earlier four-file core group passed 260 tests. The first full CI run on
+`adf1fb315` passed 3,522 tests and failed 13 tests that still depended on the
+removed queue-wide rejection. Those cases now assert acceptance of earlier work
+or use genuine waits and invalid results to test retained obligations.
+
+Final `bun run ci` passed on a clean checkout of `6358142bb`: 3,537 tests passed,
+three existing installation-dependent tests skipped, zero failures, and 18,929
+assertions across 323 files. Host/SDK type checks, App-boundary checks and lint
+passed; the browser test executed. `bun run check:may-design` passed integrity,
+examples and canonical App checks, with two pre-existing layout warnings
+(`features` and `reports`). These checks use synthetic decisions, not model calls.
+
+Polishing corrected assumptions exposed by the trial. Workspace cleanup
+must consider retained requirements and Conditions, not only queued events.
+An event-storm observer must wait for remaining work to drain, not merely for
+the first accepted result to appear. Recovery coverage now induces a real
+omitted-Request rejection rather than relying on unrelated arrivals to reject
+an otherwise valid first answer.
+
+Independent review found that the candidate's workspace-retention query validates
+result scope and could throw outside the existing rejected-result handler. That
+lost useful returned evidence. Both local and Git regression cases failed on
+`adf1fb315` and passed after moving retention planning inside that same handler,
+still before cleanup. In-execution proposal preflight from #297 and commit-time
+validation remain intact; no new recovery mechanism was added. The focused
+workspace/rejection group passed 10 tests with 104 assertions. Review independently
+rechecked both evidence-preservation cases and all seven burst/Stop/revision cases.
+Continuation/reopen coverage passed seven tests with 84 assertions.
+
+The previously observed unread-correction case is an explicit contract limit:
+ordinary text has no instantaneous semantic effect before interpretation. It
+remains queued; explicit Stop retains immediate control. This does not promise
+completion under contradictory revisions or prove model comprehension, fairness
+under overload, token savings or production behavior. May was not deployed or
+started for this trial.
+
 ## Reproduction
 
-Use an isolated Host checkout with normal dependencies. At the harness commit:
+Use an isolated Host checkout with normal dependencies. At candidate `6358142bb`:
+
+```sh
+bun test src/app/core/state/conversation-task-progress.test.ts
+bun test src/app/core/tasks/app-task-runtime.test.ts --test-name-pattern 'result-scope rejection|partial acceptance preserves'
+bun run ci
+```
+
+The following commands reproduce the historical experiment at its recorded
+revisions. At the original harness commit:
 
 ```sh
 bun test src/app/core/state/burst-progress.poc.test.ts

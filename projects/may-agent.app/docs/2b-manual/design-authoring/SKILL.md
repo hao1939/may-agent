@@ -153,6 +153,13 @@ Distinguish a contract conflict, source defect, missing evidence, historical
 statement and editorial preference; they need different remedies. Trust admitted
 agent judgment by default without presenting it as guaranteed correctness.
 
+Look for implicit assumptions that couple independent facts or decisions.
+For each restriction, identify the explicit contract or authority it enforces
+and the useful work it might prevent. Follow the
+[independent-facts rule](../../1-principles/core-principles.md#code-executes-and-brings-back-evidence-agents-judge):
+an accepted contribution, remaining input and an outstanding Condition have
+different meanings. Do not turn one into a global completion or waiting gate.
+
 For a substantive finding, name the affected behavior, its consequence and the
 smallest useful correction. Link evidence. Do not replace reasoning with a
 scorecard, mandatory independent review or a blanket proof requirement.

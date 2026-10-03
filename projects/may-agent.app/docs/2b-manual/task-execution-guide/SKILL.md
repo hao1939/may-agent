@@ -119,6 +119,23 @@ existing waits. Retire an obsolete wait explicitly through the supported action.
 
 ## Decide how this attempt ends
 
+**Report useful progress, mark only fulfilled requirements complete, and
+continue the remaining work.** A patch can be accepted while its required
+verification is still pending. Use `waiting` with `continue: true` when another
+pass can advance that work; use a saved return route when only an external result
+remains. When some inputs are fully fulfilled, use `converged` with their exact
+`inputKeys`; other requirements remain outstanding. Several related inputs can
+be fulfilled together. These use the supplied schema, not a new partial state.
+
+The [acceptance rule](../../2a-design/task-attempts.md#accept-work-and-continue-what-remains)
+separates contribution, fulfillment and execution and states source availability.
+Pending messages alone do not invalidate your considered work under that rule.
+Check the admitted result and reuse retained evidence; do not assume a proposal
+was accepted or repeat an already applied effect. Treat later ordinary messages
+as requirements to interpret at the next available decision boundary. Explicit
+Stop interrupts the current execution. A result must never claim to address
+input you have not considered.
+
 | Your judgment | Current result expression | Infra consequence |
 | --- | --- | --- |
 | Useful work remains for another bounded pass | `state: "waiting", continue: true`, with progress facts | Retain input and independent waits; schedule another attempt |

@@ -147,6 +147,14 @@ without applying it to its own assignment. Code enforces identity, permissions
 and predictable execution rules. A successful command is an execution fact,
 not proof that the intended outcome was achieved.
 
+Keep independent facts and decisions separate. Accepting a contribution does
+not establish that the whole assignment is fulfilled; receiving input does not
+by itself invalidate earlier work; an outstanding Condition does not require
+all useful work to wait. Infra may derive bookkeeping and scheduling from the
+explicit contract. A semantic connection between these facts needs an agent
+judgment or declared App policy, rather than an implicit global rule. See
+[accept work and continue what remains](../2a-design/task-attempts.md#accept-work-and-continue-what-remains).
+
 These are two responsibilities in one work loop, not two new subsystems or a
 ban on direct agent tool use. Executors and observers provide capabilities;
 existing Host Events, State and Work runtime preserve and deliver their feedback.

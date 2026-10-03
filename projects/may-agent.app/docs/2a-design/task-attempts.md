@@ -5,7 +5,7 @@
 **Choice basis:** [Apps own meaning; the Host owns mechanics](../1-principles/core-principles.md#apps-own-meaning-the-host-owns-mechanics).
 
 **Design status:** Accepted.
-**Implementation status:** The shared attempt interface, result admission and live/final change admission are implemented in Host source, including #285. Its proposed `decision` spelling is deferred. App adoption and deployment remain separate.
+**Implementation status:** The shared attempt interface, result admission and live/final change admission are implemented in Host source, including #285. Scoped acceptance while input remains is implemented in candidate Host `6358142bb`; see [accept work and continue what remains](#accept-work-and-continue-what-remains) and its validation record. It is not deployed. The proposed `decision` spelling remains deferred. App adoption and deployment remain separate.
 
 An attempt is one bounded execution of a Task. It can read, act, request help,
 check results and repair several times before returning. Infra supplies current
@@ -32,6 +32,74 @@ semantic veto or become satisfied merely because work converged. New evidence
 can be reconsidered through the responsible owner's existing input/control path.
 Completing addressed input does not close the Task or erase its other work.
 
+## Accept work and continue what remains
+
+**Accept useful work, record what it fulfills, and continue what remains.**
+A result can be accepted before the whole assignment is finished. This lets May
+build on useful work while requirements arrive, reducing repeated work and
+human reminders in support of [its purpose](../1-principles/purpose.md).
+
+Keep three meanings separate:
+
+| Meaning | Agent judgment and infra responsibility |
+| --- | --- |
+| Contribution accepted | The agent reports progress and evidence. Infra validates and records the contribution within its considered scope; a request may still be unfinished. |
+| Requirement fulfilled | The agent judges which requested outcomes have been delivered. Infra records fulfillment for exactly that input scope and retains the rest. |
+| Execution continues, waits or ends | The agent chooses the useful next step under App policy. Infra runs or schedules admitted work and preserves outstanding input and Conditions. |
+
+For example, a request asks for a bug fix and verification. The patch can be
+accepted as progress while tests run; the request remains unfinished. After
+tests pass, the agent can judge that request fulfilled. If another requirement
+remains, continue it using the accepted work. Several messages may belong to
+one intention and be fulfilled together; no per-message attempt is required.
+
+Ending an attempt releases that execution; it does not erase the Task's work.
+Infra derives Task state from the accepted decisions, remaining input and waits.
+Owner closure is a separate control. An outstanding Condition retains its actual
+state while useful independent work proceeds. These distinctions use existing
+results and input records, without a new `partially-complete` Task phase.
+
+Pending input alone must not invalidate an otherwise admissible contribution.
+It remains accountable for a later decision. A later correction may require
+revising accepted work; acceptance records the scoped judgment, not guaranteed
+correctness against requirements the agent has not considered. Infra still
+checks current authority, attempt identity and affected revisions. Result and
+proposed effects remain atomic where required: a saved draft is progress, but
+a rejected review request cannot be recorded as delivered.
+
+Keep early result-scope validation before workspace cleanup, inside the existing
+result-rejection path. If it rejects the result, preserve useful output, facts
+and artifacts as unaccepted recovery evidence,
+while keeping its input unfinished. A returned result with invalid scope is not
+the same as an executor that produced no result. In-execution preflight lets the
+worker correct a proposal; settlement still validates current state.
+
+This follows [agent judgment and explicit infra rules](../1-principles/core-principles.md#code-executes-and-brings-back-evidence-agents-judge):
+neither a new message nor a successful contribution establishes the semantic
+state of all remaining work. The agent makes that judgment; infra keeps the
+records and executes it.
+
+Ordinary messages change the understood requirement when the agent interprets
+and records that change. The next decision considers queued corrections and
+reuses still-valid work. Explicit Stop/cancellation immediately fences its
+execution identity; it is a control, not another ordinary message. An action
+prepared under the previous understood requirement can therefore be admitted
+before a queued correction is read. The Host must not claim that unread input
+was incorporated, or infer meaning from whether its source is human or system.
+Live steering, where supported, lets the agent reconsider at useful boundaries;
+it does not require waiting for all possible later messages before acting.
+
+**Source availability:** Candidate Host `6358142bb` applies this rule to final
+completion, partial results, live actions, cross-App requests, Conversation
+Request changes and creator Task revisions. Existing attempt, authority,
+affected-revision and transaction checks remain. Workspace finalization also
+retains clean workspaces when scoped completion leaves input or Conditions.
+The schema is unchanged: `waiting` with `continue: true` accepts progress;
+`converged` fulfills its selected inputs. One result has one disposition for
+its selected set. The [PoC record](../archive/reviews/burst-input-progress-20261003.md#implementation-candidate-and-poc)
+records portable checks and limits; source validation does not establish live
+adoption, agent judgment or token savings.
+
 ## One attempt interface
 
 Executor choice does not change Task semantics:
@@ -55,22 +123,16 @@ approval, steering, or cancellation.
 The listener's attempt-local `accept` consumes the exact input only with an
 admitted result; the next attempt still receives it if the executor cannot
 incorporate it live. New input does not invalidate facts or completed work.
-The Runtime retains no-action output and open waits, but defers terminal
-judgments until the newer input has been considered. Results proposing Task
-actions remain atomic with those actions; unseen input still fences the batch.
-It preserves the clean workspace for that next pass. Cross-App dependency
-publication still requires current accepted input. The Runtime owns fencing,
-leases, event persistence, result admission, and recovery, so an executor
-implements no scheduler, queue, retry loop across Task attempts, or Task storage.
-Bounded repair inside one execution follows the
+The Runtime accepts an admissible result for its considered scope while leaving
+other input pending. Results proposing Task actions remain atomic with those
+actions. Cross-App requests and immediate actions use the same current-attempt
+and authority checks. A genuine rejected result remains recovery evidence;
+a queued message alone is not a rejection. Clean workspaces remain reusable
+when input or Conditions remain.
+The Runtime owns fencing, leases, event persistence, result admission and
+recovery, so an executor implements no scheduler, queue, retry loop across Task
+attempts, or Task storage. Bounded repair inside one execution follows the
 [workflow repair convention](execution-contributions.md#repair-within-an-attempt).
-
-**Known progress limit:** the current unseen-input fence can prevent accepted
-completion under continuous arrivals, even when the newer input is independent.
-The [burst-input proposal](../proposals/progress-under-burst-input.md) reviews
-bounded settlement and steering together. Its experimental check removal also
-allows an obsolete handoff after an unread correction; it is not an implemented
-replacement contract or a recommendation to bypass current fences.
 
 A wake asks the Host to check a Task's pending work. One attempt receives the
 pending input batch; there is no one-event/one-agent-call rule and no collection
@@ -167,14 +229,14 @@ binds bytes, not source authority or semantic truth. See the
 
 | Outcome                                                                                 | Runtime disposition                                                                                                                                                                |
 | --------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Valid `converged` result                                                                | Accept the exact input's outcome when current-input fences, evidence, actions and verification permit; keep the Task open                                                          |
+| Valid `converged` result                                                                | Accept the exact input's outcome when current-attempt checks, evidence, actions and verification permit; keep the Task open                                                          |
 | Valid `waiting` result                                                     | Retain independent Conditions and input; yield on a return route or schedule useful work; structural children alone do not establish a wait |
 | Valid `incomplete` result                                                               | Retain unsuccessful attempt facts, report the input's first accepted blocker to its linked caller, and retry unfinished work with backoff; no cancellation or implicit parent wake |
 | Workflow `needs-agent`                                                                  | At most one sequential selected-agent judgment for the same Task; no ownership transfer                                                                                            |
 | Unavailable agent/workflow/executor or failed workspace prerequisite                    | Visible failure and same-Task paced retry; no silent executor substitution                                                                                                         |
 | Invalid/rejected handler result (including self-unblock) or explicitly blocked workflow | Preserve diagnostic evidence and unfinished input, reject proposed effects and retry with pacing; not an accepted answer                                                           |
 | Thrown execution error or timeout                                                       | Same-Task execution-failure recovery, subject to its retry policy                                                                                                                  |
-| Stale generation, resource version or unseen-input fence                                | Reject stale effects; reread current state without replacing accepted state or releasing another attempt                                                                           |
+| Stale generation, resource version or cancelled attempt                                | Reject stale effects; reread current state without replacing accepted state or releasing another attempt                                                                           |
 | Durable cancellation                                                                    | Retain cancellation, interrupt the exact attempt and reject its later stale result                                                                                                 |
 
 Unknown result fields are rejected. `needs-agent` is workflow-only. A waiting
@@ -184,9 +246,9 @@ without reconstructing state from prose. A result may explicitly
 must cite that Condition's observed generation plus non-empty result facts. This
 removes the Task's obsolete link; it does not assert that the external event
 occurred, mutate a shared Condition for another Task, or clear unrelated waits.
-Omission preserves waits, and stale generation or newer-input fences reject the
-whole result. A waiting result's absolute `reviewAt` is saved with the exact input
-and scheduled across restart. Early input does not consume it; an omitted future
+Omission preserves waits. A stale generation, cancelled attempt or invalid
+action rejects the result and its proposed effects together. A waiting result's
+absolute `reviewAt` is saved with the exact input and scheduled across restart. Early input does not consume it; an omitted future
 deadline survives re-wait. Due timers permit reconsideration, not satisfaction,
 answers, or bypassing failure backoff. Sleeping again needs a Condition or new
 future deadline; `continue: true` requests useful work. Failed verification cannot establish completion.
@@ -262,7 +324,7 @@ The SDK's `admitTaskReconcileResult` is the single pure semantic validator for
 agent and workflow results. Executor finish paths call it before terminating so
 an invalid proposal returns correctable feedback; fenced settlement calls it
 again before applying effects. The pure validator knows only the proposed result.
-Settlement remains the authority for current generation, attempt, pending-input,
+Settlement remains the authority for current generation, attempt, scoped-input,
 creator, Condition and persistence checks. A schema, executor adapter, or recovery
 path must not define a narrower competing interpretation.
 
