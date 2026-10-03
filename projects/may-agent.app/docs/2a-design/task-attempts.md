@@ -204,6 +204,13 @@ the input and result history. Empty new-event lists do not establish that the
 assignment is empty; an empty result scope preserves runnable pending inputs.
 The Host maintains `inputWaits[key].pending`, waits/deadlines and continuation; workers read this current state without maintaining the ledger.
 
+**Context delivery gap:** the current previous-attempt projection omits the
+accepted result's input coverage even though storage retains it. The
+[unfinished-input context proposal](../proposals/unfinished-input-context.md)
+has an isolated candidate to preserve that scope and expose continuing work
+clearly. This is a presentation/read repair, not a new completion or retry rule;
+source and model-behavior verification remain distinct.
+
 `incomplete` requires a summary and non-empty facts; it cannot include actions, Conditions
 or child App requests. The Host checks eligibility inside the fenced transaction.
 It ends only the attempt, without fulfilling the input or a linked Request.

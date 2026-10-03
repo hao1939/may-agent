@@ -83,16 +83,13 @@ instructions. A blanket deletion of the existing fence is not the proposed fix.
 
 ### Repeated “done” with outstanding inputs
 
-An empty new-event list is not an empty work list. The owner must reconcile
-continuing requirements: fulfill a supported subset, continue useful work, or
-associate the affected inputs with an actual external Condition. Earlier work
-can fulfill several later messages; the agent judges that from their content
-and retained evidence. Age alone is not a disposition.
-
-Infra should make the remaining runnable inputs and the reason for another
-attempt clear in the existing decision context. Retain `inputKeys: []` for real
-partial progress. Do not auto-answer the backlog, reject every empty scope, or
-park unresolved work merely to reduce invocation counts.
+This has a separate cause from arrival-based rejection. The focused
+[unfinished-input context proposal](unfinished-input-context.md) repairs dropped
+previous-result coverage, makes earlier unanswered work visible, and tests the
+existing settlement path. It keeps `inputKeys: []` valid for useful partial work.
+First test whether correct context lets the agent reconcile the requirements;
+additional repetition policy remains deferred. This does not depend on changing
+the unseen-input fence below.
 
 ### Repeated proposals rejected by fresh input
 

@@ -34,6 +34,8 @@ contracts; Tier-2 design governs when wording conflicts.
 
 ## Reviews
 
+- [Unfinished-input context experiment — 2026-10-03](reviews/unfinished-input-context-20261003.md)
+  — previous-result coverage, readable continuing work, and the limits of a deterministic context repair.
 - [Burst-input progress experiment — 2026-10-03](reviews/burst-input-progress-20261003.md)
   — continuous input and finite backlog reproduce settlement starvation; an
   isolated alternative demonstrates progress and an unread-correction tradeoff.

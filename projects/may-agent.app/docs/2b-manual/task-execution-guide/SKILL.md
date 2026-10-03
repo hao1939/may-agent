@@ -64,6 +64,16 @@ On recovery, inspect accepted work, previous failure evidence and the actual
 target state before repeating an effect. A proposed but unaccepted result can
 be useful evidence; it is not authorization to replay its actions.
 
+Start from what remains unanswered, then compare it with the saved work. A
+previous summary saying "done" does not establish which inputs it covered.
+When coverage is missing from the brief, use the existing accepted-evidence
+read; treat missing scope as unknown, not as zero or all inputs. Read originals
+using the Task read's `inputKeys` option, up to eight keys per call when needed.
+An earlier implementation may satisfy several requests without another edit,
+while an added test or review requirement can still need real work.
+The [context repair proposal](../../proposals/unfinished-input-context.md)
+improves this existing path; its new presentation is not yet an installed promise.
+
 ## Find the capability by its purpose
 
 The following groups organize guidance; they are not new runtime APIs.
