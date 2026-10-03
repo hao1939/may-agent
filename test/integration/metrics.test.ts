@@ -4,6 +4,8 @@ import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { closeDb, getDb } from "../../src/lib/requests.js";
 import { createMetricService } from "../../src/lib/metrics.js";
+import { DbWriter } from "../../src/lib/db-writer.js";
+import { EventBus, type AgentEvent } from "../../src/app/core/events/bus.js";
 
 describe("MetricService", () => {
   const roots: string[] = [];
@@ -125,6 +127,58 @@ describe("MetricService", () => {
       data: { metricId: "scout.idea-yield-24h" },
     });
   });
+
+  it.each(["automatic breach", "manual breach", "recovery"] as const)(
+    "retries %s after required event persistence fails without losing or repeating the transition",
+    (transition) => {
+      const { root, db } = harness();
+      const bus = new EventBus();
+      const writer = new DbWriter(root);
+      bus.setPersistenceSubscriber(writer.handler);
+      bus.setDeliveryRecorder(writer.recordDelivery);
+      const delivered: string[] = [];
+      bus.subscribe((event) => {
+        delivered.push(event.type);
+      });
+      const metrics = createMetricService({
+        getDb: () => db,
+        now: () => 10_000,
+        emit: (type, data, envelope) => bus.emit({ type, data, ...envelope } as AgentEvent),
+      });
+      const id = "sample.queue-depth";
+      metrics.define({ id, owner: "sample", threshold: 0, alertOp: ">" });
+      metrics.record(id, 1);
+      if (transition === "recovery") {
+        metrics.evaluate(id);
+        metrics.record(id, 0);
+      }
+      const attempt = () =>
+        transition === "manual breach" ? metrics.alert(id, "Queue needs attention") : metrics.evaluate(id);
+      const beforeAlerts = db.prepare("SELECT * FROM metric_alerts").all();
+      const beforeEvents = db.prepare("SELECT event_type, alert_id FROM events ORDER BY id").all();
+      const beforeDelivered = [...delivered];
+      // Fail the real writer at its durable event insert, not a mocked emitter.
+      db.exec(`CREATE TEMP TRIGGER reject_metric_event BEFORE INSERT ON events
+        WHEN NEW.event_type IN ('metric.breach', 'metric.recovered')
+        BEGIN SELECT RAISE(ABORT, 'fixture event persistence failure'); END`);
+      expect(attempt).toThrow("fixture event persistence failure");
+      expect(db.prepare("SELECT * FROM metric_alerts").all()).toEqual(beforeAlerts);
+      expect(db.prepare("SELECT event_type, alert_id FROM events ORDER BY id").all()).toEqual(beforeEvents);
+      expect(delivered).toEqual(beforeDelivered);
+      expect(metrics.get(id)?.current).toBe(transition === "recovery" ? 0 : 1);
+
+      db.exec("DROP TRIGGER reject_metric_event");
+      attempt();
+      attempt();
+      const alert = db.prepare("SELECT id, resolved_at FROM metric_alerts").get()!;
+      const expectedTypes = transition === "recovery" ? ["metric.breach", "metric.recovered"] : ["metric.breach"];
+      expect(db.prepare("SELECT event_type, alert_id FROM events ORDER BY id").all()).toEqual(
+        expectedTypes.map((event_type) => ({ event_type, alert_id: String(alert.id) })),
+      );
+      expect(delivered).toEqual(expectedTypes);
+      expect(alert.resolved_at).toBe(transition === "recovery" ? 10_000 : null);
+    },
+  );
 
   it("defaults project metric ownership to the project owner and emits routing context", () => {
     const { db, service, emitted } = harness();

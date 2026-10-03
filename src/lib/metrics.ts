@@ -1,4 +1,5 @@
 import type { SqliteDb } from "./db.js";
+import { stateTransaction } from "./db/transaction.js";
 import { normalizeEventOwner } from "../../packages/control/src/event-envelope.js";
 
 export type MetricType = "gauge" | "counter" | "health" | "derived";
@@ -458,28 +459,32 @@ export function createMetricService(options: MetricServiceOptions): MetricServic
           ]);
         }
         if (!openAlert) {
-          db.run("INSERT INTO metric_alerts (metric_id, alert_type, message, created_at) VALUES (?, ?, ?, ?)", [
-            row.id,
-            alertType,
-            message,
-            ts,
-          ]);
-          const alertId = latestAlertId(db, row.id);
-          emitMetricEvent("metric.breach", owner, {
-            metricId: row.id,
-            metricName: row.name,
-            project: row.project ?? undefined,
-            alertId,
-            alertType,
-            current,
-            threshold,
-            target: row.target,
-            alertOp: row.alert_op,
-            direction: thresholdDirection,
-            measuredAt: ts,
-            trend: recentTrend(db, row.id),
-            message,
-            priority: row.priority ?? "P2",
+          // The event writer joins this transaction; a failed publication leaves the transition retryable.
+          const alertId = stateTransaction(db, () => {
+            db.run("INSERT INTO metric_alerts (metric_id, alert_type, message, created_at) VALUES (?, ?, ?, ?)", [
+              row.id,
+              alertType,
+              message,
+              ts,
+            ]);
+            const alertId = latestAlertId(db, row.id);
+            emitMetricEvent("metric.breach", owner, {
+              metricId: row.id,
+              metricName: row.name,
+              project: row.project ?? undefined,
+              alertId,
+              alertType,
+              current,
+              threshold,
+              target: row.target,
+              alertOp: row.alert_op,
+              direction: thresholdDirection,
+              measuredAt: ts,
+              trend: recentTrend(db, row.id),
+              message,
+              priority: row.priority ?? "P2",
+            });
+            return alertId;
           });
           results.push({ metricId: row.id, status: "breached", alertId, message });
         } else {
@@ -487,19 +492,21 @@ export function createMetricService(options: MetricServiceOptions): MetricServic
           results.push({ metricId: row.id, status: "breached", alertId: openAlert.id, message });
         }
       } else if (openAlert) {
-        db.run("UPDATE metric_alerts SET resolved_at = ? WHERE id = ?", [ts, openAlert.id]);
-        emitMetricEvent("metric.recovered", owner, {
-          metricId: row.id,
-          metricName: row.name,
-          project: row.project ?? undefined,
-          alertId: openAlert.id,
-          current,
-          threshold,
-          target: row.target,
-          alertOp: row.alert_op,
-          measuredAt: ts,
-          trend: recentTrend(db, row.id),
-          priority: row.priority ?? "P2",
+        stateTransaction(db, () => {
+          db.run("UPDATE metric_alerts SET resolved_at = ? WHERE id = ?", [ts, openAlert.id]);
+          emitMetricEvent("metric.recovered", owner, {
+            metricId: row.id,
+            metricName: row.name,
+            project: row.project ?? undefined,
+            alertId: openAlert.id,
+            current,
+            threshold,
+            target: row.target,
+            alertOp: row.alert_op,
+            measuredAt: ts,
+            trend: recentTrend(db, row.id),
+            priority: row.priority ?? "P2",
+          });
         });
         results.push({ metricId: row.id, status: "recovered", alertId: openAlert.id });
       } else {
@@ -557,33 +564,35 @@ export function createMetricService(options: MetricServiceOptions): MetricServic
       ]);
       return;
     }
-    db.run("INSERT INTO metric_alerts (metric_id, alert_type, message, created_at) VALUES (?, ?, ?, ?)", [
-      id,
-      alertType,
-      finalMessage,
-      ts,
-    ]);
-    const alertId = latestAlertId(db, id);
-    const owner = resolveOwner({
-      id,
-      explicitOwner: row.explicitOwner,
-      projectOwner: row.projectOwner,
-      project: row.project,
-    });
-    emitMetricEvent("metric.breach", owner, {
-      metricId: id,
-      metricName: row.name,
-      project: row.project ?? undefined,
-      alertId,
-      alertType,
-      current: row.current,
-      threshold: row.threshold,
-      target: row.target,
-      alertOp: row.alert_op,
-      measuredAt: ts,
-      trend: recentTrend(db, id),
-      message: finalMessage,
-      priority: opts?.priority ?? row.priority ?? "P2",
+    stateTransaction(db, () => {
+      db.run("INSERT INTO metric_alerts (metric_id, alert_type, message, created_at) VALUES (?, ?, ?, ?)", [
+        id,
+        alertType,
+        finalMessage,
+        ts,
+      ]);
+      const alertId = latestAlertId(db, id);
+      const owner = resolveOwner({
+        id,
+        explicitOwner: row.explicitOwner,
+        projectOwner: row.projectOwner,
+        project: row.project,
+      });
+      emitMetricEvent("metric.breach", owner, {
+        metricId: id,
+        metricName: row.name,
+        project: row.project ?? undefined,
+        alertId,
+        alertType,
+        current: row.current,
+        threshold: row.threshold,
+        target: row.target,
+        alertOp: row.alert_op,
+        measuredAt: ts,
+        trend: recentTrend(db, id),
+        message: finalMessage,
+        priority: opts?.priority ?? row.priority ?? "P2",
+      });
     });
   }
 
