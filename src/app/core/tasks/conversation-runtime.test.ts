@@ -180,7 +180,7 @@ function seedRetiredConversation(f: Awaited<ReturnType<typeof fixture>>) {
   expect(f.store.isCancelled(id)).toBe(true);
 }
 
-test.each(["throws", "invalid", "missing-topic"] as const)(
+test.each(["throws", "invalid", "unavailable-topic"] as const)(
   "Task input survives %s and reaches an exact answer through paced retry",
   async (failure) => {
     const calls: CallOptions[] = [];
@@ -197,7 +197,7 @@ test.each(["throws", "invalid", "missing-topic"] as const)(
         return {
           status: "done",
           structuredResult:
-            failure === "invalid" ? ({} as ConversationTurnResult) : { ...delegated, topic: { kind: "none" } },
+            failure === "invalid" ? ({} as ConversationTurnResult) : { ...delegated, topic: { kind: "existing", id: "absent" } },
         };
       }
       return { status: "done", structuredResult: answer };
@@ -1266,7 +1266,7 @@ test.each(["live", "restart", "admission-write-failure"])(
         data: {
           appId: app.id,
           conversationId: "primary",
-          topicId: input.topicId,
+          originInputId: contexts[0]!.id,
           taskRef: { appId: background.id, taskId: "sample" },
           attemptId: original.attemptId,
           summary: "Forged alternate result",
@@ -1632,6 +1632,7 @@ test.each(["live", "restart", "stop"])("owner closure returns without manufactur
           appId: app.id,
           conversationId: "primary",
           topicId: readAppConversationResource(f.db, app.id, "primary").topics[0]!.id,
+          originInputId: seen[0]!.id,
           taskAppId: background.id,
           taskId: "sample",
           closedGeneration: 1,
