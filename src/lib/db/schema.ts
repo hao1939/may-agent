@@ -70,6 +70,7 @@ CREATE TABLE IF NOT EXISTS execution_usage (
   data TEXT NOT NULL
 );
 CREATE INDEX IF NOT EXISTS idx_execution_usage_started ON execution_usage(started_at);
+CREATE INDEX IF NOT EXISTS idx_execution_usage_updated ON execution_usage(updated_at);
 CREATE INDEX IF NOT EXISTS idx_execution_usage_session ON execution_usage(session_id);
 
 CREATE TABLE IF NOT EXISTS sessions (

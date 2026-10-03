@@ -1236,7 +1236,7 @@ export class EventBus {
    *  it uses only the built-in idempotent recovery routes because an ordinary
    *  subscriber may already have performed its effect before the earlier process
    *  stopped. */
-  emit(input: AgentEvent): AgentEvent & {
+  emit(input: AgentEvent & { [EVENT_RECORD_ONLY]?: boolean }): AgentEvent & {
     [EVENT_ROW_ID]?: number;
     [EVENT_DELIVERY_RESULT]?: DeliveryResult;
   } {

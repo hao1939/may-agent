@@ -6,7 +6,7 @@ import { applyDbSchema } from "../lib/db/schema.js";
 import { closeDb, getDb } from "../lib/requests.js";
 import { createMetricService } from "../lib/metrics.js";
 import { attachEventPersistence } from "./daemon-events.js";
-import { EventBus, EVENT_ROW_ID } from "./core/events/bus.js";
+import { EventBus, EVENT_ROW_ID, EVENT_RECORD_ONLY } from "./core/events/bus.js";
 import { WORKFLOW_OUTCOME_METRICS } from "./adapters/reporting/workflow-metrics.js";
 import {
   attachMetricSourceMeasurement,
@@ -14,6 +14,7 @@ import {
   evaluateMetrics,
   type MetricPassRuntime,
   INTENTIONAL_OBSERVATION_EVENT_TYPES,
+  STALE_ACTIVE_METRIC_ID,
   STALE_ACTIVE_SOURCE_QUERY,
   SUBSCRIBER_FAILED_COUNT_METRIC_ID,
   SUBSCRIBER_FAILED_COUNT_SOURCE_QUERY,
@@ -63,11 +64,11 @@ describe("source-query metric measurement", () => {
       ],
       { stdin: "pipe", stdout: "pipe", stderr: "pipe", timeout: 5_000 },
     );
-    const run = db.run.bind(db);
+    const exec = db.exec.bind(db);
     let busyErrors = 0;
-    const runSpy = spyOn(db, "run").mockImplementation((sql, params) => {
+    const runSpy = spyOn(db, "exec").mockImplementation((sql) => {
       try {
-        return run(sql, params);
+        return exec(sql);
       } catch (error) {
         if (error instanceof Error && "code" in error && error.code === "SQLITE_BUSY") {
           // Release only after a real registration write encountered the lock.
@@ -178,6 +179,32 @@ describe("source-query metric measurement", () => {
     insert.run("project.task.reconciled", Date.now() - 3_600_001);
 
     expect(db.prepare(UNEXPECTED_UNHANDLED_SIGNAL_SOURCE_QUERY).get()).toEqual({ value: 2 });
+  });
+
+  it("records optional observations as accepted facts while preserving real subscriber acceptance", () => {
+    const db = getDb(persistDir);
+    for (const type of ["runtime.daemon.heartbeat", "handler.workflow_dispatched", "skill.loaded"]) {
+      bus.emit({ type, [EVENT_RECORD_ONLY]: true, source: "fixture", owner: "agent:may", data: {} } as any);
+    }
+    bus.subscribe((event) =>
+      event.type === "skill.loaded" ? { accepted: true, by: "fixture-consumer", route: "direct" } : undefined,
+    );
+    bus.emit({
+      type: "skill.loaded",
+      [EVENT_RECORD_ONLY]: true,
+      source: "fixture",
+      owner: "agent:may",
+      data: {
+        name: "example", agent: "may", sessionId: "example", activation: "explicit",
+        scope: "shared", filePath: "example/SKILL.md", contentHash: "example",
+      },
+    });
+    const rows = db.prepare(`SELECT delivery_status, delivery_route, accepted_by FROM events
+      WHERE event_type IN ('runtime.daemon.heartbeat', 'handler.workflow_dispatched', 'skill.loaded') ORDER BY id`).all();
+    expect(rows).toHaveLength(4);
+    expect(rows.slice(0, 3).every((row) => row.delivery_status === "accepted" && row.delivery_route === "noop")).toBe(true);
+    expect(rows[3]).toMatchObject({ delivery_status: "accepted", accepted_by: "fixture-consumer", delivery_route: "direct" });
+    expect(db.prepare(UNEXPECTED_UNHANDLED_SIGNAL_SOURCE_QUERY).get()).toEqual({ value: 0 });
   });
 
   it("registers source measurement as passive observation, not synchronous acceptance", () => {
@@ -886,6 +913,29 @@ describe("source-query metric measurement", () => {
     insertMetric.run("retired.stale", "retired", "retired", null, null, 300_000);
     insertSnapshot.run("retired.stale", now - 24 * 60 * 60_000);
 
-    expect(db.prepare(STALE_ACTIVE_SOURCE_QUERY).get()).toEqual({ value: 2 });
+    expect(db.prepare(STALE_ACTIVE_SOURCE_QUERY).get()).toMatchObject({ value: 2 });
+    const note = JSON.parse(String(db.prepare(STALE_ACTIVE_SOURCE_QUERY).get()!.note));
+    expect(note.examples.map((row: any) => row.metricId).sort()).toEqual(["command.stale", "push.long-stale"]);
+  });
+
+  it("gives new collectors a grace period and alerts when even one established collector goes stale", () => {
+    const db = getDb(persistDir);
+    const metrics = createMetricService({ getDb: () => db });
+    metrics.define({ id: "sample.collector", measureInterval: 300_000 });
+    expect(db.prepare(STALE_ACTIVE_SOURCE_QUERY).get()).toMatchObject({ value: 0 });
+    db.run("UPDATE metrics SET created_at = ? WHERE id = 'sample.collector'", [Date.now() - 16 * 60_000]);
+    // A future-dated observation cannot hide missing current evidence.
+    metrics.record("sample.collector", 0, { measuredAt: Date.now() + 60_000 });
+    const sample = db.prepare(STALE_ACTIVE_SOURCE_QUERY).get()!;
+    expect(sample).toMatchObject({ value: 1 });
+    // Migrated definitions may have no creation time. record() also writes the
+    // future measurement time into updated_at; neither is current evidence.
+    db.run("UPDATE metrics SET created_at = NULL WHERE id = 'sample.collector'");
+    expect(db.prepare(STALE_ACTIVE_SOURCE_QUERY).get()).toMatchObject({ value: 1 });
+    metrics.record(STALE_ACTIVE_METRIC_ID, Number(sample.value));
+    expect(metrics.evaluate(STALE_ACTIVE_METRIC_ID)[0]?.status).toBe("breached");
+    metrics.record("sample.collector", 0, { measuredAt: Date.now() - 1_000 });
+    metrics.record(STALE_ACTIVE_METRIC_ID, Number(db.prepare(STALE_ACTIVE_SOURCE_QUERY).get()!.value));
+    expect(metrics.evaluate(STALE_ACTIVE_METRIC_ID)[0]?.status).toBe("recovered");
   });
 });

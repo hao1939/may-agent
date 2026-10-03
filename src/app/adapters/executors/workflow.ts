@@ -15,7 +15,7 @@ import { createRuntimeAppRead } from "../../core/reads/app-read.js";
 import { readMetricView } from "../reporting/metric-read.js";
 import { projectAppTaskChildPromptContext } from "../../core/tasks/app-task-context.js";
 import { APP_TASK_RECOVERY_OWNER } from "../../core/tasks/session-binding.js";
-import { childEventTrace, type AgentEvent, type EventBus } from "../../core/events/bus.js";
+import { EVENT_RECORD_ONLY, childEventTrace, type AgentEvent, type EventBus } from "../../core/events/bus.js";
 import { normalizeTaskHandlerResult, type TaskCapabilityRun } from "../../core/tasks/result.js";
 import type { TaskDefinitionSource, TaskWorkflowInput, TaskWorkflowRunner } from "../../core/tasks/execution.js";
 import { localAgentDir } from "../discovery/local-agents.js";
@@ -127,6 +127,7 @@ async function executeTaskWorkflow(
   ].join("\n");
 
   bus.emit({
+    [EVENT_RECORD_ONLY]: true,
     type: "handler.workflow_dispatched",
     source: `agent:${agentName}`,
     owner: `agent:${attempt.role.agent}`,
@@ -208,6 +209,7 @@ async function executeTaskWorkflow(
       );
     }
     bus.emit({
+      [EVENT_RECORD_ONLY]: true,
       type: "handler.workflow_dispatched",
       source: `agent:${agentName}`,
       owner: `agent:${attempt.role.agent}`,
@@ -244,6 +246,7 @@ async function executeTaskWorkflow(
     const unavailable = error instanceof WorkflowHandlerUnavailable;
     const runId = error instanceof WorkflowExecutionFailure ? error.execution.id : null;
     bus.emit({
+      [EVENT_RECORD_ONLY]: true,
       type: "handler.workflow_dispatched",
       source: `agent:${agentName}`,
       owner: `agent:${attempt.role.agent}`,

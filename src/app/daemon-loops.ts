@@ -1,5 +1,5 @@
 import { createInterface } from "node:readline";
-import type { EventBus } from "./core/events/bus.js";
+import { EVENT_RECORD_ONLY, type EventBus } from "./core/events/bus.js";
 import type { SubagentManager } from "../lib/index.js";
 import { readSqlPerformance } from "../lib/db/query-performance.js";
 
@@ -79,6 +79,7 @@ export async function runDaemonKeepalive(opts: {
   const emitHeartbeat = () => {
     const { since, calls, errors, totalMs, untracked } = readSqlPerformance();
     opts.bus.emit({
+      [EVENT_RECORD_ONLY]: true,
       type: "runtime.daemon.heartbeat",
       source: "daemon",
       owner: "agent:may",

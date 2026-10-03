@@ -34,6 +34,28 @@ describe("MetricService", () => {
     return { root, db, service, emitted };
   }
 
+  it("retires definitions and open alerts atomically without claiming recovery or deleting observations", () => {
+    const { db, service, emitted } = harness();
+    const definition = { id: "sample.old-check", threshold: 0, alertOp: ">" as const };
+    service.define(definition);
+    service.record(definition.id, 4);
+    service.evaluate();
+    emitted.length = 0;
+    db.exec(`CREATE TEMP TRIGGER reject_retirement BEFORE UPDATE ON metric_alerts
+      BEGIN SELECT RAISE(ABORT, 'cannot close alert'); END`);
+    expect(() => service.define({ ...definition, status: "retired" })).toThrow("cannot close alert");
+    expect(service.get(definition.id)?.status).toBe("active");
+    db.exec("DROP TRIGGER reject_retirement");
+    service.define({ ...definition, status: "retired" });
+    const retained = db.prepare("SELECT * FROM metric_alerts").all();
+    service.define({ ...definition, status: "retired" });
+    expect(db.prepare("SELECT * FROM metric_alerts").all()).toEqual(retained);
+    expect(retained[0].resolved_at).toBe(10_000);
+    expect(service.get(definition.id)?.observation?.value).toBe(4);
+    expect(service.evaluate()).toEqual([]);
+    expect(emitted).toEqual([]);
+  });
+
   it("upgrades duplicate open alerts once, retaining the first episode and its historical references", () => {
     const { db, service, emitted } = harness();
     const id = "sample.queue-depth";
