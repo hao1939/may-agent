@@ -73,6 +73,20 @@ describe("canonical database schema", () => {
       expect(inboxIndexes.some(({ name }) => name === "idx_app_inbox_available")).toBe(true);
       expect(inboxIndexes.some(({ name }) => name === "idx_app_inbox_expired")).toBe(true);
       expect(inboxIndexes.some(({ name }) => name === "idx_app_inbox_task_wait_recovery")).toBe(true);
+      expect(inboxIndexes.some(({ name }) => name === "idx_app_inbox_task_admission")).toBe(true);
+      const obligationPlan = db
+        .prepare(
+          `EXPLAIN QUERY PLAN SELECT id, input_kind, status, task_admission_key
+           FROM app_inbox_items
+           WHERE app_id = ? AND task_admission_key IN (?, ?, ?)
+             AND ((status = 'handling' AND waiting_on_kind = 'task' AND waiting_on_id = ?)
+               OR execution_task_id = ?)
+           ORDER BY id`,
+        )
+        .all("may", "input:a", "input:b", "input:c", "goal/task", "goal/task") as Array<{ detail: string }>;
+      expect(obligationPlan.map(({ detail }) => detail).join("\n")).toContain(
+        "SEARCH app_inbox_items USING INDEX idx_app_inbox_task_admission (app_id=? AND task_admission_key=?)",
+      );
       const inboxSql = db
         .prepare("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'app_inbox_items'")
         .get() as { sql: string };
