@@ -117,7 +117,7 @@ type ReconciliationCommand =
       state: "withdraw";
       duplicateInputKey: string;
       survivorInputKey: string;
-      withdrawalInputKey: string;
+      withdrawalInputKeys: string[];
     };
 
 type ParsedReconciliationCommand = {
@@ -211,9 +211,17 @@ function reconciliationCommand(
     commands.push({ requested, commandKey });
   }
   if (withdrawals.size) {
-    if (withdrawals.size !== 1 || commandByKey.size !== 2)
+    if (commandByKey.size !== 2) return { state: "invalid" };
+    const withdrawalEntries = [...withdrawals.entries()];
+    const withdrawal = withdrawalEntries[0]![1];
+    if (
+      withdrawalEntries.some(
+        ([, candidate]) =>
+          candidate.duplicateInputKey !== withdrawal.duplicateInputKey ||
+          candidate.survivorInputKey !== withdrawal.survivorInputKey,
+      )
+    )
       return { state: "invalid" };
-    const [withdrawalInputKey, withdrawal] = [...withdrawals.entries()][0]!;
     const duplicate = commandByKey.get(withdrawal.duplicateInputKey);
     const survivor = commandByKey.get(withdrawal.survivorInputKey);
     if (
@@ -231,7 +239,11 @@ function reconciliationCommand(
       )
     )
       return { state: "invalid" };
-    return { state: "withdraw", withdrawalInputKey, ...withdrawal };
+    return {
+      state: "withdraw",
+      withdrawalInputKeys: withdrawalEntries.map(([key]) => key),
+      ...withdrawal,
+    };
   }
   if (!commands.length) return { state: "none" };
   if (commands.length !== 1) return { state: "invalid" };
@@ -1003,7 +1015,10 @@ export async function runTaskOutcomeSelector(
       state: "converged",
       summary,
       response: summary,
-      inputKeys: [reconcile.duplicateInputKey, reconcile.withdrawalInputKey],
+      inputKeys: [
+        reconcile.duplicateInputKey,
+        ...reconcile.withdrawalInputKeys,
+      ],
       facts: [
         `selector:exact-input-reconciliation-command-withdrawn:${reconcile.duplicateInputKey}`,
         `selector:exact-input-reconciliation-command-preserved:${reconcile.survivorInputKey}`,

@@ -1934,6 +1934,101 @@ describe("automatic task outcome selector", () => {
     expect(emissions).toBe(0);
   });
 
+  test("settles every identical withdrawal admission without weakening conflicting-command fencing", async () => {
+    const requested = ["task:app_first", "task:app_second"];
+    const command = (id: string, sourceId: string, observedAt: string) => ({
+      observedAt,
+      event: {
+        type: "app.task.requested",
+        data: {
+          appId: "evaluation",
+          taskId: "runtime/task-outcome-selector",
+          idempotencyKey: `task:${id}`,
+          request: {
+            id,
+            input: {
+              kind: "reconcile-automatic-review-inputs",
+              data: { inputKeys: requested },
+            },
+            source: { kind: "app", id: sourceId },
+          },
+        },
+      },
+    });
+    const withdrawal = (
+      id: string,
+      duplicateInputKey = "task:app_duplicate",
+      survivorInputKey = "task:app_survivor",
+    ) => ({
+      observedAt: "2026-10-03T23:05:00.000Z",
+      event: {
+        type: "app.task.requested",
+        data: {
+          appId: "evaluation",
+          taskId: "runtime/task-outcome-selector",
+          idempotencyKey: `task:${id}`,
+          request: {
+            id,
+            input: {
+              kind: "withdraw-reconciliation-command",
+              data: { duplicateInputKey, survivorInputKey },
+            },
+            source: { kind: "app", id: "evaluation" },
+          },
+        },
+      },
+    });
+    const baseEvents = [
+      command("app_survivor", "may", "2026-10-03T22:56:26.044Z"),
+      command("app_duplicate", "evaluation", "2026-10-03T22:57:02.534Z"),
+      withdrawal("app_withdrawal_direct"),
+      withdrawal("app_withdrawal_declared"),
+    ];
+    const run = async (items: unknown[]) =>
+      (await runSelector(
+        {
+          input: { reason: "scheduled" },
+          reconciliation: {
+            appId: "evaluation",
+            taskId: "runtime/task-outcome-selector",
+            events: { items, continuedInputs: [], truncated: false },
+          },
+          read: { tasks: { get: async () => ({}) } },
+          events: { emit: async () => undefined },
+          done: (_summary: string, result: Record<string, unknown>) => result,
+        } as never,
+        undefined,
+        { ...config, enabled: false },
+      )) as unknown as Record<string, unknown>;
+
+    await expect(run(baseEvents)).resolves.toMatchObject({
+      state: "converged",
+      inputKeys: [
+        "task:app_duplicate",
+        "task:app_withdrawal_direct",
+        "task:app_withdrawal_declared",
+      ],
+      facts: [
+        "selector:exact-input-reconciliation-command-withdrawn:task:app_duplicate",
+        "selector:exact-input-reconciliation-command-preserved:task:app_survivor",
+        "selector:exact-input-side-effects:none",
+      ],
+    });
+    await expect(
+      run([
+        ...baseEvents.slice(0, -1),
+        withdrawal(
+          "app_withdrawal_conflicting",
+          "task:app_survivor",
+          "task:app_duplicate",
+        ),
+      ]),
+    ).resolves.toMatchObject({
+      state: "incomplete",
+      facts: ["selector:exact-input-reconciliation-command-unavailable"],
+    });
+  });
+
   test("does not use withdrawal to choose between genuinely distinct or wrongly owned commands", async () => {
     const command = (
       id: string,
