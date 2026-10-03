@@ -132,6 +132,9 @@ wrap-up instruction. Only `finish()` remains executable; rejected proposals can
 still be corrected through that same tool. A helper is joined before its caller
 receives its result, and outstanding helpers are drained before execution capacity
 is released. Explicit Stop and the hard deadline still cancel the invocation.
+The distinction between a work stop and ordinary cancellation survives nested
+helper calls, so joining a deeper helper still returns its execution reference
+and available evidence instead of replacing them with a generic cancellation error.
 
 For example, a review exceeds its work allowance after a patch is prepared.
 The parent receives the interrupted review's execution reference and available
