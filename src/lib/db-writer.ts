@@ -19,13 +19,14 @@ import {
   type EventTaskEmissionFence,
   type AgentEvent,
   type DeliveryResult,
+  type DeferredEventDelivery,
 } from "../app/core/events/bus.js";
 import { getDb } from "./db/connection.js";
 import { upsertSession, updateSessionDb } from "./db/sessions.js";
 import type { SqliteDb } from "./db.js";
 import { isCanonicalEventEnvelope, isRecord } from "../../packages/control/src/event-envelope.js";
 import { withSqliteBusyRetry } from "./db/busy-retry.js";
-import { inStateTransaction, stateTransaction } from "./db/transaction.js";
+import { afterStateCommit, inStateTransaction, stateTransaction } from "./db/transaction.js";
 import { persistEventClosure, persistEventTrace, readEventTraceMetadata } from "./db/event-traces.js";
 import { evaluationProjectionFromEventData, upsertEvaluationProjection } from "./db/evaluations.js";
 import { advanceTaskResourceRevision } from "./db/task-resource-schema.js";
@@ -499,7 +500,7 @@ export class DbWriter {
   }
 
   /** Subscribe this writer to an EventBus. */
-  handler = (event: AgentEvent): void => {
+  handler = (event: AgentEvent): DeferredEventDelivery | void => {
     switch (event.type) {
       case "session.start": {
         const ev = event as any;
@@ -644,6 +645,9 @@ export class DbWriter {
           this.insertEventRow(event, data, eventSource(ev), eventOwner(ev), eventUrgency(ev), eventTtlMs(ev));
         }
         break;
+    }
+    if (inStateTransaction(this.db)) {
+      return { afterCommit: (deliver) => afterStateCommit(this.db, deliver) };
     }
   };
 

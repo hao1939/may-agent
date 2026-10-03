@@ -1065,6 +1065,9 @@ export type DeliveryResult = {
 };
 export type SubscriberResult = DeliveryResult | void;
 export type Subscriber = (event: AgentEvent) => SubscriberResult;
+/** A writer joining a caller's transaction releases fan-out only on commit. */
+export type DeferredEventDelivery = { afterCommit: (deliver: () => void) => void };
+type PersistenceSubscriber = (event: AgentEvent) => SubscriberResult | DeferredEventDelivery;
 export type SubscribeOptions = { priority?: "first" | "normal"; label?: string };
 export type EventListener = (event: AgentEvent) => void | Promise<void>;
 export type ListenOptions = { label?: string; types?: readonly string[] };
@@ -1139,7 +1142,7 @@ function inheritedEventTrace(event: AgentEvent, parent: AgentEvent | undefined):
  * This guarantees that if a handler triggers work, the originating event is already on disk.
  */
 export class EventBus {
-  private persistenceSubscriber: Subscriber | undefined;
+  private persistenceSubscriber: PersistenceSubscriber | undefined;
   private durableRouteSubscribers: Subscriber[] = [];
   private firstSubscribers: Subscriber[] = [];
   private normalSubscribers: Subscriber[] = [];
@@ -1149,7 +1152,7 @@ export class EventBus {
   private reportingFailures = false;
   private failureFlushScheduled = false;
   private pendingFailureEvents: AgentEvent[] = [];
-  private subscriberLabels = new WeakMap<Subscriber | EventListener, string>();
+  private subscriberLabels = new WeakMap<(event: AgentEvent) => unknown, string>();
 
   /**
    * Register a bounded synchronous acceptance route.
@@ -1213,8 +1216,10 @@ export class EventBus {
    * emission before any side-effect subscriber runs. Replacing the handler is
    * intentional so daemon reload/bootstrap code can reattach persistence
    * without accumulating duplicate writers.
+   * A writer inside a state transaction returns an afterCommit hook; routing
+   * and presentation wait for that commit. The saved journal owns crash recovery.
    */
-  setPersistenceSubscriber(fn: Subscriber): void {
+  setPersistenceSubscriber(fn: PersistenceSubscriber): void {
     this.persistenceSubscriber = fn;
   }
 
@@ -1223,6 +1228,7 @@ export class EventBus {
   }
 
   /** Emit an event. Persists first, then runs "first" and "normal" subscribers.
+   * If persistence joins a state transaction, delivery waits for its outer commit.
    *
    *  For an ordinary emission, all subscribers run regardless of which one records
    *  delivery acceptance. A retry of an already-persisted pending event is different:
@@ -1298,7 +1304,12 @@ export class EventBus {
       // Required durability is deliberately outside subscriber error
       // isolation. If persistence fails, no side-effect handler may run.
       if (persist && this.persistenceSubscriber) {
-        delivery = normalizeDeliveryResult(this.runSubscriber(event, "persistence", this.persistenceSubscriber));
+        const persisted = this.runSubscriber(event, "persistence", this.persistenceSubscriber);
+        if (persisted && typeof persisted === "object" && "afterCommit" in persisted) {
+          persisted.afterCommit(() => { this.dispatch(event, false); });
+          return event;
+        }
+        delivery = normalizeDeliveryResult(persisted);
       }
       // Retry-safe ingress may resolve to an already-persisted event. Return
       // that receipt without delivering the same intent or effect again.
@@ -1431,11 +1442,11 @@ export class EventBus {
     }
   }
 
-  private runSubscriber(
+  private runSubscriber<T>(
     event: AgentEvent,
     priority: "persistence" | "first" | "normal",
-    fn: Subscriber,
-  ): SubscriberResult {
+    fn: (event: AgentEvent) => T,
+  ): T {
     const startedAt = performance.now();
     try {
       return eventContext.run(event, () => fn(event));

@@ -187,13 +187,13 @@ describe("SQLite health observations", () => {
     applyDbSchema(db);
     expect(db.prepare("SELECT COUNT(*) AS count FROM metric_alerts").get()).toEqual({ count: 10002 });
     for (const [filter, args, index] of [
-      ["", [], "idx_ma_open_created"],
-      ["AND metric_id = ?", ["sample"], "idx_ma_open_metric_created"],
+      ["", [], /idx_ma_open_created/],
+      ["AND metric_id = ?", ["sample"], /idx_ma_(open_metric_created|one_open_metric)/],
     ] as const) {
       const plan = db.prepare(`EXPLAIN QUERY PLAN SELECT id, metric_id, message, created_at
         FROM metric_alerts WHERE resolved_at IS NULL ${filter}
         ORDER BY created_at DESC, id DESC LIMIT ?`).all(...args, 21) as Array<{ detail: string }>;
-      expect(plan.some((row) => row.detail.includes(index))).toBeTrue();
+      expect(plan.some((row) => index.test(row.detail))).toBeTrue();
       expect(plan.some((row) => /TEMP B-TREE|SCAN metric_alerts$/.test(row.detail))).toBeFalse();
     }
   });

@@ -201,13 +201,6 @@ function evaluateThreshold(metric: { current: number; threshold: number; alert_o
     : metric.current < metric.threshold;
 }
 
-function latestAlertId(db: SqliteDb, metricId: string): number | undefined {
-  const row = db
-    .prepare("SELECT id FROM metric_alerts WHERE metric_id = ? AND resolved_at IS NULL LIMIT 1")
-    .get(metricId) as { id?: number } | null;
-  return typeof row?.id === "number" ? row.id : undefined;
-}
-
 function recentTrend(db: SqliteDb, metricId: string): Array<{ value: number; measuredAt: number }> {
   try {
     return (
@@ -216,7 +209,7 @@ function recentTrend(db: SqliteDb, metricId: string): Array<{ value: number; mea
           `SELECT value, measured_at
        FROM metric_snapshots
        WHERE metric_id = ?
-       ORDER BY measured_at DESC
+       ORDER BY measured_at DESC, id DESC
        LIMIT 5`,
         )
         .all(metricId) as Array<{ value: number; measured_at: number }>
@@ -300,20 +293,17 @@ export function createMetricService(options: MetricServiceOptions): MetricServic
     const db = options.getDb();
     const measuredAt = opts?.measuredAt ?? now();
     const measuredBy = opts?.measuredBy ?? options.measuredBy ?? "metric-service";
-    db.run("UPDATE metrics SET current = ?, updated_at = ? WHERE id = ?", [value, measuredAt, id]);
-    if (opts?.sampleSize != null || opts?.note != null) {
+    stateTransaction(db, () => {
       db.run(
         "INSERT INTO metric_snapshots (metric_id, value, sample_size, measured_at, measured_by, note) VALUES (?, ?, ?, ?, ?, ?)",
         [id, value, opts?.sampleSize ?? null, measuredAt, measuredBy, opts?.note ?? null],
       );
-    } else {
-      db.run("INSERT INTO metric_snapshots (metric_id, value, measured_at, measured_by) VALUES (?, ?, ?, ?)", [
-        id,
-        value,
-        measuredAt,
-        measuredBy,
-      ]);
-    }
+      // Use the same latest observation as readers, including late arrivals.
+      db.run(`UPDATE metrics SET (current, updated_at) = (
+        SELECT value, measured_at FROM metric_snapshots WHERE metric_id = ?
+        ORDER BY measured_at DESC, id DESC LIMIT 1
+      ) WHERE id = ?`, [id, id]);
+    });
   }
 
   function evaluate(id?: string): MetricEvaluationResult[] {
@@ -370,7 +360,7 @@ export function createMetricService(options: MetricServiceOptions): MetricServic
       if (metricType === "health" && alertConfig?.mode === "consecutive_failures") {
         const requiredCount = alertConfig.count || 3;
         const snapshots = db
-          .prepare("SELECT value FROM metric_snapshots WHERE metric_id = ? ORDER BY measured_at DESC LIMIT ?")
+          .prepare("SELECT value FROM metric_snapshots WHERE metric_id = ? ORDER BY measured_at DESC, id DESC LIMIT ?")
           .all(row.id, requiredCount) as Array<{ value: number }>;
         breached =
           snapshots.length >= requiredCount &&
@@ -379,7 +369,7 @@ export function createMetricService(options: MetricServiceOptions): MetricServic
       } else if (metricType === "counter" && alertConfig?.mode === "rate") {
         const lastTwo = db
           .prepare(
-            "SELECT value, measured_at FROM metric_snapshots WHERE metric_id = ? ORDER BY measured_at DESC LIMIT 2",
+            "SELECT value, measured_at FROM metric_snapshots WHERE metric_id = ? ORDER BY measured_at DESC, id DESC LIMIT 2",
           )
           .all(row.id) as Array<{ value: number; measured_at: number }>;
         if (lastTwo.length === 2) {
@@ -403,7 +393,7 @@ export function createMetricService(options: MetricServiceOptions): MetricServic
             const latest = lastTwo[0];
             const changed = db
               .prepare(
-                "SELECT measured_at FROM metric_snapshots WHERE metric_id = ? AND value != ? ORDER BY measured_at DESC LIMIT 1",
+                "SELECT measured_at FROM metric_snapshots WHERE metric_id = ? AND value != ? ORDER BY measured_at DESC, id DESC LIMIT 1",
               )
               .get(row.id, latest.value) as { measured_at?: number } | null;
             if (ts - (changed?.measured_at ?? 0) > alertConfig.stall_after_ms) {
@@ -421,7 +411,7 @@ export function createMetricService(options: MetricServiceOptions): MetricServic
       } else if (metricType === "gauge" && alertConfig?.mode === "sustained") {
         const requiredCount = alertConfig.consecutive || 3;
         const snapshots = db
-          .prepare("SELECT value FROM metric_snapshots WHERE metric_id = ? ORDER BY measured_at DESC LIMIT ?")
+          .prepare("SELECT value FROM metric_snapshots WHERE metric_id = ? ORDER BY measured_at DESC, id DESC LIMIT ?")
           .all(row.id, requiredCount) as Array<{ value: number }>;
         breached =
           snapshots.length >= requiredCount &&
@@ -464,13 +454,13 @@ export function createMetricService(options: MetricServiceOptions): MetricServic
           ]);
         }
         if (!openAlert) {
-          db.run("INSERT INTO metric_alerts (metric_id, alert_type, message, created_at) VALUES (?, ?, ?, ?)", [
+          const inserted = db.run("INSERT INTO metric_alerts (metric_id, alert_type, message, created_at) VALUES (?, ?, ?, ?)", [
             row.id,
             alertType,
             message,
             ts,
           ]);
-          const alertId = latestAlertId(db, row.id);
+          const alertId = Number(inserted.lastInsertRowid);
           emitMetricEvent("metric.breach", owner, {
             metricId: row.id,
             metricName: row.name,
@@ -564,13 +554,13 @@ export function createMetricService(options: MetricServiceOptions): MetricServic
         ]);
         return;
       }
-      db.run("INSERT INTO metric_alerts (metric_id, alert_type, message, created_at) VALUES (?, ?, ?, ?)", [
+      const inserted = db.run("INSERT INTO metric_alerts (metric_id, alert_type, message, created_at) VALUES (?, ?, ?, ?)", [
         id,
         alertType,
         finalMessage,
         ts,
       ]);
-      const alertId = latestAlertId(db, id);
+      const alertId = Number(inserted.lastInsertRowid);
       const owner = resolveOwner({
         id,
         explicitOwner: row.explicitOwner,
@@ -596,7 +586,7 @@ export function createMetricService(options: MetricServiceOptions): MetricServic
   }
 
   function resolveAlert(alertId: number, _reason?: string): void {
-    options.getDb().run("UPDATE metric_alerts SET resolved_at = ? WHERE id = ?", [now(), alertId]);
+    options.getDb().run("UPDATE metric_alerts SET resolved_at = COALESCE(resolved_at, ?) WHERE id = ?", [now(), alertId]);
   }
 
   function get(id: string): Metric | null {
