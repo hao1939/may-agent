@@ -19,6 +19,7 @@ export function appObservationSelectors(app: Readonly<AppDefinition>): EventSele
 export function readAppContract(app: Readonly<AppDefinition>): AppContract {
   return {
     appId: app.id,
+    agent: (app.agent ?? app.owner)!.trim().replace(/^agent:/, ""),
     inputSchema: structuredClone(app.inputSchema),
     observations: (app.observers ?? []).flatMap((observer) =>
       "inspect" in observer

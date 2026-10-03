@@ -686,7 +686,7 @@ describe("caller feedback PoC", () => {
     const result = await tool.execute("contract", { action: "contract", target: { appId: "reviewer.app" } });
     const content = result.content[0];
     if (content?.type !== "text") throw new Error("Expected contract text");
-    expect(JSON.parse(content.text)).toEqual({ appId: "reviewer", inputSchema, observations: [] });
+    expect(JSON.parse(content.text)).toEqual({ appId: "reviewer", agent: "reviewer", inputSchema, observations: [] });
     const clone = getLoadedAppInputContract({ bus, appId: "reviewer" });
     clone.inputSchema.properties = {};
     expect(getLoadedAppInputContract({ bus, appId: "reviewer" }).inputSchema).toEqual(inputSchema);
@@ -1017,6 +1017,8 @@ describe("caller feedback PoC", () => {
         executors: {
           measure: async (attempt) => {
             calls.push(attempt.task.id);
+            expect(attempt.task.agent).toBe(attempt.role.agent);
+            expect((await attempt.read.contract("sample")).agent).toBe(app.agent);
             const level = Number(attempt.task.id.split("/").at(-1));
             const returned = attempt.events.items.find(
               ({ event }) => event.type === "app.dependency.updated" && event.data.status === "done",

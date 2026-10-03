@@ -65,6 +65,43 @@ describe("App read projections", () => {
     });
   }
 
+  it("reads the same responsible agent that execution selects, without confusing creator or input with ownership", () => {
+    const config = resourceConfig();
+    const creator = { appId: "caller", taskId: "original" };
+    const makeTask = (id: string, parentId: string, agent?: string) => observeAppTaskIntent(config, {
+      appAgent: "app-lead", creator,
+      intent: { id, parentId, agent, outcome: "Prepare evidence", acceptance: ["Checked"],
+        input: { agent: "untrusted-input", owner: "untrusted-input" } },
+    });
+    makeTask("parent", "review", "specialist");
+    makeTask("inherited", "parent");
+    makeTask("group-default", "review");
+    makeTask("explicit", "parent", "another-specialist");
+    for (const [taskId, expected] of [
+      ["inherited", "specialist"], ["group-default", "evaluation"], ["explicit", "another-specialist"],
+    ]) {
+      const read = readRuntimeTaskView({ taskStateConfig: config }, taskId)!;
+      expect(read).toMatchObject({ agent: expected, owner: expected, creator });
+      const claim = claimObservedAppTask(config, { taskId, appAgent: config.agent, handler: "auto" });
+      expect(claim).toMatchObject({ kind: "claimed", agent: read.agent });
+      if (claim.kind !== "claimed") throw new Error("Expected claim");
+      completeAppTask(config, claim, { summary: "Prepared", facts: ["Checked"] });
+    }
+  });
+
+  it("exposes the App default agent on a Task with no explicit or inherited assignment", () => {
+    const config = resourceConfig();
+    // A structural root does not need an agent assignment.
+    const store = AppTaskResourceStore.fromDb(db, "default-only");
+    store.bootstrapSnapshot({ groups: { root: { id: "root" } }, resources: {}, tasks: {} }, "seed:default");
+    const scoped = { ...config, agent: "default-lead", resourceStore: store };
+    observeAppTaskIntent(scoped, { appAgent: scoped.agent,
+      intent: { id: "work", parentId: "root", outcome: "Prepare", acceptance: ["Checked"] } });
+    expect(readRuntimeTaskView({ taskStateConfig: scoped }, "work")?.agent).toBe("default-lead");
+    expect(claimObservedAppTask(scoped, { taskId: "work", appAgent: scoped.agent, handler: "auto" }))
+      .toMatchObject({ kind: "claimed", agent: "default-lead" });
+  });
+
   it("reads current Condition observations without conflating approval, new input and accepted progress", () => {
     const config = resourceConfig();
     const taskId = "review/context";

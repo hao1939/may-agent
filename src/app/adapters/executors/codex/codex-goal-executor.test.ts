@@ -161,6 +161,7 @@ describe("Codex goal Task context", () => {
     const packet = JSON.parse(small.developerInstructions.split("## Canonical May Task Attempt\n")[1]!);
     expect(packet.coverage.detail).toBeUndefined();
     expect(packet.assignment.outcome).toBe(attempt().task.outcome);
+    expect(packet.assignment.agent).toBe("evaluator");
   });
 });
 
