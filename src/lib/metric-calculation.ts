@@ -23,6 +23,14 @@ export function metricCalculationOptions(config: unknown): MetricCalculationOpti
   return options;
 }
 
+export function metricMaxAgeMs(
+  options: MetricCalculationOptions,
+  measureInterval?: number | null,
+): number | undefined {
+  return options.maxAgeMs ??
+    (measureInterval && measureInterval > 0 ? measureInterval * 2 : options.windowMs);
+}
+
 /** Pure observation: callers own scheduling and any alert transition. */
 export function calculateMetric(
   db: SqliteDb,
@@ -45,9 +53,7 @@ export function calculateMetric(
     ...(options.windowMs === undefined ? {} : { windowMs: options.windowMs }),
   };
   if (!latest) return { ...result, reason: "No sample at or before calculation time" };
-  const maxAge =
-    options.maxAgeMs ??
-    (metric.measure_interval && metric.measure_interval > 0 ? metric.measure_interval * 2 : options.windowMs);
+  const maxAge = metricMaxAgeMs(options, metric.measure_interval);
   if (maxAge !== undefined && now - latest.measured_at > maxAge) {
     return { ...result, reason: "Latest sample is stale" };
   }

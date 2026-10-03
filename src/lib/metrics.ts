@@ -2,7 +2,7 @@ import type { SqliteDb } from "./db.js";
 import { stateTransaction } from "./db/transaction.js";
 import { normalizeEventOwner } from "../../packages/control/src/event-envelope.js";
 import type { MetricCalculation, MetricCalculationOptions } from "@may-agent/sdk";
-import { calculateMetric, metricCalculationOptions } from "./metric-calculation.js";
+import { calculateMetric, metricCalculationOptions, metricMaxAgeMs } from "./metric-calculation.js";
 
 export type MetricType = "gauge" | "counter" | "health" | "derived";
 export type MetricPriority = "P0" | "P1" | "P2" | "P3";
@@ -396,9 +396,18 @@ const configuredCount = alertConfig.count ?? alertConfig.consecutive;
             "SELECT value, measured_at FROM metric_snapshots WHERE metric_id = ? AND measured_at <= ? ORDER BY measured_at DESC, id DESC LIMIT 2",
           )
           .all(row.id, ts) as Array<{ value: number; measured_at: number }>;
-        if (current !== null && lastTwo.length === 2) {
-          const deltaMs = lastTwo[0].measured_at - lastTwo[1].measured_at;
-          const deltaValue = lastTwo[0].value - lastTwo[1].value;
+        const maxAgeMs = metricMaxAgeMs(metricCalculationOptions(config), row.measure_interval);
+        const rateSamples =
+          maxAgeMs === undefined
+            ? lastTwo
+            : (db
+                .prepare(
+                  "SELECT value, measured_at FROM metric_snapshots WHERE metric_id = ? AND measured_at >= ? AND measured_at <= ? ORDER BY measured_at DESC, id DESC LIMIT 2",
+                )
+                .all(row.id, ts - maxAgeMs, ts) as Array<{ value: number; measured_at: number }>);
+        if (current !== null && rateSamples.length === 2) {
+          const deltaMs = rateSamples[0].measured_at - rateSamples[1].measured_at;
+          const deltaValue = rateSamples[0].value - rateSamples[1].value;
           if (deltaMs > 0 && deltaValue >= 0) {
             const perHour = (deltaValue / deltaMs) * 3600000;
             ratePer = alertConfig.per === "day" ? perHour * 24 : perHour;

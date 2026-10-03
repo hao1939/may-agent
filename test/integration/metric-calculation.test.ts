@@ -229,6 +229,22 @@ describe("sample calculations and alert transitions", () => {
     expect(events[0].data?.alertType).toBe("stall");
   });
 
+  it("does not calculate a counter rate from a stale predecessor sample", () => {
+    const { service, events, at } = fixture();
+    const metrics = service();
+    const id = "stale-rate-predecessor";
+    metrics.define({
+      id, type: "counter", threshold: 1000, alertOp: ">", measureInterval: 60_000,
+      config: { alert: { mode: "rate", max_rate: 1 } },
+    });
+    metrics.record(id, 0);
+    at(180_001);
+    metrics.record(id, 100);
+
+    expect(metrics.evaluate(id)[0]).toMatchObject({ status: "unknown", calculation: { value: 100 } });
+    expect(events).toEqual([]);
+  });
+
   it("rejects invalid calculation policies before changing a definition", () => {
     const { service } = fixture();
     const metrics = service();
