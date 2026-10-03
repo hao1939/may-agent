@@ -11,6 +11,8 @@ export type FinalizedTaskWorkspace = {
   reason?: string;
 };
 
+export type InspectedTaskWorkspace = FinalizedTaskWorkspace & { removable: boolean };
+
 /** Host-private worktree operations; core owns ordering and admission of their facts. */
 export type TaskWorkspaces = {
   prepare(input: {
@@ -22,6 +24,8 @@ export type TaskWorkspaces = {
     refreshRemote?: boolean;
     previous?: AppTaskWorkspace;
   }): Promise<PreparedTaskWorkspace>;
+  /** Inspect acceptance prerequisites without removing files, branches or refs. */
+  inspect(prepared: PreparedTaskWorkspace): Promise<InspectedTaskWorkspace>;
   /** Preserve accepted local deliverables; integration requirements belong to App acceptance. */
   finalize(
     prepared: PreparedTaskWorkspace,

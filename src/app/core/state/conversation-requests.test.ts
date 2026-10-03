@@ -14,6 +14,7 @@ import {
   cancelAppTask,
   claimObservedAppTask,
   completeAppTask,
+  deferAppTask,
   failAppTaskAttempt,
   observeAppTaskIntent,
   reportAppTaskFailure,
@@ -485,7 +486,7 @@ test.each(["stop", "failure", "completion"] as const)(
   },
 );
 
-test("new input fences an old requirement save until the same Conversation reviews it", async () => {
+test("requirement saves accept considered scope and leave later corrections for the next turn", async () => {
   const f = fixture();
   await f.turn({ ...answer, requestUpdates: [ask] });
   const turn = await f.prepare(async ({ execution }) => {
@@ -498,19 +499,19 @@ test("new input fences an old requirement save until the same Conversation revie
       input: { kind: "message", data: { text: "Include costs as well" } },
       intent: conversationTaskIntent(f.context()),
     });
-    expect(() => execution.updateRequest!({ id: ask.id, expectedRevision: 1, scope: "Old interpretation" }, "old"))
-      .toThrow("newer Task facts are pending");
-    expect(readConversationRequest(f.db, app.id, "chat", ask.id)).toMatchObject({ revision: 1, scope: ask.scope });
-    return answer;
+    expect(execution.updateRequest!({ id: ask.id, expectedRevision: 1, scope: "Old interpretation" }, "old"))
+      .toMatchObject({ revision: 2, scope: "Old interpretation" });
+    expect(readConversationRequest(f.db, app.id, "chat", ask.id)).toMatchObject({ revision: 2, scope: "Old interpretation" });
+    return { ...answer, requestUpdates: [{ id: ask.id, expectedRevision: 2, disposition: "open", reason: "Measurements remain" }] };
   });
   turn.settle();
   f.reopen();
   const next = await f.prepare(async ({ inputContext, execution }) => {
     expect(inputContext.inputs?.some(({ id }) => id === "newer-correction")).toBe(true);
-    expect(execution.updateRequest!({ id: ask.id, expectedRevision: 1, scope: "Compare both options including costs",
+    expect(execution.updateRequest!({ id: ask.id, expectedRevision: 3, scope: "Compare both options including costs",
       inputIds: inputContext.inputs!.map(({ id }) => id) }, "reviewed"))
-      .toMatchObject({ revision: 2, scope: "Compare both options including costs" });
-    return { ...answer, requestUpdates: [{ id: ask.id, expectedRevision: 2, disposition: "fulfilled", reason: "Compared both including costs" }] };
+      .toMatchObject({ revision: 4, scope: "Compare both options including costs" });
+    return { ...answer, requestUpdates: [{ id: ask.id, expectedRevision: 4, disposition: "fulfilled", reason: "Compared both including costs" }] };
   }, false);
   expect(next.claim.taskId).toBe(turn.claim.taskId);
   expect(next.settle().status).toBe("applied");
@@ -817,7 +818,7 @@ test.each(["closed", "foreign"])("a %s ask cannot be handed off through the scop
 });
 
 test.each(["closure", "handoff"] as const)(
-  "a deferred Request %s remains assigned beside unrelated input across reopen",
+  "partial work retains its assigned Request across reopen before %s",
   async (outcome) => {
     const f = fixture();
     const initial = await f.prepare(async ({ execution }) => {
@@ -846,8 +847,10 @@ test.each(["closure", "handoff"] as const)(
       input: { kind: "message", data: { text: "An unrelated finding arrived" } },
       intent: conversationTaskIntent(f.context()),
     });
-    expect(initial.settle().taskContinues).toBe(true);
-    expect(f.context().resourceStore.readAttempt(initial.claim.attemptId)?.acceptedResult).toBeUndefined();
+    deferAppTask(f.context(), initial.claim, { disposition: "waiting", continue: true,
+      summary: "Prepared a draft; further checking remains", facts: ["draft:prepared"],
+      result: { draft: initial.proposal.decision } });
+    expect(f.context().resourceStore.readAttempt(initial.claim.attemptId)?.acceptedResult?.state).toBe("waiting");
     expect(f.context(owner.id).resourceStore.readTask("work")).toBeNull();
     f.reopen();
     const next = await f.prepare(async ({ inputContext }) => {
@@ -860,8 +863,7 @@ test.each(["closure", "handoff"] as const)(
           inputIds: [original!.id],
         },
       ]);
-      expect(inputContext.previousAttempt?.unacceptedResult?.result?.conversation).toEqual(initial.proposal.decision);
-      expect(inputContext.previousAttempt?.unacceptedResult?.settlementError).toContain("not accepted");
+      expect(inputContext.previousAttempt?.acceptedResult?.result?.draft).toEqual(initial.proposal.decision);
       return { summary: "News handled", response: "Here is the new finding.", topic: { kind: "none" } };
     }, false);
     expect(next.settle).toThrow(`Request ${ask.id} was not addressed`);
@@ -912,7 +914,8 @@ test("related inputs refine one Request and one answer must use its latest requi
     input: { kind: "message", data: { text: "Battery life matters most; stay below 1500" } },
     intent: conversationTaskIntent(f.context()),
   });
-  initial.settle();
+  deferAppTask(f.context(), initial.claim, { disposition: "waiting", continue: true,
+    summary: "Work needs another pass", facts: ["draft:prepared"] });
   f.reopen();
   const scope = "Compare two laptops below 1500, prioritizing battery life";
   const revised = await f.prepare(async ({ inputContext, execution }) => {
@@ -1018,7 +1021,8 @@ test("several intentions can share a turn while input association remains an exp
     input: { kind: "message", data: { text: "Also review this contract" } },
     intent: conversationTaskIntent(f.context()),
   });
-  first.settle();
+  deferAppTask(f.context(), first.claim, { disposition: "waiting", continue: true,
+    summary: "Work needs another pass", facts: ["draft:prepared"] });
   const next = await f.prepare(async ({ execution }) => {
     const compare = { id: "compare", expectedRevision: 0, scope: "Compare two laptops" };
     expect(() => execution.updateRequest!(compare, "ambiguous")).toThrow("requires inputIds");
@@ -1118,7 +1122,8 @@ test("a new input can continue the same Request without copying scope, and inter
     input: { kind: "message", data: { text: "Also note the meeting time" } },
     intent: conversationTaskIntent(f.context()),
   });
-  continuing.settle();
+  deferAppTask(f.context(), continuing.claim, { disposition: "waiting", continue: true,
+    summary: "Work needs another pass", facts: ["draft:prepared"] });
   // Push the accepted ask out of the ordinary recent-Request window.
   for (let i = 0; i < 13; i++)
     applyConversationRequestUpdates(f.db, {

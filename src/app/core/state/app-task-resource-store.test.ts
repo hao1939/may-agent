@@ -25,6 +25,7 @@ import {
   deferAppTask,
   observeAppTaskIntent,
   recordAppTaskTrigger,
+  recordAppTaskAttemptWorkspace,
   reportAppTaskFailure,
 } from "../tasks/app-task-reconciler.js";
 
@@ -105,6 +106,49 @@ function open() {
 }
 
 describe("AppTaskResourceStore", () => {
+  it.each([false, true])("recovers exact workspace beyond recent execution history and restart (legacy=%s)", (legacy) => {
+    const root = mkdtempSync(join(tmpdir(), "may-workspace-reference-"));
+    roots.push(root);
+    const path = join(root, "host.sqlite");
+    let store = AppTaskResourceStore.openStandalone(path, "example");
+    const config = appTaskContext({ appDir: root, projectDir: root, agent: "may", maxConcurrent: 2, resourceStore: store });
+    try {
+      store.bootstrapSnapshot(fixture(), "fixture");
+      const claim = claimObservedAppTask(config, { taskId: "normal", appAgent: "may", handler: "agent" });
+      if (claim.kind !== "claimed") throw new Error("expected claim");
+      const workspace = {
+        kind: "task-worktree" as const, path: join(root, "retained"), branch: "task/retained",
+        baseRef: "main", baseCommit: "base", headCommit: "head", disposition: "active" as const,
+      };
+      expect(recordAppTaskAttemptWorkspace(config, claim, workspace)).toBe(true);
+      completeAppTask(config, claim, { summary: "Contribution accepted; branch retained" });
+      for (let index = 0; index < 20; index++) {
+        recordAppTaskTrigger(config, "normal", { type: "native.check", eventId: 100 + index });
+        const native = claimObservedAppTask(config, { taskId: "normal", appAgent: "may", handler: "native" });
+        if (native.kind !== "claimed") throw new Error("expected native claim");
+        completeAppTask(config, native, { summary: "Native check complete" });
+      }
+      expect(store.readTaskContext({ taskIds: ["normal"] }).attempts?.[claim.attemptId]).toBeUndefined();
+      expect(recordAppTaskAttemptWorkspace(config, claim, { ...workspace, path: "stale" })).toBe(false);
+      if (legacy) {
+        const task = store.readTask("normal")!;
+        delete task.status.workspaceAttemptId;
+        expect(store.replaceTask({ expectedResourceVersion: task.metadata.resourceVersion, resource: task, ready: false })).toBe(true);
+      }
+      store.close();
+      store = AppTaskResourceStore.openStandalone(path, "example");
+      expect(store.readTaskWorkspace("normal", 1)).toEqual(workspace);
+      expect(store.readTaskWorkspace("normal", 2)).toBeUndefined();
+      expect(store.readTaskWorkspace("human", 1)).toBeUndefined();
+      const task = store.readTask("normal")!;
+      task.status.workspaceAttemptId = "missing";
+      expect(store.replaceTask({ expectedResourceVersion: task.metadata.resourceVersion, resource: task, ready: false })).toBe(true);
+      expect(() => store.readTaskWorkspace("normal", 1)).toThrow("invalid workspace attempt reference");
+    } finally {
+      store.close();
+    }
+  });
+
   it("upgrades retained input identities once without retaining duplicate event bodies", () => {
     const store = open();
     try {

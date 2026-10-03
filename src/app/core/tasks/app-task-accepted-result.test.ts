@@ -115,12 +115,13 @@ describe("accepted Task outcome facts", () => {
     });
   });
 
-  it("does not label output awaiting a correction as accepted completion", () => {
+  it("accepts considered output while preserving a later correction", () => {
     const { config, claim } = fixture();
     const old = claim();
     recordAppTaskTrigger(config, "work", { type: "sample.correction", eventId: 2, data: { sample: "corrected" } });
     expect(completeAppTask(config, old, measured)).toMatchObject({ status: "applied", taskContinues: true });
-    expect(config.resourceStore.readAttempt(old.attemptId)).not.toHaveProperty("acceptedResult");
+    expect(config.resourceStore.readAttempt(old.attemptId)).toMatchObject({ acceptedResult: measured });
+    expect(config.resourceStore.readTrigger("work")?.event.eventId).toBe(2);
     const corrected = claim();
     completeAppTask(config, corrected, {
       summary: "Corrected measurement",

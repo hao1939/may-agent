@@ -456,17 +456,19 @@ test.each(["changed-spec", "replaced-id"])("reconsiders inputs with %s waits aft
     // A later independent ask was not in this execution's context.
     admit("late-question");
     expect(completeAppTask(config, final, { summary: "Reviews accepted", response: "Corrected review complete" }).taskContinues).toBe(true);
-    expect(readAppTaskAdmissionOutcome(config, "work", "original")).toBeNull();
+    expect(readAppTaskAdmissionOutcome(config, "work", "correction")?.attemptId).toBe(final.attemptId);
+    if (change === "changed-spec") {
+      expect(readAppTaskAdmissionOutcome(config, "work", "original")?.attemptId).toBe(final.attemptId);
+    } else expect(readAppTaskAdmissionOutcome(config, "work", "original")).toBeNull();
+    expect(readAppTaskAdmissionOutcome(config, "work", "late-question")).toBeNull();
     const next = claim();
-    if (change === "changed-spec") expect(next.continuedInputKeys).toContain("original");
-    else expect(next.continuedInputKeys ?? []).not.toContain("original");
+    expect(next.continuedInputKeys ?? []).not.toContain("original");
     completeAppTask(config, next, { summary: "Reviewed new question too", response: "Corrected review complete; independent review pending" });
-    for (const key of ["correction", "late-question"]) {
-      expect(readAppTaskAdmissionOutcome(config, "work", key)?.attemptId).toBe(next.attemptId);
-    }
+    expect(readAppTaskAdmissionOutcome(config, "work", "correction")?.attemptId).toBe(final.attemptId);
+    expect(readAppTaskAdmissionOutcome(config, "work", "late-question")?.attemptId).toBe(next.attemptId);
     expect(readAppTaskAdmissionOutcome(config, "work", "independent-request")).toBeNull();
     if (change === "changed-spec") {
-      expect(readAppTaskAdmissionOutcome(config, "work", "original")?.attemptId).toBe(next.attemptId);
+      expect(readAppTaskAdmissionOutcome(config, "work", "original")?.attemptId).toBe(final.attemptId);
       expect(config.resourceStore.readTask("work")?.status.conditionIds).toEqual(["independent"]);
     } else {
       expect(readAppTaskAdmissionOutcome(config, "work", "original")).toBeNull();
