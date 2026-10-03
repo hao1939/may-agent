@@ -48,7 +48,14 @@ export class ExecutionScope {
     // part of the existing allowance, never a timeout extension.
     const finishMs = onFinishRequested ? Math.min(60_000, Math.floor(this.timeoutMs / 5)) : 0;
     this.workDeadlineAt = this.deadlineAt - finishMs;
-    this.parentAbort = () => this.stop(new Error("Caller execution stopped", { cause: parentSignal?.reason }));
+    this.parentAbort = () => {
+      const reason = parentSignal?.reason;
+      // Preserve the work-stop distinction at every depth so joined helper
+      // evidence can return while ordinary cancellation still interrupts.
+      this.stop(
+        reason instanceof ExecutionWorkEnded ? reason : new Error("Caller execution stopped", { cause: reason }),
+      );
+    };
     parentSignal?.addEventListener("abort", this.parentAbort, { once: true });
     this.timer = setTimeout(() => {
       this.timedOut = true;

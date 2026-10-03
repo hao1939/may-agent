@@ -8,6 +8,7 @@ import { defineApp, taskAgentResultSchema } from "@may-agent/sdk";
 import { prepareAgentExecution, executePreparedAgent } from "./agent-execution.js";
 import { createAgentRun } from "./agent-runner.js";
 import { currentAgentSessionId } from "./agent-session-context.js";
+import { ExecutionWorkEnded } from "./execution-scope.js";
 import { SubagentManager } from "./manager.js";
 import { createFinishTool } from "./tools/lifecycle.js";
 import { closeDb, getDb } from "./db/connection.js";
@@ -193,6 +194,90 @@ test("a stalled finalization still reaches the original hard stop without an inv
   expect(result.error).toBe("Agent timed out after 1000ms");
   expect(result.finishResult).toBeUndefined();
   expect(result.structuredResult).toBeUndefined();
+});
+
+test.each(["work-stop", "cancel"] as const)("nested helper calls preserve the %s result contract", async (stop) => {
+  const dir = root();
+  const controller = new AbortController();
+  const leafEntered = Promise.withResolvers<void>();
+  const manager = new SubagentManager({
+    persistDir: join(dir, "state"),
+    projectRoot: dir,
+    agentRunFactory: (config) => {
+      const name = config.initialState?.model?.id;
+      return createAgentRun({
+        ...config,
+        streamFn: (_model, _context, options) => {
+          if (options?.signal?.aborted) return abortedReply();
+          return name === "leaf"
+            ? call("hold", {})
+            : call("agents", { action: "call", agent: name === "owner" ? "helper" : "leaf", task: "Review" });
+        },
+      });
+    },
+  });
+  for (const name of ["owner", "helper", "leaf"]) {
+    const hold = stalledTool();
+    manager.register({
+      name,
+      description: "fixture",
+      domain: "test",
+      model: { ...fakeModel(), id: name },
+      systemPrompt: "Return available review evidence.",
+      tools:
+        name === "leaf"
+          ? [
+              {
+                ...hold,
+                execute: (...args) => {
+                  leafEntered.resolve();
+                  return hold.execute(...args);
+                },
+              },
+            ]
+          : [
+              manager.createAgentsTool({
+                getCallerSessionId: () => currentAgentSessionId(name),
+                getCallerAgentName: () => name,
+              }),
+            ],
+    });
+  }
+  const ownerId = manager.run("owner", "Review", { signal: controller.signal, timeoutMs: 5_000 });
+  try {
+    // Inject the ancestor's signal only after every nested call has started;
+    // timer ordering is covered separately by the managed Task test below.
+    await leafEntered.promise;
+    const ids = new Map([...manager.activeSessions.values()].map((session) => [session.agentName, session.sessionId]));
+    expect(ids.size).toBe(3);
+    controller.abort(stop === "work-stop" ? new ExecutionWorkEnded() : new Error("Explicit Stop"));
+    expect((await manager.waitFor(ownerId)).status).toBe("interrupted");
+    expect(manager.status()).toEqual([]);
+    for (const [caller, child] of [
+      ["helper", "leaf"],
+      ["owner", "helper"],
+    ]) {
+      const receipt = manager
+        .progress(ids.get(caller)!, 100)
+        .find((message) => message.role === "toolResult" && message.toolName === "agents");
+      expect(receipt?.role).toBe("toolResult");
+      if (receipt?.role !== "toolResult") throw new Error("Missing helper receipt");
+      const content = receipt.content.find((part) => part.type === "text");
+      if (content?.type !== "text") throw new Error("Missing helper receipt text");
+      const result = JSON.parse(content.text);
+      if (stop === "work-stop") {
+        expect(result).toMatchObject({ sessionId: ids.get(child), status: "interrupted" });
+      } else {
+        expect(result).toEqual({ error: "Caller execution stopped" });
+      }
+    }
+    expect(JSON.stringify(manager.progress(ids.get("leaf")!, 100))).toContain("Review interrupted; completion unknown");
+  } finally {
+    controller.abort(new Error("Fixture cleanup"));
+    const sessions = manager.status();
+    for (const session of sessions) manager.cancel(session.sessionId);
+    await Promise.allSettled(sessions.map((session) => manager.waitFor(session.sessionId)));
+  }
 });
 
 test("a managed Task accepts progress after helper cancellation and continues from it on the same Task", async () => {
