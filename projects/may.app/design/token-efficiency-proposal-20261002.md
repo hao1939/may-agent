@@ -15,7 +15,7 @@
 | Review clock | Apps `95e142b3d0` and current `metric-review.ts` use the immutable report completion time (`payload.createdAt`) plus the interval. Reused publication keeps that time. No new `reviewedAt` field is needed. A long publication delay can legitimately leave the next review due. |
 | Meaningful reconsideration | Conditions and retained investigation identity exist. Better choice of wake predicates and measured review eligibility remain App policy and trial work. |
 | Context size | Host [#288](https://github.com/hao1939/may-agent/pull/288) fixes a separate full-history Codex resume cost. It does not prove that optional Conversation reference enrichment is bounded or cheaper. Assess that path separately. |
-| Continuing detection | The [October 3 inventory](metric-coverage-audit-20261003.md) found existing invocation usage but no effort metric. Section 5 proposes a bounded observation and the existing independent review routes. Catalog/threshold cleanup comes first; new lifecycle counters are deferred. Nothing in this audit was activated. |
+| Continuing detection | The [October 3 inventory and October 4 implementation](metric-coverage-audit-20261003.md#october-4-implementation) supply catalog cleanup and two effort observations using existing invocation usage. Source verification covers report publication and accepted owner judgment. Effort alerts remain disabled for calibration; activation and a runtime comparison are pending. |
 | Repeated delivery and correctable output | [Host `7b416af40`](https://github.com/hao1939/may-agent/commit/7b416af40) and this Apps companion add durable GitHub fact identity, groups same-result Topic returns, and validates direct-agent results before terminal finish. The owning [observer contract](github-pull-request-observation.md), [Conversation contract](../../may-agent.app/docs/2a-design/conversation-execution.md#routing-and-authority), and [completion contract](../../may-agent.app/docs/2a-design/execution-contributions.md) describe behavior and limits. |
 | Duplicate hygiene timers | The companion removes the hard-coded App timer for the standing hygiene Task. Its already chosen `reviewAt` owns the cycle; the agent explicitly selects the next review. This preserves the existing Task and deadline without a state migration. |
 
@@ -220,10 +220,11 @@ Treat required current input, acceptance criteria and obligation identities sepa
 
 ## 5. Detect recurrence through existing metrics
 
-**Status:** Proposed after the [October 3 audit](metric-coverage-audit-20261003.md).
-No new metric or review was installed. Existing terminal-completion repairs stay
-regression requirements; do not add completion-lifecycle counters before trying
-the available usage data.
+**Status:** Implemented in source after the [October 3 audit](metric-coverage-audit-20261003.md#october-4-implementation), with isolated verification.
+The two observations start without alert thresholds. Nothing was activated in
+the stopped installation. Runtime calibration and adoption of an attention
+threshold remain pending. Existing terminal-completion repairs stay regression
+requirements; new completion-lifecycle counters remain deferred.
 
 Start with an ordinary question: **which Task is using enough model effort to
 deserve a closer look?** Host already retains cumulative usage for each managed
@@ -232,16 +233,16 @@ ask for review. The reviewer decides whether the effort is producing value.
 
 ### Observation definition
 
-Proposed name: **maximum observed model replies for a Task's recently active
+Measurement: **maximum observed model replies for a Task's recently active
 invocations**. This deliberately measures effort, not progress or failure.
 
-| Property | Proposed first implementation |
+| Property | Source implementation |
 | --- | --- |
 | Source | Existing `execution_usage`, one cumulative row per invocation. |
 | Cohort | Rows with `updated_at` in `[cut - 1 hour, cut)`, including unfinished invocations. Read at one fixed cut. |
 | Calculation | Sum `data.totals.replies` by exact `(app_id, task_id)`; take the maximum in the declared responsibility scope. Count each invocation once. |
 | Unit/type | Observed assistant replies; gauge. These are not provider-request counts or exact within-hour consumption. |
-| Scopes | Two App-defined metrics: non-Evaluation Apps, and Evaluation only. Follow the existing failure-metric responsibility split. |
+| Scopes | `may.max-task-recent-model-replies` covers non-Evaluation Apps; `may.evaluation-max-task-recent-model-replies` covers Evaluation only. They follow the existing failure-metric responsibility split. |
 | Cadence | Existing five-minute source collection and decoupled rule evaluation. No model call to collect or calculate. |
 | Trial threshold | Observe without an alert first. Candidate attention rule: at least 100 replies (`> 99`) in the defined cohort. The audit cut selected two May Tasks; one is a human Conversation. Calibrate with useful-work examples before adoption. |
 | Sample evidence | Fixed cut and cohort definition, represented invocation count, number of qualifying Tasks, top five Task groups with exact read references, token/pricing coverage, and unsupported paths. Report truncation. |

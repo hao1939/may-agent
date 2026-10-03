@@ -109,6 +109,16 @@ an aggregate do not prove fulfillment of the original input.
 
 ## Breach identity and retained response
 
+Effort observations use this same review path. The reviewer reads named Tasks,
+accepted results, intermediate artifacts, remaining requirements, new input and
+Conditions before judging value. High effort and partial fulfillment can coexist
+with useful work. Recommendations compare the smallest correction's likely value
+and cost, including no change. Unsupported accounting and unknown prices remain
+evidence limits; aging out of a rolling population is not verified recovery.
+May's [effort definitions and calibration](../../may.app/design/token-efficiency-proposal-20261002.md#5-detect-recurrence-through-existing-metrics)
+own attention policy. Evaluation's own effort routes independently to May when
+enabled; it is excluded from this semantic self-review path.
+
 One ongoing breach has one existing `alertId`. Changed values update that alert;
 recovery closes it, and a later breach gets a new identity. Manual resolution or
 configuration changes can also close an alert, so closure is not recovery proof.

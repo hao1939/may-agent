@@ -2,7 +2,7 @@
 
 **Supports:** [May's efficiency proposal](token-efficiency-proposal-20261002.md#5-detect-recurrence-through-existing-metrics). Identify useful existing coverage before adding another signal.
 **Choice basis:** [Simple first](../../may-agent.app/docs/1-principles/core-principles.md#simple-first). Repair collection, meaning and ownership before extending the catalog.
-**Status:** Read-only audit and proposed disposition. No runtime changes, assignments, model calls or deployment. May remained stopped.
+**Status:** Audit followed by [October 4 source fixes and isolated verification](#october-4-implementation). No runtime changes, assignments, model calls or deployment. May remains stopped.
 
 We have a working metric mechanism and several useful signals. The immediate
 problems are catalog drift, an unreachable collector-health threshold, and a
@@ -237,3 +237,53 @@ Native usage coverage is a factual Host adapter gap to address through the
 existing usage record, if the provider exposes trustworthy measurements. It does
 not require another alert mechanism. More anomaly counters, a new scheduler and
 automatic “no progress” rejection are deferred until evidence shows a need.
+
+## October 4 implementation
+
+**Status:** Source implementation and isolated verification. The installation
+remains stopped; this is not a completed rollout or a change to its saved registry.
+Host source: [`3b21b5766`, PR #306](https://github.com/hao1939/may-agent/pull/306).
+The App companion is on `fix/metric-coverage-20261004` and is integrated locally
+after its checks. The Host PR and runtime activation remain separate steps.
+
+| Audit finding | Source correction |
+| --- | --- |
+| Unreachable stale threshold | Existing Host definition uses `> 0`, retains the cadence grace, gives new collectors first-sample grace, ignores future-dated samples for freshness, and includes exact stale examples. |
+| Retired alerts remain open | Explicit retirement/closure in `MetricService.define()` quietly closes open alerts in the definition transaction. Repeated activation retains history and closure time; no recovery event or Task completion is invented. |
+| Obsolete catalog | May declares 47 reviewed legacy definitions retired: 33 paused-platform checks, 11 obsolete/unimplemented Gym checks, two legacy session checks and the transition-only migration check. This is an explicit list, not an age-based retirement rule. Existing retired Evaluation declarations repair their old alerts through the same Host operation. |
+| Event-pair query | Retained as diagnostic inventory without its arbitrary attention threshold; it cannot establish a current Task failure. |
+| Passive events look unanswered | Daemon heartbeat, workflow-dispatch and skill-load producers use the existing record-only marker. Durable subscribers still accept work when applicable; optional observation does not require another consumer. Historical rows are unchanged and age out normally. |
+| Effort invisible to selection | Two query-backed observations use the existing cumulative usage rows and a normal `updated_at` index. Definitions start without alert thresholds; existing routine review can inspect them. The independent May route is ready for the Evaluation scope when its threshold is enabled. |
+| Overinterpreting effort | Evaluation guidance asks it to inspect useful artifacts, accepted results, outstanding requirements and waits, and recommend the smallest worthwhile change or no change. May judges the recommendation. |
+
+Current native Codex progress reports expose goal tokens/status and coarse native
+turns, not the managed collector's assistant-reply accounting contract. Treating
+those counters as equivalent would manufacture coverage. The new observations
+explicitly retain this limit; native accounting remains a separately scoped
+adapter extension, as proposed. It does not prevent reviewing native failures
+through existing attempt and age metrics.
+
+The fixture uses production usage persistence, the source query, metric service,
+Evaluation report publication, May intake and Host Task acceptance with scripted
+judgments. Productive high effort reaches an accepted `no-change` decision;
+continued samples do not emit another breach. Query tests include accepted-work
+activity, a running invocation crossing the hour boundary, quiet waits, exact
+ownership scopes, unavailable reply accounting and indexed selection. Retirement
+tests cover rollback and retained observations. These prove mechanics, not model
+judgment quality or measured token savings.
+
+Verification: Host `bun run ci` passed (3,527 tests, three deployment-only skips,
+zero failures). May/Evaluation tests passed (427 tests, one existing skip), and
+the final effort-query regression passed after adding unattributed-usage evidence.
+May's typecheck and the design integrity/examples check passed. The design check
+retains the existing unclassified `reports/` warning. Evaluation's separate
+typecheck still reports SDK `task-contract.ts:584` union narrowing under its
+non-strict configuration; the unchanged baseline reports the identical error.
+This is a known check limitation, not a claimed clean typecheck for Evaluation.
+
+Integrate the Host correction before activating the App definitions. Normal
+activation performs catalog retirement; no production SQL patch or data movement
+is required. Keep the platform App paused. Keep effort alerts in calibration
+until an authorized runtime trial compares useful work, review cost and noise.
+Existing investigations retain their work and are reconsidered by their owners;
+retiring a metric does not silently finish them.

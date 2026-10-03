@@ -472,6 +472,12 @@ Record-only facts with no consumer remain valid observations. A required event
 without durable acceptance remains visible for recovery. Invalid or unknown
 external input and nonexistent required targets create no event receipt.
 
+Internal passive producers use the same record-only marker as the App event
+interface. Heartbeat, workflow-dispatch and skill-load facts can still reach
+interested subscribers, but their persistence does not require an extra worker
+to accept them. Mark the producer's intent rather than adding its name to a
+metric exclusion list whenever optional telemetry appears unanswered.
+
 ## Results and correlation
 
 In the current Host, a Task result completes linked Task-based caller records

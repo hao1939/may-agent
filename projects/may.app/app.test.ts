@@ -570,21 +570,9 @@ describe("canonical May conversation App", () => {
       data: { context: { event } },
     });
     expect(String(input.data.message)).toContain("metric-response");
-    expect(String(input.data.message)).toContain("runtime/compat/owner-review");
-    expect(String(input.data.message)).toContain("accepted-incomplete");
-    expect(String(input.data.message)).toContain(
-      "stale/requeued interruptions",
-    );
-    expect(String(input.data.message)).toContain(
-      "terminal-attempt denominator",
-    );
-    expect(String(input.data.message)).toContain("trial May attention policy");
-    expect(String(input.data.message)).toContain(
-      "do not create a repair or human message for each failure or sample",
-    );
-    expect(String(input.data.message)).toContain(
-      "Generic supervisor fallback remains deferred",
-    );
+    expect(String(input.data.message)).toContain("accepted results");
+    expect(String(input.data.message)).toContain("valuable partial work");
+    expect(String(input.data.message)).toContain("Preserve retries");
     expect(Check(app.inputSchema, input)).toBeTrue();
     for (const type of [
       "metric.updated",

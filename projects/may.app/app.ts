@@ -19,6 +19,8 @@ import {
 } from "./reliability-metrics.js";
 
 import retiredAksMetrics from "./retired-aks-metrics.json" with { type: "json" };
+import { retiredLegacyMetrics } from "./retired-legacy-metrics.js";
+import { effortMetrics, EVALUATION_EFFORT_METRIC } from "./effort-metrics.js";
 
 import { createMetricEvidenceObserver } from "./watchers/metric-evidence.js";
 import {
@@ -395,14 +397,16 @@ export function evaluationOperationAlertInput(
   const data = record(event.data);
   if (
     event.type !== "metric.breach" ||
-    data.metricId !== EVALUATION_OPERATION_METRIC ||
+    ![EVALUATION_OPERATION_METRIC, EVALUATION_EFFORT_METRIC].includes(
+      String(data.metricId),
+    ) ||
     data.repeat === true
   )
     return null;
   return {
     kind: "message",
     data: {
-      message: `Independently review this Evaluation operation alert episode through the existing metric-response path. Read the exact metric evidence and its alertId, then reread the current Evaluation Tasks and retained attempts named by the bounded sample before judging. The source covers failed/rejected attempts, accepted-incomplete results and stale/requeued interruptions, including runtime/compat/owner-review by ordinary Task identity; it excludes user cancellation and discloses the retained terminal-attempt denominator, six-hour cut and coverage limits. Three unsuccessful attempts for one Task generation in six hours is a trial May attention policy, not a retry cap or proof of waste. Reuse an existing investigation when its scope fits and bind the disposition to this alert episode; do not create a repair or human message for each failure or sample. Preserve original retries, inputs, caller/dependency links and waits. Notification, aggregate recovery and a new investigation do not fulfill the original Evaluation input. Generic supervisor fallback remains deferred.`,
+      message: `Independently review this Evaluation operation alert episode through the existing metric-response path. Read its exact evidence, alertId, cohort and accounting limits, then the named Tasks, accepted results and remaining requirements. Judge whether repeated effort or unsuccessful attempts warrant a useful correction; high effort can produce valuable partial work. Reuse a fitting investigation and bind the disposition to this episode. Preserve retries, inputs, caller links and Conditions. A quieter metric, notification or new investigation does not fulfill the original input.`,
       context: { event: structuredClone(event) },
     },
   };
@@ -484,6 +488,8 @@ export default defineApp({
   id: "may",
   metrics: [
     ...reliabilityMetrics,
+    ...effortMetrics,
+    ...retiredLegacyMetrics,
     ...(retiredAksMetrics as NonNullable<AppDefinition["metrics"]>),
   ],
   version: 1,

@@ -31,6 +31,18 @@ const sqlLatencySourceCommand = `bun ${JSON.stringify(join(import.meta.dir, "scr
 // App attention policy; Host samples existing facts and never stops retries from these rules.
 export const reliabilityMetrics: NonNullable<AppDefinition["metrics"]> = [
   {
+    id: "event.pair-orphan-count",
+    name: "Open orphaned event pairs",
+    owner: "may",
+    type: "gauge",
+    unit: "pairs",
+    measureInterval: 300_000,
+    description:
+      "Diagnostic inventory of legacy event-pair records. An orphan does not establish an unfinished current Task; review current Task and delivery evidence before acting.",
+    sourceQuery:
+      "SELECT COUNT(*) AS value FROM event_pair_runs WHERE status = 'orphan' AND closed_at IS NULL",
+  },
+  {
     id: SQL_TIME_METRIC,
     name: "Daemon time spent in SQLite",
     owner: "may",

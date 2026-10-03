@@ -315,11 +315,21 @@ A change in meaning requires a new metric ID or an explicit cutover. Retiring
 a metric preserves its history, stops new measurement, and resolves or
 explains its open alerts.
 
-Currently changing a definition's status does not close its alerts: evaluation
-skips inactive definitions. The retiring caller explicitly uses `resolveAlert()`
-for administrative closure and records the reason in its normal change/Task
-evidence. That method's optional reason argument is not persisted. Administrative
-closure emits no measured recovery and does not settle related Tasks.
+The October 4 source correction makes an explicit `retired` or `closed`
+definition close its open alerts in the same transaction. Reinstalling the
+definition is idempotent and retains the original closure time and observations.
+This administrative closure emits no measured recovery and does not settle
+related Tasks. Existing `resolveAlert()` remains available for other deliberate
+administrative closure; its optional reason argument is not persisted. Keep
+the reason in normal definition/change or Task evidence.
+
+The same source correction changes `metric.stale-active-count` to request
+attention when any cadence-bound collector is overdue. Both a missing first
+sample and an older sample receive the existing grace of at least fifteen
+minutes or two collection intervals. Its sample identifies the monitored
+population and bounded stale collector examples. It does not diagnose a stopped
+daemon from inside that daemon. Source changes and App catalog activation remain
+separate from deployment; see the [implementation record](../../../may.app/design/metric-coverage-audit-20261003.md#october-4-implementation).
 
 ## Metric semantics and persistence
 

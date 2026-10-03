@@ -8,7 +8,10 @@ import { applyDbSchema } from "../may-agent/src/lib/db/schema.js";
 import { closeDb, getDb } from "../may-agent/src/lib/db/connection.js";
 import { EventBus } from "../may-agent/src/app/core/events/bus.js";
 import { createAppReporting } from "../may-agent/src/app/composition/reporting.js";
-import { measureSourceMetrics } from "../may-agent/src/app/metric-source-measurement.js";
+import {
+  measureSourceMetrics,
+  evaluateMetrics,
+} from "../may-agent/src/app/metric-source-measurement.js";
 import { createAppScheduleProducer } from "../may-agent/src/app/adapters/producers/app-schedules.js";
 import {
   createAppInboxItem,
@@ -27,6 +30,7 @@ import {
   SQL_DIAGNOSTIC_NOTE_MAX_CHARS,
   sqlLatencySample,
 } from "./scripts/daemon-sql-latency.js";
+import { effortMetrics } from "./effort-metrics.js";
 import app, { evaluationOperationAlertInput } from "./app.js";
 
 let db: SqliteDb;
@@ -235,17 +239,54 @@ test("SQL latency evidence preserves the worst-call witness across windows and n
     averageMs: 10,
     maxMs: 10,
   }));
-  const slow = { id: "slow:witness", operation: "get", sql: "SELECT slow ?", calls: 1, totalMs: 2_001, averageMs: 2_001, maxMs: 2_001 };
-  const observed = sqlLatencySample({ diagnostics: { pid: 7, sql: {
-    since: now - 600_000, measuredAt: now, queryLimit: 8, untracked: { calls: 3 },
-    queries: { since: now - 300_000, until: now, trackedQueries: 20, topByTotalTime: fast, topByWorstTime: fast },
-    previousQueries: { since: now - 600_000, until: now - 300_000, trackedQueries: 1, topByTotalTime: [slow], topByWorstTime: [slow] },
-  } } }, now);
+  const slow = {
+    id: "slow:witness",
+    operation: "get",
+    sql: "SELECT slow ?",
+    calls: 1,
+    totalMs: 2_001,
+    averageMs: 2_001,
+    maxMs: 2_001,
+  };
+  const observed = sqlLatencySample(
+    {
+      diagnostics: {
+        pid: 7,
+        sql: {
+          since: now - 600_000,
+          measuredAt: now,
+          queryLimit: 8,
+          untracked: { calls: 3 },
+          queries: {
+            since: now - 300_000,
+            until: now,
+            trackedQueries: 20,
+            topByTotalTime: fast,
+            topByWorstTime: fast,
+          },
+          previousQueries: {
+            since: now - 600_000,
+            until: now - 300_000,
+            trackedQueries: 1,
+            topByTotalTime: [slow],
+            topByWorstTime: [slow],
+          },
+        },
+      },
+    },
+    now,
+  );
   const note = JSON.parse(observed.note);
   expect(observed.value).toBe(2_001);
-  expect(observed.note.length).toBeLessThanOrEqual(SQL_DIAGNOSTIC_NOTE_MAX_CHARS);
+  expect(observed.note.length).toBeLessThanOrEqual(
+    SQL_DIAGNOSTIC_NOTE_MAX_CHARS,
+  );
   expect(note.queries[0].fingerprint).toBe("slow:witness");
-  expect(note.queries.slice(1).every((row: any) => row.fingerprint.startsWith("fast:"))).toBe(true);
+  expect(
+    note.queries
+      .slice(1)
+      .every((row: any) => row.fingerprint.startsWith("fast:")),
+  ).toBe(true);
   expect(note.coverage).toMatchObject({
     lifetimeUntrackedCalls: 3,
     selectedRowsTruncated: true,
@@ -259,9 +300,32 @@ test("SQL latency evidence preserves the worst-call witness across windows and n
 
 test("SQL latency rejects coercible and non-finite identity or timing fields", () => {
   const now = Date.now();
-  const valid = { diagnostics: { pid: 7, sql: { since: now - 1, measuredAt: now,
-    queries: { since: now - 1, until: now, trackedQueries: 1, topByTotalTime: [{ id: "x", operation: "get", sql: "SELECT ?", calls: 1, totalMs: 1, averageMs: 1, maxMs: 1 }], topByWorstTime: [] },
-  } } };
+  const valid = {
+    diagnostics: {
+      pid: 7,
+      sql: {
+        since: now - 1,
+        measuredAt: now,
+        queries: {
+          since: now - 1,
+          until: now,
+          trackedQueries: 1,
+          topByTotalTime: [
+            {
+              id: "x",
+              operation: "get",
+              sql: "SELECT ?",
+              calls: 1,
+              totalMs: 1,
+              averageMs: 1,
+              maxMs: 1,
+            },
+          ],
+          topByWorstTime: [],
+        },
+      },
+    },
+  };
   for (const bad of [null, true, "", Infinity]) {
     const identity = structuredClone(valid) as any;
     identity.diagnostics.pid = bad;
@@ -517,6 +581,8 @@ test("Host source collection retains diagnostic evidence and opens one metric br
       persistDir: root,
       isDue: (metric) => metric.id === SQL_LATENCY_METRIC,
     });
+    expect(breaches).toHaveLength(0);
+    await evaluateMetrics({ bus, persistDir: root });
     expect(result).toEqual({
       measured: [SQL_LATENCY_METRIC],
       skipped: [],
@@ -600,6 +666,7 @@ test("declared reliability metrics collect through the Host and retain a real br
     );
     const bus = new EventBus();
     const collected = await measureSourceMetrics({ bus, persistDir: root });
+    await evaluateMetrics({ bus, persistDir: root });
     // This isolated collector has no daemon diagnostic socket. The new metric
     // must fail visibly rather than recording a healthy zero.
     expect(collected.failures).toEqual([
@@ -607,7 +674,7 @@ test("declared reliability metrics collect through the Host and retain a real br
     ]);
     expect(collected.skipped).toEqual([SQL_LATENCY_METRIC]);
     expect(collected.measured.sort()).toEqual(
-      reliabilityMetrics
+      [...reliabilityMetrics, ...effortMetrics]
         .filter((metric) => metric.id !== SQL_LATENCY_METRIC)
         .map((metric) => metric.id)
         .sort(),
@@ -630,6 +697,7 @@ test("declared reliability metrics collect through the Host and retain a real br
     ).toEqual([
       { id: SQL_LATENCY_METRIC, reason: expect.stringContaining("ENOENT") },
     ]);
+    await evaluateMetrics({ bus, persistDir: root });
     expect(
       await reporting.readMetric("may.unresolved-input-recovery-count"),
     ).toMatchObject({ value: 0, sampleSize: 0 });
@@ -677,12 +745,14 @@ test("real Host collection maps one May review input per Evaluation breach episo
         breachEvents.push(event);
       }
     });
-    const collect = () =>
-      measureSourceMetrics({
+    const collect = async () => {
+      await measureSourceMetrics({
         bus,
         persistDir: root,
         isDue: (metric) => metric.id === EVALUATION_OPERATION_METRIC,
       });
+      await evaluateMetrics({ bus, persistDir: root });
+    };
     const reviewInputs = () =>
       breachEvents
         .map((event) =>
@@ -707,12 +777,7 @@ test("real Host collection maps one May review input per Evaluation breach episo
 
     addFailure(4);
     await collect();
-    expect(breachEvents).toHaveLength(2);
-    expect(breachEvents[1]!.data).toMatchObject({
-      alertId: breachEvents[0]!.data.alertId,
-      repeat: true,
-      current: 4,
-    });
+    expect(breachEvents).toHaveLength(1); // A new sample in the same episode is quiet.
     expect(reviewInputs()).toHaveLength(1);
     expect(
       store
@@ -742,8 +807,8 @@ test("real Host collection maps one May review input per Evaluation breach episo
       )
       .run(now - 10_000);
     await collect();
-    expect(breachEvents).toHaveLength(3);
-    expect(breachEvents[2]!.data.alertId).not.toBe(
+    expect(breachEvents).toHaveLength(2);
+    expect(breachEvents[1]!.data.alertId).not.toBe(
       breachEvents[0]!.data.alertId,
     );
     expect(reviewInputs()).toHaveLength(2);
