@@ -613,23 +613,21 @@ export class SubagentManager {
       throw new Error("Structured workflow completion is not supported for persistent chat sessions");
     }
 
-    const usage = persistentChat
-      ? undefined
-      : observeExecutionUsage(
-          this._persistDir,
-          {
-            sessionId,
-            agent: def.name,
-            appId: opts?.taskBinding?.appId ?? opts?.projectId ?? def.projectId,
-            workflowRunId: opts?.workflowRunId,
-            taskId: opts?.taskBinding?.taskId,
-            attemptId: opts?.taskBinding?.attemptId,
-            configuredModel: `${def.model.provider}/${def.model.id}`,
-          },
-          (error) => log("warn", `[usage] Could not save execution measurements for ${sessionId}: ${String(error)}`),
-        );
+    const usage = observeExecutionUsage(
+      this._persistDir,
+      {
+        sessionId,
+        agent: def.name,
+        appId: opts?.taskBinding?.appId ?? opts?.projectId ?? def.projectId,
+        workflowRunId: opts?.workflowRunId,
+        taskId: opts?.taskBinding?.taskId,
+        attemptId: opts?.taskBinding?.attemptId,
+        configuredModel: `${def.model.provider}/${def.model.id}`,
+      },
+      (error) => log("warn", `[usage] Could not save execution measurements for ${sessionId}: ${String(error)}`),
+    );
     const prepared = prepareAgentExecution({
-      onPreparation: usage?.preparation,
+      onPreparation: usage.preparation,
       executionContext,
       definition: def,
       projectRoot: this._projectRoot,
@@ -711,7 +709,7 @@ export class SubagentManager {
     // Create the same prepared model/tool loop used by direct callers. The
     // durable manager only adds persistence and system-event adapters around it.
     const agent = this._agentRunFactory(prepared.runner);
-    if (usage) agent.subscribe(usage.observe);
+    agent.subscribe(usage.observe);
 
     // JSONL persistence
     agent.subscribe((event) => {
@@ -847,6 +845,7 @@ export class SubagentManager {
       // A running invocation owns cleanup and its terminal receipt. Do not
       // mark it offline while it or one of its helpers can still have effects.
       if (wasRunning) return;
+      session.usage?.finish("interrupted");
       this._registry.updateSessionStatus(sessionId, "interrupted", "Cancelled");
       updateSessionDb(this._persistDir, sessionId, {
         status: "interrupted",
@@ -2228,6 +2227,7 @@ export class SubagentManager {
 
     if (session.status === "interrupted" || (errorText && !retryableChatFailure)) {
       const status: "error" | "interrupted" = session.status === "interrupted" ? "interrupted" : "error";
+      session.usage?.finish(status);
       try {
         unlinkSync(join(sessionDir(this._persistDir, sessionId), "[STARTED]"));
       } catch {}

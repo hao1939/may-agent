@@ -5,7 +5,7 @@ import { tmpdir } from "node:os";
 import { createAssistantMessageEventStream, type AssistantMessage } from "@earendil-works/pi-ai";
 import { fakeModel } from "../../test/fixtures/model.js";
 import { createAgentRun } from "./agent-runner.js";
-import { closeDb } from "./db/connection.js";
+import { closeDb, getDb } from "./db/connection.js";
 import { SubagentManager } from "./manager.js";
 
 function definition(version: string) {
@@ -23,12 +23,14 @@ describe("manager session lifecycle", () => {
   let persistDir: string;
   let manager: SubagentManager;
   let holdReplies: boolean;
+  let replyFailure: string | undefined;
   let started: ReturnType<typeof Promise.withResolvers<void>>;
   let requests: Array<{ model: string; systemPrompt: string; reply: () => void }>;
 
   beforeEach(() => {
     persistDir = mkdtempSync(join(tmpdir(), "may-manager-lifecycle-"));
     holdReplies = false;
+    replyFailure = undefined;
     started = Promise.withResolvers<void>();
     requests = [];
     manager = new SubagentManager({
@@ -45,7 +47,8 @@ describe("manager session lifecycle", () => {
                 provider: model.provider,
                 model: model.id,
                 content: [{ type: "text", text: `Reply from ${model.id}` }],
-                stopReason: "stop",
+                stopReason: replyFailure ? "error" : "stop",
+                errorMessage: replyFailure,
                 timestamp: Date.now(),
                 usage: {
                   input: 1,
@@ -56,7 +59,8 @@ describe("manager session lifecycle", () => {
                   cost: { input: 0, output: 0, total: 0, cacheRead: 0, cacheWrite: 0 },
                 },
               };
-              stream.push({ type: "done", reason: "stop", message });
+              if (replyFailure) stream.push({ type: "error", reason: "error", error: message });
+              else stream.push({ type: "done", reason: "stop", message });
             };
             requests.push({ model: model.id, systemPrompt: context.systemPrompt ?? "", reply });
             started.resolve();
@@ -115,7 +119,10 @@ describe("manager session lifecycle", () => {
       status: "done",
       lastAssistantText: "Reply from captured",
     });
-    expect(requests[0]).toMatchObject({ model: "captured", systemPrompt: expect.stringContaining("Instructions for captured") });
+    expect(requests[0]).toMatchObject({
+      model: "captured",
+      systemPrompt: expect.stringContaining("Instructions for captured"),
+    });
   });
 
   it("rejects a premature result and resolves concurrent waiters to the completed result", async () => {
@@ -131,6 +138,58 @@ describe("manager session lifecycle", () => {
     expect(results[0]).toMatchObject({ sessionId, status: "done", lastAssistantText: "Reply from old" });
     expect(results[1]).toEqual(results[0]);
     expect(manager.result(sessionId)).toEqual(results[0]);
+  });
+
+  it("records persistent chat replies without recounting retained history on resume", async () => {
+    const taskBinding = { appId: "example", taskId: "conversation", generation: 1, attemptId: "attempt-1" };
+    const sessionId = manager.run("worker", "First chat input", { kind: "chat", autoClose: "never", taskBinding });
+    const rows = () =>
+      getDb(persistDir)
+        .prepare(
+          `SELECT app_id, task_id, attempt_id, outcome,
+      json_extract(data, '$.totals.replies') AS replies,
+      json_extract(data, '$.totals.input') AS input FROM execution_usage ORDER BY started_at, rowid`,
+        )
+        .all();
+    await manager.waitForIdle(sessionId);
+    expect(rows()).toEqual([
+      { app_id: "example", task_id: "conversation", attempt_id: "attempt-1", outcome: null, replies: 1, input: 1 },
+    ]);
+
+    manager.send(sessionId, "Second chat input");
+    await manager.waitForIdle(sessionId);
+    expect(rows()).toHaveLength(1);
+    expect(rows()[0]).toMatchObject({ outcome: null, replies: 2, input: 2 });
+    manager.close(sessionId);
+    expect(rows()[0]).toMatchObject({ outcome: "interrupted", replies: 2 });
+
+    manager.resumeSession(sessionId, "New work after resume", {
+      taskBinding: { ...taskBinding, attemptId: "attempt-2" },
+    });
+    await manager.waitForIdle(sessionId);
+    expect(rows()).toHaveLength(2);
+    expect(rows()[1]).toMatchObject({
+      app_id: "example",
+      task_id: "conversation",
+      attempt_id: "attempt-2",
+      outcome: null,
+      replies: 1,
+      input: 1,
+    });
+  });
+
+  it("retains usage when a persistent chat fails", async () => {
+    replyFailure = "Synthetic provider failure";
+    const sessionId = manager.run("worker", "Fail this chat input", { kind: "chat", autoClose: "never" });
+    await expect(manager.waitForIdle(sessionId)).rejects.toThrow(replyFailure);
+    expect(
+      getDb(persistDir)
+        .prepare(
+          `SELECT task_id, outcome,
+      json_extract(data, '$.totals.replies') AS replies FROM execution_usage`,
+        )
+        .all(),
+    ).toEqual([{ task_id: null, outcome: "error", replies: 1 }]);
   });
 
   it("returns no progress when the requested limit is zero", async () => {
