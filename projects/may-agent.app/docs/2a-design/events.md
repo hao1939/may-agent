@@ -222,6 +222,16 @@ commands, network I/O, presentation, broad reads and other actual handling
 begin asynchronously after `publish` returns. Failed attachment remains saved
 for recovery through the same admission boundary.
 
+Internal emissions can join an existing resource `stateTransaction`. The writer
+saves the Event and required projections inside that transaction, then returns
+an `afterCommit` delivery hook to the bus. Durable routes, ordinary subscribers
+and passive listeners run only after the outer commit; releasing a nested
+savepoint is not a commit. A rollback discards that scope's pending delivery.
+The internal emit therefore has no delivery acceptance yet while its caller's
+transaction is open. Delivery errors after commit cannot undo accepted SQL.
+If the process stops between commit and delivery, the existing journal recovery
+retries its idempotent routes; the callbacks are not another durable queue.
+
 The EventHub does not serialize semantic handling. It records event identity,
 sequence, and causal links, but those facts do not control execution order.
 Each consumer owns the ordering its resource requires. For example, May's

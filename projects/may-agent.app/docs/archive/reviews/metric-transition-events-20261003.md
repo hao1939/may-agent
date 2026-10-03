@@ -113,6 +113,40 @@ inside the transaction. Existing real EventBus/DbWriter rollback tests also pass
 These tests exercise a deterministic conflicting schedule, not a load benchmark
 or a live-runtime trial. Full-CI status and the exact revision belong to PR #300.
 
+## Review correction: repair the complete persistence boundary
+
+The next review identified legacy duplicate open rows: serializing future
+decisions alone left those rows to generate successive recoveries. The upgrade
+now retains the earliest inserted open alert ID, administratively closes the
+duplicates with a reference to that ID, and adds a unique partial index.
+Historical rows and Event references remain readable. The existing schema
+transaction owns this one-time repair; no runtime duplicate-resolution branch
+is needed. A read-only check of the stopped installation found no such duplicates,
+so portable seeded fixtures provide the upgrade evidence.
+
+Tracing the full path exposed two more failures. A snapshot-insert failure left
+the current metric value changed; an outer-commit failure could deliver a breach
+or recovery even though its alert and Event rolled back. Five new regressions
+failed on `9b1c46d01`: the seeded duplicate upgrade, failed sample persistence,
+and commit failure for automatic breach, manual breach and recovery. Another
+regression reproduced a late sample replacing newer current evidence.
+
+Host `86cba2552` makes sample/current writes atomic, orders observations by
+measurement time and insertion ID, and uses the inserted alert's exact returned
+ID. Shared state transactions now release EventBus delivery after outer commit
+and discard pending delivery on rollback. A failed nested savepoint discards
+only its own callbacks; a post-commit delivery failure leaves SQL committed and
+does not prevent other pending deliveries from being attempted. Existing journal
+recovery remains responsible for committed but unaccepted Events.
+
+The focused metric, schema, transaction, bus, evidence and HTTP/browser checks
+passed 71 tests. Bulk-alert fixtures now use separate metrics or resolved history,
+preserving their list-cap and exact-detail coverage under the new invariant.
+The exact-metric query-plan assertion accepts the new unique index and still
+rejects a table scan or temporary sort. Full CI and GitHub check status belong to
+the PR's final revision. No live runtime, model call or installation migration
+was used for these trials.
+
 ## Value and limits
 
 The verified gain is fewer events and unnecessary input admissions. The latest

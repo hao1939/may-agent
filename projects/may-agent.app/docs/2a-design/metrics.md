@@ -102,6 +102,20 @@ rule no longer matches, it resolves that alert and emits `metric.recovered` once
 A later breach opens a new episode with a new `alertId`. Reopening the metric
 service uses that stored state, not an in-memory notification cache.
 
+SQLite enforces one open alert per metric. At upgrade, if an older race left
+several open rows, keep the earliest inserted open ID as the episode. Close the
+extra rows administratively and append a reference to that ID in their messages;
+retain all rows, original message text and historical Event references. This
+repair emits no recovery Event and does not rewrite already admitted work.
+The existing schema transaction performs it once before installing the unique
+open-alert index. Normal evaluation then follows the same single-episode rule.
+
+Recording a sample saves both its history row and current-value projection in
+one transaction. The latest observation is ordered by measurement time, then
+insertion ID for equal timestamps. A late sample remains evidence without
+overwriting newer current evidence. Alert decisions and evidence readers use
+this same ordering; recording alone does not emit an Event.
+
 Each evaluation or manual alert call reads current metric evidence and open-alert
 state under the same database write transaction that saves its transition and
 required Event. The existing `stateTransaction` and Event writer provide this
@@ -110,8 +124,12 @@ of opening the same episode or publishing its recovery twice. If Event persisten
 fails, the alert change rolls back so the next ordinary call can retry it.
 Previously recorded samples remain available. The transaction covers one metric,
 not the whole collection pass; successful earlier metrics remain committed.
+The EventBus releases routing and presentation only after the outer transaction
+commits. A rollback also discards pending delivery; a crash after commit leaves
+the saved Event available to existing journal recovery. These are shared
+[Event persistence rules](events.md), not a metric-specific retry loop.
 
-This producer correction is implemented at Host `9b1c46d01` in
+This producer correction is implemented at Host `86cba2552` in
 [PR #300](https://github.com/hao1939/may-agent/pull/300), pending merge and
 deployment. The [isolated comparison](../archive/reviews/metric-transition-events-20261003.md)
 records the source, regression and App-routing evidence.
