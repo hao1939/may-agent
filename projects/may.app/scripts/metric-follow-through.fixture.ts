@@ -355,6 +355,15 @@ export async function fixture(execute: TaskExecutor) {
         data: { decision: "implementation", approved: true },
       } as unknown as AgentEvent);
     },
+    publishTaskUpdate(id: string) {
+      bus.emit({
+        type: "test.task.updated",
+        source: "test:task-update",
+        owner: "app:may",
+        target: { appId: "may", taskId: id },
+        data: { revision: 1 },
+      } as unknown as AgentEvent);
+    },
     async condition(
       reviewAfterMs = 3_600_000,
       expected: Record<string, unknown> = {

@@ -28,7 +28,8 @@ async function setup(judge: (prompt: string) => Promise<MetricReview>) {
         ? requested
         : reconciliation.input;
       const saved = initial?.data?.context?.metricResponse as
-        MetricReview | undefined;
+        | MetricReview
+        | undefined;
       if (saved) {
         initialOwnerCalls++;
         return structuredClone(saved);
@@ -539,6 +540,71 @@ test("missing selected work and invalid Conditions never leave accepted metric d
     f.attach("invalid", { context: { metricResponse: plan } }),
   ).rejects.toThrow("reviewAfterMs must be an integer of at least 60000");
   expect(f.decisions()).toHaveLength(0);
+});
+
+test("a retained future review remains valid when an intervening result omits it", async () => {
+  let calls = 0;
+  const f = await setup(async (prompt) => {
+    calls++;
+    expect(prompt).toContain("test.task.updated");
+    return {
+      task: {
+        state: "waiting",
+        summary: "Keep the deliberate post-backoff review",
+        facts: ["Intervening evidence does not replace the scheduled review"],
+      },
+      decisions: [
+        {
+          ...f.subject,
+          disposition: "investigate",
+          reason: "Post-backoff verification remains outstanding",
+          evidence: ["verification:pending"],
+          nextAction: "Reconsider at the retained checkpoint",
+        },
+      ],
+    };
+  });
+  const reviewAt = Date.now() + 3_600_000;
+  const plan: MetricReview = {
+    task: {
+      state: "waiting",
+      summary: "Recheck actual outstanding work after backoff",
+      facts: ["verification remains outstanding"],
+      reviewAt,
+    },
+    decisions: [
+      {
+        ...f.subject,
+        disposition: "investigate",
+        reason: "Post-backoff verification remains outstanding",
+        evidence: ["verification:pending"],
+        nextAction: "Reconsider after backoff",
+      },
+    ],
+  };
+  await f.attach("timed-review", { context: { metricResponse: plan } });
+  await until(
+    () => f.get("timed-review")?.status === "waiting",
+    "reviewAt-only wait accepted",
+  );
+  expect(f.initialOwnerCalls()).toBe(1);
+  expect(f.get("timed-review")!.currentObligations).toMatchObject({
+    available: true,
+    reviewAt,
+  });
+  expect(f.get("timed-review")!.conditions).toHaveLength(0);
+
+  f.publishTaskUpdate("timed-review");
+  await until(
+    () => calls === 1 && f.get("timed-review")?.status === "waiting",
+    "omitted retained review accepted",
+  );
+  expect(f.get("timed-review")!.currentObligations).toMatchObject({
+    available: true,
+    reviewAt,
+  });
+  expect(f.get("timed-review")!.conditions).toHaveLength(0);
+  expect(f.attempts).toHaveLength(2);
 });
 
 test("an explicit Task review runs once and preserves the repair wait", async () => {
