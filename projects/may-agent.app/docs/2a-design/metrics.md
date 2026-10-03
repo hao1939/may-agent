@@ -572,6 +572,11 @@ retained transcript messages are not new usage. Preserve known App/Task/attempt
 links and leave absent identity unknown. Recording is quiet and best-effort;
 the existing metric calculation and App review decide whether attention is due.
 
+Startup recovery settles unfinished usage from the prior invocation after its
+workers have stopped, including when the same session resumes. It preserves
+saved counters and the last observation time; an unobserved end time or duration
+stays unknown. Repeating recovery leaves already terminal records unchanged.
+
 Model reply counts, native turns and native thread token totals are different
 measurements. Keep their scope explicit before aggregating them. The native
 `codex-goal` adapter does not yet populate this managed-invocation store. Neither
