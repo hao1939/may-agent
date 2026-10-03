@@ -43,7 +43,12 @@ WHERE delivery_status = 'unhandled'
 export const STALE_ACTIVE_METRIC_ID = "metric.stale-active-count";
 export const STALE_ACTIVE_SOURCE_QUERY = `WITH clock AS (SELECT strftime('%s','now') * 1000 AS cut),
   cadence AS (
-    SELECT m.id, m.measure_interval, COALESCE(m.created_at, m.updated_at, 0) AS created_at,
+    SELECT m.id, m.measure_interval,
+      COALESCE(
+        CASE WHEN m.created_at <= (SELECT cut FROM clock) THEN m.created_at END,
+        CASE WHEN m.updated_at <= (SELECT cut FROM clock) THEN m.updated_at END,
+        0
+      ) AS created_at,
       (SELECT MAX(s.measured_at) FROM metric_snapshots s
         WHERE s.metric_id = m.id AND s.measured_at <= (SELECT cut FROM clock)) AS last_sample
     FROM metrics m
