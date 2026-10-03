@@ -333,8 +333,9 @@ export type ConversationTurnResult = {
    */
   response?: string;
   facts?: string[];
-  topic: ConversationTopicDecision;
-  /** Admit one responsible Task directly and link it to the chosen Topic; handling of this input then completes. The accepted ask may remain open. */
+  /** Optional Conversation organization. Omit to retain the input's association; work and result delivery need no Topic. */
+  topic?: ConversationTopicDecision;
+  /** Admit one responsible Task with its caller input retained for result delivery. The accepted ask may remain open. */
   followUp?: ConversationDelegation;
   taskControls?: ConversationTaskControl[];
   requestUpdates?: AppConversationRequestUpdate[];
@@ -362,16 +363,18 @@ export const conversationTurnResultSchema = Type.Object(
       }),
     ),
     facts: Type.Optional(Type.Array(nonEmptyStringSchema, { maxItems: 32 })),
-    topic: Type.Union(
-      [
-        Type.Object({ kind: Type.Literal("none") }, { additionalProperties: false }),
-        Type.Object({ kind: Type.Literal("new"), title: nonEmptyStringSchema }, { additionalProperties: false }),
-        Type.Object({ kind: Type.Literal("existing"), id: nonEmptyStringSchema }, { additionalProperties: false }),
-      ],
-      {
-        description:
-          "Related conversation context and exact Task links: use an existing Topic, create a new durable interest, or none for a self-contained answer.",
-      },
+    topic: Type.Optional(
+      Type.Union(
+        [
+          Type.Object({ kind: Type.Literal("none") }, { additionalProperties: false }),
+          Type.Object({ kind: Type.Literal("new"), title: nonEmptyStringSchema }, { additionalProperties: false }),
+          Type.Object({ kind: Type.Literal("existing"), id: nonEmptyStringSchema }, { additionalProperties: false }),
+        ],
+        {
+          description:
+            "Optional grouping for this Conversation's discussion and Requests. Omit to retain the input's Topic, if any. Choose new, existing or none only to change that grouping. Delegation and result delivery do not require a Topic.",
+        },
+      ),
     ),
     followUp: Type.Optional(
       Type.Object(
@@ -388,7 +391,7 @@ export const conversationTurnResultSchema = Type.Object(
         {
           additionalProperties: false,
           description:
-            "Submit this input as durable Task work to the selected App and link it to the chosen Topic. Reuse an exact Task only when its outcome, acceptance, input and execution method fit. The Host admits the handoff when this Turn's result is accepted. Task admission alone does not fulfill a Request.",
+            "Submit this input as durable Task work to the selected App. The Host retains the originating Conversation input and returns the selected result automatically. Reuse an exact Task only when its outcome, acceptance, input and execution method fit. The Host admits the handoff when this Turn's result is accepted. Task admission alone does not fulfill a Request.",
         },
       ),
     ),

@@ -180,7 +180,7 @@ function seedRetiredConversation(f: Awaited<ReturnType<typeof fixture>>) {
   expect(f.store.isCancelled(id)).toBe(true);
 }
 
-test.each(["throws", "invalid", "missing-topic"] as const)(
+test.each(["throws", "invalid", "unavailable-topic"] as const)(
   "Task input survives %s and reaches an exact answer through paced retry",
   async (failure) => {
     const calls: CallOptions[] = [];
@@ -197,7 +197,7 @@ test.each(["throws", "invalid", "missing-topic"] as const)(
         return {
           status: "done",
           structuredResult:
-            failure === "invalid" ? ({} as ConversationTurnResult) : { ...delegated, topic: { kind: "none" } },
+            failure === "invalid" ? ({} as ConversationTurnResult) : { ...delegated, topic: { kind: "existing", id: "absent" } },
         };
       }
       return { status: "done", structuredResult: answer };
@@ -781,6 +781,41 @@ test.each(["available", "removed"] as const)(
   },
 );
 
+test.each(["drop", "keep"] as const)("finish validation leaves an uninitialized target unchanged before a %s correction", async (correction) => {
+  let judgments = 0;
+  const f = await fixture(async (_definition, _prompt, options) => {
+    judgments++;
+    const writes = () => f.db.prepare("SELECT total_changes() AS count").get()!.count;
+    const before = writes();
+    const invalid = { ...delegated, requestUpdates: undefined,
+      followUp: { ...delegated.followUp!, requestId: "closed" } };
+    expect(options.validateOutput?.(invalid)).toContain("open accepted Request");
+    expect(AppTaskResourceStore.activeFromDb(f.db, background.id)).toBeNull();
+    expect(writes()).toBe(before);
+    const corrected = correction === "keep" ? delegated : {
+      summary: "Answered here", response: "No follow-up is needed.", topic: { kind: "none" as const },
+    };
+    expect(options.validateOutput?.(corrected)).toBeNull();
+    expect(AppTaskResourceStore.activeFromDb(f.db, background.id)).toBeNull();
+    expect(writes()).toBe(before);
+    return { status: "done", structuredResult: corrected };
+  }, (root, appDir) => ({
+    ...withBackground(root, appDir), installControllers: false, taskAppIds: [app.id],
+  }));
+  applyConversationRequestUpdates(f.db, {
+    appId: app.id, conversationId: "primary", now: Date.now(), updateKey: "prior-answer", messageId: "prior-answer",
+    updates: [{ id: "closed", expectedRevision: 0, scope: "An earlier ask", disposition: "fulfilled", reason: "Already answered" }],
+  });
+  expect(AppTaskResourceStore.activeFromDb(f.db, background.id)).toBeNull();
+  const admitted = f.admit();
+  await f.run(admitted.taskId);
+  expect(judgments).toBe(1);
+  expect(getAppInboxItem(f.db, admitted.item.id)?.status).toBe("done");
+  const target = AppTaskResourceStore.activeFromDb(f.db, background.id);
+  if (correction === "keep") expect(target?.readTask("sample")?.spec.outcome).toBe("Get the sample measurement");
+  else expect(target).toBeNull();
+});
+
 test("one-App worker resolves follow-up from its pinned registry and emits a post-commit wake", async () => {
   const f = await fixture(
     async () => ({ status: "done", structuredResult: delegated }),
@@ -1231,7 +1266,7 @@ test.each(["live", "restart", "admission-write-failure"])(
         data: {
           appId: app.id,
           conversationId: "primary",
-          topicId: input.topicId,
+          originInputId: contexts[0]!.id,
           taskRef: { appId: background.id, taskId: "sample" },
           attemptId: original.attemptId,
           summary: "Forged alternate result",
@@ -1597,6 +1632,7 @@ test.each(["live", "restart", "stop"])("owner closure returns without manufactur
           appId: app.id,
           conversationId: "primary",
           topicId: readAppConversationResource(f.db, app.id, "primary").topics[0]!.id,
+          originInputId: seen[0]!.id,
           taskAppId: background.id,
           taskId: "sample",
           closedGeneration: 1,
