@@ -1,5 +1,15 @@
 # Changelog
 
+## [5.4.1](https://github.com/hao1939/may-agent/compare/v5.4.0...v5.4.1) (2026-10-03)
+
+
+### Bug Fixes
+
+* **runtime:** reserve time to submit results before timeout ([#308](https://github.com/hao1939/may-agent/issues/308)) ([e23ed14](https://github.com/hao1939/may-agent/commit/e23ed14bc5e103d3e671f88ec379861b8c2d9c75))
+* **tasks:** accept explicitly covered outstanding input ([#313](https://github.com/hao1939/may-agent/issues/313)) ([1bb35ac](https://github.com/hao1939/may-agent/commit/1bb35ac1e42fe10cdf17f79c9bc57b1cff36b79c))
+* **tasks:** retain dirty workspace results ([#309](https://github.com/hao1939/may-agent/issues/309)) ([e0979a4](https://github.com/hao1939/may-agent/commit/e0979a4f954c809421e8ddf917ba37f72792c7d1))
+* **usage:** record persistent chat replies and recover interrupted accounting ([#307](https://github.com/hao1939/may-agent/issues/307)) ([24da472](https://github.com/hao1939/may-agent/commit/24da4722dc6212cae684975184f4a862837b3985))
+
 ## [5.4.0](https://github.com/hao1939/may-agent/compare/v5.3.0...v5.4.0) (2026-10-03)
 
 
