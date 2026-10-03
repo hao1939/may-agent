@@ -147,6 +147,22 @@ rejects a table scan or temporary sort. Full CI and GitHub check status belong t
 the PR's final revision. No live runtime, model call or installation migration
 was used for these trials.
 
+The final initialization audit also found that a successful backup restore
+returned before applying the Host schema and connection settings. At Host
+`868d387e8`, restored databases continue through the normal initialization path.
+A seeded old backup with a retained session and duplicate open alerts reproduces
+the skipped repair on the previous source; the corrected path retains the
+session, repairs the duplicate, enforces uniqueness and enables the normal WAL
+and foreign-key settings. The focused connection/metric selection passes 24 tests.
+
+One local full run also failed the separate workflow interrupted-result
+assertion. It did not recur in the standalone test, 30 repetitions alongside
+the concurrently running checkpoint test file (510 checks), or the next full
+run. Its cause is not established; no workflow behavior was changed. A diagnostic
+run was additionally invalidated by temporary database debug output entering a
+command fixture's JSON output; that instrumentation was removed. The final PR
+status distinguishes these runs from clean validation of the committed source.
+
 ## Value and limits
 
 The verified gain is fewer events and unnecessary input admissions. The latest

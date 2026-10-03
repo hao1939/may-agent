@@ -109,6 +109,8 @@ retain all rows, original message text and historical Event references. This
 repair emits no recovery Event and does not rewrite already admitted work.
 The existing schema transaction performs it once before installing the unique
 open-alert index. Normal evaluation then follows the same single-episode rule.
+Restoring a backup continues through this normal Host initialization path;
+restoration does not bypass schema upgrades or connection settings.
 
 Recording a sample saves both its history row and current-value projection in
 one transaction. The latest observation is ordered by measurement time, then
@@ -129,7 +131,7 @@ commits. A rollback also discards pending delivery; a crash after commit leaves
 the saved Event available to existing journal recovery. These are shared
 [Event persistence rules](events.md), not a metric-specific retry loop.
 
-This producer correction is implemented at Host `86cba2552` in
+This producer correction is implemented at Host `868d387e8` in
 [PR #300](https://github.com/hao1939/may-agent/pull/300), pending merge and
 deployment. The [isolated comparison](../archive/reviews/metric-transition-events-20261003.md)
 records the source, regression and App-routing evidence.
