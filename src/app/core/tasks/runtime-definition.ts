@@ -193,11 +193,15 @@ export function standaloneAppTaskAdmissionDescriptors(input: {
   persistDir: string;
   projectsRoot: string;
   entries: AppRegistrySnapshot["entries"];
+  /** Proposal inspection must not activate an otherwise unused target App. */
+  initialize?: boolean;
 }): Map<string, AppTaskRuntimeDescriptor> {
   const descriptors = new Map<string, AppTaskRuntimeDescriptor>();
   for (const { appDir, definition: app } of input.entries) {
     if (!app.tasks) continue;
-    const resourceStore = discoverAppTaskResourceStore(input.persistDir, app, appDir);
+    const resourceStore = input.initialize === false
+      ? AppTaskResourceStore.inspectFromDb(getDb(input.persistDir), app.id)
+      : discoverAppTaskResourceStore(input.persistDir, app, appDir);
     const descriptor: AppTaskRuntimeDescriptor = {
       id: app.id,
       appDir,

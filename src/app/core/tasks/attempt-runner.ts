@@ -672,7 +672,7 @@ async function runClaimedTask(
 }
 
 /** Resolve targets from the same pinned installation for preparation and settlement. */
-function conversationTaskApp(opts: AppTaskRuntimeOptions, descriptor: AppTaskRuntimeDescriptor, appId: string) {
+function conversationTaskApp(opts: AppTaskRuntimeOptions, descriptor: AppTaskRuntimeDescriptor, appId: string, initialize = true) {
   const registry = opts.appRegistrySnapshot ?? opts.appRegistry?.snapshot();
   if (!registry) throw new Error("Conversation execution requires an installed App registry");
   const entry = registry.entries.find(({ definition }) => definition.id === appId);
@@ -684,6 +684,7 @@ function conversationTaskApp(opts: AppTaskRuntimeOptions, descriptor: AppTaskRun
           persistDir: opts.persistDir,
           projectsRoot: opts.projectsRoot,
           entries: [entry],
+          initialize,
         }).get(appId)!;
   return { app: target.app, config: appTaskConfig(target) };
 }
@@ -722,7 +723,7 @@ async function executeTaskHandler(input: TaskHandlerInput & { conversation: bool
         taskSnapshot: input.taskSnapshot,
         executionPaths: input.executionPaths,
       },
-      getTaskApp: (appId) => conversationTaskApp(opts, descriptor, appId),
+      getTaskApp: (appId) => conversationTaskApp(opts, descriptor, appId, false),
     });
     return {
       handlerResult: {
