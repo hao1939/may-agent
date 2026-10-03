@@ -1930,4 +1930,100 @@ describe("automatic task outcome selector", () => {
       "selector:exact-input-semantic-supersession-unavailable",
     );
   });
+
+  test("does not let reconciliation bookkeeping rebind a semantic decision that predates the wake", async () => {
+    const requested = ["task:app_newer_wake"];
+    const ctx = {
+      input: { reconcileInputKeys: requested },
+      reconciliation: {
+        appId: "evaluation",
+        taskId: "runtime/task-outcome-selector",
+        events: {
+          items: [
+            {
+              observedAt: "2026-10-03T22:11:11.980Z",
+              event: {
+                type: "app.task.requested",
+                data: {
+                  appId: "evaluation",
+                  taskId: "runtime/task-outcome-selector",
+                  idempotencyKey: "task:app_command",
+                  request: {
+                    id: "app_command",
+                    input: {
+                      kind: "reconcile-automatic-review-inputs",
+                      data: { inputKeys: requested },
+                    },
+                  },
+                },
+              },
+            },
+          ],
+          truncated: false,
+        },
+      },
+      read: {
+        tasks: {
+          get: async () => ({
+            inputEvents: [
+              {
+                key: requested[0],
+                observedAt: "2026-10-03T22:00:00.000Z",
+                event: {
+                  type: "app.task.requested",
+                  data: {
+                    appId: "evaluation",
+                    taskId: "runtime/task-outcome-selector",
+                    idempotencyKey: requested[0],
+                    request: {
+                      id: "app_newer_wake",
+                      input: { kind: "automatic-review", data: {} },
+                    },
+                  },
+                },
+              },
+            ],
+            acceptedEvidence: {
+              page: {
+                items: [
+                  {
+                    attemptId: "r_reconciliation_after_wake",
+                    startedAt: "2026-10-03T22:05:00.000Z",
+                    acceptedResult: {
+                      state: "converged",
+                      facts: [
+                        "selector:exact-input-reconciliation:1",
+                        "selector:exact-input-superseded-by-attempt:r_semantic_before_wake",
+                      ],
+                    },
+                  },
+                  {
+                    attemptId: "r_semantic_before_wake",
+                    startedAt: "2026-10-03T21:59:00.000Z",
+                    acceptedResult: {
+                      state: "converged",
+                      facts: ["selector:no-candidate"],
+                    },
+                  },
+                ],
+              },
+            },
+          }),
+        },
+      },
+      events: { emit: async () => undefined },
+      done: (_summary: string, result: Record<string, unknown>) => result,
+    } as never;
+
+    const result = (await runSelector(
+      ctx,
+      undefined,
+      config,
+    )) as unknown as Record<string, unknown>;
+    expect(result).toMatchObject({ state: "incomplete", report: true });
+    expect(result).not.toHaveProperty("inputKeys");
+    expect(result.facts).toContain(
+      "selector:exact-input-semantic-supersession-unavailable",
+    );
+  });
 });

@@ -188,15 +188,23 @@ function acceptedSelectorJudgmentAfter(
     const result = object(item.acceptedResult);
     const facts = strings(result.facts);
     const startedAt = Date.parse(text(item.startedAt));
+    const reconciliationOnly = facts.some((fact) =>
+      fact.startsWith("selector:exact-input-"),
+    );
     const hasSelectorDecision = facts.some(
       (fact) =>
-        (fact.startsWith("selector:") && !fact.startsWith("selector-state:")) ||
+        fact === "selector:disabled" ||
+        fact.startsWith("selector:requested-reviews-first:") ||
+        fact === "selector:requested-review-backlog-unknown" ||
+        fact === "selector:no-candidate" ||
+        fact.startsWith("selector:metric-observed:") ||
         fact.startsWith("selected:"),
     );
     if (
       result.state === "converged" &&
       Number.isFinite(startedAt) &&
       startedAt > admittedAfter &&
+      !reconciliationOnly &&
       hasSelectorDecision
     )
       return text(item.attemptId);
