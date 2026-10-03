@@ -648,7 +648,7 @@ describe("project task workspace", () => {
     expect(await git(f.repo, "branch", "--list", prepared.metadata.branch)).toBe("");
   });
 
-  it("refuses to close accepted work that still has uncommitted files", async () => {
+  it("observes dirty accepted work as retained and non-removable", async () => {
     const f = await fixture();
     const prepared = await prepareAppTaskWorkspace({
       repoDir: f.repo,
@@ -658,12 +658,28 @@ describe("project task workspace", () => {
       baseBranch: "dev",
       refreshRemote: false,
     });
-    writeFileSync(join(prepared.metadata.path, "dirty.txt"), "not committed\n");
+    writeFileSync(join(prepared.metadata.path, "staged.txt"), "staged\n");
+    await git(prepared.metadata.path, "add", "staged.txt");
+    writeFileSync(join(prepared.metadata.path, "README.md"), "unstaged\n");
+    writeFileSync(join(prepared.metadata.path, "untracked.txt"), "untracked\n");
 
     const finalized = await finalizeAppTaskWorkspace(prepared, "accepted");
 
-    expect(finalized).toMatchObject({ ok: false, metadata: { disposition: "retained-for-recovery" } });
-    expect(finalized.reason).toContain("Bounded git status:\n?? dirty.txt");
+    expect(finalized).toMatchObject({
+      ok: true,
+      removable: false,
+      metadata: {
+        disposition: "retained-for-recovery",
+        dirtyObservation: {
+          observedAt: expect.any(String),
+          status: " M README.md\nA  staged.txt\n?? untracked.txt",
+          truncated: false,
+        },
+      },
+    });
+    expect(finalized.reason).toContain("Bounded git status:\n M README.md\nA  staged.txt\n?? untracked.txt");
+    expect(existsSync(prepared.metadata.path)).toBe(true);
+    expect(await git(f.repo, "branch", "--list", prepared.metadata.branch)).toContain(prepared.metadata.branch);
   });
 
   for (const retained of [false, true]) {
