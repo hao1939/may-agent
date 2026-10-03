@@ -274,6 +274,13 @@ accept or decline without reconstructing the diagnosis:
   the proposal unnecessary or wrong. Keep current recovery and prevention of
   recurrence separate.
 
+Keep the proposal within the evidence's scope: a sampled request does not prove
+how every request should be handled. Prefer correcting use of an existing
+capability when that can fulfill the work. A proposed code change names the
+violated contract or explains why changing the contract is worth its cost;
+repetition alone does not establish which layer is broken. Verification checks
+both reduced waste and preservation of unfinished work and its return path.
+
 Keep this proportional: a short finding and linked verification can be enough.
 For a justified wait or recovered issue with no worthwhile residual correction,
 recommend no change and explain why. May or the accountable App checks current
