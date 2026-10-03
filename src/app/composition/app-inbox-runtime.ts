@@ -2,7 +2,7 @@ import { validateIntent } from "../core/tasks/app-task-reconciler.js";
 import { deliverConversationApproval, taskControlAction } from "../core/events/interface.js";
 import { readTaskEventTarget, readEventTaskTarget } from "../core/events/task-target.js";
 import { appInputFeedbackEvent, appInputAdmissionFailureEvent } from "../core/inbox/input-result.js";
-import { conversationTaskId, listPendingConversationTaskChanges } from "../core/state/conversation-task-turns.js";
+import { conversationTaskId, listPendingConversationTaskChanges, type ConversationTaskChangeRef } from "../core/state/conversation-task-turns.js";
 import type { AppTaskCapability } from "../core/tasks/app-task-capability.js";
 import { createAppScheduleProducer } from "../adapters/producers/app-schedules.js";
 import { OwnedTimer } from "../core/scheduling/timer.js";
@@ -34,7 +34,7 @@ import {
   type AppInboxHostOptions,
 } from "../core/inbox/app-inbox-host.js";
 import { hasConversationExecutionTask } from "../core/state/app-inbox-store.js";
-import { listConversationTaskLinks, type ConversationTaskLink } from "../core/state/conversation-task-links.js";
+import { listConversationTaskLinks } from "../core/state/conversation-task-links.js";
 import type {
   AppDefinitionSource,
   AppRegistry,
@@ -303,35 +303,32 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
     armConversationUpdate();
   };
 
-  const emitConversationTaskChanged = (
-    link: ConversationTaskLink,
-    taskRef: { appId: string; taskId: string },
-    change: {
-      idempotencyKey: string;
-      attemptId?: string;
-      closedGeneration?: number;
-    },
-  ): void => {
-    // The source identity is enough. Admission reads the stored outcome;
-    // the executing Task collects current Conversation context.
-    if (taskRef.appId === link.appId && taskRef.taskId === conversationTaskId(link.appId, link.conversationId)) return;
-    if (!change.attemptId && change.closedGeneration === undefined) return;
-    options.bus.emit({
-      type: "conversation.task.changed",
-      source: "app-task",
-      owner: `app:${link.appId}`,
-      target: { appId: link.appId, project: link.appId },
-      data: {
-        appId: link.appId,
-        conversationId: link.conversationId,
-        ...(link.topicId ? { topicId: link.topicId } : {}),
-        ...(link.originInputId ? { originInputId: link.originInputId } : {}),
-        taskRef,
-        ...(change.attemptId ? { attemptId: change.attemptId } : {}),
-        ...(change.closedGeneration !== undefined ? { closedGeneration: change.closedGeneration } : {}),
-      },
-      idempotencyKey: change.idempotencyKey,
-    } as unknown as AgentEvent);
+  const admitConversationTaskChanges = (changes: readonly ConversationTaskChangeRef[]): void => {
+    // Admit each Conversation once. Admission reads all eligible saved links;
+    // choosing one representative Topic could hide another caller's report.
+    const seen = new Set<string>();
+    for (const change of changes) {
+      const { appId, conversationId, taskAppId, taskId, attemptId, closedGeneration } = change;
+      if (taskAppId === appId && taskId === conversationTaskId(appId, conversationId)) continue;
+      if (!attemptId && closedGeneration === undefined) continue;
+      const identity = JSON.stringify([appId, conversationId, taskAppId, taskId, attemptId ?? null, closedGeneration ?? null]);
+      if (seen.has(identity)) continue;
+      seen.add(identity);
+      try {
+        const admitted = options.admitConversationChange?.({
+          appId, conversationId, taskAppId, taskId,
+          ...(attemptId !== undefined ? { attemptId } : { closedGeneration: closedGeneration! }),
+        });
+        if (!admitted) throw new Error("Conversation Task change has no available execution owner");
+      } catch (error) {
+        // Saved links/outcomes remain due for the existing recovery scan.
+        // One unavailable Conversation must not prevent another from receiving work.
+        reportFailure({
+          appId, conversationId, stage: "conversation-change", disposition: "recovery-pending",
+          error: `Task ${taskAppId}/${taskId}, outcome ${attemptId ?? `closed:${closedGeneration}`}: ${String(error)}`,
+        });
+      }
+    }
   };
   const host = new AppInboxHost({
     db: options.db,
@@ -894,16 +891,7 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
         if (!appId) throw new Error("Conversation supervision review requires its App");
         if (options.admitConversationChange) {
           const changes = listPendingConversationTaskChanges(options.db, appId, limit);
-          for (const change of changes) {
-            emitConversationTaskChanged(
-              change,
-              { appId: change.taskAppId, taskId: change.taskId },
-              {
-                ...change,
-                idempotencyKey: `conversation-change-review:${eventRowId(event)}:${change.conversationId}:${change.originInputId ?? change.topicId}:${change.taskAppId}:${change.taskId}:${change.attemptId ?? `closed:${change.closedGeneration}`}`,
-              },
-            );
-          }
+          admitConversationTaskChanges(changes);
           return {
             accepted: true,
             by: `conversation-changes:${appId}`,
@@ -914,6 +902,7 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
         throw new Error("Conversation Task change admission is not configured");
       }
       if (String(event.type) === "conversation.task.changed") {
+        // Read notifications saved by older Hosts through the same admission path.
         if (!options.admitConversationChange) throw new Error("Conversation Task change admission is not configured");
         const ref = record(data.taskRef);
         if (
@@ -994,20 +983,13 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
           void host
             .refreshTaskResults(appId, taskId)
             .catch((error) => reportRuntimeFailure("input-result", error, appId));
-          for (const link of listConversationTaskLinks(options.db, appId, taskId)) {
-            emitConversationTaskChanged(
-              link,
-              { appId, taskId },
-              {
-                ...(closed
-                  ? { closedGeneration: Number(data.generation) }
-                  : typeof data.attemptId === "string"
-                    ? { attemptId: data.attemptId }
-                    : {}),
-                idempotencyKey: `conversation-task-changed:${link.conversationId}:${link.originInputId ?? link.topicId}:${appId}:${taskId}:${eventRowId(event) ?? data.generation ?? "unknown"}`,
-              },
+          if (closed || typeof data.attemptId === "string")
+            admitConversationTaskChanges(
+              listConversationTaskLinks(options.db, appId, taskId).map((link) => ({
+                ...link, taskAppId: appId, taskId,
+                ...(closed ? { closedGeneration: Number(data.generation) } : { attemptId: String(data.attemptId) }),
+              })),
             );
-          }
         }
         // Closure is already committed; its notification cannot become fresh Task input.
         if (closed) return { accepted: true, by: "task-runtime-notification", route: "direct" };
