@@ -724,7 +724,7 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
        FROM event_durable_routes route
        LEFT JOIN app_event_admission_plans plan ON plan.event_id = route.event_id
        WHERE route.route_id = 'app-inbox-route' AND route.status = 'pending'
-         AND plan.event_id IS NULL
+         AND (plan.event_id IS NULL OR plan.status = 'completed')
          ${force ? "" : "AND route.updated_at <= ?"}
        ORDER BY route.updated_at, route.event_id
        LIMIT ?`,
@@ -736,6 +736,14 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
       )
       .map((row) => Number(row.event_id))
       .filter((eventId) => Number.isSafeInteger(eventId) && eventId > 0 && !plannedIds.has(eventId));
+    if (prePlanEventIds.length > 0) {
+      const recordAttempt = options.db.prepare(
+        `UPDATE event_durable_routes
+         SET updated_at = MAX(updated_at + 1, ?)
+         WHERE event_id = ? AND route_id = 'app-inbox-route' AND status = 'pending'`,
+      );
+      for (const eventId of prePlanEventIds) recordAttempt.run(currentTime, eventId);
+    }
     admissionRecoveryHandle = setTimeout(() => {
       admissionRecoveryHandle = null;
       if (closed) return;
@@ -761,9 +769,9 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
             });
           }
         } else if (event) {
-          // EventBus re-runs only idempotent durable routes and records delivery
-          // acceptance on the original row; ordinary subscribers never replay.
-          options.bus.redeliverPersisted(event, recovery.eventId);
+          // Retry only this pending route. Other durable subscribers may already
+          // have completed consequential effects before this marker failed.
+          options.bus.redeliverPersistedRoute(event, recovery.eventId, "app-inbox-route");
         }
         if (index < recoveries.length) admissionRecoveryHandle = setTimeout(recoverNext, 0);
       };

@@ -53,6 +53,17 @@ describe("EventBus subscriber priority", () => {
     expect(recovered[EVENT_DELIVERY_RESULT]).toMatchObject({ accepted: true, by: "durable-recovery" });
   });
 
+  it("redelivers only the identified durable route", () => {
+    const bus = new EventBus();
+    const calls: string[] = [];
+    bus.subscribeDurableRoute(() => calls.push("app-inbox"), { label: "app-inbox-route" });
+    bus.subscribeDurableRoute(() => calls.push("command-send"), { label: "command-router" });
+
+    bus.redeliverPersistedRoute({ type: "info", message: "recover" }, 92, "app-inbox-route");
+
+    expect(calls).toEqual(["app-inbox"]);
+  });
+
   it("fans out a worker-persisted event without appending it twice", async () => {
     const bus = new EventBus();
     const calls: string[] = [];

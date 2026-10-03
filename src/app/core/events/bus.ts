@@ -1267,14 +1267,29 @@ export class EventBus {
     [EVENT_ROW_ID]?: number;
     [EVENT_DELIVERY_RESULT]?: DeliveryResult;
   } {
+    return this.redeliverPersistedRoute(input, eventId);
+  }
+
+  /** Retry one identified durable route without replaying other durable effects. */
+  redeliverPersistedRoute(
+    input: AgentEvent,
+    eventId: number,
+    routeId?: string,
+  ): AgentEvent & {
+    [EVENT_ROW_ID]?: number;
+    [EVENT_DELIVERY_RESULT]?: DeliveryResult;
+  } {
     if (!Number.isSafeInteger(eventId) || eventId <= 0) {
       throw new Error("Persisted event redelivery requires a positive event id");
+    }
+    if (routeId !== undefined && !routeId.trim()) {
+      throw new Error("Persisted event route redelivery requires a non-empty route id");
     }
     const event = Object.isExtensible(input) ? input : ({ ...input } as AgentEvent);
     Object.defineProperty(event, EVENT_ROW_ID, { value: eventId, configurable: true });
     Object.defineProperty(event, EVENT_DEDUPLICATED, { value: true, configurable: true });
     Object.defineProperty(event, EVENT_REDELIVERY_REQUIRED, { value: true, configurable: true });
-    return this.dispatch(event, false);
+    return this.dispatch(event, false, routeId);
   }
 
   /**
@@ -1302,6 +1317,7 @@ export class EventBus {
   private dispatch(
     input: AgentEvent,
     persist: boolean,
+    durableRouteId?: string,
   ): AgentEvent & {
     [EVENT_ROW_ID]?: number;
     [EVENT_DELIVERY_RESULT]?: DeliveryResult;
@@ -1343,6 +1359,7 @@ export class EventBus {
         return event as AgentEvent & { [EVENT_ROW_ID]?: number };
       }
       for (const { fn, routeId } of this.durableRouteSubscribers) {
+        if (durableRouteId !== undefined && routeId !== durableRouteId) continue;
         try {
           const result = normalizeDeliveryResult(this.runSubscriber(event, "first", fn));
           delivery = preferredDelivery(delivery, result);
