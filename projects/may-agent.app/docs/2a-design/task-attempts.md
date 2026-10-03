@@ -65,6 +65,13 @@ implements no scheduler, queue, retry loop across Task attempts, or Task storage
 Bounded repair inside one execution follows the
 [workflow repair convention](execution-contributions.md#repair-within-an-attempt).
 
+**Known progress limit:** the current unseen-input fence can prevent accepted
+completion under continuous arrivals, even when the newer input is independent.
+The [burst-input proposal](../proposals/progress-under-burst-input.md) reviews
+bounded settlement and steering together. Its experimental check removal also
+allows an obsolete handoff after an unread correction; it is not an implemented
+replacement contract or a recommendation to bypass current fences.
+
 A wake asks the Host to check a Task's pending work. One attempt receives the
 pending input batch; there is no one-event/one-agent-call rule and no collection
 delay. The queue holds one pending entry per Task. Signals received during

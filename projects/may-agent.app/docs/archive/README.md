@@ -34,6 +34,9 @@ contracts; Tier-2 design governs when wording conflicts.
 
 ## Reviews
 
+- [Burst-input progress experiment — 2026-10-03](reviews/burst-input-progress-20261003.md)
+  — continuous input and finite backlog reproduce settlement starvation; an
+  isolated alternative demonstrates progress and an unread-correction tradeoff.
 - [Resource/Event boundary review — 2026-09-27](reviews/resource-event-boundary-20260927.md)
   — clarified routing versus reconciliation and immediate updates; reproduced
   pre-plan admission recovery failure and checked Condition freshness coupling.
