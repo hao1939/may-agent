@@ -5,7 +5,7 @@
 **Choice basis:** [Apps own meaning; the Host owns mechanics](../1-principles/core-principles.md#apps-own-meaning-the-host-owns-mechanics).
 
 **Design status:** Accepted.
-**Implementation status:** The shared attempt interface, result admission and live/final change admission are implemented in Host source, including #285. Scoped acceptance while input remains is implemented in candidate Host `6358142bb`; see [accept work and continue what remains](#accept-work-and-continue-what-remains) and its validation record. It is not deployed. The proposed `decision` spelling remains deferred. App adoption and deployment remain separate.
+**Implementation status:** The shared attempt interface, result admission and live/final change admission are implemented in Host source, including #285. Scoped acceptance while input remains is implemented in candidate Host `5664ce7b1`; see [accept work and continue what remains](#accept-work-and-continue-what-remains) and its validation record. It is not deployed. The proposed `decision` spelling remains deferred. App adoption and deployment remain separate.
 
 An attempt is one bounded execution of a Task. It can read, act, request help,
 check results and repair several times before returning. Infra supplies current
@@ -89,11 +89,14 @@ was incorporated, or infer meaning from whether its source is human or system.
 Live steering, where supported, lets the agent reconsider at useful boundaries;
 it does not require waiting for all possible later messages before acting.
 
-**Source availability:** Candidate Host `6358142bb` applies this rule to final
+**Source availability:** Candidate Host `5664ce7b1` applies this rule to final
 completion, partial results, live actions, cross-App requests, Conversation
 Request changes and creator Task revisions. Existing attempt, authority,
 affected-revision and transaction checks remain. Workspace finalization also
-retains clean workspaces when scoped completion leaves input or Conditions.
+retains clean workspaces when scoped completion leaves input or unresolved
+Conditions. Cleanup uses the same satisfaction rule as settlement: a satisfied
+Condition that settlement removes must not retain an otherwise clean, integrated
+worktree. Missing or unrecognized Condition state remains unresolved.
 The schema is unchanged: `waiting` with `continue: true` accepts progress;
 `converged` fulfills its selected inputs. One result has one disposition for
 its selected set. The [PoC record](../archive/reviews/burst-input-progress-20261003.md#implementation-candidate-and-poc)
@@ -128,7 +131,7 @@ other input pending. Results proposing Task actions remain atomic with those
 actions. Cross-App requests and immediate actions use the same current-attempt
 and authority checks. A genuine rejected result remains recovery evidence;
 a queued message alone is not a rejection. Clean workspaces remain reusable
-when input or Conditions remain.
+when input or unresolved Conditions remain.
 The Runtime owns fencing, leases, event persistence, result admission and
 recovery, so an executor implements no scheduler, queue, retry loop across Task
 attempts, or Task storage. Bounded repair inside one execution follows the

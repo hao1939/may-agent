@@ -212,13 +212,38 @@ completion under contradictory revisions or prove model comprehension, fairness
 under overload, token savings or production behavior. May was not deployed or
 started for this trial.
 
+## PR review follow-up: clean up the last resolved wait
+
+Host `5664ce7b1` addresses the [PR review finding](https://github.com/hao1939/may-agent/pull/305#discussion_r4173781787).
+A satisfied Condition remains linked until settlement. The earlier retention
+check counted the link as unfinished work, then settlement removed it and
+converged the Task. No later attempt was scheduled to remove the clean worktree.
+
+Retention planning and settlement now share the same satisfaction predicate.
+Only a recognized satisfied Condition is excluded; unknown or missing state
+still retains the workspace. No new cleanup loop or agent decision is needed.
+
+The existing Git regression now uses a local bare remote so private refs really
+exist. It resolves two independent waits in sequence: the first settlement
+retains the workspace and evidence, and the last removes the clean integrated
+worktree, Task branch and private refs. The no-Condition input case still cleans
+up when its remaining input is answered. The Condition case fails on `6358142bb`
+and passes with the correction. The focused workspace/rejection group passed
+10 tests with 127 assertions, including rejected-output preservation.
+
+Full `bun run ci` passed on `5664ce7b1`: 3,537 tests passed, three existing
+installation-dependent tests skipped, zero failures, and 18,950 assertions across
+323 files. Type, SDK, boundary and lint checks passed; the browser test executed.
+Design integrity, examples and canonical App checks also passed with the same
+two pre-existing layout warnings. No deployment or model trial was performed.
+
 ## Reproduction
 
-Use an isolated Host checkout with normal dependencies. At candidate `6358142bb`:
+Use an isolated Host checkout with normal dependencies. At candidate `5664ce7b1`:
 
 ```sh
 bun test src/app/core/state/conversation-task-progress.test.ts
-bun test src/app/core/tasks/app-task-runtime.test.ts --test-name-pattern 'result-scope rejection|partial acceptance preserves'
+bun test src/app/core/tasks/app-task-runtime.test.ts --test-name-pattern 'result-scope rejection|partial acceptance retains'
 bun run ci
 ```
 
