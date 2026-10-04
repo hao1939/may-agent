@@ -1,0 +1,273 @@
+{
+  "kind": "alex-legacy-lineage-reconciliation",
+  "lineage": "app-dependency-completion",
+  "date": "2026-10-04",
+  "author": "bob",
+  "sessionId": "s_1791118630636_28b1f3f6-e73f-4965-b058-75449941ee45",
+  "scope": "Exactly the two old may-agent Tasks listed in mappings. Other Task identities below identify callers or evidence only, not additional dispositions.",
+  "decision": {
+    "status": "recommendation-only-not-admitted",
+    "summary": "Both historical execution paths are superseded, but neither requested outcome is proved fulfilled. Do not activate the obsolete frozen candidate or reconstruct app.dependency.completed/app-inbox:wake. Preserve the useful requirement for exact saved-answer correlation, visible failures, caller wake and terminal results under the current protocol, with one bounded current-evidence verification decision by Alex. May retains the exact old Hao approval relationship and must decide its withdrawal or continued relevance through the existing human return, not silently retarget it.",
+    "replacement": null,
+    "oldTasksFulfilled": false,
+    "runtimeMutationPerformed": false,
+    "replacementWorkAdmitted": false,
+    "conditionReboundOrSettled": false,
+    "implementationNeeded": "Not established. Current source implements a different protocol and a live current request returned to its caller. The historical negative controls and both complete representative lineages have not been proved here. Verification/reframing, not a duplicate repair or deployment, is the next useful technical decision.",
+    "humanDecisionNeeded": "May must retain and adjudicate the pending exact-candidate approval boundary. Migration authority permits replacing obsolete execution identities, but does not authorize activation, imply Hao approved or rejected the old candidate, or settle an unanswered human decision."
+  },
+  "baselines": {
+    "appsWorktreeCommit": "9df19124636250b213f20b2d030d39f08b5d04fa",
+    "hostSourceCommit": "fc3b9cab31d3b3af40ee04453b689a93e0477832",
+    "frontier": "projects/alex.app/legacy-frontier-disposition-2026-10-04.json",
+    "migrationReceipt": "projects/alex.app/migration-receipt-2026-10-04.md",
+    "agreedDesign": "/app/projects/may-agent.app/docs/proposals/alex-improvement-app.md",
+    "snapshot": "/app/.state/alex-migration-20261004/legacy-frontier-snapshot.json",
+    "snapshotSha256": "bd3f6a1cc65e125c61f5a8380cba746d55e3d8143edc6f8d6825af286d5d7f97",
+    "snapshotCapturedAt": "2026-10-04T12:13:38.821491+00:00",
+    "index": "/app/.state/alex-migration-20261004/legacy-frontier-index.json",
+    "indexSha256": "46d61e762a8abac6170b4333c7aac30af2661afabe7fe635294a17318ea1cde9",
+    "oldCandidate": {
+      "commit": "6d2e57b40d93553d529bd606f2021d9fde24b216",
+      "artifactSha256": "1a477cfd317fe48b38a0fb6c8973a1a64816aa00a3586e8757fe848b18d892b6",
+      "baselineCommit": "73426f5c735ddd6c6c813dd83d03b4f6e6a9de2f",
+      "ancestryObservation": "The commit object exists, but git merge-base --is-ancestor OLD HEAD returned 1. This does not establish whether equivalent changes were incorporated another way; it does prohibit treating current deployment as this exact candidate's receipt."
+    }
+  },
+  "mappings": [
+    {
+      "old": {
+        "appId": "may-agent",
+        "taskId": "activate-and-live-prove-app-dependency-completion-correlation-20260819",
+        "generation": 1,
+        "resourceVersion": 8,
+        "phase": "waiting",
+        "owner": "may",
+        "creator": {
+          "appId": "may"
+        },
+        "parentId": "repair-and-live-prove-app-dependency-completion-correlation-20260819",
+        "conditionIds": [
+          "hao-runtime-candidate-6d2e57b-activation-decision"
+        ]
+      },
+      "outcome": "After Hao explicitly approves the exact frozen Runtime candidate, activate it once through the supported supervisor-owned path and produce fresh terminal proof that only genuinely correlated canonical app dependency completions receive `app-inbox:wake`, while all rejected and failed-wake cases remain visible and both required lineages reach their terminal results.",
+      "fullRequirementsReference": "snapshot.apps['may-agent'].tasks[task_id='activate-and-live-prove-app-dependency-completion-correlation-20260819'].resource_json.spec; pinned snapshot above",
+      "acceptedProgress": "Retained status stops before activation for missing exact Hao decision. Its parent records a frozen preactivation candidate. These are historical status evidence, not fresh validation of missing candidate files.",
+      "recommendedDisposition": "execution-path-superseded-not-fulfilled-retain-may-approval-boundary",
+      "replacement": null,
+      "technicalOwnerForUsefulRemainder": "alex",
+      "decisionAuthorityAndReturn": "May as retained creator/owner represents Hao; activation child returns through repair parent, then reconcile-app-dependency-completed-delivery-taxonomy-20260819. Do not replace this chain with a new direct human promise.",
+      "remainingUnproved": [
+        "Explicit Hao decision on exactly the old commit and SHA on its request trace.",
+        "Exact approved staged activation with requested/loaded SHA equality, supervisor and web health, staged-marker removal, targetedWake=true and duplicateDeploy=false.",
+        "Both complete fresh AKS and May terminal-result/artifact lineages, including May parent resumption.",
+        "Bounded negative controls including unsuccessful wake and positive dual-consumer/no-duplicate behavior.",
+        "Fresh supported event.unhandled-signal-count-1h snapshot and truthful scoped alert-4602 disposition."
+      ],
+      "nextDecision": "May should consider withdrawing the obsolete activation request as unfulfilled after receiving this source-backed supersession recommendation. Until its accepted decision is recorded, retain the exact Condition unchanged. Do not deploy 6d2e57b or treat a modern deployment or migration approval as its approval."
+    },
+    {
+      "old": {
+        "appId": "may-agent",
+        "taskId": "repair-and-live-prove-app-dependency-completion-correlation-20260819",
+        "generation": 1,
+        "resourceVersion": 6,
+        "phase": "waiting",
+        "owner": "may",
+        "creator": {
+          "appId": "may"
+        },
+        "parentId": "reconcile-app-dependency-completed-delivery-taxonomy-20260819",
+        "conditionIds": []
+      },
+      "outcome": "Repair and live-prove the app-inbox `app.dependency.completed` disposition so only a schema-valid completion fact from the canonical task reconciler and matching owner, backed by the exact terminal task receipt and an actual required dependency wake that propagates successfully, is accepted as `app-inbox:wake`; every malformed, unknown, missing, nonterminal, unmatched, failed-propagation, and unrelated fact remains visible.",
+      "fullRequirementsReference": "snapshot.apps['may-agent'].tasks[task_id='repair-and-live-prove-app-dependency-completion-correlation-20260819'].resource_json.spec; pinned snapshot above",
+      "acceptedProgress": "Historical status records preactivation acceptance for commit 6d2e57b40d93553d529bd606f2021d9fde24b216 and SHA 1a477cfd317fe48b38a0fb6c8973a1a64816aa00a3586e8757fe848b18d892b6, no production mutation, and delegation to its exact activation child. Parent explicitly says it cannot converge before approval and fresh terminal proof.",
+      "recommendedDisposition": "execution-path-superseded-not-fulfilled-current-protocol-verification-remains-useful",
+      "replacement": null,
+      "technicalOwnerForUsefulRemainder": "alex",
+      "decisionAuthorityAndReturn": "May retains creator authority and the return to reconcile-app-dependency-completed-delivery-taxonomy-20260819. Alex can assess current technical coverage, not silently revise May's old acceptance or close that caller.",
+      "usefulRemainder": [
+        "Correlate each saved App answer/report to the exact request, originating caller and input admission; do not substitute a later destination Task result.",
+        "Verify required caller wake and terminal receipt/artifact, lost-notification recovery and no duplicate result.",
+        "Keep malformed, unknown, unmatched, stale and failed-propagation cases observable without falsely fulfilling a Condition or caller obligation.",
+        "Determine which historic AKS/May proof obligations remain meaningful with only May, Alex and Scout enabled. May must accept any changed representative lineage; Alex must not pretend an Alex example already fulfills the AKS requirement."
+      ],
+      "nextDecision": "Alex should use one bounded verification-only scope for both old Tasks, reusing current source and saved traces before commissioning implementation. Return its exact gaps and proposed modern acceptance to May on the preserved caller chain. Do not admit two duplicate repair/activation replacements."
+    }
+  ],
+  "preservedCondition": {
+    "appId": "may-agent",
+    "linkedTaskId": "activate-and-live-prove-app-dependency-completion-correlation-20260819",
+    "metadata": {
+      "generation": 1,
+      "id": "hao-runtime-candidate-6d2e57b-activation-decision",
+      "resourceVersion": 1
+    },
+    "spec": {
+      "expected": {
+        "approvalKind": "runtime-staged-activation",
+        "artifactSha256": "1a477cfd317fe48b38a0fb6c8973a1a64816aa00a3586e8757fe848b18d892b6",
+        "authority": "Hao",
+        "candidateCommit": "6d2e57b40d93553d529bd606f2021d9fde24b216",
+        "decision": {
+          "oneOf": [
+            "approve",
+            "reject"
+          ]
+        }
+      },
+      "owner": "may",
+      "reviewAfterMs": 86400000,
+      "subject": "project:may-agent",
+      "type": "project.approval.submitted"
+    },
+    "statusAtSnapshot": {
+      "observedAt": "2026-08-20T22:01:53.160Z",
+      "observedGeneration": 0,
+      "state": "unknown"
+    },
+    "handling": "Preserve as historical exact Condition and unresolved authority boundary. It is not an app-request Condition, is not converted by the app.dependency.completed to app.dependency.updated cutover, and is not approval for a modern candidate. Do not infer a present approval or rejection from snapshot unknown, App disablement or source removal."
+  },
+  "evidence": [
+    {
+      "id": "E1",
+      "kind": "pinned-retained-resource-snapshot",
+      "path": "/app/.state/alex-migration-20261004/legacy-frontier-snapshot.json",
+      "query": "Read apps['may-agent'].tasks filtered to the exact two mapping IDs; read conditions filtered to hao-runtime-candidate-6d2e57b-activation-decision; read relations containing either exact Task ID; search pendingInputs and admissions for the same IDs.",
+      "observed": "Two waiting generation-1 resources, their complete acceptance/input/status, two parent relations, and one unknown human approval Condition. No additional matching inbox/admission entries were found in this bounded snapshot. That is not a claim of no historical caller input or human message.",
+      "verification": "sha256sum snapshot and legacy-frontier-index.json matched both pinned hashes above."
+    },
+    {
+      "id": "E2",
+      "kind": "live-supported-task-read",
+      "queries": [
+        {
+          "tool": "tasks",
+          "action": "get",
+          "target": {
+            "appId": "may-agent"
+          },
+          "taskId": "activate-and-live-prove-app-dependency-completion-correlation-20260819"
+        },
+        {
+          "tool": "tasks",
+          "action": "get",
+          "target": {
+            "appId": "may-agent"
+          },
+          "taskId": "repair-and-live-prove-app-dependency-completion-correlation-20260819"
+        }
+      ],
+      "observed": "Both returned: App may-agent has no loaded Task runtime. Exact current legacy resource/Condition state could not be reread through this capability; the pinned retained snapshot is the available state evidence."
+    },
+    {
+      "id": "E3",
+      "kind": "live-supported-discovery",
+      "query": "bun -e 'import {sendSocketCommand} from \"/app/projects/may-agent/packages/control/src/client.ts\"; console.log(JSON.stringify(await sendSocketCommand(\"/app/.state/instances/background/may.sock\",{type:\"apps.list\"},{timeoutMs:15000}),null,2))'",
+      "observed": "type=ok; loaded Apps exactly alex, may, scout-knowledge-lib. No may-agent or AKS App is loaded. This establishes current installation scope, not old outcome fulfillment."
+    },
+    {
+      "id": "E4",
+      "kind": "deployed-revision-and-source",
+      "paths": [
+        "/app/projects/may-agent/.state/deploy-receipts/main-fc3b9cab3-alex-20261004.json",
+        "/app/.state/instances/background/identity.json"
+      ],
+      "observed": "Deployment receipt phase=succeeded, sourceCommit=fc3b9cab31d3b3af40ee04453b689a93e0477832, requested/loaded SHA both 18e181627a04cfe222b2b6752911d295a35466d2814cc69032293bada2ae0d83, health=healthy, duplicateDeploy=false, completedAt=2026-10-04T11:46:41.602Z. Runtime identity startedAt=2026-10-04T11:46:40.729Z and status=running. Host checkout HEAD equals the receipt source and git status --short was empty. No fresh health canary or loaded-byte hash was taken by this helper.",
+      "commands": [
+        "git -C /app/projects/may-agent rev-parse HEAD",
+        "git -C /app/projects/may-agent status --short",
+        "git -C /app/projects/may-agent cat-file -t 6d2e57b40d93553d529bd606f2021d9fde24b216",
+        "git -C /app/projects/may-agent merge-base --is-ancestor 6d2e57b40d93553d529bd606f2021d9fde24b216 HEAD"
+      ]
+    },
+    {
+      "id": "E5",
+      "kind": "current-protocol-source",
+      "revision": "fc3b9cab31d3b3af40ee04453b689a93e0477832",
+      "references": [
+        "/app/projects/may-agent/src/app/core/inbox/input-result.ts:35-68",
+        "/app/projects/may-agent/src/app/core/tasks/dependency-admission.ts:310-318,392-489",
+        "/app/projects/may-agent/src/app/core/state/task-state-cutover.ts:161-168",
+        "/app/projects/may-agent/src/app/composition/app-inbox-runtime.ts:1090-1132",
+        "/app/projects/may-agent/src/app/core/tasks/app-task-condition-tracker.ts:271-303"
+      ],
+      "query": "git -C /app/projects/may-agent grep -n -e 'app-inbox:wake' -e 'app.dependency.completed' HEAD -- src",
+      "observed": "No app-inbox:wake path remains in current src. app.dependency.completed occurs only in the state-cutover transform and its test. Current App feedback uses app.dependency.updated with kind=app, exact request ID, source=app-inbox:<callee> and owner=app:<caller>; done answers have stable per-request publication identities. Dependency admission retains app-request:<requestId> Conditions expecting status=done. Recovery reads the exact saved answer/report, checks the originating App, and uses ordinary Condition tracking to wake the exact linked Tasks. Cutover renames only app-request Conditions, not the human approval Condition.",
+      "semanticCaution": "Current route can accept an app.dependency.updated kind=app fact as app-input-result/noop when no route needs it. The old rule that every accepted fact must propagate an inbox wake is therefore not the current contract. This is evidence for reframing acceptance, not proof of a defect or permission to suppress malformed/failed evidence."
+    },
+    {
+      "id": "E6",
+      "kind": "current-saved-live-answer-and-caller-input",
+      "query": {
+        "tool": "tasks",
+        "action": "get",
+        "target": {
+          "appId": "alex"
+        },
+        "taskId": "input/appdep_b2210accc9bfd6faf68121e1",
+        "acceptedEvidence": {
+          "limit": 1
+        }
+      },
+      "path": "/app/.state/task-context/5e6769088329b1a61eeb3209dd7c4641f62ee2190f52dc306bdce52077a23d3d/74aab1106a37c293a35ad331c757669bef50d048bbc163cedfcc46b178ac2181/context.json",
+      "location": "events.items[eventId=6643257], approximately lines 542-568",
+      "observed": "Current Alex child is done at generation 1, resourceVersion 4, accepted attempt r_1_e20f490c-6198-4f72-a7ae-9c641992272e finished 2026-10-04T12:54:59.698Z. Its exact creator is alex/input/app_7a279469-7ac8-4bec-894a-9314635bd452. Parent attempt-start context includes event 6643257 at 12:54:59.766Z: app.dependency.updated, kind=app, id=appdep_b2210accc9bfd6faf68121e1, status=done, source=app-inbox:alex, owner=app:alex, idempotencyKey=app-input-answer:alex:appdep_b2210accc9bfd6faf68121e1. This proves a modern exact saved result reached the caller's input, not both old requested lineages, a parent terminal result, or all negative boundaries."
+    },
+    {
+      "id": "E7",
+      "kind": "inspected-regression-source-not-executed",
+      "references": [
+        "/app/projects/may-agent/src/app/core/inbox/input-result.test.ts:53-137",
+        "/app/projects/may-agent/src/app/core/tasks/app-task-runtime.test.ts:4700-4840"
+      ],
+      "observed": "Tests cover repeated report/answer publication identity and persistence retries; runtime fixture explicitly loses a notification, saves a later different answer, and expects exact original answer recovery and accepted owner convergence. These are inspected assertions, not test pass claims."
+    },
+    {
+      "id": "E8",
+      "kind": "historical-artifact-availability",
+      "path": "/app/projects/may-agent.app/.state/proof-rollout/app-dependency-completion-correlation-20260819/preactivation-candidate",
+      "query": "ls /app/projects/may-agent.app/.state/proof-rollout/app-dependency-completion-correlation-20260819/preactivation-candidate",
+      "observed": "No such file or directory. The retained Task cites manifest.json, verification.md, activation-proposal.md and SHA256SUMS there, but this helper could not validate their bytes. No terminal artifact was supplied or recovered for the two old outcomes."
+    }
+  ],
+  "executableNextDecision": {
+    "owner": "alex",
+    "sequence": [
+      "Accept or revise this bounded mapping in the migration parent: two old execution paths superseded, zero old outcomes fulfilled, replacement=null, and exact old approval unresolved. Keep the caller chain and complete pinned old acceptance references.",
+      "Through the migration Task's existing May return/escalation route, present the exact candidate/Condition supersession recommendation and ask May to dispose of the obsolete pending activation request without claiming Hao approved or rejected it. No direct human contact, Condition rebinding or activation follows from this artifact.",
+      "Before any additional implementation, choose at most one current-protocol verification scope for the useful remainder. Reuse existing correlated saved answers and test receipts. Check exact request/owner correlation, terminal caller result, malformed/unmatched/stale cases, failed propagation visibility, lost-notification recovery and duplicates. Preserve the old AKS/May and metric requirements as unproved until May accepts an explicit revised or no-longer-useful disposition.",
+      "Only if that bounded verification finds a concrete current defect should Alex commission a current-source repair, with an exact new candidate and its own authority boundary. If evidence supports the current protocol and May accepts the obsolete-scope disposition, record no further repair as needed, not historical fulfillment."
+    ],
+    "stopConditions": [
+      "No old-candidate activation without exact current trace approval and supported operational authority.",
+      "No forced disabled-App read/write, direct DB access, replacement admission or Condition mutation by this helper.",
+      "No claim that source tests, modern deployment, one current child result or retirement of an App satisfies both historic live-proof outcomes."
+    ]
+  },
+  "coverageLimits": [
+    "No query_db capability was supplied. No SQL was executed and no DB was opened from bash. Disabled-App Task reads failed explicitly; snapshot state is retained evidence, not a current journal-wide approval/terminal-proof search.",
+    "No full historical approval trace or complete upstream caller Task was available through the disabled runtime. Exact snapshot creator/parent/Condition relationships are preserved; unknown human message/request identities are not invented.",
+    "No tests, negative controls, metric recomputation, restart, deploy or live mutation were run. Source/test inspection and an existing live saved result are supporting evidence only.",
+    "The historical candidate directory is missing at its exact reference. Missing evidence is not proof that activation, approval or terminal results never occurred.",
+    "Only this JSON artifact is authored. Frontier, receipt, source, runtime and Task state are unchanged by this contribution."
+  ],
+  "alexAcceptance": {
+    "acceptedAt": "2026-10-04T13:03:00Z",
+    "decision": "Accept Bob mapping with current-protocol verification completed by deterministic deployed-source tests; retain historical outcomes as unfulfilled and May authority decision as open.",
+    "currentProtocolVerification": {
+      "command": "bun test ./projects/may-agent/src/app/core/inbox/input-result.test.ts ./projects/may-agent/src/app/core/tasks/app-task-runtime.test.ts",
+      "sourceCommit": "fc3b9cab31d3b3af40ee04453b689a93e0477832",
+      "result": "209 pass, 0 fail, 2476 expectations",
+      "coverage": "Exact saved-result identity, persistence retry, dependency admission and exact owner/caller return, lost-notification recovery, restart/replay, duplicate and stale result rejection, failed execution and invalid result visibility, and Condition preservation/recovery.",
+      "limit": "Deterministic current-source verification does not reconstruct or fulfill the two historical AKS/May live-proof outcomes and does not decide the old Hao approval Condition."
+    },
+    "mayRequest": {
+      "requestId": "appdep_1c07f1557f0d0d7f27a678c5",
+      "conditionId": "app-request:appdep_1c07f1557f0d0d7f27a678c5",
+      "purpose": "Disposition of obsolete old-candidate approval boundary without false fulfillment."
+    }
+  }
+}
