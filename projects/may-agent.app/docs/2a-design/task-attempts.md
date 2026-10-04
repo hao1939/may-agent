@@ -253,6 +253,16 @@ tools, repairs or works around the problem, and records the outcome and any
 remaining defect for later evaluation. Recovery of the work does not establish
 that its underlying defect is fixed.
 
+The first agent claim after an unexpected procedure failure saves
+`failoverFromAttemptId` on the ordinary attempt, atomically with that claim.
+It links the exact failed attempt in the same Task and generation. This is
+observation metadata, not another execution state or handler-selection input.
+It survives a crash before agent startup and remains after accepted recovery.
+Agent continuations, failed claim writes and intentional `needs-agent` or
+legacy `needs-owner` handoffs are not additional failovers. The optional metric
+sampler [counts the retained switches](metrics.md#procedure-to-agent-failovers);
+recording them does not itself request work.
+
 Handler selection follows retained attempts in the current specification generation.
 Once the agent has taken control, subsequent attempts continue with that agent
 across failures, accepted partial progress, waits and restart; they do not
@@ -271,6 +281,13 @@ configured procedure's paced retry available. An explicit agent handoff still
 selects the agent; unavailability becomes a visible, paced execution failure.
 If an already selected fallback agent becomes unavailable, retain that selection
 and its visible failure instead of replaying the old procedure.
+
+Retry repeats a procedure and can resolve a transient failure. Failover returns
+the same assignment to the responsible agent for diagnosis and choice of method.
+This rule does not classify errors or add a fixed number of procedure retries
+before switching: even a transient failure can cost an agent invocation. The
+agent may retry the operation with its ordinary tools. Retained failover evidence
+lets Apps assess that cost without assuming that every switch required repair.
 
 Diagnosis does not require a working workflow. When the fallback agent proposes
 completion, the Host rereads the authored workflow contract and runs its verifier

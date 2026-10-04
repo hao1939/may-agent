@@ -122,13 +122,58 @@ in the sample is not proof of live Telegram delivery or repair of May's retained
 Conversation. A successful request is not proof that the underlying defect was
 fixed.
 
+## Durable failover observation
+
+The follow-up adds `failoverFromAttemptId` to the first agent claim after an
+unexpected workflow/executor/CLI failure. The claim transaction saves the exact
+source-attempt link before execution. Handler selection continues to use the
+existing attempt history; the marker is observation only. An intentional
+`needs-agent`/`needs-owner` handoff and later agent attempts do not add switches.
+
+The existing sampler installs `task.failover-count-24h`. Its partial-index query
+counts retained marked claims within the rolling 24-hour window and includes
+five exact evidence references at most. Ordinary attempt reporting exposes the
+same marker and counts. Successful settlement does not remove either failure
+or switch. Older unmarked history is unknown. Apps can calibrate an alert using
+the existing metric contract; the default observation has no automatic alert.
+No new recovery queue, event stream or execution-side counter is introduced.
+
+Portable checks exercise actual claim persistence and reopen, failed claim
+storage, continuation after partial progress/failure, missing-agent procedure
+retry and deliberate handoff. Reporting tests use synthetic retained attempts,
+including startup interrupted before a result, subsequently successful work,
+other Apps, and out-of-window records. They follow each sampled source link
+through the public attempt reader and verify the partial index is used.
+Repeated samples are quiet; an App-defined threshold emits one breach across
+successive measurements. Startup preserves that App calibration and retirement.
+
+The first focused run passed 51 tests and failed one test expectation: the
+existing metric reader represents no observation as `null`, not `undefined`.
+Correcting that fixture assertion made both new reporting tests pass. Production
+logic was unchanged by that correction. These checks prove collection and the
+existing breach boundary, not independent evaluator follow-through or deployment.
+
+Full local `bun run ci` then passed on
+`1d586318fb5f1c48f32743fc2f52bbb356e24cc1`: type, SDK, boundary and lint checks,
+3,617 passing tests, three explicit installation-specific skips and no failures.
+The test run took 290.44 seconds across 327 files. Evidence log:
+`ci-failover-metrics.log` under the same local evidence directory.
+
+The discussion also clarified the execution policy: when an agent is available,
+the current candidate switches on the first procedure failure after the existing
+retry delay. It does not try the same procedure once more before switching. This
+can cost an agent invocation for a transient failure. Without an available agent,
+ordinary paced procedure retries remain. The marker and metric are independent
+of that policy and would also record a later switch if retry policy changes.
+
 ## Reproduction and source
 
 Host base: `fc3b9cab31d3b3af40ee04453b689a93e0477832` (#324).
 Host candidate: `cf1920e3f726fc77d2c7cc43a9a8685b0fde4d17`.
 Candidate branch: `fix/task-agent-failover-20261004`.
 [Host PR #325](https://github.com/hao1939/may-agent/pull/325) includes the
-follow-up process-test changes; production code remains the model-tested revision.
+follow-up process-test and metric changes. The execution policy is the model-tested
+revision; the later metric addition is validated by portable persistence/reporting tests.
 Design branch: `design/task-agent-failover-20261004`, based on
 `64b901d1e4c95a385c4f1d633bbbbe9a99d6f367`.
 

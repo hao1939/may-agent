@@ -266,6 +266,10 @@ initial execution path. On failure, the Host can give the same Task to its
 responsible agent through ordinary execution,
 retaining the failed attempt and original obligations. This changes execution,
 not scope or authority; configured verification still governs completion.
+The Host marks each failure-driven switch on the agent's first attempt and
+exposes it through existing metrics and attempt reads. Successful recovery does
+not erase that evidence. Apps judge whether its frequency or cost warrants repair;
+recording a switch alone does not create another request or notification.
 [Attempt selection](task-attempts.md#selecting-the-attempt-mechanism) owns the
 exact handoff and restart behavior. A dead Host requires the installation's
 process supervisor/operator; an unavailable owner uses only the fallback
