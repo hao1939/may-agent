@@ -8,6 +8,7 @@ import { createMetricService } from "../lib/metrics.js";
 import { attachEventPersistence } from "./daemon-events.js";
 import { EventBus, EVENT_ROW_ID, EVENT_RECORD_ONLY } from "./core/events/bus.js";
 import { WORKFLOW_OUTCOME_METRICS } from "./adapters/reporting/workflow-metrics.js";
+import { TASK_FAILOVER_METRIC } from "./adapters/reporting/task-failover-metrics.js";
 import {
   attachMetricSourceMeasurement,
   measureSourceMetrics,
@@ -900,6 +901,7 @@ describe("source-query metric measurement", () => {
     insertSnapshot.run(SUBSCRIBER_FAILED_COUNT_METRIC_ID, now - 60_000);
     insertSnapshot.run(UNEXPECTED_UNHANDLED_SIGNAL_METRIC_ID, now - 60_000);
     for (const metric of WORKFLOW_OUTCOME_METRICS) insertSnapshot.run(metric.id, now - 60_000);
+    insertSnapshot.run(TASK_FAILOVER_METRIC.id, now - 60_000);
     insertMetric.run("query.fresh", "query fresh", "active", "SELECT 1 AS value", null, 300_000);
     insertSnapshot.run("query.fresh", now - 60_000);
     insertMetric.run("command.stale", "command stale", "active", null, "echo 1", 300_000);
