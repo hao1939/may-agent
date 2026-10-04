@@ -133,6 +133,21 @@ that commits accepted state and its related records atomically. Requests and
 admission records have their own durable coordination boundaries; see
 [Events](events.md) and [Task Resource Engine](task-resource-engine.md).
 
+SQLite permits one writer even when changes only append records. A competing
+writer is a normal transient condition. Reuse bounded contention handling at
+the owning transaction's acquisition boundary; run the body once after obtaining
+the lock. Nested operations share that transaction through savepoints. A failure
+inside the body rolls it back; failure delivering a committed result does not
+authorize replaying the body. A single atomic append can retry the rejected
+statement. Exhaustion remains observable and uses the existing durable recovery
+path; this is not an unlimited wait or a new queue.
+
+Keep acquisition waits and lock-holding work distinct. Shorten expensive work
+inside writes, and diagnose slow reads separately: WAL readers need not hold
+the writer slot, but synchronous reads can still stall the Host. The
+[October 4 SQLite review](../archive/reviews/sqlite-contention-20261004.md)
+records the live evidence, isolated regressions and candidate status.
+
 Claimed request attachment commits Task input, request wait/claim release and
 Topic correlation together. Settlement persists linked request readiness in
 the same transaction; an event notification only accelerates discovery.
