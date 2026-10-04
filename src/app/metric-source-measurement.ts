@@ -5,7 +5,7 @@ import { createMetricService } from "../lib/metrics.js";
 import { log } from "../lib/log.js";
 import { EVENT_ROW_ID, eventData, type AgentEvent, type EventBus } from "./core/events/bus.js";
 import { getDb } from "../lib/db/connection.js";
-import { stateTransaction } from "../lib/db/transaction.js";
+import { withSqliteBusyRetry } from "../lib/db/busy-retry.js";
 import { resolveRuntimeRoots } from "./path-roots.js";
 import { WORKFLOW_OUTCOME_METRICS } from "./adapters/reporting/workflow-metrics.js";
 import { TASK_FAILOVER_METRIC } from "./adapters/reporting/task-failover-metrics.js";
@@ -279,9 +279,10 @@ export function attachMetricSourceMeasurement(options: {
 }): MetricPassRuntime {
   const db = getDb(options.persistDir);
   const metricService = createMetricService({ getDb: () => db });
-  // Registration shares one transaction and acquisition budget. Nested
-  // definition writes join it; measurement and subscription start after commit.
-  stateTransaction(db, () => {
+  // Startup registrations are repeatable definition writes, not observations.
+  // Reuse the bounded storage policy when another startup process owns SQLite's
+  // writer lock; keep measurement and subscription effects outside this retry.
+  withSqliteBusyRetry("register source metric definitions", () => {
     metricService.defineMany(WORKFLOW_OUTCOME_METRICS);
     // Install observation defaults once; retain any App-owned calibration or retirement.
     if (!db.prepare("SELECT id FROM metrics WHERE id = ?").get(TASK_FAILOVER_METRIC.id)) {

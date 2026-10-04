@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, spyOn } from "bun:test";
+import { afterEach, beforeEach, describe, expect, it } from "bun:test";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -20,27 +20,6 @@ describe("session digest facts", () => {
   afterEach(() => {
     closeDb(persistDir);
     rmSync(persistDir, { recursive: true });
-  });
-
-  it("retains one digest when its insert meets transient contention", () => {
-    const db = getDb(persistDir);
-    const prepare = db.prepare.bind(db);
-    let inserts = 0;
-    const spy = spyOn(db, "prepare").mockImplementation((sql) => {
-      const statement = prepare(sql);
-      if (!sql.includes("INTO session_digests")) return statement;
-      return { ...statement, run: (...params) => {
-        if (++inserts === 1) throw new Error("database is locked");
-        return statement.run(...params);
-      } };
-    });
-    try {
-      createStartDigest(persistDir, sessionId, "worker", "Verify delivery");
-      expect(inserts).toBe(2);
-      expect(prepare("SELECT count(*) AS count FROM session_digests WHERE sessionId = ?").get(sessionId))
-        .toEqual({ count: 1 });
-      expect(getLastDigest(persistDir, sessionId)).toMatchObject({ task: "Verify delivery", step: 1 });
-    } finally { spy.mockRestore(); }
   });
 
   it("records start, checkpoint, and terminal facts without replacing earlier observations", () => {

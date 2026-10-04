@@ -49,7 +49,7 @@ describe("App metric definitions", () => {
     expect(installed[0]).toMatchObject({ owner: "operator", project: "host" });
   });
 
-  it("leaves the storage retry budget with the metric service", () => {
+  it("retries ordinary SQLite contention while installing a definition", () => {
     const definition = defineApp({
       id: "evaluation",
       version: 1,
@@ -59,13 +59,13 @@ describe("App metric definitions", () => {
     });
     let attempts = 0;
 
-    expect(() => syncAppMetricDefinitions([{ definition }], {
+    syncAppMetricDefinitions([{ definition }], {
       define() {
         attempts += 1;
-        throw new Error("database is locked");
+        if (attempts === 1) throw new Error("database is locked");
       },
-    })).toThrow("database is locked");
+    });
 
-    expect(attempts).toBe(1);
+    expect(attempts).toBe(2);
   });
 });

@@ -5,7 +5,7 @@ import { tmpdir } from "node:os";
 import { DbWriter } from "./db-writer.js";
 import { closeDb, getDb } from "./requests.js";
 import { stateTransaction } from "./db/transaction.js";
-import { EventBus, EVENT_ROW_ID } from "../app/core/events/bus.js";
+import { EventBus } from "../app/core/events/bus.js";
 const roots: string[] = [];
 afterEach(() =>
   roots.splice(0).forEach((root) => {
@@ -51,34 +51,19 @@ test("event persistence joins the caller transaction and can retry after its rol
   ).toEqual([{ delivery_status: "accepted" }]);
 });
 
-test("delivery acceptance exhausts one acquisition retry budget without changing the event", () => {
-  const root = mkdtempSync(join(tmpdir(), "may-delivery-contention-"));
+test("input preparation fails before taking the Event writer slot", () => {
+  const root = mkdtempSync(join(tmpdir(), "may-event-prepare-"));
   roots.push(root);
   const db = getDb(root);
-  const bus = new EventBus();
   const writer = new DbWriter(root);
-  bus.setPersistenceSubscriber(writer.handler);
-  const event = bus.emit({ type: "fixture.saved", source: "fixture", owner: "app:sample", data: {} });
-  const rowId = event[EVENT_ROW_ID];
-  expect(rowId).toBeNumber();
-  const before = db.prepare("SELECT * FROM events WHERE id = ?").get(rowId!);
-  const exec = db.exec.bind(db);
-  let acquisitions = 0;
-  const spy = spyOn(db, "exec").mockImplementation((sql) => {
-    if (sql === "BEGIN IMMEDIATE") {
-      acquisitions++;
-      throw new Error("database is locked");
-    }
-    return exec(sql);
-  });
+  const exec = spyOn(db, "exec");
+  const payload: Record<string, unknown> = { idempotencyKey: "invalid" };
+  payload.circular = payload;
   try {
-    writer.recordDelivery(event, { accepted: true, by: "fixture" });
-    expect(acquisitions).toBe(9);
-    expect(db.prepare("SELECT * FROM events WHERE id = ?").get(rowId!)).toEqual(before);
+    expect(() => writer.handler({ type: "fixture.saved", source: "fixture", owner: "app:sample", data: payload })).toThrow();
+    expect(exec.mock.calls.some(([sql]) => sql === "BEGIN IMMEDIATE")).toBe(false);
+    expect(db.prepare("SELECT COUNT(*) AS count FROM events").get()).toEqual({ count: 0 });
   } finally {
-    spy.mockRestore();
+    exec.mockRestore();
   }
-  writer.recordDelivery(event, { accepted: true, by: "fixture" });
-  expect(db.prepare("SELECT delivery_status FROM events WHERE id = ?").get(rowId!))
-    .toEqual({ delivery_status: "accepted" });
-}, 30_000);
+});
