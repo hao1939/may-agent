@@ -3,7 +3,7 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach } from "bun:test";
-import { mkdtempSync, mkdirSync, rmSync } from "node:fs";
+import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { getBuiltinModel } from "@earendil-works/pi-ai/providers/all";
@@ -11,6 +11,8 @@ import { SubagentManager } from "./manager.js";
 import { appendSessionMessage } from "./persistence.js";
 import { closeDb } from "./db/connection.js";
 import { upsertSession } from "./db/sessions.js";
+import { prepareAgentExecution } from "./agent-execution.js";
+import { createReadTool } from "./tools/read.js";
 import type { AgentTool, AgentToolResult } from "@earendil-works/pi-agent-core";
 
 // ── Helpers ─────────────────────────────────────────────────────────────
@@ -85,7 +87,7 @@ describe("agents tool", () => {
 
   it("advertises only implemented delegation options", () => {
     const { properties } = manager.createAgentsTool().parameters;
-    for (const name of ["force", "priority", "message"]) {
+    for (const name of ["force", "priority", "message", "skill"]) {
       expect(properties).not.toHaveProperty(name);
     }
     expect(properties).toHaveProperty("task");
@@ -141,68 +143,61 @@ describe("agents tool", () => {
     expect(result.error).toContain("Use tech-lead instead");
   });
 
-  it("call appends context_files to the dispatched task", async () => {
+  it.each(["call", "fork"] as const)("%s shares a readable guide without selecting the receiver's skill", async (action) => {
+    const projectRoot = join(persistDir, "project");
+    mkdirSync(projectRoot);
+    const skillPath = join(persistDir, "SKILL.md");
+    writeFileSync(skillPath, "Use the current design to review the patch.");
     manager.register({
       name: "coder",
       description: "Writes code",
       domain: "coding",
       model: mockModel(),
-      tools: [echoTool()],
+      tools: [createReadTool(projectRoot)],
     });
 
     let dispatchedTask = "";
-    (manager as any).callAgent = async (_agent: string, task: string) => {
+    let dispatchedOptions: Parameters<SubagentManager["runAgent"]>[2];
+    manager.runAgent = (_agent, task, options) => {
       dispatchedTask = task;
+      dispatchedOptions = options;
+      return "child";
+    };
+    manager.callAgent = async (_agent, task, options) => {
+      dispatchedTask = task;
+      dispatchedOptions = options;
       return { sessionId: "child", status: "done", lastAssistantText: "ok", messages: [], duration: "0s", outputDir: "" };
     };
 
     manager.activeSessions.set("caller", { definition: manager.getAgentDefinition("coder") } as any);
     const tool = manager.createAgentsTool({ getCallerSessionId: () => "caller" });
     const result = await callTool(tool, {
-      action: "call",
+      action,
       agent: "coder",
-      task: "Drive the project loop",
-      context_files: [
-        "shared/skills/project-loop-driver/SKILL.md",
-        "shared/skills/reading-metrics/SKILL.md",
-      ],
+      task: "Review the patch",
+      context_files: [skillPath],
+      // A stale caller's removed option cannot select a receiving-catalog skill.
+      skill: "caller-only-guide",
     });
 
-    expect(result.status).toBe("done");
-    expect(dispatchedTask).toContain("Drive the project loop");
+    expect(result.status).toBe(action === "call" ? "done" : "started");
+    expect(result.sessionId).toBe("child");
+    expect(dispatchedOptions).not.toHaveProperty("skill");
+    expect(dispatchedOptions).toMatchObject({ parentSessionId: "caller" });
+    expect(dispatchedTask).toContain("Review the patch");
     expect(dispatchedTask).toContain("Context files the receiving agent must read before acting:");
-    expect(dispatchedTask).toContain("shared/skills/project-loop-driver/SKILL.md");
-    expect(dispatchedTask).toContain("shared/skills/reading-metrics/SKILL.md");
-  });
+    expect(dispatchedTask).toContain(skillPath);
 
-  it("fork appends context_files to the session task", async () => {
-    manager.register({
-      name: "coder",
-      description: "Writes code",
-      domain: "coding",
-      model: mockModel(),
-      tools: [echoTool()],
+    const prepared = prepareAgentExecution({
+      ...dispatchedOptions,
+      definition: manager.getAgentDefinition("coder")!, projectRoot, sessionId: "child", task: dispatchedTask,
     });
-
-    let dispatchedTask = "";
-    (manager as any).runAgent = (_agent: string, task: string) => {
-      dispatchedTask = task;
-      return "s_context_files";
-    };
-
-    const tool = manager.createAgentsTool();
-    const result = await callTool(tool, {
-      action: "fork",
-      agent: "coder",
-      task: "Investigate the socket route",
-      context_files: ["shared/skills/control-plane-operation/SKILL.md"],
-    });
-
-    expect(result.status).toBe("started");
-    expect(result.sessionId).toBe("s_context_files");
-    expect(dispatchedTask).toContain("Investigate the socket route");
-    expect(dispatchedTask).toContain("Context files the receiving agent must read before acting:");
-    expect(dispatchedTask).toContain("shared/skills/control-plane-operation/SKILL.md");
+    expect(prepared.activatedSkill).toBeUndefined();
+    expect(prepared.prompt).toContain(skillPath);
+    expect(prepared.prompt).not.toContain("Use the current design to review the patch.");
+    const read = prepared.tools.find((tool) => tool.name === "read")!;
+    const contents = await read.execute("read-guide", { path: skillPath });
+    expect(contents.content).toContainEqual({ type: "text", text: "Use the current design to review the patch." });
   });
 
   it.each(["blocked", "partial", "failure"] as const)("returns truthful handoff status for a completed session reporting %s", async (finishStatus) => {

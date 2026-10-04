@@ -122,6 +122,12 @@ describe("May skill catalog", () => {
     expect(invokeCatalogSkill(refreshed, "task-guide", "Continue").prompt).toContain("Revised instructions");
   });
 
+  it("rejects an unavailable explicit skill before execution", () => {
+    expect(() => invokeCatalogSkill(undefined, "review-change", "Review this patch")).toThrow(
+      'Skill "review-change" is not available for this agent',
+    );
+  });
+
   it("keeps scope precedence and rejects distinct same-scope duplicates in configured paths", async () => {
     const root = tempRoot();
     const agentDir = join(root, "agents", "may");

@@ -210,6 +210,8 @@ export type AgentPreparationOptions = {
   taskContext?: TaskExecutionContext;
   persistentChat?: boolean;
   skill?: string;
+  /** Interpret a leading $skill command; false keeps delegated task text literal. */
+  parseSkillCommand?: boolean;
   requireFinish?: boolean;
   outputSchema?: TSchema;
   /** Pure caller admission check; rejection keeps this invocation open for correction. */
@@ -510,7 +512,7 @@ export function prepareAgentExecution(options: AgentPreparationOptions): Prepare
 function prepareExecution(options: AgentPreparationOptions): Omit<PreparedAgentExecution, "preparation"> {
   const definition = definitionForExecution(options);
   options = { ...options, definition, projectRoot: options.executionRoot ?? options.projectRoot };
-  const parsedSkill = parseExplicitSkill(options.task);
+  const parsedSkill = options.parseSkillCommand === false ? { task: options.task } : parseExplicitSkill(options.task);
   const skillName = options.skill ?? parsedSkill.skill;
   const task = parsedSkill.skill ? parsedSkill.task : options.task;
   if (skillName && !task) throw new Error(`Skill "${skillName}" requires a task`);

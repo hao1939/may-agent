@@ -25,7 +25,7 @@ describe("manager session lifecycle", () => {
   let holdReplies: boolean;
   let replyFailure: string | undefined;
   let started: ReturnType<typeof Promise.withResolvers<void>>;
-  let requests: Array<{ model: string; systemPrompt: string; reply: () => void }>;
+  let requests: Array<{ model: string; systemPrompt: string; prompt: string; reply: () => void }>;
 
   beforeEach(() => {
     persistDir = mkdtempSync(join(tmpdir(), "may-manager-lifecycle-"));
@@ -62,7 +62,7 @@ describe("manager session lifecycle", () => {
               if (replyFailure) stream.push({ type: "error", reason: "error", error: message });
               else stream.push({ type: "done", reason: "stop", message });
             };
-            requests.push({ model: model.id, systemPrompt: context.systemPrompt ?? "", reply });
+            requests.push({ model: model.id, systemPrompt: context.systemPrompt ?? "", prompt: JSON.stringify(context.messages), reply });
             started.resolve();
             if (!holdReplies) reply();
             return stream;
@@ -82,6 +82,48 @@ describe("manager session lifecycle", () => {
       closeDb(persistDir);
       rmSync(persistDir, { recursive: true, force: true });
     }
+  });
+
+  const skill = {
+    name: "review-guide", description: "Review a patch",
+    filePath: "/fixture/review-guide/SKILL.md", canonicalPath: "/fixture/review-guide/SKILL.md",
+    content: "Activate the selected review method.", scope: "agent" as const, contentHash: "review-guide-hash",
+  };
+  const skilledWorker = () => ({
+    ...definition("worker"),
+    skillCatalog: { skills: new Map([[skill.name, skill]]), diagnostics: [], omittedFromPrompt: [] },
+  });
+
+  it.each([
+    ["call", "caller-only-guide"], ["fork", "caller-only-guide"],
+    ["call", "review-guide"], ["fork", "review-guide"],
+  ] as const)("%s treats leading $%s as delegated text", async (action, name) => {
+    manager.register(skilledWorker());
+    holdReplies = true;
+    const caller = manager.run("worker", "Coordinate the review");
+    await started.promise;
+    holdReplies = false;
+    const task = `$${name} Review the patch`;
+    const tool = manager.createAgentsTool({ getCallerSessionId: () => caller });
+    const response = await tool.execute("delegate", { action, agent: "worker", task });
+    const result = JSON.parse((response.content[0] as { text: string }).text);
+    expect(result.error).toBeUndefined();
+    expect(await manager.waitFor(result.sessionId)).toMatchObject({ status: "done" });
+    expect(requests[1].prompt).toContain(task);
+    expect(requests[1].prompt).not.toContain(skill.content);
+    expect(manager.registryStore.getSession(result.sessionId)?.task).toBe(task);
+  });
+
+  it("retains direct skill commands and explicit activation for authored calls", async () => {
+    manager.register(skilledWorker());
+    const direct = manager.run("worker", "$review-guide Review directly");
+    expect(await manager.waitFor(direct)).toMatchObject({ status: "done" });
+    expect(requests[0].prompt).toContain(skill.content);
+    expect(manager.registryStore.getSession(direct)?.task).toBe("Review directly");
+    const authored = await manager.callAgent("worker", "Review in a procedure", { skill: "review-guide" });
+    expect(authored.status).toBe("done");
+    expect(requests[1].prompt).toContain(skill.content);
+    expect(requests[1].prompt).toContain("Review in a procedure");
   });
 
   it("keeps an active execution's model and instructions when the registered definition changes", async () => {
