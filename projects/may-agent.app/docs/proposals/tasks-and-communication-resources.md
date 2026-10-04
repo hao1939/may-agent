@@ -12,9 +12,10 @@ and [agents judge; infra executes](../1-principles/core-principles.md#code-execu
 Reuse ordinary Tasks and their existing admission, actions, Conditions and return
 contracts. Add communication records only for information they need to preserve.
 
-**Design status:** Draft for review, 2026-10-04. Task-first ownership and the
-supporting roles below capture the discussed direction; capability boundaries
-and migration still need review.
+**Design status:** Draft for review, revised 2026-10-04 after review of input
+admission, reply responsibility and independent facts. The boundaries and staged
+order below capture the discussed direction; concrete capability schemas and
+migration still need implementation review.
 **Implementation status:** Partial foundation exists. Conversation turns already
 use the Task runtime, and accepted Requests have no execution lifecycle. The
 ordinary communication capabilities and contract consolidation proposed here are
@@ -50,11 +51,14 @@ for a bounded assignment; it needs no extra conversational Request record.
 A Conversation is useful when the exchange itself needs retained context.
 Topics earn their place when a stream covers several subjects.
 
-A Task can serve several Requests. One Request can involve several Tasks while
-retaining one accountable Task for returning its overall answer. That Task may
-be the Conversation handler or an explicitly assigned work Task. A Task link
-alone does not transfer this responsibility. Separate Conversations may discuss
-the same Task within their access scope; they do not acquire its execution state.
+A Task can serve several Requests. One Request can involve several Tasks. In the
+first version, the existing Task that accepts the original ask remains responsible
+for returning its overall answer. Its saved admission and return relationships
+identify that responsibility; no additional ownership registry is needed. A
+reviewer returns its contribution without taking over the original promise.
+Task links do not transfer responsibility. General responsibility transfer is
+deferred until a concrete case needs it. Separate Conversations may discuss the
+same Task within their access scope; they do not acquire its execution state.
 
 ### What Request means in the current implementation
 
@@ -136,6 +140,29 @@ fulfill the whole ask, and a pending Condition does not globally prevent progres
 
 ## One Task contract, with scoped communication capabilities
 
+### One durable input admission
+
+Every input accepted for Task handling has one durable Task admission.
+Conversational input additionally retains its message and reply references.
+Both use the common input reader and admission contract; a Conversation binding
+must not select a second incompatible input protocol. App-specific payloads
+remain supported; common admission does not require identical input schemas.
+
+Admission retains the original input identity, source, target Task and exact
+caller/return relationship. Retry reuses that admission. A new contribution
+requested from another Task has its own addressed input and return relationship;
+it is not a second admission of the caller's original ask. Discussion records,
+outgoing replies and metric samples do not automatically become executable inputs.
+
+The common reader must supply the accepted input and its optional communication
+context without requiring the agent to reconstruct inbox keys or bindings. Validate
+reader compatibility before committing admission, and retain the same identity
+through claim, acceptance, interruption and restart. Preserve #319's guard until
+both this reader and the shared admission path support the relevant inputs;
+unifying result schemas alone is insufficient.
+
+### Ordinary execution decisions and communication effects
+
 Retain the [ordinary attempt contract](../2a-design/task-attempts.md). A Task
 handling messages can request work, retain Conditions, accept contributions,
 continue, wait or report failure using the same meanings as every other Task.
@@ -166,17 +193,34 @@ previous contributions or an already published reply, or falsely close an ask.
 Saving the message establishes publication; provider delivery is a separate fact.
 Transport failure remains visible and recoverable without rerunning completed work.
 
-Authorization comes from the current assignment and explicit communication
-scope. Being in the same Conversation, knowing a Request ID or appearing in
-`taskRefs` does not grant permission to change someone else's promise or work.
-The proposed default is that trusted admission binds the accepting Task to the
-ask and its reply destination. An explicit assignment may carry that scope to
-another responsible Task; a normal review request carries only its own return
-scope, not permission to close the parent ask. Reuse these saved relationships
-when checking a communication action instead of accepting model-supplied authority.
-The accountable Task can communicate itself or request a contribution from a
-designated communication Task; either uses ordinary Task execution. Ownership
-and escalation retain the [existing agent/App boundary](../2a-design/agents.md#task-ownership-and-app-scope).
+Authorization comes from the current assignment and saved admission/return
+relationships. Being in the same Conversation, knowing a Request ID or appearing
+in `taskRefs` does not grant permission to change someone else's promise or work.
+The accepting Task retains the original ask and reply destination. A review or
+drafting request carries its own contribution/return scope; it cannot close the
+parent ask or take over its reply responsibility. The accepting Task applies the
+contribution and publishes its answer through infra. Reuse these saved relationships
+when checking communication actions instead of accepting model-supplied authority
+or adding a responsibility-transfer mechanism. Ownership and escalation retain
+the [existing agent/App boundary](../2a-design/agents.md#task-ownership-and-app-scope).
+
+### Independent facts and quiet work
+
+Publishing progress, fulfilling a Request, continuing work and waiting for review
+are separate facts and decisions that can coexist. Each applies to its explicit
+scope. The agent judges their meaning against the accepted requirements; infra
+must not turn one into a global completion, waiting or notification rule.
+
+An open Request preserves an obligation, but does not itself schedule attempts
+or recurring model calls. Ordinary continuation, admitted new input, relevant
+Condition changes and existing Task recovery govern execution. No Request
+poller or periodic closure judge is introduced.
+
+An accepted background result can remain in Task summary, facts and result
+records. It does not automatically publish a Conversation message or trigger a
+Telegram notification. A human reply obligation or the agent's decision to send
+a useful update selects communication; infra handles the saved destination and
+transport. An unchanged wait can remain quiet without losing its obligation.
 
 ### Routing and recovery
 
@@ -210,6 +254,7 @@ behavior and may change as implementation progresses.
 | Current behavior and evidence | Assessment and proposed correction |
 | --- | --- |
 | [Task runtime](../../../may-agent/src/app/core/tasks/attempt-runner.ts) supplies claims, bounded attempts and recovery for Conversation too. | Keep it. There is no need for another scheduler or Conversation worker lifecycle. |
+| [Conversation admission and reader](../../../may-agent/src/app/core/state/conversation-task-turns.ts) require saved Conversation bindings; ordinary work admission can otherwise supply incompatible input. | Establish one durable Task admission and common reader, retaining optional message/reply references. Keep #319's compatibility guard until this boundary is proven. |
 | [System Model](../2a-design/system-model.md#a-turn-or-a-task) presents a choice between a turn and a delegated Task. | Clarify the choice as continuing the current Task versus commissioning independent work. Keep interactive discussion natural. |
 | [Conversation result](../../../may-agent/packages/sdk/src/app.ts) has one `followUp`, separate controls and Request updates; the attempt adapter returns it as `converged`. | Converge on ordinary Task execution decisions plus scoped communication effects. Remove special handoff restrictions through compatibility work. |
 | [Request storage](../../../may-agent/src/app/core/state/conversation-requests.ts) retains scope/revision and closure without a scheduler, but authorizes updates through Conversation execution bindings. | Preserve the records and integrity checks. Authorize the responsible Task's scoped communication capability without requiring a special executor. |
@@ -237,37 +282,43 @@ guard remains necessary until a replacement input boundary is verified.
 | Merge all ask/call records into one new Request engine first. | A single public noun. | Risks a second lifecycle and a broad migration before shared behavior is proven. |
 | Use ordinary Tasks with scoped communication capabilities. **Recommended.** | Reuses execution and preserves communication only where useful. | Requires careful authority, result-contract and retained-state compatibility work; benefits need a connected trial. |
 
-The main tradeoff is replacing executor-specific restrictions with explicit
-capability scope. Do not weaken authority merely to remove special cases. Retain
-only communication context relevant to the Task, so reuse does not expand every
-prompt. Human ordering and pending asks must survive the simplification.
+The value is one work contract and fewer forced handoffs. The main migration
+cost is preserving existing input identities, pending Requests and exact return
+relationships while consolidating admission, reading and results. Capability
+scope must preserve authority as executor-specific restrictions are removed.
+Retain only communication context relevant to the Task, so reuse does not expand
+every prompt. Human ordering and pending asks must survive the simplification.
 
 ## Incremental implementation and review
 
-The immediate operational routing correction can use existing ordinary goal
-admission and proceed independently. It need not wait for the capability
-consolidation below, and it should not introduce another escalation protocol.
+1. **Keep the focused #319 fix and separately reviewed incident repair.** Retain
+   incompatible-input rejection and the preservation checks on the exact repair.
+   Source merge does not apply the incident repair or prove runtime recovery.
+2. **Route Evaluation's operational reports through ordinary May work admission.**
+   Use existing goal admission and accountable Tasks; reuse fitting active work.
+   Prove that a diagnosis reaches executable May work while the Conversation
+   handler is broken. This correction can proceed now without contract
+   consolidation or another escalation protocol. Repeated semantic-review
+   selection remains a separate policy issue: changing the receiver alone does
+   not prove less review cost or timely intervention.
+3. **Prove the common contract in an isolated fixture.** Admit human input once
+   to an ordinary Task with saved message/reply context. Let the same accepting
+   Task request review, keep its Condition, continue useful testing and reply.
+   Exercise a published reply followed by failure/retry without duplicate
+   publication or lost obligations. Review the smallest necessary input-reader
+   and communication-action changes before teaching them as available.
+4. **Replace the special Conversation execution contract.** Consolidate admission,
+   reading and result handling, then remove the unnecessary `followUp` and metric
+   conversion code. Translate retained legacy decisions without rerunning their
+   effects. Preserve message, input, Request, Task and operation identities, exact
+   returns and Stop fences. Keep compatibility readers and #319's guard until
+   the common path is verified for both new input and saved work.
 
-1. **Prove the common contract in an isolated fixture.** Run an ordinary Task
-   with human input, a scoped accepted ask and a reply destination. Let it request
-   review, keep its Condition, continue testing and publish partial progress.
-   Reuse existing admission and action boundaries. Review the smallest necessary
-   capability schema before teaching it as available.
-2. **Consolidate the Conversation adapter.** Translate retained legacy decisions
-   into the common contract without rerunning their effects. Preserve message,
-   input, Request, Task and operation identities, exact returns and stop fences.
-   Keep compatibility readers until saved work can resume. Remove the special
-   `followUp` writer and forced convergence only after the common path is verified.
-3. **Adopt the work routes in May.** Move operational handling to ordinary
-   accountable Tasks, reuse matching active work, and remove metric result
-   conversion. Keep human discussion and intentional human updates available.
-   Repeated semantic-review selection is a separate policy issue: changing the
-   receiver alone does not prove less review cost or timely intervention.
-4. **Update the owning contracts and agent guidance.** Integrate accepted rules
-   in System Model, message/Conversation contracts, Task attempts, escalation and
-   the Task execution skill. Remove misleading turn-versus-Task wording and old
-   App-owns-Task statements. Keep this proposal only for remaining decisions;
-   archive implementation evidence separately.
+Update the owning contracts and Task execution skill with each implemented slice:
+System Model, message/Conversation contracts, Task admission/attempts and escalation.
+Remove misleading turn-versus-Task wording and old App-owns-Task statements as
+their replacement lands. Keep this proposal only for remaining decisions and
+archive implementation evidence separately.
 
 Preserve accepted history and pending requirements during migration. Do not
 interpret queued human replies, reopen closed work, or mark old input handled
@@ -281,16 +332,24 @@ by accepting this design document alone.
 
 | Case | What must be demonstrated |
 | --- | --- |
+| Ordinary and conversational input admission | One durable admission per addressed input, retained message/reply references when present, and readable original input across retry/restart; incompatible input is rejected before effects. |
 | Two messages refine one ask | Same accepted Request and fitting Task; both requirements remain readable after restart. |
 | Several asks share a batch | One answer cannot silently fulfill an omitted ask; scoped partial acceptance preserves the rest. |
 | Review is pending while testing continues | Ordinary requests/Conditions and continuation work with communication, without a special handoff or another Task solely to yield. |
 | Simple agent-to-agent review | Exact caller result with no extra Conversation, Topic or conversational Request. |
+| Reviewer returns a contribution | The accepting Task still owes the original answer; return or a Task reference cannot transfer or close that promise. |
 | Live reply followed by failure/retry | Accepted publication survives; replay does not duplicate it; unfulfilled work and waits remain visible. |
 | Request closure after a scope change | Stale closure is rejected; current agent judgment and explanation can be accepted without an extra completion judge. |
 | Unauthorized reference | A copied Conversation/Request/Task identity grants no mutation or recipient authority. |
-| Broken Conversation execution | An existing declared owner route reaches a working Task; diagnosis admission alone is not reported as handling or recovery. |
+| Broken Conversation execution | With the handler still broken, a real Evaluation publication reaches executable ordinary May work through the installed App route; a test-seeded repair Task or admission receipt alone is insufficient. |
+| Open Request and quiet background work | An open ask alone produces no repeated model calls; accepted background results and unchanged waits produce no Conversation/Telegram message without a communication decision. |
 | Old follow-up and return after upgrade | Exact retained identities/results remain usable; no replayed effects, lost Conditions or silent reopening. |
 | Human Stop and later input | Only the selected execution stops; published work and unresolved asks survive, and later input can continue through the supported route. |
+
+The two decisive connected trials are diagnosis delivery while Conversation
+execution is broken, and published reply followed by failure/retry. Each must
+exercise the normal admission, execution and return path with retained identities;
+manually advancing a replacement Task does not establish the required behavior.
 
 Use portable deterministic regressions for identity, admission and restart.
 Then compare bounded agent runs on a human refinement and an agent review:
@@ -302,13 +361,16 @@ outcomes and preserved obligations.
 ## Decisions to review
 
 The recommendation is to accept the resource boundaries and incremental direction
-above. Before implementation, settle the smallest public communication-action
-shape, the concrete authority binding described above, and how legacy results
-map into common admission without losing identity. Keep a standing intake Task
-as an App convention, rather than a mandatory core Task for every Conversation.
+above. Before implementation, settle the common admission/reader representation,
+the smallest public communication-action shape, and how legacy inputs/results
+map into the common contract without losing identity. Reply responsibility stays
+with the accepting Task through existing admission/return relationships in this
+version. Keep a standing intake Task as an App convention, rather than a mandatory
+core Task for every Conversation.
 
-Generic multi-agent discussion, participant management and unified Request
-storage are future needs to demonstrate, not prerequisites for the first slice.
+General responsibility transfer, generic multi-agent discussion, participant
+management and universal Request storage remain deferred until concrete needs
+justify them; they are not prerequisites for the first slice.
 The [capability proposal](task-execution-capabilities-20261002.md) remains the home
 for common discovery and agent guidance; this proposal supplies its work versus
 communication boundary.
