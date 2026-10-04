@@ -431,6 +431,7 @@ export function listOpenAppInboxItemsByIdempotencyPrefix(
          AND status != 'done'
          AND source_kind = 'app'
          AND source_id = ?
+         AND idempotency_key != ''
          AND idempotency_key >= ?
          AND idempotency_key < ?
        ORDER BY idempotency_key, id
@@ -455,7 +456,7 @@ export function listAppInboxItems(db: SqliteDb, query: AppInboxQuery = {}): AppI
     params.push(query.status);
   }
   if (query.idempotencyKey !== undefined) {
-    conditions.push("idempotency_key = ?");
+    conditions.push("idempotency_key = ? AND idempotency_key != ''");
     params.push(requiredText(query.idempotencyKey, "idempotencyKey"));
   }
   const limit = query.limit ?? 100;
@@ -671,7 +672,7 @@ export function createAppInboxItem(db: SqliteDb, input: CreateAppInboxItem): { i
 
   const existing = input.idempotencyKey
     ? db
-        .prepare("SELECT * FROM app_inbox_items WHERE app_id = ? AND idempotency_key = ?")
+        .prepare("SELECT * FROM app_inbox_items WHERE app_id = ? AND idempotency_key = ? AND idempotency_key != ''")
         .get(input.appId, input.idempotencyKey)
     : db.prepare("SELECT * FROM app_inbox_items WHERE id = ?").get(id);
   if (!existing) throw new Error(`App inbox item ${id} conflicted with an unknown row`);
