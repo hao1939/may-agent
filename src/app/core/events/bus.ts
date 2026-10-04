@@ -1251,6 +1251,7 @@ export class EventBus {
   redeliverPersisted(
     input: AgentEvent,
     eventId: number,
+    durableRouteLabel?: string,
   ): AgentEvent & {
     [EVENT_ROW_ID]?: number;
     [EVENT_DELIVERY_RESULT]?: DeliveryResult;
@@ -1262,7 +1263,7 @@ export class EventBus {
     Object.defineProperty(event, EVENT_ROW_ID, { value: eventId, configurable: true });
     Object.defineProperty(event, EVENT_DEDUPLICATED, { value: true, configurable: true });
     Object.defineProperty(event, EVENT_REDELIVERY_REQUIRED, { value: true, configurable: true });
-    return this.dispatch(event, false);
+    return this.dispatch(event, false, durableRouteLabel);
   }
 
   /**
@@ -1290,6 +1291,7 @@ export class EventBus {
   private dispatch(
     input: AgentEvent,
     persist: boolean,
+    durableRouteLabel?: string,
   ): AgentEvent & {
     [EVENT_ROW_ID]?: number;
     [EVENT_DELIVERY_RESULT]?: DeliveryResult;
@@ -1322,6 +1324,7 @@ export class EventBus {
         return event as AgentEvent & { [EVENT_ROW_ID]?: number };
       }
       for (const fn of this.durableRouteSubscribers) {
+        if (durableRouteLabel && this.subscriberLabels.get(fn) !== durableRouteLabel) continue;
         try {
           const result = normalizeDeliveryResult(this.runSubscriber(event, "first", fn));
           delivery = preferredDelivery(delivery, result);

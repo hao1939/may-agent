@@ -21,6 +21,7 @@ import type { SqliteDb } from "../../lib/db.js";
 import { loadPersistedEvent } from "../core/events/persisted.js";
 import {
   EVENT_DELIVERY_RESULT,
+  EVENT_REDELIVERY_REQUIRED,
   EVENT_ROW_ID,
   eventData,
   type AgentEvent,
@@ -79,6 +80,8 @@ export type AppInboxRuntime = {
 // The Event journal remains the sole recovery authority.
 const ADMISSION_RECOVERY_INTERVAL_MS = 60_000;
 const ADMISSION_RECOVERY_BATCH_SIZE = 16;
+const APP_ADMISSION_RECOVERY_SCAN_SIZE = 64;
+const APP_ADMISSION_RECOVERY_BATCH_SIZE = 16;
 const ADMISSION_COMMAND_TURN_GAP_MS = 2;
 
 export type StartAppInboxRuntimeOptions = {
@@ -241,6 +244,7 @@ function addressedAgentMessage(event: AgentEvent):
     identity,
   };
 }
+
 
 export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions): Promise<AppInboxRuntime> {
   let taskAdmissionWorker = options.createTaskAdmissionWorker?.();
@@ -424,18 +428,25 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
     const current = new Promise<void>((resolve) => setTimeout(resolve, 0))
       .then(async () => {
         if (closed) return;
-        // Resume saved human inputs through the same durable route. This also
-        // closes a crash between Conversation persistence and decision publication.
-        const inputs = options.db.prepare(`SELECT id FROM events
-          WHERE event_type = 'conversation.message.created' AND id > ?
-            AND delivery_status IN ('pending', 'unhandled')
-            AND (json_type(data, '$.approvalReply.hostApproval') = 'object' OR body_ref IS NOT NULL)
-          ORDER BY id LIMIT 16`).all(inputRecoveryCursor);
-        if (!inputs.length) inputRecoveryCursor = 0;
-        for (const row of inputs) {
-          inputRecoveryCursor = Number(row.id);
-          const event = loadPersistedEvent(options.db, Number(row.id), options.persistDir);
-          if (event) options.bus.redeliverPersisted(event, Number(row.id));
+        // Inspect a fixed indexed marker window. Global delivery status belongs
+        // to other durable routes and cannot discharge the App obligation. The
+        // cursor wraps so a repeatedly failing admission remains owed.
+        const rows = options.db.prepare(`SELECT id
+          FROM events INDEXED BY idx_events_app_admission_pending
+          WHERE app_admission_pending = 1 AND id > ? ORDER BY id LIMIT ?`).all(inputRecoveryCursor, APP_ADMISSION_RECOVERY_SCAN_SIZE);
+        if (!rows.length) inputRecoveryCursor = 0;
+        let recovered = 0;
+        for (const row of rows) {
+          const eventId = Number(row.id);
+          inputRecoveryCursor = eventId;
+          const event = loadPersistedEvent(options.db, eventId, options.persistDir);
+          if (!event) {
+            reportRuntimeFailure("input-recovery", new Error(`Pending App-admission event ${eventId} is unavailable`));
+            continue;
+          }
+          options.bus.redeliverPersisted(event, eventId, "app-inbox-route");
+          recovered += 1;
+          if (recovered === APP_ADMISSION_RECOVERY_BATCH_SIZE) break;
         }
         await host.recoverAdmissions();
         if (!closed) await host.recoverTaskResults();
@@ -741,7 +752,7 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
         } else {
           // EventBus re-runs only idempotent durable routes and records delivery
           // acceptance on the original row; ordinary subscribers never replay.
-          options.bus.redeliverPersisted(event, plan.eventId);
+          options.bus.redeliverPersisted(event, plan.eventId, "app-inbox-route");
         }
         if (index < plans.length) admissionRecoveryHandle = setTimeout(recoverNext, 0);
       };
@@ -749,8 +760,7 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
     }, 0);
   };
 
-  const unsubscribe = options.bus.subscribeDurableRoute(
-    (event): DeliveryResult | void => {
+  const admitEvent = (event: AgentEvent): DeliveryResult | void => {
       // Task controls have their own fenced writer and receipt. Their target
       // identifies the resource to control, not fresh input for that Task.
       if (taskControlAction(event.type)) return;
@@ -769,6 +779,9 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
         for (const row of rows) notifyConversationUpdated(String(data.project), String(row.conversation_id));
       }
       if (event.type === "conversation.turn.stop.requested") {
+        // The first delivery executes the fenced control. Marker recovery only
+        // inspects and acknowledges it; repeating Stop is not App admission.
+        if ((event as AgentEvent & { [EVENT_REDELIVERY_REQUIRED]?: boolean })[EVENT_REDELIVERY_REQUIRED]) return;
         host.stopTurn({
           appId: String(data.appId ?? ""),
           conversationId: String(data.conversationId ?? ""),
@@ -779,7 +792,15 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
       }
       const message = addressedAgentMessage(event);
       if (message) {
-        const candidates = host.matchingAppIds(message.targetOwner, message.input);
+        const eventId = eventRowId(event);
+        // A direct admission can commit before its Event marker acknowledgement.
+        // On retry, preserve that accepted recipient instead of reselecting a
+        // different App after registry reload.
+        const existing = eventId
+          ? options.db.prepare("SELECT app_id FROM app_inbox_items WHERE origin_event_id = ? LIMIT 1").get(eventId)
+          : null;
+        const retainedAppId = typeof existing?.app_id === "string" ? existing.app_id : undefined;
+        const candidates = retainedAppId ? [retainedAppId] : host.matchingAppIds(message.targetOwner, message.input);
         if (candidates.length === 1) {
           const admitted = host.admit({
             appId: candidates[0]!,
@@ -1128,6 +1149,18 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
       // without inventing work when no current Condition or App route needs it.
       if (event.type === "app.dependency.updated" && data.kind === "app")
         return { accepted: true, by: "app-input-result", route: "noop" };
+    };
+  const unsubscribe = options.bus.subscribeDurableRoute(
+    (event): DeliveryResult | void => {
+      const result = admitEvent(event);
+      const eventId = eventRowId(event);
+      // Accepted delivery is acknowledged together with its Event receipt by
+      // DbWriter.recordDelivery. An inspected no-work disposition has no
+      // delivery receipt, so acknowledge that marker here.
+      if (eventId && result === undefined) {
+        options.db.prepare("UPDATE events SET app_admission_pending = 0 WHERE id = ?").run(eventId);
+      }
+      return result;
     },
     { label: "app-inbox-route" },
   );

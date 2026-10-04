@@ -210,6 +210,10 @@ function capEventData(payload: Record<string, unknown>): string {
     },
   };
   const priorityKeys = [
+    // External bodies still need their direct destination in the bounded SQL
+    // projection so restart recovery can discover and verify the full Event.
+    "appId",
+    "conversationId",
     "sessionId",
     "agent",
     "status",
@@ -286,6 +290,11 @@ function prepareEventBody(
   }
   const artifact = writeContentAddressedJson(persistDir, "event-bodies", payload);
   const projected = compactEventValue(payload) as Record<string, unknown>;
+  // compactEventValue bounds objects by insertion order. Restore the direct
+  // destination scalars from the authoritative body before applying the byte
+  // cap, whose priority order guarantees they survive the SQL projection.
+  if (typeof payload.appId === "string") projected.appId = payload.appId;
+  if (typeof payload.conversationId === "string") projected.conversationId = payload.conversationId;
   return {
     data: capEventData({
       ...projected,
@@ -665,7 +674,8 @@ export class DbWriter {
                  accepted_by = ?,
                  accepted_at = ?,
                  delivery_route = ?,
-                 delivery_note = ?
+                 delivery_note = ?,
+                 app_admission_pending = 0
              WHERE id = ?`,
             [result.by, now, result.route ?? "direct", result.note ?? null, rowId],
           );
@@ -734,7 +744,7 @@ export class DbWriter {
       if (idempotencyKey) {
         const existing = this.db
           .prepare(
-            `SELECT e.id, e.idempotency_hash, e.delivery_status, e.accepted_by, e.delivery_route,
+            `SELECT e.id, e.idempotency_hash, e.delivery_status, e.accepted_by, e.delivery_route, e.app_admission_pending,
                     e.source, e.owner, e.timestamp
              FROM events e
              WHERE e.event_type = ?
@@ -750,6 +760,7 @@ export class DbWriter {
               delivery_status?: unknown;
               accepted_by?: unknown;
               delivery_route?: unknown;
+              app_admission_pending?: unknown;
               source?: unknown;
               owner?: unknown;
               timestamp?: unknown;
@@ -847,8 +858,8 @@ export class DbWriter {
            session_id, workflow_run_id, project_id, task_id, attempt_id, handler,
            metric_id, alert_id, escalation_id, subject_status, duration_ms,
            timestamp, urgency, ttl_ms, idempotency_key, idempotency_scope,
-           idempotency_hash, ingress_source)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+           idempotency_hash, ingress_source, app_admission_pending)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)`,
         [
           event.type,
           source,

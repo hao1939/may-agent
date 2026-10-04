@@ -49,6 +49,7 @@ WHERE json_extract(data, '$.version') = 1
     OR (json_type(data, '$.alertId') = 'integer' AND json_extract(data, '$.alertId') > 0))
   AND timestamp IS NOT NULL`;
 
+
 /** Canonical runtime schema. Historical schemas are not supported. */
 export const SCHEMA = `
 CREATE TABLE IF NOT EXISTS execution_usage (
@@ -200,7 +201,8 @@ CREATE TABLE IF NOT EXISTS events (
   idempotency_key TEXT,
   idempotency_scope TEXT NOT NULL DEFAULT '',
   idempotency_hash TEXT,
-  ingress_source TEXT NOT NULL DEFAULT ''
+  ingress_source TEXT NOT NULL DEFAULT '',
+  app_admission_pending INTEGER
 );
 CREATE INDEX IF NOT EXISTS idx_events_owner ON events(owner, timestamp);
 CREATE INDEX IF NOT EXISTS idx_events_type ON events(event_type, timestamp);
@@ -221,6 +223,10 @@ CREATE INDEX IF NOT EXISTS idx_events_metric ON events(metric_id, timestamp);
 CREATE INDEX IF NOT EXISTS idx_events_app_conversation_message
   ON events(json_extract(data, '$.appId'), json_extract(data, '$.conversationId'), id)
   WHERE event_type = 'conversation.message.created';
+-- Prospective Event rows remain an App-admission obligation until the App route
+-- records a complete plan, durable direct acceptance, or inspected no-work.
+CREATE INDEX IF NOT EXISTS idx_events_app_admission_pending ON events(id)
+  WHERE app_admission_pending = 1;
 
 CREATE TABLE IF NOT EXISTS event_traces (
   event_id INTEGER PRIMARY KEY,
@@ -406,6 +412,7 @@ WHEN
     SELECT 1 FROM app_inbox_items i
     WHERE i.origin_event_id = OLD.id AND i.status != 'done'
   )
+  OR OLD.app_admission_pending = 1
 BEGIN
   SELECT RAISE(IGNORE);
 END;
@@ -520,6 +527,8 @@ CREATE INDEX IF NOT EXISTS idx_wfr_project_started ON workflow_runs(projectId, s
 CREATE INDEX IF NOT EXISTS idx_wfr_task_binding ON workflow_runs(app_id, task_id, task_generation, attempt_id);
 `;
 
+
+
 export function applyDbSchema(db: SqliteDb): void {
   // The daemon, web server, and maintenance process can open the same database
   // together after a restart. Serialize the complete shape upgrade so another
@@ -535,10 +544,12 @@ export function applyDbSchema(db: SqliteDb): void {
     ensureExistingAppInboxTableColumns(db);
     ensureExistingAppInboxWaitKinds(db);
     ensureExistingTaskBindingColumns(db);
-    // Trigger definitions are not replaced by CREATE TRIGGER IF NOT EXISTS.
-    // Recreate this retention fence so existing databases gain every new durable
-    // reference added to the canonical schema.
+    if (tableExists(db, "events")) ensureColumn(db, "events", "app_admission_pending", "INTEGER");
+    // Trigger definitions are not replaced by IF NOT EXISTS. Remove the superseded
+    // type-specific discovery objects; historical rows remain NULL and acquire no obligation.
     db.exec("DROP TRIGGER IF EXISTS trg_events_referential_retention");
+    db.exec("DROP VIEW IF EXISTS event_direct_app_recovery_candidates");
+    db.exec("DROP INDEX IF EXISTS idx_events_direct_app_recovery");
     db.exec(SCHEMA);
     ensureSingleOpenMetricAlert(db);
     if (needsEventTraceBackfill) {
