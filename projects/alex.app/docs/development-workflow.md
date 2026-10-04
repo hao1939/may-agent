@@ -10,6 +10,20 @@ its requested outcome with fewer relayed instructions.
 **Choice basis:** [Agent judgment and infra execution](1-principles/core-principles.md).
 Alex chooses this procedure; its code runs and records the selected steps.
 
+## Repository delivery boundary
+
+Apply the contribution and review rules of the repository containing the change.
+The Host at `/app/projects/may-agent` uses protected GitHub pull requests. The
+Apps repository at `/app` uses its authorized local integration path and bare
+backup remote. Review and focused verification still apply there; a Host PR or
+Host CI requirement does not transfer to an App-only correction.
+
+Retain the exact candidate, integrated source and activation evidence separately.
+When a creator's acceptance names the wrong repository process, return the
+mismatch to that creator for correction, then reconcile its obsolete Condition.
+Use existing deployment authority; request a human decision only for an actual
+remaining permission or unresolved tradeoff.
+
 ## Sufficient first outcome
 
 Turn an accepted requirement into a locally committed, verified and reviewed

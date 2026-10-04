@@ -1,0 +1,555 @@
+{
+  "kind": "bounded-owner-review-contract-semantic-reconciliation",
+  "date": "2026-10-04",
+  "contributor": "bob",
+  "sessionId": "s_1791119677933_304bf703-3466-4ffa-8838-123800717094",
+  "scope": [
+    "repair-grouped-goal-task-creation-and-regeneration-20260827",
+    "repair-owner-review-message-deduplication-and-disclosure-20260825"
+  ],
+  "status": "contribution-only; no legacy fulfillment, migration completion, runtime mutation or continuation admission",
+  "sourceSnapshot": {
+    "path": "/app/.state/alex-migration-20261004/legacy-frontier-snapshot.json",
+    "sha256": "bd3f6a1cc65e125c61f5a8380cba746d55e3d8143edc6f8d6825af286d5d7f97",
+    "coverage": "Retained nonconverged frontier, not complete event/attempt history"
+  },
+  "frontier": {
+    "path": "projects/alex.app/legacy-frontier-disposition-2026-10-04.json",
+    "sha256AtRead": "0d14c5235242c53c95dc99501b8871753c18287702bb268924d243b13990cc3a"
+  },
+  "requiredReferences": [
+    "projects/alex.app/migration-receipt-2026-10-04.md",
+    "projects/alex.app/docs/proposals/alex-improvement-app.md"
+  ],
+  "currentIdentity": {
+    "hostCommit": "d8c87757782ae5750984bedc239b00eab4c76715",
+    "hostDeployReceipt": {
+      "version": 1,
+      "correlation": "failover-d8c877577-20261004",
+      "artifactSha": "af72410f0ebe7f289a062111781fa5dd15491ce1d809bb01d27bfca0b09fdd56",
+      "sourceCommit": "d8c87757782ae5750984bedc239b00eab4c76715",
+      "phase": "succeeded",
+      "requestedAt": "2026-10-04T13:07:06.716Z",
+      "verification": "After the restarter settles service and HTTP health, read this exact receipt without redeploying; verify loadedArtifactSha equals artifactSha, health is healthy, and duplicateDeploy is false. Any notification target is best-effort only.",
+      "completedAt": "2026-10-04T13:07:17.698Z",
+      "loadedArtifactSha": "af72410f0ebe7f289a062111781fa5dd15491ce1d809bb01d27bfca0b09fdd56",
+      "health": "healthy",
+      "duplicateDeploy": false
+    },
+    "activatedDefinitions": "/app/.state/releases/app-definitions/b924e240dadd1c5d9042cd0f5d0c5b235ae35aee-definitions-v4",
+    "appsEvidence": "/app/.state/alex-migration-20261004/retirement-live-apps.json",
+    "activeApps": [
+      "alex",
+      "may",
+      "scout-knowledge-lib"
+    ],
+    "sourceChecks": [
+      {
+        "path": "projects/alex.app/app.ts",
+        "sha256": "6209a127c0d68f8079e755a9df6e100e05b4325afd459fb6510a7f2e494a43bf",
+        "equalsActivatedBytes": true
+      },
+      {
+        "path": "projects/alex.app/app.test.ts",
+        "sha256": "a45b14e3def7748b6cd8e325315206ee3b920fde792d180fc1df3c917ebf853d",
+        "equalsActivatedBytes": true
+      },
+      {
+        "path": "projects/may.app/app.ts",
+        "sha256": "6adf7bcf54489af39dd6a62f0e7b23b359e91711940547c6790aa36614dd58e1",
+        "equalsActivatedBytes": true
+      },
+      {
+        "path": "projects/may.app/app.test.ts",
+        "sha256": "de108bdba40c6f6d4a27dabfdb2dba411125aacfa6dbb659e4fee83f44f81563",
+        "equalsActivatedBytes": true
+      },
+      {
+        "path": "projects/scout-knowledge-lib.app/app.ts",
+        "sha256": "ad737f158d130a1d3cd5a66b368206bc9754b622d6a88f786cb24bc2739e8616",
+        "equalsActivatedBytes": true
+      }
+    ]
+  },
+  "tasks": [
+    {
+      "old": {
+        "appId": "may-agent",
+        "taskId": "repair-grouped-goal-task-creation-and-regeneration-20260827",
+        "generation": 1,
+        "phase": "attention",
+        "owner": null,
+        "conditionIds": []
+      },
+      "retainedResource": {
+        "app_id": "may-agent",
+        "task_id": "repair-grouped-goal-task-creation-and-regeneration-20260827",
+        "generation": 1,
+        "resource_version": 145,
+        "phase": "attention",
+        "updated_at": 1788095684808,
+        "resource_json": {
+          "metadata": {
+            "creator": {
+              "appId": "may"
+            },
+            "generation": 1,
+            "id": "repair-grouped-goal-task-creation-and-regeneration-20260827",
+            "resourceVersion": 145
+          },
+          "spec": {
+            "acceptance": [
+              "Inventory the shared Host/runtime and installed App-definition task producers that can create or refill one Task per item, and identify the exact producer or contract responsible for recurring fragmentation with source and runtime evidence.",
+              "Define and implement the systemic boundary: one durable Task per meaningful goal; findings, checks, proposals, sessions, and work items remain structured state or evidence inside that goal Task unless they have a genuinely independent outcome, authority boundary, or external wait that requires a separate Task.",
+              "Preserve stable existing task identities, immutable completion receipts, running work, valid dependencies, historical evidence, benchmark truth, and App ownership boundaries; do not mutate foreign App task storage or duplicate the existing cleanup work.",
+              "Add focused regression proof that repeated timer, event, refill, owner-review, and reconciliation inputs reuse the retained goal identity and do not recreate one-Task-per-item backlogs; prove legitimate separate-goal exceptions still work.",
+              "Return the exact changed files and immutable revision, focused test and typecheck results, the before/after task-creation behavior, identified exception rules, and a bounded activation proposal if production activation requires Hao approval.",
+              "If the systemic source is App-local rather than shared Host/runtime, return exact evidence and schema-valid follow-up requirements for the responsible existing App task instead of patching across its ownership boundary."
+            ],
+            "category": "runtime-task-topology",
+            "mode": "achieve",
+            "outcome": "Identify and correct the May Host/runtime and shared App-definition task-creation rule that permits one Task per finding, check, proposal, session audit, or work item to regenerate instead of retaining one durable Task per meaningful goal; prove the corrected rule preserves item-level evidence and legitimate waits inside the retained goal Task without altering foreign App-owned task state directly.",
+            "outputs": [
+              "Source-backed root-cause inventory",
+              "Grouped-goal task-creation contract and implementation",
+              "Focused non-regeneration regression proof",
+              "Before/after task-creation behavior report"
+            ],
+            "parentId": "app-request/appreq_526ff3c62357a47caecdd980",
+            "priority": "P0"
+          },
+          "status": {
+            "conditionIds": [],
+            "evidence": [
+              "The supplied Reconciliation Task lists open Condition resume-grouped-goal-repair-after-stop with type human-decision, subject human-decision:grouped-goal-repair-completion, and state unknown.",
+              "No New Event or supplied dependency observation resolves or supersedes that Condition in this attempt."
+            ],
+            "observedAttemptId": "r_1_4a9991c8-d8ca-464a-9e61-6bec17702a2b",
+            "observedGeneration": 1,
+            "phase": "attention",
+            "summary": "Resolved agent may is not a runnable agent",
+            "updatedAt": "2026-08-30T13:14:44.808Z"
+          }
+        },
+        "trigger_json": null
+      },
+      "historicalFulfilled": false,
+      "preservedRelationships": [
+        {
+          "app_id": "may-agent",
+          "source_task_id": "repair-grouped-goal-task-creation-and-regeneration-20260827",
+          "relation_kind": "parent",
+          "target_task_id": "app-request/appreq_526ff3c62357a47caecdd980"
+        }
+      ],
+      "creator": {
+        "appId": "may"
+      },
+      "replacement": null,
+      "decision": "needs-bounded-current-alex-technical-continuation-with-preserved-may-human-stop-boundary",
+      "basis": [
+        "The retired maintenance App did contain stable runtime/platform-owner-review reuse and explicit independent-goal exceptions. This is source progress, not terminal proof of the old systemic outcome.",
+        "Current Alex reuses standing research, selector and metric-review identities; May retains evaluation-intake; Scout scheduled feed/library work has stable identities. Distinct goals and independent assessments may legitimately remain separate.",
+        "Current Alex evaluationReportInput produces ordinary messages and taskForInput maps each new admission ID to input/<id>. A pure mapper probe with identical report content and two admission IDs returns two different Tasks. This demonstrates an App-local item-carrier path still present, not a Host deduplication failure or proof of a live growing backlog.",
+        "The agreed new migration design allows a bounded intake Task to finish its own disposition and requires agent judgment for semantic overlap. Thus distinct report Tasks are not automatically a defect: a bounded Alex investigation must decide whether this particular intake outcome is independently valuable or should reuse one owner goal. Do not mechanically apply the old blanket grouping rule."
+      ],
+      "technicalContinuation": {
+        "owner": "alex",
+        "outcome": "Decide and demonstrate whether repeated current Alex report/qualified-finding inputs reuse useful owner work without regenerating duplicate improvement outcomes; preserve every immutable report, original request, legitimate independent outcome and wait.",
+        "acceptance": [
+          "Read exact current retained intake results and linked improvement Tasks for a bounded repeated-concern sample; distinguish independent assessment/intake outcome from duplicate repair commissioning.",
+          "Exercise declared subscriptions plus actual Host admission with two different publications for one material concern, transport replay, new evidence and one genuinely independent outcome. Mapper-only evidence is insufficient.",
+          "If independent intake is useful, retain a no-change decision with linked owner-work proof. Otherwise implement only the demonstrated App-local identity/intake defect, with Conditions and caller preservation regression.",
+          "Return current exact source, test evidence, costs and stop/no-change criterion. No foreign Task mutation and no global Host semantic deduplication heuristic."
+        ],
+        "authorizationLimit": "This recommendation is not an admission or permission to resume the stopped historical candidate. Alex may assess current migration intake; May must disposition the separate historical stop before revival of that repair."
+      },
+      "authorityBoundary": {
+        "conditionId": "resume-grouped-goal-repair-after-stop",
+        "taskStatusConditionIds": [],
+        "correction": "Although absent from the final Task status conditionIds array, the retained Condition resource and both child/parent evidence explicitly record the unresolved prior stop. Do not infer withdrawal from the empty array.",
+        "neededMayDecision": "Preserve the cleanup caller and determine whether the stopped legacy candidate is withdrawn unfulfilled or a precise surviving obligation needs Hao to resume it. Migration authority does not establish historical stop resolution."
+      },
+      "missingProof": [
+        "No complete original producer inventory, before/after runtime non-regeneration report, final immutable seven-file candidate identity or terminal live reconciliation proof recovered.",
+        "No Hao continue/stop resolution recovered.",
+        "The retained parent corrects running-count aggregation: historical 2270 unfinished = 8 continue + 2262 wait, not 6 + 2264; later observation 2334 unfinished and 8 running. These are historical only, not present inventory."
+      ],
+      "callerChain": [
+        "may creator -> may-agent/repair-grouped-goal-task-creation-and-regeneration-20260827",
+        "parent may-agent/app-request/appreq_526ff3c62357a47caecdd980 -> platform-system-review-feedback-loop"
+      ],
+      "retainedParent": {
+        "metadata": {
+          "creator": {
+            "appId": "may"
+          },
+          "generation": 2,
+          "id": "app-request/appreq_526ff3c62357a47caecdd980",
+          "resourceVersion": 289
+        },
+        "spec": {
+          "acceptance": [
+            "Review every current canonical unfinished task across installed Apps and classify it with an evidence-backed disposition: continue, wait, abandon, or requires Hao's decision.",
+            "Abandon tasks only when canonical evidence proves they are obsolete, superseded, duplicated, legacy with no remaining purpose, or founded on data that is no longer valid.",
+            "Preserve running work, valid dependency-bound work, historical evidence, benchmark truth, and tasks with unresolved but legitimate blockers.",
+            "Do not duplicate or interfere with Gym task owner-review/appreq_ee4c30f34f998b5cba46f97e-a679128f203e48cd; incorporate its known scope and leave it running.",
+            "Return final counts by App and disposition, exact identities and reasons for every abandoned task, and any smallest remaining decisions that require Hao."
+          ],
+          "input": {
+            "data": {
+              "acceptance": [
+                "Review every current canonical unfinished task across installed Apps and classify it with an evidence-backed disposition: continue, wait, abandon, or requires Hao's decision.",
+                "Abandon tasks only when canonical evidence proves they are obsolete, superseded, duplicated, legacy with no remaining purpose, or founded on data that is no longer valid.",
+                "Preserve running work, valid dependency-bound work, historical evidence, benchmark truth, and tasks with unresolved but legitimate blockers.",
+                "Do not duplicate or interfere with Gym task owner-review/appreq_ee4c30f34f998b5cba46f97e-a679128f203e48cd; incorporate its known scope and leave it running.",
+                "Return final counts by App and disposition, exact identities and reasons for every abandoned task, and any smallest remaining decisions that require Hao."
+              ],
+              "baselineCorrection": {
+                "aggregationRule": "Treat the historical correction as an audit fix only; use a fresh canonical identity set and phase snapshot for final counts so every current identity is represented and all running work is preserved.",
+                "currentObservation": {
+                  "observedAt": "2026-08-25T16:32:24.617Z",
+                  "running": 8,
+                  "totalUnfinished": 2334
+                },
+                "findingKey": "canonical-cleanup-running-baseline-count-mismatch",
+                "historicalSnapshot": {
+                  "provisionalDispositionCounts": {
+                    "abandon": 0,
+                    "continue": 8,
+                    "requiresHaoDecision": 0,
+                    "wait": 2262
+                  },
+                  "running": 8,
+                  "totalUnfinished": 2270
+                },
+                "sourceSessionId": "s_1787653392518_88",
+                "supersededIncorrectCounts": {
+                  "continue": 6,
+                  "wait": 2264
+                }
+              },
+              "constraints": [
+                "Do not abandon tasks merely because they are old, pending, waiting, or in attention.",
+                "Use the responsible App boundary for any task mutation or disposition that Host Operations does not own.",
+                "Prefer continuing exact task identities over creating replacement cleanup tasks.",
+                "Treat 'out of data' as 'out of date or based on invalidated data' unless evidence shows a different meaning.",
+                "Before aggregating child and dependency reviews, recompute the full baseline from current canonical task state and preserve every running identity."
+              ],
+              "outcome": "Systemically review all current canonical tasks across installed Apps and clean up tasks that are proven legacy, obsolete, superseded, duplicated, or based on no-longer-valid data, while preserving valid active work and the existing Gym backlog cleanup."
+            },
+            "kind": "owner-review"
+          },
+          "mode": "achieve",
+          "outcome": "Systemically review all current canonical tasks across installed Apps and clean up tasks that are proven legacy, obsolete, superseded, duplicated, or based on no-longer-valid data, while preserving valid active work and the existing Gym backlog cleanup.",
+          "owner": "may",
+          "parentId": "platform-system-review-feedback-loop",
+          "priority": "P1"
+        },
+        "status": {
+          "conditionIds": [],
+          "evidence": [
+            "The supplied Task lists both App dependencies as open with status `handling`; the new event only reports that the Evaluation dependency was updated and supplies no completed dependency observation.",
+            "The supplied child summary identifies `repair-grouped-goal-task-creation-and-regeneration-20260827` as live and waiting on unresolved human decision `resume-grouped-goal-repair-after-stop`.",
+            "The supplied Task acceptance requires a fresh full canonical snapshot before final aggregation, so historical counts cannot serve as terminal proof."
+          ],
+          "lane": "human",
+          "observedAttemptId": "r_2_47a6e064-450f-46fa-875b-15e9883f1983",
+          "observedGeneration": 2,
+          "phase": "attention",
+          "summary": "Resolved agent may is not a runnable agent",
+          "updatedAt": "2026-08-28T07:03:36.861Z"
+        }
+      },
+      "retainedCondition": {
+        "app_id": "may-agent",
+        "condition_id": "resume-grouped-goal-repair-after-stop",
+        "state": "unknown",
+        "condition_json": "{\"metadata\":{\"generation\":3,\"id\":\"resume-grouped-goal-repair-after-stop\",\"resourceVersion\":42},\"spec\":{\"expected\":\"Hao explicitly approves resuming the grouped-goal task-creation repair.\",\"owner\":\"Hao\",\"requestedAction\":\"Approve or reject resuming the existing grouped-goal repair Task after the prior stop.\",\"reviewAfterMs\":86400000,\"subject\":\"human-decision:grouped-goal-repair-completion\",\"type\":\"human-decision\"},\"status\":{\"createdAt\":\"2026-08-28T00:39:08.393Z\",\"observedAt\":\"2026-08-28T00:39:08.393Z\",\"observedGeneration\":0,\"state\":\"unknown\"}}",
+        "parsed": {
+          "metadata": {
+            "generation": 3,
+            "id": "resume-grouped-goal-repair-after-stop",
+            "resourceVersion": 42
+          },
+          "spec": {
+            "expected": "Hao explicitly approves resuming the grouped-goal task-creation repair.",
+            "owner": "Hao",
+            "requestedAction": "Approve or reject resuming the existing grouped-goal repair Task after the prior stop.",
+            "reviewAfterMs": 86400000,
+            "subject": "human-decision:grouped-goal-repair-completion",
+            "type": "human-decision"
+          },
+          "status": {
+            "createdAt": "2026-08-28T00:39:08.393Z",
+            "observedAt": "2026-08-28T00:39:08.393Z",
+            "observedGeneration": 0,
+            "state": "unknown"
+          }
+        }
+      }
+    },
+    {
+      "old": {
+        "appId": "may-agent",
+        "taskId": "repair-owner-review-message-deduplication-and-disclosure-20260825",
+        "generation": 2,
+        "phase": "waiting",
+        "owner": null,
+        "conditionIds": [
+          "approve-owner-signal-boundary-62890907"
+        ]
+      },
+      "retainedResource": {
+        "app_id": "may-agent",
+        "task_id": "repair-owner-review-message-deduplication-and-disclosure-20260825",
+        "generation": 2,
+        "resource_version": 10,
+        "phase": "waiting",
+        "updated_at": 1787685652768,
+        "resource_json": {
+          "metadata": {
+            "creator": {
+              "appId": "may"
+            },
+            "generation": 2,
+            "id": "repair-owner-review-message-deduplication-and-disclosure-20260825",
+            "resourceVersion": 10
+          },
+          "spec": {
+            "acceptance": [
+              "Baseline evidence accounts for byte-identical unhandled messages 6087428 and 6087435 and reconciles them with the contradictory terminal claim from session s_1787653153677_77.",
+              "The terminal disclosure helper is invoked by the actual terminal result path rather than remaining standalone, and focused source evidence or a regression proves the integration.",
+              "A persisted regression or golden trace proves canonical receipt lookup precedes every owner-signal creation path, an exact replay creates zero new owner signals, and one genuinely new finding follows exactly one supported accountable App or Task owner route without an unconsumed owner label.",
+              "Terminal behavior truthfully reports newlyCreatedSignalCount and exact created event IDs and cannot claim zero when the attempt created a signal.",
+              "Focused tests and typecheck run after the final candidate modification and pass; pre-change-only checks do not satisfy this criterion.",
+              "No approval is requested until all pre-activation criteria pass. Any approved production activation must prove exact loaded identity, healthy nonduplicate activation, fresh positive and replay controls, terminal App and Task results, and no hidden genuine delivery failure."
+            ],
+            "category": "runtime-reliability",
+            "mode": "achieve",
+            "outcome": "Complete the existing may-agent owner-review notification-boundary repair demonstrated by session s_1787653153677_77 and independently reviewed in session s_1787683908535_443. Integrate terminal-signal disclosure into the actual terminal path; ensure canonical delivery and remediation receipt lookup occurs before every agent or human owner-signal path; route a genuinely new finding through one supported accountable App or Task owner; make an exact replay create zero new signals; and truthfully disclose the count and event IDs of signals created by the attempt. Run all focused tests and typecheck after the final source change. Preserve the distinction between finding delivery and remediation, request approval only after the candidate is fully integrated and verified, and perform no production mutation without that approval. Replan on this same task if any receipt binding, route, regression, post-change check, activation identity, or live terminal proof is incomplete.",
+            "outputs": [
+              "Evidence-backed owner-review deduplication repair disposition",
+              "Persisted receipt-first replay regression",
+              "Truthful terminal created-signal disclosure proof"
+            ],
+            "parentId": "runtime/platform-owner-review",
+            "priority": "P1"
+          },
+          "status": {
+            "conditionIds": [
+              "approve-owner-signal-boundary-62890907"
+            ],
+            "evidence": [
+              "Normal terminal manager path enriches finishParams before status, session.end, caller finishResult, and structuredResult are produced.",
+              "Recovered App Task terminal path applies the same disclosure before writing result.json and emitting session.end.",
+              "Persisted regressions prove exact receipt replay creates zero messages, a new finding returns one typed App/Task route with no owner-label event, and terminal disclosure replaces a false zero with exact event IDs.",
+              "Activation identity and live controls are intentionally pending approval."
+            ],
+            "observedGeneration": 2,
+            "phase": "waiting",
+            "result": {
+              "approvalStatus": "requested-after-preactivation-proof",
+              "baselineDuplicateOwnerSignalEventIds": [
+                6087428,
+                6087435
+              ],
+              "candidateCommit": "62890907e0fbb19d590c727373b410c4402deaae",
+              "candidatePath": "/app/projects/may-agent-worktrees/owner-signal-boundary-20260825",
+              "decision": "request-production-activation-approval",
+              "focusedTests": {
+                "failed": 0,
+                "passed": 23
+              },
+              "newlyCreatedSignalCount": 0,
+              "newlyCreatedSignalEventIds": [],
+              "productionMutationPerformed": false,
+              "sourceSessionId": "s_1787653153677_77",
+              "typecheck": "passed"
+            },
+            "summary": "All pre-activation criteria now pass on immutable candidate 62890907e0fbb19d590c727373b410c4402deaae. Human approval owns the next step; no production mutation has occurred, and activation plus fresh positive/replay terminal proof remains required on this same Task.",
+            "updatedAt": "2026-08-25T19:20:52.768Z"
+          }
+        },
+        "trigger_json": null
+      },
+      "historicalFulfilled": false,
+      "preservedRelationships": [
+        {
+          "app_id": "may-agent",
+          "source_task_id": "repair-owner-review-message-deduplication-and-disclosure-20260825",
+          "relation_kind": "parent",
+          "target_task_id": "runtime/platform-owner-review"
+        }
+      ],
+      "creator": {
+        "appId": "may"
+      },
+      "replacement": null,
+      "decision": "retains-may-human-authority-boundary-obsolete-exact-candidate-unfulfilled",
+      "basis": [
+        "Exact frozen Host commit 62890907e0fbb19d590c727373b410c4402deaae is available in Git but is not an ancestor of deployed d8c87757782ae5750984bedc239b00eab4c76715.",
+        "Candidate lookup uses obsolete app.dependency.completed receipts and optional owner_review metadata on message. Both terminal managers were wired in the historical diff; this supports retained preactivation progress, not live fulfillment.",
+        "Current Host lacks inspectOwnerReviewSignal/enforceTerminalSignalDisclosure/newlyCreatedSignalCount source. Generic message intentionally records each call; a fake-emitter double-call produces two message.created events. Current supported Task communication instead journals exact IDs, rejects changed-content replay, preserves original requests and returns receipts across restart.",
+        "The former platform owner-review controller no longer runs; current Alex owns improvement intake and May human decisions. Reintroducing the frozen receipt predicate or global semantic message suppression is not justified. Exact signal counts/event IDs and finding-versus-remediation proof of the historical requested outcome are not supplied by modern transport replay tests."
+      ],
+      "authorityBoundary": {
+        "conditionId": "approve-owner-signal-boundary-62890907",
+        "requestedCandidate": "62890907e0fbb19d590c727373b410c4402deaae",
+        "neededMayDecision": "Through Alex, ask May to disposition this exact obsolete activation request as withdrawn unfulfilled, or identify a precise surviving human/caller obligation. Do not settle/rebind the Condition or infer approval, rejection or withdrawal here."
+      },
+      "technicalContinuation": {
+        "immediateHostPatchRecommended": false,
+        "reason": "No demonstrated current owner-review production recurrence. The obsolete event protocol and controller should not be revived. Shared current Alex intake/routing investigation from the grouped-goal item can check linked finding delivery versus actual remediation and truthful receipt reporting without installing legacy Host-wide counters.",
+        "reopenTrigger": "Concrete current double-delivery, duplicate repair commissioning, false receipt claim, or accepted present requirement for terminal counts; then scope a current-protocol correction with accountable owner and replay/negative controls."
+      },
+      "missingProof": [
+        "Original session s_1787653153677_77 and independent review s_1787683908535_443 directories were not available at /app/.state/sessions; baseline event bodies 6087428 and 6087435 not recovered. Byte identity and contradictory terminal claim remain retained requirements, not independently reverified facts.",
+        "Historical 23 passing tests/typecheck are retained status assertions. Original raw check receipts were not recovered or rerun.",
+        "No exact approval, loaded 62890907 identity, fresh positive/replay controls or correlated terminal App/Task live results recovered."
+      ],
+      "callerChain": [
+        "may creator -> may-agent/repair-owner-review-message-deduplication-and-disclosure-20260825 -> may-agent/runtime/platform-owner-review -> platform-system-review-feedback-loop"
+      ],
+      "retainedCallerSpec": {
+        "acceptance": [
+          "The owner performs one useful platform step or records an evidence-backed no-op, with task-resource changes proposed as typed actions.",
+          "Before sending any direct owner signal for recurring or previously attempted work, inspect the canonical delivery and remediation receipts and reuse the existing owner lineage when it already covers the obligation.",
+          "The terminal result discloses every direct owner signal created during the review and explicitly records zero when none were created.",
+          "Repeated timer, event, refill, owner-review, and reconciliation inputs attach to this retained goal; findings, checks, proposals, sessions, and work items remain request evidence or structured Task state rather than becoming Tasks merely because they are separate items.",
+          "Create a separate Task only for an explicit independent goal key whose outcome, authority boundary, or external wait is genuinely independent; reuse that key for repeated inputs for the same goal."
+        ],
+        "input": {
+          "scope": "may-agent-platform"
+        },
+        "mode": "maintain",
+        "outcome": "Keep platform state reviewed by its accountable owner and organize the smallest useful follow-up from current evidence.",
+        "owner": "tech-lead",
+        "parentId": "platform-system-review-feedback-loop",
+        "priority": "P1"
+      },
+      "retainedCondition": {
+        "app_id": "may-agent",
+        "condition_id": "approve-owner-signal-boundary-62890907",
+        "state": "unknown",
+        "condition_json": "{\"metadata\":{\"generation\":1,\"id\":\"approve-owner-signal-boundary-62890907\",\"resourceVersion\":1},\"spec\":{\"expected\":\"approved\",\"owner\":\"human\",\"requestedAction\":\"Approve production activation of exact candidate commit 62890907e0fbb19d590c727373b410c4402deaae so this Task can run fresh positive and exact replay controls and verify terminal App/Task results.\",\"reviewAfterMs\":3600000,\"subject\":\"approval:may-agent-owner-signal-boundary-62890907e0fbb19d590c727373b410c4402deaae\",\"type\":\"human-approval\"},\"status\":{\"createdAt\":\"2026-08-25T19:20:52.768Z\",\"observedAt\":\"2026-08-25T19:20:52.768Z\",\"observedGeneration\":0,\"state\":\"unknown\"}}",
+        "parsed": {
+          "metadata": {
+            "generation": 1,
+            "id": "approve-owner-signal-boundary-62890907",
+            "resourceVersion": 1
+          },
+          "spec": {
+            "expected": "approved",
+            "owner": "human",
+            "requestedAction": "Approve production activation of exact candidate commit 62890907e0fbb19d590c727373b410c4402deaae so this Task can run fresh positive and exact replay controls and verify terminal App/Task results.",
+            "reviewAfterMs": 3600000,
+            "subject": "approval:may-agent-owner-signal-boundary-62890907e0fbb19d590c727373b410c4402deaae",
+            "type": "human-approval"
+          },
+          "status": {
+            "createdAt": "2026-08-25T19:20:52.768Z",
+            "observedAt": "2026-08-25T19:20:52.768Z",
+            "observedGeneration": 0,
+            "state": "unknown"
+          }
+        }
+      }
+    }
+  ],
+  "historicalSourceEvidence": {
+    "appsCommit": "06f9c03922f523524d89341a88f783c2f373cfdf",
+    "maintenanceApp": "git show 06f9c03922f523524d89341a88f783c2f373cfdf:projects/may-agent.app/app.ts, lines 143-197: retained owner goal and independentGoal + goalKey exception",
+    "maintenanceTests": "same commit app.test.ts lines 286-375: repeated timer/event/refill/owner-review/reconciliation identities and explicit independent goals; inspected, not rerun",
+    "candidateCommit": "62890907e0fbb19d590c727373b410c4402deaae",
+    "candidateFiles": [
+      "src/app/app-task-runtime.ts",
+      "src/lib/manager.ts",
+      "src/lib/terminal-signal-disclosure.test.ts",
+      "src/lib/terminal-signal-disclosure.ts",
+      "src/lib/tools/message-tool.test.ts",
+      "src/lib/tools/message-tool.ts",
+      "src/lib/tools/owner-review-signal-boundary.ts"
+    ],
+    "candidateInspectionCommands": [
+      "git -C /app/projects/may-agent show 62890907:src/lib/tools/owner-review-signal-boundary.ts",
+      "git -C /app/projects/may-agent show 62890907:src/lib/terminal-signal-disclosure.ts",
+      "git -C /app/projects/may-agent show 62890907 -- src/lib/manager.ts src/app/app-task-runtime.ts src/lib/tools/message-tool.ts",
+      "git -C /app/projects/may-agent merge-base --is-ancestor 62890907e0fbb19d590c727373b410c4402deaae HEAD (exit 1)"
+    ]
+  },
+  "currentSourceEvidence": [
+    {
+      "path": "projects/alex.app/app.ts:119-157,226-334",
+      "finding": "Immutable reports preserve caller/event context; stable standing/selector/metric identities; independent review identity includes subject/evidence/reviewer; generic messages/goals use admission ID."
+    },
+    {
+      "path": "projects/may.app/app.ts:141-159; projects/may.app/app.test.ts:386-459",
+      "finding": "Evaluation oversight uses fixed evaluation-intake responsibility; no duplicated routine report subscription."
+    },
+    {
+      "path": "projects/scout-knowledge-lib.app/app.ts:83-142,326-390,449-509",
+      "finding": "Scheduled feed, digest and library goals use stable intent identities; explicit assess-source/goals and unmatched owner requests use new admission IDs. No claim that every such independent request is fragmentation."
+    },
+    {
+      "path": "/app/projects/may-agent/src/app/core/tasks/task-communication.ts:50-75,154-202",
+      "finding": "Exact communication journal receipt precedes publication; changed-content ID replay rejected. This is operation idempotency, not semantic finding/remediation equivalence."
+    },
+    {
+      "path": "/app/projects/may-agent/src/app/core/tasks/task-communication.test.ts:251-357,852-930",
+      "finding": "Publication before failure, replay after restart and maximal Request scopes preserve receipts/asks."
+    },
+    {
+      "path": "/app/projects/may-agent/src/lib/tools/message-tool.ts:205-250",
+      "finding": "Generic messages emit each call with sourceSessionId; handling explicitly depends on declared routes."
+    }
+  ],
+  "checks": [
+    {
+      "name": "apps",
+      "command": "bun test ./projects/alex.app/app.test.ts ./projects/may.app/app.test.ts",
+      "cwd": "/app/worktrees/alex/input-app_7a279469-7ac8-4bec-894a-9314635bd452-a882250576",
+      "exitCode": 0,
+      "passed": 31,
+      "failed": 0,
+      "expectations": 163,
+      "outputSha256": "b41bfb446b3b3756dbcdf438c5881f7364872b36e1da824fa0c7b13671a7d663",
+      "rawOutput": "bun test v1.3.14 (0d9b296a)\n\nprojects/alex.app/app.test.ts:\n(pass) Alex bootstrap uses ordinary durable Task admission [17.64ms]\n(pass) An operational message reaches executable Alex work [0.09ms]\n(pass) specialist goals remain Alex-owned executable work [0.06ms]\n(pass) independent review may assess Alex work without App-wide exclusion [0.41ms]\n(pass) selected review events return to executable Alex review work [0.33ms]\n(pass) qualified Scout research reaches executable Alex adoption work [0.12ms]\n(pass) automatic review failures stay executable under Alex [0.06ms]\n(pass) declared metric and review-failure subscriptions dispatch executable inputs [0.31ms]\n(pass) ordinary Evaluation reports are consumed only by Alex with immutable identity [0.56ms]\n(pass) weekly research preserves one standing Alex Bob Task across deliveries [0.27ms]\n(pass) comparison inputs attach to the migrated Gym specialist [0.08ms]\n\nprojects/may.app/app.test.ts:\n(pass) canonical May conversation App > the Host accepts all declared metric definitions [0.71ms]\n(pass) canonical May conversation App > owns one manifest for human input and addressed decision events [0.28ms]\n(pass) canonical May conversation App > maps App text requests to ordinary work with the original requirements [0.36ms]\n(pass) canonical May conversation App > maps durable May goals to ordinary visible goal Tasks [0.12ms]\n(pass) canonical May conversation App > keeps ordinary workflow references out of structured metric review parsing [0.50ms]\n(pass) canonical May conversation App > deliberately maps a generation-fenced revision to one exact existing goal [5.38ms]\n(pass) canonical May conversation App > keeps May human work local and leaves improvement specialists to Alex [0.19ms]\n(pass) canonical May conversation App > leaves the hygiene cadence to its Task reviewAt without a duplicate App timer [0.04ms]\n(pass) canonical May conversation App > does not keep the migrated weekly research schedule [0.03ms]\n(pass) canonical May conversation App > method selection does not add a development input or bound workflow [0.26ms]\n(pass) canonical May conversation App > keeps common authority shared and separates domain Task guidance [0.46ms]\n(pass) canonical May conversation App > accepts ordinary human messages through the same App schema [0.29ms]\n(pass) canonical May conversation App > routes Host observer failures to ordinary May judgment without automatic escalation [1.29ms]\n(pass) canonical May conversation App > routes one Evaluation operation metric alert episode to independent May judgment [0.80ms]\n(pass) canonical May conversation App > normalizes Evaluation escalations into messages with original correlation context [0.62ms]\n(pass) canonical May conversation App > normalizes exact task report identity across the Evaluation target boundary [0.74ms]\n(pass) canonical May conversation App > rejects malformed publication and excludes Evaluation self-review [0.12ms]\n(pass) canonical May conversation App > does not claim a decision addressed to another project [0.11ms]\n(pass) canonical May conversation App > rejects malformed decision obligations instead of hiding them as null [0.07ms]\n(pass) admission failures reach May with exact identity and bounded human escalation guidance [0.38ms]\n\n 31 pass\n 0 fail\n 163 expect() calls\nRan 31 tests across 2 files. [317.00ms]\n"
+    },
+    {
+      "name": "host",
+      "command": "bun test src/app/core/tasks/task-communication.test.ts src/app/core/tasks/app-task-runtime.test.ts src/lib/tools/message-tool.test.ts",
+      "cwd": "/app/projects/may-agent",
+      "exitCode": 0,
+      "passed": 230,
+      "failed": 0,
+      "expectations": 2588,
+      "outputSha256": "a8410ac830c155208293d22d3750aa647f94a635d008a0d62dc10ac174fccfbf",
+      "rawOutput": "bun test v1.3.14 (0d9b296a)\n\nsrc/lib/tools/message-tool.test.ts:\n(pass) message tool > does not claim a message was recorded when publication is absent or fails [1.05ms]\n(pass) message tool > rejects missing 'to' or 'content' [0.43ms]\n(pass) message tool > records each message without advertising duplicate detection [0.30ms]\n(pass) message tool > attaches the exact caller session to the emitted message [0.21ms]\n(pass) message tool > default priority is P2; even P0 records a fact without promising execution [0.32ms]\n(pass) message tool > respects allowedTargets allowlist and reports invalid targets to may [0.59ms]\n(pass) message tool > always allows messages to human [0.13ms]\n(pass) message tool > supports lazy allowedTargets function that re-evaluates on each call [0.23ms]\n(pass) message tool > uses only human as the shorthand for human:operator [0.13ms]\n(pass) message tool > does not treat personal aliases as human owners [0.36ms]\n(pass) message tool > rejects tool namespace targets with an actionable hint [0.26ms]\n(pass) message tool > includes intent and content_files in body [0.20ms]\n(pass) message tool > emits canonical message.created envelope [0.11ms]\n(pass) message tool > rejects artifacts outside project root [0.23ms]\n\nsrc/app/core/tasks/task-communication.test.ts:\n(pass) a malformed Conversation handoff falls back to its agent, retains failure across restart, and answers the original input [260.13ms]\n(pass) ordinary Task publishes before failure, reuses the publication after restart, and retains the ask [388.97ms]\n(pass) one ordinary Task asks for review, continues testing, and answers through its original context [284.35ms]\n(pass) common Conversation execution retains old admissions and can read ordinary addressed input in the same Task [178.95ms]\n(pass) Request revisions and ownership are checked before publication, independently of waiting [161.40ms]\n(pass) a final response uses the common saved context without a duplicate result projection [71.76ms]\n(pass) managed finish preflight checks a combined decision without keeping state or publishing [83.03ms]\n(pass) final Task acceptance can stay quiet and open without a reason; closure still requires an explanation [95.03ms]\n(pass) a reply to a common Task publication retains Topic and Task navigation without transport knowledge [130.22ms]\n(pass) maximal Request scopes retain message history, reply links and exact receipts across restart [385.13ms]\n(pass) finish preflight and settlement share the communication limit after adding an implicit response [97.64ms]\n\nsrc/app/core/tasks/app-task-runtime.test.ts:\n(pass) publishes one reopening fact despite a lost publication and operator replay across restart [64.93ms]\n(pass) reopens with mapped requirements and one durable input, rolling back failed admission and replaying after restart [111.06ms]\n(pass) retains closed-Task observations as history without treating desired work as an observation [68.00ms]\n(pass) shares Task detail, evidence and exact outcome reads between tools and executor capabilities [75.06ms]\n(pass) carries explicit earlier input through executor reads and converged settlement [63.11ms]\n(pass) carries explicit earlier input through executor reads and waiting settlement [70.08ms]\n(pass) carries explicit earlier input through executor reads and incomplete settlement [64.41ms]\n(pass) caller feedback PoC > reads the full installed input contract through tasks without starting target work [40.30ms]\n(pass) caller feedback PoC > reads an exact accepted admission from a caller-only registry without starting target execution [57.96ms]\n(pass) caller feedback PoC > recovers delegated creator after lost admission and revises across Apps from a caller-only runtime [89.11ms]\n(pass) caller feedback PoC > composes three assignments through the same executor and return contract across restart [209.52ms]\n{\"poc\":\"caller-feedback\",\"scenario\":\"quiet\",\"workerCalls\":2,\"callerCalls\":2,\"reportRecovered\":false,\"originalAnswer\":{\"score\":0.92},\"changedReportDelivered\":false}\n(pass) caller feedback PoC > returns exact feedback and recovers the original answer (quiet) [274.12ms]\n{\"poc\":\"caller-feedback\",\"scenario\":\"incomplete-then-wait\",\"workerCalls\":3,\"callerCalls\":3,\"reportRecovered\":true,\"originalAnswer\":{\"score\":0.92},\"changedReportDelivered\":false}\n(pass) caller feedback PoC > returns exact feedback and recovers the original answer (incomplete-then-wait) [287.65ms]\n{\"poc\":\"caller-feedback\",\"scenario\":\"report-wait\",\"workerCalls\":2,\"callerCalls\":3,\"reportRecovered\":true,\"originalAnswer\":{\"score\":0.92},\"changedReportDelivered\":false}\n(pass) caller feedback PoC > returns exact feedback and recovers the original answer (report-wait) [315.58ms]\n{\"poc\":\"caller-feedback\",\"scenario\":\"report-continue\",\"workerCalls\":3,\"callerCalls\":3,\"reportRecovered\":true,\"originalAnswer\":{\"score\":0.92},\"changedReportDelivered\":false}\n(pass) caller feedback PoC > returns exact feedback and recovers the original answer (report-continue) [315.58ms]\n{\"poc\":\"caller-feedback\",\"scenario\":\"throw\",\"workerCalls\":2,\"callerCalls\":3,\"reportRecovered\":true,\"originalAnswer\":{\"score\":0.92},\"changedReportDelivered\":false}\n(pass) caller feedback PoC > returns exact feedback and recovers the original answer (throw) [224.17ms]\n{\"poc\":\"caller-feedback\",\"scenario\":\"invalid\",\"workerCalls\":2,\"callerCalls\":3,\"reportRecovered\":true,\"originalAnswer\":{\"score\":0.92},\"changedReportDelivered\":false}\n(pass) caller feedback PoC > returns exact feedback and recovers the original answer (invalid) [246.19ms]\n{\"poc\":\"caller-feedback\",\"scenario\":\"throw-then-wait\",\"workerCalls\":3,\"callerCalls\":4,\"reportRecovered\":true,\"originalAnswer\":{\"score\":0.92},\"changedReportDelivered\":true}\n(pass) caller feedback PoC > returns exact feedback and recovers the original answer (throw-then-wait) [339.15ms]\n{\"poc\":\"caller-feedback\",\"scenario\":\"throw-then-report-retry\",\"workerCalls\":4,\"callerCalls\":4,\"reportRecovered\":true,\"originalAnswer\":{\"score\":0.92},\"changedReportDelivered\":true}\n(pass) caller feedback PoC > returns exact feedback and recovers the original answer (throw-then-report-retry) [324.21ms]\n(pass) recovers legacy attention as the same Tasks without inventing App review input [145.52ms]\n(pass) keeps omitted workflows visible, continues unrelated work, and recovers with a supplied runner [97.36ms]\n(pass) settles report and useful continuation equivalently for agent and workflow attempts [101.41ms]\n(pass) retains an App and exact agent work when its agent capability is removed, then restores it [80.02ms]\n(pass) releases failed context preparation before later Task events and recovers after repair [65.23ms]\n(pass) lets the handoff agent diagnose while the workflow is unavailable, then verifies completion [119.55ms]\n(pass) canonical direct-agent residue cleanup > restores agent file and index edits that remain unchanged since planning [74.62ms]\n(pass) canonical direct-agent residue cleanup > preserves concurrent file and index edits while applying other planned cleanup [54.91ms]\n(pass) canonical direct-agent residue cleanup > rejects only converged direct-agent results whose edits were restored [0.87ms]\n(pass) App Task persisted prompt context > shows the executor the exact accepted wait before it judges feedback [50.44ms]\n(pass) canonical App task runtime > routes recurring exact-target schedule facts through the persistent Task mutation boundary [112.59ms]\n(pass) canonical App task runtime > explains rejected dependencies, preserves existing waits, and admits a corrected input [70.49ms]\n(pass) canonical App task runtime > routes a retained text request through ordinary work and answers the original ask (live) [103.81ms]\n(pass) canonical App task runtime > routes a retained text request through ordinary work and answers the original ask (restart) [118.40ms]\n(pass) canonical App task runtime > routes a retained text request through ordinary work and answers the original ask (lost-feedback) [116.83ms]\n(pass) canonical App task runtime > rejects a dependency when the configured registry has no target Apps [37.40ms]\n(pass) canonical App task runtime > does not publish a dependency requested from a stale task result [46.49ms]\n(pass) canonical App task runtime > accepts a recovered frozen Condition route after its task has already left the wait [48.28ms]\n(pass) canonical App task runtime > preserves event time through Runtime preview so stale level observations stay blocked [47.77ms]\n(pass) canonical App task runtime > returns the exact cross-App answer after a later Task cycle through event [224.04ms]\n(pass) canonical App task runtime > returns the exact cross-App answer after a later Task cycle through recovery [258.31ms]\n(pass) canonical App task runtime > handles the same App text request with a caller Condition: %s [178.26ms]\n(pass) canonical App task runtime > handles the same App text request with a caller Condition: %s [137.44ms]\n(pass) canonical App task runtime > delivers work during an active attempt through attempt and retains its exact result [128.73ms]\n(pass) canonical App task runtime > delivers work during an active attempt through tool and retains its exact result [136.98ms]\n(pass) canonical App task runtime > delivers work during an active attempt through fast-result and retains its exact result [133.24ms]\n(pass) canonical App task runtime > delivers work during an active attempt through interrupted and retains its exact result [183.74ms]\n(pass) canonical App task runtime > reuses a live action receipt when final settlement repeats an already retired Condition [82.72ms]\n(pass) canonical App task runtime > rejects a replayed retirement combined with redeclaring the same Condition [77.47ms]\n(pass) canonical App task runtime > preserves a customized saved request Condition when applying a reference only (satisfied: %s) [85.24ms]\n(pass) canonical App task runtime > preserves a customized saved request Condition when applying a reference only (satisfied: %s) [114.68ms]\n(pass) canonical App task runtime > adds distinct work across restart (completed first: false) [141.13ms]\n(pass) canonical App task runtime > adds distinct work across restart (completed first: true) [139.01ms]\n(pass) canonical App task runtime > returns a pre-Task admission blocker through the installed caller route for actual consideration [138.42ms]\n(pass) canonical App task runtime > follows A -> B -> C -> B -> A through explicit inputs, with discussion and a blocker (live) [385.60ms]\n(pass) canonical App task runtime > follows A -> B -> C -> B -> A through explicit inputs, with discussion and a blocker (lost-notification) [288.98ms]\n(pass) canonical App task runtime > follows A -> B -> C -> B -> A through explicit inputs, with discussion and a blocker (restart) [353.20ms]\n(pass) canonical App task runtime > follows A -> B -> C -> B -> A through explicit inputs, with discussion and a blocker (owner-cancel) [275.07ms]\n(pass) canonical App task runtime > returns the exact saved App answer after its notification is lost (live) [142.44ms]\n(pass) canonical App task runtime > returns the exact saved App answer after its notification is lost (restart) [149.97ms]\n(pass) canonical App task runtime > returns the exact saved App answer after its notification is lost (missing-index) [152.65ms]\n(pass) canonical App task runtime > returns the exact saved App answer after its notification is lost (late-index) [144.00ms]\nautomatic-recovery-evidence {\"automaticRecovery\":true,\"taskIds\":{\"owner\":\"work/owner\",\"producer\":\"work/reviewer\",\"unrelated\":\"work/unrelated\"},\"requestIds\":{\"original\":\"appdep_ca22666b299387d84b18ab66\",\"later\":\"app_7dac59bd-b4e6-4dcf-94a9-37ac39580934\"},\"admissionTimes\":{\"unrelated\":1791119764441,\"owner\":1791119764479,\"later\":1791119765198},\"notificationLostAt\":1791119765190,\"recoveryScans\":[{\"at\":1791119765437,\"taskIds\":[\"work/unrelated\",\"work/owner\"]},{\"at\":1791119765681,\"taskIds\":[\"work/unrelated\"]},{\"at\":1791119765889,\"taskIds\":[\"work/unrelated\"]},{\"at\":1791119766096,\"taskIds\":[\"work/unrelated\"]},{\"at\":1791119766303,\"taskIds\":[\"work/unrelated\"]},{\"at\":1791119766510,\"taskIds\":[\"work/unrelated\"]},{\"at\":1791119766718,\"taskIds\":[\"work/unrelated\"]}],\"ownerDispatches\":[{\"at\":1791119764507,\"eventTypes\":[\"app.task.requested\"]},{\"at\":1791119765470,\"eventTypes\":[\"app.dependency.updated\"]}],\"route\":\"installed indexed scheduler -> code recovery of exact saved answer -> one owner attempt\",\"scope\":\"in-process installed Task runtime with deterministic executors and a real timer; fixture accelerates the indexed recovery clock, not default timing, native agent judgment, restart, or OS/daemon proof\",\"executorReturnedAt\":1791119765470,\"acceptedAttempt\":{\"id\":\"r_1_5723c85d-82b7-4bfe-8cc9-61869daa41e4\",\"finishedAt\":\"2026-10-04T13:16:05.472Z\"},\"laterAnswerSavedAt\":1791119765235}\nautomatic-recovery-control {\"automaticRecovery\":false,\"originalRequestId\":\"appdep_ca22666b299387d84b18ab66\",\"notificationLostAt\":1791119767025,\"suppressedCandidates\":[{\"at\":1791119767264,\"taskIds\":[\"work/unrelated\",\"work/owner\"]}],\"ownerDispatches\":[{\"at\":1791119766978,\"eventTypes\":[\"app.task.requested\"]}]}\n(pass) canonical App task runtime > recovers missed answers in code without repeatedly invoking a waiting owner [4260.25ms]\n(pass) canonical App task runtime > returns one blocker and the later exact answer through the same caller wait (live) [235.61ms]\n(pass) canonical App task runtime > returns one blocker and the later exact answer through the same caller wait (lost) [225.54ms]\n(pass) canonical App task runtime > returns one blocker and the later exact answer through the same caller wait (restart) [218.71ms]\n(pass) canonical App task runtime > preserves one accepted App request across a rejected attempt and its retry [48.00ms]\n(pass) canonical App task runtime > reuses a create-work request when the agent reports its resolved Task [39.55ms]\n(pass) canonical App task runtime > reattaches an exact live request after recovery (requirements revised: %s) [38.54ms]\n(pass) canonical App task runtime > reattaches an exact live request after recovery (requirements revised: %s) [46.74ms]\n(pass) canonical App task runtime > turns a typed App dependency into deterministic input and an exact completion Condition [36.62ms]\n(pass) canonical App task runtime > keeps the source Task runnable when its dependency is neither admitted nor durably published [32.27ms]\n(pass) canonical App task runtime > projects the exact ordered claimed event batch into workflow context [33.65ms]\n(pass) canonical App task runtime > does not rewrite App task state for high-volume session progress [40.90ms]\n(pass) canonical App task runtime > limits successful-session recovery reads to the session's bound App [50.48ms]\n(pass) canonical App task runtime > does not discover or import App definitions independently [33.66ms]\n(pass) canonical App task runtime > installs an activated resource-backed App without recreating state.json [34.39ms]\n(pass) canonical App task runtime > bootstraps a brand-new App directly into resource authority [27.79ms]\n(pass) canonical App task runtime > refuses historical JSON state without canonical resource authority [22.09ms]\n(pass) canonical App task runtime > yields readiness inside one large reconciliation after claim persistence [233.04ms]\n(pass) canonical App task runtime > preserves workspace admission: executor uses App branch [143.20ms]\n(pass) canonical App task runtime > preserves workspace admission: executor defaults to dev [135.65ms]\n(pass) canonical App task runtime > preserves workspace admission: local executor needs no worktree [45.69ms]\n(pass) canonical App task runtime > preserves workspace admission: local executor needs no workspace backend [46.70ms]\n(pass) canonical App task runtime > preserves workspace admission: agent does not run until its workspace backend is restored [169.40ms]\n(pass) canonical App task runtime > preserves workspace admission: Git executor rejects a missing workspace backend [158.94ms]\n(pass) canonical App task runtime > preserves workspace admission: workflow uses App branch [140.67ms]\n(pass) canonical App task runtime > preserves workspace admission: workflow defaults to dev [141.25ms]\n(pass) canonical App task runtime > preserves workspace admission: workflow overrides App branch [140.17ms]\n(pass) canonical App task runtime > preserves workspace admission: shared workflow needs no worktree [76.01ms]\n(pass) canonical App task runtime > preserves workspace admission: shared workflow needs no workspace backend [82.58ms]\n(pass) canonical App task runtime > preserves workspace admission: task workflow rejects a missing workspace backend [157.70ms]\n(pass) canonical App task runtime > preserves workspace admission: task workflow rejects a local App [49.47ms]\n(pass) canonical App task runtime > preserves workspace admission: failed Git preparation can recover on the same Task [182.04ms]\n(pass) canonical App task runtime > retains waiting output when new facts arrive during a worktree attempt [177.39ms]\n(pass) canonical App task runtime > retains converged output when new facts arrive during a worktree attempt [172.48ms]\n(pass) canonical App task runtime > rechecks persistence after a concurrent fact without repeating execution [59.86ms]\n(pass) canonical App task runtime > rechecks persistence after a concurrent intent without repeating execution [54.75ms]\n(pass) canonical App task runtime > rechecks persistence after a concurrent action without repeating execution [53.29ms]\n(pass) canonical App task runtime > rechecks persistence after a concurrent persistent without repeating execution [56.17ms]\n(pass) canonical App task runtime > does not create task worktrees while startup installs and recovers work [65.90ms]\n(pass) canonical App task runtime > releases a fresh previous-runtime attempt and requeues it through bounded task capacity [45.59ms]\n(pass) canonical App task runtime > drains an orphaned setsid owner's exact process group before replacement recovery [1056.24ms]\n(pass) canonical App task runtime > fails startup recovery closed when a durable owner process group cannot be confirmed drained [49.33ms]\n(pass) canonical App task runtime > admits desired attachments and resolved events through the one loaded generation [39.31ms]\n(pass) canonical App task runtime > discards a post-claim superseded attempt without a handler failure or retry loop [68.78ms]\n(pass) canonical App task runtime > runs three explicitly scheduled reviews without self-published clock echoes through executor [147.55ms]\n(pass) canonical App task runtime > runs three explicitly scheduled reviews without self-published clock echoes through tasks tool [162.82ms]\n(pass) canonical App task runtime > live apply preserves input until incorporated (%s) [73.81ms]\n(pass) canonical App task runtime > live apply preserves input until incorporated (%s) [73.27ms]\n(pass) canonical App task runtime > admits a request after self-publication through the executor surface [66.71ms]\n(pass) canonical App task runtime > admits a request after self-publication through the tasks tool surface [80.15ms]\n(pass) canonical App task runtime > admits the first broadcast Condition fact and retains its identity through settlement [96.43ms]\n(pass) canonical App task runtime > keeps late repeated worker publications consumed after child settlement [311.37ms]\n(pass) canonical App task runtime > ignores duplicate Task feedback during execution through exact admission and preserves new input [117.88ms]\n(pass) canonical App task runtime > ignores duplicate Task feedback during execution through intent admission and preserves new input [98.04ms]\n(pass) canonical App task runtime > ignores duplicate Task feedback after acceptance through exact admission and preserves new input [91.78ms]\n(pass) canonical App task runtime > ignores duplicate Task feedback after acceptance through intent admission and preserves new input [96.11ms]\n(pass) canonical App task runtime > ignores duplicate Task feedback after restart through exact admission and preserves new input [105.57ms]\n(pass) canonical App task runtime > ignores duplicate Task feedback after restart through intent admission and preserves new input [102.65ms]\n(pass) canonical App task runtime > ignores duplicate Task feedback after upgrade through exact admission and preserves new input [103.46ms]\n(pass) canonical App task runtime > ignores duplicate Task feedback after upgrade through intent admission and preserves new input [103.01ms]\n(pass) canonical App task runtime > preserves other consumers and recovery after self-publication with execution failure [94.15ms]\n(pass) canonical App task runtime > preserves other consumers and recovery after self-publication with invalid result [90.37ms]\n(pass) canonical App task runtime > preserves other consumers and recovery after self-publication with external input [98.97ms]\n(pass) canonical App task runtime > preserves other consumers and recovery after self-publication with superseded [92.71ms]\n(pass) canonical App task runtime > atomically consumes live input incorporated by a registered executor [58.24ms]\n(pass) canonical App task runtime > retries a restored executor through durable eligibility while independent Tasks keep working [337.01ms]\n(pass) canonical App task runtime > keeps inherited helper context separate from the attempt owner session and lease [92.00ms]\n(pass) canonical App task runtime > uses current session adapters after reload without adding another listener [39.25ms]\n(pass) canonical App task runtime > uses current session adapters after close and reinstall without adding another listener [35.46ms]\n(pass) canonical App task runtime > uses current session adapters after rejected reload without adding another listener [36.90ms]\n(pass) canonical App task runtime > leaves rejected initial publication inactive and allows a later installation [41.88ms]\n(pass) canonical App task runtime > starts new work from a reloaded definition while an old attempt is still running [69.48ms]\n(pass) canonical App task runtime > keeps the registered executor role without a CLI lifecycle (controllers=%s) [50.81ms]\n(pass) canonical App task runtime > keeps the registered executor role without a CLI lifecycle (controllers=%s) [46.88ms]\n(pass) canonical App task runtime > delegates a controller attempt across the configured execution boundary [36.23ms]\n(pass) canonical App task runtime > delegates startup Task recovery across the configured execution boundary [29.87ms]\n(pass) canonical App task runtime > supplies accepted waits to workflow judgment without inferring them from children [83.16ms]\n(pass) canonical App task runtime > replays full published facts through the installed workflow after result rejection and reopen [131.97ms]\n(pass) canonical App task runtime > replays full published facts through the installed workflow after execution failure and reopen [126.11ms]\n(pass) canonical App task runtime > admits a direct workflow failure report, retries, and rejects an invalid direct result [105.06ms]\n(pass) canonical App task runtime > retains an explicit workflow blocker across recovery and rechecks the same Task after corrected input [130.01ms]\n(pass) canonical App task runtime > result-scope rejection preserves useful evidence before cleanup (Git: %s) [46.12ms]\n(pass) canonical App task runtime > result-scope rejection preserves useful evidence before cleanup (Git: %s) [118.90ms]\n(pass) canonical App task runtime > partial acceptance retains its workspace until remaining input is settled [208.59ms]\n(pass) canonical App task runtime > partial acceptance retains its workspace until remaining condition is settled [239.22ms]\n(pass) canonical App task runtime > final-result retirement plans Git cleanup after admission: last-wait [173.60ms]\n(pass) canonical App task runtime > final-result retirement plans Git cleanup after admission: independent-wait [141.83ms]\n(pass) canonical App task runtime > final-result retirement plans Git cleanup after admission: live-replay [180.76ms]\n(pass) canonical App task runtime > final-result retirement plans Git cleanup after admission: stale [155.48ms]\n(pass) canonical App task runtime > final-result retirement plans Git cleanup after admission: policy-rejected [139.49ms]\n(pass) canonical App task runtime > final-result retirement plans Git cleanup after admission: unauthorized [163.72ms]\n(pass) canonical App task runtime > final-result retirement plans Git cleanup after admission: stop-during-validation [142.68ms]\n(pass) canonical App task runtime > final-result retirement plans Git cleanup after admission: revision-during-validation [148.39ms]\n(pass) canonical App task runtime > final-result retirement plans Git cleanup after admission: new-work-during-cleanup [1277.74ms]\n(pass) canonical App task runtime > final-result retirement plans Git cleanup after admission: cleanup-fails [151.30ms]\n(pass) canonical App task runtime > final-result retirement plans Git cleanup after admission: cleanup-fails-after-history [1105.63ms]\n(pass) canonical App task runtime > final-result retirement plans Git cleanup after admission: branch-only [190.22ms]\n(pass) canonical App task runtime > final-result retirement plans Git cleanup after admission: private-refs-only [158.52ms]\n(pass) canonical App task runtime > final-result retirement plans Git cleanup after admission: already-removed [161.39ms]\n(pass) canonical App task runtime > final-result retirement plans Git cleanup after admission: clock-reversed [316.80ms]\n(pass) canonical App task runtime > final-result retirement plans Git cleanup after admission: dirty-after-release [158.41ms]\n(pass) canonical App task runtime > final-result retirement plans Git cleanup after admission: cleanup-recording-fails [160.24ms]\n(pass) canonical App task runtime > preserves workspace and respects the accepted outcome (converged, committed=false) [105.23ms]\n(pass) canonical App task runtime > preserves workspace and respects the accepted outcome (converged, committed=true) [134.13ms]\n(pass) canonical App task runtime > preserves workspace and respects the accepted outcome (waiting, committed=false) [156.17ms]\n(pass) canonical App task runtime > preserves workspace and respects the accepted outcome (waiting, committed=false) [181.79ms]\n(pass) canonical App task runtime > preserves workspace and respects the accepted outcome (incomplete, committed=false) [205.49ms]\n(pass) canonical App task runtime > preserves workspace and respects the accepted outcome (incomplete, committed=true) [204.68ms]\n(pass) canonical App task runtime > paces invalid-state and accepts a corrected result on the same Task [323.94ms]\n(pass) canonical App task runtime > paces self-unblock and accepts a corrected result on the same Task [309.79ms]\n(pass) canonical App task runtime > paces controller retries beyond the old limit while unrelated work progresses [3857.48ms]\n(pass) canonical App task runtime > retains a worker failure report and resumes the same input after reopen (normal) [101.16ms]\n(pass) canonical App task runtime > retains a worker failure report and resumes the same input after reopen (direct-agent) [97.50ms]\n(pass) canonical App task runtime > counts failed executions once when another connection admits input during failure persistence [93.01ms]\n(pass) canonical App task runtime > persists retry backoff across independent wakes and a fresh process [280.78ms]\n(pass) canonical App task runtime > retries the same Task after an executor process failure [317.21ms]\n(pass) canonical App task runtime > schedules unexpected exact-task input without replacing outstanding waits [104.55ms]\n(pass) canonical App task runtime > coalesces an exact-task event storm into bounded fresh reconciliations [340.78ms]\n(pass) canonical App task runtime > keeps task admission durable while paused without starting reconciliation [49.07ms]\n(pass) canonical App task runtime > terminal completion recovery > retries uncommitted session output through startup before accepting effects [81.65ms]\n(pass) canonical App task runtime > terminal completion recovery > retries uncommitted session output through busy before accepting effects [76.86ms]\n(pass) canonical App task runtime > terminal completion recovery > requires confirmed session drain before startup redo [57.91ms]\n(pass) canonical App task runtime > terminal completion recovery > requires confirmed session drain before busy redo [54.85ms]\n(pass) canonical App task runtime > terminal completion recovery > handles progress without closing the Task [45.72ms]\n(pass) canonical App task runtime > terminal completion recovery > handles self-revision without closing the Task [49.93ms]\n(pass) canonical App task runtime > terminal completion recovery > handles waiting without closing the Task [54.72ms]\n(pass) canonical App task runtime > terminal completion recovery > handles incomplete without closing the Task [61.21ms]\n(pass) canonical App task runtime > terminal completion recovery > replays an early external fact for a wait recovered through startup [103.09ms]\n(pass) canonical App task runtime > terminal completion recovery > replays an early external fact for a wait recovered through busy [96.86ms]\n(pass) canonical App task runtime > terminal completion recovery > reads a consumed journal fact for a newly declared Condition after restart [118.88ms]\n(pass) canonical App task runtime > terminal completion recovery > accepts a replacement direct-agent result through startup [88.36ms]\n(pass) canonical App task runtime > terminal completion recovery > accepts a replacement direct-agent result through busy [81.29ms]\n(pass) canonical App task runtime > terminal completion recovery > retries a terminal workflow handoff through startup with a accept verifier [72.91ms]\n(pass) canonical App task runtime > terminal completion recovery > retries a terminal workflow handoff through startup with a reject verifier [71.86ms]\n(pass) canonical App task runtime > terminal completion recovery > retries a terminal workflow handoff through startup with a missing verifier [77.96ms]\n(pass) canonical App task runtime > terminal completion recovery > retries a terminal workflow handoff through busy with a accept verifier [81.71ms]\n(pass) canonical App task runtime > terminal completion recovery > retries a terminal workflow handoff through busy with a reject verifier [85.59ms]\n(pass) canonical App task runtime > terminal completion recovery > retries a terminal workflow handoff through busy with a missing verifier [85.62ms]\n(pass) dependency Condition specification updates > keeps compatible legacy fields through generated echoes and new input without timer-driven attempts [123.88ms]\n(pass) dependency Condition specification updates > rejects a same-ID dependency type conflict at the attempt boundary [75.51ms]\n(pass) dependency Condition specification updates > rejects a same-ID dependency subject conflict at the attempt boundary [80.27ms]\n(pass) dependency Condition specification updates > rejects a same-ID dependency expected conflict at the attempt boundary [76.71ms]\n(pass) dependency Condition specification updates > rejects a same-ID dependency duplicate-cadence conflict at the attempt boundary [77.26ms]\n(pass) dependency Condition specification updates > does not apply a compatible Condition update from a stale generation [68.35ms]\n\n 230 pass\n 0 fail\n 2588 expect() calls\nRan 230 tests across 3 files. [40.96s]\n"
+    }
+  ],
+  "probes": [
+    {
+      "kind": "pure-mapper",
+      "method": "Call evaluationReportInput for one valid immutable Task report, then taskForInput twice with identical input and admission IDs delivery-a and delivery-b; no admission/runtime writes.",
+      "output": "[\"input/delivery-a\",\"input/delivery-b\"]",
+      "limit": "Different admission identities, not a transport replay; does not prove duplicate repair creation or a live backlog."
+    },
+    {
+      "kind": "fake-emitter",
+      "method": "Call createMessageTool with an in-memory events array twice with same call ID and {to:may,content:same finding,intent:owner-review}; no live emitter/database.",
+      "output": "{\"eventCount\":2,\"types\":[\"message.created\",\"message.created\"]}",
+      "limit": "Generic message behavior, not proof that current Alex routes use it incorrectly."
+    }
+  ],
+  "limitations": [
+    "No query_db capability was supplied. No DB opened; snapshot is historical resource evidence and does not establish current disabled Task/Condition state.",
+    "No runtime mutation, deployment, production data write, legacy Task/Condition update, old-source edit, new dependency or approval request was performed.",
+    "Focused tests are deterministic fixture checks of current deployed source, not original candidate checks, live terminal proof or full CI/typecheck. No source candidate was changed.",
+    "Bounded source/session/retained archive discovery is not an exhaustive historical evidence search. Missing artifact does not prove its action never happened.",
+    "31 App tests establish local mapping behavior only; the proposed connected intake trial has not been run.",
+    "Two old requirements share a lineage label but have distinct outcomes and authority boundaries; neither is automatically subsumed by the other.",
+    "Caller must retain this contribution durably in the reviewed Apps change; this helper does not commit, integrate or complete migration."
+  ],
+  "recommendation": "Keep both historical outcomes unfulfilled. Alex should conduct at most one bounded current intake/owner-work reuse investigation, allowing a supported no-change result rather than recreating global grouping or message-dedup heuristics. Separately obtain May disposition for the exact old activation approval and the easily missed grouped-goal human stop; retain both old caller chains and Conditions until that disposition is accepted."
+}

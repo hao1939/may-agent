@@ -133,6 +133,51 @@ that commits accepted state and its related records atomically. Requests and
 admission records have their own durable coordination boundaries; see
 [Events](events.md) and [Task Resource Engine](task-resource-engine.md).
 
+SQLite permits one writer even when changes only append records. A competing
+writer is a normal transient condition. First minimize time holding the writer
+lock: prepare immutable payloads and file artifacts before the owning transaction
+where possible, and keep current-state checks, fences and atomic SQL changes
+inside it. An outer transaction may still own the lock; moving work before a
+nested helper alone does not shorten that outer transaction. Measure acquisition
+wait separately from lock-holding time before adding retries.
+
+Reuse existing bounded contention handling at
+the owning transaction's acquisition boundary; run the body once after obtaining
+the lock. Callers use that one retry budget rather than wrapping the transaction
+in another retry. Nested operations share that transaction through savepoints. A failure
+inside the body rolls it back; failure delivering a committed result does not
+authorize replaying the body. A single atomic append can retry the rejected
+statement. Exhaustion remains observable. Existing admission-plan recovery covers
+saved plans; failure before a plan is saved remains a delivery gap, recorded in
+the review below. A contention retry alone does not close that gap. This is not
+an unlimited wait or a new queue.
+
+Keep acquisition waits and lock-holding work distinct. Shorten expensive work
+inside writes, and diagnose slow reads separately: WAL readers need not hold
+the writer slot, but synchronous reads can still stall the Host. The
+[October 4 SQLite review](../archive/reviews/sqlite-contention-20261004.md)
+records the live evidence, isolated regressions and candidate status.
+The follow-up [SQL audit](../archive/reviews/sql-query-audit-20261004.md) records
+query-by-query screening, measured rewrite candidates and remaining transaction
+scope work. Audit the actual parameters, plan, read frequency, intermediate
+payload size and enclosing transaction; a scan or output LIMIT alone is not a
+performance verdict. Prefer matching existing indexes and selecting small
+identities before loading full bodies over adding indexes or retries by default.
+Partial-index predicates belong in the lookup SQL even when callers already
+validate them; a bound parameter may not let SQLite prove the predicate.
+Rank/filter bounded historical identities before joining their large bodies.
+For retention, discover bounded candidate identities outside the write and
+recheck eligibility on those exact identities while deleting. Preserve existing
+reference-protection triggers. A concurrent update may postpone deletion to a
+later pass; it must not lose a newly protected record.
+
+Pure Event identity preparation can precede the Event writer's own acquisition.
+Unkeyed Events need no idempotency hash. Artifact creation still follows the
+atomic duplicate check, so retrieving an accepted receipt does not depend on
+new filesystem work. Moving artifact preparation further out needs a separate
+contract-preserving change; a smaller writer slot does not justify weakening
+receipt replay or an outer transaction's atomicity.
+
 Claimed request attachment commits Task input, request wait/claim release and
 Topic correlation together. Settlement persists linked request readiness in
 the same transaction; an event notification only accelerates discovery.

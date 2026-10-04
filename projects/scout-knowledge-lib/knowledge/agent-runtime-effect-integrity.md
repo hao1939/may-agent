@@ -1,7 +1,7 @@
 <ai_context>
 summary: "Companion to agent-runtime-hardening.md for core effect integrity: revision-bound workspace admission, evidence-carrying closure, quarantine for unknown effects, operation identity across replanning, transactional review versus atomic commit, guarded writes, apply-time revalidation, session-bound retry safety, observation-bound handover, history/context separation, and externally anchored sandbox authority."
-triggers: ["runtime effect integrity", "revision-bound admission", "effect closure", "unknown effect", "operation identity", "replanning retry", "resource quarantine", "atomic commit", "guarded configuration write", "previewable plan", "ambiguous delivery", "forward-only delivery", "reached wire", "unknown usage", "AID-Guard", "outbound publication", "remote session retry", "desktop handover", "history fidelity", "safe resume", "sandbox escape", "external authority"]
-last_updated: "2026-09-28"
+triggers: ["runtime effect integrity", "revision-bound admission", "effect closure", "unknown effect", "operation identity", "replanning retry", "resource quarantine", "atomic commit", "guarded configuration write", "previewable plan", "configuration hook installer", "Coucou", "ambiguous delivery", "forward-only delivery", "reached wire", "unknown usage", "AID-Guard", "outbound publication", "remote session retry", "desktop handover", "history fidelity", "safe resume", "sandbox escape", "external authority"]
+last_updated: "2026-10-04"
 source_basis: "Extracted from agent-runtime-hardening.md during its oversized-note review and subsequently updated with source-grounded findings, including SkillRanker's pre-wait provider-attempt journal and decision-time feedback snapshots, amux's identity-bound steering receipts, and Apache Maka's transactional tool ledger. Each retained section preserves stable source links, pinned revisions where applicable, reproduced checks where performed, and explicit evidence limitations. Unattended-execution, replay, approval-resume, settlement, accountable-write, and desktop-authorization sections moved intact to agent-runtime-unattended-execution-and-replay.md during the 2026-09-21 oversized-note review. Operation admission, ownership, effect-mode, feedback-binding, and receipt-identity sections moved intact to agent-runtime-operation-admission-and-identity.md during the 2026-09-28 oversized-note review."
 </ai_context>
 
@@ -273,6 +273,56 @@ are independently represented. Call the result “stored as intended,” not
 - **Inspected revision:** [`7ec7c7daa556f98803c11b346a268282b0889d94`](https://github.com/FarazHayder/n8n-mcp-guard/commit/7ec7c7daa556f98803c11b346a268282b0889d94)
 - **Primary sources:** [guarded plan/apply implementation](https://github.com/FarazHayder/n8n-mcp-guard/blob/7ec7c7daa556f98803c11b346a268282b0889d94/src/n8n/guardedUpdate.ts), [behavioral fingerprint](https://github.com/FarazHayder/n8n-mcp-guard/blob/7ec7c7daa556f98803c11b346a268282b0889d94/src/n8n/graph.ts#L123-L148), [backup verification](https://github.com/FarazHayder/n8n-mcp-guard/blob/7ec7c7daa556f98803c11b346a268282b0889d94/src/n8n/backup.ts), and [guard tests](https://github.com/FarazHayder/n8n-mcp-guard/blob/7ec7c7daa556f98803c11b346a268282b0889d94/test/unit/guardedUpdate.test.ts)
 - **Discovery query:** GitHub Repository Search API `"AI agent" (security OR sandbox OR evaluation OR observability) created:>=2026-09-11`, sorted by stars; `incomplete_results: false`
+
+## A Fingerprinted Preview Still Needs One Apply-Time Snapshot — Coucou (GitHub, October 2026)
+
+Coucou's Claude Code hook installer is a compact example of configuration
+mutation treated as a reviewable effect rather than a setup convenience. It
+parses the existing `settings.json`, preserves unrelated fields and other
+hooks, shows a unified diff, and returns a fingerprint of the bytes behind that
+preview. The later write refuses a stale fingerprint, takes a byte-for-byte
+backup, creates the replacement beside the target with permissions no broader
+than the original, and renames it over the target. Unreadable or malformed
+configuration aborts instead of being treated as empty. Project-authored tests
+cover BOM parsing, preservation of another tool's hook, backup fidelity,
+permission preservation, and rejection after a file changes between preview
+and write.
+
+This supports a useful minimum for local agent-hook installation: **preserve,
+preview, bind, back up, and replace**. Each verb covers a different failure.
+Merging only owned entries avoids taking over a shared configuration; a diff
+makes the proposed authority expansion visible; a base fingerprint rejects
+ordinary stale approval; a faithful backup preserves recovery evidence; and a
+same-directory replacement avoids exposing a partially written JSON file.
+
+Static inspection also exposes why those controls should not be summarized as
+an atomic compare-and-swap. `write()` parses the current file, then separately
+re-reads the path to compare its fingerprint, then separately copies the path
+for backup before renaming the generated content. It holds no lock and performs
+no identity check on one opened file descriptor through commit. A concurrent
+writer can therefore still change the path between those operations or after
+the comparison. In that race, the parsed base, compared bytes, backup bytes,
+and replaced path need not all be the same snapshot. The bundled stale-file
+test exercises sequential drift, not an interleaving concurrent writer.
+
+**Runtime rule:** bind a human-reviewed configuration diff to the exact base,
+but carry that identity through one apply-time snapshot and the final replace.
+For a local file this can mean locking/cooperating writers, or opening and
+validating one file identity and rechecking immediately before a guarded
+commit. A preview fingerprint plus atomic rename protects review freshness and
+write completeness in common cases; it does not by itself provide a linearizable
+conditional update.
+
+The fingerprint is non-cryptographic FNV-1a and is explicitly used as a change
+detector, not an adversarial integrity proof. Scout inspected project-authored
+Rust code and tests at the pinned revision but did not build Coucou, run its
+tests, install hooks, or reproduce the race. Repository popularity and release
+metadata were discovery signals only.
+
+- **Repo:** https://github.com/Louis-CFM/coucou
+- **Inspected revision:** [`19f1f08651bc2b020a9a1b72c6ac0bb3656c0198`](https://github.com/Louis-CFM/coucou/commit/19f1f08651bc2b020a9a1b72c6ac0bb3656c0198)
+- **Primary sources:** [hook installer and tests](https://github.com/Louis-CFM/coucou/blob/19f1f08651bc2b020a9a1b72c6ac0bb3656c0198/windows/src-tauri/src/hooks.rs), [setup documentation](https://github.com/Louis-CFM/coucou/blob/19f1f08651bc2b020a9a1b72c6ac0bb3656c0198/README.md), and [pinned tree](https://api.github.com/repos/Louis-CFM/coucou/git/trees/19f1f08651bc2b020a9a1b72c6ac0bb3656c0198?recursive=1)
+- **Discovery query:** GitHub Repository Search API `(AI agent OR agentic) in:name,description,readme created:>2026-09-20 stars:>5`, sorted by stars; `incomplete_results: false`
 
 ## A Previewable Plan Is Not a Write Capability — AnkiBridge (GitHub, September 2026)
 

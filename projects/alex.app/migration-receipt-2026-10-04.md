@@ -97,3 +97,160 @@ Remaining before migration completion: incorporate returned writer-containment a
 Alex continuation `input/appdep_b2210accc9bfd6faf68121e1` returned a terminal reconciliation for exactly the three mapped workspace-writer identities. Its durable decision artifact is `projects/alex.app/workspace-writer-containment-reconciliation-2026-10-04.json` (SHA-256 `44ae7ea043ec50172e887101d9f4aa30521c5e98e8943dc55d61952a46ec5125`). Current evidence found no active incident recurrence and the incident-specific execution path is obsolete. The receipt therefore marks the three paths **superseded with no current continuation, but not fulfilled**: terminal May/AKS results, the required 180-second artifact, dependency wake and lineage-specific metric proof were never established. Exact callers, historical requests and old Conditions remain recorded; no disabled Task state was mutated and no replacement is admitted unless fresh current writer/process/event evidence appears.
 
 Independent evaluator review `input/appdep_fd5798c6edc4d09905205c70` verified all 117 pinned identities and found no proved legacy fulfillment. Its correction is incorporated: the four Gym mappings now supersede only retired `gym.valid-run-rate` recomputation, while each distinct public projection/workflow remainder stays open. Old Condition `hao-approval-gym-public-health-candidate-v10` is separately preserved and is not replaced by the current retired-metric decision Condition.
+
+## App-dependency completion lineage reconciliation
+
+Activated plain Bob independently reconciled the two old `app-dependency-completion` Tasks in session `s_1791118630636_28b1f3f6-e73f-4965-b058-75449941ee45`. The accepted durable decision artifact is `projects/alex.app/app-dependency-completion-reconciliation-2026-10-04.json` (SHA-256 `16faabcd0bf1afb4a049ae515a9156a95954c006692188893ca84fb5e6b3b1ed`). Current Host source no longer implements the old `app.dependency.completed` / `app-inbox:wake` path, and the frozen candidate `6d2e57b40d93553d529bd606f2021d9fde24b216` is not an ancestor of deployed Host main. The two old execution paths are therefore obsolete, but neither requested outcome is proved fulfilled.
+
+The activation child's exact human-authority boundary is now dispositioned by May as an obsolete request withdrawn unfulfilled. Condition `hao-runtime-candidate-6d2e57b-activation-decision` remains historical evidence, the May creator/caller chain remains preserved, and exact approval, staged activation, dual-terminal-lineage, negative-control and metric evidence remain absent. Alex verified the useful modern technical remainder under the current saved-answer / `app.dependency.updated` protocol; that verification does not reconstruct or fulfill either historical live-proof outcome. One modern correlated Alex return remains supporting evidence only.
+
+Alex submitted exact May request `appdep_1c07f1557f0d0d7f27a678c5` with Condition `app-request:appdep_1c07f1557f0d0d7f27a678c5` for disposition of the obsolete old-candidate approval boundary. May converged it as `withdraw-obsolete-exact-candidate-request-unfulfilled`: no surviving human action is required, the old Condition remains historical evidence rather than approval or rejection, the caller chain is preserved, and no disabled legacy state was mutated. Alex separately verified the current deployed protocol with `input-result.test.ts` and `app-task-runtime.test.ts`: **209/209 passed** with 2,476 expectations, covering exact saved result/owner/caller correlation, lost notification, restart/replay, duplicate and stale result rejection, failed/invalid result visibility, and Condition preservation/recovery. These checks validate the modern remainder but do not fulfill the two historical AKS/May live-proof outcomes.
+
+## Dependency-authority lineage reconciliation
+
+Activated plain Bob reconciled exactly the two old `dependency-authority` Tasks in session `s_1791119267001_a5aa55d8-b287-4c47-aadf-7e8ba318f2d5`. The durable contribution is `projects/alex.app/dependency-authority-reconciliation-2026-10-04.json` (SHA-256 `6a9c15a12e9bebc759a616fbfa0127e09e3f2a4448e42732f3eac6a5ec63408b`). It preserves both complete retained specs, the activation-child → repair-parent → `runtime/platform-owner-review` return chain, original AKS request/events, and exact unknown Condition `approval-dependency-authority-contract-20260820-dc15a38b`.
+
+Neither historical outcome is fulfilled. The incident-specific AKS consumer and old owner tree are absent from the enabled three-App installation, while current request/return and authority-scoping fixtures pass; no current defect warrants resurrecting a fixed generation-154 request. The frozen artifact is also unsafe to activate as scoped: its supposedly dependency-authority-only App patch includes a separate `installed-app-resolver-observation` consumer contract. Host verification passed **251/251** with 2,685 expectations and current May/Alex App verification passed **31/31** with 163 expectations. These deterministic checks support the no-new-technical-continuation decision but do not reconstruct the missing May/AKS terminal results or metric proof.
+
+The frontier now records both paths as obsolete candidates awaiting May's exact authority/caller disposition, unfulfilled. Alex must reuse an existing matching May request if one exists or submit one bounded disposition request; May decides whether the obsolete fingerprint `dc15a38b…` ask is withdrawn unfulfilled or whether a precise surviving human/caller obligation remains. No old Condition is rebound, satisfied, or treated as approval/rejection.
+
+## Retired source integration
+
+The operator's separately reviewed source retirement is integrated in Apps main `b924e240dadd1c5d9042cd0f5d0c5b235ae35aee` (retirement commit `83475307bffffc269789508a4bbb7ac0a910a592`) and this branch merges that main revision. Reload `alex-retirement-b924e240da-20261004` succeeded in event `6643341`, reporting nine intended updated agents, exactly three Task-enabled Apps and three durable App addresses; readiness is healthy. The affected suite reports **418 passed / 0 failed**, design and registry/workflow checks pass, and the immutable release invoked both relocated shared skills without diagnostics.
+
+Useful manuals and skills now live under `projects/alex.app/docs`, historical specialist knowledge under `projects/alex.app/knowledge`, criteria under `projects/alex.app/criteria`, and retired source/evidence under `projects/alex.app/archive/retired-apps`. The local preservation receipt records 22,264 entries with matching hashes and compatibility aliases for saved artifact references. Do not delete those aliases or archives. Old may-agent, Evaluation and Gym executable manifests/profiles are removed; eleven retired Evaluation metrics are declared by Alex and retired in live storage. This cleanup did not delete or fulfill any legacy Task, input or Condition. Exact operator evidence is in `/app/.state/alex-migration-20261004/retirement-summary.json`, `retirement-local-preservation.json`, `retirement-source-map.json`, and `retirement-activation-result.json`. The remaining API scan of disabled `sample-reviewer` is the already-recorded filesystem projection limitation, not a loaded old controller.
+
+## Returned dependency-authority disposition
+
+May Task `goal/appdep_6cc0d62a8a22a1ca0cb4d1e8` returned the exact
+`withdraw-obsolete-activation-ask-unfulfilled` disposition. May neither approved
+nor rejected the frozen `dc15a38b…` manifest. Condition
+`approval-dependency-authority-contract-20260820-dc15a38b` remains historical
+state unknown, the activation-child → repair-parent →
+`runtime/platform-owner-review` chain remains preserved, and the missing
+May/AKS terminal results and scoped remeasurement remain unproved. The
+immutable patch's unrelated `installed-app-resolver-observation` behavior still
+makes it unsafe to activate. May found no surviving precise current caller
+obligation; reopen only from an exact failing public-protocol trace supplied by
+an enabled App. May's structured result artifact is
+`artifacts/dependency-authority-may-disposition-2026-10-04.json` (SHA-256
+`db81afbe1e4cb28a4da877ad3c6eb8b9f4ad3a203e666195e81c0499864ec019`).
+No old Task, Condition or runtime state was mutated.
+
+## Owner-review contract lineage reconciliation
+
+Activated plain Bob reconciled the two old `owner-review-contract` Tasks in
+session `s_1791119677933_304bf703-3466-4ffa-8838-123800717094`. The bounded
+contribution is `projects/alex.app/owner-review-contract-reconciliation-2026-10-04.json`
+(SHA-256 `e9bed7fcd5753d94e4e5643d88b47e2ab75a27ea3dd60a2f7a2f48660808d614`).
+It preserves both complete retained specs, caller chains, historical Condition
+`approve-owner-signal-boundary-62890907`, and the easily missed unresolved stop
+`resume-grouped-goal-repair-after-stop`, which is absent from the final Task's
+condition ID array but present in retained Condition and parent/child evidence.
+
+Neither historical outcome is fulfilled. Frozen Host candidate `62890907…` is
+not an ancestor of deployed Host `d8c877577…`, uses obsolete
+`app.dependency.completed` receipts and has no recovered approval or live
+terminal proof. Current Task communication has exact receipt and replay
+behavior, but that does not establish the old requested terminal signal counts
+or finding-versus-remediation proof. No current recurrence warrants reviving the
+old controller, a global message suppression heuristic or the frozen candidate.
+
+A current semantic question remains narrower than the old blanket grouping
+rule: Alex's ordinary report mapper creates distinct input Tasks for distinct
+admissions, but the agreed design permits intake Tasks with independent
+assessment outcomes. One bounded Alex continuation must exercise actual Host
+admission for repeated concern, replay, new evidence and an independent outcome,
+then either retain a linked no-change decision or correct only a demonstrated
+App-local reuse defect. Separately, May must disposition the obsolete exact
+activation ask and the stopped grouped-goal historical candidate; neither old
+Condition is rebound or settled. Bob's current deterministic checks passed
+**230/230** Host tests with 2,588 expectations and **31/31** Alex/May tests with
+163 expectations.
+
+The bounded current investigation is admitted as Alex request
+`appdep_34a3e05d87955f537e05b372` with Condition
+`app-request:appdep_34a3e05d87955f537e05b372`. The two historical authority
+boundaries are submitted together to May as request
+`appdep_bc9a845ad126f8632071584a` with Condition
+`app-request:appdep_bc9a845ad126f8632071584a`. These are separate outcomes:
+the current investigation does not authorize resuming either historical
+candidate, and May's disposition does not pre-decide current Alex intake design.
+
+## Returned owner-review contract decisions
+
+Current Alex investigation `input/appdep_34a3e05d87955f537e05b372` exercised actual Host admission rather than only the report mapper. Its accepted `no-change-linked-reuse` decision is commit `9009a1d57a6fc3ef1d6530c6ec7232ea5bf70a28`: two immutable publications for one material concern plus a third new-evidence publication remained distinct assessment Tasks, persisted replay created no extra input or execution, all three returned explicit links to the same consequential improvement, and an independent metric publication retained a separate outcome. Focused verification passed **12/12** with 136 expectations, four local Task executions and zero provider calls. Reopen only for demonstrated duplicate consequential commissioning, immutable publication loss/collapse, or wrongful merging of an independent outcome; prose similarity alone is not evidence.
+
+May Task `goal/appdep_bc9a845ad126f8632071584a` separately returned both historical authority decisions. Frozen candidate `62890907…` is withdrawn obsolete/unfulfilled, and the stopped grouped-goal candidate is withdrawn historical/unfulfilled. Neither disposition is approval, rejection or legacy fulfillment. Conditions `approve-owner-signal-boundary-62890907` and `resume-grouped-goal-repair-after-stop` remain unknown historical evidence; both caller chains, the cleanup caller and all missing historical terminal/live proof remain preserved. May's structured artifact is `artifacts/owner-review-contract-may-disposition-2026-10-04.json` (SHA-256 `5ab3a9836c17bb38b65f5161dd6d9953c2440208f9c6b3170b4f479294422483`). No runtime, disabled Task or Condition was mutated.
+
+## AKS taxonomy/correlation lineage reconciliation
+
+Activated plain Bob reconciled exactly the seven frontier entries tagged `aks-taxonomy-and-correlation` in session `s_1791120090535_35c29aff-0fb0-4eab-abce-f3f87b6ec909`. The durable contribution is `projects/alex.app/aks-taxonomy-correlation-reconciliation-2026-10-04.json` (SHA-256 `b38fa79f00a0fc8902ef6dbe2949375ba2c1e38e74f3f7828fc427b31f835f56`). It preserves all seven complete retained specs, four Conditions, eight direct relationships, the bridge and parent/downstream chains, recovered c6636d34 activation receipt, requested 3bf56cf5 release, stopped f9824eb7 assessment, and every missing terminal link.
+
+All seven incident-specific execution paths are obsolete in the enabled three-App organization, but none of their requested outcomes is proved fulfilled. The old candidates are not ancestors of deployed Host main; one c6636d34 activation receipt is recovered, while the problem-task terminal links, complete six-pair proof, staged 3bf56cf5 activation/caller closure, and f9824eb7 approval/terminal evidence remain missing. Current source verification found no precise enabled-App defect requiring another Alex technical continuation: Host saved-result/App Task/event-delivery checks passed **253/253** with 2,584 expectations, selector/metric-source checks passed **34/34** with 118 expectations, and current Alex/May App checks passed **31/31** with 163 expectations. These checks support technical supersession only; they do not reconstruct old live proof.
+
+No existing current May Task matching AKS taxonomy, f9824eb7 or 3bf56cf5 was found. One bounded May authority/caller disposition was therefore admitted as `goal/appdep_b9d63909a838fa7ad225d6b6`, retained by Condition `app-request:appdep_b9d63909a838fa7ad225d6b6`. May must decide withdrawal-unfulfilled versus a precise surviving obligation without activating retired candidates, restoring devbox solely for retired Apps, replaying requests, mutating Conditions or escalating to Hao absent an exact current human decision need.
+
+## Returned AKS authority disposition and unhandled-signal reconciliation
+
+May Task `goal/appdep_b9d63909a838fa7ad225d6b6` withdrew all seven retired
+AKS taxonomy/correlation outcomes as **unfulfilled**. The exact four historical
+Conditions remain unknown, eight parent relationships and the bridge/downstream
+lineage remain preserved, and the successful `c6636d34` receipt remains partial
+proof only. The obsolete `f9824eb7` approval ask and requested `3bf56cf5`
+release are neither approvals nor rejections and require no current Hao action.
+No devbox restoration, request replay, carrier reopening, deployment, disabled
+Task mutation, or Condition settlement occurred. Reopen only for a fresh
+enabled-App falsifier, recovered exact terminal artifact, or explicit current
+obligation.
+
+Activated plain Bob next reconciled exactly the ten frontier entries tagged
+`unhandled-signal-owner-review` in session
+`s_1791120573892_e0465843-5d88-4e54-8260-8da464cf8377`. The durable artifact is
+`projects/alex.app/unhandled-signal-owner-review-reconciliation-2026-10-04.json`
+(SHA-256 `006ab98f3f398e5210e6fb7200c204ef197a8a818e736e31c65628de49eeed3b`).
+All ten historical execution paths are obsolete, but none of their outcomes is
+proved fulfilled; complete specs, exact Conditions, 39 direct relationships and
+missing terminal/alert/Gym proof remain preserved. Current checks passed 71/71
+Host tests and 31/31 Alex/May tests. A production-function scratch probe exposed
+one precise current question: absent source/caller time, a delayed successful
+metric collector recorded its fallback timestamp 240 ms before producer
+completion. The recommendation requires an exact related-work check and one
+bounded Alex comparison before any patch; the separate five-name noisy-event
+query gap already has May parent `goal/app_f61801ff-d565-4cde-af42-54c0a700d124`
+and approval child `goal/appdep_0f3f67e14e6115f52af6c3ca`, so it must not be
+duplicated. Historical proof promises and caller boundaries still need a bounded
+May disposition. No continuation was rushed into admission in this attempt.
+
+
+## Accepted unhandled-signal disposition and current causality continuation
+
+May Task `goal/appdep_7bfd3ac4b0fa68969a9e3b23` withdrew all ten retired unhandled-signal/owner-review outcomes as **unfulfilled**. Exact historical callers, four preserved unknown Conditions plus the unrecovered historical mention, all 39 direct relationships, and every missing terminal/alert/Gym proof remain recorded. Withdrawal is not fulfillment, approval, rejection or Condition settlement. No current Hao decision or additional May reply survives from these ten; the separate five-name noisy-event proposal and its human Condition remain independent.
+
+Alex Gym Task `input/appdep_154c005c87f7d8c436e76d9f` completed the bounded current-source comparison. It preserved producer timestamp `111`, caller timestamp `222`, shared-producer execution and failed-source safety, but found untimestamped fallback observations **183 ms before direct producer completion** and **176 ms before completion through the actual App schedule path**. This falsifies the no-change case and supports only a narrow current Host adaptation: producer `measuredAt` > explicit caller `measuredAt` > one source-completion instant, with scheduled request time kept for cadence rather than observation time. Implementation is admitted separately as Alex tech-lead Task `input/appdep_db79add2ae9333ab16f704e9`; it has no merge, deployment or rollout authority and must not duplicate May's five-name query work or revive historical `ae8ed87…`.
+
+## Gym request-correlation lineage reconciliation
+
+Activated Bob session `s_1791121065520_0995a42e-296f-4622-a5e9-cc4671d23cbd` reconciled exactly the three `gym-request-correlation` identities in `projects/alex.app/gym-request-correlation-reconciliation-2026-10-04.json` (SHA-256 `d95196cf2cd3e8d7655d77dd28fa9d6d6ad152021edb96ff76d537cbdf1946bd`). The artifact preserves both unknown Conditions, five direct relationships, two caller inputs and all full old specs. Current generic correlation and comparison fixtures pass, but do not implement the old finish-result/addressed-route envelopes or prove any historical live matrix; no technical continuation is warranted without a fresh enabled-App falsifier. One bounded May historical authority/caller disposition is pending as `goal/appdep_8630d39afbc036c94782ceda`; no old outcome is marked fulfilled.
+
+### Finish-result lifecycle reconciliation
+
+Activated Bob session `s_1791121522591_3a5e90f7-22ff-42e8-93dc-a62dfe1fea15`
+reconciled three exact may-agent frontier identities and one explicitly corrected
+Gym child identity in
+`projects/alex.app/finish-result-lifecycle-reconciliation-2026-10-04.json`
+(SHA-256 `0c4003e4bb5ebbb5902309f2e644112f2c98fd34a0a8c2f8390650ff43f5d11a`).
+The artifact preserves all retained specifications, three unknown historical
+Conditions, direct caller/parent/dependency relationships, recovered candidate
+and failed-run evidence, and the distinction between current structured finish
+result handling and the retired top-level result format.
+
+The frontier now classifies the three may-agent paths under
+`finish-result-lifecycle`. Current Host behavior supports only part of the old
+finish-envelope outcome; timed idle auto-close and automatic legacy session
+resume are obsolete paths. None of the three historical outcomes is marked
+fulfilled. Their exact May creator disposition remains pending: May must either
+withdraw the obsolete promises unfulfilled or identify a precise current caller
+contract. No old Condition is satisfied or rebound, no candidate is activated,
+and the explicitly resolved Gym child remains a separate identity rather than a
+fourth may-agent frontier row.

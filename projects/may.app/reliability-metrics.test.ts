@@ -609,30 +609,47 @@ test("Host source collection retains diagnostic evidence and opens one metric br
   }
 });
 
-test("May schedules one normal collection opportunity every five minutes without a Task input", () => {
+test("May schedules recurring metric collection and evaluation independently without a Task input", () => {
   let now = 0;
   const bus = new EventBus();
-  const observed: unknown[] = [];
+  const observed: Array<{ type: string; source?: string; data: Record<string, unknown> }> = [];
   bus.subscribe((event) => {
-    if (event.type === "trigger.metrics-snapshot") observed.push(event);
+    if (event.type === "trigger.metrics-snapshot" || event.type === "trigger.metrics-evaluate") {
+      observed.push(event as (typeof observed)[number]);
+    }
   });
   const producer = createAppScheduleProducer({ bus, now: () => now });
   try {
     producer.replace([{ appDir: "/fixture/may.app", definition: app }]);
     producer.scanNow();
     expect(observed).toEqual([]);
+
+    now = 60_000;
+    producer.scanNow();
+    producer.scanNow();
+    expect(observed).toEqual([
+      expect.objectContaining({
+        type: "trigger.metrics-evaluate",
+        source: "app:may:schedule:metric-evaluation",
+        data: { idempotencyKey: "schedule:may:metric-evaluation:1" },
+      }),
+    ]);
+
     now = 300_000;
     producer.scanNow();
+    expect(observed.filter((event) => event.type === "trigger.metrics-snapshot")).toEqual([
+      expect.objectContaining({
+        type: "trigger.metrics-snapshot",
+        source: "app:may:schedule:metric-source-collection",
+        data: { idempotencyKey: "schedule:may:metric-source-collection:1" },
+      }),
+    ]);
+    expect(observed.filter((event) => event.type === "trigger.metrics-evaluate")).toHaveLength(2);
+
+    now = 360_000;
     producer.scanNow();
-    expect(observed).toHaveLength(1);
-    expect(observed[0]).toMatchObject({
-      type: "trigger.metrics-snapshot",
-      source: "app:may:schedule:metric-source-collection",
-      data: { idempotencyKey: "schedule:may:metric-source-collection:1" },
-    });
-    now = 600_000;
-    producer.scanNow();
-    expect(observed).toHaveLength(2);
+    expect(observed.filter((event) => event.type === "trigger.metrics-snapshot")).toHaveLength(1);
+    expect(observed.filter((event) => event.type === "trigger.metrics-evaluate")).toHaveLength(3);
   } finally {
     producer.close();
   }
@@ -955,6 +972,10 @@ test("input metrics include old unadmitted work after feedback and exclude recov
     stage: "input-admission",
     failures: 1,
   });
+  for (const id of ["may.unresolved-input-recovery-count", "may.oldest-input-recovery-age-seconds"]) {
+    const plan = db.prepare(`EXPLAIN QUERY PLAN ${reliabilityMetrics.find((metric) => metric.id === id)!.sourceQuery}`).all();
+    expect(plan.filter((step) => String(step.detail) === "MATERIALIZE recoveries")).toHaveLength(1);
+  }
   resolveAppInboxRecovery(db, "input", "input-admission", Date.now());
   expect(sample("may.unresolved-input-recovery-count").value).toBe(0);
 });
@@ -983,6 +1004,8 @@ test("retains failed attempts after later success and calculates the rate from t
       }),
     );
   }
+  const plan = db.prepare(`EXPLAIN QUERY PLAN ${reliabilityMetrics.find((metric) => metric.id === "may.failed-task-attempts-24h")!.sourceQuery}`).all();
+  expect(plan.filter((step) => String(step.detail) === "MATERIALIZE cohort")).toHaveLength(1);
   const observed = sample("may.failed-task-attempts-24h");
   expect(observed.value).toBe(1);
   expect(observed.sampleSize).toBe(3);

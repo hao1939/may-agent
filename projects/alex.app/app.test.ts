@@ -49,6 +49,38 @@ test("independent review may assess Alex work without App-wide exclusion", () =>
   });
 });
 
+test("failed evaluator reconciliation does not review itself while ordinary work remains eligible", () => {
+  const enabled = process.env.EVALUATION_AUTO_REVIEW_ENABLED;
+  const reviewer = process.env.EVALUATION_AUTO_REVIEW_REVIEWER;
+  process.env.EVALUATION_AUTO_REVIEW_ENABLED = "true";
+  process.env.EVALUATION_AUTO_REVIEW_REVIEWER = "evaluator-deepseek";
+  try {
+    // Real incomplete events carry the Task and handler, but no input or worker.
+    const data = {
+      project: "alex",
+      taskId: "review/example",
+      generation: 1,
+      attemptId: "attempt-example",
+      handler: "workflow:task-outcome-review",
+      disposition: "incomplete",
+    };
+    expect(taskInputForEvent({ type: "project.task.reconciled", data } as never)).toBeNull();
+    expect(taskInputForEvent({ type: "project.task.reconciled", data: {
+      ...data, taskId: "input/migration-repair", handler: "workflow:implementation-repair",
+      disposition: "retrying",
+    } } as never)).toEqual({
+      kind: "review-task-outcome",
+      data: { appId: "alex", taskId: "input/migration-repair", assessmentPurpose: "ongoing",
+        automatic: true, reviewer: "evaluator-deepseek" },
+    });
+  } finally {
+    if (enabled === undefined) delete process.env.EVALUATION_AUTO_REVIEW_ENABLED;
+    else process.env.EVALUATION_AUTO_REVIEW_ENABLED = enabled;
+    if (reviewer === undefined) delete process.env.EVALUATION_AUTO_REVIEW_REVIEWER;
+    else process.env.EVALUATION_AUTO_REVIEW_REVIEWER = reviewer;
+  }
+});
+
 test("selected review events return to executable Alex review work", () => {
   const input = taskInputForEvent({
     type: "evaluation.task.review.requested",

@@ -1,0 +1,546 @@
+{
+  "kind": "alex-legacy-lineage-semantic-reconciliation",
+  "version": 1,
+  "generatedAt": "2026-10-04T13:12:20.603135+00:00",
+  "lineage": "dependency-authority",
+  "status": "bounded-review-contribution; proposed-disposition-only",
+  "author": {
+    "agent": "bob",
+    "sessionId": "s_1791119267001_a5aa55d8-b287-4c47-aadf-7e8ba318f2d5",
+    "callerSessionId": "s_1791119239314_e000703e-f37e-4c25-a77e-e0997af44963",
+    "owningTask": {
+      "appId": "alex",
+      "taskId": "input/app_7a279469-7ac8-4bec-894a-9314635bd452"
+    },
+    "scope": "Exactly two legacy may-agent Tasks; no runtime mutations, human contact, replacement admissions or Condition rebinding."
+  },
+  "candidate": {
+    "appsWorktree": "/app/worktrees/alex/input-app_7a279469-7ac8-4bec-894a-9314635bd452-a882250576",
+    "appsBase": "d396579b6a14f0c3e7cea6d4e87cfab6506c9d41",
+    "hostReadOnlySource": "/app/projects/may-agent",
+    "hostRevision": "d8c87757782ae5750984bedc239b00eab4c76715",
+    "hostStatus": "clean before and after tests",
+    "implementationDiff": null,
+    "artifactOnly": true
+  },
+  "sources": {
+    "design": {
+      "path": "/app/projects/may-agent.app/docs/proposals/alex-improvement-app.md",
+      "sha256": "0bff163bad32fb56cccbaf87c9747737e632d5b8a5c50dd75de8fe0e9fc5ad83",
+      "sections": [
+        "What ongoing work needs to carry forward",
+        "Cut over and continue"
+      ],
+      "rule": "Replacement can change identities, never falsely fulfill old outcomes or broaden approval."
+    },
+    "frontier": {
+      "path": "projects/alex.app/legacy-frontier-disposition-2026-10-04.json",
+      "sha256": "6cbed876047929ac5dbf002d1a2fdcf43739d7cbf879091d69382e0c64a8779b",
+      "selectedLineage": "dependency-authority",
+      "selectedCount": 2
+    },
+    "receipt": {
+      "path": "projects/alex.app/migration-receipt-2026-10-04.md",
+      "sha256": "26d06b79148d098410a9810ed9b66a0bcd688f5949608735bd26a46cbac56558"
+    },
+    "snapshot": {
+      "path": "/app/.state/alex-migration-20261004/legacy-frontier-snapshot.json",
+      "sha256": "bd3f6a1cc65e125c61f5a8380cba746d55e3d8143edc6f8d6825af286d5d7f97",
+      "capturedAt": "2026-10-04T12:13:38.821491+00:00",
+      "scope": "apps.may-agent.tasks, conditions, relations, pendingInputs, admissions; activeAppConditions searched only for exact identities"
+    },
+    "index": {
+      "path": "/app/.state/alex-migration-20261004/legacy-frontier-index.json",
+      "sha256": "46d61e762a8abac6170b4333c7aac30af2661afabe7fe635294a17318ea1cde9"
+    }
+  },
+  "items": [
+    {
+      "old": {
+        "appId": "may-agent",
+        "taskId": "activate-and-replay-dependency-authority-contract-20260820",
+        "generation": 1,
+        "resourceVersion": 8,
+        "phase": "waiting"
+      },
+      "retainedResource": {
+        "metadata": {
+          "creator": {
+            "appId": "may"
+          },
+          "generation": 1,
+          "id": "activate-and-replay-dependency-authority-contract-20260820",
+          "resourceVersion": 8
+        },
+        "spec": {
+          "acceptance": [
+            "Recover checkpoint #2 and current source, preserve unrelated concurrent changes, and produce an immutable artifact containing only the exact `dependency-authority-runtime-review` App contract, its negative controls, the generic dependency-observation authority prompt instruction, and their tests.",
+            "Re-run May App check plus focused Runtime prompt and reconciler suites; prove generic `owner-request`, unknown Apps, malformed inputs, unrelated projects, overbroad work, and Host-private projection refinement remain rejected.",
+            "Present the exact immutable artifact identities, complete proof, activation scope, rollback boundary, and supervisor operation for approval before any live reload, restart, or deployment; do not infer approval.",
+            "If approved, activate only through the supervisor-owned path and prove the loaded App contract and Runtime artifact match the approved identities, Runtime health is terminal, and no unrelated dirty App work was included; if rejected or superseded, return that exact terminal disposition without mutation.",
+            "After healthy activation, have the AKS owner submit one fresh request using `dependency-authority-runtime-review` with correlation to appdep_b0fced12cada9800c8035457 and events 5810518/5810519; do not replay generic `owner-request`.",
+            "Return the correlated terminal May App result, then prove the dependency wake reached AKS `runtime/owner-review` and that lineage reached its terminal task/domain result; admission, attachment, or claimed repair is insufficient.",
+            "Remeasure the scoped signal while preserving events 5810518/5810519 and visibility for genuine subscriber, malformed-input, missing-consumer, and control-plane failures; do not duplicate alert-4602 taxonomy work.",
+            "Return all source, regression, approval, activation, loaded-artifact, May-result, AKS-result, and remeasurement evidence to the parent; if any link is missing, identify the responsible May Runtime or AKS App layer and the exact next bounded repair rather than declaring success."
+          ],
+          "category": "runtime-reliability",
+          "input": {
+            "candidateHashes": {
+              "mayAppTest": "0e6d73f4b8bc52685107ac044440e6eeab0a1c49994a9b59335e5cffa62cac9e",
+              "mayAppTs": "04e1332e94ae533f33de6f684f18f6cdd916cd3c8e6f585b8501388d450365f3",
+              "runtimeTest": "e3c51608ef37ff56c54247e8aea64a65e1137a58ee3f8aac3f424e52dd5e942b",
+              "runtimeTs": "bcb84c4c04718396e8a5166d01c4e2a7e5441264d4a41842f06740b1a1fe92c8"
+            },
+            "canonicalKeepCommit": "1f361007a903477b3cd35fee16136b6af03612c7",
+            "constraints": {
+              "approvalBeforeProductionMutation": true,
+              "noDuplicateAlertTaxonomyWork": true,
+              "noGenericOwnerRequestFallback": true,
+              "noHostPrivateProjectionReadsForSuppliedDependency": true,
+              "noUnknownInputWeakening": true
+            },
+            "historicalSessionId": "s_1787054895397_14",
+            "sourceAppId": "aks-rp-e2e",
+            "sourceEvents": [
+              5810518,
+              5810519
+            ],
+            "sourceRequestId": "appdep_b0fced12cada9800c8035457",
+            "sourceTaskGeneration": 154,
+            "sourceTaskId": "runtime/owner-review"
+          },
+          "mode": "achieve",
+          "outcome": "Isolate and review the verified dependency-authority replacement without absorbing unrelated dirty App work; produce the exact immutable May App and May Runtime artifact, obtain the required production activation decision, activate only through the supervisor-owned path if approved, and carry a fresh schema-valid AKS request through a correlated terminal May App result and the requesting AKS `runtime/owner-review` lineage’s terminal task/domain result.",
+          "outputs": [
+            "/app/projects/may-agent/.state/deploy-receipts/dependency-authority-contract-20260820.json"
+          ],
+          "owner": "may",
+          "parentId": "repair-dependency-authority-owner-request-consumer-20260820",
+          "priority": "P0"
+        },
+        "status": {
+          "conditionIds": [
+            "approval-dependency-authority-contract-20260820-dc15a38b"
+          ],
+          "evidence": [
+            "artifact:/app/projects/may-agent/.state/artifacts/dependency-authority-contract-20260820 — all files are read-only; manifest SHA-256 is dc15a38b77d5d9aefa6274edadf5eea2ee520e32dfea5d85319ad3815badd091.",
+            "patch:490d1aaf6d636a038247e36fd97c5fb5a7d36e2854de4a179abddd5a80ce4670 and patch:d740e4042cecb9b558be40af0b04bb3ac47262ec59fd23a8f528855bfe2f8115 — reverse applicability checks prove both exact deltas remain present.",
+            "proof recorded in the immutable manifest — May App 15/15, Runtime prompt 19/19, reconciler 125/125, and Runtime typecheck passed, including all required negative controls.",
+            "approval search — no matching project approval, App inbox decision, notification, or correlated receipt exists for this artifact.",
+            "runtime health — may-agent and may-agent-web are RUNNING on the prior deployment; no staged deploy marker exists and no activation was attempted.",
+            "checkpoint:#2 — durable resume evidence records the exact artifact, approval boundary, runtime state, and post-decision terminal proof chain."
+          ],
+          "observedGeneration": 1,
+          "phase": "waiting",
+          "summary": "The reviewed immutable artifact remains valid, both exact candidate patches are present, and the prior runtime is healthy, but no approval or correlated deploy receipt exists. Stop production mutation and wait event-driven for Hao's exact approve, reject, or hold decision on manifest `dc15a38b77d5d9aefa6274edadf5eea2ee520e32dfea5d85319ad3815badd091`; do not schedule another empty checkpoint. If approved, May will isolate only the reviewed deltas, activate at most once through a newly correlated supervisor-owned deployment, verify loaded identities and terminal health, then carry a fresh schema-valid request through the terminal May App and AKS `runtime/owner-review` lineage results; reject or hold means no mutation, and any missing proof is replanned with the responsible May Runtime or AKS App layer.",
+          "updatedAt": "2026-08-20T06:18:30.915Z"
+        }
+      },
+      "disposition": "recommend-obsolete-execution-path-not-fulfilled; authority-disposition-still-required",
+      "outcomeFulfilled": false,
+      "replacement": null,
+      "acceptedProgressAssessment": "Retain exact prior status and evidence below as historical accepted progress, not a new verification of its claims. Immutable bytes survive, but isolation claim is contradicted by the App patch; old live activation and terminal proof are absent from inspected evidence.",
+      "remainingObligations": [
+        "May must disposition the exact historical approval/caller boundary; Alex must not transfer approval to a new artifact or assume withdrawal.",
+        "Historical correlated May result, dependency wake, AKS runtime/owner-review@g154 terminal task/domain result, and scoped metric remeasurement remain unproved. Preserve this shortfall even if obsolete paths are retired.",
+        "Do not execute the old patch or restore the incident-specific App input merely to recreate historical proof. Any useful modern defect must be demonstrated under current public Task protocols first."
+      ]
+    },
+    {
+      "old": {
+        "appId": "may-agent",
+        "taskId": "repair-dependency-authority-owner-request-consumer-20260820",
+        "generation": 1,
+        "resourceVersion": 4,
+        "phase": "waiting"
+      },
+      "retainedResource": {
+        "metadata": {
+          "creator": {
+            "appId": "may"
+          },
+          "generation": 1,
+          "id": "repair-dependency-authority-owner-request-consumer-20260820",
+          "resourceVersion": 4
+        },
+        "spec": {
+          "acceptance": [
+            "Inspect current canonical May Runtime source and the exact historical edit attributed to session s_1787054895397_14; return an evidence-backed keep, revert, or bounded replacement decision rather than trusting the historical edit.",
+            "Establish one explicit schema-valid consumer contract for the intended AKS request semantics while preserving rejection of unknown Apps, malformed inputs, unrelated projects, overbroad owner work, and generic `owner-request` fallback.",
+            "Persist regression or golden-trace proof from the observed request binding through the intended handler and terminal May App result, including negative controls for impermissible inputs.",
+            "Prove generic dependency-scoped owner instructions use the supplied dependency observation as complete authority and do not direct an App owner to inspect Host-private task-tree projections.",
+            "Respect May-owned source, review, activation, and supervisor boundaries; if live activation is required, present the exact immutable artifact and proof for approval before production mutation, then prove the intended artifact is loaded and runtime health is terminal.",
+            "Return the correlated terminal May App result and the requesting AKS `runtime/owner-review` lineage’s terminal task/domain result; delivery acceptance, task attachment, or a claimed fix alone is insufficient.",
+            "Remeasure the scoped effect without suppressing events 5810518/5810519 until their consumer and terminal result are proved, and preserve visibility for genuine subscriber, malformed-input, missing-consumer, and control-plane failures.",
+            "May reviews source, regression, App-result, AKS-result, and any activation evidence; if any link is missing, replan with the responsible May Runtime or AKS App owner on this same task, escalating only a demonstrated authority blocker."
+          ],
+          "category": "runtime-reliability",
+          "input": {
+            "alertId": 4602,
+            "constraints": {
+              "noDuplicateAlertTaxonomyWork": true,
+              "noGenericOwnerRequestFallback": true,
+              "noHostPrivateTaskProjectionReadsForAuthoritativeDependencyObservation": true,
+              "noUnknownInputWeakening": true
+            },
+            "historicalSessionId": "s_1787054895397_14",
+            "metricId": "event.unhandled-signal-count-1h",
+            "preserveRelatedSessionId": "s_1787055419630_35",
+            "requestId": "appdep_b0fced12cada9800c8035457",
+            "sourceAppId": "aks-rp-e2e",
+            "sourceEvents": [
+              5810518,
+              5810519
+            ],
+            "sourceTaskGeneration": 154,
+            "sourceTaskId": "runtime/owner-review"
+          },
+          "mode": "achieve",
+          "outcome": "Resolve rejected AKS request appdep_b0fced12cada9800c8035457 through a supported, schema-valid May App contract: adjudicate the current validity of the historical direct Host-test edit and ensure dependency-scoped owner guidance treats the supplied dependency observation as authoritative without directing App owners to inspect Host-private task-tree projections; then carry the request through a correlated terminal May App result and the requesting AKS task’s terminal evidence without weakening unknown-input rejection or duplicating alert-4602 taxonomy work.",
+          "outputs": [],
+          "owner": "may",
+          "parentId": "runtime/platform-owner-review",
+          "priority": "P0"
+        },
+        "status": {
+          "conditionIds": [],
+          "evidence": [
+            "event:5810518 — unsupported `owner-request` from AKS request appdep_b0fced12cada9800c8035457 remains delivery_status=unhandled with no accepted consumer.",
+            "event:5810519 — consequent subscriber.failed remains unhandled; no taxonomy suppression was applied.",
+            "session:/app/.state/sessions/s_1787054895397_14/result.json and session.jsonl — AKS app-ops directly edited `/app/projects/may-agent/src/app/app-task-reconciler.test.ts`; the historical attempt is evidence, not May source authority.",
+            "commit:1f361007a903477b3cd35fee16136b6af03612c7 and current blame at app-task-reconciler.test.ts:3439-3485 — canonical May source owns the atomic reject/leaf-first/upward-later regression.",
+            "test:may-agent/src/app/app-task-reconciler.test.ts — 125 pass, 0 fail, 584 assertions.",
+            "candidate:/app/projects/may-agent.app/app.ts and app.test.ts — exact `dependency-authority-runtime-review` binding is restricted to request appdep_b0fced12cada9800c8035457, AKS `runtime/owner-review` generation 154, events 5810518/5810519, authority=true, private reads=false, and rejects generic/malformed/cross-App inputs.",
+            "test:may-agent.app `bun run check` — syntax, TypeScript, Prettier, and 15 tests pass; generic `owner-request` remains rejected.",
+            "candidate:/app/projects/may-agent/src/app/app-task-runtime.ts — owner prompt says a supplied dependency observation is complete authority and forbids Host-private state/tree/Kanban refinement or task substitution while preserving supported diagnostics without an observation.",
+            "test:may-agent/src/app/app-task-runtime.test.ts — 19 pass, 0 fail; May Runtime TypeScript check passes.",
+            "checkpoint:#2 — exact candidate hashes and the remaining immutable-artifact, approval, supervisor activation, replay, and terminal-proof chain are durable."
+          ],
+          "observedGeneration": 1,
+          "phase": "waiting",
+          "summary": "Keep the historical leaf-first reconciler regression because current canonical May commit 1f361007 independently owns it and the current 125-test suite proves the behavior; reject session s_1787054895397_14 as source authority because an AKS owner directly edited Host source and refined work through task-tree reads. The bounded replacement is an exact AKS-only `dependency-authority-runtime-review` schema plus a generic owner instruction that treats a supplied dependency observation as complete authority and forbids Host-private projection refinement; tests pass, but it is not terminal until isolated from unrelated dirty App work, reviewed as an immutable artifact, approved and supervisor-activated, then followed through a fresh correlated May App result and the AKS `runtime/owner-review` terminal result. Events 5810518/5810519 remain visible and unhandled; the parent must review the child’s source, activation, App-result, AKS-result, and remeasurement evidence and replan the responsible layer if any link is absent.",
+          "updatedAt": "2026-08-20T05:08:53.447Z"
+        }
+      },
+      "disposition": "recommend-obsolete-execution-path-not-fulfilled; authority-disposition-still-required",
+      "outcomeFulfilled": false,
+      "replacement": null,
+      "acceptedProgressAssessment": "Retain exact prior status and evidence below as historical accepted progress, not a new verification of its claims. Immutable bytes survive, but isolation claim is contradicted by the App patch; old live activation and terminal proof are absent from inspected evidence.",
+      "remainingObligations": [
+        "May must disposition the exact historical approval/caller boundary; Alex must not transfer approval to a new artifact or assume withdrawal.",
+        "Historical correlated May result, dependency wake, AKS runtime/owner-review@g154 terminal task/domain result, and scoped metric remeasurement remain unproved. Preserve this shortfall even if obsolete paths are retired.",
+        "Do not execute the old patch or restore the incident-specific App input merely to recreate historical proof. Any useful modern defect must be demonstrated under current public Task protocols first."
+      ]
+    }
+  ],
+  "relationships": {
+    "creatorOfBoth": {
+      "appId": "may"
+    },
+    "oldResponsibleOwnerOfBoth": "may",
+    "parentEdges": [
+      {
+        "app_id": "may-agent",
+        "source_task_id": "activate-and-replay-dependency-authority-contract-20260820",
+        "relation_kind": "parent",
+        "target_task_id": "repair-dependency-authority-owner-request-consumer-20260820"
+      },
+      {
+        "app_id": "may-agent",
+        "source_task_id": "repair-dependency-authority-owner-request-consumer-20260820",
+        "relation_kind": "parent",
+        "target_task_id": "runtime/platform-owner-review"
+      }
+    ],
+    "humanCondition": {
+      "retainedRow": {
+        "app_id": "may-agent",
+        "condition_id": "approval-dependency-authority-contract-20260820-dc15a38b",
+        "state": "unknown",
+        "condition_json": "{\"metadata\":{\"generation\":2,\"id\":\"approval-dependency-authority-contract-20260820-dc15a38b\",\"resourceVersion\":2},\"spec\":{\"expected\":{\"anyOf\":[\"approve\",\"reject\",\"hold\"],\"approvalId\":\"dependency-authority-contract-20260820\",\"approvalKind\":\"production-artifact-activation\",\"artifactFingerprint\":\"sha256:dc15a38b77d5d9aefa6274edadf5eea2ee520e32dfea5d85319ad3815badd091\",\"field\":\"decision\",\"taskId\":\"activate-and-replay-dependency-authority-contract-20260820\"},\"owner\":\"human:hao\",\"subject\":\"project:may-agent\",\"type\":\"project.approval.submitted\"},\"status\":{\"observedAt\":\"2026-08-20T06:18:30.915Z\",\"observedGeneration\":0,\"state\":\"unknown\"}}"
+      },
+      "parsedResource": {
+        "metadata": {
+          "generation": 2,
+          "id": "approval-dependency-authority-contract-20260820-dc15a38b",
+          "resourceVersion": 2
+        },
+        "spec": {
+          "expected": {
+            "anyOf": [
+              "approve",
+              "reject",
+              "hold"
+            ],
+            "approvalId": "dependency-authority-contract-20260820",
+            "approvalKind": "production-artifact-activation",
+            "artifactFingerprint": "sha256:dc15a38b77d5d9aefa6274edadf5eea2ee520e32dfea5d85319ad3815badd091",
+            "field": "decision",
+            "taskId": "activate-and-replay-dependency-authority-contract-20260820"
+          },
+          "owner": "human:hao",
+          "subject": "project:may-agent",
+          "type": "project.approval.submitted"
+        },
+        "status": {
+          "observedAt": "2026-08-20T06:18:30.915Z",
+          "observedGeneration": 0,
+          "state": "unknown"
+        }
+      },
+      "disposition": "Preserve exact unknown historical Condition and fingerprint. This review neither satisfies nor retires it. Ask May to disposition the obsolete candidate request; no approval/rejection/withdrawal inferred.",
+      "approvalScope": "Only manifest dc15a38b77d5d9aefa6274edadf5eea2ee520e32dfea5d85319ad3815badd091 and its specified production activation; not any current Host commit, Alex Task or reconstructed patch."
+    },
+    "originalTechnicalCaller": {
+      "appId": "aks-rp-e2e",
+      "taskId": "runtime/owner-review",
+      "generation": 154,
+      "requestId": "appdep_b0fced12cada9800c8035457",
+      "events": [
+        5810518,
+        5810519
+      ],
+      "eventMeaningAtSnapshot": [
+        "unsupported owner-request, unhandled",
+        "consequent subscriber.failed, unhandled"
+      ],
+      "conditionId": null,
+      "conditionIdLimit": "No exact AKS caller Condition supplied in this snapshot; do not invent app-request identity or bind a replacement from prose alone."
+    },
+    "parentReturn": "Activation child -> repair parent -> may-agent/runtime/platform-owner-review; both creators are May. Preserve all three nodes as relationships, not additional dispositions. Alex migration -> its caller remains this contribution return.",
+    "snapshotInputSearch": "No rows in may-agent pendingInputs/admissions contained either exact Task identity; this is bounded snapshot coverage, not evidence that the original caller obligation was answered."
+  },
+  "acceptedProgress": {
+    "historicalDecision": "Keep canonical leaf-first regression, reject unauthorized historical AKS session as source authority, prepare bounded schema and dependency-observation guidance. Preserve as prior decision, not permission for new Host edits.",
+    "manifest": {
+      "version": 1,
+      "artifactId": "dependency-authority-contract-20260820",
+      "taskId": "activate-and-replay-dependency-authority-contract-20260820",
+      "createdAt": "2026-08-20T05:16:00Z",
+      "scope": "Exact dependency-authority-runtime-review May App contract, negative controls, generic supplied-dependency authority prompt instruction, and their tests only.",
+      "bases": {
+        "workspaceCommit": "1a7293a0239a9df7a34e7b83029da863d0b8daa2",
+        "mayRuntimeCommit": "60bf60f9d825ac991f115bc6857e89ecc7ec0abd",
+        "canonicalKeepCommit": "1f361007a903477b3cd35fee16136b6af03612c7"
+      },
+      "sourceFiles": {
+        "/app/projects/may-agent.app/app.ts": "04e1332e94ae533f33de6f684f18f6cdd916cd3c8e6f585b8501388d450365f3",
+        "/app/projects/may-agent.app/app.test.ts": "0e6d73f4b8bc52685107ac044440e6eeab0a1c49994a9b59335e5cffa62cac9e",
+        "/app/projects/may-agent/src/app/app-task-runtime.ts": "bcb84c4c04718396e8a5166d01c4e2a7e5441264d4a41842f06740b1a1fe92c8",
+        "/app/projects/may-agent/src/app/app-task-runtime.test.ts": "e3c51608ef37ff56c54247e8aea64a65e1137a58ee3f8aac3f424e52dd5e942b"
+      },
+      "patches": {
+        "patches/may-agent-app.patch": "490d1aaf6d636a038247e36fd97c5fb5a7d36e2854de4a179abddd5a80ce4670",
+        "patches/may-runtime.patch": "d740e4042cecb9b558be40af0b04bb3ac47262ec59fd23a8f528855bfe2f8115"
+      },
+      "proof": {
+        "mayAppCheck": "PASS: syntax, TypeScript, Prettier, 15 tests, 85 assertions",
+        "runtimePromptSuite": "PASS: 19 tests, 84 assertions",
+        "runtimeReconcilerSuite": "PASS: 125 tests, 584 assertions",
+        "runtimeTypecheck": "PASS: bun run check (tsc --noEmit)",
+        "negativeControls": [
+          "generic owner-request rejected",
+          "unknown App rejected",
+          "malformed input rejected",
+          "unrelated project rejected",
+          "overbroad work rejected",
+          "hostPrivateProjectionReadsAllowed=true rejected",
+          "supplied dependency observation forbids Host-private refinement"
+        ]
+      },
+      "activation": {
+        "approvalRequired": true,
+        "approvedDecisions": [
+          "approve",
+          "reject",
+          "hold"
+        ],
+        "scope": "Load only the four source identities above; do not include unrelated dirty App work; restart only through may-agent supervisor restarter.",
+        "supervisorOperation": "From an immutable reviewed May Runtime commit containing only patches/may-runtime.patch, invoke MAY_AGENT_DEPLOY_TASK_ID=activate-and-replay-dependency-authority-contract-20260820 MAY_AGENT_DEPLOY_CORRELATION=dependency-authority-contract-20260820-<approved-commit> ./scripts/deploy.sh; the supervisor-owned may-agent-restarter performs activation and settles the correlated receipt.",
+        "loadedProof": "Receipt must show loadedArtifactSha=artifactSha, health=healthy, targetedWake=true, duplicateDeploy=false; loaded May App and Runtime source hashes must equal sourceFiles.",
+        "rollback": "Supervisor restarter rollback to the previously loaded Runtime/SDK and previous May App source; settle the same receipt as rolled_back and verify healthy runtime before further action. Git revert the exact adoption commits for durable source rollback."
+      },
+      "postActivation": {
+        "freshRequestKind": "dependency-authority-runtime-review",
+        "correlation": "appdep_b0fced12cada9800c8035457",
+        "sourceEvents": [
+          5810518,
+          5810519
+        ],
+        "aksTask": "aks-rp-e2e/runtime/owner-review@g154",
+        "terminalProofRequired": [
+          "correlated terminal May App result",
+          "dependency wake",
+          "terminal AKS task/domain result",
+          "scoped signal remeasurement with genuine failures preserved"
+        ]
+      }
+    },
+    "artifactDirectory": "/app/projects/may-agent/.state/artifacts/dependency-authority-contract-20260820",
+    "integrity": "sha256sum -c SHA256SUMS: all four files OK; manifest matches pinned dc15a38b... fingerprint.",
+    "correctionToAcceptedNarrative": {
+      "severity": "blocks-reuse-of-old-activation-candidate",
+      "finding": "The supposedly isolated May App patch also adds installed-app-resolver-observation schema, mapper branch, source restriction and a golden trace for a different request (appdep_c486e1db18a2121dd83a2d69). Thus checksum validity does not establish the requested isolation. Do not approve/deploy this artifact as dependency-authority-only.",
+      "evidence": "/app/projects/may-agent/.state/artifacts/dependency-authority-contract-20260820/patches/may-agent-app.patch:82-144,183-213,224-227,242-248",
+      "scopeLimit": "This identifies extra patch content only; it does not disposition that other lineage or claim a production effect."
+    },
+    "historicalRegressionLimit": "Commit 1f361007a903477b3cd35fee16136b6af03612c7 is readable, but merge-base --is-ancestor against current Host returns 1. Current reconciler tests do not contain the historical leaf-first/upward close-task case. No automatic revert or reapplication is justified; old tree lifecycle is not the present Task contract."
+  },
+  "currentEvidence": [
+    {
+      "id": "runtime",
+      "source": "/app/projects/may-agent/.state/deploy-receipts/failover-d8c877577-20261004.json",
+      "sha256": "d01ec2363e06cb781a95489c254f0448485bc3f98451ceede2d1448d860d03a5",
+      "observed": "phase succeeded; sourceCommit d8c87757782ae5750984bedc239b00eab4c76715; artifactSha = loadedArtifactSha = af72410f0ebe7f289a062111781fa5dd15491ce1d809bb01d27bfca0b09fdd56; healthy; duplicateDeploy false; completed 2026-10-04T13:07:17.698Z. More recent than migration receipt baseline fc3b9cab3.",
+      "limit": "Deployment receipt, not a new live old-lineage trial."
+    },
+    {
+      "id": "apps",
+      "source": "/app/.state/alex-migration-20261004/retirement-live-apps.json",
+      "sha256": "c478bebd5d24923cf6c488fc3f0eaef1dd5084992a59b8456f013c0f60e531f9",
+      "observed": "Recorded active Apps are alex, may, scout-knowledge-lib, not may-agent or aks-rp-e2e. Fresh tasks.get for each old may-agent Task returns App may-agent has no loaded Task runtime. Fresh tasks.contract(may) exposes goal/message; tasks.contract(alex) exposes goal/message plus review/compare inputs, not dependency-authority-runtime-review."
+    },
+    {
+      "id": "current-guidance",
+      "source": "/app/projects/may-agent/src/lib/execution-instructions.md:1-17; src/lib/task-decision-context.ts:238-245; src/lib/task-workspace-context.ts:89",
+      "observed": "Current guidance binds work to caller assignment and authority; shared context does not expand authority; references are evidence rather than authority; incomplete coverage is explicit.",
+      "limit": "Not the exact old complete-authority observation string. Search of Host src and current May/Alex source found no supplied-dependency instruction constant or incident-specific input. This does not prove equivalent agent behavior."
+    },
+    {
+      "id": "current-correlation",
+      "source": "/app/projects/may-agent/src/app/core/tasks/dependency-admission.ts:60-175,379-390; src/app/core/inbox/input-result.ts:34-73",
+      "observed": "Current request IDs retain caller and original input identity; references resolve exact earlier admission; Conditions use app.dependency.updated/id:<request>; unavailable Apps and invalid schema/route reject. Feedback is formed from saved item/result and directed to item.source.id. No generic old owner-request fallback."
+    },
+    {
+      "id": "current-checks",
+      "source": "retained raw logs in verification.logs",
+      "observed": "251 Host tests pass, 0 fail, 2685 assertions; 31 App tests pass, 0 fail, 163 assertions. Tests include unavailable-App rejection, malformed request rejection while preserving waits, stale dependency rejection, exact saved-answer recovery across lost notification/restart, exact request reuse, current assignment/generation and independent approval preservation.",
+      "limit": "Fixture verification, not terminal May/AKS proof, current metric proof, or independent real-agent compliance with the historical no-private-projection clause."
+    },
+    {
+      "id": "schema-controls",
+      "source": "schema-check-retry.log",
+      "observed": "Both May and Alex reject owner-request and dependency-authority-runtime-review kinds, reject goal with empty acceptance, accept valid goal. Installed contracts independently confirm input kinds.",
+      "limit": "Does not reproduce every old AKS-specific negative control or assert unrelated project goals should be mechanically rejected under the modern general goal contract."
+    }
+  ],
+  "decision": {
+    "oldOutcomesFulfilled": false,
+    "historicalExecutionPathUsefulNow": false,
+    "oneCurrentAlexTechnicalContinuationNeeded": false,
+    "reason": "The incident-specific consumer and old owner tree contract are absent from the three-App installation. Restoring a fixed AKS g154 request would revive disabled execution rather than satisfy a present consumer. Current generic request/return and authority-scoping mechanisms have passing evidence; no current defect demonstrated. Do not commission speculative implementation just because an old prompt string is absent.",
+    "usefulRemainder": "Keep history and modern safety intent. May must disposition the outstanding exact-candidate approval and caller return, with the isolation defect disclosed. Alex can do that within this migration; it does not require another Alex technical Task.",
+    "approvalBoundaryDisposition": "Still open/unresolved in this contribution; recommended obsolete request withdrawal without fulfillment is for May to judge, not performed here.",
+    "reopenOnlyIf": "A current enabled App supplies an exact request/input and failing public-protocol trace showing caller identity substitution, unauthorized scope expansion, lost result or malformed-input acceptance. Then Alex may scope one coherent modern continuation after duplicate check, preserving caller/Condition and new approval requirements.",
+    "simplerAlternative": "No technical change; preserve unfulfilled historical outcome and obtain May authority disposition.",
+    "cost": "No old App resurrection, no paid Gym trial, no repeated approval polling. Cost remaining is one bounded May judgment and incorporation in the existing migration."
+  },
+  "nextDecision": {
+    "owner": "alex",
+    "action": "Accept or correct this contribution, then use the existing migration Task to request May disposition of the exact obsolete approval boundary; do not admit a new Alex technical continuation now.",
+    "preflight": [
+      "Read exact related May work before sending; reuse/revise any matching current request rather than create duplicate work. A prior withdrawal for another lineage is not authorization here.",
+      "If May needs a human answer, May owns that decision and contact; Bob/Alex must not infer one from elapsed time, disablement or prior unrelated approvals."
+    ],
+    "proposedMayInput": {
+      "kind": "goal",
+      "data": {
+        "outcome": "Disposition the obsolete dependency-authority exact-candidate activation request without falsely fulfilling either retained old Task or widening approval.",
+        "acceptance": [
+          "Read the required reconciliation artifact and exact two retained specs, Condition and parent chain.",
+          "Determine whether to withdraw the obsolete manifest dc15a38b77d5d9aefa6274edadf5eea2ee520e32dfea5d85319ad3815badd091 activation ask unfulfilled or identify a surviving precise caller/human obligation. Do not imply approval or rejection.",
+          "Account for the extra installed-app-resolver-observation code in the immutable patch; no production activation of this old artifact.",
+          "Return the disposition to the current Alex migration caller; preserve unknown historical Condition and missing May/AKS terminal results; do not mutate disabled legacy state."
+        ],
+        "constraints": [
+          "No deployment, runtime mutation, old Condition rebinding or resurrection of retired Apps.",
+          "No assumption that generic modern tests fulfill historical terminal outcome."
+        ],
+        "context": {
+          "requiredReading": "projects/alex.app/dependency-authority-reconciliation-2026-10-04.json",
+          "oldTaskIds": [
+            "activate-and-replay-dependency-authority-contract-20260820",
+            "repair-dependency-authority-owner-request-consumer-20260820"
+          ],
+          "conditionId": "approval-dependency-authority-contract-20260820-dc15a38b",
+          "artifactFingerprint": "sha256:dc15a38b77d5d9aefa6274edadf5eea2ee520e32dfea5d85319ad3815badd091",
+          "callerTask": {
+            "appId": "alex",
+            "taskId": "input/app_7a279469-7ac8-4bec-894a-9314635bd452"
+          }
+        }
+      }
+    },
+    "admissionStatus": "Proposal only. No request ID reserved and no Task or Condition admitted. On acceptance Alex should retain the ordinary request-result Condition using the returned exact admission ID, not any fabricated legacy ID.",
+    "afterMay": "Record actual accepted May decision and evidence. If withdrawal is accepted, mark old execution paths obsolete/unfulfilled in migration receipt while retaining old relationships. If a useful current obligation survives, re-evaluate one coherent modern continuation under its current owner and scope."
+  },
+  "coverageLimits": [
+    "Old may-agent runtime cannot be queried through tasks.get because it is disabled. Exact retained specs/relations/Condition are from the pinned snapshot, not fresh live state.",
+    "No query_db capability is supplied. No raw production DB was opened; current event delivery, approval submissions, AKS Task result and metric value are not independently remeasured. No claim that absence from files proves global absence.",
+    "Expected /app/projects/may-agent/.state/deploy-receipts/dependency-authority-contract-20260820.json is missing; historical session /app/.state/sessions/s_1787054895397_14 is unavailable at that path. Manifest proof is retained historical assertion; underlying old test receipts and checkpoint #2 were not recovered.",
+    "Current focused tests are fixture evidence; no live replay, activation, human contact or modern end-to-end AKS trial was performed.",
+    "Only two listed old Tasks receive dispositions. Parent/caller and the extra patch input are context only; other frontier entries, alert taxonomy, aggregate metric health and other approval requests are not decided.",
+    "No old Task was closed, fulfilled, retired in runtime, rebound or replaced. No new work was admitted."
+  ],
+  "verification": {
+    "hostCommand": "cd /app/projects/may-agent && bun test src/app/core/inbox/input-result.test.ts src/app/core/tasks/app-task-runtime.test.ts src/lib/task-decision-context.test.ts src/lib/agent-execution.test.ts",
+    "appCommand": "bun test ./projects/may.app/app.test.ts ./projects/alex.app/app.test.ts",
+    "logs": [
+      {
+        "path": "/app/.state/task-context/5e6769088329b1a61eeb3209dd7c4641f62ee2190f52dc306bdce52077a23d3d/notes/dependency-authority-20261004/schema-check.log",
+        "sha256": "af088fdad035cbe810d6fbc7b08095b1be60fb575f2bd48a283f5a68d6d0753a",
+        "tail": [
+          "error: Cannot find module '@may-agent/sdk/schema' from '/app/worktrees/alex/input-app_7a279469-7ac8-4bec-894a-9314635bd452-a882250576/[eval]'",
+          "",
+          "Bun v1.3.14 (Linux x64)"
+        ]
+      },
+      {
+        "path": "/app/.state/task-context/5e6769088329b1a61eeb3209dd7c4641f62ee2190f52dc306bdce52077a23d3d/notes/dependency-authority-20261004/host-tests.log",
+        "sha256": "efeeabfdb720a54043106425f1c45510b12de34df0f40163835602509633d639",
+        "tail": [
+          "(pass) repeated result recovery reuses a report across restart, then publishes its revision and answer [131.68ms]",
+          "(pass) separate requests and final answers retain their own publication identity [50.24ms]",
+          "(pass) retries failed persistence and pending delivery without another report record [36.99ms]",
+          "(pass) retries failed persistence and noop delivery without another report record [42.83ms]",
+          "",
+          " 251 pass",
+          " 0 fail",
+          " 2685 expect() calls",
+          "Ran 251 tests across 4 files. [51.92s]"
+        ]
+      },
+      {
+        "path": "/app/.state/task-context/5e6769088329b1a61eeb3209dd7c4641f62ee2190f52dc306bdce52077a23d3d/notes/dependency-authority-20261004/app-tests.log",
+        "sha256": "e3ca927a641183cacb337c021b819cafdfd16265db3c3c1cae10aaa17667e53c",
+        "tail": [
+          "(pass) declared metric and review-failure subscriptions dispatch executable inputs [0.24ms]",
+          "(pass) ordinary Evaluation reports are consumed only by Alex with immutable identity [0.45ms]",
+          "(pass) weekly research preserves one standing Alex Bob Task across deliveries [0.23ms]",
+          "(pass) comparison inputs attach to the migrated Gym specialist [0.13ms]",
+          "",
+          " 31 pass",
+          " 0 fail",
+          " 163 expect() calls",
+          "Ran 31 tests across 2 files. [311.00ms]"
+        ]
+      },
+      {
+        "path": "/app/.state/task-context/5e6769088329b1a61eeb3209dd7c4641f62ee2190f52dc306bdce52077a23d3d/notes/dependency-authority-20261004/schema-check-retry.log",
+        "sha256": "c3551966fc06fbb405136c547476e6160cbb13016ec781e50eb3bbee31b8bd2c",
+        "tail": [
+          "{\"appId\":\"may\",\"input\":{\"kind\":\"owner-request\",\"data\":{}},\"accepted\":false}",
+          "{\"appId\":\"may\",\"input\":{\"kind\":\"dependency-authority-runtime-review\",\"data\":{}},\"accepted\":false}",
+          "{\"appId\":\"may\",\"input\":{\"kind\":\"goal\",\"data\":{\"outcome\":\"x\",\"acceptance\":[]}},\"accepted\":false}",
+          "{\"appId\":\"may\",\"input\":{\"kind\":\"goal\",\"data\":{\"outcome\":\"x\",\"acceptance\":[\"y\"]}},\"accepted\":true}",
+          "{\"appId\":\"alex\",\"input\":{\"kind\":\"owner-request\",\"data\":{}},\"accepted\":false}",
+          "{\"appId\":\"alex\",\"input\":{\"kind\":\"dependency-authority-runtime-review\",\"data\":{}},\"accepted\":false}",
+          "{\"appId\":\"alex\",\"input\":{\"kind\":\"goal\",\"data\":{\"outcome\":\"x\",\"acceptance\":[]}},\"accepted\":false}",
+          "{\"appId\":\"alex\",\"input\":{\"kind\":\"goal\",\"data\":{\"outcome\":\"x\",\"acceptance\":[\"y\"]}},\"accepted\":true}"
+        ]
+      }
+    ],
+    "failedTrial": "Initial inline schema check imported nonexistent @may-agent/sdk/schema and failed before assertions. Corrected to existing test convention typebox/value; eight checks then passed. No missing-import run is counted as pass.",
+    "artifactHashRule": "Artifact hash is returned separately after serialization/readback; no self-referential hash."
+  }
+}
