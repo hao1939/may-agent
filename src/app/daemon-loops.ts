@@ -48,7 +48,15 @@ export async function runInteractiveLoop(opts: {
       rl.close();
       return;
     }
-    opts.handleInput(joined, "console");
+    try {
+      opts.handleInput(joined, "console");
+    } catch (error) {
+      // Input rejection must not escape the readline timer and stop background
+      // work. Report directly: persistence may be the failing boundary, and
+      // quiet-console mode hides ordinary info events.
+      console.error(`[console] Input failed: ${error instanceof Error ? error.message : String(error)}`);
+      opts.emitPrompt();
+    }
   };
 
   rl.on("line", (line: string) => {

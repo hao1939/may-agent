@@ -32,6 +32,9 @@ app-runtime.ts                              startup, reload, shutdown
 Input handling ends independently of an accepted Request or background Task.
 A Task attempt proposes a result; only fenced state admission accepts it.
 See [Conversation handling](conversations/README.md) for the interactive path.
+The console loop reports input failures locally and remains available for the
+next input; a rejected admission must not terminate unrelated background work.
+Reporting does not retry the input or claim it was accepted.
 
 ## Ownership and extension starting points
 
