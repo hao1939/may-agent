@@ -3468,11 +3468,14 @@
       "lineage": "owner-review-contract",
       "replacement": {
         "appId": "alex",
-        "taskId": null,
+        "taskId": "input/appdep_34a3e05d87955f537e05b372",
         "role": "bounded current intake/owner-work reuse investigation recommended; separate historical stop remains May-owned",
-        "status": "pending-admission",
+        "status": "admitted-current-investigation",
         "artifact": "projects/alex.app/owner-review-contract-reconciliation-2026-10-04.json",
-        "artifactSha256": "e9bed7fcd5753d94e4e5643d88b47e2ab75a27ea3dd60a2f7a2f48660808d614"
+        "artifactSha256": "e9bed7fcd5753d94e4e5643d88b47e2ab75a27ea3dd60a2f7a2f48660808d614",
+        "conditionId": "app-request:appdep_34a3e05d87955f537e05b372",
+        "mayDispositionTask": "goal/appdep_bc9a845ad126f8632071584a",
+        "mayDispositionConditionId": "app-request:appdep_bc9a845ad126f8632071584a"
       },
       "basis": "Current source retains stable standing identities in several paths, but Alex report admissions remain distinct input Tasks and mapper evidence alone cannot establish harmful duplicate repair commissioning. The old outcome is unfulfilled. Admit one bounded current Alex investigation using actual Host admission and preserve every report/caller/wait; separately ask May to disposition the historical unknown stop Condition resume-grouped-goal-repair-after-stop without treating migration authority as resolution.",
       "preservation": [
@@ -3552,7 +3555,9 @@
         "role": "bounded exact supersession recommendation; human authority remains with May",
         "status": "awaiting-may-disposition",
         "artifact": "projects/alex.app/owner-review-contract-reconciliation-2026-10-04.json",
-        "artifactSha256": "e9bed7fcd5753d94e4e5643d88b47e2ab75a27ea3dd60a2f7a2f48660808d614"
+        "artifactSha256": "e9bed7fcd5753d94e4e5643d88b47e2ab75a27ea3dd60a2f7a2f48660808d614",
+        "mayDispositionTask": "goal/appdep_bc9a845ad126f8632071584a",
+        "mayDispositionConditionId": "app-request:appdep_bc9a845ad126f8632071584a"
       },
       "basis": "Frozen Host commit 62890907 is not deployed and uses obsolete app.dependency.completed receipts. Current Task communication has exact receipt/replay behavior, but does not prove the requested historical terminal disclosure/count outcome. No current recurrence justifies a Host patch or global message suppression. Preserve Condition approve-owner-signal-boundary-62890907 and caller chain while May withdraws the obsolete request unfulfilled or identifies a precise surviving obligation.",
       "preservation": [

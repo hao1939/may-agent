@@ -167,3 +167,12 @@ activation ask and the stopped grouped-goal historical candidate; neither old
 Condition is rebound or settled. Bob's current deterministic checks passed
 **230/230** Host tests with 2,588 expectations and **31/31** Alex/May tests with
 163 expectations.
+
+The bounded current investigation is admitted as Alex request
+`appdep_34a3e05d87955f537e05b372` with Condition
+`app-request:appdep_34a3e05d87955f537e05b372`. The two historical authority
+boundaries are submitted together to May as request
+`appdep_bc9a845ad126f8632071584a` with Condition
+`app-request:appdep_bc9a845ad126f8632071584a`. These are separate outcomes:
+the current investigation does not authorize resuming either historical
+candidate, and May's disposition does not pre-decide current Alex intake design.
