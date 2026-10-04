@@ -77,21 +77,27 @@ export async function runDaemonKeepalive(opts: {
   socketEnabled: boolean;
 }): Promise<never> {
   const emitHeartbeat = () => {
-    const { since, calls, errors, totalMs, untracked } = readSqlPerformance();
-    opts.bus.emit({
-      [EVENT_RECORD_ONLY]: true,
-      type: "runtime.daemon.heartbeat",
-      source: "daemon",
-      owner: "agent:may",
-      data: {
-        pid: process.pid,
-        interfaceAgent: opts.interfaceAgent,
-        socketEnabled: opts.socketEnabled,
-        // Cumulative counters make interval cost reconstructable across retained
-        // heartbeats. Query details remain an on-demand diagnostic read.
-        sql: { since, calls, errors, totalMs, untrackedCalls: untracked.calls },
-      },
-    });
+    try {
+      const { since, calls, errors, totalMs, untracked } = readSqlPerformance();
+      opts.bus.emit({
+        [EVENT_RECORD_ONLY]: true,
+        type: "runtime.daemon.heartbeat",
+        source: "daemon",
+        owner: "agent:may",
+        data: {
+          pid: process.pid,
+          interfaceAgent: opts.interfaceAgent,
+          socketEnabled: opts.socketEnabled,
+          // Cumulative counters make interval cost reconstructable across retained
+          // heartbeats. Query details remain an on-demand diagnostic read.
+          sql: { since, calls, errors, totalMs, untrackedCalls: untracked.calls },
+        },
+      });
+    } catch (error) {
+      // A missing observation must not stop work. Keep the diagnostic outside
+      // the event/database path and try again at the next ordinary interval.
+      console.error(JSON.stringify({ type: "runtime.daemon.heartbeat.failed", error: String(error) }));
+    }
   };
 
   opts.bus.emit({
