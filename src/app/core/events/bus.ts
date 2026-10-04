@@ -1089,6 +1089,8 @@ type EventListenerState = {
 export const EVENT_ROW_ID = Symbol.for("may-agent.eventRowId");
 export const EVENT_DEDUPLICATED = Symbol.for("may-agent.eventDeduplicated");
 export const EVENT_REDELIVERY_REQUIRED = Symbol.for("may-agent.eventRedeliveryRequired");
+/** Limits a producer retry to the independent App-admission durable route. */
+export const EVENT_APP_ADMISSION_REDELIVERY_REQUIRED = Symbol.for("may-agent.eventAppAdmissionRedeliveryRequired");
 
 // One listener notification per turn keeps socket polling responsive even
 // when several independent listeners have accumulated worker Event bursts.
@@ -1321,12 +1323,15 @@ export class EventBus {
       const retry = event as AgentEvent & {
         [EVENT_DEDUPLICATED]?: boolean;
         [EVENT_REDELIVERY_REQUIRED]?: boolean;
+        [EVENT_APP_ADMISSION_REDELIVERY_REQUIRED]?: boolean;
       };
       if (retry[EVENT_DEDUPLICATED] && !retry[EVENT_REDELIVERY_REQUIRED]) {
         return event as AgentEvent & { [EVENT_ROW_ID]?: number };
       }
       for (const fn of this.durableRouteSubscribers) {
-        if (durableRouteLabel && this.subscriberLabels.get(fn) !== durableRouteLabel) continue;
+        const routeLabel = this.subscriberLabels.get(fn);
+        if (durableRouteLabel && routeLabel !== durableRouteLabel) continue;
+        if (retry[EVENT_APP_ADMISSION_REDELIVERY_REQUIRED] && routeLabel !== "app-inbox-route") continue;
         try {
           const result = normalizeDeliveryResult(this.runSubscriber(event, "first", fn));
           delivery = preferredDelivery(delivery, result);

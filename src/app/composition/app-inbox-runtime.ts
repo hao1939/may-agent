@@ -423,19 +423,29 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
   const inputRecoveryIntervalMs = Math.max(60_000, options.scanIntervalMs ?? 5_000);
   let nextInputRecoveryAt = 0;
   let inputRecoveryCursor = 0;
+  let inputRecoveryCycleMaxId = 0;
   const recoverInputs = (): Promise<void> => {
     if (inputRecovery) return inputRecovery;
     nextInputRecoveryAt = now() + inputRecoveryIntervalMs;
     const current = new Promise<void>((resolve) => setTimeout(resolve, 0))
       .then(async () => {
         if (closed) return;
-        // Inspect a fixed indexed marker window. Global delivery status belongs
-        // to other durable routes and cannot discharge the App obligation. The
-        // cursor wraps so a repeatedly failing admission remains owed.
+        // Freeze each indexed keyset cycle at its current high-water mark. New
+        // markers wait for the next cycle instead of indefinitely postponing an
+        // older failing row behind the cursor.
+        if (inputRecoveryCycleMaxId === 0) {
+          inputRecoveryCycleMaxId = Number(options.db.prepare(`SELECT COALESCE(MAX(id), 0) AS id
+            FROM events INDEXED BY idx_events_app_admission_pending
+            WHERE app_admission_pending = 1`).get()?.id ?? 0);
+        }
         const rows = options.db.prepare(`SELECT id
           FROM events INDEXED BY idx_events_app_admission_pending
-          WHERE app_admission_pending = 1 AND id > ? ORDER BY id LIMIT ?`).all(inputRecoveryCursor, APP_ADMISSION_RECOVERY_SCAN_SIZE);
-        if (!rows.length) inputRecoveryCursor = 0;
+          WHERE app_admission_pending = 1 AND id > ? AND id <= ? ORDER BY id LIMIT ?`)
+          .all(inputRecoveryCursor, inputRecoveryCycleMaxId, APP_ADMISSION_RECOVERY_SCAN_SIZE);
+        if (!rows.length) {
+          inputRecoveryCursor = 0;
+          inputRecoveryCycleMaxId = 0;
+        }
         let recovered = 0;
         for (const row of rows) {
           const eventId = Number(row.id);

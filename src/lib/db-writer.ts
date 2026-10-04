@@ -9,6 +9,7 @@
 import { createHash } from "node:crypto";
 import { readTaskEventTarget } from "../app/core/events/task-target.js";
 import {
+  EVENT_APP_ADMISSION_REDELIVERY_REQUIRED,
   EVENT_DEDUPLICATED,
   EVENT_DELIVERY_RESULT,
   EVENT_INGRESS_SOURCE,
@@ -780,6 +781,7 @@ export class DbWriter {
           Object.defineProperty(event, EVENT_ROW_ID, { value: existingId, configurable: true });
           Object.defineProperty(event, EVENT_DEDUPLICATED, { value: true, configurable: true });
           if (
+            existing.app_admission_pending !== 1 &&
             existing.delivery_status === "accepted" &&
             typeof existing.accepted_by === "string" &&
             existing.delivery_route !== "noop"
@@ -791,6 +793,19 @@ export class DbWriter {
             });
           }
           if (
+            existing.app_admission_pending === 1 &&
+            existing.delivery_status === "accepted" &&
+            existing.delivery_route !== "noop"
+          ) {
+            // Global Event acceptance and App admission are independent receipts.
+            // Limit this producer retry to the outstanding App route; unrelated
+            // durable routes may already have performed their effects.
+            Object.defineProperty(event, EVENT_REDELIVERY_REQUIRED, { value: true, configurable: true });
+            Object.defineProperty(event, EVENT_APP_ADMISSION_REDELIVERY_REQUIRED, {
+              value: true,
+              configurable: true,
+            });
+          } else if (
             existing.delivery_status === "pending" ||
             existing.delivery_status === "unhandled" ||
             (existing.delivery_status === "accepted" && existing.delivery_route === "noop")

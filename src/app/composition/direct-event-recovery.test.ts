@@ -184,6 +184,40 @@ test("recovers a report saved before its first App plan, independent of global d
   }
 });
 
+test("an idempotent duplicate still runs App admission when another route accepted the Event", async () => {
+  const root = mkdtempSync(join(tmpdir(), "may-event-duplicate-app-route-"));
+  let runtime: AppInboxRuntime | undefined;
+  try {
+    const registry = await fixture(root);
+    const input = {
+      type: "evaluation.task_report_published",
+      source: "worker:evaluation",
+      owner: "agent:evaluator",
+      data: { taskId: "review/duplicate", report: "retained", idempotencyKey: "evaluation-report:review/duplicate" },
+    } as any;
+    const first = producer(root).emit(input);
+    const eventId = first[EVENT_ROW_ID]!;
+    const db = getDb(root);
+    new DbWriter(root).recordDelivery(first, { accepted: true, by: "unrelated-route", route: "direct" });
+
+    const bus = producer(root);
+    bus.setDeliveryRecorder(new DbWriter(root).recordDelivery);
+    runtime = await startAppInboxRuntime({
+      db, bus, registry, persistDir: root, schedulesEnabled: false, deferStart: true,
+      attachTask: fakeTaskAttacher(db, (current) => ({ taskId: `work/${current.inboxInputId ?? current.inputId}` })),
+    });
+    const duplicate = bus.emit({ ...input, data: { ...input.data } });
+    expect(duplicate[EVENT_ROW_ID]).toBe(eventId);
+    await until(() => db.prepare("SELECT app_admission_pending FROM events WHERE id = ?").get(eventId)?.app_admission_pending === 0);
+    await until(() => db.prepare("SELECT COUNT(*) AS count FROM app_inbox_items").get()?.count === 1);
+    expect(db.prepare("SELECT origin_event_id FROM app_inbox_items").all()).toEqual([{ origin_event_id: eventId }]);
+  } finally {
+    runtime?.close();
+    closeDb(root);
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
 test("first successful admission after a pre-plan failure uses registry N+1 and retains authored identities", async () => {
   const root = mkdtempSync(join(tmpdir(), "may-event-current-routing-"));
   let runtime: AppInboxRuntime | undefined;
@@ -576,6 +610,49 @@ test("lost acknowledgement retains an addressed message recipient across owner r
       "EXPLAIN QUERY PLAN SELECT app_id FROM app_inbox_items WHERE origin_event_id = ? LIMIT 1",
     ).all(eventId) as Array<{ detail?: string }>;
     expect(lookupPlan.some(({ detail }) => detail?.includes("idx_app_inbox_origin_event"))).toBe(true);
+  } finally {
+    runtime?.close();
+    closeDb(root);
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("marker recovery revisits older failures despite sustained higher-ID inflow", async () => {
+  const root = mkdtempSync(join(tmpdir(), "may-event-fair-recovery-"));
+  let runtime: AppInboxRuntime | undefined;
+  try {
+    const registry = await fixture(root);
+    const ingress = producer(root);
+    for (let id = 1; id <= 80; id += 1) {
+      ingress.emit({ type: "probe.unhandled", source: "fixture", owner: "fixture", data: { id } } as any);
+    }
+    const db = getDb(root);
+    const bus = producer(root);
+    const recovered: number[] = [];
+    bus.redeliverPersisted = ((event: any, eventId: number) => {
+      recovered.push(eventId);
+      return event;
+    }) as typeof bus.redeliverPersisted;
+    let clock = 1_000_000;
+    runtime = await startAppInboxRuntime({
+      db, bus, registry, persistDir: root, schedulesEnabled: false, scanIntervalMs: 60_000, now: () => clock,
+    });
+    await until(() => recovered.length === 16);
+
+    for (let scan = 1; scan <= 6; scan += 1) {
+      for (let offset = 0; offset < 16; offset += 1) {
+        ingress.emit({ type: "probe.unhandled", source: "fixture", owner: "fixture", data: { scan, offset } } as any);
+      }
+      clock += 60_001;
+      runtime.scanNow();
+      if (scan <= 4 || scan === 6) await until(() => recovered.length === 16 * (scan + (scan === 6 ? 0 : 1)));
+      else await Bun.sleep(20);
+    }
+    expect(recovered.filter((eventId) => eventId === 1)).toHaveLength(2);
+    const queryPlan = db.prepare(`EXPLAIN QUERY PLAN SELECT id
+      FROM events INDEXED BY idx_events_app_admission_pending
+      WHERE app_admission_pending = 1 AND id > ? AND id <= ? ORDER BY id LIMIT ?`).all(0, 80, 64) as Array<{ detail?: string }>;
+    expect(queryPlan.some(({ detail }) => detail?.includes("idx_events_app_admission_pending"))).toBe(true);
   } finally {
     runtime?.close();
     closeDb(root);

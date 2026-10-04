@@ -544,9 +544,9 @@ export function applyDbSchema(db: SqliteDb): void {
     ensureExistingAppInboxTableColumns(db);
     ensureExistingAppInboxWaitKinds(db);
     ensureExistingTaskBindingColumns(db);
-    if (tableExists(db, "events")) ensureColumn(db, "events", "app_admission_pending", "INTEGER");
+    if (tableExists(db, "events")) ensureAppAdmissionPendingColumn(db);
     // Trigger definitions are not replaced by IF NOT EXISTS. Remove the superseded
-    // type-specific discovery objects; historical rows remain NULL and acquire no obligation.
+    // type-specific discovery objects after preserving their exact outstanding subset.
     db.exec("DROP TRIGGER IF EXISTS trg_events_referential_retention");
     db.exec("DROP VIEW IF EXISTS event_direct_app_recovery_candidates");
     db.exec("DROP INDEX IF EXISTS idx_events_direct_app_recovery");
@@ -846,6 +846,19 @@ function ensureExistingEventsTableColumns(db: SqliteDb): void {
   for (const [column, definition] of EVENT_COLUMNS) {
     ensureColumn(db, "events", column, definition);
   }
+}
+
+/** Preserve only the exact direct-input obligations selected by the retired recovery query. */
+function ensureAppAdmissionPendingColumn(db: SqliteDb): void {
+  const columns = db.prepare("PRAGMA table_info(events)").all() as Array<{ name?: unknown }>;
+  if (columns.some((item) => item.name === "app_admission_pending")) return;
+  db.exec("ALTER TABLE events ADD COLUMN app_admission_pending INTEGER");
+  db.exec(`
+    UPDATE events SET app_admission_pending = 1
+    WHERE event_type = 'conversation.message.created'
+      AND delivery_status IN ('pending', 'unhandled')
+      AND (json_type(data, '$.approvalReply.hostApproval') = 'object' OR body_ref IS NOT NULL)
+  `);
 }
 
 /** Runs inside the schema transaction; keep unscoped rows as history, not routing. */
