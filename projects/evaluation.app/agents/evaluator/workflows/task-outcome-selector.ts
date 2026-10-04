@@ -351,10 +351,35 @@ async function reconcileAutomaticReviewInputs(
     const latestAdmission = Math.max(
       ...inputEvents.map((item) => Date.parse(text(object(item).observedAt))),
     );
-    const semanticAttempt =
+    let semanticAttempt =
       issues.length || !Number.isFinite(latestAdmission)
         ? ""
         : acceptedSelectorJudgmentAfter(detail, latestAdmission);
+    let evidenceCursor = text(
+      object(object(detail.acceptedEvidence).page).nextCursor,
+    );
+    // Repair results can fill the newest page. Follow its continuation using
+    // the same 128-record budget as ordinary accepted-evidence navigation.
+    for (
+      let pages = 1;
+      !issues.length &&
+      inputEvents.length === requested.length &&
+      Number.isFinite(latestAdmission) &&
+      !semanticAttempt &&
+      evidenceCursor &&
+      pages < 16;
+      pages++
+    ) {
+      const older = object(
+        await ctx.read.tasks.get(taskId, {
+          acceptedEvidence: { limit: 8, cursor: evidenceCursor },
+        }),
+      );
+      semanticAttempt = acceptedSelectorJudgmentAfter(older, latestAdmission);
+      evidenceCursor = text(
+        object(object(older.acceptedEvidence).page).nextCursor,
+      );
+    }
     if (
       issues.length ||
       inputEvents.length !== requested.length ||
@@ -372,6 +397,9 @@ async function reconcileAutomaticReviewInputs(
           ...issues.slice(0, 8),
           ...(!semanticAttempt
             ? ["selector:exact-input-semantic-supersession-unavailable"]
+            : []),
+          ...(!semanticAttempt && evidenceCursor
+            ? [`selector:exact-input-evidence-next-cursor:${evidenceCursor}`]
             : []),
         ],
       });
@@ -395,7 +423,7 @@ async function reconcileAutomaticReviewInputs(
     const reason =
       error instanceof Error ? error.message : text(error) || "unknown failure";
     const summary =
-      "Exact automatic-review reconciliation remains open because the canonical originals could not be read.";
+      "Exact automatic-review reconciliation remains open because its original inputs or supporting evidence could not be read.";
     return ctx.done(summary, {
       state: "incomplete",
       report: true,

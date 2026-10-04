@@ -1672,10 +1672,10 @@ describe("automatic task outcome selector", () => {
     expect(reads).toBe(0);
   });
 
-  test("settles only exact canonical automatic-review originals considered by the same attempt", async () => {
+  test.each([0, 1, 16])("repair evidence: %i pages", async (repairPages) => {
     const requested = ["task:app_first", "task:app_second"];
     const commandKey = "task:app_reconcile";
-    let readOptions: unknown;
+    const reads: unknown[] = [];
     let emissions = 0;
     const original = (key: string) => ({
       key,
@@ -1728,7 +1728,26 @@ describe("automatic task outcome selector", () => {
       read: {
         tasks: {
           get: async (_taskId: string, options: unknown) => {
-            readOptions = options;
+            reads.push(options);
+            if (reads.length <= repairPages)
+              return {
+                ...(reads.length === 1
+                  ? { inputEvents: requested.map(original) }
+                  : {}),
+                acceptedEvidence: {
+                  page: {
+                    items: Array.from({ length: 8 }, (_, index) => ({
+                      attemptId: `repair_${reads.length}_${index}`,
+                      startedAt: "2026-10-03T22:08:24.569Z",
+                      acceptedResult: {
+                        state: "converged",
+                        facts: ["selector:exact-input-reconciliation:8"],
+                      },
+                    })),
+                    nextCursor: `page_${reads.length + 1}`,
+                  },
+                },
+              };
             return {
               inputEvents: requested.map(original),
               acceptedEvidence: {
@@ -1761,16 +1780,33 @@ describe("automatic task outcome selector", () => {
       ...config,
       enabled: false,
     })) as unknown as Record<string, unknown>;
-    expect(readOptions).toEqual({
+    expect(reads[0]).toEqual({
       inputKeys: requested,
       acceptedEvidence: { limit: 8 },
     });
+    for (let index = 1; index < reads.length; index++)
+      expect(reads[index]).toEqual({
+        acceptedEvidence: { limit: 8, cursor: `page_${index + 1}` },
+      });
+    expect(emissions).toBe(0);
+    if (repairPages === 16) {
+      expect(reads).toHaveLength(16);
+      expect(result.state).toBe("incomplete");
+      expect(result.inputKeys).toBeUndefined();
+      expect(result.facts).toContain(
+        "selector:exact-input-evidence-next-cursor:page_17",
+      );
+      return;
+    }
+    expect(reads).toHaveLength(repairPages + 1);
     expect(result).toMatchObject({
       state: "converged",
       inputKeys: [...requested, commandKey],
       actions: [],
     });
-    expect(emissions).toBe(0);
+    expect(result.facts).toContain(
+      "selector:exact-input-superseded-by-attempt:r_1074_current",
+    );
   });
 
   test("keeps malformed or ambiguous reconciliation commands open without selector side effects", async () => {

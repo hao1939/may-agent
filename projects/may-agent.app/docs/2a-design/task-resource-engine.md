@@ -270,6 +270,13 @@ match. A superseded generation or attempt applies no mutation. New events on
 the same executing generation are pending input, not proof that its output is
 invalid.
 
+Admitting fresh input also advances `resourceVersion` when the desired state is
+unchanged: pending input shares the Task's write fence. A claim or result write
+from an older snapshot must reread before committing, preserving the newly
+admitted input. Replaying the same admission does not add input or advance the
+version. This is storage conflict detection, not a reason to rerun valid work
+or change the Task generation.
+
 There is no manager-transfer lifecycle or ownership encoded in ID prefixes.
 Creator identity is immutable metadata `{appId, taskId?}`: App-created work has
 an App-only creator, while delegated work names its exact creator Task. Creation

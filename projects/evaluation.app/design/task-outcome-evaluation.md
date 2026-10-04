@@ -413,6 +413,22 @@ The deterministic `list-evaluation-reports` and `read-evaluation-report` actions
 
 Activation must not awaken the retained legacy Evaluation backlog. The matching Host requires a string structural parent, so every supported input uses the surviving non-executable `evaluation-system` root group instead of a cancelled legacy subgroup. Canonical review, reader, and selector Task IDs remain stable; historical/manual compatibility inputs use fresh `runtime/compat/*` identities so they cannot revive cancelled Tasks. Session-only shallow/deep semantic entrypoints return neutral retired/insufficient-evidence results regardless of caller ownership hints; canonical Task-outcome review is the semantic path. Follow `rollout-and-migration-2026-09.md` for the exact 2,037-Task frozen retirement, staged canary, and rollback. Never delete Task or report history.
 
+### Historical selector input repair
+
+An exact `reconcile-automatic-review-inputs` request names up to eight original
+automatic-review inputs. The selector verifies their canonical admissions and a
+later accepted selector decision before explicitly answering those inputs. This
+App judgment concerns redundant selection opportunities; it does not claim that
+every metric incident was fixed or every requested semantic review was performed.
+The Host persists the exact answer links. Repair emits no new review or report.
+
+Repair-only results are not selection decisions. If they fill the newest evidence
+page, follow the existing accepted-evidence continuation, up to the ordinary
+128-record navigation budget. A missing decision leaves the request incomplete;
+if more evidence remains, retain its next cursor for owner investigation. Reading
+a bounded prefix never proves the older decision is absent. Repair stays explicit
+and scoped; ordinary selection does not sweep or replay historical requests.
+
 ### Listing retained reports
 
 The report reader returns the newest valid published reports across all App and
