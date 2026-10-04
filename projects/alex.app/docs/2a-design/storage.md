@@ -134,13 +134,23 @@ admission records have their own durable coordination boundaries; see
 [Events](events.md) and [Task Resource Engine](task-resource-engine.md).
 
 SQLite permits one writer even when changes only append records. A competing
-writer is a normal transient condition. Reuse bounded contention handling at
+writer is a normal transient condition. First minimize time holding the writer
+lock: prepare immutable payloads and file artifacts before the owning transaction
+where possible, and keep current-state checks, fences and atomic SQL changes
+inside it. An outer transaction may still own the lock; moving work before a
+nested helper alone does not shorten that outer transaction. Measure acquisition
+wait separately from lock-holding time before adding retries.
+
+Reuse existing bounded contention handling at
 the owning transaction's acquisition boundary; run the body once after obtaining
-the lock. Nested operations share that transaction through savepoints. A failure
+the lock. Callers use that one retry budget rather than wrapping the transaction
+in another retry. Nested operations share that transaction through savepoints. A failure
 inside the body rolls it back; failure delivering a committed result does not
 authorize replaying the body. A single atomic append can retry the rejected
-statement. Exhaustion remains observable and uses the existing durable recovery
-path; this is not an unlimited wait or a new queue.
+statement. Exhaustion remains observable. Existing admission-plan recovery covers
+saved plans; failure before a plan is saved remains a delivery gap, recorded in
+the review below. A contention retry alone does not close that gap. This is not
+an unlimited wait or a new queue.
 
 Keep acquisition waits and lock-holding work distinct. Shorten expensive work
 inside writes, and diagnose slow reads separately: WAL readers need not hold
