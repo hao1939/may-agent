@@ -4,7 +4,7 @@
   "generatedAt": "2026-10-04T12:52:05.128Z",
   "source": "/app/.state/alex-migration-20261004/legacy-frontier-index.json",
   "sourceSha256": "46d61e762a8abac6170b4333c7aac30af2661afabe7fe635294a17318ea1cde9",
-  "status": "bounded semantic migration in progress: exact writer-containment continuation admitted; four obsolete Gym projection paths mapped to current May decision; no old outcome falsely fulfilled",
+  "status": "bounded semantic migration in progress: writer-containment lineage reconciled as superseded but unfulfilled; four obsolete Gym projection paths mapped to current May decision; no old outcome falsely fulfilled",
   "rules": [
     "No old Task is marked fulfilled by this receipt.",
     "replacement=null means no replacement Task has been admitted yet.",
@@ -15,10 +15,11 @@
     "total": 117,
     "byDisposition": {
       "inspect-current-evidence-for-alex-continuation": 35,
-      "consolidate-lineage-after-current-state-check": 33,
+      "consolidate-lineage-after-current-state-check": 30,
+      "superseded-no-current-continuation-not-fulfilled": 3,
       "retain-may-boundary": 6,
       "source-identified-current-lineage-check": 37,
-      "superseded-execution-path-awaiting-current-may-decision": 4,
+      "partial-execution-path-supersession-nonmetric-open": 4,
       "retain-may-boundary-after-alex-technical-reconciliation": 2
     },
     "byProposedOwner": {
@@ -122,16 +123,18 @@
         "conditionIds": []
       },
       "outcome": "Activate the verified finite May App containment input through the supported release/supervisor control plane, then require the accountable AKS App/task dependency path to issue the semantically exact containment request under a fresh supported identity without reusing the occupied control-socket correlation; carry that fresh request through lineage-scoped Host/Runtime containment, dependency wake, terminal May and AKS App results, mutation-free 180-second quiescence, and fresh metric proof.",
-      "disposition": "consolidate-lineage-after-current-state-check",
+      "disposition": "superseded-no-current-continuation-not-fulfilled",
       "proposedOwner": "alex",
       "lineage": "workspace-writer-containment",
       "replacement": {
         "appId": "alex",
-        "requestId": "appdep_b2210accc9bfd6faf68121e1",
-        "role": "exact current-state reconciliation",
-        "status": "admitted"
+        "taskId": "input/appdep_b2210accc9bfd6faf68121e1",
+        "role": "exact supersession reconciliation receipt",
+        "status": "done",
+        "artifact": "projects/alex.app/workspace-writer-containment-reconciliation-2026-10-04.json",
+        "artifactSha256": "44ae7ea043ec50172e887101d9f4aa30521c5e98e8943dc55d61952a46ec5125"
       },
-      "basis": "One fresh Alex continuation now reconciles this exact writer-containment identity with its two overlapping lineage members. Admission preserves old identity/evidence and does not establish fulfillment.",
+      "basis": "Returned current-state reconciliation found no active incident recurrence and proves the incident-specific execution path obsolete. The old outcome is explicitly not fulfilled: required terminal May/AKS results, 180-second artifact, dependency wake, and lineage-specific metric proof were never established. Preserve audit history and reopen only for fresh current writer/process/event evidence.",
       "preservation": [
         "latest corrections and acceptance",
         "accepted evidence/artifacts",
@@ -2377,7 +2380,7 @@
         "conditionIds": []
       },
       "outcome": "Regenerate Gym’s public task projection from current canonical public task/control-plane state and recompute `gym.valid-run-rate` from a current bounded receipt window, then return evidence sufficient for Gym to resolve evaluator finding `gym.app:stale-public-health-projections`.",
-      "disposition": "superseded-execution-path-awaiting-current-may-decision",
+      "disposition": "partial-execution-path-supersession-nonmetric-open",
       "proposedOwner": "may",
       "lineage": "gym-public-health",
       "replacement": {
@@ -2385,9 +2388,11 @@
         "taskId": "goal/appdep_c1890444e02436f8d2131ffd",
         "conditionId": "gym-valid-run-rate-retirement-reconcile-7cf298dd9dd55942",
         "role": "current authoritative retired-metric decision",
-        "status": "waiting-human"
+        "status": "waiting-human",
+        "scope": "retired metric definition/recompute only",
+        "nonMetricRemainder": "open for exact projection/workflow adjudication"
       },
-      "basis": "Current canonical evidence shows gym.valid-run-rate is retired with stale current=0.76, zero snapshots and all 34 alerts resolved; this makes the old projection/recompute execution path obsolete, not fulfilled. The exact current May Task retains the packet-bound human decision and historical Gym/Evaluation evidence.",
+      "basis": "Current May Task decides only the retired gym.valid-run-rate definition and supersedes obsolete metric recomputation. It does not fulfill or replace the distinct public projection/workflow obligation. That non-metric remainder stays open; any old approval/caller relationship remains separately preserved.",
       "preservation": [
         "latest corrections and acceptance",
         "accepted evidence/artifacts",
@@ -2521,7 +2526,7 @@
         "conditionIds": []
       },
       "outcome": "Refresh and reconcile Gym's public task projection and recompute `gym.valid-run-rate` from a current bounded receipt window, returning durable post-refresh evidence so Gym can close evaluator finding `gym.app:stale-public-health-projections`.",
-      "disposition": "superseded-execution-path-awaiting-current-may-decision",
+      "disposition": "partial-execution-path-supersession-nonmetric-open",
       "proposedOwner": "may",
       "lineage": "gym-public-health",
       "replacement": {
@@ -2529,9 +2534,11 @@
         "taskId": "goal/appdep_c1890444e02436f8d2131ffd",
         "conditionId": "gym-valid-run-rate-retirement-reconcile-7cf298dd9dd55942",
         "role": "current authoritative retired-metric decision",
-        "status": "waiting-human"
+        "status": "waiting-human",
+        "scope": "retired metric definition/recompute only",
+        "nonMetricRemainder": "open for exact projection/workflow adjudication"
       },
-      "basis": "Current canonical evidence shows gym.valid-run-rate is retired with stale current=0.76, zero snapshots and all 34 alerts resolved; this makes the old projection/recompute execution path obsolete, not fulfilled. The exact current May Task retains the packet-bound human decision and historical Gym/Evaluation evidence.",
+      "basis": "Current May Task decides only the retired gym.valid-run-rate definition and supersedes obsolete metric recomputation. It does not fulfill or replace the distinct public projection/workflow obligation. That non-metric remainder stays open; any old approval/caller relationship remains separately preserved.",
       "preservation": [
         "latest corrections and acceptance",
         "accepted evidence/artifacts",
@@ -2644,16 +2651,18 @@
         "conditionIds": []
       },
       "outcome": "Using supported May Host/Runtime supervision only, attribute the responsible writer to exact command/session/workflow/PID-start identity; stop only the responsible external descendant and duplicate or replayed execution; repair the actual producer/reissue path fail-closed; prove at least 180 uninterrupted seconds without a lineage write and without any mutation of the incident path or stale Git metadata; return terminal App evidence and fresh correlated event.unhandled-signal-count-1h, infra.bus.subscriber-failed-count-1h, alert 4602, and every subscriber-failure row for this fresh request. Do not reuse appdep_7d94713590078a6994af0d6d or events 5789642/5791149, weaken admission, stop unrelated execution, or treat point-in-time absence as proof.",
-      "disposition": "consolidate-lineage-after-current-state-check",
+      "disposition": "superseded-no-current-continuation-not-fulfilled",
       "proposedOwner": "alex",
       "lineage": "workspace-writer-containment",
       "replacement": {
         "appId": "alex",
-        "requestId": "appdep_b2210accc9bfd6faf68121e1",
-        "role": "exact current-state reconciliation",
-        "status": "admitted"
+        "taskId": "input/appdep_b2210accc9bfd6faf68121e1",
+        "role": "exact supersession reconciliation receipt",
+        "status": "done",
+        "artifact": "projects/alex.app/workspace-writer-containment-reconciliation-2026-10-04.json",
+        "artifactSha256": "44ae7ea043ec50172e887101d9f4aa30521c5e98e8943dc55d61952a46ec5125"
       },
-      "basis": "The outcome is exact writer attribution, containment and quiescence proof, not an aggregate alert review. A fresh Alex continuation was admitted for this identity together with activate-and-prove-aks-writer-containment-20260819 and repair-aks-workspace-writer-containment-input-20260819; the old outcome remains unfulfilled pending its returned decision.",
+      "basis": "Returned current-state reconciliation found no active incident recurrence and proves the incident-specific execution path obsolete. The old outcome is explicitly not fulfilled: required terminal May/AKS results, 180-second artifact, dependency wake, and lineage-specific metric proof were never established. Preserve audit history and reopen only for fresh current writer/process/event evidence.",
       "preservation": [
         "latest corrections and acceptance",
         "accepted evidence/artifacts",
@@ -2743,7 +2752,7 @@
         "conditionIds": []
       },
       "outcome": "Regenerate /app/projects/gym.app/tasks/outcome-projection.json through the canonical Gym/Host projection path so it reflects the verified terminal lifecycle of improve/may generation 5.",
-      "disposition": "superseded-execution-path-awaiting-current-may-decision",
+      "disposition": "partial-execution-path-supersession-nonmetric-open",
       "proposedOwner": "may",
       "lineage": "gym-public-health",
       "replacement": {
@@ -2751,9 +2760,11 @@
         "taskId": "goal/appdep_c1890444e02436f8d2131ffd",
         "conditionId": "gym-valid-run-rate-retirement-reconcile-7cf298dd9dd55942",
         "role": "current authoritative retired-metric decision",
-        "status": "waiting-human"
+        "status": "waiting-human",
+        "scope": "retired metric definition/recompute only",
+        "nonMetricRemainder": "open for exact projection/workflow adjudication"
       },
-      "basis": "Current canonical evidence shows gym.valid-run-rate is retired with stale current=0.76, zero snapshots and all 34 alerts resolved; this makes the old projection/recompute execution path obsolete, not fulfilled. The exact current May Task retains the packet-bound human decision and historical Gym/Evaluation evidence.",
+      "basis": "Current May Task decides only the retired gym.valid-run-rate definition and supersedes obsolete metric recomputation. It does not fulfill or replace the distinct public projection/workflow obligation. That non-metric remainder stays open; any old approval/caller relationship remains separately preserved.",
       "preservation": [
         "latest corrections and acceptance",
         "accepted evidence/artifacts",
@@ -3315,16 +3326,18 @@
         "conditionIds": []
       },
       "outcome": "Restore a supported, schema-valid finite May App path for rejected AKS request appdep_7d94713590078a6994af0d6d, carry the exact external/replayed workspace-writer containment obligation through its terminal App result and host/domain proof, and preserve explicit rejection of unknown, malformed, impermissible, or overbroad host-mutation requests.",
-      "disposition": "consolidate-lineage-after-current-state-check",
+      "disposition": "superseded-no-current-continuation-not-fulfilled",
       "proposedOwner": "alex",
       "lineage": "workspace-writer-containment",
       "replacement": {
         "appId": "alex",
-        "requestId": "appdep_b2210accc9bfd6faf68121e1",
-        "role": "exact current-state reconciliation",
-        "status": "admitted"
+        "taskId": "input/appdep_b2210accc9bfd6faf68121e1",
+        "role": "exact supersession reconciliation receipt",
+        "status": "done",
+        "artifact": "projects/alex.app/workspace-writer-containment-reconciliation-2026-10-04.json",
+        "artifactSha256": "44ae7ea043ec50172e887101d9f4aa30521c5e98e8943dc55d61952a46ec5125"
       },
-      "basis": "One fresh Alex continuation now reconciles this exact writer-containment identity with its two overlapping lineage members. Admission preserves old identity/evidence and does not establish fulfillment.",
+      "basis": "Returned current-state reconciliation found no active incident recurrence and proves the incident-specific execution path obsolete. The old outcome is explicitly not fulfilled: required terminal May/AKS results, 180-second artifact, dependency wake, and lineage-specific metric proof were never established. Preserve audit history and reopen only for fresh current writer/process/event evidence.",
       "preservation": [
         "latest corrections and acceptance",
         "accepted evidence/artifacts",
@@ -3704,7 +3717,7 @@
         ]
       },
       "outcome": "Recover Gym’s public-health projection and valid-run-rate refresh capability by reconstructing a materially changed immutable Host candidate from the authoritative clean baseline, proving it without reusing the rejected candidate, obtaining explicit approval before activation, and then returning terminal live projection, metric, and workflow evidence for the parent outcome.",
-      "disposition": "superseded-execution-path-awaiting-current-may-decision",
+      "disposition": "partial-execution-path-supersession-nonmetric-open",
       "proposedOwner": "may",
       "lineage": "gym-public-health",
       "replacement": {
@@ -3712,9 +3725,12 @@
         "taskId": "goal/appdep_c1890444e02436f8d2131ffd",
         "conditionId": "gym-valid-run-rate-retirement-reconcile-7cf298dd9dd55942",
         "role": "current authoritative retired-metric decision",
-        "status": "waiting-human"
+        "status": "waiting-human",
+        "scope": "retired metric definition/recompute only",
+        "nonMetricRemainder": "open for exact projection/workflow adjudication",
+        "preservedOldCondition": "hao-approval-gym-public-health-candidate-v10"
       },
-      "basis": "Current canonical evidence shows gym.valid-run-rate is retired with stale current=0.76, zero snapshots and all 34 alerts resolved; this makes the old projection/recompute execution path obsolete, not fulfilled. The exact current May Task retains the packet-bound human decision and historical Gym/Evaluation evidence.",
+      "basis": "Current May Task decides only the retired gym.valid-run-rate definition and supersedes obsolete metric recomputation. It does not fulfill or replace the distinct public projection/workflow obligation. That non-metric remainder stays open; any old approval/caller relationship remains separately preserved.",
       "preservation": [
         "latest corrections and acceptance",
         "accepted evidence/artifacts",
@@ -3906,7 +3922,9 @@
       {
         "appId": "alex",
         "requestId": "appdep_fd5798c6edc4d09905205c70",
-        "conditionId": "app-request:appdep_fd5798c6edc4d09905205c70"
+        "conditionId": "app-request:appdep_fd5798c6edc4d09905205c70",
+        "status": "done",
+        "finding": "No legacy outcome is proved fulfilled; Gym mappings narrowed to metric-only supersession with non-metric remainder open."
       }
     ],
     "rejectedAdmissions": [
@@ -3928,6 +3946,16 @@
     ],
     "reviewEvidence": {
       "bobSession": "s_1791118120085_b4762675-5ca7-43d8-8247-ff22139104e4"
-    }
+    },
+    "completedReconciliations": [
+      {
+        "appId": "alex",
+        "taskId": "input/appdep_b2210accc9bfd6faf68121e1",
+        "oldTaskCount": 3,
+        "disposition": "superseded-no-current-continuation-not-fulfilled",
+        "artifact": "projects/alex.app/workspace-writer-containment-reconciliation-2026-10-04.json",
+        "artifactSha256": "44ae7ea043ec50172e887101d9f4aa30521c5e98e8943dc55d61952a46ec5125"
+      }
+    ]
   }
 }
