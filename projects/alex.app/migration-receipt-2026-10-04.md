@@ -190,3 +190,34 @@ Activated plain Bob reconciled exactly the seven frontier entries tagged `aks-ta
 All seven incident-specific execution paths are obsolete in the enabled three-App organization, but none of their requested outcomes is proved fulfilled. The old candidates are not ancestors of deployed Host main; one c6636d34 activation receipt is recovered, while the problem-task terminal links, complete six-pair proof, staged 3bf56cf5 activation/caller closure, and f9824eb7 approval/terminal evidence remain missing. Current source verification found no precise enabled-App defect requiring another Alex technical continuation: Host saved-result/App Task/event-delivery checks passed **253/253** with 2,584 expectations, selector/metric-source checks passed **34/34** with 118 expectations, and current Alex/May App checks passed **31/31** with 163 expectations. These checks support technical supersession only; they do not reconstruct old live proof.
 
 No existing current May Task matching AKS taxonomy, f9824eb7 or 3bf56cf5 was found. One bounded May authority/caller disposition was therefore admitted as `goal/appdep_b9d63909a838fa7ad225d6b6`, retained by Condition `app-request:appdep_b9d63909a838fa7ad225d6b6`. May must decide withdrawal-unfulfilled versus a precise surviving obligation without activating retired candidates, restoring devbox solely for retired Apps, replaying requests, mutating Conditions or escalating to Hao absent an exact current human decision need.
+
+## Returned AKS authority disposition and unhandled-signal reconciliation
+
+May Task `goal/appdep_b9d63909a838fa7ad225d6b6` withdrew all seven retired
+AKS taxonomy/correlation outcomes as **unfulfilled**. The exact four historical
+Conditions remain unknown, eight parent relationships and the bridge/downstream
+lineage remain preserved, and the successful `c6636d34` receipt remains partial
+proof only. The obsolete `f9824eb7` approval ask and requested `3bf56cf5`
+release are neither approvals nor rejections and require no current Hao action.
+No devbox restoration, request replay, carrier reopening, deployment, disabled
+Task mutation, or Condition settlement occurred. Reopen only for a fresh
+enabled-App falsifier, recovered exact terminal artifact, or explicit current
+obligation.
+
+Activated plain Bob next reconciled exactly the ten frontier entries tagged
+`unhandled-signal-owner-review` in session
+`s_1791120573892_e0465843-5d88-4e54-8260-8da464cf8377`. The durable artifact is
+`projects/alex.app/unhandled-signal-owner-review-reconciliation-2026-10-04.json`
+(SHA-256 `006ab98f3f398e5210e6fb7200c204ef197a8a818e736e31c65628de49eeed3b`).
+All ten historical execution paths are obsolete, but none of their outcomes is
+proved fulfilled; complete specs, exact Conditions, 39 direct relationships and
+missing terminal/alert/Gym proof remain preserved. Current checks passed 71/71
+Host tests and 31/31 Alex/May tests. A production-function scratch probe exposed
+one precise current question: absent source/caller time, a delayed successful
+metric collector recorded its fallback timestamp 240 ms before producer
+completion. The recommendation requires an exact related-work check and one
+bounded Alex comparison before any patch; the separate five-name noisy-event
+query gap already has May parent `goal/app_f61801ff-d565-4cde-af42-54c0a700d124`
+and approval child `goal/appdep_0f3f67e14e6115f52af6c3ca`, so it must not be
+duplicated. Historical proof promises and caller boundaries still need a bounded
+May disposition. No continuation was rushed into admission in this attempt.

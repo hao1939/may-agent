@@ -7,7 +7,7 @@
     "appId": "alex",
     "taskId": "input/app_7a279469-7ac8-4bec-894a-9314635bd452"
   },
-  "status": "recommendation-for-Alex-incorporation; seven old outcomes unfulfilled; obsolete execution; one bounded May disposition recommended",
+  "status": "incorporated by Alex; seven old outcomes withdrawn unfulfilled; obsolete execution stopped; preserved historical evidence and relationships remain",
   "scope": {
     "count": 7,
     "selection": "Exactly items whose lineage equals aks-taxonomy-and-correlation in the hashed frontier. References to external parents/downstream work do not adjudicate an eighth frontier entry.",
@@ -247,14 +247,14 @@
               "devbox-authority-restoration-terminal"
             ],
             "evidence": [
-              "release-request:/app/.state/releases/deploy/may-ops-health-aks-taxonomy-3bf56cf5f4-20260816/request.json — exact correlation and target revision remain staged with phase=requested.",
-              "compose:/app/.state/releases/deploy/may-ops-health-aks-taxonomy-3bf56cf5f4-20260816/compose.yml — exact target release mount is preserved.",
+              "release-request:/app/.state/releases/deploy/may-ops-health-aks-taxonomy-3bf56cf5f4-20260816/request.json \u2014 exact correlation and target revision remain staged with phase=requested.",
+              "compose:/app/.state/releases/deploy/may-ops-health-aks-taxonomy-3bf56cf5f4-20260816/compose.yml \u2014 exact target release mount is preserved.",
               "sha256:/app/.state/releases/apps/3bf56cf5f416d2bd4989f676190202971edd7a68/projects/may-agent.app/agents/tech-lead/handlers/ops-health-review.ts=d61e4a7fb4fe5b28c8e64d359676f8c897f413c80f2c07d8958c7f241af1cf7e.",
-              "ssh-exec:devbox — two current bounded probes timed out; TCP 20.24.129.235:22 is unreachable.",
-              "carrier-capability — no Docker executable or /var/run/docker.sock, so no supported local activation alternative exists.",
-              "event:5721976 — prior attempt explicitly performed no recreate and emitted no parent tick.",
-              "task:ops/restore-devbox-authority-and-load-condition-native-blocked-metric-20260816 — existing P0 platform restoration work already owns the same unreachable devbox authority; do not duplicate it.",
-              "checkpoint:/app/projects/may-agent.app/.state/checkpoints — latest checkpoint preserves correlation, artifacts, blocker evidence, and exact safe resume sequence."
+              "ssh-exec:devbox \u2014 two current bounded probes timed out; TCP 20.24.129.235:22 is unreachable.",
+              "carrier-capability \u2014 no Docker executable or /var/run/docker.sock, so no supported local activation alternative exists.",
+              "event:5721976 \u2014 prior attempt explicitly performed no recreate and emitted no parent tick.",
+              "task:ops/restore-devbox-authority-and-load-condition-native-blocked-metric-20260816 \u2014 existing P0 platform restoration work already owns the same unreachable devbox authority; do not duplicate it.",
+              "checkpoint:/app/projects/may-agent.app/.state/checkpoints \u2014 latest checkpoint preserves correlation, artifacts, blocker evidence, and exact safe resume sequence."
             ],
             "observedGeneration": 2,
             "phase": "waiting",
@@ -338,19 +338,19 @@
           "status": {
             "conditionIds": [],
             "evidence": [
-              "app:app_cb5522a1-db4a-494f-88c8-c1738bf6ce52 — terminal structured result cites exact carrier ops/app-request/app_cb5522a1-db4a-494f-88c8-c1738bf6ce52 and actions=[]",
-              "app:app_34525ee7-476d-4772-8296-d12c7220266b — still handling on distinct task runtime/problem-solver/live-proof-aks-taxonomy-c6636d34-20260818-1346",
-              "/app/projects/aks-rp-e2e.app/.state/tasks/state.json — existing problem task generation 1, workflow problem-solver, owner app-ops, phase pending, observedGeneration 0",
-              "event:5770719 — exact task wake accepted directly, but no matching task execution session or project.task.reconciled result followed",
-              "event:5770437 — aks-repo-ref-watcher/aks.repo-ref.observed accepted as intentional observation",
-              "event:5770932 — genuine aks-repo-ref-watcher/aks.repo-ref.changed accepted directly by this exact proof task for origin/dev 383e1fd… → 4d7e859…",
-              "event:5770521 — aks-pipeline-watcher/pipeline-artifact.available accepted with run 177108807 artifact path",
-              "event:5770522 — aks-pipeline-watcher/pipeline.spec.observed accepted with passing terminal result artifact",
-              "events:5770535 and 5770546 — aks-pipeline-watcher/pipeline-run.state completed/succeeded and routed directly to exact task domain/live-prove-master-validation-new-vnet-http-reachability-ba56ce4f-20260818",
-              "event:5770545 — aks-pipeline-watcher/pipeline.completed accepted with plan-inputs and slice-01-test-results",
-              "artifact:/app/projects/aks-rp-e2e.app/.state/watchers/aks-pipeline-artifacts/177108807/slice-01-test-results/runs/test-results/test_20260818131809882_y3dokp_932076/result.json — passed 1/1 with no failures, blockers, or errors",
-              "test:/app/projects/aks-rp-e2e.app/canonical-routing.test.ts:267-295 — all six source-fenced pairs match and unexpected-watcher is rejected",
-              "receipt:/app/projects/may-agent/.state/deploy-receipts/aks-taxonomy-c6636d34.json — phase succeeded, loaded artifact matches, health healthy, targeted wake true, duplicate deploy false",
+              "app:app_cb5522a1-db4a-494f-88c8-c1738bf6ce52 \u2014 terminal structured result cites exact carrier ops/app-request/app_cb5522a1-db4a-494f-88c8-c1738bf6ce52 and actions=[]",
+              "app:app_34525ee7-476d-4772-8296-d12c7220266b \u2014 still handling on distinct task runtime/problem-solver/live-proof-aks-taxonomy-c6636d34-20260818-1346",
+              "/app/projects/aks-rp-e2e.app/.state/tasks/state.json \u2014 existing problem task generation 1, workflow problem-solver, owner app-ops, phase pending, observedGeneration 0",
+              "event:5770719 \u2014 exact task wake accepted directly, but no matching task execution session or project.task.reconciled result followed",
+              "event:5770437 \u2014 aks-repo-ref-watcher/aks.repo-ref.observed accepted as intentional observation",
+              "event:5770932 \u2014 genuine aks-repo-ref-watcher/aks.repo-ref.changed accepted directly by this exact proof task for origin/dev 383e1fd\u2026 \u2192 4d7e859\u2026",
+              "event:5770521 \u2014 aks-pipeline-watcher/pipeline-artifact.available accepted with run 177108807 artifact path",
+              "event:5770522 \u2014 aks-pipeline-watcher/pipeline.spec.observed accepted with passing terminal result artifact",
+              "events:5770535 and 5770546 \u2014 aks-pipeline-watcher/pipeline-run.state completed/succeeded and routed directly to exact task domain/live-prove-master-validation-new-vnet-http-reachability-ba56ce4f-20260818",
+              "event:5770545 \u2014 aks-pipeline-watcher/pipeline.completed accepted with plan-inputs and slice-01-test-results",
+              "artifact:/app/projects/aks-rp-e2e.app/.state/watchers/aks-pipeline-artifacts/177108807/slice-01-test-results/runs/test-results/test_20260818131809882_y3dokp_932076/result.json \u2014 passed 1/1 with no failures, blockers, or errors",
+              "test:/app/projects/aks-rp-e2e.app/canonical-routing.test.ts:267-295 \u2014 all six source-fenced pairs match and unexpected-watcher is rejected",
+              "receipt:/app/projects/may-agent/.state/deploy-receipts/aks-taxonomy-c6636d34.json \u2014 phase succeeded, loaded artifact matches, health healthy, targeted wake true, duplicate deploy false",
               "No external authority or human decision is required; this is a runtime supervision gap on existing durable work"
             ],
             "observedGeneration": 1,
@@ -426,11 +426,11 @@
           "status": {
             "conditionIds": [],
             "evidence": [
-              "task:activate-existing-aks-taxonomy-app-release-host-20260816 — status=waiting, generation=2; live direct child already owns supported at-most-once activation and parent wake.",
-              "release-request:/app/.state/releases/deploy/may-ops-health-aks-taxonomy-3bf56cf5f4-20260816/request.json — correlation is exact, sourceRevision=3bf56cf5f416d2bd4989f676190202971edd7a68, phase=requested; no duplicate activation receipt exists here.",
-              "ssh-exec:devbox at 2026-08-19 owner review — bounded 20-second probe timed out with no output, so May cannot cross the supported privileged host boundary in this attempt.",
-              "ops-health:/app/projects/may-agent.app/.state/ops-health-packets.jsonl — latest packet generated_at=2026-08-17T01:09:50.315Z and file mtime=2026-08-17T01:09:54Z; it still contains event-delivery-unaccepted evidence and therefore is not fresh post-release acceptance proof.",
-              "checkpoint:/app/projects/may-agent.app/.state/checkpoints — durable checkpoint records the current carrier, live child, release request, packet path, foreign restoration state path, and exact next review steps."
+              "task:activate-existing-aks-taxonomy-app-release-host-20260816 \u2014 status=waiting, generation=2; live direct child already owns supported at-most-once activation and parent wake.",
+              "release-request:/app/.state/releases/deploy/may-ops-health-aks-taxonomy-3bf56cf5f4-20260816/request.json \u2014 correlation is exact, sourceRevision=3bf56cf5f416d2bd4989f676190202971edd7a68, phase=requested; no duplicate activation receipt exists here.",
+              "ssh-exec:devbox at 2026-08-19 owner review \u2014 bounded 20-second probe timed out with no output, so May cannot cross the supported privileged host boundary in this attempt.",
+              "ops-health:/app/projects/may-agent.app/.state/ops-health-packets.jsonl \u2014 latest packet generated_at=2026-08-17T01:09:50.315Z and file mtime=2026-08-17T01:09:54Z; it still contains event-delivery-unaccepted evidence and therefore is not fresh post-release acceptance proof.",
+              "checkpoint:/app/projects/may-agent.app/.state/checkpoints \u2014 durable checkpoint records the current carrier, live child, release request, packet path, foreign restoration state path, and exact next review steps."
             ],
             "observedGeneration": 2,
             "phase": "waiting",
@@ -623,13 +623,13 @@
           "status": {
             "conditionIds": [],
             "evidence": [
-              "event:5770436 — supported supervisor activation aks-taxonomy-c6636d34 succeeded",
-              "events:5770437,5770438 — fresh aks.repo-ref.observed accepted as intentional observations",
-              "events:5770521,5770522,5770545 — fresh pipeline-artifact.available, pipeline.spec.observed, and pipeline.completed accepted as intentional observations",
-              "events:5770535,5770546 — terminal pipeline-run.state accepted by exact task consumer aks-rp-e2e/domain/live-prove-master-validation-new-vnet-http-reachability-ba56ce4f-20260818; run 177108807 succeeded with plan-inputs and slice-01-test-results",
-              "app:app_cb5522a1-db4a-494f-88c8-c1738bf6ce52 — fresh owner-review request handling on request-specific task ops/app-request/app_cb5522a1-db4a-494f-88c8-c1738bf6ce52",
-              "app:app_34525ee7-476d-4772-8296-d12c7220266b — fresh problem-investigation request handling on distinct task runtime/problem-solver/live-proof-aks-taxonomy-c6636d34-20260818-1346, not historical problem_20260720164634",
-              "task:activate-and-live-prove-aks-correlation-taxonomy-c6636d34 — live direct child; its transition will wake this parent",
+              "event:5770436 \u2014 supported supervisor activation aks-taxonomy-c6636d34 succeeded",
+              "events:5770437,5770438 \u2014 fresh aks.repo-ref.observed accepted as intentional observations",
+              "events:5770521,5770522,5770545 \u2014 fresh pipeline-artifact.available, pipeline.spec.observed, and pipeline.completed accepted as intentional observations",
+              "events:5770535,5770546 \u2014 terminal pipeline-run.state accepted by exact task consumer aks-rp-e2e/domain/live-prove-master-validation-new-vnet-http-reachability-ba56ce4f-20260818; run 177108807 succeeded with plan-inputs and slice-01-test-results",
+              "app:app_cb5522a1-db4a-494f-88c8-c1738bf6ce52 \u2014 fresh owner-review request handling on request-specific task ops/app-request/app_cb5522a1-db4a-494f-88c8-c1738bf6ce52",
+              "app:app_34525ee7-476d-4772-8296-d12c7220266b \u2014 fresh problem-investigation request handling on distinct task runtime/problem-solver/live-proof-aks-taxonomy-c6636d34-20260818-1346, not historical problem_20260720164634",
+              "task:activate-and-live-prove-aks-correlation-taxonomy-c6636d34 \u2014 live direct child; its transition will wake this parent",
               "No post-activation aks.repo-ref.changed event or terminal result for either fresh App request was present in the reviewed runtime evidence"
             ],
             "observedGeneration": 1,
@@ -716,13 +716,13 @@
               "aks-taxonomy-problem-app-result-c6636d34"
             ],
             "evidence": [
-              "event:5770719 — original exact task wake accepted but produced no task attempt",
-              "events:5772014-5772016 and 5772344-5772346 — accepted exact cancellations for six stale duplicate app-ops sessions; ordinary cancellation did not restore the target route",
-              "/app/projects/aks-rp-e2e.app/.state/tasks/tree.json — preserved task runtime/problem-solver/live-proof-aks-taxonomy-c6636d34-20260818-1346 remains generation 1, owner app-ops, workflow problem-solver, pending at observedGeneration 0, with no receipt",
-              "event:5772383 — supported runtime.restart.requested accepted by command-router:runtime-restart to clear corrupted in-memory supervision while preserving durable state",
-              "events:5772591,5772593,5772595 — post-restart AKS task controller produced fresh reconciliation starts, proving supervision restarted and recovered durable work",
-              "event:5772758 — post-restart project.task.tick accepted by the exact preserved AKS task route",
-              "app_inbox_items:app_34525ee7-476d-4772-8296-d12c7220266b — still handling on the exact task with result null; no duplicate request was created",
+              "event:5770719 \u2014 original exact task wake accepted but produced no task attempt",
+              "events:5772014-5772016 and 5772344-5772346 \u2014 accepted exact cancellations for six stale duplicate app-ops sessions; ordinary cancellation did not restore the target route",
+              "/app/projects/aks-rp-e2e.app/.state/tasks/tree.json \u2014 preserved task runtime/problem-solver/live-proof-aks-taxonomy-c6636d34-20260818-1346 remains generation 1, owner app-ops, workflow problem-solver, pending at observedGeneration 0, with no receipt",
+              "event:5772383 \u2014 supported runtime.restart.requested accepted by command-router:runtime-restart to clear corrupted in-memory supervision while preserving durable state",
+              "events:5772591,5772593,5772595 \u2014 post-restart AKS task controller produced fresh reconciliation starts, proving supervision restarted and recovered durable work",
+              "event:5772758 \u2014 post-restart project.task.tick accepted by the exact preserved AKS task route",
+              "app_inbox_items:app_34525ee7-476d-4772-8296-d12c7220266b \u2014 still handling on the exact task with result null; no duplicate request was created",
               "checkpoint #2 preserves the diagnosis, restart rationale, exact task/request identities, stale-session evidence, and terminal review requirements"
             ],
             "observedGeneration": 1,
@@ -823,11 +823,11 @@
           "status": {
             "conditionIds": [],
             "evidence": [
-              "event:5769426 — aks-rp-e2e runtime/owner-review converged with actionsApplied=[] while claiming a P0 taxonomy repair had been created; no matching durable repair task was found.",
-              "app-request:app_fdf777fa-68f1-4fea-85f5-15af8fbc6df4 / event:5769811 — corrected v2 advance-project input was accepted but immediately returned the same deficient result.",
-              "app-request:app_856cfa84-1322-4b2e-a022-c5b60564e73d / event:5769839 — exact v3 problem-investigation input was accepted but completed with unrelated stale problem_20260720164634 task-tree CLI evidence.",
-              "events:5769663-5769673 and 5769721-5769730 — fresh pipeline-run.state, pipeline.spec.observed, pipeline-artifact.available, and pipeline.completed representatives remained unexpected-unhandled.",
-              "checkpoint:#3 — durable recovery context records the failed App request identities, correlation defect, child identity, and exact review paths."
+              "event:5769426 \u2014 aks-rp-e2e runtime/owner-review converged with actionsApplied=[] while claiming a P0 taxonomy repair had been created; no matching durable repair task was found.",
+              "app-request:app_fdf777fa-68f1-4fea-85f5-15af8fbc6df4 / event:5769811 \u2014 corrected v2 advance-project input was accepted but immediately returned the same deficient result.",
+              "app-request:app_856cfa84-1322-4b2e-a022-c5b60564e73d / event:5769839 \u2014 exact v3 problem-investigation input was accepted but completed with unrelated stale problem_20260720164634 task-tree CLI evidence.",
+              "events:5769663-5769673 and 5769721-5769730 \u2014 fresh pipeline-run.state, pipeline.spec.observed, pipeline-artifact.available, and pipeline.completed representatives remained unexpected-unhandled.",
+              "checkpoint:#3 \u2014 durable recovery context records the failed App request identities, correlation defect, child identity, and exact review paths."
             ],
             "observedGeneration": 1,
             "phase": "waiting",
@@ -1131,5 +1131,26 @@
     "oldOutcomesFulfilled": 0,
     "runtimeMutation": false,
     "commitCreated": false
+  },
+  "acceptedMayDisposition": {
+    "taskId": "goal/appdep_b9d63909a838fa7ad225d6b6",
+    "requestId": "appdep_b9d63909a838fa7ad225d6b6",
+    "disposition": "withdrawn-unfulfilled",
+    "humanDecisionRequired": false,
+    "historicalApproval": {
+      "conditionId": "wait:may-agent:aks-workspace-integrity-f9824eb7:g1",
+      "state": "unknown-preserved",
+      "meaning": "obsolete ask withdrawn without approve, reject, or hold"
+    },
+    "stagedRelease": {
+      "correlation": "may-ops-health-aks-taxonomy-3bf56cf5f4-20260816",
+      "state": "requested-preserved-obsolete",
+      "action": "do-not-activate"
+    },
+    "historicalReceipt": {
+      "correlation": "aks-taxonomy-c6636d34",
+      "state": "succeeded-preserved-partial-proof"
+    },
+    "effects": "No legacy Task/Condition mutation, request replay, deployment, devbox restoration, carrier reopening, or retired-App resurrection."
   }
 }
