@@ -1,8 +1,8 @@
 <ai_context>
-summary: "OpenGeni's fix for a race between live steering and context compaction shows that agent control commands need operation-specific safe points. A steer can be accepted durably while its interruption effect is deferred until the compaction checkpoint reaches a terminal landmark; then the old turn is superseded before further inference. Pause and Cancel retain immediate fencing semantics."
-triggers: ["agent steering", "context compaction", "safe point", "checkpoint transaction", "interrupt fence", "turn supersession", "durable control command", "agent runtime race"]
-last_updated: "2026-08-28"
-source_basis: "OpenGeni repository documentation, implementation diff, and regression tests at commit f6223235f63b60c295566f81f84e2e72df14f410."
+summary: "OpenGeni's control-plane evidence shows that live direction and structured human input need operation-specific settlement boundaries. Steer may defer its interruption effect until compaction reaches a safe landmark; a frozen human-input tool call separately serializes answer, expiry, cancellation, and supersession under stable request identity and a generation fence."
+triggers: ["agent steering", "context compaction", "safe point", "checkpoint transaction", "interrupt fence", "turn supersession", "structured human input", "settlement race", "generation fence", "durable control command", "agent runtime race"]
+last_updated: "2026-10-04"
+source_basis: "OpenGeni repository documentation, implementation, and repository-authored regression tests at pinned revisions f6223235f63b60c295566f81f84e2e72df14f410 and 5ccec09449de8a0eafd691c8fd940f9f0a86904f."
 </ai_context>
 
 # Agent Steering Needs Compaction Safe Points
@@ -79,14 +79,59 @@ operation, the runtime should define:
 - how queued direction is prevented from triggering old-goal continuation;
 - a test that forbids any old-direction model or tool call after the handoff.
 
+## Human input is a settlement boundary, not a chat message — October 2026 update
+
+At revision `5ccec09449de8a0eafd691c8fd940f9f0a86904f`, OpenGeni's structured
+human-input path applies the same broader principle to a different control seam.
+`request_human_input` freezes one exact tool call and later supplies one typed
+outcome—`answered`, `skipped`, `expired`, or `cancelled`—as that call's result.
+Its stable request identity comes from the session, logical turn, and SDK tool-call
+ID; the row separately retains immutable creation-attempt provenance and a mutable
+execution-generation fence. Recovery may therefore advance the physical attempt
+without changing the questions, deadline, or logical request.
+
+Answer and expiry use one database settlement function. It locks the session and
+request row, verifies that the active turn owns the request at the same generation,
+and commits first-writer-wins. A client event ID makes a response retry return its
+original terminal event without generating another event or wake. Already-terminal
+expiry loses without acknowledging a human response. Historical cancelled rows
+missing their canonical event have a separate one-time repair path that does not
+wake terminal work.
+
+The Temporal timer is deliberately not proof of expiry. If it fires slightly before
+the database clock considers the persisted deadline elapsed, the database leaves the
+request pending and the workflow waits on one bounded interruptible retry floor
+instead of spinning or forcing settlement. Repository-authored database tests name
+coverage for restart survival, idempotent resume, answer-versus-expiry races,
+one-time cancellation repair, and one accepted response across parallel structured
+input and ordinary approval interruptions.
+
+Superseding input is semantic rather than incidental: Steer, terminal transitions,
+and an ordinary Send while actively waiting cancel the frozen request and emit its
+terminal tool result before replacement work proceeds. Pause instead preserves the
+request. This prevents a new message, pause, or recovery attempt from being silently
+interpreted as the answer to a different logical question.
+
+**Runtime rule:** bind human input to a durable logical request, immutable question
+contract, and current execution-generation owner. Serialize answer, expiry,
+cancellation, and supersession as competing terminal outcomes; use stable retry
+receipts; treat the database projection as actionable truth; and let workflow timers
+request settlement rather than declare it. A visible form is not complete
+human-in-the-loop support unless the reviewed question and accepted answer resume the
+same frozen operation.
+
 ## Evidence limits
 
-This is evidence from one repository's implementation change and author-written
-regression suite, not an independent production incident report or comparative
-benchmark. The value is the concrete race and its testable ordering invariant;
-it does not establish that OpenGeni's entire lifecycle model is race-free. The
-commit is also large (827 changed lines across implementation, documentation,
-and tests), so the finding should not be read as a minimal patch-size claim.
+Both assessments are static inspection of project-authored implementation,
+documentation, and tests, not independent production incident reports or comparative
+benchmarks. Scout did not run OpenGeni's Bun/Postgres suite, reproduce the compaction
+race, exercise a worker restart, or test answer/expiry concurrency. The evidence
+supports concrete ordering and settlement patterns; it does not establish that
+OpenGeni's entire lifecycle is race-free. The August commit is also large (827
+changed lines across implementation, documentation, and tests), so that finding
+should not be read as a minimal patch-size claim. The October assessment does not
+validate OpenGeni's broader durability, sandboxing, credential, or multi-day-run
+claims.
 
 ## Primary sources
 
@@ -96,3 +141,9 @@ and tests), so the finding should not be read as a minimal patch-size claim.
 - Run-lifecycle contract: https://github.com/Cloudgeni-ai/opengeni/blob/f6223235f63b60c295566f81f84e2e72df14f410/docs/run-lifecycle.md
 - Activity regression test: https://github.com/Cloudgeni-ai/opengeni/blob/f6223235f63b60c295566f81f84e2e72df14f410/apps/worker/test/context-compaction-activity.test.ts
 - Control-plane implementation: https://github.com/Cloudgeni-ai/opengeni/blob/f6223235f63b60c295566f81f84e2e72df14f410/packages/db/src/session-queue-commands.ts
+- October inspected revision: https://github.com/Cloudgeni-ai/opengeni/commit/5ccec09449de8a0eafd691c8fd940f9f0a86904f
+- Structured human-input contract: https://github.com/Cloudgeni-ai/opengeni/blob/5ccec09449de8a0eafd691c8fd940f9f0a86904f/docs/human-input.md
+- Human-input settlement implementation: https://github.com/Cloudgeni-ai/opengeni/blob/5ccec09449de8a0eafd691c8fd940f9f0a86904f/packages/db/src/index.ts#L42089-L42536
+- Temporal wait and expiry loop: https://github.com/Cloudgeni-ai/opengeni/blob/5ccec09449de8a0eafd691c8fd940f9f0a86904f/apps/worker/src/workflows/session.ts#L823-L865
+- Repository-authored database tests: https://github.com/Cloudgeni-ai/opengeni/blob/5ccec09449de8a0eafd691c8fd940f9f0a86904f/packages/db/test/session-human-input.test.ts
+- October discovery query: GitHub Repository Search API `"AI agent" in:name,description,readme pushed:>=2026-09-27`, sorted by updated; `total_count: 106376`, `incomplete_results: false`.
