@@ -1,5 +1,5 @@
 {
-  "name": "alex-evaluator",
+  "name": "evaluator",
   "description": "Independent reviewer for exact external or Alex-authored Task outcomes",
   "domain": "independent session and Agent App auditing",
   "model": "gpt-5.6-sol",
