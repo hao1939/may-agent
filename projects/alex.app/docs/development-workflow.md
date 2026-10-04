@@ -280,10 +280,20 @@ Task's existing caller feedback. The workflow does not invent a human Condition
 with no return route or directly send messages. The experiment does not claim
 exact suppression of repeated questions during retry.
 
-## Waiting for GitHub pull-request facts
+## Publishing and waiting for GitHub pull-request facts
 
-When this workflow leaves a May-owned delivery waiting on a GitHub PR, use the
-registered `github-pull-request` observer contract documented in
+`develop-change` ends with a locally committed candidate; it does not publish a
+PR or make the Alex Task directly observable by the May GitHub observer. PR
+publication is a separately authorized delivery outcome. For Alex-origin work,
+a publisher may use the observer only when a genuine May delivery Task owns that
+outcome. The PR body then contains that exact owner's single visible
+`## May Task` block (`App ID: may`), while the originating Alex Task remains
+preserved through the Tasks' actual saved caller/request relationship. An
+`## Task` block with `App ID: alex` is unsupported and is rejected. If there is
+no May delivery Task, do not fabricate one or relabel the Alex Task as May.
+
+When a May-owned delivery is waiting on a GitHub PR, use the registered
+`github-pull-request` observer contract documented in
 [`../../may.app/design/github-pull-request-observation.md`](../../may.app/design/github-pull-request-observation.md).
 Return a `may.github.pull-request.state` Condition with canonical subject
 `pull-request:github:<owner>/<repo>#<number>`, matching provider/repository, and

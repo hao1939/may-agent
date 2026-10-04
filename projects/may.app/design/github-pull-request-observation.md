@@ -25,10 +25,20 @@ and unknown or closed Tasks are rejected rather than guessed. Task IDs are
 opaque; branch names and free prose are not ownership. The block contains no
 secret, local path, Task prose, or session identity.
 
-PR authors obtain the exact Task identity from current context, include the block
-in the initial body, preserve it during description polishing, and read the final
-remote body back. Ordinary `gh pr create` and `gh pr edit` remain usable. There is
-no registration command, watch registry, mandatory helper, or special Condition.
+PR authors obtain the exact May delivery Task identity from current context,
+include the block in the initial body, preserve it during description polishing,
+and read the final remote body back. Ordinary `gh pr create` and `gh pr edit`
+remain usable. There is no registration command, watch registry, mandatory
+helper, or special Condition.
+
+An Alex development Task ends at its local candidate and is not directly owned
+or observed by this May-scoped observer. If separately authorized publication
+of an Alex-origin candidate is assigned to a genuine May delivery Task, the
+block names that May delivery owner. The originating Alex Task is preserved by
+its actual saved caller/request relationship with the delivery work, not by a
+second PR ownership block. `## Task` with `App ID: alex` is unsupported and is
+rejected. Without a real May delivery Task, a publisher must not invent a May
+identity or claim observer routing.
 
 This implements the accepted resource-ownership convention in
 `projects/alex.app/docs/2a-design/agent-app.md`: Conditions describe what a

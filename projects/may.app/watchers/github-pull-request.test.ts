@@ -220,6 +220,28 @@ describe("May GitHub pull-request resource ownership", () => {
       intervalMs: 900000,
     });
   });
+  test("routes an Alex-origin candidate only through its genuine May delivery owner", async () => {
+    const unsupportedAlexOwner =
+      "Alex-origin candidate\n\n## Task\n- App ID: alex\n- Task ID: input/alex-origin\n";
+    expect(parseMayTaskOwner(unsupportedAlexOwner)).toBeNull();
+    const rejected = await observe(
+      context(new Map([["input/alex-origin", task("input/alex-origin")]])),
+      provider(new Map([[215, pullPayload(215, unsupportedAlexOwner)]])),
+    );
+    expect(rejected.events).toHaveLength(0);
+
+    const deliveryTaskId = "goal/deliver-alex-candidate";
+    const routed = await observe(
+      context(new Map([[deliveryTaskId, task(deliveryTaskId)]])),
+      provider(new Map([[215, pullPayload(215, ownerBody(deliveryTaskId))]])),
+    );
+    expect(routed.events).toHaveLength(1);
+    expect(routed.events[0]).toMatchObject({
+      type: GITHUB_PULL_REQUEST_EVENT,
+      target: { appId: "may", project: "may", taskId: deliveryTaskId },
+      data: { number: 215, state: "open", merged: false },
+    });
+  });
   test("routes a PR to a quiet done owner with only a human Condition", async () => {
     const calls: string[] = [];
     const result = await observe(

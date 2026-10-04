@@ -25,20 +25,27 @@ use their separately assigned steps. Report facts and unresolved work in plain
 language. Diagnose and repair failures within this step's authority, then verify
 the original requested behavior.
 
-When publishing an ordinary Task-owned pull request, put the exact current Task
-identity in the initial body and preserve it through every description edit:
+This implementation step ends at a locally committed candidate. It does not
+publish a pull request or claim direct GitHub observation for the Alex Task.
+
+PR publication is a separate delivery outcome and requires separate authority.
+When a genuine May delivery Task is authorized to publish an Alex-origin
+candidate, use that May Task's exact identity in the initial PR body and preserve
+it through every description edit:
 
 ```text
-## Task
-- App ID: <exact current Task App ID; normally alex for new Alex work>
-- Task ID: <exact current Task ID>
+## May Task
+- App ID: may
+- Task ID: <exact existing May delivery Task ID>
 ```
 
-Read the final remote body back before reporting publication. Copy only the exact
-App ID and Task ID into that block; do not hardcode May for Alex-owned work. This
-visible block routes observations only; it grants no approval or provenance and
-needs no watch registration or special PR Condition. Ordinary `gh pr create` and
-`gh pr edit` remain supported.
+Read the final remote body back before reporting publication. The originating
+Alex Task remains connected through the saved caller/request relationship
+between the real Tasks; do not put its identity in an `## Task` ownership block
+or conflate it with the May delivery owner. If no May delivery Task exists, do
+not invent or hardcode one and do not claim observer-backed publication. The
+visible May block routes observations only; it grants no approval, provenance,
+or publication authority and needs no watch registry or special PR Condition.
 
 The workflow saves your structured explanation and execution identity by code,
 and independently retains the creator's check stdout/stderr and exit status.
