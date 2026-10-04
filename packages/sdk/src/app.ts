@@ -1,3 +1,10 @@
+import {
+  conversationRequestUpdatesSchema,
+  type AppConversationRequest,
+  type AppConversationRequestUpdate,
+} from "./conversation-contract.js";
+export { conversationRequestUpdatesSchema, MAX_CONVERSATION_REQUESTS_PER_TURN } from "./conversation-contract.js";
+export type { AppConversationRequest, AppConversationRequestUpdate } from "./conversation-contract.js";
 import { Type, type Static, type TSchema } from "typebox";
 import { appInputSchema } from "./app-input.js";
 import type { ResourceObserver, ObservationContract } from "./observer.js";
@@ -120,6 +127,8 @@ export type AppConversationMessage = {
     channelThreadId?: string;
     channelMessageId?: number;
     requestId?: string;
+    /** Accepted Task communication operation; may be cited as replyId in its owning Task generation. */
+    communicationId?: string;
     command?: string;
     /** Human-facing context that links this turn to exact App work. */
     topicId?: string;
@@ -162,100 +171,6 @@ export type AppConversationResource = {
   /** Durable messages only, in the order shared by every human surface. */
   messages: AppConversationMessage[];
 };
-
-/** An accepted conversational promise to the human, recognized by the App. */
-export type AppConversationRequest = {
-  id: string;
-  revision: number;
-  scope: string;
-  status: "open" | "closed";
-  topicId?: string;
-  /** Relevant Task identities; references alone do not assign work or subscribe to results. */
-  taskRefs: Array<{ appId: string; taskId: string }>;
-  closure?: { disposition: "fulfilled" | "withdrawn" | "unfulfilled"; reason: string; messageId: string };
-};
-
-/** App judgment; expectedRevision=0 accepts a new ask. Closing cannot silently change scope. */
-export type AppConversationRequestUpdate = {
-  id: string;
-  expectedRevision: number;
-  /** Inputs establishing or refining this intention. Required for an unlinked Request in a mixed batch. */
-  inputIds?: string[];
-  /** Required for a new ask. Omit to retain an existing Request's exact scope. */
-  scope?: string;
-  disposition: "open" | "fulfilled" | "withdrawn" | "unfulfilled";
-  /** Required in a final turn decision; an open disposition explains continuing work or the remaining gap and wait. */
-  reason?: string;
-  /** Add relevant Task references; omitted/empty lists retain earlier references. At most 32 distinct references. */
-  taskRefs?: Array<{ appId: string; taskId: string }>;
-};
-
-export const MAX_CONVERSATION_REQUESTS_PER_TURN = 8;
-
-export const conversationRequestUpdatesSchema = Type.Array(
-  Type.Object(
-    {
-      id: Type.String({ minLength: 1, maxLength: 200 }),
-      inputIds: Type.Optional(
-        Type.Array(Type.String({ minLength: 1 }), {
-          minItems: 1,
-          maxItems: 96,
-          uniqueItems: true,
-          description:
-            "Current input IDs establishing or refining this same intention. Several inputs may belong to one Request. Omit for a single input or to retain this turn's existing Request associations; choose explicitly for a new Request in a mixed batch.",
-        }),
-      ),
-      expectedRevision: Type.Integer({
-        minimum: 0,
-        maximum: Number.MAX_SAFE_INTEGER - 1,
-        description:
-          "Observed Request revision, or 0 for a new ask. Use the revision returned by conversation_request; reread after a conflict.",
-      }),
-      scope: Type.Optional(
-        Type.String({
-          minLength: 1,
-          maxLength: 2000,
-          description:
-            "Complete accepted ask for creation or authorized revision. Omit to retain existing scope. Closing cannot change the scope.",
-        }),
-      ),
-      disposition: Type.Union([
-        Type.Literal("open"),
-        Type.Literal("fulfilled"),
-        Type.Literal("withdrawn"),
-        Type.Literal("unfulfilled"),
-      ]),
-      reason: Type.Optional(
-        Type.String({
-          minLength: 1,
-          maxLength: 2000,
-          pattern: "\\S",
-          description:
-            "Required for each final requestUpdates entry. Explain fulfillment, withdrawal, an unfulfilled outcome, or the continuing work or remaining gap and wait that keeps this Request open. A reply about another Request is not its explanation.",
-        }),
-      ),
-      taskRefs: Type.Optional(
-        Type.Array(
-          Type.Object(
-            { appId: Type.String({ minLength: 1 }), taskId: Type.String({ minLength: 1 }) },
-            { additionalProperties: false },
-          ),
-          {
-            maxItems: 32,
-            description:
-              "Record relevant Task references without assigning work or subscribing to results. A handoff naming this Request in followUp.requestId adds its Task automatically. Empty or omitted lists retain existing references; at most 32 distinct references in total.",
-          },
-        ),
-      ),
-    },
-    { additionalProperties: false },
-  ),
-  {
-    maxItems: MAX_CONVERSATION_REQUESTS_PER_TURN,
-    description:
-      "Accept, revise, link or close conversational promises to the human. Routine automated handling belongs in turn/Task evidence; an automated result can advance an existing human promise. A simple ask may be accepted and fulfilled in one answer. After saving with conversation_request, retain its revision and omit unchanged scope. Read omitted/truncated Requests before changing them. Close only with an explanatory response and a fulfillment, withdrawal or unfulfilled disposition; Task completion alone is not Request closure.",
-  },
-);
 
 /** Context for one admitted input, distinct from an accepted conversational Request. */
 export type AppInputContext<TData = unknown> = {
@@ -522,7 +437,8 @@ export type AppTaskPolicy = {
 
 /** Conversation input executes through one stable Task per Conversation. */
 export type AppConversationPolicy = {
-  mode: "agent";
+  /** Task is the common execution contract. Agent retains the legacy Conversation adapter during migration. */
+  mode: "task" | "agent";
   /** Input kinds handled as bounded conversation. Omit for legacy all-input behavior. */
   inputKinds?: string[];
   /** Conversation used for event/API requests that do not arrive through a conversation adapter. */

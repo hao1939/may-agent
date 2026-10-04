@@ -1505,6 +1505,9 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
               },
             }
           : {}),
+        ...(opts.taskBinding && opts.taskContext?.readCommunication
+          ? { readCommunication: opts.taskContext.readCommunication }
+          : {}),
         ...(opts.taskBinding && opts.taskContext?.applyTaskChanges
           ? {
               applyTaskChanges: (changes: Parameters<TaskAttempt["apply"]>[0]) => {

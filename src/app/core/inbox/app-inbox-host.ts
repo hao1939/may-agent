@@ -366,7 +366,11 @@ export class AppInboxHost {
     assertValidAppInput(app, input.input);
     const targetTaskId =
       input.targetTaskId === undefined ? undefined : requiredText(input.targetTaskId, "targetTaskId");
-    if (targetTaskId && hasConversationExecutionTask(this.#db, app.id, targetTaskId)) {
+    if (
+      app.conversation?.mode !== "task" &&
+      targetTaskId &&
+      hasConversationExecutionTask(this.#db, app.id, targetTaskId)
+    ) {
       throw new Error("Conversation Task input must use conversationId without targetTaskId");
     }
     const conversationInput =
@@ -513,7 +517,11 @@ export class AppInboxHost {
       // Recheck retained inputs at the attachment boundary. A target that did
       // not exist during initial admission may become a Conversation executor
       // before recovery; it must never acquire ordinary Task authority.
-      if (item.targetTaskId && hasConversationExecutionTask(this.#db, app.id, item.targetTaskId)) {
+      if (
+        app.conversation?.mode !== "task" &&
+        item.targetTaskId &&
+        hasConversationExecutionTask(this.#db, app.id, item.targetTaskId)
+      ) {
         throw new AppTaskAdmissionError("Conversation Task input must use conversationId without targetTaskId");
       }
       if (item.waitingOn?.kind === "task") {

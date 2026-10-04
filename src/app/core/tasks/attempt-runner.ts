@@ -42,6 +42,7 @@ import {
 } from "./attempt-execution.js";
 import { type AppTaskDispatch } from "./controller.js";
 import { recoverTaskConditions } from "./dependency-admission.js";
+import { settleTaskCommunicationInputs, taskResultCommunication } from "./task-communication.js";
 import { applyTaskChanges } from "./task-changes.js";
 import { type TaskCapabilityRun } from "./result.js";
 import {
@@ -204,7 +205,10 @@ async function runClaimedTask(
       workflowWorkspace === "task" || (typeof workflowWorkspace === "object" && workflowWorkspace.kind === "task");
     // Both execution paths share workspace lineage, admission fencing, and
     // failure handling. Only the workflow may override the App's base branch.
-    if (!conversation && (workflowNeedsWorktree || (!workflowKey && descriptor.app.workspace?.kind === "git"))) {
+    if (
+      !(conversation && descriptor.app.conversation?.mode !== "task") &&
+      (workflowNeedsWorktree || (!workflowKey && descriptor.app.workspace?.kind === "git"))
+    ) {
       try {
         if (descriptor.app.workspace?.kind !== "git") {
           throw new Error(`Workflow ${workflowKey} requires a task worktree but app workspace is not Git`);
@@ -338,6 +342,7 @@ async function runClaimedTask(
           claim,
           changes: {
             requests: result.requests,
+            communication: report.conversation ? undefined : taskResultCommunication(config, claim, result),
             actions: result.actions,
             facts: result.facts,
             inputKeys: result.inputKeys,
@@ -375,6 +380,7 @@ async function runClaimedTask(
                     workspace: inspected,
                     acceptedLiveEventIds: report.acceptedLiveEventIds,
                   });
+              if (!report.conversation && apply.status === "applied") settleTaskCommunicationInputs(config, claim);
             },
           }),
         );
@@ -477,6 +483,7 @@ async function runClaimedTask(
             claim,
             changes: {
               requests: result.requests,
+              communication: result.communication,
               conditions: result.conditions,
               actions: result.actions,
               facts: result.facts,
@@ -731,7 +738,9 @@ async function executeTaskHandler(input: TaskHandlerInput & { conversation: bool
         }
       : {}),
   };
-  if (conversation) {
+  if (conversation && descriptor.app.conversation?.mode === "task" && claim.handler === "executor:conversation")
+    return runTaskAgent(execution);
+  if (conversation && descriptor.app.conversation?.mode !== "task") {
     if (!descriptor.app.conversation || !opts.conversations)
       throw new Error(`App ${descriptor.id} Conversation executor is unavailable`);
     const registry = opts.appRegistrySnapshot ?? opts.appRegistry?.snapshot();

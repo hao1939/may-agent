@@ -77,6 +77,11 @@ async function executeTaskAgent(
   const trace = childEventTrace(event);
   const dependencyCatalog = input.dependencies;
   const prompt = [
+    ...(attempt.events.communication?.length
+      ? [
+          "This Task handles communication through saved input context. Use communication changes (in tasks.apply or finish) to publish a message, accept/refine an ask, or record its disposition. Select inputId from events.inputs; infra retains the recipient and delivery route. Keep the original human promise when requesting a contribution from another Task. A message does not imply fulfillment or convergence: use ordinary waiting/continue/requests/Conditions while work remains. Request records alone do not schedule execution. Keep background work quiet unless a useful message is owed.",
+        ]
+      : []),
     "## Reconciliation Task",
     "```json",
     JSON.stringify(
@@ -135,7 +140,9 @@ async function executeTaskAgent(
     outputSchema: appTaskAgentResultSchema,
     validateOutput: (output: unknown) => {
       const admitted = normalizeTaskHandlerResult(output, { type: "done", summary: "", runId: null }, admissionOptions);
-      return admitted.resultRejected ? admitted.summary : null;
+      return admitted.resultRejected
+        ? admitted.summary
+        : (input.validateResult?.(admitted as import("@may-agent/sdk").TaskReconcileResult) ?? null);
     },
     toolPolicy: "full" as const,
     timeout: input.executionTimeoutMs,

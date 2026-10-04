@@ -1,3 +1,7 @@
+import { isDeepStrictEqual } from "node:util";
+import { getAppInboxItem } from "../state/app-inbox-store.js";
+import { listConversationInputRequests } from "../state/conversation-requests.js";
+import { readConversationInputTopicId } from "../state/conversations.js";
 import { canonicalAppEvent } from "../../canonical-app-event.js";
 import type { AgentEvent } from "../events/bus.js";
 import type { AppTaskContext, TaskTree } from "./app-task-store.js";
@@ -71,4 +75,59 @@ export function continuedTaskInputKeys(
       ? [key]
       : [],
   );
+}
+
+/** Read one admission for every addressed input; communication is optional context. */
+export function readTaskInputs(
+  config: AppTaskContext,
+  claim: Pick<
+    import("./app-task-reconciler.js").AppTaskClaim,
+    "taskId" | "generation" | "events" | "continuedInputKeys"
+  >,
+): import("@may-agent/sdk").TaskInput[] {
+  const keys = taskInputAdmissionKeys(claim.events, claim.continuedInputKeys);
+  const admissions = config.resourceStore.readTaskContext({ taskIds: [], admissionIds: keys }).appTaskAdmissions;
+  return keys.map((key) => {
+    const admission = admissions?.[key];
+    const request = admission?.inputEvent?.data as { request?: import("@may-agent/sdk").AppTaskInput } | undefined;
+    if (
+      !admission ||
+      admission.taskId !== claim.taskId ||
+      admission.taskGeneration > claim.generation ||
+      !request?.request
+    )
+      throw new Error("Task input does not belong to this Task admission");
+    const original = request.request;
+    // Legacy handoffs used the caller's inbox id with a separate, durable admission.
+    // That is contribution context, not authority over the caller's communication.
+    const item = key.startsWith("conversation-follow-up:")
+      ? null
+      : getAppInboxItem(config.resourceStore.db, original.id);
+    if (
+      item &&
+      (item.appId !== config.resourceStore.appId ||
+        item.taskAdmissionKey !== key ||
+        (item.executionTaskId ?? (item.waitingOn?.kind === "task" ? item.waitingOn.id : undefined)) !== claim.taskId ||
+        !isDeepStrictEqual(item.source, original.source) ||
+        !isDeepStrictEqual(item.input, original.input))
+    )
+      throw new Error("Task input does not match its saved communication or return context");
+    return {
+      ...structuredClone(original),
+      key,
+      ...(item?.conversationId
+        ? {
+            communication: {
+              conversationId: item.conversationId,
+              replyTo: item.source.id,
+              topicId: readConversationInputTopicId(config.resourceStore.db, item),
+              ...(item.replyToSourceId ? { inReplyTo: item.replyToSourceId } : {}),
+              requestIds: listConversationInputRequests(config.resourceStore.db, item.appId, item.conversationId, [
+                item.id,
+              ]).map(({ id }) => id),
+            },
+          }
+        : {}),
+    };
+  });
 }

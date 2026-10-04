@@ -1,5 +1,6 @@
 import { Type, type TSchema } from "typebox";
 import { Check, Errors } from "typebox/value";
+import { conversationRequestUpdatesSchema } from "./conversation-contract.js";
 import { appInputSchema } from "./app-input.js";
 import type {
   Condition,
@@ -86,7 +87,39 @@ export const conditionSchema = Type.Object(
   },
 );
 
+const communicationSchema = Type.Array(
+  Type.Object(
+    {
+      id: Type.String({ minLength: 1, maxLength: 160, pattern: "\\S" }),
+      inputId: Type.String({ minLength: 1, pattern: "\\S" }),
+      message: Type.Optional(Type.String({ minLength: 1, maxLength: 8000, pattern: "\\S" })),
+      replyId: Type.Optional(Type.String({ minLength: 1, maxLength: 160, pattern: "\\S" })),
+      requestUpdates: Type.Optional(conversationRequestUpdatesSchema),
+      topic: Type.Optional(
+        Type.Union([
+          Type.Object({ kind: Type.Literal("none") }, { additionalProperties: false }),
+          Type.Object(
+            { kind: Type.Literal("new"), title: Type.String({ minLength: 1 }) },
+            { additionalProperties: false },
+          ),
+          Type.Object(
+            { kind: Type.Literal("existing"), id: Type.String({ minLength: 1 }) },
+            { additionalProperties: false },
+          ),
+        ]),
+      ),
+    },
+    { additionalProperties: false },
+  ),
+  {
+    maxItems: 8,
+    description:
+      "Publish or update an ask through an input accepted by this Task. Reuse id and exact content on retry. Publication, Request disposition and execution state are independent.",
+  },
+);
+
 const resultFields = {
+  communication: Type.Optional(communicationSchema),
   summary: nonEmptyStringSchema,
   inputKeys: Type.Optional(
     Type.Array(Type.String({ minLength: 1, pattern: "\\S" }), {
@@ -228,6 +261,7 @@ export const taskReconcileResultSchema = Type.Union(
 );
 
 const changeFields = {
+  communication: resultFields.communication,
   requests: resultFields.requests,
   conditions: resultFields.conditions,
   actions: resultFields.actions,
@@ -536,6 +570,8 @@ export function admitTaskReconcileResult(
     };
   }
 
+  const communication =
+    "communication" in output && output.communication ? { communication: structuredClone(output.communication) } : {};
   const report = {
     summary: output.summary.trim(),
     ...("inputKeys" in output && output.inputKeys ? { inputKeys: [...output.inputKeys] } : {}),
@@ -545,6 +581,7 @@ export function admitTaskReconcileResult(
   if (output.state === "waiting") {
     const waiting = {
       ...report,
+      ...communication,
       state: "waiting" as const,
       actions,
       ...(reviewAt !== undefined ? { reviewAt: Number(reviewAt) } : {}),
@@ -571,22 +608,29 @@ export function admitTaskReconcileResult(
       },
     };
   }
-  return { ok: true, result: { ...answer, state: "converged", actions, ...(requests.length ? { requests } : {}) } };
+  return {
+    ok: true,
+    result: { ...answer, ...communication, state: "converged", actions, ...(requests.length ? { requests } : {}) },
+  };
 }
 
 export function admitTaskChanges(output: unknown): { ok: true; changes: TaskChanges } | { ok: false; error: string } {
   if (!Check(taskChangesSchema, output))
-    return { ok: false, error: "Task changes must contain only inputKeys, facts, requests, conditions and actions" };
+    return {
+      ok: false,
+      error: "Task changes must contain only inputKeys, facts, requests, conditions, actions and communication",
+    };
   const admitted = admitTaskReconcileResult(
     { state: "waiting", summary: "Apply Task changes", facts: [], ...(output as TaskChanges) },
     { allowNeedsAgent: false },
   );
   if (!admitted.ok) return admitted;
-  const { requests, conditions, actions, inputKeys, facts } = admitted.result;
+  const { requests, conditions, actions, inputKeys, facts, communication } = admitted.result;
   if (actions?.length && !facts.length) return { ok: false, error: "Task actions require non-empty facts" };
   return {
     ok: true,
     changes: {
+      ...(communication ? { communication } : {}),
       ...(requests ? { requests } : {}),
       ...(conditions ? { conditions } : {}),
       ...(actions ? { actions } : {}),

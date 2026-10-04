@@ -438,6 +438,10 @@ export type TaskReconciliationEvent = {
 
 /** Ordered, bounded work input that this reconciliation result will observe. */
 export type TaskReconciliationEvents = {
+  /** Input identities and scoped reply context. Original payloads remain in items/continuedInputs. */
+  inputs?: Array<Omit<import("./task.js").TaskInput, "input">>;
+  /** Bounded discussion context, grouped once per referenced Conversation. */
+  communication?: import("./app.js").AppConversationResource[];
   items: TaskReconciliationEvent[];
   /** Earlier outstanding requests included in this saved assignment; not new input or new authority. */
   continuedInputs?: TaskReconciliationEvent[];
@@ -473,7 +477,12 @@ export type TaskAttempt = {
    * The same scoped Task reads available to workflows and agent tools.
    * Reads neither consume pending input nor change this attempt's binding.
    */
-  read: Pick<AppRead, "tasks" | "contract">;
+  read: Pick<AppRead, "tasks" | "contract"> & {
+    communication?: (
+      inputId: string,
+      query?: import("./conversation-contract.js").TaskCommunicationQuery,
+    ) => Promise<unknown>;
+  };
   /** Latest earlier attempt of this Task. Facts to inspect, not authority to repeat its effects. */
   previousAttempt?: {
     attemptId: string;
@@ -612,6 +621,7 @@ export type WorkflowContext<TInput = unknown> = {
   reviseTask?: TaskAttempt["reviseTask"];
   /** Apply the same changes accepted in a final result, while continuing this execution. */
   applyTaskChanges?: TaskAttempt["apply"];
+  readCommunication?: TaskAttempt["read"]["communication"];
   read: AppRead;
   agents: {
     call<S extends TSchema>(

@@ -20,7 +20,12 @@ export function taskExecutionContext(
     reviseTask: (change) => attempt.reviseTask(change),
     applyTaskChanges: (changes) => attempt.apply(changes),
     taskRead: attempt.read.tasks,
-    details: { task, declaredOutputs: attempt.declaredOutputPaths, ...(input.dependencies ? { dependencies: input.dependencies } : {}) },
+    readCommunication: attempt.read.communication,
+    details: {
+      task,
+      declaredOutputs: attempt.declaredOutputPaths,
+      ...(input.dependencies ? { dependencies: input.dependencies } : {}),
+    },
     reconciliation: {
       task: structuredClone(task),
       appId: descriptor.id,
