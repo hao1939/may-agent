@@ -315,6 +315,38 @@ that directory. They prove the bounded state repair, not
 that normal pacing has consumed the replacement input; accepted Task state must
 be read before claiming corrected consumption.
 
+## Repair incompatible Conversation input offline
+
+Use the Host's existing `operate:recover-malformed-conversation-input` command
+only against a stopped, quiesced installation, with a consistent database backup
+and an exact reviewed JSON plan. Run `--dry-run` first; both dry-run and apply
+check the Task generation, resource version and absence of a current attempt.
+The command never starts an agent.
+
+The plan binds `malformed` to the exact App, Task, input ID, source, payload,
+origin event, inbox idempotency key and Task admission key. `taskFence` carries
+the current generation/resource version and `currentAttemptId: null`;
+`recovery` supplies the original Conversation ID and a distinct stable
+idempotency key. The repair removes only the matching unaccepted admission and
+trigger, then readmits the retained payload through Conversation. It preserves
+other queued inputs, Conditions, accepted attempts and failure history. The
+replacement remains pending for the owning agent's judgment.
+
+For a legacy direct admission (`task:<inputId>`), the malformed inbox row is
+marked failed, without claiming the request was fulfilled. For a legacy
+self-follow-up (`conversation-follow-up:<appId>:<inputId>`), add
+`malformed.acceptedTurn: { attemptId, input }`, where `input` is the original
+accepted Conversation payload and `malformed.input` is the follow-up payload.
+The command verifies the original accepted attempt, its exact follow-up and
+canonical input admission. It leaves that accepted inbox row and answer
+unchanged. Only the incompatible follow-up is replaced.
+
+A changed tuple, accepted follow-up, key collision or stale Task fence aborts
+the whole transaction. Repeating the exact completed repair returns
+`already-repaired`. Record the receipt and verify preserved input identities
+before any separately authorized deployment or restart. A successful repair
+does not prove that queued messages have been answered.
+
 ## Adapter uncertainty
 
 An App result remains readable even when an adapter send fails or its provider

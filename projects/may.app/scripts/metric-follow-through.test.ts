@@ -6,7 +6,7 @@ import {
   handoffDecision,
   until,
 } from "./metric-follow-through.fixture.js";
-import { type MetricReview } from "../metric-follow-through.js";
+import { metricReviewHandoff, type MetricReview } from "../metric-follow-through.js";
 import { inspectMetricResponse } from "../agents/may/workflows/metric-response.js";
 
 const fixtures: Awaited<ReturnType<typeof fixture>>[] = [];
@@ -77,6 +77,43 @@ function investigate(
     ],
   };
 }
+
+test("a completed Conversation review persists its metric decision without a work handoff", async () => {
+  const f = await fixture(async () => {
+    throw new Error("Completed review must not commission work");
+  });
+  fixtures.push(f);
+  const decision = metricReviewHandoff(
+    {
+      task: {
+        state: "converged",
+        summary: "Reviewed the evidence",
+        facts: ["report:checked"],
+      },
+      decisions: [
+        {
+          ...f.subject,
+          disposition: "no-change",
+          reason: "No intervention justified",
+          evidence: ["report:checked"],
+        },
+      ],
+    },
+    { response: "No further action is needed." },
+  );
+  await f.handoff(decision);
+  await until(
+    () => f.decisions().length === 1,
+    "Conversation metric disposition accepted",
+  );
+  expect(f.decisions()[0].decision).toMatchObject({ disposition: "no-change" });
+  expect(f.decisions()[0].decision.linkedTask).toBeUndefined();
+  expect(f.get("goal/poc-message")).toBeNull();
+  expect(f.attempts).toEqual([]);
+  await f.restart();
+  expect(f.decisions()).toHaveLength(1);
+  expect(f.attempts).toEqual([]);
+});
 
 test("the receiving owner accepts one breach plan; samples stay quiet and the repair result returns to its Request", async () => {
   let calls = 0;

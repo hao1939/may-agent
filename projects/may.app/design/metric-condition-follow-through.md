@@ -10,6 +10,9 @@ judgment and #295 companion changes were activated on October 3 in App release
 [rollout evidence](token-efficiency-proposal-20261002.md#october-3-rollout-verification).
 Activation does not prove that every older sample Condition was retired or
 establish sustained token savings.
+The October 4 completed-Conversation review and admission corrections below
+have source regression coverage and an offline recovery rehearsal. They have
+not been deployed; the stopped installation's backlog remains pending.
 
 The old helper prepared a metric fact, then asked the agent to save its next
 review time, create work and copy its Task ID separately. The observed failure
@@ -82,10 +85,22 @@ and Evaluation report intake. A bounded call inside an existing Task returns the
 complete composed result for `finish().result`. There is no Task ID or date to
 copy separately. Existing Tasks keep their chosen executor and requirements.
 
-Conversation cannot retain Conditions. The caller supplies its current Topic,
-Request updates and optional exact May Task to the helper along with the review.
-The helper returns an ordinary Conversation `followUp`, carrying that review in
-`goal.data.context.metricResponse`. No disposition is claimed by Conversation.
+Conversation finishes the review it considered; independent Requests and waits
+can remain open. For a completed `no-change` or `recovered` review, the agent
+supplies `task.state: converged` to `metric-response` with its Conversation
+context. The helper returns summary and disposition facts directly, plus the
+chosen response and Request updates. It creates no follow-up or investigation
+link. Acceptance of that Conversation result records the decision. The helper
+rejects Task effects or a target supplied with this completed form rather than
+silently dropping requested work.
+
+For remaining metric work, the caller supplies a waiting review, its current
+Topic/Request updates and an optional exact ordinary May Task whose scope fits.
+Do not target the current Conversation Task. The helper returns an ordinary
+Conversation `followUp`, carrying the review in
+`goal.data.context.metricResponse`. Preparing this handoff claims no accepted
+disposition. Host checks target executor compatibility before admission;
+Conversation input and ordinary Task input are not interchangeable.
 A new goal selects the `metric-follow-through` workflow. Each eligible attempt
 asks the owning agent to judge the full current assignment, including the
 handed-off review, all pending input, retained waits and previous attempt feedback.
@@ -120,8 +135,9 @@ approval requirement.
 
 ## One authority for live deadlines
 
-Accepted Task facts still supply the existing `metric_dispositions` view. New
-version 1 facts bind `linkedTask` to the owning Task and mark unresolved decisions
+Accepted Task facts still supply the existing `metric_dispositions` view. A
+completed Conversation review omits `linkedTask`; it created no investigation.
+Investigation version 1 facts bind `linkedTask` to the owning Task and mark unresolved decisions
 with `followThrough:"task"`. They omit nextReviewAt. The existing read projection
 already supports this optional field; no Host schema or storage change is needed.
 

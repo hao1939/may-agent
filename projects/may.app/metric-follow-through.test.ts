@@ -91,6 +91,76 @@ function reconciliation(): TaskReconciliationContext {
   };
 }
 
+test("completed Conversation metric review retains the judgment without commissioning work", async () => {
+  for (const disposition of ["no-change", "recovered"] as const) {
+    const complete: MetricReview = {
+      task: {
+        state: "converged",
+        summary: "Review is complete",
+        facts: ["publication:checked"],
+      },
+      decisions: [{ ...decision, disposition }],
+    };
+    const conversation = { response: "No further action is needed." };
+    const result = await respondToMetric(
+      createTestAppWorkflowContext({
+        input: { review: complete, conversation },
+      }),
+      async () => ({
+        available: true,
+        metricId: decision.metricId,
+        alerts: [],
+        dispositions: [],
+      }),
+    );
+    const output = result.output as ReturnType<typeof metricReviewHandoff>;
+    expect(output).toMatchObject({
+      summary: "Review is complete",
+      response: conversation.response,
+    });
+    expect(output.followUp).toBeUndefined();
+    expect(output.facts?.[0]).toBe("publication:checked");
+    expect(
+      JSON.parse(output.facts![1]!.slice("metric-disposition:".length)),
+    ).toMatchObject({ version: 1, metricId: decision.metricId, disposition });
+    expect(output.facts![1]).not.toContain("linkedTask");
+    expect(
+      metricReviewHandoff(
+        { ...complete, task: { ...complete.task, response: "Reviewed" } },
+        {},
+      ).response,
+    ).toBe("Reviewed");
+    expect(() =>
+      metricReviewHandoff(
+        { ...complete, task: { ...complete.task, response: "Reviewed" } },
+        conversation,
+      ),
+    ).toThrow("Use one response");
+    expect(() =>
+      metricReviewHandoff(complete, {
+        task: { appId: "may", taskId: "conversation" },
+      }),
+    ).toThrow("without Task effects");
+    expect(() =>
+      metricReviewHandoff(
+        {
+          ...complete,
+          task: {
+            ...complete.task,
+            requests: [
+              { id: "work", appId: "may", input: { kind: "goal", data: {} } },
+            ],
+          },
+        },
+        {},
+      ),
+    ).toThrow("without Task effects");
+    expect(() =>
+      metricReviewHandoff({ ...complete, decisions: [decision] }, {}),
+    ).toThrow("without Task effects");
+  }
+});
+
 test("May's real input mapper selects the workflow only for an explicit metric plan, and exposes the observer", () => {
   const handoff = metricReviewHandoff(review(), { topic: { kind: "none" } });
   expect(handoff.response).toBeUndefined();

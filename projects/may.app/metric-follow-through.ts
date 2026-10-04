@@ -93,6 +93,14 @@ export function metricReviewResult(
   const review = readMetricReview(value);
   const result = review.task;
   assertInvestigationWaits(result, owner.task.conditions);
+  return composeMetricReview(review, owner);
+}
+
+function composeMetricReview(
+  review: MetricReview & { task: TaskReconcileResult },
+  owner?: { appId: string; taskId: string },
+): TaskReconcileResult {
+  const result = review.task;
   const seen = new Set<string>();
   const facts = review.decisions.map((decision) => {
     const key = JSON.stringify([decision.metricId, decision.alertId]);
@@ -121,7 +129,9 @@ export function metricReviewResult(
     const fact = `metric-disposition:${JSON.stringify({
       version: 1,
       ...decision,
-      linkedTask: { appId: owner.appId, taskId: owner.taskId },
+      ...(owner
+        ? { linkedTask: { appId: owner.appId, taskId: owner.taskId } }
+        : {}),
       // Current deadlines are read from this Task, never duplicated in a fact.
       ...(unresolved ? { followThrough: "task" } : {}),
     })}`;
@@ -161,18 +171,47 @@ export type MetricConversation = Pick<
   task?: { appId: string; taskId: string };
 };
 
-/** Transport the selected result once; only Task acceptance records its decisions. */
+/** Prepare either a completed Conversation review or a handoff of remaining work. */
 export function metricReviewHandoff(
   value: unknown,
   conversation: MetricConversation,
 ): ConversationTurnResult {
   const review = readMetricReview(value);
   assertInvestigationWaits(review.task);
-  if (
-    !review.decisions.length ||
-    review.task.state !== "waiting" ||
-    review.task.inputKeys !== undefined
-  )
+  if (!review.decisions.length || review.task.inputKeys !== undefined)
+    throw new Error(
+      "Metric review needs decisions; input scope comes from admission",
+    );
+  if (review.task.state === "converged") {
+    if (
+      review.decisions.some(
+        (decision) =>
+          !["no-change", "recovered"].includes(decision.disposition),
+      ) ||
+      review.task.actions?.length ||
+      review.task.requests?.length ||
+      review.task.result !== undefined ||
+      conversation.task !== undefined
+    )
+      throw new Error(
+        "A completed Conversation metric review records its decision without Task effects or a follow-up target; hand off remaining work separately",
+      );
+    if (
+      review.task.response &&
+      conversation.response &&
+      review.task.response !== conversation.response
+    )
+      throw new Error("Use one response for the completed Conversation review");
+    const response = conversation.response ?? review.task.response;
+    return {
+      summary: review.task.summary,
+      facts: composeMetricReview(review).facts,
+      ...(response ? { response } : {}),
+      topic: conversation.topic,
+      requestUpdates: conversation.requestUpdates,
+    };
+  }
+  if (review.task.state !== "waiting")
     throw new Error(
       "A metric handoff requires a waiting decision; input scope comes from admission",
     );

@@ -167,6 +167,16 @@ Reply requirements belong to `response`; delegation alone requires neither a new
 The agent chooses the work. On accepted settlement, the Host saves the input, Task reference and return association together.
 Existing Topic-to-Task links return results through [Routing and authority](conversation-execution.md#routing-and-authority).
 
+A review that needs no further work finishes with its summary and facts in the
+current Conversation result. Unrelated open Requests or waits do not require a
+follow-up for that review. When work remains, `followUp` targets an ordinary work
+Task. A Conversation executor consumes input admitted through Conversation;
+attaching ordinary Task work to it bypasses that input contract. Host admission
+checks the actual target executor and rejects incompatible input before saving
+effects. An explicit incompatible follow-up gets the same feedback during
+`finish` validation, so the agent can correct it in the current attempt. An App
+mapper still runs only once, during settlement, under the same atomic check.
+
 Closure must match the latest accepted scope and explain the outcome in
 Conversation. Persist its message and closure decision consistently, so retry
 cannot lose the explanation or produce duplicate closure. Adapter delivery

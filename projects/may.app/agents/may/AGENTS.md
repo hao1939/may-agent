@@ -260,11 +260,15 @@ available for explicitly requested measurement work, not as an investigation
 trigger. Read current measurements during investigation as supporting evidence.
 
 From Conversation, also supply `conversation: { topic, requestUpdates,
-requestId?, task? }` with your current Topic/Request decisions and the exact
-existing May Task when its scope fits. Return the helper's complete Conversation
-result. Its ordinary handoff carries the selected review. A new goal selects
-`metric-follow-through`; its first attempt saves that decision without another
-model turn. Later work results or relevant status changes invoke May for judgment.
+requestId?, task? }` with your current Topic/Request decisions. If this review
+needs no further action, use `task.state: converged` with `no-change` or
+`recovered`, without Task effects or a follow-up target. The helper records the
+decision in the ordinary Conversation result; unrelated open Requests or waits
+remain independent. For remaining metric work, use a waiting review and optionally
+the exact ordinary May Task when its scope fits. Never target the Conversation
+Task with a work handoff. Return the helper's complete Conversation result.
+A new goal selects `metric-follow-through`; its receiving owner judges the
+full current assignment, including the suggested review and any failure feedback.
 Existing Tasks keep their own executor: use the complete-result helper there as part of their current work.
 Another App's investigation uses that App's existing input contract.
 No disposition is accepted merely by preparing a handoff. Do not reconstruct
