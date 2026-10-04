@@ -307,8 +307,10 @@ generation. Historical completion receipts remain evidence, not authority to hid
 newer work. Cancellation keeps its own durable authority and fence.
 
 **Implementation status:** Merged in Host [PR #325](https://github.com/hao1939/may-agent/pull/325)
-at `d8c877577`; deployment and live recovery remain separate checks.
-Connected trials and their limits are recorded in
+at `d8c877577` and deployed locally on October 4. The real Conversation switched
+to agent execution and made accepted progress; complete backlog settlement is
+not yet established. One operator Retry advanced its existing backoff for the
+trial. Connected trials, live evidence and their limits are recorded in
 [the failover review](../archive/reviews/task-agent-failover-20261004.md).
 
 

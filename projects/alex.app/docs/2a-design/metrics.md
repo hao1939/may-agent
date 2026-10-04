@@ -236,8 +236,10 @@ reads and periodic review can consume it; an App may configure a breach rule
 and route the existing `metric.breach`/`metric.recovered` transitions. Startup
 preserves that App calibration and retirement. Repeated measurement stays quiet,
 and a continuing breach does not create repeated review requests. This implements
-durable observation; deployment and evidence that an evaluator actually follows
-up remain separate acceptance checks.
+durable observation. The [October 4 rollout](../archive/reviews/task-agent-failover-20261004.md#live-rollout)
+verified two naturally scheduled samples retaining count one across agent
+continuations. Evidence that an evaluator independently follows up remains a
+separate acceptance check.
 
 ## Public App capability
 
