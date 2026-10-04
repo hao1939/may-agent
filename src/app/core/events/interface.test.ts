@@ -35,6 +35,7 @@ function fixture(conversationAppId?: string) {
     bus,
     db,
     conversationAppId,
+    conversationAgent: "helper",
     validateAppInput: (appId, input) => {
       if (appId !== "sample" || input.kind !== "message") throw new Error("invalid App input");
     },
@@ -222,7 +223,7 @@ describe("simple event interface", () => {
   it.each(["sample", " sample.app "])("requires durable input for the selected conversational App: %s", (selection) => {
     const { db, events } = fixture(selection);
     for (const appId of ["sample", "sample.app", " sample.app "]) {
-      for (const target of [{ data: { agent: appId } }, { target: { appId }, data: {} }]) {
+      for (const target of [{ data: { agent: "helper" } }, { target: { appId }, data: {} }]) {
         expect(() =>
           events.publish(
             { ...target, type: "chat.start.requested", data: { ...target.data, message: "Discuss this" } },
@@ -248,7 +249,12 @@ describe("simple event interface", () => {
   });
 
   it("allows direct agent input without a conversational capability", () => {
-    const { events } = fixture();
+    const { db, events } = fixture();
+    expect(() => events.publish(
+      { type: "chat.start.requested", data: { agent: "helper", message: "Interface input" } },
+      { source: "fixture" },
+    )).toThrow("No Conversation App is configured");
+    expect(db.prepare("SELECT COUNT(*) AS count FROM events").get()).toEqual({ count: 0 });
     const receipt = events.publish(
       { type: "chat.start.requested", data: { agent: "may", message: "Direct agent input" } },
       { source: "fixture" },

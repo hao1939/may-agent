@@ -3,6 +3,96 @@ import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
+for (const failure of ["missing-binding", "storage", "close-flush"] as const) {
+  test(`console survives ${failure} input failure without accepting or retrying it`, async () => {
+    const root = mkdtempSync(join(tmpdir(), "may-console-failure-"));
+    const moduleUrl = (path: string) => JSON.stringify(new URL(path, import.meta.url).href);
+    const child = Bun.spawn(
+      [process.execPath, "--eval", `
+        import assert from "node:assert/strict";
+        import { runInteractiveLoop } from ${moduleUrl("./daemon-loops.ts")};
+        import { attachCommandRouter } from ${moduleUrl("./command-router.ts")};
+        import { EventBus } from ${moduleUrl("./core/events/bus.ts")};
+        import { DbWriter } from ${moduleUrl("../lib/db-writer.ts")};
+        import { getDb, closeDb } from ${moduleUrl("../lib/db/connection.ts")};
+
+        const root = ${JSON.stringify(root)};
+        const failure = ${JSON.stringify(failure)};
+        const bus = new EventBus();
+        const writer = new DbWriter(root);
+        bus.setPersistenceSubscriber(writer.handler);
+        bus.setDeliveryRecorder(writer.recordDelivery);
+        const db = getDb(root);
+        if (failure === "storage") db.exec(
+          "CREATE TEMP TRIGGER reject_input BEFORE INSERT ON events " +
+          "WHEN NEW.event_type = 'app.input.requested' " +
+          "BEGIN SELECT RAISE(ABORT, 'fixture input storage unavailable'); END"
+        );
+        const manager = { status: () => [], run: () => { throw new Error("unexpected model call"); } };
+        let readline;
+        let prompts = 0;
+        let reloads = 0;
+        let inputs = 0;
+        let closed = 0;
+        const sendLine = (text) => process.stdin.emit("data", Buffer.from(text + "\\n"));
+        const router = attachCommandRouter({
+          bus, manager, projectRoot: root, interfaceAgent: "helper",
+          conversationAppId: failure === "storage" ? "support" : undefined,
+          reload: () => {
+            reloads++;
+            setImmediate(() => sendLine("quit"));
+            return { ok: true, summary: "fixture reload complete" };
+          },
+          restart: () => { throw new Error("unexpected restart"); },
+          shutdown: () => { throw new Error("unexpected shutdown"); },
+        });
+        await runInteractiveLoop({
+          bus, manager,
+          handleInput: (text, source) => { inputs++; router.handleInput(text, source); },
+          gracefulShutdown: () => { throw new Error("unexpected shutdown"); },
+          socketUI: { close: () => closed++ },
+          telegramBot: { close: () => closed++ },
+          setActiveReadline: (rl) => { readline = rl; },
+          isCancelLatched: () => false, latchCancel: () => {},
+          emitPrompt: () => {
+            if (++prompts === 1) setImmediate(() => {
+              sendLine("hello");
+              if (failure === "close-flush") readline.close();
+            });
+            else if (failure !== "close-flush") setImmediate(() => sendLine("/reload"));
+          },
+        });
+        assert.equal(prompts, 2);
+        assert.equal(inputs, failure === "close-flush" ? 1 : 2);
+        assert.equal(reloads, failure === "close-flush" ? 0 : 1);
+        assert.equal(closed, 2);
+        assert.equal(readline, null);
+        assert.equal(db.prepare("SELECT COUNT(*) AS n FROM events WHERE event_type = 'app.input.requested'").get().n, 0);
+        router.close();
+        closeDb(root);
+        console.log("console survived");
+      `],
+      { stdin: "pipe", stdout: "pipe", stderr: "pipe", timeout: 10_000 },
+    );
+    try {
+      const [code, stdout, stderr] = await Promise.all([
+        child.exited,
+        new Response(child.stdout).text(),
+        new Response(child.stderr).text(),
+      ]);
+      expect({ code, stderr }).toMatchObject({ code: 0 });
+      expect(stdout).toContain("console survived");
+      expect(stderr).toContain(failure === "storage"
+        ? "[console] Input failed: fixture input storage unavailable"
+        : "[console] Input failed: No Conversation App is configured");
+    } finally {
+      child.kill();
+      await child.exited;
+      rmSync(root, { recursive: true, force: true });
+    }
+  }, 15_000);
+}
+
 test("heartbeat survives locked storage at startup and on a timer, then records the next sample", async () => {
   const root = mkdtempSync(join(tmpdir(), "may-heartbeat-"));
   const moduleUrl = (path: string) => JSON.stringify(new URL(path, import.meta.url).href);

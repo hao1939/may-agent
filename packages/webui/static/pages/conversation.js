@@ -8,7 +8,7 @@ let maySendPending = false;
 let mayUnconfirmedInput = null;
 
 function isMayConversation() {
-  return currentAgentChat === 'may' && !isSessionPageMode();
+  return Boolean(humanInterface.appId) && currentAgentChat === humanInterface.agent && !isSessionPageMode();
 }
 
 function updateConversationStop() {
@@ -22,7 +22,7 @@ function updateConversationStop() {
 
 function subscribeMayConversation() {
   if (ws?.readyState === WebSocket.OPEN && isMayConversation()) {
-    ws.send(JSON.stringify({ type: 'subscribe', sessions: ['*'], conversations: ['may:primary'] }));
+    ws.send(JSON.stringify({ type: 'subscribe', sessions: ['*'], conversations: [humanInterface.conversationId] }));
   }
   updateConversationStop();
 }
@@ -37,7 +37,7 @@ function refreshMayConversation() {
     do {
       mayConversationDirty = false;
       try {
-        const response = await fetch('/api/conversation?appId=may&conversationId=may%3Aprimary', { signal: AbortSignal.timeout(5000) });
+        const response = await fetch('/api/conversation?' + new URLSearchParams({ appId: humanInterface.appId, conversationId: humanInterface.conversationId }), { signal: AbortSignal.timeout(5000) });
         const conversation = await response.json();
         if (!response.ok) throw new Error(conversation.error || 'Conversation unavailable');
         if (!isMayConversation()) return;
@@ -87,8 +87,8 @@ async function stopMayConversation() {
   updateConversationStop();
   try {
     await publishMayConversationEvent({
-      type: 'conversation.turn.stop.requested', target: { appId: 'may' },
-      data: { conversationId: 'may:primary', turnId: turn.id, expectedRevision: turn.revision },
+      type: 'conversation.turn.stop.requested', target: { appId: humanInterface.appId },
+      data: { conversationId: humanInterface.conversationId, turnId: turn.id, expectedRevision: turn.revision },
       idempotencyKey: `web-stop:${turn.id}:${turn.revision}`,
     });
     toast('Stop request accepted. Background Tasks continue.');
@@ -112,8 +112,8 @@ async function sendMayConversation() {
   const { id } = mayUnconfirmedInput;
   try {
     await publishMayConversationEvent({
-      type: 'conversation.message.created', target: { appId: 'may' },
-      data: { conversationId: 'may:primary', author: { kind: 'human', id }, text: text.trim(), metadata: { channel: 'web-ui' } },
+      type: 'conversation.message.created', target: { appId: humanInterface.appId },
+      data: { conversationId: humanInterface.conversationId, author: { kind: 'human', id }, text: text.trim(), metadata: { channel: 'web-ui' } },
       idempotencyKey: id,
     });
     mayUnconfirmedInput = null;

@@ -1,3 +1,4 @@
+import { readFileWritePolicy, type FileWritePolicy } from "../lib/tools/file-write-policy.js";
 import type { AgentMessage, AgentTool } from "@earendil-works/pi-agent-core";
 import type { TSchema } from "@earendil-works/pi-ai";
 import { appendFileSync, mkdirSync, writeFileSync } from "node:fs";
@@ -36,6 +37,7 @@ export type DirectAgentRunOptions = {
   agentName: string;
   task: string;
   projectRoot: string;
+  /** Explicit installation-layout workspace, possibly separate from projectRoot. */
   workRoot: string;
   agentsRoot: string;
   sharedRoot: string;
@@ -121,13 +123,14 @@ async function buildDirectTools(
   source: AgentDirectory,
   options: DirectAgentRunOptions,
   effectiveTools: string[],
+  fileWritePolicy: FileWritePolicy,
 ): Promise<{ tools: AgentTool[]; cleanup: Array<() => void> }> {
   const tools: AgentTool[] = [];
   const cleanup: Array<() => void> = [];
   for (const capability of effectiveTools) {
     switch (capability) {
       case "coding":
-        tools.push(...createCodingTools(options.workRoot, { agentName: config.name }));
+        tools.push(...createCodingTools(options.workRoot, { agentName: config.name, fileWritePolicy }));
         break;
       case "read-only":
         tools.push(createReadTool(options.workRoot) as AgentTool);
@@ -188,7 +191,11 @@ export async function prepareDirectAgentExecution(options: DirectAgentRunOptions
   const model = options.models[config.model];
   if (!model) throw new Error(`Agent ${config.name} uses unknown model ${config.model}`);
   let executionManifest = resolveDirectToolPolicy(config.name, config.tools, options.toolDenials);
-  const { tools, cleanup } = await buildDirectTools(config, source, options, executionManifest.effectiveTools);
+  const fileWritePolicy: FileWritePolicy = {
+    ...readFileWritePolicy(options.sharedRoot, options.projectRoot),
+    execution: { root: resolve(options.workRoot), sourceRoot: resolve(options.projectRoot) },
+  };
+  const { tools, cleanup } = await buildDirectTools(config, source, options, executionManifest.effectiveTools, fileWritePolicy);
   const definitionSource = options.visibleAgentDir ? { ...source, dir: resolve(options.visibleAgentDir) } : source;
   const definition = await buildAgentDefinition({
     config,
@@ -199,6 +206,7 @@ export async function prepareDirectAgentExecution(options: DirectAgentRunOptions
     sharedRoot: options.sharedRoot,
     globalAgentsRoot: options.globalAgentsRoot ?? join(options.projectRoot, "agents"),
   });
+  definition.fileWritePolicy = fileWritePolicy;
   for (const diagnostic of definition.skillCatalog?.diagnostics ?? []) options.onNotice?.(diagnostic);
 
   const sessionId = options.sessionId ?? generateId("direct");

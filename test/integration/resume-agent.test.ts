@@ -363,7 +363,7 @@ describe("SubagentManager.resumeStaleSessions()", () => {
       expect.objectContaining({
         type: "session.resume_failed",
         source: "manager",
-        owner: "agent:may",
+        owner: "system:host",
         data: expect.objectContaining({
           sessionId: "missing-session",
           category: "session_not_found",

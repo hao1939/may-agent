@@ -5,6 +5,19 @@ import { tmpdir } from "node:os";
 import { parseAppArgs } from "./app-args.js";
 
 describe("app args", () => {
+  it.each([["--agent", "selected"], ["--agent=selected"]])("captures the full binding with CLI precedence: %j", (...flags) => {
+    const args = parseAppArgs(["may-agent", ...flags], {
+      AGENT: "unused", DAEMON_AGENT: "legacy", CONVERSATION_APP: "support", CONVERSATION_ID: "retained-room",
+    });
+    expect(args.humanInterface).toEqual({ agent: "selected", appId: "support", conversationId: "retained-room" });
+    expect(() => parseAppArgs(["may-agent", ...flags], { CONVERSATION_ID: "orphan" }))
+      .toThrow("requires CONVERSATION_APP");
+  });
+
+  it.each([["--agent"], ["--agent", "--send"], ["--agent="], ["--agent", " "]])("rejects missing agent values: %j", (...flags) => {
+    expect(() => parseAppArgs(["may-agent", ...flags], {})).toThrow("--agent requires an agent name");
+  });
+
   it("parses agent selection and task-file content", () => {
     const root = mkdtempSync(join(tmpdir(), "app-args-"));
     try {
@@ -13,7 +26,7 @@ describe("app args", () => {
 
       const args = parseAppArgs(["may-agent", "--agent", "scout", "--task-file", taskFile], {});
 
-      expect(args.interfaceAgent).toBe("scout");
+      expect(args.humanInterface.agent).toBe("scout");
       expect(args.initialTask).toBe("do the work");
       expect(args.webOnlyMode).toBe(false);
     } finally {
@@ -24,7 +37,7 @@ describe("app args", () => {
   it("uses conventional env defaults and detects web-only mode", () => {
     const args = parseAppArgs(["may-agent", "--web"], { AGENT: "may" });
 
-    expect(args.interfaceAgent).toBe("may");
+    expect(args.humanInterface.agent).toBe("may");
     expect(args.webEnabled).toBe(true);
     expect(args.webOnlyMode).toBe(true);
   });
@@ -47,7 +60,7 @@ describe("app args", () => {
   it("uses DAEMON_AGENT as the interface agent when AGENT is unset", () => {
     const args = parseAppArgs(["may-agent", "--web"], { DAEMON_AGENT: "aks-explorer" });
 
-    expect(args.interfaceAgent).toBe("aks-explorer");
+    expect(args.humanInterface.agent).toBe("aks-explorer");
   });
 
   it("throws a clear error when task-file is missing", () => {

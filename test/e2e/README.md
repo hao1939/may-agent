@@ -57,7 +57,6 @@ Committed fixtures provide minimal agents, mechanical handlers, a no-model
 workflow, and project files. Handler progress that spans invocations is stored
 in the sandbox database, not hidden in module globals.
 
-Current system contracts live in `may-agent.app/docs`. Historical harness
-findings are in that tree's
-`archive/implementation/2026-05-19-e2e-harness-findings.md`; they are not the
-current coverage checklist.
+The [test guide](../README.md) describes current coverage ownership. Keep Host
+fixtures self-contained; App acceptance and historical App trials belong with
+the owning App and are supplied separately when needed for an integration.

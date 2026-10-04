@@ -113,7 +113,7 @@ function ownerForTarget(target: string): string {
 
 function targetHint(target: string, allowedTargets: Set<string> | null): string {
   if (/^(functions?|tools?)\./i.test(target)) {
-    return `"${target}" is a tool namespace, not a message receiver. To send a message, call the message tool itself with to set to an agent name such as "may", "dev", "scout", or "human".`;
+    return `"${target}" is a tool namespace, not a message receiver. To send a message, call the message tool itself with to set to an agent name from the available target list, or "human".`;
   }
   if (target.includes(".")) {
     return `"${target}" does not look like an agent name. Use an exact configured agent name or "human".`;
@@ -151,7 +151,7 @@ export function createMessageTool(opts: MessageToolOptions): AgentTool {
           opts.emit?.({
             type: "message.delivery_failed",
             source: `agent:${opts.agentName}`,
-            owner: "agent:may",
+            owner: `agent:${opts.agentName}`,
             urgency: urgencyForPriority(params.priority),
             data: {
               from: opts.agentName,

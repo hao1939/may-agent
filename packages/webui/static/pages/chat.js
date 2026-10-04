@@ -441,7 +441,7 @@ function connectWs() {
         if (event.type === 'connected') {
           subscribeMayConversation();
           void refreshMayConversation();
-        } else if (event.type === 'conversation.updated' && data.appId === 'may' && data.conversationId === 'may:primary') {
+        } else if (event.type === 'conversation.updated' && data.appId === humanInterface.appId && data.conversationId === humanInterface.conversationId) {
           void refreshMayConversation();
         }
         // Keep global status/feed current while rendering only canonical
@@ -581,7 +581,7 @@ function connectWs() {
           renderSessionPicker();
           // Auto-attach to existing chat session (preserves conversation across refreshes)
           if (!mayConversation && !currentSessionId) {
-            const chatSession = activeSessions.find(s => s.agent === 'may' && (s.status === 'running' || (s.status === 'idle' && s.kind === 'chat')));
+            const chatSession = activeSessions.find(s => s.agent === humanInterface.agent && (s.status === 'running' || (s.status === 'idle' && s.kind === 'chat')));
             if (chatSession) {
               switchSession(chatSession.sessionId);
             } else {
@@ -597,7 +597,7 @@ function connectWs() {
             renderSessionPicker();
             // Auto-attach to chat session if we don't have one
             if (!mayConversation && !currentSessionId) {
-              const chatSession = activeSessions.find(s => s.agent === 'may' && (s.status === 'running' || (s.status === 'idle' && s.kind === 'chat')));
+              const chatSession = activeSessions.find(s => s.agent === humanInterface.agent && (s.status === 'running' || (s.status === 'idle' && s.kind === 'chat')));
               if (chatSession) {
                 switchSession(chatSession.sessionId);
               }
@@ -610,6 +610,10 @@ function connectWs() {
 }
 
 function sendChat() {
+  if (currentAgentChat === humanInterface.agent && !isSessionPageMode() && !humanInterface.appId) {
+    toast("No Conversation App is configured");
+    return;
+  }
   if (isMayConversation()) { void sendMayConversation(); return; }
   const input = document.getElementById('chat-input');
   const msg = input.value.trim();
@@ -638,7 +642,7 @@ function sendChat() {
       { message: msg },
       { target: { sessionId: currentSessionId } },
     );
-  } else if (currentAgentChat) {
+  } else if (currentAgentChat && currentAgentChat !== humanInterface.agent) {
     // Telegram-style: agent chat with no session yet. POST spawns one.
     const newParam = forceNewAgentChat ? '?new=true' : '';
     forceNewAgentChat = false;
@@ -652,11 +656,12 @@ function sendChat() {
       else setTimeout(() => initAgentChat(currentAgentChat), 800);
     }).catch(e => toast('Failed: ' + e.message));
   } else {
+    if (!humanInterface.appId) { toast("No Conversation App is configured"); return; }
     // Chat mode — input to the interface agent
     sendIntent(
       'app.input.requested',
-      { input: { kind: 'message', data: { message: msg } }, channel: 'web-ui' },
-      { target: { appId: 'may' } },
+      { input: { kind: 'message', data: { message: msg } }, channel: 'web-ui', conversationId: humanInterface.conversationId },
+      { target: { appId: humanInterface.appId } },
     );
   }
   input.value = '';

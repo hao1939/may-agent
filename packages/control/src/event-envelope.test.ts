@@ -2,8 +2,8 @@ import { describe, expect, it } from "bun:test";
 import { buildCanonicalEventEnvelope, isCanonicalEventEnvelope, normalizeEventOwner } from "./event-envelope.js";
 
 describe("event envelope helpers", () => {
-  it("normalizes owners with the human deputy rule", () => {
-    expect(normalizeEventOwner(undefined)).toBe("agent:may");
+  it("preserves explicit owners and attributes missing ownership to Host", () => {
+    expect(normalizeEventOwner(undefined)).toBe("system:host");
     expect(normalizeEventOwner("may")).toBe("agent:may");
     expect(normalizeEventOwner("agent:dev")).toBe("agent:dev");
     expect(normalizeEventOwner("project:alpha-project")).toBe("project:alpha-project");

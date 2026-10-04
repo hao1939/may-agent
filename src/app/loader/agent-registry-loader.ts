@@ -1,3 +1,4 @@
+import { readFileWritePolicy } from "../../lib/tools/file-write-policy.js";
 import { existsSync } from "node:fs";
 import { resolve } from "node:path";
 import type { ModelWithApiKey } from "../../lib/types.js";
@@ -80,7 +81,7 @@ function reportInvalidGeneration(bus: EventBus, errors: readonly ValidationError
   bus.emit({
     type: "agent.config_invalid",
     source: "loader",
-    owner: "agent:may",
+    owner: "system:host",
     urgency: "immediate",
     data: {
       count: errors.length,
@@ -130,6 +131,7 @@ export async function prepareAgents(
   runtime: AgentRegistryRuntime,
 ): Promise<PreparedAgentGeneration> {
   const { agentsRoot, projectRoot, projectsRoot, models, manager } = opts;
+  const fileWritePolicy = readFileWritePolicy(opts.definitionSharedRoot ?? opts.sharedRoot ?? resolve(opts.projectRoot, "shared"), opts.projectRoot);
   const allErrors: ValidationError[] = [];
   const warnings: string[] = [];
   const requestedNames = opts.agentNames ? new Set(opts.agentNames.map((name) => name.trim()).filter(Boolean)) : null;
@@ -190,6 +192,7 @@ export async function prepareAgents(
         model: models[config.model],
         tools: await buildTools(config, {
           ...opts,
+          fileWritePolicy,
           projectRoot: effectiveProjectRoot,
           agentsRoot: agentsRootForAgentDir(source),
           globalAgentsRoot: agentsRoot,
@@ -209,6 +212,7 @@ export async function prepareAgents(
       for (const message of definition.skillCatalog?.diagnostics ?? []) {
         allErrors.push({ agent: config.name, field: "skills", message });
       }
+      definition.fileWritePolicy = fileWritePolicy;
       definitions.push(definition);
     } catch (error) {
       allErrors.push({

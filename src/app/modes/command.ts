@@ -1,3 +1,5 @@
+import type { InterfaceBinding } from "@may-agent/control";
+
 export async function runStatusMode(opts: {
   persistDir: string;
   notify: boolean;
@@ -12,15 +14,13 @@ export async function runStatusMode(opts: {
 
 export async function runMessageMode(opts: {
   argv: string[];
-  persistDir: string;
-  agentsRoot: string;
+  socketPath: string;
+  interface: InterfaceBinding;
 }): Promise<number> {
   const { parseSendArgs, cliSend } = await import("../cli-send.js");
   const sendOpts = parseSendArgs(opts.argv);
   if (!sendOpts) return 0;
 
-  sendOpts.persistDir = opts.persistDir;
-  sendOpts.agentsRoot = opts.agentsRoot;
-  const delivered = await cliSend(sendOpts);
+  const delivered = await cliSend({ ...sendOpts, socketPath: opts.socketPath, interface: opts.interface });
   return delivered ? 0 : 1;
 }

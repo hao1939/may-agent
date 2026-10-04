@@ -16,6 +16,7 @@ import {
 export type { SocketFrame } from "@may-agent/control/protocol";
 
 export interface SocketUIOptions {
+  conversationAppId?: string;
   socketPath: string;
   events: Pick<EventInterface, "get" | "subscribe">;
   publishEvent: AttachControlSocketOptions["publishEvent"];
@@ -99,6 +100,7 @@ export async function attachSocketUI(opts: SocketUIOptions): Promise<SocketUI> {
     invokeProjectAction: opts.invokeProjectAction,
     subscribeEvents: (handler) => events.subscribe({}, handler),
     onInfo: opts.reportInfo,
+    conversationAppId: opts.conversationAppId,
     agentName,
     instance,
   });

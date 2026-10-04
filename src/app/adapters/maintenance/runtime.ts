@@ -4,9 +4,9 @@
  * App model/workflow execution belongs exclusively to Task attempts.
  * Maintenance observations are best-effort and never acknowledge App work.
  *
- * Design: projects/may-agent.app/docs/2a-design/cron.md
  */
 
+import { normalizeEventOwner } from "../../../../packages/control/src/event-envelope.js";
 import { resolve, dirname } from "node:path";
 import { childEventTrace, EVENT_ROW_ID, type EventBus, type SystemEvent } from "../../core/events/bus.js";
 import { getDb } from "../../../lib/db/connection.js";
@@ -390,7 +390,7 @@ export class HostMaintenance {
       opts?.triggerEvent ?? {
         type: `trigger.${entry.name}`,
         source: "manual",
-        owner: `agent:${entry.agent || "may"}`,
+        owner: normalizeEventOwner(entry.agent),
         timestamp: Date.now(),
         data: { entry: entry.name },
       },
@@ -564,7 +564,7 @@ export class HostMaintenance {
       this.fireHandler(entry, {
         type: "timer.tick",
         source: "timer",
-        owner: `agent:${entry.agent || "may"}`,
+        owner: normalizeEventOwner(entry.agent),
         timestamp: Date.now(),
         data: { entry: entry.name },
       });
@@ -615,13 +615,13 @@ export class HostMaintenance {
     const startMs = Date.now();
     const trace = childEventTrace(triggerEvent);
     this.addInflight(entry.name, startMs);
-    const agent = entry.agent || "may";
+    const agent = entry.agent;
     const handlerRunId = `handler:${entry.name}:${startMs}:${++this.handlerRunSequence}`;
 
     const recorded = this.observe({
       type: "handler.started",
       source: "cron",
-      owner: `agent:${agent}`,
+      owner: normalizeEventOwner(agent),
       data: { handler: entry.name, handlerRunId, agent },
       ...(trace ? { trace } : {}),
     });
@@ -643,7 +643,7 @@ export class HostMaintenance {
       this.observe({
         type: "handler.failed",
         source: "cron",
-        owner: `agent:${agent}`,
+        owner: normalizeEventOwner(agent),
         data: { handler: entry.name, handlerRunId, agent, error: errMsg, durationMs: Date.now() - startMs },
         ...(trace ? { trace } : {}),
       });
@@ -685,7 +685,7 @@ export class HostMaintenance {
         this.observe({
           type: "handler.completed",
           source: "cron",
-          owner: `agent:${agent}`,
+          owner: normalizeEventOwner(agent),
           data: { handler: entry.name, handlerRunId, agent, durationMs: Date.now() - startMs },
           ...(trace ? { trace } : {}),
         });

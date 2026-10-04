@@ -26,7 +26,7 @@ describe("HTTP event reads", () => {
       [resolve(import.meta.dir, "../../src/app/http/server.ts"), "--state-dir", root, "--port", "0"],
       {
         cwd: root,
-        env: { ...process.env, PROJECT_ROOT: root, AGENTS_ROOT: root, PROJECTS_ROOT: root, SHARED_ROOT: root },
+        env: { ...process.env, AGENT: "helper", CONVERSATION_APP: "support", CONVERSATION_ID: "retained-room", PROJECT_ROOT: root, AGENTS_ROOT: root, PROJECTS_ROOT: root, SHARED_ROOT: root },
         stdio: ["ignore", "pipe", "pipe"],
       },
     );
@@ -67,6 +67,20 @@ describe("HTTP event reads", () => {
     expect(response.status).toBe(200);
     return response.json();
   }
+
+  it("exposes independent interface identities and excludes disabled App agents", async () => {
+    expect(await read("/api/interface")).toEqual({ agent: "helper", appId: "support", conversationId: "retained-room" });
+    for (const [app, disabled] of [["support", false], ["retired", true]] as const) {
+      const appDir = join(root, `${app}.app`);
+      const dir = join(appDir, "agents", app);
+      mkdirSync(dir, { recursive: true });
+      writeFileSync(join(appDir, "app.ts"), "export default {};\n");
+      writeFileSync(join(dir, "agent.json"), JSON.stringify({ name: app }));
+      if (disabled) writeFileSync(join(appDir, ".disabled"), "");
+    }
+    const catalog = await read("/api/agents");
+    expect(catalog.map((agent: { name: string }) => agent.name)).toEqual(["support"]);
+  });
 
   it("reads legacy learning findings as facts without changing saved notes", async () => {
     const sessionId = "s_learning";

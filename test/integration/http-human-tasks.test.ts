@@ -57,13 +57,13 @@ describe("HTTP human Task reads and board", () => {
     registry = new AppRegistry(async () => []);
     service = new HumanTaskService(db, registry);
     control = await attachControlSocket({
-      socketPath: daemonSocketPath(root, { instance: "task-test", interfaceAgent: "may" }),
+      socketPath: daemonSocketPath(root, { instance: "task-test", interfaceAgent: "helper" }),
       getSessionId: () => "fixture",
       getStatus: () => [],
       emitEvent: () => {},
       subscribeEvents: (listener) => { listeners.add(listener); return () => listeners.delete(listener); },
       getAppConversation: (appId, conversationId, options) => {
-        if (appId !== "may" || conversationId !== "may:primary" || options?.limit !== 30) throw new Error("Invalid conversation read");
+        if (appId !== "support" || conversationId !== "retained-room" || options?.limit !== 30) throw new Error("Invalid conversation read");
         if (rejectConversationRead) throw new Error("fixture Conversation storage unavailable");
         return conversation;
       },
@@ -77,7 +77,7 @@ describe("HTTP human Task reads and board", () => {
         }
         return { eventId: published.length, eventType: event.type, delivery: "accepted" };
       },
-      agentName: "may",
+      agentName: "helper",
       instance: "task-test",
       listApps: (appId) => {
         if (rejectAppRead) throw new Error("fixture App reads unavailable");
@@ -93,6 +93,10 @@ describe("HTTP human Task reads and board", () => {
         ...(options?.inputKeys ? { inputEvents: options.inputKeys.map((key) => ({ key })) } : {}),
       }),
     });
+    await startWeb();
+  });
+
+  async function startWeb(conversationApp = "support", conversationId = "retained-room") {
     child = spawn(
       "bun",
       [resolve(import.meta.dir, "../../src/app/http/server.ts"), "--state-dir", root, "--port", "0"],
@@ -104,9 +108,9 @@ describe("HTTP human Task reads and board", () => {
           PROJECT_ROOT: root,
           AGENTS_ROOT: root,
           SHARED_ROOT: root,
-          PROJECTS_ROOT: projects,
+          PROJECTS_ROOT: join(root, "projects"),
           DAEMON_INSTANCE: "task-test",
-          DAEMON_AGENT: "may",
+          AGENT: "helper", CONVERSATION_APP: conversationApp, CONVERSATION_ID: conversationId, DAEMON_AGENT: "unused-legacy",
         },
       },
     );
@@ -130,7 +134,7 @@ describe("HTTP human Task reads and board", () => {
     } finally {
       clearTimeout(timer!);
     }
-  });
+  }
 
   afterEach(async () => {
     child?.kill("SIGKILL");
@@ -162,6 +166,72 @@ describe("HTTP human Task reads and board", () => {
     expect(res.status).toBe(status);
     return res.json();
   }
+
+  function seedChat(agent = "helper") {
+    const sessionId = `${agent}-old-session`;
+    db.prepare("INSERT INTO sessions (sessionId, agent, task, status, kind, source, startedAt) VALUES (?, ?, ?, ?, ?, ?, ?)")
+      .run(sessionId, agent, "Earlier conversation", "idle", "chat", "web-ui", Date.now());
+    return sessionId;
+  }
+
+  test.each([false, true])("interface-agent HTTP input retains its Conversation with existing session=%s", async (existing) => {
+    if (existing) {
+      const sessionId = seedChat();
+      expect(await read("/api/agents/helper/default-session")).toMatchObject({ sessionId });
+    }
+    const response = await fetch(base + "/api/agents/helper/message", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ content: "Review the migration" }),
+    });
+    expect(response.status).toBe(200);
+    expect(published).toHaveLength(1);
+    expect(published[0]).toMatchObject({
+      type: "app.input.requested", target: { appId: "support" },
+      data: { conversationId: "retained-room", input: { kind: "message", data: { message: "Review the migration" } } },
+    });
+  });
+
+  test("explicit session input and other agents retain direct chat", async () => {
+    const sessionId = seedChat();
+    seedChat("worker");
+    for (const path of [`/api/sessions/${sessionId}/message`, "/api/agents/worker/message", "/api/agents/new-worker/message"]) {
+      const response = await fetch(base + path, { method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ content: "Follow up here" }) });
+      expect(response.status).toBe(200);
+    }
+    expect(published).toMatchObject([
+      { type: "session.steer.requested", target: { sessionId } },
+      { type: "session.steer.requested", target: { sessionId: "worker-old-session" } },
+      { type: "chat.start.requested", data: { agent: "new-worker" } },
+    ]);
+  });
+
+  test.skipIf(skipBrowser)("unbound interface chat rejects HTTP and browser input without steering an old session", async () => {
+    seedChat();
+    child.kill("SIGKILL");
+    await stopped;
+    await startWeb("", "");
+    for (const suffix of ["", "?new=true"]) {
+      const response = await fetch(base + "/api/agents/helper/message" + suffix, {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ content: "Keep this request" }),
+      });
+      expect(response.status).toBe(503);
+      expect(await response.json()).toEqual({ error: "No Conversation App is configured" });
+    }
+    const browser = await puppeteer.launch({ executablePath: chrome!, headless: true, args: ["--no-sandbox", "--disable-dev-shm-usage"] });
+    try {
+      const page = await browser.newPage();
+      page.setDefaultTimeout(5000);
+      await page.goto(`${base}/agents/helper`, { waitUntil: "domcontentloaded" });
+      await page.waitForFunction("currentAgentChat === 'helper' && ws?.readyState === WebSocket.OPEN");
+      await page.type("#chat-input", "Keep this request");
+      await page.click("#chat-send");
+      await page.waitForFunction(() => document.body.textContent!.includes("No Conversation App is configured"));
+      expect(await page.$eval("#chat-input", el => (el as HTMLInputElement).value)).toBe("Keep this request");
+      expect(published).toEqual([]);
+    } finally { await browser.close(); }
+  });
 
   async function installApps(...ids: string[]) {
     await registry.reload(undefined, async () => ids.map((id) => ({
@@ -298,24 +368,25 @@ describe("HTTP human Task reads and board", () => {
   });
 
   test("HTTP Conversation reads forward exact identity and bounded options", async () => {
-    expect(await read("/api/conversation?appId=may&conversationId=may%3Aprimary")).toEqual(conversation);
-    await read("/api/conversation?appId=may", 400);
-    await read("/api/conversation?conversationId=may%3Aprimary", 400);
+    expect(await read("/api/conversation?appId=support&conversationId=retained-room")).toEqual(conversation);
+    await read("/api/conversation?appId=support", 400);
+    await read("/api/conversation?conversationId=retained-room", 400);
     rejectConversationRead = true;
-    expect(await read("/api/conversation?appId=may&conversationId=may%3Aprimary", 503)).toMatchObject({ error: "fixture Conversation storage unavailable" });
+    expect(await read("/api/conversation?appId=support&conversationId=retained-room", 503)).toMatchObject({ error: "fixture Conversation storage unavailable" });
     rejectConversationRead = false;
-    expect(await read("/api/conversation?appId=may&conversationId=may%3Aprimary")).toEqual(conversation);
+    expect(await read("/api/conversation?appId=support&conversationId=retained-room")).toEqual(conversation);
     expect(published).toHaveLength(0);
     control.close();
-    await read("/api/conversation?appId=may&conversationId=may%3Aprimary", 503);
+    await read("/api/conversation?appId=support&conversationId=retained-room", 503);
   });
 
   test.skipIf(skipBrowser)("May browser Stop retains its observed target and draft, then admits a correction to Conversation", async () => {
+    seedChat();
     const browser = await puppeteer.launch({ executablePath: chrome!, headless: true, args: ["--no-sandbox", "--disable-dev-shm-usage"] });
     try {
       const page = await browser.newPage();
       page.setDefaultTimeout(5000);
-      await page.goto(`${base}/agents/may`, { waitUntil: "domcontentloaded" });
+      await page.goto(`${base}/agents/helper`, { waitUntil: "domcontentloaded" });
       await page.waitForFunction(() => !document.querySelector<HTMLButtonElement>("#chat-stop")!.disabled);
       // HTTP readiness does not prove the notification subscription is active.
       // A status response on the same ordered socket follows the page's subscribe.
@@ -347,13 +418,13 @@ describe("HTTP human Task reads and board", () => {
       await page.type("#chat-input", "Discuss costs before implementing");
       await page.click("#chat-stop");
       await page.waitForFunction(() => document.body.textContent!.includes("Stop request accepted"));
-      expect(published[0]).toMatchObject({ type: "conversation.turn.stop.requested", target: { appId: "may" },
-        data: { conversationId: "may:primary", turnId: "turn-one", expectedRevision: 7 } });
+      expect(published[0]).toMatchObject({ type: "conversation.turn.stop.requested", target: { appId: "support" },
+        data: { conversationId: "retained-room", turnId: "turn-one", expectedRevision: 7 } });
       expect(await page.$eval("#chat-input", el => (el as HTMLInputElement).value)).toBe("Discuss costs before implementing");
       await page.click("#chat-send");
       await page.waitForFunction(() => document.querySelector<HTMLInputElement>("#chat-input")!.value === "");
-      expect(published.at(-1)).toMatchObject({ type: "conversation.message.created", target: { appId: "may" },
-        data: { conversationId: "may:primary", text: "Discuss costs before implementing", author: { kind: "human" } } });
+      expect(published.at(-1)).toMatchObject({ type: "conversation.message.created", target: { appId: "support" },
+        data: { conversationId: "retained-room", text: "Discuss costs before implementing", author: { kind: "human" } } });
       rejectPublish = true;
       await page.waitForFunction(() => !document.querySelector<HTMLButtonElement>("#chat-stop")!.disabled);
       await page.click("#chat-stop");
@@ -369,7 +440,7 @@ describe("HTTP human Task reads and board", () => {
       await page.waitForFunction(() => document.querySelector<HTMLInputElement>("#chat-input")!.value === "");
       expect(published.at(-1)).toEqual(unconfirmed);
       rejectConversationRead = true;
-      for (const listener of listeners) listener({ type: "conversation.updated", data: { appId: "may", conversationId: "may:primary" } });
+      for (const listener of listeners) listener({ type: "conversation.updated", data: { appId: "support", conversationId: "retained-room" } });
       await page.waitForFunction(() => document.querySelector("#chat-status")!.textContent!.includes("storage unavailable"));
       // Drop the actual notification connection while the HTTP control route
       // remains usable. Its normal reconnect must later recover a lost wake.
@@ -383,7 +454,7 @@ describe("HTTP human Task reads and board", () => {
         data: { turnId: "turn-two", expectedRevision: 8 } });
       rejectConversationRead = false;
       conversation.activeTurn = undefined;
-      for (const listener of listeners) listener({ type: "conversation.updated", data: { appId: "may", conversationId: "may:primary" } });
+      for (const listener of listeners) listener({ type: "conversation.updated", data: { appId: "support", conversationId: "retained-room" } });
       await page.waitForFunction(() => document.querySelector<HTMLButtonElement>("#chat-stop")!.disabled);
       expect(published.some(event => event.type === "session.cancel.requested" || event.type === "session.steer.requested")).toBe(false);
     } finally { await browser.close(); }
