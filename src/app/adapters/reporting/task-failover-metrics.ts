@@ -4,7 +4,7 @@ import type { MetricDefinition } from "../../../lib/metrics.js";
 export const TASK_FAILOVER_METRIC: MetricDefinition = {
   id: "task.failover-count-24h",
   name: "Procedure-to-agent failovers (24h)",
-  owner: "may-agent",
+  owner: "system:host",
   type: "gauge",
   unit: "failovers",
   measureInterval: 300_000,

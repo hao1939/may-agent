@@ -25,6 +25,7 @@ function attachTelegramBot(
   options: Omit<Parameters<typeof attachTelegramBotRuntime>[0], "publishEvent">,
 ): ReturnType<typeof attachTelegramBotRuntime> {
   return attachTelegramBotRuntime({
+    conversationAppId: "may",
     ...options,
     publishEvent(input) {
       const data = {

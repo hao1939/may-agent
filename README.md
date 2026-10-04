@@ -29,7 +29,6 @@ test/
   e2e/          Full process and transport tests
   fixtures/     Shared test data
   helpers/      Shared test utilities
-  deployment/   Explicit installed-App compatibility checks
 
 container/   Container image and supervisor configuration
 scripts/     Current build, deploy, maintenance, and diagnostic commands
@@ -136,3 +135,36 @@ Node.js 24 and the Bun version recorded in `.bun-version` for CI/image parity.
 ## License
 
 MIT
+
+## Installation policy
+
+Host has no built-in human-facing App. Set `AGENT` (or `DAEMON_AGENT`) for
+its interface/socket identity and `CONVERSATION_APP` for the App receiving
+human input. `CONVERSATION_ID` optionally preserves an existing Conversation;
+it defaults to `<appId>:primary`. For example, `AGENT=helper` and
+`CONVERSATION_APP=support` select different agent and App identities. Without
+an App binding the Host can run background Tasks, but Console, Telegram and
+human notifications report that their destination is unavailable. Browser
+clients read the same binding from `/api/interface`.
+
+The installation may commit `shared/file-write-policy.json`:
+
+```json
+{
+  "protectedPaths": ["projects/quality.app/criteria/**"],
+  "grants": [{ "paths": ["projects/quality.app/criteria/**"], "writers": ["reviewer"] }]
+}
+```
+
+Patterns are relative to the installation root (or its execution checkout).
+Explicit grants override protected paths and generic file-tool safeguards;
+agent names alone grant nothing. The policy file itself cannot be rewritten
+through these tools. The selected definition captures the policy with its
+source release, including when a Task uses another execution directory.
+Without a declaration, generic shared-guidance and cross-agent configuration
+protection remains. This covers `write` and `edit`, not shell or native CLI
+filesystem access; it is not a security sandbox.
+
+When upgrading an existing installation, supply its destination and intended
+file grants before rollout. Keep the old Conversation ID to retain its history.
+Source relocation does not rename saved Task, Request or return identities.

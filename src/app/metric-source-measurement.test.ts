@@ -228,7 +228,7 @@ describe("source-query metric measurement", () => {
     expect(
       db.prepare("SELECT owner, source_query FROM metrics WHERE id = ?").get(SUBSCRIBER_FAILED_COUNT_METRIC_ID),
     ).toEqual({
-      owner: "may",
+      owner: "system:host",
       source_query: SUBSCRIBER_FAILED_COUNT_SOURCE_QUERY,
     });
 
@@ -597,7 +597,7 @@ describe("source-query metric measurement", () => {
       .all() as Array<{ source: string; owner: string; data: string }>;
     expect(failures).toHaveLength(2);
     expect(
-      failures.every((row) => row.source === "runtime:metric-source-measurement" && row.owner === "agent:may"),
+      failures.every((row) => row.source === "runtime:metric-source-measurement" && row.owner === "system:host"),
     ).toBe(true);
     const [command, query] = failures.map((row) => JSON.parse(row.data));
     expect(query).toEqual({

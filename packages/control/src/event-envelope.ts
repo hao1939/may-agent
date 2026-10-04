@@ -18,9 +18,10 @@ function nonEmptyString(value: unknown): string | undefined {
   return typeof value === "string" && value.trim() ? value.trim() : undefined;
 }
 
-export function normalizeEventOwner(owner: unknown, fallback: unknown = "may"): string {
-  const value = nonEmptyString(owner) ?? nonEmptyString(fallback) ?? "may";
+export function normalizeEventOwner(owner: unknown, fallback: unknown = "system:host"): string {
+  const value = nonEmptyString(owner) ?? nonEmptyString(fallback) ?? "system:host";
   if (
+    value.startsWith("system:") ||
     value.startsWith("agent:") ||
     value.startsWith("app:") ||
     value.startsWith("human:") ||

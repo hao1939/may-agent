@@ -74,7 +74,7 @@ export function observeDurableDaemonHeartbeat(
 export async function observeDaemonLiveness(persistDir: string): Promise<RuntimeLivenessObservation> {
   const socketPath = daemonSocketPath(persistDir, {
     instance: process.env.INSTANCE || "default",
-    interfaceAgent: process.env.DAEMON_AGENT || "may",
+    interfaceAgent: process.env.DAEMON_AGENT || "host",
   });
   try {
     const response = await sendSocketCommand(socketPath, { type: "status" }, { timeoutMs: LIVENESS_PROBE_TIMEOUT_MS });

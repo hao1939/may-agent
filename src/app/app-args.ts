@@ -1,3 +1,4 @@
+import { interfaceBinding } from "@may-agent/control";
 import { existsSync, readFileSync } from "node:fs";
 import { parseEmitMode } from "./modes/emit.js";
 import { parseOneshotTimeoutMinutes } from "./modes/oneshot.js";
@@ -121,5 +122,5 @@ function parseInterfaceAgent(argv: string[], env: NodeJS.ProcessEnv): string {
   const idx = argv.indexOf("--agent");
   if (idx !== -1 && argv[idx + 1]) return argv[idx + 1];
 
-  return env.AGENT || env.DAEMON_AGENT || "may";
+  return interfaceBinding(env).agent;
 }

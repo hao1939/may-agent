@@ -33,16 +33,15 @@ Install Chrome/Chromium for browser tests (or set `CHROME_PATH`). CI requires
 the browser test to execute. Locally, `E2E_NO_UI=1` explicitly skips it; a
 missing prerequisite is reported as a skip, not a pass.
 
-Tests inspecting the separately maintained Apps, installed agent catalog, and
-shared instructions run separately:
+The optional installed-agent loader check runs separately:
 
 ```sh
 MAY_AGENT_APP_ROOT=/absolute/path/to/app bun run test:deployment
 ```
 
 That command requires an explicit, existing installation and does not certify
-all deployed behavior. Legacy cron checks are explicitly skipped when the
-installation no longer uses the optional May cron file. Ordinary CI must work
+all deployed behavior. Domain policy, shared instruction assertions and App acceptance tests belong
+in the Apps repository alongside their source. Ordinary CI must work
 from this repository alone.
 Model-backed experiments require separate credentials and explicit authority;
 neither those experiments nor a production restart belongs in PR CI.

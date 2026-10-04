@@ -1,3 +1,4 @@
+import { interfaceBinding } from "@may-agent/control";
 import { randomUUID } from "node:crypto";
 import { assertLegacyCliTasksSettled } from "../lib/cli-agent.js";
 import { basename, dirname, resolve } from "node:path";
@@ -177,7 +178,7 @@ export async function runAppRuntime(opts: {
   } else if (process.env.MAY_DAEMON_QUIET !== "1") attachDaemonInfoLog(bus);
 
   if (WEB_ENABLED) {
-    const { port } = await startWebMode({ stateDir: opts.persistDir, port: parseWebPort(process.env.WEB_PORT) });
+    const { port } = await startWebMode({ interfaceAgent, stateDir: opts.persistDir, port: parseWebPort(process.env.WEB_PORT) });
     bus.emit({ type: "info", message: `[web] Dashboard running on http://localhost:${port}` });
   }
 
@@ -285,8 +286,10 @@ export async function runAppRuntime(opts: {
         controlKey,
       }),
   });
-  const conversationAppId = "may";
+  const humanInterface = interfaceBinding();
+  const conversationAppId = humanInterface.appId;
   const events = createEventInterface({
+    conversationAgent: interfaceAgent,
     bus,
     db: getDb(opts.persistDir),
     conversationAppId,
@@ -481,6 +484,8 @@ export async function runAppRuntime(opts: {
   installProcessHandlers();
 
   const commandRouter = attachCommandRouter({
+    interfaceAgent,
+    conversationAppId,
     bus,
     manager,
     projectRoot: opts.projectRoot,
@@ -490,7 +495,7 @@ export async function runAppRuntime(opts: {
   });
   const handleInput = commandRouter.handleInput;
 
-  if (!manager.hasAgent(interfaceAgent)) {
+  if ((interactiveConsole || INITIAL_TASK) && !manager.hasAgent(interfaceAgent)) {
     console.error(`Agent "${interfaceAgent}" is not registered. Available: ${manager.agentNames().join(", ")}`);
     process.exit(1);
   }
@@ -503,6 +508,8 @@ export async function runAppRuntime(opts: {
         bus,
         persistDir: opts.persistDir,
         interfaceAgent,
+        conversationAppId,
+        conversationId: humanInterface.conversationId,
         humanTasks: {
           getTask: (input) => humanTasks.getTask(input),
           listApps: (appId) => humanTasks.listApps(appId),
@@ -522,6 +529,7 @@ export async function runAppRuntime(opts: {
     admit: admitAppInput,
   });
   const { socketPath: SOCKET_PATH, socketUI } = await startInterfaceRuntime({
+    conversationAppId,
     socketEnabled: SOCKET_ENABLED,
     persistDir: opts.persistDir,
     instanceLabel: opts.instanceLabel,

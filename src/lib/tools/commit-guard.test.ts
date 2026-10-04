@@ -403,17 +403,17 @@ describe("commit-guard", () => {
       rmSync(labDir, { recursive: true, force: true });
     });
 
-    it("signals finish when agent has uncommitted changes in gym/", async () => {
-      const gymDir = join(agentsDir, "gym", "scenarios");
+    it("signals finish for ordinary App workspace changes", async () => {
+      const gymDir = join(agentsDir, ".lab", "scenarios");
       mkdirSync(gymDir, { recursive: true });
       writeFileSync(join(gymDir, "scenario.md"), "# Scenario");
 
       const guard = createCommitGuard("bob", tmpDir);
-      const result = await guard(makeFinishCtxWithWrites({ status: "success", summary: "done" }, ["gym/scenarios/scenario.md"]));
+      const result = await guard(makeFinishCtxWithWrites({ status: "success", summary: "done" }, [".lab/scenarios/scenario.md"]));
 
       expect(result).toBeDefined();
       expect(result!.block).toBe(false);
-      expect(result!.reason).toContain("gym/");
+      expect(result!.reason).toContain(".lab/");
 
       // Clean up
       rmSync(join(agentsDir, "gym"), { recursive: true, force: true });

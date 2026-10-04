@@ -9,7 +9,7 @@ export const WORKFLOW_OUTCOME_WINDOW_MS = 86_400_000;
 export const WORKFLOW_OUTCOME_METRICS: MetricDefinition[] = WORKFLOW_OUTCOMES.map((status) => ({
   id: `workflow.${status}-count-24h`,
   name: `Workflow executions: ${status} (24h)`,
-  owner: "may-agent",
+  owner: "system:host",
   type: "gauge",
   unit: "runs",
   measureInterval: 300_000,

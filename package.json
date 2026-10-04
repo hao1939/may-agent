@@ -15,7 +15,7 @@
     "verify": "bun run ci",
     "verify:apps-artifact": "bun run check:canonical-app-boundary && bun scripts/verify-app-artifact-compatibility.ts",
     "test": "bun test --timeout 30000 --parallel=2 src/ packages/ test/integration/ test/e2e/ scripts/",
-    "test:deployment": "bun test --timeout 30000 test/deployment/ test/integration/agent-loader.test.ts",
+    "test:deployment": "bun test --timeout 30000 test/integration/agent-loader.test.ts",
     "test:components": "bun test --timeout 30000 --parallel=2 src/ packages/",
     "test:unit": "bun run test:components",
     "test:changed": "bun test --changed=origin/main --timeout 30000 --parallel=2 src/ packages/ test/integration/ test/e2e/ scripts/",

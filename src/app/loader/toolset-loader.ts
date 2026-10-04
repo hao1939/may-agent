@@ -1,3 +1,4 @@
+import type { FileWritePolicy } from "../../lib/tools/file-write-policy.js";
 import { createRuntimeAppRead } from "../core/reads/app-read.js";
 import { getLoadedAppInputContract } from "../core/tasks/app-task-runtime.js";
 import { readMetricView } from "../adapters/reporting/metric-read.js";
@@ -28,6 +29,7 @@ import { loadAgentLocalTools } from "./agent-local-tools.js";
 import { createAppTaskReadTool } from "../app-task-read-tool.js";
 
 export interface ToolsetLoaderOptions {
+  fileWritePolicy?: FileWritePolicy;
   agentsRoot: string;
   sharedRoot: string;
   projectsRoot: string;
@@ -65,7 +67,7 @@ export async function buildTools(config: AgentConfig, opts: ToolsetLoaderOptions
         break;
 
       case "coding":
-        tools.push(...createCodingTools(projectRoot, { agentName: config.name }));
+        tools.push(...createCodingTools(projectRoot, { agentName: config.name, fileWritePolicy: opts.fileWritePolicy }));
         break;
 
       case "read-only": {
@@ -87,7 +89,7 @@ export async function buildTools(config: AgentConfig, opts: ToolsetLoaderOptions
 
       case "message": {
         // Use globalAgentsRoot (top-level agents/) when available so
-        // project-scoped agents can message system agents like "may".
+        // App-scoped agents can message other installed agents.
         const messageAgentsRoot = opts.globalAgentsRoot ?? opts.agentsRoot;
         // Lazy evaluation: agents loaded after this tool is created are still
         // visible. Prevents stale allowedTargets when App-local agents are

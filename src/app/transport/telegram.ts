@@ -106,6 +106,8 @@ export interface TelegramBotOptions {
   persistDir?: string;
   bus: EventBus;
   interfaceAgent: string;
+  conversationAppId?: string;
+  conversationId?: string;
   humanTasks: Pick<HumanTaskService, "getTask" | "listApps" | "listTasks">;
   publishEvent: (
     input: EventInput,
@@ -123,7 +125,7 @@ export interface TelegramBot {
 
 /** One logical human conversation; provider chat/topic IDs are coordinates. */
 export function primaryConversationId(agent: string): string {
-  return `${agent.trim() || "may"}:primary`;
+  return `${agent.trim() || "host"}:primary`;
 }
 
 export function renderTelegramApps(apps: HumanAppView[], selectedApp?: string): string {
@@ -562,7 +564,8 @@ function fullHumanActionText(task: HumanTaskView): string {
   return actions.length > 0 ? actions.join("\n\n") : humanActionText(task);
 }
 
-export function telegramMayInputEvent(input: {
+export function telegramConversationInputEvent(input: {
+  appId: string;
   message: string;
   chatId: string;
   messageId: number;
@@ -576,7 +579,7 @@ export function telegramMayInputEvent(input: {
   const sourceId = `telegram:${input.chatId}:${input.messageId}`;
   return {
     type: "conversation.message.created",
-    target: { appId: "may" },
+    target: { appId: input.appId },
     data: {
       conversationId: input.conversationId,
       author: { kind: "human", id: sourceId },
@@ -673,7 +676,9 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
     return watchedTasks.delete(surface);
   };
   const surfaceKey = (chatId: string, topicId?: number) => `${chatId}:${topicId ?? 0}`;
-  const sharedConversationId = primaryConversationId(opts.interfaceAgent);
+  const conversationAppId = opts.conversationAppId?.trim() || "";
+  if (!conversationAppId) throw new Error("Telegram requires CONVERSATION_APP");
+  const sharedConversationId = opts.conversationId ?? primaryConversationId(conversationAppId);
   const nextTodoPageBySurface = new Map<string, { appId?: string; cursor: string }>();
   const renderedConversationMessages = new Set<string>();
   const rememberRenderedConversationMessage = (messageId: string): void => {
@@ -688,7 +693,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
     }
   };
   try {
-    for (const message of readAppConversationResource(getDb(persistDir), opts.interfaceAgent, sharedConversationId, {
+    for (const message of readAppConversationResource(getDb(persistDir), conversationAppId, sharedConversationId, {
       limit: 200,
     }).messages) {
       rememberRenderedConversationMessage(message.id);
@@ -805,7 +810,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
     try {
       if (!isAllowed(chatId)) text = "Unauthorized.";
       else if (control && query.data === control.token && query.message?.message_id === control.messageId) {
-        const active = readAppConversationResource(getDb(persistDir), opts.interfaceAgent, sharedConversationId, {
+        const active = readAppConversationResource(getDb(persistDir), conversationAppId, sharedConversationId, {
           limit: 1,
         }).activeTurn;
         if (!active || active.id !== control.turnId || active.revision !== control.revision) {
@@ -815,7 +820,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
           try {
             receipt = opts.publishEvent({
               type: "conversation.turn.stop.requested",
-              target: { appId: opts.interfaceAgent },
+              target: { appId: conversationAppId },
               data: {
                 conversationId: sharedConversationId,
                 turnId: control.turnId,
@@ -878,7 +883,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
   }
 
   async function syncConversation(): Promise<void> {
-    const conversation = readAppConversationResource(getDb(persistDir), opts.interfaceAgent, sharedConversationId, {
+    const conversation = readAppConversationResource(getDb(persistDir), conversationAppId, sharedConversationId, {
       limit: 200,
     });
     await syncTurnControls(conversation.activeTurn);
@@ -935,7 +940,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
     if (!selected) return undefined;
     // Admission can append Task links after selection. Read the current Topic
     // before deciding whether this Task belongs to it.
-    const topic = readConversationTopic(getDb(persistDir), opts.interfaceAgent, sharedConversationId, selected.id);
+    const topic = readConversationTopic(getDb(persistDir), conversationAppId, sharedConversationId, selected.id);
     if (topic) selectedTopics.set(surface, topic);
     else selectedTopics.delete(surface);
     return topic?.taskRefs.some((ref) => ref.appId === task.appId && ref.taskId === task.taskId) ? topic.id : undefined;
@@ -956,7 +961,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
     if (shownWatchRevisions.get(surface) === revision) return;
     if (task.terminal) {
       const result = task.response?.trim() || task.summary?.trim();
-      const conversation = readAppConversationResource(getDb(persistDir), opts.interfaceAgent, sharedConversationId, {
+      const conversation = readAppConversationResource(getDb(persistDir), conversationAppId, sharedConversationId, {
         limit: 40,
       });
       const equivalent =
@@ -1073,7 +1078,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
   async function refreshTodos(surface: string): Promise<void> {
     const coordinates = surfaces.get(surface);
     if (!coordinates) return;
-    const appId = selectedApps.get(surface) ?? opts.interfaceAgent;
+    const appId = selectedApps.get(surface) ?? conversationAppId;
     const page = opts.humanTasks.listTasks({ appId, humanActionOnly: true, limit: TODO_PAGE_SIZE });
     const actions = page.items.map((task) => {
       const owner = task.humanAction?.task ?? { appId: task.appId, taskId: task.taskId };
@@ -1160,7 +1165,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
       ),
     });
     if (!messageId || !running) return;
-    if ((selectedApps.get(surface) ?? opts.interfaceAgent) === appId) {
+    if ((selectedApps.get(surface) ?? conversationAppId) === appId) {
       for (const { task, signature } of changed) {
         next.set(todoTaskKey(task), presentedTodoActionRevision(signature));
       }
@@ -1217,7 +1222,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
         return;
       }
       if (event.type === "conversation.updated") {
-        if (data.appId === opts.interfaceAgent && data.conversationId === sharedConversationId) {
+        if (data.appId === conversationAppId && data.conversationId === sharedConversationId) {
           conversationRefresh.queue(sharedConversationId);
         }
         return;
@@ -1229,7 +1234,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
       }
       if (isTaskDerivedViewWake(event)) {
         for (const surface of surfaces.keys()) {
-          const selected = selectedApps.get(surface) ?? opts.interfaceAgent;
+          const selected = selectedApps.get(surface) ?? conversationAppId;
           if (selected === wake.appId) todoRefresh.queue(surface);
         }
       }
@@ -1255,7 +1260,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
   }): void {
     opts.publishEvent({
       type: "conversation.message.created",
-      target: { appId: opts.interfaceAgent },
+      target: { appId: conversationAppId },
       data: {
         conversationId: input.conversationId,
         messageId: `telegram:${input.chatId}:${input.messageId}`,
@@ -1293,7 +1298,8 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
     approvalAuthorization?: Parameters<TelegramBotOptions["publishEvent"]>[1],
   ): void {
     if (!channelMessageId || !chatId || !conversationId) return;
-    const input = telegramMayInputEvent({
+    const input = telegramConversationInputEvent({
+      appId: conversationAppId,
       message,
       chatId,
       messageId: channelMessageId,
@@ -1409,7 +1415,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
     const topicId = msg.message_thread_id as number | undefined;
     const surface = surfaceKey(chatIdStr, topicId);
     surfaces.set(surface, { chatId: chatIdStr, ...(topicId === undefined ? {} : { topicId }) });
-    const conversationId = primaryConversationId(opts.interfaceAgent);
+    const conversationId = sharedConversationId;
     const recordedConversationId = !text.startsWith("/")
       ? resumeRecordedInput("conversation.message.created", `telegram:${chatIdStr}:${msg.message_id}`)
       : undefined;
@@ -1476,8 +1482,8 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
     // Every ordinary turn becomes one durable May request.
     const focusedTask = replyToMsgId ? replyTask : watchedTasks.get(surfaceKey(chatIdStr, topicId));
     const focusedApp = replyToMsgId
-      ? (replyTask?.appId ?? opts.interfaceAgent)
-      : (selectedApps.get(surface) ?? opts.interfaceAgent);
+      ? (replyTask?.appId ?? conversationAppId)
+      : (selectedApps.get(surface) ?? conversationAppId);
     const conversationTopic = replyToMsgId ? undefined : selectedTopics.get(surface);
     inputContext = {
       ...(inputContext ?? {}),
@@ -1518,7 +1524,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
     }
     // Presentation after durable recording cannot turn a saved input into a retry.
     try {
-      const active = readAppConversationResource(getDb(persistDir), opts.interfaceAgent, conversationId, {
+      const active = readAppConversationResource(getDb(persistDir), conversationAppId, conversationId, {
         limit: 1,
       }).activeTurn;
       if (
@@ -1619,7 +1625,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
           if (watched && watched.appId !== nextApp) stopWatching(surface);
           selectedChanged = true;
         }
-        const selected = selectedApps.get(surface) ?? opts.interfaceAgent;
+        const selected = selectedApps.get(surface) ?? conversationAppId;
         deliverCommandView(
           apps.length === 0
             ? `App ${rest[0]} was not found.`
@@ -1639,7 +1645,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
           deliverCommandView("No next page. Use /topics first.");
           return true;
         }
-        const conversation = readAppConversationResource(getDb(persistDir), opts.interfaceAgent, conversationId, {
+        const conversation = readAppConversationResource(getDb(persistDir), conversationAppId, conversationId, {
           limit: 30,
           ...(cursor ? { topicCursor: cursor } : {}),
         });
@@ -1671,7 +1677,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
         return true;
       }
       const exactTopicId = rest[0] ?? selectedTopics.get(surface)?.id;
-      const conversation = readAppConversationResource(getDb(persistDir), opts.interfaceAgent, conversationId, {
+      const conversation = readAppConversationResource(getDb(persistDir), conversationAppId, conversationId, {
         limit: 30,
         ...(exactTopicId ? { topicId: exactTopicId } : {}),
       });
@@ -1711,7 +1717,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
         ? prior!.appId
         : tokens.includes("all")
           ? undefined
-          : (selectedApps.get(surface) ?? opts.interfaceAgent);
+          : (selectedApps.get(surface) ?? conversationAppId);
       const page = opts.humanTasks.listTasks({
         ...(appId ? { appId } : {}),
         humanActionOnly: true,
@@ -1752,7 +1758,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
         ? prior!.appId
         : tokens.includes("all")
           ? undefined
-          : (selectedApps.get(surface) ?? opts.interfaceAgent);
+          : (selectedApps.get(surface) ?? conversationAppId);
       const page = opts.humanTasks.listTasks({
         ...(appId ? { appId } : {}),
         includeDone,
@@ -1831,7 +1837,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
       } else {
         const topicRef = taskTopicId(task);
         const topic = topicRef
-          ? readConversationTopic(getDb(persistDir), opts.interfaceAgent, conversationId, topicRef)
+          ? readConversationTopic(getDb(persistDir), conversationAppId, conversationId, topicRef)
           : null;
         if (topic) selectedTopics.set(surface, topic);
         else selectedTopics.delete(surface);

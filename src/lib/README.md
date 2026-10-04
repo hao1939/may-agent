@@ -54,10 +54,9 @@ Conversation Requests. New internal callers use the corresponding `db/` module.
 internal code imports the owning module directly to avoid loader cycles.
 
 Detailed tests live beside their source. Cross-component execution and process
-coverage is described in the [test guide](../../test/README.md). Gym's direct
-execution and script consumers are listed in the
-[script guide](../../scripts/README.md#gym-compatibility-boundary); inspect them
-before changing an entry path.
+coverage is described in the [test guide](../../test/README.md). External direct-execution consumers use the documented adapter in the
+[script guide](../../scripts/README.md#external-execution-consumers); review
+their contract before changing an entry path.
 
 ## Context timing
 

@@ -113,24 +113,10 @@ export interface MetricService {
   list(filter?: MetricFilter): Metric[];
 }
 
-const AGENT_OWNER_PREFIX_BLACKLIST = new Set([
-  "agent",
-  "capability",
-  "handler",
-  "infra",
-  "message",
-  "project",
-  "session",
-  "system",
-  "v2",
-]);
+
 
 function hasColumn(db: SqliteDb, table: string, column: string): boolean {
   return (db.prepare(`PRAGMA table_info(${table})`).all() as Array<{ name?: string }>).some((c) => c.name === column);
-}
-
-function hasTable(db: SqliteDb, table: string): boolean {
-  return !!db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name = ?").get(table);
 }
 
 function numberOrNull(value: unknown): number | null {
@@ -148,7 +134,6 @@ function parseConfig(raw: unknown): Record<string, any> | null {
 }
 
 function defaultOwnerForMetric(
-  db: SqliteDb,
   metric: { id: string; explicitOwner?: string | null; projectOwner?: string | null; project?: string | null },
 ): string {
   const explicit = metric.explicitOwner?.trim();
@@ -156,19 +141,7 @@ function defaultOwnerForMetric(
   if (metric.project?.trim()) return `project:${metric.project.trim()}`;
   const projectOwner = metric.projectOwner?.trim();
   if (projectOwner) return projectOwner;
-  if (metric.project && hasTable(db, "projects")) {
-    try {
-      const row = db
-        .prepare(`SELECT owner FROM projects WHERE id = ? OR path = ? OR name = ? LIMIT 1`)
-        .get(metric.project, metric.project, metric.project) as { owner?: string | null } | null;
-      if (row?.owner?.trim()) return row.owner.trim();
-    } catch {
-      // Fall through to metric-id convention.
-    }
-  }
-  const prefix = metric.id.split(".")[0]?.trim();
-  if (prefix && !AGENT_OWNER_PREFIX_BLACKLIST.has(prefix)) return prefix;
-  return "may";
+  return "system:host";
 }
 
 function toDbDefinition(def: MetricDefinition, owner: string, now: number): Record<string, unknown> {
@@ -263,7 +236,7 @@ export function createMetricService(options: MetricServiceOptions): MetricServic
     project?: string | null;
   }): string {
     if (options.resolveOwner) return options.resolveOwner(row);
-    return defaultOwnerForMetric(options.getDb(), row);
+    return defaultOwnerForMetric(row);
   }
 
   function define(def: MetricDefinition): void {
@@ -271,7 +244,7 @@ export function createMetricService(options: MetricServiceOptions): MetricServic
     metricCalculationOptions(def.config);
     const db = options.getDb();
     const ts = now();
-    const owner = defaultOwnerForMetric(db, {
+    const owner = defaultOwnerForMetric({
       id: def.id,
       explicitOwner: def.owner ?? null,
       project: def.project ?? null,

@@ -16,6 +16,7 @@ import {
   prepareAgentExecution,
   withGithubCopilotIdeTokenRecovery,
 } from "./agent-execution.js";
+import { readFileWritePolicy } from "./tools/file-write-policy.js";
 import { currentAgentSessionId } from "./agent-session-context.js";
 import { createFinishTool } from "./tools/lifecycle.js";
 import { usageReply } from "../../test/fixtures/execution-usage.js";
@@ -874,4 +875,26 @@ describe("direct structured judgment execution", () => {
     expect(result.finishResult?.status).toBe("failure");
     expect(result.structuredResult).toEqual(judgment);
   });
+});
+
+
+test("execution-root rebinding preserves the captured file-write policy", async () => {
+  const root = mkdtempSync(join(tmpdir(), "execution-write-policy-")); roots.push(root);
+  const sharedRoot = join(root, "shared"); mkdirSync(sharedRoot, { recursive: true });
+  writeFileSync(join(sharedRoot, "file-write-policy.json"), JSON.stringify({ protectedPaths: ["criteria/**"], grants: [{ paths: ["criteria/**"], writers: ["reviewer"] }] }));
+  const policy = readFileWritePolicy(sharedRoot);
+  const executionRoot = join(root, "checkout"); mkdirSync(executionRoot);
+  // Rewriting the live declaration cannot widen this selected execution.
+  writeFileSync(join(sharedRoot, "file-write-policy.json"), JSON.stringify({ protectedPaths: [], grants: [] }));
+  const prepare = (name: string) => prepareAgentExecution({
+    definition: { name, description: "test", domain: "test", model: { contextWindow: 10000 } as any,
+      tools: [tool("write")], projectRoot: root, fileWritePolicy: policy },
+    projectRoot: root, executionRoot, task: "Update criteria", sessionId: name,
+  });
+  const denied = prepare("worker").tools.find(t => t.name === "write")!;
+  const rejection = await denied.execute("blocked", { path: "criteria/rules.md", content: "new" });
+  expect(rejection.content).toMatchObject([{ type: "text", text: expect.stringContaining("WRITE BLOCKED") }]);
+  const allowed = prepare("reviewer").tools.find(t => t.name === "write")!;
+  const result = await allowed.execute("allowed", { path: "criteria/rules.md", content: "new" });
+  expect(result.content).toMatchObject([{ type: "text", text: expect.stringContaining("Wrote 3 bytes") }]);
 });

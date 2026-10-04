@@ -226,7 +226,7 @@ describe("Telegram exact approval presentation", () => {
         const bus = new EventBus();
         bot = attachTelegramBot({
           bus,
-          interfaceAgent: "may",
+          interfaceAgent: "may", conversationAppId: "may",
           persistDir: root,
           humanTasks: service,
           publishEvent: () => ({ eventId: 1, eventType: "fixture", delivery: "accepted" }),

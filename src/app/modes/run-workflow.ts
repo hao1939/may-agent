@@ -54,7 +54,7 @@ export async function runWorkflowMode(opts: {
   });
 
   const agentMatch = opts.mode.input.match(/agent:\s*(\S+)/) || opts.mode.name.match(/^(\w+)-heartbeat$/);
-  const agent = agentMatch ? agentMatch[1] : "may";
+  const agent = agentMatch ? agentMatch[1] : "host";
 
   const workflowDir = dirname(wfPath);
   const agentDir = dirname(workflowDir);

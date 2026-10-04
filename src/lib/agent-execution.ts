@@ -246,9 +246,9 @@ function definitionForExecution(options: AgentPreparationOptions): SubagentDefin
       case "bash":
         return createBashTool(executionRoot, { processGroupOwner: options.bashProcessGroupOwner });
       case "edit":
-        return root ? createEditTool(executionRoot, { agentName, projectRoot: executionRoot }) : tool;
+        return root ? createEditTool(executionRoot, { agentName, projectRoot: executionRoot, fileWritePolicy: options.definition.fileWritePolicy }) : tool;
       case "write":
-        return root ? createWriteTool(executionRoot, { agentName, projectRoot: executionRoot }) : tool;
+        return root ? createWriteTool(executionRoot, { agentName, projectRoot: executionRoot, fileWritePolicy: options.definition.fileWritePolicy }) : tool;
       default:
         return tool;
     }

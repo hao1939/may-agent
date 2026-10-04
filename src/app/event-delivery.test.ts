@@ -761,7 +761,7 @@ describe("event delivery metadata", () => {
       const event = db.prepare("SELECT id FROM events").get() as { id: number };
       expect(checkEventTraceIntegrity(db)).toMatchObject({
         conversationHumanWithoutSingleRequestCount: 1,
-        mayResultWithoutConversationCount: 0,
+        resultWithoutConversationCount: 0,
         semanticOk: false,
       });
 
@@ -786,7 +786,7 @@ describe("event delivery metadata", () => {
       );
       expect(checkEventTraceIntegrity(db)).toMatchObject({
         conversationHumanWithoutSingleRequestCount: 0,
-        mayResultWithoutConversationCount: 0,
+        resultWithoutConversationCount: 0,
         semanticOk: true,
       });
 
@@ -796,7 +796,7 @@ describe("event delivery metadata", () => {
       );
       expect(checkEventTraceIntegrity(db)).toMatchObject({
         conversationHumanWithoutSingleRequestCount: 0,
-        mayResultWithoutConversationCount: 1,
+        resultWithoutConversationCount: 1,
         semanticOk: false,
       });
     } finally {

@@ -35,6 +35,7 @@ function fixture(conversationAppId?: string) {
     bus,
     db,
     conversationAppId,
+    conversationAgent: "helper",
     validateAppInput: (appId, input) => {
       if (appId !== "sample" || input.kind !== "message") throw new Error("invalid App input");
     },
@@ -222,7 +223,7 @@ describe("simple event interface", () => {
   it.each(["sample", " sample.app "])("requires durable input for the selected conversational App: %s", (selection) => {
     const { db, events } = fixture(selection);
     for (const appId of ["sample", "sample.app", " sample.app "]) {
-      for (const target of [{ data: { agent: appId } }, { target: { appId }, data: {} }]) {
+      for (const target of [{ data: { agent: "helper" } }, { target: { appId }, data: {} }]) {
         expect(() =>
           events.publish(
             { ...target, type: "chat.start.requested", data: { ...target.data, message: "Discuss this" } },

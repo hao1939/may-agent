@@ -83,7 +83,7 @@ export async function runDaemonKeepalive(opts: {
         [EVENT_RECORD_ONLY]: true,
         type: "runtime.daemon.heartbeat",
         source: "daemon",
-        owner: "agent:may",
+        owner: "system:host",
         data: {
           pid: process.pid,
           interfaceAgent: opts.interfaceAgent,

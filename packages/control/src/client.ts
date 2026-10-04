@@ -1,3 +1,5 @@
+import { interfaceBinding, type InterfaceBinding } from "./interface-binding.js";
+export { interfaceBinding, type InterfaceBinding } from "./interface-binding.js";
 import { connect, Socket, type NetConnectOpts } from "node:net";
 import { randomUUID } from "node:crypto";
 import { resolve } from "node:path";
@@ -46,7 +48,7 @@ export interface DaemonSocketPathOptions {
 
 export function daemonSocketPath(persistDir: string, opts: DaemonSocketPathOptions = {}): string {
   const instance = opts.instance?.trim() || "default";
-  const interfaceAgent = opts.interfaceAgent?.trim() || "may";
+  const interfaceAgent = opts.interfaceAgent?.trim() || "host";
   return resolve(persistDir, "instances", instance, `${interfaceAgent}.sock`);
 }
 
@@ -347,15 +349,16 @@ export function sendDaemonInput(
   endpoint: SocketEndpoint,
   message: string,
   source = "control",
-  opts?: { timeoutMs?: number },
+  opts: { appId: string; timeoutMs?: number },
 ): Promise<SocketResponse> {
+  if (!opts?.appId?.trim()) throw new Error("App input requires an explicit appId");
   return sendSocketCommand(
     endpoint,
     {
       type: "publish",
       event: {
         type: "app.input.requested",
-        target: { appId: "may" },
+        target: { appId: opts.appId.trim() },
         data: {
           input: { kind: "message", data: { message } },
           channel: source,
@@ -372,9 +375,12 @@ export function sendAgentMessage(
   agent: string,
   message: string,
   source = "control",
-  opts?: { timeoutMs?: number },
+  opts?: { timeoutMs?: number; interface?: InterfaceBinding },
 ): Promise<SocketResponse> {
-  if (agent === "may") return sendDaemonInput(endpoint, message, source, opts);
+  const binding = opts?.interface ?? interfaceBinding();
+  if (agent === binding.agent && binding.appId) {
+    return sendDaemonInput(endpoint, message, source, { appId: binding.appId, timeoutMs: opts?.timeoutMs });
+  }
   return sendSocketCommand(
     endpoint,
     {

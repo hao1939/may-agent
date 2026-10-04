@@ -30,10 +30,7 @@ export const INTENTIONAL_OBSERVATION_EVENT_TYPES = [
   "metric.measurement.failed",
   "metric.evaluation.failed",
   "conversation.updated",
-  "gym.review.filtered",
   "project.approval.resolved",
-  "project.ops_digest.created",
-  "project.ops_health.observed",
 ] as const;
 const intentionalObservationSql = INTENTIONAL_OBSERVATION_EVENT_TYPES.map((type) => `'${type}'`).join(",");
 export const UNEXPECTED_UNHANDLED_SIGNAL_SOURCE_QUERY = `SELECT COUNT(*) AS value
@@ -195,7 +192,7 @@ export async function measureSourceMetrics(options: {
       options.bus.emit({
         type: "metric.measurement.failed",
         source: "runtime:metric-source-measurement",
-        owner: "agent:may",
+        owner: "system:host",
         data: { metricId: id, reason, triggerEventId: options.triggerEventId },
       });
     } catch (error) {
@@ -297,7 +294,7 @@ export function attachMetricSourceMeasurement(options: {
       metricService.define({
         id: SUBSCRIBER_FAILED_COUNT_METRIC_ID,
         name: "Event bus subscriber failures (1h)",
-        owner: "may",
+        owner: "system:host",
         type: "health",
         target: 0,
         threshold: 3,
@@ -337,7 +334,7 @@ export function attachMetricSourceMeasurement(options: {
       metricService.define({
         id: UNEXPECTED_UNHANDLED_SIGNAL_METRIC_ID,
         name: "Unexpected unhandled signal events (1h)",
-        owner: "may",
+        owner: "system:host",
         type: "health",
         target: 0,
         threshold: 5,
@@ -367,7 +364,7 @@ export function attachMetricSourceMeasurement(options: {
     metricService.define({
       id: STALE_ACTIVE_METRIC_ID,
       name: "Stale cadence-bound active metrics",
-      owner: "may",
+      owner: "system:host",
       type: "health",
       target: 0,
       threshold: 0,
@@ -415,7 +412,7 @@ export async function evaluateMetrics(options: { bus: EventBus; persistDir: stri
       log("warn", `[metrics:${id}] Evaluation failed: ${reason}`);
       try {
         options.bus.emit({ type: "metric.evaluation.failed", source: "runtime:metric-evaluation",
-          owner: "agent:may", data: { metricId: String(id), reason } });
+          owner: "system:host", data: { metricId: String(id), reason } });
       } catch (error) {
         log("warn", `[metrics:${id}] Could not retain evaluation diagnostic: ${measurementError(error)}`);
       }

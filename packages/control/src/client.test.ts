@@ -159,8 +159,8 @@ describe("daemonSocketPath", () => {
     );
   });
 
-  it("defaults to the default may daemon socket", () => {
-    expect(daemonSocketPath("/state")).toBe("/state/instances/default/may.sock");
+  it("defaults to the default host daemon socket", () => {
+    expect(daemonSocketPath("/state")).toBe("/state/instances/default/host.sock");
   });
 });
 
@@ -459,7 +459,7 @@ describe("emitDaemonEvent", () => {
     expect(JSON.parse(writes[0] ?? "")).toEqual({
       type: "project.status_changed",
       source: "control",
-      owner: "agent:may",
+      owner: "system:host",
       data: {
         projectId: "p1",
         from: "open",
@@ -486,11 +486,11 @@ describe("emitDaemonEvent", () => {
   it("publishes one May App input event and keeps direct agent chat direct", async () => {
     const writes: string[] = [];
 
-    await expect(sendDaemonInput(captureEndpoint(writes), "hello May", "cli")).resolves.toMatchObject({
+    await expect(sendDaemonInput(captureEndpoint(writes), "hello May", "cli", { appId: "may" })).resolves.toMatchObject({
       type: "ok",
       command: "publish",
     });
-    await expect(sendAgentMessage(captureEndpoint(writes), "may", "review this", "cli")).resolves.toMatchObject({
+    await expect(sendAgentMessage(captureEndpoint(writes), "may", "review this", "cli", { interface: { agent: "may", appId: "may" } })).resolves.toMatchObject({
       type: "ok",
       command: "publish",
     });

@@ -196,9 +196,8 @@ const EVENT_DEFINITIONS: Readonly<Record<string, EventDefinition>> = {
       if (input.target?.appId) throw new Error("App input must use app.input.requested");
       const agent = optionalText(input.data.agent);
       if (!agent) throw new Error("chat.start.requested requires data.agent");
-      const appId = agent.replace(/\.app$/, "");
-      if (appId === options.conversationAppId?.trim().replace(/\.app$/, ""))
-        throw new Error(`${appId} input must use app.input.requested`);
+      if (options.conversationAppId && agent === options.conversationAgent)
+        throw new Error(`${agent} input must use app.input.requested`);
       if (!options.hasAgent(agent)) throw new Error(`Agent ${agent} is not loaded`);
       requiredText(input.data.message, "chat.start.requested data.message");
     },
@@ -337,6 +336,7 @@ export type CreateEventInterfaceOptions = {
   validateSessionControl?(type: string, sessionId?: string): void;
   /** Composition selects the conversational App; its input must use durable admission. */
   conversationAppId?: string;
+  conversationAgent?: string;
 };
 
 function requiredText(value: unknown, field: string): string {
@@ -436,7 +436,7 @@ function eventOwner(input: EventInput): string {
   if (agent) return `agent:${agent.replace(/^agent:/, "")}`;
   const recipient = optionalText(input.data.to);
   if (recipient && recipient !== "human") return `agent:${recipient.replace(/^agent:/, "")}`;
-  return "agent:may";
+  return "system:host";
 }
 
 function canonicalEvent(input: EventInput, context: EventPublisherContext): AgentEvent {

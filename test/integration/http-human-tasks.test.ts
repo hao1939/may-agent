@@ -106,7 +106,7 @@ describe("HTTP human Task reads and board", () => {
           SHARED_ROOT: root,
           PROJECTS_ROOT: projects,
           DAEMON_INSTANCE: "task-test",
-          DAEMON_AGENT: "may",
+          AGENT: "may", CONVERSATION_APP: "may", CONVERSATION_ID: "may:primary", DAEMON_AGENT: "may",
         },
       },
     );

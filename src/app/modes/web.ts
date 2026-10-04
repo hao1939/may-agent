@@ -4,14 +4,16 @@ export function parseWebPort(value: string | undefined): number {
 }
 
 export async function startWebMode(opts: {
+  interfaceAgent?: string;
   stateDir: string;
   port: number;
 }): Promise<{ port: number }> {
   const { startWebUI } = await import("../http/server.js");
-  return startWebUI({ stateDir: opts.stateDir, port: opts.port });
+  return startWebUI(opts);
 }
 
 export async function runWebOnlyMode(opts: {
+  interfaceAgent?: string;
   stateDir: string;
   port: number;
 }): Promise<never> {

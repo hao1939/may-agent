@@ -22,7 +22,6 @@ import type {
   Demand,
 } from "./workflow.js";
 import { WorkflowInterrupted, WorkflowBlocked } from "./workflow.js";
-import { appOwnerReviewEvent } from "../app/app-input-event.js";
 import { validateOperationAllowance } from "./workflow-finish-recovery.js";
 // ── In-memory workflow types (used during execution) ────────────────────
 
@@ -918,38 +917,13 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
     parentWorkflowRunId?: string;
   }): void => {
     const workflowOwner = normalizeEventOwner(opts.agentName);
-    const payload = {
-      workflowRunId: data.workflowRunId,
-      workflow: data.workflow,
-      workflowOwner,
-      projectId: data.projectId,
-      parentSessionId: data.parentSessionId,
-      parentWorkflowRunId: data.parentWorkflowRunId,
-      task: truncate(data.task, 500),
-      reason: data.reason,
-      context: data.context,
-    };
-    if (data.projectId) {
-      emitRuntimeEvent(
-        appOwnerReviewEvent({
-          appId: data.projectId,
-          source: "workflow-tool",
-          sourceId: `workflow-blocked:${data.workflowRunId}`,
-          data: {
-            project: data.projectId,
-            reason: "workflow-blocked",
-            params: payload,
-          },
-        }),
-      );
-      return;
-    }
     emitRuntimeEvent({
       type: "workflow.owner.requested",
       source: "workflow-tool",
       owner: workflowOwner,
       data: {
         reason: "workflow-blocked",
+        projectId: data.projectId,
         workflowRunId: data.workflowRunId,
         workflow: data.workflow,
         workflowOwner,
@@ -1133,7 +1107,7 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
         emitRuntimeEvent({
           type: "guard.triggered",
           source: "workflow",
-          owner: `agent:${opts.agentName ?? "may"}`,
+          owner: normalizeEventOwner(opts.agentName),
           data: {
             workflow: workflow.name,
             workflowRunId: runId,

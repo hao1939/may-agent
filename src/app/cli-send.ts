@@ -50,7 +50,7 @@ export async function cliSend(opts: SendOptions): Promise<boolean> {
 
   const socketPath = daemonSocketPath(persistDir, {
     instance: process.env.DAEMON_INSTANCE || process.env.INSTANCE || "default",
-    interfaceAgent: process.env.DAEMON_AGENT || process.env.AGENT || "may",
+    interfaceAgent: process.env.DAEMON_AGENT || process.env.AGENT || "host",
   });
 
   try {

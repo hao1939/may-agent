@@ -46,6 +46,7 @@ function fixture(
   };
   manager.registryStore.saveSession("s_chat", { agent: "may", task: "chat", status: "idle", startedAt: 1 });
   const router = attachCommandRouter({
+    interfaceAgent: "may", conversationAppId: "may",
     bus,
     manager: manager as any,
     projectRoot: root,

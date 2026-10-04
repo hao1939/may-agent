@@ -70,6 +70,10 @@ describe("direct agent tool policy", () => {
       });`,
     );
 
+    await mkdir(join(root, "shared"), { recursive: true });
+    await writeFile(join(root, "shared", "file-write-policy.json"), JSON.stringify({
+      protectedPaths: ["criteria/**"], grants: [],
+    }));
     let direct: Awaited<ReturnType<typeof prepareDirectAgentExecution>> | undefined;
     try {
       direct = await prepareDirectAgentExecution({
@@ -83,6 +87,10 @@ describe("direct agent tool policy", () => {
         models: { test: { id: "test-model" } as any },
       });
 
+      const guardedWrite = direct.prepared.tools.find((tool) => tool.name === "write")!;
+      const denied = await guardedWrite.execute("policy-probe", { path: "criteria/rules.md", content: "rewrite" });
+      expect(denied.content).toMatchObject([{ type: "text", text: expect.stringContaining("WRITE BLOCKED") }]);
+      expect(direct.prepared.definition.fileWritePolicy?.protectedPaths).toEqual(["criteria/**"]);
       expect(direct.executionManifest).toEqual({
         agent: "example",
         configuredTools: ["coding"],
