@@ -2,7 +2,8 @@ import type { AppDefinition } from "@may-agent/sdk";
 import { join } from "node:path";
 
 const clock = `CAST(strftime('%s','now') AS INTEGER) * 1000`;
-const recoveries = `WITH clock AS (SELECT ${clock} AS cut), recoveries AS (
+// Reuse each query-local cohort for the aggregate and its evidence examples.
+const recoveries = `WITH clock AS (SELECT ${clock} AS cut), recoveries AS MATERIALIZED (
   SELECT i.id, i.app_id, r.key AS stage,
     json_extract(r.value, '$.firstFailedAt') AS firstFailedAt,
     json_extract(r.value, '$.lastFailedAt') AS lastFailedAt,
@@ -142,7 +143,7 @@ export const reliabilityMetrics: NonNullable<AppDefinition["metrics"]> = [
     alertOp: ">",
     description:
       "Failures among retained external App attempts started in the last day and terminal before the sample cut. Sample size is completed + failed + interrupted; inspect rate and examples before judging.",
-    sourceQuery: `WITH clock AS (SELECT ${clock} AS cut), cohort AS (
+    sourceQuery: `WITH clock AS (SELECT ${clock} AS cut), cohort AS MATERIALIZED (
       SELECT app_id, task_id, attempt_id, state, started_at FROM app_task_attempts, clock
       WHERE app_id != 'alex' AND started_at >= cut - 86400000 AND started_at < cut
         AND state IN ('completed', 'failed', 'interrupted')

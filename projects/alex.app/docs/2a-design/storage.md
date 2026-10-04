@@ -163,6 +163,20 @@ scope work. Audit the actual parameters, plan, read frequency, intermediate
 payload size and enclosing transaction; a scan or output LIMIT alone is not a
 performance verdict. Prefer matching existing indexes and selecting small
 identities before loading full bodies over adding indexes or retries by default.
+Partial-index predicates belong in the lookup SQL even when callers already
+validate them; a bound parameter may not let SQLite prove the predicate.
+Rank/filter bounded historical identities before joining their large bodies.
+For retention, discover bounded candidate identities outside the write and
+recheck eligibility on those exact identities while deleting. Preserve existing
+reference-protection triggers. A concurrent update may postpone deletion to a
+later pass; it must not lose a newly protected record.
+
+Pure Event identity preparation can precede the Event writer's own acquisition.
+Unkeyed Events need no idempotency hash. Artifact creation still follows the
+atomic duplicate check, so retrieving an accepted receipt does not depend on
+new filesystem work. Moving artifact preparation further out needs a separate
+contract-preserving change; a smaller writer slot does not justify weakening
+receipt replay or an outer transaction's atomicity.
 
 Claimed request attachment commits Task input, request wait/claim release and
 Topic correlation together. Settlement persists linked request readiness in

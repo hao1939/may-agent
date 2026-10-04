@@ -55,6 +55,19 @@ investigation policy; the generic Host Condition engine still executes declared
 observations. The metric observer remains available for explicitly requested
 measurement work outside automated investigation follow-through.
 
+## Keep measurement work bounded
+
+May owns the SQL meaning of its reliability metrics. The unresolved-recovery
+and failed-attempt queries use a query-local materialized cohort when both the
+aggregate and evidence examples need the same rows. This removes duplicate
+calculation without a persistent cache, schema change or change to alert policy.
+Source-query collection remains outside the Host metric-state write transaction.
+
+The [October 4 SQL audit](../../alex.app/docs/archive/reviews/sql-query-audit-20261004.md#implementation-and-integrated-trial)
+records identical-result comparisons and costs. The source change requires the
+ordinary App release/reload path; a checkout update does not establish that the
+saved live metric definitions changed.
+
 ## Adopting the policy for existing work
 
 An existing investigation gets one owner judgment through its next ordinary

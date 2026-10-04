@@ -3,9 +3,9 @@
 ## Decision and scope
 
 Reduce unnecessary work before adding contention retries. The existing schema
-and query machinery already support several useful corrections. PR #328 remains
-a draft; this review does not authorize deployment or claim historical failures
-have recovered. See the [contention investigation](sqlite-contention-20261004.md).
+and query machinery already support several useful corrections. Source fixes
+and their validation are recorded in [implementation](#implementation-and-integrated-trial);
+this review does not claim deployment or recovery of historical failures. See the [contention investigation](sqlite-contention-20261004.md).
 
 Host source: `6b507d429` (main after #329). App source: workspace `ad8f56849b`;
 May's reliability metric definitions last changed in `6036d96990`.
@@ -219,3 +219,56 @@ portable CI tests. The ledger and this report retain the source revisions,
 questions, findings and limitations for future review without publishing private
 records. Production source, schema, data and PR #328 were not modified by this
 audit.
+
+
+## Implementation and integrated trial
+
+The fixes preserve the existing Host/App boundary and add no schema, index,
+cache or retry budget:
+
+| Finding | Source change | Validation |
+| --- | --- | --- |
+| F1 | [Host #328](https://github.com/hao1939/may-agent/pull/328), `f99b80f64`: six key lookups state their nonempty invariant so SQLite uses existing partial indexes | Production-SQL plan regression fails on main and passes with the fix; identity, collision, legacy receipt and fenced emission coverage retained |
+| F2 | [Host #330](https://github.com/hao1939/may-agent/pull/330), `7f0578931`: rank attempt IDs, then join selected bodies by exact App/attempt identity | 36 resource-store tests, including multiple Tasks, cross-App ID reuse, empty references, timestamp ties and clock reversal |
+| F3 | #328 prepares identity before its own transaction and skips unused hashes for unkeyed Events | Standalone preparation failure does not acquire the writer slot; existing rollback, fence and body-persistence tests retained |
+| F4 | [Host #331](https://github.com/hao1939/may-agent/pull/331), `1e6928b11`: reuse two-phase cleanup for expired Event and pair candidates | Ten maintenance tests; a second connection writes during selection, changes eligibility and adds a reference before exact-ID deletion |
+| F5 | May reliability queries materialize their shared recovery/attempt cohort within each query | 19 App tests, 119 assertions, including production-query plans and unchanged metric values/evidence |
+
+PR #328's prior retry additions are removed from its final diff. Host PRs are
+independent. Full local CI and GitHub check results are tracked on the PRs;
+no source change here is a deployment claim.
+
+An integrated trial invoked both source implementations of `readTaskContext`
+against the same read-only snapshot, with child expansion disabled. All six
+complete Task contexts were deeply equal. The 3,809-attempt Task took
+158–172 ms before and 14–24 ms after; the 674-attempt Task took 18–19 ms before
+and 3.5–4.4 ms after; the 506-attempt Task took 7.5–11.2 ms before and
+2.2–2.3 ms after. Each returned the same 16 attempts. This includes surrounding
+resource reads and parsing, unlike F2's initial SQL-only trial.
+
+The same trial imported both App metric source revisions and fixed their clock
+to one sample cut. All six complete metric rows were equal. Failed-attempt
+measurement took 590–810 ms before and 149–152 ms after; unresolved recovery
+count took 136–139 ms before and 60–75 ms after; oldest recovery age took
+112–113 ms before and 61–63 ms after. Other tests were running on the machine;
+these small trials demonstrate avoidable work, not a latency guarantee.
+
+A separate synthetic Event trial used temporary databases and large payloads,
+measuring acquisition and the full acquired-to-COMMIT interval independently.
+For standalone keyed writes, average hold time was about 30 ms before and
+19 ms after moving identity preparation; total time was about 31 ms and 29 ms.
+Unkeyed writes also remove previously unused hashing. Keyed nested writes still
+perform their preparation within the outer caller transaction; their timing
+variation is not evidence that a nested savepoint releases the writer slot.
+
+Artifact creation remains after the atomic duplicate check: moving it earlier
+could turn receipt replay into a new filesystem failure. Broader artifact and
+outer-transaction preparation work remains open. The cheap trace-link expiry
+query remains unchanged. The historical competing lock holder is still unknown,
+and Events with no saved admission plan have not been replayed or recovered.
+
+Reproduction artifacts are in ignored `.state/sql-audit-20261004/`:
+`integrated-read-trial.ts`, `integrated-read-comparison.json`,
+`event-hold-trial.ts`, `event-hold-comparison.json` and the focused/full CI logs.
+The first trial uses read-only installation data; the Event trial uses only
+synthetic temporary data. Neither is a live rollout or a model-behavior trial.

@@ -972,6 +972,10 @@ test("input metrics include old unadmitted work after feedback and exclude recov
     stage: "input-admission",
     failures: 1,
   });
+  for (const id of ["may.unresolved-input-recovery-count", "may.oldest-input-recovery-age-seconds"]) {
+    const plan = db.prepare(`EXPLAIN QUERY PLAN ${reliabilityMetrics.find((metric) => metric.id === id)!.sourceQuery}`).all();
+    expect(plan.filter((step) => String(step.detail) === "MATERIALIZE recoveries")).toHaveLength(1);
+  }
   resolveAppInboxRecovery(db, "input", "input-admission", Date.now());
   expect(sample("may.unresolved-input-recovery-count").value).toBe(0);
 });
@@ -1000,6 +1004,8 @@ test("retains failed attempts after later success and calculates the rate from t
       }),
     );
   }
+  const plan = db.prepare(`EXPLAIN QUERY PLAN ${reliabilityMetrics.find((metric) => metric.id === "may.failed-task-attempts-24h")!.sourceQuery}`).all();
+  expect(plan.filter((step) => String(step.detail) === "MATERIALIZE cohort")).toHaveLength(1);
   const observed = sample("may.failed-task-attempts-24h");
   expect(observed.value).toBe(1);
   expect(observed.sampleSize).toBe(3);
