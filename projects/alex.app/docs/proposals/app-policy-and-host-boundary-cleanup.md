@@ -25,6 +25,15 @@ paths. Deployment tests even imported retired executable Apps.
 The root cause was treating one installation as the system contract. Replacing
 one hard-coded name with another would keep the same dependency.
 
+Follow-up review exposed the same authority problem within configuration:
+startup honored a CLI override while send and maintenance independently read
+environment defaults. Missing Conversation configuration also selected direct
+chat in some paths. The candidate now resolves the complete binding once per
+CLI invocation, passes it into each mode, and rejects missing human routing
+at client and Host admission. The owning
+[installation contract](../2a-design/system-boundary.md#installation-declarations)
+defines this rule; agents do not need to understand these transport choices.
+
 ## Candidate changes
 
 | Decision | Owner and implementation |
@@ -66,6 +75,9 @@ Verification must cover independent agent/App names, missing destination,
 disabled-App discovery, policy capture and execution rebinding, current App
 admission, and retained result/retry behavior. Source checks establish these
 contracts, not model judgment or live adoption.
+CLI process trials also use conflicting `--agent`, `AGENT` and `DAEMON_AGENT`
+values: sends retain the App/Conversation, headless interface input is rejected,
+other recipients remain usable, and maintenance probes the selected daemon.
 
 The migration of retained legacy Tasks is still Alex's work. Private maintenance
 capabilities and optional retained reporting schemas need their own consumer

@@ -115,6 +115,19 @@ This view lists Task actions, not every open conversational Request.
 
 ## Starting and development modes
 
+The [installation binding](../2a-design/system-boundary.md#installation-declarations)
+keeps agent identity, Conversation App and Conversation ID independent. In the
+Host #326 source candidate, `--agent` overrides `AGENT`, then `DAEMON_AGENT`, then
+`host`. It chooses the interface/socket identity; `--send <name>` chooses the
+message recipient. `CONVERSATION_APP` selects the App and `CONVERSATION_ID`
+preserves the communication history. Sending to the selected interface without
+an App reports a configuration error; headless Tasks can still execute.
+
+Use the same instance and agent selection for daemon, send and maintenance
+commands. A CLI override is local to its invocation, so a separately started
+probe needs the same flag or shared environment. The container's supervisor
+and restarter use the shared installation environment. These changes remain
+candidate behavior until the paired Host/App rollout is verified.
 
 ```bash
 # Run these commands from the Runtime repository.
@@ -294,10 +307,11 @@ Control a running instance via Unix socket:
 
 ```bash
 # Convention path:
-# .state/instances/<DAEMON_INSTANCE>/<DAEMON_AGENT>.sock
+# .state/instances/<DAEMON_INSTANCE>/<selected-interface-agent>.sock
 #
-# Defaults are DAEMON_INSTANCE=$INSTANCE or default, and DAEMON_AGENT=$AGENT or
-# may. Docker/background runtime usually uses DAEMON_INSTANCE=background.
+# Instance defaults to INSTANCE or default. The selected interface agent follows
+# --agent, AGENT, DAEMON_AGENT, then host. These installation examples use may.
+# Docker/background runtime usually uses DAEMON_INSTANCE=background.
 
 # Watch events
 socat - UNIX-CONNECT:.state/instances/default/may.sock

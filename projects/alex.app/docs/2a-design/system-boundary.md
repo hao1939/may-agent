@@ -46,6 +46,18 @@ Conversation App and retained Conversation ID are independent. The agent asks
 for a message or reply; adapters handle these coordinates. Without a destination,
 headless work remains valid and a human notification fails explicitly.
 
+Resolve installation selection at the entry point, then pass the result to
+execution and transport adapters. CLI modes share the same selected agent,
+App and Conversation; a probe receives the selected daemon address. Adapters
+must not silently reselect an environment default after a caller supplied an
+override. This keeps one authority for routing without adding a registry.
+
+Missing wiring is a configuration failure, not a semantic choice to start a
+different kind of work. Human-interface chat requires its Conversation App at
+both client and Host admission. Other directly addressed agents and explicit
+session controls retain their ordinary execution contracts. Rejecting input
+must remain local to that interface and preserve unrelated Tasks.
+
 Domain file protections and writer grants live in
 `shared/file-write-policy.json`, captured with the selected definition release.
 Generic shared-guidance and cross-agent configuration safeguards remain even
