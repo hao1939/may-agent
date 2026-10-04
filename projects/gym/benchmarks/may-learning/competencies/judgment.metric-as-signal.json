@@ -5,7 +5,7 @@
   "objective": "Use metrics to find and verify real work without letting a score make the decision or replace the intended outcome.",
   "criticality": "high",
   "sources": [
-    {"path": "../may-agent.app/docs/1-principles/core-principles.md", "section": "Metrics are observations, not decisions"},
+    {"path": "../alex.app/docs/1-principles/core-principles.md", "section": "Metrics are observations, not decisions"},
     {"path": "../../shared/common-sense.md", "section": "Never game metrics"}
   ],
   "prerequisites": ["judgment.principle-application"],

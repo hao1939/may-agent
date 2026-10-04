@@ -341,7 +341,7 @@ export function followUpAfterVerifiedActivation(
       state: "ready-for-independent-follow-up";
       dependency: {
         id: string;
-        appId: "evaluation";
+        appId: "alex";
         input: {
           kind: "review-task-outcome";
           data: {
@@ -377,7 +377,7 @@ export function followUpAfterVerifiedActivation(
     state: "ready-for-independent-follow-up",
     dependency: {
       id: `post-adoption-review:${packet.packetHash}:${activation.newSubjectTask.evidenceHash}`,
-      appId: "evaluation",
+      appId: "alex",
       input: {
         kind: "review-task-outcome",
         data: {

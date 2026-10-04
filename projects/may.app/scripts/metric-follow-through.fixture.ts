@@ -24,7 +24,7 @@ import { createMetricService } from "../../may-agent/src/lib/metrics.js";
 import { readMetricEvidence } from "../../may-agent/src/app/adapters/reporting/metric-evidence.js";
 import { readConversationRequest } from "../../may-agent/src/app/core/state/conversation-requests.js";
 import mayApp, { taskForMayInput } from "../app.js";
-import type { MetricEvidence } from "../../evaluation.app/agents/evaluator/workflows/lib/metric-evidence.js";
+import type { MetricEvidence } from "../../alex.app/agents/evaluator/workflows/lib/metric-evidence.js";
 import {
   metricReviewHandoff,
   type MetricReview,

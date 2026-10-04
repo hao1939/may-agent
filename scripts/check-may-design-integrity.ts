@@ -3,10 +3,10 @@ import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 
 const root = process.cwd();
-const designDir = join(root, "projects", "may-agent.app", "docs", "2a-design");
-const principlesDir = join(root, "projects", "may-agent.app", "docs", "1-principles");
-const manualDir = join(root, "projects", "may-agent.app", "docs", "2b-manual");
-const indexPath = join(root, "projects", "may-agent.app", "docs", "INDEX.md");
+const designDir = join(root, "projects", "alex.app", "docs", "2a-design");
+const principlesDir = join(root, "projects", "alex.app", "docs", "1-principles");
+const manualDir = join(root, "projects", "alex.app", "docs", "2b-manual");
+const indexPath = join(root, "projects", "alex.app", "docs", "INDEX.md");
 // Manuals packaged as skills remain part of the design review surface. The
 // documentation index is the navigation authority; avoid a second skill list.
 const indexedSkillPaths = [...new Set(

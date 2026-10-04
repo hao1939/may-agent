@@ -6,7 +6,7 @@ Preference learning remains at the earlier PoC boundary.
 
 ## Contract ownership
 
-The common [App contract](../../may-agent.app/docs/2a-design/agent-app.md#assignment-authority-and-context)
+The common [App contract](../../alex.app/docs/2a-design/agent-app.md#assignment-authority-and-context)
 owns assignment authority, required context references, admission, caller
 clarification and Task reuse. The Host implementation removes redundant
 Conversation handoff fields and shares the agent guidance with ordinary Tasks.
@@ -143,8 +143,8 @@ procedure, with in-flight work and rollback considered at that boundary.
 
 The sufficient outcome is a useful source assessment that survives the turn,
 with corrections carried to its existing owner and less human repetition. The
-common [review rule](../../may-agent.app/docs/1-principles/core-principles.md#review-rule)
-and [philosophy](../../may-agent.app/docs/1-principles/design-philosophy.md#how-to-decide-a-tradeoff)
+common [review rule](../../alex.app/docs/1-principles/core-principles.md#review-rule)
+and [philosophy](../../alex.app/docs/1-principles/design-philosophy.md#how-to-decide-a-tradeoff)
 support removing the ignored outer assignment fields and using existing App
 input, Task revision, feedback, and findings records. A separate intent router,
 semantic-admission service, clarification lifecycle, or archive service does not
@@ -272,7 +272,7 @@ Reinforcement Learning*, arXiv:2508.10874v1. The source was a readable 39-page
 PDF. It tested the narrower design: May echoes its understood outcome, Scout's
 code prepares source evidence and saves the result, and one read-only model call
 provides the analysis. The Host implementation and execution lifecycle did not
-change. Shared guidance belongs to [Workflows](../../may-agent.app/docs/2a-design/workflows.md#procedural-evidence-and-agent-judgment);
+change. Shared guidance belongs to [Workflows](../../alex.app/docs/2a-design/workflows.md#procedural-evidence-and-agent-judgment);
 May's wording/default effort belongs to [intent policy](intent-and-daily-learning.md),
 and extraction/archive behavior belongs to Scout's
 [source-assessment procedure](../../scout-knowledge-lib.app/design/scout-knowledge-library-process.md#requested-source-assessments).

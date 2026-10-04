@@ -1,0 +1,10 @@
+{
+  "name": "tech-lead",
+  "description": "Tech-lead: implements and verifies focused changes in Alex development Tasks",
+  "domain": "simple, robust implementation and evidence-backed repair",
+  "model": "gpt-5.6-sol",
+  "tools": [
+    "coding",
+    "finish"
+  ]
+}

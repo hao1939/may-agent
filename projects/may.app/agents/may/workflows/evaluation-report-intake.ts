@@ -2,12 +2,12 @@ import type { ExecutionResult, WorkflowContext } from "@may-agent/sdk";
 import {
   readPublishedEvaluationReport,
   type PublishedReportRequest,
-} from "../../../../evaluation.app/agents/evaluator/workflows/evaluation-report-reader.js";
+} from "../../../../alex.app/agents/evaluator/workflows/evaluation-report-reader.js";
 import {
   readSubjectTask,
   type SubjectEvidence,
-} from "../../../../evaluation.app/agents/evaluator/workflows/lib/public-task-evidence.js";
-import { assessmentContext } from "../../../../evaluation.app/agents/evaluator/workflows/lib/task-assessment-context.js";
+} from "../../../../alex.app/agents/evaluator/workflows/lib/public-task-evidence.js";
+import { assessmentContext } from "../../../../alex.app/agents/evaluator/workflows/lib/task-assessment-context.js";
 import { planReportIntake } from "../../../evaluation-report-intake.js";
 import {
   inspectMetricResponse,
@@ -18,7 +18,7 @@ import { createHash } from "node:crypto";
 import {
   readMetricEvidence,
   type MetricReader,
-} from "../../../../evaluation.app/agents/evaluator/workflows/lib/metric-evidence.js";
+} from "../../../../alex.app/agents/evaluator/workflows/lib/metric-evidence.js";
 
 export const name = "evaluation-report-intake";
 export const description =

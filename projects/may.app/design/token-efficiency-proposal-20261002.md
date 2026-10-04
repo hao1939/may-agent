@@ -1,8 +1,8 @@
 # Prevent repeated execution and unnecessary reviews
 
-**Supports:** [May metric follow-through](metric-condition-follow-through.md) and [system observability](../../may-agent.app/docs/2a-design/metrics.md). Reduce the cost of delivering useful outcomes while keeping unfinished work accountable.
+**Supports:** [May metric follow-through](metric-condition-follow-through.md) and [system observability](../../alex.app/docs/2a-design/metrics.md). Reduce the cost of delivering useful outcomes while keeping unfinished work accountable.
 
-**Choice basis:** [Value and cost](../../may-agent.app/docs/1-principles/design-philosophy.md#value-and-cost); [agent decisions and infra execution](../../may-agent.app/docs/1-principles/code-vs-data.md); [safe retry ownership](../../may-agent.app/docs/2a-design/system-boundary.md#retry-and-recovery-ownership).
+**Choice basis:** [Value and cost](../../alex.app/docs/1-principles/design-philosophy.md#value-and-cost); [agent decisions and infra execution](../../alex.app/docs/1-principles/code-vs-data.md); [safe retry ownership](../../alex.app/docs/2a-design/system-boundary.md#retry-and-recovery-ownership).
 
 **Design status:** Proposed efficiency follow-up and retained October 2 audit.
 **Implementation status (2026-10-03):** Mixed; use the disposition and dated rollout evidence below. No new usage comparison has established sustained savings.
@@ -16,7 +16,7 @@
 | Meaningful reconsideration | Conditions and retained investigation identity exist. Better choice of wake predicates and measured review eligibility remain App policy and trial work. |
 | Context size | Host [#288](https://github.com/hao1939/may-agent/pull/288) fixes a separate full-history Codex resume cost. It does not prove that optional Conversation reference enrichment is bounded or cheaper. Assess that path separately. |
 | Continuing detection | The [October 3 inventory and October 4 implementation](metric-coverage-audit-20261003.md#october-4-implementation) supply catalog cleanup and two effort observations using existing invocation usage. Source verification covers report publication and accepted owner judgment. Effort alerts remain disabled for calibration; activation and a runtime comparison are pending. |
-| Repeated delivery and correctable output | [Host `7b416af40`](https://github.com/hao1939/may-agent/commit/7b416af40) and this Apps companion add durable GitHub fact identity, groups same-result Topic returns, and validates direct-agent results before terminal finish. The owning [observer contract](github-pull-request-observation.md), [Conversation contract](../../may-agent.app/docs/2a-design/conversation-execution.md#routing-and-authority), and [completion contract](../../may-agent.app/docs/2a-design/execution-contributions.md) describe behavior and limits. |
+| Repeated delivery and correctable output | [Host `7b416af40`](https://github.com/hao1939/may-agent/commit/7b416af40) and this Apps companion add durable GitHub fact identity, groups same-result Topic returns, and validates direct-agent results before terminal finish. The owning [observer contract](github-pull-request-observation.md), [Conversation contract](../../alex.app/docs/2a-design/conversation-execution.md#routing-and-authority), and [completion contract](../../alex.app/docs/2a-design/execution-contributions.md) describe behavior and limits. |
 | Duplicate hygiene timers | The companion removes the hard-coded App timer for the standing hygiene Task. Its already chosen `reviewAt` owns the cycle; the agent explicitly selects the next review. This preserves the existing Task and deadline without a state migration. |
 
 The remaining sections retain the audit baseline and original implementation
@@ -143,7 +143,7 @@ Preserve these invariants:
 - Useful retries remain permitted. Usage and recurrence can trigger owner review; they do not themselves authorize cancellation or impose a retry cap.
 - Result validity and execution efficiency remain separate facts.
 
-These follow the existing [system boundary](../../may-agent.app/docs/2a-design/system-boundary.md), [Task contract](../../may-agent.app/docs/2a-design/task-resource-engine.md), [metrics contract](../../may-agent.app/docs/2a-design/metrics.md) and [failure follow-up process](failure-follow-up-proposal-20260919.md).
+These follow the existing [system boundary](../../alex.app/docs/2a-design/system-boundary.md), [Task contract](../../alex.app/docs/2a-design/task-resource-engine.md), [metrics contract](../../alex.app/docs/2a-design/metrics.md) and [failure follow-up process](failure-follow-up-proposal-20260919.md).
 
 ## 1. Unify terminal completion
 
@@ -367,7 +367,7 @@ Rollback restores the prior code/policy revision without deleting Tasks, inputs 
 
 The later October 2 investigation confirmed the container Codex sandbox failure and reproduced two additional defects: stale context after resume and an immediate stale-result loop with a bounded event backlog. It also identified gaps in owner escalation and independent coverage of Evaluation's own operational work.
 
-The [recovery and independent oversight proposal](../../may-agent.app/docs/proposals/reliable-recovery-and-independent-oversight-20261002.md) owns those fixes and their connected verification. It reuses the existing caller feedback, metric and Condition paths. This token-efficiency proposal continues to own completion, review scheduling, reconsideration and optional context budgets. Neither document claims deployment, and no global retry limit is proposed.
+The [recovery and independent oversight proposal](../../alex.app/docs/proposals/reliable-recovery-and-independent-oversight-20261002.md) owns those fixes and their connected verification. It reuses the existing caller feedback, metric and Condition paths. This token-efficiency proposal continues to own completion, review scheduling, reconsideration and optional context budgets. Neither document claims deployment, and no global retry limit is proposed.
 
 ## Decisions for reviewers
 

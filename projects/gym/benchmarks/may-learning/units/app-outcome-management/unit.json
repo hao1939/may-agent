@@ -17,8 +17,8 @@
     "reliability.semantic-notification-dedup"
   ],
   "sources": [
-    { "path": "../may-agent.app/docs/2a-design/agent-app.md", "section": "Addressed work" },
-    { "path": "../may-agent.app/docs/2a-design/agents.md", "section": "Cross-App task dependencies" },
+    { "path": "../alex.app/docs/2a-design/agent-app.md", "section": "Addressed work" },
+    { "path": "../alex.app/docs/2a-design/agents.md", "section": "Cross-App task dependencies" },
     { "path": "../may.app/agents/may/AGENTS.md", "section": "Authority and evidence" }
   ],
   "benchmark": "may-app-outcome-management",

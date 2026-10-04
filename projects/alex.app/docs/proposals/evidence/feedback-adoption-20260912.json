@@ -1,0 +1,650 @@
+{
+  "setup": {
+    "appCommit": "0588a7ba1afa7f41fbbc2d4a67a6774038eef643",
+    "hostCommit": "886ae455d4ba45f44bcd4aa44ba645a9554b7f57",
+    "harnessHash": "8a66dc9347a7294b5e03a306e97c2b62b3f5264da8a0667149d186fd73815533",
+    "projectionHash": "f47da9f0fc931ddca708a695349ccde921676b612531f94394dd52a81cd9cc73",
+    "guidance": "## Evaluator Feedback (Learning Loop)\nIf `projects/evaluation.app/generated/agent-feedback/<you>.md` exists, read it at session start. It contains the evaluator's critique of your most recent session. Adapt your approach to avoid repeating flagged issues. Acknowledge relevant feedback in your plan.\n\n### Heartbeats (Autonomy)\nA scheduled wake supplies an opportunity to review the current outcome, not\nnew authority or a requirement to invent work. Use current facts and the App's\nscope to choose the next useful action.\n\n### Metrics (Signal + Judgment)\nYou own metrics that signal where attention is needed. Metrics inform your judgment — they don't replace it. A regression is a signal to investigate, not an automatic trigger. Use gym for fast feedback (minutes) when possible.\n\n### Workflows\nA workflow is one bounded recipe inside an attempt, not a persistent worker or\nproject controller. Use ordinary tools for simple work and an available skill\nfor reusable judgment. Do not invoke a workflow merely because an old note\nnames it. A bounded agent call must return before its caller can accept the\nresult; independent continuation belongs to an App Task, not a fire-and-forget\nfork or message.\n\nInside a workflow step, follow its supplied scope and result contract. An agent\nfinishing, a passing command, a commit, a PR, and an integrated result are\ndifferent facts. Report the one actually proved.\n\n### Repository changes\n\n- Find the actual Git repository and read its current contribution rules. A\n  project directory may be inside a larger repository; never assume `/app` is\n  the repository to commit or push.\n- Work in the assigned isolated worktree. For direct coding without a Host-owned\n  worktree, use ordinary Git to prepare a named branch/worktree and retain its\n  identity with the work. Do not change branches, stash, reset, or clean another\n  worker's checkout. Read-only investigation and declared runtime scratch do\n  not require a worktree.\n- Keep one reviewable change focused. Test and review the exact diff in the\n  checkout that was edited, then commit only owned files. Failed or skipped\n  checks are not passes. Run project-required CI and live tests when authorized;\n  a local test does not replace them.\n- Bring reviewed changes back to the project's target branch (normally `main`)\n  through its required PR/review process. Do not merge, push to `main`, or deploy\n  merely because local checks passed. Confirm the integrated revision before\n  calling an integration outcome complete.\n- Reuse an existing branch/PR for that change. While review or a pipeline runs,\n  continue independent authorized work; do not create overlapping fixes or\n  another capacity queue. Use available external-event observation and exact\n  Task Conditions for later checks instead of keeping an LLM polling.\n- Explain PRs in plain language: problem, change, verification and remaining\n  risks. Include the exact Task/worker reference when supplied, not invented\n  metadata, private logs, or credentials.\n- Keep unfinished work recoverable. Remove only the exact owned worktree/branch\n  after proving integration or receiving explicit discard authority; never\n  clean other workers' files to obtain a clean status.\n\nWorkflow authors must align prompts, writable paths, verification, and result\nadmission with these rules. A prompt alone cannot fix a workflow that writes\nor verifies the shared checkout. See\n`projects/alex.app/docs/2b-manual/workflow-authoring.md`.\n\n### Guards\nGuards enforce quality automatically — verification, scope, completeness. They exist because these rules work better as structural checks than as instructions. If a guard blocks you, satisfy it. If you genuinely can't, escalate.\n\n### Escalation\nDon't burn cycles retrying the same approach.\n\n**Chain:** You → session owner → May → Hao.\n\n**Cross-agent help:** scout (research), dev (debugging/metrics), arc (architecture/strategy).",
+    "live": true,
+    "maxExecutions": 4,
+    "timeoutMs": 90000
+  },
+  "checks": {
+    "noProductionChanges": true,
+    "sameDefinitionAllExecutions": true,
+    "noReloadBetweenExecutions": true,
+    "realProjectionAndAppInput": true,
+    "daemonOrTaskRuntimeTest": false
+  },
+  "records": [
+    {
+      "id": "before-feedback",
+      "evidence": {
+        "tenant": "Orion",
+        "environment": "production",
+        "occupiedSlots": 30,
+        "additionalSlots": 9
+      },
+      "prompt": "Assess the Orion capacity request in evidence.json. Cite the actual policy and explain whether occupied plus additional slots fit. If policy is unavailable, say so. Do not deploy anything.",
+      "systemPrompt": "<system_instructions>\n## Evaluator Feedback (Learning Loop)\nIf `projects/evaluation.app/generated/agent-feedback/<you>.md` exists, read it at session start. It contains the evaluator's critique of your most recent session. Adapt your approach to avoid repeating flagged issues. Acknowledge relevant feedback in your plan.\n\n### Heartbeats (Autonomy)\nA scheduled wake supplies an opportunity to review the current outcome, not\nnew authority or a requirement to invent work. Use current facts and the App's\nscope to choose the next useful action.\n\n### Metrics (Signal + Judgment)\nYou own metrics that signal where attention is needed. Metrics inform your judgment — they don't replace it. A regression is a signal to investigate, not an automatic trigger. Use gym for fast feedback (minutes) when possible.\n\n### Workflows\nA workflow is one bounded recipe inside an attempt, not a persistent worker or\nproject controller. Use ordinary tools for simple work and an available skill\nfor reusable judgment. Do not invoke a workflow merely because an old note\nnames it. A bounded agent call must return before its caller can accept the\nresult; independent continuation belongs to an App Task, not a fire-and-forget\nfork or message.\n\nInside a workflow step, follow its supplied scope and result contract. An agent\nfinishing, a passing command, a commit, a PR, and an integrated result are\ndifferent facts. Report the one actually proved.\n\n### Repository changes\n\n- Find the actual Git repository and read its current contribution rules. A\n  project directory may be inside a larger repository; never assume `/app` is\n  the repository to commit or push.\n- Work in the assigned isolated worktree. For direct coding without a Host-owned\n  worktree, use ordinary Git to prepare a named branch/worktree and retain its\n  identity with the work. Do not change branches, stash, reset, or clean another\n  worker's checkout. Read-only investigation and declared runtime scratch do\n  not require a worktree.\n- Keep one reviewable change focused. Test and review the exact diff in the\n  checkout that was edited, then commit only owned files. Failed or skipped\n  checks are not passes. Run project-required CI and live tests when authorized;\n  a local test does not replace them.\n- Bring reviewed changes back to the project's target branch (normally `main`)\n  through its required PR/review process. Do not merge, push to `main`, or deploy\n  merely because local checks passed. Confirm the integrated revision before\n  calling an integration outcome complete.\n- Reuse an existing branch/PR for that change. While review or a pipeline runs,\n  continue independent authorized work; do not create overlapping fixes or\n  another capacity queue. Use available external-event observation and exact\n  Task Conditions for later checks instead of keeping an LLM polling.\n- Explain PRs in plain language: problem, change, verification and remaining\n  risks. Include the exact Task/worker reference when supplied, not invented\n  metadata, private logs, or credentials.\n- Keep unfinished work recoverable. Remove only the exact owned worktree/branch\n  after proving integration or receiving explicit discard authority; never\n  clean other workers' files to obtain a clean status.\n\nWorkflow authors must align prompts, writable paths, verification, and result\nadmission with these rules. A prompt alone cannot fix a workflow that writes\nor verifies the shared checkout. See\n`projects/alex.app/docs/2b-manual/workflow-authoring.md`.\n\n### Guards\nGuards enforce quality automatically — verification, scope, completeness. They exist because these rules work better as structural checks than as instructions. If a guard blocks you, satisfy it. If you genuinely can't, escalate.\n\n### Escalation\nDon't burn cycles retrying the same approach.\n\n**Chain:** You → session owner → May → Hao.\n\n**Cross-agent help:** scout (research), dev (debugging/metrics), arc (architecture/strategy).\n\nYou are a helpful software engineering assistant. Review changes and answer questions from supplied evidence.\nUse relevant available skills when useful. Do not invent tool results or claim to have modified anything.\nYou can read fixture files but cannot write files or operate external systems. Keep answers concise.\n\nThe following skills provide specialized instructions for specific tasks.\nRead the full skill file when the task matches its description.\nWhen a skill file references a relative path, resolve it against the skill directory (parent of SKILL.md / dirname of the path) and use that absolute path in tool commands.\n\n<available_skills>\n  <skill>\n    <name>review-change</name>\n    <description>Review pull requests, evaluate reviewer comments and check CI evidence. Use for PR assessments, not ordinary writing tasks.</description>\n    <location><fixture-root>/state/releases/app-definitions/4a1edc9e214d95e120302af3a13073bdbfb5fd38-definitions-v4/agents/reviewer/skills/review-change/SKILL.md</location>\n  </skill>\n</available_skills>\n\n# Runtime Environment\n- Project root: <fixture-root>\n- Agent directory: state/releases/app-definitions/4a1edc9e214d95e120302af3a13073bdbfb5fd38-definitions-v4/agents/reviewer\n- Already in context: shared/common-sense.md and this agent's AGENTS.md when present.\n- Prompt precedence: common-sense is the shared default; this agent's AGENTS.md is the role-specific identity layer and takes precedence for agent-specific behavior.\n- Available tools: read\n- Current time: 2026-09-12T07:04:33.834Z\n\nAll paths are relative to project root unless absolute paths are explicitly provided.\n</system_instructions>",
+      "sourceCommit": "4a1edc9e214d95e120302af3a13073bdbfb5fd38",
+      "toolsAvailable": [
+        "read"
+      ],
+      "status": "done",
+      "answer": "`evidence.json` shows Orion production at **30 occupied slots**, requesting **9 additional slots**, for a total of **39 slots**.\n\nNo capacity policy or slot limit is available in the supplied evidence, so I cannot cite an actual policy or determine whether 39 slots fit. **No deployment was performed.**",
+      "durationMs": 10094,
+      "tools": [
+        {
+          "name": "read",
+          "arguments": {
+            "path": "projects/evaluation.app/generated/agent-feedback/reviewer.md"
+          }
+        },
+        {
+          "name": "read",
+          "arguments": {
+            "path": "<fixture-root>/state/releases/app-definitions/4a1edc9e214d95e120302af3a13073bdbfb5fd38-definitions-v4/agents/reviewer/skills/review-change/SKILL.md"
+          }
+        },
+        {
+          "name": "read",
+          "arguments": {
+            "path": "evidence.json"
+          }
+        },
+        {
+          "name": "read",
+          "arguments": {
+            "path": "policy.md"
+          }
+        },
+        {
+          "name": "read",
+          "arguments": {
+            "path": "capacity-policy.md"
+          }
+        },
+        {
+          "name": "read",
+          "arguments": {
+            "path": "policies/capacity.md"
+          }
+        },
+        {
+          "name": "read",
+          "arguments": {
+            "path": "README.md"
+          }
+        },
+        {
+          "name": "read",
+          "arguments": {
+            "path": "evidence/policy.md"
+          }
+        },
+        {
+          "name": "read",
+          "arguments": {
+            "path": "shared/common-sense.md"
+          }
+        },
+        {
+          "name": "read",
+          "arguments": {
+            "path": "AGENTS.md"
+          }
+        },
+        {
+          "name": "read",
+          "arguments": {
+            "path": "projects/evaluation.app/evidence.json"
+          }
+        },
+        {
+          "name": "read",
+          "arguments": {
+            "path": "policy.json"
+          }
+        },
+        {
+          "name": "read",
+          "arguments": {
+            "path": "capacity.json"
+          }
+        }
+      ],
+      "models": [
+        "gpt-5.6-sol"
+      ],
+      "usage": [
+        {
+          "input": 1477,
+          "output": 165,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "reasoning": 33,
+          "totalTokens": 1642,
+          "cost": {
+            "input": 0.005908,
+            "output": 0.0033000000000000004,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0.009208000000000001
+          }
+        },
+        {
+          "input": 1834,
+          "output": 139,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "reasoning": 39,
+          "totalTokens": 1973,
+          "cost": {
+            "input": 0.007336,
+            "output": 0.0027800000000000004,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0.010116
+          }
+        },
+        {
+          "input": 626,
+          "output": 139,
+          "cacheRead": 1536,
+          "cacheWrite": 0,
+          "reasoning": 38,
+          "totalTokens": 2301,
+          "cost": {
+            "input": 0.0025039999999999997,
+            "output": 0.0027800000000000004,
+            "cacheRead": 0.0006144000000000001,
+            "cacheWrite": 0,
+            "total": 0.005898400000000001
+          }
+        },
+        {
+          "input": 443,
+          "output": 129,
+          "cacheRead": 2048,
+          "cacheWrite": 0,
+          "reasoning": 59,
+          "totalTokens": 2620,
+          "cost": {
+            "input": 0.001772,
+            "output": 0.0025800000000000003,
+            "cacheRead": 0.0008192000000000001,
+            "cacheWrite": 0,
+            "total": 0.0051712
+          }
+        }
+      ]
+    },
+    {
+      "id": "projection-review-v1",
+      "input": {
+        "evaluation": {
+          "sessionId": "review-v1",
+          "agent": "reviewer",
+          "quality": 0.4,
+          "verdict": "needs_improvement",
+          "issues": [
+            "The earlier capacity assessment missed the accepted policy reference. Consult facts/orion-v1.json and include occupied slots in demand."
+          ],
+          "overall": {
+            "evidence": [
+              "facts/orion-v1.json"
+            ]
+          },
+          "createdAt": 100
+        },
+        "feedbackKey": "reviewer"
+      },
+      "result": {
+        "id": "wf_test",
+        "kind": "workflow",
+        "status": "done",
+        "summary": "Saved evaluation review-v1 for reviewer; reading and remediation remain unverified.",
+        "output": {
+          "state": "converged",
+          "summary": "Saved evaluation review-v1 for reviewer; reading and remediation remain unverified.",
+          "evidence": [
+            "evaluated-session:review-v1",
+            "feedback-updated:reviewer",
+            "feedback-verified:reviewer"
+          ],
+          "actions": []
+        }
+      }
+    },
+    {
+      "id": "saved-feedback",
+      "evidence": {
+        "tenant": "Orion",
+        "environment": "production",
+        "occupiedSlots": 30,
+        "additionalSlots": 9
+      },
+      "prompt": "Assess the Orion capacity request in evidence.json. Cite the actual policy and explain whether occupied plus additional slots fit. If policy is unavailable, say so. Do not deploy anything.",
+      "systemPrompt": "<system_instructions>\n## Evaluator Feedback (Learning Loop)\nIf `projects/evaluation.app/generated/agent-feedback/<you>.md` exists, read it at session start. It contains the evaluator's critique of your most recent session. Adapt your approach to avoid repeating flagged issues. Acknowledge relevant feedback in your plan.\n\n### Heartbeats (Autonomy)\nA scheduled wake supplies an opportunity to review the current outcome, not\nnew authority or a requirement to invent work. Use current facts and the App's\nscope to choose the next useful action.\n\n### Metrics (Signal + Judgment)\nYou own metrics that signal where attention is needed. Metrics inform your judgment — they don't replace it. A regression is a signal to investigate, not an automatic trigger. Use gym for fast feedback (minutes) when possible.\n\n### Workflows\nA workflow is one bounded recipe inside an attempt, not a persistent worker or\nproject controller. Use ordinary tools for simple work and an available skill\nfor reusable judgment. Do not invoke a workflow merely because an old note\nnames it. A bounded agent call must return before its caller can accept the\nresult; independent continuation belongs to an App Task, not a fire-and-forget\nfork or message.\n\nInside a workflow step, follow its supplied scope and result contract. An agent\nfinishing, a passing command, a commit, a PR, and an integrated result are\ndifferent facts. Report the one actually proved.\n\n### Repository changes\n\n- Find the actual Git repository and read its current contribution rules. A\n  project directory may be inside a larger repository; never assume `/app` is\n  the repository to commit or push.\n- Work in the assigned isolated worktree. For direct coding without a Host-owned\n  worktree, use ordinary Git to prepare a named branch/worktree and retain its\n  identity with the work. Do not change branches, stash, reset, or clean another\n  worker's checkout. Read-only investigation and declared runtime scratch do\n  not require a worktree.\n- Keep one reviewable change focused. Test and review the exact diff in the\n  checkout that was edited, then commit only owned files. Failed or skipped\n  checks are not passes. Run project-required CI and live tests when authorized;\n  a local test does not replace them.\n- Bring reviewed changes back to the project's target branch (normally `main`)\n  through its required PR/review process. Do not merge, push to `main`, or deploy\n  merely because local checks passed. Confirm the integrated revision before\n  calling an integration outcome complete.\n- Reuse an existing branch/PR for that change. While review or a pipeline runs,\n  continue independent authorized work; do not create overlapping fixes or\n  another capacity queue. Use available external-event observation and exact\n  Task Conditions for later checks instead of keeping an LLM polling.\n- Explain PRs in plain language: problem, change, verification and remaining\n  risks. Include the exact Task/worker reference when supplied, not invented\n  metadata, private logs, or credentials.\n- Keep unfinished work recoverable. Remove only the exact owned worktree/branch\n  after proving integration or receiving explicit discard authority; never\n  clean other workers' files to obtain a clean status.\n\nWorkflow authors must align prompts, writable paths, verification, and result\nadmission with these rules. A prompt alone cannot fix a workflow that writes\nor verifies the shared checkout. See\n`projects/alex.app/docs/2b-manual/workflow-authoring.md`.\n\n### Guards\nGuards enforce quality automatically — verification, scope, completeness. They exist because these rules work better as structural checks than as instructions. If a guard blocks you, satisfy it. If you genuinely can't, escalate.\n\n### Escalation\nDon't burn cycles retrying the same approach.\n\n**Chain:** You → session owner → May → Hao.\n\n**Cross-agent help:** scout (research), dev (debugging/metrics), arc (architecture/strategy).\n\nYou are a helpful software engineering assistant. Review changes and answer questions from supplied evidence.\nUse relevant available skills when useful. Do not invent tool results or claim to have modified anything.\nYou can read fixture files but cannot write files or operate external systems. Keep answers concise.\n\nThe following skills provide specialized instructions for specific tasks.\nRead the full skill file when the task matches its description.\nWhen a skill file references a relative path, resolve it against the skill directory (parent of SKILL.md / dirname of the path) and use that absolute path in tool commands.\n\n<available_skills>\n  <skill>\n    <name>review-change</name>\n    <description>Review pull requests, evaluate reviewer comments and check CI evidence. Use for PR assessments, not ordinary writing tasks.</description>\n    <location><fixture-root>/state/releases/app-definitions/4a1edc9e214d95e120302af3a13073bdbfb5fd38-definitions-v4/agents/reviewer/skills/review-change/SKILL.md</location>\n  </skill>\n</available_skills>\n\n# Runtime Environment\n- Project root: <fixture-root>\n- Agent directory: state/releases/app-definitions/4a1edc9e214d95e120302af3a13073bdbfb5fd38-definitions-v4/agents/reviewer\n- Already in context: shared/common-sense.md and this agent's AGENTS.md when present.\n- Prompt precedence: common-sense is the shared default; this agent's AGENTS.md is the role-specific identity layer and takes precedence for agent-specific behavior.\n- Available tools: read\n- Current time: 2026-09-12T07:04:43.934Z\n\nAll paths are relative to project root unless absolute paths are explicitly provided.\n</system_instructions>",
+      "sourceCommit": "4a1edc9e214d95e120302af3a13073bdbfb5fd38",
+      "toolsAvailable": [
+        "read"
+      ],
+      "status": "done",
+      "answer": "**Orion’s request does not fit.**\n\n- **Policy:** Accepted Orion policy v1 allows **37 production slots**, measured as **“occupied plus additional slots”** (`facts/orion-v1.json`).\n- **Demand:** 30 occupied + 9 additional = **39 slots** (`evidence.json`).\n- **Result:** The request exceeds capacity by **2 slots**.\n\nThe policy also states that capacity eligibility does not authorize deployment. **No deployment was performed.**",
+      "durationMs": 7414,
+      "tools": [
+        {
+          "name": "read",
+          "arguments": {
+            "path": "projects/evaluation.app/generated/agent-feedback/reviewer.md"
+          }
+        },
+        {
+          "name": "read",
+          "arguments": {
+            "path": "evidence.json"
+          }
+        },
+        {
+          "name": "read",
+          "arguments": {
+            "path": "facts/orion-v1.json"
+          }
+        }
+      ],
+      "models": [
+        "gpt-5.6-sol"
+      ],
+      "usage": [
+        {
+          "input": 1477,
+          "output": 136,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "reasoning": 76,
+          "totalTokens": 1613,
+          "cost": {
+            "input": 0.005908,
+            "output": 0.00272,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0.008628
+          }
+        },
+        {
+          "input": 797,
+          "output": 33,
+          "cacheRead": 1024,
+          "cacheWrite": 0,
+          "reasoning": 9,
+          "totalTokens": 1854,
+          "cost": {
+            "input": 0.003188,
+            "output": 0.0006600000000000001,
+            "cacheRead": 0.00040960000000000004,
+            "cacheWrite": 0,
+            "total": 0.0042576
+          }
+        },
+        {
+          "input": 1893,
+          "output": 158,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "reasoning": 53,
+          "totalTokens": 2051,
+          "cost": {
+            "input": 0.007572,
+            "output": 0.00316,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0.010732
+          }
+        }
+      ]
+    },
+    {
+      "id": "projection-review-v2",
+      "input": {
+        "evaluation": {
+          "sessionId": "review-v2",
+          "agent": "reviewer",
+          "quality": 0.4,
+          "verdict": "needs_improvement",
+          "issues": [
+            "The policy reference has been updated: consult facts/orion-v2.json for staging. The older reference does not define staging."
+          ],
+          "overall": {
+            "evidence": [
+              "facts/orion-v2.json"
+            ]
+          },
+          "createdAt": 200
+        },
+        "feedbackKey": "reviewer"
+      },
+      "result": {
+        "id": "wf_test",
+        "kind": "workflow",
+        "status": "done",
+        "summary": "Saved evaluation review-v2 for reviewer; reading and remediation remain unverified.",
+        "output": {
+          "state": "converged",
+          "summary": "Saved evaluation review-v2 for reviewer; reading and remediation remain unverified.",
+          "evidence": [
+            "evaluated-session:review-v2",
+            "feedback-updated:reviewer",
+            "feedback-verified:reviewer"
+          ],
+          "actions": []
+        }
+      }
+    },
+    {
+      "id": "updated-feedback",
+      "evidence": {
+        "tenant": "Orion",
+        "environment": "staging",
+        "occupiedSlots": 5,
+        "additionalSlots": 8
+      },
+      "prompt": "Assess the Orion capacity request in evidence.json. Cite the actual policy and explain whether occupied plus additional slots fit. If policy is unavailable, say so. Do not deploy anything.",
+      "systemPrompt": "<system_instructions>\n## Evaluator Feedback (Learning Loop)\nIf `projects/evaluation.app/generated/agent-feedback/<you>.md` exists, read it at session start. It contains the evaluator's critique of your most recent session. Adapt your approach to avoid repeating flagged issues. Acknowledge relevant feedback in your plan.\n\n### Heartbeats (Autonomy)\nA scheduled wake supplies an opportunity to review the current outcome, not\nnew authority or a requirement to invent work. Use current facts and the App's\nscope to choose the next useful action.\n\n### Metrics (Signal + Judgment)\nYou own metrics that signal where attention is needed. Metrics inform your judgment — they don't replace it. A regression is a signal to investigate, not an automatic trigger. Use gym for fast feedback (minutes) when possible.\n\n### Workflows\nA workflow is one bounded recipe inside an attempt, not a persistent worker or\nproject controller. Use ordinary tools for simple work and an available skill\nfor reusable judgment. Do not invoke a workflow merely because an old note\nnames it. A bounded agent call must return before its caller can accept the\nresult; independent continuation belongs to an App Task, not a fire-and-forget\nfork or message.\n\nInside a workflow step, follow its supplied scope and result contract. An agent\nfinishing, a passing command, a commit, a PR, and an integrated result are\ndifferent facts. Report the one actually proved.\n\n### Repository changes\n\n- Find the actual Git repository and read its current contribution rules. A\n  project directory may be inside a larger repository; never assume `/app` is\n  the repository to commit or push.\n- Work in the assigned isolated worktree. For direct coding without a Host-owned\n  worktree, use ordinary Git to prepare a named branch/worktree and retain its\n  identity with the work. Do not change branches, stash, reset, or clean another\n  worker's checkout. Read-only investigation and declared runtime scratch do\n  not require a worktree.\n- Keep one reviewable change focused. Test and review the exact diff in the\n  checkout that was edited, then commit only owned files. Failed or skipped\n  checks are not passes. Run project-required CI and live tests when authorized;\n  a local test does not replace them.\n- Bring reviewed changes back to the project's target branch (normally `main`)\n  through its required PR/review process. Do not merge, push to `main`, or deploy\n  merely because local checks passed. Confirm the integrated revision before\n  calling an integration outcome complete.\n- Reuse an existing branch/PR for that change. While review or a pipeline runs,\n  continue independent authorized work; do not create overlapping fixes or\n  another capacity queue. Use available external-event observation and exact\n  Task Conditions for later checks instead of keeping an LLM polling.\n- Explain PRs in plain language: problem, change, verification and remaining\n  risks. Include the exact Task/worker reference when supplied, not invented\n  metadata, private logs, or credentials.\n- Keep unfinished work recoverable. Remove only the exact owned worktree/branch\n  after proving integration or receiving explicit discard authority; never\n  clean other workers' files to obtain a clean status.\n\nWorkflow authors must align prompts, writable paths, verification, and result\nadmission with these rules. A prompt alone cannot fix a workflow that writes\nor verifies the shared checkout. See\n`projects/alex.app/docs/2b-manual/workflow-authoring.md`.\n\n### Guards\nGuards enforce quality automatically — verification, scope, completeness. They exist because these rules work better as structural checks than as instructions. If a guard blocks you, satisfy it. If you genuinely can't, escalate.\n\n### Escalation\nDon't burn cycles retrying the same approach.\n\n**Chain:** You → session owner → May → Hao.\n\n**Cross-agent help:** scout (research), dev (debugging/metrics), arc (architecture/strategy).\n\nYou are a helpful software engineering assistant. Review changes and answer questions from supplied evidence.\nUse relevant available skills when useful. Do not invent tool results or claim to have modified anything.\nYou can read fixture files but cannot write files or operate external systems. Keep answers concise.\n\nThe following skills provide specialized instructions for specific tasks.\nRead the full skill file when the task matches its description.\nWhen a skill file references a relative path, resolve it against the skill directory (parent of SKILL.md / dirname of the path) and use that absolute path in tool commands.\n\n<available_skills>\n  <skill>\n    <name>review-change</name>\n    <description>Review pull requests, evaluate reviewer comments and check CI evidence. Use for PR assessments, not ordinary writing tasks.</description>\n    <location><fixture-root>/state/releases/app-definitions/4a1edc9e214d95e120302af3a13073bdbfb5fd38-definitions-v4/agents/reviewer/skills/review-change/SKILL.md</location>\n  </skill>\n</available_skills>\n\n# Runtime Environment\n- Project root: <fixture-root>\n- Agent directory: state/releases/app-definitions/4a1edc9e214d95e120302af3a13073bdbfb5fd38-definitions-v4/agents/reviewer\n- Already in context: shared/common-sense.md and this agent's AGENTS.md when present.\n- Prompt precedence: common-sense is the shared default; this agent's AGENTS.md is the role-specific identity layer and takes precedence for agent-specific behavior.\n- Available tools: read\n- Current time: 2026-09-12T07:04:51.351Z\n\nAll paths are relative to project root unless absolute paths are explicitly provided.\n</system_instructions>",
+      "sourceCommit": "4a1edc9e214d95e120302af3a13073bdbfb5fd38",
+      "toolsAvailable": [
+        "read"
+      ],
+      "status": "done",
+      "answer": "According to **`facts/orion-v2.json`**, the accepted Orion policy v2 sets **staging capacity at 12 slots**, measured as **“occupied plus additional slots.”**\n\n- Occupied: 5\n- Additional requested: 8\n- Total: **13**\n- Staging limit: **12**\n\nThe request **does not fit**; it exceeds capacity by **1 slot**. The policy also states that capacity eligibility does not authorize deployment. **No deployment was performed.**",
+      "durationMs": 7692,
+      "tools": [
+        {
+          "name": "read",
+          "arguments": {
+            "path": "projects/evaluation.app/generated/agent-feedback/reviewer.md"
+          }
+        },
+        {
+          "name": "read",
+          "arguments": {
+            "path": "<fixture-root>/state/releases/app-definitions/4a1edc9e214d95e120302af3a13073bdbfb5fd38-definitions-v4/agents/reviewer/skills/review-change/SKILL.md"
+          }
+        },
+        {
+          "name": "read",
+          "arguments": {
+            "path": "evidence.json"
+          }
+        },
+        {
+          "name": "read",
+          "arguments": {
+            "path": "facts/orion-v2.json"
+          }
+        }
+      ],
+      "models": [
+        "gpt-5.6-sol"
+      ],
+      "usage": [
+        {
+          "input": 453,
+          "output": 161,
+          "cacheRead": 1024,
+          "cacheWrite": 0,
+          "reasoning": 29,
+          "totalTokens": 1638,
+          "cost": {
+            "input": 0.001812,
+            "output": 0.00322,
+            "cacheRead": 0.00040960000000000004,
+            "cacheWrite": 0,
+            "total": 0.0054416
+          }
+        },
+        {
+          "input": 942,
+          "output": 38,
+          "cacheRead": 1024,
+          "cacheWrite": 0,
+          "reasoning": 14,
+          "totalTokens": 2004,
+          "cost": {
+            "input": 0.0037679999999999996,
+            "output": 0.00076,
+            "cacheRead": 0.00040960000000000004,
+            "cacheWrite": 0,
+            "total": 0.0049376
+          }
+        },
+        {
+          "input": 512,
+          "output": 147,
+          "cacheRead": 1536,
+          "cacheWrite": 0,
+          "reasoning": 39,
+          "totalTokens": 2195,
+          "cost": {
+            "input": 0.002048,
+            "output": 0.0029400000000000003,
+            "cacheRead": 0.0006144000000000001,
+            "cacheWrite": 0,
+            "total": 0.0056024000000000004
+          }
+        }
+      ]
+    },
+    {
+      "id": "projection-review-clean",
+      "input": {
+        "evaluation": {
+          "sessionId": "review-clean",
+          "agent": "reviewer",
+          "quality": 0.9,
+          "verdict": "good",
+          "issues": [],
+          "overall": {
+            "evidence": [
+              ""
+            ]
+          },
+          "createdAt": 300
+        },
+        "feedbackKey": "reviewer"
+      },
+      "result": {
+        "id": "wf_test",
+        "kind": "workflow",
+        "status": "done",
+        "summary": "Removed stale generated feedback for reviewer; the latest evaluation is not actionable.",
+        "output": {
+          "state": "converged",
+          "summary": "Removed stale generated feedback for reviewer; the latest evaluation is not actionable.",
+          "evidence": [
+            "evaluated-session:review-clean",
+            "feedback-removed:reviewer",
+            "feedback-verified:reviewer"
+          ],
+          "actions": []
+        }
+      }
+    },
+    {
+      "id": "cleared-feedback",
+      "evidence": {
+        "tenant": "Orion",
+        "environment": "staging",
+        "occupiedSlots": 5,
+        "additionalSlots": 8
+      },
+      "prompt": "Assess the Orion capacity request in evidence.json. Cite the actual policy and explain whether occupied plus additional slots fit. If policy is unavailable, say so. Do not deploy anything.",
+      "systemPrompt": "<system_instructions>\n## Evaluator Feedback (Learning Loop)\nIf `projects/evaluation.app/generated/agent-feedback/<you>.md` exists, read it at session start. It contains the evaluator's critique of your most recent session. Adapt your approach to avoid repeating flagged issues. Acknowledge relevant feedback in your plan.\n\n### Heartbeats (Autonomy)\nA scheduled wake supplies an opportunity to review the current outcome, not\nnew authority or a requirement to invent work. Use current facts and the App's\nscope to choose the next useful action.\n\n### Metrics (Signal + Judgment)\nYou own metrics that signal where attention is needed. Metrics inform your judgment — they don't replace it. A regression is a signal to investigate, not an automatic trigger. Use gym for fast feedback (minutes) when possible.\n\n### Workflows\nA workflow is one bounded recipe inside an attempt, not a persistent worker or\nproject controller. Use ordinary tools for simple work and an available skill\nfor reusable judgment. Do not invoke a workflow merely because an old note\nnames it. A bounded agent call must return before its caller can accept the\nresult; independent continuation belongs to an App Task, not a fire-and-forget\nfork or message.\n\nInside a workflow step, follow its supplied scope and result contract. An agent\nfinishing, a passing command, a commit, a PR, and an integrated result are\ndifferent facts. Report the one actually proved.\n\n### Repository changes\n\n- Find the actual Git repository and read its current contribution rules. A\n  project directory may be inside a larger repository; never assume `/app` is\n  the repository to commit or push.\n- Work in the assigned isolated worktree. For direct coding without a Host-owned\n  worktree, use ordinary Git to prepare a named branch/worktree and retain its\n  identity with the work. Do not change branches, stash, reset, or clean another\n  worker's checkout. Read-only investigation and declared runtime scratch do\n  not require a worktree.\n- Keep one reviewable change focused. Test and review the exact diff in the\n  checkout that was edited, then commit only owned files. Failed or skipped\n  checks are not passes. Run project-required CI and live tests when authorized;\n  a local test does not replace them.\n- Bring reviewed changes back to the project's target branch (normally `main`)\n  through its required PR/review process. Do not merge, push to `main`, or deploy\n  merely because local checks passed. Confirm the integrated revision before\n  calling an integration outcome complete.\n- Reuse an existing branch/PR for that change. While review or a pipeline runs,\n  continue independent authorized work; do not create overlapping fixes or\n  another capacity queue. Use available external-event observation and exact\n  Task Conditions for later checks instead of keeping an LLM polling.\n- Explain PRs in plain language: problem, change, verification and remaining\n  risks. Include the exact Task/worker reference when supplied, not invented\n  metadata, private logs, or credentials.\n- Keep unfinished work recoverable. Remove only the exact owned worktree/branch\n  after proving integration or receiving explicit discard authority; never\n  clean other workers' files to obtain a clean status.\n\nWorkflow authors must align prompts, writable paths, verification, and result\nadmission with these rules. A prompt alone cannot fix a workflow that writes\nor verifies the shared checkout. See\n`projects/alex.app/docs/2b-manual/workflow-authoring.md`.\n\n### Guards\nGuards enforce quality automatically — verification, scope, completeness. They exist because these rules work better as structural checks than as instructions. If a guard blocks you, satisfy it. If you genuinely can't, escalate.\n\n### Escalation\nDon't burn cycles retrying the same approach.\n\n**Chain:** You → session owner → May → Hao.\n\n**Cross-agent help:** scout (research), dev (debugging/metrics), arc (architecture/strategy).\n\nYou are a helpful software engineering assistant. Review changes and answer questions from supplied evidence.\nUse relevant available skills when useful. Do not invent tool results or claim to have modified anything.\nYou can read fixture files but cannot write files or operate external systems. Keep answers concise.\n\nThe following skills provide specialized instructions for specific tasks.\nRead the full skill file when the task matches its description.\nWhen a skill file references a relative path, resolve it against the skill directory (parent of SKILL.md / dirname of the path) and use that absolute path in tool commands.\n\n<available_skills>\n  <skill>\n    <name>review-change</name>\n    <description>Review pull requests, evaluate reviewer comments and check CI evidence. Use for PR assessments, not ordinary writing tasks.</description>\n    <location><fixture-root>/state/releases/app-definitions/4a1edc9e214d95e120302af3a13073bdbfb5fd38-definitions-v4/agents/reviewer/skills/review-change/SKILL.md</location>\n  </skill>\n</available_skills>\n\n# Runtime Environment\n- Project root: <fixture-root>\n- Agent directory: state/releases/app-definitions/4a1edc9e214d95e120302af3a13073bdbfb5fd38-definitions-v4/agents/reviewer\n- Already in context: shared/common-sense.md and this agent's AGENTS.md when present.\n- Prompt precedence: common-sense is the shared default; this agent's AGENTS.md is the role-specific identity layer and takes precedence for agent-specific behavior.\n- Available tools: read\n- Current time: 2026-09-12T07:04:59.047Z\n\nAll paths are relative to project root unless absolute paths are explicitly provided.\n</system_instructions>",
+      "sourceCommit": "4a1edc9e214d95e120302af3a13073bdbfb5fd38",
+      "toolsAvailable": [
+        "read"
+      ],
+      "status": "done",
+      "answer": "`evidence.json` shows Orion staging has **5 occupied slots** and requests **8 additional slots**, for a total of **13 slots**.\n\nNo capacity policy or slot limit is available in the supplied evidence, so I cannot cite an actual policy or determine whether 13 slots fit. The request should remain **unapproved pending the applicable policy/limit**.\n\nNo deployment was performed.",
+      "durationMs": 26963,
+      "tools": [
+        {
+          "name": "read",
+          "arguments": {
+            "path": "projects/evaluation.app/generated/agent-feedback/reviewer.md"
+          }
+        },
+        {
+          "name": "read",
+          "arguments": {
+            "path": "<fixture-root>/state/releases/app-definitions/4a1edc9e214d95e120302af3a13073bdbfb5fd38-definitions-v4/agents/reviewer/skills/review-change/SKILL.md"
+          }
+        },
+        {
+          "name": "read",
+          "arguments": {
+            "path": "evidence.json"
+          }
+        },
+        {
+          "name": "read",
+          "arguments": {
+            "path": "policy.md"
+          }
+        },
+        {
+          "name": "read",
+          "arguments": {
+            "path": "capacity-policy.md"
+          }
+        },
+        {
+          "name": "read",
+          "arguments": {
+            "path": "policies/capacity.md"
+          }
+        },
+        {
+          "name": "read",
+          "arguments": {
+            "path": "README.md"
+          }
+        },
+        {
+          "name": "read",
+          "arguments": {
+            "path": "AGENTS.md"
+          }
+        },
+        {
+          "name": "read",
+          "arguments": {
+            "path": "POLICY.md"
+          }
+        },
+        {
+          "name": "read",
+          "arguments": {
+            "path": "policies.md"
+          }
+        },
+        {
+          "name": "read",
+          "arguments": {
+            "path": "capacity_policy.md"
+          }
+        },
+        {
+          "name": "read",
+          "arguments": {
+            "path": "docs/capacity-policy.md"
+          }
+        },
+        {
+          "name": "read",
+          "arguments": {
+            "path": "policy.json"
+          }
+        },
+        {
+          "name": "read",
+          "arguments": {
+            "path": "capacity-policy.json"
+          }
+        }
+      ],
+      "models": [
+        "gpt-5.6-sol"
+      ],
+      "usage": [
+        {
+          "input": 1477,
+          "output": 152,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "reasoning": 20,
+          "totalTokens": 1629,
+          "cost": {
+            "input": 0.005908,
+            "output": 0.00304,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0.008948000000000001
+          }
+        },
+        {
+          "input": 1822,
+          "output": 140,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "reasoning": 42,
+          "totalTokens": 1962,
+          "cost": {
+            "input": 0.007287999999999999,
+            "output": 0.0028000000000000004,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0.010088
+          }
+        },
+        {
+          "input": 2150,
+          "output": 246,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "reasoning": 132,
+          "totalTokens": 2396,
+          "cost": {
+            "input": 0.0086,
+            "output": 0.004920000000000001,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0.01352
+          }
+        },
+        {
+          "input": 574,
+          "output": 82,
+          "cacheRead": 2048,
+          "cacheWrite": 0,
+          "reasoning": 0,
+          "totalTokens": 2704,
+          "cost": {
+            "input": 0.002296,
+            "output": 0.0016400000000000002,
+            "cacheRead": 0.0008192000000000001,
+            "cacheWrite": 0,
+            "total": 0.0047552
+          }
+        }
+      ]
+    }
+  ],
+  "interpretation": "Four fresh direct-runner executions using one unchanged definition and the actual App feedback projection. Not a daemon, native worker, production installation or Task-runtime adoption proof. No model-authored guidance or permission change.",
+  "limitations": [
+    "Read-only fixture lacks file listing; missing feedback prompted extra path guesses.",
+    "Unnecessary PR-review skill was read in three cases; useful output does not establish optimal method selection.",
+    "Updated feedback supplies a new factual reference; this is not weight training or autonomous permanent learning."
+  ]
+}

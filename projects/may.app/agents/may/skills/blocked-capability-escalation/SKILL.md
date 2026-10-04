@@ -6,7 +6,7 @@ description: Find the canonical escalation guidance when missing tools, permissi
 # Blocked Capability Escalation
 
 Read and apply **Escalate an unresolved blocker** in the
-[Task execution guide](../../../../../may-agent.app/docs/2b-manual/task-execution-guide/SKILL.md#escalate-an-unresolved-blocker).
+[Task execution guide](../../../../../alex.app/docs/2b-manual/task-execution-guide/SKILL.md#escalate-an-unresolved-blocker).
 That manual owns the shared procedure; this entry preserves discovery under
 May's existing skill name without maintaining a second rule.
 

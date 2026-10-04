@@ -6,7 +6,7 @@
   "criticality": "high",
   "sources": [
     {
-      "path": "../may-agent.app/docs/1-principles/work-model.md",
+      "path": "../alex.app/docs/1-principles/work-model.md",
       "section": "Project posture"
     }
   ],

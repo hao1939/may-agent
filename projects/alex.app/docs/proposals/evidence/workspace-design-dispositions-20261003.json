@@ -1,0 +1,1828 @@
+{
+  "date": "2026-10-03",
+  "baseline": {
+    "apps": "ac048bfcf50369ea4abbc83e356034089a1c02ec",
+    "hostFetched": "797c7ee35",
+    "hostLocal": "0317016b"
+  },
+  "scope": "May Apps and Host documentation; adjacent AKS/Herdr repos preserved",
+  "archive": "/home/hao/workspace-archive/workspace-hygiene-20261003",
+  "records": [
+    {
+      "repository": "apps",
+      "path": "projects/gym.app/design/task-resource-practice-20260929.md",
+      "blob": "ebf86427b6e74a739943cb9c18020c428b0c54ee",
+      "sources": [
+        {
+          "branch": "docs/app-environment-review-20260928",
+          "commit": "046317e8fa3b1b46b308ab0281bb026f6a59f55b"
+        }
+      ],
+      "disposition": "defer experiment",
+      "reason": "Fresh-worker transfer and method comparison remain useful, but do not establish a mandatory Host context procedure."
+    },
+    {
+      "repository": "apps",
+      "path": "projects/alex.app/docs/INDEX.md",
+      "blob": "2599f286e7d8ab170f185b277aab73b1d63910c6",
+      "sources": [
+        {
+          "branch": "docs/app-environment-review-20260928",
+          "commit": "046317e8fa3b1b46b308ab0281bb026f6a59f55b"
+        },
+        {
+          "branch": "task/goal-app_a0c8d3d8-b549-4c1e-8af5-84e8d283c8fa-f0fb3a68a2",
+          "commit": "bde78f90f9fb68eed7eb1bf879b247a60abca819"
+        },
+        {
+          "branch": "task/goal-app_a0c8d3d8-focused",
+          "commit": "4d8f89307de16caa9b13ae73c18058b2f87d1ac7"
+        }
+      ],
+      "disposition": "superseded navigation",
+      "reason": "Current purpose/value hierarchy and new disposition index replace branch navigation."
+    },
+    {
+      "repository": "apps",
+      "path": "projects/alex.app/docs/README.md",
+      "blob": "1e2e94d42c227478a406a79f533b3283f1266362",
+      "sources": [
+        {
+          "branch": "docs/app-environment-review-20260928",
+          "commit": "046317e8fa3b1b46b308ab0281bb026f6a59f55b"
+        },
+        {
+          "branch": "task/goal-app_a0c8d3d8-b549-4c1e-8af5-84e8d283c8fa-6e8667cfce",
+          "commit": "88e93dfde72abcb400a8d83e1f8de79ac6736514"
+        }
+      ],
+      "disposition": "superseded navigation",
+      "reason": "Current purpose/value hierarchy and new disposition index replace branch navigation."
+    },
+    {
+      "repository": "apps",
+      "path": "projects/alex.app/docs/proposals/app-environment-review-20260928.md",
+      "blob": "541a4c21ea1aeb33e4c3211902cfef09c5aab59a",
+      "sources": [
+        {
+          "branch": "docs/app-environment-review-20260928",
+          "commit": "046317e8fa3b1b46b308ab0281bb026f6a59f55b"
+        }
+      ],
+      "disposition": "merge refined synthesis",
+      "reason": "Preserve adoption/context questions and evidence while linking current authority, value and principles; original variants remain archived."
+    },
+    {
+      "repository": "apps",
+      "path": "projects/alex.app/docs/proposals/task-resource-layout-20260929.md",
+      "blob": "dc46463ccab4f768842682b7be0441f93b609703",
+      "sources": [
+        {
+          "branch": "docs/app-environment-review-20260928",
+          "commit": "046317e8fa3b1b46b308ab0281bb026f6a59f55b"
+        }
+      ],
+      "disposition": "merge refined synthesis",
+      "reason": "Preserve adoption/context questions and evidence while linking current authority, value and principles; original variants remain archived."
+    },
+    {
+      "repository": "apps",
+      "path": "projects/alex.app/docs/1-principles/code-vs-data.md",
+      "blob": "76e054da60c2a6014b14bc8740f463947e03b566",
+      "sources": [
+        {
+          "branch": "docs/dependency-task-admission",
+          "commit": "b6ea6ce0b431d3e055cb854ef82dcc27544dadfa"
+        }
+      ],
+      "disposition": "already represented",
+      "reason": "Exact blob occurs in main history; no duplicate integration."
+    },
+    {
+      "repository": "apps",
+      "path": "projects/alex.app/docs/1-principles/core-principles.md",
+      "blob": "25e1d6e16aee26d2e048e4426c41d33d161dbc73",
+      "sources": [
+        {
+          "branch": "docs/dependency-task-admission",
+          "commit": "b6ea6ce0b431d3e055cb854ef82dcc27544dadfa"
+        }
+      ],
+      "disposition": "already represented",
+      "reason": "Exact blob occurs in main history; no duplicate integration."
+    },
+    {
+      "repository": "apps",
+      "path": "projects/alex.app/docs/2a-design/agent-app.md",
+      "blob": "ff58d01a098304947628aec90432daaf589d0bc4",
+      "sources": [
+        {
+          "branch": "docs/dependency-task-admission",
+          "commit": "b6ea6ce0b431d3e055cb854ef82dcc27544dadfa"
+        }
+      ],
+      "disposition": "merge selected Host #285 contract text",
+      "reason": "Checked requests, caller Conditions and live/final admission against merged Host 797c7ee35. Preserve newer retry rules; paired App runtime changes and proposed decision/reply fields are not adopted."
+    },
+    {
+      "repository": "apps",
+      "path": "projects/alex.app/docs/2a-design/message-lifecycle.md",
+      "blob": "f837e5efc8129e5d1bba6154a298e6c27f906bcf",
+      "sources": [
+        {
+          "branch": "docs/dependency-task-admission",
+          "commit": "b6ea6ce0b431d3e055cb854ef82dcc27544dadfa"
+        }
+      ],
+      "disposition": "merge selected Host #285 contract text",
+      "reason": "Checked requests, caller Conditions and live/final admission against merged Host 797c7ee35. Preserve newer retry rules; paired App runtime changes and proposed decision/reply fields are not adopted."
+    },
+    {
+      "repository": "apps",
+      "path": "projects/alex.app/docs/2a-design/system-boundary.md",
+      "blob": "fea677b232678005d90aecd0cc98c5232c114bff",
+      "sources": [
+        {
+          "branch": "docs/dependency-task-admission",
+          "commit": "b6ea6ce0b431d3e055cb854ef82dcc27544dadfa"
+        }
+      ],
+      "disposition": "already represented",
+      "reason": "Exact blob occurs in main history; no duplicate integration."
+    },
+    {
+      "repository": "apps",
+      "path": "projects/alex.app/docs/2a-design/system-model.md",
+      "blob": "9ca9b1a2dadedeb80df91aa80892bc3c2ca68a1a",
+      "sources": [
+        {
+          "branch": "docs/dependency-task-admission",
+          "commit": "b6ea6ce0b431d3e055cb854ef82dcc27544dadfa"
+        }
+      ],
+      "disposition": "merge selected Host #285 contract text",
+      "reason": "Checked requests, caller Conditions and live/final admission against merged Host 797c7ee35. Preserve newer retry rules; paired App runtime changes and proposed decision/reply fields are not adopted."
+    },
+    {
+      "repository": "apps",
+      "path": "projects/alex.app/docs/2a-design/task-resource-engine.md",
+      "blob": "15ec2e2deb95b973d48bb477efe4b9e9189faefe",
+      "sources": [
+        {
+          "branch": "docs/dependency-task-admission",
+          "commit": "b6ea6ce0b431d3e055cb854ef82dcc27544dadfa"
+        }
+      ],
+      "disposition": "merge selected Host #285 contract text",
+      "reason": "Checked requests, caller Conditions and live/final admission against merged Host 797c7ee35. Preserve newer retry rules; paired App runtime changes and proposed decision/reply fields are not adopted."
+    },
+    {
+      "repository": "apps",
+      "path": "projects/alex.app/docs/2b-manual/handler-authoring.md",
+      "blob": "eaf66ff7be3e7a59ea6ff84f7142e88bf77ac605",
+      "sources": [
+        {
+          "branch": "docs/dependency-task-admission",
+          "commit": "b6ea6ce0b431d3e055cb854ef82dcc27544dadfa"
+        }
+      ],
+      "disposition": "merge selected Host #285 contract text",
+      "reason": "Checked requests, caller Conditions and live/final admission against merged Host 797c7ee35. Preserve newer retry rules; paired App runtime changes and proposed decision/reply fields are not adopted."
+    },
+    {
+      "repository": "apps",
+      "path": "projects/alex.app/docs/2b-manual/workflow-authoring.md",
+      "blob": "b35c1c3a6402ac50cb67526ed896abe55c873037",
+      "sources": [
+        {
+          "branch": "docs/dependency-task-admission",
+          "commit": "b6ea6ce0b431d3e055cb854ef82dcc27544dadfa"
+        }
+      ],
+      "disposition": "merge selected Host #285 contract text",
+      "reason": "Checked requests, caller Conditions and live/final admission against merged Host 797c7ee35. Preserve newer retry rules; paired App runtime changes and proposed decision/reply fields are not adopted."
+    },
+    {
+      "repository": "apps",
+      "path": "projects/alex.app/docs/proposals/design-hierarchy-review-20261003.md",
+      "blob": "8b887840619e8992e6a3151074e1ae9c78a39b23",
+      "sources": [
+        {
+          "branch": "docs/dependency-task-admission",
+          "commit": "b6ea6ce0b431d3e055cb854ef82dcc27544dadfa"
+        }
+      ],
+      "disposition": "current hierarchy and retry guidance supersede",
+      "reason": "Main retains more recent purpose/value and safe-retry review; do not revert it with the whole branch."
+    },
+    {
+      "repository": "apps",
+      "path": "projects/alex.app/docs/proposals/task-capability-pr-review-20261003.md",
+      "blob": "bdc41f2a26c73d7203452f3422bd3cb0e61bddcc",
+      "sources": [
+        {
+          "branch": "docs/dependency-task-admission",
+          "commit": "b6ea6ce0b431d3e055cb854ef82dcc27544dadfa"
+        }
+      ],
+      "disposition": "already represented",
+      "reason": "Exact blob occurs in main history; no duplicate integration."
+    },
+    {
+      "repository": "apps",
+      "path": "projects/alex.app/docs/proposals/task-execution-capabilities-20261002.md",
+      "blob": "c08161ea2ebb3d03b459d356a923464187d210dc",
+      "sources": [
+        {
+          "branch": "docs/dependency-task-admission",
+          "commit": "b6ea6ce0b431d3e055cb854ef82dcc27544dadfa"
+        }
+      ],
+      "disposition": "already represented",
+      "reason": "Exact blob occurs in main history; no duplicate integration."
+    },
+    {
+      "repository": "apps",
+      "path": "projects/alex.app/docs/proposals/task-execution-capability-contracts-20261003.md",
+      "blob": "f9944ef847eb37b56c3d1de1b52ba938230fbe44",
+      "sources": [
+        {
+          "branch": "docs/dependency-task-admission",
+          "commit": "b6ea6ce0b431d3e055cb854ef82dcc27544dadfa"
+        }
+      ],
+      "disposition": "already represented",
+      "reason": "Exact blob occurs in main history; no duplicate integration."
+    },
+    {
+      "repository": "apps",
+      "path": "projects/alex.app/docs/2a-design/events.md",
+      "blob": "4e1e8c1f72af6524ce6039285bb6ce742aab1fc3",
+      "sources": [
+        {
+          "branch": "docs/sample-release-verification-20261001",
+          "commit": "92ab3b746ee3db9f03708267317cf321ab37887f"
+        }
+      ],
+      "disposition": "retain historical variant",
+      "reason": "Current Task identity, creator authority, request correlation and observation owners supersede this branch-specific wording. Retain its exact source for comparison; no second state authority or event inference rule is adopted."
+    },
+    {
+      "repository": "apps",
+      "path": "projects/sample.app/reviews/release-53-2026-10-01.md",
+      "blob": "4fe637ace72f7011c23eeef4c09e77d5622dc41c",
+      "sources": [
+        {
+          "branch": "docs/sample-release-verification-20261001",
+          "commit": "92ab3b746ee3db9f03708267317cf321ab37887f"
+        }
+      ],
+      "disposition": "retain dated verification",
+      "reason": "Pinned release comparison, restart and event-link evidence; release status is historical. Keep with the referenced active workspace and archive, not as current contract."
+    },
+    {
+      "repository": "apps",
+      "path": "projects/alex.app/docs/2a-design/agents.md",
+      "blob": "bf71190bdb757ff5d09d99c4361f17db804f83e6",
+      "sources": [
+        {
+          "branch": "docs/task-context-metadata-20260926",
+          "commit": "e7d454918979711a36272ebe845126a42a6664b1"
+        }
+      ],
+      "disposition": "retain historical variant",
+      "reason": "Older sharedContext/annotation/current-Task-message prototype. Current decision-context integration and matched trials own adopted behavior; generic annotations, complete history and alternate helper APIs are not promoted."
+    },
+    {
+      "repository": "apps",
+      "path": "projects/alex.app/docs/2a-design/system-boundary.md",
+      "blob": "b28d3a529e53dbdef981636b012fef11932d6230",
+      "sources": [
+        {
+          "branch": "docs/task-context-metadata-20260926",
+          "commit": "e7d454918979711a36272ebe845126a42a6664b1"
+        }
+      ],
+      "disposition": "retain historical variant",
+      "reason": "Older sharedContext/annotation/current-Task-message prototype. Current decision-context integration and matched trials own adopted behavior; generic annotations, complete history and alternate helper APIs are not promoted."
+    },
+    {
+      "repository": "apps",
+      "path": "projects/alex.app/docs/2a-design/task-resource-engine.md",
+      "blob": "0ce5bb1c0891429074d02c6fee3e53c1edca7422",
+      "sources": [
+        {
+          "branch": "docs/task-context-metadata-20260926",
+          "commit": "e7d454918979711a36272ebe845126a42a6664b1"
+        }
+      ],
+      "disposition": "retain historical variant",
+      "reason": "Older sharedContext/annotation/current-Task-message prototype. Current decision-context integration and matched trials own adopted behavior; generic annotations, complete history and alternate helper APIs are not promoted."
+    },
+    {
+      "repository": "apps",
+      "path": "projects/alex.app/docs/2a-design/task-resource-read-interface.md",
+      "blob": "e203abf1c400183a07e85c5671f02bf2a134bddd",
+      "sources": [
+        {
+          "branch": "docs/task-context-metadata-20260926",
+          "commit": "e7d454918979711a36272ebe845126a42a6664b1"
+        }
+      ],
+      "disposition": "retain historical variant",
+      "reason": "Older sharedContext/annotation/current-Task-message prototype. Current decision-context integration and matched trials own adopted behavior; generic annotations, complete history and alternate helper APIs are not promoted."
+    },
+    {
+      "repository": "apps",
+      "path": "projects/alex.app/docs/INDEX.md",
+      "blob": "8b490e1b0c4a67c3e1d1ba33fb7da604eaf8c3ce",
+      "sources": [
+        {
+          "branch": "docs/task-context-metadata-20260926",
+          "commit": "e7d454918979711a36272ebe845126a42a6664b1"
+        }
+      ],
+      "disposition": "superseded navigation",
+      "reason": "Current purpose/value hierarchy and new disposition index replace branch navigation."
+    },
+    {
+      "repository": "apps",
+      "path": "projects/alex.app/docs/README.md",
+      "blob": "78800a7d7772d98630f2b6ad1a6052651caa0d2f",
+      "sources": [
+        {
+          "branch": "docs/task-context-metadata-20260926",
+          "commit": "e7d454918979711a36272ebe845126a42a6664b1"
+        }
+      ],
+      "disposition": "superseded navigation",
+      "reason": "Current purpose/value hierarchy and new disposition index replace branch navigation."
+    },
+    {
+      "repository": "apps",
+      "path": "projects/alex.app/docs/archive/reviews/task-decision-context-poc-20260926.md",
+      "blob": "e210a9ecfc90df7bda5229cb999ed3ab92ce30c1",
+      "sources": [
+        {
+          "branch": "docs/task-context-metadata-20260926",
+          "commit": "e7d454918979711a36272ebe845126a42a6664b1"
+        }
+      ],
+      "disposition": "represented by later integration and comparisons",
+      "reason": "Use existing decision-context integration, behavior-comparison and reuse records. Complete history and generic annotations remain proposed; do not restore broad prototype guarantees."
+    },
+    {
+      "repository": "apps",
+      "path": "projects/alex.app/docs/proposals/task-state-events-reconciliation-20260926.md",
+      "blob": "9c243766521cdcc571d524860e32ea7a4032f71e",
+      "sources": [
+        {
+          "branch": "docs/task-context-metadata-20260926",
+          "commit": "e7d454918979711a36272ebe845126a42a6664b1"
+        }
+      ],
+      "disposition": "represented by later integration and comparisons",
+      "reason": "Use existing decision-context integration, behavior-comparison and reuse records. Complete history and generic annotations remain proposed; do not restore broad prototype guarantees."
+    },
+    {
+      "repository": "apps",
+      "path": "projects/alex.app/docs/2a-design/system-boundary.md",
+      "blob": "9db5240dff2a83990d56b86a73109fa0b655c5c9",
+      "sources": [
+        {
+          "branch": "docs/task-executor-surface-20260928",
+          "commit": "c5d9b93bf915e0ebbcdbc3fade69da11b720c48b"
+        }
+      ],
+      "disposition": "retain historical variant",
+      "reason": "#265/#266 source behavior has current SDK/execution owners. Merge its trial synthesis, preserving current contract text and later #284/#285 updates rather than old candidate status."
+    },
+    {
+      "repository": "apps",
+      "path": "projects/alex.app/docs/2a-design/workflows.md",
+      "blob": "1a3ea51eb3f9bd0d13af860f7f17d35d2aba2908",
+      "sources": [
+        {
+          "branch": "docs/task-executor-surface-20260928",
+          "commit": "c5d9b93bf915e0ebbcdbc3fade69da11b720c48b"
+        }
+      ],
+      "disposition": "retain historical variant",
+      "reason": "#265/#266 source behavior has current SDK/execution owners. Merge its trial synthesis, preserving current contract text and later #284/#285 updates rather than old candidate status."
+    },
+    {
+      "repository": "apps",
+      "path": "projects/alex.app/docs/2b-manual/source-reading-guide.md",
+      "blob": "01a2622078dda7a90a0f0e7828175a485d547a3e",
+      "sources": [
+        {
+          "branch": "docs/task-executor-surface-20260928",
+          "commit": "c5d9b93bf915e0ebbcdbc3fade69da11b720c48b"
+        }
+      ],
+      "disposition": "retain historical variant",
+      "reason": "#265/#266 source behavior has current SDK/execution owners. Merge its trial synthesis, preserving current contract text and later #284/#285 updates rather than old candidate status."
+    },
+    {
+      "repository": "apps",
+      "path": "projects/alex.app/docs/INDEX.md",
+      "blob": "c93409414438e2822f9997c4e3c75732a0f450b7",
+      "sources": [
+        {
+          "branch": "docs/task-executor-surface-20260928",
+          "commit": "c5d9b93bf915e0ebbcdbc3fade69da11b720c48b"
+        }
+      ],
+      "disposition": "superseded navigation",
+      "reason": "Current purpose/value hierarchy and new disposition index replace branch navigation."
+    },
+    {
+      "repository": "apps",
+      "path": "projects/alex.app/docs/proposals/task-executor-surface-20260928.md",
+      "blob": "dfcab7d8f41fcc428b06817b4d8cb8a15e6d94cd",
+      "sources": [
+        {
+          "branch": "docs/task-executor-surface-20260928",
+          "commit": "c5d9b93bf915e0ebbcdbc3fade69da11b720c48b"
+        }
+      ],
+      "disposition": "merge retained evidence synthesis",
+      "reason": "Keep positive and failed #265/#266 trials, source/reproduction identities and limits without reintroducing an old contract."
+    },
+    {
+      "repository": "apps",
+      "path": "projects/alex.app/docs/proposals/task-worker-command-context-20260919.md",
+      "blob": "6430dac39bf77253cc88e80f42bf07b0031db283",
+      "sources": [
+        {
+          "branch": "docs/worker-context-final-evidence",
+          "commit": "c22a1b67bdbe26f06bb8227b3c31b07a2d711851"
+        }
+      ],
+      "disposition": "superseded status",
+      "reason": "Main already includes merged #199 and later rollout evidence; the branch says not deployed and would regress that record."
+    },
+    {
+      "repository": "apps",
+      "path": "projects/evaluation.app/design/task-outcome-evaluation.md",
+      "blob": "06d59914027890337c4deed9d63ed8462db8c582",
+      "sources": [
+        {
+          "branch": "fix/apps-value-integration-20260929",
+          "commit": "37449f48296761b8599c29a8ae32a5855fa0cb89"
+        }
+      ],
+      "disposition": "already represented",
+      "reason": "Exact blob occurs in main history; no duplicate integration."
+    },
+    {
+      "repository": "apps",
+      "path": "projects/alex.app/docs/2a-design/agents.md",
+      "blob": "3e72bd2ed10fad73b70b0e64a6c89bc3377c2d5c",
+      "sources": [
+        {
+          "branch": "fix/apps-value-integration-20260929",
+          "commit": "37449f48296761b8599c29a8ae32a5855fa0cb89"
+        },
+        {
+          "branch": "task/app-env-approval-a0c8d3d8",
+          "commit": "b62dfbbdbe0b7b3a2c5529b11104bd37c1171a42"
+        },
+        {
+          "branch": "task/app-env-focused-a0c8d3d8",
+          "commit": "6b1c2798bc8c231ecb4b84b73cf5a2f54f3f6602"
+        },
+        {
+          "branch": "task/app-env-refresh-a0c8d3d8",
+          "commit": "4441c0565764d91aa9dfbdcbfc492755d5fc37ff"
+        },
+        {
+          "branch": "task/app-env-refresh2-a0c8d3d8",
+          "commit": "0b534881c0f2f3976b1fcee5388f5cdc37eaecf8"
+        },
+        {
+          "branch": "task/goal-app_a0c8d3d8-b549-4c1e-8af5-84e8d283c8fa-f0fb3a68a2",
+          "commit": "bde78f90f9fb68eed7eb1bf879b247a60abca819"
+        },
+        {
+          "branch": "task/goal-app_a0c8d3d8-focused",
+          "commit": "4d8f89307de16caa9b13ae73c18058b2f87d1ac7"
+        }
+      ],
+      "disposition": "retain historical variant",
+      "reason": "Assigned versus unclaimed input guidance is integrated narrowly in the quickstart and resource proposal; the current context owner and paired App candidate remain unchanged."
+    },
+    {
+      "repository": "apps",
+      "path": "projects/alex.app/docs/2b-manual/sdk-quickstart.md",
+      "blob": "8f869c2762014a3309a6a4cdb1b505c769481704",
+      "sources": [
+        {
+          "branch": "fix/apps-value-integration-20260929",
+          "commit": "37449f48296761b8599c29a8ae32a5855fa0cb89"
+        }
+      ],
+      "disposition": "merge narrow discovery guidance",
+      "reason": "Teach assigned versus unclaimed input, current reads and explicit capability limits. Do not import unrelated runtime changes or repeat approval gates."
+    },
+    {
+      "repository": "apps",
+      "path": "projects/alex.app/docs/proposals/evidence/app-environment-focused-record-20260929.md",
+      "blob": "194e06c1cebc50492874855e7d095bb8bd18c616",
+      "sources": [
+        {
+          "branch": "fix/apps-value-integration-20260929",
+          "commit": "37449f48296761b8599c29a8ae32a5855fa0cb89"
+        },
+        {
+          "branch": "task/app-env-focused-a0c8d3d8",
+          "commit": "6b1c2798bc8c231ecb4b84b73cf5a2f54f3f6602"
+        }
+      ],
+      "disposition": "summarize evidence in App environment proposal",
+      "reason": "Distinguish separate cold-entry, Recovery-only and Evaluation-return trials; do not combine their success claims."
+    },
+    {
+      "repository": "apps",
+      "path": "projects/scout-knowledge-lib.app/design/scout-knowledge-library-process.md",
+      "blob": "089e4a825a517c976269391e3bfb33a40f576732",
+      "sources": [
+        {
+          "branch": "fix/apps-value-integration-20260929",
+          "commit": "37449f48296761b8599c29a8ae32a5855fa0cb89"
+        }
+      ],
+      "disposition": "retain paired source variant",
+      "reason": "Source-specific approval, channel or Scout policy changes require the exact paired Host/App candidate. Existing current contract remains authority; cleanup does not activate that candidate."
+    },
+    {
+      "repository": "apps",
+      "path": "projects/alex.app/docs/2a-design/human-control-surfaces.md",
+      "blob": "bb624d45dec01b31c52384465421ebfad06d826d",
+      "sources": [
+        {
+          "branch": "fix/communication-guidance-20260921",
+          "commit": "6bb7ce5170eb7343ef4a294bd0d7ebdd285854f8"
+        }
+      ],
+      "disposition": "already represented",
+      "reason": "Exact blob occurs in main history; no duplicate integration."
+    },
+    {
+      "repository": "apps",
+      "path": "projects/alex.app/docs/2a-design/telegram-notifications.md",
+      "blob": "de58e66a48f11589a99f03ea035b549be9255cc4",
+      "sources": [
+        {
+          "branch": "fix/communication-guidance-20260921",
+          "commit": "6bb7ce5170eb7343ef4a294bd0d7ebdd285854f8"
+        }
+      ],
+      "disposition": "retain paired source variant",
+      "reason": "Source-specific approval, channel or Scout policy changes require the exact paired Host/App candidate. Existing current contract remains authority; cleanup does not activate that candidate."
+    },
+    {
+      "repository": "apps",
+      "path": "projects/alex.app/docs/2a-design/agent-app.md",
+      "blob": "02e4ccca88eb1b11aa2fd588f83a07bd26e544ee",
+      "sources": [
+        {
+          "branch": "fix/event-resource-contract",
+          "commit": "d5cf582885adb94be20cbd2e8ea11359179fc80c"
+        }
+      ],
+      "disposition": "retain historical variant",
+      "reason": "Current Events contract already retains subscription responsibility before translation. Preserve the detailed #254 trial as dated evidence; no new notBefore field or hidden freshness-policy removal is adopted."
+    },
+    {
+      "repository": "apps",
+      "path": "projects/alex.app/docs/2a-design/events.md",
+      "blob": "71909f0f5b6b8ee2b2012ca061c2b24c39142de0",
+      "sources": [
+        {
+          "branch": "fix/event-resource-contract",
+          "commit": "d5cf582885adb94be20cbd2e8ea11359179fc80c"
+        }
+      ],
+      "disposition": "retain historical variant",
+      "reason": "Current Events contract already retains subscription responsibility before translation. Preserve the detailed #254 trial as dated evidence; no new notBefore field or hidden freshness-policy removal is adopted."
+    },
+    {
+      "repository": "apps",
+      "path": "projects/alex.app/docs/archive/reviews/resource-event-boundary-20260927.md",
+      "blob": "4eab9c0179e4efd7532b7b8417427f36c44579e2",
+      "sources": [
+        {
+          "branch": "fix/event-resource-contract",
+          "commit": "d5cf582885adb94be20cbd2e8ea11359179fc80c"
+        }
+      ],
+      "disposition": "retain historical variant",
+      "reason": "Current Events contract already retains subscription responsibility before translation. Preserve the detailed #254 trial as dated evidence; no new notBefore field or hidden freshness-policy removal is adopted."
+    },
+    {
+      "repository": "apps",
+      "path": "projects/alex.app/docs/proposals/design-implementation-convergence.md",
+      "blob": "10c14e33bf48d322c217543ad95fd0a20355c382",
+      "sources": [
+        {
+          "branch": "fix/event-resource-contract",
+          "commit": "d5cf582885adb94be20cbd2e8ea11359179fc80c"
+        }
+      ],
+      "disposition": "retain historical variant",
+      "reason": "Current Events contract already retains subscription responsibility before translation. Preserve the detailed #254 trial as dated evidence; no new notBefore field or hidden freshness-policy removal is adopted."
+    },
+    {
+      "repository": "apps",
+      "path": "projects/may.app/design/operator-application.md",
+      "blob": "20c35c57ebb6ad25f13a757e7da85a14d3907345",
+      "sources": [
+        {
+          "branch": "fix/improvement-untracked-preservation-a0c8d3d8",
+          "commit": "488a5f9739170f4c9f3db9cdeed5652c13cc7163"
+        },
+        {
+          "branch": "task/app-env-approval-a0c8d3d8",
+          "commit": "b62dfbbdbe0b7b3a2c5529b11104bd37c1171a42"
+        },
+        {
+          "branch": "task/app-env-refresh2-a0c8d3d8",
+          "commit": "0b534881c0f2f3976b1fcee5388f5cdc37eaecf8"
+        }
+      ],
+      "disposition": "retain paired source variant",
+      "reason": "Source-specific approval, channel or Scout policy changes require the exact paired Host/App candidate. Existing current contract remains authority; cleanup does not activate that candidate."
+    },
+    {
+      "repository": "apps",
+      "path": "projects/evaluation.app/design/metric-pattern-review.md",
+      "blob": "0eb7908e59ad7842cad44666ea1dcc84231634bc",
+      "sources": [
+        {
+          "branch": "fix/metric-condition-follow-through",
+          "commit": "053a0bdc546ad1d7e14fe1feaa3b21804d8bea72"
+        }
+      ],
+      "disposition": "already represented",
+      "reason": "Exact blob occurs in main history; no duplicate integration."
+    },
+    {
+      "repository": "apps",
+      "path": "projects/alex.app/docs/2a-design/metrics.md",
+      "blob": "df13fb9f413f4591aa9cfd9bf8bcc4277062dd2d",
+      "sources": [
+        {
+          "branch": "fix/metric-condition-follow-through",
+          "commit": "053a0bdc546ad1d7e14fe1feaa3b21804d8bea72"
+        }
+      ],
+      "disposition": "already represented",
+      "reason": "Exact blob occurs in main history; no duplicate integration."
+    },
+    {
+      "repository": "apps",
+      "path": "projects/may.app/design/metric-condition-follow-through.md",
+      "blob": "d231c9f09ae83b12046d126363ab464c86e6afff",
+      "sources": [
+        {
+          "branch": "fix/metric-condition-follow-through",
+          "commit": "053a0bdc546ad1d7e14fe1feaa3b21804d8bea72"
+        }
+      ],
+      "disposition": "already represented",
+      "reason": "Exact blob occurs in main history; no duplicate integration."
+    },
+    {
+      "repository": "apps",
+      "path": "projects/alex.app/docs/2a-design/message-lifecycle.md",
+      "blob": "f2658d5636fdd8577f2a8f9d9717166c5cac4e28",
+      "sources": [
+        {
+          "branch": "fix/request-follow-through-guidance",
+          "commit": "2f3cd2b30bf0036e6c7bc0fce22ddafcaaa5ea4c"
+        }
+      ],
+      "disposition": "already represented",
+      "reason": "Exact blob occurs in main history; no duplicate integration."
+    },
+    {
+      "repository": "apps",
+      "path": "projects/alex.app/docs/2a-design/storage.md",
+      "blob": "c4e6261dc395d2a9ed428281a0281fc9c287d38e",
+      "sources": [
+        {
+          "branch": "fix/request-follow-through-guidance",
+          "commit": "2f3cd2b30bf0036e6c7bc0fce22ddafcaaa5ea4c"
+        }
+      ],
+      "disposition": "already represented",
+      "reason": "Exact blob occurs in main history; no duplicate integration."
+    },
+    {
+      "repository": "apps",
+      "path": "projects/alex.app/docs/2a-design/storage.md",
+      "blob": "48a8f24055755019c799c86a99558644912eaa38",
+      "sources": [
+        {
+          "branch": "fix/runtime-reliability-hardening-192d3539",
+          "commit": "9e9928c43d244a05821427066a2dcd74c4ea5f96"
+        }
+      ],
+      "disposition": "retain historical variant",
+      "reason": "Conversation lifecycle and recovery are covered by the current Task/storage owners. Do not merge a broad older runtime branch to acquire wording changes."
+    },
+    {
+      "repository": "apps",
+      "path": "projects/alex.app/docs/2a-design/telegram-notifications.md",
+      "blob": "a33ab3d5a203754c0876114f3c5e16b462c7232f",
+      "sources": [
+        {
+          "branch": "fix/telegram-presentation-dedup",
+          "commit": "d8c5b844d59c97c752c4161ac68ea2feffd06155"
+        }
+      ],
+      "disposition": "retain open PR companion",
+      "reason": "Keep with Host PR #290; do not claim the unfinished candidate is merged."
+    },
+    {
+      "repository": "apps",
+      "path": "projects/may.app/design/metric-condition-follow-through.md",
+      "blob": "108d22b7eb10012be388b4369a7b0b01c8b71a90",
+      "sources": [
+        {
+          "branch": "poc/metric-condition-follow-through",
+          "commit": "7f86505ecbeb144b165a9b724161dce429f05530"
+        }
+      ],
+      "disposition": "retain historical variant",
+      "reason": "Current observation implementation and metric follow-through records own adoption. Retain prior isolated PoC results and monitoring limitations without replacing implemented status with not-activated language."
+    },
+    {
+      "repository": "apps",
+      "path": "projects/may.app/experiments/metric-condition/README.md",
+      "blob": "62f107f3a2c99413c347a7f69186d3ee5cc05259",
+      "sources": [
+        {
+          "branch": "poc/metric-condition-follow-through",
+          "commit": "7f86505ecbeb144b165a9b724161dce429f05530"
+        }
+      ],
+      "disposition": "retain operational or trial evidence",
+      "reason": "Dated review/evidence rather than a new system contract; preserve exact revision and Task ownership in archive."
+    },
+    {
+      "repository": "apps",
+      "path": "projects/alex.app/docs/proposals/task-observation-contract-20260930.md",
+      "blob": "8af1a938565ca8f7ae01d6d1b982acd674a111f0",
+      "sources": [
+        {
+          "branch": "poc/task-observation-20260930",
+          "commit": "fe77f03b9b8bf91f350d8df40dd28fdede61490c"
+        }
+      ],
+      "disposition": "retain historical variant",
+      "reason": "Current observation implementation and metric follow-through records own adoption. Retain prior isolated PoC results and monitoring limitations without replacing implemented status with not-activated language."
+    },
+    {
+      "repository": "apps",
+      "path": "projects/may-agent.app/experiments/task-observation-20260930/README.md",
+      "blob": "489edc5e9d14873e3bba6aad534ea0c620678221",
+      "sources": [
+        {
+          "branch": "poc/task-observation-20260930",
+          "commit": "fe77f03b9b8bf91f350d8df40dd28fdede61490c"
+        }
+      ],
+      "disposition": "retain operational or trial evidence",
+      "reason": "Dated review/evidence rather than a new system contract; preserve exact revision and Task ownership in archive."
+    },
+    {
+      "repository": "apps",
+      "path": "projects/alex.app/docs/proposals/app-policy-and-host-boundary-cleanup.md",
+      "blob": "7f5328672823c7b06ef9e1991a9e670e6b79081e",
+      "sources": [
+        {
+          "branch": "refactor/maintenance-health-observer-20260913",
+          "commit": "e7407845a73d3e3694d523463606c2fde1760cc2"
+        }
+      ],
+      "disposition": "already represented",
+      "reason": "Exact blob occurs in main history; no duplicate integration."
+    },
+    {
+      "repository": "apps",
+      "path": "projects/alex.app/docs/2a-design/metrics.md",
+      "blob": "74b675eae4adb6f66ce9d48f7500c4a28c81afa5",
+      "sources": [
+        {
+          "branch": "refactor/task-attempt-reading-docs",
+          "commit": "2db1c70d33bff3cbd47caf73fef37fada5eedbdb"
+        }
+      ],
+      "disposition": "retain historical variant",
+      "reason": "Existing source-reading/metrics/storage owners have later lifecycle changes. Preserve this readability variant; an older source revision is not a reason to replace them."
+    },
+    {
+      "repository": "apps",
+      "path": "projects/alex.app/docs/2b-manual/source-reading-guide.md",
+      "blob": "2083103b8623d2470d9e3df22e33ef09bfb3849a",
+      "sources": [
+        {
+          "branch": "refactor/task-attempt-reading-docs",
+          "commit": "2db1c70d33bff3cbd47caf73fef37fada5eedbdb"
+        }
+      ],
+      "disposition": "retain historical variant",
+      "reason": "Existing source-reading/metrics/storage owners have later lifecycle changes. Preserve this readability variant; an older source revision is not a reason to replace them."
+    },
+    {
+      "repository": "apps",
+      "path": "projects/alex.app/docs/proposals/storage-state-service.md",
+      "blob": "4e8f57aaff8b69f5c1a640346d3f4f250e41a9c7",
+      "sources": [
+        {
+          "branch": "refactor/task-attempt-reading-docs",
+          "commit": "2db1c70d33bff3cbd47caf73fef37fada5eedbdb"
+        }
+      ],
+      "disposition": "retain historical variant",
+      "reason": "Existing source-reading/metrics/storage owners have later lifecycle changes. Preserve this readability variant; an older source revision is not a reason to replace them."
+    },
+    {
+      "repository": "apps",
+      "path": "projects/alex.app/docs/2a-design/message-lifecycle.md",
+      "blob": "ccb485ad6b1cce0a4594cee4df58c7a50ae1286a",
+      "sources": [
+        {
+          "branch": "task/app-env-approval-a0c8d3d8",
+          "commit": "b62dfbbdbe0b7b3a2c5529b11104bd37c1171a42"
+        },
+        {
+          "branch": "task/app-env-refresh-a0c8d3d8",
+          "commit": "4441c0565764d91aa9dfbdcbfc492755d5fc37ff"
+        }
+      ],
+      "disposition": "retain historical variant",
+      "reason": "Historical test/navigation or paired approval wording is retained with its source. Current contracts and shared authority rules remain owners; no additional approval gate is added."
+    },
+    {
+      "repository": "apps",
+      "path": "projects/alex.app/docs/2b-manual/sdk-quickstart.md",
+      "blob": "570b001ff9e4fdc0d1b67606f054253cba071633",
+      "sources": [
+        {
+          "branch": "task/app-env-approval-a0c8d3d8",
+          "commit": "b62dfbbdbe0b7b3a2c5529b11104bd37c1171a42"
+        },
+        {
+          "branch": "task/app-env-refresh-a0c8d3d8",
+          "commit": "4441c0565764d91aa9dfbdcbfc492755d5fc37ff"
+        },
+        {
+          "branch": "task/app-env-refresh2-a0c8d3d8",
+          "commit": "0b534881c0f2f3976b1fcee5388f5cdc37eaecf8"
+        }
+      ],
+      "disposition": "merge narrow discovery guidance",
+      "reason": "Teach assigned versus unclaimed input, current reads and explicit capability limits. Do not import unrelated runtime changes or repeat approval gates."
+    },
+    {
+      "repository": "apps",
+      "path": "projects/alex.app/docs/2b-manual/source-reading-guide.md",
+      "blob": "722094f04a8b029193a29bf74829ca440ce6e60d",
+      "sources": [
+        {
+          "branch": "task/app-env-approval-a0c8d3d8",
+          "commit": "b62dfbbdbe0b7b3a2c5529b11104bd37c1171a42"
+        },
+        {
+          "branch": "task/app-env-refresh-a0c8d3d8",
+          "commit": "4441c0565764d91aa9dfbdcbfc492755d5fc37ff"
+        },
+        {
+          "branch": "task/app-env-refresh2-a0c8d3d8",
+          "commit": "0b534881c0f2f3976b1fcee5388f5cdc37eaecf8"
+        }
+      ],
+      "disposition": "retain historical variant",
+      "reason": "Historical test/navigation or paired approval wording is retained with its source. Current contracts and shared authority rules remain owners; no additional approval gate is added."
+    },
+    {
+      "repository": "apps",
+      "path": "projects/alex.app/docs/proposals/authority-boundary-simplification.md",
+      "blob": "c493cf6976ba1cdec628451ae861b8a3855372a7",
+      "sources": [
+        {
+          "branch": "task/app-env-approval-a0c8d3d8",
+          "commit": "b62dfbbdbe0b7b3a2c5529b11104bd37c1171a42"
+        },
+        {
+          "branch": "task/app-env-refresh-a0c8d3d8",
+          "commit": "4441c0565764d91aa9dfbdcbfc492755d5fc37ff"
+        },
+        {
+          "branch": "task/app-env-refresh2-a0c8d3d8",
+          "commit": "0b534881c0f2f3976b1fcee5388f5cdc37eaecf8"
+        }
+      ],
+      "disposition": "retain historical variant",
+      "reason": "Historical test/navigation or paired approval wording is retained with its source. Current contracts and shared authority rules remain owners; no additional approval gate is added."
+    },
+    {
+      "repository": "apps",
+      "path": "projects/scout-knowledge-lib.app/design/scout-knowledge-library-process.md",
+      "blob": "08bddb1c93c93355971de0a2604f89c3a140923f",
+      "sources": [
+        {
+          "branch": "task/app-env-approval-a0c8d3d8",
+          "commit": "b62dfbbdbe0b7b3a2c5529b11104bd37c1171a42"
+        },
+        {
+          "branch": "task/app-env-refresh-a0c8d3d8",
+          "commit": "4441c0565764d91aa9dfbdcbfc492755d5fc37ff"
+        }
+      ],
+      "disposition": "retain paired source variant",
+      "reason": "Source-specific approval, channel or Scout policy changes require the exact paired Host/App candidate. Existing current contract remains authority; cleanup does not activate that candidate."
+    },
+    {
+      "repository": "apps",
+      "path": "projects/alex.app/docs/2b-manual/sdk-quickstart.md",
+      "blob": "6b6fef19ec4420695c1d3bfab7a177f155e9f5f4",
+      "sources": [
+        {
+          "branch": "task/app-env-focused-a0c8d3d8",
+          "commit": "6b1c2798bc8c231ecb4b84b73cf5a2f54f3f6602"
+        }
+      ],
+      "disposition": "merge narrow discovery guidance",
+      "reason": "Teach assigned versus unclaimed input, current reads and explicit capability limits. Do not import unrelated runtime changes or repeat approval gates."
+    },
+    {
+      "repository": "apps",
+      "path": "projects/scout-knowledge-lib.app/design/scout-knowledge-library-process.md",
+      "blob": "abd2341c9a1333f2545cd7c126d824fe2fb5851b",
+      "sources": [
+        {
+          "branch": "task/app-env-focused-a0c8d3d8",
+          "commit": "6b1c2798bc8c231ecb4b84b73cf5a2f54f3f6602"
+        },
+        {
+          "branch": "task/goal-app_a0c8d3d8-b549-4c1e-8af5-84e8d283c8fa-6e8667cfce",
+          "commit": "88e93dfde72abcb400a8d83e1f8de79ac6736514"
+        },
+        {
+          "branch": "task/goal-app_a0c8d3d8-b549-4c1e-8af5-84e8d283c8fa-f0fb3a68a2",
+          "commit": "bde78f90f9fb68eed7eb1bf879b247a60abca819"
+        },
+        {
+          "branch": "task/goal-app_a0c8d3d8-focused",
+          "commit": "4d8f89307de16caa9b13ae73c18058b2f87d1ac7"
+        }
+      ],
+      "disposition": "retain paired source variant",
+      "reason": "Source-specific approval, channel or Scout policy changes require the exact paired Host/App candidate. Existing current contract remains authority; cleanup does not activate that candidate."
+    },
+    {
+      "repository": "apps",
+      "path": "projects/alex.app/docs/2a-design/message-lifecycle.md",
+      "blob": "7ac434e34495cd19a5f55f769d4b401843c82e5f",
+      "sources": [
+        {
+          "branch": "task/app-env-refresh2-a0c8d3d8",
+          "commit": "0b534881c0f2f3976b1fcee5388f5cdc37eaecf8"
+        }
+      ],
+      "disposition": "retain historical variant",
+      "reason": "Historical test/navigation or paired approval wording is retained with its source. Current contracts and shared authority rules remain owners; no additional approval gate is added."
+    },
+    {
+      "repository": "apps",
+      "path": "projects/scout-knowledge-lib.app/design/scout-knowledge-library-process.md",
+      "blob": "4202ed8fa946963bf925f21c0728d8eeaba06ddd",
+      "sources": [
+        {
+          "branch": "task/app-env-refresh2-a0c8d3d8",
+          "commit": "0b534881c0f2f3976b1fcee5388f5cdc37eaecf8"
+        }
+      ],
+      "disposition": "retain paired source variant",
+      "reason": "Source-specific approval, channel or Scout policy changes require the exact paired Host/App candidate. Existing current contract remains authority; cleanup does not activate that candidate."
+    },
+    {
+      "repository": "apps",
+      "path": "projects/alex.app/docs/2a-design/agents.md",
+      "blob": "faca4c29f064e37ea138f3e032dd037b61ed350c",
+      "sources": [
+        {
+          "branch": "task/communication-contract-same-capability-design-f933aa6d",
+          "commit": "45e49bf81bdadbba8433746e3c4f68a8f3c2a0d4"
+        }
+      ],
+      "disposition": "retain historical variant",
+      "reason": "Alternative bounded helper call/follow_up/inspect prototype remains paired source work. It is not the current durable request/reply capability contract and is not activated through documentation cleanup."
+    },
+    {
+      "repository": "apps",
+      "path": "projects/alex.app/docs/2b-manual/user-guide.md",
+      "blob": "613bfda12ebef254901ba211f05517af140e09cb",
+      "sources": [
+        {
+          "branch": "task/communication-contract-same-capability-design-f933aa6d",
+          "commit": "45e49bf81bdadbba8433746e3c4f68a8f3c2a0d4"
+        }
+      ],
+      "disposition": "retain historical variant",
+      "reason": "Alternative bounded helper call/follow_up/inspect prototype remains paired source work. It is not the current durable request/reply capability contract and is not activated through documentation cleanup."
+    },
+    {
+      "repository": "apps",
+      "path": "projects/may.app/docs/reviews/conversation-batch-presentation-aab469a2-review.md",
+      "blob": "da8a05682767a7a4cdcffcd76207c35222b4ca55",
+      "sources": [
+        {
+          "branch": "task/goal-app_0a979f67-2417-41c1-be3b-d21304cf85f8-f418184056",
+          "commit": "e25e8351720c462f81f2ff8fd740728148bd7622"
+        }
+      ],
+      "disposition": "retain operational or trial evidence",
+      "reason": "Dated review/evidence rather than a new system contract; preserve exact revision and Task ownership in archive."
+    },
+    {
+      "repository": "apps",
+      "path": "artifacts/hygiene-20260926T1200Z/review-summary.md",
+      "blob": "a77f6ac76561d32d50c3f7cb19b4141a8b1d3d28",
+      "sources": [
+        {
+          "branch": "task/goal-app_224ef63e-ddd6-4f4b-b159-26de9dd60107-25f16c0f4f",
+          "commit": "020938e8b8a6534be9e926ca17d7df600486f1c8"
+        }
+      ],
+      "disposition": "retain operational or trial evidence",
+      "reason": "Dated review/evidence rather than a new system contract; preserve exact revision and Task ownership in archive."
+    },
+    {
+      "repository": "apps",
+      "path": "artifacts/hygiene-20260926T1600Z/review-summary.md",
+      "blob": "550ed14e7124971b0ce0433530fa74e8f015c8cb",
+      "sources": [
+        {
+          "branch": "task/goal-app_224ef63e-ddd6-4f4b-b159-26de9dd60107-25f16c0f4f",
+          "commit": "020938e8b8a6534be9e926ca17d7df600486f1c8"
+        }
+      ],
+      "disposition": "retain operational or trial evidence",
+      "reason": "Dated review/evidence rather than a new system contract; preserve exact revision and Task ownership in archive."
+    },
+    {
+      "repository": "apps",
+      "path": "artifacts/hygiene-20260926T2000Z/review-summary.md",
+      "blob": "7c161c782f5493d906851b2c969fb6c164620ae6",
+      "sources": [
+        {
+          "branch": "task/goal-app_224ef63e-ddd6-4f4b-b159-26de9dd60107-25f16c0f4f",
+          "commit": "020938e8b8a6534be9e926ca17d7df600486f1c8"
+        }
+      ],
+      "disposition": "retain operational or trial evidence",
+      "reason": "Dated review/evidence rather than a new system contract; preserve exact revision and Task ownership in archive."
+    },
+    {
+      "repository": "apps",
+      "path": "artifacts/hygiene-20260927T0000Z/review-summary.md",
+      "blob": "a72a22888d7dad47dc2076b426739a4e7541347c",
+      "sources": [
+        {
+          "branch": "task/goal-app_224ef63e-ddd6-4f4b-b159-26de9dd60107-25f16c0f4f",
+          "commit": "020938e8b8a6534be9e926ca17d7df600486f1c8"
+        }
+      ],
+      "disposition": "retain operational or trial evidence",
+      "reason": "Dated review/evidence rather than a new system contract; preserve exact revision and Task ownership in archive."
+    },
+    {
+      "repository": "apps",
+      "path": "artifacts/hygiene-20260927T0400Z/review-summary.md",
+      "blob": "e93382376968b5d9bf79cfef8bc34c01c35eb656",
+      "sources": [
+        {
+          "branch": "task/goal-app_224ef63e-ddd6-4f4b-b159-26de9dd60107-25f16c0f4f",
+          "commit": "020938e8b8a6534be9e926ca17d7df600486f1c8"
+        }
+      ],
+      "disposition": "retain operational or trial evidence",
+      "reason": "Dated review/evidence rather than a new system contract; preserve exact revision and Task ownership in archive."
+    },
+    {
+      "repository": "apps",
+      "path": "artifacts/hygiene-20260927T0800Z/review-summary.md",
+      "blob": "58ca4b7d4dd669c69c0ffa4bb27bb85f67659b28",
+      "sources": [
+        {
+          "branch": "task/goal-app_224ef63e-ddd6-4f4b-b159-26de9dd60107-25f16c0f4f",
+          "commit": "020938e8b8a6534be9e926ca17d7df600486f1c8"
+        }
+      ],
+      "disposition": "retain operational or trial evidence",
+      "reason": "Dated review/evidence rather than a new system contract; preserve exact revision and Task ownership in archive."
+    },
+    {
+      "repository": "apps",
+      "path": "artifacts/hygiene-20260927T1200Z/review-summary.md",
+      "blob": "672cd06a89fa199adb16755931db61209eaa1891",
+      "sources": [
+        {
+          "branch": "task/goal-app_224ef63e-ddd6-4f4b-b159-26de9dd60107-25f16c0f4f",
+          "commit": "020938e8b8a6534be9e926ca17d7df600486f1c8"
+        }
+      ],
+      "disposition": "retain operational or trial evidence",
+      "reason": "Dated review/evidence rather than a new system contract; preserve exact revision and Task ownership in archive."
+    },
+    {
+      "repository": "apps",
+      "path": "artifacts/hygiene-20260927T1600Z/review-summary.md",
+      "blob": "97edb1b7bc06ca2ac733a381a8b1302d313c85e2",
+      "sources": [
+        {
+          "branch": "task/goal-app_224ef63e-ddd6-4f4b-b159-26de9dd60107-25f16c0f4f",
+          "commit": "020938e8b8a6534be9e926ca17d7df600486f1c8"
+        }
+      ],
+      "disposition": "retain operational or trial evidence",
+      "reason": "Dated review/evidence rather than a new system contract; preserve exact revision and Task ownership in archive."
+    },
+    {
+      "repository": "apps",
+      "path": "artifacts/hygiene-20260927T2000Z/review-summary.md",
+      "blob": "2f1e46b0be44e8bb6214f3dced2f42ff71119595",
+      "sources": [
+        {
+          "branch": "task/goal-app_224ef63e-ddd6-4f4b-b159-26de9dd60107-25f16c0f4f",
+          "commit": "020938e8b8a6534be9e926ca17d7df600486f1c8"
+        }
+      ],
+      "disposition": "retain operational or trial evidence",
+      "reason": "Dated review/evidence rather than a new system contract; preserve exact revision and Task ownership in archive."
+    },
+    {
+      "repository": "apps",
+      "path": "experiments/laya-local-exploration/README.md",
+      "blob": "a3b2468fae809e80d4dfb7135911478ee07832f9",
+      "sources": [
+        {
+          "branch": "task/goal-app_32d8a877-27db-4545-b720-b6e6ab25f5fc-2861646e17",
+          "commit": "4410f0c53403ac3939a4487e8ed9505caa824b22"
+        },
+        {
+          "branch": "task/goal-app_32d8a877-27db-4545-b720-b6e6ab25f5fc-bdd48b3d66",
+          "commit": "9062fd5231157c84da8b6b5dc450975c0db7a765"
+        }
+      ],
+      "disposition": "archive unadopted experiment",
+      "reason": "Useful negative evidence: false positives and inadequate completed-action recall did not establish value over direct source inspection. No automatic library judgment or publication."
+    },
+    {
+      "repository": "apps",
+      "path": "experiments/laya-local-exploration/tech-lead-review.md",
+      "blob": "8f8cccc8019b30883f14fbc7495141d2c5af44d6",
+      "sources": [
+        {
+          "branch": "task/goal-app_32d8a877-27db-4545-b720-b6e6ab25f5fc-2861646e17",
+          "commit": "4410f0c53403ac3939a4487e8ed9505caa824b22"
+        },
+        {
+          "branch": "task/goal-app_32d8a877-27db-4545-b720-b6e6ab25f5fc-bdd48b3d66",
+          "commit": "9062fd5231157c84da8b6b5dc450975c0db7a765"
+        }
+      ],
+      "disposition": "archive unadopted experiment",
+      "reason": "Useful negative evidence: false positives and inadequate completed-action recall did not establish value over direct source inspection. No automatic library judgment or publication."
+    },
+    {
+      "repository": "apps",
+      "path": "projects/scout-knowledge-lib.app/design/scout-knowledge-library-process.md",
+      "blob": "8c4bcd9641c73e44078c61a0efaf21e0ff2c0b73",
+      "sources": [
+        {
+          "branch": "task/goal-app_32d8a877-27db-4545-b720-b6e6ab25f5fc-2861646e17",
+          "commit": "4410f0c53403ac3939a4487e8ed9505caa824b22"
+        }
+      ],
+      "disposition": "retain paired source variant",
+      "reason": "Source-specific approval, channel or Scout policy changes require the exact paired Host/App candidate. Existing current contract remains authority; cleanup does not activate that candidate."
+    },
+    {
+      "repository": "apps",
+      "path": "projects/scout-knowledge-lib.app/design/scout-library-mining-prototype.md",
+      "blob": "39be3e5ca74b5685eab26a18c6dd4ffc882bce09",
+      "sources": [
+        {
+          "branch": "task/goal-app_32d8a877-27db-4545-b720-b6e6ab25f5fc-2861646e17",
+          "commit": "4410f0c53403ac3939a4487e8ed9505caa824b22"
+        }
+      ],
+      "disposition": "archive unadopted experiment",
+      "reason": "Useful negative evidence: false positives and inadequate completed-action recall did not establish value over direct source inspection. No automatic library judgment or publication."
+    },
+    {
+      "repository": "apps",
+      "path": "projects/scout-knowledge-lib.app/design/scout-library-mining-prototype.md",
+      "blob": "ca35ab5e77247ea537c1a7a17cab4100ec63e3e5",
+      "sources": [
+        {
+          "branch": "task/goal-app_32d8a877-27db-4545-b720-b6e6ab25f5fc-bdd48b3d66",
+          "commit": "9062fd5231157c84da8b6b5dc450975c0db7a765"
+        }
+      ],
+      "disposition": "archive unadopted experiment",
+      "reason": "Useful negative evidence: false positives and inadequate completed-action recall did not establish value over direct source inspection. No automatic library judgment or publication."
+    },
+    {
+      "repository": "apps",
+      "path": "projects/evaluation.app/design/task-outcome-evaluation.md",
+      "blob": "bb30564c4359041473c919e8d50360fac07b235b",
+      "sources": [
+        {
+          "branch": "task/goal-app_59c18fd1-34d5-429c-a4b8-90a7a6c0fa47-a07055e747",
+          "commit": "836c3e21f2de5297469d122a4bef4ca2942280eb"
+        }
+      ],
+      "disposition": "retain historical variant",
+      "reason": "Metric checkpoint digest wording belongs with its Evaluation runtime candidate. Preserve evidence but do not claim candidate source is active."
+    },
+    {
+      "repository": "apps",
+      "path": "artifacts/evaluation-owner-feedback-review-3745784375.md",
+      "blob": "776ad5a6deab9be22fe71df683b6500d3cb8331a",
+      "sources": [
+        {
+          "branch": "task/goal-app_60e4b484-06c5-4bf3-bbec-fdd15382ed7d-daf571982a",
+          "commit": "f65a3a8d604c4100f1e1e48b4b8f2f3e474aa210"
+        }
+      ],
+      "disposition": "retain operational or trial evidence",
+      "reason": "Dated review/evidence rather than a new system contract; preserve exact revision and Task ownership in archive."
+    },
+    {
+      "repository": "apps",
+      "path": "projects/alex.app/docs/2a-design/system-boundary.md",
+      "blob": "3ee96491e065292f63e97ef800c41bfbe9097781",
+      "sources": [
+        {
+          "branch": "task/goal-app_671bcd1f-1aeb-4edf-a34b-a57d5cc5dd4a-3019be7eda",
+          "commit": "d0068a6efa96bba0ffac3068624fe73e725b1578"
+        }
+      ],
+      "disposition": "retain historical variant",
+      "reason": "Current Task identity, creator authority, request correlation and observation owners supersede this branch-specific wording. Retain its exact source for comparison; no second state authority or event inference rule is adopted."
+    },
+    {
+      "repository": "apps",
+      "path": "projects/alex.app/docs/2a-design/task-resource-engine.md",
+      "blob": "931d153ae7b9ff7bbad4b37250063b4b885d68ed",
+      "sources": [
+        {
+          "branch": "task/goal-app_671bcd1f-1aeb-4edf-a34b-a57d5cc5dd4a-3019be7eda",
+          "commit": "d0068a6efa96bba0ffac3068624fe73e725b1578"
+        }
+      ],
+      "disposition": "retain historical variant",
+      "reason": "Current Task identity, creator authority, request correlation and observation owners supersede this branch-specific wording. Retain its exact source for comparison; no second state authority or event inference rule is adopted."
+    },
+    {
+      "repository": "apps",
+      "path": "projects/evaluation.app/design/automatic-assessment-proposal-20260919.md",
+      "blob": "1808f7da82313871a73f7f0bd7842df6864a6ca4",
+      "sources": [
+        {
+          "branch": "task/goal-app_7b986648-56f3-4a77-876d-cc5b3d1e6be0-85cbc5fdc3",
+          "commit": "9d712f4305c5035a8b041c8b39a9192d69342ea7"
+        }
+      ],
+      "disposition": "already represented",
+      "reason": "Exact blob occurs in main history; no duplicate integration."
+    },
+    {
+      "repository": "apps",
+      "path": "projects/evaluation.app/design/task-outcome-evaluation.md",
+      "blob": "6ca7abc4324c32bbbecdf22583ee5d46a2f98d0e",
+      "sources": [
+        {
+          "branch": "task/goal-app_7b986648-56f3-4a77-876d-cc5b3d1e6be0-85cbc5fdc3",
+          "commit": "9d712f4305c5035a8b041c8b39a9192d69342ea7"
+        }
+      ],
+      "disposition": "already represented",
+      "reason": "Exact blob occurs in main history; no duplicate integration."
+    },
+    {
+      "repository": "apps",
+      "path": "projects/alex.app/docs/2a-design/task-resource-engine.md",
+      "blob": "345133fd0d196d488f905660bf689bd4640e7789",
+      "sources": [
+        {
+          "branch": "task/goal-app_7b986648-56f3-4a77-876d-cc5b3d1e6be0-85cbc5fdc3",
+          "commit": "9d712f4305c5035a8b041c8b39a9192d69342ea7"
+        }
+      ],
+      "disposition": "already represented",
+      "reason": "Exact blob occurs in main history; no duplicate integration."
+    },
+    {
+      "repository": "apps",
+      "path": "projects/alex.app/docs/2a-design/human-control-surfaces.md",
+      "blob": "00f66f0932fc6f4233ec988568f78d2c3b7ac5e0",
+      "sources": [
+        {
+          "branch": "task/goal-app_95a3a0e7-6cdd-4d8c-b8a5-b1f4dfaee702-67e5b6b346",
+          "commit": "b4cca7d1dd27a0473ed58b5bdf79f89757e236dc"
+        }
+      ],
+      "disposition": "retain paired source variant",
+      "reason": "Source-specific approval, channel or Scout policy changes require the exact paired Host/App candidate. Existing current contract remains authority; cleanup does not activate that candidate."
+    },
+    {
+      "repository": "apps",
+      "path": "projects/alex.app/docs/2a-design/may-console.md",
+      "blob": "98191c9f5ffd4a6f1e783da2d105e864edb67782",
+      "sources": [
+        {
+          "branch": "task/goal-app_95a3a0e7-6cdd-4d8c-b8a5-b1f4dfaee702-67e5b6b346",
+          "commit": "b4cca7d1dd27a0473ed58b5bdf79f89757e236dc"
+        }
+      ],
+      "disposition": "retain paired source variant",
+      "reason": "Source-specific approval, channel or Scout policy changes require the exact paired Host/App candidate. Existing current contract remains authority; cleanup does not activate that candidate."
+    },
+    {
+      "repository": "apps",
+      "path": "projects/alex.app/docs/2a-design/telegram-notifications.md",
+      "blob": "cf37dce07978b3ae49b09a85a83efb4d32702921",
+      "sources": [
+        {
+          "branch": "task/goal-app_95a3a0e7-6cdd-4d8c-b8a5-b1f4dfaee702-67e5b6b346",
+          "commit": "b4cca7d1dd27a0473ed58b5bdf79f89757e236dc"
+        }
+      ],
+      "disposition": "retain paired source variant",
+      "reason": "Source-specific approval, channel or Scout policy changes require the exact paired Host/App candidate. Existing current contract remains authority; cleanup does not activate that candidate."
+    },
+    {
+      "repository": "apps",
+      "path": "projects/may.app/design/operator-application.md",
+      "blob": "6be372d85e5a9188a2e218a79d9c96b295c2cd5b",
+      "sources": [
+        {
+          "branch": "task/goal-app_95a3a0e7-6cdd-4d8c-b8a5-b1f4dfaee702-67e5b6b346",
+          "commit": "b4cca7d1dd27a0473ed58b5bdf79f89757e236dc"
+        }
+      ],
+      "disposition": "retain paired source variant",
+      "reason": "Source-specific approval, channel or Scout policy changes require the exact paired Host/App candidate. Existing current contract remains authority; cleanup does not activate that candidate."
+    },
+    {
+      "repository": "apps",
+      "path": "projects/alex.app/docs/2b-manual/sdk-quickstart.md",
+      "blob": "b4ccab2ded8726228bba311cf5219c1daa295a91",
+      "sources": [
+        {
+          "branch": "task/goal-app_a0c8d3d8-b549-4c1e-8af5-84e8d283c8fa-6e8667cfce",
+          "commit": "88e93dfde72abcb400a8d83e1f8de79ac6736514"
+        },
+        {
+          "branch": "task/goal-app_a0c8d3d8-b549-4c1e-8af5-84e8d283c8fa-f0fb3a68a2",
+          "commit": "bde78f90f9fb68eed7eb1bf879b247a60abca819"
+        },
+        {
+          "branch": "task/goal-app_a0c8d3d8-focused",
+          "commit": "4d8f89307de16caa9b13ae73c18058b2f87d1ac7"
+        }
+      ],
+      "disposition": "merge narrow discovery guidance",
+      "reason": "Teach assigned versus unclaimed input, current reads and explicit capability limits. Do not import unrelated runtime changes or repeat approval gates."
+    },
+    {
+      "repository": "apps",
+      "path": "projects/alex.app/docs/INDEX.md",
+      "blob": "8e8a0ab3ffb1ec18aa73ca4f50a9790123ffcdfb",
+      "sources": [
+        {
+          "branch": "task/goal-app_a0c8d3d8-b549-4c1e-8af5-84e8d283c8fa-6e8667cfce",
+          "commit": "88e93dfde72abcb400a8d83e1f8de79ac6736514"
+        }
+      ],
+      "disposition": "superseded navigation",
+      "reason": "Current purpose/value hierarchy and new disposition index replace branch navigation."
+    },
+    {
+      "repository": "apps",
+      "path": "projects/alex.app/docs/proposals/app-environment-review-20260928.md",
+      "blob": "6b22ba82b5cf8227f7d5be2d82739b09cbbcb6a4",
+      "sources": [
+        {
+          "branch": "task/goal-app_a0c8d3d8-b549-4c1e-8af5-84e8d283c8fa-6e8667cfce",
+          "commit": "88e93dfde72abcb400a8d83e1f8de79ac6736514"
+        }
+      ],
+      "disposition": "merge refined synthesis",
+      "reason": "Preserve adoption/context questions and evidence while linking current authority, value and principles; original variants remain archived."
+    },
+    {
+      "repository": "apps",
+      "path": "projects/alex.app/docs/proposals/design-implementation-convergence.md",
+      "blob": "fcb6c6a4f1b912186ce2c442f7d155bbfeeaad99",
+      "sources": [
+        {
+          "branch": "task/goal-app_a0c8d3d8-b549-4c1e-8af5-84e8d283c8fa-6e8667cfce",
+          "commit": "88e93dfde72abcb400a8d83e1f8de79ac6736514"
+        },
+        {
+          "branch": "task/goal-app_a0c8d3d8-b549-4c1e-8af5-84e8d283c8fa-f0fb3a68a2",
+          "commit": "bde78f90f9fb68eed7eb1bf879b247a60abca819"
+        },
+        {
+          "branch": "task/goal-app_a0c8d3d8-focused",
+          "commit": "4d8f89307de16caa9b13ae73c18058b2f87d1ac7"
+        }
+      ],
+      "disposition": "retain historical variant",
+      "reason": "Current Task identity, creator authority, request correlation and observation owners supersede this branch-specific wording. Retain its exact source for comparison; no second state authority or event inference rule is adopted."
+    },
+    {
+      "repository": "apps",
+      "path": "projects/alex.app/docs/proposals/evidence/app-environment-third-app-trial-20260928.md",
+      "blob": "3f48b2cef18774f045a982e9f5fa724b4ee24216",
+      "sources": [
+        {
+          "branch": "task/goal-app_a0c8d3d8-b549-4c1e-8af5-84e8d283c8fa-6e8667cfce",
+          "commit": "88e93dfde72abcb400a8d83e1f8de79ac6736514"
+        }
+      ],
+      "disposition": "summarize evidence in App environment proposal",
+      "reason": "Distinguish separate cold-entry, Recovery-only and Evaluation-return trials; do not combine their success claims."
+    },
+    {
+      "repository": "apps",
+      "path": "artifacts/task-resource-practice/retained-p1/work/details/catalog-review-42.md",
+      "blob": "3dccf22376727778a9a09728dedd4cdcab5c84d2",
+      "sources": [
+        {
+          "branch": "task/goal-app_a0c8d3d8-b549-4c1e-8af5-84e8d283c8fa-f0fb3a68a2",
+          "commit": "bde78f90f9fb68eed7eb1bf879b247a60abca819"
+        }
+      ],
+      "disposition": "retain operational or trial evidence",
+      "reason": "Dated review/evidence rather than a new system contract; preserve exact revision and Task ownership in archive."
+    },
+    {
+      "repository": "apps",
+      "path": "artifacts/task-resource-practice/scenarios/p1-paraphrase/environment/details/catalog-review-42.md",
+      "blob": "3dccf22376727778a9a09728dedd4cdcab5c84d2",
+      "sources": [
+        {
+          "branch": "task/goal-app_a0c8d3d8-b549-4c1e-8af5-84e8d283c8fa-f0fb3a68a2",
+          "commit": "bde78f90f9fb68eed7eb1bf879b247a60abca819"
+        }
+      ],
+      "disposition": "retain operational or trial evidence",
+      "reason": "Dated review/evidence rather than a new system contract; preserve exact revision and Task ownership in archive."
+    },
+    {
+      "repository": "apps",
+      "path": "projects/alex.app/docs/proposals/app-environment-review-20260928.md",
+      "blob": "9f394dd724711010e4574570d6cbb261a194cc51",
+      "sources": [
+        {
+          "branch": "task/goal-app_a0c8d3d8-b549-4c1e-8af5-84e8d283c8fa-f0fb3a68a2",
+          "commit": "bde78f90f9fb68eed7eb1bf879b247a60abca819"
+        },
+        {
+          "branch": "task/goal-app_a0c8d3d8-focused",
+          "commit": "4d8f89307de16caa9b13ae73c18058b2f87d1ac7"
+        }
+      ],
+      "disposition": "merge refined synthesis",
+      "reason": "Preserve adoption/context questions and evidence while linking current authority, value and principles; original variants remain archived."
+    },
+    {
+      "repository": "apps",
+      "path": "projects/alex.app/docs/proposals/evidence/app-environment-third-app-trial-20260928.md",
+      "blob": "95f682fae9e14e3eda050ddf9e7a6441ff0f0ee3",
+      "sources": [
+        {
+          "branch": "task/goal-app_a0c8d3d8-b549-4c1e-8af5-84e8d283c8fa-f0fb3a68a2",
+          "commit": "bde78f90f9fb68eed7eb1bf879b247a60abca819"
+        }
+      ],
+      "disposition": "summarize evidence in App environment proposal",
+      "reason": "Distinguish separate cold-entry, Recovery-only and Evaluation-return trials; do not combine their success claims."
+    },
+    {
+      "repository": "apps",
+      "path": "projects/alex.app/docs/proposals/task-resource-layout-20260929.md",
+      "blob": "274e67697a24dd4cc490d544fbb49d117fcbb645",
+      "sources": [
+        {
+          "branch": "task/goal-app_a0c8d3d8-b549-4c1e-8af5-84e8d283c8fa-f0fb3a68a2",
+          "commit": "bde78f90f9fb68eed7eb1bf879b247a60abca819"
+        },
+        {
+          "branch": "task/goal-app_a0c8d3d8-focused",
+          "commit": "4d8f89307de16caa9b13ae73c18058b2f87d1ac7"
+        }
+      ],
+      "disposition": "merge refined synthesis",
+      "reason": "Preserve adoption/context questions and evidence while linking current authority, value and principles; original variants remain archived."
+    },
+    {
+      "repository": "apps",
+      "path": "projects/alex.app/docs/proposals/evidence/app-environment-third-app-trial-20260928.md",
+      "blob": "69a797a0c08ae91e9fff73c3f19fbb417fb75d01",
+      "sources": [
+        {
+          "branch": "task/goal-app_a0c8d3d8-focused",
+          "commit": "4d8f89307de16caa9b13ae73c18058b2f87d1ac7"
+        }
+      ],
+      "disposition": "summarize evidence in App environment proposal",
+      "reason": "Distinguish separate cold-entry, Recovery-only and Evaluation-return trials; do not combine their success claims."
+    },
+    {
+      "repository": "apps",
+      "path": "notes/evaluation-owner-review-current-evidence-20261002.md",
+      "blob": "7b7d18ecf0332dd75cc73a0ae93d450133c727c1",
+      "sources": [
+        {
+          "branch": "task/goal-app_de102092-e33a-404e-a797-8979e2f3536d-c297e58f56",
+          "commit": "efd1635ea98314def855ee90580fd428dcaec8d8"
+        }
+      ],
+      "disposition": "retain operational or trial evidence",
+      "reason": "Dated review/evidence rather than a new system contract; preserve exact revision and Task ownership in archive."
+    },
+    {
+      "repository": "apps",
+      "path": "projects/alex.app/docs/2a-design/telegram-notifications.md",
+      "blob": "634efe9fe074ae20209c52ba6fff15ad0d388bbd",
+      "sources": [
+        {
+          "branch": "task/goal-app_de102092-e33a-404e-a797-8979e2f3536d-c297e58f56",
+          "commit": "efd1635ea98314def855ee90580fd428dcaec8d8"
+        }
+      ],
+      "disposition": "already represented",
+      "reason": "Exact blob occurs in main history; no duplicate integration."
+    },
+    {
+      "repository": "apps",
+      "path": "artifacts/pr263-8952003b-independent-review.md",
+      "blob": "f99d7f1c7dbfe6f264b2355a419b4b0827842a1c",
+      "sources": [
+        {
+          "branch": "task/goal-app_dec45b8d-8b7d-4672-bcfc-a8c9c72726fc-d3d168caeb",
+          "commit": "7b78e90537508b6df940b62f24aa7c56ed22fa9f"
+        }
+      ],
+      "disposition": "retain operational or trial evidence",
+      "reason": "Dated review/evidence rather than a new system contract; preserve exact revision and Task ownership in archive."
+    },
+    {
+      "repository": "apps",
+      "path": "projects/may.app/docs/reviews/public-task-evidence-timeout-diagnosis-20261001.md",
+      "blob": "9d5060e2a43c9655e4333dc013992e53e76b4a68",
+      "sources": [
+        {
+          "branch": "task/goal-app_e3f6f0a0-77d7-439b-a8a5-62be37cf3dee-6d000e87c8",
+          "commit": "70031e37fd8380a313a239d49ec4c56435576d19"
+        }
+      ],
+      "disposition": "defer paired consumer change",
+      "reason": "Useful scoped-reader diagnosis, but recheck against later indexed-read/diagnostic Host fixes before adopting consumer/runtime changes."
+    },
+    {
+      "repository": "apps",
+      "path": "projects/alex.app/docs/2a-design/task-executor-interface.md",
+      "blob": "9da37bf6313f02017390f26a36d24964b89ccdea",
+      "sources": [
+        {
+          "branch": "task/goal-app_f6d1f477-f24c-494f-a4a8-26eb30ff0933-36a4e44506",
+          "commit": "627e86007156e8ac282229e024eea6633e9794e4"
+        }
+      ],
+      "disposition": "superseded contract",
+      "reason": "Task engine/SDK own the interface; the old live-input accept behavior predates later settlement rules."
+    },
+    {
+      "repository": "apps",
+      "path": "projects/alex.app/docs/2a-design/task-resource-engine.md",
+      "blob": "67f63033d8f183b112dffcc5bc3da7212b622d7a",
+      "sources": [
+        {
+          "branch": "task/goal-app_f6d1f477-f24c-494f-a4a8-26eb30ff0933-36a4e44506",
+          "commit": "627e86007156e8ac282229e024eea6633e9794e4"
+        }
+      ],
+      "disposition": "retain historical variant",
+      "reason": "Current Task identity, creator authority, request correlation and observation owners supersede this branch-specific wording. Retain its exact source for comparison; no second state authority or event inference rule is adopted."
+    },
+    {
+      "repository": "apps",
+      "path": "projects/alex.app/docs/2a-design/agents.md",
+      "blob": "c456a65533ed7c245362a8fbe3ce746f3d2cfb8d",
+      "sources": [
+        {
+          "branch": "task/goal-app_f933aa6d-34c8-4287-bae2-318e129c4f81-3e265fdc13",
+          "commit": "953a3b5f1878f5a375278819b4115545dfee8dc3"
+        }
+      ],
+      "disposition": "retain historical variant",
+      "reason": "Alternative bounded helper call/follow_up/inspect prototype remains paired source work. It is not the current durable request/reply capability contract and is not activated through documentation cleanup."
+    },
+    {
+      "repository": "apps",
+      "path": "projects/alex.app/docs/2b-manual/user-guide.md",
+      "blob": "4a70dd3e5ff4928d229905dfa34b3d2df5a3beda",
+      "sources": [
+        {
+          "branch": "task/goal-app_f933aa6d-34c8-4287-bae2-318e129c4f81-3e265fdc13",
+          "commit": "953a3b5f1878f5a375278819b4115545dfee8dc3"
+        }
+      ],
+      "disposition": "retain historical variant",
+      "reason": "Alternative bounded helper call/follow_up/inspect prototype remains paired source work. It is not the current durable request/reply capability contract and is not activated through documentation cleanup."
+    },
+    {
+      "repository": "apps",
+      "path": "projects/may.app/design/aks-rp-e2e-retire-metrics-control.md",
+      "blob": "66d0fdbd5d3f3fb3bd548b31f36b23346c3ddde1",
+      "sources": [
+        {
+          "branch": "task/goal-appdep_132d378345cafb1291267b24-3d8538c214",
+          "commit": "072e0a78cd5d313dc0d0b49fd1948a327ed05b22"
+        }
+      ],
+      "disposition": "retain task-owned candidate",
+      "reason": "Operational scope and exact proposal authority remain with the existing Task. Documentation cleanup cannot execute or authorize retirement."
+    },
+    {
+      "repository": "apps",
+      "path": "projects/may.app/design/aks-rp-e2e-retire-metrics-control.md",
+      "blob": "38bb25590d15677a0884dbf7c4c1119e8e0504bd",
+      "sources": [
+        {
+          "branch": "task/goal-appdep_354dd7146a482f325f2cadd9-aa394c2f2a",
+          "commit": "470e934f64656c9985358da5aa5bac46fe9d4f38"
+        },
+        {
+          "branch": "task/goal-appdep_3b8a01a40248c98c6d59ce4c-7b191acccd",
+          "commit": "1f1288689fb96957d7cf11bd3717615ef6fba525"
+        },
+        {
+          "branch": "task/goal-appdep_3c56238aedba0a628c125081-9ee4fabe78",
+          "commit": "e7be7a05152458a33c55fefb564f2602738d8fde"
+        },
+        {
+          "branch": "task/goal-appdep_ab5debdc21f0065d43709799-8e47bc769d",
+          "commit": "4d966a4d6a71cf08b764b12d4ea4f19b110c4fec"
+        }
+      ],
+      "disposition": "retain task-owned candidate",
+      "reason": "Operational scope and exact proposal authority remain with the existing Task. Documentation cleanup cannot execute or authorize retirement."
+    },
+    {
+      "repository": "apps",
+      "path": "projects/may.app/outputs/aks-rp-e2e-retirement-readiness-review-20260930.md",
+      "blob": "0c4cf2b0739fa70e372d3c873d54c536d5440637",
+      "sources": [
+        {
+          "branch": "task/goal-appdep_354dd7146a482f325f2cadd9-aa394c2f2a",
+          "commit": "470e934f64656c9985358da5aa5bac46fe9d4f38"
+        }
+      ],
+      "disposition": "retain task-owned candidate",
+      "reason": "Operational scope and exact proposal authority remain with the existing Task. Documentation cleanup cannot execute or authorize retirement."
+    },
+    {
+      "repository": "apps",
+      "path": "projects/may.app/outputs/aks-rp-e2e-retirement-readiness-review-20261001.md",
+      "blob": "ff52de2c7de34f6d4a763b74edf34a5857d7d2a4",
+      "sources": [
+        {
+          "branch": "task/goal-appdep_3c56238aedba0a628c125081-9ee4fabe78",
+          "commit": "e7be7a05152458a33c55fefb564f2602738d8fde"
+        }
+      ],
+      "disposition": "retain task-owned candidate",
+      "reason": "Operational scope and exact proposal authority remain with the existing Task. Documentation cleanup cannot execute or authorize retirement."
+    },
+    {
+      "repository": "apps",
+      "path": "outputs/owner-review-transition-diagnosis-20261001.md",
+      "blob": "878ec7498e16fd2230ade269ef21866c492803c0",
+      "sources": [
+        {
+          "branch": "task/goal-appdep_813aed29be2e39dfad11f327-649faad4a3",
+          "commit": "80316153d9255de9dcf2b72f4d0a9d8ee0ad70a8"
+        }
+      ],
+      "disposition": "retain operational or trial evidence",
+      "reason": "Dated review/evidence rather than a new system contract; preserve exact revision and Task ownership in archive."
+    },
+    {
+      "repository": "apps",
+      "path": "outputs/observer-checkpoint-repair/review.md",
+      "blob": "92e86b4fcb0294ada543c2e1ee818c49d1fe5916",
+      "sources": [
+        {
+          "branch": "task/goal-appdep_f4cdd7c956510fb9c2eac2ba-cb6a605ae5",
+          "commit": "8b096003529651bcf4186646f76d4c311aa257e8"
+        }
+      ],
+      "disposition": "retain operational or trial evidence",
+      "reason": "Dated review/evidence rather than a new system contract; preserve exact revision and Task ownership in archive."
+    },
+    {
+      "repository": "may-agent",
+      "path": "experiments/task-context-comparison/PLAN.md",
+      "blob": "3861aa2e3499f97d233527708aa45ce4b828c01a",
+      "sources": [
+        {
+          "branch": "experiment/task-context-comparison-20260926",
+          "commit": "fe9c40509099afa7e6e3949640c1b8c29bc54870"
+        },
+        {
+          "branch": "experiment/task-context-followup-candidate-20260926",
+          "commit": "5e29c0ef06945f0c8c9a22698a5750194ff46433"
+        }
+      ],
+      "disposition": "experiment plan already covered",
+      "reason": "Existing matched-behavior and reuse comparison records own results. Preserve harness source and failed trials in Host bundle instead of reinstating experiments in production."
+    },
+    {
+      "repository": "may-agent",
+      "path": "experiments/task-context-followup/PLAN.md",
+      "blob": "5da81615ca79adc4a09b12bc8cef9d46aae6357d",
+      "sources": [
+        {
+          "branch": "experiment/task-context-followup-baseline-20260926",
+          "commit": "78071ecab755f1930f2944daba007df26cbebcee"
+        },
+        {
+          "branch": "experiment/task-context-followup-candidate-20260926",
+          "commit": "5e29c0ef06945f0c8c9a22698a5750194ff46433"
+        },
+        {
+          "branch": "experiment/task-context-followup-discovery-20260926",
+          "commit": "cb5c9056e790dee782a09dcf469b0405fa809ee6"
+        }
+      ],
+      "disposition": "experiment plan already covered",
+      "reason": "Existing matched-behavior and reuse comparison records own results. Preserve harness source and failed trials in Host bundle instead of reinstating experiments in production."
+    },
+    {
+      "repository": "may-agent",
+      "path": "experiments/task-context-followup/FIELD-PLAN.md",
+      "blob": "12facb6d7de7cfa3a51f8d26912c30b2b0ef6ca2",
+      "sources": [
+        {
+          "branch": "experiment/task-context-followup-candidate-20260926",
+          "commit": "5e29c0ef06945f0c8c9a22698a5750194ff46433"
+        }
+      ],
+      "disposition": "experiment plan already covered",
+      "reason": "Existing matched-behavior and reuse comparison records own results. Preserve harness source and failed trials in Host bundle instead of reinstating experiments in production."
+    },
+    {
+      "repository": "apps",
+      "path": "projects/alex.app/docs/proposals/reliable-recovery-and-independent-oversight-20261002.md",
+      "uncommittedSha256": "468192c1bf870a19ae4a9a7ba531335b50389fc68ab60d1bac305eee7528cfe4",
+      "disposition": "merge refined proposal",
+      "reason": "Mark #284 merged, keep independent oversight/connected recovery unproved; preserve agent decisions and infra retries."
+    },
+    {
+      "repository": "apps",
+      "path": "projects/may.app/design/token-efficiency-proposal-20261002.md",
+      "uncommittedSha256": "10ef7c576aa121123072c39981e5b937d6d17fb895431d7628e628daa37c5f0a",
+      "disposition": "merge refined proposal",
+      "reason": "Mark completion and review clock source repairs integrated; no extra clock field, retry cap or claimed new usage result."
+    },
+    {
+      "repository": "apps",
+      "path": "projects/alex.app/docs/proposals/runtime-reliability-20260925.md",
+      "uncommittedSha256": "31c8e24408a923a681f05428126dbd54958cb9711c18575ae12d7e847471efbd",
+      "disposition": "archive superseded draft",
+      "reason": "Fixed-count quarantine and automatic human-lane escalation contradict agent-owned intervention. Consumed input is not fulfilled input. Preserve incident evidence without adopting those mechanisms."
+    },
+    {
+      "repository": "apps",
+      "path": "projects/alex.app/docs/2a-design/system-boundary.md",
+      "uncommittedPatchSha256": "9e80c92090fb2d2059a75785a026804a7b4659f016aaf6abe9964c1274b4816d",
+      "sourceWorkspace": "/app/.state/worktrees/may-app-direct-tool-policy-20260921",
+      "archiveWorkspaceId": "0aa13806adbe331e",
+      "disposition": "superseded direct-tool policy draft",
+      "reason": "Draft allows concrete-tool denials and rejects unknown/duplicate denials. The merged #223/current owner documents narrower configured-bundle denials before construction. Keep exact current contract; do not promote broader candidate policy from an uncommitted file."
+    }
+  ]
+}

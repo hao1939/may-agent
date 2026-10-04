@@ -79,7 +79,7 @@ presentation/contract changes (`1c2f8366`). Host
 view upgrade (`18785a27`). The companion
 App change owns May's judgment guidance, Evaluation cadence and observation reads.
 The common design records the Request and context hierarchy contracts in
-`may-agent.app/docs`; Evaluation policy stays in its own design.
+`alex.app/docs`; Evaluation policy stays in its own design.
 
 ## Checks and trials
 
@@ -140,7 +140,7 @@ explanation for human input and explicitly permits quiet background delegation.
 No additional merge-blocking source defect was found. Full local CI results above
 apply to these unchanged heads; they were not rerun merely to repeat the review.
 
-The [timeout investigation](../../../may-agent.app/docs/proposals/responsive-host-recovery-20261002.md)
+The [timeout investigation](../../../alex.app/docs/proposals/responsive-host-recovery-20261002.md)
 now separately measures the Conversation recovery query and documents a proposed
 repair. The earlier limits below remain relevant to the metric PR's claims.
 

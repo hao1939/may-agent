@@ -11,8 +11,8 @@ import { createExecutionUsage } from "../may-agent/src/lib/execution-usage.js";
 import { createMetricService } from "../may-agent/src/lib/metrics.js";
 import { createAppReporting } from "../may-agent/src/app/composition/reporting.js";
 import { readMetricEvidence } from "../may-agent/src/app/adapters/reporting/metric-evidence.js";
-import evaluationApp, { taskInputForEvent } from "../evaluation.app/app.js";
-import { reviewMetric } from "../evaluation.app/agents/evaluator/workflows/metric-review.js";
+import alexApp, { taskInputForEvent } from "../alex.app/app.js";
+import { reviewMetric } from "../alex.app/agents/evaluator/workflows/metric-review.js";
 import { intakeEvaluationReport } from "./agents/may/workflows/evaluation-report-intake.js";
 import {
   fixture,
@@ -92,7 +92,7 @@ test("effort observes accepted work and running invocations, preserves scopes an
   usage(db, "long", "scout", "research", 130, cut - 1, cut - 7_200_000);
   usage(db, "old", "may", "quiet-wait", 999, cut - 3_600_001);
   usage(db, "future", "may", "future", 999, cut);
-  usage(db, "evaluator", "evaluation", "assessment", 500);
+  usage(db, "evaluator", "alex", "assessment", 500);
   usage(db, "unattributed", undefined, undefined, 900);
   usage(db, "without-task", "may", undefined, 900);
   const observed = sample();
@@ -142,7 +142,7 @@ test("missing reply accounting is unavailable; calibration does not open alerts"
 
 test("normal definition activation retires the reviewed catalog and its alerts while preserving history", () => {
   const metrics = createMetricService({ getDb: () => db });
-  const retired = [...app.metrics!, ...evaluationApp.metrics!].filter(
+  const retired = [...app.metrics!, ...alexApp.metrics!].filter(
     (metric) => metric.status === "retired",
   );
   for (const metric of retired) {
@@ -152,7 +152,7 @@ test("normal definition activation retires the reviewed catalog and its alerts w
   }
   createAppReporting(() => db).syncDefinitions([
     { definition: app },
-    { definition: evaluationApp },
+    { definition: alexApp },
   ]);
   expect(retired).toHaveLength(97);
   expect(
@@ -224,7 +224,7 @@ test("effort review publishes evidence and reaches an accepted May decision with
     const ctx = createTestAppWorkflowContext({
       input: input.data,
       workspace: {
-        appRoot: fileURLToPath(new URL("../evaluation.app/", import.meta.url)),
+        appRoot: fileURLToPath(new URL("../alex.app/", import.meta.url)),
         root,
         projectRoot: root,
         output: root,

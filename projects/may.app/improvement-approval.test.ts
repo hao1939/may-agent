@@ -284,7 +284,7 @@ describe("trusted decision, source application and follow-up composition", () =>
     expect(followUpAfterVerifiedActivation(packet, activation)).toMatchObject({
       state: "ready-for-independent-follow-up",
       dependency: {
-        appId: "evaluation",
+        appId: "alex",
         input: {
           kind: "review-task-outcome",
           data: {

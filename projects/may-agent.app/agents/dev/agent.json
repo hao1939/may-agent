@@ -1,8 +1,0 @@
-{
-  "name": "dev",
-  "description": "May-agent platform debugger and metrics specialist",
-  "domain": "system reliability, metrics, debugging",
-  "model": "gpt-5.6-sol",
-  "heartbeat": false,
-  "tools": ["coding", "query_db", "finish"]
-}

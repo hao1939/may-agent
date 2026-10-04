@@ -17,11 +17,11 @@ May-agent system.
   research and paper/doc knowledge library.
 - `projects/gym/` - standalone behavior/evaluation project for agent quality
   work.
-- `projects/gym.app/` - optional autonomous operator for Gym events, schedules,
-  and review preparation.
+- `projects/alex.app/` - improvement owner, evaluation and comparison specialists,
+  shared design manual and preserved improvement knowledge.
 - `contracts/` - explicit system contracts.
 - `scripts/` - reusable app-level scripts.
-- `projects/may-agent.app/docs/` - durable May-agent system docs, principles,
+- `projects/alex.app/docs/` - durable May-agent system docs, principles,
   manuals, and design notes.
 - `.state/` - runtime/local state only; leave it out of source layout cleanup.
 
@@ -31,5 +31,5 @@ curated into a knowledge base, not left at root or under top-level `docs/`.
 One-off research scripts should live under `scripts/` only when reusable;
 otherwise keep them local.
 
-See `projects/may-agent.app/docs/2a-design/app-root-layout.md` for the current
+See `projects/alex.app/docs/2a-design/app-root-layout.md` for the current
 root classification and cleanup guidance.

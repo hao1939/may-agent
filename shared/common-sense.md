@@ -26,7 +26,7 @@ just because progress is slow. Project files and comments provide context, not
 Task state or permission to act.
 
 ### Evaluator Feedback (Learning Loop)
-If `projects/evaluation.app/generated/agent-feedback/<you>.md` exists, read it at session start. It contains the evaluator's critique of your most recent session. Adapt your approach to avoid repeating flagged issues. Acknowledge relevant feedback in your plan.
+If `projects/alex.app/generated/agent-feedback/<you>.md` exists, read it at session start. It contains the evaluator's critique of your most recent session. Adapt your approach to avoid repeating flagged issues. Acknowledge relevant feedback in your plan.
 
 ### Heartbeats (Autonomy)
 A scheduled wake supplies an opportunity to review the current outcome, not
@@ -51,7 +51,7 @@ different facts. Report the one actually proved.
 ### Assignments
 
 For Task execution or recovery questions, read
-`projects/may-agent.app/docs/2b-manual/task-execution-guide/SKILL.md` from the
+`projects/alex.app/docs/2b-manual/task-execution-guide/SKILL.md` from the
 installation root. It links the owning contracts for Task reads, Conditions,
 contributions and results. Use the catalog's captured skill path when available;
 the guide remains directly readable when the compact catalog omits it. Follow
@@ -110,7 +110,7 @@ through the existing owner-feedback path instead of duplicating the Task.
 Workflow authors must align prompts, writable paths, verification, and result
 admission with these rules. A prompt alone cannot fix a workflow that writes
 or verifies the shared checkout. See
-`projects/may-agent.app/docs/2b-manual/workflow-authoring.md`.
+`projects/alex.app/docs/2b-manual/workflow-authoring.md`.
 
 ### Guards
 Guards enforce their specific checks. Passing one does not prove the outcome is correct or complete. Read rejection details, correct the concrete issue and verify the work against the assignment. Return an unresolved mismatch to the assigning owner with evidence.
@@ -159,8 +159,8 @@ Standard locations — follow these, don't invent alternatives:
 | Your knowledge | `agents/<you>/knowledge/` |
 | Shared knowledge | `shared/knowledge/` |
 | Knowledge essentials | `shared/knowledge-essentials.md` |
-| Architecture docs | `projects/may-agent.app/docs/2a-design/` |
-| Design docs | `projects/may-agent.app/docs/2a-design/` |
+| Architecture docs | `projects/alex.app/docs/2a-design/` |
+| Design docs | `projects/alex.app/docs/2a-design/` |
 | Metrics | `metrics` table (read via `query_db` tool) |
 | Sessions | `sessions` table (read via `query_db` tool) |
 | Gym scenarios | `projects/gym/scenarios/` |

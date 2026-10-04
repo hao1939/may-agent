@@ -1,9 +1,0 @@
-{
-  "name": "judge",
-  "description": "Convention compliance judge for gym scenarios \u2014 evaluates whether agents follow may-agent protocols",
-  "domain": "convention compliance evaluation",
-  "model": "claude-opus-5",
-  "heartbeat": false,
-  "tools": ["coding", "finish"],
-  "memoryLimit": 0
-}

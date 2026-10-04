@@ -37,13 +37,7 @@ const githubPullRequestObserver = createGitHubPullRequestObserver({
 
 const detailsSchema = Type.Record(Type.String(), Type.Unknown());
 const teamAssignmentSchema = Type.Object(
-  {
-    agent: Type.Union([
-      Type.Literal("may"),
-      Type.Literal("may-bob"),
-      Type.Literal("may-tech-lead"),
-    ]),
-  },
+  { agent: Type.Literal("may") },
   { additionalProperties: false },
 );
 
@@ -92,73 +86,15 @@ const mayInputSchema = Type.Union([
   ),
 ]);
 
-const STANDING_RESEARCH_TASK_ID = "research-adoption";
-const standingResearchOutcome =
-  "Continuously assess qualified Scout findings and older archived research for small, evidence-backed improvements to this installation.";
-const standingResearchAcceptance = [
-  "Return a current-first Bob recommendation or a supported no-change, negative, or visible deferral outcome; retain source limits, linked evidence, owner and next action without applying a candidate.",
-];
-
-function requireStandingResearchContract(
-  data: Record<string, unknown>,
-  outcome: string,
-  acceptance: readonly string[],
-): void {
-  const matchesAcceptance =
-    acceptance.length === standingResearchAcceptance.length &&
-    acceptance.every(
-      (item, index) => item.trim() === standingResearchAcceptance[index],
-    );
-  const allowedFields = new Set([
-    "outcome",
-    "acceptance",
-    "assignment",
-    "research",
-  ]);
-  const hasCallerSpecificRequirements = Object.keys(data).some(
-    (field) => !allowedFields.has(field),
-  );
-  if (
-    outcome !== standingResearchOutcome ||
-    !matchesAcceptance ||
-    hasCallerSpecificRequirements
-  ) {
-    throw new Error(
-      "Standing research adoption requires the exact fixed contract without caller-specific requirements; use targeted mode to preserve additional requirements",
-    );
-  }
-}
-
 function selectedAgent(data: Record<string, unknown>): string {
   const assignment = record(data.assignment);
   if (Object.keys(assignment).length === 0) return "may";
-  if (
-    assignment.agent !== "may" &&
-    assignment.agent !== "may-bob" &&
-    assignment.agent !== "may-tech-lead"
-  ) {
+  if (assignment.agent !== "may") {
     throw new Error(
-      "May goal assignment must select an installed May team role",
+      "May goal assignment must select May; system-improvement specialists are owned by App alex",
     );
   }
-  return assignment.agent;
-}
-
-function researchMode(
-  data: Record<string, unknown>,
-  agent: string,
-): "standing" | "targeted" | null {
-  const research = record(data.research);
-  if (research.adoption !== "research-adoption") return null;
-  if (
-    agent !== "may-bob" ||
-    (research.mode !== "standing" && research.mode !== "targeted")
-  ) {
-    throw new Error(
-      "Research adoption requires Bob and a standing or targeted mode",
-    );
-  }
-  return research.mode;
+  return "may";
 }
 
 // One standing intake responsibility; individual publications remain exact Task inputs.
@@ -222,11 +158,13 @@ export function taskForMayInput(
     };
   }
   const agent = selectedAgent(data);
-  const mode = researchMode(data, agent);
+  if (record(data.research).adoption === "research-adoption") {
+    throw new Error("Research adoption is owned by App alex");
+  }
   const metricReview = metricReviewInput(admitted.input);
   if (metricReview !== undefined) {
     readMetricReview(metricReview);
-    if (agent !== "may" || mode)
+    if (agent !== "may")
       throw new Error("Metric follow-through requires May");
   }
   const outcome = String(data.outcome ?? "").trim();
@@ -238,9 +176,6 @@ export function taskForMayInput(
     : [];
   if (!outcome || acceptance.length === 0) {
     throw new Error("May goal requires outcome and acceptance");
-  }
-  if (mode === "standing") {
-    requireStandingResearchContract(data, outcome, acceptance);
   }
   const hasRevision = Object.prototype.hasOwnProperty.call(data, "revision");
   const revision = record(data.revision);
@@ -264,31 +199,15 @@ export function taskForMayInput(
     intent: {
       id: revisesExisting
         ? revisionTaskId
-        : mode === "standing"
-          ? STANDING_RESEARCH_TASK_ID
-          : `goal/${admitted.id.replace(/[^a-zA-Z0-9._-]+/g, "-")}`,
+        : `goal/${admitted.id.replace(/[^a-zA-Z0-9._-]+/g, "-")}`,
       parentId: "may",
-      outcome: mode === "standing" ? standingResearchOutcome : outcome,
-      acceptance: mode === "standing" ? standingResearchAcceptance : acceptance,
+      outcome,
+      acceptance,
       agent,
       ...(metricReview !== undefined
         ? { workflow: "metric-follow-through" }
         : {}),
-      input:
-        mode === "standing"
-          ? {
-              kind: "goal",
-              data: {
-                outcome: standingResearchOutcome,
-                acceptance: standingResearchAcceptance,
-                assignment: { agent: "may-bob" },
-                research: {
-                  adoption: "research-adoption",
-                  mode: "standing",
-                },
-              },
-            }
-          : { kind: admitted.input.kind, data },
+      input: { kind: admitted.input.kind, data },
       priority: "P1" as const,
     },
   };
@@ -315,51 +234,6 @@ function requiredText(
     throw new Error(`${eventType} requires non-empty ${field}`);
   }
   return value;
-}
-
-export function scoutResearchHandoffInput(
-  event: AppEvent<Record<string, unknown>>,
-): AppInput | null {
-  const data = record(event.data);
-  if (
-    event.source !== "app-task:scout-knowledge-lib" ||
-    data.producerAppId !== "scout-knowledge-lib"
-  ) {
-    return null;
-  }
-  for (const field of [
-    "sourceUrl",
-    "sourceRevision",
-    "artifact",
-    "artifactHash",
-    "claim",
-    "limits",
-    "possibleApplication",
-  ]) {
-    requiredText(data, field, event.type);
-  }
-  if (!/^[a-f0-9]{64}$/.test(String(data.artifactHash))) {
-    throw new Error(`${event.type} requires SHA-256 artifactHash`);
-  }
-  return {
-    kind: "goal",
-    data: {
-      outcome: standingResearchOutcome,
-      acceptance: standingResearchAcceptance,
-      assignment: { agent: "may-bob" },
-      research: {
-        adoption: "research-adoption",
-        mode: "standing",
-        opportunity: "scout-qualified-handoff",
-        handoff: structuredClone(data),
-        transport: {
-          source: event.source,
-          localKey: event.localKey,
-          target: structuredClone(event.target),
-        },
-      },
-    },
-  };
 }
 
 export function observerFailureInput(
@@ -540,29 +414,6 @@ export default defineApp({
       },
     },
     {
-      id: "research-adoption-archive-review",
-      enabled: true,
-      intervalMs: 7 * 24 * 60 * 60 * 1000,
-      catchUp: "latest",
-      input: {
-        kind: "goal",
-        data: {
-          outcome: standingResearchOutcome,
-          acceptance: standingResearchAcceptance,
-          assignment: { agent: "may-bob" },
-          research: {
-            adoption: "research-adoption",
-            mode: "standing",
-            opportunity: "weekly-archive-review",
-            recordLimit: 3,
-            candidateLimit: 1,
-            navigation:
-              "Continue after the last accepted archive cursor and wrap after the final record; retain the next cursor in the current-first result.",
-          },
-        },
-      },
-    },
-    {
       id: "conversation-supervision-recovery",
       intervalMs: 900_000,
       event: {
@@ -582,11 +433,6 @@ export default defineApp({
   observers: [githubPullRequestObserver, createMetricEvidenceObserver()],
   subscriptions: [
     {
-      id: "evaluation-metric-report",
-      event: { type: "evaluation.metric_report_published" },
-      toInput: evaluationTaskReportInput,
-    },
-    {
       id: "evaluation-review-lag",
       event: { type: "metric.breach" },
       toInput(event) {
@@ -595,7 +441,7 @@ export default defineApp({
           record(event.data).repeat === true
         )
           return null;
-        return evaluationWorkInput("Review the unfinished Evaluation work identified by this metric. Read current review Tasks, allowance and return paths. Preserve retries and reuse linked owner work. If review remains overdue, use metric-response with a complete review in this Task context; wait for an actual review result or human decision, or commission useful work, then return the ordinary Task result. New samples are evidence, not investigation triggers. This age threshold requests inspection; it is not a promised deadline or authority to stop work.",
+        return evaluationWorkInput("Review the unfinished Alex-hosted review work identified by this metric. Read current review Tasks, allowance and return paths. Preserve retries and reuse linked owner work. If review remains overdue, use metric-response with a complete review in this Task context; wait for an actual review result or human decision, or commission useful work, then return the ordinary Task result. New samples are evidence, not investigation triggers. This age threshold requests inspection; it is not a promised deadline or authority to stop work.",
           { event: structuredClone(event) },
         );
       },
@@ -618,25 +464,12 @@ export default defineApp({
       toInput: observerFailureInput,
     },
     {
-      id: "scout-research-qualified",
-      event: { type: "scout.research.qualified", project: "may" },
-      toInput: scoutResearchHandoffInput,
-    },
-    {
       id: "evaluation-human-decision",
       event: {
         type: "evaluation.human_decision.requested",
         project: "may",
       },
       toInput: evaluationHumanDecisionInput,
-    },
-    {
-      id: "evaluation-task-report",
-      // Publications target Evaluation; consumer admission must not add a May
-      // target/project filter. Host routing of this cross-target subscription
-      // is independently exercised during isolated installation review.
-      event: { type: "evaluation.task_report_published" },
-      toInput: evaluationTaskReportInput,
     },
   ],
 });

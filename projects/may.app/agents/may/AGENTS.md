@@ -332,7 +332,7 @@ Keep this check bounded to the material decision and its evidence. Record a
 no-action decision when that evidence supports it.
 If accepted waits/no-ops persist without useful progress, observed outcomes
 conflict with a health claim, or similar fixes recur, use the selective deeper
-review in `../may-agent.app/docs/2b-manual/workflow-authoring.md#when-to-deepen-a-review`
+review in `../alex.app/docs/2b-manual/workflow-authoring.md#when-to-deepen-a-review`
 (relative to the App root). Follow exact evidence links and ask the original
 owner for the smallest useful investigation through the existing Task. Judge
 impact and cost before expanding scope; a stable genuine wait needs no repair.
@@ -365,9 +365,11 @@ For an actionable finding, own an ordinary May goal with the report, desired
 outcome, explicit scope and acceptance. Use the intake's stable handoff key when
 returning a dependency; inspect existing linked work before creating another.
 Keep one improvement candidate active at a time during this pilot. Use direct
-tools or `develop-change` for isolated preparation, involving Bob or tech-lead
-where useful. Check the actual current target baseline before building; a
-retained worktree or old remote ref may not contain the latest accepted fixes.
+tools for a focused local investigation. Route candidate development that needs
+Bob, tech-lead, or the moved development workflow through an ordinary goal to
+App `alex`; May cannot call Alex-local workers or their workflow directly. Check
+the actual current target baseline before building; a retained worktree or old
+remote ref may not contain the latest accepted fixes.
 
 Use two explicit human-judgment gates, without a generic score or invented ROI.
 First decide whether the finding merits improvement: distinguish useful successful
@@ -422,18 +424,18 @@ under the May App source for the stage and operator contracts.
 
 ## Local team work
 
-Choose how to do the work. Use direct tools for a focused edit or answer; use
-`agents.call` when this App's `may-bob` or `may-tech-lead` adds useful expertise
-or independent judgment. Give the outcome, constraints, and relevant references;
-the receiver chooses its method. When a guide is needed, pass its full readable
-path in `context_files`. The receiver reads it through ordinary file tools;
-catalog registration is not required.
-List your workflow catalog when an established procedure may help. For a local
-code or documentation candidate needing design, implementation, verification
-and review, call `develop-change` with structured `input: { verify: [...] }`.
-The verification argv is a procedure parameter you choose for the requirement.
-The current Task supplies the outcome and acceptance. Do not create an input
-kind, another Task, or a duplicate assignment merely to select a workflow.
+Choose how to do the work. Use direct tools for a focused edit or answer. When
+Alex's specialists add useful expertise or independent judgment, send an ordinary
+goal to App `alex` with the outcome, constraints, current human promise and
+relevant references; May cannot call Alex-local workers directly. Alex chooses
+and coordinates its specialists and returns the result through the Task dependency.
+When a guide is needed, include its full readable path in that App input.
+List your workflow catalog when an established procedure may help. For a code
+or documentation candidate needing Alex's moved design, implementation,
+verification and review workflow, include the required checks in the ordinary
+App `alex` goal; Alex selects and runs `develop-change` within its boundary.
+May must not call that moved workflow or Alex-local specialists directly. Do not
+create a duplicate assignment merely to select a workflow.
 
 When conversation asks for substantial independent work that should survive
 this turn, create an ordinary May `goal` with the outcome, acceptance and
@@ -603,7 +605,7 @@ evidence; fix Host mechanics in Host code. Present the exact candidate, baseline
 diff, checks, limits and rollback scope for final human approval before applying
 the improvement. A changed candidate or stale baseline needs a renewed decision.
 The current integration proposal is in
-`projects/gym.app/design/report-driven-improvement.md`; it does not enable Gym.
+`projects/alex.app/docs/comparison/report-driven-improvement.md`; it does not enable Gym.
 
 For research digests, choose three to five useful highlights and retain their
 uncertainties. Use verified absolute source URLs from the cited notes; copied
@@ -613,7 +615,7 @@ artifacts as paths, not as web links.
 
 Preserve strong Hao preferences and decisions as Gym learning evidence; ordinary
 conversation details are not automatically training truth. Reusable judgment is
-in May's skills. Current system design is in `projects/may-agent.app/docs/`.
+in May's skills. Current system design is in `projects/alex.app/docs/`.
 
 For a recurring hygiene review, choose its next `reviewAt` in the accepted Task
 result and perform one cycle when it is due. That Task deadline owns this

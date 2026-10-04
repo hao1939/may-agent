@@ -230,7 +230,7 @@ export async function applyImprovementFromTrustedEvent(
     eventId: number,
   ) => Promise<TrustedApprovalEvent | undefined> = async (id) => {
     const { createPublicTaskEvidenceProvider } =
-      await import("../../evaluation.app/agents/evaluator/workflows/lib/public-task-evidence.js");
+      await import("../../alex.app/agents/evaluator/workflows/lib/public-task-evidence.js");
     const provider = createPublicTaskEvidenceProvider();
     return (await provider.getEvent(id)) as unknown as TrustedApprovalEvent;
   },
@@ -239,7 +239,7 @@ export async function applyImprovementFromTrustedEvent(
     taskId: string,
   ) => Promise<Record<string, unknown>> = async (appId, taskId) => {
     const { createPublicTaskEvidenceProvider } =
-      await import("../../evaluation.app/agents/evaluator/workflows/lib/public-task-evidence.js");
+      await import("../../alex.app/agents/evaluator/workflows/lib/public-task-evidence.js");
     const provider = createPublicTaskEvidenceProvider();
     return provider.getTask(appId, taskId);
   },
