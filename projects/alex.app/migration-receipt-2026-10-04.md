@@ -24,6 +24,21 @@ Pending inbox obligations are distinct from nonconverged Task resources and rema
 
 Use bounded per-App reads of `resource_json.spec.outcome` and inbox identity on continuation. Do not use a single globally sorted 100-row sample, which can hide another App's frontier.
 
+The exact 117-resource frontier now has a bounded semantic triage artifact at
+`projects/alex.app/legacy-frontier-disposition-2026-10-04.json`. It is pinned to
+SHA-256 `46d61e762a8abac6170b4333c7aac30af2661afabe7fe635294a17318ea1cde9`
+of the operator index. The artifact preserves every old Task identity, phase,
+ownership, outcome and exact Condition IDs, and records a proposed boundary and
+next decision without inventing replacement IDs. It identifies 39 entries in
+known overlapping lineages for consolidation after a current-state check, 37
+opaque addressed Host Operations shells that require their retained source input
+before replacement, 35 other improvement obligations needing current-evidence
+review, and 6 obligations that retain May's human-authority/human-commitment
+boundary. `replacement: null` is deliberate: no Task is marked fulfilled,
+superseded, rebound or replaced until its current evidence and relationships
+have been checked and an exact continuation or evidenced no-longer-useful
+disposition is admitted.
+
 ## Candidate source mapping
 
 - Alex owner: `projects/alex.app/agents/alex`.
