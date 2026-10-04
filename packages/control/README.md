@@ -128,8 +128,8 @@ subscriptions in the owning App; only add a public event when that integration
 needs one. Private claims, leases, result admission and timer callbacks remain
 ordinary calls/transactions. There is no general event plugin or second router.
 
-The canonical design is
-[Events and Task Admission](../../../alex.app/docs/2a-design/events.md).
+The [Host source map](../../src/app/README.md) locates event admission and
+Task persistence; the public protocol lives in this package.
 
 ## SQL diagnostics
 

@@ -2,9 +2,9 @@
  * cli-message.ts -- Send a message to an agent from the command line.
  *
  * Usage:
- *   bun src/app/may.ts --send bob --message "do the thing"
- *   bun src/app/may.ts --send bob --message-file /tmp/brief.txt
- *   bun src/app/may.ts --send bob --message "review this" --artifact projects/may-agent.app/docs/3-proposals/foo.md
+ *   bun src/app/may.ts --send worker --message "do the thing"
+ *   bun src/app/may.ts --send worker --message-file /tmp/brief.txt
+ *   bun src/app/may.ts --send worker --message "review this" --artifact /path/to/proposal.md
  *
  * Delivery:
  *   1. Uses the convention daemon socket path:

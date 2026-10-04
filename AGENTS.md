@@ -1,14 +1,21 @@
 # Working on May Host
 
-Read `CONTRIBUTING.md` for checks, review, and release boundaries. This is the
-generic Host repository; App policy and system design live in the sibling
-`alex.app` repository tree, not in a second design folder here.
+Read [CONTRIBUTING.md](CONTRIBUTING.md) for checks, review, and release boundaries.
+This repository implements a generic Host. Its [source map](src/app/README.md),
+[control guide](packages/control/README.md), SDK types and owning tests describe
+the contracts being changed. A standalone checkout must be sufficient for Host
+implementation and portable verification.
 
-Before changing behavior, read the relevant current design through
-`../alex.app/docs/README.md`, especially `1-principles/core-principles.md`
-and `2a-design/system-boundary.md`. In an isolated checkout where those docs
-are unavailable, request the exact design reference needed for the change;
-do not invent a replacement design. Routine CI does not require that tree.
+Keep App policy, named-agent privileges, installation routing and App operating
+procedures outside generic Host behavior. Apps supply meaning and requirements;
+trusted installation configuration selects operational scope and destinations.
+The Host validates those declarations and executes their shared contracts.
+An App move, rename or removal should not require a Host source edit.
+
+For cross-repository changes, include the relevant App requirements and exact
+references in the work item or PR. They are supplied context, not a dependency
+on a particular sibling App or its documentation layout. Preserve generic
+Host safeguards when removing installation-specific assumptions.
 
 - Apps own meaning, desired outcomes, and acceptance. The Host owns storage,
   scheduling, bounded execution, recovery, and exposing results.

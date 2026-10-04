@@ -4,11 +4,15 @@ The Host contains stable mechanics and replaceable capabilities. Start at
 `app-runtime.ts` for process composition, then follow the responsibility below.
 External means outside the core; it can live in the same repository and process.
 
-The canonical [architecture](../../../alex.app/docs/2a-design/architecture.md),
-[core principles](../../../alex.app/docs/1-principles/core-principles.md), and
-[Host/App boundary](../../../alex.app/docs/2a-design/system-boundary.md)
-live in the sibling App tree. This page maps source, not another system design.
-For a standalone checkout, obtain those cited contracts before changing behavior.
+The Host persists work, runs bounded attempts, enforces generic controls and
+exposes results. Apps and agents judge desired outcomes, acceptance and useful
+next actions. Installation composition selects trusted scope and destinations.
+Keep these responsibilities separate: an App's name or directory must not
+select a privileged behavior in generic infrastructure.
+
+This page maps the owning source and tests. App-specific designs belong to the
+App and may be supplied as context for a change; they are not a prerequisite
+for working on this repository.
 
 ## Reading order
 
@@ -95,18 +99,18 @@ A new implementation does not require a universal adapter, manifest or lifecycle
 
 Keep behavioral detail and change status with their owners:
 
-- [Runtime](../../../alex.app/docs/2a-design/runtime.md): startup, readiness,
-  recovery, reload and shutdown.
-- [Task engine](../../../alex.app/docs/2a-design/task-resource-engine.md):
-  claims, waits, result admission, parent review, unavailable handlers and stop.
-- [Workflows](../../../alex.app/docs/2a-design/workflows.md): bounded
-  execution, repair and acceptance.
-- [Storage](../../../alex.app/docs/2a-design/storage.md): authoritative
-  records and transaction boundaries.
-- [Events](../../../alex.app/docs/2a-design/events.md) and
-  [scheduling](../../../alex.app/docs/2a-design/cron.md): admission, wakes,
-  observations and timing.
-- [Message lifecycle](../../../alex.app/docs/2a-design/message-lifecycle.md):
-  Turn, Request, Topic, Task and follow-through semantics.
-- [Simplification review](../../../alex.app/docs/proposals/authority-boundary-simplification.md):
-  conditional feature reductions and remaining organization work.
+- [App definitions](../../packages/sdk/src/app.ts): public registration, input,
+  Task mapping, schedule and observer declarations.
+- [Task and workflow results](../../packages/sdk/src/workflow.ts): the public
+  execution context and returned decisions.
+- [Control guide](../../packages/control/README.md): event admission, typed
+  reads and resource controls.
+- [Conversation handling](conversations/README.md): saved communication state
+  and its relationship to Task execution.
+- [Maintenance](adapters/maintenance/README.md): Host-owned upkeep and its limits.
+- [Verification](../../test/README.md): portable contract coverage and explicit
+  installation checks.
+
+Use the source map above for the lifecycle and persistence owners. Include
+external requirements in a work item's context when the change spans an App;
+do not make these entry points depend on that App's name or manual location.

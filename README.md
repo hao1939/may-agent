@@ -5,9 +5,10 @@ generic **May Host**, not May's reasoning worker. The Host runs agent sessions,
 workflows, task reconciliation, transports, persistence, and the local control
 surfaces used by the apps under `/app/projects`.
 
-All system, product, and runtime design lives in
-[`../alex.app/docs`](../alex.app/docs/README.md). This repository
-contains implementation and tests, without a parallel design tree.
+Host contracts and implementation guidance are available through the source maps,
+SDK types, package guides and tests below. Apps maintain their own policy,
+manuals and operating knowledge. Host development does not require a particular
+App checkout or documentation location.
 
 ## Layout
 
@@ -121,11 +122,12 @@ deployed serving still reads `<PROJECTS_ROOT>/platform/ui` by default.
 - Keep generated output in ignored directories such as `bundle/`.
 - Keep runtime evidence and generated artifacts outside version control.
 - Keep app-specific workflows and tests in their owning project app.
-- Add Gym scenarios to `/app/projects/gym`.
+- Keep domain scenarios and their acceptance checks with the owning App.
 - Delete obsolete scripts when their owner or data model disappears.
 - Prefer package imports over reaching into another package's `src/` tree.
-- Keep every platform and runtime design in `alex.app/docs`; do not create
-  a second design tree here.
+- Keep generic Host contracts with their owning API and implementation guide.
+  Supply App-specific design references as work context, without hard-coding
+  a sibling App path into Host guidance.
 
 ## Requirements
 

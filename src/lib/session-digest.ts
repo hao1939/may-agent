@@ -9,7 +9,6 @@
  * recovery classifier annotates explicit recovery observations; it does not
  * dispatch work or decide whether an App Task is complete.
  *
- * See projects/may-agent.app/docs/2a-design/sessions.md for the contract.
  */
 
 import { getDb } from "./db/connection.js";

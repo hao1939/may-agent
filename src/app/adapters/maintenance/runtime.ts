@@ -4,7 +4,6 @@
  * App model/workflow execution belongs exclusively to Task attempts.
  * Maintenance observations are best-effort and never acknowledge App work.
  *
- * Design: projects/may-agent.app/docs/2a-design/cron.md
  */
 
 import { resolve, dirname } from "node:path";
