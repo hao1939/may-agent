@@ -1,4 +1,5 @@
 import type { SqliteDb } from "../db.js";
+import { withSqliteBusyRetry } from "./busy-retry.js";
 
 const active = new WeakMap<SqliteDb, Array<() => void>>();
 
@@ -19,7 +20,8 @@ export function stateTransaction<T>(db: SqliteDb, operation: () => T): T {
   const nested = parent !== undefined;
   const pending = parent ?? [];
   const checkpoint = pending.length;
-  db.exec(nested ? "SAVEPOINT state_operation" : "BEGIN IMMEDIATE");
+  if (nested) db.exec("SAVEPOINT state_operation");
+  else withSqliteBusyRetry("begin state transaction", () => db.exec("BEGIN IMMEDIATE"));
   active.set(db, pending);
   let result: T;
   try {

@@ -1,5 +1,6 @@
 import type { AppInput, TaskIntent } from "@may-agent/sdk";
 import type { SqliteDb } from "../../../lib/db.js";
+import { stateTransaction } from "../../../lib/db/transaction.js";
 
 export type AppEventAdmissionRoute =
   | {
@@ -204,18 +205,6 @@ function commandFromRow(row: Row): AppEventAdmissionCommand {
   throw new Error(`Invalid App event admission route_kind: ${kind}`);
 }
 
-function withTransaction<T>(db: SqliteDb, operation: () => T): T {
-  db.exec("BEGIN IMMEDIATE");
-  try {
-    const result = operation();
-    db.exec("COMMIT");
-    return result;
-  } catch (error) {
-    db.exec("ROLLBACK");
-    throw error;
-  }
-}
-
 export function getAppEventAdmissionPlan(db: SqliteDb, eventId: number): AppEventAdmissionPlan | null {
   const plan = db
     .prepare(
@@ -311,7 +300,7 @@ export function createAppEventAdmissionPlan(
   const existing = getAppEventAdmissionPlan(db, input.eventId);
   if (existing) return existing;
   const now = input.now ?? Date.now();
-  withTransaction(db, () => {
+  stateTransaction(db, () => {
     db.prepare(
       `INSERT INTO app_event_admission_plans
          (event_id, registry_snapshot_id, registry_generation, status, created_at, updated_at)

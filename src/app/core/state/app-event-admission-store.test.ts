@@ -3,6 +3,7 @@ import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { openDatabase, type SqliteDb } from "../../../lib/db.js";
+import { stateTransaction } from "../../../lib/db/transaction.js";
 import { applyDbSchema, SCHEMA } from "../../../lib/db/schema.js";
 import {
   completeAppEventAdmissionPlan,
@@ -35,6 +36,19 @@ afterEach(() => {
 });
 
 describe("App event admission store", () => {
+  it("joins the owning state transaction and rolls back the plan with it", () => {
+    const database = fixture();
+    expect(() => stateTransaction(database, () => {
+      createAppEventAdmissionPlan(database, {
+        eventId: 101, registrySnapshotId: "boot-a:7", registryGeneration: 7,
+        routes: [{ appId: "sample", kind: "noop", routeId: "no-work", conditionTaskIds: [] }],
+      });
+      expect(getAppEventAdmissionPlan(database, 101)).not.toBeNull();
+      throw new Error("caller rejected");
+    })).toThrow("caller rejected");
+    expect(getAppEventAdmissionPlan(database, 101)).toBeNull();
+  });
+
   it("freezes one route kind and validated payload per App", () => {
     const database = fixture();
     const plan = createAppEventAdmissionPlan(database, {

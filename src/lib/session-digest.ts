@@ -13,6 +13,7 @@
  */
 
 import { getDb } from "./db/connection.js";
+import { withSqliteBusyRetry } from "./db/busy-retry.js";
 import { describeText, sessionMetaRef } from "./artifacts.js";
 import { log } from "./log.js";
 
@@ -107,14 +108,13 @@ function insertDigest(
     fullTask.length <= 2_000
       ? fullTask
       : `${fullTask.slice(0, 2_000)}\n...[full task in session meta; ${fullTask.length} chars]`;
-  const result = db
-    .prepare(
+  const statement = db.prepare(
       `${insertVerb} INTO session_digests
        (sessionId, agent, trigger, step, task, task_ref, task_sha256, task_bytes, what_happened, outcome, still_open,
         files_modified, details, action, action_reason, created_at)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-    )
-    .run(
+    );
+  const result = withSqliteBusyRetry("append session digest", () => statement.run(
       row.sessionId,
       row.agent,
       row.trigger,
@@ -131,7 +131,7 @@ function insertDigest(
       row.action ?? null,
       row.action_reason ?? null,
       row.created_at,
-    );
+    ));
   // node:sqlite returns { changes, lastInsertRowid }, bun returns { lastInsertRowid }
   return Number((result as any).lastInsertRowid ?? 0);
 }
