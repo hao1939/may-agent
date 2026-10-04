@@ -2944,11 +2944,18 @@
         ]
       },
       "outcome": "understood_intent: correct the proof and acceptance-record gap for the May Runtime auto-resume repair while preserving its current no-go disposition. mode: evaluate. priority: proof. Freeze baseline session s_1787581054581_348 with completed child/result artifacts s_1787581089982_349 and s_1787581435493_364, and exact candidate commit f9f56c43f3ad89e32e723eacda51999afbfdc21a with evidence/auto-resume-tool-correlation-20260824/proof-manifest.sha256.json. next_action: obtain exactly one bounded baseline-vs-candidate Gym comparison on the smallest representative real-restart sample, then return a proof-backed rollout proposal before adoption only if it shows clear gain without material regression. Explicitly record that repair-auto-resume-tool-result-correlation-20260824@g4 is an immutable terminal no-go receipt with an unmet comparison acceptance criterion, not completed repair acceptance. constraints: reject broad rollout until Hao approval; rollback is Git revert.",
-      "disposition": "inspect-current-evidence-for-alex-continuation",
+      "disposition": "obsolete-auto-resume-path-reconciled-historical-no-go-preserved-awaiting-may-withdrawal",
       "proposedOwner": "alex",
-      "lineage": null,
-      "replacement": null,
-      "basis": "System-improvement obligation is in Alex scope, but age/status alone cannot prove it remains useful. Check current source, accepted evidence, caller and waits before replacement or supersession.",
+      "lineage": "finish-result-lifecycle",
+      "replacement": {
+        "appId": "alex",
+        "taskId": "input/app_7a279469-7ac8-4bec-894a-9314635bd452",
+        "role": "bounded current-state reconciliation; historical creator disposition remains May-owned",
+        "status": "technical-reconciliation-done-may-creator-withdrawal-pending",
+        "artifact": "projects/alex.app/finish-result-lifecycle-reconciliation-2026-10-04.json",
+        "artifactSha256": "0c4003e4bb5ebbb5902309f2e644112f2c98fd34a0a8c2f8390650ff43f5d11a"
+      },
+      "basis": "Current startup recovery deliberately rejects background resumption of legacy inbox and Task-bound sessions; explicit Task recovery replaces that path. The frozen candidate manifest is recoverable and verified, but the only Gym run was a generic failing alignment benchmark rather than the required independent restart comparison. Preserve the immutable historical no-go and unknown comparison Condition; ask May to withdraw the old proof promise unfulfilled rather than restore auto-resume.",
       "preservation": [
         "latest corrections and acceptance",
         "accepted evidence/artifacts",
@@ -3562,11 +3569,18 @@
         "conditionIds": []
       },
       "outcome": "Repair the May Runtime session completion boundary so every schema-valid non-null `finish().result` is preserved in the canonical session result artifact and remains available to task/App consumers, while malformed or missing results continue to fail closed; freeze the current baseline and exact candidate, obtain one bounded Gym baseline-vs-candidate comparison, and return a proof-backed staged rollout proposal before production adoption.",
-      "disposition": "inspect-current-evidence-for-alex-continuation",
+      "disposition": "obsolete-candidate-reconciled-partial-current-protocol-historical-outcome-unfulfilled-awaiting-may-disposition",
       "proposedOwner": "alex",
-      "lineage": null,
-      "replacement": null,
-      "basis": "System-improvement obligation is in Alex scope, but age/status alone cannot prove it remains useful. Check current source, accepted evidence, caller and waits before replacement or supersession.",
+      "lineage": "finish-result-lifecycle",
+      "replacement": {
+        "appId": "alex",
+        "taskId": "input/app_7a279469-7ac8-4bec-894a-9314635bd452",
+        "role": "bounded current-state reconciliation; historical creator disposition remains May-owned",
+        "status": "technical-reconciliation-done-may-creator-disposition-pending",
+        "artifact": "projects/alex.app/finish-result-lifecycle-reconciliation-2026-10-04.json",
+        "artifactSha256": "0c4003e4bb5ebbb5902309f2e644112f2c98fd34a0a8c2f8390650ff43f5d11a"
+      },
+      "basis": "Current Host preserves accepted structured finish results through finishParams.result and direct managed-agent consumption, with schema validation and duplicate/restart correlation, but does not duplicate them at the historical top-level artifact field. No current enabled-App consumer failure justifies restoring that retired format. The old exact Gym comparison, historical artifacts, create-task exactly-once proof and reviewed rollout remain unproved; ask May to withdraw the old outcome unfulfilled or identify a precise current caller contract.",
       "preservation": [
         "latest corrections and acceptance",
         "accepted evidence/artifacts",
@@ -3852,11 +3866,18 @@
         ]
       },
       "outcome": "Repair the May Runtime finish-to-session terminalization boundary so a schema-valid successful finish immediately and durably removes the session from idle auto-close eligibility, cannot later be overwritten with an idle-timeout error, and converges its owning Task exactly once without replay.",
-      "disposition": "inspect-current-evidence-for-alex-continuation",
+      "disposition": "obsolete-idle-autoclose-path-reconciled-outcome-unfulfilled-awaiting-may-withdrawal",
       "proposedOwner": "alex",
-      "lineage": null,
-      "replacement": null,
-      "basis": "System-improvement obligation is in Alex scope, but age/status alone cannot prove it remains useful. Check current source, accepted evidence, caller and waits before replacement or supersession.",
+      "lineage": "finish-result-lifecycle",
+      "replacement": {
+        "appId": "alex",
+        "taskId": "input/app_7a279469-7ac8-4bec-894a-9314635bd452",
+        "role": "bounded current-state reconciliation; historical creator disposition remains May-owned",
+        "status": "technical-reconciliation-done-may-creator-withdrawal-pending",
+        "artifact": "projects/alex.app/finish-result-lifecycle-reconciliation-2026-10-04.json",
+        "artifactSha256": "0c4003e4bb5ebbb5902309f2e644112f2c98fd34a0a8c2f8390650ff43f5d11a"
+      },
+      "basis": "The historical timed idle-autoclose execution path no longer exists; current immediate/never lifecycle, cancellation and startup-recovery checks support modern terminal safety. The exact CLI execution timed out, its historical artifacts and race canary are absent, and the unknown Condition was never satisfied. Recommend May withdraw the obsolete path unfulfilled; reopen only for a fresh enabled-App terminal-overwrite trace.",
       "preservation": [
         "latest corrections and acceptance",
         "accepted evidence/artifacts",

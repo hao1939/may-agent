@@ -232,3 +232,25 @@ Alex Gym Task `input/appdep_154c005c87f7d8c436e76d9f` completed the bounded curr
 ## Gym request-correlation lineage reconciliation
 
 Activated Bob session `s_1791121065520_0995a42e-296f-4622-a5e9-cc4671d23cbd` reconciled exactly the three `gym-request-correlation` identities in `projects/alex.app/gym-request-correlation-reconciliation-2026-10-04.json` (SHA-256 `d95196cf2cd3e8d7655d77dd28fa9d6d6ad152021edb96ff76d537cbdf1946bd`). The artifact preserves both unknown Conditions, five direct relationships, two caller inputs and all full old specs. Current generic correlation and comparison fixtures pass, but do not implement the old finish-result/addressed-route envelopes or prove any historical live matrix; no technical continuation is warranted without a fresh enabled-App falsifier. One bounded May historical authority/caller disposition is pending as `goal/appdep_8630d39afbc036c94782ceda`; no old outcome is marked fulfilled.
+
+### Finish-result lifecycle reconciliation
+
+Activated Bob session `s_1791121522591_3a5e90f7-22ff-42e8-93dc-a62dfe1fea15`
+reconciled three exact may-agent frontier identities and one explicitly corrected
+Gym child identity in
+`projects/alex.app/finish-result-lifecycle-reconciliation-2026-10-04.json`
+(SHA-256 `0c4003e4bb5ebbb5902309f2e644112f2c98fd34a0a8c2f8390650ff43f5d11a`).
+The artifact preserves all retained specifications, three unknown historical
+Conditions, direct caller/parent/dependency relationships, recovered candidate
+and failed-run evidence, and the distinction between current structured finish
+result handling and the retired top-level result format.
+
+The frontier now classifies the three may-agent paths under
+`finish-result-lifecycle`. Current Host behavior supports only part of the old
+finish-envelope outcome; timed idle auto-close and automatic legacy session
+resume are obsolete paths. None of the three historical outcomes is marked
+fulfilled. Their exact May creator disposition remains pending: May must either
+withdraw the obsolete promises unfulfilled or identify a precise current caller
+contract. No old Condition is satisfied or rebound, no candidate is activated,
+and the explicitly resolved Gym child remains a separate identity rather than a
+fourth may-agent frontier row.
