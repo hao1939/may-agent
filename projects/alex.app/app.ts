@@ -151,6 +151,16 @@ export function evaluationReportInput(event: AppEvent<Record<string, unknown>>):
 /** Route selected reviews and qualified Scout findings into executable Alex work. */
 export function taskInputForEvent(event: AppEvent<Record<string, unknown>>): AppInput | null {
   const data = record(event.data);
+  if (event.type === "workflow.owner.requested") {
+    if (data.projectId !== "alex" || data.reason !== "workflow-blocked") return null;
+    const workflowRunId = typeof data.workflowRunId === "string" ? data.workflowRunId.trim() : "";
+    const blocker = typeof data.blockerReason === "string" ? data.blockerReason.trim() : "";
+    if (!workflowRunId || !blocker) return null;
+    return { kind: "message", data: {
+      message: `Review the blocked standalone Alex workflow ${workflowRunId}: ${blocker}. Inspect retained effects and return relationships before deciding recovery; escalate any unresolved authority blocker to May.`,
+      context: { workflowBlocked: structuredClone(data) },
+    } } as AppInput;
+  }
   if (event.type === "scout.research.qualified") {
     return {
       kind: "message",
@@ -350,6 +360,7 @@ export default defineApp({
   inputSchema,
   task: taskForInput,
   subscriptions: [
+    { id: "standalone-workflow-blocked", event: { type: "workflow.owner.requested", project: "alex" }, toInput: taskInputForEvent },
     {
       id: "evaluation-task-report",
       event: { type: "evaluation.task_report_published" },

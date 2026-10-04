@@ -39,9 +39,8 @@ projects/gym/
 └── .state/                     # generated runs, databases, reports, caches
 ```
 
-Gym owns its CLI, tests, fixtures, and shared scoring implementation. The May
-project retains a thin compatibility wrapper that records May runs in May's
-database; it delegates execution to this project CLI.
+Gym owns its CLI, tests, fixtures, scoring implementation and recording
+wrappers. The wrappers execute this project CLI and record to Gym's database.
 
 Generated state never belongs at project root. Keep approved labels and
 append-only adjudications versioned with their benchmark, archive historical
@@ -122,7 +121,7 @@ bun run gym -- phantom-fix --adapter claude-code
 GYM_AGENT_CMD="my-agent --task-file" bun run gym -- phantom-fix --adapter generic
 
 # May compatibility/recording wrapper
-projects/may-agent/scripts/gym-run.sh phantom-fix --agent coder
+projects/gym/scripts/gym-run.sh phantom-fix --agent coder
 ```
 
 ### Filtering and batch runs
@@ -371,3 +370,7 @@ and runs each phase as a separate agent session against the same work directory.
 - Task wording matters: vague tasks test judgment, precise tasks test execution
 - Workflow variants let you test whether explicit phasing helps
 - Tier assignment: `smoke` for quick core coverage, `standard` for full, `full` for workflows
+
+Recording wrappers use `.state/gym.db` inside this project by default. Set
+`GYM_RESULTS_DB` explicitly to read/write an existing retained result database;
+relocating source does not migrate or delete past runs.

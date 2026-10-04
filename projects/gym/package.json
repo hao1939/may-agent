@@ -15,7 +15,7 @@
     "scenario:run": "bun run build && bun ./src/cli.ts",
     "loop": "bun run build && bun ./src/loop/cli.ts",
     "typecheck": "tsc -p tsconfig.json",
-    "test": "bun run build && bun test ./test && node --test ./benchmarks/may-alignment/score-decision.test.cjs ./benchmarks/may-app-outcome-management/score-task-result.test.cjs",
+    "test": "bun run build && bun test ./test ./scripts && node --test ./benchmarks/may-alignment/score-decision.test.cjs ./benchmarks/may-app-outcome-management/score-task-result.test.cjs",
     "review:may-alignment": "node ./benchmarks/may-alignment/review-suite.cjs",
     "review:may-canary": "bun ./src/loop/canary-review.ts",
     "review:may-learning": "bun ./src/learning/review-cli.ts",

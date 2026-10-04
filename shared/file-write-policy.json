@@ -1,0 +1,22 @@
+{
+  "protectedPaths": [
+    "projects/alex.app/criteria/**",
+    "**/agents/evaluator/knowledge/criteria.md",
+    "**/agents/evaluator/knowledge/adversarial-evaluation.md",
+    "**/agents/evaluator/knowledge/INDEX.md",
+    "**/agents/evaluator/skills/score.md",
+    "**/agents/evaluator/skills/monitor-session.md"
+  ],
+  "grants": [
+    { "paths": ["**"], "writers": ["may"] },
+    { "paths": ["**/agents/*/agent.json"], "writers": ["tech-lead"] },
+    {
+      "paths": [
+        "projects/alex.app/criteria/**",
+        "**/agents/evaluator/knowledge/**",
+        "**/agents/evaluator/skills/**"
+      ],
+      "writers": ["evaluator"]
+    }
+  ]
+}

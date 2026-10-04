@@ -190,3 +190,15 @@ test("comparison inputs attach to the migrated Gym specialist", () => {
     agent: "gym", workflow: "compare-candidate", input: data,
   });
 });
+
+
+test("Alex translates its blocked standalone workflow facts into ordinary owned work", () => {
+  const fact = { type: "workflow.owner.requested", source: "workflow-tool", data: {
+    projectId: "alex", reason: "workflow-blocked", workflowRunId: "wr_blocked", blockerReason: "Missing authority",
+  } };
+  const input = taskInputForEvent(fact);
+  expect(input?.kind).toBe("message");
+  expect(taskForInput({ id: "workflow-report", input } as never).intent).toMatchObject({ agent: "alex", input });
+  expect(taskInputForEvent({ ...fact, data: { ...fact.data, projectId: "another" } })).toBeNull();
+  expect(taskInputForEvent({ ...fact, data: { ...fact.data, workflowRunId: "" } })).toBeNull();
+});

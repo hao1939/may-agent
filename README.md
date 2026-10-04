@@ -33,3 +33,20 @@ otherwise keep them local.
 
 See `projects/alex.app/docs/2a-design/app-root-layout.md` for the current
 root classification and cleanup guidance.
+
+## Host installation declarations
+
+`shared/host.env` selects this installation's interface agent, Conversation App
+and existing Conversation ID. Supply it as environment to the Host and its
+adapters (for Compose, `--env-file /app/shared/host.env`). Keep credential files
+separate. This source file is not loaded automatically by the Host and does not
+change a running container.
+
+`shared/file-write-policy.json` declares domain protections and intended writer
+grants. The Host candidate in PR #326 captures it during definition activation.
+These are file-tool safeguards, not shell or native CLI filesystem permissions.
+Land these declarations before deploying that Host change. Retained Tasks,
+Requests and Conversation history keep their existing identities.
+
+Run installed policy/guide acceptance with `bun run test:deployment`; Gym's
+script tests run from its package. Generic Host tests remain in the Host repo.

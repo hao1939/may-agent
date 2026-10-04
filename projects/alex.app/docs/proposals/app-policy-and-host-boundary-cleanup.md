@@ -1,517 +1,73 @@
 # Keep domain policy in Apps, keep the Host generic
 
-**Supports:** [Host And App Boundary](../2a-design/system-boundary.md). Moves varying domain policy to its owner while retaining common execution guarantees.
+**Supports:** [Host and App boundary](../2a-design/system-boundary.md). App changes
+should improve the system without requiring unrelated Host edits or losing work.
 
-**Choice basis:** [Applicable philosophy and convention](../1-principles/core-principles.md#one-authority-for-each-resource); [compare competing choices](../1-principles/core-principles.md#resolve-conflicting-designs).
+**Choice basis:** [One authority for each resource](../1-principles/core-principles.md#one-authority-for-each-resource)
+and [simple first](../1-principles/core-principles.md#simple-first). Reuse trusted
+installation configuration, definition releases and existing event admission;
+do not add a role registry, another scheduler or a second ownership system.
 
-**Status:** Accepted; documentation and six focused Host source slices are
-implemented for review. The broader cleanup is not complete. Deployment and live
-permission/state changes remain separate and are not authorized here.
-**Reviewed:** September 12–13, 2026. Initial Host baseline `649d801c`; the
-candidates include Task-contract PR #168 and fetched `main` `d7b9d962`
-after #177 and #178 merged; health-source integration now includes `fd2afb83`
-after #179. The discovery table below records the
-initial findings; the application record distinguishes fixes from remaining gaps.
-This is source evidence, not a claim about the running installation.
+**Status:** Accepted direction; the October 4 source candidate is under review
+in Host PR #326 with a companion Apps change. It has not been deployed.
+The [September review](../archive/reviews/app-policy-boundary-baseline-20260913.md)
+retains earlier decisions and evidence. Its old App IDs and rollout status are
+historical, not current instructions.
 
-## Proposal in plain language
+## What the migration exposed
 
-May's maintenance is a domain, just like research or software testing. The App
-that understands that domain should own its knowledge, procedures and decisions.
-The Host should not need to know that an agent is called `tech-lead`, that an
-improvement process uses Gym, or that a particular App is called Host Operations.
+Moving improvement work into Alex should require changing Apps and installation
+wiring. Instead, Host documentation required a particular sibling manual,
+file tools granted privileges by agent name, human interfaces assumed May was
+both agent and App, and reports inferred policy from evaluator names and job
+paths. Deployment tests even imported retired executable Apps.
 
-Keep the existing Host/App split. Remove special treatment and duplicate paths
-that contradict it; do not introduce another framework to enforce the vocabulary.
+The root cause was treating one installation as the system contract. Replacing
+one hard-coded name with another would keep the same dependency.
 
-The intended outcome is a system that is easier to understand and extend:
-adding or replacing a domain App should normally change that App and its
-installation wiring, not generic execution or recovery rules.
+## Candidate changes
 
-This proposal follows [Core Principles](../1-principles/core-principles.md) and
-the [Host/App boundary](../2a-design/system-boundary.md). It is a focused companion
-to [authority-boundary simplification](authority-boundary-simplification.md),
-not a competing Task-runtime cleanup plan.
-
-## The responsibility split
-
-| Responsibility | Home |
+| Decision | Owner and implementation |
 | --- | --- |
-| Understand a domain, choose useful work, judge results and decide what to do about failures | The responsible App and its agents, knowledge, tools and workflows |
-| Persist admitted work, run bounded attempts, enforce controls, recover and return evidence | The Host |
-| Collect provider facts, execute a supported operation or present results | A suitable adapter or tool using existing contracts |
-| Select installed Apps, bind deployment access and grant operational scope | Trusted installation configuration and deployment tooling |
-
-These are responsibilities, not four services. Adapters can remain in the Host
-repository and process. No new configuration framework is proposed.
-
-The distinction is not simply **code versus agent**. App policy can be code:
-"wake tech-lead for this metric" is still domain policy even if it is deterministic.
-"reject a result from an obsolete attempt" is a generic Host rule.
-
-May may still investigate, edit, verify and answer directly within the human's
-authorization. This does not require a handoff to a maintenance App for every
-technical question. Independent work uses the existing Task mechanism; an App
-boundary matters when responsibility, expertise or operational authority differs.
-
-## What the review found
-
-| Area | Source evidence | Why it matters |
-| --- | --- | --- |
-| Host Operations | [App declaration](../../app.ts), [deployment owner check](../../../may-agent/scripts/deploy-receipt.ts), [deployment prompt](../../../may-agent/src/app/adapters/executors/agent-workspace.ts) | An ordinary domain App is also described as a special system authority; generic execution knows its deployment procedure. |
-| Named-agent privileges | [Cross-edit guard](../../../may-agent/src/lib/tools/cross-edit-guard.ts) | `may`, `tech-lead` and `evaluator` receive name-based exceptions. Changing an agent name can change write treatment. |
-| Deputy tool policy | [Policy names](../../../may-agent/src/lib/session-policy.ts), [tool filtering](../../../may-agent/src/lib/agent-execution.ts) | A human-facing role is also a tool restriction preset. Current Conversation execution uses `app-agent-full`; retained deputy names are not proof that current May is restricted to handoffs. |
-| Escalation | [Daemon subscription](../../../may-agent/src/app/daemon-events.ts), legacy `src/lib/escalation-lifecycle.ts` (since removed), [current design](../2a-design/escalation.md) | The docs call old records read-only, but a registered listener still handles resolution and can request a source-session resume or owner review. Actual live usage is not established. |
-| Maintenance and metrics | [Private maintenance adapter](../../../may-agent/src/app/adapters/maintenance/README.md), retired tech-lead jobs (see the [source archive](../../archive/retired-apps/README.md)), [metric cleanup](../../../may.app/design/metric-coverage-audit-20261003.md#legacy-source-cleanup) | The baseline mixed runtime recovery, reviews, digests and metric policy in a private maintenance path. The October 4 source cleanup removes the obsolete metric collector; the other maintenance responsibilities remain separately reviewable. |
-| Learning and Gym | [Coach-specific status](../../../may-agent/src/lib/tools/system-dashboard.ts), [learning design](../2a-design/practice-learning-loop.md) | A particular improvement arrangement appears in generic reporting and whole-system descriptions. Useful mechanisms should not require these particular Apps or agent names. |
-| Project owner and control plane | [Projects contract](../2a-design/projects.md), [legacy command route](../../../may-agent/src/app/command-router.ts) | Docs say historical Markdown is not a runtime path, but the command route still updates legacy project discussion/status and falls back to `tech-lead`. |
-| Task and Conversation descriptions | [System Model](../2a-design/system-model.md), [Message Lifecycle](../2a-design/message-lifecycle.md), [Architecture](../2a-design/architecture.md) | Some status paragraphs still say shared execution is unimplemented, while Architecture records the #158 merge. Old mode names and new lifetime semantics need separate, accurate descriptions. |
-
-The table distinguishes observed code from unverified use. A registered path
-is not proof that it currently receives traffic. Before removing one, inspect
-its callers, configured consumers and retained obligations.
-
-## Proposed changes
-
-### 1. Make maintenance an ordinary App responsibility
-
-Remove **Host Operations** as a core architectural concept. In App-specific
-documentation, describe `may-agent` as "the App that maintains May." Keep the
-technical App ID and existing Task identities; a naming cleanup needs no data migration.
-
-Keep source knowledge, investigation, deployment judgment and acceptance in
-that App. Move deployment-specific agent instructions out of the generic
-executor. Return operation evidence through the existing Task/event/evidence
-contracts rather than teaching every executor a deployment receipt convention.
-
-Keep atomic activation, exact artifact checks, duplicate-effect protection,
-failure receipts and rollback in the deployment tooling. Those safeguards do
-not become optional because the decision belongs to an App.
-
-The current rule naming `may-agent` as deployment owner should become an
-explicit installation policy, not a universal Host contract. The exact narrow
-binding needs an implementation review. Until it exists and is tested, retain
-the current restriction; do not replace it with an agent-supplied App ID or
-permission flag. A different agent name alone must not grant deployment access.
-
-### 2. Separate agent identity from granted capabilities
-
-The Host should enforce an operation's granted scope without inventing trusted
-roles from names such as `may`, `tech-lead` or `evaluator`. App guidance may say
-who normally performs a review; trusted tool construction or installation
-policy determines what that execution may change.
-
-Use the smallest existing tool/configuration seam that can carry the required
-scope. Do not build a general role, identity or permissions service for this
-cleanup. An agent's own editable instructions must not grant broader access.
-
-Preserve protections for shared guidance, other agents' configuration and
-evaluation truth. Existing file-tool guards are not a complete filesystem
-sandbox; do not claim that changing them secures shell or native-agent execution.
-State and test the actual enforcement boundary.
-
-Keep "deputy" as an optional description of May's relationship with the human,
-not a required execution mode. Check current tool-policy callers and retained
-session metadata before retiring old presets. Existing sessions must never
-gain tools merely because an old policy name was removed. Prefer ordinary
-declared tools and the necessary execution restrictions over another preset family.
-
-### 3. Return problems through the existing caller path
-
-Use the merged [caller-feedback design](../archive/reviews/caller-feedback-and-waiting.md): do safe
-local work, return evidence and any needed decision to the exact caller, and
-keep the assignment open until its owner closes it.
-
-"Escalation" can remain ordinary language for asking someone with different
-authority to decide or act. It is not a new resource, mandatory cross-App
-handoff or automatic response to a failed attempt. Different authority can
-exist within one App; a normal cross-App dependency is not necessarily escalation.
-
-Retire the old resolution-to-session-resume path only after mapping its live
-consumers and any unfinished obligations. Replace needed behavior with existing
-Task returns, dependencies or Conditions, not another escalation event pair.
-Keep historical events and trace reads. If an unresolved legacy case cannot
-be safely correlated, expose that limitation for an owner decision rather
-than guessing a replacement Task or silently dropping it.
-
-Update the canonical escalation document to distinguish the merged caller
-contract from retained compatibility behavior. Do not implement #169 again.
-
-### 4. Split mechanical upkeep from domain observation and review
-
-Keep deterministic recovery of Host-owned claims, processes and resources
-with the Host. Required recovery must not depend on installing a maintenance
-agent, enabling its optional schedule or choosing a particular agent name.
-
-Classify each existing private maintenance job by what it does, not by its
-filename or whether it calls a model:
-
-- generic recovery stays with the Host;
-- domain observations use ordinary App observers or declared metric sources;
-- review and digest policy uses the owning App's existing schedules and Tasks;
-- unused compatibility callbacks are removed after the caller check.
-
-Move domain metric definitions to the Apps that understand them. Generic
-execution measurements can remain in an optional reporting component; they
-need not become a new metrics App or a mandatory core service. Decouple that
-component's activation from a `tech-lead` job where the coupling is confirmed.
-The sampler also recognizes particular domain script filenames for batching;
-move such optimizations to their producer or remove them if they do not earn
-their cost, rather than expanding a Host list of special script names.
-
-Preserve workflow/attempt error evidence even with reporting disabled. Missing
-or stale measurements must remain visible as unknown, not zero or healthy.
-This proposal does not replace metric storage or introduce another scheduler.
-
-### 5. Describe learning as a capability, not a required organization
-
-Keep generic mechanisms for reading evidence, editing authorized guidance,
-running isolated checks, activating reviewed source and observing later results.
-Agents can combine these mechanisms in an ordinary Task without a new learning
-controller or a human operating every intermediate step.
-
-Evaluation criteria, coaching methods, benchmark truth, improvement selection
-and promotion rules belong to their owning Apps. Move hardcoded Coach reporting
-there, or remove it if it has no useful consumer. Document the Evaluation/Gym
-arrangement as one integration, not the universal May improvement lifecycle.
-
-Keep useful evaluation summaries and historical evidence. Do not remove Gym
-adapters while Gym still imports them, move App state into a new database, or
-weaken exact-artifact approval/protected-test rules as a side effect of naming
-cleanup. Reuse the existing [extension proposal](agent-behavior-and-capability-extension.md)
-and [scripts retirement boundary](poc-retirement-and-knowledge-20260912.md).
-
-### 6. Give each description one clear meaning
-
-Use the existing terms consistently:
-
-- **Host:** generic execution and state machinery; "runtime" describes that
-  machinery, not another owner.
-- **App:** responsibility and policy, implemented with code and agent guidance.
-- **Project:** goal/context and workspace; not another execution controller.
-- **Agent:** an execution profile, not an implicit administrator.
-- **Task:** the durable execution identity; an accepted result does not itself
-  mean its owner closed the Task.
-- **Attempt:** one bounded execution. A conversational Turn is an attempt in
-  its human-facing context.
-- **Request:** an accepted ask owed an outcome; distinguish it from a merely
-  admitted input or transport receipt.
-- **Condition:** the exact fact or decision being waited for.
-- **Observer:** collects facts; the responsible App decides what they mean.
-
-Keep Event, workflow and evidence terminology where it explains real mechanics.
-Do not flatten failure, waiting, cancellation and successful completion into
-one "done" state. Do not mass-rename persisted fields or public SDK names.
-
-Replace `.app control plane` with "App definition and policy" where a directory
-is meant. Describe optional components as "outside core" when location matters;
-they do not need separate processes. Say `supervisord` or "container process
-manager" when that actual program is meant, not "supervisor" as an agent role.
-
-Retire legacy Markdown project dispatch separately from read-only project
-history. Missing routing should be reported explicitly, not default to
-tech-lead or May. Diagnostic attribution must not silently become work assignment.
-
-## Documentation changes after acceptance
-
-Keep the existing documentation home; this proposal does not move the entire
-design tree just because it is stored beside the maintenance App.
-
-- System Model owns the concise vocabulary; Architecture owns the component map.
-- System Boundary owns the generic responsibility rule, without a required named App.
-- The maintenance App README and operations guidance own its installation-specific procedure.
-- Scheduling, metrics, escalation and learning documents explain their generic
-  contracts and link to concrete App integrations instead of prescribing them.
-- Mark source gaps, pending changes and historical descriptions explicitly.
-  Correct stale "not implemented" paragraphs against the reviewed revision.
-- Keep dated evidence in the existing archive and implementation status with
-  its owning proposal. Do not copy another PR-status inventory into every design page.
-
-The existing Task/HTTP work described in the
-[authority proposal](authority-boundary-simplification.md)
-already covers some vocabulary and evaluation boundaries. Refresh its actual
-merge state before implementation; contribute there rather than starting a
-competing rewrite.
-
-## Delivery order and verification
-
-Use independently reviewable changes, not one large cleanup PR.
-
-| Step | Change | Required evidence |
-| --- | --- | --- |
-| 1 | Align current descriptions and document the policy placement | Links resolve; source-status claims match a named revision; examples still satisfy the real SDK. No behavior or permissions change. |
-| 2 | Remove named-role and deployment-policy coupling in separate focused slices | Granted actions still work; ungranted writes/deployments stay rejected; missing configuration cannot broaden access; deployment evidence and duplicate-effect protection survive interruption. |
-| 3 | Retire legacy escalation/project action paths | Consumer inventory; exact caller delivery; no duplicate resume or lost unfinished obligation; historical reads still work. |
-| 4 | Separate private maintenance, domain metrics and optional learning presentation | Relevant App works through ordinary contracts; removing it preserves unrelated work and truthful failure evidence; no duplicate jobs or collectors. |
-
-Prefer existing regression suites with temporary Apps and stores. Add a focused
-case for each changed boundary; no permanent PoC framework is needed. Refresh
-the source baseline and check overlapping work before each slice.
-
-For absence checks, use an isolated installation without the selected App.
-If the App owns unfinished work, first drain it or exercise the existing removal
-rejection. Optional capability does not authorize abandoning accepted Tasks.
-
-Code and documentation checks establish source behavior only. Production
-permission changes, deployment and live verification require their own explicit
-authority. Do not restart or alter the current installation to review this draft.
-
-## Application record — September 13, 2026
-
-Six source slices implement independent parts of this proposal. #177, #178 and #179
-have since been merged by others; this work has not merged or deployed them.
-The current Task-contract baseline is
-merged #168, not the stale local Host checkout. No production activation, model
-call, permission change or state migration was performed.
-
-| Source slice | Change | Adoption boundary |
-| --- | --- | --- |
-| [#176](https://github.com/hao1939/may-agent/pull/176) | Remove Markdown mutation, owner fallback and misleading comment receipts; retain declared App subscriptions. | Unsupported App intake fails visibly and the browser retains input. |
-| [#177](https://github.com/hao1939/may-agent/pull/177), merged `d7b9d962` | Run exact declared metric commands, optionally sharing an ID-keyed sample envelope; remove Coach-specific dashboard counts. | Old single-sample commands still work. Producer and definition changes must land together to retain batching; installed definitions are not rewritten. |
-| [#178](https://github.com/hao1939/may-agent/pull/178), merged `7ee4aac6` | Return bounded-call circuit-break failures to the caller, retain the exact cancellation reason, and remove misleading tool-error handoff/bypass instructions. | Standalone-job recovery and old restricted tool-policy presets remain compatible. |
-| [#179](https://github.com/hao1939/may-agent/pull/179), merged `fd2afb83` | Move deployment receipt interpretation out of generic agent execution; provide exact fact delivery and a read-only receipt lookup. | Adopt with maintenance-agent guidance. Preserve the current deployment-owner restriction, atomic activation, rollback and duplicate-effect protection. |
-| [#180](https://github.com/hao1939/may-agent/pull/180) | Replace name-based file-write grants with exact reviewed configuration; separate installation protection root from App working directory. | Now targets main after #178. Review needed installation grants before deployment; absent grants deny protected edits. |
-| [#181](https://github.com/hao1939/may-agent/pull/181) | Add a narrow read-only Host health snapshot for ordinary App observers through optional reporting. | Host first, then companion App observer and old-job removal together. No private SQL, new timer, work assignment or healthy verdict. |
-
-The file-grant PR is a deliberate behavior change, not a universal administrator
-role. Its guards cover coding `write`/`edit`, not shell, native CLI, custom code
-or symlink aliases. Granting an `agent.json` permits administration of that
-profile, including its grants. The loader guide states this explicitly.
-
-### Verification and review
-
-- Current-main candidates were tested together on an isolated integration
-  branch: **2,946 passed, three existing installation-only skips, zero failures**
-  across 297 files, including actual browser and daemon tests. This baseline
-  precedes the final #179 review fixes; their refreshed evidence is recorded below.
-- #176's refreshed socket/browser cases passed (three tests, 44 assertions).
-  #180 includes a real loader plus write/edit check of canonical ownership,
-  explicit grants, self-config rejection, invalid configuration and retained
-  old-generation scope. Each Host candidate also passed static checks.
-- Review of #177 found a compatibility issue: a valid legacy sample could
-  contain an extra `samples` field. The parser now gives its top-level `value`
-  precedence, with real command regressions. The review thread is resolved.
-- Review of #179 identified that timer ticks could coalesce away operation
-  evidence and flat IDs were not routing authority. The correction uses
-  `deployment.settled` with canonical `{appId, taskId}` targeting, not
-  a new routing subsystem. Receipt validation also checks common, optional and
-  terminal fields. The published correction at `0043fc8b` passed 33 focused
-  checks with 153 assertions, including actual CLI/daemon admission, later-tick
-  retention and reopened storage. Its Quality and Container checks passed and
-  both review threads were resolved by the session maintaining that PR. This
-  work retained its independent, unpublished correction for audit rather than
-  pushing a competing event convention.
-- #180 was refreshed against main at `b36f65aa`; 63 focused regressions and
-  static checks passed after conflict resolution. Current-head Quality and
-  Container passed; another Copilot review was requested.
-- Hosted Quality and Container results belong to each exact PR head. A prior
-  green run is not proof for a later push; review and merge remain separate.
-
-### Initial project-comment slice
-
-### Applied in this slice
-
-- Current principles, boundary, work model, App descriptions and operations
-  guidance distinguish ordinary maintenance policy from Host mechanics and
-  installation authority. Stable App/Task IDs and existing deployment checks
-  are unchanged; May may still work directly for the human.
-- Scheduling, learning and lifecycle documents distinguish liveness from App
-  review, optional Evaluation/Gym integration from generic capabilities, and
-  merged shared execution from remaining SDK cleanup. The old escalation
-  listener is honestly documented as active, not read-only.
-- The command router no longer appends legacy discussion Markdown, activates
-  project posture, selects a fallback owner or emits `project.nudge`.
-  Historical reads and recorded events remain intact.
-- HTTP no longer converts a missing App or unavailable admission into a
-  fallback comment receipt. The browser shows failure and retains the input;
-  it no longer promises automatic project resumption.
-
-The consumer check changed one implementation decision: the maintenance App
-and Gym deliberately accept comments through declared subscriptions, not
-generic `message` inputs. Their subscription route is **not** the retired
-Markdown handler. It remains available after a definitive message-schema
-rejection. Evaluation and Scout also declare comment subscriptions. A
-record-only fact is still not a completion or work-acceptance claim.
-
-Initial verification at #176 source `d651f3f4` (before the main refresh):
-
-- Three focused router regressions first reproduced legacy Markdown/status
-  mutation. They now cover shared and agent-local history, with and without
-  a declared durable consumer, retaining the original event and no nudge.
-- The socket test now exercises a real App subscription, Task and accepted
-  isolated-workflow result. Browser coverage exercises missing-App rejection,
-  retained text/history, declared App handling, same-key receipt reuse and
-  the existing shipped chat renderer. The old filesystem integration assertion
-  is consolidated into the focused regressions, not preserved as a second policy.
-- Host `bun run ci`: **2,921 passed, three installation-only skips, zero
-  failures**, including real socket/daemon and Chrome tests. The first full
-  run exposed three legacy expectations; the supported-path tests replaced
-  them. There were no automatic retries or new skips.
-- Companion `bun run check:may-design`: passed; `bun test
-  ./projects/may-agent.app/app.test.ts`: **13 passed**. These check the local
-  documentation/App tree; they do not certify a deployed installation.
-- Hosted checks and independent review are recorded on #176, separately
-  from local validation. Do not infer merge or deployment from this record.
-
-### Read-only installation audit
-
-The inspected installation had no legacy escalation lifecycle events, no
-escalation event-pair rows, and no `session-recovery` workflow runs. Its 514
-recorded sessions were all bounded `call` sessions: 456 done, 48 error and ten
-interrupted. This supports fixing current call recovery without treating it
-as permission to delete compatibility for every installation.
-
-The audit also found 23 metric-snapshot triggers and 39 saved active metric
-definitions referencing scripts from the removed local AKS App; neither
-producer script exists locally. No definitions were retired, scripts restored
-or local AKS work restarted. Those records are an installation-data cleanup
-decision, not a reason to return healthy zeros or add filename policy.
-
-The legacy session-policy metadata was not comprehensively audited; old
-restricted presets remain in place. All of these observations are a
-point-in-time read, not a live migration or a claim about other installations.
-
-### Read-only Host health and ordinary maintenance observation
-
-The approved read is implemented in #181, Host source `35294614`, through
-`ObserverContext.read.hostHealth`. Its default window is one hour, maximum one
-day. It reports retained running and ended executions, separate outcome counts,
-missing end timestamps and selected Host failure event counts. Totals are not
-capped; coverage is explicit and fixed categories keep the report small. It is
-aggregate-only, with no execution, event, Task or App identifiers or detail lists.
-It reports executions and events, including retries and nested calls, not unique
-Tasks, incidents, product failures or an overall health verdict. It reveals no
-transcripts, configuration, task text, raw event data or provider error text.
-
-The optional reporting adapter supplies the read. Missing or failed reporting
-rejects rather than returning healthy zeros. Its SQL runs in a read-only
-snapshot; failure preserves the caller's surrounding transaction. No collector,
-database table, scheduler, global workflow capability or policy hook was added.
-
-The companion App candidate is commit `e79c7f44f7`, refined for aggregate-only
-reporting at `01e036c139`, on local branch
-`refactor/maintenance-health-observer-20260913`, in isolated worktree
-`/home/hao/workspace-worktrees/app-maintenance-health-20260913`. The active App
-tree is unchanged. Its 80-line observer replaces the private health job and
-signal files with returned facts and existing observation memory. It routes
-changed delivery/resume symptoms and incomplete execution evidence through the
-existing owner-review Task. Domain failures stay visible without automatically
-assigning every failed execution to maintenance. Only its exact observer's
-read failure gets the unavailable-health owner request.
-
-Unchanged signal families do not repeat the request; counts remain in each fact.
-A cleared time window is not proof of repair. Restart/reload may replay a
-visible symptom to the same stable Task; no exactly-once incident guarantee or
-separate durable suppression registry is claimed.
-
-This is deliberately narrower than the retired private job: metric breach and
-stall routes remain, as do separate escalation, session-recovery, metric-snapshot
-and daily-digest handlers. Legacy owner-message/orphan-pair aging and special
-blocked-workflow suppression are not reimplemented. Those heuristics do not
-become Host policy or new snapshot fields. The candidate README records this
-tradeoff and paired adoption order; it is not described as a lossless migration.
-The deleted handler and old tests remain recoverable in Git; production files,
-generated evidence and accepted Tasks are untouched.
-
-Review found a material composed-capability leak in the first candidate:
-diagnostic execution IDs could be passed to the existing unscoped execution
-reader to retrieve private content. Checking only the serialized snapshot did
-not catch that interaction. The fix removes all resource IDs and detail lists,
-including event IDs, rather than adding a permission layer or claiming that
-opaque-looking IDs are safe. Regression assertions now pin the complete allowed
-shape using foreign executions and private stored content. Detailed diagnosis
-requires separately authorized evidence access, not this global summary.
-
-The reviewer also found an old reusable observer fixture missing the new method.
-It and the observer-runtime factories now use the shared SDK context helper.
-An integration case checks both reject-by-default reporting and explicit reader
-injection. Both findings are fixed; the published thread is replied to/resolved
-and Copilot re-review is requested.
-
-The follow-up review requested non-forgeable event provenance. This was evaluated
-as a boundary limitation, not a reason to add identity machinery to reporting.
-Source `2e47e0ac` documents that `runtimeFailures` counts recorded event types,
-not authenticated Host failures or incidents. An integration regression publishes
-a synthetic failure-type fact through an ordinary observer and confirms the
-reported count. Apps already can publish those facts or request owner review;
-the new read grants no additional action authority. App judgment must verify the
-cause before acting. Producer authentication and untrusted-code isolation remain
-separate work; a forgeable source label would not provide that guarantee.
-
-Verification so far:
-
-- Stable-main full Host CI: **2,946 passed, three installation-only skips, zero
-  failures**. An earlier run overlapped a main merge and failed two changed
-  contract tests; it is not used as proof. The stable run passed without changing
-  those contracts. Pre-review `d75c1b9b` full CI, after extra window and
-  failed-read transaction regressions and formatting: **2,947 passed, three
-  installation-only skips, zero failures; 12,877 assertions across 297 files**.
-- Review-fix focused report/runtime/fixture/SDK/real-daemon checks:
-  **23 passed, 66 assertions**. The daemon proof follows an ordinary
-  observer read through a recorded fact and declared App subscription to an
-  accepted workflow result. It makes no model call.
-- Companion manifest, routing and observer checks: **22 passed, 117 assertions**;
-  source and new observer tests type-check against the new Host SDK, and the
-  App bundles. This does not claim whole-installation type compatibility.
-- Aggregate-only source `35294614`: full local CI **2,948 passed, three
-  installation-only skips, zero failures; 12,883 assertions across 297 files**.
-  The 11 observer-runtime tests also pass. Current-head Quality and Container
-  passed. #181 is ready for review with both initial findings fixed; Copilot
-  re-review is requested. Merge and final maintainer review remain separate.
-
-Main advanced during review: source `a1cd8027` merges `fd2afb83` (#179) without
-changing the health API or reader. Its full CI passed **2,960 tests, three
-installation-only skips, zero failures; 12,914 assertions across 298 files**;
-Quality and Container passed. Source `2e47e0ac` then adds the provenance contract
-clarification and regression. Its final full CI passed **2,961 tests, three
-installation-only skips, zero failures; 12,916 assertions across 298 files**.
-Current-head Quality and Container passed. #181 is ready for review, both initial
-bugs are fixed and the provenance suggestion is dispositioned; final Copilot
-re-review is requested, not yet claimed complete. The companion App's provenance
-guidance is committed at `3a90521523`. Final maintainer review, merge and paired
-installation adoption remain separate.
-
-Adoption requires the new Host first and then the App definition plus cron
-removal together, with no overlapping old job. No live restart, permission,
-metric-definition or state changes were made.
-
-### Still open, deliberately not weakened
-
-| Boundary | Remaining work and reason |
-| --- | --- |
-| Installation permission adoption | #180 supplies the narrow trusted file scope, but no installed grant list is changed. The retained evaluation-path list is a protection floor, not a privileged name. Old deputy policies cannot be removed without checking retained sessions. |
-| Deployment authority | #179 removes the generic executor's receipt prompt and scanner. The exact open `may-agent` Task requirement remains until a reviewed trusted installation binding replaces it. Agent-supplied IDs or flags must not broaden this authority. |
-| Legacy escalation | #178 fixes bounded calls, not standalone jobs. The legacy lifecycle subscriber, configured escalation handler and session-recovery workflow still have source consumers. Retire them with correlated obligations and paired App/Host adoption, never by assuming a quiet database proves global disuse. |
-| Private maintenance and metric policy | #181 and companion `e79c7f44f7` supply the health-observer source path; paired installation adoption remains pending. Session cleanup, global metric queries and the daily digest still use private handlers. Their supported boundaries remain separate work; do not export SQL/runtime context, duplicate timers, or replace deterministic sampling with model polling. |
-| Reporting activation | #177 removes filename policy and Coach counts, not the collector's dependency on `trigger.metrics-snapshot` cadence. Decoupling that cadence must retain one collector and honest due/failure behavior. |
-
-These are remaining source/adoption gaps, not completed work. The reviewer
-approved a narrow read-only Host health snapshot for ordinary App observers on
-September 13. The source candidate now uses optional reporting and existing
-observer reads, with bounded facts, explicit coverage and visible failure when unavailable.
-No SQL, raw private messages, thresholds, work assignment or runtime controls
-belong in that contract. This does not authorize live configuration edits,
-dropping accepted obligations or changing deployment authority.
-
-## What makes this worthwhile
-
-The benefit is fewer hidden exceptions, duplicate action paths and choices a
-human or agent must remember. The cost is reviewing existing consumers and
-moving policy without losing safeguards. Extra indirection or a configurable
-replacement for every old conditional would defeat the purpose.
-
-We are done when the selected boundaries have one clear owner, ordinary Apps
-can use them without privileged names, and removing an optional App leaves
-unrelated work correct. We do not need zero historical terms or zero domain
-examples in the repository. If a relocation adds machinery without removing a
-real coupling, leave it out or narrow the feature instead.
-
-## Decisions requested from reviewers
-
-1. Is the proposed Host/App/installation responsibility split clear and sufficient?
-2. Do we agree to remove Host Operations as a core concept while retaining the
-   existing maintenance App and its stable technical identity?
-3. Are there necessary callers or obligations that prevent retiring the named
-   legacy paths? Identify the exact consumer, not only a historical feature name.
-4. Does the proposed sequence preserve useful safeguards without introducing
-   another permissions, escalation, maintenance or learning framework?
+| Where human input and explicit notices go | Installation environment selects agent, App and retained Conversation independently. Console, Telegram, WebUI and control clients use that binding. Missing binding is explicit; a headless Host still runs Tasks. |
+| Who can edit domain-protected files | Installation commits `shared/file-write-policy.json`. Host captures it in the definition release and preserves it when execution changes directory. Names alone confer no rights. |
+| Which agents are available | Runtime and WebUI reuse enabled-App discovery, including `.disabled`. |
+| What a metric or failed workflow means | Host preserves declared ownership and execution facts. An unattributed metric belongs to `system:host`; its label cannot assign an agent. Apps translate subscribed workflow facts into their own input schemas. |
+| Whether quiet activity needs review | App policy decides. Generic reports show observations without assuming a required heartbeat or evaluation for every session. |
+| Where domain tooling and acceptance checks live | Gym owns its runners and recording wrappers. Apps own their policy and acceptance tests. Host CI uses portable contract fixtures. |
+| Which manual a Host contributor must read | Local Host source maps, contracts and tests suffice. Relevant App requirements arrive in the assignment or PR context. |
+
+File tools retain generic protection for shared guidance and agent configuration.
+The installation preserves its previous intended grants explicitly and protects
+Alex's evaluation criteria. The policy file cannot grant its writer permission
+to rewrite itself through those tools. Shell and native CLI access remain a
+separate enforcement boundary; these file guards are not a filesystem sandbox.
+
+Task-owned workflow failures continue through their existing Task result and
+recovery path. A blocked standalone workflow publishes `workflow.owner.requested`
+with its exact run and owner; the receiving App declares the translation. Host
+must not fabricate `owner-review` for arbitrary App schemas.
+
+## Adoption and remaining work
+
+Commit the companion policy and provide `shared/host.env` to the installation
+before rolling out the reviewed Host. Preserve `may:primary` for this installation;
+new destinations are configuration choices, not a history migration. A retained definition release created by an older Host does not contain this
+file: roll out under maintenance and explicitly reload the companion Apps
+revision before resuming work. Reload selects a new immutable policy generation;
+already prepared execution retains its captured grants. Neither source edit rewrites retained work or history.
+
+Gym recording now defaults to its own `.state/gym.db`. `GYM_RESULTS_DB` explicitly
+selects an older retained database. No database is moved or deleted by this change.
+Retired Gym-emission and May-cron tests targeted removed workflows; current Alex
+comparison tests and generic Host emission/admission tests own current behavior.
+
+Verification must cover independent agent/App names, missing destination,
+disabled-App discovery, policy capture and execution rebinding, current App
+admission, and retained result/retry behavior. Source checks establish these
+contracts, not model judgment or live adoption.
+
+The migration of retained legacy Tasks is still Alex's work. Private maintenance
+capabilities and optional retained reporting schemas need their own consumer
+reviews before removal. Do not infer that zero hard-coded names establishes
+complete isolation, or move a safeguard without its consumer and replacement.

@@ -23,6 +23,7 @@
     "gym:loop": "bun --cwd=projects/gym run loop",
     "gym:review": "bun --cwd=projects/gym run review:may-alignment",
     "test": "bun scripts/run-app-tests.ts",
+    "test:deployment": "bun test ./shared/tests/deployment/ ./shared/tests/file-write-policy.test.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "check:event-graph": "bun projects/may-agent/scripts/event-graph-check.ts"
   }

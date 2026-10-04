@@ -32,6 +32,35 @@ scope. [Agent ownership and App scope](agents.md#task-ownership-and-app-scope)
 distinguishes that authority from carrying the Task's outcome. Current durable
 admission remains App-scoped; standalone Tasks are an explicit follow-up.
 
+## Installation declarations
+
+An App move, rename or removal must not require changing generic Host source.
+Agent names identify actors; they do not confer permissions or select a work
+lifecycle. An App address selects scope, policy and context. Installation
+configuration chooses destinations and operational grants; Host validates and
+executes them. This lets ordinary Apps evolve without hidden privileged names.
+
+The October 4 candidate in Host #326 uses the existing environment for human
+interface wiring and one captured file-tool policy declaration. Agent identity,
+Conversation App and retained Conversation ID are independent. The agent asks
+for a message or reply; adapters handle these coordinates. Without a destination,
+headless work remains valid and a human notification fails explicitly.
+
+Domain file protections and writer grants live in
+`shared/file-write-policy.json`, captured with the selected definition release.
+Generic shared-guidance and cross-agent configuration safeguards remain even
+without that file. Rebinding tools to a Task checkout preserves the captured
+policy. These guards apply to file tools, not shell/native CLI access.
+
+Apps interpret metric breaches and blocked-workflow facts through their existing
+subscriptions and input schemas. Host never derives agent ownership from a
+metric label or invents a domain request merely from an App ID. Reports describe
+observed activity; App policy decides whether absent activity needs action.
+
+**Source/adoption status:** candidate, not deployed. See the
+[boundary cleanup](../proposals/app-policy-and-host-boundary-cleanup.md) for
+integration order, enforcement limits and remaining obligations.
+
 ## The boundary in one flow
 
 ```text

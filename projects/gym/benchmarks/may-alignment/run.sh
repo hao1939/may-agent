@@ -3,7 +3,7 @@ set -euo pipefail
 
 HERE="$(cd "$(dirname "$0")" && pwd)"
 REPO_ROOT="$(cd "$HERE/../../../.." && pwd)"
-MAY_PROJECT="$REPO_ROOT/projects/may-agent"
+GYM_PROJECT="$REPO_ROOT/projects/gym"
 TRIALS=3
 
 if [[ "${1:-}" == "--trials" ]]; then
@@ -20,5 +20,5 @@ for ((trial = 1; trial <= TRIALS; trial++)); do
     args+=(--scenario "$scenario")
   done
   echo "May alignment benchmark: trial $trial/$TRIALS"
-  GYM_AGENTS_ROOT="$REPO_ROOT/agents" "$MAY_PROJECT/scripts/gym-baseline.sh" "${args[@]}"
+  GYM_AGENTS_ROOT="$REPO_ROOT/agents" "$GYM_PROJECT/scripts/gym-baseline.sh" "${args[@]}"
 done
