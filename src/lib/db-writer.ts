@@ -770,7 +770,10 @@ export class DbWriter {
           if (existing?.idempotency_hash !== inputHash) {
             throw new Error(`Idempotency key ${idempotencyKey} was already used with different event input`);
           }
-          const retryEvent = event as AgentEvent & Record<string, unknown>;
+          const retryEvent = event as AgentEvent & Record<string, unknown> & {
+            [EVENT_REDELIVERY_REQUIRED]?: boolean;
+            [EVENT_APP_ADMISSION_REDELIVERY_REQUIRED]?: boolean;
+          };
           if (typeof existing.source === "string") retryEvent.source = existing.source;
           if (typeof existing.owner === "string") retryEvent.owner = existing.owner;
           if (typeof existing.timestamp === "number") retryEvent.timestamp = existing.timestamp;
@@ -800,11 +803,15 @@ export class DbWriter {
             // Global Event acceptance and App admission are independent receipts.
             // Limit this producer retry to the outstanding App route; unrelated
             // durable routes may already have performed their effects.
-            Object.defineProperty(event, EVENT_REDELIVERY_REQUIRED, { value: true, configurable: true });
-            Object.defineProperty(event, EVENT_APP_ADMISSION_REDELIVERY_REQUIRED, {
-              value: true,
-              configurable: true,
-            });
+            if (!retryEvent[EVENT_REDELIVERY_REQUIRED]) {
+              Object.defineProperty(event, EVENT_REDELIVERY_REQUIRED, { value: true, configurable: true });
+            }
+            if (!retryEvent[EVENT_APP_ADMISSION_REDELIVERY_REQUIRED]) {
+              Object.defineProperty(event, EVENT_APP_ADMISSION_REDELIVERY_REQUIRED, {
+                value: true,
+                configurable: true,
+              });
+            }
           } else if (
             existing.delivery_status === "pending" ||
             existing.delivery_status === "unhandled" ||

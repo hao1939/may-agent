@@ -7,7 +7,12 @@ import { DbWriter } from "../../lib/db-writer.js";
 import { closeDb, getDb } from "../../lib/requests.js";
 import { fakeTaskAttacher } from "../../../test/fixtures/task-attachment.js";
 import { AppRegistry } from "../core/apps/registry.js";
-import { EventBus, EVENT_DELIVERY_RESULT, EVENT_ROW_ID } from "../core/events/bus.js";
+import {
+  EventBus,
+  EVENT_DELIVERY_RESULT,
+  EVENT_REDELIVERY_REQUIRED,
+  EVENT_ROW_ID,
+} from "../core/events/bus.js";
 import { getAppEventAdmissionPlan } from "../core/state/app-event-admission-store.js";
 import { startAppInboxRuntime, type AppInboxRuntime } from "./app-inbox-runtime.js";
 
@@ -206,7 +211,11 @@ test("an idempotent duplicate still runs App admission when another route accept
       db, bus, registry, persistDir: root, schedulesEnabled: false, deferStart: true,
       attachTask: fakeTaskAttacher(db, (current) => ({ taskId: `work/${current.inboxInputId ?? current.inputId}` })),
     });
-    const duplicate = bus.emit({ ...input, data: { ...input.data } });
+    const duplicateInput = { ...input, data: { ...input.data } };
+    // Producer recovery may already carry a non-configurable retry marker.
+    // App-only duplicate routing must honor it rather than redefining it.
+    Object.defineProperty(duplicateInput, EVENT_REDELIVERY_REQUIRED, { value: true });
+    const duplicate = bus.emit(duplicateInput);
     expect(duplicate[EVENT_ROW_ID]).toBe(eventId);
     await until(() => db.prepare("SELECT app_admission_pending FROM events WHERE id = ?").get(eventId)?.app_admission_pending === 0);
     await until(() => db.prepare("SELECT COUNT(*) AS count FROM app_inbox_items").get()?.count === 1);
