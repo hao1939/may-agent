@@ -176,28 +176,34 @@ export function listAppConversationMessages(
     if (message && !eventMessagesById.has(message.id)) eventMessagesById.set(message.id, message);
   }
   const conversationRows = listAppInboxConversationItems(db, appId, conversationId, limit, exactTopicId);
-  const assignmentByInput = new Map<string, { appId: string; taskId: string; outcome: string }>(
-    conversationRows.length
-      ? db
-          .prepare(
-            `SELECT link.origin_input_id, link.task_app_id, link.task_id,
-              json_extract(task.resource_json, '$.spec.outcome') AS outcome
-             FROM (${conversationTaskLinksSql("caller")}) link
-             JOIN app_tasks task ON task.app_id = link.task_app_id AND task.task_id = link.task_id
-             WHERE link.origin_input_id IN (${conversationRows.map(() => "?").join(",")})`,
-          )
-          .all(...conversationRows.map(({ id }) => id))
-          .flatMap((row) => {
-            const inputId = typeof row.origin_input_id === "string" ? row.origin_input_id : "";
-            const taskAppId = typeof row.task_app_id === "string" ? row.task_app_id : "";
-            const taskId = typeof row.task_id === "string" ? row.task_id : "";
-            const outcome = typeof row.outcome === "string" ? row.outcome.trim() : "";
-            return inputId && taskAppId && taskId && outcome
-              ? [[inputId, { appId: taskAppId, taskId, outcome }] as const]
-              : [];
-          })
-      : [],
-  );
+  const assignmentByInput = new Map<string, Array<{ appId: string; taskId: string; outcome: string }>>();
+  if (conversationRows.length) {
+    const assignments = db
+      .prepare(
+        `SELECT origin.id AS origin_input_id, admission.app_id AS task_app_id,
+          CAST(json_extract(admission.admission_json, '$.taskId') AS TEXT) AS task_id,
+          json_extract(task.resource_json, '$.spec.outcome') AS outcome
+         FROM app_inbox_items origin
+         JOIN app_task_admissions admission INDEXED BY idx_app_task_admissions_input
+           ON admission.task_id = 'conversation-follow-up:' || origin.app_id || ':' || origin.id
+          AND CAST(json_extract(admission.admission_json, '$.inputEvent.data.request.id') AS TEXT) = origin.id
+         JOIN app_tasks task ON task.app_id = admission.app_id
+          AND task.task_id = CAST(json_extract(admission.admission_json, '$.taskId') AS TEXT)
+         WHERE origin.app_id = ? AND origin.conversation_id = ?
+          AND CAST(json_extract(admission.admission_json, '$.taskId') AS TEXT) <> origin.execution_task_id
+          AND origin.id IN (${conversationRows.map(() => "?").join(",")})`,
+      )
+      .all(appId, conversationId, ...conversationRows.map(({ id }) => id));
+    for (const row of assignments) {
+      const inputId = typeof row.origin_input_id === "string" ? row.origin_input_id : "";
+      const taskAppId = typeof row.task_app_id === "string" ? row.task_app_id : "";
+      const taskId = typeof row.task_id === "string" ? row.task_id : "";
+      const outcome = typeof row.outcome === "string" ? row.outcome.trim() : "";
+      if (!inputId || !taskAppId || !taskId || !outcome) continue;
+      const assignment = { appId: taskAppId, taskId, outcome };
+      assignmentByInput.set(inputId, [...(assignmentByInput.get(inputId) ?? []), assignment]);
+    }
+  }
   const targetedTaskIds = new Set(conversationRows.flatMap((item) => (item.targetTaskId ? [item.targetTaskId] : [])));
   const explicitlyCommunicatedInputs = new Set(
     conversationRows.length
@@ -232,6 +238,27 @@ export function listAppConversationMessages(
           ...(item.topicId ? { topicId: item.topicId } : {}),
         },
         createdAt: item.createdAt,
+      });
+    }
+    // The admitted Task is canonical bookkeeping, independent of whether the
+    // App also chose explicit communication or produced a fallback response.
+    for (const assignment of assignmentByInput.get(item.id) ?? []) {
+      messages.push({
+        id: `assignment:${item.id}:${assignment.appId}:${assignment.taskId}`,
+        sequence,
+        author: { kind: "agent", id: appId },
+        text: boundedConversationText(
+          `Assigned to ${assignment.appId}: ${assignment.outcome}\nTask: ${assignment.appId}/${assignment.taskId}`,
+        ),
+        metadata: {
+          ...(item.channel ? { channel: item.channel } : {}),
+          ...(item.channelTargetId ? { channelTargetId: item.channelTargetId } : {}),
+          ...(item.channelThreadId ? { channelThreadId: item.channelThreadId } : {}),
+          requestId: item.id,
+          ...(item.topicId ? { topicId: item.topicId } : {}),
+          followTask: { appId: assignment.appId, taskId: assignment.taskId },
+        },
+        createdAt: item.completedAt ?? item.updatedAt,
       });
     }
     // Explicit Task communication owns publication independently of input settlement.
@@ -273,26 +300,6 @@ export function listAppConversationMessages(
       },
       createdAt: item.completedAt ?? item.updatedAt,
     });
-    const assignment = assignmentByInput.get(item.id);
-    if (assignment) {
-      messages.push({
-        id: `assignment:${item.id}`,
-        sequence,
-        author: { kind: "agent", id: appId },
-        text: boundedConversationText(
-          `Assigned to ${assignment.appId}: ${assignment.outcome}\nTask: ${assignment.appId}/${assignment.taskId}`,
-        ),
-        metadata: {
-          ...(item.channel ? { channel: item.channel } : {}),
-          ...(item.channelTargetId ? { channelTargetId: item.channelTargetId } : {}),
-          ...(item.channelThreadId ? { channelThreadId: item.channelThreadId } : {}),
-          requestId: item.id,
-          ...(item.topicId ? { topicId: item.topicId } : {}),
-          followTask: { appId: assignment.appId, taskId: assignment.taskId },
-        },
-        createdAt: item.completedAt ?? item.updatedAt,
-      });
-    }
   }
 
   // Command views remain in the event journal, but only the newest view for

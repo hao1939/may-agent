@@ -2872,13 +2872,53 @@ test("invalid handoff is repairable after reopen and only complete referenced in
     acceptance: assignment.acceptance,
     input: { kind: "review", data: assignment },
   });
-  const assignmentMessage = readAppConversationResource(f.db, app.id, "primary").messages.find(
-    ({ metadata }) => metadata?.followTask?.appId === worker.id && metadata.followTask.taskId === "review",
-  );
-  expect(assignmentMessage).toMatchObject({
+  const assignmentPlan = f.db
+    .prepare(
+      `EXPLAIN QUERY PLAN SELECT origin.id
+       FROM app_inbox_items origin
+       JOIN app_task_admissions admission INDEXED BY idx_app_task_admissions_input
+         ON admission.task_id = 'conversation-follow-up:' || origin.app_id || ':' || origin.id
+        AND CAST(json_extract(admission.admission_json, '$.inputEvent.data.request.id') AS TEXT) = origin.id
+       JOIN app_tasks task ON task.app_id = admission.app_id
+        AND task.task_id = CAST(json_extract(admission.admission_json, '$.taskId') AS TEXT)
+       WHERE origin.app_id = ? AND origin.conversation_id = ?
+        AND CAST(json_extract(admission.admission_json, '$.taskId') AS TEXT) <> origin.execution_task_id
+        AND origin.id IN (?)`,
+    )
+    .all(app.id, "primary", "review-request")
+    .map((row) => String(row.detail));
+  expect(assignmentPlan).toEqual(expect.arrayContaining([
+    expect.stringContaining("app_inbox_items"),
+    expect.stringContaining("idx_app_task_admissions_input"),
+    expect.stringContaining("app_tasks"),
+  ]));
+  expect(assignmentPlan.every((detail) => !detail.startsWith("SCAN "))).toBe(true);
+  const findAssignment = () =>
+    readAppConversationResource(f.db, app.id, "primary").messages.find(
+      ({ metadata }) => metadata?.followTask?.appId === worker.id && metadata.followTask.taskId === "review",
+    );
+  const fallbackAssignment = findAssignment();
+  expect(fallbackAssignment).toMatchObject({
     text: `Assigned to ${worker.id}: ${assignment.outcome}\nTask: ${worker.id}/review`,
     metadata: { followTask: { appId: worker.id, taskId: "review" } },
   });
+  f.db.run("INSERT INTO events (event_type, source, owner, data, timestamp) VALUES (?, ?, ?, ?, ?)", [
+    "conversation.message.created",
+    "app-inbox",
+    `app:${app.id}`,
+    JSON.stringify({
+      appId: app.id,
+      conversationId: "primary",
+      messageId: "result:review-request",
+      author: { kind: "agent", id: app.id },
+      text: "I will review the referenced design.",
+      metadata: { requestId: "review-request" },
+      communication: { inputId: "review-request" },
+    }),
+    Date.now(),
+  ]);
+  expect(findAssignment()).toEqual(fallbackAssignment);
+  expect(findAssignment()).toEqual(fallbackAssignment);
   expect(JSON.stringify(saved.spec.input).length).toBeLessThan(1_000);
   expect(readFileSync(documentPath, "utf8")).toContain("Required: preserve source identity.");
 });
