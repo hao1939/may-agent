@@ -24,7 +24,7 @@ export function findTaskEmission(
       .prepare(
         `SELECT id AS eventId, idempotency_key AS idempotencyKey FROM events
      WHERE event_type = ? AND ingress_source = ? AND idempotency_scope = ?
-       AND idempotency_key IN (?, ?) AND project_id = ? AND task_id = ?
+       AND idempotency_key IN (?, ?) AND idempotency_key != '' AND project_id = ? AND task_id = ?
      ORDER BY idempotency_key = ? DESC LIMIT 1`,
       )
       .get(type, `app-task:${scope.appId}`, scope.appId, key, legacyKey, scope.appId, scope.taskId, key) as {

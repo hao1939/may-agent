@@ -1,4 +1,4 @@
-import { afterEach, expect, test } from "bun:test";
+import { afterEach, expect, spyOn, test } from "bun:test";
 import { mkdtempSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
@@ -49,4 +49,21 @@ test("event persistence joins the caller transaction and can retry after its rol
   expect(
     db.prepare("SELECT delivery_status FROM events WHERE event_type = 'conversation.message.created'").all(),
   ).toEqual([{ delivery_status: "accepted" }]);
+});
+
+test("input preparation fails before taking the Event writer slot", () => {
+  const root = mkdtempSync(join(tmpdir(), "may-event-prepare-"));
+  roots.push(root);
+  const db = getDb(root);
+  const writer = new DbWriter(root);
+  const exec = spyOn(db, "exec");
+  const payload: Record<string, unknown> = { idempotencyKey: "invalid" };
+  payload.circular = payload;
+  try {
+    expect(() => writer.handler({ type: "fixture.saved", source: "fixture", owner: "app:sample", data: payload })).toThrow();
+    expect(exec.mock.calls.some(([sql]) => sql === "BEGIN IMMEDIATE")).toBe(false);
+    expect(db.prepare("SELECT COUNT(*) AS count FROM events").get()).toEqual({ count: 0 });
+  } finally {
+    exec.mockRestore();
+  }
 });
