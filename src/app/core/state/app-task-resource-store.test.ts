@@ -6,6 +6,7 @@ import { openDatabase } from "../../../lib/db.js";
 import { AppTaskResourceStore } from "./app-task-resource-store.js";
 import { AppTaskRecoveryScheduler } from "../tasks/app-task-recovery.js";
 import { admitConversationTaskInput } from "./conversation-task-turns.js";
+import { admitTaskInput } from "./inbox.js";
 import { trackAppTaskConditionEventForTasks } from "../tasks/app-task-condition-tracker.js";
 import { listRuntimeTaskViews, readRuntimeTaskView } from "../reads/app-read.js";
 import type { AppTaskResource } from "../tasks/app-task-state.js";
@@ -27,6 +28,7 @@ import {
   recordAppTaskTrigger,
   recordAppTaskAttemptWorkspace,
   reportAppTaskFailure,
+  readAppTaskAdmissionOutcome,
 } from "../tasks/app-task-reconciler.js";
 
 const roots: string[] = [];
@@ -1145,6 +1147,69 @@ describe("AppTaskResourceStore", () => {
       expect(store.readTrigger("normal")).not.toBeNull();
     } finally {
       store.close();
+    }
+  });
+
+  it.each(["claim", "completion"])("preserves same-spec input admitted during a stale %s write", (transition) => {
+    const root = mkdtempSync(join(tmpdir(), "may-task-admission-race-"));
+    roots.push(root);
+    const path = join(root, "host.sqlite");
+    const store = AppTaskResourceStore.openStandalone(path, "example");
+    store.bootstrapSnapshot(fixture(), "initial");
+    const other = AppTaskResourceStore.openStandalone(path, "example");
+    const config: AppTaskContext = {
+      appDir: root, projectDir: root, agent: "may", maxConcurrent: 2, resourceStore: store,
+    };
+    const admit = (resourceStore: AppTaskResourceStore, id: string) => admitTaskInput({ ...config, resourceStore }, {
+      appId: "example",
+      attachment: { kind: "existing", taskId: "normal" },
+      idempotencyKey: `task:${id}`,
+      inputContext: { id, source: { kind: "app", id: "example" }, input: { kind: "review", data: {} } },
+    });
+    const claim = () => {
+      const result = claimObservedAppTask(config, { taskId: "normal", appAgent: "may", handler: "agent" });
+      if (result.kind !== "claimed") throw new Error(`expected claim, got ${result.kind}`);
+      return result;
+    };
+    try {
+      admit(store, "first");
+      const first = transition === "completion" ? claim() : undefined;
+      const before = store.readTask("normal")!;
+      const commit = store.commit.bind(store);
+      let injected = false;
+      store.commit = (mutation) => {
+        if (!injected) { injected = true; admit(other, "second"); }
+        return commit(mutation);
+      };
+      try {
+        expect(() => first ? completeAppTask(config, first, { summary: "First reviewed" }) : claim()).toThrow("stale fence");
+      } finally {
+        store.commit = commit;
+      }
+      const current = store.readTask("normal")!;
+      expect(current.metadata.generation).toBe(before.metadata.generation);
+      expect(current.status.currentAttemptId).toBe(before.status.currentAttemptId);
+      expect(current.metadata.resourceVersion).toBeGreaterThan(before.metadata.resourceVersion);
+      expect(store.readTrigger("normal")?.events?.map(({ event }) => event.data?.idempotencyKey)).toContain("task:second");
+
+      // Retrying the state transition reads current input; it need not rerun a worker.
+      if (first) expect(completeAppTask(config, first, { summary: "First reviewed" }).status).toBe("applied");
+      const next = claim();
+      expect(next.events.map(({ event }) => event.data?.idempotencyKey)).toEqual(
+        first ? ["task:second"] : ["task:first", "task:second"],
+      );
+      expect(completeAppTask(config, next, { summary: "Assigned input reviewed" }).status).toBe("applied");
+    } finally {
+      store.close();
+      other.close();
+    }
+    const reopened = AppTaskResourceStore.openStandalone(path, "example");
+    try {
+      expect(readAppTaskAdmissionOutcome({ resourceStore: reopened }, "normal", "task:first")?.state).toBe("converged");
+      expect(readAppTaskAdmissionOutcome({ resourceStore: reopened }, "normal", "task:second")?.state).toBe("converged");
+      expect(reopened.readTrigger("normal")).toBeNull();
+    } finally {
+      reopened.close();
     }
   });
 
