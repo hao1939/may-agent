@@ -22,9 +22,15 @@ Maintenance reads its timestamp as a fallback when the control socket does not
 respond. A fresh timestamp shows that the daemon ran the callback; it does not
 prove that Apps are making progress or that every subsystem is healthy.
 
-The [SQL measurement candidate](../proposals/responsive-host-recovery-20261002.md#sql-visibility-and-routine-review)
-adds compact cumulative SQLite counters to this existing observation. App metric
-collection can compare retained samples without a new timer or model call per
+Collection or persistence failure belongs to the observation producer. Log the
+failure to stderr, leave the missing sample visible, and let the next ordinary
+interval collect a fresh observation. A failed heartbeat must not terminate the
+daemon or trigger its own immediate retry loop. Required event persistence still
+fails closed; this boundary does not turn unsaved work into accepted work.
+
+The Host includes compact cumulative SQLite counters in this existing observation
+(see the [SQL measurement design](../proposals/responsive-host-recovery-20261002.md#sql-visibility-and-routine-review)).
+App metric collection can compare retained samples without a new timer or model call per
 heartbeat. Detailed query rankings remain an on-demand diagnostic read. The Host
 measures; the App chooses review cadence, thresholds and follow-through.
 
