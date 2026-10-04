@@ -1,0 +1,8 @@
+{
+  "id": "alex",
+  "type": "agent-app",
+  "owner": "alex",
+  "status": "active",
+  "priority": "P1",
+  "goal": "Own improvement from evidence through verified outcomes with specialist contributions and escalation to May."
+}

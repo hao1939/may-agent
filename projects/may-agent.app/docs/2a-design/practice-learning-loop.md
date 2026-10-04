@@ -11,6 +11,11 @@ implemented in source. A complete installed improvement cycle requires separate
 proof of report consumption, candidate preparation, comparison, approval,
 application and fresh behavior. This document does not certify that cycle.
 
+The [Alex proposal](../proposals/alex-improvement-app.md) introduces App `alex`
+and owner agent `alex` as the intended home for new system-improvement
+coordination. Its responsibility and migration details are under review and
+unimplemented. The May-led source behavior below remains the current reference.
+
 ## Purpose
 
 Agents improve through ordinary work, evidence, authorized changes and later

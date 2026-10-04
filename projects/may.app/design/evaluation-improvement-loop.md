@@ -5,6 +5,14 @@ controller. Evaluation findings and observed execution failures share owner
 judgment and the later improvement stages; they keep different evidence readers.
 Normal execution recovery remains in the original work.
 
+The [Alex proposal](../../may-agent.app/docs/proposals/alex-improvement-app.md)
+places new system-improvement coordination with App `alex`, owned by agent
+`alex`, using the same Task and evidence mechanisms. It is unimplemented;
+May's current intake and retained ownership described here stay in place until
+the separately verified transition. The proposed operating target enables only
+May, Alex and Scout; useful Evaluation/Gym and maintenance capabilities move
+under Alex as part of the breaking migration.
+
 Evaluation publications, review-lag breaches and Evaluation operation breaches now
 route to ordinary May `evaluation-intake` work in App source. Each
 report keeps its immutable publication identity and original event/caller context.

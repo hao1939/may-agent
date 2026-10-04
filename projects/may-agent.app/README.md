@@ -12,6 +12,15 @@ Judge runtime work by that contribution and its total cost. Use the
 [decision and review guide](docs/1-principles/core-principles.md#review-rule)
 for proposals, implementation choices, and reviews.
 
+The [Alex proposal](docs/proposals/alex-improvement-app.md) introduces App `alex`
+with owner agent `alex` to coordinate new system improvements. It is not yet
+implemented. It permits a one-time breaking reorganization and replacement Task
+IDs, carrying ongoing work into Alex. This App's current behavior remains until
+that migration; its existing interfaces need not be retained afterward. The
+proposed installation keeps only May, Alex and Scout enabled, moving needed
+maintenance capabilities into Alex before disabling this App. The Host runtime
+remains in service.
+
 ## Boundary
 
 - `../may-agent/` is the platform/runtime code workspace. It should remain a

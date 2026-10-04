@@ -1,0 +1,8 @@
+{
+  "name": "alex",
+  "description": "Owns system improvement, maintenance and learning from evidence through verified outcomes",
+  "domain": "May Host and App improvement, recovery, assessment, implementation and comparison",
+  "model": "gpt-5.6-sol",
+  "heartbeat": false,
+  "tools": ["coding", "query_db", "workflow", "agents", "message", "cli-delegation", "system-status", "finish"]
+}

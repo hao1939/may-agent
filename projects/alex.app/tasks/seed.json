@@ -1,0 +1,12 @@
+{
+  "version": 3,
+  "project": "alex",
+  "project_lifecycle": "active",
+  "root_task_id": "root",
+  "groups": { "root": { "id": "root", "parent_id": null, "owner": "alex" } },
+  "resources": {},
+  "conditions": {},
+  "attempts": {},
+  "taskTriggers": {},
+  "receipts": {}
+}
