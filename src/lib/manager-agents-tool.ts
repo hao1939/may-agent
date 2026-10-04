@@ -35,12 +35,12 @@ export interface AgentsToolManagerDeps {
   callAgent(
     agentName: string,
     task: string,
-    opts?: { parentSessionId?: string; workflowRunId?: string; projectId?: string; source?: string; trace?: EventTrace; signal?: AbortSignal },
+    opts?: { parentSessionId?: string; workflowRunId?: string; projectId?: string; source?: string; trace?: EventTrace; parseSkillCommand?: boolean; signal?: AbortSignal },
   ): Promise<TaskResult & { messages: AgentMessage[] }>;
   runAgent(
     agentName: string,
     task: string,
-    opts?: { parentSessionId?: string; originSessionId?: string; source?: string; requestId?: string; workflowRunId?: string; projectId?: string; trace?: EventTrace; signal?: AbortSignal },
+    opts?: { parentSessionId?: string; originSessionId?: string; source?: string; requestId?: string; workflowRunId?: string; projectId?: string; trace?: EventTrace; parseSkillCommand?: boolean; signal?: AbortSignal },
   ): string;
   status(): SessionInfo[];
   progress(sessionId: string, limit?: number): AgentMessage[];
@@ -271,6 +271,7 @@ export function createAgentsTool(manager: AgentsToolManagerDeps, opts?: CreateAg
               projectId: lineage.projectId,
               source: "agents.call",
               trace: lineage.trace,
+              parseSkillCommand: false,
               signal,
             });
 
@@ -326,6 +327,7 @@ export function createAgentsTool(manager: AgentsToolManagerDeps, opts?: CreateAg
               projectId: lineage.projectId,
               source: "agents.fork",
               trace: lineage.trace,
+              parseSkillCommand: false,
               signal,
             });
 

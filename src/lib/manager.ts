@@ -125,6 +125,8 @@ export interface RunOptions {
   trace?: EventTrace;
   /** Explicit primary skill to activate for this turn. */
   skill?: string;
+  /** Direct inputs accept $skill commands; delegated assignments stay literal. */
+  parseSkillCommand?: boolean;
   /** Require the agent to terminate through finish(); used by workflow steps. */
   requireFinish?: boolean;
   /** Finite positive integer tool-operation allowance before bounded completion is requested. */
@@ -152,6 +154,7 @@ export type CallAgentOptions = Pick<
   | "stepLabel"
   | "trace"
   | "skill"
+  | "parseSkillCommand"
   | "requireFinish"
   | "operationAllowance"
   | "outputSchema"
@@ -637,6 +640,7 @@ export class SubagentManager {
       taskContext: opts?.taskContext,
       contextPrompt: opts?.contextPrompt,
       skill: opts?.skill,
+      parseSkillCommand: opts?.parseSkillCommand,
       requireFinish: opts?.requireFinish,
       outputSchema: opts?.outputSchema,
       validateOutput: opts?.validateOutput,
@@ -1057,6 +1061,7 @@ export class SubagentManager {
       signal: opts?.signal,
       trace: opts?.trace,
       skill: opts?.skill,
+      parseSkillCommand: opts?.parseSkillCommand,
       requireFinish: opts?.requireFinish,
       operationAllowance: opts?.operationAllowance,
       outputSchema: opts?.outputSchema,
@@ -1102,6 +1107,7 @@ export class SubagentManager {
       recoveryOwner?: string;
       trace?: EventTrace;
       skill?: string;
+      parseSkillCommand?: boolean;
       requireFinish?: boolean;
       operationAllowance?: number;
       outputSchema?: TSchema;
@@ -1124,6 +1130,7 @@ export class SubagentManager {
       recoveryOwner: opts?.recoveryOwner,
       trace: opts?.trace,
       skill: opts?.skill,
+      parseSkillCommand: opts?.parseSkillCommand,
       requireFinish: opts?.requireFinish,
       operationAllowance: opts?.operationAllowance,
       outputSchema: opts?.outputSchema,
