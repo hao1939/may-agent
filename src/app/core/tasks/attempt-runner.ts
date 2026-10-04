@@ -83,6 +83,7 @@ export async function runTaskAttempt(input: {
       taskId: input.taskId,
       appAgent: descriptor.agent,
       handler: "auto",
+      canUseAgentFallback: (agent) => opts.agents?.available(agent) ?? false,
       reason: input.reason ?? "task-controller",
       recoverSessionHandoff: (attempt) => opts.sessions?.handoff(attempt),
     });
@@ -268,17 +269,6 @@ async function runClaimedTask(
         reason: result.summary,
       });
     }
-    if (
-      result.state === "converged" &&
-      claim.handoff?.reason === "needs-agent" &&
-      intent.workflow &&
-      !report.verifier
-    ) {
-      return await rejectResult(
-        `Agent convergence was rejected because workflow ${intent.workflow} handed off without a verifier`,
-        { handlerBlocked: true },
-      );
-    }
     if (result.state === "incomplete") {
       const stale = await fenceWorkspaceFinalization(report);
       if (stale) return stale.reconcileTaskIds;
@@ -316,6 +306,7 @@ async function runClaimedTask(
     }
     if (result.state === "converged") {
       const accepted = await establishTaskAcceptance({
+        opts,
         descriptor,
         intent,
         claim,
@@ -740,7 +731,7 @@ async function executeTaskHandler(input: TaskHandlerInput & { conversation: bool
   };
   if (conversation && descriptor.app.conversation?.mode === "task" && claim.handler === "executor:conversation")
     return runTaskAgent(execution);
-  if (conversation && descriptor.app.conversation?.mode !== "task") {
+  if (conversation && claim.handler === "executor:conversation" && descriptor.app.conversation?.mode !== "task") {
     if (!descriptor.app.conversation || !opts.conversations)
       throw new Error(`App ${descriptor.id} Conversation executor is unavailable`);
     const registry = opts.appRegistrySnapshot ?? opts.appRegistry?.snapshot();
@@ -799,29 +790,7 @@ async function executeTaskHandler(input: TaskHandlerInput & { conversation: bool
       unavailable: true,
     };
   }
-  const handoffWorkflow =
-    claim.handoff && claim.intent.workflow
-      ? await opts.workflows?.inspect({
-          source: opts,
-          appDir: descriptor.appDir,
-          agent: claim.agent,
-          workflow: claim.intent.workflow,
-        })
-      : undefined;
-  if (claim.handoff && claim.intent.workflow && !handoffWorkflow?.available) {
-    return {
-      handlerResult: {
-        state: "error",
-        summary: handoffWorkflow?.error ?? "Task workflow runner is not installed",
-        facts: [],
-        actions: [],
-      },
-      runId: null,
-      unavailable: true,
-    };
-  }
-  const report = await runTaskAgent(execution);
-  return handoffWorkflow?.verifier ? { ...report, verifier: handoffWorkflow.verifier } : report;
+  return runTaskAgent(execution);
 }
 
 function emitTaskReconciliationEvent(
@@ -890,6 +859,7 @@ function recoverStaleTaskActionResult(
 }
 
 async function establishTaskAcceptance(input: {
+  opts: AppTaskRuntimeOptions;
   descriptor: AppTaskRuntimeDescriptor;
   intent: AppTaskIntent;
   claim: AppTaskClaim;
@@ -898,7 +868,33 @@ async function establishTaskAcceptance(input: {
 }): Promise<{ ok: true; acceptanceBasis: AppTaskAcceptanceBasis } | { ok: false; summary: string; facts: string[] }> {
   const { descriptor, intent, claim, capability } = input;
   const workflow = claim.handler.startsWith("workflow:");
-  if (!capability.verifier) {
+  let verifier = capability.verifier;
+  if (claim.handoff && intent.workflow) {
+    // Failure must not prevent diagnosis. Check the authored verifier only
+    // when the agent proposes completion, after it has had a chance to repair.
+    try {
+      const selected = await input.opts.workflows?.inspect({
+        source: input.opts,
+        appDir: descriptor.appDir,
+        agent: claim.agent,
+        workflow: intent.workflow,
+      });
+      if (!selected?.available)
+        return {
+          ok: false,
+          summary: selected?.error ?? "Task workflow contract is unavailable for verification",
+          facts: capability.handlerResult.facts,
+        };
+      verifier = selected.verifier;
+    } catch (error) {
+      return {
+        ok: false,
+        summary: `Task workflow contract could not be read: ${String(error)}`,
+        facts: capability.handlerResult.facts,
+      };
+    }
+  }
+  if (!verifier) {
     if (!workflow) {
       return {
         ok: true,
@@ -920,7 +916,7 @@ async function establishTaskAcceptance(input: {
   try {
     const verificationConfig = appTaskConfig(descriptor);
     const pendingTrigger = readPendingAppTaskTrigger(verificationConfig, claim.taskId);
-    const raw = await capability.verifier.verify(
+    const raw = await verifier.verify(
       {
         appId: descriptor.id,
         taskId: claim.taskId,
@@ -941,7 +937,7 @@ async function establishTaskAcceptance(input: {
     if (!admitted.ok) {
       return {
         ok: false,
-        summary: `Verifier ${capability.verifier.name} returned an invalid result: ${admitted.error}`,
+        summary: `Verifier ${verifier.name} returned an invalid result: ${admitted.error}`,
         facts: capability.runId ? [`workflow-run:${capability.runId}`] : [],
       };
     }
@@ -956,14 +952,14 @@ async function establishTaskAcceptance(input: {
       ok: true,
       acceptanceBasis: {
         method: "deterministic",
-        verifier: capability.verifier.name,
+        verifier: verifier.name,
         facts: admitted.result.facts,
       },
     };
   } catch (error) {
     return {
       ok: false,
-      summary: `Verifier ${capability.verifier.name} failed: ${error instanceof Error ? error.message : String(error)}`,
+      summary: `Verifier ${verifier.name} failed: ${error instanceof Error ? error.message : String(error)}`,
       facts: capability.runId ? [`workflow-run:${capability.runId}`] : [],
     };
   }

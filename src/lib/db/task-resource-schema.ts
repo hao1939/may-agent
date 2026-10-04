@@ -60,6 +60,9 @@ CREATE TABLE IF NOT EXISTS app_task_attempts (
 );
 CREATE INDEX IF NOT EXISTS idx_app_task_attempts_task
   ON app_task_attempts(app_id, task_id, started_at DESC);
+CREATE INDEX IF NOT EXISTS idx_app_task_attempts_failover
+  ON app_task_attempts(started_at)
+  WHERE json_extract(attempt_json, '$.failoverFromAttemptId') IS NOT NULL;
 DROP INDEX IF EXISTS idx_app_task_attempts_execution_failure;
 CREATE INDEX IF NOT EXISTS idx_app_task_attempts_expired
   ON app_task_attempts(app_id, lease_until, task_id) WHERE state = 'running' AND lease_until IS NOT NULL;

@@ -34,6 +34,7 @@ type Attempt = {
   attemptId: string;
   generation: number;
   handler: string;
+  failoverFromAttemptId: string | null;
   state: string;
   startedAt: string;
   finishedAt: string | null;
@@ -44,6 +45,7 @@ type Attempt = {
 const PROJECTION = `app_id AS appId, task_id AS taskId, attempt_id AS attemptId,
   task_generation AS generation, state,
   json_extract(attempt_json, '$.handler') AS handler,
+  json_extract(attempt_json, '$.failoverFromAttemptId') AS failoverFromAttemptId,
   json_extract(attempt_json, '$.startedAt') AS startedAt,
   json_extract(attempt_json, '$.finishedAt') AS finishedAt,
   json_extract(attempt_json, '$.failureReason') AS failureReason,
@@ -64,6 +66,7 @@ function counts(rows: Attempt[], cut: number) {
   ).length;
   return {
     started: rows.length,
+    failovers: rows.filter((a) => a.failoverFromAttemptId !== null).length,
     terminal: terminal.length,
     completed: terminal.filter((a) => a.state === "completed").length,
     failed: failed.length,

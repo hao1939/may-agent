@@ -213,12 +213,73 @@ function acceptedAttempt(f: ReturnType<typeof fixture>) {
   return attempt!;
 }
 
-async function retryWhenDue(f: ReturnType<typeof fixture>) {
+function serveFinish(answer: Record<string, unknown>, onPrompt: (prompt: string) => void) {
+  return Bun.serve({
+    hostname: "127.0.0.1",
+    port: 0,
+    async fetch(request) {
+      onPrompt(await request.text());
+      const chunk = (delta: unknown, finish: string | null) =>
+        `data: ${JSON.stringify({
+          id: "fixture-review",
+          object: "chat.completion.chunk",
+          created: 0,
+          model: "test",
+          choices: [{ index: 0, delta, finish_reason: finish }],
+        })}\n\n`;
+      return new Response(
+        chunk(
+          {
+            role: "assistant",
+            tool_calls: [
+              {
+                index: 0,
+                id: "finish-review",
+                type: "function",
+                function: {
+                  name: "finish",
+                  arguments: JSON.stringify(answer),
+                },
+              },
+            ],
+          },
+          null,
+        ) +
+          chunk({}, "tool_calls") +
+          "data: [DONE]\n\n",
+        { headers: { "Content-Type": "text/event-stream" } },
+      );
+    },
+  });
+}
+
+async function retryWhenDue(f: ReturnType<typeof fixture>, agent: string) {
   const due = f.store.readTask("work/one")!.status.executionRetryAt!;
   assert(Number.isFinite(due), "Failure must retain a durable retry deadline");
-  await new Promise((resolve) => setTimeout(resolve, Math.max(0, due - Date.now())));
-  await run(f);
-  assert(Date.parse(acceptedAttempt(f).startedAt) >= due, "A fresh worker must obey persisted pacing");
+  const summary = `completed by ${agent} after recovery`;
+  let calls = 0;
+  const server = serveFinish(
+    {
+      status: "success",
+      summary,
+      verification_facts: ["Fixture recovery verified"],
+      result: { state: "converged", summary, facts: ["Fixture recovery verified"] },
+    },
+    () => {
+      calls++;
+    },
+  );
+  f.modelBaseUrl = server.url.origin;
+  try {
+    await new Promise((resolve) => setTimeout(resolve, Math.max(0, due - Date.now())));
+    await run(f);
+    const accepted = acceptedAttempt(f);
+    assert(Date.parse(accepted.startedAt) >= due, "A fresh worker must obey persisted pacing");
+    assert.equal(accepted.handler, `agent:${agent}`);
+    assert.equal(calls, 1);
+  } finally {
+    await server.stop(true);
+  }
 }
 
 const scenarios: Record<string, () => Promise<void>> = {
@@ -271,47 +332,14 @@ const scenarios: Record<string, () => Promise<void>> = {
     rmSync(helperDir, { recursive: true });
     releases.activate(releases.stage());
     const prompts: string[] = [];
-    const server = Bun.serve({
-      hostname: "127.0.0.1",
-      port: 0,
-      async fetch(request) {
-        prompts.push(await request.text());
-        const chunk = (delta: unknown, finish: string | null) =>
-          `data: ${JSON.stringify({
-            id: "fixture-review",
-            object: "chat.completion.chunk",
-            created: 0,
-            model: "test",
-            choices: [{ index: 0, delta, finish_reason: finish }],
-          })}\n\n`;
-        return new Response(
-          chunk(
-            {
-              role: "assistant",
-              tool_calls: [
-                {
-                  index: 0,
-                  id: "finish-review",
-                  type: "function",
-                  function: {
-                    name: "finish",
-                    arguments: JSON.stringify({
-                      status: "success",
-                      summary: "Reviewed by the pinned helper",
-                      verification_facts: ["Fixture reviewed"],
-                    }),
-                  },
-                },
-              ],
-            },
-            null,
-          ) +
-            chunk({}, "tool_calls") +
-            "data: [DONE]\n\n",
-          { headers: { "Content-Type": "text/event-stream" } },
-        );
+    const server = serveFinish(
+      {
+        status: "success",
+        summary: "Reviewed by the pinned helper",
+        verification_facts: ["Fixture reviewed"],
       },
-    });
+      (prompt) => prompts.push(prompt),
+    );
     f.modelBaseUrl = server.url.origin;
     try {
       await run(f);
@@ -359,8 +387,8 @@ const scenarios: Record<string, () => Promise<void>> = {
         ?.count,
       0,
     );
-    await retryWhenDue(f);
-    assert.equal(acceptedAttempt(f).acceptedResult?.summary, "completed by specialist");
+    await retryWhenDue(f, "specialist");
+    assert.equal(acceptedAttempt(f).acceptedResult?.summary, "completed by specialist after recovery");
     assert.deepEqual(f.store.readAttempt(attempt!.metadata.id), attempt);
   },
 
@@ -404,8 +432,8 @@ export async function execute(ctx) {
     releases.activate(releases.stage());
     await run(f, true);
     assert.equal(f.store.readTask("work/one")?.status.phase, "pending");
-    await retryWhenDue(f);
-    assert.equal(acceptedAttempt(f).acceptedResult?.summary, "current handler ran");
+    await retryWhenDue(f, "owner");
+    assert.equal(acceptedAttempt(f).acceptedResult?.summary, "completed by owner after recovery");
   },
 
   async restoredHandler() {
@@ -441,8 +469,8 @@ export async function execute(ctx) {
       0,
     );
 
-    await retryWhenDue(f);
-    assert.equal(acceptedAttempt(f).acceptedResult?.summary, "repaired workflow ran");
+    await retryWhenDue(f, "owner");
+    assert.equal(acceptedAttempt(f).acceptedResult?.summary, "completed by owner after recovery");
     assert.equal(acceptedAttempt(f).taskGeneration, task.metadata.generation);
   },
 
