@@ -1063,6 +1063,8 @@ export type DeliveryResult = {
   by: string;
   route?: DeliveryRoute;
   note?: string;
+  /** The App route inspected and durably settled its independent admission obligation. */
+  appAdmission?: true;
 };
 export type SubscriberResult = DeliveryResult | void;
 export type Subscriber = (event: AgentEvent) => SubscriberResult;
@@ -1522,6 +1524,7 @@ function normalizeDeliveryResult(result: SubscriberResult): DeliveryResult | und
     by: result.by.trim(),
     ...(result.route ? { route: result.route } : {}),
     ...(result.note ? { note: result.note } : {}),
+    ...(result.appAdmission === true ? { appAdmission: true as const } : {}),
   };
 }
 

@@ -18,6 +18,7 @@ import {
 } from "@may-agent/sdk";
 import { log } from "../../lib/log.js";
 import type { SqliteDb } from "../../lib/db.js";
+import { withSqliteBusyRetry } from "../../lib/db/busy-retry.js";
 import { loadPersistedEvent } from "../core/events/persisted.js";
 import {
   EVENT_DELIVERY_RESULT,
@@ -1154,13 +1155,16 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
     (event): DeliveryResult | void => {
       const result = admitEvent(event);
       const eventId = eventRowId(event);
-      // Accepted delivery is acknowledged together with its Event receipt by
-      // DbWriter.recordDelivery. An inspected no-work disposition has no
-      // delivery receipt, so acknowledge that marker here.
+      // This route alone owns the App-admission acknowledgement. Accepted
+      // work is tagged so DbWriter records its Event receipt and acknowledgement
+      // atomically; a global receipt from another worker route cannot clear it.
+      // Inspected no-work has no receipt, so acknowledge it directly.
       if (eventId && result === undefined) {
-        options.db.prepare("UPDATE events SET app_admission_pending = 0 WHERE id = ?").run(eventId);
+        withSqliteBusyRetry(`acknowledge App admission for event ${eventId}`, () => {
+          options.db.prepare("UPDATE events SET app_admission_pending = 0 WHERE id = ?").run(eventId);
+        });
       }
-      return result;
+      return result ? { ...result, appAdmission: true } : undefined;
     },
     { label: "app-inbox-route" },
   );

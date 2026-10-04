@@ -69,14 +69,43 @@ test("recovers a report saved before its first App plan, independent of global d
       app_admission_pending: 1,
     });
     expect(getAppEventAdmissionPlan(db, eventId)).toBeNull();
-    // Another durable route can accept the Event globally without satisfying
-    // the independent App-admission outbox obligation.
-    db.prepare("UPDATE events SET delivery_status = 'accepted', accepted_by = 'other-route' WHERE id = ?").run(eventId);
+    // A worker can accept the Event through an unrelated durable route before
+    // parent relay. Its global receipt must not discharge the independent App
+    // admission obligation.
+    new DbWriter(root).recordDelivery(event, {
+      accepted: true,
+      by: "event-pair-tracker",
+      route: "direct",
+      note: "worker lifecycle pair accepted before parent relay",
+    });
+    expect(db.prepare(`SELECT delivery_status, accepted_by, app_admission_pending
+      FROM events WHERE id = ?`).get(eventId)).toEqual({
+      delivery_status: "accepted",
+      accepted_by: "event-pair-tracker",
+      app_admission_pending: 1,
+    });
     closeDb(root);
 
     db = getDb(root);
     const bus = producer(root);
     const writer = new DbWriter(root);
+    let acknowledgementAttempts = 0;
+    const receiptDb = new Proxy(db as object, {
+      get(target, property) {
+        if (property === "exec") {
+          return (sql: string) => {
+            if (sql === "BEGIN IMMEDIATE") {
+              acknowledgementAttempts += 1;
+              if (acknowledgementAttempts === 1) throw new Error("database is locked");
+            }
+            return db.exec(sql);
+          };
+        }
+        const value = Reflect.get(target, property);
+        return typeof value === "function" ? value.bind(target) : value;
+      },
+    });
+    (writer as unknown as { db: typeof db }).db = receiptDb as typeof db;
     bus.setDeliveryRecorder(writer.recordDelivery);
     runtime = await startAppInboxRuntime({
       db,
@@ -92,6 +121,7 @@ test("recovers a report saved before its first App plan, independent of global d
     // The marker is acknowledged once the complete plan is durable; command
     // dispatch follows asynchronously from that saved authority.
     await until(() => db.prepare("SELECT app_admission_pending FROM events WHERE id = ?").get(eventId)?.app_admission_pending === 0);
+    expect(acknowledgementAttempts).toBe(2);
     await until(() => db.prepare("SELECT COUNT(*) AS count FROM app_inbox_items").get()?.count === 1);
     expect(db.prepare("SELECT origin_event_id FROM app_inbox_items").all()).toEqual([{ origin_event_id: eventId }]);
     await until(() => getAppEventAdmissionPlan(db, eventId)?.status === "completed");

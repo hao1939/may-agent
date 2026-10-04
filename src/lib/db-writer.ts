@@ -210,10 +210,6 @@ function capEventData(payload: Record<string, unknown>): string {
     },
   };
   const priorityKeys = [
-    // External bodies still need their direct destination in the bounded SQL
-    // projection so restart recovery can discover and verify the full Event.
-    "appId",
-    "conversationId",
     "sessionId",
     "agent",
     "status",
@@ -290,11 +286,6 @@ function prepareEventBody(
   }
   const artifact = writeContentAddressedJson(persistDir, "event-bodies", payload);
   const projected = compactEventValue(payload) as Record<string, unknown>;
-  // compactEventValue bounds objects by insertion order. Restore the direct
-  // destination scalars from the authoritative body before applying the byte
-  // cap, whose priority order guarantees they survive the SQL projection.
-  if (typeof payload.appId === "string") projected.appId = payload.appId;
-  if (typeof payload.conversationId === "string") projected.conversationId = payload.conversationId;
   return {
     data: capEventData({
       ...projected,
@@ -675,9 +666,16 @@ export class DbWriter {
                  accepted_at = ?,
                  delivery_route = ?,
                  delivery_note = ?,
-                 app_admission_pending = 0
+                 app_admission_pending = CASE WHEN ? = 1 THEN 0 ELSE app_admission_pending END
              WHERE id = ?`,
-            [result.by, now, result.route ?? "direct", result.note ?? null, rowId],
+            [
+              result.by,
+              now,
+              result.route ?? "direct",
+              result.note ?? null,
+              result.appAdmission === true ? 1 : 0,
+              rowId,
+            ],
           );
         });
       });
