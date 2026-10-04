@@ -323,6 +323,14 @@ agent or a metrics handler:
 - delete an artifact only after no retained metadata row or domain record
   references it.
 
+Keep history-wide candidate searches outside write transactions. A deletion
+limit bounds rows changed, not rows examined or time holding SQLite's writer
+lock. Orphan cleanup should read a bounded set of candidate IDs first, then
+delete those exact rows while rechecking that their owning events are still
+absent. An empty candidate set needs no write. Retention protections remain
+authoritative at deletion; discovery alone never authorizes removal. This is
+Host maintenance mechanics and adds no App procedure or recovery controller.
+
 Database size is an observability signal, not a trigger for synchronous full
 rewrites. With bounded rows, old rows can age out naturally and incremental
 reclaim can remain opportunistic.
