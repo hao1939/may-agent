@@ -8,7 +8,7 @@ import {
   type Model,
   type StreamFunction,
 } from "@earendil-works/pi-ai";
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
@@ -20,6 +20,8 @@ import { readFileWritePolicy } from "./tools/file-write-policy.js";
 import { currentAgentSessionId } from "./agent-session-context.js";
 import { createFinishTool } from "./tools/lifecycle.js";
 import { usageReply } from "../../test/fixtures/execution-usage.js";
+import type { TaskExecutionContext } from "./task-execution-context.js";
+import { appTaskExecutionPaths, withAppTaskWorkspace } from "../app/core/tasks/app-task-output-paths.js";
 
 const roots: string[] = [];
 
@@ -888,7 +890,8 @@ test("execution-root rebinding preserves the captured file-write policy", async 
   writeFileSync(join(sharedRoot, "file-write-policy.json"), JSON.stringify({ protectedPaths: [], grants: [] }));
   const prepare = (name: string) => prepareAgentExecution({
     definition: { name, description: "test", domain: "test", model: { contextWindow: 10000 } as any,
-      tools: [tool("write")], projectRoot: root, fileWritePolicy: policy },
+      tools: [tool("write")], projectRoot: root,
+      fileWritePolicy: { ...policy, execution: { root: executionRoot, sourceRoot: root } } },
     projectRoot: root, executionRoot, task: "Update criteria", sessionId: name,
   });
   const denied = prepare("worker").tools.find(t => t.name === "write")!;
@@ -897,4 +900,61 @@ test("execution-root rebinding preserves the captured file-write policy", async 
   const allowed = prepare("reviewer").tools.find(t => t.name === "write")!;
   const result = await allowed.execute("allowed", { path: "criteria/rules.md", content: "new" });
   expect(result.content).toMatchObject([{ type: "text", text: expect.stringContaining("Wrote 3 bytes") }]);
+});
+
+test.each(["app", "project-checkout", "unknown-cwd"])("file policy retains installation scope for %s execution", async (mode) => {
+  const root = mkdtempSync(join(tmpdir(), "execution-policy-scope-")); roots.push(root);
+  const installation = join(root, "installation");
+  const appDir = join(installation, "projects", "support.app");
+  const projectDir = join(installation, "projects", "support");
+  mkdirSync(appDir, { recursive: true });
+  mkdirSync(projectDir, { recursive: true });
+  const paths = mode === "project-checkout"
+    ? withAppTaskWorkspace(appTaskExecutionPaths(appDir, projectDir), join(root, "checkout"))
+    : appTaskExecutionPaths(appDir, projectDir);
+  const taskContext = {
+    executionPaths: paths, reconciliation: { task: {} },
+  } as TaskExecutionContext;
+  const prepared = prepareAgentExecution({
+    definition: { name: "maintainer", description: "test", domain: "test", model: { contextWindow: 10000 } as any,
+      tools: [tool("write"), tool("edit")], projectRoot: appDir,
+      fileWritePolicy: {
+        root: installation,
+        protectedPaths: ["projects/support.app/criteria/**", "projects/support/criteria/**"],
+        grants: [
+          { paths: ["agents/*/agent.json"], writers: ["maintainer"] },
+          { paths: ["projects/support/criteria/allowed.md"], writers: ["maintainer"] },
+        ],
+      } },
+    projectRoot: installation, executionRoot: paths.workspaceDir,
+    ...(mode === "unknown-cwd" ? {} : { taskContext }),
+    task: "Inspect file policy", sessionId: mode,
+  });
+  const write = prepared.tools.find(t => t.name === "write")!;
+  const edit = prepared.tools.find(t => t.name === "edit")!;
+  // Supplying executionRoot (as every managed App attempt does) must not turn
+  // an installation-level grant into permission for an App or project's agents.
+  const config = await write.execute("config", { path: "agents/worker/agent.json", content: "{}" });
+  expect(config.content).toMatchObject([{ type: "text", text: expect.stringContaining("WRITE BLOCKED") }]);
+  const protectedPath = join(paths.workspaceDir, "criteria", "rules.md");
+  mkdirSync(join(paths.workspaceDir, "criteria"), { recursive: true });
+  writeFileSync(protectedPath, "original");
+  for (const [target, params] of [
+    [write, { path: "criteria/rules.md", content: "rewritten" }],
+    [edit, { path: "criteria/rules.md", oldText: "original", newText: "rewritten" }],
+  ] as const) {
+    expect((await target.execute("protected", params)).content)
+      .toMatchObject([{ type: "text", text: expect.stringContaining("WRITE BLOCKED") }]);
+  }
+  expect(readFileSync(protectedPath, "utf8")).toBe("original");
+  if (mode === "project-checkout") {
+    await write.execute("grant", { path: "criteria/allowed.md", content: "accepted" });
+    expect(readFileSync(join(paths.workspaceDir, "criteria", "allowed.md"), "utf8")).toBe("accepted");
+    // The declared project mapping cannot be reused for an unrelated cwd.
+    const other = prepareAgentExecution({ definition: prepared.definition, projectRoot: installation,
+      executionRoot: join(root, "other"), sessionId: "other", task: "Inspect" });
+    expect(other.definition.fileWritePolicy?.execution).toBeUndefined();
+  } else {
+    expect(prepared.definition.fileWritePolicy?.execution).toBeUndefined();
+  }
 });

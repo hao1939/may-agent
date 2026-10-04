@@ -610,6 +610,10 @@ function connectWs() {
 }
 
 function sendChat() {
+  if (currentAgentChat === humanInterface.agent && !isSessionPageMode() && !humanInterface.appId) {
+    toast("No Conversation App is configured");
+    return;
+  }
   if (isMayConversation()) { void sendMayConversation(); return; }
   const input = document.getElementById('chat-input');
   const msg = input.value.trim();
@@ -638,7 +642,7 @@ function sendChat() {
       { message: msg },
       { target: { sessionId: currentSessionId } },
     );
-  } else if (currentAgentChat) {
+  } else if (currentAgentChat && currentAgentChat !== humanInterface.agent) {
     // Telegram-style: agent chat with no session yet. POST spawns one.
     const newParam = forceNewAgentChat ? '?new=true' : '';
     forceNewAgentChat = false;

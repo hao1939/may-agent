@@ -93,6 +93,10 @@ describe("HTTP human Task reads and board", () => {
         ...(options?.inputKeys ? { inputEvents: options.inputKeys.map((key) => ({ key })) } : {}),
       }),
     });
+    await startWeb();
+  });
+
+  async function startWeb(conversationApp = "support", conversationId = "retained-room") {
     child = spawn(
       "bun",
       [resolve(import.meta.dir, "../../src/app/http/server.ts"), "--state-dir", root, "--port", "0"],
@@ -104,9 +108,9 @@ describe("HTTP human Task reads and board", () => {
           PROJECT_ROOT: root,
           AGENTS_ROOT: root,
           SHARED_ROOT: root,
-          PROJECTS_ROOT: projects,
+          PROJECTS_ROOT: join(root, "projects"),
           DAEMON_INSTANCE: "task-test",
-          AGENT: "helper", CONVERSATION_APP: "support", CONVERSATION_ID: "retained-room", DAEMON_AGENT: "unused-legacy",
+          AGENT: "helper", CONVERSATION_APP: conversationApp, CONVERSATION_ID: conversationId, DAEMON_AGENT: "unused-legacy",
         },
       },
     );
@@ -130,7 +134,7 @@ describe("HTTP human Task reads and board", () => {
     } finally {
       clearTimeout(timer!);
     }
-  });
+  }
 
   afterEach(async () => {
     child?.kill("SIGKILL");
@@ -163,7 +167,18 @@ describe("HTTP human Task reads and board", () => {
     return res.json();
   }
 
-  test("interface-agent HTTP input retains the configured App and Conversation", async () => {
+  function seedChat(agent = "helper") {
+    const sessionId = `${agent}-old-session`;
+    db.prepare("INSERT INTO sessions (sessionId, agent, task, status, kind, source, startedAt) VALUES (?, ?, ?, ?, ?, ?, ?)")
+      .run(sessionId, agent, "Earlier conversation", "idle", "chat", "web-ui", Date.now());
+    return sessionId;
+  }
+
+  test.each([false, true])("interface-agent HTTP input retains its Conversation with existing session=%s", async (existing) => {
+    if (existing) {
+      const sessionId = seedChat();
+      expect(await read("/api/agents/helper/default-session")).toMatchObject({ sessionId });
+    }
     const response = await fetch(base + "/api/agents/helper/message", {
       method: "POST", headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ content: "Review the migration" }),
@@ -174,6 +189,48 @@ describe("HTTP human Task reads and board", () => {
       type: "app.input.requested", target: { appId: "support" },
       data: { conversationId: "retained-room", input: { kind: "message", data: { message: "Review the migration" } } },
     });
+  });
+
+  test("explicit session input and other agents retain direct chat", async () => {
+    const sessionId = seedChat();
+    seedChat("worker");
+    for (const path of [`/api/sessions/${sessionId}/message`, "/api/agents/worker/message", "/api/agents/new-worker/message"]) {
+      const response = await fetch(base + path, { method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ content: "Follow up here" }) });
+      expect(response.status).toBe(200);
+    }
+    expect(published).toMatchObject([
+      { type: "session.steer.requested", target: { sessionId } },
+      { type: "session.steer.requested", target: { sessionId: "worker-old-session" } },
+      { type: "chat.start.requested", data: { agent: "new-worker" } },
+    ]);
+  });
+
+  test.skipIf(skipBrowser)("unbound interface chat rejects HTTP and browser input without steering an old session", async () => {
+    seedChat();
+    child.kill("SIGKILL");
+    await stopped;
+    await startWeb("", "");
+    for (const suffix of ["", "?new=true"]) {
+      const response = await fetch(base + "/api/agents/helper/message" + suffix, {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ content: "Keep this request" }),
+      });
+      expect(response.status).toBe(503);
+      expect(await response.json()).toEqual({ error: "No Conversation App is configured" });
+    }
+    const browser = await puppeteer.launch({ executablePath: chrome!, headless: true, args: ["--no-sandbox", "--disable-dev-shm-usage"] });
+    try {
+      const page = await browser.newPage();
+      page.setDefaultTimeout(5000);
+      await page.goto(`${base}/agents/helper`, { waitUntil: "domcontentloaded" });
+      await page.waitForFunction("currentAgentChat === 'helper' && ws?.readyState === WebSocket.OPEN");
+      await page.type("#chat-input", "Keep this request");
+      await page.click("#chat-send");
+      await page.waitForFunction(() => document.body.textContent!.includes("No Conversation App is configured"));
+      expect(await page.$eval("#chat-input", el => (el as HTMLInputElement).value)).toBe("Keep this request");
+      expect(published).toEqual([]);
+    } finally { await browser.close(); }
   });
 
   async function installApps(...ids: string[]) {
@@ -324,6 +381,7 @@ describe("HTTP human Task reads and board", () => {
   });
 
   test.skipIf(skipBrowser)("May browser Stop retains its observed target and draft, then admits a correction to Conversation", async () => {
+    seedChat();
     const browser = await puppeteer.launch({ executablePath: chrome!, headless: true, args: ["--no-sandbox", "--disable-dev-shm-usage"] });
     try {
       const page = await browser.newPage();

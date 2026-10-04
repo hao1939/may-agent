@@ -12,7 +12,7 @@ import {
 } from "@earendil-works/pi-ai";
 import { streamSimple } from "@earendil-works/pi-ai/compat";
 import { existsSync, readFileSync } from "node:fs";
-import { dirname, join } from "node:path";
+import { dirname, join, resolve } from "node:path";
 import { createCompactionTransform, type CompactionInfo } from "./compaction.js";
 import type { TaskExecutionContext } from "./task-execution-context.js";
 import { createTaskDecisionContext } from "./task-decision-context.js";
@@ -239,9 +239,19 @@ function definitionForExecution(options: AgentPreparationOptions): SubagentDefin
   if (!root && !options.bashProcessGroupOwner) return options.definition;
   const executionRoot = root ?? options.definition.projectRoot ?? options.projectRoot;
   const agentName = options.definition.name;
-  const fileWritePolicy = options.definition.fileWritePolicy && root
-    ? { ...options.definition.fileWritePolicy, executionRoot: root }
-    : options.definition.fileWritePolicy;
+  let fileWritePolicy = options.definition.fileWritePolicy;
+  if (fileWritePolicy && root) {
+    const paths = options.taskContext?.executionPaths;
+    // A cwd alone says nothing about checkout layout. Task workspaces mirror
+    // their project; ordinary App-local execution needs no path translation.
+    let execution = fileWritePolicy.execution;
+    if (paths && resolve(paths.workspaceDir) === resolve(root)) {
+      execution = resolve(paths.appDir) === resolve(root) ? undefined : { root, sourceRoot: paths.projectDir };
+    } else if (execution && resolve(execution.root) !== resolve(root)) {
+      execution = undefined;
+    }
+    fileWritePolicy = { ...fileWritePolicy, execution };
+  }
   const tools = options.definition.tools.map((tool) => {
     switch (tool.name) {
       case "read":

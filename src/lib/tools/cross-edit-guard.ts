@@ -89,10 +89,13 @@ export function checkCrossEditGuard(
     blocked: true,
     message: `WRITE BLOCKED: Agent '${agentName}' has no declared permission to modify ${rel}. Report the blocked path and reason to your caller; do not bypass the guard.`,
   });
-  const policyRoots = [policy?.root ?? projectRoot, policy?.executionRoot]
-    .filter((root): root is string => Boolean(root));
-  const paths = [...new Set(policyRoots)]
-    .map((root) => relative(resolve(root), resolve(absolutePath)).split(sep).join("/"))
+  const absolutePaths = [resolve(absolutePath)];
+  const execution = policy?.execution;
+  if (execution && isInsidePath(resolve(absolutePath), resolve(execution.root))) {
+    absolutePaths.push(resolve(execution.sourceRoot, relative(resolve(execution.root), resolve(absolutePath))));
+  }
+  const paths = [...new Set(absolutePaths)]
+    .map((path) => relative(resolve(policy?.root ?? projectRoot), path).split(sep).join("/"))
     .filter((path) => path !== ".." && !path.startsWith("../"));
   // The policy itself is operator-owned. A file-tool grant cannot rewrite its own authority.
   if (paths.includes("shared/file-write-policy.json")) return deny();
@@ -111,7 +114,7 @@ export function checkCrossEditGuard(
   )
     return deny();
   const target =
-    (policy?.root ? findAgentTreePath(resolve(absolutePath), policy.root) : undefined) ??
+    (policy?.root ? absolutePaths.map(path => findAgentTreePath(path, policy.root)).find(Boolean) : undefined) ??
     findAgentTreePath(resolve(absolutePath), projectRoot);
   if (!target || !PROTECTED_FILENAMES.has(target.fileName)) return { blocked: false };
   if (target.fileName === "agent.json" || target.targetDir !== agentName) return deny();

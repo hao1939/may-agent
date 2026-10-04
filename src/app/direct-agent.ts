@@ -37,6 +37,7 @@ export type DirectAgentRunOptions = {
   agentName: string;
   task: string;
   projectRoot: string;
+  /** Explicit installation-layout workspace, possibly separate from projectRoot. */
   workRoot: string;
   agentsRoot: string;
   sharedRoot: string;
@@ -192,7 +193,7 @@ export async function prepareDirectAgentExecution(options: DirectAgentRunOptions
   let executionManifest = resolveDirectToolPolicy(config.name, config.tools, options.toolDenials);
   const fileWritePolicy: FileWritePolicy = {
     ...readFileWritePolicy(options.sharedRoot, options.projectRoot),
-    executionRoot: resolve(options.workRoot),
+    execution: { root: resolve(options.workRoot), sourceRoot: resolve(options.projectRoot) },
   };
   const { tools, cleanup } = await buildDirectTools(config, source, options, executionManifest.effectiveTools, fileWritePolicy);
   const definitionSource = options.visibleAgentDir ? { ...source, dir: resolve(options.visibleAgentDir) } : source;

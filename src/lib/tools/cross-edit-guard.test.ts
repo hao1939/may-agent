@@ -43,7 +43,7 @@ describe("file-tool policy", () => {
         "/tmp/task-checkout/projects/support.app/agents/worker/agent.json",
         "maintainer",
         "/tmp/task-checkout",
-        { ...policy, executionRoot: "/tmp/task-checkout" },
+        { ...policy, execution: { root: "/tmp/task-checkout", sourceRoot: root } },
       ).blocked,
     ).toBe(false);
     expect(
@@ -63,7 +63,7 @@ describe("file-tool policy", () => {
     expect(checkCrossEditGuard(`${root}/agents/worker/agent.json`, "maintainer", root, scoped).blocked).toBe(false);
     expect(checkCrossEditGuard(config, "maintainer", `${root}/projects/support.app`, scoped).blocked).toBe(true);
     expect(checkCrossEditGuard(`${root}/projects/support.app/criteria/rules.md`, "worker", `${root}/projects/support.app`, scoped).blocked).toBe(false);
-    const rebound = { ...scoped, executionRoot: "/tmp/task-checkout" };
+    const rebound = { ...scoped, execution: { root: "/tmp/task-checkout", sourceRoot: root } };
     expect(checkCrossEditGuard("/tmp/task-checkout/agents/worker/agent.json", "maintainer", "/tmp/task-checkout", rebound).blocked).toBe(false);
     expect(checkCrossEditGuard("/tmp/task-checkout/projects/support.app/agents/worker/agent.json", "maintainer", "/tmp/task-checkout", rebound).blocked).toBe(true);
     expect(checkCrossEditGuard("/tmp/task-checkout/criteria/rules.md", "worker", "/tmp/task-checkout", rebound).blocked).toBe(true);

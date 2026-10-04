@@ -146,6 +146,10 @@ it defaults to `<appId>:primary`. For example, `AGENT=helper` and
 an App binding the Host can run background Tasks, but Console, Telegram and
 human notifications report that their destination is unavailable. Browser
 clients read the same binding from `/api/interface`.
+The interface agent's web page and message endpoint use that binding even
+when an older chat session exists. Explicit session follow-ups remain addressed
+to the selected session. A missing App binding reports an error and preserves
+the browser draft.
 
 For Compose, put these bindings in the installation `.env` consumed by
 `container/compose.yml`, or set them in an explicit Compose override file.
@@ -162,13 +166,18 @@ The installation may commit `shared/file-write-policy.json`:
 }
 ```
 
-Patterns are relative to the installation root (or its execution checkout).
+Patterns are relative to the installation root. A working directory alone
+does not declare a copy of that root. Task context identifies a project checkout,
+so its files retain the source project's installation-relative paths. Direct
+runs explicitly map their installation-layout work root to the installation.
 An App-local working directory does not change that scope: `agents/*/agent.json`
 matches installation-level agents only, not `projects/example.app/agents/*/agent.json`.
 Explicit grants override protected paths and generic file-tool safeguards;
 agent names alone grant nothing. The policy file itself cannot be rewritten
 through these tools. The selected definition captures the policy with its
-source release, including when a Task uses another execution directory.
+source release, including when a Task uses another execution directory. A
+project checkout therefore cannot gain installation-level permissions by
+containing similarly named files.
 Without a declaration, generic shared-guidance and cross-agent configuration
 protection remains. This covers `write` and `edit`, not shell or native CLI
 filesystem access; it is not a security sandbox.

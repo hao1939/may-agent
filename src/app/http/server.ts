@@ -3219,7 +3219,8 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
   }
 
   /**
-   * Send a message to an agent. Telegram-style:
+   * Interface-agent input always uses the installation's Conversation binding.
+   * Other agents keep direct session chat:
    *   1. resolve default session (most-recent non-throwaway)
    *   2. if a session exists, forward to /api/sessions/:id/message which
    *      uses the 'steer' command (handles running/idle/cold uniformly).
@@ -3239,6 +3240,21 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
     const content = (body.content ?? "").trim();
     if (!content) return json({ error: "content required" }, 400);
     const forceNew = url?.searchParams.get("new") === "true";
+
+    if (agentName === humanInterface.agent) {
+      if (!humanInterface.appId) return json({ error: "No Conversation App is configured" }, 503);
+      const result = await sendDaemonFrame(buildPublishFrame(
+        "app.input.requested",
+        {
+          input: { kind: "message", data: { message: content, context: { forceNew } } },
+          channel: "web-ui",
+          conversationId: humanInterface.conversationId,
+        },
+        { target: { appId: humanInterface.appId } },
+      ));
+      if (!result.ok) return json({ error: result.error }, 503);
+      return json({ ok: true, agent: agentName, sessionId: null, deliveredAt: Date.now(), spawned: true });
+    }
 
     // Resolve default session (skip if forcing new chat).
     if (!forceNew) {
@@ -3265,22 +3281,12 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
 
     // No prior session — request a create-or-bind chat start from the daemon.
     const result = await sendDaemonFrame(
-      agentName === humanInterface.agent && humanInterface.appId
-        ? buildPublishFrame(
-            "app.input.requested",
-            {
-              input: { kind: "message", data: { message: content, context: { forceNew } } },
-              channel: "web-ui",
-              conversationId: humanInterface.conversationId,
-            },
-            { target: { appId: humanInterface.appId } },
-          )
-        : buildPublishFrame("chat.start.requested", {
-            agent: agentName,
-            message: content,
-            channel: "web-ui",
-            forceNew,
-          }),
+      buildPublishFrame("chat.start.requested", {
+        agent: agentName,
+        message: content,
+        channel: "web-ui",
+        forceNew,
+      }),
     );
     if (!result.ok) return json({ error: result.error }, 503);
     return json({ ok: true, agent: agentName, sessionId: null, deliveredAt: Date.now(), spawned: true });

@@ -4,8 +4,8 @@ import { isAbsolute, join, resolve } from "node:path";
 /** Trusted installation declarations, captured with the selected definition generation. */
 export interface FileWritePolicy {
   readonly root: string;
-  /** Explicit execution checkout of the installation; never an App-local working directory. */
-  readonly executionRoot?: string;
+  /** Trusted checkout mapping; sourceRoot retains its installation-relative scope. */
+  readonly execution?: { readonly root: string; readonly sourceRoot: string };
   readonly protectedPaths: readonly string[];
   readonly grants: readonly {
     readonly paths: readonly string[];
