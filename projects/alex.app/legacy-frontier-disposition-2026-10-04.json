@@ -1,10 +1,10 @@
 {
   "kind": "alex-legacy-frontier-disposition",
   "capturedAt": "2026-10-04T12:13:00Z",
-  "generatedAt": "2026-10-04T12:39:00Z",
+  "generatedAt": "2026-10-04T12:52:05.128Z",
   "source": "/app/.state/alex-migration-20261004/legacy-frontier-index.json",
   "sourceSha256": "46d61e762a8abac6170b4333c7aac30af2661afabe7fe635294a17318ea1cde9",
-  "status": "bounded semantic triage with all 37 formerly opaque addressed source inputs identified; replacements not yet admitted",
+  "status": "bounded semantic migration in progress: exact writer-containment continuation admitted; four obsolete Gym projection paths mapped to current May decision; no old outcome falsely fulfilled",
   "rules": [
     "No old Task is marked fulfilled by this receipt.",
     "replacement=null means no replacement Task has been admitted yet.",
@@ -15,23 +15,26 @@
     "total": 117,
     "byDisposition": {
       "inspect-current-evidence-for-alex-continuation": 35,
-      "consolidate-lineage-after-current-state-check": 39,
+      "consolidate-lineage-after-current-state-check": 33,
       "retain-may-boundary": 6,
-      "source-identified-current-lineage-check": 37
+      "source-identified-current-lineage-check": 37,
+      "superseded-execution-path-awaiting-current-may-decision": 4,
+      "retain-may-boundary-after-alex-technical-reconciliation": 2
     },
     "byProposedOwner": {
-      "alex": 111,
-      "may": 6
+      "alex": 105,
+      "may": 12
     },
     "withConditions": 33,
     "lineages": {
       "app-dependency-completion": 2,
-      "workspace-writer-containment": 4,
+      "workspace-writer-containment": 3,
       "dependency-authority": 2,
       "aks-taxonomy-and-correlation": 7,
       "gym-public-health": 8,
-      "unhandled-signal-owner-review": 11,
+      "provider-archive-recovery": 2,
       "gym-request-correlation": 3,
+      "unhandled-signal-owner-review": 10,
       "owner-review-contract": 2
     }
   },
@@ -122,8 +125,13 @@
       "disposition": "consolidate-lineage-after-current-state-check",
       "proposedOwner": "alex",
       "lineage": "workspace-writer-containment",
-      "replacement": null,
-      "basis": "Overlapping system-improvement lineage. Reconcile current source/results and preserve exact live Conditions before admitting at most one coherent Alex continuation; duplicates become superseded only after mapping.",
+      "replacement": {
+        "appId": "alex",
+        "requestId": "appdep_b2210accc9bfd6faf68121e1",
+        "role": "exact current-state reconciliation",
+        "status": "admitted"
+      },
+      "basis": "One fresh Alex continuation now reconciles this exact writer-containment identity with its two overlapping lineage members. Admission preserves old identity/evidence and does not establish fulfillment.",
       "preservation": [
         "latest corrections and acceptance",
         "accepted evidence/artifacts",
@@ -2369,11 +2377,17 @@
         "conditionIds": []
       },
       "outcome": "Regenerate Gym’s public task projection from current canonical public task/control-plane state and recompute `gym.valid-run-rate` from a current bounded receipt window, then return evidence sufficient for Gym to resolve evaluator finding `gym.app:stale-public-health-projections`.",
-      "disposition": "consolidate-lineage-after-current-state-check",
-      "proposedOwner": "alex",
+      "disposition": "superseded-execution-path-awaiting-current-may-decision",
+      "proposedOwner": "may",
       "lineage": "gym-public-health",
-      "replacement": null,
-      "basis": "Overlapping system-improvement lineage. Reconcile current source/results and preserve exact live Conditions before admitting at most one coherent Alex continuation; duplicates become superseded only after mapping.",
+      "replacement": {
+        "appId": "may",
+        "taskId": "goal/appdep_c1890444e02436f8d2131ffd",
+        "conditionId": "gym-valid-run-rate-retirement-reconcile-7cf298dd9dd55942",
+        "role": "current authoritative retired-metric decision",
+        "status": "waiting-human"
+      },
+      "basis": "Current canonical evidence shows gym.valid-run-rate is retired with stale current=0.76, zero snapshots and all 34 alerts resolved; this makes the old projection/recompute execution path obsolete, not fulfilled. The exact current May Task retains the packet-bound human decision and historical Gym/Evaluation evidence.",
       "preservation": [
         "latest corrections and acceptance",
         "accepted evidence/artifacts",
@@ -2507,11 +2521,17 @@
         "conditionIds": []
       },
       "outcome": "Refresh and reconcile Gym's public task projection and recompute `gym.valid-run-rate` from a current bounded receipt window, returning durable post-refresh evidence so Gym can close evaluator finding `gym.app:stale-public-health-projections`.",
-      "disposition": "consolidate-lineage-after-current-state-check",
-      "proposedOwner": "alex",
+      "disposition": "superseded-execution-path-awaiting-current-may-decision",
+      "proposedOwner": "may",
       "lineage": "gym-public-health",
-      "replacement": null,
-      "basis": "Overlapping system-improvement lineage. Reconcile current source/results and preserve exact live Conditions before admitting at most one coherent Alex continuation; duplicates become superseded only after mapping.",
+      "replacement": {
+        "appId": "may",
+        "taskId": "goal/appdep_c1890444e02436f8d2131ffd",
+        "conditionId": "gym-valid-run-rate-retirement-reconcile-7cf298dd9dd55942",
+        "role": "current authoritative retired-metric decision",
+        "status": "waiting-human"
+      },
+      "basis": "Current canonical evidence shows gym.valid-run-rate is retired with stale current=0.76, zero snapshots and all 34 alerts resolved; this makes the old projection/recompute execution path obsolete, not fulfilled. The exact current May Task retains the packet-bound human decision and historical Gym/Evaluation evidence.",
       "preservation": [
         "latest corrections and acceptance",
         "accepted evidence/artifacts",
@@ -2578,11 +2598,11 @@
         "conditionIds": []
       },
       "outcome": "Coordinate the exact infrastructure/provider-bound recovery attempt for the missing original 230-file compact preservation set, or return an explicit terminal adjudication proving that no safe retained source remains.",
-      "disposition": "consolidate-lineage-after-current-state-check",
-      "proposedOwner": "alex",
-      "lineage": "workspace-writer-containment",
+      "disposition": "retain-may-boundary-after-alex-technical-reconciliation",
+      "proposedOwner": "may",
+      "lineage": "provider-archive-recovery",
       "replacement": null,
-      "basis": "Overlapping system-improvement lineage. Reconcile current source/results and preserve exact live Conditions before admitting at most one coherent Alex continuation; duplicates become superseded only after mapping.",
+      "basis": "Exact 230-file archive recovery requires a May/provider decision and is not workspace-writer containment. Alex may reconcile technical evidence, but source retirement and migration do not fulfill or authorize this obligation.",
       "preservation": [
         "latest corrections and acceptance",
         "accepted evidence/artifacts",
@@ -2626,9 +2646,14 @@
       "outcome": "Using supported May Host/Runtime supervision only, attribute the responsible writer to exact command/session/workflow/PID-start identity; stop only the responsible external descendant and duplicate or replayed execution; repair the actual producer/reissue path fail-closed; prove at least 180 uninterrupted seconds without a lineage write and without any mutation of the incident path or stale Git metadata; return terminal App evidence and fresh correlated event.unhandled-signal-count-1h, infra.bus.subscriber-failed-count-1h, alert 4602, and every subscriber-failure row for this fresh request. Do not reuse appdep_7d94713590078a6994af0d6d or events 5789642/5791149, weaken admission, stop unrelated execution, or treat point-in-time absence as proof.",
       "disposition": "consolidate-lineage-after-current-state-check",
       "proposedOwner": "alex",
-      "lineage": "unhandled-signal-owner-review",
-      "replacement": null,
-      "basis": "Overlapping system-improvement lineage. Reconcile current source/results and preserve exact live Conditions before admitting at most one coherent Alex continuation; duplicates become superseded only after mapping.",
+      "lineage": "workspace-writer-containment",
+      "replacement": {
+        "appId": "alex",
+        "requestId": "appdep_b2210accc9bfd6faf68121e1",
+        "role": "exact current-state reconciliation",
+        "status": "admitted"
+      },
+      "basis": "The outcome is exact writer attribution, containment and quiescence proof, not an aggregate alert review. A fresh Alex continuation was admitted for this identity together with activate-and-prove-aks-writer-containment-20260819 and repair-aks-workspace-writer-containment-input-20260819; the old outcome remains unfulfilled pending its returned decision.",
       "preservation": [
         "latest corrections and acceptance",
         "accepted evidence/artifacts",
@@ -2718,11 +2743,17 @@
         "conditionIds": []
       },
       "outcome": "Regenerate /app/projects/gym.app/tasks/outcome-projection.json through the canonical Gym/Host projection path so it reflects the verified terminal lifecycle of improve/may generation 5.",
-      "disposition": "consolidate-lineage-after-current-state-check",
-      "proposedOwner": "alex",
+      "disposition": "superseded-execution-path-awaiting-current-may-decision",
+      "proposedOwner": "may",
       "lineage": "gym-public-health",
-      "replacement": null,
-      "basis": "Overlapping system-improvement lineage. Reconcile current source/results and preserve exact live Conditions before admitting at most one coherent Alex continuation; duplicates become superseded only after mapping.",
+      "replacement": {
+        "appId": "may",
+        "taskId": "goal/appdep_c1890444e02436f8d2131ffd",
+        "conditionId": "gym-valid-run-rate-retirement-reconcile-7cf298dd9dd55942",
+        "role": "current authoritative retired-metric decision",
+        "status": "waiting-human"
+      },
+      "basis": "Current canonical evidence shows gym.valid-run-rate is retired with stale current=0.76, zero snapshots and all 34 alerts resolved; this makes the old projection/recompute execution path obsolete, not fulfilled. The exact current May Task retains the packet-bound human decision and historical Gym/Evaluation evidence.",
       "preservation": [
         "latest corrections and acceptance",
         "accepted evidence/artifacts",
@@ -2764,11 +2795,11 @@
         "conditionIds": []
       },
       "outcome": "Obtain and durably record an infrastructure/provider decision for the missing original 230-file preservation archive: either coordinate safe offline recovery from a read-only clone of `/dev/sdd`, or provide terminal provider evidence that recovery is impossible.",
-      "disposition": "consolidate-lineage-after-current-state-check",
-      "proposedOwner": "alex",
-      "lineage": "workspace-writer-containment",
+      "disposition": "retain-may-boundary-after-alex-technical-reconciliation",
+      "proposedOwner": "may",
+      "lineage": "provider-archive-recovery",
       "replacement": null,
-      "basis": "Overlapping system-improvement lineage. Reconcile current source/results and preserve exact live Conditions before admitting at most one coherent Alex continuation; duplicates become superseded only after mapping.",
+      "basis": "Exact 230-file archive recovery requires a May/provider decision and is not workspace-writer containment. Alex may reconcile technical evidence, but source retirement and migration do not fulfill or authorize this obligation.",
       "preservation": [
         "latest corrections and acceptance",
         "accepted evidence/artifacts",
@@ -3287,8 +3318,13 @@
       "disposition": "consolidate-lineage-after-current-state-check",
       "proposedOwner": "alex",
       "lineage": "workspace-writer-containment",
-      "replacement": null,
-      "basis": "Overlapping system-improvement lineage. Reconcile current source/results and preserve exact live Conditions before admitting at most one coherent Alex continuation; duplicates become superseded only after mapping.",
+      "replacement": {
+        "appId": "alex",
+        "requestId": "appdep_b2210accc9bfd6faf68121e1",
+        "role": "exact current-state reconciliation",
+        "status": "admitted"
+      },
+      "basis": "One fresh Alex continuation now reconciles this exact writer-containment identity with its two overlapping lineage members. Admission preserves old identity/evidence and does not establish fulfillment.",
       "preservation": [
         "latest corrections and acceptance",
         "accepted evidence/artifacts",
@@ -3668,11 +3704,17 @@
         ]
       },
       "outcome": "Recover Gym’s public-health projection and valid-run-rate refresh capability by reconstructing a materially changed immutable Host candidate from the authoritative clean baseline, proving it without reusing the rejected candidate, obtaining explicit approval before activation, and then returning terminal live projection, metric, and workflow evidence for the parent outcome.",
-      "disposition": "consolidate-lineage-after-current-state-check",
-      "proposedOwner": "alex",
+      "disposition": "superseded-execution-path-awaiting-current-may-decision",
+      "proposedOwner": "may",
       "lineage": "gym-public-health",
-      "replacement": null,
-      "basis": "Overlapping system-improvement lineage. Reconcile current source/results and preserve exact live Conditions before admitting at most one coherent Alex continuation; duplicates become superseded only after mapping.",
+      "replacement": {
+        "appId": "may",
+        "taskId": "goal/appdep_c1890444e02436f8d2131ffd",
+        "conditionId": "gym-valid-run-rate-retirement-reconcile-7cf298dd9dd55942",
+        "role": "current authoritative retired-metric decision",
+        "status": "waiting-human"
+      },
+      "basis": "Current canonical evidence shows gym.valid-run-rate is retired with stale current=0.76, zero snapshots and all 34 alerts resolved; this makes the old projection/recompute execution path obsolete, not fulfilled. The exact current May Task retains the packet-bound human decision and historical Gym/Evaluation evidence.",
       "preservation": [
         "latest corrections and acceptance",
         "accepted evidence/artifacts",
@@ -3845,6 +3887,47 @@
       "reviewer": "bob",
       "sessionId": "s_1791117886758_34005740-6d3f-4236-90c4-21abdd9139fe",
       "result": "all 37 source identities matched; corrected omitted noisy-metric identities and clarified Alex reconciliation versus May decision authority"
+    }
+  },
+  "migrationProgress": {
+    "admittedContinuations": [
+      {
+        "appId": "alex",
+        "requestId": "appdep_b2210accc9bfd6faf68121e1",
+        "oldTaskIds": [
+          "activate-and-prove-aks-writer-containment-20260819",
+          "repair-aks-workspace-writer-containment-input-20260819",
+          "app-request/appdep_acc6f5a5a4cb4fe00ca2f025"
+        ],
+        "conditionId": "app-request:appdep_b2210accc9bfd6faf68121e1"
+      }
+    ],
+    "independentReviews": [
+      {
+        "appId": "alex",
+        "requestId": "appdep_fd5798c6edc4d09905205c70",
+        "conditionId": "app-request:appdep_fd5798c6edc4d09905205c70"
+      }
+    ],
+    "rejectedAdmissions": [
+      {
+        "requestId": "appdep_8bb3d085316ebee15b7b4e9f",
+        "reason": "targeted nonexistent exact Task; corrected by ordinary new Task admission"
+      },
+      {
+        "requestId": "appdep_d2d4d520386f92b2eecdf0c9",
+        "reason": "targeted nonexistent exact Task; corrected by ordinary new Task admission"
+      }
+    ],
+    "currentMayMappings": [
+      {
+        "taskId": "goal/appdep_c1890444e02436f8d2131ffd",
+        "conditionId": "gym-valid-run-rate-retirement-reconcile-7cf298dd9dd55942",
+        "oldTaskCount": 4
+      }
+    ],
+    "reviewEvidence": {
+      "bobSession": "s_1791118120085_b4762675-5ca7-43d8-8247-ff22139104e4"
     }
   }
 }
