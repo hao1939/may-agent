@@ -89,7 +89,9 @@ export function checkCrossEditGuard(
     blocked: true,
     message: `WRITE BLOCKED: Agent '${agentName}' has no declared permission to modify ${rel}. Report the blocked path and reason to your caller; do not bypass the guard.`,
   });
-  const paths = [...new Set([projectRoot, policy?.root].filter((root): root is string => Boolean(root)))]
+  const policyRoots = [policy?.root ?? projectRoot, policy?.executionRoot]
+    .filter((root): root is string => Boolean(root));
+  const paths = [...new Set(policyRoots)]
     .map((root) => relative(resolve(root), resolve(absolutePath)).split(sep).join("/"))
     .filter((path) => path !== ".." && !path.startsWith("../"));
   // The policy itself is operator-owned. A file-tool grant cannot rewrite its own authority.
@@ -105,7 +107,7 @@ export function checkCrossEditGuard(
       "shared/philosophy.md",
       "agents/shared/common-sense.md",
       "agents/shared/philosophy.md",
-    ].some((path) => paths.includes(path))
+    ].some((path) => paths.includes(path) || rel === path)
   )
     return deny();
   const target =

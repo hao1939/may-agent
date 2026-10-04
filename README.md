@@ -157,6 +157,8 @@ The installation may commit `shared/file-write-policy.json`:
 ```
 
 Patterns are relative to the installation root (or its execution checkout).
+An App-local working directory does not change that scope: `agents/*/agent.json`
+matches installation-level agents only, not `projects/example.app/agents/*/agent.json`.
 Explicit grants override protected paths and generic file-tool safeguards;
 agent names alone grant nothing. The policy file itself cannot be rewritten
 through these tools. The selected definition captures the policy with its

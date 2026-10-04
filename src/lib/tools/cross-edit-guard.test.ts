@@ -43,14 +43,29 @@ describe("file-tool policy", () => {
         "/tmp/task-checkout/projects/support.app/agents/worker/agent.json",
         "maintainer",
         "/tmp/task-checkout",
-        policy,
+        { ...policy, executionRoot: "/tmp/task-checkout" },
       ).blocked,
     ).toBe(false);
     expect(
       checkCrossEditGuard(`${root}/shared/file-write-policy.json`, "maintainer", root, {
+        root,
         protectedPaths: [],
         grants: [{ paths: ["**"], writers: ["maintainer"] }],
       }).blocked,
     ).toBe(true);
+  });
+  test("installation-relative grants do not expand under an App-local working directory", () => {
+    const scoped: FileWritePolicy = {
+      root,
+      protectedPaths: ["criteria/**"],
+      grants: [{ paths: ["agents/*/agent.json"], writers: ["maintainer"] }],
+    };
+    expect(checkCrossEditGuard(`${root}/agents/worker/agent.json`, "maintainer", root, scoped).blocked).toBe(false);
+    expect(checkCrossEditGuard(config, "maintainer", `${root}/projects/support.app`, scoped).blocked).toBe(true);
+    expect(checkCrossEditGuard(`${root}/projects/support.app/criteria/rules.md`, "worker", `${root}/projects/support.app`, scoped).blocked).toBe(false);
+    const rebound = { ...scoped, executionRoot: "/tmp/task-checkout" };
+    expect(checkCrossEditGuard("/tmp/task-checkout/agents/worker/agent.json", "maintainer", "/tmp/task-checkout", rebound).blocked).toBe(false);
+    expect(checkCrossEditGuard("/tmp/task-checkout/projects/support.app/agents/worker/agent.json", "maintainer", "/tmp/task-checkout", rebound).blocked).toBe(true);
+    expect(checkCrossEditGuard("/tmp/task-checkout/criteria/rules.md", "worker", "/tmp/task-checkout", rebound).blocked).toBe(true);
   });
 });

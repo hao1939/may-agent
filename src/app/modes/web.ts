@@ -17,7 +17,7 @@ export async function runWebOnlyMode(opts: {
   stateDir: string;
   port: number;
 }): Promise<never> {
-  const { port } = await startWebMode({ stateDir: opts.stateDir, port: opts.port });
+  const { port } = await startWebMode(opts);
   console.log(`[web] Dashboard running on http://localhost:${port}`);
   setInterval(() => {}, 30_000);
   return await new Promise<never>(() => {});

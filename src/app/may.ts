@@ -147,6 +147,7 @@ if (EMIT_MODE) {
 
 if (WEB_ONLY_MODE) {
   await runWebOnlyMode({
+    interfaceAgent,
     stateDir: PERSIST_DIR,
     port: parseWebPort(process.env.WEB_PORT),
   });

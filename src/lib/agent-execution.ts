@@ -239,6 +239,9 @@ function definitionForExecution(options: AgentPreparationOptions): SubagentDefin
   if (!root && !options.bashProcessGroupOwner) return options.definition;
   const executionRoot = root ?? options.definition.projectRoot ?? options.projectRoot;
   const agentName = options.definition.name;
+  const fileWritePolicy = options.definition.fileWritePolicy && root
+    ? { ...options.definition.fileWritePolicy, executionRoot: root }
+    : options.definition.fileWritePolicy;
   const tools = options.definition.tools.map((tool) => {
     switch (tool.name) {
       case "read":
@@ -246,14 +249,14 @@ function definitionForExecution(options: AgentPreparationOptions): SubagentDefin
       case "bash":
         return createBashTool(executionRoot, { processGroupOwner: options.bashProcessGroupOwner });
       case "edit":
-        return root ? createEditTool(executionRoot, { agentName, projectRoot: executionRoot, fileWritePolicy: options.definition.fileWritePolicy }) : tool;
+        return root ? createEditTool(executionRoot, { agentName, projectRoot: executionRoot, fileWritePolicy }) : tool;
       case "write":
-        return root ? createWriteTool(executionRoot, { agentName, projectRoot: executionRoot, fileWritePolicy: options.definition.fileWritePolicy }) : tool;
+        return root ? createWriteTool(executionRoot, { agentName, projectRoot: executionRoot, fileWritePolicy }) : tool;
       default:
         return tool;
     }
   });
-  return { ...options.definition, ...(root ? { projectRoot: executionRoot } : {}), tools };
+  return { ...options.definition, ...(root ? { projectRoot: executionRoot, fileWritePolicy } : {}), tools };
 }
 
 export type DirectAgentExecutionResult = {

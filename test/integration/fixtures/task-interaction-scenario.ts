@@ -123,7 +123,7 @@ async function conversation() {
   const f = fixture("owner", false, false, true);
   const socketPath = daemonSocketPath(f.persistDir, {
     instance: process.env.INSTANCE || "default",
-    interfaceAgent: process.env.DAEMON_AGENT || "host",
+    interfaceAgent: process.env.AGENT || process.env.DAEMON_AGENT || "host",
   });
   const control = await attachControlSocket({
     socketPath,

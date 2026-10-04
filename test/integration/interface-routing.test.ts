@@ -8,6 +8,48 @@ import { cliSend } from "../../src/app/cli-send.js";
 import { parseAppArgs } from "../../src/app/app-args.js";
 import { observeDaemonLiveness } from "../../src/app/modes/maintenance.js";
 import { runEmitMode } from "../../src/app/modes/emit.js";
+import { spawn } from "node:child_process";
+import { once } from "node:events";
+import { fileURLToPath } from "node:url";
+
+test("web-only CLI forwards its selected agent through to HTTP and the control socket", async () => {
+  const root = mkdtempSync(join(tmpdir(), "web-only-routing-"));
+  const control = await attachControlSocket({
+    socketPath: daemonSocketPath(root, { instance: "web-test", interfaceAgent: "helper" }),
+    agentName: "helper", instance: "web-test", getSessionId: () => "fixture",
+    getStatus: () => ({ sessions: [], activeWork: false }),
+    emitEvent: () => {}, subscribeEvents: () => () => {},
+  });
+  const child = spawn(process.execPath, [fileURLToPath(new URL("../../src/app/may.ts", import.meta.url)), "--web", "--agent", "helper"], {
+    env: { ...process.env, APP_ROOT: root, PROJECT_ROOT: root, STATE_DIR: root,
+      WEB_PORT: "0", AGENT: "unused-env-agent", DAEMON_AGENT: "unused-legacy",
+      INSTANCE: "web-test", DAEMON_INSTANCE: "web-test" },
+    stdio: ["ignore", "pipe", "pipe"], timeout: 10_000,
+  });
+  let output = "";
+  child.stderr.on("data", chunk => { output += chunk.toString(); });
+  const closed = once(child, "close");
+  try {
+    const port = await new Promise<number>((resolve, reject) => {
+      child.once("error", reject);
+      child.once("exit", code => reject(new Error(`Web-only exited (${code}): ${output}`)));
+      child.stdout.on("data", chunk => {
+        output += chunk.toString();
+        const match = output.match(/Dashboard running on http:\/\/localhost:(\d+)/);
+        if (match) resolve(Number(match[1]));
+      });
+    });
+    const base = `http://127.0.0.1:${port}`;
+    expect(await (await fetch(`${base}/api/interface`)).json()).toMatchObject({ agent: "helper" });
+    expect(await (await fetch(`${base}/api/readiness`)).json()).toMatchObject({ ready: true,
+      socketPath: daemonSocketPath(root, { instance: "web-test", interfaceAgent: "helper" }) });
+  } finally {
+    child.kill("SIGKILL");
+    await closed;
+    control.close();
+    rmSync(root, { recursive: true, force: true });
+  }
+}, 15_000);
 
 test.each([
   { AGENT: "helper", DAEMON_AGENT: undefined },
