@@ -46,6 +46,8 @@ See the manual's [repair feedback guidance](../../docs/2b-manual/task-execution-
   source, design and evidence updates.
 - `/app/projects/may-agent` is the separate Host Git repository. `/app` is the
   Apps Git repository. Use isolated candidates and preserve unrelated work.
+  Apply that repository’s delivery rules; see the
+  [repository boundary](../../docs/development-workflow.md#repository-delivery-boundary).
 - The existing Bob, tech-lead, Evaluation and Gym source remains available even
   when those Apps are disabled. Reuse useful capability implementations.
 
