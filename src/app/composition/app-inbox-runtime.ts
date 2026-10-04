@@ -801,7 +801,15 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
           ? options.db.prepare("SELECT app_id FROM app_inbox_items WHERE origin_event_id = ? LIMIT 1").get(eventId)
           : null;
         const retainedAppId = typeof existing?.app_id === "string" ? existing.app_id : undefined;
-        const candidates = retainedAppId ? [retainedAppId] : host.matchingAppIds(message.targetOwner, message.input);
+        if (retainedAppId) {
+          return {
+            accepted: true,
+            by: `app-inbox:${retainedAppId}:message`,
+            route: "direct",
+            note: "addressed agent message already admitted to App inbox",
+          };
+        }
+        const candidates = host.matchingAppIds(message.targetOwner, message.input);
         if (candidates.length === 1) {
           const admitted = host.admit({
             appId: candidates[0]!,

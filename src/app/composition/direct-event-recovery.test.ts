@@ -7,7 +7,7 @@ import { DbWriter } from "../../lib/db-writer.js";
 import { closeDb, getDb } from "../../lib/requests.js";
 import { fakeTaskAttacher } from "../../../test/fixtures/task-attachment.js";
 import { AppRegistry } from "../core/apps/registry.js";
-import { EventBus, EVENT_ROW_ID } from "../core/events/bus.js";
+import { EventBus, EVENT_DELIVERY_RESULT, EVENT_ROW_ID } from "../core/events/bus.js";
 import { getAppEventAdmissionPlan } from "../core/state/app-event-admission-store.js";
 import { startAppInboxRuntime, type AppInboxRuntime } from "./app-inbox-runtime.js";
 
@@ -101,33 +101,44 @@ test("recovers a report saved before its first App plan, independent of global d
          const db = new Database(process.argv[1]);
          db.exec("PRAGMA journal_mode = WAL; PRAGMA busy_timeout = 0; BEGIN IMMEDIATE");
          console.log("locked");
-         await Bun.sleep(250);
+         await Bun.stdin.text();
          db.exec("COMMIT");
          db.close();`,
         join(root, "may.db"),
       ],
-      { stdout: "pipe", stderr: "pipe" },
+      { stdin: "pipe", stdout: "pipe", stderr: "pipe" },
     );
-    const lockOutput = lockHolder.stdout.getReader();
-    expect(new TextDecoder().decode((await lockOutput.read()).value)).toContain("locked");
-    runtime = await startAppInboxRuntime({
-      db,
-      bus,
-      registry,
-      persistDir: root,
-      schedulesEnabled: false,
-      scanIntervalMs: 10_000,
-      attachTask: fakeTaskAttacher(db, (input) => {
-        return { taskId: `work/${input.inboxInputId ?? input.inputId}` };
-      }),
-    });
-    // The first delivery observes the real lock and leaves the marker owed.
-    // Once the independent writer releases it, the bounded recovery path can
-    // retry the same Event identity and acknowledge the durable plan.
-    expect(await lockHolder.exited).toBe(0);
-    expect(db.prepare("SELECT app_admission_pending FROM events WHERE id = ?").get(eventId)).toEqual({
-      app_admission_pending: 1,
-    });
+    try {
+      const lockOutput = lockHolder.stdout.getReader();
+      expect(new TextDecoder().decode((await lockOutput.read()).value)).toContain("locked");
+      runtime = await startAppInboxRuntime({
+        db,
+        bus,
+        registry,
+        persistDir: root,
+        schedulesEnabled: false,
+        scanIntervalMs: 10_000,
+        attachTask: fakeTaskAttacher(db, (input) => {
+          return { taskId: `work/${input.inboxInputId ?? input.inputId}` };
+        }),
+      });
+      // Invoke the same production durable route while the child still owns
+      // the writer slot. No fixed delay can let this assertion run post-lock.
+      const lockedAttempt = bus.redeliverPersisted(event, eventId, "app-inbox-route");
+      expect(lockedAttempt[EVENT_DELIVERY_RESULT]).toBeUndefined();
+      expect(getAppEventAdmissionPlan(db, eventId)).toBeNull();
+      expect(db.prepare("SELECT app_admission_pending FROM events WHERE id = ?").get(eventId)).toEqual({
+        app_admission_pending: 1,
+      });
+    } finally {
+      lockHolder.stdin.end();
+      const exitCode = await Promise.race([
+        lockHolder.exited,
+        Bun.sleep(2_000).then(() => -1),
+      ]);
+      if (exitCode === -1) lockHolder.kill();
+      expect(exitCode).toBe(0);
+    }
     runtime.close();
     runtime = await startAppInboxRuntime({
       db,
@@ -229,6 +240,84 @@ test("first admission after restart uses the current subscription while retainin
       origin_event_id: eventId,
       input_data: JSON.stringify({ value: "replacement:retained" }),
     });
+  } finally {
+    runtime?.close();
+    closeDb(root);
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("lost acknowledgement retains an addressed message recipient across owner remapping", async () => {
+  const root = mkdtempSync(join(tmpdir(), "may-event-addressed-recovery-"));
+  let runtime: AppInboxRuntime | undefined;
+  try {
+    const appDir = (id: string) => join(root, `${id}.app`);
+    mkdirSync(appDir("alpha"), { recursive: true });
+    mkdirSync(appDir("beta"), { recursive: true });
+    const definition = (id: string, agent: string) => defineApp({
+      id,
+      version: 1,
+      agent,
+      inputSchema: Type.Object({
+        kind: Type.Literal("message"),
+        data: Type.Object({ message: Type.String() }),
+      }),
+      task: ({ id: inputId }) => ({
+        kind: "desired",
+        intent: { id: `work/${inputId}`, parentId: "root", outcome: "Answer", acceptance: ["Answered"] },
+      }),
+      tasks: {},
+    });
+    let remapped = false;
+    const registry = new AppRegistry(async () => [
+      { appDir: appDir("alpha"), definition: definition("alpha", remapped ? "other" : "recipient") },
+      { appDir: appDir("beta"), definition: definition("beta", remapped ? "recipient" : "other") },
+    ]);
+    await registry.reload();
+    const db = getDb(root);
+    const bus = producer(root);
+    const writer = new DbWriter(root);
+    bus.setDeliveryRecorder(writer.recordDelivery);
+    const start = () => startAppInboxRuntime({
+      db,
+      bus,
+      registry,
+      persistDir: root,
+      schedulesEnabled: false,
+      scanIntervalMs: 10_000,
+    });
+    runtime = await start();
+    const event = bus.emit({
+      type: "message.created",
+      source: "agent:sender",
+      owner: "agent:recipient",
+      data: { from: "agent:sender", to: "agent:recipient", content: "retain me" },
+    });
+    const eventId = event[EVENT_ROW_ID]!;
+    await until(() => db.prepare("SELECT COUNT(*) AS count FROM app_inbox_items").get()?.count === 1);
+    expect(db.prepare(`SELECT app_id, origin_event_id, idempotency_key, input_data
+      FROM app_inbox_items`).get()).toEqual({
+      app_id: "alpha",
+      origin_event_id: eventId,
+      idempotency_key: `event:${eventId}`,
+      input_data: JSON.stringify({ message: "retain me", context: { from: "agent:sender", sourceEventId: eventId } }),
+    });
+
+    // Model an accepted direct inbox write whose marker acknowledgement was
+    // lost, then publish a registry where fresh owner selection chooses beta.
+    db.prepare("UPDATE events SET app_admission_pending = 1 WHERE id = ?").run(eventId);
+    runtime.close();
+    remapped = true;
+    await registry.reload();
+    runtime = await start();
+    expect(runtime.host.matchingAppIds("recipient", {
+      kind: "message",
+      data: { message: "retain me", context: { from: "agent:sender", sourceEventId: eventId } },
+    })).toEqual(["beta"]);
+    await until(() => db.prepare("SELECT app_admission_pending FROM events WHERE id = ?").get(eventId)?.app_admission_pending === 0);
+    expect(db.prepare("SELECT app_id, origin_event_id FROM app_inbox_items").all()).toEqual([
+      { app_id: "alpha", origin_event_id: eventId },
+    ]);
   } finally {
     runtime?.close();
     closeDb(root);
