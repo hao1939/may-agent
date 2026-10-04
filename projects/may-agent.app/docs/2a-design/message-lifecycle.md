@@ -172,9 +172,12 @@ current Conversation result. Unrelated open Requests or waits do not require a
 follow-up for that review. When work remains, `followUp` targets an ordinary work
 Task. A Conversation executor consumes input admitted through Conversation;
 attaching ordinary Task work to it bypasses that input contract. Host admission
-checks the actual target executor and rejects incompatible input before saving
-effects. An explicit incompatible follow-up gets the same feedback during
-`finish` validation, so the agent can correct it in the current attempt. An App
+identifies Conversation Tasks by their saved Conversation input bindings, using
+the same rule as execution dispatch. An ordinary App executor may also be named
+`conversation`; its name alone does not change its input contract. Admission
+rejects incompatible input before saving effects. An explicit incompatible
+follow-up gets the same feedback during `finish` validation, so the agent can
+correct it in the current attempt. An App
 mapper still runs only once, during settlement, under the same atomic check.
 
 Closure must match the latest accepted scope and explain the outcome in

@@ -99,7 +99,8 @@ Topic/Request updates and an optional exact ordinary May Task whose scope fits.
 Do not target the current Conversation Task. The helper returns an ordinary
 Conversation `followUp`, carrying the review in
 `goal.data.context.metricResponse`. Preparing this handoff claims no accepted
-disposition. Host checks target executor compatibility before admission;
+disposition. Host checks target input compatibility before admission, identifying
+Conversation Tasks by saved Conversation bindings rather than executor names.
 Conversation input and ordinary Task input are not interchangeable.
 A new goal selects the `metric-follow-through` workflow. Each eligible attempt
 asks the owning agent to judge the full current assignment, including the
