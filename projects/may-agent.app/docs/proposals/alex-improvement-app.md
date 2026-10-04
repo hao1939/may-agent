@@ -21,6 +21,15 @@ May–Alex–Scout installation with other Apps disabled after migration.
 **Implementation status:** Not implemented or activated. This proposal adds no
 App registration, agent, event subscription or runtime behavior.
 
+Implementation update (2026-10-04): the bootstrap is running and the team move
+is implemented in the candidate. Alex-local agent names have no App prefix;
+May requests ordinary Alex work rather than calling its private specialists.
+Current development and research guidance lives in
+[Alex's manual](../../../alex.app/README.md). The
+[migration receipt](../../../alex.app/migration-receipt-2026-10-04.md) separately
+records source activation, live trials and unfinished legacy disposition. This
+proposal remains the migration target until that cutover is complete.
+
 ## Purpose and sufficient outcome
 
 **Alex carries worthwhile improvements from evidence through a decision,

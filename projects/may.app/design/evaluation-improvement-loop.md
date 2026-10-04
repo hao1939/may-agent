@@ -5,29 +5,30 @@ controller. Evaluation findings and observed execution failures share owner
 judgment and the later improvement stages; they keep different evidence readers.
 Normal execution recovery remains in the original work.
 
-The [Alex proposal](../../may-agent.app/docs/proposals/alex-improvement-app.md)
-places new system-improvement coordination with App `alex`, owned by agent
-`alex`, using the same Task and evidence mechanisms. It is unimplemented;
-May's current intake and retained ownership described here stay in place until
-the separately verified transition. The proposed operating target enables only
-May, Alex and Scout; useful Evaluation/Gym and maintenance capabilities move
-under Alex as part of the breaking migration.
+The [Alex migration](../../may-agent.app/docs/proposals/alex-improvement-app.md)
+moves ordinary Evaluation report intake and system-improvement coordination to
+App `alex`. Its owner selects the plain local specialist names `bob`,
+`tech-lead`, `evaluator`, `evaluator-deepseek`, `gym` and `judge`. See the
+[migration receipt](../../alex.app/migration-receipt-2026-10-04.md) for exact
+source, activation and remaining legacy obligations.
 
-Evaluation publications, review-lag breaches and Evaluation operation breaches now
-route to ordinary May `evaluation-intake` work in App source. Each
-report keeps its immutable publication identity and original event/caller context.
-The standing responsibility has a fixed intent, so changed evidence reuses the
-Task without silently revising requirements. Duplicate transport reuses its
-admission. A closed intake still requires explicit authorized reopening.
+Task and metric publications now enter ordinary Alex work with immutable
+publication identity and saved event/caller context. Alex judges their meaning
+and reuses fitting work; exact event replay remains infra's responsibility.
+May retains independent review-lag and operation-breach oversight over Alex,
+plus human commitments and escalations. That oversight can execute without
+Alex successfully publishing a report. Ordinary samples do not trigger an LLM.
 
-The Conversation handler is independent of this route. May verifies findings,
-reuses fitting investigation work and returns ordinary Task judgments. Summary,
-facts and results remain quiet unless the agent decides a message is owed.
-This fixes delivery of a diagnosis to executable work; it does not prove that
-Evaluation selects fewer repeated semantic reviews or that live recovery has
-occurred. The connected regression is `evaluation-routing.test.ts`; the broader
-[Task communication proposal](../../may-agent.app/docs/proposals/tasks-and-communication-resources.md)
-retains the common execution change.
+The connected regression `../../alex.app/evaluation-routing.test.ts` exercises
+report admission and execution while May's Conversation handler is broken,
+without duplicate replay or a routine human reply. It proves routing, not the
+quality of model judgment or complete migration of old obligations.
+
+The remaining pilot detail below records the pre-migration May-owned process.
+Apply its evidence and approval rules with Alex coordinating new improvement
+work; retained May Tasks keep their current caller responsibilities until an
+explicit disposition moves them. Agent ownership and authority are not inferred
+from this historical description.
 
 The [metric-review source candidate](../../evaluation.app/design/metric-pattern-review.md)
 uses the same judgment and improvement boundary for `{appId, metricId}` reports.

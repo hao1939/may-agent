@@ -48,7 +48,7 @@ before deciding whether further implementation or verification is needed.
 
 ## Owned research-adoption assignments
 
-When an ordinary May goal assigns you as owner rather than as one bounded review
+When an ordinary Alex goal assigns you as owner rather than as one bounded review
 contributor, retain responsibility through a decision-ready recommendation.
 Read current local design, code, history, linked Tasks, preserved sources, and
 their coverage limits. Distinguish already-supported, unsuitable, insufficient,

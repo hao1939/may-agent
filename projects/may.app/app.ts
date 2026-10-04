@@ -86,43 +86,6 @@ const mayInputSchema = Type.Union([
   ),
 ]);
 
-const STANDING_RESEARCH_TASK_ID = "research-adoption";
-const standingResearchOutcome =
-  "Continuously assess qualified Scout findings and older archived research for small, evidence-backed improvements to this installation.";
-const standingResearchAcceptance = [
-  "Return a current-first Bob recommendation or a supported no-change, negative, or visible deferral outcome; retain source limits, linked evidence, owner and next action without applying a candidate.",
-];
-
-function requireStandingResearchContract(
-  data: Record<string, unknown>,
-  outcome: string,
-  acceptance: readonly string[],
-): void {
-  const matchesAcceptance =
-    acceptance.length === standingResearchAcceptance.length &&
-    acceptance.every(
-      (item, index) => item.trim() === standingResearchAcceptance[index],
-    );
-  const allowedFields = new Set([
-    "outcome",
-    "acceptance",
-    "assignment",
-    "research",
-  ]);
-  const hasCallerSpecificRequirements = Object.keys(data).some(
-    (field) => !allowedFields.has(field),
-  );
-  if (
-    outcome !== standingResearchOutcome ||
-    !matchesAcceptance ||
-    hasCallerSpecificRequirements
-  ) {
-    throw new Error(
-      "Standing research adoption requires the exact fixed contract without caller-specific requirements; use targeted mode to preserve additional requirements",
-    );
-  }
-}
-
 function selectedAgent(data: Record<string, unknown>): string {
   const assignment = record(data.assignment);
   if (Object.keys(assignment).length === 0) return "may";
@@ -132,23 +95,6 @@ function selectedAgent(data: Record<string, unknown>): string {
     );
   }
   return "may";
-}
-
-function researchMode(
-  data: Record<string, unknown>,
-  agent: string,
-): "standing" | "targeted" | null {
-  const research = record(data.research);
-  if (research.adoption !== "research-adoption") return null;
-  if (
-    agent !== "may-bob" ||
-    (research.mode !== "standing" && research.mode !== "targeted")
-  ) {
-    throw new Error(
-      "Research adoption requires Bob and a standing or targeted mode",
-    );
-  }
-  return research.mode;
 }
 
 // One standing intake responsibility; individual publications remain exact Task inputs.
@@ -212,11 +158,13 @@ export function taskForMayInput(
     };
   }
   const agent = selectedAgent(data);
-  const mode = researchMode(data, agent);
+  if (record(data.research).adoption === "research-adoption") {
+    throw new Error("Research adoption is owned by App alex");
+  }
   const metricReview = metricReviewInput(admitted.input);
   if (metricReview !== undefined) {
     readMetricReview(metricReview);
-    if (agent !== "may" || mode)
+    if (agent !== "may")
       throw new Error("Metric follow-through requires May");
   }
   const outcome = String(data.outcome ?? "").trim();
@@ -228,9 +176,6 @@ export function taskForMayInput(
     : [];
   if (!outcome || acceptance.length === 0) {
     throw new Error("May goal requires outcome and acceptance");
-  }
-  if (mode === "standing") {
-    requireStandingResearchContract(data, outcome, acceptance);
   }
   const hasRevision = Object.prototype.hasOwnProperty.call(data, "revision");
   const revision = record(data.revision);
@@ -254,31 +199,15 @@ export function taskForMayInput(
     intent: {
       id: revisesExisting
         ? revisionTaskId
-        : mode === "standing"
-          ? STANDING_RESEARCH_TASK_ID
-          : `goal/${admitted.id.replace(/[^a-zA-Z0-9._-]+/g, "-")}`,
+        : `goal/${admitted.id.replace(/[^a-zA-Z0-9._-]+/g, "-")}`,
       parentId: "may",
-      outcome: mode === "standing" ? standingResearchOutcome : outcome,
-      acceptance: mode === "standing" ? standingResearchAcceptance : acceptance,
+      outcome,
+      acceptance,
       agent,
       ...(metricReview !== undefined
         ? { workflow: "metric-follow-through" }
         : {}),
-      input:
-        mode === "standing"
-          ? {
-              kind: "goal",
-              data: {
-                outcome: standingResearchOutcome,
-                acceptance: standingResearchAcceptance,
-                assignment: { agent: "may-bob" },
-                research: {
-                  adoption: "research-adoption",
-                  mode: "standing",
-                },
-              },
-            }
-          : { kind: admitted.input.kind, data },
+      input: { kind: admitted.input.kind, data },
       priority: "P1" as const,
     },
   };
@@ -305,51 +234,6 @@ function requiredText(
     throw new Error(`${eventType} requires non-empty ${field}`);
   }
   return value;
-}
-
-export function scoutResearchHandoffInput(
-  event: AppEvent<Record<string, unknown>>,
-): AppInput | null {
-  const data = record(event.data);
-  if (
-    event.source !== "app-task:scout-knowledge-lib" ||
-    data.producerAppId !== "scout-knowledge-lib"
-  ) {
-    return null;
-  }
-  for (const field of [
-    "sourceUrl",
-    "sourceRevision",
-    "artifact",
-    "artifactHash",
-    "claim",
-    "limits",
-    "possibleApplication",
-  ]) {
-    requiredText(data, field, event.type);
-  }
-  if (!/^[a-f0-9]{64}$/.test(String(data.artifactHash))) {
-    throw new Error(`${event.type} requires SHA-256 artifactHash`);
-  }
-  return {
-    kind: "goal",
-    data: {
-      outcome: standingResearchOutcome,
-      acceptance: standingResearchAcceptance,
-      assignment: { agent: "may-bob" },
-      research: {
-        adoption: "research-adoption",
-        mode: "standing",
-        opportunity: "scout-qualified-handoff",
-        handoff: structuredClone(data),
-        transport: {
-          source: event.source,
-          localKey: event.localKey,
-          target: structuredClone(event.target),
-        },
-      },
-    },
-  };
 }
 
 export function observerFailureInput(

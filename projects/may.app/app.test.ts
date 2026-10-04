@@ -9,7 +9,6 @@ import app, {
   evaluationTaskReportInput,
   observerFailureInput,
   admissionFailureInput,
-  scoutResearchHandoffInput,
   taskForMayInput,
 } from "./app.ts";
 
@@ -246,49 +245,6 @@ describe("canonical May conversation App", () => {
 
   test("does not keep the migrated weekly research schedule", () => {
     expect(app.schedules.find(({ id }) => id === "research-adoption-archive-review")).toBeUndefined();
-  });
-
-  test("normalizes only qualified Scout handoffs without Evaluation identity", () => {
-    const event: AppEvent<Record<string, unknown>> = {
-      type: "scout.research.qualified",
-      source: "app-task:scout-knowledge-lib",
-      owner: "agent:scout",
-      localKey: "research-source-revision",
-      target: { appId: "may", project: "may" },
-      data: {
-        producerAppId: "scout-knowledge-lib",
-        sourceUrl: "https://example.test/paper",
-        sourceRevision: "v2",
-        artifact:
-          "/app/projects/scout-knowledge-lib/knowledge/findings/paper.md",
-        artifactHash: "a".repeat(64),
-        claim: "A bounded technique may reduce cost.",
-        limits: "Author-reported result; not locally reproduced.",
-        possibleApplication: "Compare against the current task mapper.",
-      },
-    };
-    const input = scoutResearchHandoffInput(event)!;
-    expect(input).toMatchObject({
-      kind: "goal",
-      data: {
-        assignment: { agent: "may-bob" },
-        research: {
-          adoption: "research-adoption",
-          mode: "standing",
-          opportunity: "scout-qualified-handoff",
-        },
-      },
-    });
-    expect(JSON.stringify(input)).not.toContain("evaluationTaskReport");
-    expect(
-      scoutResearchHandoffInput({ ...event, source: "agent:evaluator" }),
-    ).toBeNull();
-    expect(() =>
-      scoutResearchHandoffInput({
-        ...event,
-        data: { ...event.data, artifactHash: "not-a-hash" },
-      }),
-    ).toThrow("SHA-256 artifactHash");
   });
 
   test("method selection does not add a development input or bound workflow", () => {
