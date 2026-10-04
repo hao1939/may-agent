@@ -121,7 +121,7 @@ export async function emitResearchHandoff(
   await emit({
     type: "scout.research.qualified",
     localKey: `research-${researchHandoffKey(handoff)}`,
-    target: { appId: "may", project: "may" },
+    target: { appId: "alex", project: "alex" },
     data: { producerAppId: "scout-knowledge-lib", ...handoff },
   });
 }

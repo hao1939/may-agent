@@ -1,0 +1,14 @@
+{
+  "name": "alex-evaluator-deepseek",
+  "description": "Independent DeepSeek reviewer for exact Task outcomes",
+  "domain": "independent Task outcome auditing",
+  "model": "deepseek-v4-flash",
+  "heartbeat": false,
+  "tools": [
+    "coding",
+    "query_db",
+    "message",
+    "finish"
+  ],
+  "memoryLimit": 5
+}
