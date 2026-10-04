@@ -1,5 +1,49 @@
 # Reddit Source Contract Review — 2026-09-24
 
+## 2026-10-04 owner decision: ordinary-permalink lane blocked; preserve responsibility in review-only mode
+
+**Applied source state:** treat unauthenticated ordinary `www.reddit.com` permalink
+body retrieval as blocked from the configured Scout runtime. Automatic Reddit
+wakes remain responsible for the source, but they should reconcile **review-only**
+and should not launch another identical search-feed-plus-ordinary-permalink scan
+while this state is current. This suspends the low-value scan execution, not the
+standing `explore-reddit` responsibility, its on-demand route, or its existing
+four-hour wake opportunity.
+
+A single current control request at `2026-10-04T13:15Z` used the configured
+`ScoutResearchBot/1.0 (read-only public-source research; contact: local may-agent
+installation)` User-Agent, redirects enabled, a 10-second connection timeout,
+and a 30-second total timeout. The endpoint was the ordinary public permalink
+`https://www.reddit.com/r/reddit.com/comments/87/the_downing_street_memo/`,
+chosen independently of the latest feed candidate. It returned **HTTP 403**
+(`HTTP/2 403`), 190,240 bytes, and Reddit's “You've been blocked by network
+security” marker; response SHA-256 was
+`dc131f91303300301ab1b23a7e3b0a084b9e325b318b2722d00fc637247b8b7a`.
+No login, bypass, alternate endpoint, or source substitution was attempted.
+
+That control result matches both the repeated pattern assessed in Evaluation
+report `explore-reddit-039edac4a9b8588b.md` (seven or more consecutive
+permalink-403 no-ops) and the latest accepted `explore-reddit` evidence at
+`2026-10-04T12:12:51.998Z` (search Atom HTTP 200; candidate `t3_1wxdxim` exact
+ordinary permalink HTTP 403; no publication). It supports a runtime/path-level
+block for the tested ordinary-permalink lane; it does **not** prove that every
+Reddit representation, network, client, or future request is blocked.
+
+Review-only mode ends when any one of these evidence triggers arrives: a newer
+ordinary-permalink success from the configured Scout runtime and User-Agent; a
+known runtime, network, or access-contract change; or an explicit operator
+request for one bounded recheck. A triggered check remains read-only,
+unauthenticated, bounded, and stop-on-boundary. If it succeeds, ordinary source
+exploration may resume and the historical cadence recommendation is void; if it
+fails, this state can be reaffirmed without starting a repeated scan loop.
+
+**Effect and limitation:** this owner policy prevents identical automatic HTTP
+scans while keeping the standing source responsibility observable and
+on-demand. It does not mutate the App's four-hour schedule or assert permanent
+Reddit unavailability. The schedule can continue to wake the standing Task; the
+Task's existing acceptance already permits review-only outcomes when no scan is
+useful.
+
 ## 2026-10-02 decision update: daily bounded check, not four-hourly scanning or retirement
 
 **Recommendation to May:** approve reducing the automatic Reddit opportunity
