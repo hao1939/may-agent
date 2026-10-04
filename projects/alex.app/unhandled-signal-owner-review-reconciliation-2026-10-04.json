@@ -12,7 +12,7 @@
     "count": 10,
     "identitySelection": "Exact equality on frontier.items[].lineage; related identities below are relationship/evidence references only, never additional disposition items."
   },
-  "status": "recommendation-only; no Task, Condition, runtime or production database mutation; no commit or deployment",
+  "status": "accepted May withdrawal-unfulfilled disposition and current causal comparison incorporated; narrow Host implementation pending separately; no historical outcome fulfilled",
   "sources": [
     {
       "path": "/app/worktrees/alex/input-app_7a279469-7ac8-4bec-894a-9314635bd452-a882250576/projects/alex.app/legacy-frontier-disposition-2026-10-04.json",
@@ -36,11 +36,11 @@
     "fulfilledCount": 0,
     "obsoleteOldExecutionPaths": 10,
     "preciseNewAlexTechnicalContinuations": 1,
-    "summary": "Do not collapse ten outcomes into blanket fulfillment or one suppression fix. Preserve all old specs/returns. One current causal-timestamp evaluation is warranted; the separate noisy-event query gap already has exact current May work. Dispose original proof promises/caller obligations through May, without resurrecting retired controllers or implicit child gating.",
+    "summary": "May withdrew all ten historical outcomes unfulfilled while preserving exact callers and unknown Conditions. The bounded current-source comparison falsified no-change and supports a narrow completion-causal fallback adaptation; implementation is separately admitted without rollout authority. The separate five-name noisy-event work remains unchanged and must not be duplicated.",
     "technicalContinuation": {
       "owner": "alex",
-      "admitted": false,
-      "reuseCheckRequired": true,
+      "admitted": true,
+      "reuseCheckRequired": false,
       "outcome": "Judge and, if worthwhile, prepare the smallest current-source metric-causality adaptation with independent representative evidence, not a legacy cherry-pick.",
       "candidate": null,
       "baseline": "d8c87757782ae5750984bedc239b00eab4c76715",
@@ -48,12 +48,26 @@
       "stopCondition": "One deterministic comparison settles source/caller/fallback precedence, scheduled path, shared producer and failed-source safety. Stop/replan on contract ambiguity or alert regression; do not seek live rollout without the existing authority path.",
       "smallestAdaptation": "Per successful source completion fallback (with explicit source/caller precedence) and distinguish internally scheduled request time; shared producer needs one completion instant. Reuse current collector, no new controller.",
       "cost": "One narrow Host collector/test change if justified plus one independent Alex-hosted comparison and May proposal review. No ongoing process; maintain causality and failure tests. No-change is simpler but leaves a reproduced timestamp lead.",
-      "humanBoundary": "Old staged-rollout commitment and exactly-one independent evaluation constraint remain for May to retain or revise; this recommendation alone revises neither."
+      "humanBoundary": "Old staged-rollout commitment and exactly-one independent evaluation constraint remain for May to retain or revise; this recommendation alone revises neither.",
+      "requestId": "appdep_154c005c87f7d8c436e76d9f",
+      "taskId": "input/appdep_154c005c87f7d8c436e76d9f",
+      "status": "done",
+      "decision": "narrow-current-source-adaptation-supported",
+      "comparisonEvidence": "Direct fallback preceded producer completion by 183 ms and scheduled-path fallback by 176 ms; explicit producer/caller times and failed-source safety were preserved.",
+      "implementationRequestId": "appdep_db79add2ae9333ab16f704e9",
+      "implementationTaskId": "input/appdep_db79add2ae9333ab16f704e9",
+      "implementationStatus": "admitted-pending"
     },
     "mayDisposition": {
-      "admitted": false,
+      "admitted": true,
       "scope": "Disposition obsolete sample-feedback proof/staged proposal promises, frozen ae8ed87 evaluation scope if replaced, and exact historic owner-review/alert/aggregate callers; withdrawal-unfulfilled versus a precise surviving obligation. Reuse already returned AKS decision only after exact-scope read.",
-      "prohibited": "No silent cancellation, approval, Condition satisfaction/rebinding, legacy Task mutation, broad suppression, deployment or recreation of unavailable App consumers."
+      "prohibited": "No silent cancellation, approval, Condition satisfaction/rebinding, legacy Task mutation, broad suppression, deployment or recreation of unavailable App consumers.",
+      "requestId": "appdep_7bfd3ac4b0fa68969a9e3b23",
+      "taskId": "goal/appdep_7bfd3ac4b0fa68969a9e3b23",
+      "status": "done",
+      "decision": "withdrawn-unfulfilled",
+      "currentHumanDecisionRequired": false,
+      "resultSummary": "All ten retired outcomes withdrawn unfulfilled; exact historical callers and unknown Conditions preserved. No additional current May reply or Hao ask survives from these ten."
     }
   },
   "currentEvidence": {

@@ -1,0 +1,1096 @@
+{
+  "kind": "alex-gym-request-correlation-reconciliation-contribution",
+  "version": 1,
+  "generatedAt": "2026-10-04T13:42:45.404137+00:00",
+  "authorSession": "s_1791121065520_0995a42e-296f-4622-a5e9-cc4671d23cbd",
+  "scope": "Exactly entries whose lineage equals gym-request-correlation. Recommendation for Alex, not an admitted continuation, legacy settlement, approval or activation.",
+  "sources": [
+    {
+      "path": "projects/alex.app/legacy-frontier-disposition-2026-10-04.json",
+      "sha256": "db7f4e9a128ba607bc87dd07f638c7b2222b85d6c006fc16f32da906d9e643c4"
+    },
+    {
+      "path": "/app/.state/alex-migration-20261004/legacy-frontier-snapshot.json",
+      "sha256": "bd3f6a1cc65e125c61f5a8380cba746d55e3d8143edc6f8d6825af286d5d7f97"
+    },
+    {
+      "path": "/app/.state/alex-migration-20261004/legacy-frontier-index.json",
+      "sha256": "46d61e762a8abac6170b4333c7aac30af2661afabe7fe635294a17318ea1cde9"
+    },
+    {
+      "path": "projects/alex.app/migration-receipt-2026-10-04.md",
+      "sha256": "bbca49cb1239c3eee389d28da41cade031d3c61df3e6d9148ca67517c6c1b754"
+    },
+    {
+      "path": "/app/projects/may-agent.app/docs/proposals/alex-improvement-app.md",
+      "sha256": "0bff163bad32fb56cccbaf87c9747737e632d5b8a5c50dd75de8fe0e9fc5ad83"
+    }
+  ],
+  "currentSource": {
+    "appsWorktreeHead": "510ee53e6f3a483066640e7b5f39cc310ba791d2",
+    "loadedDefinitions": "b924e240dadd1c5d9042cd0f5d0c5b235ae35aee-definitions-v4",
+    "hostInspectedHead": "d8c87757782ae5750984bedc239b00eab4c76715",
+    "currentAppsRead": "GET http://localhost:8080/api/apps returned exactly alex, may, scout-knowledge-lib",
+    "oldCandidates": "git merge-base --is-ancestor returned 1 for both 96ebe7cb78022737a2675e798d65679c7ba2a3e7 and 0ff56f626cbfb3646a098deef4042c8b262d1bd3 against inspected Host HEAD. This is ancestry evidence, not proof of semantic absence."
+  },
+  "items": [
+    {
+      "identity": {
+        "appId": "may-agent",
+        "taskId": "app-request/appdep_b94c899a17cf157ddc78bd5d",
+        "generation": 1,
+        "phase": "waiting",
+        "owner": "may",
+        "conditionIds": [
+          "gym-finish-result-definition-release-preflight-clean"
+        ]
+      },
+      "lineage": "gym-request-correlation",
+      "fullOldRecord": {
+        "app_id": "may-agent",
+        "task_id": "app-request/appdep_b94c899a17cf157ddc78bd5d",
+        "generation": 1,
+        "resource_version": 16,
+        "phase": "waiting",
+        "updated_at": 1787761704249,
+        "resource_json": {
+          "metadata": {
+            "creator": {
+              "appId": "may"
+            },
+            "generation": 1,
+            "id": "app-request/appdep_b94c899a17cf157ddc78bd5d",
+            "resourceVersion": 16
+          },
+          "spec": {
+            "acceptance": [
+              "Loaded Gym App source/fingerprint is proven to include the explicit finish-result variant in /app/projects/gym.app/app.ts and agents/gym/workflows/regression-run.ts; cite machine-observable activation and loaded-readiness receipts.",
+              "A non-executing live admission/readback probe preserves sourceRequestId appdep_9be92f70d1f32757a748438d, priorFailedRequestId appdep_a372e40b096b6d63639c3656, mode, outcome, baseline, candidate, sampleScope, requiredProof, constraints, returnPath, and generated executionRequestId value-for-value.",
+              "Malformed or incomplete finish-result envelopes fail closed, unsupported aliases remain rejected, and ordinary/unrelated Gym routing remains healthy in the loaded consumer.",
+              "The activation does not invoke the real frozen comparison: corrected comparison launch count remains 0, with no generic benchmark substitution or retry.",
+              "Do not activate or modify the May Runtime candidate, benchmark truth, providers, credentials, schedules, historical evidence, runtime-owned tasks, or unrelated workspace changes.",
+              "Return exact activation receipt, loaded source identity, probe correlation, launch count, readiness decision, and Git-revert rollback boundary."
+            ],
+            "input": {
+              "data": {
+                "acceptance": [
+                  "Loaded Gym App source/fingerprint is proven to include the explicit finish-result variant in /app/projects/gym.app/app.ts and agents/gym/workflows/regression-run.ts; cite machine-observable activation and loaded-readiness receipts.",
+                  "A non-executing live admission/readback probe preserves sourceRequestId appdep_9be92f70d1f32757a748438d, priorFailedRequestId appdep_a372e40b096b6d63639c3656, mode, outcome, baseline, candidate, sampleScope, requiredProof, constraints, returnPath, and generated executionRequestId value-for-value.",
+                  "Malformed or incomplete finish-result envelopes fail closed, unsupported aliases remain rejected, and ordinary/unrelated Gym routing remains healthy in the loaded consumer.",
+                  "The activation does not invoke the real frozen comparison: corrected comparison launch count remains 0, with no generic benchmark substitution or retry.",
+                  "Do not activate or modify the May Runtime candidate, benchmark truth, providers, credentials, schedules, historical evidence, runtime-owned tasks, or unrelated workspace changes.",
+                  "Return exact activation receipt, loaded source identity, probe correlation, launch count, readiness decision, and Git-revert rollback boundary."
+                ],
+                "constraints": [
+                  "Activation scope is only the Gym App definition/workflow consumer needed for `mode=finish-result-comparison`.",
+                  "Preserve all unrelated dirty workspace changes; do not commit, stash, discard, or absorb them into the activation artifact.",
+                  "Do not submit the real frozen run-regression comparison request in this dependency.",
+                  "Static receipt: /app/projects/gym/.state/proofs/finish-result-appdep_9be92f70d1f32757a748438d/consumer-variant-static-receipt.json.",
+                  "May Runtime candidate commit 0ff56f626cbfb3646a098deef4042c8b262d1bd3 must remain inactive."
+                ],
+                "outcome": "Through the approved Gym owner/supervisor activation path, activate only the verified explicit `mode=finish-result-comparison` consumer variant currently in /app/projects/gym.app, then live-prove the loaded consumer preserves the exact request envelope through admission, desired Task input, workflow handoff contract, and App readback without executing the frozen comparison or activating May Runtime."
+              },
+              "kind": "owner-review"
+            },
+            "mode": "achieve",
+            "outcome": "Through the approved Gym owner/supervisor activation path, activate only the verified explicit `mode=finish-result-comparison` consumer variant currently in /app/projects/gym.app, then live-prove the loaded consumer preserves the exact request envelope through admission, desired Task input, workflow handoff contract, and App readback without executing the frozen comparison or activating May Runtime.",
+            "owner": "may",
+            "parentId": "platform-system-review-feedback-loop",
+            "priority": "P1"
+          },
+          "status": {
+            "conditionIds": [
+              "gym-finish-result-definition-release-preflight-clean"
+            ],
+            "evidence": [
+              "Exact Task readback preserves the accepted Condition and records the failed stage gate at source commit deec78e028be5c4b4cc72cf398aeb3d994a05b84.",
+              "The new event supplies no observation resolving the Condition; it only adds the post-edit verification receipt to the request constraints.",
+              "Existing safety evidence records comparisonLaunchCount=0, releaseActivated=false, reloadRequested=false, and workspaceSourceMutated=false."
+            ],
+            "observedAttemptId": "r_1_26f707af-29a1-4d35-8b43-441cf5dc162e",
+            "observedGeneration": 1,
+            "phase": "waiting",
+            "result": {
+              "authoritativeArtifact": "/app/projects/may-agent.app/artifacts/owner-review/definition-reload-wait-20260826/disposition.json",
+              "blockerCount": 67,
+              "canonicalStagePreflight": {
+                "exit": 23,
+                "passed": false
+              },
+              "comparisonLaunchCount": 0,
+              "conditionId": "gym-finish-result-definition-release-preflight-clean",
+              "decision": "KEEP_EXISTING_RELEASE_PREFLIGHT_WAIT",
+              "postEditReceipt": "/app/projects/gym/.state/proofs/finish-result-appdep_9be92f70d1f32757a748438d/post-edit-verification/receipt.d7039a8377ce20519a9d49c7b232e4dbb0559d8d782c33917912d1c631dee86c.json",
+              "releaseActivated": false,
+              "reloadRequested": false,
+              "taskId": "app-request/appdep_b94c899a17cf157ddc78bd5d"
+            },
+            "summary": "The exact Gym consumer activation Task is waiting on the existing whole-repository definition-source release gate. Current authoritative evidence still records 67 preserved blockers and a failed canonical stage preflight (exit 23); the added post-edit receipt does not establish completion of the four owner dispositions or authorize reload. No Gym activation, May Runtime activation, or comparison launch has occurred.",
+            "updatedAt": "2026-08-26T16:28:24.249Z"
+          }
+        },
+        "trigger_json": null
+      },
+      "pinnedIndexEntry": {
+        "appId": "may-agent",
+        "taskId": "app-request/appdep_b94c899a17cf157ddc78bd5d",
+        "generation": 1,
+        "phase": "waiting",
+        "owner": "may",
+        "outcome": "Through the approved Gym owner/supervisor activation path, activate only the verified explicit `mode=finish-result-comparison` consumer variant currently in /app/projects/gym.app, then live-prove the loaded consumer preserves the exact request envelope through admission, desired Task input, workflow handoff contract, and App readback without executing the frozen comparison or activating May Runtime.",
+        "acceptance": [
+          "Loaded Gym App source/fingerprint is proven to include the explicit finish-result variant in /app/projects/gym.app/app.ts and agents/gym/workflows/regression-run.ts; cite machine-observable activation and loaded-readiness receipts.",
+          "A non-executing live admission/readback probe preserves sourceRequestId appdep_9be92f70d1f32757a748438d, priorFailedRequestId appdep_a372e40b096b6d63639c3656, mode, outcome, baseline, candidate, sampleScope, requiredProof, constraints, returnPath, and generated executionRequestId value-for-value.",
+          "Malformed or incomplete finish-result envelopes fail closed, unsupported aliases remain rejected, and ordinary/unrelated Gym routing remains healthy in the loaded consumer.",
+          "The activation does not invoke the real frozen comparison: corrected comparison launch count remains 0, with no generic benchmark substitution or retry.",
+          "Do not activate or modify the May Runtime candidate, benchmark truth, providers, credentials, schedules, historical evidence, runtime-owned tasks, or unrelated workspace changes.",
+          "Return exact activation receipt, loaded source identity, probe correlation, launch count, readiness decision, and Git-revert rollback boundary."
+        ],
+        "summary": "The exact Gym consumer activation Task is waiting on the existing whole-repository definition-source release gate. Current authoritative evidence still records 67 preserved blockers and a failed canonical stage preflight (exit 23); the added post-edit receipt does not establish completion of the four owner dispositions or authorize reload. No Gym activation, May Runtime activation, or comparison launch has occurred.",
+        "conditionIds": [
+          "gym-finish-result-definition-release-preflight-clean"
+        ]
+      },
+      "frontierEntryAtRead": {
+        "old": {
+          "appId": "may-agent",
+          "taskId": "app-request/appdep_b94c899a17cf157ddc78bd5d",
+          "generation": 1,
+          "phase": "waiting",
+          "owner": "may",
+          "conditionIds": [
+            "gym-finish-result-definition-release-preflight-clean"
+          ]
+        },
+        "outcome": "Through the approved Gym owner/supervisor activation path, activate only the verified explicit `mode=finish-result-comparison` consumer variant currently in /app/projects/gym.app, then live-prove the loaded consumer preserves the exact request envelope through admission, desired Task input, workflow handoff contract, and App readback without executing the frozen comparison or activating May Runtime.",
+        "disposition": "consolidate-lineage-after-current-state-check",
+        "proposedOwner": "alex",
+        "lineage": "gym-request-correlation",
+        "replacement": null,
+        "basis": "Overlapping system-improvement lineage. Reconcile current source/results and preserve exact live Conditions before admitting at most one coherent Alex continuation; duplicates become superseded only after mapping.",
+        "preservation": [
+          "latest corrections and acceptance",
+          "accepted evidence/artifacts",
+          "remaining work",
+          "caller/human reply relationship",
+          "exact live Conditions"
+        ]
+      },
+      "exactConditions": [
+        {
+          "app_id": "may-agent",
+          "condition_id": "gym-finish-result-definition-release-preflight-clean",
+          "state": "unknown",
+          "condition_json": "{\"metadata\":{\"generation\":1,\"id\":\"gym-finish-result-definition-release-preflight-clean\",\"resourceVersion\":2},\"spec\":{\"expected\":{\"canonicalStagePreflight\":\"pass\",\"ownerDispositions\":{\"aks-rp-e2e\":\"complete\",\"gym\":\"complete\",\"may-agent\":\"complete\",\"scout-knowledge-lib\":\"complete\"},\"reloadRequestedBeforePass\":false,\"reviewedSnapshot\":\"committed-whole-repository-definition-scope\"},\"owner\":\"may-agent and listed App owners\",\"requestedAction\":\"Preserve and explicitly disposition every file listed in the authoritative artifact, isolate and approve the Gym finish-result consumer within the committed definition set, review the whole-repository snapshot, and make DefinitionSourceReleaseStore.stage() pass before requesting /reload.\",\"reviewAfterMs\":300000,\"subject\":\"definition-source-release:whole-repository\",\"type\":\"external-workspace-disposition\"},\"status\":{\"createdAt\":\"2026-08-26T13:24:40.897Z\",\"observedAt\":\"2026-08-26T16:28:24.243Z\",\"observedGeneration\":0,\"state\":\"unknown\"}}"
+        }
+      ],
+      "directRelationships": [
+        {
+          "app_id": "may-agent",
+          "source_task_id": "app-request/appdep_b94c899a17cf157ddc78bd5d",
+          "relation_kind": "parent",
+          "target_task_id": "platform-system-review-feedback-loop"
+        }
+      ],
+      "directCallerInputs": [
+        {
+          "id": "appdep_01d47fc2e7e9d97f50723748",
+          "app_id": "may-agent",
+          "parent_id": null,
+          "conversation_id": null,
+          "conversation_seq": null,
+          "channel": null,
+          "channel_thread_id": null,
+          "channel_message_id": null,
+          "reply_to_source_id": null,
+          "source_kind": "app",
+          "source_id": "gym",
+          "input_kind": "owner-review",
+          "input_data": "{\"outcome\":\"Through the approved Gym owner/supervisor activation path, activate only the verified explicit `mode=finish-result-comparison` consumer variant currently in /app/projects/gym.app, then live-prove the loaded consumer preserves the exact request envelope through admission, desired Task input, workflow handoff contract, and App readback without executing the frozen comparison or activating May Runtime.\",\"acceptance\":[\"Loaded Gym App source/fingerprint is proven to include the explicit finish-result variant in /app/projects/gym.app/app.ts and agents/gym/workflows/regression-run.ts; cite machine-observable activation and loaded-readiness receipts.\",\"A non-executing live admission/readback probe preserves sourceRequestId appdep_9be92f70d1f32757a748438d, priorFailedRequestId appdep_a372e40b096b6d63639c3656, mode, outcome, baseline, candidate, sampleScope, requiredProof, constraints, returnPath, and generated executionRequestId value-for-value.\",\"Malformed or incomplete finish-result envelopes fail closed, unsupported aliases remain rejected, and ordinary/unrelated Gym routing remains healthy in the loaded consumer.\",\"The activation does not invoke the real frozen comparison: corrected comparison launch count remains 0, with no generic benchmark substitution or retry.\",\"Do not activate or modify the May Runtime candidate, benchmark truth, providers, credentials, schedules, historical evidence, runtime-owned tasks, or unrelated workspace changes.\",\"Return exact activation receipt, loaded source identity, probe correlation, launch count, readiness decision, and Git-revert rollback boundary.\"],\"constraints\":[\"Activation scope is only the Gym App definition/workflow consumer needed for `mode=finish-result-comparison`.\",\"Preserve all unrelated dirty workspace changes; do not commit, stash, discard, or absorb them into the activation artifact.\",\"Do not submit the real frozen run-regression comparison request in this dependency.\",\"Static receipt: /app/projects/gym/.state/proofs/finish-result-appdep_9be92f70d1f32757a748438d/consumer-variant-static-receipt.json.\",\"Post-edit receipt: /app/projects/gym/.state/proofs/finish-result-appdep_9be92f70d1f32757a748438d/post-edit-verification/receipt.d7039a8377ce20519a9d49c7b232e4dbb0559d8d782c33917912d1c631dee86c.json.\",\"May Runtime candidate commit 0ff56f626cbfb3646a098deef4042c8b262d1bd3 must remain inactive.\"]}",
+          "status": "handling",
+          "session_id": null,
+          "waiting_on_kind": "task",
+          "waiting_on_id": "app-request/appdep_b94c899a17cf157ddc78bd5d",
+          "result": null,
+          "available_at": 1789026733061,
+          "review_at": null,
+          "lease_generation": 3,
+          "lease_owner": null,
+          "lease_expires_at": null,
+          "origin_event_id": 6171361,
+          "idempotency_key": "task-dependency:gym:owner-review/appdep_9be92f70d1f32757a748438d-e22848fb334440a3/repair-and-run-finish-result-comparison:2:appdep_b94c899a17cf157ddc78bd5d:01d47fc2e7e9d97f50723748",
+          "created_at": 1787756206739,
+          "updated_at": 1789026733061,
+          "completed_at": null,
+          "channel_target_id": null,
+          "continues_request_id": null,
+          "started_at": 1787756206812,
+          "changed_at": 1787892033744,
+          "target_task_id": "app-request/appdep_b94c899a17cf157ddc78bd5d",
+          "topic_id": null,
+          "handling": null,
+          "task_admission_key": null,
+          "execution_task_id": null,
+          "creator_json": null,
+          "recovery_json": null
+        },
+        {
+          "id": "appdep_b94c899a17cf157ddc78bd5d",
+          "app_id": "may-agent",
+          "parent_id": null,
+          "conversation_id": null,
+          "conversation_seq": null,
+          "channel": null,
+          "channel_thread_id": null,
+          "channel_message_id": null,
+          "reply_to_source_id": null,
+          "source_kind": "app",
+          "source_id": "gym",
+          "input_kind": "owner-review",
+          "input_data": "{\"outcome\":\"Through the approved Gym owner/supervisor activation path, activate only the verified explicit `mode=finish-result-comparison` consumer variant currently in /app/projects/gym.app, then live-prove the loaded consumer preserves the exact request envelope through admission, desired Task input, workflow handoff contract, and App readback without executing the frozen comparison or activating May Runtime.\",\"acceptance\":[\"Loaded Gym App source/fingerprint is proven to include the explicit finish-result variant in /app/projects/gym.app/app.ts and agents/gym/workflows/regression-run.ts; cite machine-observable activation and loaded-readiness receipts.\",\"A non-executing live admission/readback probe preserves sourceRequestId appdep_9be92f70d1f32757a748438d, priorFailedRequestId appdep_a372e40b096b6d63639c3656, mode, outcome, baseline, candidate, sampleScope, requiredProof, constraints, returnPath, and generated executionRequestId value-for-value.\",\"Malformed or incomplete finish-result envelopes fail closed, unsupported aliases remain rejected, and ordinary/unrelated Gym routing remains healthy in the loaded consumer.\",\"The activation does not invoke the real frozen comparison: corrected comparison launch count remains 0, with no generic benchmark substitution or retry.\",\"Do not activate or modify the May Runtime candidate, benchmark truth, providers, credentials, schedules, historical evidence, runtime-owned tasks, or unrelated workspace changes.\",\"Return exact activation receipt, loaded source identity, probe correlation, launch count, readiness decision, and Git-revert rollback boundary.\"],\"constraints\":[\"Activation scope is only the Gym App definition/workflow consumer needed for `mode=finish-result-comparison`.\",\"Preserve all unrelated dirty workspace changes; do not commit, stash, discard, or absorb them into the activation artifact.\",\"Do not submit the real frozen run-regression comparison request in this dependency.\",\"Static receipt: /app/projects/gym/.state/proofs/finish-result-appdep_9be92f70d1f32757a748438d/consumer-variant-static-receipt.json.\",\"May Runtime candidate commit 0ff56f626cbfb3646a098deef4042c8b262d1bd3 must remain inactive.\"]}",
+          "status": "handling",
+          "session_id": null,
+          "waiting_on_kind": "task",
+          "waiting_on_id": "app-request/appdep_b94c899a17cf157ddc78bd5d",
+          "result": null,
+          "available_at": 1789026733061,
+          "review_at": null,
+          "lease_generation": 6,
+          "lease_owner": null,
+          "lease_expires_at": null,
+          "origin_event_id": 6139591,
+          "idempotency_key": "task-dependency:gym:owner-review/appdep_9be92f70d1f32757a748438d-e22848fb334440a3/repair-and-run-finish-result-comparison:1:activate-gym-finish-result-consumer-appdep-9be9-v1:b94c899a17cf157ddc78bd5d",
+          "created_at": 1787727619886,
+          "updated_at": 1789026733061,
+          "completed_at": null,
+          "channel_target_id": null,
+          "continues_request_id": null,
+          "started_at": 1787727620737,
+          "changed_at": 1787892029406,
+          "target_task_id": null,
+          "topic_id": null,
+          "handling": null,
+          "task_admission_key": null,
+          "execution_task_id": null,
+          "creator_json": null,
+          "recovery_json": null
+        }
+      ],
+      "creator": {
+        "appId": "may"
+      },
+      "parentId": "platform-system-review-feedback-loop",
+      "relationshipLimits": "Creator appId is preserved exactly; no missing creator taskId is invented. All matching direct snapshot edges and retained caller inputs are included. Snapshot is not a complete terminal event archive.",
+      "judgment": {
+        "proposedDisposition": "obsolete-execution-path-outcome-unfulfilled-await-may-caller-authority-disposition",
+        "legacyFulfilled": false,
+        "replacement": null,
+        "usefulness": "Exact finish-result consumer activation belongs to a retired Gym App. Preserve the useful requirement of value-for-value request/result correlation, not the old run-regression variant or whole-repository release gate.",
+        "acceptedProgress": "Recovered static receipt reports 40 focused/110 full tests and loadedConsumerReady=false. Recovered terminal.record.json is evidenced-hold with correctedComparisonLaunches=0; it explicitly rejects the unrelated 8-pass/40-fail generic benchmark as comparison evidence. Retained Task records failed stage preflight exit 23 with 67 blockers, no reload and no activation.",
+        "missingProof": [
+          "Successful exact Gym finish-result definition release and loaded-source identity",
+          "Value-for-value non-executing live admission/task/workflow/readback probe with zero corrected launches",
+          "Terminal response to both retained Gym source inputs and the original Gym caller; no terminal activation artifact recovered"
+        ],
+        "boundary": "Alex owns modern request-preservation engineering. May owns disposition of the historical supervisor release/preflight and original Gym reply promise; historical caller is Gym owner-review/appdep_9be92f70d1f32757a748438d-e22848fb334440a3/repair-and-run-finish-result-comparison, not merely the spec parent platform-system-review-feedback-loop.",
+        "next": "Recommend obsolete-execution-path, unfulfilled, with no activation/retry. Ask May to withdraw the historical activation/reply obligation unfulfilled or identify a precise surviving current need. Do not infer the old preflight Condition satisfied by the later Alex installation reload."
+      }
+    },
+    {
+      "identity": {
+        "appId": "may-agent",
+        "taskId": "repair-gym-owner-review-input-correlation-20260820",
+        "generation": 1,
+        "phase": "attention",
+        "owner": "may",
+        "conditionIds": []
+      },
+      "lineage": "gym-request-correlation",
+      "fullOldRecord": {
+        "app_id": "may-agent",
+        "task_id": "repair-gym-owner-review-input-correlation-20260820",
+        "generation": 1,
+        "resource_version": 37,
+        "phase": "attention",
+        "updated_at": 1787893375323,
+        "resource_json": {
+          "metadata": {
+            "creator": {
+              "appId": "may"
+            },
+            "generation": 1,
+            "id": "repair-gym-owner-review-input-correlation-20260820",
+            "resourceVersion": 37
+          },
+          "spec": {
+            "acceptance": [
+              "Persist a baseline that reproduces the current defect: an accepted exact-comparison input retains its payload in the App inbox but the Gym task binding drops that payload or coalesces it into unrelated `runtime/owner-review` work.",
+              "Produce the smallest immutable, content-hashed consumer correction and regression proof showing the exact request payload and request identity reach an independently reconcilable Gym owner carrier, its correlated App result, and its terminal artifact; malformed, unsupported, unrelated, and duplicate inputs remain rejected or visibly distinct.",
+              "Obtain one persisted, content-hashed Gym comparison naming exact candidate 96ebe7cb78022737a2675e798d65679c7ba2a3e7 and sole parent 353e4ebc501034f1a3f6c127b2dfceb287ca7f9d and covering tech-lead and app-ops admission without subscriber failure, supported metric-definition projection, and unknown, non-runnable, cross-project, malformed, ambiguous, invalid-definition, and unsupported-projection controls.",
+              "Keep production, benchmark truth, provider/routing configuration, and the prior invalid comparison unchanged unless an exact immutable consumer change is separately presented to Hao and explicitly approved; any approved activation must use the supported supervisor-owned path and prove loaded identity and runtime health before the comparison is accepted.",
+              "Return the corrected consumer proof, correlated Gym App result, comparison path and SHA-256, and completion wake for parent review; if any consumer, identity, receipt, terminal-artifact, activation, or authority link remains missing, preserve the same task and identify that exact gap rather than claiming completion."
+            ],
+            "category": "consumer-repair",
+            "mode": "achieve",
+            "outcome": "Restore a supported request-specific Gym App consumer for the exact addressed-route and metric-definition baseline-vs-candidate comparison, then carry the request for candidate 96ebe7cb78022737a2675e798d65679c7ba2a3e7 and parent 353e4ebc501034f1a3f6c127b2dfceb287ca7f9d through a correlated terminal Gym result and content-hashed comparison without conflating unrelated standing owner-review work or mutating production or benchmark truth.",
+            "outputs": [],
+            "owner": "may",
+            "parentId": "activate-addressed-route-and-remeasure-alert-4566-20260816",
+            "priority": "P0"
+          },
+          "status": {
+            "conditionIds": [],
+            "evidence": [
+              "Observed completed Gym request appdep_78e696bb880935a9485fae40 and exact Task owner-review/appdep_78e696bb880935a9485fae40-b40abb56a34a7e69.",
+              "Preserved comparison artifact SHA-256 e3897576b9e7a4b1294d0fe2b9b0f2f34c2e904cc1a8e0b53c03532e6be1a926 for candidate 96ebe7cb78022737a2675e798d65679c7ba2a3e7 and sole parent 353e4ebc501034f1a3f6c127b2dfceb287ca7f9d.",
+              "Gym's terminal disposition is hold/no-rely, not approval or completion, because fresh metric loading failed and commit 1a523d3615a does not contain the supplied live consumer bytes.",
+              "Gym confirmed that no benchmark truth or production state changed."
+            ],
+            "observedGeneration": 1,
+            "phase": "attention",
+            "summary": "Resolved agent may is not a runnable agent",
+            "updatedAt": "2026-08-28T05:02:55.323Z"
+          }
+        },
+        "trigger_json": null
+      },
+      "pinnedIndexEntry": {
+        "appId": "may-agent",
+        "taskId": "repair-gym-owner-review-input-correlation-20260820",
+        "generation": 1,
+        "phase": "attention",
+        "owner": "may",
+        "outcome": "Restore a supported request-specific Gym App consumer for the exact addressed-route and metric-definition baseline-vs-candidate comparison, then carry the request for candidate 96ebe7cb78022737a2675e798d65679c7ba2a3e7 and parent 353e4ebc501034f1a3f6c127b2dfceb287ca7f9d through a correlated terminal Gym result and content-hashed comparison without conflating unrelated standing owner-review work or mutating production or benchmark truth.",
+        "acceptance": [
+          "Persist a baseline that reproduces the current defect: an accepted exact-comparison input retains its payload in the App inbox but the Gym task binding drops that payload or coalesces it into unrelated `runtime/owner-review` work.",
+          "Produce the smallest immutable, content-hashed consumer correction and regression proof showing the exact request payload and request identity reach an independently reconcilable Gym owner carrier, its correlated App result, and its terminal artifact; malformed, unsupported, unrelated, and duplicate inputs remain rejected or visibly distinct.",
+          "Obtain one persisted, content-hashed Gym comparison naming exact candidate 96ebe7cb78022737a2675e798d65679c7ba2a3e7 and sole parent 353e4ebc501034f1a3f6c127b2dfceb287ca7f9d and covering tech-lead and app-ops admission without subscriber failure, supported metric-definition projection, and unknown, non-runnable, cross-project, malformed, ambiguous, invalid-definition, and unsupported-projection controls.",
+          "Keep production, benchmark truth, provider/routing configuration, and the prior invalid comparison unchanged unless an exact immutable consumer change is separately presented to Hao and explicitly approved; any approved activation must use the supported supervisor-owned path and prove loaded identity and runtime health before the comparison is accepted.",
+          "Return the corrected consumer proof, correlated Gym App result, comparison path and SHA-256, and completion wake for parent review; if any consumer, identity, receipt, terminal-artifact, activation, or authority link remains missing, preserve the same task and identify that exact gap rather than claiming completion."
+        ],
+        "summary": "Resolved agent may is not a runnable agent",
+        "conditionIds": []
+      },
+      "frontierEntryAtRead": {
+        "old": {
+          "appId": "may-agent",
+          "taskId": "repair-gym-owner-review-input-correlation-20260820",
+          "generation": 1,
+          "phase": "attention",
+          "owner": "may",
+          "conditionIds": []
+        },
+        "outcome": "Restore a supported request-specific Gym App consumer for the exact addressed-route and metric-definition baseline-vs-candidate comparison, then carry the request for candidate 96ebe7cb78022737a2675e798d65679c7ba2a3e7 and parent 353e4ebc501034f1a3f6c127b2dfceb287ca7f9d through a correlated terminal Gym result and content-hashed comparison without conflating unrelated standing owner-review work or mutating production or benchmark truth.",
+        "disposition": "consolidate-lineage-after-current-state-check",
+        "proposedOwner": "alex",
+        "lineage": "gym-request-correlation",
+        "replacement": null,
+        "basis": "Overlapping system-improvement lineage. Reconcile current source/results and preserve exact live Conditions before admitting at most one coherent Alex continuation; duplicates become superseded only after mapping.",
+        "preservation": [
+          "latest corrections and acceptance",
+          "accepted evidence/artifacts",
+          "remaining work",
+          "caller/human reply relationship",
+          "exact live Conditions"
+        ]
+      },
+      "exactConditions": [],
+      "directRelationships": [
+        {
+          "app_id": "may-agent",
+          "source_task_id": "repair-gym-owner-review-input-correlation-20260820",
+          "relation_kind": "parent",
+          "target_task_id": "activate-addressed-route-and-remeasure-alert-4566-20260816"
+        },
+        {
+          "app_id": "may-agent",
+          "source_task_id": "evaluate-metric-causal-timestamps-rollout-20260820",
+          "relation_kind": "dependency",
+          "target_task_id": "repair-gym-owner-review-input-correlation-20260820"
+        },
+        {
+          "app_id": "may-agent",
+          "source_task_id": "evaluate-telegram-admission-bounded-lookup-20260820",
+          "relation_kind": "dependency",
+          "target_task_id": "repair-gym-owner-review-input-correlation-20260820"
+        }
+      ],
+      "directCallerInputs": [],
+      "creator": {
+        "appId": "may"
+      },
+      "parentId": "activate-addressed-route-and-remeasure-alert-4566-20260816",
+      "relationshipLimits": "Creator appId is preserved exactly; no missing creator taskId is invented. All matching direct snapshot edges and retained caller inputs are included. Snapshot is not a complete terminal event archive.",
+      "judgment": {
+        "proposedDisposition": "obsolete-execution-path-outcome-unfulfilled-await-may-caller-authority-disposition",
+        "legacyFulfilled": false,
+        "replacement": null,
+        "usefulness": "The old standing owner-review carrier defect is useful historical motivation for exact independent comparison ownership, already supported in current Alex mapping and Host result fixtures. The exact historical addressed-route/metric comparison is not interchangeable with current frozen behavioral comparison.",
+        "acceptedProgress": "Retained accepted evidence names completed Gym request appdep_78e696bb880935a9485fae40 and owner-review/appdep_78e696bb880935a9485fae40-b40abb56a34a7e69, candidate 96ebe7cb78022737a2675e798d65679c7ba2a3e7 versus sole parent 353e4ebc501034f1a3f6c127b2dfceb287ca7f9d, comparison SHA e3897576b9e7a4b1294d0fe2b9b0f2f34c2e904cc1a8e0b53c03532e6be1a926. The result was hold/no-rely: fresh metric loading failed and commit 1a523d3615a did not contain supplied live consumer bytes. This partial terminal result does not fulfill the repair outcome.",
+        "missingProof": [
+          "Recover and verify bytes for comparison SHA e3897576b9e7a4b1294d0fe2b9b0f2f34c2e904cc1a8e0b53c03532e6be1a926 (not found in bounded proof/review search)",
+          "Correct source-bound consumer and valid baseline/candidate comparison covering all acceptance controls",
+          "Accepted correlated terminal completion and parent wake, replacing neither the invalid prior comparison nor the exact request"
+        ],
+        "boundary": "Alex owns any demonstrated current correlation defect. May owns historical parent activate-addressed-route-and-remeasure-alert-4566-20260816 and its Gym proof/reply disposition. Incoming dependencies from evaluate-metric-causal-timestamps-rollout-20260820 and evaluate-telegram-admission-bounded-lookup-20260820 must not be dropped.",
+        "next": "Recommend no new technical Task without an enabled-App falsifier. Preserve historical comparison as hold/no-rely and unfulfilled. May must disposition the old parent and downstream proof promises, not rerun an obsolete 96ebe7 comparison or call current unit tests its completion."
+      }
+    },
+    {
+      "identity": {
+        "appId": "may-agent",
+        "taskId": "repair-gym-review-lifecycle-pair-correlation-20260820",
+        "generation": 1,
+        "phase": "waiting",
+        "owner": "may",
+        "conditionIds": [
+          "approval-gym-owner-review-input-correlation-g1-be629466c6b12818"
+        ]
+      },
+      "lineage": "gym-request-correlation",
+      "fullOldRecord": {
+        "app_id": "may-agent",
+        "task_id": "repair-gym-review-lifecycle-pair-correlation-20260820",
+        "generation": 1,
+        "resource_version": 18,
+        "phase": "waiting",
+        "updated_at": 1787253423730,
+        "resource_json": {
+          "metadata": {
+            "creator": {
+              "appId": "may"
+            },
+            "generation": 1,
+            "id": "repair-gym-review-lifecycle-pair-correlation-20260820",
+            "resourceVersion": 18
+          },
+          "spec": {
+            "acceptance": [
+              "The Gym-owned result arrives through the supported App dependency boundary and addresses the exact event semantics, consumer/observation disposition, terminal artifacts, and whether exclusion is warranted.",
+              "Any replacement candidate binds both pair members to the same exact durable review identity using sufficient current correlation facts, and regression proof rejects a newly lone event that has an older matching opposite member as well as actionable, incomplete, failed, malformed, unknown-source, and unrelated controls.",
+              "A frozen baseline and candidate-or-no-op comparison is immutable and reproducible; no metric definition, production artifact, event history, benchmark truth, approval state, or schedule changes before Hao approves an exact verified replacement candidate.",
+              "If a replacement is approved, the supported owner and supervisor path returns loaded-artifact identity, healthy runtime, authentic positive and visible negative traces, fresh alert remeasurement, and terminal App/domain evidence; reject or hold terminates with production unchanged.",
+              "May reviews the Gym result, regression evidence, and terminal artifact; insufficient semantics, correlation, or live proof is replanned with Gym or the runtime owner, while only a verified replacement candidate or accepted-design conflict is brought to Hao."
+            ],
+            "category": "runtime-reliability",
+            "input": {
+              "alertId": 4602,
+              "candidatePath": ".state/proof-rollout/gym-review-lifecycle-delivery-taxonomy-20260819/candidate.sql",
+              "metricId": "event.unhandled-signal-count-1h",
+              "provenancePacketPath": ".state/owner-review-artifacts/gym-review-events-5785134-5785135-20260820/README.md",
+              "sourceFindingEventId": 5834336,
+              "withdrawnCandidateSha256": "de193514edf7c172a2583b73f989a7a93c0d72b4ab574b535351f5574e86f493"
+            },
+            "mode": "achieve",
+            "outcome": "Obtain the accountable Gym App's revised semantic disposition for the exact non-human review terminal observations and determine a safe terminal taxonomy disposition: either produce one immutable replacement candidate that cannot cross-pair stale or reused review identities and carry it through explicit approval and terminal live proof, or return a justified no-change result that preserves their visibility.",
+            "outputs": [],
+            "owner": "may",
+            "parentId": "runtime/platform-owner-review",
+            "priority": "P1"
+          },
+          "status": {
+            "conditionIds": [
+              "approval-gym-owner-review-input-correlation-g1-be629466c6b12818"
+            ],
+            "evidence": [
+              "event:5849963 — the supported Gym dependency completed with an unrelated but prerequisite owner-review input-correlation repair, not the required lifecycle-taxonomy disposition.",
+              "/app/projects/gym.app/.state/proposals/repair-gym-owner-review-input-correlation-20260820/approval-manifest.json — immutable verified-non-activated candidate; approval requested=false and granted=false; exact activation, monitoring, rollback, and post-approval proof bounds.",
+              "/app/projects/gym.app/.state/proposals/repair-gym-owner-review-input-correlation-20260820/receipts/baseline.txt — `bun run check`, exit 0, 77 pass, 0 fail.",
+              "/app/projects/gym.app/.state/proposals/repair-gym-owner-review-input-correlation-20260820/receipts/candidate.txt — `bun run check`, exit 0, 79 pass, 0 fail.",
+              "/app/projects/gym.app/.state/proposals/repair-gym-owner-review-input-correlation-20260820/SHA256SUMS — `sha256sum -c` verified all exact candidate, test, receipt, trace, and manifest identities.",
+              "artifact:.state/proof-rollout/gym-review-lifecycle-delivery-taxonomy-20260819/candidate.sql#sha256:de193514edf7c172a2583b73f989a7a93c0d72b4ab574b535351f5574e86f493 — withdrawn taxonomy predicate remains unapproved and unchanged; no metric or production mutation occurred."
+            ],
+            "observedGeneration": 1,
+            "phase": "waiting",
+            "summary": "Hold the lifecycle-taxonomy task at a real human approval boundary. Gym's returned result is not the required semantic disposition, but it proves the owner-review input path must first be repaired; the exact repair candidate is immutable, fully verified, and not activated, so approval authorizes only supervised activation and terminal correlation proof before the original Gym review is rerun.",
+            "updatedAt": "2026-08-20T19:17:03.730Z"
+          }
+        },
+        "trigger_json": null
+      },
+      "pinnedIndexEntry": {
+        "appId": "may-agent",
+        "taskId": "repair-gym-review-lifecycle-pair-correlation-20260820",
+        "generation": 1,
+        "phase": "waiting",
+        "owner": "may",
+        "outcome": "Obtain the accountable Gym App's revised semantic disposition for the exact non-human review terminal observations and determine a safe terminal taxonomy disposition: either produce one immutable replacement candidate that cannot cross-pair stale or reused review identities and carry it through explicit approval and terminal live proof, or return a justified no-change result that preserves their visibility.",
+        "acceptance": [
+          "The Gym-owned result arrives through the supported App dependency boundary and addresses the exact event semantics, consumer/observation disposition, terminal artifacts, and whether exclusion is warranted.",
+          "Any replacement candidate binds both pair members to the same exact durable review identity using sufficient current correlation facts, and regression proof rejects a newly lone event that has an older matching opposite member as well as actionable, incomplete, failed, malformed, unknown-source, and unrelated controls.",
+          "A frozen baseline and candidate-or-no-op comparison is immutable and reproducible; no metric definition, production artifact, event history, benchmark truth, approval state, or schedule changes before Hao approves an exact verified replacement candidate.",
+          "If a replacement is approved, the supported owner and supervisor path returns loaded-artifact identity, healthy runtime, authentic positive and visible negative traces, fresh alert remeasurement, and terminal App/domain evidence; reject or hold terminates with production unchanged.",
+          "May reviews the Gym result, regression evidence, and terminal artifact; insufficient semantics, correlation, or live proof is replanned with Gym or the runtime owner, while only a verified replacement candidate or accepted-design conflict is brought to Hao."
+        ],
+        "summary": "Hold the lifecycle-taxonomy task at a real human approval boundary. Gym's returned result is not the required semantic disposition, but it proves the owner-review input path must first be repaired; the exact repair candidate is immutable, fully verified, and not activated, so approval authorizes only supervised activation and terminal correlation proof before the original Gym review is rerun.",
+        "conditionIds": [
+          "approval-gym-owner-review-input-correlation-g1-be629466c6b12818"
+        ]
+      },
+      "frontierEntryAtRead": {
+        "old": {
+          "appId": "may-agent",
+          "taskId": "repair-gym-review-lifecycle-pair-correlation-20260820",
+          "generation": 1,
+          "phase": "waiting",
+          "owner": "may",
+          "conditionIds": [
+            "approval-gym-owner-review-input-correlation-g1-be629466c6b12818"
+          ]
+        },
+        "outcome": "Obtain the accountable Gym App's revised semantic disposition for the exact non-human review terminal observations and determine a safe terminal taxonomy disposition: either produce one immutable replacement candidate that cannot cross-pair stale or reused review identities and carry it through explicit approval and terminal live proof, or return a justified no-change result that preserves their visibility.",
+        "disposition": "consolidate-lineage-after-current-state-check",
+        "proposedOwner": "alex",
+        "lineage": "gym-request-correlation",
+        "replacement": null,
+        "basis": "Overlapping system-improvement lineage. Reconcile current source/results and preserve exact live Conditions before admitting at most one coherent Alex continuation; duplicates become superseded only after mapping.",
+        "preservation": [
+          "latest corrections and acceptance",
+          "accepted evidence/artifacts",
+          "remaining work",
+          "caller/human reply relationship",
+          "exact live Conditions"
+        ]
+      },
+      "exactConditions": [
+        {
+          "app_id": "may-agent",
+          "condition_id": "approval-gym-owner-review-input-correlation-g1-be629466c6b12818",
+          "state": "unknown",
+          "condition_json": "{\"metadata\":{\"generation\":1,\"id\":\"approval-gym-owner-review-input-correlation-g1-be629466c6b12818\",\"resourceVersion\":1},\"spec\":{\"expected\":{\"acceptedDecisions\":[\"approve\",\"reject\",\"hold\"],\"artifactFingerprint\":\"be629466c6b1281859f5bc50203d0a10c02ae3e5bf51c4db877c406add526995\",\"taskGeneration\":1,\"taskId\":\"repair-gym-review-lifecycle-pair-correlation-20260820\"},\"owner\":\"may\",\"reviewAfterMs\":86400000,\"subject\":\"approvalId:may-agent:gym-owner-review-input-correlation:repair-gym-owner-review-input-correlation-20260820:g1:be629466c6b1281859f5bc50203d0a10c02ae3e5bf51c4db877c406add526995\",\"type\":\"project.approval.submitted\"},\"status\":{\"observedAt\":\"2026-08-20T19:17:03.730Z\",\"observedGeneration\":0,\"state\":\"unknown\"}}"
+        }
+      ],
+      "directRelationships": [
+        {
+          "app_id": "may-agent",
+          "source_task_id": "repair-gym-review-lifecycle-pair-correlation-20260820",
+          "relation_kind": "parent",
+          "target_task_id": "runtime/platform-owner-review"
+        }
+      ],
+      "directCallerInputs": [],
+      "creator": {
+        "appId": "may"
+      },
+      "parentId": "runtime/platform-owner-review",
+      "relationshipLimits": "Creator appId is preserved exactly; no missing creator taskId is invented. All matching direct snapshot edges and retained caller inputs are included. Snapshot is not a complete terminal event archive.",
+      "judgment": {
+        "proposedDisposition": "obsolete-execution-path-outcome-unfulfilled-await-may-caller-authority-disposition",
+        "legacyFulfilled": false,
+        "replacement": null,
+        "usefulness": "Anti-cross-pairing and visibility of unknown/actionable failures remain valid safety properties. The old Gym semantic taxonomy request and withdrawn SQL candidate target retired event producers; current evidence does not demonstrate an enabled-App stale-pair defect.",
+        "acceptedProgress": "Event 5849963 returned a prerequisite input-correlation repair, explicitly not the requested lifecycle semantic judgment. Approval manifest is verified-non-activated, requested=false, granted=false. Historical receipts retain 77 baseline and 79 candidate passes; seven archived manifest/receipt files verify, but original live app.ts/app.test.ts paths no longer exist. Withdrawn SQL fingerprint de193514edf7c172a2583b73f989a7a93c0d72b4ab574b535351f5574e86f493 remains unapproved.",
+        "missingProof": [
+          "Gym semantic disposition of exact events 5785134/5785135 and source finding 5834336",
+          "A valid no-change decision preserving visibility OR immutable replacement rejecting stale/reused review cross-pairing with all requested negative controls",
+          "Exact be629466c6b1281859f5bc50203d0a10c02ae3e5bf51c4db877c406add526995 human decision; any approved loaded identity/live taxonomy/alert/terminal proof"
+        ],
+        "boundary": "Alex judges any new enabled-producer semantics using exact durable run identity, not broad exclusions. May owns the historical approval and runtime/platform-owner-review return. Current noisy-event candidate and gym.valid-run-rate retirement are separate existing May outcomes, not replacements for this Condition.",
+        "next": "Recommend obsolete execution path, unfulfilled; retain visibility rather than revive withdrawn taxonomy SQL. May should disposition the obsolete prerequisite activation ask and unanswered semantic reply together, withdrawing unfulfilled unless an exact current surviving obligation exists. No Hao escalation is needed merely to approve a retired candidate."
+      }
+    }
+  ],
+  "currentRelatedWorkSearch": {
+    "alex": "tasks.list(limit=100) completed without nextCursor; no current exact Gym correlation continuation found. Existing migration Task owns this reconciliation. Current comparison mapping preserves complete data on comparison/<sanitized requestId + hash>, not runtime/owner-review.",
+    "may": "Cross-App tasks.list rejected scope; used documented read-only HTTP app Task projection instead. Paginated pending/running/waiting/attention: 123 rows over 2 pages, 15 not closed after excluding closed/cancelled rows. No exact active be629466, b94c899, finish-result or 96ebe7 continuation found. This is bounded open-work search, not a claim all historical terminal evidence was searched.",
+    "exactReads": [
+      {
+        "taskId": "goal/appdep_7bfd3ac4b0fa68969a9e3b23",
+        "resourceVersion": 4,
+        "decision": "done; May withdrew ten unhandled-signal outcomes unfulfilled. Scope excludes these three; do not silently expand or reuse its completed result."
+      },
+      {
+        "taskId": "goal/app_f61801ff-d565-4cde-af42-54c0a700d124",
+        "resourceVersion": 1244,
+        "decision": "Existing noisy-event metric concern; summary measurements are historical, not current telemetry."
+      },
+      {
+        "taskId": "goal/appdep_0f3f67e14e6115f52af6c3ca",
+        "resourceVersion": 22,
+        "decision": "Exact current approval child retains refreshed packet 28128dc3aadcdbb33b97e4290008bee3d7f83d1e29dd5818572faecfb6a76080; separate five-name exclusion proposal, not Gym lifecycle semantic proof."
+      },
+      {
+        "taskId": "goal/appdep_c1890444e02436f8d2131ffd",
+        "resourceVersion": 21,
+        "decision": "Only gym.valid-run-rate definition/retirement approval; cannot settle these request, taxonomy, or comparison outcomes."
+      }
+    ],
+    "otherOverlap": "Current Alex metric-causality comparison input/appdep_154c005c87f7d8c436e76d9f relates to one historical downstream dependency but does not fulfill or require resurrecting this retired Gym repair. No duplicate causality work is recommended."
+  },
+  "currentTechnicalAssessment": {
+    "observed": "Alex app.ts: comparison schema is explicit with additionalProperties=false; taskForInput preserves complete data, assigns plain gym/compare-candidate and exact request-derived identity. safe() hashes original identity to distinguish sanitized collisions. compare-candidate validates frozen scope, hashes, objective, terminal trials and bounded command receipt; holds on invalid/partial evidence. Host saved-result tests cover request-specific return and stale/duplicate rejection.",
+    "limits": "The current comparison protocol is a frozen behavioral-run contract, NOT a compatible adapter for old finish-result or addressed-route/metric-definition envelopes. Passing fixtures does not prove those historical live matrices or a modern equivalent of every retired capability. No real comparison, provider call, current event-row query or metric remeasurement was performed. No fresh enabled-App correlation failure was supplied or found in bounded source/Task evidence.",
+    "recommendation": "No new Alex technical implementation or benchmark at present. Preserve generic exact correlation safety; reopen only from a current enabled-App request whose admitted payload, execution input, terminal result or caller readback demonstrably diverges, or an exact current lifecycle pair wrongly hides an actionable event. Use one ordinary bounded Alex investigation then, with replay/distinct/stale/malformed controls; do not restore old App or broad alias."
+  },
+  "mayAuthorityRecommendation": {
+    "admitNow": false,
+    "ownerAction": "Alex should refresh related May work, then if still unmatched submit ONE bounded historical authority/caller disposition for exactly these three records, full artifact and hashes. May decides withdrawal-unfulfilled versus a precise surviving obligation; this helper creates no request.",
+    "requiredScope": [
+      "Old whole-repository release gate and both Gym caller inputs appdep_b94c899a17cf157ddc78bd5d/appdep_01d47fc2e7e9d97f50723748",
+      "be629466 exact approval/prerequisite ask and unanswered lifecycle semantic reply",
+      "96ebe7 hold/no-rely comparison, original addressed-route parent and both dependent proof promises"
+    ],
+    "humanBoundary": "Approval states remain unknown; source retirement is neither approval nor rejection. May need only contact Hao if she identifies an exact current decision or reply still owed. No new operational authority is requested here."
+  },
+  "overlapJudgment": "The three share request-correlation machinery but have distinct outcomes: nonexecuting consumer activation, exact addressed-route comparison, lifecycle semantic taxonomy. Consolidate only historical disposition handling; never let one static repair, metric retirement, generic comparison or terminal hold fulfill all three.",
+  "recoveredArtifacts": [
+    {
+      "path": "/app/projects/gym/.state/proofs/finish-result-appdep_9be92f70d1f32757a748438d/consumer-variant-static-receipt.json",
+      "sha256": "3893c94ef999b1e9c19600517b931b29154c5d5f7e040459e47f24b464779ad6",
+      "content": {
+        "artifactType": "gym.finish-result-consumer-static-readiness.v1",
+        "requestCorrelation": {
+          "sourceRequestId": "appdep_9be92f70d1f32757a748438d",
+          "priorFailedRequestId": "appdep_a372e40b096b6d63639c3656",
+          "identitiesDistinct": true
+        },
+        "variant": {
+          "inputKind": "run-regression",
+          "mode": "finish-result-comparison",
+          "aliasesAdded": [],
+          "genericFallbackAllowed": false,
+          "mayRuntimeActivationAllowed": false
+        },
+        "sourceFiles": [
+          {
+            "path": "/app/projects/gym.app/app.ts",
+            "sha256": "2a3987284af81ac9ea621242b0b71707e41336ea5fa38ca7f622492b83016945"
+          },
+          {
+            "path": "/app/projects/gym.app/app.test.ts",
+            "sha256": "8b1fd3e2ae8972f88d999810ff3da0996c0379a93ff6a5d04fd3f855fbee4648"
+          },
+          {
+            "path": "/app/projects/gym.app/agents/gym/workflows/regression-run.ts",
+            "sha256": "d3086477b1d7f24b82c107a830e8cdf6de0e957346da8463633a509ea5f0d2dc"
+          },
+          {
+            "path": "/app/projects/gym.app/agents/gym/workflows/regression-run.test.ts",
+            "sha256": "bc893d2b4d6ae68473f5b00bf5b6144ce23815f8a778e4a5addd3a38f3e91110"
+          }
+        ],
+        "verification": {
+          "focused": {
+            "command": "bun test ./app.test.ts ./agents/gym/workflows/regression-run.test.ts --timeout 30000",
+            "passed": 40,
+            "failed": 0
+          },
+          "full": {
+            "command": "bun run check",
+            "passed": 110,
+            "failed": 0,
+            "syntax": "pass",
+            "typecheck": "pass",
+            "format": "pass"
+          }
+        },
+        "executionBudget": {
+          "realCorrectedComparisonLaunches": 0,
+          "unitFixtureLaunchesExcluded": true,
+          "reason": "The real frozen comparison remains gated on accountable supervisor activation and live loaded-consumer proof."
+        },
+        "readiness": {
+          "sourceAndTestsReady": true,
+          "loadedConsumerReady": false,
+          "nextGate": "Approved Gym owner/supervisor activation and machine-observable loaded admission/readback proof."
+        }
+      }
+    },
+    {
+      "path": "/app/projects/gym/.state/proofs/finish-result-appdep_9be92f70d1f32757a748438d/terminal.record.json",
+      "sha256": "8e0973411fad0c47da5fd89df93f245c87d272be5f792a3afafb11937ef7abcf",
+      "content": {
+        "artifactType": "gym.finish-result-comparison-terminal.v1",
+        "requestCorrelation": {
+          "sourceRequestId": "appdep_9be92f70d1f32757a748438d",
+          "priorFailedRequestId": "appdep_a372e40b096b6d63639c3656",
+          "taskId": "owner-review/appdep_9be92f70d1f32757a748438d-e22848fb334440a3/verify-exact-finish-result-comparison",
+          "taskGeneration": 1,
+          "sessionId": "s_1787726052313_151",
+          "priorAdmissionEventId": 5902243,
+          "priorTerminalEventId": 6134892,
+          "identitiesDistinct": true
+        },
+        "frozenInput": {
+          "baseline": {
+            "artifact": "/app/.state/sessions/s_1787238379742_871/result.json",
+            "requiredSha256": "e4d47ca876d70d8f24ec5896c33d4d1824acaced93d85b7ae128e92b8e870cff",
+            "actualSha256": "e4d47ca876d70d8f24ec5896c33d4d1824acaced93d85b7ae128e92b8e870cff",
+            "match": true
+          },
+          "candidate": {
+            "worktree": "/app/projects/may-agent-finish-result-candidate",
+            "requiredCommit": "0ff56f626cbfb3646a098deef4042c8b262d1bd3",
+            "actualCommit": "0ff56f626cbfb3646a098deef4042c8b262d1bd3",
+            "commitMatch": true,
+            "requiredPatchSha256": "c09007f96d991be0714f7c500afb53a125a5560550fda3ca3a965a0dd3c4aab7",
+            "actualPatchSha256": "c09007f96d991be0714f7c500afb53a125a5560550fda3ca3a965a0dd3c4aab7",
+            "patchMatch": true,
+            "worktreeClean": true
+          }
+        },
+        "priorFailure": {
+          "acceptedAsComparisonEvidence": false,
+          "explanation": "The immutable prior request carried the finish-result baseline, candidate, sample scope, required proof, constraints, and return path, but the bound Gym task classified it as a standalone benchmark. Its terminal event 6134892 reports may-alignment-test-20260826T050943Z-75bb9cc1 with 8 pass, 40 fail, and 0 invalid. Those are generic benchmark rows, not baseline-versus-candidate finish-result evidence.",
+          "genericRun": {
+            "runId": "may-alignment-test-20260826T050943Z-75bb9cc1",
+            "pass": 8,
+            "fail": 40,
+            "invalid": 0
+          }
+        },
+        "readinessGate": {
+          "ready": false,
+          "reason": "The canonical repaired Gym comparator does not admit this request envelope. It requires outcome, acceptanceProof, constraints, and scope containing relative-path frozen identities for baseline, candidate, and a pre-existing comparisonArtifact plus lifecycle/control labels. This finish-result request instead supplies an absolute baseline artifact and candidate commit/worktree/patch identity with a requested executable matrix. Passing it unchanged fails closed; dropping its fields routes to the standalone benchmark, which is forbidden. The comparator also reads its frozen artifacts only beneath /app/projects/may-agent, while this task requires generated proof under Gym-owned roots.",
+          "sourceEvidence": [
+            "/app/projects/gym.app/app.ts",
+            "/app/projects/gym.app/agents/gym/workflows/regression-run.ts",
+            "/app/projects/gym/.state/proofs/finish-result-appdep_9be92f70d1f32757a748438d/gym-contract-controls.receipt.txt"
+          ],
+          "consumerActivationClaimed": false
+        },
+        "execution": {
+          "correctedComparisonLaunches": 0,
+          "genericSubstitutions": 0,
+          "retries": 0,
+          "reasonNotLaunched": "The acceptance contract requires stopping before execution when readiness is not proved. Launching the generic benchmark or adapting the envelope outside the accountable consumer path would violate the request."
+        },
+        "matrix": [
+          {
+            "id": "identity-baseline-sha256",
+            "class": "preflight",
+            "result": "pass",
+            "evidence": "identity-fences.receipt.txt"
+          },
+          {
+            "id": "identity-candidate-commit",
+            "class": "preflight",
+            "result": "pass",
+            "evidence": "identity-fences.receipt.txt"
+          },
+          {
+            "id": "identity-candidate-patch-sha256",
+            "class": "preflight",
+            "result": "pass",
+            "evidence": "identity-fences.receipt.txt"
+          },
+          {
+            "id": "request-envelope-admission-task-execution-terminal-app-readback",
+            "class": "comparison-path",
+            "result": "fail-closed-hold",
+            "evidence": "Current comparator schema is value-lossless for its own scope envelope but incompatible with this executable finish-result envelope; no launch occurred."
+          },
+          {
+            "id": "schema-valid-non-null-result-canonical-artifact",
+            "class": "positive-control",
+            "result": "pass-static-candidate",
+            "evidence": "candidate-controls.receipt.txt: canonical session terminal event keeps structured result identically at top level and finishParams.result."
+          },
+          {
+            "id": "schema-valid-result-downstream-task-readback",
+            "class": "positive-control",
+            "result": "pass-static-candidate",
+            "evidence": "candidate-controls.receipt.txt: persisted terminal direct-owner result is consumed and applied once."
+          },
+          {
+            "id": "historical-nested-only-compatibility-readback",
+            "class": "positive-control",
+            "result": "pass-static-candidate",
+            "evidence": "candidate-controls.receipt.txt: invalid persisted terminal fixture has result only at finishParams.result and reaches schema/action validation, proving nested-only readback remains active."
+          },
+          {
+            "id": "malformed-result-fails-closed",
+            "class": "negative-control",
+            "result": "pass-static-candidate",
+            "evidence": "candidate-controls.receipt.txt: malformed finish parameters do not create top-level result; invalid persisted terminal result is rejected without state mutation."
+          },
+          {
+            "id": "missing-result-fails-closed",
+            "class": "negative-control",
+            "result": "pass-static-candidate",
+            "evidence": "candidate-controls.receipt.txt: missing result is not fabricated."
+          },
+          {
+            "id": "null-result-fails-closed",
+            "class": "negative-control",
+            "result": "pass-static-candidate",
+            "evidence": "candidate-controls.receipt.txt: null result is not fabricated."
+          },
+          {
+            "id": "failed-status-not-consumed-as-success",
+            "class": "negative-control",
+            "result": "pass-static-candidate",
+            "evidence": "Candidate preserves failed status as error; readPersistedTerminalOwnerResult admits only artifact.status=done and finishParams.status=success."
+          },
+          {
+            "id": "duplicate-completion-consumed-at-most-once",
+            "class": "negative-control",
+            "result": "pass-static-candidate",
+            "evidence": "candidate-controls.receipt.txt: first persisted terminal consumption applies; second returns null."
+          },
+          {
+            "id": "persisted-proof-secret-safe",
+            "class": "negative-control",
+            "result": "pass-for-this-proof",
+            "evidence": "final-secret-safety.receipt.txt: no exact credential-like environment value or credential assignment literal appears in the completed proof package."
+          },
+          {
+            "id": "unrelated-gym-input-kinds-retain-routing",
+            "class": "negative-control",
+            "result": "pass-static-gym",
+            "evidence": "gym-contract-controls.receipt.txt: supported non-comparison inputs, ordinary regressions, and rejected comparison aliases retain distinct routing; 38 tests pass."
+          },
+          {
+            "id": "live-corrected-comparison",
+            "class": "terminal-comparison",
+            "result": "not-run-readiness-gate",
+            "evidence": "No corrected execution was launched because the repaired consumer cannot preserve this envelope through its supported path."
+          }
+        ],
+        "testReceipts": {
+          "candidateControls": {
+            "path": "/app/projects/gym/.state/proofs/finish-result-appdep_9be92f70d1f32757a748438d/candidate-controls.receipt.txt",
+            "sha256": "330e07cd5b68c10b2054290d94602926669fef0a7ce0f5a8ce10f8987a03027d",
+            "passed": 25,
+            "failed": 0
+          },
+          "gymContractControls": {
+            "path": "/app/projects/gym/.state/proofs/finish-result-appdep_9be92f70d1f32757a748438d/gym-contract-controls.receipt.txt",
+            "sha256": "cf3fbbb52ab1fa4b90c66cba456c7654d2a816fd7af7bff1d7fa0b8838a964bf",
+            "passed": 38,
+            "failed": 0
+          },
+          "identityFences": {
+            "path": "/app/projects/gym/.state/proofs/finish-result-appdep_9be92f70d1f32757a748438d/identity-fences.receipt.txt",
+            "sha256": "fd179ca9aab2edec5060480a065dc436881cd30280a850bc308448c13ebd4658"
+          },
+          "secretSafety": {
+            "path": "/app/projects/gym/.state/proofs/finish-result-appdep_9be92f70d1f32757a748438d/secret-safety.receipt.txt",
+            "sha256": "0b198fc29837c8a15a1252465b04d903bf58c8cf46e327fe3b22ae90dbea5c52"
+          }
+        },
+        "disposition": "evidenced-hold",
+        "decisionReason": "Static candidate and Gym controls pass and all frozen hashes match, but the accountable live comparison path cannot admit and execute this request envelope without either losing fields or introducing an unapproved adapter/artifact outside the established contract. Candidate behavior is therefore neither approved nor rejected from this request.",
+        "rolloutProposal": {
+          "status": "not-authorized",
+          "scope": "After a separately reviewed Gym consumer extension preserves this exact finish-result envelope, stage only the finish-result persistence candidate for one canary App-task path; do not broaden input aliases or activate May Runtime in this task.",
+          "stages": [
+            "Add and review an explicit finish-result comparison envelope variant under the canonical run-regression kind, preserving source and execution request identities value-for-value.",
+            "Activate only that Gym consumer through the accountable owner/supervisor path and live-prove admission and readback without activating the May Runtime candidate.",
+            "Run one frozen canary comparison and require every matrix row plus content-hashed terminal correlation.",
+            "Only after independent May review and Hao approval, propose limited Runtime canary activation."
+          ],
+          "risks": [
+            "Silent fallback to generic may-alignment benchmarking",
+            "Envelope field loss or request identity substitution",
+            "Failed or null result promoted as success",
+            "Duplicate terminal consumption",
+            "Secret leakage in persisted proof",
+            "Behavior drift for unrelated Gym input kinds"
+          ],
+          "monitoring": [
+            "Exact sourceRequestId and executionRequestId through admission, task, workflow, terminal result, and App readback",
+            "Corrected comparison admission count equals one",
+            "Result schema validity and terminal status",
+            "Duplicate-consumption count at most one",
+            "Secret scan zero hits",
+            "Unrelated Gym routing regression suite remains green"
+          ],
+          "rollback": "Git-revert the exact approved Gym consumer commit first; if a later Runtime canary is separately approved, Git-revert candidate commit 0ff56f626cbfb3646a098deef4042c8b262d1bd3 and verify historical nested-only readback remains available."
+        },
+        "safety": {
+          "mayRuntimeCandidateActivated": false,
+          "benchmarkTruthChanged": false,
+          "providersOrCredentialsChanged": false,
+          "schedulesChanged": false,
+          "historicalEvidenceChanged": false,
+          "runtimeOwnedTasksMutated": false,
+          "genericRunCountedAsComparison": false
+        }
+      }
+    },
+    {
+      "path": "/app/projects/gym.app/.state/proposals/repair-gym-owner-review-input-correlation-20260820/approval-manifest.json",
+      "sha256": "be629466c6b1281859f5bc50203d0a10c02ae3e5bf51c4db877c406add526995",
+      "content": {
+        "proposalId": "repair-gym-owner-review-input-correlation-20260820",
+        "state": "verified-non-activated-candidate",
+        "approval": {
+          "requested": false,
+          "granted": false,
+          "boundary": "Hao must approve this exact manifest and immutable identities before any supervisor-owned activation."
+        },
+        "changedFiles": [
+          {
+            "path": "/app/projects/gym.app/app.ts",
+            "sha256": "eeed5528639f6a0b21b67bf44bdb1e52970dd0dcb05ef55752cf5fb76967e635",
+            "priorSha256": "4c86e55012816590a29540ef011564676b675b76baef9136108b43b826da1ff4",
+            "purpose": "Create deterministic request-correlated plain owner-review achieve carriers and retain request identity plus complete admitted App input."
+          },
+          {
+            "path": "/app/projects/gym.app/app.test.ts",
+            "sha256": "7f094fbc8d37dcba4290391380abd83503e96f4ae863576700b629c14782bc6b",
+            "priorSha256": "19db71696d2007a49aa08aaa7c46f30cf47d110cafd629d9bb2718fb5848ff14",
+            "purpose": "Prove correlation, idempotence, payload preservation, admission rejection, and separation from every other supported input kind."
+          }
+        ],
+        "proofArtifacts": [
+          {
+            "path": "receipts/baseline.txt",
+            "sha256": "4520640323556166e26071f8315e1d6bcb0190a2dbd2709a452e16b306d2fb4c",
+            "result": "exit 0; 77 pass; 0 fail"
+          },
+          {
+            "path": "receipts/candidate.txt",
+            "sha256": "6df4a2eaff24969cdca724b62c24075a4eab8d0fcb1f00daf8de5a80dbfe980f",
+            "result": "exit 0; 79 pass; 0 fail"
+          },
+          {
+            "path": "trace.md",
+            "sha256": "d964b6e76c68c32b10dd31be6d577facd376dd90117e3a66fb9544dd9baceedc"
+          },
+          {
+            "path": "native-worker-receipt.md",
+            "sha256": "bdf2142393c9c6292b176daa222108ed924e21f85189682aa8cdf6ba1f41a099",
+            "note": "Native worker requests were accepted but produced no result artifact by packaging time; they are not counted as implementation proof."
+          }
+        ],
+        "activationScope": {
+          "included": [
+            "Load only the exact Gym App source identity listed above through the supervisor-owned activation path.",
+            "Restart or reload only the Gym App consumer as required by that path."
+          ],
+          "excluded": [
+            "Benchmark truth, historical evidence, provider or routing configuration, production or metric data, candidate comparison, and request appdep_f85b8c5b5b51c323dcd40793 rerun before loaded-identity proof."
+          ]
+        },
+        "monitoring": [
+          "Confirm Gym App input admission and task attachment remain healthy after activation.",
+          "Confirm an owner-review probe produces one owner-review/* achieve carrier owned by gym, preserves its exact payload and request identity, and completes through the correlated request result path.",
+          "Confirm repeated probe identity does not create a second carrier and a distinct identity does not collide.",
+          "Watch Gym App consumer errors and task reconciliation failures for the bounded post-activation observation window chosen by the supervisor owner."
+        ],
+        "rollback": {
+          "trigger": "Loaded identity mismatch, Gym App health regression, correlation failure, duplicate/colliding carrier, payload loss, or missing terminal request result.",
+          "scope": "Use the supervisor-owned rollback path to restore app.ts SHA-256 4c86e55012816590a29540ef011564676b675b76baef9136108b43b826da1ff4 and app.test.ts SHA-256 19db71696d2007a49aa08aaa7c46f30cf47d110cafd629d9bb2718fb5848ff14; then prove restored loaded identity and runtime health. Do not rewrite historical evidence or reuse a completed request receipt as rollback proof."
+        },
+        "postApprovalProofRequiredBeforeOriginalRerun": [
+          "Supervisor activation receipt naming this proposal and exact app.ts SHA-256 eeed5528639f6a0b21b67bf44bdb1e52970dd0dcb05ef55752cf5fb76967e635.",
+          "Independent readback from the loaded Gym App source/configuration proving that same identity is active, not merely present in the workspace.",
+          "Healthy Gym App process and consumer checks after activation with no new input-admission or task-reconciliation error.",
+          "One fresh non-production probe proving the request-specific owner-review carrier identity, achieve mode, gym ownership, exact payload plus requestId, idempotence, and correlated terminal result.",
+          "Only after Gym owner reviews all four proofs may request appdep_f85b8c5b5b51c323dcd40793 be rerun through its existing request path."
+        ]
+      }
+    },
+    {
+      "path": "/app/projects/gym.app/.state/proposals/repair-gym-owner-review-input-correlation-20260820/trace.md",
+      "sha256": "d964b6e76c68c32b10dd31be6d577facd376dd90117e3a66fb9544dd9baceedc",
+      "content": "# Request-correlated owner-review trace\n\n## Admission\n\nThe declared `gymInputSchema` admits only the six supported input kinds, requires a record-valued `data`, and rejects extra top-level properties. Focused regression coverage uses the schema's runtime `Check` function to prove malformed `owner-review` inputs and unsupported kinds are rejected.\n\n## Correlated carrier intent\n\nFor an admitted envelope whose explicit request identity is `R` and whose App input is `I = { kind: \"owner-review\", data: P }`, `taskForGymInput` constructs one deterministic plain project task:\n\n- id: `owner-review/<sanitized-R>-<first-16-hex-of-sha256(R)>` (never `runtime/*`);\n- parent: `review-proposals`;\n- mode: `achieve`;\n- owner: `gym`;\n- input: `{ requestId: R, admittedInput: I }`.\n\nThe complete admitted App payload `I` and explicit request identity `R` therefore reach the owner carrier without selecting or flattening payload fields. The digest prevents sanitized request-id collisions; identical request identities produce identical carrier intents, while distinct identities produce distinct carrier ids.\n\n## Terminal-result contract\n\nThe request-specific achieve carrier remains accountable to Gym until the owner returns an evidence-backed disposition satisfying its acceptance. The shared task runtime correlates that terminal carrier result back to the admitted request; a standing `runtime/owner-review` maintain task is no longer used as the consumer. Existing non-owner input kinds retain their separate intent paths, and regression coverage proves none can create an `owner-review/*` carrier.\n\n## Verification trace\n\n1. Baseline receipt: `receipts/baseline.txt` — exact `bun run check`, exit 0, 77 tests passed.\n2. Candidate source identities: `app.ts` SHA-256 `eeed5528639f6a0b21b67bf44bdb1e52970dd0dcb05ef55752cf5fb76967e635`; `app.test.ts` SHA-256 `7f094fbc8d37dcba4290391380abd83503e96f4ae863576700b629c14782bc6b`.\n3. Candidate receipt: `receipts/candidate.txt` — identical exact `bun run check`, exit 0, 79 tests passed.\n4. This package is non-activated. It does not prove the live supervisor has loaded the candidate.\n"
+    },
+    {
+      "path": "/app/projects/may-agent/.state/deploy-receipts/activate-gym-exact-comparison-appdep-5217b6559e8b155c4f0ac215.json",
+      "sha256": "d28c345018c94957046f921aecebfc29d3519221519d0e074764dbdc48cb2344",
+      "content": {
+        "version": 1,
+        "correlation": "activate-gym-exact-comparison-appdep-5217b6559e8b155c4f0ac215",
+        "project": "may-agent",
+        "taskId": "app-request/appdep_5217b6559e8b155c4f0ac215",
+        "artifactSha": "54ff8615eec24db402048a739ca4bc2b4a95daa41f9785b19fcda89ecb714dc5",
+        "sourceCommit": "d53da7d5f5b640dd565a9d62502f615987470490",
+        "phase": "succeeded",
+        "requestedAt": "2026-08-25T04:00:21.842Z",
+        "verification": "After the supervisor settles service and HTTP health, verify loadedArtifactSha equals artifactSha, health is healthy, and duplicateDeploy is false, then complete the owner task without redeploying.",
+        "completedAt": "2026-08-25T04:00:48.283Z",
+        "loadedArtifactSha": "54ff8615eec24db402048a739ca4bc2b4a95daa41f9785b19fcda89ecb714dc5",
+        "health": "healthy",
+        "duplicateDeploy": false
+      }
+    },
+    {
+      "path": "/app/projects/gym.app/.state/reviews/exact-addressed-route-metric-comparison-96ebe7cb.decision.json",
+      "sha256": "8be2fa866cf45303cbf5e4045cadcc7f5a788bd3c1bf63e3161d6aa8ca5de8fb",
+      "content": {
+        "disposition": "invalid",
+        "matchedCoverage": [
+          "may-alignment/may-align-trust-completed-artifacts",
+          "may-deputy-learning-transfer/may-learn-route-project-app-request",
+          "may-deputy-learning/may-learn-require-terminal-proof-before-completion"
+        ],
+        "dispositionReason": "Missing JSON/SHA-256 artifacts and an empty evidence path prevent a sound May judgment; the actionable defect is the Gym/controller runtime output contract, not May behavior."
+      }
+    }
+  ],
+  "evidenceLimits": [
+    "Missing original /app/projects/may-agent.app/artifacts/owner-review/definition-reload-wait-20260826/disposition.json; accepted snapshot status preserves its claims but raw gate report was not recovered.",
+    "Bounded search did not recover bytes matching comparison e3897576; its retained accepted hold/no-rely evidence remains explicitly distinguished from direct artifact verification.",
+    "Historical SHA256SUMS first invoked at wrong directory failed; corrected original Gym App root verified seven receipt/manifest files, but app.ts/app.test.ts absent after source retirement. No full candidate-byte verification claimed.",
+    "An older successful deployment receipt for appdep_5217b6559e8b155c4f0ac215 was recovered: exact loaded hash/healthy/duplicateDeploy=false. It belongs to a different request/sourceCommit d53da7d5 and does not prove this finish-result release or requested terminal comparisons.",
+    "Initial Host test invocation used nonexistent src/app/tasks filters and matched no tests. Corrected discovered paths executed 209 tests successfully."
+  ],
+  "verification": {
+    "selectionCount": 3,
+    "uniqueIdentityCount": 3,
+    "conditionCount": 2,
+    "directRelationshipCount": 5,
+    "directCallerInputCount": 2,
+    "historicalFulfillmentCount": 0,
+    "tests": [
+      {
+        "command": "bun test ./projects/alex.app/app.test.ts ./projects/alex.app/agents/gym/workflows/compare-candidate.test.ts",
+        "cwd": "/app/worktrees/alex/input-app_7a279469-7ac8-4bec-894a-9314635bd452-a882250576",
+        "passed": 23,
+        "failed": 0,
+        "expectations": 115
+      },
+      {
+        "command": "bun test ./src/app/core/inbox/input-result.test.ts ./src/app/core/tasks/app-task-runtime.test.ts",
+        "cwd": "/app/projects/may-agent",
+        "passed": 209,
+        "failed": 0,
+        "expectations": 2446
+      }
+    ],
+    "retainedReceipts": [
+      {
+        "path": "/app/.state/task-context/5e6769088329b1a61eeb3209dd7c4641f62ee2190f52dc306bdce52077a23d3d/notes/gym-request-correlation-20261004/bob-gym-apps.json",
+        "sha256": "8a9461c31d3416f6566639427b607a82a68343c022c79d4137005a2897fece52"
+      },
+      {
+        "path": "/app/.state/task-context/5e6769088329b1a61eeb3209dd7c4641f62ee2190f52dc306bdce52077a23d3d/notes/gym-request-correlation-20261004/bob-gym-may-current.json",
+        "sha256": "5be811b8950490b0d53af77da5e8642f86954b214edf0d65515ad2221256c288"
+      },
+      {
+        "path": "/app/.state/task-context/5e6769088329b1a61eeb3209dd7c4641f62ee2190f52dc306bdce52077a23d3d/notes/gym-request-correlation-20261004/bob-gym-correlation-tests.txt",
+        "sha256": "5f9899ca712f89a3b0f4b690b18bf0642d0450991f89059d33486219fbd0e584"
+      },
+      {
+        "path": "/app/.state/task-context/5e6769088329b1a61eeb3209dd7c4641f62ee2190f52dc306bdce52077a23d3d/notes/gym-request-correlation-20261004/bob-gym-host-tests.txt",
+        "sha256": "5278912e7701d3392bde182dbc9bc136ac3f495d942e1b8f0cd6fd09e8303cce"
+      },
+      {
+        "path": "/app/.state/task-context/5e6769088329b1a61eeb3209dd7c4641f62ee2190f52dc306bdce52077a23d3d/notes/gym-request-correlation-20261004/bob-appdep_0f3f67e14e6115f52af6c3ca.json",
+        "sha256": "58ea77c33501b10e0094b5e5c7dcb4aebd3d0faeb2ef2c543a6a2cb33c8a955a"
+      },
+      {
+        "path": "/app/.state/task-context/5e6769088329b1a61eeb3209dd7c4641f62ee2190f52dc306bdce52077a23d3d/notes/gym-request-correlation-20261004/bob-appdep_c1890444e02436f8d2131ffd.json",
+        "sha256": "8f1f1946dde32f62578b50fbdba6d2cb266c904d8a8754132c1c2f051c5486e9"
+      },
+      {
+        "path": "/app/.state/task-context/5e6769088329b1a61eeb3209dd7c4641f62ee2190f52dc306bdce52077a23d3d/notes/gym-request-correlation-20261004/bob-appdep_7bfd3ac4b0fa68969a9e3b23.json",
+        "sha256": "678c212b10fd3977c14f4456f80b532377d276a5f2ec2f8f8f3b1cf1dc5b061c"
+      }
+    ]
+  },
+  "safety": {
+    "legacyTasksMutated": false,
+    "conditionsMutated": false,
+    "runtimeMutated": false,
+    "productionDatabaseAccessed": false,
+    "deployed": false,
+    "activated": false,
+    "realComparisonLaunched": false,
+    "frontierOrReceiptEdited": false
+  },
+  "durableMirror": "/app/.state/task-context/5e6769088329b1a61eeb3209dd7c4641f62ee2190f52dc306bdce52077a23d3d/notes/gym-request-correlation-20261004/gym-request-correlation-reconciliation-2026-10-04.json"
+}

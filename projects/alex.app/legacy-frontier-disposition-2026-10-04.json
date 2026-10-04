@@ -4,7 +4,7 @@
   "generatedAt": "2026-10-04T13:37:00Z",
   "source": "/app/.state/alex-migration-20261004/legacy-frontier-index.json",
   "sourceSha256": "46d61e762a8abac6170b4333c7aac30af2661afabe7fe635294a17318ea1cde9",
-  "status": "bounded semantic migration in progress: AKS lineage withdrawn unfulfilled by May; ten unhandled-signal/owner-review paths reconciled as obsolete and unfulfilled with one precise current technical follow-up identified; no old outcome falsely fulfilled",
+  "status": "bounded semantic migration in progress: unhandled-signal lineage withdrawn unfulfilled with a current narrow Host continuation; gym-request-correlation reconciled technically with May historical disposition pending; no old outcome falsely fulfilled",
   "rules": [
     "No old Task is marked fulfilled by this receipt.",
     "replacement=null means no replacement Task has been admitted yet.",
@@ -2718,14 +2718,22 @@
       "proposedOwner": "alex",
       "lineage": "gym-request-correlation",
       "replacement": null,
-      "basis": "Overlapping system-improvement lineage. Reconcile current source/results and preserve exact live Conditions before admitting at most one coherent Alex continuation; duplicates become superseded only after mapping.",
+      "basis": "Current generic request/result correlation is covered by focused tests, but it is not a compatible adapter or terminal proof for the retired Gym envelope/lifecycle outcomes. Preserve the exact two Conditions, five relationships and two caller inputs; no new technical implementation is warranted absent a current enabled-App falsifier, and May disposition is pending.",
       "preservation": [
         "latest corrections and acceptance",
         "accepted evidence/artifacts",
         "remaining work",
         "caller/human reply relationship",
         "exact live Conditions"
-      ]
+      ],
+      "reconciliation": {
+        "artifact": "projects/alex.app/gym-request-correlation-reconciliation-2026-10-04.json",
+        "artifactSha256": "d95196cf2cd3e8d7655d77dd28fa9d6d6ad152021edb96ff76d537cbdf1946bd",
+        "legacyOutcomeFulfilled": false,
+        "technicalContinuation": "none-without-current-enabled-App-falsifier",
+        "mayDispositionTask": "goal/appdep_8630d39afbc036c94782ceda",
+        "mayDispositionStatus": "pending"
+      }
     },
     {
       "old": {
@@ -2904,14 +2912,25 @@
         "artifact": "projects/alex.app/unhandled-signal-owner-review-reconciliation-2026-10-04.json",
         "artifactSha256": "006ab98f3f398e5210e6fb7200c204ef197a8a818e736e31c65628de49eeed3b"
       },
-      "basis": "All ten retired execution paths are obsolete and none of their outcomes is proved fulfilled. Exact old callers, Conditions and proof gaps remain in the reconciliation artifact. One current Host metric fallback-timestamp issue warrants reuse checking and bounded Alex evaluation; the separate five-name noisy-event remainder already has exact current May work and must not be duplicated. Historical proof promises/caller boundaries still require May disposition.",
+      "basis": "May withdrew this retired outcome unfulfilled; exact historical callers, Conditions, relationships and missing proof remain preserved. A distinct current-source metric-causality comparison falsified no-change and admitted one narrow Host implementation, but neither current work nor the separate five-name noisy-event lineage fulfills this old outcome.",
       "preservation": [
         "latest corrections and acceptance",
         "accepted evidence/artifacts",
         "remaining work",
         "caller/human reply relationship",
         "exact live Conditions"
-      ]
+      ],
+      "reconciliation": {
+        "artifact": "projects/alex.app/unhandled-signal-owner-review-reconciliation-2026-10-04.json",
+        "historicalDisposition": "withdrawn-unfulfilled",
+        "mayTaskId": "goal/appdep_7bfd3ac4b0fa68969a9e3b23",
+        "historicalConditions": "unknown-preserved",
+        "legacyOutcomeFulfilled": false,
+        "currentTechnicalEvaluation": "input/appdep_154c005c87f7d8c436e76d9f",
+        "currentTechnicalDecision": "narrow-current-source-adaptation-supported",
+        "implementationTask": "input/appdep_db79add2ae9333ab16f704e9",
+        "implementationStatus": "pending"
+      }
     },
     {
       "old": {
@@ -2990,14 +3009,25 @@
         "artifact": "projects/alex.app/unhandled-signal-owner-review-reconciliation-2026-10-04.json",
         "artifactSha256": "006ab98f3f398e5210e6fb7200c204ef197a8a818e736e31c65628de49eeed3b"
       },
-      "basis": "All ten retired execution paths are obsolete and none of their outcomes is proved fulfilled. Exact old callers, Conditions and proof gaps remain in the reconciliation artifact. One current Host metric fallback-timestamp issue warrants reuse checking and bounded Alex evaluation; the separate five-name noisy-event remainder already has exact current May work and must not be duplicated. Historical proof promises/caller boundaries still require May disposition.",
+      "basis": "May withdrew this retired outcome unfulfilled; exact historical callers, Conditions, relationships and missing proof remain preserved. A distinct current-source metric-causality comparison falsified no-change and admitted one narrow Host implementation, but neither current work nor the separate five-name noisy-event lineage fulfills this old outcome.",
       "preservation": [
         "latest corrections and acceptance",
         "accepted evidence/artifacts",
         "remaining work",
         "caller/human reply relationship",
         "exact live Conditions"
-      ]
+      ],
+      "reconciliation": {
+        "artifact": "projects/alex.app/unhandled-signal-owner-review-reconciliation-2026-10-04.json",
+        "historicalDisposition": "withdrawn-unfulfilled",
+        "mayTaskId": "goal/appdep_7bfd3ac4b0fa68969a9e3b23",
+        "historicalConditions": "unknown-preserved",
+        "legacyOutcomeFulfilled": false,
+        "currentTechnicalEvaluation": "input/appdep_154c005c87f7d8c436e76d9f",
+        "currentTechnicalDecision": "narrow-current-source-adaptation-supported",
+        "implementationTask": "input/appdep_db79add2ae9333ab16f704e9",
+        "implementationStatus": "pending"
+      }
     },
     {
       "old": {
@@ -3195,14 +3225,25 @@
         "artifact": "projects/alex.app/unhandled-signal-owner-review-reconciliation-2026-10-04.json",
         "artifactSha256": "006ab98f3f398e5210e6fb7200c204ef197a8a818e736e31c65628de49eeed3b"
       },
-      "basis": "All ten retired execution paths are obsolete and none of their outcomes is proved fulfilled. Exact old callers, Conditions and proof gaps remain in the reconciliation artifact. One current Host metric fallback-timestamp issue warrants reuse checking and bounded Alex evaluation; the separate five-name noisy-event remainder already has exact current May work and must not be duplicated. Historical proof promises/caller boundaries still require May disposition.",
+      "basis": "May withdrew this retired outcome unfulfilled; exact historical callers, Conditions, relationships and missing proof remain preserved. A distinct current-source metric-causality comparison falsified no-change and admitted one narrow Host implementation, but neither current work nor the separate five-name noisy-event lineage fulfills this old outcome.",
       "preservation": [
         "latest corrections and acceptance",
         "accepted evidence/artifacts",
         "remaining work",
         "caller/human reply relationship",
         "exact live Conditions"
-      ]
+      ],
+      "reconciliation": {
+        "artifact": "projects/alex.app/unhandled-signal-owner-review-reconciliation-2026-10-04.json",
+        "historicalDisposition": "withdrawn-unfulfilled",
+        "mayTaskId": "goal/appdep_7bfd3ac4b0fa68969a9e3b23",
+        "historicalConditions": "unknown-preserved",
+        "legacyOutcomeFulfilled": false,
+        "currentTechnicalEvaluation": "input/appdep_154c005c87f7d8c436e76d9f",
+        "currentTechnicalDecision": "narrow-current-source-adaptation-supported",
+        "implementationTask": "input/appdep_db79add2ae9333ab16f704e9",
+        "implementationStatus": "pending"
+      }
     },
     {
       "old": {
@@ -3367,14 +3408,25 @@
         "artifact": "projects/alex.app/unhandled-signal-owner-review-reconciliation-2026-10-04.json",
         "artifactSha256": "006ab98f3f398e5210e6fb7200c204ef197a8a818e736e31c65628de49eeed3b"
       },
-      "basis": "All ten retired execution paths are obsolete and none of their outcomes is proved fulfilled. Exact old callers, Conditions and proof gaps remain in the reconciliation artifact. One current Host metric fallback-timestamp issue warrants reuse checking and bounded Alex evaluation; the separate five-name noisy-event remainder already has exact current May work and must not be duplicated. Historical proof promises/caller boundaries still require May disposition.",
+      "basis": "May withdrew this retired outcome unfulfilled; exact historical callers, Conditions, relationships and missing proof remain preserved. A distinct current-source metric-causality comparison falsified no-change and admitted one narrow Host implementation, but neither current work nor the separate five-name noisy-event lineage fulfills this old outcome.",
       "preservation": [
         "latest corrections and acceptance",
         "accepted evidence/artifacts",
         "remaining work",
         "caller/human reply relationship",
         "exact live Conditions"
-      ]
+      ],
+      "reconciliation": {
+        "artifact": "projects/alex.app/unhandled-signal-owner-review-reconciliation-2026-10-04.json",
+        "historicalDisposition": "withdrawn-unfulfilled",
+        "mayTaskId": "goal/appdep_7bfd3ac4b0fa68969a9e3b23",
+        "historicalConditions": "unknown-preserved",
+        "legacyOutcomeFulfilled": false,
+        "currentTechnicalEvaluation": "input/appdep_154c005c87f7d8c436e76d9f",
+        "currentTechnicalDecision": "narrow-current-source-adaptation-supported",
+        "implementationTask": "input/appdep_db79add2ae9333ab16f704e9",
+        "implementationStatus": "pending"
+      }
     },
     {
       "old": {
@@ -3571,14 +3623,22 @@
       "proposedOwner": "alex",
       "lineage": "gym-request-correlation",
       "replacement": null,
-      "basis": "Overlapping system-improvement lineage. Reconcile current source/results and preserve exact live Conditions before admitting at most one coherent Alex continuation; duplicates become superseded only after mapping.",
+      "basis": "Current generic request/result correlation is covered by focused tests, but it is not a compatible adapter or terminal proof for the retired Gym envelope/lifecycle outcomes. Preserve the exact two Conditions, five relationships and two caller inputs; no new technical implementation is warranted absent a current enabled-App falsifier, and May disposition is pending.",
       "preservation": [
         "latest corrections and acceptance",
         "accepted evidence/artifacts",
         "remaining work",
         "caller/human reply relationship",
         "exact live Conditions"
-      ]
+      ],
+      "reconciliation": {
+        "artifact": "projects/alex.app/gym-request-correlation-reconciliation-2026-10-04.json",
+        "artifactSha256": "d95196cf2cd3e8d7655d77dd28fa9d6d6ad152021edb96ff76d537cbdf1946bd",
+        "legacyOutcomeFulfilled": false,
+        "technicalContinuation": "none-without-current-enabled-App-falsifier",
+        "mayDispositionTask": "goal/appdep_8630d39afbc036c94782ceda",
+        "mayDispositionStatus": "pending"
+      }
     },
     {
       "old": {
@@ -3596,14 +3656,22 @@
       "proposedOwner": "alex",
       "lineage": "gym-request-correlation",
       "replacement": null,
-      "basis": "Overlapping system-improvement lineage. Reconcile current source/results and preserve exact live Conditions before admitting at most one coherent Alex continuation; duplicates become superseded only after mapping.",
+      "basis": "Current generic request/result correlation is covered by focused tests, but it is not a compatible adapter or terminal proof for the retired Gym envelope/lifecycle outcomes. Preserve the exact two Conditions, five relationships and two caller inputs; no new technical implementation is warranted absent a current enabled-App falsifier, and May disposition is pending.",
       "preservation": [
         "latest corrections and acceptance",
         "accepted evidence/artifacts",
         "remaining work",
         "caller/human reply relationship",
         "exact live Conditions"
-      ]
+      ],
+      "reconciliation": {
+        "artifact": "projects/alex.app/gym-request-correlation-reconciliation-2026-10-04.json",
+        "artifactSha256": "d95196cf2cd3e8d7655d77dd28fa9d6d6ad152021edb96ff76d537cbdf1946bd",
+        "legacyOutcomeFulfilled": false,
+        "technicalContinuation": "none-without-current-enabled-App-falsifier",
+        "mayDispositionTask": "goal/appdep_8630d39afbc036c94782ceda",
+        "mayDispositionStatus": "pending"
+      }
     },
     {
       "old": {
@@ -3661,14 +3729,25 @@
         "artifact": "projects/alex.app/unhandled-signal-owner-review-reconciliation-2026-10-04.json",
         "artifactSha256": "006ab98f3f398e5210e6fb7200c204ef197a8a818e736e31c65628de49eeed3b"
       },
-      "basis": "All ten retired execution paths are obsolete and none of their outcomes is proved fulfilled. Exact old callers, Conditions and proof gaps remain in the reconciliation artifact. One current Host metric fallback-timestamp issue warrants reuse checking and bounded Alex evaluation; the separate five-name noisy-event remainder already has exact current May work and must not be duplicated. Historical proof promises/caller boundaries still require May disposition.",
+      "basis": "May withdrew this retired outcome unfulfilled; exact historical callers, Conditions, relationships and missing proof remain preserved. A distinct current-source metric-causality comparison falsified no-change and admitted one narrow Host implementation, but neither current work nor the separate five-name noisy-event lineage fulfills this old outcome.",
       "preservation": [
         "latest corrections and acceptance",
         "accepted evidence/artifacts",
         "remaining work",
         "caller/human reply relationship",
         "exact live Conditions"
-      ]
+      ],
+      "reconciliation": {
+        "artifact": "projects/alex.app/unhandled-signal-owner-review-reconciliation-2026-10-04.json",
+        "historicalDisposition": "withdrawn-unfulfilled",
+        "mayTaskId": "goal/appdep_7bfd3ac4b0fa68969a9e3b23",
+        "historicalConditions": "unknown-preserved",
+        "legacyOutcomeFulfilled": false,
+        "currentTechnicalEvaluation": "input/appdep_154c005c87f7d8c436e76d9f",
+        "currentTechnicalDecision": "narrow-current-source-adaptation-supported",
+        "implementationTask": "input/appdep_db79add2ae9333ab16f704e9",
+        "implementationStatus": "pending"
+      }
     },
     {
       "old": {
@@ -3691,14 +3770,25 @@
         "artifact": "projects/alex.app/unhandled-signal-owner-review-reconciliation-2026-10-04.json",
         "artifactSha256": "006ab98f3f398e5210e6fb7200c204ef197a8a818e736e31c65628de49eeed3b"
       },
-      "basis": "All ten retired execution paths are obsolete and none of their outcomes is proved fulfilled. Exact old callers, Conditions and proof gaps remain in the reconciliation artifact. One current Host metric fallback-timestamp issue warrants reuse checking and bounded Alex evaluation; the separate five-name noisy-event remainder already has exact current May work and must not be duplicated. Historical proof promises/caller boundaries still require May disposition.",
+      "basis": "May withdrew this retired outcome unfulfilled; exact historical callers, Conditions, relationships and missing proof remain preserved. A distinct current-source metric-causality comparison falsified no-change and admitted one narrow Host implementation, but neither current work nor the separate five-name noisy-event lineage fulfills this old outcome.",
       "preservation": [
         "latest corrections and acceptance",
         "accepted evidence/artifacts",
         "remaining work",
         "caller/human reply relationship",
         "exact live Conditions"
-      ]
+      ],
+      "reconciliation": {
+        "artifact": "projects/alex.app/unhandled-signal-owner-review-reconciliation-2026-10-04.json",
+        "historicalDisposition": "withdrawn-unfulfilled",
+        "mayTaskId": "goal/appdep_7bfd3ac4b0fa68969a9e3b23",
+        "historicalConditions": "unknown-preserved",
+        "legacyOutcomeFulfilled": false,
+        "currentTechnicalEvaluation": "input/appdep_154c005c87f7d8c436e76d9f",
+        "currentTechnicalDecision": "narrow-current-source-adaptation-supported",
+        "implementationTask": "input/appdep_db79add2ae9333ab16f704e9",
+        "implementationStatus": "pending"
+      }
     },
     {
       "old": {
@@ -3821,14 +3911,25 @@
         "artifact": "projects/alex.app/unhandled-signal-owner-review-reconciliation-2026-10-04.json",
         "artifactSha256": "006ab98f3f398e5210e6fb7200c204ef197a8a818e736e31c65628de49eeed3b"
       },
-      "basis": "All ten retired execution paths are obsolete and none of their outcomes is proved fulfilled. Exact old callers, Conditions and proof gaps remain in the reconciliation artifact. One current Host metric fallback-timestamp issue warrants reuse checking and bounded Alex evaluation; the separate five-name noisy-event remainder already has exact current May work and must not be duplicated. Historical proof promises/caller boundaries still require May disposition.",
+      "basis": "May withdrew this retired outcome unfulfilled; exact historical callers, Conditions, relationships and missing proof remain preserved. A distinct current-source metric-causality comparison falsified no-change and admitted one narrow Host implementation, but neither current work nor the separate five-name noisy-event lineage fulfills this old outcome.",
       "preservation": [
         "latest corrections and acceptance",
         "accepted evidence/artifacts",
         "remaining work",
         "caller/human reply relationship",
         "exact live Conditions"
-      ]
+      ],
+      "reconciliation": {
+        "artifact": "projects/alex.app/unhandled-signal-owner-review-reconciliation-2026-10-04.json",
+        "historicalDisposition": "withdrawn-unfulfilled",
+        "mayTaskId": "goal/appdep_7bfd3ac4b0fa68969a9e3b23",
+        "historicalConditions": "unknown-preserved",
+        "legacyOutcomeFulfilled": false,
+        "currentTechnicalEvaluation": "input/appdep_154c005c87f7d8c436e76d9f",
+        "currentTechnicalDecision": "narrow-current-source-adaptation-supported",
+        "implementationTask": "input/appdep_db79add2ae9333ab16f704e9",
+        "implementationStatus": "pending"
+      }
     },
     {
       "old": {
@@ -4001,14 +4102,25 @@
         "artifact": "projects/alex.app/unhandled-signal-owner-review-reconciliation-2026-10-04.json",
         "artifactSha256": "006ab98f3f398e5210e6fb7200c204ef197a8a818e736e31c65628de49eeed3b"
       },
-      "basis": "All ten retired execution paths are obsolete and none of their outcomes is proved fulfilled. Exact old callers, Conditions and proof gaps remain in the reconciliation artifact. One current Host metric fallback-timestamp issue warrants reuse checking and bounded Alex evaluation; the separate five-name noisy-event remainder already has exact current May work and must not be duplicated. Historical proof promises/caller boundaries still require May disposition.",
+      "basis": "May withdrew this retired outcome unfulfilled; exact historical callers, Conditions, relationships and missing proof remain preserved. A distinct current-source metric-causality comparison falsified no-change and admitted one narrow Host implementation, but neither current work nor the separate five-name noisy-event lineage fulfills this old outcome.",
       "preservation": [
         "latest corrections and acceptance",
         "accepted evidence/artifacts",
         "remaining work",
         "caller/human reply relationship",
         "exact live Conditions"
-      ]
+      ],
+      "reconciliation": {
+        "artifact": "projects/alex.app/unhandled-signal-owner-review-reconciliation-2026-10-04.json",
+        "historicalDisposition": "withdrawn-unfulfilled",
+        "mayTaskId": "goal/appdep_7bfd3ac4b0fa68969a9e3b23",
+        "historicalConditions": "unknown-preserved",
+        "legacyOutcomeFulfilled": false,
+        "currentTechnicalEvaluation": "input/appdep_154c005c87f7d8c436e76d9f",
+        "currentTechnicalDecision": "narrow-current-source-adaptation-supported",
+        "implementationTask": "input/appdep_db79add2ae9333ab16f704e9",
+        "implementationStatus": "pending"
+      }
     },
     {
       "old": {
@@ -4031,14 +4143,25 @@
         "artifact": "projects/alex.app/unhandled-signal-owner-review-reconciliation-2026-10-04.json",
         "artifactSha256": "006ab98f3f398e5210e6fb7200c204ef197a8a818e736e31c65628de49eeed3b"
       },
-      "basis": "All ten retired execution paths are obsolete and none of their outcomes is proved fulfilled. Exact old callers, Conditions and proof gaps remain in the reconciliation artifact. One current Host metric fallback-timestamp issue warrants reuse checking and bounded Alex evaluation; the separate five-name noisy-event remainder already has exact current May work and must not be duplicated. Historical proof promises/caller boundaries still require May disposition.",
+      "basis": "May withdrew this retired outcome unfulfilled; exact historical callers, Conditions, relationships and missing proof remain preserved. A distinct current-source metric-causality comparison falsified no-change and admitted one narrow Host implementation, but neither current work nor the separate five-name noisy-event lineage fulfills this old outcome.",
       "preservation": [
         "latest corrections and acceptance",
         "accepted evidence/artifacts",
         "remaining work",
         "caller/human reply relationship",
         "exact live Conditions"
-      ]
+      ],
+      "reconciliation": {
+        "artifact": "projects/alex.app/unhandled-signal-owner-review-reconciliation-2026-10-04.json",
+        "historicalDisposition": "withdrawn-unfulfilled",
+        "mayTaskId": "goal/appdep_7bfd3ac4b0fa68969a9e3b23",
+        "historicalConditions": "unknown-preserved",
+        "legacyOutcomeFulfilled": false,
+        "currentTechnicalEvaluation": "input/appdep_154c005c87f7d8c436e76d9f",
+        "currentTechnicalDecision": "narrow-current-source-adaptation-supported",
+        "implementationTask": "input/appdep_db79add2ae9333ab16f704e9",
+        "implementationStatus": "pending"
+      }
     },
     {
       "old": {
@@ -4061,14 +4184,25 @@
         "artifact": "projects/alex.app/unhandled-signal-owner-review-reconciliation-2026-10-04.json",
         "artifactSha256": "006ab98f3f398e5210e6fb7200c204ef197a8a818e736e31c65628de49eeed3b"
       },
-      "basis": "All ten retired execution paths are obsolete and none of their outcomes is proved fulfilled. Exact old callers, Conditions and proof gaps remain in the reconciliation artifact. One current Host metric fallback-timestamp issue warrants reuse checking and bounded Alex evaluation; the separate five-name noisy-event remainder already has exact current May work and must not be duplicated. Historical proof promises/caller boundaries still require May disposition.",
+      "basis": "May withdrew this retired outcome unfulfilled; exact historical callers, Conditions, relationships and missing proof remain preserved. A distinct current-source metric-causality comparison falsified no-change and admitted one narrow Host implementation, but neither current work nor the separate five-name noisy-event lineage fulfills this old outcome.",
       "preservation": [
         "latest corrections and acceptance",
         "accepted evidence/artifacts",
         "remaining work",
         "caller/human reply relationship",
         "exact live Conditions"
-      ]
+      ],
+      "reconciliation": {
+        "artifact": "projects/alex.app/unhandled-signal-owner-review-reconciliation-2026-10-04.json",
+        "historicalDisposition": "withdrawn-unfulfilled",
+        "mayTaskId": "goal/appdep_7bfd3ac4b0fa68969a9e3b23",
+        "historicalConditions": "unknown-preserved",
+        "legacyOutcomeFulfilled": false,
+        "currentTechnicalEvaluation": "input/appdep_154c005c87f7d8c436e76d9f",
+        "currentTechnicalDecision": "narrow-current-source-adaptation-supported",
+        "implementationTask": "input/appdep_db79add2ae9333ab16f704e9",
+        "implementationStatus": "pending"
+      }
     }
   ],
   "sourceSnapshot": {

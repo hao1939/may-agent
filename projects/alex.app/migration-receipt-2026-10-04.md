@@ -221,3 +221,14 @@ query gap already has May parent `goal/app_f61801ff-d565-4cde-af42-54c0a700d124`
 and approval child `goal/appdep_0f3f67e14e6115f52af6c3ca`, so it must not be
 duplicated. Historical proof promises and caller boundaries still need a bounded
 May disposition. No continuation was rushed into admission in this attempt.
+
+
+## Accepted unhandled-signal disposition and current causality continuation
+
+May Task `goal/appdep_7bfd3ac4b0fa68969a9e3b23` withdrew all ten retired unhandled-signal/owner-review outcomes as **unfulfilled**. Exact historical callers, four preserved unknown Conditions plus the unrecovered historical mention, all 39 direct relationships, and every missing terminal/alert/Gym proof remain recorded. Withdrawal is not fulfillment, approval, rejection or Condition settlement. No current Hao decision or additional May reply survives from these ten; the separate five-name noisy-event proposal and its human Condition remain independent.
+
+Alex Gym Task `input/appdep_154c005c87f7d8c436e76d9f` completed the bounded current-source comparison. It preserved producer timestamp `111`, caller timestamp `222`, shared-producer execution and failed-source safety, but found untimestamped fallback observations **183 ms before direct producer completion** and **176 ms before completion through the actual App schedule path**. This falsifies the no-change case and supports only a narrow current Host adaptation: producer `measuredAt` > explicit caller `measuredAt` > one source-completion instant, with scheduled request time kept for cadence rather than observation time. Implementation is admitted separately as Alex tech-lead Task `input/appdep_db79add2ae9333ab16f704e9`; it has no merge, deployment or rollout authority and must not duplicate May's five-name query work or revive historical `ae8ed87…`.
+
+## Gym request-correlation lineage reconciliation
+
+Activated Bob session `s_1791121065520_0995a42e-296f-4622-a5e9-cc4671d23cbd` reconciled exactly the three `gym-request-correlation` identities in `projects/alex.app/gym-request-correlation-reconciliation-2026-10-04.json` (SHA-256 `d95196cf2cd3e8d7655d77dd28fa9d6d6ad152021edb96ff76d537cbdf1946bd`). The artifact preserves both unknown Conditions, five direct relationships, two caller inputs and all full old specs. Current generic correlation and comparison fixtures pass, but do not implement the old finish-result/addressed-route envelopes or prove any historical live matrix; no technical continuation is warranted without a fresh enabled-App falsifier. One bounded May historical authority/caller disposition is pending as `goal/appdep_8630d39afbc036c94782ceda`; no old outcome is marked fulfilled.
