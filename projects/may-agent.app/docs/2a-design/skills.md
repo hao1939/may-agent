@@ -321,7 +321,20 @@ another request or ownership record.
 
 ### Explicit runtime and delegation invocation
 
-Add an optional skill name to existing session boundaries:
+Delegate the outcome, constraints, and supporting references by default. The
+receiver chooses its method. When a specific method is needed, inspect the
+receiver's loaded catalog through the existing agent list:
+
+```ts
+agents({ action: "list", agent: "bob" });
+```
+
+Named inspection returns that agent's skill names, short descriptions, and
+`filePath` references, without loading bodies. It uses the same loaded catalog
+as execution; changes on disk become available after definition reload. The
+unfiltered list stays compact and does not expand every agent's skills.
+
+An optional skill name at existing session boundaries activates a cataloged method:
 
 ```ts
 manager.run(agent, task, { skill: "verify-change", trace });
@@ -336,11 +349,30 @@ The manager validates the name against the receiving agent's catalog and uses
 turn has at most one explicit primary skill in v1. Other cataloged skills can
 still be read on demand.
 
-The `agents` tool's `context_files` argument appends explicit file references
-to the recipient's assignment; it does not inject their contents. A known skill
-should use the typed `skill` field so validation, provenance, and evaluation
-remain reliable. The retired agent-definition field with the same name has no
-prompt effect; see [prompt files](../2b-manual/agent-convention.md#prompt-files).
+An unavailable explicit name is rejected before model execution. The error
+points the caller to receiver inspection and the alternatives: select a listed
+name, delegate without explicit activation, or provide a readable file reference.
+The Host does not silently substitute another method.
+
+The `agents` tool's `context_files` argument appends file references to the
+recipient's assignment; it does not inject their contents. A full `SKILL.md`
+path can supply guidance even when the file is outside the receiver's catalog:
+
+```ts
+agents({ action: "call", agent: "bob", task: "Review this patch against the design",
+  context_files: ["/workspace/design/review-guide/SKILL.md"] });
+```
+
+The file must be readable in the receiver's execution environment. Catalog
+membership governs discovery and named activation, not ordinary file access;
+there is no need to copy or register a guide just to read it. File references
+can also accompany a cataloged skill. Reading an uncataloged guide uses existing
+file tools and evidence, without claiming a cataloged `skill.loaded` activation.
+The catalog describes the loaded snapshot; an ordinary file read returns the
+file's contents at read time and follows existing permissions.
+
+The retired agent-definition field named `context_files` has no prompt effect;
+see [prompt files](../2b-manual/agent-convention.md#prompt-files).
 
 ## Trace And Evaluation
 
