@@ -3,7 +3,12 @@ import { assertAppTaskClaimCurrent } from "./app-task-reconciler.js";
 import { readTaskInputs } from "./app-task-inputs.js";
 import { createHash } from "node:crypto";
 import { isDeepStrictEqual } from "node:util";
-import type { TaskCommunication, TaskChangeReceipt, TaskReconcileResult } from "@may-agent/sdk";
+import {
+  admitTaskChanges,
+  type TaskCommunication,
+  type TaskChangeReceipt,
+  type TaskReconcileResult,
+} from "@may-agent/sdk";
 import type { AppTaskContext } from "./app-task-store.js";
 import type { AppTaskClaim } from "./app-task-reconciler.js";
 import { getAppInboxItem } from "../state/app-inbox-store.js";
@@ -59,7 +64,7 @@ export function applyTaskCommunication(
     const localKey = `communication:${change.id}`;
     // Both event kinds share the same operation name. Content cannot be changed on replay.
     const saved =
-      events.read("conversation.message.created", localKey) ?? events.read("app.task.communication.updated", localKey);
+      events.read("app.task.communication.updated", localKey) ?? events.read("conversation.message.created", localKey);
     if (saved) {
       if (!isDeepStrictEqual(saved.data.communication, change))
         throw new Error("Communication id was reused for different content");
@@ -157,8 +162,10 @@ export function applyTaskCommunication(
           }
         : {}),
     };
+    // Keep replay evidence in its own journal fact. Repeating full Request scopes
+    // in the message would overflow the bounded SQL projection used by history.
     events.publish(localKey, {
-      type: change.message ? "conversation.message.created" : "app.task.communication.updated",
+      type: "app.task.communication.updated",
       target: { appId: item.appId },
       data: {
         appId: item.appId,
@@ -166,25 +173,32 @@ export function applyTaskCommunication(
         communication: structuredClone(change),
         receipt,
         ...(messageId ? { messageId } : {}),
-        ...(change.message
-          ? {
-              author: { kind: "agent", id: claim.agent },
-              text: change.message,
-              replyTo: item.source.id,
-              metadata: {
-                requestId: item.id,
-                communicationId: change.id,
-                taskRefs: [{ appId: item.appId, taskId: claim.taskId }],
-                ...(topicId ? { topicId } : {}),
-                ...(item.channel ? { channel: item.channel } : {}),
-                ...(item.channelTargetId ? { channelTargetId: item.channelTargetId } : {}),
-                ...(item.channelThreadId ? { channelThreadId: item.channelThreadId } : {}),
-                ...(item.channelMessageId ? { channelMessageId: item.channelMessageId } : {}),
-              },
-            }
-          : {}),
       },
     });
+    if (change.message)
+      events.publish(localKey, {
+        type: "conversation.message.created",
+        target: { appId: item.appId },
+        data: {
+          appId: item.appId,
+          conversationId,
+          communication: { id: change.id, inputId: change.inputId },
+          messageId,
+          author: { kind: "agent", id: claim.agent },
+          text: change.message,
+          replyTo: item.source.id,
+          metadata: {
+            requestId: item.id,
+            communicationId: change.id,
+            taskRefs: [{ appId: item.appId, taskId: claim.taskId }],
+            ...(topicId ? { topicId } : {}),
+            ...(item.channel ? { channel: item.channel } : {}),
+            ...(item.channelTargetId ? { channelTargetId: item.channelTargetId } : {}),
+            ...(item.channelThreadId ? { channelThreadId: item.channelThreadId } : {}),
+            ...(item.channelMessageId ? { channelMessageId: item.channelMessageId } : {}),
+          },
+        },
+      });
     return receipt;
   });
 }
@@ -241,6 +255,10 @@ export function validateTaskCommunication(
   changes: readonly TaskCommunication[],
   events: AppTaskEvents,
 ): string | null {
+  // Implicit response conversion has already run. Use settlement's schema here
+  // too, including the combined entry count and message bounds.
+  const admitted = admitTaskChanges({ communication: changes });
+  if (!admitted.ok) return admitted.error;
   const completed = new Error("communication preview complete");
   const proposed = new Map<string, { eventId: number; data: Record<string, unknown> }>();
   try {

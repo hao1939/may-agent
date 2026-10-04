@@ -767,3 +767,118 @@ test("a reply to a common Task publication retains Topic and Task navigation wit
     await f.close();
   }
 });
+
+test("maximal Request scopes retain message history, reply links and exact receipts across restart", async () => {
+  const communication: TaskCommunication = {
+    id: "large-acceptance",
+    inputId: "ask",
+    message: "All eight asks have been accepted.",
+    topic: { kind: "new", title: "Requested work" },
+    requestUpdates: Array.from({ length: 8 }, (_, index) => ({
+      id: `ask-${index}`,
+      expectedRevision: 0,
+      disposition: "open",
+      scope: String(index).repeat(2000),
+      reason: "r".repeat(2000),
+    })),
+  };
+  let calls = 0;
+  let messageId: string | undefined;
+  let topicId: string | undefined;
+  const f = await fixture(async (attempt) => {
+    calls++;
+    const receipt = await attempt.apply({
+      // A different batch on retry exercises per-operation journal replay,
+      // rather than returning the whole prior batch's saved receipt.
+      communication: calls === 1 ? [communication] : [
+        communication,
+        {
+          id: "additional-ask",
+          inputId: "ask",
+          requestUpdates: [{ id: "extra", expectedRevision: 0, scope: "Additional work", disposition: "open" }],
+        },
+      ],
+    });
+    const accepted = receipt.communication![0]!;
+    expect(accepted.requests?.map(({ scope }) => scope)).toEqual(
+      communication.requestUpdates!.map(({ scope }) => scope),
+    );
+    if (calls === 1) {
+      messageId = accepted.messageId;
+      topicId = readConversationMessageTopicId(f.db, "sample", "discussion", messageId!)!;
+      throw new Error("Interrupted after large publication");
+    }
+    expect(accepted.messageId).toBe(messageId);
+    expect(await attempt.read.communication!("ask")).toMatchObject({
+      messages: expect.arrayContaining([
+        expect.objectContaining({ id: messageId, text: communication.message, metadata: expect.objectContaining({ topicId }) }),
+      ]),
+    });
+    return {
+      state: "waiting",
+      summary: "Scope retained; waiting for environment",
+      facts: [],
+      conditions: [
+        { id: "environment", type: "environment.ready", subject: "environment:test", expected: true, owner: "app:sample" },
+      ],
+    };
+  });
+  try {
+    f.admit("ask");
+    await f.run();
+    expect(f.store.readTask("work")?.status.executionFailures).toBe(1);
+    expect(f.store.readTask("work")?.status.summary).toContain("Interrupted after large publication");
+    expect(topicId).toMatch(/^task-topic:/);
+    await f.reopen();
+    await until(() => f.store.readTask("work")?.status.phase === "waiting");
+    expect(calls).toBe(2);
+    const messages = listAppConversationMessages(f.db, "sample", "discussion").filter(
+      ({ author }) => author.kind === "agent",
+    );
+    expect(messages).toHaveLength(1);
+    expect(messages[0]).toMatchObject({
+      id: messageId,
+      text: communication.message,
+      replyTo: "ask",
+      metadata: { topicId, communicationId: communication.id, taskRefs: [{ appId: "sample", taskId: "work" }] },
+    });
+    expect(readConversationMessageTopicId(f.db, "sample", "discussion", messageId!)).toBe(topicId);
+  } finally {
+    await f.close();
+  }
+});
+
+test("finish preflight and settlement share the communication limit after adding an implicit response", async () => {
+  const communication: TaskCommunication[] = Array.from({ length: 8 }, (_, index) => ({
+    id: `accept-${index}`,
+    inputId: "ask",
+    requestUpdates: [{ id: `scope-${index}`, expectedRevision: 0, scope: `Ask ${index}`, disposition: "open" }],
+  }));
+  const proposal = { state: "converged" as const, summary: "Accepted", facts: [], communication, response: "Accepted." };
+  const corrected = { ...proposal, communication: communication.slice(0, 7) };
+  const f = await fixture(
+    async () => corrected,
+    "task",
+    async ({ validateResult }) => {
+      expect(validateResult!(proposal)).toContain("Task changes");
+      expect(validateResult!(corrected)).toBeNull();
+      expect(f.db.prepare("SELECT COUNT(*) AS n FROM conversation_requests").get()?.n).toBe(0);
+      expect(
+        f.db.prepare("SELECT COUNT(*) AS n FROM events WHERE event_type = 'conversation.message.created'").get()?.n,
+      ).toBe(0);
+    },
+  );
+  try {
+    const input = f.admit("ask").item;
+    await f.run(input.executionTaskId!);
+    expect(f.store.readTask(input.executionTaskId!)?.status.phase).toBe("converged");
+    expect(f.db.prepare("SELECT COUNT(*) AS n FROM conversation_requests").get()?.n).toBe(7);
+    expect(
+      listAppConversationMessages(f.db, "sample", "discussion")
+        .filter(({ author }) => author.kind === "agent")
+        .map(({ text }) => text),
+    ).toEqual(["Accepted."]);
+  } finally {
+    await f.close();
+  }
+});
