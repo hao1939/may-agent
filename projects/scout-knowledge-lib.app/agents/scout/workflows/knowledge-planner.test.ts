@@ -28,6 +28,124 @@ afterAll(() =>
 );
 
 describe("Scout owner reconciliation boundary", () => {
+  it.each(["converged", "waiting", "incomplete"] as const)(
+    "guides acceptance-bounded blocker reports and preserves a %s decision",
+    async (state) => {
+      const fixture = publicationTestFixture();
+      const head = fixture.git("rev-parse", "HEAD");
+      const acceptance =
+        state === "converged"
+          ? "Apply the change or return the exact blocked capability and resume context."
+          : "Apply the change and verify the installed definition.";
+      const facts = [
+        "missing-capability: definition activation is unavailable in this call",
+        "current-state: installed definition remains unchanged; no activation claimed",
+        "resume-context: authorized operator must apply and read back the exact definition",
+        ...(state === "converged"
+          ? [
+              "fulfilled-acceptance: exact blocked capability and resume context report",
+            ]
+          : ["unfulfilled-acceptance: installed change still required"]),
+      ];
+      const conditions =
+        state === "waiting"
+          ? [
+              {
+                id: "definition-active",
+                type: "definition.activated",
+                subject: "definition:scout-test",
+                owner: "human",
+                expected: { revision: "approved-test-revision" },
+                requestedAction:
+                  "Apply the approved definition and read back its revision.",
+              },
+            ]
+          : undefined;
+      const output = {
+        state,
+        summary:
+          "Definition activation unavailable; exact resume context supplied.",
+        facts,
+        ...(conditions ? { conditions } : {}),
+      };
+      let prompt = "";
+      const emitted: unknown[] = [];
+      try {
+        const result = await execute(
+          createTestAppWorkflowContext({
+            reconciliation: {
+              appId: "scout-knowledge-lib",
+              taskId: `goal/blocked-report-${state}`,
+              generation: 1,
+              resourceVersion: 1,
+              agent: "scout",
+              outcome:
+                "Handle the approved definition change within this call's authority",
+              acceptance: [acceptance],
+              input: { kind: "goal", data: { acceptance: [acceptance] } },
+              children: { live: [], completed: [] },
+              events: { items: [], truncated: false },
+            },
+            workspace: fixture.workspace,
+            callAgent: (async (_agent, value) => {
+              prompt = value;
+              // Agent decisions are fixtures, not evidence of live model behavior.
+              return {
+                id: `s_blocked_report_${state}`,
+                kind: "agent",
+                status: "done",
+                output,
+              };
+            }) as WorkflowContext["agents"]["call"],
+            emit: async (event) => {
+              emitted.push(event);
+            },
+          }),
+        );
+        const guidance = prompt.replace(/\s+/g, " ");
+        expect(guidance).toContain(
+          "If an acceptance branch explicitly permits a blocked-capability/resume-context report as the bounded outcome, and your report fulfills that branch",
+        );
+        expect(guidance).toContain(
+          'finish(status: "success", result: {state: "converged"',
+        );
+        expect(guidance).toContain(
+          'Do not return finish(status: "blocked") for this fulfilled report',
+        );
+        expect(guidance).toContain(
+          "Identify the fulfilled acceptance branch, exact missing capability, verified current state, and precise resume context",
+        );
+        expect(guidance).toContain(
+          "do not claim it was applied, activated, or verified",
+        );
+        expect(guidance).toContain(
+          "If acceptance still requires the external work, retain a real `waiting` result with a supported Condition or known return route; with no return route, return `incomplete`",
+        );
+        expect(guidance).toContain(
+          "Never infer permission to converge merely from a blocker, repeated retries, or a lack of available tools",
+        );
+        expect(prompt).toContain(acceptance);
+        expect(result).toMatchObject({
+          status: "done",
+          output: { ...output, facts: expect.arrayContaining(facts) },
+        });
+        expect(emitted).toEqual([
+          expect.objectContaining({
+            type: "project.knowledge.maintained",
+            data: expect.objectContaining({
+              state,
+              facts: expect.arrayContaining(facts),
+            }),
+          }),
+        ]);
+        expect(fixture.git("rev-parse", "HEAD")).toBe(head);
+        expect(fixture.git("status", "--porcelain")).toBe("");
+      } finally {
+        rmSync(fixture.repositoryRoot, { recursive: true, force: true });
+      }
+    },
+  );
+
   it("hands recovery procedure and exact retained failure to Scout without replacing Task authority", async () => {
     const fixture = publicationTestFixture();
     const taskId = "goal/recovery-context";

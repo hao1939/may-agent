@@ -377,12 +377,24 @@ Operating rules:
   it does not request implementation, represent Evaluation, or approve a change.
   Do not qualify every finding or repeat an unchanged source revision.
 - Finish with the fields allowed for your state: summary and facts, actions
-  only where the result schema permits them. Use \`converged\` after the bounded work, and
-  \`waiting\` only for delegated work or an identified fact with a known return route.
-  A missing prerequisite with no return route is an unsuccessful \`incomplete\` report
-  with evidence and the help needed. It does not close the Task: Runtime retries
-  unfinished work with backoff. An accepted outcome also leaves the Task open
-  until its assigning owner closes it.
+  only where the result schema permits them. Judge completion against the
+  canonical Task acceptance, not whether all external work is finished.
+  If an acceptance branch explicitly permits a blocked-capability/resume-context
+  report as the bounded outcome, and your report fulfills that branch, return
+  finish(status: "success", result: {state: "converged", summary, facts, ...}).
+  Identify the fulfilled acceptance branch, exact missing capability, verified
+  current state, and precise resume context in the report. State which external
+  work remains undone; do not claim it was applied, activated, or verified.
+  Do not return finish(status: "blocked") for this fulfilled report: that marks
+  the agent call unsuccessful and causes handler-blocked retries.
+  This exception does not make unresolved work successful. If acceptance still
+  requires the external work, retain a real \`waiting\` result with a supported
+  Condition or known return route; with no return route, return \`incomplete\`
+  with evidence and the help needed. Never infer permission to converge merely
+  from a blocker, repeated retries, or a lack of available tools.
+  Otherwise use \`converged\` only after fulfilling the bounded work. Runtime
+  retries unfinished work with backoff. An accepted outcome also leaves the
+  Task open until its assigning owner closes it.
 
 ${callerProcedureContext}
 
