@@ -122,11 +122,9 @@ describe("May skill catalog", () => {
     expect(invokeCatalogSkill(refreshed, "task-guide", "Continue").prompt).toContain("Revised instructions");
   });
 
-  it("rejects an unavailable explicit name with discovery and file-reference recovery guidance", () => {
+  it("rejects an unavailable explicit skill before execution", () => {
     expect(() => invokeCatalogSkill(undefined, "review-change", "Review this patch")).toThrow(
-      'Skill "review-change" is not in this agent\'s catalog. ' +
-      "For delegation, omit skill to let the receiver choose its method. " +
-      "If this guide is needed, pass its full readable SKILL.md path in context_files instead.",
+      'Skill "review-change" is not available for this agent',
     );
   });
 

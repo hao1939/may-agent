@@ -35,12 +35,12 @@ export interface AgentsToolManagerDeps {
   callAgent(
     agentName: string,
     task: string,
-    opts?: { parentSessionId?: string; workflowRunId?: string; projectId?: string; source?: string; trace?: EventTrace; skill?: string; signal?: AbortSignal },
+    opts?: { parentSessionId?: string; workflowRunId?: string; projectId?: string; source?: string; trace?: EventTrace; signal?: AbortSignal },
   ): Promise<TaskResult & { messages: AgentMessage[] }>;
   runAgent(
     agentName: string,
     task: string,
-    opts?: { parentSessionId?: string; originSessionId?: string; source?: string; requestId?: string; workflowRunId?: string; projectId?: string; trace?: EventTrace; skill?: string; signal?: AbortSignal },
+    opts?: { parentSessionId?: string; originSessionId?: string; source?: string; requestId?: string; workflowRunId?: string; projectId?: string; trace?: EventTrace; signal?: AbortSignal },
   ): string;
   status(): SessionInfo[];
   progress(sessionId: string, limit?: number): AgentMessage[];
@@ -125,11 +125,6 @@ const AgentsToolParams = Type.Object({
     Type.Array(Type.String(), {
       description:
         "For 'call'/'fork': bullet points describing how to verify the task is done correctly. Appended to the delegated session task.",
-    }),
-  ),
-  skill: Type.Optional(
-    Type.String({
-      description: "For 'call'/'fork': optional explicit activation of a skill known to be in the receiving agent's catalog. Normally omit; the receiver chooses its method. A name in your own catalog is not necessarily available there. To share a guide, pass its readable file path in context_files.",
     }),
   ),
   scope: Type.Optional(
@@ -276,7 +271,6 @@ export function createAgentsTool(manager: AgentsToolManagerDeps, opts?: CreateAg
               projectId: lineage.projectId,
               source: "agents.call",
               trace: lineage.trace,
-              skill: params.skill,
               signal,
             });
 
@@ -332,7 +326,6 @@ export function createAgentsTool(manager: AgentsToolManagerDeps, opts?: CreateAg
               projectId: lineage.projectId,
               source: "agents.fork",
               trace: lineage.trace,
-              skill: params.skill,
               signal,
             });
 

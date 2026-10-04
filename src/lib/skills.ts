@@ -172,13 +172,7 @@ export function invokeCatalogSkill(
   skill: MaySkill;
 } {
   const skill = catalog?.skills.get(name);
-  if (!skill) {
-    throw new Error(
-      `Skill "${name}" is not in this agent's catalog. ` +
-      "For delegation, omit skill to let the receiver choose its method. " +
-      "If this guide is needed, pass its full readable SKILL.md path in context_files instead.",
-    );
-  }
+  if (!skill) throw new Error(`Skill "${name}" is not available for this agent`);
   if (Buffer.byteLength(skill.content, "utf8") > MAX_EXPLICIT_SKILL_BYTES) {
     throw new Error(`Skill "${name}" exceeds the ${MAX_EXPLICIT_SKILL_BYTES}-byte activation limit`);
   }
