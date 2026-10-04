@@ -25,6 +25,7 @@ function withoutCompleteDeliveryAuthority(data: string | undefined): string | un
       approvalAnchor: _approvalAnchor,
       humanCondition: _humanCondition,
       completedHumanAction: _completedHumanAction,
+      completedHumanActions: _completedHumanActions,
       ...ordinary
     } = parsed as Record<string, unknown>;
     return JSON.stringify(ordinary);
