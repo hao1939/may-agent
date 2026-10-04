@@ -1,10 +1,10 @@
 {
   "kind": "alex-legacy-frontier-disposition",
   "capturedAt": "2026-10-04T12:13:00Z",
-  "generatedAt": "2026-10-04T13:06:00Z",
+  "generatedAt": "2026-10-04T13:14:00Z",
   "source": "/app/.state/alex-migration-20261004/legacy-frontier-index.json",
   "sourceSha256": "46d61e762a8abac6170b4333c7aac30af2661afabe7fe635294a17318ea1cde9",
-  "status": "bounded semantic migration in progress: writer-containment reconciled; Gym metric-only paths partially superseded; app-dependency completion old path reconciled with current-protocol verification and May approval boundary open; no old outcome falsely fulfilled",
+  "status": "bounded semantic migration in progress: writer-containment, app-dependency completion and dependency-authority reconciled without historical fulfillment; Gym metric-only paths partially superseded; dependency-authority exact candidate awaits May disposition; no old outcome falsely fulfilled",
   "rules": [
     "No old Task is marked fulfilled by this receipt.",
     "replacement=null means no replacement Task has been admitted yet.",
@@ -15,14 +15,15 @@
     "total": 117,
     "byDisposition": {
       "inspect-current-evidence-for-alex-continuation": 35,
-      "consolidate-lineage-after-current-state-check": 28,
+      "obsolete-approval-request-withdrawn-unfulfilled": 1,
       "superseded-no-current-continuation-not-fulfilled": 3,
+      "obsolete-candidate-awaiting-may-disposition-unfulfilled": 2,
+      "consolidate-lineage-after-current-state-check": 26,
       "retain-may-boundary": 6,
       "source-identified-current-lineage-check": 37,
       "partial-execution-path-supersession-nonmetric-open": 4,
       "retain-may-boundary-after-alex-technical-reconciliation": 2,
-      "current-protocol-verified-old-outcome-unfulfilled": 1,
-      "obsolete-approval-request-withdrawn-unfulfilled": 1
+      "current-protocol-verified-old-outcome-unfulfilled": 1
     },
     "byProposedOwner": {
       "alex": 105,
@@ -163,12 +164,19 @@
           "approval-dependency-authority-contract-20260820-dc15a38b"
         ]
       },
-      "outcome": "Isolate and review the verified dependency-authority replacement without absorbing unrelated dirty App work; produce the exact immutable May App and May Runtime artifact, obtain the required production activation decision, activate only through the supervisor-owned path if approved, and carry a fresh schema-valid AKS request through a correlated terminal May App result and the requesting AKS `runtime/owner-review` lineage\u2019s terminal task/domain result.",
-      "disposition": "consolidate-lineage-after-current-state-check",
+      "outcome": "Isolate and review the verified dependency-authority replacement without absorbing unrelated dirty App work; produce the exact immutable May App and May Runtime artifact, obtain the required production activation decision, activate only through the supervisor-owned path if approved, and carry a fresh schema-valid AKS request through a correlated terminal May App result and the requesting AKS `runtime/owner-review` lineage’s terminal task/domain result.",
+      "disposition": "obsolete-candidate-awaiting-may-disposition-unfulfilled",
       "proposedOwner": "alex",
       "lineage": "dependency-authority",
-      "replacement": null,
-      "basis": "Overlapping system-improvement lineage. Reconcile current source/results and preserve exact live Conditions before admitting at most one coherent Alex continuation; duplicates become superseded only after mapping.",
+      "replacement": {
+        "appId": "alex",
+        "taskId": "input/app_7a279469-7ac8-4bec-894a-9314635bd452",
+        "role": "bounded exact supersession recommendation; human authority and caller disposition remain with May",
+        "status": "awaiting-may-disposition",
+        "artifact": "projects/alex.app/dependency-authority-reconciliation-2026-10-04.json",
+        "artifactSha256": "6a9c15a12e9bebc759a616fbfa0127e09e3f2a4448e42732f3eac6a5ec63408b"
+      },
+      "basis": "Current three-App source has no incident-specific AKS consumer or old owner tree. Current request/return and authority-scoping fixtures pass; no current defect warrants resurrection. The frozen artifact is not safely reusable because its App patch also contains an unrelated installed-app-resolver-observation contract. Neither old terminal outcome is fulfilled. Preserve the exact unknown approval Condition and parent/caller chain while May dispositions the obsolete candidate request.",
       "preservation": [
         "latest corrections and acceptance",
         "accepted evidence/artifacts",
@@ -238,7 +246,7 @@
           "hao-cli-worker-lifecycle-activation-decision-5a601758"
         ]
       },
-      "outcome": "Obtain Hao\u2019s exact approve, reject, or hold decision on immutable May Runtime CLI-worker lifecycle repair 5a601758cf8c86bc37401f6e19106d580dec17a6 and, only if approved, activate that exact candidate through the supported supervisor-owned path and prove the live accepted-to-terminal lifecycle without duplicate execution or secret exposure.",
+      "outcome": "Obtain Hao’s exact approve, reject, or hold decision on immutable May Runtime CLI-worker lifecycle repair 5a601758cf8c86bc37401f6e19106d580dec17a6 and, only if approved, activate that exact candidate through the supported supervisor-owned path and prove the live accepted-to-terminal lifecycle without duplicate execution or secret exposure.",
       "disposition": "retain-may-boundary",
       "proposedOwner": "may",
       "lineage": null,
@@ -288,7 +296,7 @@
           "hao-gym-app-definition-activation-decision-20260825"
         ]
       },
-      "outcome": "Obtain Hao\u2019s exact approve, reject, or hold decision for activating committed App definitions at source commit 5a06bbacfcde7848b664c30b5a02d4171e116184; only if approved, invoke the supported `/reload` control exactly once and prove the live release manifest, Gym constituent hash, and service health without replaying the comparison or performing another Host deployment.",
+      "outcome": "Obtain Hao’s exact approve, reject, or hold decision for activating committed App definitions at source commit 5a06bbacfcde7848b664c30b5a02d4171e116184; only if approved, invoke the supported `/reload` control exactly once and prove the live release manifest, Gym constituent hash, and service health without replaying the comparison or performing another Host deployment.",
       "disposition": "retain-may-boundary",
       "proposedOwner": "may",
       "lineage": null,
@@ -2388,7 +2396,7 @@
         "owner": "may",
         "conditionIds": []
       },
-      "outcome": "Regenerate Gym\u2019s public task projection from current canonical public task/control-plane state and recompute `gym.valid-run-rate` from a current bounded receipt window, then return evidence sufficient for Gym to resolve evaluator finding `gym.app:stale-public-health-projections`.",
+      "outcome": "Regenerate Gym’s public task projection from current canonical public task/control-plane state and recompute `gym.valid-run-rate` from a current bounded receipt window, then return evidence sufficient for Gym to resolve evaluator finding `gym.app:stale-public-health-projections`.",
       "disposition": "partial-execution-path-supersession-nonmetric-open",
       "proposedOwner": "may",
       "lineage": "gym-public-health",
@@ -2442,7 +2450,7 @@
         "owner": "may",
         "conditionIds": []
       },
-      "outcome": "Through supported runtime deployment and resolver event paths, activate the exact fingerprinted Gym request-scope binding correction and give terminal evidenced dispositions to the three exact historical regression-run resources, returning loaded-source identity plus a fresh public task projection so Gym can run a bounded 1-scenario \u00d7 1-trial proof.",
+      "outcome": "Through supported runtime deployment and resolver event paths, activate the exact fingerprinted Gym request-scope binding correction and give terminal evidenced dispositions to the three exact historical regression-run resources, returning loaded-source identity plus a fresh public task projection so Gym can run a bounded 1-scenario × 1-trial proof.",
       "disposition": "consolidate-lineage-after-current-state-check",
       "proposedOwner": "alex",
       "lineage": "gym-public-health",
@@ -3394,12 +3402,19 @@
         "owner": "may",
         "conditionIds": []
       },
-      "outcome": "Resolve rejected AKS request appdep_b0fced12cada9800c8035457 through a supported, schema-valid May App contract: adjudicate the current validity of the historical direct Host-test edit and ensure dependency-scoped owner guidance treats the supplied dependency observation as authoritative without directing App owners to inspect Host-private task-tree projections; then carry the request through a correlated terminal May App result and the requesting AKS task\u2019s terminal evidence without weakening unknown-input rejection or duplicating alert-4602 taxonomy work.",
-      "disposition": "consolidate-lineage-after-current-state-check",
+      "outcome": "Resolve rejected AKS request appdep_b0fced12cada9800c8035457 through a supported, schema-valid May App contract: adjudicate the current validity of the historical direct Host-test edit and ensure dependency-scoped owner guidance treats the supplied dependency observation as authoritative without directing App owners to inspect Host-private task-tree projections; then carry the request through a correlated terminal May App result and the requesting AKS task’s terminal evidence without weakening unknown-input rejection or duplicating alert-4602 taxonomy work.",
+      "disposition": "obsolete-candidate-awaiting-may-disposition-unfulfilled",
       "proposedOwner": "alex",
       "lineage": "dependency-authority",
-      "replacement": null,
-      "basis": "Overlapping system-improvement lineage. Reconcile current source/results and preserve exact live Conditions before admitting at most one coherent Alex continuation; duplicates become superseded only after mapping.",
+      "replacement": {
+        "appId": "alex",
+        "taskId": "input/app_7a279469-7ac8-4bec-894a-9314635bd452",
+        "role": "bounded exact supersession recommendation; human authority and caller disposition remain with May",
+        "status": "awaiting-may-disposition",
+        "artifact": "projects/alex.app/dependency-authority-reconciliation-2026-10-04.json",
+        "artifactSha256": "6a9c15a12e9bebc759a616fbfa0127e09e3f2a4448e42732f3eac6a5ec63408b"
+      },
+      "basis": "Current three-App source has no incident-specific AKS consumer or old owner tree. Current request/return and authority-scoping fixtures pass; no current defect warrants resurrection. The frozen artifact is not safely reusable because its App patch also contains an unrelated installed-app-resolver-observation contract. Neither old terminal outcome is fulfilled. Preserve the exact unknown approval Condition and parent/caller chain while May dispositions the obsolete candidate request.",
       "preservation": [
         "latest corrections and acceptance",
         "accepted evidence/artifacts",
@@ -3732,7 +3747,7 @@
           "hao-approval-gym-public-health-candidate-v10"
         ]
       },
-      "outcome": "Recover Gym\u2019s public-health projection and valid-run-rate refresh capability by reconstructing a materially changed immutable Host candidate from the authoritative clean baseline, proving it without reusing the rejected candidate, obtaining explicit approval before activation, and then returning terminal live projection, metric, and workflow evidence for the parent outcome.",
+      "outcome": "Recover Gym’s public-health projection and valid-run-rate refresh capability by reconstructing a materially changed immutable Host candidate from the authoritative clean baseline, proving it without reusing the rejected candidate, obtaining explicit approval before activation, and then returning terminal live projection, metric, and workflow evidence for the parent outcome.",
       "disposition": "partial-execution-path-supersession-nonmetric-open",
       "proposedOwner": "may",
       "lineage": "gym-public-health",
