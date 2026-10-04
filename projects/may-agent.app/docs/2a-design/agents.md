@@ -72,11 +72,12 @@ creator. App contract/catalog discovery exposes the owner agent alongside
 the input schema. These facts make responsibility discoverable; they do not
 automatically supervise a specialist or contact someone when a result is blocked.
 
-**Source availability:** the added owner metadata and execution guidance are in
-[Host PR #314](https://github.com/hao1939/may-agent/pull/314), revision
-`21570ff54f144be6a598d511734fc09457d1e745`. Integrate that Host change before
-activating instructions that rely on the added fields. Source checks do not
-establish installed availability or improved agent behavior. Existing input
+**Source availability:** the added owner metadata and execution guidance merged in
+[Host PR #314](https://github.com/hao1939/may-agent/pull/314), merge commit
+`169396a4040f7b9b43cbbafb87d5d24e8e773f4c`. The reviewed candidate was
+`21570ff54f144be6a598d511734fc09457d1e745`. Activate a Host containing this change
+before activating instructions that rely on the added fields. Merge and source
+checks do not establish installed availability or improved agent behavior. Existing input
 routing, workspace/knowledge discovery and assignment controls are retained.
 
 **Accepted direction, not yet implemented:** an agent can own durable Tasks
