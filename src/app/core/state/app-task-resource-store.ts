@@ -1089,23 +1089,26 @@ export class AppTaskResourceStore {
     const referencedAttemptIds = Object.values(resources).flatMap(({ status }) =>
       [status.currentAttemptId, status.observedAttemptId].filter((id): id is string => Boolean(id)),
     );
+    // Rank identities first; load JSON only for the bounded selection.
     const attempts =
       options.includeHistory !== false && taskIds.length
         ? Object.fromEntries(
             (
               this.db
                 .prepare(
-                  `SELECT attempt_id, attempt_json FROM (
-                   SELECT attempt_id, attempt_json,
+                  `SELECT body.attempt_id, body.attempt_json FROM (
+                   SELECT attempt_id,
                      ROW_NUMBER() OVER (PARTITION BY task_id ORDER BY
                        CASE WHEN attempt_id IN (${referencedAttemptIds.map(() => "?").join(", ") || "NULL"})
                          THEN 0 ELSE 1 END,
                        started_at DESC, attempt_id DESC) AS position
                    FROM app_task_attempts
                    WHERE app_id = ? AND task_id IN (${taskIds.map(() => "?").join(", ")})
-                 ) WHERE position <= ?`,
+                 ) selected
+                 JOIN app_task_attempts body ON body.app_id = ? AND body.attempt_id = selected.attempt_id
+                 WHERE selected.position <= ?`,
                 )
-                .all(...referencedAttemptIds, this.appId, ...taskIds, MAX_CONTEXT_ATTEMPTS_PER_TASK) as Array<{
+                .all(...referencedAttemptIds, this.appId, ...taskIds, this.appId, MAX_CONTEXT_ATTEMPTS_PER_TASK) as Array<{
                 attempt_id?: string;
                 attempt_json?: string;
               }>

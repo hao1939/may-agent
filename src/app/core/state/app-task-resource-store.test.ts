@@ -761,13 +761,23 @@ describe("AppTaskResourceStore", () => {
       tree.attempts![attempt.metadata.id] = attempt;
     }
     store.bootstrapSnapshot(tree, "revision-1");
+    // Attempt IDs are unique within an App, not across Apps.
+    const otherTree = structuredClone(tree);
+    otherTree.project = "other";
+    for (const attempt of Object.values(otherTree.attempts!)) attempt.summary = "Other App";
+    AppTaskResourceStore.fromDb(store.db, "other").bootstrapSnapshot(otherTree, "revision-1");
 
     const context = store.readTaskContext({ taskIds: ["normal"] });
     expect(Object.keys(context.resources ?? {})).toEqual(["normal"]);
     expect(context.resources?.human).toBeUndefined();
     expect(context.resources?.active).toBeUndefined();
     expect(Object.keys(context.groups ?? {})).toEqual(["project"]);
-    expect(Object.keys(context.attempts ?? {})).toHaveLength(16);
+    expect(Object.keys(context.attempts ?? {}).sort()).toEqual(
+      Array.from({ length: 16 }, (_, index) => `normal-history-${index + 24}`),
+    );
+    const combined = store.readTaskContext({ taskIds: ["normal", "active"] });
+    expect(combined.attempts).toEqual({ ...context.attempts, "attempt-1": tree.attempts!["attempt-1"] });
+    for (const [id, attempt] of Object.entries(combined.attempts!)) expect(attempt).toEqual(tree.attempts![id]);
     const currentOnly = store.readTaskContext({ taskIds: ["active"] }, { includeHistory: false });
     expect(Object.keys(currentOnly.attempts ?? {})).toEqual([]);
     expect(currentOnly.resources?.active?.status.currentAttemptId).toBe("attempt-1");
