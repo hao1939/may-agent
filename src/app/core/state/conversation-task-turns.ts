@@ -652,14 +652,17 @@ export type ConversationTaskChangeRef = {
   taskId: string;
 } & ConversationTaskChange;
 
-function returnedAttemptSql(selectedReportSql: string): string {
-  return `(
+const returnedWithoutSelectionSql = `(
   json_extract(attempt.attempt_json, '$.acceptedResult.state') = 'converged'
   OR (json_extract(attempt.attempt_json, '$.acceptedResult.state') IN ('incomplete', 'stopped')
     AND NOT EXISTS (SELECT 1 FROM app_task_admissions admission
       WHERE admission.app_id = attempt.app_id
         AND CAST(json_extract(admission.admission_json, '$.taskId') AS TEXT) = attempt.task_id
         AND json_extract(admission.admission_json, '$.taskGeneration') = attempt.task_generation))
+  )`;
+
+function returnedAttemptSql(selectedReportSql: string, returnedSql = returnedWithoutSelectionSql): string {
+  return `(${returnedSql}
   OR (NOT EXISTS (SELECT 1 FROM app_task_cancellations closed
       WHERE closed.app_id = attempt.app_id AND closed.task_id = attempt.task_id)
     AND EXISTS (${selectedReportSql})
@@ -695,8 +698,8 @@ const continuedCallerSql = `NOT EXISTS (SELECT 1 FROM app_task_control_receipts 
     AND reopened.action = 'reopen' AND reopened.expected_generation >= link.task_generation)`;
 
 /** Return only the selected answer/report. An outstanding input can survive a creator revision. */
-function returnedLinkAttemptSql(selectedReportSql: string): string {
-  return `((link.origin_input_id IS NULL AND ${returnedAttemptSql(selectedReportSql)})
+function returnedLinkAttemptSql(selectedReportSql: string, returnedSql = returnedWithoutSelectionSql): string {
+  return `((link.origin_input_id IS NULL AND ${returnedAttemptSql(selectedReportSql, returnedSql)})
     OR (link.origin_input_id IS NOT NULL AND ${continuedCallerSql}
       AND link.task_generation <= attempt.task_generation
       AND (link.result_attempt_id = attempt.attempt_id
@@ -728,7 +731,7 @@ const groupedChangeReceiptSql = `SELECT grouped.id FROM app_inbox_items grouped
 const undeliveredChangeSql = `NOT EXISTS (SELECT 1 FROM app_inbox_items handled WHERE handled.id = changes.inputId)
   AND NOT EXISTS (${groupedChangeReceiptSql})`;
 
-function conversationChangesSql(selectedReportSql: string): string {
+function conversationChangesSql(selectedReportSql: string, materializedAttempts = false): string {
   return `SELECT link.app_id AS appId, link.conversation_id AS conversationId, link.topic_id AS topicId,
     link.origin_input_id AS originInputId, link.link_id AS linkId,
     link.task_app_id AS taskAppId, link.task_id AS taskId, attempt.attempt_id AS attemptId,
@@ -737,8 +740,9 @@ function conversationChangesSql(selectedReportSql: string): string {
       'conversation-result:' || link.app_id || ':' || link.conversation_id || ':' || link.topic_id || ':' || link.task_app_id || ':' || attempt.attempt_id
     ELSE 'conversation-input-result:' || link.origin_input_id || ':' || link.task_app_id || ':' || attempt.attempt_id END AS inputId
   FROM links link
-  JOIN app_task_attempts attempt ON attempt.app_id = link.task_app_id AND attempt.task_id = link.task_id
-  WHERE ${returnedLinkAttemptSql(selectedReportSql)}
+  JOIN ${materializedAttempts ? "linked_attempts" : "app_task_attempts"} attempt
+    ON attempt.app_id = link.task_app_id AND attempt.task_id = link.task_id
+  WHERE ${returnedLinkAttemptSql(selectedReportSql, materializedAttempts ? "attempt.returnable" : returnedWithoutSelectionSql)}
   UNION ALL
   SELECT link.app_id, link.conversation_id, link.topic_id, link.origin_input_id, link.link_id,
     link.task_app_id, link.task_id, NULL,
@@ -759,12 +763,20 @@ export function listPendingConversationTaskChanges(
 ): ConversationTaskChangeRef[] {
   if (!Number.isSafeInteger(limit) || limit < 1 || limit > 100)
     throw new Error("Conversation change limit must be an integer from 1 to 100");
+  // Many caller/Topic links can refer to one Task. Interpret each retained
+  // attempt once, then join its small projection instead of reparsing the body
+  // and checking its admissions for every link. Exact admission reads stay direct.
   return db
     .prepare(
       `
     WITH links AS MATERIALIZED (SELECT * FROM (${conversationTaskLinksSql()}) WHERE app_id = ?),
     linked_tasks AS MATERIALIZED (
       SELECT DISTINCT task_app_id AS app_id, task_id FROM links
+    ), linked_attempts AS MATERIALIZED (
+      SELECT attempt.app_id, attempt.task_id, attempt.attempt_id, attempt.task_generation, attempt.started_at,
+        ${returnedWithoutSelectionSql} AS returnable
+      FROM linked_tasks linked
+      JOIN app_task_attempts attempt ON attempt.app_id = linked.app_id AND attempt.task_id = linked.task_id
     ), selected_reports AS MATERIALIZED (
       SELECT admission.app_id,
         CAST(json_extract(admission.admission_json, '$.taskId') AS TEXT) AS task_id,
@@ -788,7 +800,7 @@ export function listPendingConversationTaskChanges(
       WHERE input.app_id = ? AND input.conversation_id IS NOT NULL
         AND NOT EXISTS (SELECT 1 FROM app_task_cancellations closed
           WHERE closed.app_id = owner.app_id AND closed.task_id = owner.task_id)
-    ), changes AS (${conversationChangesSql(materializedSelectedReportSql)})
+    ), changes AS (${conversationChangesSql(materializedSelectedReportSql, true)})
     SELECT appId, conversationId, topicId, originInputId, taskAppId, taskId, attemptId, closedGeneration
     FROM changes
     WHERE EXISTS (SELECT 1 FROM live_conversations live
