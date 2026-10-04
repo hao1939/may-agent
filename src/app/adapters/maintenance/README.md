@@ -56,5 +56,5 @@ snapshots, operations health review, and the daily operations digest. Their
 named callbacks and private capabilities are preserved. No App maintenance
 configuration or live installation is changed by the Host refactor.
 
-The governing design is [Scheduling and Observation](../../../../../may-agent.app/docs/2a-design/cron.md).
+The governing design is [Scheduling and Observation](../../../../../alex.app/docs/2a-design/cron.md).
 This guide describes implementation ownership, not deployment proof.

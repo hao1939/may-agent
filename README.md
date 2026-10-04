@@ -6,7 +6,7 @@ workflows, task reconciliation, transports, persistence, and the local control
 surfaces used by the apps under `/app/projects`.
 
 All system, product, and runtime design lives in
-[`../may-agent.app/docs`](../may-agent.app/docs/README.md). This repository
+[`../alex.app/docs`](../alex.app/docs/README.md). This repository
 contains implementation and tests, without a parallel design tree.
 
 ## Layout
@@ -124,7 +124,7 @@ deployed serving still reads `<PROJECTS_ROOT>/platform/ui` by default.
 - Add Gym scenarios to `/app/projects/gym`.
 - Delete obsolete scripts when their owner or data model disappears.
 - Prefer package imports over reaching into another package's `src/` tree.
-- Keep every platform and runtime design in `may-agent.app/docs`; do not create
+- Keep every platform and runtime design in `alex.app/docs`; do not create
   a second design tree here.
 
 ## Requirements

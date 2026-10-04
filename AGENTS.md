@@ -2,10 +2,10 @@
 
 Read `CONTRIBUTING.md` for checks, review, and release boundaries. This is the
 generic Host repository; App policy and system design live in the sibling
-`may-agent.app` repository tree, not in a second design folder here.
+`alex.app` repository tree, not in a second design folder here.
 
 Before changing behavior, read the relevant current design through
-`../may-agent.app/docs/README.md`, especially `1-principles/core-principles.md`
+`../alex.app/docs/README.md`, especially `1-principles/core-principles.md`
 and `2a-design/system-boundary.md`. In an isolated checkout where those docs
 are unavailable, request the exact design reference needed for the change;
 do not invent a replacement design. Routine CI does not require that tree.

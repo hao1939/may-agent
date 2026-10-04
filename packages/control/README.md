@@ -129,7 +129,7 @@ needs one. Private claims, leases, result admission and timer callbacks remain
 ordinary calls/transactions. There is no general event plugin or second router.
 
 The canonical design is
-[Events and Task Admission](../../../may-agent.app/docs/2a-design/events.md).
+[Events and Task Admission](../../../alex.app/docs/2a-design/events.md).
 
 ## SQL diagnostics
 

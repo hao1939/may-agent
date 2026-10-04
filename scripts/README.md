@@ -2,7 +2,7 @@
 
 Start with `bun run ci` for portable source verification. Build, diagnosis,
 deployment and model evaluation are different operations. Design and operating
-procedures live in the sibling `may-agent.app/docs` tree; routine CI does not
+procedures live in the sibling `alex.app/docs` tree; routine CI does not
 need that tree, an installed App, credentials or a running May.
 
 ## Maintained commands
@@ -95,7 +95,7 @@ provider configuration and budget, and are not reproducible output guarantees.
 
 The existing App documentation records the questions, positive/negative results,
 limitations and decisions. Start at
-`may-agent.app/docs/proposals/poc-retirement-and-knowledge-20260912.md` for the
+`alex.app/docs/proposals/poc-retirement-and-knowledge-20260912.md` for the
 inventory and links to controller, recovery, teaching, improvement and executor
 evidence. Open proposals remain open; retiring code is not accepting their design.
 Active experimental branches are retained and must not reintroduce the folder.

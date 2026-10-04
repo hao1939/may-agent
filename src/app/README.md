@@ -4,9 +4,9 @@ The Host contains stable mechanics and replaceable capabilities. Start at
 `app-runtime.ts` for process composition, then follow the responsibility below.
 External means outside the core; it can live in the same repository and process.
 
-The canonical [architecture](../../../may-agent.app/docs/2a-design/architecture.md),
-[core principles](../../../may-agent.app/docs/1-principles/core-principles.md), and
-[Host/App boundary](../../../may-agent.app/docs/2a-design/system-boundary.md)
+The canonical [architecture](../../../alex.app/docs/2a-design/architecture.md),
+[core principles](../../../alex.app/docs/1-principles/core-principles.md), and
+[Host/App boundary](../../../alex.app/docs/2a-design/system-boundary.md)
 live in the sibling App tree. This page maps source, not another system design.
 For a standalone checkout, obtain those cited contracts before changing behavior.
 
@@ -95,18 +95,18 @@ A new implementation does not require a universal adapter, manifest or lifecycle
 
 Keep behavioral detail and change status with their owners:
 
-- [Runtime](../../../may-agent.app/docs/2a-design/runtime.md): startup, readiness,
+- [Runtime](../../../alex.app/docs/2a-design/runtime.md): startup, readiness,
   recovery, reload and shutdown.
-- [Task engine](../../../may-agent.app/docs/2a-design/task-resource-engine.md):
+- [Task engine](../../../alex.app/docs/2a-design/task-resource-engine.md):
   claims, waits, result admission, parent review, unavailable handlers and stop.
-- [Workflows](../../../may-agent.app/docs/2a-design/workflows.md): bounded
+- [Workflows](../../../alex.app/docs/2a-design/workflows.md): bounded
   execution, repair and acceptance.
-- [Storage](../../../may-agent.app/docs/2a-design/storage.md): authoritative
+- [Storage](../../../alex.app/docs/2a-design/storage.md): authoritative
   records and transaction boundaries.
-- [Events](../../../may-agent.app/docs/2a-design/events.md) and
-  [scheduling](../../../may-agent.app/docs/2a-design/cron.md): admission, wakes,
+- [Events](../../../alex.app/docs/2a-design/events.md) and
+  [scheduling](../../../alex.app/docs/2a-design/cron.md): admission, wakes,
   observations and timing.
-- [Message lifecycle](../../../may-agent.app/docs/2a-design/message-lifecycle.md):
+- [Message lifecycle](../../../alex.app/docs/2a-design/message-lifecycle.md):
   Turn, Request, Topic, Task and follow-through semantics.
-- [Simplification review](../../../may-agent.app/docs/proposals/authority-boundary-simplification.md):
+- [Simplification review](../../../alex.app/docs/proposals/authority-boundary-simplification.md):
   conditional feature reductions and remaining organization work.
