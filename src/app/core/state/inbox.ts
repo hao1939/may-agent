@@ -2,7 +2,7 @@ import type { SqliteDb } from "../../../lib/db.js";
 import type { AppInputContext, AppTaskAttachment, AppResult, ResourceCreator } from "@may-agent/sdk";
 import { isDeepStrictEqual } from "node:util";
 import { stateTransaction } from "../../../lib/db/transaction.js";
-import { getAppInboxItem, type AppInboxItem } from "./app-inbox-store.js";
+import { getAppInboxItem, hasConversationExecutionTask, type AppInboxItem } from "./app-inbox-store.js";
 import {
   observeAppTaskIntent,
   readAppTaskIntent,
@@ -41,9 +41,9 @@ export type TaskInputAdmission = {
 /** Conversation execution consumes saved Conversation input, never an ordinary Task handoff. */
 export function assertTaskInputCompatible(config: AppTaskContext, input: TaskInputAdmission): void {
   const taskId = (input.attachment.kind === "existing" ? input.attachment.taskId : input.attachment.intent.id).trim();
-  const current = config.resourceStore.readTask(taskId);
-  const proposed = input.attachment.kind === "desired" ? input.attachment.intent.executor : undefined;
-  if (current?.spec.executor !== "conversation" && proposed !== "conversation") return;
+  // Match execution dispatch: retained bindings own Conversation membership.
+  // An ordinary App executor may also be named "conversation".
+  if (!hasConversationExecutionTask(config.resourceStore.db, config.resourceStore.appId, taskId)) return;
   const item = getAppInboxItem(config.resourceStore.db, input.inputContext.id);
   if (
     !item?.conversationId ||

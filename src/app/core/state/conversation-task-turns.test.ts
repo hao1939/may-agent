@@ -185,7 +185,6 @@ test("ordinary admission cannot bypass the Conversation input contract", () => {
   for (const attachment of [
     { kind: "existing" as const, taskId: first.taskId },
     { kind: "desired" as const, intent: { ...f.input().intent, id: first.taskId } },
-    { kind: "desired" as const, intent: { ...f.input().intent, id: "another-conversation" } },
   ]) {
     expect(() =>
       admitTaskInput(f.context(), {
@@ -202,6 +201,54 @@ test("ordinary admission cannot bypass the Conversation input contract", () => {
     expect(f.store.readTaskContext({ taskIds: [first.taskId], admissionIds: [] })).toEqual(before);
   }
 });
+
+for (const target of ["explicit", "mapped"] as const) {
+  test(`${target} follow-up can select an ordinary executor named conversation`, () => {
+    const f = fixture();
+    const taskId = "another-conversation";
+    const input = { kind: "message", data: { text: "Ordinary work" } };
+    admitTaskInput(f.context(), {
+      appId: app.id,
+      attachment: { kind: "desired", intent: { ...f.input().intent, id: taskId } },
+      idempotencyKey: "ordinary-first",
+      inputContext: { id: "ordinary-first", source: { kind: "system", id: "fixture" }, input },
+    });
+    const first = f.admit();
+    const claim = f.claim(first.taskId);
+    const getTaskApp = () => ({
+      app: defineApp({ ...app, tasks: {}, task: () => ({ kind: "existing" as const, taskId }) }),
+      config: f.context(),
+    });
+    const proposed: ConversationTurnResult = {
+      ...decision,
+      followUp: {
+        appId: app.id,
+        ...(target === "explicit" ? { task: { appId: app.id, taskId } } : {}),
+        input,
+      },
+    };
+    validateConversationTaskProposal(f.context(), claim, proposed, getTaskApp);
+    expect(completeConversationTaskTurn(f.context(), claim, proposed, { getTaskApp }).admittedTasks).toEqual([
+      { appId: app.id, taskId },
+    ]);
+    expect(getAppInboxItem(f.db, first.item.id)?.status).toBe("done");
+    f.reopen();
+    admitTaskInput(f.context(), {
+      appId: app.id,
+      attachment: { kind: "existing", taskId },
+      idempotencyKey: "ordinary-later",
+      inputContext: { id: "ordinary-later", source: { kind: "system", id: "fixture" }, input },
+    });
+    const work = f.claim(taskId);
+    expect(work.events.map(({ event }) => event.idempotencyKey)).toEqual([
+      "ordinary-first",
+      `conversation-follow-up:${app.id}:${first.item.id}`,
+      "ordinary-later",
+    ]);
+    completeAppTask(f.context(), work, { summary: "Ordinary work completed", facts: [] });
+    expect(f.store.readAttempt(work.attemptId)?.acceptedResult?.summary).toBe("Ordinary work completed");
+  });
+}
 
 test("one Task executes real Conversation input and retains replies and Requests across reopen", async () => {
   const f = fixture();
