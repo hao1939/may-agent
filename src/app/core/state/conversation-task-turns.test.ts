@@ -1950,6 +1950,7 @@ test("recovery scopes report lookups to linked Tasks without changing legacy JSO
       expect(lookup).toContain("idx_app_inbox_conversation_change (app_id=? AND conversation_id=? AND source_kind=? AND input_kind=? AND <expr>=? AND <expr>=? AND <expr>=?)");
     }
     expect(plan.filter((step) => String(step.detail).includes("MATERIALIZE linked_tasks"))).toHaveLength(1);
+    expect(plan.filter((step) => String(step.detail).includes("MATERIALIZE linked_attempts"))).toHaveLength(1);
     expect(plan.filter((step) => String(step.detail).includes("MATERIALIZE selected_reports"))).toHaveLength(1);
     expect(plan.filter((step) => String(step.detail).includes("MATERIALIZE live_conversations"))).toHaveLength(1);
     f.db.prepare("UPDATE app_task_admissions SET admission_json = ? WHERE app_id = ? AND task_id = ?")
