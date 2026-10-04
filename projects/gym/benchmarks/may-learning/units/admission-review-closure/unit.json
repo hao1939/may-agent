@@ -18,11 +18,11 @@
       "path": "scenarios/may-learn-admission-review-disposition-before-runtime-repair/expected.json"
     },
     {
-      "path": "../may-agent.app/docs/2a-design/escalation.md",
+      "path": "../alex.app/docs/2a-design/escalation.md",
       "section": "Boundary"
     },
     {
-      "path": "../may-agent.app/docs/2a-design/agent-app.md",
+      "path": "../alex.app/docs/2a-design/agent-app.md",
       "section": "Addressed work"
     }
   ],

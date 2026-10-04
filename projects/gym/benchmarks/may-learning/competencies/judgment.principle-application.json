@@ -6,7 +6,7 @@
   "criticality": "high",
   "sources": [
     {
-      "path": "../may-agent.app/docs/1-principles/core-principles.md",
+      "path": "../alex.app/docs/1-principles/core-principles.md",
       "section": "Review rule"
     },
     {

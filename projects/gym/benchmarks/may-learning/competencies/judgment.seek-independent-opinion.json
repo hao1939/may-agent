@@ -6,7 +6,7 @@
   "criticality": "high",
   "sources": [
     {
-      "path": "../may-agent.app/docs/2a-design/native-coding-workers.md",
+      "path": "../alex.app/docs/2a-design/native-coding-workers.md",
       "section": "The simple model"
     }
   ],

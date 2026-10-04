@@ -3,8 +3,8 @@ import { resolve } from "node:path";
 import { admitTaskReconcileResult } from "../projects/may-agent/packages/sdk/src/task-contract.ts";
 import { appTaskContext, observeAppTaskIntent } from "../projects/may-agent/src/app/core/tasks/app-task-reconciler.ts";
 import { AppTaskResourceStore } from "../projects/may-agent/src/app/core/state/app-task-resource-store.ts";
-import app, { dependencyResult, waitingResult } from "../projects/may-agent.app/docs/examples/app.ts";
-import { reviewInput } from "../projects/may-agent.app/docs/examples/client.ts";
+import app, { dependencyResult, waitingResult } from "../projects/alex.app/docs/examples/app.ts";
+import { reviewInput } from "../projects/alex.app/docs/examples/client.ts";
 import seed from "../projects/sample.app/tasks/seed.json";
 
 // Check the linked documentation example against source SDK types, independently
@@ -12,7 +12,7 @@ import seed from "../projects/sample.app/tasks/seed.json";
 const root = resolve(import.meta.dir, "..");
 const compiler = Bun.spawn([
   "bun", resolve(root, "projects/may-agent/node_modules/typescript/bin/tsc"),
-  "--project", resolve(root, "projects/may-agent.app/docs/examples/tsconfig.json"),
+  "--project", resolve(root, "projects/alex.app/docs/examples/tsconfig.json"),
 ], { cwd: root, stdout: "inherit", stderr: "inherit" });
 const exitCode = await compiler.exited;
 if (exitCode !== 0) process.exit(exitCode);
@@ -44,8 +44,8 @@ try {
   }
   const agent = app.agent ?? app.owner!;
   const context = appTaskContext({
-    appDir: resolve(root, "projects/may-agent.app/docs/examples"),
-    projectDir: resolve(root, "projects/may-agent.app/docs/examples"),
+    appDir: resolve(root, "projects/alex.app/docs/examples"),
+    projectDir: resolve(root, "projects/alex.app/docs/examples"),
     agent, maxConcurrent: 1, resourceStore: store,
   });
   const observed = observeAppTaskIntent(context, {

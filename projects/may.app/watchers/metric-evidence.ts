@@ -2,7 +2,7 @@ import { defineObserver, type ResourceObserver } from "@may-agent/sdk";
 import {
   readMetricObservation,
   type MetricReader,
-} from "../../evaluation.app/agents/evaluator/workflows/lib/metric-evidence.js";
+} from "../../alex.app/agents/evaluator/workflows/lib/metric-evidence.js";
 
 /** Read retained samples. Existing metric producers own collection and aggregation. */
 export function createMetricEvidenceObserver(

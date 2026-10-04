@@ -4,10 +4,10 @@ Status: migrated into Alex source; activation is recorded in the
 [migration receipt](../migration-receipt-2026-10-04.md). The earlier local trial
 is retained in the [PoC review](../../may.app/docs/development-workflow-poc.md).
 
-**Supports:** [Useful completed work](../../may-agent.app/docs/1-principles/purpose.md).
+**Supports:** [Useful completed work](1-principles/purpose.md).
 Alex keeps design, implementation and review together so a candidate can reach
 its requested outcome with fewer relayed instructions.
-**Choice basis:** [Agent judgment and infra execution](../../may-agent.app/docs/1-principles/core-principles.md).
+**Choice basis:** [Agent judgment and infra execution](1-principles/core-principles.md).
 Alex chooses this procedure; its code runs and records the selected steps.
 
 ## Sufficient first outcome
@@ -49,7 +49,7 @@ attempt; the same Task remains responsible under ordinary backoff.
 
 Bob's design/review stages, tech-lead authorship, local commit and verification
 argv are this procedure's choices. Other workflows preserve the
-[common execution contract](../../may-agent.app/docs/2a-design/workflows.md#shared-contract-and-changeable-procedure)
+[common execution contract](2a-design/workflows.md#shared-contract-and-changeable-procedure)
 without copying this team or graph. Alex can evolve these choices as evidence
 changes; the active implementation still enforces its declared gates and returns
 control when it cannot satisfy them.
@@ -115,7 +115,7 @@ assigned repair can authorize edits. The standard loader also supplies scoped
 `tasks` reads, fact publication and creator-authorized updates. Available tools
 do not expand the assignment or bypass these authority checks.
 
-The shared [Task entry convention](../../may-agent.app/docs/2a-design/workflows.md#task-entry-and-discovery)
+The shared [Task entry convention](2a-design/workflows.md#task-entry-and-discovery)
 provides full context and discovery references to every participant. It is
 navigation, not a team-specific evidence ledger. The workflow still checks the
 actual candidate and retained verification/review evidence before proposing
@@ -179,7 +179,7 @@ repository must already ignore that directory, as this App does; the workflow
 checks this before work and never changes ignore rules to hide source edits.
 The shared `shared/tools/task-evidence.ts` helper publishes complete
 content-addressed files and never replaces an existing artifact. Its common
-recovery rule is described in the [workflow contract](../../may-agent.app/docs/2a-design/execution-contributions.md#evidence-retention-and-autonomous-recovery). Alex supplies
+recovery rule is described in the [workflow contract](2a-design/execution-contributions.md#evidence-retention-and-autonomous-recovery). Alex supplies
 the Git/requirement validity checks and team policy. Raw JSON preserves exact values; readable Markdown supports paginated
 inspection of long text. These are local deliverables retained with the Task
 worktree, not a permanent archive independent of worktree retention.
@@ -270,7 +270,7 @@ exact suppression of repeated questions during retry.
 
 When this workflow leaves a May-owned delivery waiting on a GitHub PR, use the
 registered `github-pull-request` observer contract documented in
-[`../design/github-pull-request-observation.md`](../design/github-pull-request-observation.md).
+[`../../may.app/design/github-pull-request-observation.md`](../../may.app/design/github-pull-request-observation.md).
 Return a `may.github.pull-request.state` Condition with canonical subject
 `pull-request:github:<owner>/<repo>#<number>`, matching provider/repository, and
 `{ "field": "fingerprint", "notEquals": null }` for the initial observation.

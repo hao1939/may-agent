@@ -1,7 +1,7 @@
 # Metric coverage audit — October 3, 2026
 
 **Supports:** [May's efficiency proposal](token-efficiency-proposal-20261002.md#5-detect-recurrence-through-existing-metrics). Identify useful existing coverage before adding another signal.
-**Choice basis:** [Simple first](../../may-agent.app/docs/1-principles/core-principles.md#simple-first). Repair collection, meaning and ownership before extending the catalog.
+**Choice basis:** [Simple first](../../alex.app/docs/1-principles/core-principles.md#simple-first). Repair collection, meaning and ownership before extending the catalog.
 **Status:** Audit followed by [October 4 source fixes and isolated verification](#october-4-implementation). No runtime changes, assignments, model calls or deployment. May remains stopped.
 
 We have a working metric mechanism and several useful signals. The immediate

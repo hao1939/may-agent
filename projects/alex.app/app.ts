@@ -1,4 +1,5 @@
 import { createHash } from "node:crypto";
+import { retiredEvaluationMetrics } from "./retired-evaluation-metrics.js";
 import { automaticReviewConfig } from "./agents/evaluator/workflows/task-outcome-selector.js";
 import { metricReviewTaskId } from "./agents/evaluator/workflows/lib/metric-selection.js";
 import {
@@ -181,6 +182,11 @@ export function taskInputForEvent(event: AppEvent<Record<string, unknown>>): App
     }} as AppInput;
   }
   if (event.type === "metric.breach" || event.type === "metric.recovered") {
+    // Retained signals owned by the removed Evaluation App stay historical.
+    // Alex work remains reviewable; the old App-wide exclusion must not move to Alex.
+    if ([data.appId, data.project, event.owner].some(
+      (owner) => owner === "evaluation" || owner === "app:evaluation",
+    )) return null;
     const automatic = automaticReviewConfig();
     if (!automatic.enabled || (event.type === "metric.breach" && data.repeat === true)) return null;
     const metricId = String(data.metricId ?? data.metric_id ?? event.target?.metricId ?? "").trim();
@@ -336,6 +342,7 @@ export const taskForEvaluationInput = taskForInput;
 
 export default defineApp({
   id: "alex",
+  metrics: retiredEvaluationMetrics,
   version: 1,
   agent: "alex",
   description: "Own system improvement from diagnosis through verified outcome, with design, implementation, independent review and comparison specialists; escalate unresolved blockers to May.",

@@ -19,7 +19,7 @@ An explicit reply anchors meaning, and a correction changes the existing ask
 within its authority. Background work receives complete App input with required
 references. May reviews its evidence and explains the outcome; admission or a
 worker's successful finish alone does not fulfill the human's ask. These rules
-cooperate with the common [context assembly boundary](../may-agent.app/docs/2a-design/agents.md#model-context-assembly).
+cooperate with the common [context assembly boundary](../alex.app/docs/2a-design/agents.md#model-context-assembly).
 
 ## Coding-worktree source
 
@@ -155,7 +155,7 @@ App-only authority: Task-bound creators continue to use generation-fenced
 `tasks.update`. On stale feedback, reread the current Task and submit a new
 intentional request; do not retry until success or create a duplicate goal. The
 shared authority and reconciliation rules are owned by the
-[Task resource engine](../may-agent.app/docs/2a-design/task-resource-engine.md).
+[Task resource engine](../alex.app/docs/2a-design/task-resource-engine.md).
 This input requires the paired Host/SDK support from PR210: deploy and read back
 the compatible Host and SDK before activating the May definition. An older Host
 ignores `attachment.expectedGeneration`, so activating the App half first is
@@ -188,7 +188,7 @@ guarded close preserves the Task for later review; it never falls back to raw
 cancellation merely to reduce counts. Intentional withdrawal remains a separate,
 explicitly authorized decision, including when it stops active work.
 
-The [shared-loop design](../may-agent.app/docs/archive/reviews/conversation-input-unification.md)
+The [shared-loop design](../alex.app/docs/archive/reviews/conversation-input-unification.md)
 owns the lifecycle and its evidence. Host deployment and runtime operations
 remain with the Host Operations App (`app:may-agent`).
 

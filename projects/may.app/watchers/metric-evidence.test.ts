@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test";
-import { readMetricObservation } from "../../evaluation.app/agents/evaluator/workflows/lib/metric-evidence.js";
+import { readMetricObservation } from "../../alex.app/agents/evaluator/workflows/lib/metric-evidence.js";
 import { createMetricEvidenceObserver } from "./metric-evidence.js";
 
 test("metric observation reads exact retained facts without App-catalog attribution", async () => {

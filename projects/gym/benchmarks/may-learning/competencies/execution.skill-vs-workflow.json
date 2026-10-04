@@ -6,11 +6,11 @@
   "criticality": "high",
   "sources": [
     {
-      "path": "../may-agent.app/docs/2a-design/skills.md",
+      "path": "../alex.app/docs/2a-design/skills.md",
       "section": "Skill And Workflow Boundary"
     },
     {
-      "path": "../may-agent.app/docs/2a-design/workflows.md",
+      "path": "../alex.app/docs/2a-design/workflows.md",
       "section": "Skill And Workflow Boundary"
     }
   ],

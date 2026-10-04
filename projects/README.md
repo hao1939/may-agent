@@ -37,11 +37,8 @@ explicitly restored for migration or review.
 
 ## Current Active Project Apps
 
-- `evaluation.app/` - independent session and Agent App evaluation.
-- `gym.app/` - optional autonomous operator for Gym schedules, incident intake,
-  regression execution, and review proposals.
-- `may-agent.app/` - May-agent app that drives the May-agent platform/runtime
-  domain project and owns May-agent design/principle docs.
+- `alex.app/` - system improvement, maintenance, independent evaluation, comparison,
+  and the shared system design manual.
 - `may.app/` - May's human conversation and routing App.
 - `scout-knowledge-lib.app/` - May-agent app that drives Scout's knowledge
   library project.
@@ -57,8 +54,8 @@ explicitly restored for migration or review.
 
 - `gym/` - portable agent evaluation project containing scenarios, fixtures,
   benchmarks, scorers, reports, and human review records. It remains runnable
-  without `gym.app`; the sibling app automates operation without becoming a
-  dependency of the project.
+  without Alex; Alex supplies an optional comparison workflow without becoming
+  a dependency of the project.
 - `herdr-supervisor/` - standalone Herdr supervisor project and Git repository.
 - `aks-rp-e2e-app/` - standalone AKS RP E2E App project and Git repository.
 
@@ -136,8 +133,8 @@ Done or closed milestone/archive folders archived in this batch:
 ## Suggested Cleanup Path
 
 1. Keep active v3 apps and domain workspaces at top level.
-2. Keep `may-agent.app/` as the platform project app and `may-agent/` as the
-   platform/runtime domain workspace.
+2. Keep system-improvement capabilities and useful knowledge in `alex.app/`,
+   and `may-agent/` as the separately managed Host source repository.
 3. Keep legacy folders in the external archive unless intentionally restoring one
    for migration or review.
 4. Keep ambiguous local scratch out of the top-level project list.

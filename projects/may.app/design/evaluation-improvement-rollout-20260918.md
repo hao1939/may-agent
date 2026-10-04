@@ -73,7 +73,7 @@ problems. Restoration/rollback kept the prior service available. A reviewed
 operator cutover used existing migration and cancellation APIs, preserving
 history. Later normal Host recovery settled 13 equivalent legacy admission
 aliases. One conflicting historical input remains visible and does not block new
-Gym work. See the [common recovery record](../../may-agent.app/docs/archive/reviews/task-wait-recovery-20260918.md).
+Gym work. See the [common recovery record](../../alex.app/docs/archive/reviews/task-wait-recovery-20260918.md).
 
 Installation evidence is retained under
 `.state/review-pilots/improvement-loop-live-20260918/`: initial and follow-up

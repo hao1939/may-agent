@@ -13,7 +13,7 @@ Shared resources for all agents.
 | `daily-digests/` | Historical daily summaries |
 
 May-agent design docs now live with their project app at
-`projects/may-agent.app/docs/`.
+`projects/alex.app/docs/`.
 
 ## Archive
 

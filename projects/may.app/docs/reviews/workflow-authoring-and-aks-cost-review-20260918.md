@@ -31,11 +31,11 @@ candidate's `design/workflow-reliability-fixes.md`.
 
 Current guidance:
 
-- [Workflow design](../../../may-agent.app/docs/2a-design/workflows.md)
-- [Authoring manual](../../../may-agent.app/docs/2b-manual/workflow-authoring.md)
+- [Workflow design](../../../alex.app/docs/2a-design/workflows.md)
+- [Authoring manual](../../../alex.app/docs/2b-manual/workflow-authoring.md)
 - [May development procedure](../development-workflow.md)
 - [Shared execution trials](../shared-execution-iteration-20260917.md)
-- [Context-cost proposal](../../../may-agent.app/docs/proposals/focused-session-continuation.md)
+- [Context-cost proposal](../../../alex.app/docs/proposals/focused-session-continuation.md)
 
 ## How to write a workflow using May as an example
 
