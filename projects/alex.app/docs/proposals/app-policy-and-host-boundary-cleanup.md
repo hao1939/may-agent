@@ -8,8 +8,11 @@ and [simple first](../1-principles/core-principles.md#simple-first). Reuse trust
 installation configuration, definition releases and existing event admission;
 do not add a role registry, another scheduler or a second ownership system.
 
-**Status:** Accepted direction; the October 4 source candidate is under review
-in Host PR #326 with a companion Apps change. It has not been deployed.
+**Status:** Implemented in merged Host PR #326 and the paired Apps declarations.
+The October 5 rollout is verified below. The owning
+[installation contract](../2a-design/system-boundary.md#installation-declarations)
+and [operator manual](../2b-manual/user-guide.md#starting-and-development-modes)
+define current behavior.
 The [September review](../archive/reviews/app-policy-boundary-baseline-20260913.md)
 retains earlier decisions and evidence. Its old App IDs and rollout status are
 historical, not current instructions.
@@ -28,13 +31,13 @@ one hard-coded name with another would keep the same dependency.
 Follow-up review exposed the same authority problem within configuration:
 startup honored a CLI override while send and maintenance independently read
 environment defaults. Missing Conversation configuration also selected direct
-chat in some paths. The candidate now resolves the complete binding once per
+chat in some paths. The Host now resolves the complete binding once per
 CLI invocation, passes it into each mode, and rejects missing human routing
 at client and Host admission. The owning
 [installation contract](../2a-design/system-boundary.md#installation-declarations)
 defines this rule; agents do not need to understand these transport choices.
 
-## Candidate changes
+## Implemented decisions
 
 | Decision | Owner and implementation |
 | --- | --- |
@@ -59,8 +62,24 @@ must not fabricate `owner-review` for arbitrary App schemas.
 
 ## Adoption and remaining work
 
+The paired rollout completed at 2026-10-04 16:52 UTC (October 5 China time):
+Host `11c563f6ff293e755c855ada013d61d49cd411dd`, Apps
+`aa3ff90054615a144936cf556a53d99057731e7c`, captured as `definitions-v5`.
+The deployment receipt `pr326-policy-boundary-20261005` is successful and healthy,
+with matching requested/loaded binary hashes and `duplicateDeploy=false`.
+The SDK and UI match that Host revision. Readiness passed, the interface still
+reports `may / may / may:primary`, and the captured policy hash matches source.
+The existing Alex migration Task resumed with its targeted follow-up retained.
+No legacy outcome or Condition was marked fulfilled by deployment.
+
+Verification included 79 paired App/policy/domain checks, 67 deployment boundary
+checks, design checks (one existing reports-layout warning), and successful Host
+Quality and Container checks. This proves the selected source/configuration and
+recovery path; it does not certify every future agent judgment or domain outcome.
+Local rollout evidence is retained under `.state/pr326-rollout-20261005/`.
+
 Commit the companion policy and provide `shared/host.env` to the installation
-before rolling out the reviewed Host. Preserve `may:primary` for this installation;
+before any future rollout of this boundary. Preserve `may:primary` for this installation;
 new destinations are configuration choices, not a history migration. A retained definition release created by an older Host does not contain this
 file: roll out under maintenance and explicitly reload the companion Apps
 revision before resuming work. Reload selects a new immutable policy generation;

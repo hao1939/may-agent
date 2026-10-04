@@ -116,8 +116,8 @@ This view lists Task actions, not every open conversational Request.
 ## Starting and development modes
 
 The [installation binding](../2a-design/system-boundary.md#installation-declarations)
-keeps agent identity, Conversation App and Conversation ID independent. In the
-Host #326 source candidate, `--agent` overrides `AGENT`, then `DAEMON_AGENT`, then
+keeps agent identity, Conversation App and Conversation ID independent.
+`--agent` overrides `AGENT`, then `DAEMON_AGENT`, then
 `host`. It chooses the interface/socket identity; `--send <name>` chooses the
 message recipient. `CONVERSATION_APP` selects the App and `CONVERSATION_ID`
 preserves the communication history. Sending to the selected interface without
@@ -126,8 +126,10 @@ an App reports a configuration error; headless Tasks can still execute.
 Use the same instance and agent selection for daemon, send and maintenance
 commands. A CLI override is local to its invocation, so a separately started
 probe needs the same flag or shared environment. The container's supervisor
-and restarter use the shared installation environment. These changes remain
-candidate behavior until the paired Host/App rollout is verified.
+and restarter use the shared installation environment. Host #326 and its paired
+installation declarations were activated and checked on October 5; the
+[rollout record](../proposals/app-policy-and-host-boundary-cleanup.md#adoption-and-remaining-work)
+records the exact source and verification limits.
 
 ```bash
 # Run these commands from the Runtime repository.
