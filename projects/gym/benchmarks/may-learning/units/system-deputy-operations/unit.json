@@ -16,19 +16,19 @@
   ],
   "sources": [
     {
-      "path": "../may-agent.app/docs/2a-design/system-model.md",
+      "path": "../alex.app/docs/2a-design/system-model.md",
       "section": "One example, from ask to outcome"
     },
     {
-      "path": "../may-agent.app/docs/2a-design/agent-app.md",
+      "path": "../alex.app/docs/2a-design/agent-app.md",
       "section": "Addressed work"
     },
     {
-      "path": "../may-agent.app/docs/2a-design/events.md",
+      "path": "../alex.app/docs/2a-design/events.md",
       "section": "Routing outcomes"
     },
     {
-      "path": "../may-agent.app/docs/2a-design/skills.md",
+      "path": "../alex.app/docs/2a-design/skills.md",
       "section": "Skill And Workflow Boundary"
     },
     {

@@ -19,8 +19,8 @@ import {
   resolveTaskReportPath,
   taskReportPaths,
   writeImmutable,
-} from "../../../../evaluation.app/agents/evaluator/workflows/lib/task-report-store";
-import { assessmentContext } from "../../../../evaluation.app/agents/evaluator/workflows/lib/task-assessment-context";
+} from "../../../../alex.app/agents/evaluator/workflows/lib/task-report-store";
+import { assessmentContext } from "../../../../alex.app/agents/evaluator/workflows/lib/task-assessment-context";
 
 function fixture(
   appId = "may",

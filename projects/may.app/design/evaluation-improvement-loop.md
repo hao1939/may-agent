@@ -5,7 +5,7 @@ controller. Evaluation findings and observed execution failures share owner
 judgment and the later improvement stages; they keep different evidence readers.
 Normal execution recovery remains in the original work.
 
-The [Alex migration](../../may-agent.app/docs/proposals/alex-improvement-app.md)
+The [Alex migration](../../alex.app/docs/proposals/alex-improvement-app.md)
 moves ordinary Evaluation report intake and system-improvement coordination to
 App `alex`. Its owner selects the plain local specialist names `bob`,
 `tech-lead`, `evaluator`, `evaluator-deepseek`, `gym` and `judge`. See the
@@ -30,7 +30,7 @@ work; retained May Tasks keep their current caller responsibilities until an
 explicit disposition moves them. Agent ownership and authority are not inferred
 from this historical description.
 
-The [metric-review source candidate](../../evaluation.app/design/metric-pattern-review.md)
+The [metric-review source candidate](../../alex.app/docs/evaluation/metric-pattern-review.md)
 uses the same judgment and improvement boundary for `{appId, metricId}` reports.
 May's intake verifies immutable publication and rereads the current metric. May
 then records an owner, next action or justified wait and review boundary for unresolved
@@ -38,30 +38,30 @@ concerns, reusing linked work when its scope fits. Neither a delivered alert nor
 an improved aggregate proves the original input recovered. The general observation
 loop leaves Host retries independent; source verification is not live adoption.
 
-The [systemic pattern-review proposal](../../evaluation.app/design/systemic-pattern-review-20260927.md)
+The [systemic pattern-review proposal](../../alex.app/docs/evaluation/systemic-pattern-review-20260927.md)
 refines recovered-finding disposition: May may settle an individual incident and
 still investigate a repeated cause, material cost or coverage gap. A systemic
 concern is evidence for value judgment, not an instruction to reopen the subject
 or prepare a candidate. Reuse linked investigation work and preserve the exact
 population window. The aggregate evidence and periodic selection path is deployed
-locally; its [connected trial](../../evaluation.app/experiments/systemic-pattern-review-20260927/README.md)
+locally; its [connected trial](../../alex.app/archive/retired-apps/evaluation/experiments/systemic-pattern-review-20260927/README.md)
 found recurrence and also an unsupported deadline claim. May must inspect exact
 current evidence before adopting a report's interpretation. Automatic report
 intake is proven for that sample; full unattended candidate-to-application success
 is not established by it.
 
-The shared [behavior review method](../../may-agent.app/docs/2b-manual/workflow-authoring.md#checking-app-behavior)
+The shared [behavior review method](../../alex.app/docs/2b-manual/workflow-authoring.md#checking-app-behavior)
 uses existing App tests, bounded agent trials and Evaluation. May judges a
 report's material interpretation against its evidence, including a claimed
 healthy wait or no-op. A useful correction returns to the original owner;
 an independently valuable implementation change follows the existing improvement
 path. Routine no-concern reports retain a bounded review cost. The
-[convergence review](../../may-agent.app/docs/proposals/app-behavior-convergence-20260925.md)
+[convergence review](../../alex.app/docs/proposals/app-behavior-convergence-20260925.md)
 records source gaps separately from changed guidance and live behavior.
 
 Repeated waits/no-ops without progress, health/outcome contradictions and
 recurring similar fixes can justify the shared
-[selective deeper review](../../may-agent.app/docs/2b-manual/workflow-authoring.md#when-to-deepen-a-review).
+[selective deeper review](../../alex.app/docs/2b-manual/workflow-authoring.md#when-to-deepen-a-review).
 Evaluation reports the signal and bounded evidence gap; May judges value and
 asks the existing owner to trace the failed decision and try a contrasting case.
 Use ordinary Task input, current reports and the existing improvement path.
@@ -69,7 +69,7 @@ There is no additional daily review, fixed retry threshold or remediation queue.
 
 ## Recover current work; improve future work
 
-Use the common [recovery rule](../../may-agent.app/docs/2a-design/system-boundary.md#recovery-uses-evidence-before-repetition).
+Use the common [recovery rule](../../alex.app/docs/2a-design/system-boundary.md#recovery-uses-evidence-before-repetition).
 May first helps the accountable owner restore its promised outcome within
 existing authority. A corrected request, verified existing result, safe alternate
 method or concrete owner action may be sufficient. This must not wait for an
@@ -109,7 +109,7 @@ alone is not proof of delivery. Preserve all unrelated obligations.
 6. **Source application (May/operator fallback):** `scripts/apply-improvement.ts` rereads the trusted journal event, current owner Task/Condition, actual Git and evidence identities before fast-forwarding the exact source candidate. The retained receipt includes the authorizing event/proposal/Task and all input references. Missing, rejected, stale, superseded or mismatched approval makes zero mutation. The packet-hash operator route remains a fallback.
 7. **Activation and outcome follow-up:** source approval is source-only unless the displayed packet separately includes the exact activation. For App-definition activation, `improvement-activation-follow-up` rereads the trusted journal decision, current owner Task/Condition and source receipt, then emits the existing `runtime.reload.requested` operation with the approved source commit pinned. The correlated result records the actual loaded source commit; drift, failure or an inconclusive identity remains open. Only after verified adoption and readable post-activation execution does the same owner request ordinary Evaluation of a concrete new subject Task. The Evaluation dependency is pinned to that generation/evidence; its result wakes the owner, which records the independent disposition without turning it into an automatic value claim. Reviewing the activation Task itself does not show that the intended improvement helped. Host-binary deployment and any scope not shown in the proposal remain separate explicit operator work.
 
-Each stage has an explicit input/output and retained evidence naming its failure stage. Candidate readiness is not integration, approval, activation, or deployment. The accountable owner performs one reconciliation from current Task detail at each return: it reuses the retained selected subject and admitted `appdep_…` request rather than resampling or assuming the workflow-local dependency label is the public result identity. Outstanding activation, post-adoption subject selection, and Evaluation return remain visible through the same Task's Conditions and accepted result until the exact next fact arrives. Present that state using the common [current-first Task guidance](../../may-agent.app/docs/2a-design/human-control-surfaces.md#shared-resource-interface); the same document defines generic trusted-ingress, Condition, and operation-identity boundaries.
+Each stage has an explicit input/output and retained evidence naming its failure stage. Candidate readiness is not integration, approval, activation, or deployment. The accountable owner performs one reconciliation from current Task detail at each return: it reuses the retained selected subject and admitted `appdep_…` request rather than resampling or assuming the workflow-local dependency label is the public result identity. Outstanding activation, post-adoption subject selection, and Evaluation return remain visible through the same Task's Conditions and accepted result until the exact next fact arrives. Present that state using the common [current-first Task guidance](../../alex.app/docs/2a-design/human-control-surfaces.md#shared-resource-interface); the same document defines generic trusted-ingress, Condition, and operation-identity boundaries.
 
 See the [September 18 rollout](evaluation-improvement-rollout-20260918.md) for
 the initial installation and the [September 19 live verification](evaluation-improvement-rollout-20260919.md)

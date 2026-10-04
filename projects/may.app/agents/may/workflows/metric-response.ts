@@ -3,8 +3,8 @@ import {
   readMetricEvidence,
   type MetricEvidence,
   type MetricReader,
-} from "../../../../evaluation.app/agents/evaluator/workflows/lib/metric-evidence.js";
-import { createPublicTaskEvidenceProvider } from "../../../../evaluation.app/agents/evaluator/workflows/lib/public-task-evidence.js";
+} from "../../../../alex.app/agents/evaluator/workflows/lib/metric-evidence.js";
+import { createPublicTaskEvidenceProvider } from "../../../../alex.app/agents/evaluator/workflows/lib/public-task-evidence.js";
 
 import {
   metricReviewResult,

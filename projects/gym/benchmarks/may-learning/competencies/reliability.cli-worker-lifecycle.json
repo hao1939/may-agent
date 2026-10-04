@@ -6,11 +6,11 @@
   "criticality": "critical",
   "sources": [
     {
-      "path": "../may-agent.app/docs/2a-design/native-coding-workers.md",
+      "path": "../alex.app/docs/2a-design/native-coding-workers.md",
       "section": "Evidence and continuity"
     },
     {
-      "path": "../may-agent.app/docs/2a-design/native-coding-workers.md",
+      "path": "../alex.app/docs/2a-design/native-coding-workers.md",
       "section": "Bounded tool contract"
     }
   ],

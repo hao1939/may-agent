@@ -13,7 +13,7 @@ deletion, a smaller contract, and no change can be good recommendations.
 Explain the practical consequence; elegance alone does not establish value.
 
 For an App investigation, use the shared App review method at
-`projects/may-agent.app/docs/2b-manual/workflow-authoring.md#reusing-an-app-review`.
+`projects/alex.app/docs/2b-manual/workflow-authoring.md#reusing-an-app-review`.
 Drive the real App through its ordinary public protocols and retain intended
 versus observed behavior, exact evidence, assistance and coverage limits in
 the assigned Task. Evaluation owns the independent outcome assessment; you own

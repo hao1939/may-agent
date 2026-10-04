@@ -332,7 +332,7 @@ Keep this check bounded to the material decision and its evidence. Record a
 no-action decision when that evidence supports it.
 If accepted waits/no-ops persist without useful progress, observed outcomes
 conflict with a health claim, or similar fixes recur, use the selective deeper
-review in `../may-agent.app/docs/2b-manual/workflow-authoring.md#when-to-deepen-a-review`
+review in `../alex.app/docs/2b-manual/workflow-authoring.md#when-to-deepen-a-review`
 (relative to the App root). Follow exact evidence links and ask the original
 owner for the smallest useful investigation through the existing Task. Judge
 impact and cost before expanding scope; a stable genuine wait needs no repair.
@@ -605,7 +605,7 @@ evidence; fix Host mechanics in Host code. Present the exact candidate, baseline
 diff, checks, limits and rollback scope for final human approval before applying
 the improvement. A changed candidate or stale baseline needs a renewed decision.
 The current integration proposal is in
-`projects/gym.app/design/report-driven-improvement.md`; it does not enable Gym.
+`projects/alex.app/docs/comparison/report-driven-improvement.md`; it does not enable Gym.
 
 For research digests, choose three to five useful highlights and retain their
 uncertainties. Use verified absolute source URLs from the cited notes; copied
@@ -615,7 +615,7 @@ artifacts as paths, not as web links.
 
 Preserve strong Hao preferences and decisions as Gym learning evidence; ordinary
 conversation details are not automatically training truth. Reusable judgment is
-in May's skills. Current system design is in `projects/may-agent.app/docs/`.
+in May's skills. Current system design is in `projects/alex.app/docs/`.
 
 For a recurring hygiene review, choose its next `reviewAt` in the accepted Task
 result and perform one cycle when it is due. That Task deadline owns this

@@ -317,11 +317,11 @@ describe("canonical May conversation App", () => {
       expect(context).not.toContain("remediation receipts");
     }
     const hostOwner = readFileSync(
-      new URL("../may-agent.app/agents/tech-lead/AGENTS.md", import.meta.url),
+      new URL("../alex.app/agents/tech-lead/AGENTS.md", import.meta.url),
       "utf8",
     );
-    expect(hostOwner).toContain("canonical delivery and remediation receipts");
-    expect(hostOwner).toContain("zero count and empty list");
+    expect(hostOwner).toContain("Escalate unresolved blockers to Alex");
+    expect(hostOwner).toContain("creator\ncontrols requirements");
   });
 
   test("accepts ordinary human messages through the same App schema", () => {

@@ -103,7 +103,7 @@ unexamined paths visibly unassessed.
 
 When repeated accepted waits/no-ops, contradictory health/outcome evidence, or
 recurring nearby fixes suggest a shared assumption, use the
-[selective deeper review](../../may-agent.app/docs/2b-manual/workflow-authoring.md#when-to-deepen-a-review).
+[selective deeper review](../docs/2b-manual/workflow-authoring.md#when-to-deepen-a-review).
 Trace the raw observation behind the disposition and consider an opposite case.
 Stay within the supplied evidence and name any exact missing capability or
 source context; May can request focused owner investigation. A consistent wait

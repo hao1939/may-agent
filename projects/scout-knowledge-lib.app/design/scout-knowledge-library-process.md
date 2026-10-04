@@ -5,9 +5,9 @@ Design status: accepted
 Source status: implemented and tested
 
 This document defines Scout-specific behavior. The generic contracts come from
-May-agent's current [Agent App](../../may-agent.app/docs/2a-design/agent-app.md),
-[Task Resource Engine](../../may-agent.app/docs/2a-design/task-resource-engine.md),
-[workflow](../../may-agent.app/docs/2a-design/workflows.md), and SDK designs.
+May-agent's current [Agent App](../../alex.app/docs/2a-design/agent-app.md),
+[Task Resource Engine](../../alex.app/docs/2a-design/task-resource-engine.md),
+[workflow](../../alex.app/docs/2a-design/workflows.md), and SDK designs.
 Scout does not redefine or copy them.
 
 ## Plain Model
@@ -330,7 +330,7 @@ Source exploration uses the
 existing 48-operation allowance within the ordinary execution time limit:
 select one useful candidate early and leave room for integration and read-back.
 Do not add a workflow-owned retry loop or manufacture a finding to avoid a
-no-op. The [local trial](../../may-agent.app/docs/proposals/workflow-practices-review.md)
+no-op. The [local trial](../../alex.app/docs/proposals/workflow-practices-review.md)
 records why this boundary was changed and what was actually verified.
 
 Before dispatch, the workflow records which knowledge files already exist. A
@@ -342,7 +342,7 @@ updated, consolidated, or left unchanged.
 
 ## External Waits
 
-Apply the common [recovery behavior](../../may-agent.app/docs/2a-design/system-boundary.md#recovery-uses-evidence-before-repetition).
+Apply the common [recovery behavior](../../alex.app/docs/2a-design/system-boundary.md#recovery-uses-evidence-before-repetition).
 Scout owns diagnosis and authorized setup for its source access. Tool results
 retain observations; the owner judges whether those observations require human
 help. The intended XHS flow distinguishes these cases:
@@ -380,7 +380,7 @@ Search parsing retains usable rows plus discarded-row evidence. A nonempty
 response with no usable records is a failed observation, while a successful
 empty array remains a supported empty result. Partial source evidence reaches
 both the bounded researcher and the owner; valid independent work is preserved.
-The [September behavior review](../../may-agent.app/docs/proposals/app-behavior-convergence-20260925.md)
+The [September behavior review](../../alex.app/docs/proposals/app-behavior-convergence-20260925.md)
 records the tested contrasts and remaining live-verification limits.
 
 Human-required XHS credential waits name `human:operator`, show the concrete action,

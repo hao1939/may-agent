@@ -9,14 +9,14 @@ proposal decisions are retained. Preparation, isolated implementation and trials
 are authorized. This document does not claim installed behavior or authorize application to live source.
 This is May installation policy.
 The common responsibility contract remains in
-[System boundary](../../may-agent.app/docs/2a-design/system-boundary.md#ownership-and-intervention).
+[System boundary](../../alex.app/docs/2a-design/system-boundary.md#ownership-and-intervention).
 The existing [improvement loop](evaluation-improvement-loop.md) owns candidate,
 approval, application and outcome follow-up. This proposal adds another source
 of evidence to that loop; it does not create a parallel repair lifecycle.
 
 ## Second review: alignment, simplicity and value
 
-The [core review rule](../../may-agent.app/docs/1-principles/core-principles.md#review-rule)
+The [core review rule](../../alex.app/docs/1-principles/core-principles.md#review-rule)
 requires a useful outcome, a simpler-alternative check and a lifetime cost
 judgment. The useful outcome here is that an observed unresolved failure reaches
 someone who decides what to do, and a worthwhile repair can use the established

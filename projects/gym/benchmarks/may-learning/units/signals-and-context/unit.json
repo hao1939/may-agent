@@ -13,9 +13,9 @@
     "evidence.propose-after-proof"
   ],
   "sources": [
-    {"path": "../may-agent.app/docs/1-principles/core-principles.md", "section": "Metrics are observations, not decisions"},
-    {"path": "../may-agent.app/docs/1-principles/core-principles.md", "section": "Fix the layer that failed"},
-    {"path": "../may-agent.app/docs/1-principles/core-principles.md", "section": "Context is discovered, not dumped"},
+    {"path": "../alex.app/docs/1-principles/core-principles.md", "section": "Metrics are observations, not decisions"},
+    {"path": "../alex.app/docs/1-principles/core-principles.md", "section": "Fix the layer that failed"},
+    {"path": "../alex.app/docs/1-principles/core-principles.md", "section": "Context is discovered, not dumped"},
     {"path": "../../shared/common-sense.md", "section": "Never game metrics"}
   ],
   "benchmark": "may-signals-and-context-development",

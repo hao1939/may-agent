@@ -15,9 +15,9 @@
     "communication.human-attention-judgment"
   ],
   "sources": [
-    { "path": "../may-agent.app/docs/2a-design/message-lifecycle.md", "section": "Mental model" },
-    { "path": "../may-agent.app/docs/2a-design/human-control-surfaces.md", "section": "Conversation" },
-    { "path": "../may-agent.app/docs/2a-design/telegram-notifications.md", "section": "Reply Correlation" }
+    { "path": "../alex.app/docs/2a-design/message-lifecycle.md", "section": "Mental model" },
+    { "path": "../alex.app/docs/2a-design/human-control-surfaces.md", "section": "Conversation" },
+    { "path": "../alex.app/docs/2a-design/telegram-notifications.md", "section": "Reply Correlation" }
   ],
   "benchmark": "may-conversation-follow-through-development",
   "release_benchmark": "may-conversation-follow-through-transfer",

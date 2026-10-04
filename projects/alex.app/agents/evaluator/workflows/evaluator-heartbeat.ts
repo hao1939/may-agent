@@ -10,7 +10,7 @@ import { taskEmissionKey } from "./lib/task-emission.js";
 
 export const name = "evaluator-heartbeat";
 export const description =
-  "Review evaluation.app's bounded task frontier without creating a private work tree.";
+  "Review the evaluator's bounded task frontier in Alex without creating a private work tree.";
 
 type OwnerReviewInput = { scope?: string; reason?: string };
 type AgentResult = Exclude<TaskReconcileResult, { state: "needs-agent" }>;
@@ -62,7 +62,7 @@ function ownerPrompt(
   reconciliation: TaskReconciliationContext<OwnerReviewInput>,
 ): string {
   return [
-    "You own evaluation.app reliability, not the work of evaluated Apps.",
+    "Review the supplied evaluator reliability work in Alex; evaluated Tasks retain their own owners.",
     "Use only this bounded packet. Do not query global state, create work, edit files, or evaluate Evaluation's own quality.",
     "Return a justified no-op unless one supplied waiting child can safely be unblocked.",
     "Unknown or missing evidence is a visible gap, never healthy coverage or a target failure.",

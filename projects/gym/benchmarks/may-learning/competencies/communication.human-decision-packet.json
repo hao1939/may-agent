@@ -6,7 +6,7 @@
   "criticality": "high",
   "sources": [
     {
-      "path": "../may-agent.app/docs/2a-design/telegram-notifications.md",
+      "path": "../alex.app/docs/2a-design/telegram-notifications.md",
       "section": "Proactive Human Attention"
     }
   ],

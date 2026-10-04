@@ -64,30 +64,30 @@ the teammate chooses their method.
 If the teammate needs this guide, pass its full readable `SKILL.md` path through
 `context_files`. Ordinary file reading works without catalog registration.
 For skill installation and external CLI discovery, consult the
-[skill contract](/app/projects/may-agent.app/docs/2a-design/skills.md#codex-interoperability).
+[skill contract](/app/projects/alex.app/docs/2a-design/skills.md#codex-interoperability).
 
 ## Source Of Truth
 
 Start with the compact system model, then read only the subsystem contract
 relevant to the change:
 
-- Governing model: `/app/projects/may-agent.app/docs/2a-design/system-model.md`
-- Architecture: `/app/projects/may-agent.app/docs/2a-design/architecture.md`
-- Core principles: `/app/projects/may-agent.app/docs/1-principles/core-principles.md`
-- Work model: `/app/projects/may-agent.app/docs/1-principles/work-model.md`
-- Events: `/app/projects/may-agent.app/docs/2a-design/events.md`
-- Event graph and trace: `/app/projects/may-agent.app/docs/2a-design/event-graph.md`
-- Human control surfaces: `/app/projects/may-agent.app/docs/2a-design/human-control-surfaces.md`
-- Sessions and chat-turn lifecycle: `/app/projects/may-agent.app/docs/2a-design/sessions.md`
-- Skills and progressive disclosure: `/app/projects/may-agent.app/docs/2a-design/skills.md`
-- Workflow discovery and execution: `/app/projects/may-agent.app/docs/2a-design/workflows.md`
-- Metrics: `/app/projects/may-agent.app/docs/2a-design/metrics.md`
-- Escalation: `/app/projects/may-agent.app/docs/2a-design/escalation.md`
-- Apps: `/app/projects/may-agent.app/docs/2a-design/agent-app.md`
-- Project posture: `/app/projects/may-agent.app/docs/2a-design/projects.md`
-- Task resources: `/app/projects/may-agent.app/docs/2a-design/task-resource-engine.md`
-- Agent directories: `/app/projects/may-agent.app/docs/2b-manual/agent-convention.md`
-- Metric alert triage: `/app/projects/may-agent.app/docs/2b-manual/metric-alerts.md`
+- Governing model: `/app/projects/alex.app/docs/2a-design/system-model.md`
+- Architecture: `/app/projects/alex.app/docs/2a-design/architecture.md`
+- Core principles: `/app/projects/alex.app/docs/1-principles/core-principles.md`
+- Work model: `/app/projects/alex.app/docs/1-principles/work-model.md`
+- Events: `/app/projects/alex.app/docs/2a-design/events.md`
+- Event graph and trace: `/app/projects/alex.app/docs/2a-design/event-graph.md`
+- Human control surfaces: `/app/projects/alex.app/docs/2a-design/human-control-surfaces.md`
+- Sessions and chat-turn lifecycle: `/app/projects/alex.app/docs/2a-design/sessions.md`
+- Skills and progressive disclosure: `/app/projects/alex.app/docs/2a-design/skills.md`
+- Workflow discovery and execution: `/app/projects/alex.app/docs/2a-design/workflows.md`
+- Metrics: `/app/projects/alex.app/docs/2a-design/metrics.md`
+- Escalation: `/app/projects/alex.app/docs/2a-design/escalation.md`
+- Apps: `/app/projects/alex.app/docs/2a-design/agent-app.md`
+- Project posture: `/app/projects/alex.app/docs/2a-design/projects.md`
+- Task resources: `/app/projects/alex.app/docs/2a-design/task-resource-engine.md`
+- Agent directories: `/app/projects/alex.app/docs/2b-manual/agent-convention.md`
+- Metric alert triage: `/app/projects/alex.app/docs/2b-manual/metric-alerts.md`
 
 Tier 3 proposals are background, not source of truth. Use them only when an
 accepted design doc explicitly points to unresolved proposal context.

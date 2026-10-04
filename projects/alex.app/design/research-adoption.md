@@ -1,9 +1,9 @@
 # Research adoption through Alex
 
-**Supports:** [Useful completed work](../../may-agent.app/docs/1-principles/purpose.md).
+**Supports:** [Useful completed work](../docs/1-principles/purpose.md).
 Turn preserved research into a practical local recommendation, including a
 supported decision to leave the system unchanged.
-**Choice basis:** [Agent judgment and infra execution](../../may-agent.app/docs/1-principles/core-principles.md).
+**Choice basis:** [Agent judgment and infra execution](../docs/1-principles/core-principles.md).
 Alex judges local value; ordinary Tasks retain the work and its caller return.
 
 Status: implemented in the migration candidate. See the

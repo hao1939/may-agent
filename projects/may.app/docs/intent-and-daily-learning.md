@@ -77,7 +77,7 @@ independent evidence that the claimed research occurred.
 
 Assignment authority, retrievable context, admission, Task reuse and caller
 clarification belong to the common
-[App contract](../../may-agent.app/docs/2a-design/agent-app.md#assignment-authority-and-context).
+[App contract](../../alex.app/docs/2a-design/agent-app.md#assignment-authority-and-context).
 May follows that contract: revise the same accepted Request, then use `tasks get`
 and creator-authorized `tasks update` with complete current App input for a changed
 worker assignment. A repeated handoff is not a Task specification update.

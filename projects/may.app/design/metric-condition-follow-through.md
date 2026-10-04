@@ -1,7 +1,7 @@
 # Metric follow-through through existing Conditions
 
-**Supports:** [Evidence-driven improvement](../../may-agent.app/docs/2a-design/system-model.md#improve-from-evidence-and-make-problems-actionable).
-**Choice basis:** [Agent decisions and mechanical execution](../../may-agent.app/docs/1-principles/code-vs-data.md).
+**Supports:** [Evidence-driven improvement](../../alex.app/docs/2a-design/system-model.md#improve-from-evidence-and-make-problems-actionable).
+**Choice basis:** [Agent decisions and mechanical execution](../../alex.app/docs/1-principles/code-vs-data.md).
 
 **Status:** Source implementation with Host integration coverage. The receiving-owner
 judgment and #295 companion changes were activated on October 3 in App release
@@ -149,7 +149,7 @@ reader tolerates absent `observation.reviewAt`; dates supplied by older Hosts
 remain compatibility evidence. A legacy disposition fact's date is never a
 fallback timer. Omitting unchanged Conditions retains their Host-owned wait.
 
-The [Task contract](../../may-agent.app/docs/2a-design/task-resource-engine.md#conditions)
+The [Task contract](../../alex.app/docs/2a-design/task-resource-engine.md#conditions)
 owns the Host revision and rollout requirement. Explicit repair checkpoints use
 Task `reviewAt`; missed delivery recovery does not require an agent checkpoint.
 

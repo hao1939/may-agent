@@ -1,8 +1,8 @@
 # GitHub pull-request ownership and observation
 
-**Supports:** [App observation](../../may-agent.app/docs/2a-design/agent-app.md#request-entrypoints-schedules-and-observers): return meaningful provider facts to accountable work without repeated supervision.
+**Supports:** [App observation](../../alex.app/docs/2a-design/agent-app.md#request-entrypoints-schedules-and-observers): return meaningful provider facts to accountable work without repeated supervision.
 
-**Choice basis:** [Simple first](../../may-agent.app/docs/1-principles/core-principles.md#simple-first) and [safe retry ownership](../../may-agent.app/docs/2a-design/system-boundary.md#retry-and-recovery-ownership): reuse the event journal's idempotent admission.
+**Choice basis:** [Simple first](../../alex.app/docs/1-principles/core-principles.md#simple-first) and [safe retry ownership](../../alex.app/docs/2a-design/system-boundary.md#retry-and-recovery-ownership): reuse the event journal's idempotent admission.
 
 Status: observer implemented; this companion adds durable republication identity.
 See the [source follow-up](token-efficiency-proposal-20261002.md#october-3-source-follow-up)
@@ -31,7 +31,7 @@ remote body back. Ordinary `gh pr create` and `gh pr edit` remain usable. There 
 no registration command, watch registry, mandatory helper, or special Condition.
 
 This implements the accepted resource-ownership convention in
-`projects/may-agent.app/docs/2a-design/agent-app.md`: Conditions describe what a
+`projects/alex.app/docs/2a-design/agent-app.md`: Conditions describe what a
 Task awaits; they do not subscribe resources to observers. Explicit PR Conditions
 remain a valid matching contract for exceptional shared/read-only resources, but
 this observer does not enumerate Tasks to discover ordinary PRs.

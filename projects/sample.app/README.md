@@ -57,7 +57,7 @@ definition, then use the normal `/reload` operation and verify the accepted
 installed App contract. Host and SDK must include PR #270 for document observation (and PR #269 for
 explicit result scope). Source presence alone does not prove activation.
 
-The [SDK quickstart](../may-agent.app/docs/2b-manual/sdk-quickstart.md) provides
+The [SDK quickstart](../alex.app/docs/2b-manual/sdk-quickstart.md) provides
 the ordinary submission/read client; it targets this App. The first live exercise
 is [basic cooperation](scenarios/basic-cooperation.md). Experiments needing a
 restart or fault injection use an isolated Host, with separate evidence.
@@ -71,9 +71,9 @@ existing review contract. Bob's own verification remains part of his delivery.
 
 The reviewer judges meaning, coverage and result scope. The Host owns request
 identities, state, result links, waits, scheduling and execution recovery.
-The [common boundary](../may-agent.app/docs/2a-design/system-boundary.md) owns
+The [common boundary](../alex.app/docs/2a-design/system-boundary.md) owns
 those guarantees; this example demonstrates them without redefining them.
-Use the [reusable App review method](../may-agent.app/docs/2b-manual/workflow-authoring.md#reusing-an-app-review)
+Use the [reusable App review method](../alex.app/docs/2b-manual/workflow-authoring.md#reusing-an-app-review)
 to retain findings that can guide later reviews of this or another App.
 The [first live review](reviews/2026-09-30.md) records what worked, the evidence
 handoff failure, its correction, and the limits of that trial.

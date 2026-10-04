@@ -50,5 +50,5 @@ final sentence is directly supported by this comparison.
 Not covered: external observer waits, cross-App durable caller return,
 concurrent corrections, crash/restart, clean installation, unavailable models
 or long-term behavior consistency. Reuse the
-[App review method](../../may-agent.app/docs/2b-manual/workflow-authoring.md#reusing-an-app-review)
+[App review method](../../alex.app/docs/2b-manual/workflow-authoring.md#reusing-an-app-review)
 for those separate questions.

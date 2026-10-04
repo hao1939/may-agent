@@ -28,13 +28,13 @@ invent a new approval requirement for work the user has already authorized.
 
 ## Source and guidance
 
-- `/app/projects/may-agent.app/docs/proposals/alex-improvement-app.md` records the
+- `/app/projects/alex.app/docs/proposals/alex-improvement-app.md` records the
   agreed migration, including breaking changes and replacement Task IDs.
-- `/app/projects/may-agent.app/docs/1-principles/purpose.md` and the neighboring
+- `/app/projects/alex.app/docs/1-principles/purpose.md` and the neighboring
   principles explain the value and choice principles.
-- `/app/projects/may-agent.app/docs/2b-manual/task-execution-guide/SKILL.md` is
+- `/app/projects/alex.app/docs/2b-manual/task-execution-guide/SKILL.md` is
   the Task execution contract; the manuals are maintained as agent guidance.
-- `/app/projects/may-agent.app/docs/2b-manual/design-authoring/SKILL.md` guides
+- `/app/projects/alex.app/docs/2b-manual/design-authoring/SKILL.md` guides
   source, design and evidence updates.
 - `/app/projects/may-agent` is the separate Host Git repository. `/app` is the
   Apps Git repository. Use isolated candidates and preserve unrelated work.

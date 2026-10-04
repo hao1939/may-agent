@@ -2,7 +2,7 @@
 
 Status: implemented, locally activated and tested; no merge or remote rollout claimed.
 
-The common contract is in `may-agent.app/docs/2a-design/workflows.md`. One Task
+The common contract is in `alex.app/docs/2a-design/workflows.md`. One Task
 owns the outcome. Agents choose methods; workflows compose bounded operations.
 Awaiting a result does not suspend event admission. Shared managed execution
 forwards durable Task feedback, carries exact scope and cancels nested helpers.
@@ -60,7 +60,7 @@ accurately names the saved artifact and commit without claiming merge or deploy.
 
 Host CI passed 3,080 tests (3 installation-only skips); App checks passed 50
 (1 optional integration skip), and common design checks passed. See the
-[common review](../../may-agent.app/docs/archive/reviews/shared-execution-20260917.md)
+[common review](../../alex.app/docs/archive/reviews/shared-execution-20260917.md)
 for the shared implementation and test boundaries. Exact local receipts and
 inspection are retained in `.state/review-pilots/may-shared-execution-20260917/`.
 

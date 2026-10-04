@@ -5,7 +5,7 @@ import {
   metricDecisionFact,
   respondToMetric,
 } from "./metric-response.js";
-import type { MetricEvidence } from "../../../../evaluation.app/agents/evaluator/workflows/lib/metric-evidence.js";
+import type { MetricEvidence } from "../../../../alex.app/agents/evaluator/workflows/lib/metric-evidence.js";
 
 const link = { appId: "platform", taskId: "repair/admission" };
 const decision = {

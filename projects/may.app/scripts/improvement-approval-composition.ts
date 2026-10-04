@@ -66,18 +66,18 @@ const { createTestAppWorkflowContext } = await import(
   join(host, "packages/sdk/src/testing.ts")
 );
 const { default: evaluationApp, taskIntentForInput } = await import(
-  join(app, "projects/evaluation.app/app.ts")
+  join(app, "projects/alex.app/app.ts")
 );
 const { reviewTaskOutcome } = await import(
   join(
     app,
-    "projects/evaluation.app/agents/evaluator/workflows/task-outcome-review.ts",
+    "projects/alex.app/agents/evaluator/workflows/task-outcome-review.ts",
   )
 );
 const { sendPublicReadCommand, readSubjectTask } = await import(
   join(
     app,
-    "projects/evaluation.app/agents/evaluator/workflows/lib/public-task-evidence.ts",
+    "projects/alex.app/agents/evaluator/workflows/lib/public-task-evidence.ts",
   )
 );
 const { createAppTaskEvents } = await import(

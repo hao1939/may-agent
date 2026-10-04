@@ -6,7 +6,7 @@ The canonical convention docs are maintained under the current app layout:
 
 ### Directory Layout And System Prompt Assembly
 
-→ `projects/may-agent.app/docs/2b-manual/agent-convention.md`
+→ `projects/alex.app/docs/2b-manual/agent-convention.md`
 
 ### Agent Operating Skills
 
@@ -15,13 +15,13 @@ The canonical convention docs are maintained under the current app layout:
 
 ### Design Philosophy And Work Model
 
-→ `projects/may-agent.app/docs/1-principles/core-principles.md`
-→ `projects/may-agent.app/docs/1-principles/work-model.md`
-→ `projects/may-agent.app/docs/2a-design/projects.md`
+→ `projects/alex.app/docs/1-principles/core-principles.md`
+→ `projects/alex.app/docs/1-principles/work-model.md`
+→ `projects/alex.app/docs/2a-design/projects.md`
 
 ### Team And Agent Docs
 
-→ `projects/may-agent.app/docs/2a-design/agents.md`
+→ `projects/alex.app/docs/2a-design/agents.md`
 → `agents/<agent>/AGENTS.md`
 
 ---
@@ -42,4 +42,4 @@ Source belongs in `agents/`, `shared/`, `projects/` and `scripts/`, with entry
 docs and package/build config at the root. Gym lives at `projects/gym/`.
 Dependencies, runtime `.state/`, local tool configuration and separately managed
 project repositories retain their documented homes and Git ignore rules.
-See the [root layout contract](projects/may-agent.app/docs/2a-design/app-root-layout.md).
+See the [root layout contract](projects/alex.app/docs/2a-design/app-root-layout.md).

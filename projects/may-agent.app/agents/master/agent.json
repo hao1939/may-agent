@@ -1,8 +1,0 @@
-{
-  "name": "master",
-  "description": "Senior engineer who delegates bounded implementation and review through durable agent runtimes",
-  "domain": "complex implementation via durable agent delegation",
-  "model": "claude-opus-5",
-  "heartbeat": false,
-  "tools": ["agents", "cli-delegation", "finish"]
-}
