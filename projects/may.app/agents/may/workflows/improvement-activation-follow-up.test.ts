@@ -563,7 +563,7 @@ describe("approved activation and independent follow-up", () => {
       result: { stage: "post-adoption-evaluation-requested" },
       dependencies: [
         {
-          appId: "evaluation",
+          appId: "alex",
           input: {
             kind: "review-task-outcome",
             data: { appId: "may", taskId: "goal/new-subject" },
@@ -592,7 +592,7 @@ describe("approved activation and independent follow-up", () => {
           type: "app.dependency.updated",
           subject: `id:${admittedRequestId}`,
           expected: { field: "status", equals: "done" },
-          owner: "app:evaluation",
+          owner: "app:alex",
         },
       ],
       result: output(result).result,
@@ -617,7 +617,7 @@ describe("approved activation and independent follow-up", () => {
         data: {
           kind: "app",
           id: admittedRequestId,
-          appId: "evaluation",
+          appId: "alex",
           taskId: "runtime/task-outcome/may/goal-new-subject",
           status: "done",
           summary: "Independent review retained",
@@ -696,7 +696,7 @@ describe("approved activation and independent follow-up", () => {
           type: "app.dependency.updated",
           subject: `id:${differentRequestId}`,
           expected: { field: "status", equals: "done" },
-          owner: "app:evaluation",
+          owner: "app:alex",
         },
       ],
       result: output(result).result,
@@ -718,7 +718,7 @@ describe("approved activation and independent follow-up", () => {
         data: {
           kind: "app",
           id: differentRequestId,
-          appId: "evaluation",
+          appId: "alex",
           status: "done",
         },
       },

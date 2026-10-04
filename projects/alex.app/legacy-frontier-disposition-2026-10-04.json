@@ -1,0 +1,2799 @@
+{
+  "kind": "alex-legacy-frontier-disposition",
+  "capturedAt": "2026-10-04T12:13:00Z",
+  "generatedAt": "2026-10-04T12:39:00Z",
+  "source": "/app/.state/alex-migration-20261004/legacy-frontier-index.json",
+  "sourceSha256": "46d61e762a8abac6170b4333c7aac30af2661afabe7fe635294a17318ea1cde9",
+  "status": "bounded semantic triage; replacements not yet admitted",
+  "rules": [
+    "No old Task is marked fulfilled by this receipt.",
+    "replacement=null means no replacement Task has been admitted yet.",
+    "An old Task becomes superseded only after current evidence and exact relationships are mapped to an admitted continuation or an evidenced no-longer-useful decision.",
+    "Conditions are copied as identities only; this file does not rebind or settle them."
+  ],
+  "counts": {
+    "total": 117,
+    "byDisposition": {
+      "inspect-current-evidence-for-alex-continuation": 35,
+      "consolidate-lineage-after-current-state-check": 39,
+      "retain-may-boundary": 6,
+      "inspect-before-replacement": 37
+    },
+    "byProposedOwner": {
+      "alex": 111,
+      "may": 6
+    },
+    "withConditions": 33,
+    "lineages": {
+      "app-dependency-completion": 2,
+      "workspace-writer-containment": 4,
+      "dependency-authority": 2,
+      "aks-taxonomy-and-correlation": 7,
+      "gym-public-health": 8,
+      "unhandled-signal-owner-review": 11,
+      "gym-request-correlation": 3,
+      "owner-review-contract": 2
+    }
+  },
+  "items": [
+    {
+      "old": {
+        "appId": "may-agent",
+        "taskId": "activate-addressed-route-and-remeasure-alert-4566-20260816",
+        "generation": 11,
+        "phase": "waiting",
+        "owner": "may",
+        "conditionIds": [
+          "app-request:appdep_26d2607cd95ed2addf393ce6"
+        ]
+      },
+      "outcome": "Complete the exact existing alert-4566 activation and alert-4874 recurrence lineage without sibling work or duplicate deployment. Reconcile against the task's accepted live Condition `app-request:appdep_0436d418a2092b49a11dda35`: event 6118218 proves AKS App request `appdep_0436d418a2092b49a11dda35` was accepted, and current evidence contains no matching `app.dependency.completed` event. This Condition supersedes the stale prose reference to `appdep_83491e57be8c277441f96f8f`; preserve, do not replay, replace, or bypass the accepted request. When it completes, review the immutable narrow declaration candidate against correction SHA-256 fec89b4b8b8bc8a5191ca29b47f72cf3b85c77aaeb193ecc6ea3238943a14f and current declaration SHA-256 75db4cbb673663309564f9fa6ec027f055c801aa562aee0e0dbd93a6831744e4. Replan with the same AKS owner if source, selector, negative-control, scope, monitoring, rollback, or terminal artifact proof is missing; otherwise return the exact proposal for Hao approval before production mutation. Preserve Gym proof appdep_879ba020fd9626e17ac01f06, do not repeat prior deployments, keep genuine message, subscriber, schedule, malformed, and unknown-source failures visible, and converge only after a clean addressed-message canary, a fresh supported metric measurement at or below 5, resolved alert 4874, and a bounded post-change session sample without restart-driven interruption volume comparable to the current 24-hour baseline.",
+      "disposition": "inspect-current-evidence-for-alex-continuation",
+      "proposedOwner": "alex",
+      "lineage": null,
+      "replacement": null,
+      "basis": "System-improvement obligation is in Alex scope, but age/status alone cannot prove it remains useful. Check current source, accepted evidence, caller and waits before replacement or supersession.",
+      "preservation": [
+        "latest corrections and acceptance",
+        "accepted evidence/artifacts",
+        "remaining work",
+        "caller/human reply relationship",
+        "exact live Conditions"
+      ]
+    },
+    {
+      "old": {
+        "appId": "may-agent",
+        "taskId": "activate-and-live-prove-aks-correlation-taxonomy-c6636d34",
+        "generation": 1,
+        "phase": "waiting",
+        "owner": "may",
+        "conditionIds": []
+      },
+      "outcome": "Activate the c6636d34 source-fenced selector and current AKS App correlation/taxonomy repair through the supported supervisor path, then obtain a fresh correlated aks-rp-e2e App result and terminal six-pair watcher proof.",
+      "disposition": "inspect-current-evidence-for-alex-continuation",
+      "proposedOwner": "alex",
+      "lineage": null,
+      "replacement": null,
+      "basis": "System-improvement obligation is in Alex scope, but age/status alone cannot prove it remains useful. Check current source, accepted evidence, caller and waits before replacement or supersession.",
+      "preservation": [
+        "latest corrections and acceptance",
+        "accepted evidence/artifacts",
+        "remaining work",
+        "caller/human reply relationship",
+        "exact live Conditions"
+      ]
+    },
+    {
+      "old": {
+        "appId": "may-agent",
+        "taskId": "activate-and-live-prove-app-dependency-completion-correlation-20260819",
+        "generation": 1,
+        "phase": "waiting",
+        "owner": "may",
+        "conditionIds": [
+          "hao-runtime-candidate-6d2e57b-activation-decision"
+        ]
+      },
+      "outcome": "After Hao explicitly approves the exact frozen Runtime candidate, activate it once through the supported supervisor-owned path and produce fresh terminal proof that only genuinely correlated canonical app dependency completions receive `app-inbox:wake`, while all rejected and failed-wake cases remain visible and both required lineages reach their terminal results.",
+      "disposition": "consolidate-lineage-after-current-state-check",
+      "proposedOwner": "alex",
+      "lineage": "app-dependency-completion",
+      "replacement": null,
+      "basis": "Overlapping system-improvement lineage. Reconcile current source/results and preserve exact live Conditions before admitting at most one coherent Alex continuation; duplicates become superseded only after mapping.",
+      "preservation": [
+        "latest corrections and acceptance",
+        "accepted evidence/artifacts",
+        "remaining work",
+        "caller/human reply relationship",
+        "exact live Conditions"
+      ]
+    },
+    {
+      "old": {
+        "appId": "may-agent",
+        "taskId": "activate-and-prove-aks-writer-containment-20260819",
+        "generation": 2,
+        "phase": "attention",
+        "owner": "may",
+        "conditionIds": []
+      },
+      "outcome": "Activate the verified finite May App containment input through the supported release/supervisor control plane, then require the accountable AKS App/task dependency path to issue the semantically exact containment request under a fresh supported identity without reusing the occupied control-socket correlation; carry that fresh request through lineage-scoped Host/Runtime containment, dependency wake, terminal May and AKS App results, mutation-free 180-second quiescence, and fresh metric proof.",
+      "disposition": "consolidate-lineage-after-current-state-check",
+      "proposedOwner": "alex",
+      "lineage": "workspace-writer-containment",
+      "replacement": null,
+      "basis": "Overlapping system-improvement lineage. Reconcile current source/results and preserve exact live Conditions before admitting at most one coherent Alex continuation; duplicates become superseded only after mapping.",
+      "preservation": [
+        "latest corrections and acceptance",
+        "accepted evidence/artifacts",
+        "remaining work",
+        "caller/human reply relationship",
+        "exact live Conditions"
+      ]
+    },
+    {
+      "old": {
+        "appId": "may-agent",
+        "taskId": "activate-and-replay-dependency-authority-contract-20260820",
+        "generation": 1,
+        "phase": "waiting",
+        "owner": "may",
+        "conditionIds": [
+          "approval-dependency-authority-contract-20260820-dc15a38b"
+        ]
+      },
+      "outcome": "Isolate and review the verified dependency-authority replacement without absorbing unrelated dirty App work; produce the exact immutable May App and May Runtime artifact, obtain the required production activation decision, activate only through the supervisor-owned path if approved, and carry a fresh schema-valid AKS request through a correlated terminal May App result and the requesting AKS `runtime/owner-review` lineage’s terminal task/domain result.",
+      "disposition": "consolidate-lineage-after-current-state-check",
+      "proposedOwner": "alex",
+      "lineage": "dependency-authority",
+      "replacement": null,
+      "basis": "Overlapping system-improvement lineage. Reconcile current source/results and preserve exact live Conditions before admitting at most one coherent Alex continuation; duplicates become superseded only after mapping.",
+      "preservation": [
+        "latest corrections and acceptance",
+        "accepted evidence/artifacts",
+        "remaining work",
+        "caller/human reply relationship",
+        "exact live Conditions"
+      ]
+    },
+    {
+      "old": {
+        "appId": "may-agent",
+        "taskId": "activate-app-definition-and-reconcile-conversation-c5916945-20260825",
+        "generation": 2,
+        "phase": "waiting",
+        "owner": "may",
+        "conditionIds": [
+          "clean-committed-app-definition-source-for-c5916945-activation"
+        ]
+      },
+      "outcome": "Activate the May App-definition owner-review isolation introduced by commit 0d747fefde76e69b7846d189732eecd8378b6698 through the supported App-definition control path without redeploying Runtime, reconcile exact dependency appdep_d1af53ec71e50e18c09e511e and Conversation task conversation/app_c5916945-12d2-42b5-a4ac-1d3846e64fa7 to terminal proof, and prove that a canonical completion event automatically revisits the same existing Task rather than relying on a human-sourced owner-review wake.",
+      "disposition": "inspect-current-evidence-for-alex-continuation",
+      "proposedOwner": "alex",
+      "lineage": null,
+      "replacement": null,
+      "basis": "System-improvement obligation is in Alex scope, but age/status alone cannot prove it remains useful. Check current source, accepted evidence, caller and waits before replacement or supersession.",
+      "preservation": [
+        "latest corrections and acceptance",
+        "accepted evidence/artifacts",
+        "remaining work",
+        "caller/human reply relationship",
+        "exact live Conditions"
+      ]
+    },
+    {
+      "old": {
+        "appId": "may-agent",
+        "taskId": "activate-existing-aks-taxonomy-app-release-host-20260816",
+        "generation": 2,
+        "phase": "waiting",
+        "owner": "may",
+        "conditionIds": [
+          "devbox-authority-restoration-terminal"
+        ]
+      },
+      "outcome": "Through the supported privileged host release boundary, complete the already-requested may-agent App activation for correlation may-ops-health-aks-taxonomy-3bf56cf5f4-20260816 at most once, then emit a targeted wake for the parent to perform the fresh ops-health proof.",
+      "disposition": "consolidate-lineage-after-current-state-check",
+      "proposedOwner": "alex",
+      "lineage": "aks-taxonomy-and-correlation",
+      "replacement": null,
+      "basis": "Overlapping system-improvement lineage. Reconcile current source/results and preserve exact live Conditions before admitting at most one coherent Alex continuation; duplicates become superseded only after mapping.",
+      "preservation": [
+        "latest corrections and acceptance",
+        "accepted evidence/artifacts",
+        "remaining work",
+        "caller/human reply relationship",
+        "exact live Conditions"
+      ]
+    },
+    {
+      "old": {
+        "appId": "may-agent",
+        "taskId": "adjudicate-cli-worker-lifecycle-activation-20260820",
+        "generation": 1,
+        "phase": "waiting",
+        "owner": "may",
+        "conditionIds": [
+          "hao-cli-worker-lifecycle-activation-decision-5a601758"
+        ]
+      },
+      "outcome": "Obtain Hao’s exact approve, reject, or hold decision on immutable May Runtime CLI-worker lifecycle repair 5a601758cf8c86bc37401f6e19106d580dec17a6 and, only if approved, activate that exact candidate through the supported supervisor-owned path and prove the live accepted-to-terminal lifecycle without duplicate execution or secret exposure.",
+      "disposition": "retain-may-boundary",
+      "proposedOwner": "may",
+      "lineage": null,
+      "replacement": null,
+      "basis": "Requires a human authority/credential or human-facing commitment; May remains the human-priority and escalation owner.",
+      "preservation": [
+        "latest corrections and acceptance",
+        "accepted evidence/artifacts",
+        "remaining work",
+        "caller/human reply relationship",
+        "exact live Conditions"
+      ]
+    },
+    {
+      "old": {
+        "appId": "may-agent",
+        "taskId": "adjudicate-conversation-update-delivery-taxonomy-20260819",
+        "generation": 1,
+        "phase": "waiting",
+        "owner": "may",
+        "conditionIds": [
+          "hao-decision:conversation-update-taxonomy:8dee893ed6103985d63e2308e898abd53e3434c58a935433601b0eda1c494052"
+        ]
+      },
+      "outcome": "Obtain Hao's exact approve, reject, or hold decision on immutable conversation-update taxonomy candidate 8dee893ed6103985d63e2308e898abd53e3434c58a935433601b0eda1c494052 and, only if approved, carry the single reviewed metric-source change through the supported supervisor control plane to terminal live proof without hiding actionable conversation, delivery, routing, malformed-input, unknown-source, subscriber-failure, or missing-consumer signals.",
+      "disposition": "retain-may-boundary",
+      "proposedOwner": "may",
+      "lineage": null,
+      "replacement": null,
+      "basis": "Requires a human authority/credential or human-facing commitment; May remains the human-priority and escalation owner.",
+      "preservation": [
+        "latest corrections and acceptance",
+        "accepted evidence/artifacts",
+        "remaining work",
+        "caller/human reply relationship",
+        "exact live Conditions"
+      ]
+    },
+    {
+      "old": {
+        "appId": "may-agent",
+        "taskId": "adjudicate-gym-app-definition-reload-20260825",
+        "generation": 1,
+        "phase": "waiting",
+        "owner": "may",
+        "conditionIds": [
+          "hao-gym-app-definition-activation-decision-20260825"
+        ]
+      },
+      "outcome": "Obtain Hao’s exact approve, reject, or hold decision for activating committed App definitions at source commit 5a06bbacfcde7848b664c30b5a02d4171e116184; only if approved, invoke the supported `/reload` control exactly once and prove the live release manifest, Gym constituent hash, and service health without replaying the comparison or performing another Host deployment.",
+      "disposition": "retain-may-boundary",
+      "proposedOwner": "may",
+      "lineage": null,
+      "replacement": null,
+      "basis": "Requires a human authority/credential or human-facing commitment; May remains the human-priority and escalation owner.",
+      "preservation": [
+        "latest corrections and acceptance",
+        "accepted evidence/artifacts",
+        "remaining work",
+        "caller/human reply relationship",
+        "exact live Conditions"
+      ]
+    },
+    {
+      "old": {
+        "appId": "may-agent",
+        "taskId": "align-ops-health-delivery-taxonomy-20260816",
+        "generation": 2,
+        "phase": "waiting",
+        "owner": "may",
+        "conditionIds": []
+      },
+      "outcome": "Align the may-agent.app ops-health event-delivery-unaccepted classifier with the already-verified condition-gated AKS watcher observation taxonomy so those exact expected app-owned observations do not wake the platform owner, while genuinely unaccepted events remain visible; deploy the verified App release and prove a fresh ops-health observation clears this signal family.",
+      "disposition": "inspect-current-evidence-for-alex-continuation",
+      "proposedOwner": "alex",
+      "lineage": null,
+      "replacement": null,
+      "basis": "System-improvement obligation is in Alex scope, but age/status alone cannot prove it remains useful. Check current source, accepted evidence, caller and waits before replacement or supersession.",
+      "preservation": [
+        "latest corrections and acceptance",
+        "accepted evidence/artifacts",
+        "remaining work",
+        "caller/human reply relationship",
+        "exact live Conditions"
+      ]
+    },
+    {
+      "old": {
+        "appId": "may-agent",
+        "taskId": "app-request/app_03ce35b5-12ed-4df9-ad54-0dec9bb41ffd",
+        "generation": 1,
+        "phase": "pending",
+        "owner": "tech-lead",
+        "conditionIds": []
+      },
+      "outcome": "Review and resolve the addressed Host Operations request.",
+      "disposition": "inspect-before-replacement",
+      "proposedOwner": "alex",
+      "lineage": null,
+      "replacement": null,
+      "basis": "Opaque addressed Host Operations shell lacks the underlying request in the compact index. Read its exact retained input/caller before admitting one Alex replacement; do not bulk-copy or claim fulfilled.",
+      "preservation": [
+        "latest corrections and acceptance",
+        "accepted evidence/artifacts",
+        "remaining work",
+        "caller/human reply relationship",
+        "exact live Conditions"
+      ]
+    },
+    {
+      "old": {
+        "appId": "may-agent",
+        "taskId": "app-request/app_041a064a-8510-4749-9c74-c201d9cc4375",
+        "generation": 1,
+        "phase": "pending",
+        "owner": "tech-lead",
+        "conditionIds": []
+      },
+      "outcome": "Review and resolve the addressed Host Operations request.",
+      "disposition": "inspect-before-replacement",
+      "proposedOwner": "alex",
+      "lineage": null,
+      "replacement": null,
+      "basis": "Opaque addressed Host Operations shell lacks the underlying request in the compact index. Read its exact retained input/caller before admitting one Alex replacement; do not bulk-copy or claim fulfilled.",
+      "preservation": [
+        "latest corrections and acceptance",
+        "accepted evidence/artifacts",
+        "remaining work",
+        "caller/human reply relationship",
+        "exact live Conditions"
+      ]
+    },
+    {
+      "old": {
+        "appId": "may-agent",
+        "taskId": "app-request/app_0c1a906a-a9cb-477c-ab62-e9aa0402feb4",
+        "generation": 1,
+        "phase": "attention",
+        "owner": "may",
+        "conditionIds": []
+      },
+      "outcome": "Prepare and, only after Hao explicitly authorizes one successor attempt, deploy and live-validate exact May Host commit 044f3da8d126ab7251d421fcb6d128020556c8fc through the supported supervisor path.",
+      "disposition": "inspect-current-evidence-for-alex-continuation",
+      "proposedOwner": "alex",
+      "lineage": null,
+      "replacement": null,
+      "basis": "System-improvement obligation is in Alex scope, but age/status alone cannot prove it remains useful. Check current source, accepted evidence, caller and waits before replacement or supersession.",
+      "preservation": [
+        "latest corrections and acceptance",
+        "accepted evidence/artifacts",
+        "remaining work",
+        "caller/human reply relationship",
+        "exact live Conditions"
+      ]
+    },
+    {
+      "old": {
+        "appId": "may-agent",
+        "taskId": "app-request/app_263b80b2-d2d4-46b3-b7f1-b7bef045942e",
+        "generation": 1,
+        "phase": "pending",
+        "owner": "tech-lead",
+        "conditionIds": []
+      },
+      "outcome": "Review and resolve the addressed Host Operations request.",
+      "disposition": "inspect-before-replacement",
+      "proposedOwner": "alex",
+      "lineage": null,
+      "replacement": null,
+      "basis": "Opaque addressed Host Operations shell lacks the underlying request in the compact index. Read its exact retained input/caller before admitting one Alex replacement; do not bulk-copy or claim fulfilled.",
+      "preservation": [
+        "latest corrections and acceptance",
+        "accepted evidence/artifacts",
+        "remaining work",
+        "caller/human reply relationship",
+        "exact live Conditions"
+      ]
+    },
+    {
+      "old": {
+        "appId": "may-agent",
+        "taskId": "app-request/app_298605ee-5e21-485c-8970-34dfe8d7e722",
+        "generation": 1,
+        "phase": "pending",
+        "owner": "tech-lead",
+        "conditionIds": []
+      },
+      "outcome": "Review and resolve the addressed Host Operations request.",
+      "disposition": "inspect-before-replacement",
+      "proposedOwner": "alex",
+      "lineage": null,
+      "replacement": null,
+      "basis": "Opaque addressed Host Operations shell lacks the underlying request in the compact index. Read its exact retained input/caller before admitting one Alex replacement; do not bulk-copy or claim fulfilled.",
+      "preservation": [
+        "latest corrections and acceptance",
+        "accepted evidence/artifacts",
+        "remaining work",
+        "caller/human reply relationship",
+        "exact live Conditions"
+      ]
+    },
+    {
+      "old": {
+        "appId": "may-agent",
+        "taskId": "app-request/app_2c8e44a1-2012-4ac4-bc88-250830f58230",
+        "generation": 1,
+        "phase": "waiting",
+        "owner": "may",
+        "conditionIds": [
+          "human-waiver:repair-unadmitted-existing-dependency-request-20260825"
+        ]
+      },
+      "outcome": "Review and resolve the addressed Host Operations request.",
+      "disposition": "inspect-before-replacement",
+      "proposedOwner": "alex",
+      "lineage": null,
+      "replacement": null,
+      "basis": "Opaque addressed Host Operations shell lacks the underlying request in the compact index. Read its exact retained input/caller before admitting one Alex replacement; do not bulk-copy or claim fulfilled.",
+      "preservation": [
+        "latest corrections and acceptance",
+        "accepted evidence/artifacts",
+        "remaining work",
+        "caller/human reply relationship",
+        "exact live Conditions"
+      ]
+    },
+    {
+      "old": {
+        "appId": "may-agent",
+        "taskId": "app-request/app_2ea0b27f-59bf-4f40-8d59-7730c1fafe43",
+        "generation": 1,
+        "phase": "pending",
+        "owner": "tech-lead",
+        "conditionIds": []
+      },
+      "outcome": "Review and resolve the addressed Host Operations request.",
+      "disposition": "inspect-before-replacement",
+      "proposedOwner": "alex",
+      "lineage": null,
+      "replacement": null,
+      "basis": "Opaque addressed Host Operations shell lacks the underlying request in the compact index. Read its exact retained input/caller before admitting one Alex replacement; do not bulk-copy or claim fulfilled.",
+      "preservation": [
+        "latest corrections and acceptance",
+        "accepted evidence/artifacts",
+        "remaining work",
+        "caller/human reply relationship",
+        "exact live Conditions"
+      ]
+    },
+    {
+      "old": {
+        "appId": "may-agent",
+        "taskId": "app-request/app_352d84bb-db8c-48ca-b9d1-44d85b678a18",
+        "generation": 1,
+        "phase": "pending",
+        "owner": "tech-lead",
+        "conditionIds": []
+      },
+      "outcome": "Review and resolve the addressed Host Operations request.",
+      "disposition": "inspect-before-replacement",
+      "proposedOwner": "alex",
+      "lineage": null,
+      "replacement": null,
+      "basis": "Opaque addressed Host Operations shell lacks the underlying request in the compact index. Read its exact retained input/caller before admitting one Alex replacement; do not bulk-copy or claim fulfilled.",
+      "preservation": [
+        "latest corrections and acceptance",
+        "accepted evidence/artifacts",
+        "remaining work",
+        "caller/human reply relationship",
+        "exact live Conditions"
+      ]
+    },
+    {
+      "old": {
+        "appId": "may-agent",
+        "taskId": "app-request/app_384003b3-5ac9-49ff-8065-54b06d650dac",
+        "generation": 1,
+        "phase": "pending",
+        "owner": "tech-lead",
+        "conditionIds": []
+      },
+      "outcome": "Review and resolve the addressed Host Operations request.",
+      "disposition": "inspect-before-replacement",
+      "proposedOwner": "alex",
+      "lineage": null,
+      "replacement": null,
+      "basis": "Opaque addressed Host Operations shell lacks the underlying request in the compact index. Read its exact retained input/caller before admitting one Alex replacement; do not bulk-copy or claim fulfilled.",
+      "preservation": [
+        "latest corrections and acceptance",
+        "accepted evidence/artifacts",
+        "remaining work",
+        "caller/human reply relationship",
+        "exact live Conditions"
+      ]
+    },
+    {
+      "old": {
+        "appId": "may-agent",
+        "taskId": "app-request/app_38be1a2c-7735-415d-b448-834e8550abc0",
+        "generation": 1,
+        "phase": "pending",
+        "owner": "tech-lead",
+        "conditionIds": []
+      },
+      "outcome": "Review and resolve the addressed Host Operations request.",
+      "disposition": "inspect-before-replacement",
+      "proposedOwner": "alex",
+      "lineage": null,
+      "replacement": null,
+      "basis": "Opaque addressed Host Operations shell lacks the underlying request in the compact index. Read its exact retained input/caller before admitting one Alex replacement; do not bulk-copy or claim fulfilled.",
+      "preservation": [
+        "latest corrections and acceptance",
+        "accepted evidence/artifacts",
+        "remaining work",
+        "caller/human reply relationship",
+        "exact live Conditions"
+      ]
+    },
+    {
+      "old": {
+        "appId": "may-agent",
+        "taskId": "app-request/app_39332bfc-d05b-4d13-b23b-8e525a80f82a",
+        "generation": 1,
+        "phase": "pending",
+        "owner": "tech-lead",
+        "conditionIds": []
+      },
+      "outcome": "Review and resolve the addressed Host Operations request.",
+      "disposition": "inspect-before-replacement",
+      "proposedOwner": "alex",
+      "lineage": null,
+      "replacement": null,
+      "basis": "Opaque addressed Host Operations shell lacks the underlying request in the compact index. Read its exact retained input/caller before admitting one Alex replacement; do not bulk-copy or claim fulfilled.",
+      "preservation": [
+        "latest corrections and acceptance",
+        "accepted evidence/artifacts",
+        "remaining work",
+        "caller/human reply relationship",
+        "exact live Conditions"
+      ]
+    },
+    {
+      "old": {
+        "appId": "may-agent",
+        "taskId": "app-request/app_3fe8369d-b0e1-436a-8ffd-cba67e33a415",
+        "generation": 1,
+        "phase": "pending",
+        "owner": "tech-lead",
+        "conditionIds": []
+      },
+      "outcome": "Review and resolve the addressed Host Operations request.",
+      "disposition": "inspect-before-replacement",
+      "proposedOwner": "alex",
+      "lineage": null,
+      "replacement": null,
+      "basis": "Opaque addressed Host Operations shell lacks the underlying request in the compact index. Read its exact retained input/caller before admitting one Alex replacement; do not bulk-copy or claim fulfilled.",
+      "preservation": [
+        "latest corrections and acceptance",
+        "accepted evidence/artifacts",
+        "remaining work",
+        "caller/human reply relationship",
+        "exact live Conditions"
+      ]
+    },
+    {
+      "old": {
+        "appId": "may-agent",
+        "taskId": "app-request/app_44ad8507-976c-42ac-8400-5ec36ee99a29",
+        "generation": 1,
+        "phase": "waiting",
+        "owner": "may",
+        "conditionIds": [
+          "definition-source-clean-for-ops-health-activation"
+        ]
+      },
+      "outcome": "Review and resolve the addressed Host Operations request.",
+      "disposition": "inspect-before-replacement",
+      "proposedOwner": "alex",
+      "lineage": null,
+      "replacement": null,
+      "basis": "Opaque addressed Host Operations shell lacks the underlying request in the compact index. Read its exact retained input/caller before admitting one Alex replacement; do not bulk-copy or claim fulfilled.",
+      "preservation": [
+        "latest corrections and acceptance",
+        "accepted evidence/artifacts",
+        "remaining work",
+        "caller/human reply relationship",
+        "exact live Conditions"
+      ]
+    },
+    {
+      "old": {
+        "appId": "may-agent",
+        "taskId": "app-request/app_44e421ae-6c16-4c28-8941-5029660f607a",
+        "generation": 1,
+        "phase": "pending",
+        "owner": "tech-lead",
+        "conditionIds": []
+      },
+      "outcome": "Review and resolve the addressed Host Operations request.",
+      "disposition": "inspect-before-replacement",
+      "proposedOwner": "alex",
+      "lineage": null,
+      "replacement": null,
+      "basis": "Opaque addressed Host Operations shell lacks the underlying request in the compact index. Read its exact retained input/caller before admitting one Alex replacement; do not bulk-copy or claim fulfilled.",
+      "preservation": [
+        "latest corrections and acceptance",
+        "accepted evidence/artifacts",
+        "remaining work",
+        "caller/human reply relationship",
+        "exact live Conditions"
+      ]
+    },
+    {
+      "old": {
+        "appId": "may-agent",
+        "taskId": "app-request/app_491fa6a2-cb92-4ca9-84f5-6e160487d7b0",
+        "generation": 1,
+        "phase": "pending",
+        "owner": "tech-lead",
+        "conditionIds": []
+      },
+      "outcome": "Review and resolve the addressed Host Operations request.",
+      "disposition": "inspect-before-replacement",
+      "proposedOwner": "alex",
+      "lineage": null,
+      "replacement": null,
+      "basis": "Opaque addressed Host Operations shell lacks the underlying request in the compact index. Read its exact retained input/caller before admitting one Alex replacement; do not bulk-copy or claim fulfilled.",
+      "preservation": [
+        "latest corrections and acceptance",
+        "accepted evidence/artifacts",
+        "remaining work",
+        "caller/human reply relationship",
+        "exact live Conditions"
+      ]
+    },
+    {
+      "old": {
+        "appId": "may-agent",
+        "taskId": "app-request/app_4a5f7883-3589-4a4d-9f0c-76126cd65475",
+        "generation": 1,
+        "phase": "pending",
+        "owner": "tech-lead",
+        "conditionIds": []
+      },
+      "outcome": "Review and resolve the addressed Host Operations request.",
+      "disposition": "inspect-before-replacement",
+      "proposedOwner": "alex",
+      "lineage": null,
+      "replacement": null,
+      "basis": "Opaque addressed Host Operations shell lacks the underlying request in the compact index. Read its exact retained input/caller before admitting one Alex replacement; do not bulk-copy or claim fulfilled.",
+      "preservation": [
+        "latest corrections and acceptance",
+        "accepted evidence/artifacts",
+        "remaining work",
+        "caller/human reply relationship",
+        "exact live Conditions"
+      ]
+    },
+    {
+      "old": {
+        "appId": "may-agent",
+        "taskId": "app-request/app_5170e1a7-e0a2-483b-b08e-0ce61202dc4a",
+        "generation": 1,
+        "phase": "pending",
+        "owner": "tech-lead",
+        "conditionIds": []
+      },
+      "outcome": "Review and resolve the addressed Host Operations request.",
+      "disposition": "inspect-before-replacement",
+      "proposedOwner": "alex",
+      "lineage": null,
+      "replacement": null,
+      "basis": "Opaque addressed Host Operations shell lacks the underlying request in the compact index. Read its exact retained input/caller before admitting one Alex replacement; do not bulk-copy or claim fulfilled.",
+      "preservation": [
+        "latest corrections and acceptance",
+        "accepted evidence/artifacts",
+        "remaining work",
+        "caller/human reply relationship",
+        "exact live Conditions"
+      ]
+    },
+    {
+      "old": {
+        "appId": "may-agent",
+        "taskId": "app-request/app_563a0b9e-bb64-44b3-83c5-6279f0f45553",
+        "generation": 1,
+        "phase": "pending",
+        "owner": "tech-lead",
+        "conditionIds": []
+      },
+      "outcome": "Review and resolve the addressed Host Operations request.",
+      "disposition": "inspect-before-replacement",
+      "proposedOwner": "alex",
+      "lineage": null,
+      "replacement": null,
+      "basis": "Opaque addressed Host Operations shell lacks the underlying request in the compact index. Read its exact retained input/caller before admitting one Alex replacement; do not bulk-copy or claim fulfilled.",
+      "preservation": [
+        "latest corrections and acceptance",
+        "accepted evidence/artifacts",
+        "remaining work",
+        "caller/human reply relationship",
+        "exact live Conditions"
+      ]
+    },
+    {
+      "old": {
+        "appId": "may-agent",
+        "taskId": "app-request/app_597fa5b3-40a1-42a7-a284-59671e0f7b25",
+        "generation": 1,
+        "phase": "attention",
+        "owner": "may",
+        "conditionIds": []
+      },
+      "outcome": "Review and resolve the addressed Host Operations request.",
+      "disposition": "inspect-before-replacement",
+      "proposedOwner": "alex",
+      "lineage": null,
+      "replacement": null,
+      "basis": "Opaque addressed Host Operations shell lacks the underlying request in the compact index. Read its exact retained input/caller before admitting one Alex replacement; do not bulk-copy or claim fulfilled.",
+      "preservation": [
+        "latest corrections and acceptance",
+        "accepted evidence/artifacts",
+        "remaining work",
+        "caller/human reply relationship",
+        "exact live Conditions"
+      ]
+    },
+    {
+      "old": {
+        "appId": "may-agent",
+        "taskId": "app-request/app_5b3835f3-13df-42c5-9ade-18febacdb6e0",
+        "generation": 1,
+        "phase": "pending",
+        "owner": "tech-lead",
+        "conditionIds": []
+      },
+      "outcome": "Review and resolve the addressed Host Operations request.",
+      "disposition": "inspect-before-replacement",
+      "proposedOwner": "alex",
+      "lineage": null,
+      "replacement": null,
+      "basis": "Opaque addressed Host Operations shell lacks the underlying request in the compact index. Read its exact retained input/caller before admitting one Alex replacement; do not bulk-copy or claim fulfilled.",
+      "preservation": [
+        "latest corrections and acceptance",
+        "accepted evidence/artifacts",
+        "remaining work",
+        "caller/human reply relationship",
+        "exact live Conditions"
+      ]
+    },
+    {
+      "old": {
+        "appId": "may-agent",
+        "taskId": "app-request/app_5b9e2397-7ee4-4af5-b309-944022c8b468",
+        "generation": 1,
+        "phase": "waiting",
+        "owner": "may",
+        "conditionIds": [
+          "hao-gym-app-definition-reload-decision-20260825"
+        ]
+      },
+      "outcome": "Review and resolve the addressed Host Operations request.",
+      "disposition": "inspect-before-replacement",
+      "proposedOwner": "alex",
+      "lineage": null,
+      "replacement": null,
+      "basis": "Opaque addressed Host Operations shell lacks the underlying request in the compact index. Read its exact retained input/caller before admitting one Alex replacement; do not bulk-copy or claim fulfilled.",
+      "preservation": [
+        "latest corrections and acceptance",
+        "accepted evidence/artifacts",
+        "remaining work",
+        "caller/human reply relationship",
+        "exact live Conditions"
+      ]
+    },
+    {
+      "old": {
+        "appId": "may-agent",
+        "taskId": "app-request/app_6061d77a-4b1f-4c12-b066-62cbb1dc676e",
+        "generation": 1,
+        "phase": "pending",
+        "owner": "tech-lead",
+        "conditionIds": []
+      },
+      "outcome": "Review and resolve the addressed Host Operations request.",
+      "disposition": "inspect-before-replacement",
+      "proposedOwner": "alex",
+      "lineage": null,
+      "replacement": null,
+      "basis": "Opaque addressed Host Operations shell lacks the underlying request in the compact index. Read its exact retained input/caller before admitting one Alex replacement; do not bulk-copy or claim fulfilled.",
+      "preservation": [
+        "latest corrections and acceptance",
+        "accepted evidence/artifacts",
+        "remaining work",
+        "caller/human reply relationship",
+        "exact live Conditions"
+      ]
+    },
+    {
+      "old": {
+        "appId": "may-agent",
+        "taskId": "app-request/app_6a2557c6-2623-4ecf-9649-df87304f6e91",
+        "generation": 1,
+        "phase": "pending",
+        "owner": "tech-lead",
+        "conditionIds": []
+      },
+      "outcome": "Review and resolve the addressed Host Operations request.",
+      "disposition": "inspect-before-replacement",
+      "proposedOwner": "alex",
+      "lineage": null,
+      "replacement": null,
+      "basis": "Opaque addressed Host Operations shell lacks the underlying request in the compact index. Read its exact retained input/caller before admitting one Alex replacement; do not bulk-copy or claim fulfilled.",
+      "preservation": [
+        "latest corrections and acceptance",
+        "accepted evidence/artifacts",
+        "remaining work",
+        "caller/human reply relationship",
+        "exact live Conditions"
+      ]
+    },
+    {
+      "old": {
+        "appId": "may-agent",
+        "taskId": "app-request/app_71d6dbe5-0520-4472-ad06-5dd7b49a55f5",
+        "generation": 1,
+        "phase": "attention",
+        "owner": "may",
+        "conditionIds": []
+      },
+      "outcome": "Review and resolve the addressed Host Operations request.",
+      "disposition": "inspect-before-replacement",
+      "proposedOwner": "alex",
+      "lineage": null,
+      "replacement": null,
+      "basis": "Opaque addressed Host Operations shell lacks the underlying request in the compact index. Read its exact retained input/caller before admitting one Alex replacement; do not bulk-copy or claim fulfilled.",
+      "preservation": [
+        "latest corrections and acceptance",
+        "accepted evidence/artifacts",
+        "remaining work",
+        "caller/human reply relationship",
+        "exact live Conditions"
+      ]
+    },
+    {
+      "old": {
+        "appId": "may-agent",
+        "taskId": "app-request/app_800b0d35-f150-44bf-9e0a-671979a41e5c",
+        "generation": 1,
+        "phase": "pending",
+        "owner": "tech-lead",
+        "conditionIds": []
+      },
+      "outcome": "Review and resolve the addressed Host Operations request.",
+      "disposition": "inspect-before-replacement",
+      "proposedOwner": "alex",
+      "lineage": null,
+      "replacement": null,
+      "basis": "Opaque addressed Host Operations shell lacks the underlying request in the compact index. Read its exact retained input/caller before admitting one Alex replacement; do not bulk-copy or claim fulfilled.",
+      "preservation": [
+        "latest corrections and acceptance",
+        "accepted evidence/artifacts",
+        "remaining work",
+        "caller/human reply relationship",
+        "exact live Conditions"
+      ]
+    },
+    {
+      "old": {
+        "appId": "may-agent",
+        "taskId": "app-request/app_8308f1ec-7ee7-41ab-821a-1dcd68a3db1f",
+        "generation": 1,
+        "phase": "pending",
+        "owner": "tech-lead",
+        "conditionIds": []
+      },
+      "outcome": "Review and resolve the addressed Host Operations request.",
+      "disposition": "inspect-before-replacement",
+      "proposedOwner": "alex",
+      "lineage": null,
+      "replacement": null,
+      "basis": "Opaque addressed Host Operations shell lacks the underlying request in the compact index. Read its exact retained input/caller before admitting one Alex replacement; do not bulk-copy or claim fulfilled.",
+      "preservation": [
+        "latest corrections and acceptance",
+        "accepted evidence/artifacts",
+        "remaining work",
+        "caller/human reply relationship",
+        "exact live Conditions"
+      ]
+    },
+    {
+      "old": {
+        "appId": "may-agent",
+        "taskId": "app-request/app_9c9c3322-3e93-48ec-9940-5d7283ec1177",
+        "generation": 1,
+        "phase": "pending",
+        "owner": "tech-lead",
+        "conditionIds": []
+      },
+      "outcome": "Review and resolve the addressed Host Operations request.",
+      "disposition": "inspect-before-replacement",
+      "proposedOwner": "alex",
+      "lineage": null,
+      "replacement": null,
+      "basis": "Opaque addressed Host Operations shell lacks the underlying request in the compact index. Read its exact retained input/caller before admitting one Alex replacement; do not bulk-copy or claim fulfilled.",
+      "preservation": [
+        "latest corrections and acceptance",
+        "accepted evidence/artifacts",
+        "remaining work",
+        "caller/human reply relationship",
+        "exact live Conditions"
+      ]
+    },
+    {
+      "old": {
+        "appId": "may-agent",
+        "taskId": "app-request/app_a6c75c8e-d0cf-425b-88ed-df39aaeadee2",
+        "generation": 1,
+        "phase": "attention",
+        "owner": "may",
+        "conditionIds": []
+      },
+      "outcome": "Deploy and live-validate exact May Runtime commit 5afdd92ba30f0c614a6b92c88efe585e0a2e785e, then repeat the paired Evaluation workflow-versus-Codex trial and prove reload does not delay new Task starts behind an older attempt.",
+      "disposition": "inspect-current-evidence-for-alex-continuation",
+      "proposedOwner": "alex",
+      "lineage": null,
+      "replacement": null,
+      "basis": "System-improvement obligation is in Alex scope, but age/status alone cannot prove it remains useful. Check current source, accepted evidence, caller and waits before replacement or supersession.",
+      "preservation": [
+        "latest corrections and acceptance",
+        "accepted evidence/artifacts",
+        "remaining work",
+        "caller/human reply relationship",
+        "exact live Conditions"
+      ]
+    },
+    {
+      "old": {
+        "appId": "may-agent",
+        "taskId": "app-request/app_a9a6d102-7cfb-4c45-ae90-b7d10734972b",
+        "generation": 2,
+        "phase": "pending",
+        "owner": "may",
+        "conditionIds": []
+      },
+      "outcome": "Review and resolve the addressed Host Operations request.",
+      "disposition": "inspect-before-replacement",
+      "proposedOwner": "alex",
+      "lineage": null,
+      "replacement": null,
+      "basis": "Opaque addressed Host Operations shell lacks the underlying request in the compact index. Read its exact retained input/caller before admitting one Alex replacement; do not bulk-copy or claim fulfilled.",
+      "preservation": [
+        "latest corrections and acceptance",
+        "accepted evidence/artifacts",
+        "remaining work",
+        "caller/human reply relationship",
+        "exact live Conditions"
+      ]
+    },
+    {
+      "old": {
+        "appId": "may-agent",
+        "taskId": "app-request/app_ae4d9eaf-c2df-4449-b0f4-f9222caa0145",
+        "generation": 1,
+        "phase": "pending",
+        "owner": "tech-lead",
+        "conditionIds": []
+      },
+      "outcome": "Review and resolve the addressed Host Operations request.",
+      "disposition": "inspect-before-replacement",
+      "proposedOwner": "alex",
+      "lineage": null,
+      "replacement": null,
+      "basis": "Opaque addressed Host Operations shell lacks the underlying request in the compact index. Read its exact retained input/caller before admitting one Alex replacement; do not bulk-copy or claim fulfilled.",
+      "preservation": [
+        "latest corrections and acceptance",
+        "accepted evidence/artifacts",
+        "remaining work",
+        "caller/human reply relationship",
+        "exact live Conditions"
+      ]
+    },
+    {
+      "old": {
+        "appId": "may-agent",
+        "taskId": "app-request/app_c05ec8a5-51c2-4ac8-b499-71ba714d97a7",
+        "generation": 1,
+        "phase": "pending",
+        "owner": "tech-lead",
+        "conditionIds": []
+      },
+      "outcome": "Review and resolve the addressed Host Operations request.",
+      "disposition": "inspect-before-replacement",
+      "proposedOwner": "alex",
+      "lineage": null,
+      "replacement": null,
+      "basis": "Opaque addressed Host Operations shell lacks the underlying request in the compact index. Read its exact retained input/caller before admitting one Alex replacement; do not bulk-copy or claim fulfilled.",
+      "preservation": [
+        "latest corrections and acceptance",
+        "accepted evidence/artifacts",
+        "remaining work",
+        "caller/human reply relationship",
+        "exact live Conditions"
+      ]
+    },
+    {
+      "old": {
+        "appId": "may-agent",
+        "taskId": "app-request/app_c5972eb8-bc50-47b4-b330-97994e8a8144",
+        "generation": 1,
+        "phase": "pending",
+        "owner": "tech-lead",
+        "conditionIds": []
+      },
+      "outcome": "Review and resolve the addressed Host Operations request.",
+      "disposition": "inspect-before-replacement",
+      "proposedOwner": "alex",
+      "lineage": null,
+      "replacement": null,
+      "basis": "Opaque addressed Host Operations shell lacks the underlying request in the compact index. Read its exact retained input/caller before admitting one Alex replacement; do not bulk-copy or claim fulfilled.",
+      "preservation": [
+        "latest corrections and acceptance",
+        "accepted evidence/artifacts",
+        "remaining work",
+        "caller/human reply relationship",
+        "exact live Conditions"
+      ]
+    },
+    {
+      "old": {
+        "appId": "may-agent",
+        "taskId": "app-request/app_d1380ef9-c44a-49fe-811e-be57a1e7d54c",
+        "generation": 1,
+        "phase": "attention",
+        "owner": "may",
+        "conditionIds": []
+      },
+      "outcome": "Deploy and verify the tested May conversation fix so approved proposal scope remains visible in the assigned Task and assignment message.",
+      "disposition": "inspect-current-evidence-for-alex-continuation",
+      "proposedOwner": "alex",
+      "lineage": null,
+      "replacement": null,
+      "basis": "System-improvement obligation is in Alex scope, but age/status alone cannot prove it remains useful. Check current source, accepted evidence, caller and waits before replacement or supersession.",
+      "preservation": [
+        "latest corrections and acceptance",
+        "accepted evidence/artifacts",
+        "remaining work",
+        "caller/human reply relationship",
+        "exact live Conditions"
+      ]
+    },
+    {
+      "old": {
+        "appId": "may-agent",
+        "taskId": "app-request/app_d7db39a0-421d-4949-bb58-a17318aa9587",
+        "generation": 1,
+        "phase": "attention",
+        "owner": "may",
+        "conditionIds": []
+      },
+      "outcome": "Review and resolve the addressed Host Operations request.",
+      "disposition": "inspect-before-replacement",
+      "proposedOwner": "alex",
+      "lineage": null,
+      "replacement": null,
+      "basis": "Opaque addressed Host Operations shell lacks the underlying request in the compact index. Read its exact retained input/caller before admitting one Alex replacement; do not bulk-copy or claim fulfilled.",
+      "preservation": [
+        "latest corrections and acceptance",
+        "accepted evidence/artifacts",
+        "remaining work",
+        "caller/human reply relationship",
+        "exact live Conditions"
+      ]
+    },
+    {
+      "old": {
+        "appId": "may-agent",
+        "taskId": "app-request/app_de0457db-4a96-4614-9b40-eba46cfffe32",
+        "generation": 1,
+        "phase": "pending",
+        "owner": "tech-lead",
+        "conditionIds": []
+      },
+      "outcome": "Review and resolve the addressed Host Operations request.",
+      "disposition": "inspect-before-replacement",
+      "proposedOwner": "alex",
+      "lineage": null,
+      "replacement": null,
+      "basis": "Opaque addressed Host Operations shell lacks the underlying request in the compact index. Read its exact retained input/caller before admitting one Alex replacement; do not bulk-copy or claim fulfilled.",
+      "preservation": [
+        "latest corrections and acceptance",
+        "accepted evidence/artifacts",
+        "remaining work",
+        "caller/human reply relationship",
+        "exact live Conditions"
+      ]
+    },
+    {
+      "old": {
+        "appId": "may-agent",
+        "taskId": "app-request/app_e5a390f8-bfee-4824-9f45-7989283df9bc",
+        "generation": 1,
+        "phase": "pending",
+        "owner": "tech-lead",
+        "conditionIds": []
+      },
+      "outcome": "Review and resolve the addressed Host Operations request.",
+      "disposition": "inspect-before-replacement",
+      "proposedOwner": "alex",
+      "lineage": null,
+      "replacement": null,
+      "basis": "Opaque addressed Host Operations shell lacks the underlying request in the compact index. Read its exact retained input/caller before admitting one Alex replacement; do not bulk-copy or claim fulfilled.",
+      "preservation": [
+        "latest corrections and acceptance",
+        "accepted evidence/artifacts",
+        "remaining work",
+        "caller/human reply relationship",
+        "exact live Conditions"
+      ]
+    },
+    {
+      "old": {
+        "appId": "may-agent",
+        "taskId": "app-request/app_ea18092c-380c-412d-99af-6f559e955d1c",
+        "generation": 1,
+        "phase": "pending",
+        "owner": "tech-lead",
+        "conditionIds": []
+      },
+      "outcome": "Review and resolve the addressed Host Operations request.",
+      "disposition": "inspect-before-replacement",
+      "proposedOwner": "alex",
+      "lineage": null,
+      "replacement": null,
+      "basis": "Opaque addressed Host Operations shell lacks the underlying request in the compact index. Read its exact retained input/caller before admitting one Alex replacement; do not bulk-copy or claim fulfilled.",
+      "preservation": [
+        "latest corrections and acceptance",
+        "accepted evidence/artifacts",
+        "remaining work",
+        "caller/human reply relationship",
+        "exact live Conditions"
+      ]
+    },
+    {
+      "old": {
+        "appId": "may-agent",
+        "taskId": "app-request/app_f1f41b52-2d7b-4fc7-bf35-93107e9aa50e",
+        "generation": 1,
+        "phase": "pending",
+        "owner": "tech-lead",
+        "conditionIds": []
+      },
+      "outcome": "Review and resolve the addressed Host Operations request.",
+      "disposition": "inspect-before-replacement",
+      "proposedOwner": "alex",
+      "lineage": null,
+      "replacement": null,
+      "basis": "Opaque addressed Host Operations shell lacks the underlying request in the compact index. Read its exact retained input/caller before admitting one Alex replacement; do not bulk-copy or claim fulfilled.",
+      "preservation": [
+        "latest corrections and acceptance",
+        "accepted evidence/artifacts",
+        "remaining work",
+        "caller/human reply relationship",
+        "exact live Conditions"
+      ]
+    },
+    {
+      "old": {
+        "appId": "may-agent",
+        "taskId": "app-request/app_f679fe4c-9ff3-4f78-9474-1b43387c3eb9",
+        "generation": 1,
+        "phase": "attention",
+        "owner": "may",
+        "conditionIds": []
+      },
+      "outcome": "Review and resolve the addressed Host Operations request.",
+      "disposition": "inspect-before-replacement",
+      "proposedOwner": "alex",
+      "lineage": null,
+      "replacement": null,
+      "basis": "Opaque addressed Host Operations shell lacks the underlying request in the compact index. Read its exact retained input/caller before admitting one Alex replacement; do not bulk-copy or claim fulfilled.",
+      "preservation": [
+        "latest corrections and acceptance",
+        "accepted evidence/artifacts",
+        "remaining work",
+        "caller/human reply relationship",
+        "exact live Conditions"
+      ]
+    },
+    {
+      "old": {
+        "appId": "may-agent",
+        "taskId": "app-request/app_f6b7e155-4ee8-4690-adf9-769dde3c0184",
+        "generation": 1,
+        "phase": "pending",
+        "owner": "tech-lead",
+        "conditionIds": []
+      },
+      "outcome": "Review and resolve the addressed Host Operations request.",
+      "disposition": "inspect-before-replacement",
+      "proposedOwner": "alex",
+      "lineage": null,
+      "replacement": null,
+      "basis": "Opaque addressed Host Operations shell lacks the underlying request in the compact index. Read its exact retained input/caller before admitting one Alex replacement; do not bulk-copy or claim fulfilled.",
+      "preservation": [
+        "latest corrections and acceptance",
+        "accepted evidence/artifacts",
+        "remaining work",
+        "caller/human reply relationship",
+        "exact live Conditions"
+      ]
+    },
+    {
+      "old": {
+        "appId": "may-agent",
+        "taskId": "app-request/appdep_168e5c676b765172deaf1dcc",
+        "generation": 1,
+        "phase": "waiting",
+        "owner": "may",
+        "conditionIds": [
+          "approval-may-agent-handler-race-repair-deploy-50e4cc0d"
+        ]
+      },
+      "outcome": "Safely reconcile the overlapping Host checkout edits, integrate both verified feedback-projection race repairs, obtain required activation authority, deploy through the supported Host operation, and prove the latest aks-explorer projection converges truthfully.",
+      "disposition": "inspect-current-evidence-for-alex-continuation",
+      "proposedOwner": "alex",
+      "lineage": null,
+      "replacement": null,
+      "basis": "System-improvement obligation is in Alex scope, but age/status alone cannot prove it remains useful. Check current source, accepted evidence, caller and waits before replacement or supersession.",
+      "preservation": [
+        "latest corrections and acceptance",
+        "accepted evidence/artifacts",
+        "remaining work",
+        "caller/human reply relationship",
+        "exact live Conditions"
+      ]
+    },
+    {
+      "old": {
+        "appId": "may-agent",
+        "taskId": "app-request/appdep_263928bfc590a5684bf54762",
+        "generation": 1,
+        "phase": "waiting",
+        "owner": "may",
+        "conditionIds": [
+          "hao-remedial-corrected-gym-admission-decision"
+        ]
+      },
+      "outcome": "Through the supported Host control plane, admit exactly one fresh Gym run-regression App request carrying the frozen corrected envelope for source request appdep_49c7944511611c1fdb775df2, follow its exact Task and regression-run workflow to terminal comparison evidence, then refresh the canonical public Gym task projection and gym.valid-run-rate without altering benchmark truth or historical evidence.",
+      "disposition": "consolidate-lineage-after-current-state-check",
+      "proposedOwner": "alex",
+      "lineage": "gym-public-health",
+      "replacement": null,
+      "basis": "Overlapping system-improvement lineage. Reconcile current source/results and preserve exact live Conditions before admitting at most one coherent Alex continuation; duplicates become superseded only after mapping.",
+      "preservation": [
+        "latest corrections and acceptance",
+        "accepted evidence/artifacts",
+        "remaining work",
+        "caller/human reply relationship",
+        "exact live Conditions"
+      ]
+    },
+    {
+      "old": {
+        "appId": "may-agent",
+        "taskId": "app-request/appdep_3ccc74a3a17acd12d85f5499",
+        "generation": 2,
+        "phase": "attention",
+        "owner": "may",
+        "conditionIds": []
+      },
+      "outcome": "Ensure `gym/improve/may` does not repeatedly wake and reconcile to a skip while `improve-may-ground-truth-approval` is unchanged; only the declared daily refill or a semantically relevant approval event should wake it. Preserve terminal proof that stale recovery-index wake behavior is retired, and before convergence prove that one later matching approval submission or declared daily refill wakes `gym/improve/may` exactly once and yields one bounded reconciliation outcome.",
+      "disposition": "inspect-current-evidence-for-alex-continuation",
+      "proposedOwner": "alex",
+      "lineage": null,
+      "replacement": null,
+      "basis": "System-improvement obligation is in Alex scope, but age/status alone cannot prove it remains useful. Check current source, accepted evidence, caller and waits before replacement or supersession.",
+      "preservation": [
+        "latest corrections and acceptance",
+        "accepted evidence/artifacts",
+        "remaining work",
+        "caller/human reply relationship",
+        "exact live Conditions"
+      ]
+    },
+    {
+      "old": {
+        "appId": "may-agent",
+        "taskId": "app-request/appdep_44c346a1f20c9eb3a15d8313",
+        "generation": 1,
+        "phase": "waiting",
+        "owner": "may",
+        "conditionIds": [
+          "app-request:appdep_ac3e6a44e0e39148e0545749"
+        ]
+      },
+      "outcome": "Restore and resume the existing aks-rp-e2e Task spec/verify-spec-egress-lockdown-windows-baseline-3a6483ae5f-76603a97c9 through the source/provider-capable spec-live-reconciliation workflow, preserving its exact task worktree and prepared commit.",
+      "disposition": "inspect-current-evidence-for-alex-continuation",
+      "proposedOwner": "alex",
+      "lineage": null,
+      "replacement": null,
+      "basis": "System-improvement obligation is in Alex scope, but age/status alone cannot prove it remains useful. Check current source, accepted evidence, caller and waits before replacement or supersession.",
+      "preservation": [
+        "latest corrections and acceptance",
+        "accepted evidence/artifacts",
+        "remaining work",
+        "caller/human reply relationship",
+        "exact live Conditions"
+      ]
+    },
+    {
+      "old": {
+        "appId": "may-agent",
+        "taskId": "app-request/appdep_47b0a419d6ad5ecf12052dcb",
+        "generation": 1,
+        "phase": "waiting",
+        "owner": "may",
+        "conditionIds": []
+      },
+      "outcome": "Regenerate Gym’s public task projection from current canonical public task/control-plane state and recompute `gym.valid-run-rate` from a current bounded receipt window, then return evidence sufficient for Gym to resolve evaluator finding `gym.app:stale-public-health-projections`.",
+      "disposition": "consolidate-lineage-after-current-state-check",
+      "proposedOwner": "alex",
+      "lineage": "gym-public-health",
+      "replacement": null,
+      "basis": "Overlapping system-improvement lineage. Reconcile current source/results and preserve exact live Conditions before admitting at most one coherent Alex continuation; duplicates become superseded only after mapping.",
+      "preservation": [
+        "latest corrections and acceptance",
+        "accepted evidence/artifacts",
+        "remaining work",
+        "caller/human reply relationship",
+        "exact live Conditions"
+      ]
+    },
+    {
+      "old": {
+        "appId": "may-agent",
+        "taskId": "app-request/appdep_4c2fee4e43fa14b8b10946ac",
+        "generation": 1,
+        "phase": "pending",
+        "owner": "tech-lead",
+        "conditionIds": []
+      },
+      "outcome": "Atomically activate the exact fingerprinted Gym request-scope binding candidate through the supported definition source-release/reload control path, then cause the supported Gym/runtime regression-run resolver to emit terminal evidenced dispositions for the three exact historical runtime resources and return a fresh public task projection.",
+      "disposition": "consolidate-lineage-after-current-state-check",
+      "proposedOwner": "alex",
+      "lineage": "gym-public-health",
+      "replacement": null,
+      "basis": "Overlapping system-improvement lineage. Reconcile current source/results and preserve exact live Conditions before admitting at most one coherent Alex continuation; duplicates become superseded only after mapping.",
+      "preservation": [
+        "latest corrections and acceptance",
+        "accepted evidence/artifacts",
+        "remaining work",
+        "caller/human reply relationship",
+        "exact live Conditions"
+      ]
+    },
+    {
+      "old": {
+        "appId": "may-agent",
+        "taskId": "app-request/appdep_5c14f77dde156f71dd54ee36",
+        "generation": 1,
+        "phase": "attention",
+        "owner": "may",
+        "conditionIds": []
+      },
+      "outcome": "Through supported runtime deployment and resolver event paths, activate the exact fingerprinted Gym request-scope binding correction and give terminal evidenced dispositions to the three exact historical regression-run resources, returning loaded-source identity plus a fresh public task projection so Gym can run a bounded 1-scenario × 1-trial proof.",
+      "disposition": "consolidate-lineage-after-current-state-check",
+      "proposedOwner": "alex",
+      "lineage": "gym-public-health",
+      "replacement": null,
+      "basis": "Overlapping system-improvement lineage. Reconcile current source/results and preserve exact live Conditions before admitting at most one coherent Alex continuation; duplicates become superseded only after mapping.",
+      "preservation": [
+        "latest corrections and acceptance",
+        "accepted evidence/artifacts",
+        "remaining work",
+        "caller/human reply relationship",
+        "exact live Conditions"
+      ]
+    },
+    {
+      "old": {
+        "appId": "may-agent",
+        "taskId": "app-request/appdep_5c5f2e0a694278198136a42d",
+        "generation": 1,
+        "phase": "attention",
+        "owner": "may",
+        "conditionIds": []
+      },
+      "outcome": "Adjudicate and settle the existing evaluator immutable-release deployment request for correlation evaluation-envelope-repair-f493c9e5325b-20260816T0923Z. If it has not run, publish the exact committed revision as a fresh immutable App release and perform the required host-side recreate exactly once; if it has run, recover and return the authoritative correlated terminal evidence. Do not create a duplicate deployment request.",
+      "disposition": "inspect-current-evidence-for-alex-continuation",
+      "proposedOwner": "alex",
+      "lineage": null,
+      "replacement": null,
+      "basis": "System-improvement obligation is in Alex scope, but age/status alone cannot prove it remains useful. Check current source, accepted evidence, caller and waits before replacement or supersession.",
+      "preservation": [
+        "latest corrections and acceptance",
+        "accepted evidence/artifacts",
+        "remaining work",
+        "caller/human reply relationship",
+        "exact live Conditions"
+      ]
+    },
+    {
+      "old": {
+        "appId": "may-agent",
+        "taskId": "app-request/appdep_61c7a806bdc31e3dfcf1ce2a",
+        "generation": 1,
+        "phase": "attention",
+        "owner": "may",
+        "conditionIds": []
+      },
+      "outcome": "Repair the deployed session.failed-triage-rate-3h measurement so current Task-reconciler handoffs, runtime orphan-agent recovery interruptions, and terminal-success Cancelled residue are handled by explicit tested eligibility rules; publish through the normal may-agent path and produce a fresh measurement at or above 0.8.",
+      "disposition": "inspect-current-evidence-for-alex-continuation",
+      "proposedOwner": "alex",
+      "lineage": null,
+      "replacement": null,
+      "basis": "System-improvement obligation is in Alex scope, but age/status alone cannot prove it remains useful. Check current source, accepted evidence, caller and waits before replacement or supersession.",
+      "preservation": [
+        "latest corrections and acceptance",
+        "accepted evidence/artifacts",
+        "remaining work",
+        "caller/human reply relationship",
+        "exact live Conditions"
+      ]
+    },
+    {
+      "old": {
+        "appId": "may-agent",
+        "taskId": "app-request/appdep_6e45556ac686de79c4947581",
+        "generation": 1,
+        "phase": "attention",
+        "owner": "may",
+        "conditionIds": []
+      },
+      "outcome": "Use the supported Host loaded-App projection publisher to regenerate `/app/projects/scout-knowledge-lib.app/.state/tasks/tree.json` from current canonical task resources for App `scout-knowledge-lib`, then return verification evidence.",
+      "disposition": "inspect-current-evidence-for-alex-continuation",
+      "proposedOwner": "alex",
+      "lineage": null,
+      "replacement": null,
+      "basis": "System-improvement obligation is in Alex scope, but age/status alone cannot prove it remains useful. Check current source, accepted evidence, caller and waits before replacement or supersession.",
+      "preservation": [
+        "latest corrections and acceptance",
+        "accepted evidence/artifacts",
+        "remaining work",
+        "caller/human reply relationship",
+        "exact live Conditions"
+      ]
+    },
+    {
+      "old": {
+        "appId": "may-agent",
+        "taskId": "app-request/appdep_7cd2fc39029addee92d61e1a",
+        "generation": 1,
+        "phase": "attention",
+        "owner": "may",
+        "conditionIds": []
+      },
+      "outcome": "Refresh and reconcile Gym's public task projection and recompute `gym.valid-run-rate` from a current bounded receipt window, returning durable post-refresh evidence so Gym can close evaluator finding `gym.app:stale-public-health-projections`.",
+      "disposition": "consolidate-lineage-after-current-state-check",
+      "proposedOwner": "alex",
+      "lineage": "gym-public-health",
+      "replacement": null,
+      "basis": "Overlapping system-improvement lineage. Reconcile current source/results and preserve exact live Conditions before admitting at most one coherent Alex continuation; duplicates become superseded only after mapping.",
+      "preservation": [
+        "latest corrections and acceptance",
+        "accepted evidence/artifacts",
+        "remaining work",
+        "caller/human reply relationship",
+        "exact live Conditions"
+      ]
+    },
+    {
+      "old": {
+        "appId": "may-agent",
+        "taskId": "app-request/appdep_9f0518ac9e9d530a4f6334e5",
+        "generation": 1,
+        "phase": "pending",
+        "owner": "tech-lead",
+        "conditionIds": []
+      },
+      "outcome": "Provide and execute a supported Host control-plane capability that invokes `refreshAppTaskTreeProjection` for the loaded `scout-knowledge-lib` App, regenerating its disposable task projection from canonical resources without directly editing either task JSON file.",
+      "disposition": "inspect-current-evidence-for-alex-continuation",
+      "proposedOwner": "alex",
+      "lineage": null,
+      "replacement": null,
+      "basis": "System-improvement obligation is in Alex scope, but age/status alone cannot prove it remains useful. Check current source, accepted evidence, caller and waits before replacement or supersession.",
+      "preservation": [
+        "latest corrections and acceptance",
+        "accepted evidence/artifacts",
+        "remaining work",
+        "caller/human reply relationship",
+        "exact live Conditions"
+      ]
+    },
+    {
+      "old": {
+        "appId": "may-agent",
+        "taskId": "app-request/appdep_a3c30a72d193bf75d2badbdc",
+        "generation": 1,
+        "phase": "waiting",
+        "owner": "tech-lead",
+        "conditionIds": [
+          "gym-public-health-refresh-for-contained-runtime-task"
+        ]
+      },
+      "outcome": "Through supported Host/Gym resolver boundaries, contain unchanged redispatch of exact task runtime/regression-run/appdep_2252d2204a772a9a70241103-1526e9988eba493e@g1 while its malformed input is unchanged; give that exact task an explicit non-retrying waiting or terminal disposition without direct client mutation; regenerate and verify /app/projects/gym.app/tasks/outcome-projection.json includes the exact task and current disposition; then refresh bounded gym.valid-run-rate evidence to at least 0.95 or return one exact accountable external blocker with no ready retry loop.",
+      "disposition": "consolidate-lineage-after-current-state-check",
+      "proposedOwner": "alex",
+      "lineage": "gym-public-health",
+      "replacement": null,
+      "basis": "Overlapping system-improvement lineage. Reconcile current source/results and preserve exact live Conditions before admitting at most one coherent Alex continuation; duplicates become superseded only after mapping.",
+      "preservation": [
+        "latest corrections and acceptance",
+        "accepted evidence/artifacts",
+        "remaining work",
+        "caller/human reply relationship",
+        "exact live Conditions"
+      ]
+    },
+    {
+      "old": {
+        "appId": "may-agent",
+        "taskId": "app-request/appdep_a5c132567ef83b8cd4caacf6",
+        "generation": 1,
+        "phase": "attention",
+        "owner": "may",
+        "conditionIds": []
+      },
+      "outcome": "Coordinate the exact infrastructure/provider-bound recovery attempt for the missing original 230-file compact preservation set, or return an explicit terminal adjudication proving that no safe retained source remains.",
+      "disposition": "consolidate-lineage-after-current-state-check",
+      "proposedOwner": "alex",
+      "lineage": "workspace-writer-containment",
+      "replacement": null,
+      "basis": "Overlapping system-improvement lineage. Reconcile current source/results and preserve exact live Conditions before admitting at most one coherent Alex continuation; duplicates become superseded only after mapping.",
+      "preservation": [
+        "latest corrections and acceptance",
+        "accepted evidence/artifacts",
+        "remaining work",
+        "caller/human reply relationship",
+        "exact live Conditions"
+      ]
+    },
+    {
+      "old": {
+        "appId": "may-agent",
+        "taskId": "app-request/appdep_a5e1a4e921f4678cc70fd320",
+        "generation": 1,
+        "phase": "attention",
+        "owner": "may",
+        "conditionIds": []
+      },
+      "outcome": "Fingerprint and activate the Gym-owned candidate at /app/projects/gym/.state/candidates/repair-stable-localkey-review-proposal-emission, then freshly wake or replay exact preserved task runtime/review-proposal/incident-s_1787442962045_6-d98694f90add3f99 through the same review-and-propose path to terminal done; persist public proof artifacts and refresh Gym validity metrics.",
+      "disposition": "inspect-current-evidence-for-alex-continuation",
+      "proposedOwner": "alex",
+      "lineage": null,
+      "replacement": null,
+      "basis": "System-improvement obligation is in Alex scope, but age/status alone cannot prove it remains useful. Check current source, accepted evidence, caller and waits before replacement or supersession.",
+      "preservation": [
+        "latest corrections and acceptance",
+        "accepted evidence/artifacts",
+        "remaining work",
+        "caller/human reply relationship",
+        "exact live Conditions"
+      ]
+    },
+    {
+      "old": {
+        "appId": "may-agent",
+        "taskId": "app-request/appdep_acc6f5a5a4cb4fe00ca2f025",
+        "generation": 1,
+        "phase": "attention",
+        "owner": "may",
+        "conditionIds": []
+      },
+      "outcome": "Using supported May Host/Runtime supervision only, attribute the responsible writer to exact command/session/workflow/PID-start identity; stop only the responsible external descendant and duplicate or replayed execution; repair the actual producer/reissue path fail-closed; prove at least 180 uninterrupted seconds without a lineage write and without any mutation of the incident path or stale Git metadata; return terminal App evidence and fresh correlated event.unhandled-signal-count-1h, infra.bus.subscriber-failed-count-1h, alert 4602, and every subscriber-failure row for this fresh request. Do not reuse appdep_7d94713590078a6994af0d6d or events 5789642/5791149, weaken admission, stop unrelated execution, or treat point-in-time absence as proof.",
+      "disposition": "consolidate-lineage-after-current-state-check",
+      "proposedOwner": "alex",
+      "lineage": "unhandled-signal-owner-review",
+      "replacement": null,
+      "basis": "Overlapping system-improvement lineage. Reconcile current source/results and preserve exact live Conditions before admitting at most one coherent Alex continuation; duplicates become superseded only after mapping.",
+      "preservation": [
+        "latest corrections and acceptance",
+        "accepted evidence/artifacts",
+        "remaining work",
+        "caller/human reply relationship",
+        "exact live Conditions"
+      ]
+    },
+    {
+      "old": {
+        "appId": "may-agent",
+        "taskId": "app-request/appdep_b94c899a17cf157ddc78bd5d",
+        "generation": 1,
+        "phase": "waiting",
+        "owner": "may",
+        "conditionIds": [
+          "gym-finish-result-definition-release-preflight-clean"
+        ]
+      },
+      "outcome": "Through the approved Gym owner/supervisor activation path, activate only the verified explicit `mode=finish-result-comparison` consumer variant currently in /app/projects/gym.app, then live-prove the loaded consumer preserves the exact request envelope through admission, desired Task input, workflow handoff contract, and App readback without executing the frozen comparison or activating May Runtime.",
+      "disposition": "consolidate-lineage-after-current-state-check",
+      "proposedOwner": "alex",
+      "lineage": "gym-request-correlation",
+      "replacement": null,
+      "basis": "Overlapping system-improvement lineage. Reconcile current source/results and preserve exact live Conditions before admitting at most one coherent Alex continuation; duplicates become superseded only after mapping.",
+      "preservation": [
+        "latest corrections and acceptance",
+        "accepted evidence/artifacts",
+        "remaining work",
+        "caller/human reply relationship",
+        "exact live Conditions"
+      ]
+    },
+    {
+      "old": {
+        "appId": "may-agent",
+        "taskId": "app-request/appdep_cd6f1ace87bd5db6068c1398",
+        "generation": 1,
+        "phase": "attention",
+        "owner": "may",
+        "conditionIds": []
+      },
+      "outcome": "Correct or otherwise resolve the Host runtime wake path that repeatedly wakes gym/improve/may while its ground-truth approval Condition is unchanged, so only the declared daily review or a semantically relevant approval event causes a bounded reconciliation.",
+      "disposition": "inspect-current-evidence-for-alex-continuation",
+      "proposedOwner": "alex",
+      "lineage": null,
+      "replacement": null,
+      "basis": "System-improvement obligation is in Alex scope, but age/status alone cannot prove it remains useful. Check current source, accepted evidence, caller and waits before replacement or supersession.",
+      "preservation": [
+        "latest corrections and acceptance",
+        "accepted evidence/artifacts",
+        "remaining work",
+        "caller/human reply relationship",
+        "exact live Conditions"
+      ]
+    },
+    {
+      "old": {
+        "appId": "may-agent",
+        "taskId": "app-request/appdep_d1aacd42a3eb8f3a4ac7ebb9",
+        "generation": 1,
+        "phase": "attention",
+        "owner": "may",
+        "conditionIds": []
+      },
+      "outcome": "Reconcile evaluation.app workflow runs wr_1787443397863_7wye and wr_1787443442821_e655 through supported runtime mechanics, remove their stale attempt-active suppression, and deploy/load an SDK/runtime contract that accepts `agent` as the AppDefinition and TaskIntent executor field.",
+      "disposition": "inspect-current-evidence-for-alex-continuation",
+      "proposedOwner": "alex",
+      "lineage": null,
+      "replacement": null,
+      "basis": "System-improvement obligation is in Alex scope, but age/status alone cannot prove it remains useful. Check current source, accepted evidence, caller and waits before replacement or supersession.",
+      "preservation": [
+        "latest corrections and acceptance",
+        "accepted evidence/artifacts",
+        "remaining work",
+        "caller/human reply relationship",
+        "exact live Conditions"
+      ]
+    },
+    {
+      "old": {
+        "appId": "may-agent",
+        "taskId": "app-request/appdep_f713ba59d944c3a0379cb351",
+        "generation": 1,
+        "phase": "pending",
+        "owner": "tech-lead",
+        "conditionIds": []
+      },
+      "outcome": "Regenerate /app/projects/gym.app/tasks/outcome-projection.json through the canonical Gym/Host projection path so it reflects the verified terminal lifecycle of improve/may generation 5.",
+      "disposition": "consolidate-lineage-after-current-state-check",
+      "proposedOwner": "alex",
+      "lineage": "gym-public-health",
+      "replacement": null,
+      "basis": "Overlapping system-improvement lineage. Reconcile current source/results and preserve exact live Conditions before admitting at most one coherent Alex continuation; duplicates become superseded only after mapping.",
+      "preservation": [
+        "latest corrections and acceptance",
+        "accepted evidence/artifacts",
+        "remaining work",
+        "caller/human reply relationship",
+        "exact live Conditions"
+      ]
+    },
+    {
+      "old": {
+        "appId": "may-agent",
+        "taskId": "app-request/appreq_526ff3c62357a47caecdd980",
+        "generation": 2,
+        "phase": "attention",
+        "owner": "may",
+        "conditionIds": []
+      },
+      "outcome": "Systemically review all current canonical tasks across installed Apps and clean up tasks that are proven legacy, obsolete, superseded, duplicated, or based on no-longer-valid data, while preserving valid active work and the existing Gym backlog cleanup.",
+      "disposition": "inspect-current-evidence-for-alex-continuation",
+      "proposedOwner": "alex",
+      "lineage": null,
+      "replacement": null,
+      "basis": "System-improvement obligation is in Alex scope, but age/status alone cannot prove it remains useful. Check current source, accepted evidence, caller and waits before replacement or supersession.",
+      "preservation": [
+        "latest corrections and acceptance",
+        "accepted evidence/artifacts",
+        "remaining work",
+        "caller/human reply relationship",
+        "exact live Conditions"
+      ]
+    },
+    {
+      "old": {
+        "appId": "may-agent",
+        "taskId": "app-request/appreq_a0b947fae8716ee0928e6c2d",
+        "generation": 1,
+        "phase": "pending",
+        "owner": "tech-lead",
+        "conditionIds": []
+      },
+      "outcome": "Obtain and durably record an infrastructure/provider decision for the missing original 230-file preservation archive: either coordinate safe offline recovery from a read-only clone of `/dev/sdd`, or provide terminal provider evidence that recovery is impossible.",
+      "disposition": "consolidate-lineage-after-current-state-check",
+      "proposedOwner": "alex",
+      "lineage": "workspace-writer-containment",
+      "replacement": null,
+      "basis": "Overlapping system-improvement lineage. Reconcile current source/results and preserve exact live Conditions before admitting at most one coherent Alex continuation; duplicates become superseded only after mapping.",
+      "preservation": [
+        "latest corrections and acceptance",
+        "accepted evidence/artifacts",
+        "remaining work",
+        "caller/human reply relationship",
+        "exact live Conditions"
+      ]
+    },
+    {
+      "old": {
+        "appId": "may-agent",
+        "taskId": "collect-terminal-aks-taxonomy-live-proof-c6636d34",
+        "generation": 1,
+        "phase": "waiting",
+        "owner": "may",
+        "conditionIds": []
+      },
+      "outcome": "Collect terminal results for the two already-started correlated AKS requests and complete the fresh six-pair watcher proof without duplicating work.",
+      "disposition": "consolidate-lineage-after-current-state-check",
+      "proposedOwner": "alex",
+      "lineage": "aks-taxonomy-and-correlation",
+      "replacement": null,
+      "basis": "Overlapping system-improvement lineage. Reconcile current source/results and preserve exact live Conditions before admitting at most one coherent Alex continuation; duplicates become superseded only after mapping.",
+      "preservation": [
+        "latest corrections and acceptance",
+        "accepted evidence/artifacts",
+        "remaining work",
+        "caller/human reply relationship",
+        "exact live Conditions"
+      ]
+    },
+    {
+      "old": {
+        "appId": "may-agent",
+        "taskId": "complete-unhandled-signal-feedback-loop-gym-proof-20260821",
+        "generation": 1,
+        "phase": "waiting",
+        "owner": "may",
+        "conditionIds": [
+          "wait:gym-correlation-repair-terminal-proof"
+        ]
+      },
+      "outcome": "Complete the proof package for suppressing unchanged five-minute `event.unhandled-signal-count-1h` sample-only feedback while preserving all meaningful owner wakes. Reuse and verify the frozen baseline correlating metric event 5909482, reconcile-skip event 5909294, taxonomy task generation 137, causal-timestamp evaluation task evaluate-metric-causal-timestamps-rollout-20260820 generation 1, and prior workflow evidence s_1787322824360_372; do not duplicate completed proof or mutate production. Isolate an immutable candidate and run the smallest representative baseline-versus-candidate comparison. Use exactly one typed asynchronous Gym App dependency for durable evaluation evidence. Return either an evidence-backed rejection/replan or a staged rollout proposal with scope, risks, monitoring, and rollback. Reject broad rollout until Hao approval; rollback is Git revert.",
+      "disposition": "consolidate-lineage-after-current-state-check",
+      "proposedOwner": "alex",
+      "lineage": "unhandled-signal-owner-review",
+      "replacement": null,
+      "basis": "Overlapping system-improvement lineage. Reconcile current source/results and preserve exact live Conditions before admitting at most one coherent Alex continuation; duplicates become superseded only after mapping.",
+      "preservation": [
+        "latest corrections and acceptance",
+        "accepted evidence/artifacts",
+        "remaining work",
+        "caller/human reply relationship",
+        "exact live Conditions"
+      ]
+    },
+    {
+      "old": {
+        "appId": "may-agent",
+        "taskId": "correct-auto-resume-comparison-acceptance-gap-20260824",
+        "generation": 1,
+        "phase": "waiting",
+        "owner": "may",
+        "conditionIds": [
+          "await-valid-auto-resume-baseline-candidate-comparison"
+        ]
+      },
+      "outcome": "understood_intent: correct the proof and acceptance-record gap for the May Runtime auto-resume repair while preserving its current no-go disposition. mode: evaluate. priority: proof. Freeze baseline session s_1787581054581_348 with completed child/result artifacts s_1787581089982_349 and s_1787581435493_364, and exact candidate commit f9f56c43f3ad89e32e723eacda51999afbfdc21a with evidence/auto-resume-tool-correlation-20260824/proof-manifest.sha256.json. next_action: obtain exactly one bounded baseline-vs-candidate Gym comparison on the smallest representative real-restart sample, then return a proof-backed rollout proposal before adoption only if it shows clear gain without material regression. Explicitly record that repair-auto-resume-tool-result-correlation-20260824@g4 is an immutable terminal no-go receipt with an unmet comparison acceptance criterion, not completed repair acceptance. constraints: reject broad rollout until Hao approval; rollback is Git revert.",
+      "disposition": "inspect-current-evidence-for-alex-continuation",
+      "proposedOwner": "alex",
+      "lineage": null,
+      "replacement": null,
+      "basis": "System-improvement obligation is in Alex scope, but age/status alone cannot prove it remains useful. Check current source, accepted evidence, caller and waits before replacement or supersession.",
+      "preservation": [
+        "latest corrections and acceptance",
+        "accepted evidence/artifacts",
+        "remaining work",
+        "caller/human reply relationship",
+        "exact live Conditions"
+      ]
+    },
+    {
+      "old": {
+        "appId": "may-agent",
+        "taskId": "deploy-and-prove-ops-health-aks-taxonomy-20260816",
+        "generation": 2,
+        "phase": "waiting",
+        "owner": "may",
+        "conditionIds": []
+      },
+      "outcome": "Activate may-agent App commit 3bf56cf5f416d2bd4989f676190202971edd7a68 through the supported immutable App release control plane exactly once, then trigger and inspect a fresh ops-health observation proving the corrected event-delivery taxonomy.",
+      "disposition": "consolidate-lineage-after-current-state-check",
+      "proposedOwner": "alex",
+      "lineage": "aks-taxonomy-and-correlation",
+      "replacement": null,
+      "basis": "Overlapping system-improvement lineage. Reconcile current source/results and preserve exact live Conditions before admitting at most one coherent Alex continuation; duplicates become superseded only after mapping.",
+      "preservation": [
+        "latest corrections and acceptance",
+        "accepted evidence/artifacts",
+        "remaining work",
+        "caller/human reply relationship",
+        "exact live Conditions"
+      ]
+    },
+    {
+      "old": {
+        "appId": "may-agent",
+        "taskId": "evaluate-metric-causal-timestamps-rollout-20260820",
+        "generation": 2,
+        "phase": "pending",
+        "owner": "may",
+        "conditionIds": []
+      },
+      "outcome": "Evaluate immutable metric causal-timestamp candidate ae8ed87fb69012202a470b6f474bca48bccc92d2 against frozen baseline 60bf60f9d825ac991f115bc6857e89ecc7ec0abd as an independent metric-causality improvement after its existing Gym prerequisite. This task does not block or satisfy event.unhandled-signal-count-1h alert 4874 recovery; the exact recurrence and 568-row classification tasks own that recovery and its terminal proof.",
+      "disposition": "consolidate-lineage-after-current-state-check",
+      "proposedOwner": "alex",
+      "lineage": "unhandled-signal-owner-review",
+      "replacement": null,
+      "basis": "Overlapping system-improvement lineage. Reconcile current source/results and preserve exact live Conditions before admitting at most one coherent Alex continuation; duplicates become superseded only after mapping.",
+      "preservation": [
+        "latest corrections and acceptance",
+        "accepted evidence/artifacts",
+        "remaining work",
+        "caller/human reply relationship",
+        "exact live Conditions"
+      ]
+    },
+    {
+      "old": {
+        "appId": "may-agent",
+        "taskId": "evaluate-telegram-admission-bounded-lookup-20260820",
+        "generation": 2,
+        "phase": "pending",
+        "owner": "may",
+        "conditionIds": []
+      },
+      "outcome": "Evaluate frozen Telegram admission baseline 9c3547dbb22fdb234426399ead46831211f7a747055d6b45c586558bdc66b86b against exact bounded candidate 113db95dc280e4010a668096f4d6c92738708eeae4bae5201da159087fbdb409 on the smallest representative sample, explicitly including authentic sessions s_1786869598554_8 (excess discovery after anchors) and s_1786869754817_11 (guessed task-state paths mislabeled canonical). Obtain exactly one accountable Gym baseline-vs-candidate comparison proving immediate decision or safe-route after bounded exact lookups, while preserving missing-authority honesty and catching regressions in exact lineage, closure, task correlation, and safe routing. Return a proof-backed staged rollout proposal before adoption; reject broad rollout until Hao approval; rollback is Git revert.",
+      "disposition": "inspect-current-evidence-for-alex-continuation",
+      "proposedOwner": "alex",
+      "lineage": null,
+      "replacement": null,
+      "basis": "System-improvement obligation is in Alex scope, but age/status alone cannot prove it remains useful. Check current source, accepted evidence, caller and waits before replacement or supersession.",
+      "preservation": [
+        "latest corrections and acceptance",
+        "accepted evidence/artifacts",
+        "remaining work",
+        "caller/human reply relationship",
+        "exact live Conditions"
+      ]
+    },
+    {
+      "old": {
+        "appId": "may-agent",
+        "taskId": "improve-console-telegram-information-experience",
+        "generation": 1,
+        "phase": "waiting",
+        "owner": null,
+        "conditionIds": [
+          "console-telegram-presentation-production-decision"
+        ]
+      },
+      "outcome": "Design and validate a clearer, more natural Console and Telegram information experience from evidence about current behavior and representative user journeys, while preserving human-control, approval, trace, and delivery boundaries.",
+      "disposition": "retain-may-boundary",
+      "proposedOwner": "may",
+      "lineage": null,
+      "replacement": null,
+      "basis": "Requires a human authority/credential or human-facing commitment; May remains the human-priority and escalation owner.",
+      "preservation": [
+        "latest corrections and acceptance",
+        "accepted evidence/artifacts",
+        "remaining work",
+        "caller/human reply relationship",
+        "exact live Conditions"
+      ]
+    },
+    {
+      "old": {
+        "appId": "may-agent",
+        "taskId": "ops/authorize-supervisor-model-credential-restore-20260810",
+        "generation": 1,
+        "phase": "waiting",
+        "owner": "may",
+        "conditionIds": [
+          "wait:may-agent:supervisor-model-credential-restore:20260810:g1"
+        ]
+      },
+      "outcome": "Obtain explicit human approval and have an authorized operator restore the valid shared-model credential handoff at the supervisor boundary, reload the supervised runtime, and return secret-free readiness proof.",
+      "disposition": "retain-may-boundary",
+      "proposedOwner": "may",
+      "lineage": null,
+      "replacement": null,
+      "basis": "Requires a human authority/credential or human-facing commitment; May remains the human-priority and escalation owner.",
+      "preservation": [
+        "latest corrections and acceptance",
+        "accepted evidence/artifacts",
+        "remaining work",
+        "caller/human reply relationship",
+        "exact live Conditions"
+      ]
+    },
+    {
+      "old": {
+        "appId": "may-agent",
+        "taskId": "ops/restore-supervisor-shared-model-handoff-20260810",
+        "generation": 3,
+        "phase": "pending",
+        "owner": "may",
+        "conditionIds": []
+      },
+      "outcome": "After the existing authorized supervisor credential-restore task converges, consume its secret-safe readiness proof and produce a validated, atomically promotable passing receipt for provider-fallback-negative-20260810.",
+      "disposition": "retain-may-boundary",
+      "proposedOwner": "may",
+      "lineage": null,
+      "replacement": null,
+      "basis": "Requires a human authority/credential or human-facing commitment; May remains the human-priority and escalation owner.",
+      "preservation": [
+        "latest corrections and acceptance",
+        "accepted evidence/artifacts",
+        "remaining work",
+        "caller/human reply relationship",
+        "exact live Conditions"
+      ]
+    },
+    {
+      "old": {
+        "appId": "may-agent",
+        "taskId": "prove-alert-4577-after-existing-activation-20260818",
+        "generation": 1,
+        "phase": "pending",
+        "owner": "may",
+        "conditionIds": []
+      },
+      "outcome": "After the existing generation-2 remediation and its activation dependency reach a terminal result, determine their actual effect on alert 4577 without treating alert 4573 as substitute evidence: classify alert 4577's exact opening rows and fresh current frontier by source, route, and failure lineage, reuse the existing activation and taxonomy proof without duplicate deployment, and produce a supported fresh measurement that either resolves alert 4577 or assigns every exact remaining gap to its responsible owner on this same lineage.",
+      "disposition": "inspect-current-evidence-for-alex-continuation",
+      "proposedOwner": "alex",
+      "lineage": null,
+      "replacement": null,
+      "basis": "System-improvement obligation is in Alex scope, but age/status alone cannot prove it remains useful. Check current source, accepted evidence, caller and waits before replacement or supersession.",
+      "preservation": [
+        "latest corrections and acceptance",
+        "accepted evidence/artifacts",
+        "remaining work",
+        "caller/human reply relationship",
+        "exact live Conditions"
+      ]
+    },
+    {
+      "old": {
+        "appId": "may-agent",
+        "taskId": "provider-auth-fallback-hardening-20260810",
+        "generation": 2,
+        "phase": "waiting",
+        "owner": "may",
+        "conditionIds": []
+      },
+      "outcome": "Ensure gpt-5.6-sol sessions survive an expired or unavailable GitHub Copilot credential through an explicitly owned fallback path, then prove both normal and failover model turns with bounded canaries.",
+      "disposition": "inspect-current-evidence-for-alex-continuation",
+      "proposedOwner": "alex",
+      "lineage": null,
+      "replacement": null,
+      "basis": "System-improvement obligation is in Alex scope, but age/status alone cannot prove it remains useful. Check current source, accepted evidence, caller and waits before replacement or supersession.",
+      "preservation": [
+        "latest corrections and acceptance",
+        "accepted evidence/artifacts",
+        "remaining work",
+        "caller/human reply relationship",
+        "exact live Conditions"
+      ]
+    },
+    {
+      "old": {
+        "appId": "may-agent",
+        "taskId": "reconcile-aks-workspace-integrity-release-lineage-gap-20260820",
+        "generation": 1,
+        "phase": "waiting",
+        "owner": "may",
+        "conditionIds": [
+          "wait:may-agent:aks-workspace-integrity-f9824eb7:g1"
+        ]
+      },
+      "outcome": "Correct the immutable activation-lineage gap for completed task activate-aks-workspace-integrity-release-via-supervisor-20260816 by establishing whether a currently loaded May App artifact contains watcher correction f9824eb793304c801ce514bfb40e19677f1813fb or a source-equivalent successor; if not, preserve production safety and obtain the exact authority required before any pinned activation, then return terminal scheduled watcher and downstream evidence without reopening the completed receipt or duplicating alert-4602 work.",
+      "disposition": "consolidate-lineage-after-current-state-check",
+      "proposedOwner": "alex",
+      "lineage": "aks-taxonomy-and-correlation",
+      "replacement": null,
+      "basis": "Overlapping system-improvement lineage. Reconcile current source/results and preserve exact live Conditions before admitting at most one coherent Alex continuation; duplicates become superseded only after mapping.",
+      "preservation": [
+        "latest corrections and acceptance",
+        "accepted evidence/artifacts",
+        "remaining work",
+        "caller/human reply relationship",
+        "exact live Conditions"
+      ]
+    },
+    {
+      "old": {
+        "appId": "may-agent",
+        "taskId": "reconcile-alert-4577-current-lineage-20260818",
+        "generation": 2,
+        "phase": "waiting",
+        "owner": "may",
+        "conditionIds": []
+      },
+      "outcome": "Determine whether alert 4577 is genuinely covered by the live generation-2 unhandled-signal remediation, and correct the owner decision if the cited alert-4573 carrier does not prove that coverage.",
+      "disposition": "consolidate-lineage-after-current-state-check",
+      "proposedOwner": "alex",
+      "lineage": "unhandled-signal-owner-review",
+      "replacement": null,
+      "basis": "Overlapping system-improvement lineage. Reconcile current source/results and preserve exact live Conditions before admitting at most one coherent Alex continuation; duplicates become superseded only after mapping.",
+      "preservation": [
+        "latest corrections and acceptance",
+        "accepted evidence/artifacts",
+        "remaining work",
+        "caller/human reply relationship",
+        "exact live Conditions"
+      ]
+    },
+    {
+      "old": {
+        "appId": "may-agent",
+        "taskId": "reconcile-app-dependency-completed-delivery-taxonomy-20260819",
+        "generation": 1,
+        "phase": "waiting",
+        "owner": "may",
+        "conditionIds": []
+      },
+      "outcome": "Classify the exact task-reconciler `app.dependency.completed` observations represented by events 5786777 and 5786779, and establish a narrow explicit consumer or intentional-observation disposition only for schema-valid completion facts that are canonically correlated to a real terminal task and required wake; preserve visibility for malformed payloads, unknown sources or owners, missing or nonterminal tasks, unmatched dependencies, failed wake propagation, and unrelated signals, then return terminal live trace and fresh metric proof.",
+      "disposition": "inspect-current-evidence-for-alex-continuation",
+      "proposedOwner": "alex",
+      "lineage": null,
+      "replacement": null,
+      "basis": "System-improvement obligation is in Alex scope, but age/status alone cannot prove it remains useful. Check current source, accepted evidence, caller and waits before replacement or supersession.",
+      "preservation": [
+        "latest corrections and acceptance",
+        "accepted evidence/artifacts",
+        "remaining work",
+        "caller/human reply relationship",
+        "exact live Conditions"
+      ]
+    },
+    {
+      "old": {
+        "appId": "may-agent",
+        "taskId": "reconcile-gym-runtime-attention-appdep-c64a96b3-20260825",
+        "generation": 1,
+        "phase": "waiting",
+        "owner": "may",
+        "conditionIds": []
+      },
+      "outcome": "For Gym owner request appdep_c64a96b34b8ec0021a2ab434, reconcile each of the 26 exact runtime-owned attention tasks through the responsible May Runtime resolver: resolve or safely retry on the existing identity where justified, retain valid dependency-bound or evidence-bearing work, or identify the exact remaining blocker and responsible resolver boundary. Return terminal machine-readable identity-specific or rigorously evidence-backed grouped dispositions and aggregate resolved, retained, and still-blocked counts to this parent for correlated Gym delivery.",
+      "disposition": "inspect-current-evidence-for-alex-continuation",
+      "proposedOwner": "alex",
+      "lineage": null,
+      "replacement": null,
+      "basis": "System-improvement obligation is in Alex scope, but age/status alone cannot prove it remains useful. Check current source, accepted evidence, caller and waits before replacement or supersession.",
+      "preservation": [
+        "latest corrections and acceptance",
+        "accepted evidence/artifacts",
+        "remaining work",
+        "caller/human reply relationship",
+        "exact live Conditions"
+      ]
+    },
+    {
+      "old": {
+        "appId": "may-agent",
+        "taskId": "reconcile-handler-success-rate-alert-4918-20260827",
+        "generation": 79,
+        "phase": "pending",
+        "owner": "tech-lead",
+        "conditionIds": []
+      },
+      "outcome": "Reconcile sustained handler.success-rate alert 4918 from its exact current six-hour population: reconstruct the numerator and denominator at the latest supplied measurement, attribute every failed handler to its handler family, error signature, session or workflow lineage, and accountable existing owner; distinguish regressions introduced or exposed across all verified release boundaries from pre-existing or already-owned failures; carry only the smallest justified repair or owner continuation to terminal evidence without reopening completed alert 4879 work, hiding failures, changing thresholds, or redeploying any verified artifact; then obtain a fresh supported measurement and alert-state proof. Treat event observed at 2026-08-28T06:54:49.826Z as the newest observation: current 0.6833 at measuredAt 1787900089381, below threshold 0.8 and target 0.95, with recent trend 0.6606, 0.6646, 0.6674, 0.6781, 0.6833. Treat successful correlation event-task-admission-fb9c8278-20260828 as the newest verified release boundary: source fb9c8278e9e8459908eb1c7291304e846325f7da, requested and loaded artifact e940c93bf0632ed851d4d0eb766f06a0fcf32201e920003877956d4e98010c59, health healthy, duplicateDeploy=false. Do not deploy that correlation again; use it only for causal attribution and fresh measurement.",
+      "disposition": "inspect-current-evidence-for-alex-continuation",
+      "proposedOwner": "alex",
+      "lineage": null,
+      "replacement": null,
+      "basis": "System-improvement obligation is in Alex scope, but age/status alone cannot prove it remains useful. Check current source, accepted evidence, caller and waits before replacement or supersession.",
+      "preservation": [
+        "latest corrections and acceptance",
+        "accepted evidence/artifacts",
+        "remaining work",
+        "caller/human reply relationship",
+        "exact live Conditions"
+      ]
+    },
+    {
+      "old": {
+        "appId": "may-agent",
+        "taskId": "reconcile-runtime-exact-task-retry-control-20260825",
+        "generation": 1,
+        "phase": "waiting",
+        "owner": null,
+        "conditionIds": [
+          "runtime-exact-task-retry-control-deploy-approval"
+        ]
+      },
+      "outcome": "Reconcile the live/source deployment and protocol alignment gap for May Runtime exact-existing-task retry control so the existing condition `runtime-exact-task-retry-control` can be satisfied with supported, generation-fenced, immutable-receipt behavior, then return terminal proof that allows `resolve-gym-runtime-attention-26-20260825` to resume on the same 22 blocked identities.",
+      "disposition": "inspect-current-evidence-for-alex-continuation",
+      "proposedOwner": "alex",
+      "lineage": null,
+      "replacement": null,
+      "basis": "System-improvement obligation is in Alex scope, but age/status alone cannot prove it remains useful. Check current source, accepted evidence, caller and waits before replacement or supersession.",
+      "preservation": [
+        "latest corrections and acceptance",
+        "accepted evidence/artifacts",
+        "remaining work",
+        "caller/human reply relationship",
+        "exact live Conditions"
+      ]
+    },
+    {
+      "old": {
+        "appId": "may-agent",
+        "taskId": "reconcile-structurally-pinned-metric-alert-4797-20260825",
+        "generation": 1,
+        "phase": "waiting",
+        "owner": null,
+        "conditionIds": [
+          "activate-calibrated-definition-and-resolve-alert-4797"
+        ]
+      },
+      "outcome": "Resolve metric.structurally-pinned-count alert 4797 by identifying the exact pinned metric and structural cause, choosing one supported final metric-alert operation, applying or routing the smallest justified correction without hiding real drift, and returning fresh metric plus alert-state evidence.",
+      "disposition": "inspect-current-evidence-for-alex-continuation",
+      "proposedOwner": "alex",
+      "lineage": null,
+      "replacement": null,
+      "basis": "System-improvement obligation is in Alex scope, but age/status alone cannot prove it remains useful. Check current source, accepted evidence, caller and waits before replacement or supersession.",
+      "preservation": [
+        "latest corrections and acceptance",
+        "accepted evidence/artifacts",
+        "remaining work",
+        "caller/human reply relationship",
+        "exact live Conditions"
+      ]
+    },
+    {
+      "old": {
+        "appId": "may-agent",
+        "taskId": "reconcile-subscriber-failure-metric-scope-20260820",
+        "generation": 7,
+        "phase": "attention",
+        "owner": "may",
+        "conditionIds": []
+      },
+      "outcome": "Reconcile the canonical scope, project attribution, and accountable ownership of infra.bus.subscriber-failed-count-1h so its query and emitted breach routing describe the population actually measured, while preserving visibility and accountable repair of every genuine subscriber failure and avoiding duplicate work already owned by the May CLI-lifecycle, App-input, and alert-4602 taxonomy lineages. Treat event 6293501 (alert 4923, current 58 at measuredAt 1787892759221, with a rising recent trend from 43 to 58) as the latest observation. Treat successful correlation interface-io-a2cb95df-20260828T1325CST (source a2cb95df3a97ce56cbb4536baf761e2d23bdb791, requested and loaded artifact a6d98d055901c42020b5affe81115a6712062bd216b87cacdc5b6d5c2bca3800, healthy, duplicateDeploy=false) as the newest verified recovery boundary requiring fresh authentic measurement; do not redeploy it, duplicate the existing repair, or bypass the existing owner-decision boundary for the separate metric-contract candidate.",
+      "disposition": "inspect-current-evidence-for-alex-continuation",
+      "proposedOwner": "alex",
+      "lineage": null,
+      "replacement": null,
+      "basis": "System-improvement obligation is in Alex scope, but age/status alone cannot prove it remains useful. Check current source, accepted evidence, caller and waits before replacement or supersession.",
+      "preservation": [
+        "latest corrections and acceptance",
+        "accepted evidence/artifacts",
+        "remaining work",
+        "caller/human reply relationship",
+        "exact live Conditions"
+      ]
+    },
+    {
+      "old": {
+        "appId": "may-agent",
+        "taskId": "reconcile-unhandled-signal-recurrence-20260816",
+        "generation": 224,
+        "phase": "pending",
+        "owner": "may",
+        "conditionIds": []
+      },
+      "outcome": "Reconcile the original alert-4566 lineage, the prior alert-4874 recurrence, and alert 4909 on the exact existing activation path. Treat event 6160886 as the latest observation: event.unhandled-signal-count-1h is 9 against threshold 5 and target 0 at measuredAt 1787748030491, after recent movement from 14 to 10 to 11 to 9 and after the earlier 1055 observation. Preserve the existing source-aware lifecycle classification, genuine-failure visibility, and activation proof requirements; do not infer causal resolution from window movement, create a duplicate alert task, redeploy the already healthy artifact, or bypass the existing activation dependency.",
+      "disposition": "consolidate-lineage-after-current-state-check",
+      "proposedOwner": "alex",
+      "lineage": "unhandled-signal-owner-review",
+      "replacement": null,
+      "basis": "Overlapping system-improvement lineage. Reconcile current source/results and preserve exact live Conditions before admitting at most one coherent Alex continuation; duplicates become superseded only after mapping.",
+      "preservation": [
+        "latest corrections and acceptance",
+        "accepted evidence/artifacts",
+        "remaining work",
+        "caller/human reply relationship",
+        "exact live Conditions"
+      ]
+    },
+    {
+      "old": {
+        "appId": "may-agent",
+        "taskId": "repair-aks-action-correlation-and-delivery-taxonomy-20260818",
+        "generation": 1,
+        "phase": "waiting",
+        "owner": "may",
+        "conditionIds": []
+      },
+      "outcome": "Repair and live-prove the AKS request/task correlation needed for the accountable aks-rp-e2e App owner to carry the current watcher-taxonomy request, then obtain the terminal six-pair delivery result without reusing an immutable prior receipt or claiming unapplied work.",
+      "disposition": "consolidate-lineage-after-current-state-check",
+      "proposedOwner": "alex",
+      "lineage": "aks-taxonomy-and-correlation",
+      "replacement": null,
+      "basis": "Overlapping system-improvement lineage. Reconcile current source/results and preserve exact live Conditions before admitting at most one coherent Alex continuation; duplicates become superseded only after mapping.",
+      "preservation": [
+        "latest corrections and acceptance",
+        "accepted evidence/artifacts",
+        "remaining work",
+        "caller/human reply relationship",
+        "exact live Conditions"
+      ]
+    },
+    {
+      "old": {
+        "appId": "may-agent",
+        "taskId": "repair-aks-workspace-writer-containment-input-20260819",
+        "generation": 1,
+        "phase": "waiting",
+        "owner": "may",
+        "conditionIds": []
+      },
+      "outcome": "Restore a supported, schema-valid finite May App path for rejected AKS request appdep_7d94713590078a6994af0d6d, carry the exact external/replayed workspace-writer containment obligation through its terminal App result and host/domain proof, and preserve explicit rejection of unknown, malformed, impermissible, or overbroad host-mutation requests.",
+      "disposition": "consolidate-lineage-after-current-state-check",
+      "proposedOwner": "alex",
+      "lineage": "workspace-writer-containment",
+      "replacement": null,
+      "basis": "Overlapping system-improvement lineage. Reconcile current source/results and preserve exact live Conditions before admitting at most one coherent Alex continuation; duplicates become superseded only after mapping.",
+      "preservation": [
+        "latest corrections and acceptance",
+        "accepted evidence/artifacts",
+        "remaining work",
+        "caller/human reply relationship",
+        "exact live Conditions"
+      ]
+    },
+    {
+      "old": {
+        "appId": "may-agent",
+        "taskId": "repair-and-live-prove-app-dependency-completion-correlation-20260819",
+        "generation": 1,
+        "phase": "waiting",
+        "owner": "may",
+        "conditionIds": []
+      },
+      "outcome": "Repair and live-prove the app-inbox `app.dependency.completed` disposition so only a schema-valid completion fact from the canonical task reconciler and matching owner, backed by the exact terminal task receipt and an actual required dependency wake that propagates successfully, is accepted as `app-inbox:wake`; every malformed, unknown, missing, nonterminal, unmatched, failed-propagation, and unrelated fact remains visible.",
+      "disposition": "consolidate-lineage-after-current-state-check",
+      "proposedOwner": "alex",
+      "lineage": "app-dependency-completion",
+      "replacement": null,
+      "basis": "Overlapping system-improvement lineage. Reconcile current source/results and preserve exact live Conditions before admitting at most one coherent Alex continuation; duplicates become superseded only after mapping.",
+      "preservation": [
+        "latest corrections and acceptance",
+        "accepted evidence/artifacts",
+        "remaining work",
+        "caller/human reply relationship",
+        "exact live Conditions"
+      ]
+    },
+    {
+      "old": {
+        "appId": "may-agent",
+        "taskId": "repair-dependency-authority-owner-request-consumer-20260820",
+        "generation": 1,
+        "phase": "waiting",
+        "owner": "may",
+        "conditionIds": []
+      },
+      "outcome": "Resolve rejected AKS request appdep_b0fced12cada9800c8035457 through a supported, schema-valid May App contract: adjudicate the current validity of the historical direct Host-test edit and ensure dependency-scoped owner guidance treats the supplied dependency observation as authoritative without directing App owners to inspect Host-private task-tree projections; then carry the request through a correlated terminal May App result and the requesting AKS task’s terminal evidence without weakening unknown-input rejection or duplicating alert-4602 taxonomy work.",
+      "disposition": "consolidate-lineage-after-current-state-check",
+      "proposedOwner": "alex",
+      "lineage": "dependency-authority",
+      "replacement": null,
+      "basis": "Overlapping system-improvement lineage. Reconcile current source/results and preserve exact live Conditions before admitting at most one coherent Alex continuation; duplicates become superseded only after mapping.",
+      "preservation": [
+        "latest corrections and acceptance",
+        "accepted evidence/artifacts",
+        "remaining work",
+        "caller/human reply relationship",
+        "exact live Conditions"
+      ]
+    },
+    {
+      "old": {
+        "appId": "may-agent",
+        "taskId": "repair-finish-result-envelope-persistence-20260820",
+        "generation": 4,
+        "phase": "attention",
+        "owner": "may",
+        "conditionIds": []
+      },
+      "outcome": "Repair the May Runtime session completion boundary so every schema-valid non-null `finish().result` is preserved in the canonical session result artifact and remains available to task/App consumers, while malformed or missing results continue to fail closed; freeze the current baseline and exact candidate, obtain one bounded Gym baseline-vs-candidate comparison, and return a proof-backed staged rollout proposal before production adoption.",
+      "disposition": "inspect-current-evidence-for-alex-continuation",
+      "proposedOwner": "alex",
+      "lineage": null,
+      "replacement": null,
+      "basis": "System-improvement obligation is in Alex scope, but age/status alone cannot prove it remains useful. Check current source, accepted evidence, caller and waits before replacement or supersession.",
+      "preservation": [
+        "latest corrections and acceptance",
+        "accepted evidence/artifacts",
+        "remaining work",
+        "caller/human reply relationship",
+        "exact live Conditions"
+      ]
+    },
+    {
+      "old": {
+        "appId": "may-agent",
+        "taskId": "repair-grouped-goal-task-creation-and-regeneration-20260827",
+        "generation": 1,
+        "phase": "attention",
+        "owner": null,
+        "conditionIds": []
+      },
+      "outcome": "Identify and correct the May Host/runtime and shared App-definition task-creation rule that permits one Task per finding, check, proposal, session audit, or work item to regenerate instead of retaining one durable Task per meaningful goal; prove the corrected rule preserves item-level evidence and legitimate waits inside the retained goal Task without altering foreign App-owned task state directly.",
+      "disposition": "consolidate-lineage-after-current-state-check",
+      "proposedOwner": "alex",
+      "lineage": "owner-review-contract",
+      "replacement": null,
+      "basis": "Overlapping system-improvement lineage. Reconcile current source/results and preserve exact live Conditions before admitting at most one coherent Alex continuation; duplicates become superseded only after mapping.",
+      "preservation": [
+        "latest corrections and acceptance",
+        "accepted evidence/artifacts",
+        "remaining work",
+        "caller/human reply relationship",
+        "exact live Conditions"
+      ]
+    },
+    {
+      "old": {
+        "appId": "may-agent",
+        "taskId": "repair-gym-owner-review-input-correlation-20260820",
+        "generation": 1,
+        "phase": "attention",
+        "owner": "may",
+        "conditionIds": []
+      },
+      "outcome": "Restore a supported request-specific Gym App consumer for the exact addressed-route and metric-definition baseline-vs-candidate comparison, then carry the request for candidate 96ebe7cb78022737a2675e798d65679c7ba2a3e7 and parent 353e4ebc501034f1a3f6c127b2dfceb287ca7f9d through a correlated terminal Gym result and content-hashed comparison without conflating unrelated standing owner-review work or mutating production or benchmark truth.",
+      "disposition": "consolidate-lineage-after-current-state-check",
+      "proposedOwner": "alex",
+      "lineage": "gym-request-correlation",
+      "replacement": null,
+      "basis": "Overlapping system-improvement lineage. Reconcile current source/results and preserve exact live Conditions before admitting at most one coherent Alex continuation; duplicates become superseded only after mapping.",
+      "preservation": [
+        "latest corrections and acceptance",
+        "accepted evidence/artifacts",
+        "remaining work",
+        "caller/human reply relationship",
+        "exact live Conditions"
+      ]
+    },
+    {
+      "old": {
+        "appId": "may-agent",
+        "taskId": "repair-gym-review-lifecycle-pair-correlation-20260820",
+        "generation": 1,
+        "phase": "waiting",
+        "owner": "may",
+        "conditionIds": [
+          "approval-gym-owner-review-input-correlation-g1-be629466c6b12818"
+        ]
+      },
+      "outcome": "Obtain the accountable Gym App's revised semantic disposition for the exact non-human review terminal observations and determine a safe terminal taxonomy disposition: either produce one immutable replacement candidate that cannot cross-pair stale or reused review identities and carry it through explicit approval and terminal live proof, or return a justified no-change result that preserves their visibility.",
+      "disposition": "consolidate-lineage-after-current-state-check",
+      "proposedOwner": "alex",
+      "lineage": "gym-request-correlation",
+      "replacement": null,
+      "basis": "Overlapping system-improvement lineage. Reconcile current source/results and preserve exact live Conditions before admitting at most one coherent Alex continuation; duplicates become superseded only after mapping.",
+      "preservation": [
+        "latest corrections and acceptance",
+        "accepted evidence/artifacts",
+        "remaining work",
+        "caller/human reply relationship",
+        "exact live Conditions"
+      ]
+    },
+    {
+      "old": {
+        "appId": "may-agent",
+        "taskId": "repair-owner-review-message-deduplication-and-disclosure-20260825",
+        "generation": 2,
+        "phase": "waiting",
+        "owner": null,
+        "conditionIds": [
+          "approve-owner-signal-boundary-62890907"
+        ]
+      },
+      "outcome": "Complete the existing may-agent owner-review notification-boundary repair demonstrated by session s_1787653153677_77 and independently reviewed in session s_1787683908535_443. Integrate terminal-signal disclosure into the actual terminal path; ensure canonical delivery and remediation receipt lookup occurs before every agent or human owner-signal path; route a genuinely new finding through one supported accountable App or Task owner; make an exact replay create zero new signals; and truthfully disclose the count and event IDs of signals created by the attempt. Run all focused tests and typecheck after the final source change. Preserve the distinction between finding delivery and remediation, request approval only after the candidate is fully integrated and verified, and perform no production mutation without that approval. Replan on this same task if any receipt binding, route, regression, post-change check, activation identity, or live terminal proof is incomplete.",
+      "disposition": "consolidate-lineage-after-current-state-check",
+      "proposedOwner": "alex",
+      "lineage": "owner-review-contract",
+      "replacement": null,
+      "basis": "Overlapping system-improvement lineage. Reconcile current source/results and preserve exact live Conditions before admitting at most one coherent Alex continuation; duplicates become superseded only after mapping.",
+      "preservation": [
+        "latest corrections and acceptance",
+        "accepted evidence/artifacts",
+        "remaining work",
+        "caller/human reply relationship",
+        "exact live Conditions"
+      ]
+    },
+    {
+      "old": {
+        "appId": "may-agent",
+        "taskId": "repair-platform-owner-review-terminal-contract-20260818",
+        "generation": 2,
+        "phase": "waiting",
+        "owner": "may",
+        "conditionIds": []
+      },
+      "outcome": "Restore the platform owner-review loop so a runnable accountable owner keeps the same review open or re-drives it while any required repair, activation, verification, or remeasurement child is nonterminal, and only converges after the correlated terminal domain evidence is reviewed.",
+      "disposition": "consolidate-lineage-after-current-state-check",
+      "proposedOwner": "alex",
+      "lineage": "unhandled-signal-owner-review",
+      "replacement": null,
+      "basis": "Overlapping system-improvement lineage. Reconcile current source/results and preserve exact live Conditions before admitting at most one coherent Alex continuation; duplicates become superseded only after mapping.",
+      "preservation": [
+        "latest corrections and acceptance",
+        "accepted evidence/artifacts",
+        "remaining work",
+        "caller/human reply relationship",
+        "exact live Conditions"
+      ]
+    },
+    {
+      "old": {
+        "appId": "may-agent",
+        "taskId": "repair-platform-owner-review-terminal-contract-runnable-owner-20260818",
+        "generation": 2,
+        "phase": "waiting",
+        "owner": "may",
+        "conditionIds": []
+      },
+      "outcome": "Recover the platform owner-review terminal-state repair under a runnable may-agent owner, keep the cited review open or re-driven while reconcile-unhandled-signal-recurrence-20260816 generation 2 remains nonterminal, and close only after the required child reaches a verified terminal result.",
+      "disposition": "consolidate-lineage-after-current-state-check",
+      "proposedOwner": "alex",
+      "lineage": "unhandled-signal-owner-review",
+      "replacement": null,
+      "basis": "Overlapping system-improvement lineage. Reconcile current source/results and preserve exact live Conditions before admitting at most one coherent Alex continuation; duplicates become superseded only after mapping.",
+      "preservation": [
+        "latest corrections and acceptance",
+        "accepted evidence/artifacts",
+        "remaining work",
+        "caller/human reply relationship",
+        "exact live Conditions"
+      ]
+    },
+    {
+      "old": {
+        "appId": "may-agent",
+        "taskId": "repair-platform-review-terminal-contract-after-unrunnable-owner-20260818",
+        "generation": 2,
+        "phase": "waiting",
+        "owner": "may",
+        "conditionIds": [
+          "existing-unhandled-signal-recovery-terminal"
+        ]
+      },
+      "outcome": "Repair platform owner-review supervision so the existing review cannot converge while its required repair child is nonterminal, then re-drive that review through terminal evidence without replacing or duplicating the existing repair work.",
+      "disposition": "inspect-current-evidence-for-alex-continuation",
+      "proposedOwner": "alex",
+      "lineage": null,
+      "replacement": null,
+      "basis": "System-improvement obligation is in Alex scope, but age/status alone cannot prove it remains useful. Check current source, accepted evidence, caller and waits before replacement or supersession.",
+      "preservation": [
+        "latest corrections and acceptance",
+        "accepted evidence/artifacts",
+        "remaining work",
+        "caller/human reply relationship",
+        "exact live Conditions"
+      ]
+    },
+    {
+      "old": {
+        "appId": "may-agent",
+        "taskId": "repair-subscriber-failure-metric-contract-20260820",
+        "generation": 2,
+        "phase": "waiting",
+        "owner": "may",
+        "conditionIds": [
+          "hao-subscriber-metric-02a9bb15-decision"
+        ]
+      },
+      "outcome": "Isolate, review, and carry to terminal proof the canonical `infra.bus.subscriber-failed-count-1h` contract: retain the system-wide rolling-hour population of every durable `subscriber.failed` event, restore explicit accountable owner `may` and null project attribution for existing as well as new metric rows, and ensure emitted breach/recovery facts route to the May platform owner without suppressing or falsely attributing any failure family.",
+      "disposition": "inspect-current-evidence-for-alex-continuation",
+      "proposedOwner": "alex",
+      "lineage": null,
+      "replacement": null,
+      "basis": "System-improvement obligation is in Alex scope, but age/status alone cannot prove it remains useful. Check current source, accepted evidence, caller and waits before replacement or supersession.",
+      "preservation": [
+        "latest corrections and acceptance",
+        "accepted evidence/artifacts",
+        "remaining work",
+        "caller/human reply relationship",
+        "exact live Conditions"
+      ]
+    },
+    {
+      "old": {
+        "appId": "may-agent",
+        "taskId": "repair-successful-finish-idle-autoclose-overwrite-20260825",
+        "generation": 1,
+        "phase": "waiting",
+        "owner": "may",
+        "conditionIds": [
+          "repair-finish-idle-autoclose-cli-terminal"
+        ]
+      },
+      "outcome": "Repair the May Runtime finish-to-session terminalization boundary so a schema-valid successful finish immediately and durably removes the session from idle auto-close eligibility, cannot later be overwritten with an idle-timeout error, and converges its owning Task exactly once without replay.",
+      "disposition": "inspect-current-evidence-for-alex-continuation",
+      "proposedOwner": "alex",
+      "lineage": null,
+      "replacement": null,
+      "basis": "System-improvement obligation is in Alex scope, but age/status alone cannot prove it remains useful. Check current source, accepted evidence, caller and waits before replacement or supersession.",
+      "preservation": [
+        "latest corrections and acceptance",
+        "accepted evidence/artifacts",
+        "remaining work",
+        "caller/human reply relationship",
+        "exact live Conditions"
+      ]
+    },
+    {
+      "old": {
+        "appId": "may-agent",
+        "taskId": "repair-unadmitted-existing-dependency-request-20260825",
+        "generation": 1,
+        "phase": "waiting",
+        "owner": null,
+        "conditionIds": [
+          "human-waiver:repair-unadmitted-existing-dependency-request-20260825"
+        ]
+      },
+      "outcome": "Repair the May Runtime admission/reconciliation path for the exact existing dependency request `appdep_7dfc107c800edfadbe471612` represented by event `5953599`, then reconcile its preserved Conversation Task and Condition `app-request:appdep_7dfc107c800edfadbe471612` to an evidence-backed terminal dependency result without issuing a replacement request, creating a sibling Conversation Task, mutating Host task storage, or repeating the already-successful deployment.",
+      "disposition": "inspect-current-evidence-for-alex-continuation",
+      "proposedOwner": "alex",
+      "lineage": null,
+      "replacement": null,
+      "basis": "System-improvement obligation is in Alex scope, but age/status alone cannot prove it remains useful. Check current source, accepted evidence, caller and waits before replacement or supersession.",
+      "preservation": [
+        "latest corrections and acceptance",
+        "accepted evidence/artifacts",
+        "remaining work",
+        "caller/human reply relationship",
+        "exact live Conditions"
+      ]
+    },
+    {
+      "old": {
+        "appId": "may-agent",
+        "taskId": "repair-unhandled-signal-sample-only-feedback-loop-20260821",
+        "generation": 1,
+        "phase": "waiting",
+        "owner": "may",
+        "conditionIds": []
+      },
+      "outcome": "understood_intent: stop unchanged five-minute `event.unhandled-signal-count-1h` samples from repeatedly launching owner review and advancing the dependency-blocked taxonomy task, while preserving visibility and wakes for genuine failures, meaningful source or metric deltas, and material dependency transitions. mode: evaluate. priority: proof. Freeze the current baseline represented by metric event 5909482, reconcile-skip event 5909294, taxonomy task generation 137, and unchanged proof dependency evaluate-metric-causal-timestamps-rollout-20260820 generation 1. Isolate the exact candidate behavior, run the smallest representative baseline-vs-candidate comparison, and return a proof-backed staged rollout proposal before adoption. delegations: use exactly one async Gym handoff to provide success evidence that unchanged samples are observation-only and regression evidence that genuine alerts and meaningful transitions still wake the accountable owner. constraints: reject broad rollout until Hao approval; rollback is Git revert. response_to_hao: May will gather evidence, bring back a rollout proposal, wait for Hao approval before rollout, and use Git revert as rollback if adopted changes need to be undone.",
+      "disposition": "consolidate-lineage-after-current-state-check",
+      "proposedOwner": "alex",
+      "lineage": "unhandled-signal-owner-review",
+      "replacement": null,
+      "basis": "Overlapping system-improvement lineage. Reconcile current source/results and preserve exact live Conditions before admitting at most one coherent Alex continuation; duplicates become superseded only after mapping.",
+      "preservation": [
+        "latest corrections and acceptance",
+        "accepted evidence/artifacts",
+        "remaining work",
+        "caller/human reply relationship",
+        "exact live Conditions"
+      ]
+    },
+    {
+      "old": {
+        "appId": "may-agent",
+        "taskId": "repair-waiting-reparent-action-admission-20260820",
+        "generation": 1,
+        "phase": "waiting",
+        "owner": "may",
+        "conditionIds": [
+          "hao-decision:waiting-reparent-action-admission:41d87837"
+        ]
+      },
+      "outcome": "Align waiting-result admission with the accepted atomic task-action contract so schema-valid generation-fenced update-task actions that establish live direct children can be applied without synthetic Conditions, then activate the reviewed runtime safely and re-drive the preserved original attention task to its correct child-waiting or terminal result.",
+      "disposition": "inspect-current-evidence-for-alex-continuation",
+      "proposedOwner": "alex",
+      "lineage": null,
+      "replacement": null,
+      "basis": "System-improvement obligation is in Alex scope, but age/status alone cannot prove it remains useful. Check current source, accepted evidence, caller and waits before replacement or supersession.",
+      "preservation": [
+        "latest corrections and acceptance",
+        "accepted evidence/artifacts",
+        "remaining work",
+        "caller/human reply relationship",
+        "exact live Conditions"
+      ]
+    },
+    {
+      "old": {
+        "appId": "may-agent",
+        "taskId": "repair/gym-public-health-refresh-replan-20260824",
+        "generation": 2,
+        "phase": "waiting",
+        "owner": "may",
+        "conditionIds": [
+          "hao-approval-gym-public-health-candidate-v10"
+        ]
+      },
+      "outcome": "Recover Gym’s public-health projection and valid-run-rate refresh capability by reconstructing a materially changed immutable Host candidate from the authoritative clean baseline, proving it without reusing the rejected candidate, obtaining explicit approval before activation, and then returning terminal live projection, metric, and workflow evidence for the parent outcome.",
+      "disposition": "consolidate-lineage-after-current-state-check",
+      "proposedOwner": "alex",
+      "lineage": "gym-public-health",
+      "replacement": null,
+      "basis": "Overlapping system-improvement lineage. Reconcile current source/results and preserve exact live Conditions before admitting at most one coherent Alex continuation; duplicates become superseded only after mapping.",
+      "preservation": [
+        "latest corrections and acceptance",
+        "accepted evidence/artifacts",
+        "remaining work",
+        "caller/human reply relationship",
+        "exact live Conditions"
+      ]
+    },
+    {
+      "old": {
+        "appId": "may-agent",
+        "taskId": "resolve-gym-runtime-attention-26-20260825",
+        "generation": 1,
+        "phase": "waiting",
+        "owner": "tech-lead",
+        "conditionIds": [
+          "runtime-exact-task-retry-control",
+          "gym-incident-intake-stable-localkey-loaded"
+        ]
+      },
+      "outcome": "As the responsible May Runtime resolver, reconcile exactly the 26 Gym runtime tasks supplied in the parent input through supported task control on their existing identities: safely retry only when current code and retained input justify it, retain valid dependency-bound or evidence-bearing work, and return identity-specific or rigorously evidenced grouped dispositions with exact resolved, retained, and still-blocked counts and resolver boundaries.",
+      "disposition": "inspect-current-evidence-for-alex-continuation",
+      "proposedOwner": "alex",
+      "lineage": null,
+      "replacement": null,
+      "basis": "System-improvement obligation is in Alex scope, but age/status alone cannot prove it remains useful. Check current source, accepted evidence, caller and waits before replacement or supersession.",
+      "preservation": [
+        "latest corrections and acceptance",
+        "accepted evidence/artifacts",
+        "remaining work",
+        "caller/human reply relationship",
+        "exact live Conditions"
+      ]
+    },
+    {
+      "old": {
+        "appId": "may-agent",
+        "taskId": "restore-existing-aks-problem-task-terminal-route-c6636d34",
+        "generation": 1,
+        "phase": "waiting",
+        "owner": "may",
+        "conditionIds": [
+          "aks-taxonomy-problem-task-terminal-route-c6636d34",
+          "aks-taxonomy-problem-app-result-c6636d34"
+        ]
+      },
+      "outcome": "Restore execution and terminal result propagation for the already-admitted AKS problem task runtime/problem-solver/live-proof-aks-taxonomy-c6636d34-20260818-1346, then obtain the correlated terminal App result without duplicating the request or domain task.",
+      "disposition": "consolidate-lineage-after-current-state-check",
+      "proposedOwner": "alex",
+      "lineage": "aks-taxonomy-and-correlation",
+      "replacement": null,
+      "basis": "Overlapping system-improvement lineage. Reconcile current source/results and preserve exact live Conditions before admitting at most one coherent Alex continuation; duplicates become superseded only after mapping.",
+      "preservation": [
+        "latest corrections and acceptance",
+        "accepted evidence/artifacts",
+        "remaining work",
+        "caller/human reply relationship",
+        "exact live Conditions"
+      ]
+    },
+    {
+      "old": {
+        "appId": "may-agent",
+        "taskId": "restore-platform-supervision-repair-aks-delivery-taxonomy-20260818",
+        "generation": 1,
+        "phase": "waiting",
+        "owner": "may",
+        "conditionIds": []
+      },
+      "outcome": "Repair and live-prove the AKS watcher delivery taxonomy so the accountable AKS App owns the intended watcher source/event pairs and expected observations are not reported as unexpected unhandled signals, while actionable run events still reach their exact consumers.",
+      "disposition": "consolidate-lineage-after-current-state-check",
+      "proposedOwner": "alex",
+      "lineage": "aks-taxonomy-and-correlation",
+      "replacement": null,
+      "basis": "Overlapping system-improvement lineage. Reconcile current source/results and preserve exact live Conditions before admitting at most one coherent Alex continuation; duplicates become superseded only after mapping.",
+      "preservation": [
+        "latest corrections and acceptance",
+        "accepted evidence/artifacts",
+        "remaining work",
+        "caller/human reply relationship",
+        "exact live Conditions"
+      ]
+    },
+    {
+      "old": {
+        "appId": "may-agent",
+        "taskId": "review-terminal-unhandled-signal-recurrence-evidence-20260819",
+        "generation": 1,
+        "phase": "pending",
+        "owner": "may",
+        "conditionIds": []
+      },
+      "outcome": "After the preserved reconcile-unhandled-signal-recurrence-20260816 task reaches a terminal result, review that exact result and its dependency-woken App response against the platform owner-review contract, without replacing or duplicating its repair, activation, alert, or remeasurement work.",
+      "disposition": "consolidate-lineage-after-current-state-check",
+      "proposedOwner": "alex",
+      "lineage": "unhandled-signal-owner-review",
+      "replacement": null,
+      "basis": "Overlapping system-improvement lineage. Reconcile current source/results and preserve exact live Conditions before admitting at most one coherent Alex continuation; duplicates become superseded only after mapping.",
+      "preservation": [
+        "latest corrections and acceptance",
+        "accepted evidence/artifacts",
+        "remaining work",
+        "caller/human reply relationship",
+        "exact live Conditions"
+      ]
+    },
+    {
+      "old": {
+        "appId": "may-agent",
+        "taskId": "runtime/platform-owner-review",
+        "generation": 159,
+        "phase": "pending",
+        "owner": "tech-lead",
+        "conditionIds": []
+      },
+      "outcome": "Keep platform state reviewed by its accountable owner and organize the smallest useful follow-up from current evidence.",
+      "disposition": "consolidate-lineage-after-current-state-check",
+      "proposedOwner": "alex",
+      "lineage": "unhandled-signal-owner-review",
+      "replacement": null,
+      "basis": "Overlapping system-improvement lineage. Reconcile current source/results and preserve exact live Conditions before admitting at most one coherent Alex continuation; duplicates become superseded only after mapping.",
+      "preservation": [
+        "latest corrections and acceptance",
+        "accepted evidence/artifacts",
+        "remaining work",
+        "caller/human reply relationship",
+        "exact live Conditions"
+      ]
+    },
+    {
+      "old": {
+        "appId": "may-agent",
+        "taskId": "runtime/restore-platform-owner-review-supervision",
+        "generation": 1,
+        "phase": "waiting",
+        "owner": null,
+        "conditionIds": []
+      },
+      "outcome": "Restore runnable supervision for the existing platform owner review and drive the current unhandled-signal and AKS delivery-taxonomy remediation paths to a terminal, evidence-backed ops-health result without replacing or duplicating their live tasks.",
+      "disposition": "consolidate-lineage-after-current-state-check",
+      "proposedOwner": "alex",
+      "lineage": "unhandled-signal-owner-review",
+      "replacement": null,
+      "basis": "Overlapping system-improvement lineage. Reconcile current source/results and preserve exact live Conditions before admitting at most one coherent Alex continuation; duplicates become superseded only after mapping.",
+      "preservation": [
+        "latest corrections and acceptance",
+        "accepted evidence/artifacts",
+        "remaining work",
+        "caller/human reply relationship",
+        "exact live Conditions"
+      ]
+    }
+  ]
+}

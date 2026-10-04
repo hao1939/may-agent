@@ -26,7 +26,7 @@ import {
 
 export const name = "develop-change";
 export const description =
-  "Produce a locally committed, verified and reviewed code or documentation candidate using Bob and tech-lead. Requires an ordinary Task worktree. Input: { verify: [executable, ...arguments] }. Outcome and acceptance come from the owning Task. Returns evidence for May to judge; does not merge or deploy.";
+  "Produce a locally committed, verified and reviewed code or documentation candidate using Alex-local Bob and tech-lead. Requires an ordinary Task worktree. Input: { verify: [executable, ...arguments] }. Outcome and acceptance come from the owning Task. Returns evidence for Alex to judge; does not merge or deploy.";
 export const workspace = { kind: "task", baseBranch: "main" } as const;
 
 // Explanations are archived; code bounds the aggregate Task result.
@@ -126,7 +126,7 @@ export async function execute(ctx: WorkflowContext) {
     join(
       ctx.workspace.output,
       ".state",
-      "may-development",
+      "alex-development",
       digest({ appId: rec.appId, taskId: rec.taskId }),
     ),
   );
@@ -405,7 +405,7 @@ export async function execute(ctx: WorkflowContext) {
         );
       }
       if (!saved.design) {
-        saved.design = await ask("may-bob", "design", designSchema, value);
+        saved.design = await ask("bob", "design", designSchema, value);
         // The new judgment supersedes the old request for repair. Honor review
         // of existing work; do not let stale feedback force implementation.
         saved.feedback = undefined;
@@ -421,7 +421,7 @@ export async function execute(ctx: WorkflowContext) {
             !sameCandidate(saved.implementation, value)))
       ) {
         const decision = await ask(
-          "may-tech-lead",
+          "tech-lead",
           "implementation",
           implementationSchema,
           value,
@@ -477,7 +477,7 @@ export async function execute(ctx: WorkflowContext) {
         await ensureCurrent();
         saved.verified = value;
       }
-      const review = await ask("may-bob", "review", reviewSchema, value);
+      const review = await ask("bob", "review", reviewSchema, value);
       if (
         !sameCandidate(value, await candidate(root, ctx.signal)) ||
         review.commit !== value.commit

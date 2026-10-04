@@ -92,7 +92,7 @@ test("effort observes accepted work and running invocations, preserves scopes an
   usage(db, "long", "scout", "research", 130, cut - 1, cut - 7_200_000);
   usage(db, "old", "may", "quiet-wait", 999, cut - 3_600_001);
   usage(db, "future", "may", "future", 999, cut);
-  usage(db, "evaluator", "evaluation", "assessment", 500);
+  usage(db, "evaluator", "alex", "assessment", 500);
   usage(db, "unattributed", undefined, undefined, 900);
   usage(db, "without-task", "may", undefined, 900);
   const observed = sample();

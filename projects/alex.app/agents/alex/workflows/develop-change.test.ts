@@ -20,7 +20,7 @@ import {
   createTestAppWorkflowContext,
 } from "@may-agent/sdk/testing";
 import { execute } from "./develop-change.js";
-import app, { taskForMayInput } from "../../../app.js";
+import app, { taskForInput } from "../../../app.js";
 
 const roots: string[] = [];
 afterEach(() => {
@@ -29,7 +29,7 @@ afterEach(() => {
 });
 
 function trial() {
-  const root = mkdtempSync(join(tmpdir(), "may-development-test-"));
+  const root = mkdtempSync(join(tmpdir(), "alex-development-test-"));
   roots.push(root);
   const repo = join(root, "repository");
   const worktree = join(root, "candidate");
@@ -61,7 +61,7 @@ function trial() {
   });
   const current: TaskDetail = {
     id: "goal/trial",
-    parentId: "may",
+    parentId: "root",
     generation: 1,
     status: "running",
     outcome: spec(1).data.outcome,
@@ -104,12 +104,12 @@ function trial() {
       input: { verify: (current.input as any).data.verify },
       signal,
       reconciliation: {
-        appId: "may",
+        appId: "alex",
         taskId: current.id,
         generation: current.generation,
         resourceVersion: 1,
-        agent: "may-tech-lead",
-        owner: "may-tech-lead",
+        agent: "tech-lead",
+        owner: "tech-lead",
         outcome: current.outcome,
         acceptance: current.acceptance,
         input: current.input,
@@ -187,9 +187,9 @@ function trial() {
 }
 
 describe("development workflow using real Git and verification", () => {
-  test("admission selects May to judge the method inside an ordinary Task", () => {
+  test("admission selects Alex to judge the method inside an ordinary Task", () => {
     const t = trial();
-    const admitted = taskForMayInput({
+    const admitted = taskForInput({
       id: "request",
       source: { kind: "app", id: "may" },
       input: t.current.input as any,
@@ -197,11 +197,11 @@ describe("development workflow using real Git and verification", () => {
     expect(admitted).toMatchObject({
       kind: "desired",
       intent: {
-        agent: "may",
+        agent: "alex",
         input: t.current.input,
       },
     });
-    expect(app.tasks?.maxConcurrent).toBe(4);
+    expect(app.tasks?.maxConcurrent).toBe(3);
     expect(app.workspace).toEqual({
       kind: "git",
       localPath: ".",
@@ -213,9 +213,9 @@ describe("development workflow using real Git and verification", () => {
     const t = trial();
     expect((await t.run()).state).toBe("converged");
     expect(t.calls).toEqual([
-      { agent: "may-bob", stage: "design", tools: undefined },
-      { agent: "may-tech-lead", stage: "implementation", tools: undefined },
-      { agent: "may-bob", stage: "review", tools: undefined },
+      { agent: "bob", stage: "design", tools: undefined },
+      { agent: "tech-lead", stage: "implementation", tools: undefined },
+      { agent: "bob", stage: "review", tools: undefined },
     ]);
     expect(readFileSync(join(t.worktree, ".checks"), "utf8")).toBe("check\n");
     const ctx = t.context(); // A fresh invocation; only Task result and repository survive.

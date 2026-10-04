@@ -9,7 +9,7 @@ const recoveries = `WITH clock AS (SELECT ${clock} AS cut), recoveries AS (
     json_extract(r.value, '$.failures') AS failures,
     substr(json_extract(r.value, '$.error'), 1, 400) AS error
   FROM app_inbox_items i, json_each(COALESCE(i.recovery_json, '{}')) r
-  WHERE i.app_id != 'evaluation' AND json_extract(r.value, '$.recoveredAt') IS NULL
+  WHERE i.app_id != 'alex' AND json_extract(r.value, '$.recoveredAt') IS NULL
     AND json_extract(r.value, '$.failures') > 0
     AND ((r.key = 'input-admission' AND i.status != 'done' AND i.execution_task_id IS NULL)
       OR (r.key = 'input-result' AND i.status != 'done')
@@ -144,7 +144,7 @@ export const reliabilityMetrics: NonNullable<AppDefinition["metrics"]> = [
       "Failures among retained external App attempts started in the last day and terminal before the sample cut. Sample size is completed + failed + interrupted; inspect rate and examples before judging.",
     sourceQuery: `WITH clock AS (SELECT ${clock} AS cut), cohort AS (
       SELECT app_id, task_id, attempt_id, state, started_at FROM app_task_attempts, clock
-      WHERE app_id != 'evaluation' AND started_at >= cut - 86400000 AND started_at < cut
+      WHERE app_id != 'alex' AND started_at >= cut - 86400000 AND started_at < cut
         AND state IN ('completed', 'failed', 'interrupted')
         AND CAST(strftime('%s', json_extract(attempt_json, '$.finishedAt')) AS INTEGER) * 1000 < cut
     ) SELECT COALESCE(SUM(state = 'failed'), 0) AS value, COUNT(*) AS sampleSize,
@@ -159,23 +159,23 @@ export const reliabilityMetrics: NonNullable<AppDefinition["metrics"]> = [
   },
   {
     id: EVALUATION_OPERATION_METRIC,
-    name: "Repeated unsuccessful Evaluation operation signals",
+    name: "Repeated unsuccessful Alex operation signals",
     owner: "may",
-    project: "evaluation",
+    project: "alex",
     type: "gauge",
     unit: "signals",
     measureInterval: 300_000,
     threshold: 2,
     alertOp: ">",
     description:
-      "Largest retained unsuccessful-attempt count for one Evaluation Task generation in the last six hours, or retry count for one unresolved pre-attempt Evaluation input-admission recovery. Three signals open one alert episode for independent May review; this is an App attention policy, not a retry cap or proof of waste.",
+      "Largest retained unsuccessful-attempt count for one Alex Task generation in the last six hours, or retry count for one unresolved pre-attempt Evaluation input-admission recovery. Three signals open one alert episode for independent May review; this is an App attention policy, not a retry cap or proof of waste.",
     sourceQuery: `WITH clock AS (SELECT ${clock} AS cut), terminal AS (
       SELECT task_id, task_generation AS generation, attempt_id, state, started_at,
         json_extract(attempt_json, '$.finishedAt') AS finishedAt,
         json_extract(attempt_json, '$.failureReason') AS failureReason,
         json_extract(attempt_json, '$.acceptedResult.state') AS resultState
       FROM app_task_attempts, clock
-      WHERE app_id = 'evaluation' AND started_at >= cut - 21600000 AND started_at < cut
+      WHERE app_id = 'alex' AND started_at >= cut - 21600000 AND started_at < cut
         AND state IN ('completed', 'failed', 'interrupted')
         AND CAST(strftime('%s', json_extract(attempt_json, '$.finishedAt')) AS INTEGER) * 1000 < cut
     ), classified AS (
@@ -199,7 +199,7 @@ export const reliabilityMetrics: NonNullable<AppDefinition["metrics"]> = [
         json_extract(i.recovery_json, '$."input-admission".lastFailedAt') AS lastFailedAt,
         substr(json_extract(i.recovery_json, '$."input-admission".error'), 1, 400) AS error
       FROM app_inbox_items i
-      WHERE i.app_id = 'evaluation' AND i.status != 'done' AND i.execution_task_id IS NULL
+      WHERE i.app_id = 'alex' AND i.status != 'done' AND i.execution_task_id IS NULL
         AND json_extract(i.recovery_json, '$."input-admission".recoveredAt') IS NULL
         AND json_extract(i.recovery_json, '$."input-admission".failures') > 0
     ), signals AS (
@@ -215,9 +215,9 @@ export const reliabilityMetrics: NonNullable<AppDefinition["metrics"]> = [
       (SELECT COUNT(*) FROM terminal) + (SELECT COUNT(*) FROM admissionRecoveries) AS sampleSize,
       (SELECT cut FROM clock) AS measuredAt,
       json_object('start', (SELECT cut - 21600000 FROM clock), 'end', (SELECT cut FROM clock),
-        'policy', 'Alert when one Evaluation Task generation has at least 3 retained unsuccessful attempts in 6 hours or one unresolved pre-attempt input-admission recovery has at least 3 retries. Review does not stop retries.',
-        'denominator', 'Retained terminal Evaluation attempts in the six-hour cohort plus current unresolved pre-attempt Evaluation input-admission recovery boundaries.',
-        'coverage', 'Unsuccessful attempts include failed/rejected attempts, accepted incomplete results, and stale/requeued interruptions. Admission recovery is read from durable inbox recovery state, including state retained across installation or restart. Owner-review is included by ordinary Evaluation task identity. User cancellation and other interruptions are excluded.',
+        'policy', 'Alert when one Alex Task generation has at least 3 retained unsuccessful attempts in 6 hours or one unresolved pre-attempt input-admission recovery has at least 3 retries. Review does not stop retries.',
+        'denominator', 'Retained terminal Alex attempts in the six-hour cohort plus current unresolved pre-attempt Evaluation input-admission recovery boundaries.',
+        'coverage', 'Unsuccessful attempts include failed/rejected attempts, accepted incomplete results, and stale/requeued interruptions. Admission recovery is read from durable inbox recovery state, including state retained across installation or restart. Owner-review is included by ordinary Alex task identity. User cancellation and other interruptions are excluded.',
         'groups', json((SELECT json_group_array(json_object('kind', kind,
           'taskId', CASE WHEN kind = 'task-attempts' THEN subjectId END,
           'inputId', CASE WHEN kind = 'input-admission-recovery' THEN subjectId END,
@@ -231,22 +231,22 @@ export const reliabilityMetrics: NonNullable<AppDefinition["metrics"]> = [
   },
   {
     id: REVIEW_LAG_METRIC,
-    name: "Oldest unfinished Evaluation review",
+    name: "Oldest unfinished Alex-hosted review",
     owner: "may",
-    project: "evaluation",
+    project: "alex",
     type: "gauge",
     unit: "seconds",
     measureInterval: 300_000,
     threshold: 2 * 86400,
     alertOp: ">",
     description:
-      "Age of the oldest unfinished admitted Evaluation review input. May judges overdue review; Evaluation does not assess itself. Zero means no retained unfinished review input, not complete coverage.",
+      "Age of the oldest unfinished admitted Alex-hosted review input. May judges overdue review; Evaluation does not assess itself. Zero means no retained unfinished review input, not complete coverage.",
     sourceQuery: `WITH pending AS (SELECT id, execution_task_id, created_at FROM app_inbox_items
-      WHERE app_id = 'evaluation' AND status != 'done' AND input_kind IN ('review-metric', 'review-task-outcome', 'automatic-review'))
+      WHERE app_id = 'alex' AND status != 'done' AND input_kind IN ('review-metric', 'review-task-outcome', 'automatic-review'))
       SELECT COALESCE(MAX(MAX(0, (${clock} - created_at) / 1000.0)), 0) AS value, COUNT(*) AS sampleSize,
       ${clock} AS measuredAt,
       json_object('scope', 'Current unfinished review inputs, including budget waits. Admission age is not a promised deadline.',
-        'examples', json((SELECT json_group_array(json_object('appId', 'evaluation', 'inputId', id, 'taskId', execution_task_id, 'createdAt', created_at))
+        'examples', json((SELECT json_group_array(json_object('appId', 'alex', 'inputId', id, 'taskId', execution_task_id, 'createdAt', created_at))
           FROM (SELECT * FROM pending ORDER BY created_at, id LIMIT 3)))) AS note FROM pending`,
   },
 ];
