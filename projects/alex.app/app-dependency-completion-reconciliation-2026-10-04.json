@@ -256,7 +256,7 @@
   ],
   "alexAcceptance": {
     "acceptedAt": "2026-10-04T13:03:00Z",
-    "decision": "Accept Bob mapping with current-protocol verification completed by deterministic deployed-source tests; retain historical outcomes as unfulfilled and May authority decision as open.",
+    "decision": "Accept Bob mapping; deterministic current-protocol verification completed. May withdrew the obsolete old-candidate request as unfulfilled with no surviving human action. Historical technical outcomes remain unfulfilled.",
     "currentProtocolVerification": {
       "command": "bun test ./projects/may-agent/src/app/core/inbox/input-result.test.ts ./projects/may-agent/src/app/core/tasks/app-task-runtime.test.ts",
       "sourceCommit": "fc3b9cab31d3b3af40ee04453b689a93e0477832",
@@ -267,7 +267,13 @@
     "mayRequest": {
       "requestId": "appdep_1c07f1557f0d0d7f27a678c5",
       "conditionId": "app-request:appdep_1c07f1557f0d0d7f27a678c5",
-      "purpose": "Disposition of obsolete old-candidate approval boundary without false fulfillment."
+      "purpose": "Disposition of obsolete old-candidate approval boundary without false fulfillment.",
+      "status": "done",
+      "taskId": "goal/appdep_1c07f1557f0d0d7f27a678c5",
+      "acceptedAttempt": "r_1_4f7a7615-2c12-4d5c-9c08-e3277aeb9ba0",
+      "disposition": "withdraw-obsolete-exact-candidate-request-unfulfilled",
+      "humanActionRequired": false,
+      "legacyStateMutated": false
     }
   }
 }

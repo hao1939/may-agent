@@ -1,7 +1,7 @@
 {
   "kind": "alex-legacy-frontier-disposition",
   "capturedAt": "2026-10-04T12:13:00Z",
-  "generatedAt": "2026-10-04T13:04:30Z",
+  "generatedAt": "2026-10-04T13:06:00Z",
   "source": "/app/.state/alex-migration-20261004/legacy-frontier-index.json",
   "sourceSha256": "46d61e762a8abac6170b4333c7aac30af2661afabe7fe635294a17318ea1cde9",
   "status": "bounded semantic migration in progress: writer-containment reconciled; Gym metric-only paths partially superseded; app-dependency completion old path reconciled with current-protocol verification and May approval boundary open; no old outcome falsely fulfilled",
@@ -21,8 +21,8 @@
       "source-identified-current-lineage-check": 37,
       "partial-execution-path-supersession-nonmetric-open": 4,
       "retain-may-boundary-after-alex-technical-reconciliation": 2,
-      "execution-path-superseded-not-fulfilled-retain-may-approval-boundary": 1,
-      "current-protocol-verified-old-outcome-unfulfilled": 1
+      "current-protocol-verified-old-outcome-unfulfilled": 1,
+      "obsolete-approval-request-withdrawn-unfulfilled": 1
     },
     "byProposedOwner": {
       "alex": 105,
@@ -102,18 +102,18 @@
         ]
       },
       "outcome": "After Hao explicitly approves the exact frozen Runtime candidate, activate it once through the supported supervisor-owned path and produce fresh terminal proof that only genuinely correlated canonical app dependency completions receive `app-inbox:wake`, while all rejected and failed-wake cases remain visible and both required lineages reach their terminal results.",
-      "disposition": "execution-path-superseded-not-fulfilled-retain-may-approval-boundary",
+      "disposition": "obsolete-approval-request-withdrawn-unfulfilled",
       "proposedOwner": "alex",
       "lineage": "app-dependency-completion",
       "replacement": {
         "appId": "alex",
         "taskId": "input/app_7a279469-7ac8-4bec-894a-9314635bd452",
         "role": "bounded exact supersession recommendation; human authority remains with May",
-        "status": "decision-recorded-current-migration",
+        "status": "may-withdrew-obsolete-request-unfulfilled",
         "artifact": "projects/alex.app/app-dependency-completion-reconciliation-2026-10-04.json",
-        "artifactSha256": "63915b74f9919d20625cace372b619333bf1838527312dfce0291f8728b039c0"
+        "artifactSha256": "16faabcd0bf1afb4a049ae515a9156a95954c006692188893ca84fb5e6b3b1ed"
       },
-      "basis": "Current source no longer uses app.dependency.completed/app-inbox:wake and the exact frozen candidate is not an ancestor of deployed Host main, so the old activation path is obsolete. The outcome is not fulfilled: no exact Hao decision, staged activation, dual terminal lineage, negative-control, or metric proof was recovered. Preserve Condition hao-runtime-candidate-6d2e57b-activation-decision and the May caller/authority chain until May adjudicates that obsolete exact-candidate boundary.",
+      "basis": "Current source no longer uses app.dependency.completed/app-inbox:wake and the exact frozen candidate is not an ancestor of deployed Host main. May result goal/appdep_1c07f1557f0d0d7f27a678c5 withdraws the obsolete exact-candidate request as unfulfilled, with no surviving human action and no disabled-state mutation. Preserve Condition hao-runtime-candidate-6d2e57b-activation-decision as historical evidence; no exact approval, staged activation, dual terminal lineage, negative-control, or metric proof was recovered.",
       "preservation": [
         "latest corrections and acceptance",
         "accepted evidence/artifacts",
@@ -3374,7 +3374,7 @@
         "role": "current-protocol verification remainder within migration",
         "status": "current-protocol-verified-historical-live-proof-unfulfilled",
         "artifact": "projects/alex.app/app-dependency-completion-reconciliation-2026-10-04.json",
-        "artifactSha256": "63915b74f9919d20625cace372b619333bf1838527312dfce0291f8728b039c0"
+        "artifactSha256": "16faabcd0bf1afb4a049ae515a9156a95954c006692188893ca84fb5e6b3b1ed"
       },
       "basis": "The app.dependency.completed/app-inbox:wake repair path is obsolete under current saved-answer/app.dependency.updated correlation. Deterministic deployed-source verification passes 209/209 across input-result and App Task runtime tests, covering exact saved-result identity, owner/caller correlation, lost notification, restart/replay, duplicates, stale results, failed/invalid result visibility and Condition recovery. This validates the current protocol but does not fulfill the two historical AKS/May live-proof outcomes or decide the old Hao approval.",
       "preservation": [
@@ -3973,5 +3973,18 @@
         "artifactSha256": "44ae7ea043ec50172e887101d9f4aa30521c5e98e8943dc55d61952a46ec5125"
       }
     ]
+  },
+  "sourceRetirement": {
+    "appsSourceCommit": "b924e240dadd1c5d9042cd0f5d0c5b235ae35aee",
+    "sourceRetirementCommit": "83475307bffffc269789508a4bbb7ac0a910a592",
+    "reloadEvent": 6643341,
+    "enabledApps": [
+      "alex",
+      "may",
+      "scout-knowledge-lib"
+    ],
+    "preservedLocalEntries": 22264,
+    "receipt": "/app/.state/alex-migration-20261004/retirement-summary.json",
+    "effectOnLegacyOutcomes": "none; no Task, input, Condition or outcome was deleted or marked fulfilled"
   }
 }
